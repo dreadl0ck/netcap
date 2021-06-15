@@ -1,0 +1,46 @@
+# for unit tests
+
+location: "Canada/Atlantic"
+timeFormat: "15:04"
+dateFormat: "Monday-02-01-2006"
+
+attacks:
+  # use IPs field to label all traffic from and towards addr
+  - name: DoS-GoldenEye
+    date: Thursday-15-02-2018
+    ips:
+      - 18.217.21.148
+    start: 9:26
+    end: 10:09
+    proto: HTTP
+    category: denial-of-service
+    mitre: T1498
+
+  # use victims and attackers fields to label only between those.
+  - name: Brute Force Web
+    date: Thursday-22-02-2018
+    victims:
+      - 18.218.83.150
+      - 172.31.69.28
+    attackers:
+      - 18.218.115.60
+    start: 10:17
+    end: 11:24
+    proto: HTTP
+    category: bruteforce
+    mitre: T1110
+
+  # test flagging also victim traffic when using victims and attackers fields.
+  - name: Infiltration
+    date: Thursday-01-03-2018
+    victims:
+      - 18.216.254.154
+      - 172.31.69.13
+    attackers:
+      - 13.58.225.34
+    start: 14:00
+    end: 15:37
+    proto: Unknown
+    category: infiltration
+    mitre: TA0008
+    flagVictimTraffic: true

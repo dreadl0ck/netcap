@@ -75,7 +75,7 @@ func InitSocket() {
 
 	fmt.Println("listening for incoming alerts on UNIX socket at", path)
 
-	go func () {
+	go func() {
 		for {
 			// TODO: reuse buffer?
 			var buf = make([]byte, 1024)

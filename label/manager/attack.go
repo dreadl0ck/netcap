@@ -1,3 +1,16 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
 package manager
 
 import (
@@ -53,6 +66,12 @@ type AttackInfo struct {
 	// Separate victims and attacks, flag any traffic BETWEEN the specified IPs.
 	Victims   []string `csv:"victims" yaml:"victims"`
 	Attackers []string `csv:"attackers" yaml:"attackers"`
+
+	// FlagVictimTraffic will also label traffic from and towards the victim for the current attack timeframe,
+	// and can be used when specifying victim and attacker IPs separately.
+	// This is useful for example during infiltration scenarios,
+	// where malicious activity is conducted by an infected host.
+	FlagVictimTraffic bool `yaml:"flagVictimTraffic"`
 }
 
 // private
@@ -61,37 +80,44 @@ type AttackInfo struct {
 type attackInfo struct {
 
 	// Attack instance number
-	Num int `csv:"num" yaml:"num"`
+	Num int `yaml:"num"`
 
 	// Attack Name
-	Name string `csv:"name" yaml:"name"`
+	Name string `yaml:"name"`
 
 	// Attack timeframe
-	Start time.Time `csv:"start" yaml:"start"`
-	End   time.Time `csv:"end" yaml:"end"`
+	Start time.Time `yaml:"start"`
+	End   time.Time `yaml:"end"`
 
 	// any traffic going from and towards the specified IPs in the given timeframe
 	// the field value from parsed CSV is going to be split by ";"
-	IPs []string `csv:"ips" yaml:"ips"`
+	// this approach is less granular compared to specifying victim and attacker ips separately.
+	IPs []string `yaml:"ips"`
 
 	// Underlying Protocol(s)
-	Proto string `csv:"proto" yaml:"proto"`
+	Proto string `yaml:"proto"`
 
 	// Additional notes
-	Notes string `csv:"notes" yaml:"notes"`
+	Notes string `yaml:"notes"`
 
 	// Associated category
-	Category string `csv:"category" yaml:"category"`
+	Category string `yaml:"category"`
 
 	// MITRE Tactic or Technique Name
-	MITRE string `csv:"mitre" yaml:"mitre"`
+	MITRE string `yaml:"mitre"`
 
 	// Day of Attack
-	Date time.Time `yaml:"date" yaml:"date"`
+	Date time.Time `yaml:"date"`
 
 	// Separate victims and attacks, flag any traffic BETWEEN the specified IPs.
-	Victims   []string `csv:"victims" yaml:"victims"`
-	Attackers []string `csv:"attackers" yaml:"attackers"`
+	Victims   []string `yaml:"victims"`
+	Attackers []string `yaml:"attackers"`
+
+	// FlagVictimTraffic will also label traffic from and towards the victim for the current attack timeframe,
+	// and can be used when specifying victim and attacker IPs separately.
+	// This is useful for example during infiltration scenarios,
+	// where malicious activity is conducted by an infected host.
+	FlagVictimTraffic bool `yaml:"flagVictimTraffic"`
 }
 
 func (m *LabelManager) parseAttackInfosYAML(path string) (labelMap map[string]*attackInfo, labels []*attackInfo) {
@@ -142,17 +168,19 @@ func (m *LabelManager) parseAttackInfosYAML(path string) (labelMap map[string]*a
 		end = end.AddDate(date.Year(), int(date.Month())-1, date.Day()-1)
 
 		custom := &attackInfo{
-			Num:       i,     // int
-			Start:     start, // time.Time
-			End:       end,   // time.Time
-			Victims:   a.Victims,
-			Attackers: a.Attackers,
-			Date:      date,
-			Name:      a.Name,     // string
-			Proto:     a.Proto,    // string
-			Notes:     a.Notes,    // string
-			Category:  a.Category, // string
-			MITRE:     a.MITRE,
+			Num:               i,     // int
+			Start:             start, // time.Time
+			End:               end,   // time.Time
+			Victims:           a.Victims,
+			Attackers:         a.Attackers,
+			Date:              date,
+			Name:              a.Name,     // string
+			Proto:             a.Proto,    // string
+			Notes:             a.Notes,    // string
+			Category:          a.Category, // string
+			MITRE:             a.MITRE,
+			FlagVictimTraffic: a.FlagVictimTraffic,
+			IPs:               a.IPs,
 		}
 
 		// ensure no alerts with empty name are collected

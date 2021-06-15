@@ -95,7 +95,7 @@ attacks:
     notes: Workstation manipulates motorized valve 1 and HMI flow indicator transmitter 1 of stage 1 via CIP messages to the primary PLC
     category: Process Disruption
     mitre: Impact
-    date:  019/12/6
+    date: 2019/12/6
   - name: Process Disruption 4
     start: 2019/12/6 13:09:00
     end: 2019/12/6 13:12:00
