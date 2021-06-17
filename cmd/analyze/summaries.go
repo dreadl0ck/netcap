@@ -16,6 +16,7 @@ package main
 import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/encoder"
+	"math"
 	"sort"
 	"strconv"
 	"time"
@@ -138,13 +139,13 @@ func merge(results map[string]*fileSummary) map[string]*encoder.ColumnSummary {
 			fmt.Println(col, "mean:", mean, "stddev:", std)
 
 			colSums[col] = &encoder.ColumnSummary{
-				UniqueStrings: map[string]int{},
+				UniqueStrings: map[string]float64{},
 				Version:       version,
 				Col:           col,
 				Typ:           encoder.TypeString,
 				Mean:          mean,
 				Std:           std,
-				Min:           0,
+				Min:           math.MaxFloat64,
 				Max:           float64(length) - 1,
 			}
 		} else {
@@ -175,7 +176,7 @@ func merge(results map[string]*fileSummary) map[string]*encoder.ColumnSummary {
 			min, max := encoder.MinMaxIntArr(values)
 
 			colSums[col] = &encoder.ColumnSummary{
-				UniqueStrings: map[string]int{},
+				UniqueStrings: map[string]float64{},
 				Version:       version,
 				Col:           col,
 				Typ:           encoder.TypeNumeric,
