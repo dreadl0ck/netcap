@@ -273,7 +273,11 @@ buf_size = 256
 stop_count = 0
 num_datagrams = 0
 
+datagrams = list()
+
 def create_unix_socket(name):
+
+    global datagrams
     socket_name = "/tmp/" + name + ".sock"
 
     # TODO: this seems to redirect stdout and stderr? also affects following print statements
@@ -289,8 +293,45 @@ def create_unix_socket(name):
         global num_datagrams
         datagram = sock.recv(buf_size)
         if datagram:
-            num_datagrams += 1
-            print(datagram, num_datagrams)
+            if num_datagrams != 0 and num_datagrams % arguments.batchSize == 0:
+
+                print("batch size reached", arguments.batchSize)
+
+                # create the pandas DataFrame
+                df = pd.DataFrame(datagrams, columns=['TimestampFirst',
+                                                       'LinkProto',
+                                                       'NetworkProto',
+                                                       'TransportProto',
+                                                       'ApplicationProto',
+                                                       'SrcMAC',
+                                                       'DstMAC',
+                                                       'SrcIP',
+                                                       'SrcPort',
+                                                       'DstIP',
+                                                       'DstPort',
+                                                       'TotalSize',
+                                                       'AppPayloadSize',
+                                                       'NumPackets',
+                                                       'Duration',
+                                                       'TimestampLast',
+                                                       'BytesClientToServer',
+                                                       'BytesServerToClient',
+                                                       'Category'])
+                analyze(df)
+
+                # reset datagrams
+                datagrams = list()
+
+            for data in datagram.split(b'\n'):
+                if data != b'':
+                    arr = data.split(b',')
+                    if len(arr) != 19:
+                        print(arr, len(arr))
+                    else:
+                        num_datagrams += 1
+                        datagrams.append(arr)
+
+            # TODO: dispatch alert as soon we have anything to report
             #send_alert()
 
 def run_socket():

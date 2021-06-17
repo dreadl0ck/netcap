@@ -6,6 +6,8 @@ args:
   - train.py
   - -features=18
   - -socket=True
+  - -batchSize=96000
+  #- -batchSize=32000
 
 auditRecords:
   - Connection
