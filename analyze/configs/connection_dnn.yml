@@ -6,6 +6,7 @@ args:
   - train.py
   - -features=18
   - -socket=True
+  - -encodeCategoricals=False
   - -batchSize=96000
   #- -batchSize=32000
 

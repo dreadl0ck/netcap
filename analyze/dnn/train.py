@@ -319,6 +319,8 @@ def create_unix_socket(name):
                                                        'Category'])
                 analyze(df)
 
+                process_dataframe(df, 0, 0)
+
                 # reset datagrams
                 datagrams = list()
 
@@ -362,65 +364,7 @@ def run_socket():
             print("[INFO] concatenate the files")
             df = pd.concat(df_from_each_file, ignore_index=True)
 
-            # TODO move back into process_dataset?
-            print("[INFO] process dataset, shape:", df.shape)
-            if arguments.sample != None:
-                if arguments.sample > 1.0:
-                    print("invalid sample rate")
-                    exit(1)
-
-                if arguments.sample <= 0:
-                    print("invalid sample rate")
-                    exit(1)
-
-            print("[INFO] sampling", arguments.sample)
-            if arguments.sample < 1.0:
-                df = df.sample(frac=arguments.sample, replace=False)
-
-            if arguments.drop is not None:
-                for col in arguments.drop.split(","):
-                    drop_col(col, df)
-
-            if not arguments.lstm:
-                print("dropping all time related columns...")
-                drop_col('unixtime', df)
-
-            print("[INFO] columns:", df.columns)
-            if arguments.debug:
-                print("[INFO] analyze dataset:", df.shape)
-                analyze(df)
-
-            if arguments.zscoreUnixtime:
-                encode_numeric_zscore(df, "unixtime")
-
-            if arguments.encodeColumns:
-                print("[INFO] Shape when encoding dataset:", df.shape)
-                encode_columns(df, arguments.resultColumn, arguments.lstm, arguments.debug)
-                print("[INFO] Shape AFTER encoding dataset:", df.shape)
-
-            if arguments.debug:
-                print("--------------AFTER DROPPING COLUMNS ----------------")
-                print("df.columns", df.columns, len(df.columns))
-                with pd.option_context('display.max_rows', 10, 'display.max_columns', None):  # more options can be specified also
-                    print(df)
-
-            if arguments.encodeCategoricals:
-                print("[INFO] Shape when encoding dataset:", df.shape)
-                encode_categorical_columns(df, arguments.features)
-                print("[INFO] Shape AFTER encoding dataset:", df.shape)
-
-            for batch_size in range(0, df.shape[0], arguments.batchSize):
-
-                dfCopy = df[batch_size:batch_size+arguments.batchSize]
-
-                # skip leftover that does not reach batch size
-                if len(dfCopy.index) != arguments.batchSize:
-                    leftover = dfCopy
-                    continue
-
-                print("[INFO] processing batch {}-{}/{}".format(batch_size, batch_size+arguments.batchSize, df.shape[0]))
-                history = train_dnn(dfCopy, i, epoch+1, batch=batch_size)
-                leftover = None
+            history, leftover = process_dataframe(df, i, epoch)
 
         if history is not None:
             # get current loss
@@ -437,6 +381,72 @@ def run_socket():
                     print("EPOCH", epoch+1)
                     break
 
+def process_dataframe(df, i, epoch):
+
+    history = None
+    leftover = None
+
+    print("[INFO] process dataset, shape:", df.shape)
+    if arguments.sample != None:
+        if arguments.sample > 1.0:
+            print("invalid sample rate")
+            exit(1)
+
+        if arguments.sample <= 0:
+            print("invalid sample rate")
+            exit(1)
+
+    print("[INFO] sampling", arguments.sample)
+    if arguments.sample < 1.0:
+        df = df.sample(frac=arguments.sample, replace=False)
+
+    if arguments.drop is not None:
+        for col in arguments.drop.split(","):
+            drop_col(col, df)
+
+    if not arguments.lstm:
+        print("dropping all time related columns...")
+        drop_col('unixtime', df)
+
+    print("[INFO] columns:", df.columns)
+    if arguments.debug:
+        print("[INFO] analyze dataset:", df.shape)
+        analyze(df)
+
+    if arguments.zscoreUnixtime:
+        encode_numeric_zscore(df, "unixtime")
+
+    if arguments.encodeColumns:
+        print("[INFO] Shape when encoding dataset:", df.shape)
+        encode_columns(df, arguments.resultColumn, arguments.lstm, arguments.debug)
+        print("[INFO] Shape AFTER encoding dataset:", df.shape)
+
+    if arguments.debug:
+        print("--------------AFTER DROPPING COLUMNS ----------------")
+        print("df.columns", df.columns, len(df.columns))
+        with pd.option_context('display.max_rows', 10, 'display.max_columns', None):  # more options can be specified also
+            print(df)
+
+    if arguments.encodeCategoricals:
+        print("[INFO] Shape when encoding dataset:", df.shape)
+        encode_categorical_columns(df, arguments.features)
+        print("[INFO] Shape AFTER encoding dataset:", df.shape)
+
+    for batch_size in range(0, df.shape[0], arguments.batchSize):
+
+        dfCopy = df[batch_size:batch_size+arguments.batchSize]
+
+        # skip leftover that does not reach batch size
+        if len(dfCopy.index) != arguments.batchSize:
+            leftover = dfCopy
+            continue
+
+        print("[INFO] processing batch {}-{}/{}".format(batch_size, batch_size+arguments.batchSize, df.shape[0]))
+        history = train_dnn(dfCopy, i, epoch+1, batch=batch_size)
+        leftover = None
+
+    return history, leftover
+
 # instantiate the parser
 parser = argparse.ArgumentParser(description='NETCAP compatible implementation of Network Anomaly Detection with a Deep Neural Network and TensorFlow')
 
@@ -448,7 +458,7 @@ parser.add_argument('-dropna', default=False, action='store_true', help='drop ro
 parser.add_argument('-testSize', type=float, default=0.25, help='specify size of the test data in percent (default: 0.25)')
 parser.add_argument('-loss', type=str, default='categorical_crossentropy', help='set function (default: categorical_crossentropy)')
 parser.add_argument('-optimizer', type=str, default='adam', help='set optimizer (default: adam)')
-parser.add_argument('-resultColumn', type=str, default='classification', help='set name of the column with the prediction')
+parser.add_argument('-resultColumn', type=str, default='Category', help='set name of the column with the prediction')
 parser.add_argument('-features', type=int, required=True, help='The amount of columns in the csv (dimensionality)')
 #parser.add_argument('-class_amount', type=int, default=2, help='The amount of classes e.g. normal, attack1, attack3 is 3')
 parser.add_argument('-fileBatchSize', type=int, default=50, help='The amount of files to be read in')
@@ -467,12 +477,18 @@ parser.add_argument('-classes', type=str, help='supply one or multiple comma sep
 parser.add_argument('-saveModel', default=False, help='save model (if false, only the weights will be saved)')
 parser.add_argument('-binaryClasses', default=True, help='use binary classses')
 parser.add_argument('-relu', default=False, help='use ReLU activation function (default: LeakyReLU)')
-parser.add_argument('-encodeCategoricals', default=True, help='encode categorical with one hot strategy')
+parser.add_argument('-encodeCategoricals', type=bool, default=False, help='encode categorical with one hot strategy')
 parser.add_argument('-dnnBatchSize', type=int, default=16, help='set dnn batch size')
 parser.add_argument('-socket', type=bool, default=False, help='read data from unix socket')
 
 # parse commandline arguments
 arguments = parser.parse_args()
+
+# wtf why is encodeCategoricals always True, I've set default=False x)
+print("") # newline to break from netcap status log msg when debugging
+print("encodeCategoricals", arguments.encodeCategoricals)
+arguments.encodeCategoricals = False
+print("encodeCategoricals", arguments.encodeCategoricals)
 
 if not arguments.socket:
     if arguments.read is None:
@@ -480,7 +496,9 @@ if not arguments.socket:
         exit(1)
 
 if arguments.binaryClasses:
-    classes = ["normal", "attack"]
+    # TODO: make configurable
+    classes = ["normal", "infiltration"]
+    print("classes", classes)
 
 if arguments.classes is not None:
     classes = arguments.classes.split(',')
@@ -501,7 +519,7 @@ if not arguments.socket:
         exit(1)
 
 if not arguments.binaryClasses:
-    print("MULTI-CLASS", "num classes:", len(classes))
+    print("MULTI-CLASS", "num classes:", len(classes), classes)
 
 # create models
 model = create_dnn(
