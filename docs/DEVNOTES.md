@@ -12,4 +12,5 @@ Show output of external analyzer and filter only for records labeled as not norm
 
 new analyzer api:
 
-    net capture -read 2017-09-19-traffic-analysis-exercise.pcap -analyzer connection_test -labels ../label/configs/cic-ids2018-attacks.yml -include Connection
+    net capture -read Thursday-01-03-2018.pcapng -reassemble-connections=false -analyzer=connection_dnn -labels ../label/configs/cic-ids2018-attacks.yml -include Connection
+
