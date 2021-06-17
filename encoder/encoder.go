@@ -15,6 +15,7 @@ package encoder
 
 import (
 	"log"
+	"math"
 	"strconv"
 	"sync"
 
@@ -153,16 +154,16 @@ func (m *ValueEncoder) Float64(field string, val float64) string {
 	)
 
 	sum.Lock()
-	// calculate new stats and collect value
-	if sum.NumValues > sum.MaxValues {
-		sum.Values = sum.Values[len(sum.Values)/2:]
-		sum.NumValues /= 2
-	}
-	sum.NumValues++
 
-	sum.Values = append(sum.Values, val)
-	sum.Mean, sum.Std = stat.MeanStdDev(sum.Values, nil)
-	sum.Min, sum.Max = MinMaxIntArr(sum.Values)
+	// TODO: use weights?
+	sum.Mean, sum.Std = stat.MeanStdDev([]float64{sum.Mean, val}, nil)
+
+	if val > sum.Max {
+		sum.Max = val
+	}
+	if val < sum.Min {
+		sum.Min = val
+	}
 
 	switch {
 	case m.conf.ZScore:
@@ -190,9 +191,7 @@ func (m *ValueEncoder) GetSummary(colType ColumnType, field string) *ColumnSumma
 			Col:           field,
 			Typ:           colType,
 			UniqueStrings: map[string]float64{},
-
-			// TODO: make configurable
-			MaxValues: 10000,
+			Min:           math.MaxFloat64,
 		}
 		m.columns[field] = sum
 	}

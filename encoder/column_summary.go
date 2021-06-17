@@ -39,12 +39,5 @@ type ColumnSummary struct {
 	Min float64 `json:"min"`
 	Max float64 `json:"max"`
 
-	// raw numeric values
-	// TODO: add support for a sliding window? Keeping all values in memory forever will be infeasible for long running systems.
-	Values []float64 `json:"values"`
-
-	NumValues int
-	MaxValues int
-
 	sync.Mutex
 }
