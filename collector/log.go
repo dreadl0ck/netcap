@@ -32,10 +32,11 @@ import (
 // this is used to be able to dump the collector configuration into the netcap.log in quiet mode
 // following calls to Init() will not open the filehandle again.
 func (c *Collector) initLogging() error {
+
 	// prevent reopen
-	if c.netcapLogFile != nil {
-		return nil
-	}
+	//if c.netcapLogFile != nil {
+	//	return nil
+	//}
 
 	if c.config.DecoderConfig.Out != "" {
 		if stat, err := os.Stat(c.config.DecoderConfig.Out); err != nil {

@@ -215,6 +215,7 @@ def run():
 
             if not arguments.lstm:
                 print("dropping all time related columns...")
+                # TODO: make field name configurable
                 drop_col('unixtime', df)
 
             print("[INFO] columns:", df.columns)
@@ -223,6 +224,7 @@ def run():
                 analyze(df)
 
             if arguments.zscoreUnixtime:
+               # TODO: make field name configurable
                encode_numeric_zscore(df, "unixtime")
 
             if arguments.encodeColumns:
@@ -317,9 +319,9 @@ def create_unix_socket(name):
                                                        'BytesClientToServer',
                                                        'BytesServerToClient',
                                                        'Category'])
-                analyze(df)
 
-                process_dataframe(df, 0, 0)
+                analyze(df)
+                process(df)
 
                 # reset datagrams
                 datagrams = list()
@@ -337,49 +339,32 @@ def create_unix_socket(name):
             #send_alert()
 
 def run_socket():
-
-    print("RUN SOCKET")
-
     create_unix_socket("Connection")
-    return
 
-    leftover = None
+epoch = 1
+
+def process(df):
+
+    global epoch
     global patience
     global min_delta
 
-    for epoch in range(arguments.epochs):
-        history = None
-        leftover = None
+    history, leftover = process_dataframe(df, 0, epoch)
 
-        print(colored("[INFO] epoch {}/{}".format(epoch+1, arguments.epochs), 'yellow'))
-        for i in range(0, len(files), arguments.fileBatchSize):
+    if history is not None:
+        # get current loss
+        lossValues = history.history['val_loss']
+        currentLoss = lossValues[-1]
+        print(colored("[LOSS] " + str(currentLoss),'yellow'))
 
-            print(colored("[INFO] loading file {}-{}/{} on epoch {}/{}".format(i+1, i+arguments.fileBatchSize, len(files), epoch+1, arguments.epochs), 'yellow'))
-            df_from_each_file = [readCSV(f) for f in files[i:(i+arguments.fileBatchSize)]]
-
-            # ValueError: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
-            if leftover is not None:
-                df_from_each_file.insert(0, leftover)
-
-            print("[INFO] concatenate the files")
-            df = pd.concat(df_from_each_file, ignore_index=True)
-
-            history, leftover = process_dataframe(df, i, epoch)
-
-        if history is not None:
-            # get current loss
-            lossValues = history.history['val_loss']
-            currentLoss = lossValues[-1]
-            print(colored("[LOSS] " + str(currentLoss),'yellow'))
-
-            # implement early stopping to avoid overfitting
-            # start checking the val_loss against the threshold after patience epochs
-            if epoch+1 >= patience:
-                print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
-                if currentLoss < min_delta:
-                    print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
-                    print("EPOCH", epoch+1)
-                    break
+        # implement early stopping to avoid overfitting
+        # start checking the val_loss against the threshold after patience epochs
+        if epoch+1 >= patience:
+            print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
+            if currentLoss < min_delta:
+                print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
+                print("EPOCH", epoch+1)
+                exit(0)
 
 def process_dataframe(df, i, epoch):
 
@@ -432,18 +417,18 @@ def process_dataframe(df, i, epoch):
         encode_categorical_columns(df, arguments.features)
         print("[INFO] Shape AFTER encoding dataset:", df.shape)
 
-    for batch_size in range(0, df.shape[0], arguments.batchSize):
+    # for batch_size in range(0, df.shape[0], arguments.batchSize):
+    #
+    #     dfCopy = df[batch_size:batch_size+arguments.batchSize]
+    #
+    #     # skip leftover that does not reach batch size
+    #     if len(dfCopy.index) != arguments.batchSize:
+    #         leftover = dfCopy
+    #         continue
 
-        dfCopy = df[batch_size:batch_size+arguments.batchSize]
-
-        # skip leftover that does not reach batch size
-        if len(dfCopy.index) != arguments.batchSize:
-            leftover = dfCopy
-            continue
-
-        print("[INFO] processing batch {}-{}/{}".format(batch_size, batch_size+arguments.batchSize, df.shape[0]))
-        history = train_dnn(dfCopy, i, epoch+1, batch=batch_size)
-        leftover = None
+    print("[INFO] processing batch {}/{}".format(arguments.batchSize, df.shape[0]))
+    history = train_dnn(df, i, epoch+1, batch=arguments.batchSize)
+    leftover = None
 
     return history, leftover
 
