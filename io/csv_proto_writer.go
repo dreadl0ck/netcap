@@ -102,7 +102,7 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 			if w.label {
 				values = append(values, labelEncoder.String("Label", labelManager.Label(record)))
 			}
-			out = []byte(strings.Join(values, ","))
+			out = []byte(strings.Join(values, ",") + "\n")
 		} else {
 			// use raw values
 			values = record.CSVRecord()
