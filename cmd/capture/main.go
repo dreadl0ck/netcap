@@ -288,6 +288,8 @@ func Run() {
 		HTTPShutdownEndpoint:  *flagHTTPShutdown,
 		Timeout:               *flagTimeout,
 		Labels:                *flagLabels,
+		Scatter:               *flagScatter,
+		ScatterDuration:       *flagScatterDuration,
 		DecoderConfig: &config.Config{
 			Quiet:         *flagQuiet,
 			PrintProgress: *flagPrintProgress,

@@ -43,6 +43,9 @@ var (
 	flagTimeout                = fs.Duration("timeout", 1*time.Second, "set the timeout for live capture, providing a value of zero will be substituted with pcap.BlockForever.")
 	flagLabels                 = fs.String("labels", "", "path to attacks for labeling audit records")
 
+	flagScatterDuration = fs.Duration("scatter-duration", 5*time.Minute, "interval for scatter chart")
+	flagScatter         = fs.Bool("scatter", true, "generate a scatter plot for labeled audit records")
+
 	flagBPF = fs.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")
 
 	flagInclude = fs.String("include", "", "include specific decoders")

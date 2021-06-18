@@ -54,7 +54,7 @@ func (c *Collector) Init() (err error) {
 	decoderconfig.Instance = c.config.DecoderConfig
 	stream.Debug = c.config.DecoderConfig.Debug
 	if c.config.Labels != "" {
-		io.InitLabelManager(c.config.Labels, c.config.DecoderConfig.Debug)
+		io.InitLabelManager(c.config.Labels, c.config.DecoderConfig.Debug, c.config.Scatter, c.config.ScatterDuration)
 	}
 
 	// create state machine options

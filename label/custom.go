@@ -152,7 +152,8 @@ func applyLabel(man *manager.LabelManager, record types.AuditRecord, writer io.W
 func CustomLabels(pathMappingInfo, outputPath, separator, selection string) error {
 	var (
 		start = time.Now()
-		man   = manager.NewLabelManager(UseProgressBars, Debug, removeFilesWithoutMatches)
+		// TODO: make scatter configurable
+		man = manager.NewLabelManager(UseProgressBars, Debug, removeFilesWithoutMatches, false, 5*time.Minute)
 	)
 
 	man.Init(pathMappingInfo)

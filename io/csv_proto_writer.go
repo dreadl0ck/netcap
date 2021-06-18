@@ -64,11 +64,11 @@ func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, e
 	panic("protocol buffer does not implement the types.AuditRecord interface")
 }
 
-// TODO: make configurable
-var labelManager = manager.NewLabelManager(false, false, false)
+var labelManager *manager.LabelManager
 
 // InitLabelManager can be invoked to configure the labels
-func InitLabelManager(pathMappingInfo string, debug bool) {
+func InitLabelManager(pathMappingInfo string, debug bool, scatter bool, scatterDuration time.Duration) {
+	labelManager = manager.NewLabelManager(false, false, false, scatter, scatterDuration)
 	labelManager.Init(pathMappingInfo)
 	labelManager.Debug = debug
 }

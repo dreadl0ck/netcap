@@ -101,7 +101,7 @@ type Collector struct {
 	Bpf       string
 
 	Epochs    int
-	numEpochs    int
+	numEpochs int
 }
 
 // New returns a new Collector instance.

@@ -25,7 +25,7 @@ const labelNormal = "normal"
 // Label returns the label for the current audit record according to the loaded label mapping.
 func (m *LabelManager) Label(record types.AuditRecord) string {
 
-	var label string
+	var label = labelNormal
 
 	// verify time interval of audit record is within the attack period
 	// TODO: add simple option to increment or decrement UTC instead of using named timezone
@@ -121,7 +121,7 @@ func (m *LabelManager) Label(record types.AuditRecord) string {
 
 			// only if it is not already part of the label
 			if !strings.Contains(label, l.Category) {
-				if label == "" {
+				if label == labelNormal {
 					label = l.Category
 				} else {
 					label += " | " + l.Category
@@ -130,8 +130,12 @@ func (m *LabelManager) Label(record types.AuditRecord) string {
 		}
 	}
 
-	if label == "" {
-		return labelNormal
+	if m.scatterPlot {
+		if label != labelNormal {
+			m.scatterMapMu.Lock()
+			m.scatterMap[auditRecordTime.Truncate(m.scatterDuration)]++
+			m.scatterMapMu.Unlock()
+		}
 	}
 
 	return label
