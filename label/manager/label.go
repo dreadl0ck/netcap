@@ -14,7 +14,6 @@
 package manager
 
 import (
-	"fmt"
 	"github.com/dreadl0ck/netcap/types"
 	"strings"
 	"time"
@@ -44,17 +43,17 @@ func (m *LabelManager) Label(record types.AuditRecord) string {
 			// or matches exactly the one on the audit record
 			l.Start.Equal(auditRecordTime) || l.End.Equal(auditRecordTime) {
 
-			if m.Debug {
-				fmt.Println("-----------------------", record.NetcapType(), l.Name, l.Category)
-				fmt.Println("flow:", record.Src(), "->", record.Dst(), "addr:", "IPs:", l.IPs)
-				fmt.Println("victims", l.Victims, "attackers", l.Attackers)
-				fmt.Println("start", l.Start)
-				fmt.Println("end", l.End)
-				fmt.Println("auditRecordTime", auditRecordTime)
-				fmt.Println("(l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))", l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))
-				fmt.Println("l.Start.Equal(auditRecordTime)", l.Start.Equal(auditRecordTime))
-				fmt.Println("l.End.Equal(auditRecordTime))", l.End.Equal(auditRecordTime))
-			}
+			//if m.Debug {
+			//	fmt.Println("-----------------------", record.NetcapType(), l.Name, l.Category)
+			//	fmt.Println("flow:", record.Src(), "->", record.Dst(), "addr:", "IPs:", l.IPs)
+			//	fmt.Println("victims", l.Victims, "attackers", l.Attackers)
+			//	fmt.Println("start", l.Start)
+			//	fmt.Println("end", l.End)
+			//	fmt.Println("auditRecordTime", auditRecordTime)
+			//	fmt.Println("(l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))", l.Start.Before(auditRecordTime) && l.End.After(auditRecordTime))
+			//	fmt.Println("l.Start.Equal(auditRecordTime)", l.Start.Equal(auditRecordTime))
+			//	fmt.Println("l.End.Equal(auditRecordTime))", l.End.Equal(auditRecordTime))
+			//}
 			var numMatches int
 
 			// check if any of the addresses from the labeling info

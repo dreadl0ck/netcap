@@ -52,14 +52,14 @@ func (t *testAuditRecord) Dst() string {
 	return t.dst
 }
 
-func (t *testAuditRecord) CSVRecord() []string {return nil}
-func (t *testAuditRecord) CSVHeader() []string {return nil}
-func (t *testAuditRecord) Inc() {}
-func (t *testAuditRecord) JSON() (string, error) {return "", nil}
+func (t *testAuditRecord) CSVRecord() []string                       { return nil }
+func (t *testAuditRecord) CSVHeader() []string                       { return nil }
+func (t *testAuditRecord) Inc()                                      {}
+func (t *testAuditRecord) JSON() (string, error)                     { return "", nil }
 func (t *testAuditRecord) SetPacketContext(ctx *types.PacketContext) {}
-func (t *testAuditRecord) Encode() []string {return nil}
-func (t *testAuditRecord) Analyze() {}
-func (t *testAuditRecord) NetcapType() types.Type {return 0}
+func (t *testAuditRecord) Encode() []string                          { return nil }
+func (t *testAuditRecord) Analyze()                                  {}
+func (t *testAuditRecord) NetcapType() types.Type                    { return 0 }
 
 const timeFormat = "Monday-02-01-2006 15:04"
 
