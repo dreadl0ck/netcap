@@ -95,6 +95,13 @@ type Collector struct {
 
 	zapLoggers     []*zap.Logger
 	logFileHandles []*os.File
+
+	InputFile string
+	PrintTime bool
+	Bpf       string
+
+	Epochs    int
+	numEpochs    int
 }
 
 // New returns a new Collector instance.
@@ -111,6 +118,7 @@ func New(config Config) *Collector {
 		files:               map[string]string{},
 		config:              &config,
 		start:               time.Now(),
+		numEpochs:           1,
 	}
 }
 

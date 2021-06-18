@@ -12,6 +12,8 @@ type Config struct {
 	Command string   `yaml:"command"`
 	Args    []string `yaml:"args"`
 
+	Epochs int `yaml:"epochs"`
+
 	// TODO: handle
 	AuditRecords []string `yaml:"auditRecords"`
 }

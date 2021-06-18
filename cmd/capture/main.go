@@ -176,6 +176,7 @@ func Run() {
 		// exportMetrics = true
 	}
 
+	var numEpochs int
 	var analyzerLogFileHandles []*os.File
 	if *flagAnalyzer != "" {
 
@@ -204,6 +205,8 @@ func Run() {
 			conf := analyze.ParseConfig(filepath.Join(dir, a+".yml"))
 			if conf.WorkDir != "" {
 
+				numEpochs = conf.Epochs
+
 				if strings.Contains(conf.WorkDir, "~") || strings.Contains(conf.WorkDir, "$HOME") {
 					dirname, err := os.UserHomeDir()
 					if err != nil {
@@ -231,6 +234,7 @@ func Run() {
 
 			// create call
 			cmd := exec.Command(conf.Command, conf.Args...)
+			fmt.Println("invoking analyzer:", cmd.Args)
 
 			if *flagDebug {
 				cmd.Stdout = os.Stdout
@@ -360,6 +364,10 @@ func Run() {
 			GeolocationDB: *flagGeolocationDB,
 		},
 	})
+	c.Bpf = *flagBPF
+	c.InputFile = *flagInput
+	c.PrintTime = *flagTime
+	c.Epochs = numEpochs
 
 	if len(analyzerLogFileHandles) > 0 {
 		for _, f := range analyzerLogFileHandles {

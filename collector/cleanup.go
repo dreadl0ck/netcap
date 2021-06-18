@@ -16,6 +16,7 @@ package collector
 import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/decoder/stream/alert"
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"log"
 	"os"
 	"time"
@@ -172,6 +173,70 @@ func (c *Collector) teardown() {
 			if err != nil {
 				fmt.Println("failed to close logfile handle:", err)
 			}
+		}
+	}
+	c.logFileHandles = []*os.File{}
+	c.zapLoggers = []*zap.Logger{}
+
+	if c.Epochs > 0 && c.numEpochs < c.Epochs {
+
+		// reset collector
+		c.unknownProtosAtomic = decoderutils.NewAtomicCounterMap()
+		c.allProtosAtomic =     decoderutils.NewAtomicCounterMap()
+		c.errorMap =            decoderutils.NewAtomicCounterMap()
+		c.files =               map[string]string{}
+		c.start =               time.Now()
+		c.abstractDecoders = nil
+		c.goPacketDecoders = nil
+		c.streamDecoders = nil
+		c.abstractDecoders = nil
+		c.packetDecoders = nil
+
+		// increment epoch
+		c.numEpochs++
+		fmt.Println("================ Epoch", c.numEpochs, "/", c.Epochs, "=======================")
+
+		// start timer
+		start := time.Now()
+
+		// ensure the logfile handle gets opened
+		err := c.initLogging()
+		if err != nil {
+			log.Fatal("failed to open logfile:", err)
+		}
+
+		// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
+		// setting BPF filters is not yet supported by the pcapgo package
+		if c.Bpf != "" {
+			if err = c.CollectBPF(c.InputFile, c.Bpf); err != nil {
+				log.Fatal("failed to set BPF: ", err)
+			}
+
+			return
+		}
+
+		// if not, use native pcapgo version
+		isPcap, err := IsPcap(c.InputFile)
+		if err != nil {
+			// invalid path
+			fmt.Println("failed to open file:", err)
+			os.Exit(1)
+		}
+
+		if isPcap {
+			if err = c.CollectPcap(c.InputFile); err != nil {
+				log.Fatal("failed to collect audit records from pcap file: ", err)
+			}
+		} else {
+			if err = c.CollectPcapNG(c.InputFile); err != nil {
+				log.Fatal("failed to collect audit records from pcapng file: ", err)
+			}
+		}
+
+		if c.PrintTime {
+			// stat input file
+			stat, _ := os.Stat(c.InputFile)
+			fmt.Println("size", humanize.Bytes(uint64(stat.Size())), "done in", time.Since(start))
 		}
 	}
 

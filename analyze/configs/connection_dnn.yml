@@ -8,7 +8,10 @@ args:
   - -socket=True
   - -encodeCategoricals=False
   - -batchSize=96000
+  - -lstm=True
   #- -batchSize=32000
+
+epochs: 5
 
 auditRecords:
   - Connection
