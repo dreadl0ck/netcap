@@ -14,6 +14,7 @@
 package alert
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -52,6 +53,8 @@ const networkTypeUnixgram = "unixgram"
 // SocketConn contains a pointer to the used socket at runtime.
 var SocketConn *net.UnixConn
 
+var errClosed = errors.New("use of closed network connection")
+
 // InitSocket initializes the socket for incoming alerts.
 func InitSocket() {
 
@@ -81,7 +84,7 @@ func InitSocket() {
 			var buf = make([]byte, 1024)
 			n, err := l.Read(buf)
 			if err != nil {
-				if err != net.ErrClosed {
+				if err != errClosed {
 					return
 				}
 				log.Println("failed to read from UNIX socket", err)
