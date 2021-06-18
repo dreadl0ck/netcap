@@ -185,6 +185,9 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 	// initialize decoders
 	for _, d := range defaultPacketDecoders {
 
+		// reset decoder stat in case it is reinitialized at runtime.
+		d.(*Decoder).NumRecordsWritten = 0
+
 		wg.Add(1)
 
 		go func(dec DecoderAPI) {

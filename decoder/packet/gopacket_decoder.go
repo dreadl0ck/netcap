@@ -151,6 +151,9 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 	// initialize decoders
 	for _, e := range defaultGoPacketDecoders { // fmt.Println("init", e.Layer)
 
+		// reset decoder stat in case it is reinitialized at runtime.
+		e.numRecords = 0
+
 		wg.Add(1)
 
 		go func(dec *GoPacketDecoder) {

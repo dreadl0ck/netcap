@@ -2,6 +2,7 @@ package stream
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/decoder"
 	"log"
 	"strings"
 	"sync"
@@ -137,6 +138,9 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 
 	// initialize decoders
 	for _, d := range DefaultStreamDecoders {
+
+		// reset decoder stat in case it is reinitialized at runtime.
+		d.(*decoder.StreamDecoder).NumRecordsWritten = 0
 
 		wg.Add(1)
 
