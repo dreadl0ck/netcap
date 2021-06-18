@@ -73,7 +73,7 @@ func date(str string) time.Time {
 
 func TestLabeling(t *testing.T) {
 	debug := false
-	m := NewLabelManager(false, debug, false)
+	m := NewLabelManager(false, debug, false, false, 5 * time.Minute)
 	m.Init("../configs/test.yml")
 
 	var records = []types.AuditRecord{
@@ -183,7 +183,7 @@ func TestLabeling(t *testing.T) {
 }
 
 func TestReadIDS2018Labels(t *testing.T) {
-	m := NewLabelManager(false, false, false)
+	m := NewLabelManager(false, false, false, false, 5*time.Minute)
 	labelMap, labels := m.parseAttackInfosYAML("../configs/cic-ids2018-attacks.yml")
 
 	fmt.Println("=== labelMap")
@@ -194,7 +194,7 @@ func TestReadIDS2018Labels(t *testing.T) {
 }
 
 func TestReadSWAT2019Labels(t *testing.T) {
-	m := NewLabelManager(false, false, false)
+	m := NewLabelManager(false, false, false, false, 5*time.Minute)
 	labelMap, labels := m.parseAttackInfosYAML("../configs/swat-2019-attacks.yml")
 
 	fmt.Println("=== labelMap")

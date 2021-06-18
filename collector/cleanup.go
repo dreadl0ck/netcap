@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"github.com/dreadl0ck/netcap/decoder/stream/alert"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
+	"github.com/dreadl0ck/netcap/label/manager"
 	"log"
 	"os"
 	"time"
@@ -178,14 +179,16 @@ func (c *Collector) teardown() {
 	c.logFileHandles = []*os.File{}
 	c.zapLoggers = []*zap.Logger{}
 
+	manager.Render()
+
 	if c.Epochs > 0 && c.numEpochs < c.Epochs {
 
 		// reset collector
 		c.unknownProtosAtomic = decoderutils.NewAtomicCounterMap()
-		c.allProtosAtomic =     decoderutils.NewAtomicCounterMap()
-		c.errorMap =            decoderutils.NewAtomicCounterMap()
-		c.files =               map[string]string{}
-		c.start =               time.Now()
+		c.allProtosAtomic = decoderutils.NewAtomicCounterMap()
+		c.errorMap = decoderutils.NewAtomicCounterMap()
+		c.files = map[string]string{}
+		c.start = time.Now()
 		c.abstractDecoders = nil
 		c.goPacketDecoders = nil
 		c.streamDecoders = nil

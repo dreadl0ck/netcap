@@ -124,4 +124,10 @@ type Config struct {
 	// Labels is a filesystem path to the labels file on disk
 	// that contains the attack mappings
 	Labels string
+
+	// Generate scatter chart for the applied labels during labeling.
+	Scatter bool
+
+	// ScatterDuration is the interval for data used in the scatter plot.
+	ScatterDuration time.Duration
 }

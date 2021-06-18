@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/evilsocket/islazy/tui"
@@ -38,16 +39,29 @@ type LabelManager struct {
 	Debug bool
 
 	removeFilesWithoutMatches bool
+
+	scatterPlot bool
+
+	scatterMap   map[time.Time]int
+	scatterMapMu sync.Mutex
+
+	scatterDuration time.Duration
 }
 
 // NewLabelManager returns a new label manager instance.
-func NewLabelManager(progress bool, debug bool, removeFilesWithoutMatches bool) *LabelManager {
-	return &LabelManager{
-		progress:          progress,
-		classificationMap: make(map[string]int),
-		excluded:          make(map[string]bool),
-		Debug:             debug,
+func NewLabelManager(progress bool, debug bool, removeFilesWithoutMatches bool, scatterplot bool, scatterDuration time.Duration) *LabelManager {
+	m := &LabelManager{
+		progress:                  progress,
+		classificationMap:         make(map[string]int),
+		excluded:                  make(map[string]bool),
+		Debug:                     debug,
+		removeFilesWithoutMatches: removeFilesWithoutMatches,
+		scatterPlot:               scatterplot,
+		scatterMap:                map[time.Time]int{},
+		scatterDuration:           scatterDuration,
 	}
+	instance = m
+	return m
 }
 
 // Init will load the attack information from disk.
@@ -59,7 +73,7 @@ func (m *LabelManager) Init(pathMappingInfo string) {
 		os.Exit(1)
 	}
 
-	fmt.Println("got", len(m.labels), "labels")
+	fmt.Println("got", len(m.labels), "labels", "scatterPlot:", m.scatterPlot)
 
 	var rows [][]string
 	for i, c := range m.labels {
