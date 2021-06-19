@@ -73,7 +73,12 @@ func date(str string) time.Time {
 
 func TestLabeling(t *testing.T) {
 	debug := false
-	m := NewLabelManager(false, debug, false, false, 5 * time.Minute)
+	m := NewLabelManager(
+		false,
+		debug,
+		false,
+		false,
+		5*time.Minute)
 	m.Init("../configs/test.yml")
 
 	var records = []types.AuditRecord{
