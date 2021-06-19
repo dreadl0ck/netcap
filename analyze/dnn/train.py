@@ -532,7 +532,13 @@ try:
         run()
 except: # catch *all* exceptions
     e = sys.exc_info()
+
+    print("=====================================")
+    for d in datagrams:
+        print(d)
+    print("=====================================")
     print("[EXCEPTION]", e)
+    print("=====================================")
     traceback.print_tb(e[2], None, None)
 
 print("--- %s seconds ---" % (time.time() - start_time))
