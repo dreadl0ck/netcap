@@ -20,7 +20,6 @@ import (
 	"sync"
 
 	"github.com/davecgh/go-spew/spew"
-	"gonum.org/v1/gonum/stat"
 )
 
 // ValueEncoder handles online encoding of incoming data and keeps the required state for each feature.
@@ -153,18 +152,6 @@ func (m *ValueEncoder) Float64(field string, val float64) string {
 		sum    = m.GetSummary(TypeNumeric, field)
 	)
 
-	sum.Lock()
-
-	// TODO: use weights?
-	sum.Mean, sum.Std = stat.MeanStdDev([]float64{sum.Mean, val}, nil)
-
-	if val > sum.Max {
-		sum.Max = val
-	}
-	if val < sum.Min {
-		sum.Min = val
-	}
-
 	switch {
 	case m.conf.ZScore:
 		result = ZScore(val, sum)
@@ -174,7 +161,6 @@ func (m *ValueEncoder) Float64(field string, val float64) string {
 		spew.Dump(m.conf)
 		log.Fatal("invalid config: no normalization strategy")
 	}
-	sum.Unlock()
 
 	return result
 }
