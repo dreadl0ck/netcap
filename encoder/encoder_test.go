@@ -33,6 +33,7 @@ var timestamps = []int64{
 }
 
 func TestEncodeTimeAsFloat(t *testing.T) {
+	// TODO: add support for using this format for timestamps
 	for _, r := range timestamps {
 		fmt.Println(r, "==>", strconv.FormatFloat(float64(r)/float64(10000000000000000000), 'f', 16, 64))
 	}
@@ -65,7 +66,7 @@ func TestNumericMinMaxEncoder(t *testing.T) {
 		res = append(res, encoder.Int("bytes", val))
 	}
 
-	assert.Equal(t, res, []string{"1.0000000000", "0.0000000000", "1.0000000000", "0.7500000000", "0.0000000000", "1.0000000000"}, "unexpected output")
+	assert.Equal(t, res, []string{"0.0000000000", "0.0000000000", "1.0000000000", "0.7500000000", "0.0000000000", "1.0000000000"}, "unexpected output")
 }
 
 var categoricalTest = []string{
@@ -105,8 +106,7 @@ func TestZscoreNormalizedCategoricalEncoder(t *testing.T) {
 		res = append(res, encoder.String("proto", val))
 	}
 
-	// TODO:
-	assert.Equal(t, res, []string{"1.0000000000", "+Inf", "+Inf", "+Inf", "1.0000000000", "+Inf", "+Inf", "+Inf"}, "unexpected output")
+	assert.Equal(t, res, []string{"0.0000000000", "0.7071067812", "0.7071067812", "0.7071067812", "-0.7071067812", "-0.7071067812", "0.7071067812", "0.7071067812"}, "unexpected output")
 }
 
 func TestMinMaxNormalizedCategoricalEncoder(t *testing.T) {
@@ -121,6 +121,5 @@ func TestMinMaxNormalizedCategoricalEncoder(t *testing.T) {
 		res = append(res, encoder.String("proto", val))
 	}
 
-	// TODO:
-	assert.Equal(t, res, []string{"1.0000000000", "1.0000000000", "1.0000000000", "1.0000000000", "1.0000000000", "1.0000000000", "1.0000000000", "1.0000000000"}, "unexpected output")
+	assert.Equal(t, res, []string{"0.0000000000", "1.0000000000", "1.0000000000", "1.0000000000", "0.0000000000", "0.3333333333", "0.6666666667", "1.0000000000"}, "unexpected output")
 }

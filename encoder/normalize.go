@@ -14,6 +14,7 @@
 package encoder
 
 import (
+	"gonum.org/v1/gonum/stat"
 	"strconv"
 )
 
@@ -21,25 +22,43 @@ import (
 const precision = 10
 
 // MinMax will apply the minmax encoding.
-func MinMax(value float64, sum *ColumnSummary) string {
+func MinMax(value float64, sum *ColumnSummary) (result string) {
 
-	// TODO: the first value (and all columns with a single identical value) will always yield NaN: use a static value?
-	if sum.Min == sum.Max {
-		return "1.0000000000"
+	sum.Lock()
+	if value > sum.Max {
+		sum.Max = value
+	}
+	if value < sum.Min {
+		sum.Min = value
 	}
 
-	return strconv.FormatFloat((value-sum.Min)/(sum.Max-sum.Min), 'f', precision, 64)
+	if sum.Min == sum.Max {
+		result = strconv.FormatFloat(0, 'f', precision, 64)
+	} else {
+		result = strconv.FormatFloat((value-sum.Min)/(sum.Max-sum.Min), 'f', precision, 64)
+	}
+
+	sum.Unlock()
+	return
 }
 
 // ZScore will apply the Zscore encoding.
-func ZScore(i float64, sum *ColumnSummary) string {
+func ZScore(i float64, sum *ColumnSummary) (result string) {
 
-	// TODO: the first value (and all columns with a single identical value) will always yield NaN: use a static value?
-	if sum.Mean == i {
-		return "1.0000000000"
+	sum.Lock()
+
+	// TODO: use weights?
+	sum.Mean, sum.Std = stat.MeanStdDev([]float64{sum.Mean, i}, nil)
+
+	if sum.Mean == i || sum.Mean == sum.Std {
+		result = strconv.FormatFloat(i, 'f', precision, 64)
+	} else {
+		result = strconv.FormatFloat((i-sum.Mean)/sum.Std, 'f', precision, 64)
 	}
 
-	return strconv.FormatFloat((i-sum.Mean)/sum.Std, 'f', precision, 64)
+	sum.Unlock()
+
+	return
 }
 
 // GetIndex returns the index for a value in a string array.
