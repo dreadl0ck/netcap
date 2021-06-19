@@ -15,12 +15,6 @@ package capture
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/analyze"
-	"github.com/dreadl0ck/netcap/decoder/core"
-	"github.com/dreadl0ck/netcap/decoder/stream"
-	"github.com/dreadl0ck/netcap/decoder/stream/alert"
-	"github.com/dreadl0ck/netcap/env"
-	"github.com/dreadl0ck/netcap/types"
 	"log"
 	"net/http"
 	"os"
@@ -29,6 +23,13 @@ import (
 	"runtime/pprof"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/analyze"
+	"github.com/dreadl0ck/netcap/decoder/core"
+	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/decoder/stream/alert"
+	"github.com/dreadl0ck/netcap/env"
+	"github.com/dreadl0ck/netcap/types"
 
 	"github.com/dustin/go-humanize"
 	"github.com/felixge/fgprof"
@@ -236,6 +237,9 @@ func Run() {
 			cmd := exec.Command(conf.Command, conf.Args...)
 			fmt.Println("invoking analyzer:", cmd.Args)
 
+			cmd.Env = os.Environ()
+			cmd.Env = append(cmd.Env, "LD_LIBRARY_PATH=/usr/local/cuda/lib64/")
+
 			if *flagDebug {
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
@@ -245,13 +249,16 @@ func Run() {
 			}
 
 			// TODO: handle audit records from config.
-			// For now it must be manually configured via CLI flags which audit records get product
+			// For now it must be manually configured via CLI flags which audit records get produced.
 
 			// start process
 			errCmd := cmd.Start()
 			if errCmd != nil {
 				log.Println(errCmd)
 			}
+
+			// give it some time to open the socket
+			time.Sleep(1 * time.Second)
 
 			go func() {
 				// wait for process
