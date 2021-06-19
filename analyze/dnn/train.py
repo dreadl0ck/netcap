@@ -320,7 +320,7 @@ def create_unix_socket(name):
                                                        'BytesServerToClient',
                                                        'Category'])
 
-                analyze(df)
+                #analyze(df)
                 process(df)
 
                 # reset datagrams

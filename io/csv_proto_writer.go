@@ -2,11 +2,12 @@ package io
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"strings"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/netcap/encoder"
