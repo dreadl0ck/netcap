@@ -258,7 +258,7 @@ func Run() {
 			}
 
 			// give it some time to open the socket
-			time.Sleep(1 * time.Second)
+			time.Sleep(3 * time.Second)
 
 			go func() {
 				// wait for process

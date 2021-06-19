@@ -14,8 +14,9 @@
 package encoder
 
 import (
-	"gonum.org/v1/gonum/stat"
 	"strconv"
+
+	"gonum.org/v1/gonum/stat"
 )
 
 // float precision
@@ -43,17 +44,21 @@ func MinMax(value float64, sum *ColumnSummary) (result string) {
 }
 
 // ZScore will apply the Zscore encoding.
-func ZScore(i float64, sum *ColumnSummary) (result string) {
+func ZScore(value float64, sum *ColumnSummary) (result string) {
 
 	sum.Lock()
 
 	// TODO: use weights?
-	sum.Mean, sum.Std = stat.MeanStdDev([]float64{sum.Mean, i}, nil)
+	sum.Mean, sum.Std = stat.MeanStdDev([]float64{sum.Mean, value}, nil)
 
-	if sum.Mean == i || sum.Mean == sum.Std {
-		result = strconv.FormatFloat(i, 'f', precision, 64)
+	if sum.Std == 0 {
+		result = strconv.FormatFloat(0, 'f', precision, 64)
 	} else {
-		result = strconv.FormatFloat((i-sum.Mean)/sum.Std, 'f', precision, 64)
+		if sum.Mean == value || sum.Mean == sum.Std {
+			result = strconv.FormatFloat(value, 'f', precision, 64)
+		} else {
+			result = strconv.FormatFloat((value-sum.Mean)/sum.Std, 'f', precision, 64)
+		}
 	}
 
 	sum.Unlock()
