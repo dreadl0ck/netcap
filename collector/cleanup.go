@@ -15,12 +15,14 @@ package collector
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"sync/atomic"
+	"time"
+
 	"github.com/dreadl0ck/netcap/decoder/stream/alert"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/label/manager"
-	"log"
-	"os"
-	"time"
 
 	"github.com/dustin/go-humanize"
 	"go.uber.org/zap"
@@ -151,7 +153,11 @@ func (c *Collector) teardown() {
 		c.printErrors()
 	}
 
-	c.printlnStdOut("execution time", time.Since(c.start), c.numPackets, c.numPacketsLast)
+	if c.numEpochs > 1 {
+		c.printlnStdOut(c.numEpochs, "/", c.Epochs, "execution time", time.Since(c.start), "total", time.Since(c.startFirst))
+	} else {
+		c.printlnStdOut("execution time", time.Since(c.start), c.numPackets, c.numPacketsLast)
+	}
 
 	c.log.Info("decoder teardown complete, closing logfiles")
 
@@ -183,6 +189,10 @@ func (c *Collector) teardown() {
 
 	if c.Epochs > 0 && c.numEpochs < c.Epochs {
 
+		if c.numEpochs == 1 {
+			c.startFirst = c.start
+		}
+
 		// reset collector
 		c.unknownProtosAtomic = decoderutils.NewAtomicCounterMap()
 		c.allProtosAtomic = decoderutils.NewAtomicCounterMap()
@@ -194,6 +204,14 @@ func (c *Collector) teardown() {
 		c.streamDecoders = nil
 		c.abstractDecoders = nil
 		c.packetDecoders = nil
+
+		c.statMutex.Lock()
+		c.shutdown = false
+		c.statMutex.Unlock()
+
+		atomic.StoreInt64(&c.current, 0)
+		atomic.StoreInt64(&c.numPackets, 0)
+		atomic.StoreInt64(&c.numPacketsLast, 0)
 
 		// increment epoch
 		c.numEpochs++
@@ -239,7 +257,7 @@ func (c *Collector) teardown() {
 		if c.PrintTime {
 			// stat input file
 			stat, _ := os.Stat(c.InputFile)
-			fmt.Println("size", humanize.Bytes(uint64(stat.Size())), "done in", time.Since(start))
+			fmt.Println("size", humanize.Bytes(uint64(stat.Size())), "done in", time.Since(start), "total", time.Since(c.startFirst))
 		}
 	}
 

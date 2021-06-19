@@ -55,15 +55,18 @@ var errInvalidOutputDirectory = errors.New("expected a directory, but got a file
 // Collector provides an interface to collect data from PCAP or a network interface.
 // this structure has an optimized field order to avoid excessive padding.
 type Collector struct {
-	mu                       sync.Mutex
-	statMutex                sync.Mutex
-	current                  int64
-	numPacketsLast           int64
-	totalBytesWritten        int64
-	numPackets               int64
-	numWorkers               int
-	workers                  []chan gopacket.Packet
-	start                    time.Time
+	mu                sync.Mutex
+	statMutex         sync.Mutex
+	current           int64
+	numPacketsLast    int64
+	totalBytesWritten int64
+	numPackets        int64
+	numWorkers        int
+	workers           []chan gopacket.Packet
+	start             time.Time
+
+	// when running multiple epochs, the timestamp of the first run can be preserved.
+	startFirst               time.Time
 	assemblers               []*reassembly.Assembler
 	goPacketDecoders         map[gopacket.LayerType][]*packet.GoPacketDecoder
 	packetDecoders           []packet.DecoderAPI
@@ -250,7 +253,6 @@ func (c *Collector) handlePacket(p gopacket.Packet) {
 		return
 	}
 
-	// send the packetInfo to the decoder routine
 	c.workers[c.next] <- p
 
 	// increment or reset next
@@ -523,6 +525,14 @@ func (c *Collector) printProgressInterval() chan struct{} {
 						int(curr),
 						pps,
 					)
+					c.log.Sugar().Infof(c.progressString,
+						utils.Progress(curr, num),
+						// decoder.Flows.Size(), // TODO: fetch this info from stats?
+						// decoder.Connections.Size(), // TODO: fetch this info from stats?
+						packet.DeviceProfiles.Size(),
+						service.Store.Size(),
+						int(curr),
+						pps)
 				}
 			}
 		}
