@@ -52,9 +52,11 @@ func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, e
 	w.Lock()
 	defer w.Unlock()
 
-	n, err := w.w.Write([]byte(fmt.Sprintf("# Type: %s, Created: %s, Source: %s, ContainsPayloads: %t\n", h.Type.String(), utils.UnixTimeToUTC(h.Created), h.InputSource, h.ContainsPayloads)))
-	if err != nil {
-		return n, err
+	if !w.encode {
+		n, err := w.w.Write([]byte(fmt.Sprintf("# Type: %s, Created: %s, Source: %s, ContainsPayloads: %t\n", h.Type.String(), utils.UnixTimeToUTC(h.Created), h.InputSource, h.ContainsPayloads)))
+		if err != nil {
+			return n, err
+		}
 	}
 
 	if csv, ok := msg.(types.AuditRecord); ok {

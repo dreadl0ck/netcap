@@ -280,6 +280,7 @@ datagrams = list()
 def create_unix_socket(name):
 
     global datagrams
+    global epoch
     socket_name = "/tmp/" + name + ".sock"
 
     # TODO: this seems to redirect stdout and stderr? also affects following print statements
@@ -331,6 +332,7 @@ def create_unix_socket(name):
                     arr = data.split(b',')
                     if len(arr) != 19:
                         print(arr, len(arr))
+                        epoch += 1
                     else:
                         num_datagrams += 1
                         datagrams.append(arr)
