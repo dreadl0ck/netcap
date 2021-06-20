@@ -170,7 +170,7 @@ func InitRecord(typ types.Type) (record proto.Message) {
 	case types.Type_NC_Mail:
 		record = new(types.Mail)
 	case types.Type_NC_Alert:
-		record = new(types.Mail)
+		record = new(types.Alert)
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}
