@@ -18,6 +18,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"io"
+	"log"
 	"os"
 	"sort"
 	"time"
@@ -102,13 +103,18 @@ func scatterShowLabel(scatterMap map[time.Time]int) *charts.Scatter {
 
 // Render will render the current label manager
 func Render() {
-	page := components.NewPage()
-	page.AddCharts(
-		scatterShowLabel(instance.scatterMap),
-	)
-	f, err := os.Create("scatter.html")
-	if err != nil {
-		panic(err)
+	if instance != nil {
+		page := components.NewPage()
+		page.AddCharts(
+			scatterShowLabel(instance.scatterMap),
+		)
+		f, err := os.Create("scatter.html")
+		if err != nil {
+			panic(err)
+		}
+		err = page.Render(io.MultiWriter(f))
+		if err != nil {
+			log.Println("failed to render label scatter plot", err)
+		}
 	}
-	page.Render(io.MultiWriter(f))
 }
