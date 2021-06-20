@@ -15,9 +15,10 @@ package encoder
 
 import (
 	"fmt"
-	"github.com/magiconair/properties/assert"
 	"strconv"
 	"testing"
+
+	"github.com/magiconair/properties/assert"
 )
 
 var timestamps = []int64{
@@ -37,6 +38,36 @@ func TestEncodeTimeAsFloat(t *testing.T) {
 	for _, r := range timestamps {
 		fmt.Println(r, "==>", strconv.FormatFloat(float64(r)/float64(10000000000000000000), 'f', 16, 64))
 	}
+}
+
+var numericTestZero = []int{0, 0, 0, 0, 0, 0}
+
+func TestNumericZscoreEncoderZero(t *testing.T) {
+	var encoder = NewValueEncoder()
+	encoder.conf = &Config{
+		ZScore: true,
+	}
+
+	var res []string
+	for _, val := range numericTestZero {
+		res = append(res, encoder.Int("bytes", val))
+	}
+
+	assert.Equal(t, res, []string{"0.0000000000", "0.0000000000", "0.0000000000", "0.0000000000", "0.0000000000", "0.0000000000"}, "unexpected output")
+}
+
+func TestNumericMinMaxEncoderZero(t *testing.T) {
+	var encoder = NewValueEncoder()
+	encoder.conf = &Config{
+		MinMax: true,
+	}
+
+	var res []string
+	for _, val := range numericTestZero {
+		res = append(res, encoder.Int("bytes", val))
+	}
+
+	assert.Equal(t, res, []string{"0.0000000000", "0.0000000000", "0.0000000000", "0.0000000000", "0.0000000000", "0.0000000000"}, "unexpected output")
 }
 
 var numericTest = []int{5, 2, 6, 5, 2, 6}
