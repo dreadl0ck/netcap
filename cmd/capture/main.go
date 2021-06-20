@@ -25,10 +25,12 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/analyze"
+	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
 	"github.com/dreadl0ck/netcap/decoder/stream/alert"
 	"github.com/dreadl0ck/netcap/env"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 
 	"github.com/dustin/go-humanize"
@@ -38,13 +40,11 @@ import (
 	// _ "net/http/pprof"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/metrics"
 	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
@@ -268,6 +268,9 @@ func Run() {
 				}
 
 				fmt.Println("process finished", cmd.Args)
+
+				// TODO: make configurable
+				os.Exit(0)
 			}()
 		}
 

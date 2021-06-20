@@ -1,0 +1,17 @@
+workDir: ~/go/src/github.com/dreadl0ck/netcap/analyze/dnn
+
+command: python3
+args:
+  - -u
+  - score.py
+  - -features=18
+  - -socket=True
+  - -encodeCategoricals=False
+  - -batchSize=24000
+  - -drop=SrcIP,DstIP,SrcMAC,DstMAC
+
+epochs: 5
+
+auditRecords:
+  - Connection
+

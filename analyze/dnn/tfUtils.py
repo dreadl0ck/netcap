@@ -596,6 +596,7 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
         # first layer has to specify the input dimension
 
         if relu:
+            # TODO: make input dim reduction configurable, depending on the number of dropped columns
             model.add(Dense(wrapLayerSize, input_dim=input_dim, kernel_initializer='normal', activation="relu"))
         else:
             model.add(Dense(wrapLayerSize, input_dim=input_dim, kernel_initializer='normal'))

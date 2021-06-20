@@ -1,0 +1,17 @@
+workDir: ~/go/src/github.com/dreadl0ck/netcap/analyze/dnn
+
+command: python3
+args:
+  - -u
+  - train.py
+  - -features=18
+  - -socket=True
+  - -encodeCategoricals=False
+  - -batchSize=48000
+  - -lstm=True
+
+epochs: 5
+
+auditRecords:
+  - Connection
+

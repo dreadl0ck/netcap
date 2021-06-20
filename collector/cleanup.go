@@ -34,6 +34,9 @@ import (
 // cleanup before leaving. closes all buffers and displays stats.
 func (c *Collector) cleanup(force bool) {
 
+	if c.log == nil {
+		return
+	}
 	c.log.Info("cleanup started", zap.Bool("force", force))
 	c.printlnStdOut("\nstopping workers and waiting for collector to finish...")
 
