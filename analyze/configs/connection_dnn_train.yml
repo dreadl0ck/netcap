@@ -7,9 +7,8 @@ args:
   - -features=18
   - -socket=True
   - -encodeCategoricals=False
-  - -batchSize=96000
-  - -lstm=True
-  #- -batchSize=32000
+  - -batchSize=24000
+  - -drop=SrcIP,DstIP,SrcMAC,DstMAC
 
 epochs: 5
 

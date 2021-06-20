@@ -55,7 +55,7 @@ def train_dnn(df, i, epoch, batch=0):
         x,
         y,
         test_size=arguments.testSize,
-        random_state=42, # TODO
+        random_state=42, # TODO make
         shuffle=arguments.shuffle
     )
 
@@ -149,11 +149,11 @@ def save_model(i, epoch, batch=0):
         os.mkdir("models")
 
     if arguments.lstm:
-        print("[INFO] saving model to models/lstm-epoch-{}-files-{}-{}-batch-{}-{}.h5".format(epoch.zfill(3), i, i+fileBatchSize, batch, batch+arguments.batchSize))
-        model.save('./models/lstm-epoch-{}-files-{}-{}-batch-{}-{}.h5'.format(epoch.zfill(3), i, i+fileBatchSize, batch, batch+arguments.batchSize))        
+        print("[INFO] saving model to models/lstm-epoch-{}-files-{}-{}-batch-{}-{}.h5".format(epoch.zfill(3), i, i+arguments.fileBatchSize, batch, batch+arguments.batchSize))
+        model.save('./models/lstm-epoch-{}-files-{}-{}-batch-{}-{}.h5'.format(epoch.zfill(3), i, i+arguments.fileBatchSize, batch, batch+arguments.batchSize))        
     else:
-        print("[INFO] saving model to models/dnn-epoch-{}-files-{}-{}.h5".format(epoch.zfill(3), i, i+fileBatchSize))
-        model.save('./models/dnn-epoch-{}-files-{}-{}.h5'.format(epoch.zfill(3), i, i+fileBatchSize))        
+        print("[INFO] saving model to models/dnn-epoch-{}-files-{}-{}.h5".format(epoch.zfill(3), i, i+arguments.fileBatchSize))
+        model.save('./models/dnn-epoch-{}-files-{}-{}.h5'.format(epoch.zfill(3), i, i+arguments.fileBatchSize))        
 
 # epoch.zfill(3) is used to pad the epoch num with zeros
 # so the alphanumeric sorting preserves the correct file order: 01, 02, ..., 09, 10
@@ -205,8 +205,8 @@ def run():
                     print("invalid sample rate")
                     exit(1)
 
-            print("[INFO] sampling", arguments.sample)
             if arguments.sample < 1.0:
+                print("[INFO] sampling", arguments.sample)
                 df = df.sample(frac=arguments.sample, replace=False)
 
             if arguments.drop is not None:
@@ -214,9 +214,11 @@ def run():
                     drop_col(col, df)
 
             if not arguments.lstm:
-                print("dropping all time related columns...")
+                print("[INFO] dropping all time related columns...")
                 # TODO: make field name configurable
-                drop_col('unixtime', df)
+                drop_col('Timestamp', df)
+                drop_col('TimestampFirst', df)
+                drop_col('TimestampLast', df)
 
             print("[INFO] columns:", df.columns)
             if arguments.debug:
@@ -225,7 +227,7 @@ def run():
 
             if arguments.zscoreUnixtime:
                # TODO: make field name configurable
-               encode_numeric_zscore(df, "unixtime")
+               encode_numeric_zscore(df, "Timestamp")
 
             if arguments.encodeColumns:
                 print("[INFO] Shape when encoding dataset:", df.shape)
@@ -331,7 +333,8 @@ def create_unix_socket(name):
                 if data != b'':
                     arr = data.split(b',')
                     if len(arr) != 19:
-                        print(arr, len(arr))
+                        # TODO: make configurable
+                        #print(arr, len(arr))
                         if arr[0].startswith(b'Timestamp'): 
                             epoch += 1
                             print("epoch", epoch)
@@ -372,9 +375,6 @@ def process(df):
 
 def process_dataframe(df, i, epoch):
 
-    history = None
-    leftover = None
-
     print("[INFO] process dataset, shape:", df.shape)
     if arguments.sample != None:
         if arguments.sample > 1.0:
@@ -394,16 +394,18 @@ def process_dataframe(df, i, epoch):
             drop_col(col, df)
 
     if not arguments.lstm:
-        print("dropping all time related columns...")
-        drop_col('unixtime', df)
+        print("[INFO] dropping all time related columns...")
+        drop_col('Timestamp', df)
+        drop_col('TimestampFirst', df)
+        drop_col('TimestampLast', df)
 
-    print("[INFO] columns:", df.columns)
     if arguments.debug:
+        print("[INFO] columns:", df.columns)
         print("[INFO] analyze dataset:", df.shape)
         analyze(df)
 
     if arguments.zscoreUnixtime:
-        encode_numeric_zscore(df, "unixtime")
+        encode_numeric_zscore(df, "Timestamp")
 
     if arguments.encodeColumns:
         print("[INFO] Shape when encoding dataset:", df.shape)
@@ -463,7 +465,7 @@ parser.add_argument('-debug', default=False, help='debug mode on off')
 parser.add_argument('-zscoreUnixtime', default=False, help='apply zscore to unixtime column')
 parser.add_argument('-encodeColumns', default=False, help='switch between auto encoding or using a fully encoded dataset')
 parser.add_argument('-classes', type=str, help='supply one or multiple comma separated class identifiers')
-parser.add_argument('-saveModel', default=False, help='save model (if false, only the weights will be saved)')
+parser.add_argument('-saveModel', default=True, help='save model (if false, only the weights will be saved)')
 parser.add_argument('-binaryClasses', default=True, help='use binary classses')
 parser.add_argument('-relu', default=False, help='use ReLU activation function (default: LeakyReLU)')
 parser.add_argument('-encodeCategoricals', type=bool, default=False, help='encode categorical with one hot strategy')
@@ -494,7 +496,7 @@ if arguments.classes is not None:
     print("set classes to:", classes)
 
 print("=================================================")
-print("        TRAINING v0.4.5 (binary)")
+print("        TRAINING v0.4.5")
 print("=================================================")
 print("Date:", datetime.datetime.now())
 start_time = time.time()
@@ -510,9 +512,22 @@ if not arguments.socket:
 if not arguments.binaryClasses:
     print("MULTI-CLASS", "num classes:", len(classes), classes)
 
-# create models
+# we need to include the dropped time columns for non LSTM DNNs in the specified input shape when creating the model.
+num_time_columns = 0
+if not arguments.lstm:
+    # Connection audit records have two time columns
+    num_time_columns = 2
+
+num_dropped = 0
+if arguments.drop:
+    num_dropped = len(arguments.drop.split(","))
+
+print("[INFO] input shape", arguments.features-num_dropped-num_time_columns)
+
+# create network model
 model = create_dnn(
-    arguments.features, 
+    # input shape: (num_features - dropped_features) [ - time_columns ]
+    (arguments.features-num_dropped)-num_time_columns, 
     len(classes), 
     arguments.loss, 
     arguments.optimizer, 
