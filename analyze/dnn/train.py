@@ -332,7 +332,9 @@ def create_unix_socket(name):
                     arr = data.split(b',')
                     if len(arr) != 19:
                         print(arr, len(arr))
-                        epoch += 1
+                        if arr[0].startswith(b'Timestamp'): 
+                            epoch += 1
+                            print("epoch", epoch)
                     else:
                         num_datagrams += 1
                         datagrams.append(arr)
@@ -343,7 +345,7 @@ def create_unix_socket(name):
 def run_socket():
     create_unix_socket("Connection")
 
-epoch = 1
+epoch = 0
 
 def process(df):
 
@@ -534,10 +536,11 @@ try:
         run()
 except: # catch *all* exceptions
     e = sys.exc_info()
-
-    print("=====================================")
-    for d in datagrams:
-        print(d)
+    
+    # for debugging argument errors
+    #print("=====================================")
+    #for d in datagrams:
+    #    print(d)
     print("=====================================")
     print("[EXCEPTION]", e)
     print("=====================================")
