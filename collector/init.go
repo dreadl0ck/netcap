@@ -217,7 +217,12 @@ func (c *Collector) Init() (err error) {
 
 	// wait for decoder init to finish
 	wg.Wait()
-	c.log.Info("initialized decoders", zap.Int("total", len(c.streamDecoders)))
+	c.log.Info("initialized decoders",
+		zap.Int("packetDecoders", len(c.packetDecoders)),
+		zap.Int("streamDecoders", len(c.streamDecoders)),
+		zap.Int("goPacketDecoders", len(c.goPacketDecoders)),
+		zap.Int("abstractDecoders", len(c.abstractDecoders)),
+	)
 
 	c.buildProgressString()
 	c.printlnStdOut("done in", time.Since(start))
