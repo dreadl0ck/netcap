@@ -36,9 +36,10 @@ import logging
 min_delta = 1e-3
 patience = 0
 
+# caution: when streaming data over unix socket 
 # can be overwritten via cmdline flags
 # Default uses two classes: binary classification
-classes = ["normal", "infiltration"]
+classes = [b'normal', b'infiltration']
 
 def train_dnn(df, i, epoch, batch=0):
 
@@ -55,7 +56,7 @@ def train_dnn(df, i, epoch, batch=0):
         x,
         y,
         test_size=arguments.testSize,
-        random_state=42, # TODO make
+        #random_state=42, # TODO make
         shuffle=arguments.shuffle
     )
 
@@ -106,18 +107,34 @@ def train_dnn(df, i, epoch, batch=0):
     #         print("y_test.shape", y_test.shape)
 
     print("[INFO] fitting model. xtrain.shape:", x_train.shape, "y_train.shape:", y_train.shape)
-    history = model.fit(
-        x_train,
-        y_train,
-        validation_data=(x_test, y_test),
-        #callbacks=[monitor],
-        verbose=2,
-        epochs=1,
-        # The batch size defines the number of samples that will be propagated through the network.
-        # The smaller the batch the less accurate the estimate of the gradient will be.
-        # let tensorflow set this value for us
-        #batch_size=1000
+    # history = model.fit(
+    #     x_train,
+    #     y_train,
+    #     validation_data=(x_test, y_test),
+    #     #callbacks=[monitor],
+    #     verbose=2,
+    #     epochs=1,
+    #     # The batch size defines the number of samples that will be propagated through the network.
+    #     # The smaller the batch the less accurate the estimate of the gradient will be.
+    #     # let tensorflow set this value for us
+    #     #batch_size=1000
+    # )
+
+    history = model.train_on_batch(
+        x=x_train,
+        y=y_train,
+        return_dict=True,
+        reset_metrics=False,
     )
+    print("history after training on batch", history)
+    history = model.test_on_batch(
+        x=x_test,
+        y=y_test,
+        return_dict=True,
+        reset_metrics=False,
+    )
+
+    print("history after testing batch:", history)
 
 #    print('---------intermediate testing--------------')
 #    
@@ -181,10 +198,10 @@ def run():
         history = None
         leftover = None
 
-        print(colored("[INFO] epoch {}/{}".format(epoch+1, arguments.epochs), 'yellow'))
+        print(colored("[INFO] epoch {}/{}".format(epoch, arguments.epochs), 'yellow'))
         for i in range(0, len(files), arguments.fileBatchSize):
 
-            print(colored("[INFO] loading file {}-{}/{} on epoch {}/{}".format(i+1, i+arguments.fileBatchSize, len(files), epoch+1, arguments.epochs), 'yellow'))
+            print(colored("[INFO] loading file {}-{}/{} on epoch {}/{}".format(i+1, i+arguments.fileBatchSize, len(files), epoch, arguments.epochs), 'yellow'))
             df_from_each_file = [readCSV(f) for f in files[i:(i+arguments.fileBatchSize)]]
 
             # ValueError: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
@@ -255,7 +272,7 @@ def run():
                     continue
 
                 print("[INFO] processing batch {}-{}/{}".format(batch_size, batch_size+arguments.batchSize, df.shape[0]))                    
-                history = train_dnn(dfCopy, i, epoch+1, batch=batch_size)
+                history = train_dnn(dfCopy, i, epoch, batch=batch_size)
                 leftover = None
         
         if history is not None:
@@ -266,11 +283,11 @@ def run():
 
             # implement early stopping to avoid overfitting
             # start checking the val_loss against the threshold after patience epochs
-            if epoch+1 >= patience:
+            if epoch >= patience:
                 print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
                 if currentLoss < min_delta:
                     print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
-                    print("EPOCH", epoch+1)
+                    print("EPOCH", epoch)
                     break
 
 buf_size = 512
@@ -299,8 +316,6 @@ def create_unix_socket(name):
         datagram = sock.recv(buf_size)
         if datagram:
             if num_datagrams != 0 and num_datagrams % arguments.batchSize == 0:
-
-                print(">>>>>>>> batch size reached", arguments.batchSize)
 
                 # create the pandas DataFrame
                 df = pd.DataFrame(datagrams, columns=['TimestampFirst',
@@ -359,20 +374,25 @@ def process(df):
 
     history, leftover = process_dataframe(df, 0, epoch)
 
-    if history is not None:
+    #if history is not None:
+
+        #print("history:", history)
+
         # get current loss
-        lossValues = history.history['val_loss']
-        currentLoss = lossValues[-1]
-        print(colored("[LOSS] " + str(currentLoss),'yellow'))
+        #lossValues = history.history['val_loss']
+        #currentLoss = lossValues[-1]
+        #print("============== lossValues:", lossValues)
+
+        #print(colored("[LOSS] " + str(currentLoss),'yellow'))
 
         # implement early stopping to avoid overfitting
         # start checking the val_loss against the threshold after patience epochs
-        if epoch+1 >= patience:
-            print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
-            if currentLoss < min_delta:
-                print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
-                print("EPOCH", epoch+1)
-                exit(0)
+        #if epoch >= patience:
+        #    print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
+        #    if currentLoss < min_delta:
+        #        print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
+        #        print("EPOCH", epoch)
+        #        exit(0)
 
 def process_dataframe(df, i, epoch):
 
@@ -434,7 +454,7 @@ def process_dataframe(df, i, epoch):
     #         continue
 
     print("[INFO] processing batch {}/{}".format(arguments.batchSize, df.shape[0]))
-    history = train_dnn(df, i, epoch+1, batch=arguments.batchSize)
+    history = train_dnn(df, i, epoch, batch=arguments.batchSize)
     leftover = None
 
     return history, leftover
@@ -489,7 +509,7 @@ if not arguments.socket:
 
 if arguments.binaryClasses:
     # TODO: make configurable
-    classes = ["normal", "infiltration"]
+    classes = [b'normal', b'infiltration']
     print("classes", classes)
 
 if arguments.classes is not None:

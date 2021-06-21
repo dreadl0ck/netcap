@@ -181,8 +181,6 @@ def create_unix_socket(name):
         if datagram:
             if num_datagrams != 0 and num_datagrams % arguments.batchSize == 0:
 
-                print("batch size reached", arguments.batchSize)
-
                 # create the pandas DataFrame
                 df = pd.DataFrame(datagrams, columns=['TimestampFirst',
                                                        'LinkProto',
@@ -247,11 +245,11 @@ def process(df):
 
         # implement early stopping to avoid overfitting
         # start checking the val_loss against the threshold after patience epochs
-        if epoch+1 >= patience:
+        if epoch >= patience:
             print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
             if currentLoss < min_delta:
                 print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
-                print("EPOCH", epoch+1)
+                print("EPOCH", epoch)
                 exit(0)
 
 def process_dataframe(df, i, epoch):
@@ -314,7 +312,7 @@ def process_dataframe(df, i, epoch):
     #         continue
 
     print("[INFO] processing batch {}/{}".format(arguments.batchSize, df.shape[0]))
-    history = train_dnn(df, i, epoch+1, batch=arguments.batchSize)
+    history = train_dnn(df, i, epoch, batch=arguments.batchSize)
     leftover = None
 
     return history, leftover
@@ -343,9 +341,6 @@ def eval_dnn(df):
     print(colored("[INFO] measuring accuracy...", 'yellow'))
     print("x_test.shape:", x_test.shape)
 
-    y_eval = np.argmax(y_test,axis=1)
-    print("y_eval", y_eval, y_eval.shape)
-
     if arguments.debug:
         print("--------SHAPES--------")
         print("x_test.shape", x_test.shape)
@@ -363,17 +358,19 @@ def eval_dnn(df):
             print("y_test.shape", y_test.shape)
     
     pred = model.predict(x_test)
-    #print("pred 1", pred, pred.shape)
-
+    #print("=====>", pred)
+    
     if arguments.lstm:
         #print("y_test shape", y_test.shape)
         pred = pred.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * y_test.shape[1]), y_test.shape[2])
-        #print("pred 2", pred, pred.shape)
-
+    
     pred = np.argmax(pred,axis=1)
-    #print("pred 3 (argmax)", pred, pred.shape)
+    print("pred (argmax)", pred, pred.shape)
 
-    if not arguments.lstm:
+    y_eval = np.argmax(y_test,axis=1)
+    print("y_eval (argmax)", y_eval, y_eval.shape)
+    
+    if not arguments.lstm:    
         score = metrics.accuracy_score(y_eval, pred)
         print("[INFO] Validation score: {}".format(colored(score, 'yellow')))
     
@@ -381,7 +378,7 @@ def eval_dnn(df):
     baseline_results = model.evaluate(
         x_test,
         y_test,
-        verbose=0
+        verbose=1
     )  
     print("===================================================")
 

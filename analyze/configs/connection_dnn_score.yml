@@ -9,7 +9,7 @@ args:
   - -encodeCategoricals=False
   - -batchSize=24000
   - -drop=SrcIP,DstIP,SrcMAC,DstMAC,SrcPort,DstPort
-  - -debug=True
+  #- -debug=True
 
 epochs: 1
 
