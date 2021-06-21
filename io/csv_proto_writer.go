@@ -103,7 +103,7 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 			// encode values to numeric format and normalize
 			values = record.Encode()
 			if w.label {
-				values = append(values, labelEncoder.String("Label", labelManager.Label(record)))
+				values = append(values, labelManager.Label(record))
 			}
 			out = []byte(strings.Join(values, ",") + "\n")
 		} else {
