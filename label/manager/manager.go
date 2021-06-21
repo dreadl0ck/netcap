@@ -61,6 +61,7 @@ func NewLabelManager(progress bool, debug bool, removeFilesWithoutMatches bool, 
 		scatterPlot:               scatterplot,
 		scatterMap:                map[time.Time]int{},
 		scatterDuration:           scatterDuration,
+		labelHits:                 map[string]int64{},
 	}
 	instance = m
 	return m
