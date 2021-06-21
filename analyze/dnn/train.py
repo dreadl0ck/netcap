@@ -155,10 +155,11 @@ def train_dnn(df, i, epoch, batch=0):
 #    print(cf)
 #    print('-----------------------------')
 
-    if arguments.saveModel:
-        save_model(i, str(epoch), batch=batch)
-    else:
-        save_weights(i, str(epoch), batch=batch)
+    # TODO: make saving model or checkpoint after every batch configurable
+    # if arguments.saveModel:
+    #     save_model(i, str(epoch), batch=batch)
+    # else:
+    #     save_weights(i, str(epoch), batch=batch)
 
     return history
 
@@ -169,10 +170,12 @@ def save_model(i, epoch, batch=0):
         os.mkdir("models")
 
     if arguments.lstm:
-        print("[INFO] saving model to models/lstm-epoch-{}-files-{}-{}-batch-{}-{}.h5".format(epoch.zfill(3), i, i+arguments.fileBatchSize, batch, batch+arguments.batchSize))
+        if arguments.debug:
+            print("[INFO] saving model to models/lstm-epoch-{}-files-{}-{}-batch-{}-{}.h5".format(epoch.zfill(3), i, i+arguments.fileBatchSize, batch, batch+arguments.batchSize))
         model.save('./models/lstm-epoch-{}-files-{}-{}-batch-{}-{}.h5'.format(epoch.zfill(3), i, i+arguments.fileBatchSize, batch, batch+arguments.batchSize))        
     else:
-        print("[INFO] saving model to models/dnn-epoch-{}-files-{}-{}.h5".format(epoch.zfill(3), i, i+arguments.fileBatchSize))
+        if arguments.debug:
+            print("[INFO] saving model to models/dnn-epoch-{}-files-{}-{}.h5".format(epoch.zfill(3), i, i+arguments.fileBatchSize))
         model.save('./models/dnn-epoch-{}-files-{}-{}.h5'.format(epoch.zfill(3), i, i+arguments.fileBatchSize))        
 
 # epoch.zfill(3) is used to pad the epoch num with zeros
@@ -278,12 +281,18 @@ def run():
                 history = train_dnn(dfCopy, i, epoch, batch=batch_size)
                 leftover = None
         
+        # save model or checkpoint after every epoch
+        if arguments.saveModel:
+            save_model(0, str(epoch), batch=0)
+        else:
+            save_weights(0, str(epoch), batch=0)
+
         if history is not None:
             currentLoss = history['loss']
             #currentLoss = lossValues[-1]
             #print("============== lossValues:", lossValues)
 
-            print(colored("[LOSS] " + str(currentLoss),'yellow'))
+            print(colored("[LOSS] " + str(currentLoss),'yellow') + " ==> EPOCH", epoch , "/", arguments.epochs)
 
             # implement early stopping to avoid overfitting
             # start checking the val_loss against the threshold after patience epochs
@@ -299,12 +308,9 @@ def run_in_memory():
     global patience
     global min_delta
 
-    epoch = 0
-
-    print(colored("[INFO] epoch {}/{}".format(epoch, arguments.epochs), 'yellow'))
     for i in range(0, len(files), arguments.fileBatchSize):
 
-        print(colored("[INFO] loading file {}-{}/{} on epoch {}/{}".format(i+1, i+arguments.fileBatchSize, len(files), epoch, arguments.epochs), 'yellow'))
+        print(colored("[INFO] loading file {}-{}/{}".format(i+1, i+arguments.fileBatchSize, len(files)), 'yellow'))
         df_from_each_file = [readCSV(f) for f in files[i:(i+arguments.fileBatchSize)]]
 
         # ValueError: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
@@ -313,61 +319,62 @@ def run_in_memory():
 
         print("[INFO] concatenate the files")
         df = pd.concat(df_from_each_file, ignore_index=True)
+   
+        print("[INFO] process df, shape:", df.shape)
+        if arguments.sample != None:
+            if arguments.sample > 1.0:
+                print("invalid sample rate")
+                exit(1)
+
+            if arguments.sample <= 0:
+                print("invalid sample rate")
+                exit(1)
+
+        if arguments.sample < 1.0:
+            print("[INFO] sampling", arguments.sample)
+            df = df.sample(frac=arguments.sample, replace=False)
+
+        if arguments.drop is not None:
+            for col in arguments.drop.split(","):
+                drop_col(col, df)
+
+        if not arguments.lstm:
+            print("[INFO] dropping all time related columns...")
+            # TODO: make field name configurable
+            drop_col('Timestamp', df)
+            drop_col('TimestampFirst', df)
+            drop_col('TimestampLast', df)
+
+        print("[INFO] columns:", df.columns)
+        if arguments.debug:
+            print("[INFO] analyze dataset:", df.shape)
+            analyze(df)
+
+        if arguments.zscoreUnixtime:
+            # TODO: make field name configurable
+            encode_numeric_zscore(df, "Timestamp")
+
+        if arguments.encodeColumns:
+            print("[INFO] Shape when encoding dataset:", df.shape)
+            encode_columns(df, arguments.resultColumn, arguments.lstm, arguments.debug)
+            print("[INFO] Shape AFTER encoding dataset:", df.shape)
+
+        if arguments.debug:
+            print("--------------AFTER DROPPING COLUMNS ----------------")
+            print("df.columns", df.columns, len(df.columns))
+            with pd.option_context('display.max_rows', 10, 'display.max_columns', None):  # more options can be specified also
+                print(df)
+
+        if arguments.encodeCategoricals:
+            print("[INFO] Shape when encoding dataset:", df.shape)
+            encode_categorical_columns(df, arguments.features)
+            print("[INFO] Shape AFTER encoding dataset:", df.shape) 
 
         for epoch in range(arguments.epochs):
             history = None
             leftover = None
 
-            # TODO move back into process_dataset?
-            print("[INFO] process dataset, shape:", df.shape)
-            if arguments.sample != None:
-                if arguments.sample > 1.0:
-                    print("invalid sample rate")
-                    exit(1)
-
-                if arguments.sample <= 0:
-                    print("invalid sample rate")
-                    exit(1)
-
-            if arguments.sample < 1.0:
-                print("[INFO] sampling", arguments.sample)
-                df = df.sample(frac=arguments.sample, replace=False)
-
-            if arguments.drop is not None:
-                for col in arguments.drop.split(","):
-                    drop_col(col, df)
-
-            if not arguments.lstm:
-                print("[INFO] dropping all time related columns...")
-                # TODO: make field name configurable
-                drop_col('Timestamp', df)
-                drop_col('TimestampFirst', df)
-                drop_col('TimestampLast', df)
-
-            print("[INFO] columns:", df.columns)
-            if arguments.debug:
-                print("[INFO] analyze dataset:", df.shape)
-                analyze(df)
-
-            if arguments.zscoreUnixtime:
-                # TODO: make field name configurable
-                encode_numeric_zscore(df, "Timestamp")
-
-            if arguments.encodeColumns:
-                print("[INFO] Shape when encoding dataset:", df.shape)
-                encode_columns(df, arguments.resultColumn, arguments.lstm, arguments.debug)
-                print("[INFO] Shape AFTER encoding dataset:", df.shape)
-
-            if arguments.debug:
-                print("--------------AFTER DROPPING COLUMNS ----------------")
-                print("df.columns", df.columns, len(df.columns))
-                with pd.option_context('display.max_rows', 10, 'display.max_columns', None):  # more options can be specified also
-                    print(df)
-
-            if arguments.encodeCategoricals:
-                print("[INFO] Shape when encoding dataset:", df.shape)
-                encode_categorical_columns(df, arguments.features)
-                print("[INFO] Shape AFTER encoding dataset:", df.shape)    
+            numEpoch = epoch+1   
 
             for batch_size in range(0, df.shape[0], arguments.batchSize):
 
@@ -378,8 +385,10 @@ def run_in_memory():
                     leftover = dfCopy
                     continue
 
-                print("[INFO] processing batch {}-{}/{}".format(batch_size, batch_size+arguments.batchSize, df.shape[0]))                    
-                history = train_dnn(dfCopy, i, epoch, batch=batch_size)
+                if arguments.debug:
+                    print("[INFO] processing batch {}-{}/{}".format(batch_size, batch_size+arguments.batchSize, df.shape[0]))                    
+                
+                history = train_dnn(dfCopy, i, numEpoch, batch=batch_size)
                 leftover = None
         
                 if history is not None:
@@ -387,16 +396,29 @@ def run_in_memory():
                     #currentLoss = lossValues[-1]
                     #print("============== lossValues:", lossValues)
 
-                    print(colored("[LOSS] " + str(currentLoss),'yellow'))
+                    #print(colored("[EPOCH] " + str(numEpoch) + " / " + str(arguments.epochs),'red') + " " + colored("[LOSS] " + str(currentLoss),'yellow'))
 
                     # implement early stopping to avoid overfitting
                     # start checking the val_loss against the threshold after patience epochs
                     if epoch >= patience:
                         #print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
                         if currentLoss < min_delta:
+
+                            if arguments.saveModel:
+                                save_model(0, str(numEpoch), batch=batch_size)
+                            else:
+                                save_weights(0, str(numEpoch), batch=batch_size)
                             print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
-                            print("EPOCH", epoch)
+                            print("EPOCH", numEpoch)
                             exit(0)
+            
+            print(colored("[EPOCH] " + str(numEpoch) + " / " + str(arguments.epochs),'red') + " " + colored("[LOSS] " + str(currentLoss),'yellow'))
+
+            # save model or checkpoint after every epoch
+            if arguments.saveModel:
+                save_model(0, str(numEpoch), batch=0)
+            else:
+                save_weights(0, str(numEpoch), batch=0)
 
 buf_size = 512
 stop_count = 0
@@ -491,7 +513,7 @@ def process(df):
         #currentLoss = lossValues[-1]
         #print("============== lossValues:", lossValues)
 
-        print(colored("[LOSS] " + str(currentLoss),'yellow'))
+        print(colored("[EPOCH] " + epoch + " / " +  arguments.epochs ,'red') + " " + colored("[LOSS] " + str(currentLoss),'yellow'))
 
         # implement early stopping to avoid overfitting
         # start checking the val_loss against the threshold after patience epochs
