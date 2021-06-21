@@ -155,6 +155,7 @@ func (c *Collector) Init() (err error) {
 	encoder.SetConfig(&encoder.Config{
 		//MinMax: true,
 		ZScore: true,
+		//NormalizeCategoricals: true,
 	})
 
 	var (

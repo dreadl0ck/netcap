@@ -14,14 +14,16 @@
 package manager
 
 import (
-	"github.com/go-echarts/go-echarts/v2/charts"
-	"github.com/go-echarts/go-echarts/v2/components"
-	"github.com/go-echarts/go-echarts/v2/opts"
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"sort"
 	"time"
+
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/components"
+	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
 var instance *LabelManager
@@ -110,13 +112,13 @@ func scatterShowLabel(attacks map[time.Time]int, normal map[time.Time]int) *char
 }
 
 // Render will render the current label manager
-func Render() {
+func Render(out string) {
 	if instance != nil {
 		page := components.NewPage()
 		page.AddCharts(
 			scatterShowLabel(instance.scatterAttackMap, instance.scatterNormalMap),
 		)
-		f, err := os.Create("scatter.html")
+		f, err := os.Create(filepath.Join(out, "scatter.html"))
 		if err != nil {
 			panic(err)
 		}

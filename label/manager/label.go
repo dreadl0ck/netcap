@@ -14,9 +14,10 @@
 package manager
 
 import (
-	"github.com/dreadl0ck/netcap/types"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // TODO: make configurable

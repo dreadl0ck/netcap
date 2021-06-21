@@ -188,7 +188,7 @@ func (c *Collector) teardown() {
 	c.logFileHandles = []*os.File{}
 	c.zapLoggers = []*zap.Logger{}
 
-	manager.Render()
+	manager.Render(c.config.DecoderConfig.Out)
 	manager.Stats()
 
 	if c.Epochs > 0 && c.numEpochs < c.Epochs {
