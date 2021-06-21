@@ -138,5 +138,9 @@ func (m *LabelManager) Label(record types.AuditRecord) string {
 		}
 	}
 
+	m.Lock()
+	m.labelHits[label]++
+	m.Unlock()
+
 	return label
 }
