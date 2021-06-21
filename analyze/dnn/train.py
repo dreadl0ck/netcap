@@ -276,9 +276,10 @@ def run():
                 leftover = None
         
         if history is not None:
-            # get current loss
-            lossValues = history.history['val_loss']
-            currentLoss = lossValues[-1]
+            currentLoss = history['loss']
+            #currentLoss = lossValues[-1]
+            #print("============== lossValues:", lossValues)
+
             print(colored("[LOSS] " + str(currentLoss),'yellow'))
 
             # implement early stopping to avoid overfitting
@@ -288,7 +289,111 @@ def run():
                 if currentLoss < min_delta:
                     print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
                     print("EPOCH", epoch)
-                    break
+                    exit(0)
+
+def run_in_memory():
+    leftover = None
+    global patience
+    global min_delta
+
+    epoch = 0
+
+    print(colored("[INFO] epoch {}/{}".format(epoch, arguments.epochs), 'yellow'))
+    for i in range(0, len(files), arguments.fileBatchSize):
+
+        print(colored("[INFO] loading file {}-{}/{} on epoch {}/{}".format(i+1, i+arguments.fileBatchSize, len(files), epoch, arguments.epochs), 'yellow'))
+        df_from_each_file = [readCSV(f) for f in files[i:(i+arguments.fileBatchSize)]]
+
+        # ValueError: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+        if leftover is not None:
+            df_from_each_file.insert(0, leftover)
+
+        print("[INFO] concatenate the files")
+        df = pd.concat(df_from_each_file, ignore_index=True)
+
+        for epoch in range(arguments.epochs):
+            history = None
+            leftover = None
+
+            # TODO move back into process_dataset?
+            print("[INFO] process dataset, shape:", df.shape)
+            if arguments.sample != None:
+                if arguments.sample > 1.0:
+                    print("invalid sample rate")
+                    exit(1)
+
+                if arguments.sample <= 0:
+                    print("invalid sample rate")
+                    exit(1)
+
+            if arguments.sample < 1.0:
+                print("[INFO] sampling", arguments.sample)
+                df = df.sample(frac=arguments.sample, replace=False)
+
+            if arguments.drop is not None:
+                for col in arguments.drop.split(","):
+                    drop_col(col, df)
+
+            if not arguments.lstm:
+                print("[INFO] dropping all time related columns...")
+                # TODO: make field name configurable
+                drop_col('Timestamp', df)
+                drop_col('TimestampFirst', df)
+                drop_col('TimestampLast', df)
+
+            print("[INFO] columns:", df.columns)
+            if arguments.debug:
+                print("[INFO] analyze dataset:", df.shape)
+                analyze(df)
+
+            if arguments.zscoreUnixtime:
+                # TODO: make field name configurable
+                encode_numeric_zscore(df, "Timestamp")
+
+            if arguments.encodeColumns:
+                print("[INFO] Shape when encoding dataset:", df.shape)
+                encode_columns(df, arguments.resultColumn, arguments.lstm, arguments.debug)
+                print("[INFO] Shape AFTER encoding dataset:", df.shape)
+
+            if arguments.debug:
+                print("--------------AFTER DROPPING COLUMNS ----------------")
+                print("df.columns", df.columns, len(df.columns))
+                with pd.option_context('display.max_rows', 10, 'display.max_columns', None):  # more options can be specified also
+                    print(df)
+
+            if arguments.encodeCategoricals:
+                print("[INFO] Shape when encoding dataset:", df.shape)
+                encode_categorical_columns(df, arguments.features)
+                print("[INFO] Shape AFTER encoding dataset:", df.shape)    
+
+            for batch_size in range(0, df.shape[0], arguments.batchSize):
+
+                dfCopy = df[batch_size:batch_size+arguments.batchSize]
+
+                # skip leftover that does not reach batch size
+                if len(dfCopy.index) != arguments.batchSize:
+                    leftover = dfCopy
+                    continue
+
+                print("[INFO] processing batch {}-{}/{}".format(batch_size, batch_size+arguments.batchSize, df.shape[0]))                    
+                history = train_dnn(dfCopy, i, epoch, batch=batch_size)
+                leftover = None
+        
+                if history is not None:
+                    currentLoss = history['loss']
+                    #currentLoss = lossValues[-1]
+                    #print("============== lossValues:", lossValues)
+
+                    print(colored("[LOSS] " + str(currentLoss),'yellow'))
+
+                    # implement early stopping to avoid overfitting
+                    # start checking the val_loss against the threshold after patience epochs
+                    if epoch >= patience:
+                        print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
+                        if currentLoss < min_delta:
+                            print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
+                            print("EPOCH", epoch)
+                            exit(0)
 
 buf_size = 512
 stop_count = 0
@@ -474,7 +579,7 @@ parser.add_argument('-resultColumn', type=str, default='Category', help='set nam
 parser.add_argument('-features', type=int, required=True, help='The amount of columns in the csv (dimensionality)')
 #parser.add_argument('-class_amount', type=int, default=2, help='The amount of classes e.g. normal, attack1, attack3 is 3')
 parser.add_argument('-fileBatchSize', type=int, default=50, help='The amount of files to be read in')
-parser.add_argument('-epochs', type=int, default=1, help='The amount of epochs. (default: 1)')
+parser.add_argument('-epochs', type=int, default=2500, help='The amount of epochs. (default: 1)')
 parser.add_argument('-numCoreLayers', type=int, default=1, help='set number of core layers to use')
 parser.add_argument('-shuffle', default=False, help='shuffle data before feeding it to the DNN')
 parser.add_argument('-dropoutLayer', default=False, help='insert a dropout layer at the end')
@@ -492,6 +597,7 @@ parser.add_argument('-relu', default=False, help='use ReLU activation function (
 parser.add_argument('-encodeCategoricals', type=bool, default=False, help='encode categorical with one hot strategy')
 parser.add_argument('-dnnBatchSize', type=int, default=16, help='set dnn batch size')
 parser.add_argument('-socket', type=bool, default=False, help='read data from unix socket')
+parser.add_argument('-mem', type=bool, default=False, help='hold entire data in memory to avoid re-reading it')
 
 # parse commandline arguments
 arguments = parser.parse_args()
@@ -594,6 +700,8 @@ print("[INFO] created DNN")
 try:
     if arguments.socket:
         run_socket()
+    elif arguments.mem:
+        run_in_memory()
     else:
         run()
 except: # catch *all* exceptions
