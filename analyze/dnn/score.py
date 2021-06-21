@@ -30,7 +30,7 @@ cf_total = None
 # configurable via argument
 # hardcoded these are the labeltypes that can be found in the dataset
 #classes = ["normal", "Single Stage Single Point", "Single Stage Multi Point", "Multi Stage Single Point", "Multi Stage Multi Point"]
-classes = ["normal", "infiltration"]
+classes = [b'normal', b'infiltration']
 
 def readCSV(f):
     print("[INFO] reading file", f)
@@ -454,11 +454,37 @@ if not arguments.socket:
 
 if arguments.binaryClasses:
     # TODO: make configurable
-    classes = ["normal", "infiltration"]
+    classes = [b'normal', b'infiltration']
 
 if arguments.classes is not None:
     classes = arguments.classes.split(',')
     print("set classes to:", classes)
+
+# ensure correct data type in classes list
+# - sockets will receive byte strings
+# - csv data will come as strings 
+# on the CLI we will always receive strings
+newClasses = list()
+
+if arguments.socket:
+    # convert all to byte strings
+    for c in classes:
+        if type(c) == bytes:
+            newClasses.append(c)
+        else:
+            data = c.encode('utf-8')
+            newClasses.append(data)
+else:
+    # convert all to string
+    for c in classes:
+        if type(c) == str:
+            newClasses.append(c)
+        else:
+            data = c.decode('utf-8')
+            newClasses.append(data)
+
+classes = newClasses
+print("classes after type update", classes)
 
 classes_length = len(classes)
 cf_total = np.zeros((classes_length, classes_length),dtype=np.int)
