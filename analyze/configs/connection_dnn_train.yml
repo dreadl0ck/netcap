@@ -11,7 +11,7 @@ args:
   - -drop=SrcIP,DstIP,SrcMAC,DstMAC,SrcPort,DstPort
   #- -debug=True
 
-epochs: 10
+epochs: 50
 
 auditRecords:
   - Connection

@@ -374,25 +374,25 @@ def process(df):
 
     history, leftover = process_dataframe(df, 0, epoch)
 
-    #if history is not None:
+    if history is not None:
 
         #print("history:", history)
 
         # get current loss
-        #lossValues = history.history['val_loss']
+        currentLoss = history['loss']
         #currentLoss = lossValues[-1]
         #print("============== lossValues:", lossValues)
 
-        #print(colored("[LOSS] " + str(currentLoss),'yellow'))
+        print(colored("[LOSS] " + str(currentLoss),'yellow'))
 
         # implement early stopping to avoid overfitting
         # start checking the val_loss against the threshold after patience epochs
-        #if epoch >= patience:
-        #    print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
-        #    if currentLoss < min_delta:
-        #        print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
-        #        print("EPOCH", epoch)
-        #        exit(0)
+        if epoch >= patience:
+            print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
+            if currentLoss < min_delta:
+                print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
+                print("EPOCH", epoch)
+                exit(0)
 
 def process_dataframe(df, i, epoch):
 
@@ -515,6 +515,32 @@ if arguments.binaryClasses:
 if arguments.classes is not None:
     classes = arguments.classes.split(',')
     print("set classes to:", classes)
+
+# ensure correct data type in classes list
+# - sockets will receive byte strings
+# - csv data will come as strings 
+# on the CLI we will always receive strings
+newClasses = list()
+
+if arguments.socket:
+    # convert all to byte strings
+    for c in classes:
+        if type(c) == bytes:
+            newClasses.append(c)
+        else:
+            data = c.encode('utf-8')
+            newClasses.append(data)
+else:
+    # convert all to string
+    for c in classes:
+        if type(c) == str:
+            newClasses.append(c)
+        else:
+            data = c.decode('utf-8')
+            newClasses.append(data)
+
+classes = newClasses
+print("classes after type update", classes)
 
 print("=================================================")
 print("        TRAINING v0.4.5")
