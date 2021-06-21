@@ -34,11 +34,11 @@ import logging
 #     mode='auto'
 # )
 min_delta = 1e-3
-patience = 3
+patience = 0
 
 # can be overwritten via cmdline flags
 # Default uses two classes: binary classification
-classes = ["Normal", "Attack"]
+classes = ["normal", "infiltration"]
 
 def train_dnn(df, i, epoch, batch=0):
 
@@ -273,7 +273,7 @@ def run():
                     print("EPOCH", epoch+1)
                     break
 
-buf_size = 256
+buf_size = 512
 stop_count = 0
 num_datagrams = 0
 
@@ -300,7 +300,7 @@ def create_unix_socket(name):
         if datagram:
             if num_datagrams != 0 and num_datagrams % arguments.batchSize == 0:
 
-                print("batch size reached", arguments.batchSize)
+                print(">>>>>>>> batch size reached", arguments.batchSize)
 
                 # create the pandas DataFrame
                 df = pd.DataFrame(datagrams, columns=['TimestampFirst',
@@ -323,8 +323,9 @@ def create_unix_socket(name):
                                                        'BytesServerToClient',
                                                        'Category'])
 
-                #analyze(df)
                 process(df)
+                
+                #print(df)
 
                 # reset datagrams
                 datagrams = list()

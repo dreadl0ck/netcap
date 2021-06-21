@@ -122,7 +122,7 @@ def run():
             eval_dnn(dfCopy)
             leftover = None
 
-buf_size = 256
+buf_size = 512
 stop_count = 0
 num_datagrams = 0
 
@@ -377,12 +377,13 @@ def eval_dnn(df):
         score = metrics.accuracy_score(y_eval, pred)
         print("[INFO] Validation score: {}".format(colored(score, 'yellow')))
     
-    print(colored("[INFO] metrics:", 'yellow'))
+    print("============== [INFO] metrics =====================")
     baseline_results = model.evaluate(
         x_test,
         y_test,
         verbose=0
-    )
+    )  
+    print("===================================================")
 
     try:
         for name, value in zip(model.metrics_names, baseline_results):

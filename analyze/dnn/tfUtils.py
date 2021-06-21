@@ -295,9 +295,14 @@ def to_xy(df, target, labeltypes, debug, binaryClasses):
     values = df[target].values
 
     if binaryClasses:
+        print("SINGLE CLASSS EXPANSION")
         y_vector = single_class_expansion(values, labeltypes, debug)
     else:
+        print("MULTI CLASSS EXPANSION")
         y_vector = multi_class_expansion(values, labeltypes, debug)
+
+    if debug:
+        print("y_vector", y_vector)
 
     return df[result].values.astype(np.float32), y_vector
 
@@ -345,12 +350,12 @@ def single_class_expansion(values, labeltypes, debug):
     
     if debug:
         #np.set_printoptions(threshold=sys.maxsize)
-        print("y_vector", y_vector)
+        print("y_vector:", y_vector)
+        print("y_vector unique elements:", np.unique(y_vector))
         print("z vector sum", np.sum(y_vector,axis=0))
         #np.set_printoptions(threshold=10)
 
     return y_vector
-    
 
 ## TODO: add flags for these
 
