@@ -289,16 +289,13 @@ def to_xy(df, target, labeltypes, debug, binaryClasses):
     target_type = target_type[0] if hasattr(target_type, '__iter__') else target_type
     
     if debug:
-        print("CHUNK ANALYZE")
         analyze(df)
     
     values = df[target].values
 
     if binaryClasses:
-        print("SINGLE CLASSS EXPANSION")
         y_vector = single_class_expansion(values, labeltypes, debug)
     else:
-        print("MULTI CLASSS EXPANSION")
         y_vector = multi_class_expansion(values, labeltypes, debug)
 
     if debug:

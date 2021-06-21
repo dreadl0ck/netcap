@@ -34,7 +34,7 @@ import logging
 #     mode='auto'
 # )
 min_delta = 1e-3
-patience = 0
+patience = 3
 
 # caution: when streaming data over unix socket 
 # can be overwritten via cmdline flags
@@ -43,11 +43,14 @@ classes = [b'normal', b'infiltration']
 
 def train_dnn(df, i, epoch, batch=0):
 
-    print("[INFO] breaking into predictors and prediction...")
+    if arguments.debug:
+        print("[INFO] breaking into predictors and prediction...")
+    
     # Break into X (predictors) & y (prediction)
     x, y = to_xy(df, arguments.resultColumn, classes, arguments.debug, arguments.binaryClasses)
 
-    print("[INFO] creating train/test split:", arguments.testSize)
+    if arguments.debug:
+        print("[INFO] creating train/test split:", arguments.testSize)
 
     # Create a test/train split.
     # by default, 25% of data is used for testing
@@ -106,7 +109,8 @@ def train_dnn(df, i, epoch, batch=0):
     #         print("y_train.shape", y_train.shape)
     #         print("y_test.shape", y_test.shape)
 
-    print("[INFO] fitting model. xtrain.shape:", x_train.shape, "y_train.shape:", y_train.shape)
+    if arguments.debug:
+        print("[INFO] fitting model. xtrain.shape:", x_train.shape, "y_train.shape:", y_train.shape)
     # history = model.fit(
     #     x_train,
     #     y_train,
@@ -126,15 +130,14 @@ def train_dnn(df, i, epoch, batch=0):
         return_dict=True,
         reset_metrics=False,
     )
-    print("history after training on batch", history)
+    #print("history after training on batch", history)
     history = model.test_on_batch(
         x=x_test,
         y=y_test,
         return_dict=True,
         reset_metrics=False,
     )
-
-    print("history after testing batch:", history)
+    #print("history after testing batch:", history)
 
 #    print('---------intermediate testing--------------')
 #    
@@ -285,7 +288,7 @@ def run():
             # implement early stopping to avoid overfitting
             # start checking the val_loss against the threshold after patience epochs
             if epoch >= patience:
-                print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
+                #print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
                 if currentLoss < min_delta:
                     print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
                     print("EPOCH", epoch)
@@ -389,7 +392,7 @@ def run_in_memory():
                     # implement early stopping to avoid overfitting
                     # start checking the val_loss against the threshold after patience epochs
                     if epoch >= patience:
-                        print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
+                        #print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
                         if currentLoss < min_delta:
                             print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
                             print("EPOCH", epoch)
