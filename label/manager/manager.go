@@ -41,10 +41,11 @@ type LabelManager struct {
 	removeFilesWithoutMatches bool
 
 	// scatter plot
-	scatterPlot bool
-	scatterMap   map[time.Time]int
-	scatterMapMu sync.Mutex
-	scatterDuration time.Duration
+	scatterPlot      bool
+	scatterAttackMap map[time.Time]int
+	scatterNormalMap map[time.Time]int
+	scatterMapMu     sync.Mutex
+	scatterDuration  time.Duration
 
 	labelHits map[string]int64
 	sync.Mutex
@@ -59,7 +60,8 @@ func NewLabelManager(progress bool, debug bool, removeFilesWithoutMatches bool, 
 		Debug:                     debug,
 		removeFilesWithoutMatches: removeFilesWithoutMatches,
 		scatterPlot:               scatterplot,
-		scatterMap:                map[time.Time]int{},
+		scatterAttackMap:          map[time.Time]int{},
+		scatterNormalMap:          map[time.Time]int{},
 		scatterDuration:           scatterDuration,
 		labelHits:                 map[string]int64{},
 	}
@@ -93,7 +95,7 @@ func Stats() {
 	if instance != nil {
 		var (
 			total int64
-			rows [][]string
+			rows  [][]string
 		)
 		for _, num := range instance.labelHits {
 			total += num

@@ -62,7 +62,7 @@ func generateScatterItems(values []scatterData) []opts.ScatterData {
 	return items
 }
 
-func scatterShowLabel(scatterMap map[time.Time]int) *charts.Scatter {
+func scatterShowLabel(attacks map[time.Time]int, normal map[time.Time]int) *charts.Scatter {
 	scatter := charts.NewScatter()
 	scatter.SetGlobalOptions(charts.WithTitleOpts(
 		opts.Title{
@@ -74,24 +74,32 @@ func scatterShowLabel(scatterMap map[time.Time]int) *charts.Scatter {
 			}),
 	)
 
-	var sd scatterDataSlice
-	for t, v := range scatterMap {
-		sd = append(sd, scatterData{
+	var attackData scatterDataSlice
+	for t, v := range attacks {
+		attackData = append(attackData, scatterData{
 			time:  t,
 			value: v,
 		})
 	}
-	sort.Sort(sd)
+	sort.Sort(attackData)
+
+	var normalData scatterDataSlice
+	for t, v := range normal {
+		normalData = append(normalData, scatterData{
+			time:  t,
+			value: v,
+		})
+	}
+	sort.Sort(normalData)
+
 	var times []time.Time
-	for _, s := range sd {
+	for _, s := range normalData {
 		times = append(times, s.time)
 	}
 
-	//fmt.Println(sd)
-
 	scatter.SetXAxis(times).
-		AddSeries("Attack", generateScatterItems(sd)).
-		//AddSeries("Normal", generateScatterItems(normal)).
+		AddSeries("Attack", generateScatterItems(attackData)).
+		AddSeries("Normal", generateScatterItems(normalData)).
 		SetSeriesOptions(charts.WithLabelOpts(
 			opts.Label{
 				Show:     true,
@@ -106,7 +114,7 @@ func Render() {
 	if instance != nil {
 		page := components.NewPage()
 		page.AddCharts(
-			scatterShowLabel(instance.scatterMap),
+			scatterShowLabel(instance.scatterAttackMap, instance.scatterNormalMap),
 		)
 		f, err := os.Create("scatter.html")
 		if err != nil {
