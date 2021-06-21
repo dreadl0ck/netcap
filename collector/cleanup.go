@@ -189,6 +189,7 @@ func (c *Collector) teardown() {
 	c.zapLoggers = []*zap.Logger{}
 
 	manager.Render()
+	manager.Stats()
 
 	if c.Epochs > 0 && c.numEpochs < c.Epochs {
 
@@ -207,6 +208,7 @@ func (c *Collector) teardown() {
 		c.streamDecoders = nil
 		c.abstractDecoders = nil
 		c.packetDecoders = nil
+		manager.ResetStats()
 
 		c.statMutex.Lock()
 		c.shutdown = false

@@ -40,12 +40,14 @@ type LabelManager struct {
 
 	removeFilesWithoutMatches bool
 
+	// scatter plot
 	scatterPlot bool
-
 	scatterMap   map[time.Time]int
 	scatterMapMu sync.Mutex
-
 	scatterDuration time.Duration
+
+	labelHits map[string]int64
+	sync.Mutex
 }
 
 // NewLabelManager returns a new label manager instance.
@@ -84,4 +86,34 @@ func (m *LabelManager) Init(pathMappingInfo string) {
 	// print alert summary
 	tui.Table(os.Stdout, []string{"Num", "AttackName", "Date", "Victims", "NumAttackers", "MITRE", "category"}, rows)
 	fmt.Println()
+}
+
+func Stats() {
+	if instance != nil {
+		var (
+			total int64
+			rows [][]string
+		)
+		for _, num := range instance.labelHits {
+			total += num
+		}
+		for c, num := range instance.labelHits {
+			rows = append(rows, []string{c, strconv.FormatInt(num, 10), progress(num, total)})
+		}
+
+		// print summary
+		tui.Table(os.Stdout, []string{"Category", "Count", "Share"}, rows)
+		fmt.Println()
+	}
+}
+
+func ResetStats() {
+	if instance != nil {
+		instance.labelHits = map[string]int64{}
+	}
+}
+
+func progress(current, total int64) string {
+	percent := (float64(current) / float64(total)) * 100
+	return strconv.Itoa(int(percent)) + "%"
 }
