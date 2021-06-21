@@ -283,7 +283,7 @@ def to_xy(df, target, labeltypes, debug, binaryClasses):
     result = []
     for x in df.columns:
         if x != target:
-            result.append(x)
+            result.append(x)           
     # find out the type of the target column.  Is it really this hard? :(
     target_type = df[target].dtypes
     target_type = target_type[0] if hasattr(target_type, '__iter__') else target_type
@@ -332,14 +332,18 @@ def multi_class_expansion(values, labeltypes, debug):
     return y_vector
 
 def single_class_expansion(values, labeltypes, debug):    
+
     y_vector = np.zeros((values.shape[0],2))
+
+    # collect all elements at index 1 over all sub arrays and return them as a new array.
     y_vector[:,1] = 1
 #     y_vector = np.zeros(values.shape[0])
 
     # loop through all of the labeltypes and flag the columns that contain the label type
     indices = np.where(values == labeltypes[0])
-        
+    
     if debug:
+        print("INDICES =================== ", indices)
         print("[INFO] to_xy labeltype:", labeltypes[0])
         #np.set_printoptions(threshold=sys.maxsize)
         print("indices", indices)
@@ -354,6 +358,11 @@ def single_class_expansion(values, labeltypes, debug):
         print("y_vector unique elements:", np.unique(y_vector))
         print("z vector sum", np.sum(y_vector,axis=0))
         #np.set_printoptions(threshold=10)
+        print("================ VALUES ====================")
+        print(values)
+        print("============== Y VECTOR ====================")
+        print(y_vector)
+        print("============================================")
 
     return y_vector
 
