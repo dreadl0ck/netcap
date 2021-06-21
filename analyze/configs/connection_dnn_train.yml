@@ -8,9 +8,10 @@ args:
   - -socket=True
   - -encodeCategoricals=False
   - -batchSize=24000
-  - -drop=SrcIP,DstIP,SrcMAC,DstMAC
+  - -drop=SrcIP,DstIP,SrcMAC,DstMAC,SrcPort,DstPort
+  - -debug=True
 
-epochs: 5
+epochs: 1
 
 auditRecords:
   - Connection
