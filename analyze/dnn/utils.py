@@ -1,7 +1,5 @@
 #!/usr/bin/python3
 
-# from sklearn.metrics import confusion_matrix
-
 # Official Keras version
 # import keras
 # from keras.models import Sequential
@@ -13,18 +11,18 @@
 # from tensorflow.python.keras.layers import Input, Dense, Activation
 # from tensorflow.python.keras.models import Sequential
 
-from keras.models import Sequential
-from keras.layers.core import Dense, Activation 
-import keras
+# dont import keras from this module, it will break the metrics when running tensorflow on a GPU (eg: always fp==fn and tp==tn)
+#import tensorflow.python.keras as keras
+# importing keras from tensorflow fixes this
+from tensorflow import keras
+from tensorflow.python.keras.layers import Input, Dense, Activation, Dropout, LeakyReLU
+from tensorflow.python.keras.models import Sequential
+
 import numpy as np
 import pandas as pd
 import os
 from termcolor import colored
 from sklearn import preprocessing
-
-from keras import layers
-from keras.layers import Dropout
-from keras.layers import LeakyReLU
 
 def encode_string(df, name):
     """
@@ -123,6 +121,9 @@ encoders = {
     'UID'              : encode_string,
     'Duration'         : encode_numeric_zscore,
     'TimestampLast'    : encode_numeric_zscore,
+    'BytesClientToServer': encode_numeric_zscore,
+    'BytesServerToClient': encode_numeric_zscore,
+    'Category': encode_string,
 
     # UDP specific fields
     'Length'           : encode_numeric_zscore,
@@ -471,7 +472,7 @@ def encode_columns(df, result_column, lstm, debug):
             if colName in encoders:
                 encoders[colName](df, col)
             else:
-                #print("[INFO] could not locate", colName, "in encoder dict. Defaulting to encode_numeric_zscore")
+                print("[INFO] could not locate", colName, "in encoder dict. Defaulting to encode_numeric_zscore")
                 encode_numeric_zscore(df, col)
 
     # Since this is now done in to_xy, we can skip encoding the result column here
