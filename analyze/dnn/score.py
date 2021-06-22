@@ -15,7 +15,7 @@ import datetime
 import sys
 import socket
 import numpy as np
-from tfUtils import * 
+from utils import * 
 from glob import glob
 
 from sklearn.metrics import confusion_matrix

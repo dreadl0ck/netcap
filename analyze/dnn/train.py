@@ -13,7 +13,7 @@ import time
 import traceback
 import datetime
 
-from tfUtils import * 
+from utils import * 
 from glob import glob
 import os
 from os import path
@@ -136,14 +136,14 @@ def train_dnn(df, i, epoch, batch=0):
         x=x_train,
         y=y_train,
         return_dict=True,
-        reset_metrics=False,
+        #reset_metrics=False,
     )
     #print("history after training on batch", history)
     history = model.test_on_batch(
         x=x_test,
         y=y_test,
         return_dict=True,
-        reset_metrics=False,
+        #reset_metrics=False,
     )
     #print("history after testing batch:", history)
 
