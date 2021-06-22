@@ -158,7 +158,6 @@ func (c *Collector) handleSignals() {
 		go func() {
 			sign := <-sigs
 			c.printlnStdOut("force quitting, signal:", sign)
-			c.teardown()
 			os.Exit(0)
 		}()
 
@@ -192,7 +191,6 @@ func (c *Collector) serveCleanupHTTPEndpoint() {
 
 			// triggered once already. now force shutdown
 			c.printlnStdOut("force quitting")
-			c.teardown()
 
 			// reply OK
 			// TODO: hold the connection open until the stream processing is going on.
