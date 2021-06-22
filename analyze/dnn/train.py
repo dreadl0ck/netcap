@@ -605,8 +605,11 @@ def create_unix_socket(name):
                 if data != b'':
                     arr = data.split(b',')
                     if len(arr) != 19:
-                        # TODO: make configurable
+                        # TODO: make configurable for troubleshooting
                         #print(arr, len(arr))
+
+                        # TODO: make configurable
+                        # increment epoch when receiving the CSV header again 
                         if arr[0].startswith(b'Timestamp'): 
                             epoch += 1
                             print("epoch", epoch)
@@ -755,10 +758,10 @@ parser.add_argument('-score', type=bool, default=False, help='run scoring on the
 arguments = parser.parse_args()
 
 # wtf why is encodeCategoricals always True, I've set default=False x)
-print("") # newline to break from netcap status log msg when debugging
-print("encodeCategoricals", arguments.encodeCategoricals)
-arguments.encodeCategoricals = False
-print("encodeCategoricals", arguments.encodeCategoricals)
+#print("") # newline to break from netcap status log msg when debugging
+#print("encodeCategoricals", arguments.encodeCategoricals)
+#arguments.encodeCategoricals = False
+#print("encodeCategoricals", arguments.encodeCategoricals)
 
 if not arguments.socket:
     if arguments.read is None:
