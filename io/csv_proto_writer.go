@@ -60,6 +60,12 @@ func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, e
 	}
 
 	if csv, ok := msg.(types.AuditRecord); ok {
+
+		if w.label {
+			// TODO: make label column name configurable
+			return w.w.Write([]byte(strings.Join(append(csv.CSVHeader(), "Category"), ",") + "\n"))
+		}
+
 		return w.w.Write([]byte(strings.Join(csv.CSVHeader(), ",") + "\n"))
 	}
 
