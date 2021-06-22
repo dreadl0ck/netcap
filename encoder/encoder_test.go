@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/magiconair/properties/assert"
+	"gonum.org/v1/gonum/stat"
 )
 
 var timestamps = []int64{
@@ -71,6 +72,7 @@ func TestNumericMinMaxEncoderZero(t *testing.T) {
 }
 
 var numericTest = []int{5, 2, 6, 5, 2, 6}
+var numericTestFloat = []float64{5, 2, 6, 5, 2, 6}
 
 func TestNumericZscoreEncoder(t *testing.T) {
 	var encoder = NewValueEncoder()
@@ -84,6 +86,40 @@ func TestNumericZscoreEncoder(t *testing.T) {
 	}
 
 	assert.Equal(t, res, []string{"0.7071067812", "-0.7071067812", "0.7071067812", "0.7071067812", "-0.7071067812", "0.7071067812"}, "unexpected output")
+}
+
+func TestZscoreAllData(t *testing.T) {
+
+	// TODO: use weights?
+	mean, std := stat.MeanStdDev(numericTestFloat, nil)
+
+	var res []string
+	for _, val := range numericTestFloat {
+		res = append(res, strconv.FormatFloat((val-mean)/std, 'f', precision, 64))
+	}
+
+	assert.Equal(t, res, []string{"0.3580574370", "-1.2532010296", "0.8951435925", "0.3580574370", "-1.2532010296", "0.8951435925"}, "unexpected output")
+}
+
+func TestZscoreAllDataWeights(t *testing.T) {
+
+	var numericTestFloatWeights = []float64{0.1, 0.5, 0.2, 0.1, 0.5, 0.2}
+
+	// MeanVariance computes the sample mean and unbiased variance, where the mean and variance are
+	//  \sum_i w_i * x_i / (sum_i w_i)
+	//  \sum_i w_i (x_i - mean)^2 / (sum_i w_i - 1)
+	// respectively.
+	// If weights is nil then all of the weights are 1. If weights is not nil, then
+	// len(x) must equal len(weights).
+	// When weights sum to 1 or less, a biased variance estimator should be used.
+	mean, std := stat.MeanStdDev(numericTestFloat, numericTestFloatWeights)
+
+	var res []string
+	for _, val := range numericTestFloat {
+		res = append(res, strconv.FormatFloat((val-mean)/std, 'f', precision, 64))
+	}
+
+	assert.Equal(t, res, []string{"0.5533167450", "-0.4681910919", "0.8938193573", "0.5533167450", "-0.4681910919", "0.8938193573"}, "unexpected output")
 }
 
 func TestNumericMinMaxEncoder(t *testing.T) {
