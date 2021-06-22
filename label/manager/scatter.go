@@ -120,9 +120,12 @@ func Render(out string) {
 
 		// TODO make configurable
 		filename := filepath.Base(out)
+		if filename == "" {
+			filename = "label"
+		}
 
 		// discard all file extensions if there are any
-		parts := strings.Split(filename, ",")
+		parts := strings.Split(filename, ".")
 		if len(parts) > 1 {
 			filename = parts[0]
 		}
@@ -133,7 +136,7 @@ func Render(out string) {
 			scatterShowLabel(filename, instance.scatterAttackMap, instance.scatterNormalMap),
 		)
 
-		f, err := os.Create(filepath.Join(filename, "-scatter.html"))
+		f, err := os.Create(filepath.Join(out, filename+"-scatter.html"))
 		if err != nil {
 			panic(err)
 		}
