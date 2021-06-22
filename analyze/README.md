@@ -9,3 +9,6 @@ Train model:
 Eval:
 
     python3 ../analyze/dnn/score.py -mem=True -features 18 -batchSize=24000 -read infiltration_eval/Connection.csv -drop=SrcIP,DstIP,SrcMAC,DstMAC,SrcPort  
+
+
+    python3 $HOME/go/src/github.com/dreadl0ck/netcap/analyze/dnn/train.py -mem=True -features 18 -batchSize=24000 -read Thursday-01-03-2018.pcapng.net/Connection.csv -score=True

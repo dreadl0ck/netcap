@@ -24,6 +24,12 @@ import sys
 import socket
 import logging
 
+from sklearn.metrics import confusion_matrix
+from sklearn import metrics
+
+# cf_total is for summing up all of the confusion matrices from all of the separate files
+cf_total = None
+
 # because the data is split over multiple files
 # we need to implement early stopping ourselves
 # monitor = EarlyStopping(
@@ -305,6 +311,98 @@ def run():
                     print("EPOCH", epoch)
                     exit(0)
 
+def eval_dnn(df):
+    global cf_total
+    global model
+
+    if arguments.drop is not None:
+        for col in arguments.drop.split(","):
+            drop_col(col, df)
+    
+    if not arguments.lstm:
+        print("[INFO] dropping all time related columns...")
+        drop_col('Timestamp', df)
+        drop_col('TimestampFirst', df)
+        drop_col('TimestampLast', df)
+
+    x_test, y_test = to_xy(df, arguments.resultColumn, classes, arguments.debug, arguments.binaryClasses)
+    #print("x_test", x_test, "shape", x_test.shape)
+    
+    #np.set_printoptions(threshold=sys.maxsize)
+    #print("y_test", y_test, "shape", y_test.shape)
+    #np.set_printoptions(threshold=10)
+
+    print(colored("[INFO] measuring accuracy...", 'yellow'))
+    print("x_test.shape:", x_test.shape)
+
+    if arguments.debug:
+        print("--------SHAPES--------")
+        print("x_test.shape", x_test.shape)
+        print("y_test.shape", y_test.shape)
+
+    if arguments.lstm:
+
+        print("[INFO] reshape for using LSTM layers")
+        x_test = x_test.reshape(int(arguments.batchSize / arguments.dnnBatchSize), arguments.dnnBatchSize, x_test.shape[1])
+        y_test = y_test.reshape(int(arguments.batchSize / arguments.dnnBatchSize), arguments.dnnBatchSize, y_test.shape[1])
+
+        if arguments.debug:
+            print("--------RESHAPED--------")
+            print("x_test.shape", x_test.shape)
+            print("y_test.shape", y_test.shape)
+    
+    pred = model.predict(x_test)
+    #print("=====>", pred)
+    
+    if arguments.lstm:
+        #print("y_test shape", y_test.shape)
+        pred = pred.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * y_test.shape[1]), y_test.shape[2])
+    
+    pred = np.argmax(pred,axis=1)
+    print("pred (argmax)", pred, pred.shape)
+
+    y_eval = np.argmax(y_test,axis=1)
+    print("y_eval (argmax)", y_eval, y_eval.shape)
+    
+    if not arguments.lstm:    
+        score = metrics.accuracy_score(y_eval, pred)
+        print("[INFO] Validation score: {}".format(colored(score, 'yellow')))
+    
+    print("============== [INFO] metrics =====================")
+    baseline_results = model.evaluate(
+        x_test,
+        y_test,
+        verbose=1
+    )  
+    print("===================================================")
+
+    try:
+        for name, value in zip(model.metrics_names, baseline_results):
+            print(name, ': ', value)
+        print()
+    except TypeError:
+        pass        
+
+    unique, counts = np.unique(y_eval, return_counts=True)
+    print("y_eval",dict(zip(unique, counts)))
+# 
+    unique, counts = np.unique(pred, return_counts=True)
+    print("pred",dict(zip(unique, counts)))
+# 
+#             print("y_test", np.sum(y_test,axis=0), np.sum(y_test,axis=1))
+
+    cf = confusion_matrix(y_eval,pred,labels=np.arange(len(classes)))
+    print("[INFO] confusion matrix for file ")
+    print(cf)
+    print("[INFO] confusion matrix after adding it to total:")
+    cf_total += cf
+    print(cf_total)
+
+#             cf = np.zeros((5,5))
+#             for i,j in zip(y_eval, pred):
+#                 cf[i,j] += 1
+#             print(cf)
+
 def run_in_memory():
     leftover = None
     global patience
@@ -372,6 +470,21 @@ def run_in_memory():
             encode_categorical_columns(df, arguments.features)
             print("[INFO] Shape AFTER encoding dataset:", df.shape) 
 
+        df_score = {}
+        if arguments.score:
+            
+            # Create a test/train split.
+            # by default, 25% of data is used for testing
+            # it can be configured using the test_size commandline flag
+            df, df_score = train_test_split(
+                df,
+                test_size=arguments.testSize,
+                #random_state=42, # TODO make configurable
+                shuffle=arguments.shuffle
+            )
+            print("df_train:", df.shape)
+            print("df_score:", df_score.shape, "test_size", arguments.testSize)
+        
         for epoch in range(arguments.epochs):
             history = None
             leftover = None
@@ -412,6 +525,11 @@ def run_in_memory():
                                 save_weights(0, str(numEpoch), batch=batch_size)
                             print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
                             print("EPOCH", numEpoch)
+
+                            # TODO 
+                            if arguments.score:
+                                eval_dnn(df_score)
+                            
                             exit(0)
             
             print(colored("[EPOCH] " + str(numEpoch) + " / " + str(arguments.epochs),'red') + " " + colored("[LOSS] " + str(currentLoss),'yellow'))
@@ -421,6 +539,12 @@ def run_in_memory():
                 save_model(0, str(numEpoch), batch=0)
             else:
                 save_weights(0, str(numEpoch), batch=0)
+        
+        print("all epochs done")
+        
+        # TODO 
+        if arguments.score:
+            eval_dnn(df_score)
 
 buf_size = 512
 stop_count = 0
@@ -625,6 +749,7 @@ parser.add_argument('-encodeCategoricals', type=bool, default=False, help='encod
 parser.add_argument('-dnnBatchSize', type=int, default=16, help='set dnn batch size')
 parser.add_argument('-socket', type=bool, default=False, help='read data from unix socket')
 parser.add_argument('-mem', type=bool, default=False, help='hold entire data in memory to avoid re-reading it')
+parser.add_argument('-score', type=bool, default=False, help='run scoring on the configured share of the input data')
 
 # parse commandline arguments
 arguments = parser.parse_args()
@@ -701,6 +826,9 @@ if not arguments.lstm:
 num_dropped = 0
 if arguments.drop:
     num_dropped = len(arguments.drop.split(","))
+
+classes_length = len(classes)
+cf_total = np.zeros((classes_length, classes_length),dtype=np.int)
 
 print("[INFO] input shape", arguments.features-num_dropped-num_time_columns)
 
