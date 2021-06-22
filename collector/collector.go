@@ -45,6 +45,7 @@ import (
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/label/manager"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -428,6 +429,9 @@ func (c *Collector) stats() {
 		_, _ = fmt.Fprintln(target, "saved TCP connections:", tcp.NumSavedTCPConns())
 		_, _ = fmt.Fprintln(target, "saved UDP conversations:", udp.NumSavedUDPConns())
 	}
+
+	// dump label manager stats table if configured
+	manager.Stats(target)
 }
 
 // updates the progress indicator and writes to stdout.

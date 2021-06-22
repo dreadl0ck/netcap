@@ -15,6 +15,7 @@ package manager
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strconv"
 	"sync"
@@ -91,7 +92,7 @@ func (m *LabelManager) Init(pathMappingInfo string) {
 	fmt.Println()
 }
 
-func Stats() {
+func Stats(target io.Writer) {
 	if instance != nil {
 		var (
 			total int64
@@ -104,9 +105,9 @@ func Stats() {
 			rows = append(rows, []string{c, strconv.FormatInt(num, 10), progress(num, total)})
 		}
 
-		// print summary
-		tui.Table(os.Stdout, []string{"Category", "Count", "Share"}, rows)
-		fmt.Println()
+		// print summary and newline
+		tui.Table(target, []string{"Category", "Count", "Share"}, rows)
+		fmt.Fprintln(target)
 	}
 }
 
