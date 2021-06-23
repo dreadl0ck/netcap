@@ -118,6 +118,6 @@ func ResetStats() {
 }
 
 func progress(current, total int64) string {
-	percent := (float64(current) / float64(total)) * 100
-	return strconv.Itoa(int(percent)) + "%"
+	percent := (float64(current) / float64(total)) * float64(100)
+	return strconv.FormatFloat(percent, 'f', 2, 64) + "%"
 }
