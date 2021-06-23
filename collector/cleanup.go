@@ -159,7 +159,7 @@ func (c *Collector) teardown() {
 	if c.numEpochs > 1 {
 		c.printlnStdOut(c.numEpochs, "/", c.Epochs, "execution time", time.Since(c.start), "total", time.Since(c.startFirst))
 	} else {
-		c.printlnStdOut("execution time", time.Since(c.start), c.numPackets, c.numPacketsLast)
+		c.printlnStdOut("execution time", time.Since(c.start), c.config.DecoderConfig.Out)
 	}
 
 	c.log.Info("decoder teardown complete, closing logfiles")
