@@ -58,7 +58,7 @@ func generateScatterItems(values []scatterData) []opts.ScatterData {
 		items[i] = opts.ScatterData{
 			Value:        values[i].value,
 			Symbol:       "circle",
-			SymbolSize:   10,
+			SymbolSize:   7,
 			SymbolRotate: 0,
 		}
 	}

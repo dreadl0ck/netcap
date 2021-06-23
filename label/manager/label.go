@@ -135,14 +135,22 @@ func (m *LabelManager) Label(record types.AuditRecord) string {
 		t := auditRecordTime.Truncate(m.scatterDuration)
 		if label != labelNormal {
 			m.scatterMapMu.Lock()
-			m.scatterAttackMap[t]++
+			if _, ok := m.scatterAttackMap[t]; !ok {
+				m.scatterAttackMap[t] = 1
+			} else {
+				m.scatterAttackMap[t]++
+			}
 			if _, ok := m.scatterNormalMap[t]; !ok {
 				m.scatterNormalMap[t] = 0
 			}
 			m.scatterMapMu.Unlock()
 		} else {
 			m.scatterMapMu.Lock()
-			m.scatterNormalMap[t]++
+			if _, ok := m.scatterNormalMap[t]; !ok {
+				m.scatterNormalMap[t] = 1
+			} else {
+				m.scatterNormalMap[t]++
+			}
 			if _, ok := m.scatterAttackMap[t]; !ok {
 				m.scatterAttackMap[t] = 0
 			}
