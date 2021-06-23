@@ -145,7 +145,7 @@ def train_dnn(df, i, epoch, batch=0):
         return_dict=True,
         #reset_metrics=False,
     )
-    #print("history after testing batch:", history)
+    #print(history)
 
 #    print('---------intermediate testing--------------')
 #    
@@ -874,4 +874,10 @@ except: # catch *all* exceptions
     print("=====================================")
     traceback.print_tb(e[2], None, None)
 
-print("--- %s seconds ---" % (time.time() - start_time))
+source = ""
+if arguments.socket:
+    source = "UNIX socket"
+else:
+    source = arguments.read
+
+print("--- %s seconds --- source: %s" % (time.time() - start_time, source))
