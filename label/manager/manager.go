@@ -79,8 +79,6 @@ func (m *LabelManager) Init(pathMappingInfo string) {
 		os.Exit(1)
 	}
 
-	fmt.Println("got", len(m.labels), "labels", "scatterPlot:", m.scatterPlot)
-
 	var rows [][]string
 	for i, c := range m.labels {
 		y, m, d := c.Date.Date()
