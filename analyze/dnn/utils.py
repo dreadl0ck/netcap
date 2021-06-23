@@ -15,6 +15,7 @@
 #import tensorflow.python.keras as keras
 # importing keras from tensorflow fixes this
 from tensorflow import keras
+from tensorflow.python.keras import layers
 from tensorflow.python.keras.layers import Input, Dense, Activation, Dropout, LeakyReLU
 from tensorflow.python.keras.models import Sequential
 
