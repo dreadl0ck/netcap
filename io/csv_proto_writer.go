@@ -1,7 +1,6 @@
 package io
 
 import (
-	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -13,7 +12,6 @@ import (
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/label/manager"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 	"github.com/gogo/protobuf/proto"
 )
 
@@ -52,12 +50,13 @@ func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, e
 	w.Lock()
 	defer w.Unlock()
 
-	if !w.encode {
-		n, err := w.w.Write([]byte(fmt.Sprintf("# Type: %s, Created: %s, Source: %s, ContainsPayloads: %t\n", h.Type.String(), utils.UnixTimeToUTC(h.Created), h.InputSource, h.ContainsPayloads)))
-		if err != nil {
-			return n, err
-		}
-	}
+	// TODO: make configurable and disable by default.
+	// if !w.encode {
+	// 	n, err := w.w.Write([]byte(fmt.Sprintf("# Type: %s, Created: %s, Source: %s, ContainsPayloads: %t\n", h.Type.String(), utils.UnixTimeToUTC(h.Created), h.InputSource, h.ContainsPayloads)))
+	// 	if err != nil {
+	// 		return n, err
+	// 	}
+	// }
 
 	if csv, ok := msg.(types.AuditRecord); ok {
 
