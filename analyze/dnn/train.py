@@ -311,7 +311,7 @@ def run():
                     print("EPOCH", epoch)
                     exit(0)
 
-def eval_dnn(df):
+def eval_dnn(df, sizeTrain):
     global cf_total
     global model
 
@@ -376,18 +376,28 @@ def eval_dnn(df):
     )  
     print("===================================================")
 
+    csv = ""
     try:
         for name, value in zip(model.metrics_names, baseline_results):
             print(name, ': ', value)
+            csv += str(value) + ","
         print()
     except TypeError:
         pass        
 
     unique, counts = np.unique(y_eval, return_counts=True)
     print("y_eval",dict(zip(unique, counts)))
+
+    csv += str(dict(zip(unique, counts))) + ","
 # 
     unique, counts = np.unique(pred, return_counts=True)
     print("pred",dict(zip(unique, counts)))
+
+    csv += str(dict(zip(unique, counts))) + ","
+
+    # TODO: append to logfile
+    # Epochs,File,Loss,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,AUC,Y_EVAL,Y_PRED,Time,SizeTrain,SizeEval,TestSize
+    print("=== CSV " + str(arguments.epochs) + "," + arguments.read + "," + csv + str(time.time() - start_time) + "," + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize))
 # 
 #             print("y_test", np.sum(y_test,axis=0), np.sum(y_test,axis=1))
 
@@ -528,7 +538,7 @@ def run_in_memory():
 
                             # TODO 
                             if arguments.score:
-                                eval_dnn(df_score)
+                                eval_dnn(df_score, df.shape[0])
                             
                             exit(0)
             
@@ -544,7 +554,7 @@ def run_in_memory():
         
         # TODO 
         if arguments.score:
-            eval_dnn(df_score)
+            eval_dnn(df_score, df.shape[0])
 
 buf_size = 512
 stop_count = 0
