@@ -37,7 +37,7 @@ cf_total = None
 early_stopping = EarlyStopping(
      monitor='val_loss', 
      min_delta=1e-3, 
-     patience=5, 
+     patience=20, 
      verbose=1, 
      mode='auto'
 )
