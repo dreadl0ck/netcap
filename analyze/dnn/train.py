@@ -73,6 +73,23 @@ def train_dnn(df, i, epoch, batch=0):
         shuffle=arguments.shuffle
     )
 
+    if arguments.lstm:
+
+        if arguments.debug:
+            print("[INFO] ensuring the data is a multiple of the batch size for LSTM")
+        
+        num = len(x_train) % arguments.batchSize
+        x_train = x_train[:len(x_train)-num]
+
+        num = len(x_test) % arguments.batchSize
+        x_test = x_test[:len(x_test)-num]
+
+        num = len(y_train) % arguments.batchSize
+        y_train = y_train[:len(y_train)-num]
+
+        num = len(y_test) % arguments.batchSize
+        y_test = y_test[:len(y_test)-num]
+
     if arguments.debug:
         print("--------SHAPES--------")
         print("x_train.shape", x_train.shape)
@@ -84,14 +101,23 @@ def train_dnn(df, i, epoch, batch=0):
 
         if arguments.debug:
             print("[INFO] using LSTM layers")
+            print("len(x_train)", len(x_train), len(x_train) % arguments.batchSize)
         
-        x_train = x_train.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * (1.0 - arguments.testSize)), arguments.dnnBatchSize, x.shape[1])
-        y_train = y_train.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * (1.0 - arguments.testSize)), arguments.dnnBatchSize, y.shape[1])
+        x_train = x_train.reshape(-1, arguments.dnnBatchSize, x.shape[1])
+        y_train = y_train.reshape(-1, arguments.dnnBatchSize, y.shape[1])
 
-        x_test = x_test.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * arguments.testSize), arguments.dnnBatchSize, x.shape[1])
-        y_test = y_test.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * arguments.testSize), arguments.dnnBatchSize, y.shape[1])
+        x_test = x_test.reshape(-1, arguments.dnnBatchSize, x.shape[1])
+        y_test = y_test.reshape(-1, arguments.dnnBatchSize, y.shape[1])
+        
+        # x_train = x_train.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * (1.0 - arguments.testSize)), arguments.dnnBatchSize, x.shape[1])
+        # y_train = y_train.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * (1.0 - arguments.testSize)), arguments.dnnBatchSize, y.shape[1])
+
+        # x_test = x_test.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * arguments.testSize), arguments.dnnBatchSize, x.shape[1])
+        # y_test = y_test.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * arguments.testSize), arguments.dnnBatchSize, y.shape[1])
         
         if arguments.debug:
+            print("=======> AFTER RESHAPE y_train unique values", np.unique(y_train))
+            print("=======> AFTER RESHAPE y_test unique values", np.unique(y_test))
             print("--------RESHAPED--------")
             print("x_train.shape", x_train.shape)
             print("x_test.shape", x_test.shape)
@@ -333,7 +359,6 @@ def eval_dnn(df, sizeTrain):
 
     x_test, y_test = to_xy(df, arguments.resultColumn, classes, arguments.debug, arguments.binaryClasses)
     #print("x_test", x_test, "shape", x_test.shape)
-    
     #np.set_printoptions(threshold=sys.maxsize)
     #print("y_test", y_test, "shape", y_test.shape)
     #np.set_printoptions(threshold=10)
@@ -348,27 +373,42 @@ def eval_dnn(df, sizeTrain):
 
     if arguments.lstm:
 
-        print("[INFO] reshape for using LSTM layers")
-        x_test = x_test.reshape(int(arguments.batchSize / arguments.dnnBatchSize), arguments.dnnBatchSize, x_test.shape[1])
-        y_test = y_test.reshape(int(arguments.batchSize / arguments.dnnBatchSize), arguments.dnnBatchSize, y_test.shape[1])
+        if arguments.debug:
+            print("[INFO] ensuring the data is a multiple of the batch size for LSTM")
+        
+        num = len(x_test) % arguments.batchSize
+        x_test = x_test[:len(x_test)-num]
+
+        num = len(y_test) % arguments.batchSize
+        y_test = y_test[:len(y_test)-num]
+
+        if arguments.debug:
+            print("[INFO] reshape for using LSTM layers")
+        
+        x_test = x_test.reshape(-1, arguments.dnnBatchSize, x_test.shape[1])
+        y_test = y_test.reshape(-1, arguments.dnnBatchSize, y_test.shape[1])
 
         if arguments.debug:
             print("--------RESHAPED--------")
             print("x_test.shape", x_test.shape)
             print("y_test.shape", y_test.shape)
+
+    pred = model.predict(x_test,verbose=1)
+
+    # TODO: for LSTM, suddenly there are mutliple classes even when using binary classification? shaping problems? y vectors for training and evaluation seem correct...
+    print("===================== PREDICTION ==============================")
+    print("=====>", pred)
+    print("===============================================================")
     
-    pred = model.predict(x_test)
-    #print("=====>", pred)
-    
-    if arguments.lstm:
-        #print("y_test shape", y_test.shape)
-        pred = pred.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * y_test.shape[1]), y_test.shape[2])
-    
+    # TODO: LSTM produces different output on last layer, that will be picked up as multiple classes from argmax.
+    # when using binaryClasses, determine the highest value and set all other indices to 1?
     pred = np.argmax(pred,axis=1)
     print("pred (argmax)", pred, pred.shape)
+    print("==> pred unique elements:", np.unique(pred))
 
     y_eval = np.argmax(y_test,axis=1)
     print("y_eval (argmax)", y_eval, y_eval.shape)
+    print("==> y_eval unique elements:", np.unique(y_eval))
     
     if not arguments.lstm:    
         score = metrics.accuracy_score(y_eval, pred)
@@ -426,8 +466,13 @@ def eval_dnn(df, sizeTrain):
     # TODO: append to logfile
     # Epochs,File,Time,Loss,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,AUC,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1
     print("=== CSV " + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score))
-# 
-#             print("y_test", np.sum(y_test,axis=0), np.sum(y_test,axis=1))
+
+    # print("y_test", np.sum(y_test,axis=0), np.sum(y_test,axis=1))
+
+    if arguments.lstm:
+        #pred = pred[:len(y_eval)]
+        print("y_eval", len(y_eval), "pred", len(pred))
+        print("y_eval", y_eval, "pred", pred)
 
     cf = confusion_matrix(y_eval,pred,labels=np.arange(len(classes)))
     print("[INFO] confusion matrix for file ")
@@ -848,6 +893,8 @@ if arguments.mem:
 
     print("[INFO] concatenate the files")
     df = pd.concat(df_from_each_file, ignore_index=True)
+
+    #print(df.describe())
 
     print("[INFO] process df, shape:", df.shape)
     if arguments.sample != None:
