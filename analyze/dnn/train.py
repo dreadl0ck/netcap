@@ -391,12 +391,15 @@ def eval_dnn(df, sizeTrain):
     unique, counts = np.unique(y_eval, return_counts=True)
     print("y_eval",dict(zip(unique, counts)))
 
-    csv += str(dict(zip(unique, counts))) + ","
-# 
+    # collect evaluation labels
+    # adds values as excel strings: "=""<value>"""
+    csv += '"=""' + str(dict(zip(unique, counts))) + '""",'
+
+    # collect prediction labels
     unique, counts = np.unique(pred, return_counts=True)
     print("pred",dict(zip(unique, counts)))
 
-    csv += str(dict(zip(unique, counts))) + ","
+    csv += '"=""' + str(dict(zip(unique, counts))) + '""",'
 
     # metrics values in order:
     # loss :  0.010494242422282696
@@ -418,8 +421,8 @@ def eval_dnn(df, sizeTrain):
     print("[INFO] F1 score:", f1_score)
 
     # TODO: append to logfile
-    # Epochs,File,Loss,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,AUC,Y_EVAL,Y_PRED,Time,SizeTrain,SizeEval,TestSize,F1
-    print("=== CSV " + str(arguments.epochs) + "," + arguments.read + "," + csv + str(time.time() - start_time) + "," + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score))
+    # Epochs,File,Time,Loss,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,AUC,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1
+    print("=== CSV " + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score))
 # 
 #             print("y_test", np.sum(y_test,axis=0), np.sum(y_test,axis=1))
 
@@ -511,35 +514,6 @@ def run_in_memory_v2(df, df_score):
     global min_delta
     
     history = train_dnn(df, 0, 0, batch=arguments.batchSize)
-    if history is not None:
-        #currentLoss = history['loss']
-        lossValues = history.history['val_loss']
-        currentLoss = lossValues[-1]
-        #print("============== lossValues:", lossValues)
-
-        #print(colored("[EPOCH] " + str(numEpoch) + " / " + str(arguments.epochs),'red') + " " + colored("[LOSS] " + str(currentLoss),'yellow'))
-
-        # TODO: implement via callback again
-        # implement early stopping to avoid overfitting
-        # start checking the val_loss against the threshold after patience epochs
-        # if epoch >= patience:
-        #     #print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
-        #     if currentLoss < min_delta:
-
-        #         if arguments.saveModel:
-        #             save_model(0, str(arguments.epochs), batch=batch_size)
-        #         else:
-        #             save_weights(0, str(arguments.epochs), batch=batch_size)
-        #         print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
-        #         print("EPOCH", arguments.epochs)
-
-        #         plot_metrics(history, "train-metrics")
-
-        #         # TODO 
-        #         if arguments.score:
-        #             eval_dnn(df_score, df.shape[0])
-                
-        #         exit(0)
     
     # save model or checkpoint
     if arguments.saveModel:
