@@ -14,6 +14,7 @@
 # dont import keras from this module, it will break the metrics when running tensorflow on a GPU (eg: always fp==fn and tp==tn)
 #import tensorflow.python.keras as keras
 # importing keras from tensorflow fixes this
+import tensorflow as tf
 from tensorflow import keras
 from tensorflow.python.keras import layers
 from tensorflow.python.keras.layers import Input, Dense, Activation, Dropout, LeakyReLU
@@ -24,6 +25,9 @@ import pandas as pd
 import os
 from termcolor import colored
 from sklearn import preprocessing
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 
 def encode_string(df, name):
     """
@@ -64,17 +68,21 @@ def encode_numeric_zscore(df, name, mean=None, sd=None):
 
 # TODO: make configurable
 categorical_columns = [
-    "orig",
-	"type",
-	"i/f_name",
-	"i/f_dir",
-	"src",
-	"dst",
-	"proto",
-	"appi_name",
-	"proxy_src_ip",
-	"modbus_function_description",
-	"scada_tag",
+    # "orig",
+	# "type",
+	# "i/f_name",
+	# "i/f_dir",
+	# "src",
+	# "dst",
+	# "proto",
+	# "appi_name",
+	# "proxy_src_ip",
+	# "modbus_function_description",
+	# "scada_tag",
+    # "LinkProto",
+    # "NetworkProto",
+    # "TransportProto",
+    # "ApplicationProto",
 ]
 
 def encode_categorical_columns(df, numFeatures):
@@ -286,13 +294,18 @@ def to_xy(df, target, labeltypes, debug, binaryClasses):
     for x in df.columns:
         if x != target:
             result.append(x)           
+    
+    # TODO: target_type unused?
     # find out the type of the target column.  Is it really this hard? :(
-    target_type = df[target].dtypes
-    target_type = target_type[0] if hasattr(target_type, '__iter__') else target_type
+    #target_type = df[target].dtypes
+    #target_type = target_type[0] if hasattr(target_type, '__iter__') else target_type
     
     if debug:
         analyze(df)
     
+    return df[result].values.astype(np.float32), expand_y_values(df, target, labeltypes, debug, binaryClasses)
+
+def expand_y_values(df, target, labeltypes, debug, binaryClasses):
     values = df[target].values
 
     if binaryClasses:
@@ -303,8 +316,7 @@ def to_xy(df, target, labeltypes, debug, binaryClasses):
     if debug:
         print("y_vector", y_vector)
 
-    return df[result].values.astype(np.float32), y_vector
-
+    return y_vector
     
 def multi_class_expansion(values, labeltypes, debug):    
     y_vector = np.zeros((values.shape[0],len(labeltypes)))
@@ -508,7 +520,7 @@ def encode_columns(df, result_column, lstm, debug):
         with pd.option_context('display.max_rows', 10, 'display.max_columns', None):  # more options can be specified also
             print(df)
 
-def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, coreLayerSize, dropoutLayer, lstmBatchSize, wrapLayerSize, relu, binaryClasses, dnnBatchSize):
+def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, coreLayerSize, dropoutLayer, lstmBatchSize, wrapLayerSize, relu, binaryClasses, dnnBatchSize, output_bias):
 
     # softmax is the default for multi-class classifiers
     outputLayerActivation = "softmax"
@@ -650,7 +662,12 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
             model.add(Dropout(rate=0.5))
 
         # FINAL LAYER
-        model.add(Dense(output_dim, activation=outputLayerActivation))
+        if output_bias is not None:
+            output_bias = tf.keras.initializers.Constant(output_bias)
+            print("setting output_bias on last layer:", output_bias)
+            model.add(Dense(output_dim, activation=outputLayerActivation, bias_initializer=output_bias))
+        else:
+            model.add(Dense(output_dim, activation=outputLayerActivation))
 
     # metrics for model
     METRICS = [
@@ -662,6 +679,7 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
         keras.metrics.Precision(name='precision'),
         keras.metrics.Recall(name='recall'),
         keras.metrics.AUC(name='auc'),
+        keras.metrics.AUC(name='prc', curve='PR'), # precision-recall curve
     ]
 
     # compile model
@@ -673,3 +691,31 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
     )
 
     return model
+
+def plot_metrics(history, plotname):
+
+    print("plot_metrics", history)
+
+    mpl.rcParams['figure.figsize'] = (12, 10)
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    metrics = ['loss', 'prc', 'precision', 'recall']
+    for n, metric in enumerate(metrics):
+        name = metric.replace("_"," ").capitalize()
+        plt.subplot(2,2,n+1)
+        print("history.history[metric]",history.history[metric], "history.epoch", history.epoch)
+        plt.plot(history.epoch, history.history[metric], color=colors[0], label='Train')
+        plt.plot(history.epoch, history.history['val_'+metric],
+                color=colors[0], linestyle="--", label='Val')
+        plt.xlabel('Epoch')
+        plt.ylabel(name)
+        if metric == 'loss':
+            plt.ylim([0, plt.ylim()[1]])
+        elif metric == 'auc':
+            plt.ylim([0.8,1])
+        else:
+            plt.ylim([0,1])
+
+        plt.legend()
+    
+    plt.savefig(plotname + ".png")

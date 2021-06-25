@@ -26,19 +26,21 @@ import logging
 
 from sklearn.metrics import confusion_matrix
 from sklearn import metrics
+from keras.callbacks import EarlyStopping
 
 # cf_total is for summing up all of the confusion matrices from all of the separate files
 cf_total = None
 
-# because the data is split over multiple files
-# we need to implement early stopping ourselves
-# monitor = EarlyStopping(
-#     monitor='val_loss', 
-#     min_delta=1e-3, 
-#     patience=5, 
-#     verbose=1, 
-#     mode='auto'
-# )
+# Note: when the data is split over multiple files,
+# and the data is fed in batches,
+# we need to implement early stopping ourselves.
+early_stopping = EarlyStopping(
+     monitor='val_loss', 
+     min_delta=1e-3, 
+     patience=5, 
+     verbose=1, 
+     mode='auto'
+)
 min_delta = 1e-3
 patience = 3
 
@@ -119,33 +121,34 @@ def train_dnn(df, i, epoch, batch=0):
 
     if arguments.debug:
         print("[INFO] fitting model. xtrain.shape:", x_train.shape, "y_train.shape:", y_train.shape)
-    # history = model.fit(
-    #     x_train,
-    #     y_train,
-    #     validation_data=(x_test, y_test),
-    #     #callbacks=[monitor],
-    #     verbose=2,
-    #     epochs=1,
-    #     # The batch size defines the number of samples that will be propagated through the network.
-    #     # The smaller the batch the less accurate the estimate of the gradient will be.
-    #     # let tensorflow set this value for us
-    #     #batch_size=1000
-    # )
+    
+    history = model.fit(
+        x_train,
+        y_train,
+        validation_data=(x_test, y_test),
+        callbacks=[early_stopping],
+        verbose=1,
+        epochs=arguments.epochs,
+        # The batch size defines the number of samples that will be propagated through the network.
+        # The smaller the batch the less accurate the estimate of the gradient will be.
+        # let tensorflow set this value for us
+        batch_size=2048
+    )
 
-    history = model.train_on_batch(
-        x=x_train,
-        y=y_train,
-        return_dict=True,
-        #reset_metrics=False,
-    )
-    #print("history after training on batch", history)
-    history = model.test_on_batch(
-        x=x_test,
-        y=y_test,
-        return_dict=True,
-        #reset_metrics=False,
-    )
-    #print(history)
+    # history = model.train_on_batch(
+    #     x=x_train,
+    #     y=y_train,
+    #     return_dict=True,
+    #     #reset_metrics=False,
+    # )
+    # #print("history after training on batch", history)
+    # history = model.test_on_batch(
+    #     x=x_test,
+    #     y=y_test,
+    #     return_dict=True,
+    #     #reset_metrics=False,
+    # )
+    # #print(history)
 
 #    print('---------intermediate testing--------------')
 #    
@@ -395,9 +398,28 @@ def eval_dnn(df, sizeTrain):
 
     csv += str(dict(zip(unique, counts))) + ","
 
+    # metrics values in order:
+    # loss :  0.010494242422282696
+    # tp :  114633.0
+    # fp :  0.0
+    # tn :  114633.0
+    # fn :  0.0
+    # accuracy :  1.0
+    # precision :  1.0
+    # recall :  1.0
+    # auc :  1.0
+
+    precision = baseline_results[6]
+    recall = baseline_results[7]
+
+    # The traditional F-measure or balanced F-score (F1 score) is the harmonic mean of precision and recall: 
+    f1_score = 2 * ((precision*recall)/(precision+recall))
+
+    print("[INFO] F1 score:", f1_score)
+
     # TODO: append to logfile
-    # Epochs,File,Loss,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,AUC,Y_EVAL,Y_PRED,Time,SizeTrain,SizeEval,TestSize
-    print("=== CSV " + str(arguments.epochs) + "," + arguments.read + "," + csv + str(time.time() - start_time) + "," + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize))
+    # Epochs,File,Loss,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,AUC,Y_EVAL,Y_PRED,Time,SizeTrain,SizeEval,TestSize,F1
+    print("=== CSV " + str(arguments.epochs) + "," + arguments.read + "," + csv + str(time.time() - start_time) + "," + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score))
 # 
 #             print("y_test", np.sum(y_test,axis=0), np.sum(y_test,axis=1))
 
@@ -413,148 +435,124 @@ def eval_dnn(df, sizeTrain):
 #                 cf[i,j] += 1
 #             print(cf)
 
-def run_in_memory():
+def run_in_memory(df, df_score):
     leftover = None
     global patience
     global min_delta
-
-    for i in range(0, len(files), arguments.fileBatchSize):
-
-        print(colored("[INFO] loading file {}-{}/{}".format(i+1, i+arguments.fileBatchSize, len(files)), 'yellow'))
-        df_from_each_file = [readCSV(f) for f in files[i:(i+arguments.fileBatchSize)]]
-
-        # ValueError: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
-        if leftover is not None:
-            df_from_each_file.insert(0, leftover)
-
-        print("[INFO] concatenate the files")
-        df = pd.concat(df_from_each_file, ignore_index=True)
-   
-        print("[INFO] process df, shape:", df.shape)
-        if arguments.sample != None:
-            if arguments.sample > 1.0:
-                print("invalid sample rate")
-                exit(1)
-
-            if arguments.sample <= 0:
-                print("invalid sample rate")
-                exit(1)
-
-        if arguments.sample < 1.0:
-            print("[INFO] sampling", arguments.sample)
-            df = df.sample(frac=arguments.sample, replace=False)
-
-        if arguments.drop is not None:
-            for col in arguments.drop.split(","):
-                drop_col(col, df)
-
-        if not arguments.lstm:
-            print("[INFO] dropping all time related columns...")
-            # TODO: make field name configurable
-            drop_col('Timestamp', df)
-            drop_col('TimestampFirst', df)
-            drop_col('TimestampLast', df)
-
-        print("[INFO] columns:", df.columns)
-        if arguments.debug:
-            print("[INFO] analyze dataset:", df.shape)
-            analyze(df)
-
-        if arguments.zscoreUnixtime:
-            # TODO: make field name configurable
-            encode_numeric_zscore(df, "Timestamp")
-
-        if arguments.encodeColumns:
-            print("[INFO] Shape when encoding dataset:", df.shape)
-            encode_columns(df, arguments.resultColumn, arguments.lstm, arguments.debug)
-            print("[INFO] Shape AFTER encoding dataset:", df.shape)
-
-        if arguments.debug:
-            print("--------------AFTER DROPPING COLUMNS ----------------")
-            print("df.columns", df.columns, len(df.columns))
-            with pd.option_context('display.max_rows', 10, 'display.max_columns', None):  # more options can be specified also
-                print(df)
-
-        if arguments.encodeCategoricals:
-            print("[INFO] Shape when encoding dataset:", df.shape)
-            encode_categorical_columns(df, arguments.features)
-            print("[INFO] Shape AFTER encoding dataset:", df.shape) 
-
-        df_score = {}
-        if arguments.score:
-            
-            # Create a test/train split.
-            # by default, 25% of data is used for testing
-            # it can be configured using the test_size commandline flag
-            df, df_score = train_test_split(
-                df,
-                test_size=arguments.testSize,
-                #random_state=42, # TODO make configurable
-                shuffle=arguments.shuffle
-            )
-            print("df_train:", df.shape)
-            print("df_score:", df_score.shape, "test_size", arguments.testSize)
         
-        for epoch in range(arguments.epochs):
-            history = None
+    history = None
+    leftover = None
+
+    for epoch in range(arguments.epochs):
+        numEpoch = epoch+1   
+
+        for batch_size in range(0, df.shape[0], arguments.batchSize):
+
+            dfCopy = df[batch_size:batch_size+arguments.batchSize]
+
+            # skip leftover that does not reach batch size
+            if len(dfCopy.index) != arguments.batchSize:
+                leftover = dfCopy
+                continue
+
+            if arguments.debug:
+                print("[INFO] processing batch {}-{}/{}".format(batch_size, batch_size+arguments.batchSize, df.shape[0]))                    
+            
+            history = train_dnn(dfCopy, 0, numEpoch, batch=batch_size)
+            #history["epoch"] = numEpoch
             leftover = None
+    
+            if history is not None:
+                #currentLoss = history['loss']
+                lossValues = history.history['val_loss']
+                currentLoss = lossValues[-1]
+                #print("============== lossValues:", lossValues)
 
-            numEpoch = epoch+1   
+                #print(colored("[EPOCH] " + str(numEpoch) + " / " + str(arguments.epochs),'red') + " " + colored("[LOSS] " + str(currentLoss),'yellow'))
 
-            for batch_size in range(0, df.shape[0], arguments.batchSize):
+                # implement early stopping to avoid overfitting
+                # start checking the val_loss against the threshold after patience epochs
+                if epoch >= patience:
+                    #print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
+                    if currentLoss < min_delta:
 
-                dfCopy = df[batch_size:batch_size+arguments.batchSize]
+                        if arguments.saveModel:
+                            save_model(0, str(numEpoch), batch=batch_size)
+                        else:
+                            save_weights(0, str(numEpoch), batch=batch_size)
+                        print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
+                        print("EPOCH", numEpoch)
 
-                # skip leftover that does not reach batch size
-                if len(dfCopy.index) != arguments.batchSize:
-                    leftover = dfCopy
-                    continue
+                        plot_metrics(history, "train-metrics")
 
-                if arguments.debug:
-                    print("[INFO] processing batch {}-{}/{}".format(batch_size, batch_size+arguments.batchSize, df.shape[0]))                    
+                        # TODO 
+                        if arguments.score:
+                            eval_dnn(df_score, df.shape[0])
+                        
+                        exit(0)
+        
+        print(colored("[EPOCH] " + str(numEpoch) + " / " + str(arguments.epochs),'red') + " " + colored("[LOSS] " + str(currentLoss),'yellow'))
+
+        # save model or checkpoint after every epoch
+        if arguments.saveModel:
+            save_model(0, str(numEpoch), batch=0)
+        else:
+            save_weights(0, str(numEpoch), batch=0)
+    
+    print("all epochs done")
+    plot_metrics(history, "train-metrics")
+    
+    # TODO 
+    if arguments.score:
+        eval_dnn(df_score, df.shape[0])
+
+def run_in_memory_v2(df, df_score):
+    global patience
+    global min_delta
+    
+    history = train_dnn(df, 0, 0, batch=arguments.batchSize)
+    if history is not None:
+        #currentLoss = history['loss']
+        lossValues = history.history['val_loss']
+        currentLoss = lossValues[-1]
+        #print("============== lossValues:", lossValues)
+
+        #print(colored("[EPOCH] " + str(numEpoch) + " / " + str(arguments.epochs),'red') + " " + colored("[LOSS] " + str(currentLoss),'yellow'))
+
+        # TODO: implement via callback again
+        # implement early stopping to avoid overfitting
+        # start checking the val_loss against the threshold after patience epochs
+        # if epoch >= patience:
+        #     #print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
+        #     if currentLoss < min_delta:
+
+        #         if arguments.saveModel:
+        #             save_model(0, str(arguments.epochs), batch=batch_size)
+        #         else:
+        #             save_weights(0, str(arguments.epochs), batch=batch_size)
+        #         print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
+        #         print("EPOCH", arguments.epochs)
+
+        #         plot_metrics(history, "train-metrics")
+
+        #         # TODO 
+        #         if arguments.score:
+        #             eval_dnn(df_score, df.shape[0])
                 
-                history = train_dnn(dfCopy, i, numEpoch, batch=batch_size)
-                leftover = None
-        
-                if history is not None:
-                    currentLoss = history['loss']
-                    #currentLoss = lossValues[-1]
-                    #print("============== lossValues:", lossValues)
-
-                    #print(colored("[EPOCH] " + str(numEpoch) + " / " + str(arguments.epochs),'red') + " " + colored("[LOSS] " + str(currentLoss),'yellow'))
-
-                    # implement early stopping to avoid overfitting
-                    # start checking the val_loss against the threshold after patience epochs
-                    if epoch >= patience:
-                        #print("[CHECKING EARLY STOP]: currentLoss < min_delta ? =>", currentLoss, " < ", min_delta)
-                        if currentLoss < min_delta:
-
-                            if arguments.saveModel:
-                                save_model(0, str(numEpoch), batch=batch_size)
-                            else:
-                                save_weights(0, str(numEpoch), batch=batch_size)
-                            print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
-                            print("EPOCH", numEpoch)
-
-                            # TODO 
-                            if arguments.score:
-                                eval_dnn(df_score, df.shape[0])
-                            
-                            exit(0)
-            
-            print(colored("[EPOCH] " + str(numEpoch) + " / " + str(arguments.epochs),'red') + " " + colored("[LOSS] " + str(currentLoss),'yellow'))
-
-            # save model or checkpoint after every epoch
-            if arguments.saveModel:
-                save_model(0, str(numEpoch), batch=0)
-            else:
-                save_weights(0, str(numEpoch), batch=0)
-        
-        print("all epochs done")
-        
-        # TODO 
-        if arguments.score:
-            eval_dnn(df_score, df.shape[0])
+        #         exit(0)
+    
+    # save model or checkpoint
+    if arguments.saveModel:
+        save_model(0, str(arguments.epochs), batch=0)
+    else:
+        save_weights(0, str(arguments.epochs), batch=0)
+    
+    print("all epochs done")
+    plot_metrics(history, "train-metrics")
+    
+    # TODO 
+    if arguments.score:
+        eval_dnn(df_score, df.shape[0])
 
 buf_size = 512
 stop_count = 0
@@ -845,6 +843,109 @@ cf_total = np.zeros((classes_length, classes_length),dtype=np.int)
 
 print("[INFO] input shape", arguments.features-num_dropped-num_time_columns)
 
+initial_bias = None
+df_score = {}
+df = {}
+
+# in memory assumes that the entire dataset fits into memory.
+if arguments.mem:
+
+    # read everything into a single dataframe
+    df_from_each_file = [readCSV(f) for f in files]
+
+    print("[INFO] concatenate the files")
+    df = pd.concat(df_from_each_file, ignore_index=True)
+
+    print("[INFO] process df, shape:", df.shape)
+    if arguments.sample != None:
+        if arguments.sample > 1.0:
+            print("invalid sample rate")
+            exit(1)
+
+        if arguments.sample <= 0:
+            print("invalid sample rate")
+            exit(1)
+
+    if arguments.sample < 1.0:
+        print("[INFO] sampling", arguments.sample)
+        df = df.sample(frac=arguments.sample, replace=False)
+
+    if arguments.drop is not None:
+        for col in arguments.drop.split(","):
+            drop_col(col, df)
+
+    if not arguments.lstm:
+        print("[INFO] dropping all time related columns...")
+        # TODO: make field name configurable
+        drop_col('Timestamp', df)
+        drop_col('TimestampFirst', df)
+        drop_col('TimestampLast', df)
+
+    print("[INFO] columns:", df.columns)
+    if arguments.debug:
+        print("[INFO] analyze dataset:", df.shape)
+        analyze(df)
+
+    if arguments.zscoreUnixtime:
+        # TODO: make field name configurable
+        encode_numeric_zscore(df, "Timestamp")
+
+    if arguments.encodeColumns:
+        print("[INFO] Shape when encoding dataset:", df.shape)
+        encode_columns(df, arguments.resultColumn, arguments.lstm, arguments.debug)
+        print("[INFO] Shape AFTER encoding dataset:", df.shape)
+
+    if arguments.debug:
+        print("--------------AFTER DROPPING COLUMNS ----------------")
+        print("df.columns", df.columns, len(df.columns))
+        with pd.option_context('display.max_rows', 10, 'display.max_columns', None):  # more options can be specified also
+            print(df)
+
+    if arguments.encodeCategoricals:
+        print("[INFO] Shape when encoding dataset:", df.shape)
+        encode_categorical_columns(df, arguments.features)
+        print("[INFO] Shape AFTER encoding dataset:", df.shape) 
+
+    if arguments.score:
+        
+        # Create a test/train split.
+        # by default, 25% of data is used for testing
+        # it can be configured using the test_size commandline flag
+        df, df_score = train_test_split(
+            df,
+            test_size=arguments.testSize,
+            #random_state=42, # TODO make configurable
+            shuffle=arguments.shuffle
+        )
+        print("df_train:", df.shape)
+        print("df_score:", df_score.shape, "test_size", arguments.testSize)
+
+    ############# expand Y values for training split ########################
+
+    # convert to two dimensional arrays with Y values
+    y_values = expand_y_values(df, arguments.resultColumn, classes, arguments.debug, arguments.binaryClasses)
+            
+    # create array with 0 for normal and 1 for attack labels   
+    y = []
+    for arr in y_values:
+        if arr[0] == 1:
+            y.append(0)
+        else:
+            y.append(1)
+
+    # calculate negative and positive ratio
+    neg, pos = np.bincount(y)
+    total = neg + pos
+    print('Examples:\n    Total: {}\n    Positive: {} ({:.2f}% of total)\n'.format(
+        total, pos, 100 * pos / total))
+
+    # calculate initial bias to reduce number of epochs needed
+    # This way the model doesn't need to spend the first few epochs just learning that positive examples are unlikely. 
+    initial_bias = np.log([pos/neg])
+    print("initial_bias", initial_bias)
+
+    ###########################################
+
 # create network model
 model = create_dnn(
     # input shape: (num_features - dropped_features) [ - time_columns ]
@@ -860,7 +961,8 @@ model = create_dnn(
     arguments.wrapLayerSize,
     arguments.relu,
     arguments.binaryClasses,
-    arguments.dnnBatchSize
+    arguments.dnnBatchSize,
+    initial_bias
 )
 print("[INFO] created DNN")
 
@@ -869,7 +971,7 @@ try:
     if arguments.socket:
         run_socket()
     elif arguments.mem:
-        run_in_memory()
+        run_in_memory_v2(df, df_score)
     else:
         run()
 except: # catch *all* exceptions
