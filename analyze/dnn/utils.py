@@ -627,9 +627,6 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
             model.add(Dense(wrapLayerSize, input_dim=input_dim, kernel_initializer='normal'))
             model.add(LeakyReLU(alpha=0.3))
 
-        if dropoutLayer:
-            model.add(Dropout(rate=0.8))
-
         # add requested number of core layers
         for i in range(0, numCoreLayers):
             
@@ -639,9 +636,6 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
             else:
                 model.add(Dense(coreLayerSize, input_dim=input_dim, kernel_initializer='normal'))
                 model.add(LeakyReLU(alpha=0.3))
-            
-            if dropoutLayer:
-                model.add(Dropout(rate=0.5))
 
         if relu:
             model.add(Dense(wrapLayerSize, input_dim=input_dim, kernel_initializer='normal', activation="relu"))
@@ -649,6 +643,8 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
             model.add(Dense(wrapLayerSize, input_dim=input_dim, kernel_initializer='normal'))
             model.add(LeakyReLU(alpha=0.3))
         
+        # dropout layer used here seems to have the best effect after some quick test runs
+        # needs further experiments to confirm.
         if dropoutLayer:
             model.add(Dropout(rate=0.5))
 
@@ -658,8 +654,13 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
             model.add(Dense(1, kernel_initializer='normal'))
             model.add(LeakyReLU(alpha=0.3))
         
-        if dropoutLayer:
-            model.add(Dropout(rate=0.5))
+        # TODO: tensorflow tutorial shows adding dropout before the output layer, but this blogpost says otherwise:
+        # "Dropout may be implemented on any or all hidden layers in the network as well as the visible or input layer. It is not used on the output layer."
+        # src: https://machinelearningmastery.com/dropout-for-regularizing-deep-neural-networks/
+        # performance seems notably worse when using the dorpout layer here, so I disable that option for now.
+        # needs further experiments to confirm.
+        #if dropoutLayer:
+        #    model.add(Dropout(rate=0.5))
 
         # FINAL LAYER
         if output_bias is not None:
