@@ -20,6 +20,8 @@ from tensorflow.python.keras import layers
 from tensorflow.python.keras.layers import Input, Dense, Activation, Dropout, LeakyReLU
 from tensorflow.python.keras.models import Sequential
 
+import sklearn
+import seaborn as sns
 import numpy as np
 import pandas as pd
 import os
@@ -717,3 +719,49 @@ def plot_metrics(history, plotname):
         plt.legend()
     
     plt.savefig(plotname + ".png")
+
+from sklearn.metrics import confusion_matrix
+
+def plot_cm(labels, predictions, p=0.5):
+    
+    cm = confusion_matrix(labels, predictions > p)
+    plt.figure(figsize=(5,5))
+    sns.heatmap(cm, annot=True, fmt="d")
+    plt.title('Confusion matrix @{:.2f}'.format(p))
+    plt.ylabel('Actual label')
+    plt.xlabel('Predicted label')
+
+    print('Legitimate Connections Detected (True Negatives): ', cm[0][0])
+    print('Legitimate Connections Incorrectly Detected (False Positives): ', cm[0][1])
+    print('Malicious Connections Missed (False Negatives): ', cm[1][0])
+    print('Malicious Connections Detected (True Positives): ', cm[1][1])
+    print('Total Malicious Connections: ', np.sum(cm[1]))
+    
+    plt.savefig("confusion_matrix.png")
+
+# This plot is useful because it shows, at a glance, 
+# the range of performance the model can reach just by tuning the output threshold.
+def plot_roc(name, labels, predictions, **kwargs):
+    fp, tp, _ = sklearn.metrics.roc_curve(labels, predictions)
+
+    plt.plot(100*fp, 100*tp, label=name, linewidth=2, **kwargs)
+    plt.xlabel('False positives [%]')
+    plt.ylabel('True positives [%]')
+    plt.xlim([-0.5,20])
+    plt.ylim([80,100.5])
+    plt.grid(True)
+    ax = plt.gca()
+    ax.set_aspect('equal')
+
+def distribution_plot():
+    plt.figure(figsize=(5,5))
+    pos_df = pd.DataFrame(train_features[ bool_train_labels], columns=train_df.columns)
+    neg_df = pd.DataFrame(train_features[~bool_train_labels], columns=train_df.columns)
+
+    sns.jointplot(pos_df['V5'], pos_df['V6'],
+                kind='hex', xlim=(-5,5), ylim=(-5,5))
+    plt.suptitle("Positive distribution")
+
+    sns.jointplot(neg_df['V5'], neg_df['V6'],
+                kind='hex', xlim=(-5,5), ylim=(-5,5))
+    _ = plt.suptitle("Negative distribution")

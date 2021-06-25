@@ -436,6 +436,19 @@ def eval_dnn(df, sizeTrain):
     cf_total += cf
     print(cf_total)
 
+    # plot confusion matrix
+    plot_cm(y_eval, pred)
+
+    # plot ROC
+    mpl.rcParams['figure.figsize'] = (12, 10)
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    plt.figure(figsize=(5,5))   
+    # TODO: include baseline from training
+    #plot_roc("Train Baseline", y_train, train_predictions_baseline, color=colors[0])
+    plot_roc("Test Baseline", y_eval, pred, color=colors[0], linestyle='--')
+    plt.legend(loc='lower right')
+    plt.savefig("roc.png")
+
 #             cf = np.zeros((5,5))
 #             for i,j in zip(y_eval, pred):
 #                 cf[i,j] += 1
@@ -529,7 +542,7 @@ def run_in_memory_v2(df, df_score):
     
     # TODO 
     if arguments.score:
-        eval_dnn(df_score, df.shape[0])
+        eval_dnn(df_score, df.shape[0], )
 
 buf_size = 512
 stop_count = 0
