@@ -51,6 +51,8 @@ classes = [b'normal', b'infiltration']
 
 def train_dnn(df, i, epoch, batch=0):
 
+    global class_weight
+
     if arguments.debug:
         print("[INFO] breaking into predictors and prediction...")
     
@@ -128,6 +130,7 @@ def train_dnn(df, i, epoch, batch=0):
         validation_data=(x_test, y_test),
         callbacks=[early_stopping],
         verbose=1,
+        class_weight=class_weight,
         epochs=arguments.epochs,
         # The batch size defines the number of samples that will be propagated through the network.
         # The smaller the batch the less accurate the estimate of the gradient will be.
@@ -735,6 +738,8 @@ parser.add_argument('-dnnBatchSize', type=int, default=16, help='set dnn batch s
 parser.add_argument('-socket', type=bool, default=False, help='read data from unix socket')
 parser.add_argument('-mem', type=bool, default=False, help='hold entire data in memory to avoid re-reading it')
 parser.add_argument('-score', type=bool, default=False, help='run scoring on the configured share of the input data')
+parser.add_argument('-initialBias', type=bool, default=False, help='set the initial bias of the model based on ratio of positive and negative binary classes')
+parser.add_argument('-classWeights', type=bool, default=False, help='dynamically calculate class weights based on ratio of positive and negative binary classes')
 
 # parse commandline arguments
 arguments = parser.parse_args()
@@ -820,6 +825,7 @@ print("[INFO] input shape", arguments.features-num_dropped-num_time_columns)
 initial_bias = None
 df_score = {}
 df = {}
+class_weight = {}
 
 # in memory assumes that the entire dataset fits into memory.
 if arguments.mem:
@@ -913,10 +919,22 @@ if arguments.mem:
     print('Examples:\n    Total: {}\n    Positive: {} ({:.2f}% of total)\n'.format(
         total, pos, 100 * pos / total))
 
-    # calculate initial bias to reduce number of epochs needed
-    # This way the model doesn't need to spend the first few epochs just learning that positive examples are unlikely. 
-    initial_bias = np.log([pos/neg])
-    print("initial_bias", initial_bias)
+    if arguments.initialBias:
+        # calculate initial bias to reduce number of epochs needed
+        # This way the model doesn't need to spend the first few epochs just learning that positive examples are unlikely. 
+        initial_bias = np.log([pos/neg])
+        print("initial_bias", initial_bias)
+
+    if arguments.classWeights:
+        # Scaling by total/2 helps keep the loss to a similar magnitude.
+        # The sum of the weights of all examples stays the same.
+        weight_for_0 = (1 / neg) * (total / 2.0)
+        weight_for_1 = (1 / pos) * (total / 2.0)
+
+        class_weight = {0: weight_for_0, 1: weight_for_1}
+
+        print('Weight for class 0: {:.2f}'.format(weight_for_0))
+        print('Weight for class 1: {:.2f}'.format(weight_for_1))
 
     ###########################################
 
