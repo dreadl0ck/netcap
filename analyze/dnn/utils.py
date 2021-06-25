@@ -695,8 +695,6 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
 
 def plot_metrics(history, plotname):
 
-    print("plot_metrics", history)
-
     mpl.rcParams['figure.figsize'] = (12, 10)
     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
@@ -704,7 +702,6 @@ def plot_metrics(history, plotname):
     for n, metric in enumerate(metrics):
         name = metric.replace("_"," ").capitalize()
         plt.subplot(2,2,n+1)
-        print("history.history[metric]",history.history[metric], "history.epoch", history.epoch)
         plt.plot(history.epoch, history.history[metric], color=colors[0], label='Train')
         plt.plot(history.epoch, history.history['val_'+metric],
                 color=colors[0], linestyle="--", label='Val')
