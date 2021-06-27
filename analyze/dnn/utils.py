@@ -718,11 +718,24 @@ def plot_metrics(history, plotname):
 
         plt.legend()
     
-    plt.savefig(plotname + ".png")
+    plotname = check_path(plotname)
+    plt.savefig(plotname)
+
+def check_path(path):
+    # enumerate file names when the file exists already  
+    count = 1
+    if os.exists(path):
+        new_path = os.path.splitext(path)[0] + "-" + str(count) + ".png"
+        while not os.exists(new_path):
+            count++
+            new_path = os.path.splitext(path)[0] + "-" + str(count) + ".png"
+        path = new_path
+
+    return path
 
 from sklearn.metrics import confusion_matrix
 
-def plot_cm(labels, predictions, p=0.5):
+def plot_cm(labels, predictions, path, p=0.5):
     
     cm = confusion_matrix(labels, predictions > p)
     plt.figure(figsize=(5,5))
@@ -737,7 +750,8 @@ def plot_cm(labels, predictions, p=0.5):
     print('Malicious Connections Detected (True Positives): ', cm[1][1])
     print('Total Malicious Connections: ', np.sum(cm[1]))
     
-    plt.savefig("confusion_matrix.png")
+    path = check_path(path)
+    plt.savefig(path)
 
 # This plot is useful because it shows, at a glance, 
 # the range of performance the model can reach just by tuning the output threshold.
