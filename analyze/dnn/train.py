@@ -1,12 +1,5 @@
 #!/usr/bin/python3
 
-# Run LSTM, locally:
-# $ ./train.py -read data/TCP_labeled.csv -dimensionality 22 -class_amount 2 -sample 0.5 -lstm true
-# on server, 2019 SWaT dataset:
-# $ ./train.py -read */TCP_labeled.csv -dimensionality 22 -class_amount 2 -sample 0.5 -lstm true
-# on server, 2015 SWaT dataset:
-# $ ./train.py -read */*_labeled.csv -dimensionality XX -class_amount 2 -sample 0.5 -lstm true
-
 import argparse
 import pandas as pd
 import time
@@ -44,9 +37,15 @@ early_stopping = EarlyStopping(
 min_delta = 1e-3
 patience = 3
 
-# caution: when streaming data over unix socket 
+# run tensorboard: tensorboard --logdir=./logs
+tensorboard = tf.keras.callbacks.TensorBoard(log_dir="./logs")
+
+# caution: when streaming data over unix socket
 # can be overwritten via cmdline flags
 # Default uses two classes: binary classification
+# the first one is expected to be the normal class in the stats reporting logic.
+# the name of the second class does not matter when using binary classification, 
+# as all other values than normal one will be considered to belong to the positive class.
 classes = [b'normal', b'infiltration']
 
 def train_dnn(df, i, epoch, batch=0):
@@ -154,7 +153,7 @@ def train_dnn(df, i, epoch, batch=0):
         x_train,
         y_train,
         validation_data=(x_test, y_test),
-        callbacks=[early_stopping],
+        callbacks=[early_stopping,tensorboard],
         verbose=1,
         class_weight=class_weight,
         epochs=arguments.epochs,
@@ -343,7 +342,7 @@ def run():
                     print("EPOCH", epoch)
                     exit(0)
 
-def eval_dnn(df, sizeTrain):
+def eval_dnn(df, sizeTrain, history):
     global cf_total
     global model
 
@@ -444,17 +443,6 @@ def eval_dnn(df, sizeTrain):
 
     csv += '"=""' + str(dict(zip(unique, counts))) + '""",'
 
-    # metrics values in order:
-    # loss :  0.010494242422282696
-    # tp :  114633.0
-    # fp :  0.0
-    # tn :  114633.0
-    # fn :  0.0
-    # accuracy :  1.0
-    # precision :  1.0
-    # recall :  1.0
-    # auc :  1.0
-
     precision = baseline_results[6]
     recall = baseline_results[7]
 
@@ -464,8 +452,8 @@ def eval_dnn(df, sizeTrain):
     print("[INFO] F1 score:", f1_score)
 
     # TODO: append to logfile
-    # Epochs,File,Time,Loss,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,AUC,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1
-    print("=== CSV " + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score))
+    # StopEpoch,MaxEpochs,File,Time,Loss,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,AUC,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1
+    print("=== CSV " + str(len(history.epoch)) + "," + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score))
 
     # print("y_test", np.sum(y_test,axis=0), np.sum(y_test,axis=1))
 
@@ -481,8 +469,13 @@ def eval_dnn(df, sizeTrain):
     cf_total += cf
     print(cf_total)
 
+    dirname = os.path.dirname(arguments.read)
+    if dirname == "":
+        # use current dir if empty
+        dirname = "."
+
     # plot confusion matrix
-    plot_cm(y_eval, pred)
+    plot_cm(y_eval, pred, dirname + "/" + os.path.basename(arguments.read) + "-confusion-matrix.png")
 
     # plot ROC
     mpl.rcParams['figure.figsize'] = (12, 10)
@@ -492,7 +485,7 @@ def eval_dnn(df, sizeTrain):
     #plot_roc("Train Baseline", y_train, train_predictions_baseline, color=colors[0])
     plot_roc("Test Baseline", y_eval, pred, color=colors[0], linestyle='--')
     plt.legend(loc='lower right')
-    plt.savefig("roc.png")
+    plt.savefig(check_path(dirname + "/" + os.path.basename(arguments.read) + "-roc.png"))
 
 #             cf = np.zeros((5,5))
 #             for i,j in zip(y_eval, pred):
@@ -547,11 +540,9 @@ def run_in_memory(df, df_score):
                         print("[STOPPING EARLY]: currentLoss < min_delta =>", currentLoss, " < ", min_delta)
                         print("EPOCH", numEpoch)
 
-                        plot_metrics(history, "train-metrics")
-
                         # TODO 
                         if arguments.score:
-                            eval_dnn(df_score, df.shape[0])
+                            eval_dnn(df_score, df.shape[0], history)
                         
                         exit(0)
         
@@ -564,11 +555,9 @@ def run_in_memory(df, df_score):
             save_weights(0, str(numEpoch), batch=0)
     
     print("all epochs done")
-    plot_metrics(history, "train-metrics")
-    
-    # TODO 
+
     if arguments.score:
-        eval_dnn(df_score, df.shape[0])
+        eval_dnn(df_score, df.shape[0], history)
 
 def run_in_memory_v2(df, df_score):
     global patience
@@ -582,12 +571,15 @@ def run_in_memory_v2(df, df_score):
     else:
         save_weights(0, str(arguments.epochs), batch=0)
     
-    print("all epochs done")
-    plot_metrics(history, "train-metrics")
+    dirname = os.path.dirname(arguments.read)
+    if dirname == "":
+        # use current dir if empty
+        dirname = "."
+
+    plot_metrics(history, dirname + "/" + os.path.basename(arguments.read) + "-train-metrics.png")
     
-    # TODO 
     if arguments.score:
-        eval_dnn(df_score, df.shape[0], )
+        eval_dnn(df_score, df.shape[0], history)
 
 buf_size = 512
 stop_count = 0
