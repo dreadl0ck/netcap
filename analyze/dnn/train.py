@@ -146,6 +146,8 @@ def train_dnn(df, i, epoch, batch=0):
     if arguments.debug:
         print("[INFO] fitting model. xtrain.shape:", x_train.shape, "y_train.shape:", y_train.shape)
     
+    print("====> x_train", x_train)
+
     history = model.fit(
         x_train,
         y_train,
@@ -475,14 +477,16 @@ def eval_dnn(df, sizeTrain, history):
     plot_cm(y_eval, pred, dirname + "/" + os.path.basename(arguments.read) + "-confusion-matrix.png")
 
     # plot ROC
-    mpl.rcParams['figure.figsize'] = (12, 10)
-    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-    plt.figure(figsize=(5,5))   
-    # TODO: include baseline from training
-    #plot_roc("Train Baseline", y_train, train_predictions_baseline, color=colors[0])
-    plot_roc("Test Baseline", y_eval, pred, color=colors[0], linestyle='--')
-    plt.legend(loc='lower right')
-    plt.savefig(check_path(dirname + "/" + os.path.basename(arguments.read) + "-roc.png", "png"))
+    # only supported for binary labels
+    if len(classes) == 2:
+        mpl.rcParams['figure.figsize'] = (12, 10)
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        plt.figure(figsize=(5,5))   
+        # TODO: include baseline from training
+        #plot_roc("Train Baseline", y_train, train_predictions_baseline, color=colors[0])
+        plot_roc("Test Baseline", y_eval, pred, color=colors[0], linestyle='--')
+        plt.legend(loc='lower right')
+        plt.savefig(check_path(dirname + "/" + os.path.basename(arguments.read) + "-roc.png", "png"))
 
 #             cf = np.zeros((5,5))
 #             for i,j in zip(y_eval, pred):
@@ -754,6 +758,8 @@ def process_dataframe(df, i, epoch):
 parser = argparse.ArgumentParser(description='NETCAP compatible implementation of Network Anomaly Detection with a Deep Neural Network and TensorFlow')
 
 # add commandline flags
+# CAREFUL: when creating boolean flags, set action="store_true" and set the default=False
+# if using default=True, the value can't be disabled from the cli anymore... 
 parser.add_argument('-read', type=str, help='Regex to find all labeled input CSV file to read from (required)')
 parser.add_argument('-drop', type=str, help='optionally drop specified columns, supply multiple with comma')
 parser.add_argument('-sample', type=float, default=1.0, help='optionally sample only a fraction of records')
@@ -767,26 +773,26 @@ parser.add_argument('-features', type=int, required=True, help='The amount of co
 parser.add_argument('-fileBatchSize', type=int, default=50, help='The amount of files to be read in')
 parser.add_argument('-epochs', type=int, default=2500, help='The amount of epochs. (default: 1)')
 parser.add_argument('-numCoreLayers', type=int, default=1, help='set number of core layers to use')
-parser.add_argument('-shuffle', default=False, help='shuffle data before feeding it to the DNN')
-parser.add_argument('-dropoutLayer', default=False, help='insert a dropout layer at the end')
+parser.add_argument('-shuffle', action='store_true', default=False, help='shuffle data before feeding it to the DNN')
+parser.add_argument('-dropoutLayer', action='store_true', default=False, help='insert a dropout layer at the end')
 parser.add_argument('-coreLayerSize', type=int, default=4, help='size of an DNN core layer')
 parser.add_argument('-wrapLayerSize', type=int, default=2, help='size of the first and last DNN layer')
-parser.add_argument('-lstm', default=False, help='use a LSTM network')
+parser.add_argument('-lstm', action='store_true', default=False, help='use a LSTM network')
 parser.add_argument('-batchSize', type=int, default=256000, help='chunks of records read from CSV')
-parser.add_argument('-debug', default=False, help='debug mode on off')
-parser.add_argument('-zscoreUnixtime', default=False, help='apply zscore to unixtime column')
-parser.add_argument('-encodeColumns', default=False, help='switch between auto encoding or using a fully encoded dataset')
+parser.add_argument('-debug', action='store_true', default=False, help='debug mode on off')
+parser.add_argument('-zscoreUnixtime', action='store_true', default=False, help='apply zscore to unixtime column')
+parser.add_argument('-encodeColumns', action='store_true', default=False, help='switch between auto encoding or using a fully encoded dataset')
 parser.add_argument('-classes', type=str, help='supply one or multiple comma separated class identifiers')
-parser.add_argument('-saveModel', default=True, help='save model (if false, only the weights will be saved)')
-parser.add_argument('-binaryClasses', default=True, help='use binary classses')
-parser.add_argument('-relu', default=False, help='use ReLU activation function (default: LeakyReLU)')
-parser.add_argument('-encodeCategoricals', type=bool, default=False, help='encode categorical with one hot strategy')
+parser.add_argument('-saveModel', type=bool, default=True, help='save model (if false, only the weights will be saved)')
+parser.add_argument('-binaryClasses', default=False, action='store_true', help='use binary classes')
+parser.add_argument('-relu', action='store_true', default=False, help='use ReLU activation function (default: LeakyReLU)')
+parser.add_argument('-encodeCategoricals', action='store_true', default=False, help='encode categorical with one hot strategy')
 parser.add_argument('-dnnBatchSize', type=int, default=16, help='set dnn batch size')
-parser.add_argument('-socket', type=bool, default=False, help='read data from unix socket')
-parser.add_argument('-mem', type=bool, default=False, help='hold entire data in memory to avoid re-reading it')
-parser.add_argument('-score', type=bool, default=False, help='run scoring on the configured share of the input data')
-parser.add_argument('-initialBias', type=bool, default=False, help='set the initial bias of the model based on ratio of positive and negative binary classes')
-parser.add_argument('-classWeights', type=bool, default=False, help='dynamically calculate class weights based on ratio of positive and negative binary classes')
+parser.add_argument('-socket', action='store_true', default=False, help='read data from unix socket')
+parser.add_argument('-mem', action='store_true', default=False, help='hold entire data in memory to avoid re-reading it')
+parser.add_argument('-score', action='store_true', default=False, help='run scoring on the configured share of the input data')
+parser.add_argument('-initialBias', action='store_true', default=False, help='set the initial bias of the model based on ratio of positive and negative binary classes')
+parser.add_argument('-classWeights', action='store_true', default=False, help='dynamically calculate class weights based on ratio of positive and negative binary classes')
 
 # parse commandline arguments
 arguments = parser.parse_args()
@@ -794,6 +800,7 @@ arguments = parser.parse_args()
 # wtf why is encodeCategoricals always True, I've set default=False x)
 #print("") # newline to break from netcap status log msg when debugging
 #print("encodeCategoricals", arguments.encodeCategoricals)
+print("binaryClasses", arguments.binaryClasses)
 #arguments.encodeCategoricals = False
 #print("encodeCategoricals", arguments.encodeCategoricals)
 
@@ -837,6 +844,9 @@ else:
 classes = newClasses
 print("classes after type update", classes)
 
+if len(classes) > 2:
+    arguments.binaryClasses = False
+
 # run tensorboard: tensorboard --logdir=./logs
 # the tool is not in the $PATH by default, its located in the tensorboard package: $HOME/.local/lib/python3.9/site-packages/tensorboard/main.py
 tb_out = check_path("./tensorboard-" + os.path.splitext(os.path.basename(arguments.read))[0], "")
@@ -857,7 +867,7 @@ if not arguments.socket:
         print("[INFO] no files matched")
         exit(1)
 
-if not arguments.binaryClasses:
+if arguments.binaryClasses is False:
     print("MULTI-CLASS", "num classes:", len(classes), classes)
 
 # we need to include the dropped time columns for non LSTM DNNs in the specified input shape when creating the model.

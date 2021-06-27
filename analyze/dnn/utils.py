@@ -527,7 +527,7 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
     # softmax is the default for multi-class classifiers
     outputLayerActivation = "softmax"
 
-    if binaryClasses:
+    if binaryClasses is True:
         loss = "binary_crossentropy"
         output_dim = 2
         outputLayerActivation = "sigmoid"
@@ -693,6 +693,8 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
         metrics=METRICS
     )
 
+    model.summary()
+
     return model
 
 def plot_metrics(history, plotname):
@@ -730,7 +732,8 @@ def check_path(path, ext):
     count = 1
     if os.path.exists(path):
         new_path = os.path.splitext(path)[0] + "-" + str(count) + ext 
-        while not os.path.exists(new_path):
+        while os.path.exists(new_path):
+            print(new_path, "does exist")
             count += 1
             new_path = os.path.splitext(path)[0] + "-" + str(count) + ext
         path = new_path
