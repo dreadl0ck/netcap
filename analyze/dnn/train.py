@@ -53,7 +53,7 @@ def train_dnn(df, i, epoch, batch=0):
         print("[INFO] breaking into predictors and prediction...")
     
     # Break into X (predictors) & y (prediction)
-    x, y = to_xy(df, arguments.resultColumn, classes, arguments.debug, arguments.binaryClasses)
+    x, y = to_xy(df, arguments.resultColumn, classes, arguments.debug, len(classes)>2)
 
     if arguments.debug:
         print("[INFO] creating train/test split:", arguments.testSize)
@@ -355,7 +355,7 @@ def eval_dnn(df, sizeTrain, history):
         drop_col('TimestampFirst', df)
         drop_col('TimestampLast', df)
 
-    x_test, y_test = to_xy(df, arguments.resultColumn, classes, arguments.debug, arguments.binaryClasses)
+    x_test, y_test = to_xy(df, arguments.resultColumn, classes, arguments.debug, len(classes)>2)
     #print("x_test", x_test, "shape", x_test.shape)
     #np.set_printoptions(threshold=sys.maxsize)
     #print("y_test", y_test, "shape", y_test.shape)
@@ -784,7 +784,6 @@ parser.add_argument('-zscoreUnixtime', action='store_true', default=False, help=
 parser.add_argument('-encodeColumns', action='store_true', default=False, help='switch between auto encoding or using a fully encoded dataset')
 parser.add_argument('-classes', type=str, help='supply one or multiple comma separated class identifiers')
 parser.add_argument('-saveModel', type=bool, default=True, help='save model (if false, only the weights will be saved)')
-parser.add_argument('-binaryClasses', default=False, action='store_true', help='use binary classes')
 parser.add_argument('-relu', action='store_true', default=False, help='use ReLU activation function (default: LeakyReLU)')
 parser.add_argument('-encodeCategoricals', action='store_true', default=False, help='encode categorical with one hot strategy')
 parser.add_argument('-dnnBatchSize', type=int, default=16, help='set dnn batch size')
@@ -797,22 +796,10 @@ parser.add_argument('-classWeights', action='store_true', default=False, help='d
 # parse commandline arguments
 arguments = parser.parse_args()
 
-# wtf why is encodeCategoricals always True, I've set default=False x)
-#print("") # newline to break from netcap status log msg when debugging
-#print("encodeCategoricals", arguments.encodeCategoricals)
-print("binaryClasses", arguments.binaryClasses)
-#arguments.encodeCategoricals = False
-#print("encodeCategoricals", arguments.encodeCategoricals)
-
 if not arguments.socket:
     if arguments.read is None:
         print("[INFO] need an input file / multi file regex. use the -read flag")
         exit(1)
-
-if arguments.binaryClasses:
-    # TODO: make configurable
-    classes = [b'normal', b'infiltration']
-    print("classes", classes)
 
 if arguments.classes is not None:
     classes = arguments.classes.split(',')
@@ -844,9 +831,6 @@ else:
 classes = newClasses
 print("classes after type update", classes)
 
-if len(classes) > 2:
-    arguments.binaryClasses = False
-
 # run tensorboard: tensorboard --logdir=./logs
 # the tool is not in the $PATH by default, its located in the tensorboard package: $HOME/.local/lib/python3.9/site-packages/tensorboard/main.py
 tb_out = check_path("./tensorboard-" + os.path.splitext(os.path.basename(arguments.read))[0], "")
@@ -867,7 +851,7 @@ if not arguments.socket:
         print("[INFO] no files matched")
         exit(1)
 
-if arguments.binaryClasses is False:
+if len(classes > 2):
     print("MULTI-CLASS", "num classes:", len(classes), classes)
 
 # we need to include the dropped time columns for non LSTM DNNs in the specified input shape when creating the model.
@@ -968,7 +952,7 @@ if arguments.mem:
     ############# expand Y values for training split ########################
 
     # convert to two dimensional arrays with Y values
-    y_values = expand_y_values(df, arguments.resultColumn, classes, arguments.debug, arguments.binaryClasses)
+    y_values = expand_y_values(df, arguments.resultColumn, classes, arguments.debug, len(classes)>2)
             
     # create array with 0 for normal and 1 for attack labels   
     y = []
@@ -1017,7 +1001,7 @@ model = create_dnn(
     arguments.batchSize,
     arguments.wrapLayerSize,
     arguments.relu,
-    arguments.binaryClasses,
+    len(classes) > 2,
     arguments.dnnBatchSize,
     initial_bias
 )
