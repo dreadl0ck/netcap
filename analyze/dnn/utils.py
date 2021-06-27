@@ -718,17 +718,21 @@ def plot_metrics(history, plotname):
 
         plt.legend()
     
-    plotname = check_path(plotname)
+    plotname = check_path(plotname, "png")
     plt.savefig(plotname)
 
-def check_path(path):
+def check_path(path, ext):
+
+    if ext != "":
+        ext = "." + ext
+
     # enumerate file names when the file exists already  
     count = 1
-    if os.exists(path):
-        new_path = os.path.splitext(path)[0] + "-" + str(count) + ".png"
-        while not os.exists(new_path):
-            count++
-            new_path = os.path.splitext(path)[0] + "-" + str(count) + ".png"
+    if os.path.exists(path):
+        new_path = os.path.splitext(path)[0] + "-" + str(count) + ext 
+        while not os.path.exists(new_path):
+            count += 1
+            new_path = os.path.splitext(path)[0] + "-" + str(count) + ext
         path = new_path
 
     return path
@@ -750,7 +754,7 @@ def plot_cm(labels, predictions, path, p=0.5):
     print('Malicious Connections Detected (True Positives): ', cm[1][1])
     print('Total Malicious Connections: ', np.sum(cm[1]))
     
-    path = check_path(path)
+    path = check_path(path, "png")
     plt.savefig(path)
 
 # This plot is useful because it shows, at a glance, 
