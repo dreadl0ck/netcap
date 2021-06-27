@@ -37,9 +37,6 @@ early_stopping = EarlyStopping(
 min_delta = 1e-3
 patience = 3
 
-# run tensorboard: tensorboard --logdir=./logs
-tensorboard = tf.keras.callbacks.TensorBoard(log_dir="./logs")
-
 # caution: when streaming data over unix socket
 # can be overwritten via cmdline flags
 # Default uses two classes: binary classification
@@ -485,7 +482,7 @@ def eval_dnn(df, sizeTrain, history):
     #plot_roc("Train Baseline", y_train, train_predictions_baseline, color=colors[0])
     plot_roc("Test Baseline", y_eval, pred, color=colors[0], linestyle='--')
     plt.legend(loc='lower right')
-    plt.savefig(check_path(dirname + "/" + os.path.basename(arguments.read) + "-roc.png"))
+    plt.savefig(check_path(dirname + "/" + os.path.basename(arguments.read) + "-roc.png"), "png")
 
 #             cf = np.zeros((5,5))
 #             for i,j in zip(y_eval, pred):
@@ -840,8 +837,13 @@ else:
 classes = newClasses
 print("classes after type update", classes)
 
+# run tensorboard: tensorboard --logdir=./logs
+tb_out = check_path("./tensorboard-" + os.path.splitext(os.path.basename(arguments.read))[0], "")
+print("tensorboard log output directory:", tb_out)
+tensorboard = tf.keras.callbacks.TensorBoard(log_dir=tb_out)
+
 print("=================================================")
-print("        TRAINING v0.4.5")
+print("        TRAINING v0.5.0")
 print("=================================================")
 print("Date:", datetime.datetime.now())
 start_time = time.time()
