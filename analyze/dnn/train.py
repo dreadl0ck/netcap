@@ -851,7 +851,7 @@ if not arguments.socket:
         print("[INFO] no files matched")
         exit(1)
 
-if len(classes > 2):
+if len(classes) > 2:
     print("MULTI-CLASS", "num classes:", len(classes), classes)
 
 # we need to include the dropped time columns for non LSTM DNNs in the specified input shape when creating the model.
