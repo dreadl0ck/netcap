@@ -53,7 +53,7 @@ def train_dnn(df, i, epoch, batch=0):
         print("[INFO] breaking into predictors and prediction...")
     
     # Break into X (predictors) & y (prediction)
-    x, y = to_xy(df, arguments.resultColumn, classes, arguments.debug, len(classes)>2)
+    x, y = to_xy(df, arguments.resultColumn, classes, arguments.debug, len(classes)==2)
 
     if arguments.debug:
         print("[INFO] creating train/test split:", arguments.testSize)
@@ -355,7 +355,7 @@ def eval_dnn(df, sizeTrain, history):
         drop_col('TimestampFirst', df)
         drop_col('TimestampLast', df)
 
-    x_test, y_test = to_xy(df, arguments.resultColumn, classes, arguments.debug, len(classes)>2)
+    x_test, y_test = to_xy(df, arguments.resultColumn, classes, arguments.debug, len(classes)==2)
     #print("x_test", x_test, "shape", x_test.shape)
     #np.set_printoptions(threshold=sys.maxsize)
     #print("y_test", y_test, "shape", y_test.shape)
@@ -952,7 +952,7 @@ if arguments.mem:
     ############# expand Y values for training split ########################
 
     # convert to two dimensional arrays with Y values
-    y_values = expand_y_values(df, arguments.resultColumn, classes, arguments.debug, len(classes)>2)
+    y_values = expand_y_values(df, arguments.resultColumn, classes, arguments.debug, len(classes)==2)
             
     # create array with 0 for normal and 1 for attack labels   
     y = []
@@ -975,6 +975,7 @@ if arguments.mem:
         print("initial_bias", initial_bias)
 
     if arguments.classWeights:
+        # TODO: handle multiple classes
         # Scaling by total/2 helps keep the loss to a similar magnitude.
         # The sum of the weights of all examples stays the same.
         weight_for_0 = (1 / neg) * (total / 2.0)
@@ -1001,7 +1002,7 @@ model = create_dnn(
     arguments.batchSize,
     arguments.wrapLayerSize,
     arguments.relu,
-    len(classes) > 2,
+    len(classes) == 2,
     arguments.dnnBatchSize,
     initial_bias
 )

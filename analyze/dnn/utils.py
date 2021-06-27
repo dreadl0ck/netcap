@@ -527,7 +527,8 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
     # softmax is the default for multi-class classifiers
     outputLayerActivation = "softmax"
 
-    if binaryClasses is True:
+    print("==> binaryClasses", binaryClasses)
+    if binaryClasses:
         loss = "binary_crossentropy"
         output_dim = 2
         outputLayerActivation = "sigmoid"
