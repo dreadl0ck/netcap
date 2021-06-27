@@ -482,7 +482,7 @@ def eval_dnn(df, sizeTrain, history):
     #plot_roc("Train Baseline", y_train, train_predictions_baseline, color=colors[0])
     plot_roc("Test Baseline", y_eval, pred, color=colors[0], linestyle='--')
     plt.legend(loc='lower right')
-    plt.savefig(check_path(dirname + "/" + os.path.basename(arguments.read) + "-roc.png"), "png")
+    plt.savefig(check_path(dirname + "/" + os.path.basename(arguments.read) + "-roc.png", "png"))
 
 #             cf = np.zeros((5,5))
 #             for i,j in zip(y_eval, pred):
@@ -838,6 +838,7 @@ classes = newClasses
 print("classes after type update", classes)
 
 # run tensorboard: tensorboard --logdir=./logs
+# the tool is not in the $PATH by default, its located in the tensorboard package: $HOME/.local/lib/python3.9/site-packages/tensorboard/main.py
 tb_out = check_path("./tensorboard-" + os.path.splitext(os.path.basename(arguments.read))[0], "")
 print("tensorboard log output directory:", tb_out)
 tensorboard = tf.keras.callbacks.TensorBoard(log_dir=tb_out)
