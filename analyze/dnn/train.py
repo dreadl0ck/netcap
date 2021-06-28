@@ -5,6 +5,7 @@ import pandas as pd
 import time
 import traceback
 import datetime
+import math
 
 from utils import * 
 from glob import glob
@@ -30,12 +31,13 @@ cf_total = None
 # and the data is fed in batches,
 # we need to implement early stopping ourselves.
 early_stopping = EarlyStopping(
-     monitor='val_loss', 
-     min_delta=1e-3, 
-     patience=3, 
-     verbose=1, 
-     mode='auto',
-     restore_best_weights=True
+    monitor='val_loss', 
+    min_delta=1e-3, 
+    patience=3, 
+    verbose=1, 
+    mode='auto',
+    # TODO: make configurable, as this causes quite some delay and higher RAM usage
+    restore_best_weights=True
 )
 
 # TODO: only used for manual early stop checking when using batching
@@ -403,27 +405,30 @@ def eval_dnn(df, sizeTrain, history, model):
             print("y_test.shape", y_test.shape)
 
 
-    print("y_test", y_test, "unique", np.unique(y_test), "len(x_test)", len(x_test), "len(y_test)", len(y_test))
-
-    print("============== [INFO] EVALUATE =====================")
-    baseline_results = model.evaluate(
-        x_test,
-        y_test,
-        verbose=1
-    )
-    print("===================================================")
-
     csv = ""
-    try:
-        for name, value in zip(model.metrics_names, baseline_results):
-            print(name, ': ', value)
-            csv += str(value) + ","
-        print()
-    except TypeError:
-        pass
+    #print("y_test", y_test, "unique", np.unique(y_test), "len(x_test)", len(x_test), "len(y_test)", len(y_test))
+    # print("============== [INFO] EVALUATE =====================")
+    # baseline_results = model.evaluate(
+    #     x_test,
+    #     y_test,
+    #     verbose=1
+    # )
+    # print("===================================================")
+
+    # try:
+    #     for name, value in zip(model.metrics_names, baseline_results):
+    #         print(name, ': ', value)
+    #         csv += str(value) + ","
+    #     print()
+    # except TypeError:
+    #     pass
 
     print("============== [INFO] PREDICT =====================")
-    pred = model.predict(x_test,verbose=1)
+    pred = model.predict(
+        x_test,
+        verbose=1,
+        callbacks=[tensorboard]
+    )
 
     # TODO: for LSTM, suddenly there are mutliple classes even when using binary classification? shaping problems? y vectors for training and evaluation seem correct...
     print("===================== PREDICTION ==============================")
@@ -457,18 +462,6 @@ def eval_dnn(df, sizeTrain, history, model):
 
     csv += '"=""' + str(dict(zip(unique, counts))) + '""",'
 
-    precision = baseline_results[6]
-    recall = baseline_results[7]
-
-    # The traditional F-measure or balanced F-score (F1 score) is the harmonic mean of precision and recall: 
-    f1_score = 2 * ((precision*recall)/(precision+recall))
-
-    print("[INFO] F1 score:", f1_score)
-
-    # TODO: append to logfile
-    # StopEpoch,MaxEpochs,File,Time,Loss,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,AUC,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1
-    print("=== CSV " + str(len(history.epoch)) + "," + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score))
-
     # print("y_test", np.sum(y_test,axis=0), np.sum(y_test,axis=1))
 
     if arguments.lstm:
@@ -476,12 +469,44 @@ def eval_dnn(df, sizeTrain, history, model):
         print("y_eval", len(y_eval), "pred", len(pred))
         print("y_eval", y_eval, "pred", pred)
 
-    cf = confusion_matrix(y_eval,pred,labels=np.arange(len(classes)))
+    cm = confusion_matrix(y_eval,pred,labels=np.arange(len(classes)))
     print("[INFO] confusion matrix for file ")
-    print(cf)
-    print("[INFO] confusion matrix after adding it to total:")
-    cf_total += cf
-    print(cf_total)
+    print(cm)
+    
+    print('Legitimate Connections Detected (True Negatives): ', cm[0][0])
+    print('Legitimate Connections Incorrectly Detected (False Positives): ', cm[0][1])
+    print('Malicious Connections Missed (False Negatives): ', cm[1][0])
+    print('Malicious Connections Detected (True Positives): ', cm[1][1])
+    print('Total Malicious Connections: ', np.sum(cm[1]))
+
+    tn = cm[0][0]
+    tp = cm[1][1]
+    fp = cm[0][1]
+    fn = cm[1][0]
+
+    print("tn=", tn)
+    print("tp=", tp)
+    print("fp=", fp)
+    print("fn=", fn)
+
+    # CSV fields: Loss,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,AUC
+    csv = str(tn) + "," + str(tp) + "," + str(fp) + "," + str(fn) + ","
+
+    # calculate recall and prec
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+
+    # The traditional F-measure or balanced F-score (F1 score) is the harmonic mean of precision and recall: 
+    f1_score = 2 * ((precision*recall)/(precision+recall))
+
+    if math.isnan(f1_score):
+        f1_score = 0
+
+    print("[INFO] F1 score:", f1_score)
+
+    # TODO: append to logfile
+    # StopEpoch,MaxEpochs,File,Time,CSV fields,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1
+    print("=== CSV " + str(len(history.epoch)) + "," + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score))
 
     dirname = os.path.dirname(arguments.read)
     if dirname == "":
@@ -489,7 +514,7 @@ def eval_dnn(df, sizeTrain, history, model):
         dirname = "."
 
     # plot confusion matrix
-    plot_cm(y_eval, pred, dirname + "/" + os.path.basename(arguments.read) + "-confusion-matrix.png")
+    plot_cm(cm, dirname + "/" + os.path.basename(arguments.read) + "-confusion-matrix.png")
 
     # plot ROC
     # only supported for binary labels

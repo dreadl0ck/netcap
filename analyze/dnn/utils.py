@@ -744,20 +744,13 @@ def check_path(path, ext):
 
 from sklearn.metrics import confusion_matrix
 
-def plot_cm(labels, predictions, path, p=0.5):
+def plot_cm(cm, path, p=0.5):
     
-    cm = confusion_matrix(labels, predictions > p)
     plt.figure(figsize=(5,5))
     sns.heatmap(cm, annot=True, fmt="d")
     plt.title('Confusion matrix @{:.2f}'.format(p))
     plt.ylabel('Actual label')
     plt.xlabel('Predicted label')
-
-    print('Legitimate Connections Detected (True Negatives): ', cm[0][0])
-    print('Legitimate Connections Incorrectly Detected (False Positives): ', cm[0][1])
-    print('Malicious Connections Missed (False Negatives): ', cm[1][0])
-    print('Malicious Connections Detected (True Positives): ', cm[1][1])
-    print('Total Malicious Connections: ', np.sum(cm[1]))
     
     path = check_path(path, "png")
     plt.savefig(path)
