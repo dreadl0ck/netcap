@@ -19,7 +19,9 @@ import logging
 
 from sklearn.metrics import confusion_matrix
 from sklearn import metrics
-from keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping
+
+#from tensorflow.keras.callbacks import EarlyStopping
 
 # cf_total is for summing up all of the confusion matrices from all of the separate files
 cf_total = None
@@ -30,10 +32,13 @@ cf_total = None
 early_stopping = EarlyStopping(
      monitor='val_loss', 
      min_delta=1e-3, 
-     patience=20, 
+     patience=3, 
      verbose=1, 
-     mode='auto'
+     mode='auto',
+     restore_best_weights=True
 )
+
+# TODO: only used for manual early stop checking when using batching
 min_delta = 1e-3
 patience = 3
 
@@ -45,7 +50,7 @@ patience = 3
 # as all other values than normal one will be considered to belong to the positive class.
 classes = [b'normal', b'infiltration']
 
-def train_dnn(df, i, epoch, batch=0):
+def train_dnn(df, i, epoch, model, batch=0):
 
     global class_weight
 
@@ -57,6 +62,11 @@ def train_dnn(df, i, epoch, batch=0):
 
     if arguments.debug:
         print("[INFO] creating train/test split:", arguments.testSize)
+
+    print("==============================")
+    print(x, x.shape)
+    print(y, y.shape)
+    print("==============================")
 
     # Create a test/train split.
     # by default, 25% of data is used for testing
@@ -147,6 +157,8 @@ def train_dnn(df, i, epoch, batch=0):
         print("[INFO] fitting model. xtrain.shape:", x_train.shape, "y_train.shape:", y_train.shape)
     
     print("====> x_train", x_train)
+    print("====> y_train unique", np.unique(y_train))
+    print("====> y_test unique", np.unique(y_test))
 
     history = model.fit(
         x_train,
@@ -155,11 +167,11 @@ def train_dnn(df, i, epoch, batch=0):
         callbacks=[early_stopping,tensorboard],
         verbose=1,
         class_weight=class_weight,
-        epochs=arguments.epochs,
+        epochs=arguments.epochs
         # The batch size defines the number of samples that will be propagated through the network.
         # The smaller the batch the less accurate the estimate of the gradient will be.
         # let tensorflow set this value for us
-        batch_size=2048
+        #batch_size=2048
     )
 
     # history = model.train_on_batch(
@@ -199,7 +211,7 @@ def train_dnn(df, i, epoch, batch=0):
     # else:
     #     save_weights(i, str(epoch), batch=batch)
 
-    return history
+    return history, model
 
 # epoch.zfill(3) is used to pad the epoch num with zeros
 # so the alphanumeric sorting preserves the correct file order: 01, 02, ..., 09, 10
@@ -341,9 +353,8 @@ def run():
                     print("EPOCH", epoch)
                     exit(0)
 
-def eval_dnn(df, sizeTrain, history):
+def eval_dnn(df, sizeTrain, history, model):
     global cf_total
-    global model
 
     if arguments.drop is not None:
         for col in arguments.drop.split(","):
@@ -356,9 +367,9 @@ def eval_dnn(df, sizeTrain, history):
         drop_col('TimestampLast', df)
 
     x_test, y_test = to_xy(df, arguments.resultColumn, classes, arguments.debug, len(classes)==2)
-    #print("x_test", x_test, "shape", x_test.shape)
+    print("x_test", x_test, "shape", x_test.shape)
     #np.set_printoptions(threshold=sys.maxsize)
-    #print("y_test", y_test, "shape", y_test.shape)
+    print("y_test", y_test, "shape", y_test.shape)
     #np.set_printoptions(threshold=10)
 
     print(colored("[INFO] measuring accuracy...", 'yellow'))
@@ -391,6 +402,27 @@ def eval_dnn(df, sizeTrain, history):
             print("x_test.shape", x_test.shape)
             print("y_test.shape", y_test.shape)
 
+
+    print("y_test", y_test, "unique", np.unique(y_test), "len(x_test)", len(x_test), "len(y_test)", len(y_test))
+
+    print("============== [INFO] EVALUATE =====================")
+    baseline_results = model.evaluate(
+        x_test,
+        y_test,
+        verbose=1
+    )
+    print("===================================================")
+
+    csv = ""
+    try:
+        for name, value in zip(model.metrics_names, baseline_results):
+            print(name, ': ', value)
+            csv += str(value) + ","
+        print()
+    except TypeError:
+        pass
+
+    print("============== [INFO] PREDICT =====================")
     pred = model.predict(x_test,verbose=1)
 
     # TODO: for LSTM, suddenly there are mutliple classes even when using binary classification? shaping problems? y vectors for training and evaluation seem correct...
@@ -411,23 +443,6 @@ def eval_dnn(df, sizeTrain, history):
     if not arguments.lstm:    
         score = metrics.accuracy_score(y_eval, pred)
         print("[INFO] Validation score: {}".format(colored(score, 'yellow')))
-    
-    print("============== [INFO] metrics =====================")
-    baseline_results = model.evaluate(
-        x_test,
-        y_test,
-        verbose=1
-    )  
-    print("===================================================")
-
-    csv = ""
-    try:
-        for name, value in zip(model.metrics_names, baseline_results):
-            print(name, ': ', value)
-            csv += str(value) + ","
-        print()
-    except TypeError:
-        pass        
 
     unique, counts = np.unique(y_eval, return_counts=True)
     print("y_eval",dict(zip(unique, counts)))
@@ -560,11 +575,11 @@ def run_in_memory(df, df_score):
     if arguments.score:
         eval_dnn(df_score, df.shape[0], history)
 
-def run_in_memory_v2(df, df_score):
+def run_in_memory_v2(df, df_score, model):
     global patience
     global min_delta
     
-    history = train_dnn(df, 0, 0, batch=arguments.batchSize)
+    history, model = train_dnn(df, 0, 0, model, batch=arguments.batchSize)
     
     # save model or checkpoint
     if arguments.saveModel:
@@ -580,7 +595,7 @@ def run_in_memory_v2(df, df_score):
     plot_metrics(history, dirname + "/" + os.path.basename(arguments.read) + "-train-metrics.png")
     
     if arguments.score:
-        eval_dnn(df_score, df.shape[0], history)
+        eval_dnn(df_score, df.shape[0], history, model)
 
 buf_size = 512
 stop_count = 0
@@ -835,7 +850,7 @@ print("classes after type update", classes)
 # the tool is not in the $PATH by default, its located in the tensorboard package: $HOME/.local/lib/python3.9/site-packages/tensorboard/main.py
 tb_out = check_path("./tensorboard-" + os.path.splitext(os.path.basename(arguments.read))[0], "")
 print("tensorboard log output directory:", tb_out)
-tensorboard = tf.keras.callbacks.TensorBoard(log_dir=tb_out)
+tensorboard = keras.callbacks.TensorBoard(log_dir=tb_out)
 
 print("=================================================")
 print("        TRAINING v0.5.0")
@@ -1013,7 +1028,7 @@ try:
     if arguments.socket:
         run_socket()
     elif arguments.mem:
-        run_in_memory_v2(df, df_score)
+        run_in_memory_v2(df, df_score, model)
     else:
         run()
 except: # catch *all* exceptions
