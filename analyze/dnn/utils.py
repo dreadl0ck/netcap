@@ -16,9 +16,10 @@
 # importing keras from tensorflow fixes this
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.python.keras import layers
-from tensorflow.python.keras.layers import Input, Dense, Activation, Dropout, LeakyReLU
-from tensorflow.python.keras.models import Sequential
+from tensorflow.keras import metrics
+from tensorflow.keras import layers
+from tensorflow.keras.layers import Input, Dense, Activation, Dropout, LeakyReLU
+from tensorflow.keras.models import Sequential
 
 import sklearn
 import seaborn as sns
@@ -667,7 +668,7 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
 
         # FINAL LAYER
         if output_bias is not None:
-            output_bias = tf.keras.initializers.Constant(output_bias)
+            output_bias = keras.initializers.Constant(output_bias)
             print("setting output_bias on last layer:", output_bias)
             model.add(Dense(output_dim, activation=outputLayerActivation, bias_initializer=output_bias))
         else:
