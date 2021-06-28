@@ -489,8 +489,10 @@ def eval_dnn(df, sizeTrain, history, model):
     print("fp=", fp)
     print("fn=", fn)
 
-    # CSV fields: Loss,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,AUC
-    csv = str(tn) + "," + str(tp) + "," + str(fp) + "," + str(fn) + ","
+    # CSV fields: 
+    # TODO: add Loss,AUC
+    # True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall
+    csv = str(tp) + "," + str(fp) + "," + str(tn) + "," + str(fn) + "," + str(score) + "," + str(precision) + "," + str(recall) + ","
 
     # calculate recall and prec
     precision = tp / (tp + fp)
