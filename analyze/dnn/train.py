@@ -431,6 +431,7 @@ def eval_dnn(df, sizeTrain, history, model):
     pred = model.predict(
         x_test,
         verbose=1,
+        batch_size=arguments.batchSize,
         callbacks=[tensorboard]
     )
 
@@ -510,9 +511,24 @@ def eval_dnn(df, sizeTrain, history, model):
 
     print("[INFO] F1 score:", f1_score)
 
-    # TODO: append to logfile with correct csv header
+    # TODO: refactor to join list instead
+    # TODO: add support to add notes in log via cli flags
     # StopEpoch,MaxEpochs,File,Time,CSV fields,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1
-    print("=== CSV " + str(len(history.epoch)) + "," + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + evaluation_labels + prediction_labels + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score))
+    line = str(len(history.epoch)) + "," + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + evaluation_labels + prediction_labels + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score)
+    print("=== CSV " + line)
+
+    fname = "log.csv"
+    if os.path.isfile(fname):
+        # append line
+        f = open(fname, 'a')
+        f.write(line)
+        f.close()
+    else:
+        f = open(fname, 'w+')
+        # write header
+        f.write("StopEpoch,MaxEpochs,File,Time,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1\n")
+        f.write(line)
+        f.close()
 
     dirname = os.path.dirname(arguments.read)
     if dirname == "":
@@ -914,7 +930,8 @@ if arguments.drop:
 classes_length = len(classes)
 cf_total = np.zeros((classes_length, classes_length),dtype=np.int)
 
-print("[INFO] input shape", arguments.features-num_dropped-num_time_columns)
+# TODO: does not include features that might get dropped in the encoding and normalisation steps
+#print("[INFO] input shape", arguments.features-num_dropped-num_time_columns)
 
 initial_bias = None
 df_score = {}
