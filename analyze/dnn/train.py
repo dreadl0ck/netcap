@@ -521,13 +521,13 @@ def eval_dnn(df, sizeTrain, history, model):
     if os.path.isfile(fname):
         # append line
         f = open(fname, 'a')
-        f.write(line)
+        f.write(line + "\n")
         f.close()
     else:
         f = open(fname, 'w+')
         # write header
         f.write("StopEpoch,MaxEpochs,File,Time,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1\n")
-        f.write(line)
+        f.write(line + "\n")
         f.close()
 
     dirname = os.path.dirname(arguments.read)
