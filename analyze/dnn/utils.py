@@ -535,7 +535,7 @@ def encode_columns(df, result_column, lstm, debug):
         with pd.option_context('display.max_rows', 10, 'display.max_columns', None):  # more options can be specified also
             print(df)
 
-def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, coreLayerSize, dropoutLayer, lstmBatchSize, wrapLayerSize, relu, binaryClasses, dnnBatchSize, output_bias):
+def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, coreLayerSize, dropoutLayer, wrapLayerSize, relu, binaryClasses, lstmBatchSize, output_bias):
 
     # softmax is the default for multi-class classifiers
     outputLayerActivation = "softmax"
@@ -551,7 +551,7 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
         input_dim = 1
 
     print("------------DNN info-------------")
-    print("dnnBatchSize", dnnBatchSize)
+    print("lstmBatchSize", lstmBatchSize)
     print("wrapLayerSize", wrapLayerSize)
     print("coreLayerSize", coreLayerSize)
     print("numCoreLayers", numCoreLayers)
@@ -568,7 +568,7 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
     if lstm:
 
         # construct input shape
-        input_shape=(dnnBatchSize,input_dim,)
+        input_shape=(lstmBatchSize,input_dim,)
         print("[INFO] input_shape", input_shape)
 
         print("[INFO] LSTM first and last layer neurons:", wrapLayerSize)
