@@ -32,6 +32,13 @@ from sklearn import preprocessing
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+def drop_constant_columns(x):
+    """Remove the columns with constant values"""
+    for column in x.columns:
+        if len(x[column].value_counts()) == 1:
+            x = x.drop([column], axis=1)
+    return x
+
 def encode_string(df, name):
     """
     Encodes text values to indexes(i.e. [1],[2],[3] for red,green,blue).
@@ -43,6 +50,10 @@ def encode_string(df, name):
     # explicitly type cast to string
     # to avoid any numbers that slipped in to break the code by simply treating them as strings
     df[name] = le.fit_transform(df[name].astype(str))
+
+    # apply zscore to column as well
+    encode_numeric_zscore(df, name)
+
     return le.classes_
 
 
@@ -116,26 +127,27 @@ def encode_text_dummy(df, name):
 encoders = {
 
     # Flow / Connection
-    'TimestampFirst'   : encode_numeric_zscore,
-    'LinkProto'        : encode_string,
-    'NetworkProto'     : encode_string,
-    'TransportProto'   : encode_string,
-    'ApplicationProto' : encode_string,
-    'SrcMAC'           : encode_string,
-    'DstMAC'           : encode_string,
-    'SrcIP'            : encode_string,
-    'SrcPort'          : encode_numeric_zscore,
-    'DstIP'            : encode_string,
-    'DstPort'          : encode_numeric_zscore,
-    'Size'             : encode_numeric_zscore,
-    'AppPayloadSize'   : encode_numeric_zscore,
-    'NumPackets'       : encode_numeric_zscore,
-    'UID'              : encode_string,
-    'Duration'         : encode_numeric_zscore,
-    'TimestampLast'    : encode_numeric_zscore,
+    'TimestampFirst'     : encode_numeric_zscore,
+    'LinkProto'          : encode_string,
+    'NetworkProto'       : encode_string,
+    'TransportProto'     : encode_string,
+    'ApplicationProto'   : encode_string,
+    'SrcMAC'             : encode_string,
+    'DstMAC'             : encode_string,
+    'SrcIP'              : encode_string,
+    'SrcPort'            : encode_numeric_zscore,
+    'DstIP'              : encode_string,
+    'DstPort'            : encode_numeric_zscore,
+    'Size'               : encode_numeric_zscore,
+    'AppPayloadSize'     : encode_numeric_zscore,
+    'NumPackets'         : encode_numeric_zscore,
+    'UID'                : encode_string,
+    'Duration'           : encode_numeric_zscore,
+    'TimestampLast'      : encode_numeric_zscore,
     'BytesClientToServer': encode_numeric_zscore,
     'BytesServerToClient': encode_numeric_zscore,
-    'Category': encode_string,
+    'TotalSize'          : encode_numeric_zscore,
+    'Category'           : encode_string,
 
     # UDP specific fields
     'Length'           : encode_numeric_zscore,

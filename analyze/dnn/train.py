@@ -86,6 +86,7 @@ def train_dnn(df, i, epoch, model, batch=0):
         if arguments.debug:
             print("[INFO] ensuring the data is a multiple of the batch size for LSTM")
         
+        # TODO: use dnnBatchSize for this?
         num = len(x_train) % arguments.batchSize
         x_train = x_train[:len(x_train)-num]
 
@@ -162,6 +163,8 @@ def train_dnn(df, i, epoch, model, batch=0):
     print("====> y_train unique", np.unique(y_train))
     print("====> y_test unique", np.unique(y_test))
 
+    print("x_train.shape", x_train.shape)
+
     history = model.fit(
         x_train,
         y_train,
@@ -169,11 +172,14 @@ def train_dnn(df, i, epoch, model, batch=0):
         callbacks=[early_stopping,tensorboard],
         verbose=1,
         class_weight=class_weight,
-        epochs=arguments.epochs
+        epochs=arguments.epochs,
         # The batch size defines the number of samples that will be propagated through the network.
         # The smaller the batch the less accurate the estimate of the gradient will be.
-        # let tensorflow set this value for us
-        #batch_size=2048
+        # we can either let tensorflow set this value for us, or specify it by hand.
+        # be aware this option has a huge performance impact: 
+        # setting it manually to 2048 resulted in an Epoch time of around 30seconds, 
+        # while letting tensorflow choose a much smaller size, resulted in 30minutes per epoch on the same dataset.
+        batch_size=2048
     )
 
     # history = model.train_on_batch(
@@ -308,6 +314,7 @@ def run():
                 print("[INFO] Shape when encoding dataset:", df.shape)
                 encode_columns(df, arguments.resultColumn, arguments.lstm, arguments.debug)
                 print("[INFO] Shape AFTER encoding dataset:", df.shape)
+                print("[INFO] df.columns", df.columns)
 
             if arguments.debug:
                 print("--------------AFTER DROPPING COLUMNS ----------------")
@@ -404,8 +411,6 @@ def eval_dnn(df, sizeTrain, history, model):
             print("x_test.shape", x_test.shape)
             print("y_test.shape", y_test.shape)
 
-
-    csv = ""
     #print("y_test", y_test, "unique", np.unique(y_test), "len(x_test)", len(x_test), "len(y_test)", len(y_test))
     # print("============== [INFO] EVALUATE =====================")
     # baseline_results = model.evaluate(
@@ -454,13 +459,13 @@ def eval_dnn(df, sizeTrain, history, model):
 
     # collect evaluation labels
     # adds values as excel strings: "=""<value>"""
-    csv += '"=""' + str(dict(zip(unique, counts))) + '""",'
+    evaluation_labels = '"=""' + str(dict(zip(unique, counts))) + '""",'
 
     # collect prediction labels
     unique, counts = np.unique(pred, return_counts=True)
     print("pred",dict(zip(unique, counts)))
 
-    csv += '"=""' + str(dict(zip(unique, counts))) + '""",'
+    prediction_labels = '"=""' + str(dict(zip(unique, counts))) + '""",'
 
     # print("y_test", np.sum(y_test,axis=0), np.sum(y_test,axis=1))
 
@@ -506,9 +511,9 @@ def eval_dnn(df, sizeTrain, history, model):
 
     print("[INFO] F1 score:", f1_score)
 
-    # TODO: append to logfile
+    # TODO: append to logfile with correct csv header
     # StopEpoch,MaxEpochs,File,Time,CSV fields,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1
-    print("=== CSV " + str(len(history.epoch)) + "," + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score))
+    print("=== CSV " + str(len(history.epoch)) + "," + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + evaluation_labels + prediction_labels + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score))
 
     dirname = os.path.dirname(arguments.read)
     if dirname == "":
@@ -769,6 +774,7 @@ def process_dataframe(df, i, epoch):
         print("[INFO] Shape when encoding dataset:", df.shape)
         encode_columns(df, arguments.resultColumn, arguments.lstm, arguments.debug)
         print("[INFO] Shape AFTER encoding dataset:", df.shape)
+        print("[INFO] df.columns", df.columns)
 
     if arguments.debug:
         print("--------------AFTER DROPPING COLUMNS ----------------")
@@ -828,7 +834,7 @@ parser.add_argument('-classes', type=str, help='supply one or multiple comma sep
 parser.add_argument('-saveModel', type=bool, default=True, help='save model (if false, only the weights will be saved)')
 parser.add_argument('-relu', action='store_true', default=False, help='use ReLU activation function (default: LeakyReLU)')
 parser.add_argument('-encodeCategoricals', action='store_true', default=False, help='encode categorical with one hot strategy')
-parser.add_argument('-dnnBatchSize', type=int, default=16, help='set dnn batch size')
+parser.add_argument('-dnnBatchSize', type=int, default=16, help='set dnn batch size for LSTM layers')
 parser.add_argument('-socket', action='store_true', default=False, help='read data from unix socket')
 parser.add_argument('-mem', action='store_true', default=False, help='hold entire data in memory to avoid re-reading it')
 parser.add_argument('-score', action='store_true', default=False, help='run scoring on the configured share of the input data')
@@ -962,9 +968,10 @@ if arguments.mem:
         encode_numeric_zscore(df, "Timestamp")
 
     if arguments.encodeColumns:
-        print("[INFO] Shape when encoding dataset:", df.shape)
+        print("[INFO] encodeColumns: Shape when encoding dataset:", df.shape)
         encode_columns(df, arguments.resultColumn, arguments.lstm, arguments.debug)
-        print("[INFO] Shape AFTER encoding dataset:", df.shape)
+        print("[INFO] encodeColumns: Shape AFTER encoding dataset:", df.shape)
+        print("[INFO] df.columns", df.columns)
 
     if arguments.debug:
         print("--------------AFTER DROPPING COLUMNS ----------------")
@@ -973,9 +980,9 @@ if arguments.mem:
             print(df)
 
     if arguments.encodeCategoricals:
-        print("[INFO] Shape when encoding dataset:", df.shape)
+        print("[INFO] encodeCategoricals: Shape when encoding dataset:", df.shape)
         encode_categorical_columns(df, arguments.features)
-        print("[INFO] Shape AFTER encoding dataset:", df.shape) 
+        print("[INFO] encodeCategoricals: Shape AFTER encoding dataset:", df.shape) 
 
     if arguments.score:
         
@@ -1017,23 +1024,34 @@ if arguments.mem:
         print("initial_bias", initial_bias)
 
     if arguments.classWeights:
+        
+        # factor to manipulate the final value for the positive class
+        #pos_factor = 0.1 # F1 0.82
+        #pos_factor = 0.05 # F1 0.80
+        #pos_factor = 0.01  # F1 0.83
+        # interesting: when using the share of the positive class as a factor (1,7% in this case), the F1 score seems the highest.
+        # TODO: make configurable
+        pos_factor = 0.017 # F1 0.88
+
         # TODO: handle multiple classes
         # Scaling by total/2 helps keep the loss to a similar magnitude.
         # The sum of the weights of all examples stays the same.
         weight_for_0 = (1 / neg) * (total / 2.0)
-        weight_for_1 = (1 / pos) * (total / 2.0)
+        weight_for_1 = (1 / pos) * (total / 2.0) * pos_factor
 
         class_weight = {0: weight_for_0, 1: weight_for_1}
 
-        print('Weight for class 0: {:.2f}'.format(weight_for_0))
-        print('Weight for class 1: {:.2f}'.format(weight_for_1))
+        print('Weight for class 0: {weight_0}'.format(weight_0=weight_for_0))
+        print('Weight for class 1: {weight_1}'.format(weight_1=weight_for_1))
 
     ###########################################
 
 # create network model
 model = create_dnn(
     # input shape: (num_features - dropped_features) [ - time_columns ]
-    (arguments.features-num_dropped)-num_time_columns, 
+    # calculate the input shape manually (does not take columns into account that get dropped because they were empty)
+    #(arguments.features-num_dropped)-num_time_columns, 
+    len(df.columns)-1, # when running in memory, take the number of columns after applying all args and remove the category column
     len(classes), 
     arguments.loss, 
     arguments.optimizer, 
