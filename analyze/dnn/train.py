@@ -834,7 +834,7 @@ parser.add_argument('-resultColumn', type=str, default='Category', help='set nam
 parser.add_argument('-features', type=int, required=True, help='The amount of columns in the csv (dimensionality)')
 #parser.add_argument('-class_amount', type=int, default=2, help='The amount of classes e.g. normal, attack1, attack3 is 3')
 parser.add_argument('-fileBatchSize', type=int, default=50, help='The amount of files to be read in')
-parser.add_argument('-epochs', type=int, default=2500, help='The amount of epochs. (default: 1)')
+parser.add_argument('-epochs', type=int, default=100, help='The amount of epochs. (default: 1)')
 parser.add_argument('-numCoreLayers', type=int, default=1, help='set number of core layers to use')
 parser.add_argument('-shuffle', action='store_true', default=False, help='shuffle data before feeding it to the DNN')
 parser.add_argument('-dropoutLayer', action='store_true', default=False, help='insert a dropout layer at the end')
