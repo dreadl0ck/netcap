@@ -86,7 +86,6 @@ def train_dnn(df, i, epoch, model, batch=0):
         if arguments.debug:
             print("[INFO] ensuring the data is a multiple of the batch size for LSTM")
         
-        # TODO: use dnnBatchSize for this?
         num = len(x_train) % arguments.batchSize
         x_train = x_train[:len(x_train)-num]
 
@@ -112,17 +111,17 @@ def train_dnn(df, i, epoch, model, batch=0):
             print("[INFO] using LSTM layers")
             print("len(x_train)", len(x_train), len(x_train) % arguments.batchSize)
         
-        x_train = x_train.reshape(-1, arguments.dnnBatchSize, x.shape[1])
-        y_train = y_train.reshape(-1, arguments.dnnBatchSize, y.shape[1])
+        x_train = x_train.reshape(-1, arguments.lstmBatchSize, x.shape[1])
+        y_train = y_train.reshape(-1, arguments.lstmBatchSize, y.shape[1])
 
-        x_test = x_test.reshape(-1, arguments.dnnBatchSize, x.shape[1])
-        y_test = y_test.reshape(-1, arguments.dnnBatchSize, y.shape[1])
+        x_test = x_test.reshape(-1, arguments.lstmBatchSize, x.shape[1])
+        y_test = y_test.reshape(-1, arguments.lstmBatchSize, y.shape[1])
         
-        # x_train = x_train.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * (1.0 - arguments.testSize)), arguments.dnnBatchSize, x.shape[1])
-        # y_train = y_train.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * (1.0 - arguments.testSize)), arguments.dnnBatchSize, y.shape[1])
+        # x_train = x_train.reshape(int((arguments.batchSize / arguments.lstmBatchSize) * (1.0 - arguments.testSize)), arguments.lstmBatchSize, x.shape[1])
+        # y_train = y_train.reshape(int((arguments.batchSize / arguments.lstmBatchSize) * (1.0 - arguments.testSize)), arguments.lstmBatchSize, y.shape[1])
 
-        # x_test = x_test.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * arguments.testSize), arguments.dnnBatchSize, x.shape[1])
-        # y_test = y_test.reshape(int((arguments.batchSize / arguments.dnnBatchSize) * arguments.testSize), arguments.dnnBatchSize, y.shape[1])
+        # x_test = x_test.reshape(int((arguments.batchSize / arguments.lstmBatchSize) * arguments.testSize), arguments.lstmBatchSize, x.shape[1])
+        # y_test = y_test.reshape(int((arguments.batchSize / arguments.lstmBatchSize) * arguments.testSize), arguments.lstmBatchSize, y.shape[1])
         
         if arguments.debug:
             print("=======> AFTER RESHAPE y_train unique values", np.unique(y_train))
@@ -179,7 +178,7 @@ def train_dnn(df, i, epoch, model, batch=0):
         # be aware this option has a huge performance impact: 
         # setting it manually to 2048 resulted in an Epoch time of around 30seconds, 
         # while letting tensorflow choose a much smaller size, resulted in 30minutes per epoch on the same dataset.
-        batch_size=2048
+        batch_size=arguments.batchSize
     )
 
     # history = model.train_on_batch(
@@ -403,8 +402,8 @@ def eval_dnn(df, sizeTrain, history, model):
         if arguments.debug:
             print("[INFO] reshape for using LSTM layers")
         
-        x_test = x_test.reshape(-1, arguments.dnnBatchSize, x_test.shape[1])
-        y_test = y_test.reshape(-1, arguments.dnnBatchSize, y_test.shape[1])
+        x_test = x_test.reshape(-1, arguments.lstmBatchSize, x_test.shape[1])
+        y_test = y_test.reshape(-1, arguments.lstmBatchSize, y_test.shape[1])
 
         if arguments.debug:
             print("--------RESHAPED--------")
@@ -826,7 +825,7 @@ parser.add_argument('-dropoutLayer', action='store_true', default=False, help='i
 parser.add_argument('-coreLayerSize', type=int, default=4, help='size of an DNN core layer')
 parser.add_argument('-wrapLayerSize', type=int, default=2, help='size of the first and last DNN layer')
 parser.add_argument('-lstm', action='store_true', default=False, help='use a LSTM network')
-parser.add_argument('-batchSize', type=int, default=256000, help='chunks of records read from CSV')
+parser.add_argument('-batchSize', type=int, default=2048, help='chunks of records to feed to neural network')
 parser.add_argument('-debug', action='store_true', default=False, help='debug mode on off')
 parser.add_argument('-zscoreUnixtime', action='store_true', default=False, help='apply zscore to unixtime column')
 parser.add_argument('-encodeColumns', action='store_true', default=False, help='switch between auto encoding or using a fully encoded dataset')
@@ -834,7 +833,7 @@ parser.add_argument('-classes', type=str, help='supply one or multiple comma sep
 parser.add_argument('-saveModel', type=bool, default=True, help='save model (if false, only the weights will be saved)')
 parser.add_argument('-relu', action='store_true', default=False, help='use ReLU activation function (default: LeakyReLU)')
 parser.add_argument('-encodeCategoricals', action='store_true', default=False, help='encode categorical with one hot strategy')
-parser.add_argument('-dnnBatchSize', type=int, default=16, help='set dnn batch size for LSTM layers')
+parser.add_argument('-lstmBatchSize', type=int, default=16, help='set batch size for LSTM layers')
 parser.add_argument('-socket', action='store_true', default=False, help='read data from unix socket')
 parser.add_argument('-mem', action='store_true', default=False, help='hold entire data in memory to avoid re-reading it')
 parser.add_argument('-score', action='store_true', default=False, help='run scoring on the configured share of the input data')
@@ -1059,11 +1058,10 @@ model = create_dnn(
     arguments.numCoreLayers,
     arguments.coreLayerSize,
     arguments.dropoutLayer,
-    arguments.batchSize,
     arguments.wrapLayerSize,
     arguments.relu,
     len(classes) == 2,
-    arguments.dnnBatchSize,
+    arguments.lstmBatchSize,
     initial_bias
 )
 print("[INFO] created DNN")
