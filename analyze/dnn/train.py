@@ -513,8 +513,8 @@ def eval_dnn(df, sizeTrain, history, model):
 
     # TODO: refactor to join list instead
     # TODO: add support to add notes in log via cli flags
-    # StopEpoch,MaxEpochs,File,Time,CSV fields,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1
-    line = str(len(history.epoch)) + "," + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + evaluation_labels + prediction_labels + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score)
+    # Notes,StopEpoch,MaxEpochs,File,Time,CSV fields,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1
+    line = arguments.notes + "," + str(len(history.epoch)) + "," + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + evaluation_labels + prediction_labels + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score)
     print("=== CSV " + line)
 
     fname = "log.csv"
@@ -526,7 +526,7 @@ def eval_dnn(df, sizeTrain, history, model):
     else:
         f = open(fname, 'w+')
         # write header
-        f.write("StopEpoch,MaxEpochs,File,Time,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1\n")
+        f.write("Notes,StopEpoch,MaxEpochs,File,Time,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1\n")
         f.write(line + "\n")
         f.close()
 
@@ -855,6 +855,7 @@ parser.add_argument('-mem', action='store_true', default=False, help='hold entir
 parser.add_argument('-score', action='store_true', default=False, help='run scoring on the configured share of the input data')
 parser.add_argument('-initialBias', action='store_true', default=False, help='set the initial bias of the model based on ratio of positive and negative binary classes')
 parser.add_argument('-classWeights', action='store_true', default=False, help='dynamically calculate class weights based on ratio of positive and negative binary classes')
+parser.add_argument('-notes', type=str, help='include notes in CSV log')
 
 # parse commandline arguments
 arguments = parser.parse_args()
