@@ -856,6 +856,7 @@ parser.add_argument('-score', action='store_true', default=False, help='run scor
 parser.add_argument('-initialBias', action='store_true', default=False, help='set the initial bias of the model based on ratio of positive and negative binary classes')
 parser.add_argument('-classWeights', action='store_true', default=False, help='dynamically calculate class weights based on ratio of positive and negative binary classes')
 parser.add_argument('-notes', type=str, help='include notes in CSV log')
+parser.add_argument('-positiveFactor', type=float, default=1.0, help='factor to influence the weight for the positive class when using dynamically calculated class weights')
 
 # parse commandline arguments
 arguments = parser.parse_args()
@@ -1043,12 +1044,16 @@ if arguments.mem:
     if arguments.classWeights:
         
         # factor to manipulate the final value for the positive class
-        #pos_factor = 0.1 # F1 0.82
-        #pos_factor = 0.05 # F1 0.80
-        #pos_factor = 0.01  # F1 0.83
-        # interesting: when using the share of the positive class as a factor (1,7% in this case), the F1 score seems the highest.
-        # TODO: make configurable
-        pos_factor = 0.017 # F1 0.88
+        pos_factor = 1.0
+
+        if arguments.positiveFactor == -1:
+            # set the positive factor to the share of the positive class, in case of heavy data imbalance.
+            # this delivered good result in some tests, so we added it as an option for future experiments.
+            pos_factor = pos / total
+        else:
+            pos_factor = arguments.positiveFactor
+
+        print("pos_factor", pos_factor)
 
         # TODO: handle multiple classes
         # Scaling by total/2 helps keep the loss to a similar magnitude.
