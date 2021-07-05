@@ -514,7 +514,7 @@ def eval_dnn(df, sizeTrain, history, model):
     # TODO: refactor to join list instead
     # TODO: add support to add notes in log via cli flags
     # Notes,StopEpoch,MaxEpochs,File,Time,CSV fields,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1
-    line = arguments.notes + "," + str(len(history.epoch)) + "," + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + evaluation_labels + prediction_labels + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + str(f1_score)
+    line = arguments.notes + "," + str(len(history.epoch)) + "," + str(arguments.epochs) + "," + arguments.read + "," + str(time.time() - start_time) + "," + csv + evaluation_labels + prediction_labels + str(sizeTrain) + "," + str(df.shape[0]) + "," + str(arguments.testSize) + "," + pos_training + "," + pos_testing + "," + str(f1_score)
     print("=== CSV " + line)
 
     fname = "log.csv"
@@ -526,7 +526,7 @@ def eval_dnn(df, sizeTrain, history, model):
     else:
         f = open(fname, 'w+')
         # write header
-        f.write("Notes,StopEpoch,MaxEpochs,File,Time,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,F1\n")
+        f.write("Notes,StopEpoch,MaxEpochs,File,Time,True Positives,False Positives,True Negatives,False Negatives,Accuracy,Precision,Recall,Y_EVAL,Y_PRED,SizeTrain,SizeEval,TestSize,PositiveShareTraining,PositiveShareTesting,F1\n")
         f.write(line + "\n")
         f.close()
 
@@ -690,6 +690,7 @@ def create_unix_socket(name):
                                                        'TimestampLast',
                                                        'BytesClientToServer',
                                                        'BytesServerToClient',
+
                                                        'Category'])
 
                 process(df)
@@ -940,6 +941,10 @@ df_score = {}
 df = {}
 class_weight = {}
 
+# percentage values for share of positive class in training and testing data
+pos_training = ""
+pos_testing = ""
+
 # in memory assumes that the entire dataset fits into memory.
 if arguments.mem:
 
@@ -1016,7 +1021,7 @@ if arguments.mem:
         print("df_train:", df.shape)
         print("df_score:", df_score.shape, "test_size", arguments.testSize)
 
-    ############# expand Y values for training split ########################
+    ############# expand Y values for TRAINING split ########################
 
     # convert to two dimensional arrays with Y values
     y_values = expand_y_values(df, arguments.resultColumn, classes, arguments.debug, len(classes)==2)
@@ -1032,8 +1037,8 @@ if arguments.mem:
     # calculate negative and positive ratio
     neg, pos = np.bincount(y)
     total = neg + pos
-    print('Examples:\n    Total: {}\n    Positive: {} ({:.2f}% of total)\n'.format(
-        total, pos, 100 * pos / total))
+    print('TRAINING split:\n    Total: {}\n    Positive: {} ({:.2f}% of total)\n'.format(total, pos, 100 * pos / total))
+    pos_training = "{:.2f}%".format(100 * pos / total)
 
     if arguments.initialBias:
         # calculate initial bias to reduce number of epochs needed
@@ -1066,7 +1071,24 @@ if arguments.mem:
         print('Weight for class 0: {weight_0}'.format(weight_0=weight_for_0))
         print('Weight for class 1: {weight_1}'.format(weight_1=weight_for_1))
 
-    ###########################################
+    ############# expand Y values for TESTING split ########################
+
+    # convert to two dimensional arrays with Y values
+    y_values = expand_y_values(df_score, arguments.resultColumn, classes, arguments.debug, len(classes)==2)
+            
+    # create array with 0 for normal and 1 for attack labels   
+    y = []
+    for arr in y_values:
+        if arr[0] == 1:
+            y.append(0)
+        else:
+            y.append(1)
+
+    # calculate negative and positive ratio
+    neg, pos = np.bincount(y)
+    total = neg + pos
+    print('TESTING split:\n    Total: {}\n    Positive: {} ({:.2f}% of total)\n'.format(total, pos, 100 * pos / total))
+    pos_testing = "{:.2f}%".format(100 * pos / total)
 
 # create network model
 model = create_dnn(
