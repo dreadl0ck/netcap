@@ -36,6 +36,16 @@ const (
 	fieldTimestampLast       = "TimestampLast"
 	fieldBytesClientToServer = "BytesClientToServer"
 	fieldBytesServerToClient = "BytesServerToClient"
+	fieldNumFINFlags         = "NumFINFlags"
+	fieldNumRSTFlags         = "NumRSTFlags"
+	fieldNumACKFlags         = "NumACKFlags"
+	fieldNumSYNFlags         = "NumSYNFlags"
+	fieldNumURGFlags         = "NumURGFlags"
+	fieldNumECEFlags         = "NumECEFlags"
+	fieldNumPSHFlags         = "NumPSHFlags"
+	fieldNumCWRFlags         = "NumCWRFlags"
+	fieldNumNSFlags          = "NumNSFlags"
+	fieldMeanWindowSize      = "MeanWindowSize"
 )
 
 var fieldsConnection = []string{
@@ -58,6 +68,16 @@ var fieldsConnection = []string{
 	fieldTimestampLast,
 	fieldBytesClientToServer,
 	fieldBytesServerToClient,
+	fieldNumFINFlags,
+	fieldNumRSTFlags,
+	fieldNumACKFlags,
+	fieldNumSYNFlags,
+	fieldNumURGFlags,
+	fieldNumECEFlags,
+	fieldNumPSHFlags,
+	fieldNumCWRFlags,
+	fieldNumNSFlags,
+	fieldMeanWindowSize,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -87,6 +107,16 @@ func (c *Connection) CSVRecord() []string {
 		formatTimestamp(c.TimestampLast),
 		formatInt64(c.BytesClientToServer),
 		formatInt64(c.BytesServerToClient),
+		formatInt32(c.NumFINFlags),
+		formatInt32(c.NumRSTFlags),
+		formatInt32(c.NumACKFlags),
+		formatInt32(c.NumSYNFlags),
+		formatInt32(c.NumURGFlags),
+		formatInt32(c.NumECEFlags),
+		formatInt32(c.NumPSHFlags),
+		formatInt32(c.NumCWRFlags),
+		formatInt32(c.NumNSFlags),
+		formatInt32(c.MeanWindowSize),
 	})
 }
 
@@ -220,6 +250,16 @@ func (c *Connection) Encode() []string {
 		connectionEncoder.Int64(fieldTimestampLast, c.TimestampLast),
 		connectionEncoder.Int64(fieldBytesClientToServer, c.BytesClientToServer),
 		connectionEncoder.Int64(fieldBytesServerToClient, c.BytesServerToClient),
+		connectionEncoder.Int32(fieldNumFINFlags, c.NumFINFlags),
+		connectionEncoder.Int32(fieldNumRSTFlags, c.NumRSTFlags),
+		connectionEncoder.Int32(fieldNumACKFlags, c.NumACKFlags),
+		connectionEncoder.Int32(fieldNumSYNFlags, c.NumSYNFlags),
+		connectionEncoder.Int32(fieldNumURGFlags, c.NumURGFlags),
+		connectionEncoder.Int32(fieldNumECEFlags, c.NumECEFlags),
+		connectionEncoder.Int32(fieldNumPSHFlags, c.NumPSHFlags),
+		connectionEncoder.Int32(fieldNumCWRFlags, c.NumCWRFlags),
+		connectionEncoder.Int32(fieldNumNSFlags, c.NumNSFlags),
+		connectionEncoder.Int32(fieldMeanWindowSize, c.MeanWindowSize),
 	})
 }
 

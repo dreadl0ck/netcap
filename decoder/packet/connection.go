@@ -15,6 +15,7 @@ package packet
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/gopacket/layers"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/utils"
 	"log"
@@ -160,6 +161,7 @@ func handlePacket(p gopacket.Packet) proto.Message {
 			}
 		}
 		conn.NumPackets++
+		trackTCPStats(conn.Connection, p)
 		conn.TotalSize += int32(p.Metadata().Length)
 
 		// check if LAST timestamp was before the current packet
@@ -180,6 +182,7 @@ func handlePacket(p gopacket.Packet) proto.Message {
 		co.TimestampLast = p.Metadata().Timestamp.UnixNano()
 		co.TotalSize = int32(p.Metadata().Length)
 		co.NumPackets = 1
+		trackTCPStats(co, p)
 
 		if ll != nil {
 			co.LinkProto = ll.LayerType().String()
@@ -220,6 +223,47 @@ func handlePacket(p gopacket.Packet) proto.Message {
 	conns.Unlock()
 
 	return nil
+}
+
+func trackTCPStats(co *types.Connection, p gopacket.Packet) {
+	if t, ok := p.TransportLayer().(*layers.TCP); ok {
+		if t.ACK {
+			co.NumACKFlags++
+		}
+		if t.CWR {
+			co.NumCWRFlags++
+		}
+		if t.ECE {
+			co.NumECEFlags++
+		}
+		if t.FIN {
+			co.NumFINFlags++
+		}
+		if t.RST {
+			co.NumRSTFlags++
+		}
+		if t.NS {
+			co.NumNSFlags++
+		}
+		if t.PSH {
+			co.NumPSHFlags++
+		}
+		if t.URG {
+			co.NumURGFlags++
+		}
+		if t.SYN {
+			co.NumSYNFlags++
+		}
+		if co.MeanWindowSize == 0 {
+			co.MeanWindowSize = int32(t.Window)
+		} else {
+			co.MeanWindowSize = movingAverage(co.MeanWindowSize, int32(t.Window), co.NumPackets)
+		}
+	}
+}
+
+func movingAverage(current int32, newValue int32, n int32) int32 {
+	return (current + (newValue - current)) / n
 }
 
 /*func flushConns(p gopacket.Packet) {
