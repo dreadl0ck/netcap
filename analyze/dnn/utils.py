@@ -662,7 +662,7 @@ def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, core
         # dropout layer used here seems to have the best effect after some quick test runs
         # needs further experiments to confirm.
         if dropoutLayer:
-            model.add(Dropout(rate=0.5))
+            model.add(Dropout(rate=0.3))
 
         if relu:
             model.add(Dense(1, kernel_initializer='normal', activation="relu"))
