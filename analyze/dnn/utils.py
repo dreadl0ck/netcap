@@ -76,6 +76,8 @@ def encode_minmax(df, name):
     """
     Encodes the named column in the dataframe via min max.
     """
+    # replace missing values (NaN) with a 0
+    df[name].fillna(0,inplace=True)
     min_max_scaler = preprocessing.MinMaxScaler()
     print(colored("encode_minmax " + name, "yellow"))
     df[[name]] = min_max_scaler.fit_transform(df[[name]])
