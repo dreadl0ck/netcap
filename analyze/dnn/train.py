@@ -867,6 +867,7 @@ parser.add_argument('-initialBias', action='store_true', default=False, help='se
 parser.add_argument('-classWeights', action='store_true', default=False, help='dynamically calculate class weights based on ratio of positive and negative binary classes')
 parser.add_argument('-notes', type=str, help='include notes in CSV log')
 parser.add_argument('-positiveFactor', type=float, default=1.0, help='factor to influence the weight for the positive class when using dynamically calculated class weights')
+parser.add_argument('-minmax', action='store_true', default=False, help='use min max normalisation (default: zscore)')
 
 # parse commandline arguments
 arguments = parser.parse_args()
@@ -953,6 +954,9 @@ class_weight = {}
 # percentage values for share of positive class in training and testing data
 pos_training = ""
 pos_testing = ""
+
+if arguments.minmax:
+    use_minmax()
 
 # in memory assumes that the entire dataset fits into memory.
 if arguments.mem:
@@ -1057,28 +1061,33 @@ if arguments.mem:
 
     if arguments.classWeights:
         
-        # factor to manipulate the final value for the positive class
-        pos_factor = 1.0
+        if len(classes) == 2:
 
-        if arguments.positiveFactor == -1:
-            # set the positive factor to the share of the positive class, in case of heavy data imbalance.
-            # this delivered good result in some tests, so we added it as an option for future experiments.
-            pos_factor = pos / total
-        else:
-            pos_factor = arguments.positiveFactor
+            # binary classification
+            # factor to manipulate the final value for the positive class
+            pos_factor = 1.0
 
-        print("pos_factor", pos_factor)
+            if arguments.positiveFactor == -1:
+                # set the positive factor to the share of the positive class, in case of heavy data imbalance.
+                # this delivered good result in some tests, so we added it as an option for future experiments.
+                pos_factor = pos / total
+            else:
+                pos_factor = arguments.positiveFactor
 
-        # TODO: handle multiple classes
-        # Scaling by total/2 helps keep the loss to a similar magnitude.
-        # The sum of the weights of all examples stays the same.
-        weight_for_0 = (1 / neg) * (total / 2.0)
-        weight_for_1 = (1 / pos) * (total / 2.0) * pos_factor
+            print("pos_factor", pos_factor)
 
-        class_weight = {0: weight_for_0, 1: weight_for_1}
+            # TODO: handle multiple classes
+            # Scaling by total/2 helps keep the loss to a similar magnitude.
+            # The sum of the weights of all examples stays the same.
+            weight_for_0 = (1 / neg) * (total / 2.0)
+            weight_for_1 = (1 / pos) * (total / 2.0) * pos_factor
 
-        print('Weight for class 0: {weight_0}'.format(weight_0=weight_for_0))
-        print('Weight for class 1: {weight_1}'.format(weight_1=weight_for_1))
+            class_weight = {0: weight_for_0, 1: weight_for_1}
+            print('Weight for class 0: {weight_0}'.format(weight_0=weight_for_0))
+            print('Weight for class 1: {weight_1}'.format(weight_1=weight_for_1))
+        else: # multi class classification
+            class_weight = calculate_class_weights(y_values, one_hot=True)
+            print("class_weight", class_weight)
 
     ############# expand Y values for TESTING split ########################
 
