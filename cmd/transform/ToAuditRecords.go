@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/collector"
@@ -33,12 +34,13 @@ import (
 
 var maltegoBaseConfig = collector.Config{
 	WriteUnknownPackets:  false,
-	Workers:              1,
+	Workers:              64,
 	PacketBufferSize:     defaults.PacketBuffer,
 	SnapLen:              defaults.SnapLen,
 	Promisc:              false,
 	HTTPShutdownEndpoint: true,
 	NoPrompt:             true,
+	Timeout:              1 * time.Second,
 	DecoderConfig: &config.Config{
 		Quiet:                          true,
 		PrintProgress:                  true,
@@ -75,13 +77,15 @@ var maltegoBaseConfig = collector.Config{
 		UseRE2:                         true,
 		BannerSize:                     256,
 		HarvesterBannerSize:            256,
-		StreamDecoderBufSize:           0,
+		StreamDecoderBufSize:           100,
 		StopAfterHarvesterMatch:        true,
 		RemoveClosedStreams:            false,
 		CompressionLevel:               defaults.CompressionLevel,
 		CompressionBlockSize:           defaults.CompressionBlockSize,
 		DisableGenericVersionHarvester: true,
 		IgnoreDecoderInitErrors:        true,
+		NumStreamWorkers:               100,
+		StreamBufferSize:               100,
 	},
 	BaseLayer:     utils.GetBaseLayer("ethernet"),
 	DecodeOptions: utils.GetDecodeOptions("lazy"),
