@@ -264,8 +264,6 @@ func (c *Collector) teardown() {
 			fmt.Println("size", humanize.Bytes(uint64(stat.Size())), "done in", time.Since(start), "total", time.Since(c.startFirst))
 		}
 	}
-
-	os.Exit(0)
 }
 
 // CloseFileHandleOnShutdown allows to register file handles for close on shutdown.

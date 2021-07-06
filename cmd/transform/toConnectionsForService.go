@@ -37,7 +37,7 @@ import (
 
 func toConnectionsForService() {
 	var (
-		serviceType string
+		serviceIP   string
 		resolverLog = zap.New(zapcore.NewNopCore())
 	)
 
@@ -56,20 +56,24 @@ func toConnectionsForService() {
 	os.Stdout = stdOut
 
 	netmaltego.ConnectionTransform(nil, func(lt maltego.LocalTransform, trx *maltego.Transform, conn *types.Connection, min, max uint64, path string, mac string, ip string, sizes *[]int) {
-		if serviceType == "" {
+		if serviceIP == "" {
 			// set the serviceType we are searching for once
-			serviceType = lt.Value
+			parts := strings.Split(lt.Value, ":")
+			if len(parts) > 1 {
+				serviceIP = parts[0] // trim off port
+			} else {
+				serviceIP = lt.Value
+			}
+
 			log.Println("serviceType", lt.Value)
 		}
 
-		i, err := strconv.Atoi(conn.DstPort)
-		if err != nil {
-			return
-		}
-
-		service := resolvers.LookupServiceByPort(i, strings.ToLower(conn.TransportProto))
-		log.Println("conn service", service)
-		if service == serviceType {
+		if conn.DstIP == serviceIP {
+			port, err := strconv.Atoi(conn.DstPort)
+			if err != nil {
+				maltego.Die(err.Error(), "invalid port for connection")
+			}
+			service := resolvers.LookupServiceByPort(port, strings.ToLower(conn.TransportProto))
 			addConn(trx, conn, path, min, max, maltego.InputToOutput, service)
 		}
 	})
@@ -103,9 +107,12 @@ func addConnection(trx *maltego.Transform, conn *types.Connection, path string, 
 }
 
 func makeConversationHTML(service string, conn *types.Connection, path string) string {
-	if conn.AppPayloadSize == 0 {
-		return "no data transferred"
-	}
+
+	// TODO: tracking the correct application payload size does not always seem to work, investigate why.
+	// I suspect its because the gopacket option is set to lazy and not datagrams.
+	// if conn.AppPayloadSize == 0 {
+	// 	return "no data transferred"
+	// }
 
 	if service == "" {
 		service = "unknown"

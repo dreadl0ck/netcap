@@ -601,9 +601,9 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		StreamFactory.Unlock()
 
 		startFlush := time.Now()
-		fmt.Println("flushTCPStreams", numTotal)
+		reassemblyLog.Info("flushTCPStreams", zap.Int("numTotal", numTotal))
 		flushTCPStreams(numTotal)
-		fmt.Println("flushTCPStreams DONE", time.Since(startFlush))
+		reassemblyLog.Info("flushTCPStreams DONE", zap.String("delta", time.Since(startFlush).String()))
 
 		udp.FlushUDPStreams()
 	}
