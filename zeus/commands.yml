@@ -41,8 +41,8 @@ commands:
             mkdir -p bin
             go build -ldflags "-s -w" -o bin/net github.com/dreadl0ck/netcap/cmd
             echo "setting capabilities for attaching to a network interface and moving binary to /usr/local/bin (requires root)..."
-            sudo setcap cap_net_raw,cap_net_admin=eip $(which net)
             sudo mv bin/net /usr/local/bin
+            sudo setcap cap_net_raw,cap_net_admin=eip $(which net)
 
     install-linux-nodpi:
         description: install netcap and netlabel on linux without DPI support
@@ -54,8 +54,8 @@ commands:
             mkdir -p bin
             go build -tags nodpi -ldflags "-s -w" -o bin/net github.com/dreadl0ck/netcap/cmd
             echo "setting capabilities for attaching to a network interface and moving binary to /usr/local/bin (requires root)..."
-            sudo setcap cap_net_raw,cap_net_admin=eip $(which net)
             sudo mv bin/net /usr/local/bin
+            sudo setcap cap_net_raw,cap_net_admin=eip $(which net)
 
     install-nodpi:
         description: install netcap and netlabel to $PATH
