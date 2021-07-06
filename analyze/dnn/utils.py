@@ -51,8 +51,8 @@ def encode_string(df, name):
     # to avoid any numbers that slipped in to break the code by simply treating them as strings
     df[name] = le.fit_transform(df[name].astype(str))
 
-    # apply zscore to column as well
-    encode_numeric_zscore(df, name)
+    # apply normalisation to column as well
+    encode_numeric(df, name)
 
     return le.classes_
 
@@ -64,6 +64,21 @@ def encode_bool(df, name):
     print(colored("encode_bool " + name, "yellow"))
     df[name] = df[name].astype(int)
 
+minmax = False
+def encode_numeric(df, name):
+    global minmax
+    if minmax is True:
+        encode_minmax(df, name)
+    else:
+        encode_numeric_zscore(df, name)
+
+def encode_minmax(df, name):
+    """
+    Encodes the named column in the dataframe via min max.
+    """
+    min_max_scaler = preprocessing.MinMaxScaler()
+    print(colored("encode_minmax " + name, "yellow"))
+    df[[name]] = min_max_scaler.fit_transform(df[[name]])
 
 def encode_numeric_zscore(df, name, mean=None, sd=None):
     """
@@ -127,7 +142,7 @@ def encode_text_dummy(df, name):
 encoders = {
 
     # Flow / Connection
-    'TimestampFirst'     : encode_numeric_zscore,
+    'TimestampFirst'     : encode_numeric,
     'LinkProto'          : encode_string,
     'NetworkProto'       : encode_string,
     'TransportProto'     : encode_string,
@@ -135,31 +150,31 @@ encoders = {
     'SrcMAC'             : encode_string,
     'DstMAC'             : encode_string,
     'SrcIP'              : encode_string,
-    'SrcPort'            : encode_numeric_zscore,
+    'SrcPort'            : encode_numeric,
     'DstIP'              : encode_string,
-    'DstPort'            : encode_numeric_zscore,
-    'Size'               : encode_numeric_zscore,
-    'AppPayloadSize'     : encode_numeric_zscore,
-    'NumPackets'         : encode_numeric_zscore,
+    'DstPort'            : encode_numeric,
+    'Size'               : encode_numeric,
+    'AppPayloadSize'     : encode_numeric,
+    'NumPackets'         : encode_numeric,
     'UID'                : encode_string,
-    'Duration'           : encode_numeric_zscore,
-    'TimestampLast'      : encode_numeric_zscore,
-    'BytesClientToServer': encode_numeric_zscore,
-    'BytesServerToClient': encode_numeric_zscore,
-    'TotalSize'          : encode_numeric_zscore,
+    'Duration'           : encode_numeric,
+    'TimestampLast'      : encode_numeric,
+    'BytesClientToServer': encode_numeric,
+    'BytesServerToClient': encode_numeric,
+    'TotalSize'          : encode_numeric,
     'Category'           : encode_string,
 
     # UDP specific fields
-    'Length'           : encode_numeric_zscore,
-    'Checksum'         : encode_numeric_zscore,
-    'PayloadEntropy'   : encode_numeric_zscore,
-    'PayloadSize'      : encode_numeric_zscore,
-    'Timestamp'        : encode_numeric_zscore,
+    'Length'           : encode_numeric,
+    'Checksum'         : encode_numeric,
+    'PayloadEntropy'   : encode_numeric,
+    'PayloadSize'      : encode_numeric,
+    'Timestamp'        : encode_numeric,
 
     # TCP specific fields
-    'SeqNum'           : encode_numeric_zscore,
-    'AckNum'           : encode_numeric_zscore,
-    'DataOffset'       : encode_numeric_zscore,
+    'SeqNum'           : encode_numeric,
+    'AckNum'           : encode_numeric,
+    'DataOffset'       : encode_numeric,
     'FIN'              : encode_bool,
     'SYN'              : encode_bool,
     'RST'              : encode_bool,
@@ -169,17 +184,17 @@ encoders = {
     'ECE'              : encode_bool,
     'CWR'              : encode_bool,
     'NS'               : encode_bool,
-    'Window'           : encode_numeric_zscore,
-    'Urgent'           : encode_numeric_zscore,
-    'Padding'          : encode_numeric_zscore,
+    'Window'           : encode_numeric,
+    'Urgent'           : encode_numeric,
+    'Padding'          : encode_numeric,
     'Options'          : encode_string,
 
     # ARP
-    'AddrType'          : encode_numeric_zscore,
-    'Protocol'          : encode_numeric_zscore,
-    'HwAddressSize'     : encode_numeric_zscore,
-    'ProtAddressSize'   : encode_numeric_zscore,
-    'Operation'         : encode_numeric_zscore,
+    'AddrType'          : encode_numeric,
+    'Protocol'          : encode_numeric,
+    'HwAddressSize'     : encode_numeric,
+    'ProtAddressSize'   : encode_numeric,
+    'Operation'         : encode_numeric,
     'SrcHwAddress'      : encode_string,
     'SrcProtAddress'    : encode_string,
     'DstHwAddress'      : encode_string,
@@ -189,42 +204,42 @@ encoders = {
     'Proto'                : encode_string,
 
     # NTP
-    'LeapIndicator'        : encode_numeric_zscore,     #int32
-    'Version'              : encode_numeric_zscore,     #int32
-    'Mode'                 : encode_numeric_zscore,     #int32
-    'Stratum'              : encode_numeric_zscore,     #int32
-    'Poll'                 : encode_numeric_zscore,     #int32
-    'Precision'            : encode_numeric_zscore,     #int32
-    'RootDelay'            : encode_numeric_zscore,     #uint32
-    'RootDispersion'       : encode_numeric_zscore,     #uint32
-    'ReferenceID'          : encode_numeric_zscore,     #uint32
-    'ReferenceTimestamp'   : encode_numeric_zscore,     #uint64
-    'OriginTimestamp'      : encode_numeric_zscore,     #uint64
-    'ReceiveTimestamp'     : encode_numeric_zscore,     #uint64
-    'TransmitTimestamp'    : encode_numeric_zscore,     #uint64
+    'LeapIndicator'        : encode_numeric,     #int32
+    'Version'              : encode_numeric,     #int32
+    'Mode'                 : encode_numeric,     #int32
+    'Stratum'              : encode_numeric,     #int32
+    'Poll'                 : encode_numeric,     #int32
+    'Precision'            : encode_numeric,     #int32
+    'RootDelay'            : encode_numeric,     #uint32
+    'RootDispersion'       : encode_numeric,     #uint32
+    'ReferenceID'          : encode_numeric,     #uint32
+    'ReferenceTimestamp'   : encode_numeric,     #uint64
+    'OriginTimestamp'      : encode_numeric,     #uint64
+    'ReceiveTimestamp'     : encode_numeric,     #uint64
+    'TransmitTimestamp'    : encode_numeric,     #uint64
     'ExtensionBytes'       : encode_string,         #[]byte
 
     # Ethernet
-    'EthernetType'        : encode_numeric_zscore,     #int32
+    'EthernetType'        : encode_numeric,     #int32
 
     # IPv4
-    'IHL'                : encode_numeric_zscore,  # int32
-    'TOS'                : encode_numeric_zscore,  # int32
-    'Id'                 : encode_numeric_zscore,  # int32
-    'Flags'              : encode_numeric_zscore,  # int32
-    'FragOffset'         : encode_numeric_zscore,  # int32
-    'TTL'                : encode_numeric_zscore,  # int32
+    'IHL'                : encode_numeric,  # int32
+    'TOS'                : encode_numeric,  # int32
+    'Id'                 : encode_numeric,  # int32
+    'Flags'              : encode_numeric,  # int32
+    'FragOffset'         : encode_numeric,  # int32
+    'TTL'                : encode_numeric,  # int32
 
     # IPv6
-    'TrafficClass'     : encode_numeric_zscore,  # int32
-    'FlowLabel'        : encode_numeric_zscore,  # uint32
-    'Length'           : encode_numeric_zscore,  # int32
-    'NextHeader'       : encode_numeric_zscore,  # int32
-    'HopLimit'         : encode_numeric_zscore,  # int32
+    'TrafficClass'     : encode_numeric,  # int32
+    'FlowLabel'        : encode_numeric,  # uint32
+    'Length'           : encode_numeric,  # int32
+    'NextHeader'       : encode_numeric,  # int32
+    'HopLimit'         : encode_numeric,  # int32
     'SrcIP'            : encode_string,      # string
     'DstIP'            : encode_string,      # string
-    'PayloadEntropy'   : encode_numeric_zscore,  # float64
-    'PayloadSize'      : encode_numeric_zscore,  # int32
+    'PayloadEntropy'   : encode_numeric,  # float64
+    'PayloadSize'      : encode_numeric,  # int32
     'HopByHop'         : encode_string,      # *IPv6HopByHop
 
     # HTTP
@@ -233,41 +248,41 @@ encoders = {
     'UserAgent'        : encode_string,
     'Referer'          : encode_string,
     "ReqCookies"       : encode_string,
-    'ReqContentLength' : encode_numeric_zscore,
+    'ReqContentLength' : encode_numeric,
     'URL'              : encode_string,
-    'ResContentLength' : encode_numeric_zscore,
+    'ResContentLength' : encode_numeric,
     'ContentType'      : encode_string,
-    'StatusCode'       : encode_numeric_zscore,
+    'StatusCode'       : encode_numeric,
 
     # DNS
-    'ID'           : encode_numeric_zscore, # int32
+    'ID'           : encode_numeric, # int32
     'QR'           : encode_bool, # bool
-    'OpCode'       : encode_numeric_zscore, # int32
+    'OpCode'       : encode_numeric, # int32
     'AA'           : encode_bool, # bool
     'TC'           : encode_bool, # bool
     'RD'           : encode_bool, # bool
     'RA'           : encode_bool, # bool
-    'Z'            : encode_numeric_zscore, # int32
-    'ResponseCode' : encode_numeric_zscore, # int32
-    'QDCount'      : encode_numeric_zscore, # int32
-    'ANCount'      : encode_numeric_zscore, # int32
-    'NSCount'      : encode_numeric_zscore, # int32
-    'ARCount'      : encode_numeric_zscore, # int32
+    'Z'            : encode_numeric, # int32
+    'ResponseCode' : encode_numeric, # int32
+    'QDCount'      : encode_numeric, # int32
+    'ANCount'      : encode_numeric, # int32
+    'NSCount'      : encode_numeric, # int32
+    'ARCount'      : encode_numeric, # int32
     'Questions'    : encode_string,
     'Answers'      : encode_string,
     'Authorities'  : encode_string,
     'Additionals'  : encode_string,
 
-    'Type'               : encode_numeric_zscore, # int32
-    'MessageLen'         : encode_numeric_zscore, # int32
-    'HandshakeType'      : encode_numeric_zscore, # int32
-    'HandshakeLen'       : encode_numeric_zscore, # uint32
-    'HandshakeVersion'   : encode_numeric_zscore, # int32
+    'Type'               : encode_numeric, # int32
+    'MessageLen'         : encode_numeric, # int32
+    'HandshakeType'      : encode_numeric, # int32
+    'HandshakeLen'       : encode_numeric, # uint32
+    'HandshakeVersion'   : encode_numeric, # int32
     'Random'             : encode_string, # string
-    'SessionIDLen'       : encode_numeric_zscore,  # uint32
+    'SessionIDLen'       : encode_numeric,  # uint32
     'SessionID'          : encode_string, # string, will be dropped
-    'CipherSuiteLen'     : encode_numeric_zscore,  # int32
-    'ExtensionLen'       : encode_numeric_zscore,  # int32
+    'CipherSuiteLen'     : encode_numeric,  # int32
+    'ExtensionLen'       : encode_numeric,  # int32
     'SNI'                : encode_string, # string
     'OSCP'               : encode_bool,   # bool
     'CipherSuites'       : encode_string, # string
@@ -279,7 +294,7 @@ encoders = {
     'Ja3'                : encode_string, # string
 
     # SWaT 2015 Network CSVs
-    #"num"                          : encode_numeric_zscore,
+    #"num"                          : encode_numeric,
     #"date"                         : encode_string,
     #"time"                         : encode_string,
     #"orig"                         : encode_string,
@@ -291,14 +306,14 @@ encoders = {
     #"proto"                        : encode_string,
     #"appi_name"                    : encode_string,
     #"proxy_src_ip"                 : encode_string,
-    #"Modbus_Function_Code"         : encode_numeric_zscore,
+    #"Modbus_Function_Code"         : encode_numeric,
     #"Modbus_Function_Description"  : encode_string,
-    #"Modbus_Transaction_ID"        : encode_numeric_zscore,
+    #"Modbus_Transaction_ID"        : encode_numeric,
     #"SCADA_Tag"                    : encode_string,
     #"Modbus_Value"                 : encode_string,
-    #"service"                      : encode_numeric_zscore,
-    #"s_port"                       : encode_numeric_zscore,
-    #"Tag"                          : encode_numeric_zscore,
+    #"service"                      : encode_numeric,
+    #"s_port"                       : encode_numeric,
+    #"Tag"                          : encode_numeric,
 }
 
 def to_xy(df, target, labeltypes, debug, binaryClasses):
@@ -500,8 +515,8 @@ def encode_columns(df, result_column, lstm, debug):
             if colName in encoders:
                 encoders[colName](df, col)
             else:
-                print("[INFO] could not locate", colName, "in encoder dict. Defaulting to encode_numeric_zscore")
-                encode_numeric_zscore(df, col)
+                print("[INFO] could not locate", colName, "in encoder dict. Defaulting to encode_numeric")
+                encode_numeric(df, col)
 
     # Since this is now done in to_xy, we can skip encoding the result column here
     # Encode result as text index
@@ -534,6 +549,10 @@ def encode_columns(df, result_column, lstm, debug):
         print("df.columns", df.columns, len(df.columns))
         with pd.option_context('display.max_rows', 10, 'display.max_columns', None):  # more options can be specified also
             print(df)
+
+def use_minmax():
+    global minmax
+    minmax = True
 
 def create_dnn(input_dim, output_dim, loss, optimizer, lstm, numCoreLayers, coreLayerSize, dropoutLayer, wrapLayerSize, relu, binaryClasses, lstmBatchSize, output_bias):
 
@@ -793,3 +812,24 @@ def distribution_plot():
     sns.jointplot(neg_df['V5'], neg_df['V6'],
                 kind='hex', xlim=(-5,5), ylim=(-5,5))
     _ = plt.suptitle("Negative distribution")
+
+
+def calculate_class_weights(classes, one_hot=False):
+    """
+    calculates the class weights 
+    """
+    if one_hot is False:
+        n_classes = max(classes) + 1
+    else:
+        n_classes = len(classes[0])
+    
+    class_counts = [0 for _ in range(int(n_classes))]
+    
+    if one_hot is False:
+        for label in classes:
+            class_counts[label] += 1
+    else:
+        for label in classes:
+            class_counts[np.asarray(label).tolist().index(1)] += 1
+    
+    return {i : (1. / class_counts[i]) * float(len(classes)) / float(n_classes) for i in range(int(n_classes))}
