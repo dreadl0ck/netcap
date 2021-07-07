@@ -4,7 +4,7 @@ description: A brief overview
 
 # Overview
 
-![](.gitbook/assets/screenshot-2019-05-05-at-13.41.40%20%282%29%20%281%29.png)
+![](.gitbook/assets/screenshot-2019-05-05-at-13.41.40%20%282%29%20%283%29%20%281%29.png)
 
 The _Netcap_ \(NETwork CAPture\) framework efficiently converts a stream of network packets into platform neutral type-safe structured audit records that represent specific protocols or custom abstractions. These audit records can be stored on disk or exchanged over the network, and are well suited as a data source for machine learning algorithms. Since parsing of untrusted input can be dangerous and network data is potentially malicious, implementation was performed in a programming language that provides a garbage collected memory safe runtime.
 

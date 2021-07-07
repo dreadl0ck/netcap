@@ -10,6 +10,10 @@ This part covers basic setup of Kali Linux, you can skip this if you already hav
 
 Grab a fresh Kali image from: [https://www.kali.org/downloads/](https://www.kali.org/downloads/)
 
+> Be careful with old kali images where you log in as the root user, and your default shell is still bash and not zshell, you will need to adjust the commands slightly.
+
+If you are using a virtual machine, make sure to supply sufficient resources. Maltego and Netcap are both resource intensive programs, so plan accordingly. It is possible to run on smaller files \(10-50MB\) and analyse simple graphs with a two core / 2GB RAM VM, but its not a pleasant experience and might crash if you run a larger set of transforms at the same time. I recommend at least 4 cores and 4-8GB RAM, but avoid allocating more than half of your host system resources. 
+
 After logging in with the default user **kali** and password **kali**, open a terminal prompt.
 
 Set language for your keyboard \(add to ~/.zshrc to persist\), I've chosen the German layout here:
@@ -81,13 +85,13 @@ $ sudo systemctl start apparmor
 $ sudo systemctl enable apparmor
 ```
 
-add the following directories as a **prefix** to your PATH in the **~/.zshrc** file as well as to **/root/.zshrc**:
+add the following directories as a **prefix** to your PATH in the **~/.zshrc** file \(optionally as well as to **/root/.zshrc**\):
 
 ```text
 export PATH="/home/kali/go/bin:/snap/bin:/usr/local/bin:$PATH"
 ```
 
-To have the correct PATH when using sudo, update the **secure\_path** override using:
+Optional: To have the correct PATH when using sudo, update the **secure\_path** override using:
 
 ```text
 $ sudo visudo
@@ -125,11 +129,13 @@ Compiling with the DPI bindings will dynamilly load libndpi and libprotoident at
 
 If you do not need the DPI functioniality for now, you can simply compile netcap without.
 
+The scripts will also invoke setcap to give the netcap binary permissions to attach to a network interface for live capture.
+
 #### Compile with DPI
 
 ```text
 $ cd /home/kali/go/src/github.com/dreadl0ck/netcap
-$ sudo zeus/scripts/install-debian.sh
+$ zeus/scripts/install-debian.sh
 ```
 
 This will fetch and compile libprotoident and DPI, and then compile NETCAP. The DPI libs are pretty big and compilation will take 10-20mins depending on your hardware. Time to get a coffee.
@@ -137,7 +143,7 @@ This will fetch and compile libprotoident and DPI, and then compile NETCAP. The 
 #### Compile without DPI
 
 ```text
-$ sudo zeus/generated/install-linux-nodpi.sh
+$ zeus/generated/install-linux-nodpi.sh
 ```
 
 Either way, you should now have the **net** binary in your PATH, verify by running:
@@ -170,9 +176,6 @@ available subcommands:
 
 usage: ./net <subcommand> [flags]
 or: ./net <subcommand> [-h] to get help for the subcommand
-
-$ sudo net
-[same output]
 ```
 
 ### Tab completion
