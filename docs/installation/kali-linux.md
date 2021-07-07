@@ -85,13 +85,13 @@ $ sudo systemctl start apparmor
 $ sudo systemctl enable apparmor
 ```
 
-add the following directories as a **prefix** to your PATH in the **~/.zshrc** file \(optionally as well as to **/root/.zshrc**\):
+add the following directories as a **prefix** to your PATH in the **~/.zshrc** file \(optionally as well to **/root/.zshrc**\):
 
 ```text
 export PATH="/home/kali/go/bin:/snap/bin:/usr/local/bin:$PATH"
 ```
 
-Optional: To have the correct PATH when using sudo, update the **secure\_path** override using:
+Optional: To have the correct PATH with all binaries produced by the go compiler and netcap when using sudo as well, update the **secure\_path** override using:
 
 ```text
 $ sudo visudo
@@ -99,7 +99,7 @@ $ sudo visudo
 Defaults    secure_path="/home/kali/go/bin:/snap/bin:/usr/local/bin:<original-path>"
 ```
 
-Source it and verify the go compiler binary is found by the shell:
+Source the rc file and verify the go compiler binary is found by the shell:
 
 ```text
 $ source ~/.zshrc
