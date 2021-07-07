@@ -9,6 +9,7 @@ VERSION="0.5.13"
 
 ## Clone and compile DPI dependencies from source
 
+echo "installing dependencies via apt (requires root)..."
 sudo apt update
 sudo apt install -y libpcap-dev software-properties-common ca-certificates liblzo2-2 libkeyutils-dev
 sudo update-ca-certificates
@@ -59,9 +60,13 @@ sudo find / -iname ndpi_main.h
 sudo find / -iname libprotoident.h
 sudo find / -iname libtrace.h
 
-# ensure the go compiler can output the binary to /usr/local/bin
-sudo chown -R "$USER" /usr/local/bin
+mkdir -p bin
+go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o bin/net github.com/dreadl0ck/netcap/cmd
 
-go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+echo "moving binary to /usr/local/bin"
+sudo mv bin/net /usr/local/bin
 
+echo "setting permissions to attach to network interface"
+sudo setcap cap_net_raw,cap_net_admin=eip $(which net)
 
+echo "done."

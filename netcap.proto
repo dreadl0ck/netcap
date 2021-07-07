@@ -219,6 +219,20 @@ message Connection {
   int64 Duration = 17;
   int64 BytesServerToClient = 18;
   int64 BytesClientToServer = 19;
+
+  // tcp flags
+  int32 NumFINFlags = 20;
+  int32 NumRSTFlags = 21;
+  int32 NumACKFlags = 22;
+  int32 NumSYNFlags = 23;
+  int32 NumURGFlags = 24;
+  int32 NumECEFlags = 25;
+  int32 NumPSHFlags = 26;
+  int32 NumCWRFlags = 27;
+  int32 NumNSFlags = 28;
+
+  // tcp window size
+  int32 MeanWindowSize = 29;
 }
 
 //
