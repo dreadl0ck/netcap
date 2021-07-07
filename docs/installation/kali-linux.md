@@ -143,6 +143,7 @@ This will fetch and compile libprotoident and DPI, and then compile NETCAP. The 
 #### Compile without DPI
 
 ```text
+$ cd /home/kali/go/src/github.com/dreadl0ck/netcap
 $ zeus/generated/install-linux-nodpi.sh
 ```
 
