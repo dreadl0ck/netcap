@@ -106,6 +106,12 @@ type Collector struct {
 
 	Epochs    int
 	numEpochs int
+
+	// throughput measurements in timestamps mapped to packets per second values
+	pps map[time.Time]float64
+
+	// interval for tracking collector stats
+	statsInterval time.Duration
 }
 
 // New returns a new Collector instance.
@@ -123,6 +129,8 @@ func New(config Config) *Collector {
 		config:              &config,
 		start:               time.Now(),
 		numEpochs:           1,
+		pps:                 map[time.Time]float64{},
+		statsInterval:       5 * time.Second,
 	}
 }
 
@@ -484,15 +492,12 @@ func (c *Collector) stats() {
 func (c *Collector) printProgressInterval() chan struct{} {
 	stop := make(chan struct{})
 
-	// TODO: adjust progress refresh interval based on input file size?
-	const interval = 5
-
 	go func() {
 		for {
 			select {
 			case <-stop:
 				return
-			case <-time.After(interval * time.Second):
+			case <-time.After(c.statsInterval):
 				// must be locked, otherwise a race occurs when sending a SIGINT
 				// and triggering wg.Wait() in another goroutine...
 				c.statMutex.Lock()
@@ -508,13 +513,19 @@ func (c *Collector) printProgressInterval() chan struct{} {
 					curr = atomic.LoadInt64(&c.current)
 					num  = atomic.LoadInt64(&c.numPackets)
 					last = atomic.LoadInt64(&c.numPacketsLast)
-					pps  = (curr - last) / interval
+					pps  = (curr - last) / int64(c.statsInterval.Seconds())
 				)
 
+				// update prometheus metric
 				newPacketsPerSecond.WithLabelValues().Set(float64(pps))
 
+				// track value for charting
+				c.pps[time.Now()] = float64(pps)
+
+				// update internal stats
 				atomic.StoreInt64(&c.numPacketsLast, curr)
 
+				// print to stderr
 				if !c.config.DecoderConfig.Quiet || c.config.DecoderConfig.PrintProgress { // print
 					c.clearLine()
 					_, _ = fmt.Fprintf(os.Stderr,

@@ -45,6 +45,7 @@ var (
 
 	flagScatterDuration = fs.Duration("scatter-duration", 5*time.Minute, "interval for scatter chart")
 	flagScatter         = fs.Bool("scatter", true, "generate a scatter plot for labeled audit records")
+	flagPPS             = fs.Bool("pps", false, "generate a line plot for throughput in packets per second")
 
 	flagBPF = fs.String("bpf", "", "supply a BPF filter to use prior to processing packets with netcap")
 
