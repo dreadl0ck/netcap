@@ -34,7 +34,7 @@ type scatterData struct {
 	value int
 }
 
-// decodingErrorSlice implements sort.Interface to sort decodingErrors based on their number of occurrence.
+// scatterDataSlice implements sort.Interface to sort scatter data points based on their timestamp.
 type scatterDataSlice []scatterData
 
 // Len will return the length.

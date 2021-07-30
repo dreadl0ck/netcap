@@ -452,6 +452,10 @@ func Run() {
 			panic("failed to write memory profile: " + err.Error())
 		}
 	}
+
+	if *flagPPS {
+		c.RenderPacketsPerSecond(*flagInput, *flagOutDir)
+	}
 }
 
 func generateElasticIndices(elasticAddrs []string) {
