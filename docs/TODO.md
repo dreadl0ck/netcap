@@ -1,5 +1,9 @@
 # TODOs
 
+- add tess for reading SSL pcaps: https://wiki.wireshark.org/SLL
+- implement rule engine
+- check:
+
 panic: runtime error: index out of range [-1]
 
 goroutine 38175 [running]:
