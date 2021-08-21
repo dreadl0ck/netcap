@@ -57,10 +57,8 @@ archives:
       - types/rust/*
       - types/swift/*
       - types/netcap.pb.go
-
-    format_overrides:
-      - goos: windows
-        format: zip
+    # Disables the binary count check - TODO add multiple archives
+    allow_different_binary_count: true
 
 checksum:
   name_template: 'checksums.txt'
