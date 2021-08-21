@@ -217,6 +217,8 @@ func (c *Collector) handleLinkType(lt layers.LinkType) {
 		c.config.BaseLayer = layers.LayerTypeRadioTap
 	case layers.LinkTypePPP:
 		c.config.BaseLayer = layers.LayerTypePPP
+	case layers.LinkTypeLinuxSLL:
+		c.config.BaseLayer = layers.LayerTypeLinuxSLL
 	default:
 		log.Fatal("unhandled link type: ", lt)
 	}
