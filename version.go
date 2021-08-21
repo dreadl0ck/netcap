@@ -2,7 +2,7 @@
 package netcap
 
 // Version is the current version identifier for netcap.
-var Version = "v0.5.14"
+var Version = "v0.6.1"
 
 // Commit is the git commit id of the current version.
-var Commit = "dcf3741ca8eab9bd0cfe4da48be1cd2b36f32e0a"
+var Commit = "8831a2954fe52ad2c52e6d86c0becd29ef61d638"
