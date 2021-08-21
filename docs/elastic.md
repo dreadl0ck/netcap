@@ -2,6 +2,36 @@
 description: Elastic notes
 ---
 
+# setup
+
+## permissions for mounted directories
+
+- dirs must be owned by uid 1000:1000
+- kibana.yml and elasticsearch ymal must have chmod 644
+
+## reset test license: remove data dir
+
+  rm -r /mnt/storage/elasticsearch
+
+## TLS required when using basic license
+
+  serverconfig » [1/1] executing shell
+  [root@host elasticsearch]# curl -X POST "localhost:9200/_license/start_trial?acknowledge=true&pretty"
+  {
+  "acknowledged" : true,
+  "trial_was_started" : true,
+  "type" : "trial"
+  }
+  [root@host elasticsearch]# elasticsearch-setup-passwords interactive
+
+> if using a reverse proxy like traefik: use the same username and password as basic auth 
+
+## Find objects API
+
+> todo: automate index and mapping and index pattern reset
+
+https://www.elastic.co/guide/en/kibana/current/saved-objects-api-find.html
+
 # Metricbeat
 
     metricbeat modules enable golang system
