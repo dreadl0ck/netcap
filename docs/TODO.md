@@ -1,6 +1,57 @@
 # TODOs
 
-Add tool to download geolite dbs:
+panic: runtime error: index out of range [-1]
+
+goroutine 38175 [running]:
+github.com/dreadl0ck/netcap/reassembly.(*reassemblyObject).Info(0xc0003ea078, 0x177, 0x0)
+/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/reassemblyObject.go:82 +0xd9
+github.com/dreadl0ck/netcap/decoder/stream/tcp.(*tcpConnection).ReassembledSG(0xc02c9fb040, 0x58a36d0, 0xc0003ea078, 0x0, 0x0)
+/Users/alien/go/src/github.com/dreadl0ck/netcap/decoder/stream/tcp/tcpConnection.go:243 +0x77
+github.com/dreadl0ck/netcap/reassembly.(*Assembler).sendToConnection(0xc0003ea000, 0xc0187eab20, 0xc0187eac18, 0xf385bb1)
+/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:787 +0x171
+github.com/dreadl0ck/netcap/reassembly.(*Assembler).skipFlush(0xc0003ea000, 0xc0187eab20, 0xc0187eac18)
+/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:901 +0xb4
+github.com/dreadl0ck/netcap/reassembly.(*Assembler).closeConn(0xc0003ea000, 0xc0187eab20)
+/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:1114 +0x75
+github.com/dreadl0ck/netcap/reassembly.(*Assembler).FlushAllProgress.func1(0xc0003ea000, 0xc066ec29a0, 0xc0647127b0, 0xc0187eab20)
+/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:1098 +0x35
+created by github.com/dreadl0ck/netcap/reassembly.(*Assembler).FlushAllProgress
+/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:1097 +0x188
+
+
+- resolver API: add ip blacklist and integrate feeds
+- resolvers: integrate IP and domain reputation feeds
+
+- document: stateful VS stateless packet decoders (eg UDP vs Connection)
+
+## NEXT
+
+- implement support for MLDv2MulticastListenerReport packets
+- create elastic indices: netcap-ospf does already exist?
+- censor passwords from dumped config in netcap.log
+- log hint to use pcapfix tool for errors during pcap processing like 'capture length exceeds snap length'
+- add force flag to disable prompts: flagNoPrompt already exists
+- overwrite check does not include other formats than ncap or ncap.gz
+- service detection seems racy, debug
+- add flag to disable writing files to disk (but: still generating the audit records
+- unify flag naming and update docs, eg fileStorage
+
+## BACKLOG
+  
+- add an audit record file log rotation and cleanup mechanism
+- log amount of bytes written to disk for files and conns when exiting the cli tool
+
+- add option to preserve raw pcap when capturing interface, for live capture in maltego
+- maltego: document that drag and drop via Codium works on macOS and Linux!
+- Open traffic with credentials in Wireshark
+- on exploit entity: Open Traffic for Exploit in Wireshark
+
+- add configurable timeout for processing of last TCP / UDP streams
+- add option to stop processing streams after X bytes?
+
+- restrict reassembly from growing unbounded when reading from pcap (+ how to handle it in live mode)
+
+Add tool to download latest geolite dbs:
 
 https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
 https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
@@ -122,6 +173,11 @@ ubuntu move ida to path that maltego will find:
 - add dbs in docker containers
 
 ## WIP
+
+## Future Work
+
+- add support for Kibana location maps
+- detect SYN attack
 
 ## v0.5 Documentation
 
@@ -373,8 +429,8 @@ entities:
 
 ## Linux cross compilation
 
-- CC=x86_64-pc-linux-gcc GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux -i github.com/dreadl0ck/netcap/cmd
-- GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux -ldflags="-L /usr/local/opt/libpcap/lib" -i github.com/dreadl0ck/netcap/cmd
+- CC=x86_64-pc-linux-gcc GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux github.com/dreadl0ck/netcap/cmd
+- GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux -ldflags="-L /usr/local/opt/libpcap/lib" github.com/dreadl0ck/netcap/cmd
 
 ## Benchmarks
 

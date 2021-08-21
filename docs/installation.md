@@ -21,7 +21,7 @@ $ go get -u github.com/dreadl0ck/netcap/...
 ## Manual Build
 
 ```text
-$ go build -ldflags "-s -w" -o /usr/local/bin/net -i github.com/dreadl0ck/netcap/cmd
+$ go build -ldflags "-s -w" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
 ```
 
 ## Reproducible Builds via Go Modules
@@ -41,7 +41,7 @@ You can read about Go modules here:
 To install the command-line tool:
 
 ```text
-$ go build -o /usr/local/bin/net -i github.com/dreadl0ck/netcap/cmd
+$ go build -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
 ```
 
 ## Cross Compilation
@@ -49,7 +49,7 @@ $ go build -o /usr/local/bin/net -i github.com/dreadl0ck/netcap/cmd
 To cross compile for other architectures, set the _GOARCH_ and _GOOS_ environment variables. For example to cross compile a binary for _linux amd64_:
 
 ```text
-$ GOARCH=amd64 GOOS=linux go build -o bin/net -i github.com/dreadl0ck/netcap/cmd
+$ GOARCH=amd64 GOOS=linux go build -o bin/net github.com/dreadl0ck/netcap/cmd
 ```
 
 ## Homebrew
