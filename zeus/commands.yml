@@ -94,17 +94,21 @@ commands:
     ## Release
     ##
 
+    remove-dist:
+        exec: rm -r dist
+
     # run a prod release
     release:
         description: release a new version, bundle and publish on github
         dependencies:
+            - remove-dist
             - gen-version
             - version-bump
             - check-version
             - gen-proto-release
             - build-linux
             - build-linux-nodpi
-        exec: goreleaser check && goreleaser release --rm-dist --skip-validate
+        exec: goreleaser check && goreleaser release --skip-validate
 
     # run a test release
     release-test:
