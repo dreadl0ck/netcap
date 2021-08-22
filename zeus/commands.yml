@@ -95,7 +95,7 @@ commands:
     ##
 
     remove-dist:
-        exec: rm -rf dist
+        exec: rm -rf dist; rm -rf dist-linux
 
     # run a prod release
     release:
