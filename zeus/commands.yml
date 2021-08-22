@@ -120,8 +120,29 @@ commands:
             for f in dist-linux/*.tar.gz; do
                 gh release upload --clobber v$VERSION $f
             done
-            cp dist-linux/checksums.txt dist-linux/checksums-linux.txt
-            gh release upload --clobber v$VERSION dist-linux/checksums-linux.txt
+
+            # create correct darwin archives
+            # TODO: fix goreleaser config
+            tar -cvf netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz dist/netcap_macOS_nodpi_darwin_amd64
+            mv netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz dist
+            tar -cvf netcap_v${VERSION}_darwin_amd64.tar.gz dist/netcap_darwin_amd64
+            mv netcap_v${VERSION}_darwin_amd64.tar.gz dist
+
+            # upload
+            gh release upload --clobber v$VERSION dist/netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz
+            gh release upload --clobber v$VERSION dist/netcap_${VERSION}_darwin_amd64.tar.gz
+
+            # update checksums file
+            cd dist
+            shasum -a 256 netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz >> ../dist-linux/checksums.txt
+            shasum -a 256 netcap_${VERSION}_darwin_amd64.tar.gz >> ../dist-linux/checksums.txt
+            cd ..
+
+            # append hash of windows build to final checksum file
+            head -n 1 dist/checksums.txt >> dist-linux/checksums.txt
+
+            # sync
+            gh release upload --clobber v$VERSION dist-linux/checksums.txt
 
     # run a test release
     release-test:
