@@ -73,7 +73,7 @@ changelog:
 
 brews:
   -
-    github:
+    tap:
       owner: dreadl0ck
       name: homebrew-formulas
     homepage: "https://github.com/dreadl0ck/netcap"
