@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.6.1
+    VERSION: 0.6.2
 
 # command data
 commands:
@@ -95,7 +95,7 @@ commands:
     ##
 
     remove-dist:
-        exec: rm -r dist
+        exec: rm -rf dist
 
     # run a prod release
     release:
