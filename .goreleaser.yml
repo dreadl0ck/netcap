@@ -1,6 +1,7 @@
 builds:
   - main: ./cmd
     binary: net
+    id: netcap
     goos:
       - darwin
     ldflags:
@@ -43,9 +44,8 @@ builds:
       - amd64
 
 archives:
-  -
-    # Defaults are any files matching `LICENCE*`, `LICENSE*`,
-    # `README*` and `CHANGELOG*` (case-insensitive).
+  - id: "netcap"
+    builds: [ 'net' ]
     files:
       - LICENSE
       - README.md
@@ -58,7 +58,61 @@ archives:
       - types/swift/*
       - types/netcap.pb.go
     # Disables the binary count check - TODO add multiple archives
-    allow_different_binary_count: true
+    #allow_different_binary_count: true
+  - id: "netcap_macOS_nodpi"
+    builds: [ 'netcap_macOS_nodpi' ]
+    files:
+      - LICENSE
+      - README.md
+      - types/cpp/*
+      - types/csharp/*
+      - types/java/*
+      - types/js/*
+      - types/python/*
+      - types/rust/*
+      - types/swift/*
+      - types/netcap.pb.go
+    # Disables the binary count check - TODO add multiple archives
+    #allow_different_binary_count: true
+  - id: "netcap_nodpi"
+    builds: [ 'netcap_nodpi' ]
+    files:
+      - LICENSE
+      - README.md
+      - types/cpp/*
+      - types/csharp/*
+      - types/java/*
+      - types/js/*
+      - types/python/*
+      - types/rust/*
+      - types/swift/*
+      - types/netcap.pb.go
+    # Disables the binary count check - TODO add multiple archives
+    #allow_different_binary_count: true
+
+nfpms:
+  -
+    id: "netcap"
+    builds: ['netcap']
+    formats:
+        - deb
+    maintainer: "Philipp Mieden <dreadl0ck@protonmail.ch>"
+    description: "A framework for secure and scalable network traffic analysis"
+    license: "GPL v3"
+    vendor: "netcap.io"
+    homepage: "https://netcap.io/"
+    file_name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}-{{.Arch}}"
+    replacements:
+      amd64: 64bit
+      386: 32bit
+      arm: ARM
+      arm64: ARM64
+      darwin: macOS
+      linux: Linux
+      windows: Windows
+      openbsd: OpenBSD
+      netbsd: NetBSD
+      freebsd: FreeBSD
 
 checksum:
   name_template: 'checksums.txt'
