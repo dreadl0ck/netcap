@@ -23,7 +23,7 @@ RUN go build -mod=readonly ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netca
 FROM ubuntu:18.04
 ARG IPV6_SUPPORT=true
 RUN apt-get update
-RUN apt install -y libpcap-dev software-properties-common ca-certificates liblzo2-2 libkeyutils-dev git-lfs
+RUN apt install -y --fix-missing libpcap-dev software-properties-common ca-certificates liblzo2-2 libkeyutils-dev git-lfs
 RUN update-ca-certificates
 WORKDIR /netcap
 COPY --from=builder /netcap/bin/* /usr/bin/
