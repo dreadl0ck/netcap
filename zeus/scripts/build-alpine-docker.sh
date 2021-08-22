@@ -70,7 +70,7 @@ cp README.md dist-linux/${ARCHIVE}
 cd dist-linux
 
 # create tar archive for linux
-tar -cvf ${ARCHIVE}.tar.gz ${ARCHIVE}
+tar -czvf ${ARCHIVE}.tar.gz ${ARCHIVE}
 
 # add checksum
 # goreleaser will truncate the checksums.txt file upon opening

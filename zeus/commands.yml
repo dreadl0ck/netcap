@@ -121,19 +121,17 @@ commands:
                 gh release upload --clobber v$VERSION $f
             done
 
+            cd dist
             # create correct darwin archives
             # TODO: fix goreleaser config
-            tar -cvf netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz dist/netcap_macOS_nodpi_darwin_amd64
-            mv netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz dist
-            tar -cvf netcap_v${VERSION}_darwin_amd64.tar.gz dist/netcap_darwin_amd64
-            mv netcap_v${VERSION}_darwin_amd64.tar.gz dist
+            tar -czvf netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz netcap_macOS_nodpi_darwin_amd64
+            tar -czvf netcap_${VERSION}_darwin_amd64.tar.gz netcap_darwin_amd64
 
             # upload
-            gh release upload --clobber v$VERSION dist/netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz
-            gh release upload --clobber v$VERSION dist/netcap_${VERSION}_darwin_amd64.tar.gz
+            gh release upload --clobber v$VERSION netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz
+            gh release upload --clobber v$VERSION netcap_${VERSION}_darwin_amd64.tar.gz
 
             # update checksums file
-            cd dist
             shasum -a 256 netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz >> ../dist-linux/checksums.txt
             shasum -a 256 netcap_${VERSION}_darwin_amd64.tar.gz >> ../dist-linux/checksums.txt
             cd ..
