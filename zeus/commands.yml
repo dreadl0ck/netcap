@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.6.2
+    VERSION: 0.6.3
 
 # command data
 commands:
@@ -108,7 +108,20 @@ commands:
             - gen-proto-release
             - build-linux
             - build-linux-nodpi
+            - run-goreleaser
+            - update-release-assets
+        exec: echo "release v$VERSION done"
+
+    run-goreleaser:
         exec: goreleaser check && goreleaser release --skip-validate
+
+    update-release-assets:
+        exec: |
+            for f in dist-linux/*.tar.gz; do
+                gh release upload --clobber v$VERSION $f
+            done
+            cp dist-linux/checksums.txt dist-linux/checksums-linux.txt
+            gh release upload --clobber v$VERSION dist-linux/checksums-linux.txt
 
     # run a test release
     release-test:
