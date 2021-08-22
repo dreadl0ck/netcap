@@ -90,29 +90,29 @@ archives:
     # Disables the binary count check - TODO add multiple archives
     #allow_different_binary_count: true
 
-nfpms:
-  -
-    id: "netcap"
-    builds: ['netcap']
-    formats:
-        - deb
-    maintainer: "Philipp Mieden <dreadl0ck@protonmail.ch>"
-    description: "A framework for secure and scalable network traffic analysis"
-    license: "GPL v3"
-    vendor: "netcap.io"
-    homepage: "https://netcap.io/"
-    file_name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}-{{.Arch}}"
-    replacements:
-      amd64: 64bit
-      386: 32bit
-      arm: ARM
-      arm64: ARM64
-      darwin: macOS
-      linux: Linux
-      windows: Windows
-      openbsd: OpenBSD
-      netbsd: NetBSD
-      freebsd: FreeBSD
+#nfpms:
+#  -
+#    id: "netcap"
+#    builds: ['netcap']
+#    formats:
+#        - deb
+#    maintainer: "Philipp Mieden <dreadl0ck@protonmail.ch>"
+#    description: "A framework for secure and scalable network traffic analysis"
+#    license: "GPL v3"
+#    vendor: "netcap.io"
+#    homepage: "https://netcap.io/"
+#    file_name_template: "{{.ProjectName}}_{{.Version}}_{{.Os}}-{{.Arch}}"
+#    replacements:
+#      amd64: 64bit
+#      386: 32bit
+#      arm: ARM
+#      arm64: ARM64
+#      darwin: macOS
+#      linux: Linux
+#      windows: Windows
+#      openbsd: OpenBSD
+#      netbsd: NetBSD
+#      freebsd: FreeBSD
 
 checksum:
   name_template: 'checksums.txt'
