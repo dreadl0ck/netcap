@@ -48,24 +48,24 @@ fi
 
 ARCHIVE="netcap_${VERSION}_linux_amd64_libc"
 
-echo "[INFO] preparing dist folder, CONTAINER_ID: $CONTAINER_ID, archive: $ARCHIVE"
+echo "[INFO] preparing dist-linux folder, CONTAINER_ID: $CONTAINER_ID, archive: $ARCHIVE"
 
 # clean up
-rm -rf dist/${ARCHIVE}
+rm -rf dist-linux/${ARCHIVE}
 
 # create path in dist
-mkdir -p dist/${ARCHIVE}
+mkdir -p dist-linux/${ARCHIVE}
 
 # copy binaries from container
-docker cp $CONTAINER_ID:/usr/bin/net dist/${ARCHIVE}/net
+docker cp $CONTAINER_ID:/usr/bin/net dist-linux/${ARCHIVE}/net
 
 # remove container
 docker rm $CONTAINER_ID
 
-cp LICENSE dist/${ARCHIVE}
-cp README.md dist/${ARCHIVE}
+cp LICENSE dist-linux/${ARCHIVE}
+cp README.md dist-linux/${ARCHIVE}
 
-cd dist
+cd dist-linux
 
 # create tar archive for linux
 tar -cvf ${ARCHIVE}.tar.gz ${ARCHIVE}
