@@ -266,9 +266,9 @@ commands:
         arguments:
             - tag:String
         exec: |
-            git tag -d $tag
-            # dont delete remote by default
-            #git push --delete origin $tag
+            git tag -d $tag || true
+            # try to delete remote tag as well
+            git push --delete origin $tag || true
 
     download-test-pcaps:
         description: fetches the pcap files for the unit tests
