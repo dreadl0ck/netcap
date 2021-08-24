@@ -1,5 +1,7 @@
 # TODOs
 
+- https://github.com/dreadl0ck/netcap/issues/19
+- add github issue template
 - add tess for reading SSL pcaps: https://wiki.wireshark.org/SLL
 - implement rule engine
 - check:
