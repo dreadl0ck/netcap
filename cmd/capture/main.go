@@ -14,6 +14,7 @@
 package capture
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -391,7 +392,7 @@ func Run() {
 
 	// collect traffic live from named interface
 	if live {
-		err = c.CollectLive(*flagInterface, *flagBPF)
+		err = c.CollectLive(*flagInterface, *flagBPF, context.Background())
 		if err != nil {
 			log.Fatal("failed to collect live packets: ", err)
 		}

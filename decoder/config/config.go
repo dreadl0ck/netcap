@@ -14,6 +14,7 @@
 package config
 
 import (
+	"runtime"
 	"sync"
 	"time"
 
@@ -69,6 +70,8 @@ var DefaultConfig = &Config{
 	RemoveClosedStreams:        false,
 	CompressionBlockSize:       defaults.CompressionBlockSize,
 	CompressionLevel:           defaults.CompressionLevel,
+	NumStreamWorkers:           runtime.NumCPU(),
+	StreamBufferSize:           100,
 }
 
 // Config contains configuration parameters

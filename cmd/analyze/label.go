@@ -254,7 +254,12 @@ func (t task) label() {
 						if *flagEncodeCategoricals {
 
 							// get index num
-							i := encoder.GetIndex(sum.UniqueStrings, v)
+							i, found := sum.UniqueStrings[v]
+							if !found {
+								log.Println("value not found", v)
+								continue
+							}
+
 							if *flagNormalizeCategoricals {
 								// TODO: make normalization a second stage?
 								// normalize
