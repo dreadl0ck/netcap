@@ -113,12 +113,16 @@ HTTP parameter command injection analysis:
 
 You can read more about the Maltego integration in the [docs](https://app.gitbook.com/@netcap/s/netcap/v/v0.5/maltego-integration).
 
-## License
-
-Netcap is licensed under the GNU General Public License v3, which is a very permissive open source license, that allows others to do almost anything they want with the project, except to distribute closed source versions. This license type was chosen with Netcaps research purpose in mind, and in the hope that it leads to further improvements and new capabilities contributed by other researchers on the long term.
-
 ## Contributing
 
 Contributions welcome, there's plenty of stuff to do, from simple additions to low level framework engineering!
 
 Please see the [Contributing Page](https://docs.netcap.io/v/v0.5/contributing) for more information.
+
+## Bug Reports
+
+If you encounter a bug while using Netcap, please fill out the [bugreport template](https://github.com/dreadl0ck/netcap/blob/master/docs/bugreport.md) and open a github issue.
+
+## License
+
+Netcap is licensed under the GNU General Public License v3, which is a very permissive open source license, that allows others to do almost anything they want with the project, except to distribute closed source versions. This license type was chosen with Netcaps research purpose in mind, and in the hope that it leads to further improvements and new capabilities contributed by other researchers on the long term.
