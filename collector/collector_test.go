@@ -1,8 +1,11 @@
-package collector
+package collector_test
 
 import (
+	"context"
 	"fmt"
-	"os"
+	"github.com/dreadl0ck/netcap/collector"
+	"log"
+	"os/exec"
 	"runtime"
 	"testing"
 	"time"
@@ -16,29 +19,45 @@ import (
 // TestCaptureLive will test capturing traffic live from the loopback interface
 func TestCaptureLive(t *testing.T) {
 	// prepare default config
-	DefaultConfig.DecoderConfig.Out = "../tests/collector-test-live"
-	DefaultConfig.DecoderConfig.Source = "unit tests live capture"
-	DefaultConfig.DecoderConfig.Quiet = true
+	collector.DefaultConfig.DecoderConfig.Out = "../tests/collector-test-live"
+	collector.DefaultConfig.DecoderConfig.Source = "unit tests live capture"
+	collector.DefaultConfig.DecoderConfig.Quiet = true
 
-	c := New(DefaultConfig)
+	// init config
+	c := collector.New(collector.DefaultConfig)
 	c.PrintConfiguration()
 
 	// start timer
 	start := time.Now()
 
+	// init context
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// stop collector after five seconds
 	go func() {
 		time.Sleep(5 * time.Second)
-		c.Stop()
+		cancel()
 		fmt.Println("live capture done in", time.Since(start))
-		os.Exit(0)
 	}()
 
+	// generate some traffic by pinging localhost
+	go func() {
+		fmt.Println("pinging localhost")
+		out, err := exec.Command("ping", "localhost").CombinedOutput()
+		if err != nil {
+			fmt.Println(string(out))
+			log.Fatal(err)
+		}
+	}()
+
+	// set localhost interface
 	interfaceName := "lo"
 	if runtime.GOOS == "darwin" {
 		interfaceName = "lo0"
 	}
 
-	err := c.CollectLive(interfaceName, "")
+	// collect packets from interface
+	err := c.CollectLive(interfaceName, "", ctx)
 	if err != nil {
 		t.Fatal("failed to collect live packets: ", err)
 	}
@@ -46,7 +65,7 @@ func TestCaptureLive(t *testing.T) {
 
 func TestCapturePCAP(t *testing.T) {
 	// init collector
-	c := New(Config{
+	c := collector.New(collector.Config{
 		WriteUnknownPackets: false,
 		Workers:             12,
 		PacketBufferSize:    100,
@@ -56,6 +75,7 @@ func TestCapturePCAP(t *testing.T) {
 			Buffer:               true,
 			Compression:          true,
 			CSV:                  false,
+			Proto: true,
 			IncludeDecoders:      "",
 			ExcludeDecoders:      "",
 			Out:                  "../tests/collector-test",
@@ -83,6 +103,10 @@ func TestCapturePCAP(t *testing.T) {
 			ClosePendingTimeOut:  5 * time.Second,
 			FileStorage:          "",
 			Quiet:                true,
+			CompressionBlockSize: defaults.CompressionBlockSize,
+			CompressionLevel: defaults.CompressionLevel,
+			NumStreamWorkers: runtime.NumCPU(),
+			StreamBufferSize: 100,
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("datagrams"),

@@ -16,6 +16,8 @@
 package collector
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"sync/atomic"
 
@@ -28,7 +30,7 @@ import (
 // optionally a bpf can be supplied.
 // this is the darwin version that uses the pcap lib with c bindings to fetch packets
 // currently there is no other option to do that.
-func (c *Collector) CollectLive(iface, bpf string) error {
+func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) (error) {
 	// open interface in live mode
 	// snaplen, promiscuous mode and the timeout value can be configured over the collector instance
 	handle, err := pcap.OpenLive(iface, int32(c.config.SnapLen), c.config.Promisc, c.config.Timeout)
@@ -66,30 +68,39 @@ func (c *Collector) CollectLive(iface, bpf string) error {
 
 	// read packets from channel
 	for {
-		// read next packet
-		data, ci, err = handle.ReadPacketData()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
+		select {
+		case <-ctx.Done():
+			fmt.Println("live capture canceled via context")
+			goto done
+		default:
+
+			// read next packet
+			data, ci, err = handle.ReadPacketData()
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+
+				return errors.Wrap(err, errReadingPacketData+" interface: "+iface)
 			}
 
-			return errors.Wrap(err, errReadingPacketData+" interface: "+iface)
+			// increment atomic packet counter
+			atomic.AddInt64(&c.current, 1)
+
+			// must be locked, otherwise a race occurs when sending a SIGINT
+			//  and triggering wg.Wait() in another goroutine...
+			c.statMutex.Lock()
+
+			// increment wait group for packet processing
+			c.wg.Add(1)
+
+			c.statMutex.Unlock()
+
+			c.handleRawPacketData(data, &ci)
 		}
-
-		// increment atomic packet counter
-		atomic.AddInt64(&c.current, 1)
-
-		// must be locked, otherwise a race occurs when sending a SIGINT
-		//  and triggering wg.Wait() in another goroutine...
-		c.statMutex.Lock()
-
-		// increment wait group for packet processing
-		c.wg.Add(1)
-
-		c.statMutex.Unlock()
-
-		c.handleRawPacketData(data, &ci)
 	}
+
+	done:
 
 	// Stop progress reporting
 	stopProgress <- struct{}{}

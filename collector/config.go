@@ -14,6 +14,7 @@
 package collector
 
 import (
+	"github.com/dreadl0ck/gopacket/pcap"
 	"os"
 	"time"
 
@@ -38,6 +39,7 @@ var DefaultConfig = Config{
 	DecodeOptions:       utils.GetDecodeOptions("datagrams"),
 	DecoderConfig:       config.DefaultConfig,
 	ResolverConfig:      resolvers.DefaultConfig,
+	Timeout:             pcap.BlockForever,
 	LogErrors:           false,
 }
 
