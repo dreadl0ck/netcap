@@ -16,6 +16,7 @@
 [![Homepage](https://img.shields.io/badge/Homepage-blue.svg)](https://netcap.io)
 [![Documentation](https://img.shields.io/badge/Documentation-blue.svg)](https://docs.netcap.io)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/dreadl0ck/netcap.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/dreadl0ck/netcap/alerts/)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap?ref=badge_shield)
 
 The *Netcap* (NETwork CAPture) framework efficiently converts a stream of network packets into platform neutral type-safe structured audit records that represent specific protocols or custom abstractions.
 These audit records can be stored on disk or exchanged over the network,
@@ -126,3 +127,5 @@ If you encounter a bug while using Netcap, please fill out the [bugreport templa
 ## License
 
 Netcap is licensed under the GNU General Public License v3, which is a very permissive open source license, that allows others to do almost anything they want with the project, except to distribute closed source versions. This license type was chosen with Netcaps research purpose in mind, and in the hope that it leads to further improvements and new capabilities contributed by other researchers on the long term.
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap?ref=badge_large)
