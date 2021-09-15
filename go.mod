@@ -42,6 +42,7 @@ require (
 	github.com/klauspost/pgzip v1.2.5
 	github.com/magefile/mage v1.11.0 // indirect
 	github.com/magiconair/properties v1.8.0
+	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mcnijman/go-emailaddress v1.1.0
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/namsral/flag v1.7.4-pre
@@ -65,6 +66,7 @@ require (
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	golang.org/x/mod v0.4.1 // indirect
 	golang.org/x/net v0.0.0-20210220033124-5f55cee0dc0d
+	golang.org/x/sys v0.0.0-20210915083310-ed5796bab164 // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
 	golang.org/x/tools v0.1.0 // indirect
 	gonum.org/v1/gonum v0.9.1
