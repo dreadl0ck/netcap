@@ -518,6 +518,11 @@ commands:
     install-debian:
         description: build script to compile DPI dependencies and netcap on debian linux
 
+    publish-module:
+        description: publish the latest version as go module
+        help: see https://golang.org/doc/modules/publishing
+        exec: GOPROXY=proxy.golang.org go list -m github.com/dreadl0ck/netcap@${VERSION}
+
     download-geolite:
         description: download the last maxmind geolite version that has been distributed under the creative commons licencse
         exec: |
