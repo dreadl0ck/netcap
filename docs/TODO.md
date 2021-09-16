@@ -1,8 +1,9 @@
 # TODOs
 
+- extend api with context to allow stopping collector
+- improve unit tests
 - https://github.com/dreadl0ck/netcap/issues/19
-- add github issue template
-- add tess for reading SSL pcaps: https://wiki.wireshark.org/SLL
+- add test for reading SLL pcaps: https://wiki.wireshark.org/SLL
 - implement rule engine
 - check:
 
