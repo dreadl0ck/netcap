@@ -29,7 +29,7 @@ require (
 	github.com/felixge/fgprof v0.9.1
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/glycerine/go-unsnap-stream v0.0.0-20210130063903-47dfef350d96 // indirect
-	github.com/go-echarts/go-echarts/v2 v2.2.4 // indirect
+	github.com/go-echarts/go-echarts/v2 v2.2.4
 	github.com/go-errors/errors v1.1.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551 // indirect
