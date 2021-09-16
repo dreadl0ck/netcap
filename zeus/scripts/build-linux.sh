@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # musl
-NODPI=false VERSION=v${VERSION} zeus/scripts/build-alpine-docker.sh
+NODPI=false ARGS="--no-cache" VERSION=v${VERSION} zeus/scripts/build-alpine-docker.sh
 
 # glibc
-NODPI=false VERSION=v${VERSION} zeus/scripts/build-ubuntu-docker.sh
+NODPI=false ARGS="--no-cache" VERSION=v${VERSION} zeus/scripts/build-ubuntu-docker.sh
