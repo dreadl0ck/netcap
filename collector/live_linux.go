@@ -27,7 +27,7 @@ import (
 // CollectLive starts collection of data from the given interface.
 // optionally a BPF can be supplied.
 // this is the linux version that uses the pure go version from pcapgo to fetch packets live.
-func (c *Collector) CollectLive(i string, bpf string) error {
+func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error {
 	// use raw socket to fetch packet on linux live mode
 	handle, err := pcapgo.NewEthernetHandle(i)
 	if err != nil {
@@ -64,30 +64,39 @@ func (c *Collector) CollectLive(i string, bpf string) error {
 
 	// read packets from channel
 	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("live capture canceled via context")
+			goto done
+		default:
 
-		// read next packet
-		data, ci, err = handle.ReadPacketData()
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
+			// read next packet
+			data, ci, err = handle.ReadPacketData()
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				return errors.Wrap(err, errReadingPacketData+" interface: "+i+" bpf: "+bpf)
 			}
-			return errors.Wrap(err, errReadingPacketData+" interface: "+i+" bpf: "+bpf)
+
+			// increment atomic packet counter
+			atomic.AddInt64(&c.current, 1)
+
+			// must be locked, otherwise a race occurs when sending a SIGINT
+			//  and triggering wg.Wait() in another goroutine...
+			c.statMutex.Lock()
+
+			// increment wait group for packet processing
+			c.wg.Add(1)
+
+			c.statMutex.Unlock()
+
+			c.handleRawPacketData(data, &ci)
 		}
-
-		// increment atomic packet counter
-		atomic.AddInt64(&c.current, 1)
-
-		// must be locked, otherwise a race occurs when sending a SIGINT
-		//  and triggering wg.Wait() in another goroutine...
-		c.statMutex.Lock()
-
-		// increment wait group for packet processing
-		c.wg.Add(1)
-
-		c.statMutex.Unlock()
-
-		c.handleRawPacketData(data, &ci)
 	}
+
+
+done:
 
 	// Stop progress reporting
 	stopProgress <- struct{}{}

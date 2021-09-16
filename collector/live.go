@@ -30,7 +30,7 @@ import (
 // optionally a bpf can be supplied.
 // this is the darwin version that uses the pcap lib with c bindings to fetch packets
 // currently there is no other option to do that.
-func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) (error) {
+func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 	// open interface in live mode
 	// snaplen, promiscuous mode and the timeout value can be configured over the collector instance
 	handle, err := pcap.OpenLive(iface, int32(c.config.SnapLen), c.config.Promisc, c.config.Timeout)
