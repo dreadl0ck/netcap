@@ -14,6 +14,7 @@
 package capture
 
 import (
+	"github.com/dreadl0ck/gopacket/pcap"
 	"os"
 	"runtime"
 	"time"
@@ -40,7 +41,7 @@ var (
 	flagInput                  = fs.String("read", "", "read specified file, can either be a pcap or netcap audit record file")
 	flagMetricsAddr            = fs.String("metrics", "", "serve metrics at")
 	flagOutDir                 = fs.String("out", "", "specify output directory, will be created if it does not exist")
-	flagTimeout                = fs.Duration("timeout", 1*time.Second, "set the timeout for live capture, providing a value of zero will be substituted with pcap.BlockForever.")
+	flagTimeout                = fs.Duration("timeout", pcap.BlockForever, "set the timeout for live capture, providing a value of zero will be substituted with pcap.BlockForever.")
 	flagLabels                 = fs.String("labels", "", "path to attacks for labeling audit records")
 
 	flagScatterDuration = fs.Duration("scatter-duration", 5*time.Minute, "interval for scatter chart")

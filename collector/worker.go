@@ -26,11 +26,10 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// worker spawns a new worker goroutine
+// spawnWorker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
-func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet {
+func (c *Collector) spawnWorker(assembler *reassembly.Assembler, packetChan chan gopacket.Packet) {
 	var (
-		in  = make(chan gopacket.Packet, c.config.PacketBufferSize)
 		pkt gopacket.Packet
 
 		errLayer gopacket.ErrorLayer
@@ -46,9 +45,12 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 		layer          gopacket.Layer
 	)
 
-	// start worker
+	// increment wait group for each worker
+	c.wg.Add(1)
+
+	// start spawnWorker
 	go func() {
-		for pkt = range in {
+		for pkt = range packetChan {
 			// nil packet is used to exit goroutine
 			if pkt == nil {
 				return
@@ -181,31 +183,23 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				}
 			}
 
-			c.wg.Done()
-
 			continue
 		}
-	}()
 
-	// return input channel
-	return in
+		// signal waitgroup that this worker is done
+		c.wg.Done()
+	}()
 }
 
 // spawn the configured number of workers.
-func (c *Collector) initWorkers() []chan gopacket.Packet {
+func (c *Collector) initWorkers() {
 
-	// init worker slice
-	workers := make([]chan gopacket.Packet, c.config.Workers)
+	c.packetChan = make(chan gopacket.Packet, c.config.PacketBufferSize)
 
 	// create assemblers
-	for i := range workers {
+	for i := 0; i<c.config.Workers; i++ {
 		a := reassembly.NewAssembler(tcp.GetStreamPool())
 		c.assemblers = append(c.assemblers, a)
-		workers[i] = c.worker(a)
+		c.spawnWorker(a, c.packetChan)
 	}
-
-	// update num worker count
-	c.numWorkers = len(workers)
-
-	return workers
 }

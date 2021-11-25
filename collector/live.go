@@ -87,15 +87,6 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 			// increment atomic packet counter
 			atomic.AddInt64(&c.current, 1)
 
-			// must be locked, otherwise a race occurs when sending a SIGINT
-			//  and triggering wg.Wait() in another goroutine...
-			c.statMutex.Lock()
-
-			// increment wait group for packet processing
-			c.wg.Add(1)
-
-			c.statMutex.Unlock()
-
 			c.handleRawPacketData(data, &ci)
 		}
 	}

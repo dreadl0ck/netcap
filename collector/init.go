@@ -74,7 +74,7 @@ func (c *Collector) Init() (err error) {
 	}
 
 	// start workers
-	c.workers = c.initWorkers()
+	c.initWorkers()
 	c.log.Info("spawned workers", zap.Int("total", c.config.Workers))
 
 	// create full output directory path if set

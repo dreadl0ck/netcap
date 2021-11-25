@@ -62,8 +62,7 @@ type Collector struct {
 	numPacketsLast    int64
 	totalBytesWritten int64
 	numPackets        int64
-	numWorkers        int
-	workers           []chan gopacket.Packet
+	packetChan        chan gopacket.Packet
 	start             time.Time
 
 	// when running multiple epochs, the timestamp of the first run can be preserved.
@@ -137,16 +136,7 @@ func New(config Config) *Collector {
 // stopWorkers halts all workers.
 func (c *Collector) stopWorkers() {
 	// wait until all packets have been decoded
-	c.mu.Lock()
-	for i, w := range c.workers {
-		select {
-		case w <- nil:
-			c.log.Info("worker done", zap.Int("num", i))
-			//case <-time.After(5 * time.Second):
-			//	fmt.Println("worker", i, "seems stuck, skipping...")
-		}
-	}
-	c.mu.Unlock()
+	close(c.packetChan)
 }
 
 // handleSignals catches signals and runs the cleanup
@@ -251,59 +241,44 @@ func (c *Collector) serveCleanupHTTPEndpoint() {
 }
 
 // to decode incoming packets in parallel
-// they are passed to several worker goroutines in round robin style.
+// they are passed to several spawnWorker goroutines in round robin style.
 func (c *Collector) handlePacket(p gopacket.Packet) {
-	// make it work for 1 worker only, can be used for debugging
-	if c.numWorkers == 1 {
-		c.workers[0] <- p
-
-		return
-	}
-
-	c.workers[c.next] <- p
-
-	// increment or reset next
-	if c.config.Workers == c.next+1 {
-		// reset
-		c.next = 0
-	} else {
-		c.next++
-	}
+	c.packetChan <- p
 }
 
 // to decode incoming packets in parallel
-// they are passed to several worker goroutines in round robin style.
-func (c *Collector) handlePacketTimeout(p gopacket.Packet) {
-	select {
-	// send the packetInfo to the decoder routine
-	case c.workers[c.next] <- p:
-	case <-time.After(3 * time.Second):
-		pkt := gopacket.NewPacket(p.Data(), c.config.BaseLayer, gopacket.Default)
-
-		var (
-			nf gopacket.Flow
-			tf gopacket.Flow
-		)
-
-		if nl := pkt.NetworkLayer(); nl != nil {
-			nf = nl.NetworkFlow()
-		}
-
-		if tl := pkt.TransportLayer(); tl != nil {
-			tf = tl.TransportFlow()
-		}
-
-		fmt.Println("handle packet timeout", nf, tf)
-	}
-
-	// increment or reset next
-	if c.config.Workers == c.next+1 {
-		// reset
-		c.next = 0
-	} else {
-		c.next++
-	}
-}
+// they are passed to several spawnWorker goroutines in round robin style.
+//func (c *Collector) handlePacketTimeout(p gopacket.Packet) {
+//	select {
+//	// send the packetInfo to the decoder routine
+//	case c.workers[c.next] <- p:
+//	case <-time.After(3 * time.Second):
+//		pkt := gopacket.NewPacket(p.Data(), c.config.BaseLayer, gopacket.Default)
+//
+//		var (
+//			nf gopacket.Flow
+//			tf gopacket.Flow
+//		)
+//
+//		if nl := pkt.NetworkLayer(); nl != nil {
+//			nf = nl.NetworkFlow()
+//		}
+//
+//		if tl := pkt.TransportLayer(); tl != nil {
+//			tf = tl.TransportFlow()
+//		}
+//
+//		fmt.Println("handle packet timeout", nf, tf)
+//	}
+//
+//	// increment or reset next
+//	if c.config.Workers == c.next+1 {
+//		// reset
+//		c.next = 0
+//	} else {
+//		c.next++
+//	}
+//}
 
 // print errors to stdout in red.
 func (c *Collector) printErrors() {

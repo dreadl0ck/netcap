@@ -1,6 +1,11 @@
 # TODOs
+- fix error implicit declaration of function 'ndpi_finalize_initalization' is invalid in C99
 
-- extend api with context to allow stopping collector
+- https://github.com/hashicorp/yamux
+- https://old.zeek.org/development/howtos/dpd.html
+- https://github.com/glycerine/offheap
+  - https://divan.dev/posts/visual_programming_go/
+
 - improve unit tests
 - https://github.com/dreadl0ck/netcap/issues/19
 - add test for reading SLL pcaps: https://wiki.wireshark.org/SLL
