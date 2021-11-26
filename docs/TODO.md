@@ -1,5 +1,4 @@
 # TODOs
-- fix error implicit declaration of function 'ndpi_finalize_initalization' is invalid in C99
 
 - https://github.com/hashicorp/yamux
 - https://old.zeek.org/development/howtos/dpd.html
