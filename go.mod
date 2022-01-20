@@ -14,7 +14,7 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dlclark/regexp2 v1.4.0
 	github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4
-	github.com/dreadl0ck/go-dpi v0.0.0-20200912122706-f830a777c45f
+	github.com/dreadl0ck/go-dpi v1.0.1
 	github.com/dreadl0ck/gopacket v1.1.16-0.20201228223815-140074f06498
 	github.com/dreadl0ck/ja3 v1.0.1-dreadl0ck-gopacket.0.20200917082239-a29743a537b2
 	github.com/dreadl0ck/maltego v0.0.2
@@ -66,7 +66,7 @@ require (
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 	golang.org/x/mod v0.4.1 // indirect
 	golang.org/x/net v0.0.0-20210220033124-5f55cee0dc0d
-	golang.org/x/sys v0.0.0-20210915083310-ed5796bab164 // indirect
+	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
 	golang.org/x/tools v0.1.0 // indirect
 	gonum.org/v1/gonum v0.9.1

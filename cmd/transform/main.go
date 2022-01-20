@@ -32,6 +32,7 @@ func Run() {
 	}
 
 	log.Println("os.Args:", os.Args)
+	initTransformTool()
 
 	for _, f := range []func(){
 		startCaptureProcess,
