@@ -241,13 +241,13 @@ func (c *Collector) serveCleanupHTTPEndpoint() {
 }
 
 // to decode incoming packets in parallel
-// they are passed to several spawnWorker goroutines in round robin style.
+// they are passed to several worker goroutines.
 func (c *Collector) handlePacket(p gopacket.Packet) {
 	c.packetChan <- p
 }
 
 // to decode incoming packets in parallel
-// they are passed to several spawnWorker goroutines in round robin style.
+// they are passed to several worker goroutines in round robin style.
 //func (c *Collector) handlePacketTimeout(p gopacket.Packet) {
 //	select {
 //	// send the packetInfo to the decoder routine

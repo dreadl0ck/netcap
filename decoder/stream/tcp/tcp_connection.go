@@ -16,6 +16,7 @@ package tcp
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/mgutz/ansi"
 	"log"
 	"os"
 	"reflect"
@@ -64,7 +65,7 @@ func NumSavedTCPConns() int64 {
 // internal structure that describes a bi-directional TCP connection
 // It implements the reassembly.Stream interface to handle the incoming data
 // and manage the stream lifecycle
-// this structure has an optimized field order to avoid excessive padding.
+// this structure has an optimized field order, to avoid excessive padding.
 type tcpConnection struct {
 	sync.Mutex
 	net, transport gopacket.Flow
@@ -202,9 +203,11 @@ func (t *tcpConnection) updateStats(sg reassembly.ScatterGather, skip int, lengt
 	)
 }
 
+// TODO: bug when using multiple workers: messages from client or server may be combined...
 func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, ac reassembly.AssemblerContext) {
-	// fmt.Println(t.ident, "feedData", ansi.White, dir, ansi.Cyan, len(data), ansi.Yellow, ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset)
-	// fmt.Println(hex.Dump(data))
+
+	fmt.Println(t.ident, "feedData", ansi.White, dir, ansi.Cyan, len(data), ansi.Yellow, ac.GetCaptureInfo().Timestamp.Format("2006-02-01 15:04:05.000000"), ansi.Reset)
+	//fmt.Println(hex.Dump(data))
 
 	// Copy the data before passing it to the handler
 	// Because the passed in buffer can be reused as soon as the ReassembledSG function returned
@@ -252,18 +255,19 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 		return
 	}
 
-	data := sg.Fetch(length)
+	fragments := sg.FetchFragments(length)
 
 	// fmt.Println("got raw data:", len(data), ac.GetCaptureInfo().Timestamp, "\n", hex.Dump(data))
 
 	if length > 0 {
-		if decoderconfig.Instance.HexDump {
-			reassemblyLog.Debug("feeding stream reader",
-				zap.String("data", hex.Dump(data)),
-			)
+		for _, data := range fragments {
+			if decoderconfig.Instance.HexDump {
+				reassemblyLog.Debug("feeding stream reader",
+					zap.String("data", hex.Dump(data)),
+				)
+			}
+			t.feedData(dir, data, ac)
 		}
-
-		t.feedData(dir, data, ac)
 	}
 }
 
@@ -272,7 +276,7 @@ func (t *tcpConnection) reorder(ac reassembly.AssemblerContext, firstFlow gopack
 	// fmt.Println(t.ident, !t.firstPacket.Equal(ac.GetCaptureInfo().Timestamp), "&&", t.firstPacket.After(ac.GetCaptureInfo().Timestamp))
 
 	// is this packet older than the oldest packet we saw for this connection?
-	// if yes, if check the direction of the client is correct
+	// if yes, check if the direction of the client is correct
 	if !t.firstPacket.Equal(ac.GetCaptureInfo().Timestamp) && t.firstPacket.After(ac.GetCaptureInfo().Timestamp) { // update first packet timestamp on connection
 		t.Lock()
 		t.firstPacket = ac.GetCaptureInfo().Timestamp
@@ -387,6 +391,7 @@ func (t *tcpConnection) decode() {
 	}
 
 	// make a good first guess based on the destination port of the connection
+	// TODO: make it configurable to bypass this and force protocol detection for all streams.
 	if sd, exists := stream.DefaultStreamDecoders[utils.DecodePort(t.server.Transport().Dst().Raw())]; exists {
 		if sd.Transport() == core.TCP || sd.Transport() == core.All {
 			if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
@@ -416,6 +421,7 @@ func (t *tcpConnection) decode() {
 		// call the associated decoder
 		t.decoder.Decode()
 
+		// TODO: avoid using reflection here
 		tcpStreamDecodeTime.WithLabelValues(reflect.TypeOf(t.decoder).String()).Set(float64(time.Since(ti).Nanoseconds()))
 	}
 }

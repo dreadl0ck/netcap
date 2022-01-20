@@ -22,7 +22,7 @@ import (
 
 var (
 	netFlow   gopacket.Flow
-	testDebug = false
+	testDebug = true
 )
 
 func init() {
@@ -1014,6 +1014,7 @@ func testKeep(t *testing.T, s []testKeepSequence) {
 }
 
 func TestKeepSimpleOnBoundary(t *testing.T) {
+	Debug = true
 	testKeep(t, []testKeepSequence{
 		{
 			tcp: layers.TCP{

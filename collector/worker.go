@@ -48,7 +48,7 @@ func (c *Collector) spawnWorker(assembler *reassembly.Assembler, packetChan chan
 	// increment wait group for each worker
 	c.wg.Add(1)
 
-	// start spawnWorker
+	// start worker
 	go func() {
 		for pkt = range packetChan {
 			// nil packet is used to exit goroutine

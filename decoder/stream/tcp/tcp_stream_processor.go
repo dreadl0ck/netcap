@@ -22,8 +22,8 @@ import (
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
-	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dreadl0ck/netcap/reassembly"
 )
 
 var (

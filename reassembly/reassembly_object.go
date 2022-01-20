@@ -50,6 +50,30 @@ func (rl *reassemblyObject) Fetch(l int) []byte {
 	return bytes[:l]
 }
 
+func (rl *reassemblyObject) FetchFragments(l int) [][]byte {
+
+	if len(rl.all) == 0 {
+		return nil
+	}
+	if l <= rl.all[0].length() {
+		return [][]byte{
+			rl.all[0].getBytes()[:l],
+		}
+	}
+
+	res := [][]byte{}
+
+	for _, bc := range rl.all {
+		if l <= bc.length() {
+			res = append(res, bc.getBytes()[:l])
+		} else {
+			res = append(res, bc.getBytes())
+		}
+	}
+
+	return res
+}
+
 // KeepFrom will update the toKeep fields value to the supplied offset.
 func (rl *reassemblyObject) KeepFrom(offset int) {
 	rl.toKeep = offset

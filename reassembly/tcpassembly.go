@@ -54,6 +54,9 @@ type ScatterGather interface {
 	// Fetch returns the bytes up to length (shall be <= available bytes)
 	Fetch(length int) []byte
 
+	// FetchFragments extends the Fetch api to receive fragments in the order they have been received.
+	FetchFragments(length int) [][]byte
+
 	// KeepFrom tell to keep from offset
 	KeepFrom(offset int)
 

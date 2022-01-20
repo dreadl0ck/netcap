@@ -32,7 +32,7 @@ func (c *Collector) handleRawPacketData(data []byte, ci *gopacket.CaptureInfo) {
 	p := gopacket.NewPacket(data, c.config.BaseLayer, c.config.DecodeOptions)
 	p.Metadata().CaptureInfo = *ci
 
-	// pass packet to a spawnWorker routine
+	// pass packet to a worker routine
 	c.handlePacket(p)
 }
 

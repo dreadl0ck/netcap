@@ -118,8 +118,6 @@ github.com/dlclark/regexp2 v1.4.0 h1:F1rxgk7p4uKjwIQxBs9oAXe5CqrXlCduYEJvrF4u93E
 github.com/dlclark/regexp2 v1.4.0/go.mod h1:2pZnwuY/m+8K6iRw6wQdMtk+rH5tNGR1i55kozfMjCc=
 github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4 h1:CQVDSWmSoaOzH65ZxS3b16QiD7cbpFgoYZEy6YHRlNE=
 github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4/go.mod h1:Hv2i5yZ/n12s4y3LXmn8GfP7FatOIQkJeii8jMIt78s=
-github.com/dreadl0ck/go-dpi v0.0.0-20200912122706-f830a777c45f h1:Lthma7ytUyGiaCHoOqxpPC57HLDAQ6xfwjWGTSUxlys=
-github.com/dreadl0ck/go-dpi v0.0.0-20200912122706-f830a777c45f/go.mod h1:ShxssMM64chljQ3QxF9QQY8FSUoQMvMVA5NSmB1Xx10=
 github.com/dreadl0ck/go-dpi v1.0.1 h1:INQbp9vxl9Hlsf7Z87TDpnZmoY62BdgzpfS91IyBLb8=
 github.com/dreadl0ck/go-dpi v1.0.1/go.mod h1:ShxssMM64chljQ3QxF9QQY8FSUoQMvMVA5NSmB1Xx10=
 github.com/dreadl0ck/gopacket v1.1.16-0.20200114112008-4960f4b77557/go.mod h1:d7HEeaw/pAxzNTUprrDDpb7RxPsWA9i3NFp1ZfBNl50=

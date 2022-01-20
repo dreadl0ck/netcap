@@ -1,5 +1,17 @@
 # TODOs
 
+- integrate feeds from https://threatview.io
+
+- httptest stream to reproduce issue: tcp/world-wide-web-http/192.168.0.54-49412--80.239.217.161-80.bin
+  - works: net capture -read http-reassembly-test.pcap -conns -debug -workers 1
+  - update Fetch(length int) []byte
+  - concurrency also breaks client-server detection in some cases...
+  - use sequence numbers instead of timestamps for fragment ordering
+  - repro:
+    - net capture -read http-reassembly-test.pcap -workers 1
+    - net capture -read http-reassembly-test.pcap -workers 12
+
+- add Benford's law anomaly detector
 - https://github.com/hashicorp/yamux
 - https://old.zeek.org/development/howtos/dpd.html
 - https://github.com/glycerine/offheap

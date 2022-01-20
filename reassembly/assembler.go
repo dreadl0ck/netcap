@@ -150,6 +150,9 @@ type assemblerSimpleContext gopacket.CaptureInfo
 
 // GetCaptureInfo return the underlying gopacket.CaptureInfo.
 func (asc *assemblerSimpleContext) GetCaptureInfo() gopacket.CaptureInfo {
+	if asc == nil {
+		return gopacket.CaptureInfo{}
+	}
 	return gopacket.CaptureInfo(*asc)
 }
 
@@ -724,7 +727,6 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 
 		half.pages -= r.release(a.pc)
 	}
-
 	a.dump("after consumed release", half)
 
 	// Keep un-consumed pages
@@ -733,8 +735,11 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 
 	saved := new(page)
 
-	// TODO: prevent invalid index access
-	ndx = len(a.cacheSG.all)
+	// prevent potential invalid index access if ndx >= len(a.cacheSG.all)
+	if ndx >= len(a.cacheSG.all) {
+		ndx = len(a.cacheSG.all)
+	}
+
 	for _, r := range a.cacheSG.all[ndx:] {
 		first, last, nb := r.convertToPages(a.pc, skip, ac)
 
@@ -768,9 +773,9 @@ func (a *Assembler) sendToConnection(conn *connection, half *halfconnection) Seq
 	end, nextSeq := a.buildSG(half)
 
 	// for debugging
-	// for _, b := range a.ret {
-	// 	fmt.Println(ansi.Yellow, conn.key.String(), ansi.Blue, b.length(), ansi.Reset, b.assemblerContext().GetCaptureInfo().Timestamp.Format(tf))
-	// }
+	//for i, b := range a.ret {
+	//	fmt.Println(i, ansi.Yellow, conn.key.String(), ansi.Blue, b.length(), ansi.Reset, b.assemblerContext().GetCaptureInfo().Timestamp)
+	//}
 
 	var ac AssemblerContext
 
