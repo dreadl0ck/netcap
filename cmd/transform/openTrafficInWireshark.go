@@ -37,7 +37,7 @@ func openTrafficInWireshark() {
 	if !exists {
 		log.Println(tcpdump, args)
 
-		out, err := exec.Command(findExecutable(tcpdump), args...).CombinedOutput()
+		out, err := exec.Command(findExecutable(tcpdump, false), args...).CombinedOutput()
 		if err != nil {
 			maltego.Die(err.Error(), "open file failed:\n"+string(out))
 		}
@@ -47,7 +47,7 @@ func openTrafficInWireshark() {
 
 	log.Println(wireshark, outFile)
 
-	out, err := exec.Command(findExecutable(wireshark), outFile).CombinedOutput()
+	out, err := exec.Command(findExecutable(wireshark, false), outFile).CombinedOutput()
 	if err != nil {
 		maltego.Die(err.Error(), "open file failed:\n"+string(out))
 	}

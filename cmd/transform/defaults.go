@@ -45,7 +45,7 @@ var (
 )
 
 // update the default linux paths for specific OSes
-func init() {
+func initTransformTool() {
 	if runtime.GOOS == platformLinux {
 		out, err := exec.Command("uname", "-a").CombinedOutput()
 		if err != nil {
@@ -55,7 +55,7 @@ func init() {
 		if strings.Contains(string(out), "kali") {
 
 			// prefer codium over xdg-open
-			if path := findExecutable("codium"); path != "" {
+			if path := findExecutable("codium", true); path != "" {
 				defaultOpenCommandLinux = path
 			} else {
 				// default to use xdg-open
@@ -69,7 +69,7 @@ func init() {
 
 	if runtime.GOOS == platformDarwin {
 		// use visual studio code to open files if its installed
-		if path := findExecutable("code"); path != "" {
+		if path := findExecutable("code", true); path != "" {
 			defaultOpenCommandDarwin = path
 		}
 	}

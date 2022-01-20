@@ -74,7 +74,7 @@ func makeOutFilePath(in, bpf string, lt maltego.LocalTransform, flows bool, bpfS
 	return name, false
 }
 
-func findExecutable(name string) string {
+func findExecutable(name string, ignoreErr bool) string {
 
 	var paths []string
 
@@ -101,7 +101,9 @@ func findExecutable(name string) string {
 				path, err = exec.LookPath(p)
 				if err != nil {
 					paths = append(paths, p)
-					maltego.Die("executable not found", "paths tried:\n"+strings.Join(paths, "\n")+"\n$PATH = "+os.Getenv("PATH"))
+					if !ignoreErr {
+						maltego.Die(name + " executable not found", "paths tried:\n"+strings.Join(paths, "\n")+"\n$PATH = "+os.Getenv("PATH"))
+					}
 				}
 			}
 		}
@@ -123,7 +125,7 @@ func openConnectionInWireshark() {
 	if !exists {
 		log.Println(tcpdump, args)
 
-		out, err := exec.Command(findExecutable(tcpdump), args...).CombinedOutput()
+		out, err := exec.Command(findExecutable(tcpdump, false), args...).CombinedOutput()
 		if err != nil {
 			maltego.Die(err.Error(), "open file failed:\n"+string(out))
 		}
@@ -133,7 +135,7 @@ func openConnectionInWireshark() {
 
 	log.Println(wireshark, outFile)
 
-	out, err := exec.Command(findExecutable(wireshark), outFile).CombinedOutput()
+	out, err := exec.Command(findExecutable(wireshark, false), outFile).CombinedOutput()
 	if err != nil {
 		maltego.Die(err.Error(), "open file failed:\n"+string(out))
 	}

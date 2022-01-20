@@ -58,13 +58,13 @@ func makeOpenDisasmCmd(loc string) (openCmd string, args []string) {
 		// use the platform defaults
 		switch runtime.GOOS {
 		case platformDarwin:
-			openCmd = findExecutable(defaultDisasmCommandMacOS)
+			openCmd = findExecutable(defaultDisasmCommandMacOS, false)
 			args = []string{"-e", loc}
 		case platformWindows:
 			openCmd = "C:\\Program Files\\IDA Freeware 7.0\\ida64.exe"
 			args = []string{loc}
 		case platformLinux:
-			openCmd = findExecutable("ida64")
+			openCmd = findExecutable("ida64", false)
 			args = []string{loc}
 		}
 	}
