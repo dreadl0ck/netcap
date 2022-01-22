@@ -5,4 +5,4 @@ package netcap
 var Version = "v0.6.10"
 
 // Commit is the git commit id of the current version.
-var Commit = "4cb351d8c9cf426b1b0b009199ee676f66c8709c"
+var Commit = "4169f5f099f772261cc364f7476c324b6fa2f6ff"
