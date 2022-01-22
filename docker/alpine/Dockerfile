@@ -23,9 +23,7 @@ RUN cd libprotoident-2.0.14-1 && ./bootstrap.sh && ./configure && make && make i
 #RUN cd liblinear && make && cp linear.h /usr/local/include && cp linear.o /usr/local/lib && mkdir -p /usr/local/lib/liblinear && cp linear.o /usr/lib/liblinear.o
 
 # nDPI
-#ENV PKG_CONFIG_PATH /usr/lib/
-RUN apk add json-c
-RUN find / -iname libjson-c.so.5
+RUN apk add json-c-dev
 RUN wget https://github.com/ntop/nDPI/archive/4.0.tar.gz
 RUN tar xfz 4.0.tar.gz
 RUN cd nDPI-4.0 && ./autogen.sh && ./configure && make && make install
