@@ -1,6 +1,8 @@
 builds:
   - main: ./cmd
     binary: net
+    env:
+      - CGO_ENABLED=1
     id: netcap
     goos:
       - darwin
