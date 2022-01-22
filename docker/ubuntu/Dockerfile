@@ -16,9 +16,9 @@ RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libflowmanager/cfg/setup/ba
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libprotoident/cfg/setup/bash.deb.sh' | bash
 RUN apt-get update
 
-RUN wget https://github.com/ntop/nDPI/archive/3.2.tar.gz
-RUN tar xfz 3.2.tar.gz
-RUN cd nDPI-3.2 && ./autogen.sh && ./configure && make && make install
+RUN wget https://github.com/ntop/nDPI/archive/4.0.tar.gz
+RUN tar xfz 4.0.tar.gz
+RUN cd nDPI-4.0 && ./autogen.sh && ./configure && make && make install
 
 RUN apt install -y liblinear-dev libprotoident libprotoident-dev libprotoident-tools libtrace4-dev libtrace4-tools
 
