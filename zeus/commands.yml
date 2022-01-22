@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.6.8
+    VERSION: 0.6.9
 
 # command data
 commands:
@@ -117,21 +117,20 @@ commands:
 
     update-release-assets:
         exec: |
+            # upload linux build archives
             for f in dist-linux/*.tar.gz; do
                 gh release upload --clobber v$VERSION $f
             done
 
             cd dist
-            # create correct darwin archives
+            # add nodpi darwin build - the build with dpi libs will be used untouched
             # TODO: fix goreleaser config
             tar -czvf netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz netcap_macOS_nodpi_darwin_amd64
-            tar -czvf netcap_${VERSION}_darwin_amd64.tar.gz netcap_darwin_amd64
 
-            # upload
+            # upload nodpi darwin build to release
             gh release upload --clobber v$VERSION netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz
-            gh release upload --clobber v$VERSION netcap_${VERSION}_darwin_amd64.tar.gz
 
-            # update checksums file
+            # update checksums file with hashes for darwin build
             shasum -a 256 netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz >> ../dist-linux/checksums.txt
             shasum -a 256 netcap_${VERSION}_darwin_amd64.tar.gz >> ../dist-linux/checksums.txt
             cd ..
@@ -139,7 +138,7 @@ commands:
             # append hash of windows build to final checksum file
             grep windows dist/checksums.txt >> dist-linux/checksums.txt
 
-            # sync
+            # sync updated checksums file
             gh release upload --clobber v$VERSION dist-linux/checksums.txt
 
     # run a test release
