@@ -17,7 +17,7 @@ RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libprotoident/cfg/setup/bas
 RUN apt-get update
 
 # nDPI
-RUN apt install json-c
+RUN apt-get install json-c
 RUN wget https://github.com/ntop/nDPI/archive/4.0.tar.gz
 RUN tar xfz 4.0.tar.gz
 RUN cd nDPI-4.0 && ./autogen.sh && ./configure && make && make install
