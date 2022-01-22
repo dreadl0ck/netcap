@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.6.7
+    VERSION: 0.6.8
 
 # command data
 commands:
@@ -137,7 +137,7 @@ commands:
             cd ..
 
             # append hash of windows build to final checksum file
-            head -n 1 dist/checksums.txt >> dist-linux/checksums.txt
+            grep windows dist/checksums.txt >> dist-linux/checksums.txt
 
             # sync
             gh release upload --clobber v$VERSION dist-linux/checksums.txt
