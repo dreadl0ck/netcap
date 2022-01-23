@@ -1,5 +1,6 @@
 # TODOs
 
+- add dpi / nodpi arm64 builds for linux
 - extend api with context to allow stopping collector
 - improve unit tests
 - https://github.com/dreadl0ck/netcap/issues/19
