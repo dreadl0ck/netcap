@@ -10,7 +10,6 @@ builds:
       - ""
     goarch:
       - amd64
-      - arm64
   - main: ./cmd
     binary: macOS_nodpi/net
     id: netcap_macOS_nodpi
