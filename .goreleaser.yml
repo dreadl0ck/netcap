@@ -13,6 +13,8 @@ builds:
   - main: ./cmd
     binary: macOS_nodpi/net
     id: netcap_macOS_nodpi
+    env:
+      - CGO_ENABLED=1 # needed to compile gopacket for arm64
     goos:
       - darwin
     goarch:
