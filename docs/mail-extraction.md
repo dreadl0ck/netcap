@@ -51,11 +51,13 @@ message Mail {
 
 For exploring captured emails, the Maltego Integration can be used:
 
-{% page-ref page="maltego-integration.md" %}
+{% content-ref url="maltego-integration.md" %}
+[maltego-integration.md](maltego-integration.md)
+{% endcontent-ref %}
 
 ![](.gitbook/assets/mails1.png)
 
-![](.gitbook/assets/mails2.png)
+![](<.gitbook/assets/mails2 (1).png>)
 
 ## SMTP
 
@@ -71,4 +73,3 @@ message SMTP {
     PacketContext          Context       = 6;
 }
 ```
-

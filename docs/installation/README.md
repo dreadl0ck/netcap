@@ -8,19 +8,21 @@ description: Setup instructions
 
 Compiled versions for macOS, Linux and Windows are available on GitHub:
 
-{% embed url="https://github.com/dreadl0ck/netcap/releases" caption="NETCAP GitHub Releases Page" %}
+{% embed url="https://github.com/dreadl0ck/netcap/releases" %}
+NETCAP GitHub Releases Page
+{% endembed %}
 
 ## Go Get
 
 Installation via go get:
 
-```text
+```
 $ go get -u github.com/dreadl0ck/netcap/...
 ```
 
 ## Manual Build
 
-```text
+```
 $ go build -ldflags "-s -w" -o /usr/local/bin/net -i github.com/dreadl0ck/netcap/cmd
 ```
 
@@ -40,7 +42,7 @@ You can read about Go modules here:
 
 To install the command-line tool:
 
-```text
+```
 $ go build -o /usr/local/bin/net -i github.com/dreadl0ck/netcap/cmd
 ```
 
@@ -48,7 +50,7 @@ $ go build -o /usr/local/bin/net -i github.com/dreadl0ck/netcap/cmd
 
 To cross compile for other architectures, set the _GOARCH_ and _GOOS_ environment variables. For example to cross compile a binary for _linux amd64_:
 
-```text
+```
 $ GOARCH=amd64 GOOS=linux go build -o bin/net -i github.com/dreadl0ck/netcap/cmd
 ```
 
@@ -56,7 +58,7 @@ $ GOARCH=amd64 GOOS=linux go build -o bin/net -i github.com/dreadl0ck/netcap/cmd
 
 On macOS, you can install the _netcap_ command-line tool with Homebrew:
 
-```text
+```
 $ brew tap dreadl0ck/formulas
 $ brew install netcap
 ```
@@ -65,11 +67,12 @@ $ brew install netcap
 
 _Netcap_ uses the [zeus](https://github.com/dreadl0ck/zeus) build system, it can be found on GitHub along with installation instructions:
 
-{% embed url="https://github.com/dreadl0ck/zeus" caption="ZEUS Build System GitHub" %}
+{% embed url="https://github.com/dreadl0ck/zeus" %}
+ZEUS Build System GitHub
+{% endembed %}
 
 To install the _Netcap_ and _Netlabel_ command-line tool and the library with zeus, run:
 
-```text
+```
 $ zeus install
 ```
-

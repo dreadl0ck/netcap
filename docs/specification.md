@@ -8,9 +8,9 @@ _Netcap_ files have the file extension **.ncap** or **.ncap.gz** if compressed w
 
 ## Delimited Protocol Buffer Records
 
-The data format on disk consists of gzipped length-delimited byte records. Each delimited Protocol Buffer record is preceded by a variable-length encoded integer \(varint\) that specifies the length of the serialized protocol buffer record in bytes. A stream consists of a sequence of such records packed consecutively without additional padding. There are no checksums or compression involved in this processing step.
+The data format on disk consists of gzipped length-delimited byte records. Each delimited Protocol Buffer record is preceded by a variable-length encoded integer (varint) that specifies the length of the serialized protocol buffer record in bytes. A stream consists of a sequence of such records packed consecutively without additional padding. There are no checksums or compression involved in this processing step.
 
-![Delimited protocol buffers](.gitbook/assets/Netcap-Delimited%20%281%29.svg)
+![Delimited protocol buffers](<graphics/svg/Netcap-Delimited (1).svg>)
 
 ## Data Compression
 
@@ -20,5 +20,4 @@ Encoding the output as protocol buffers does not help much with reducing the siz
 
 A piece of information produced by Netcap is called an audit record. Audit records are type safe structured data, encoded as protocol buffers. An audit record can describe a specific protocol, or other abstractions built on top of observations from the analyzed traffic. Netcap does currently not enforce the presence of any special fields for each audit record, however by convention each audit record should have a timestamp with microsecond precision. A record file contains a header followed by a list of length-delimited serialized audit records. Naming of the audit record file happens according to the encoder name and should signal whether the file contents are compressed by adding the .gz extension.
 
-![](.gitbook/assets/netcap-audit-record.svg)
-
+![](<.gitbook/assets/netcap-audit-record (1).svg>)

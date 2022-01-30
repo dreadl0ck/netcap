@@ -31,13 +31,15 @@ Database files:
 
 By default, all resolvers are disabled. You need to use the **-reverse-dns**, **-local-dns**, **-macDB**, **-ja3DB**, **-serviceDB** and **-geoDB** to enable what you want to use, or configure it via environment variables or config file, as described in:
 
-{% page-ref page="configuration.md" %}
+{% content-ref url="configuration.md" %}
+[configuration.md](configuration.md)
+{% endcontent-ref %}
 
 ## Quickstart
 
 You can download a bundled version of all databases except for the MaxMind GeoLite, here:
 
-{% file src=".gitbook/assets/resolver-dbs \(1\).zip" %}
+{% file src="../.gitbook/assets/resolver-dbs (1).zip" %}
 
 ## DNS
 
@@ -49,7 +51,7 @@ Passive DNS will read the hosts mapping from a file and load it into memory, ins
 
 To avoid producing lookups that leave the network, you can generate a hosts mapping based on the DNS traffic in your dumpfile using tshark:
 
-```text
+```
 $ tshark -r traffic.pcap -q -z hosts
 ```
 
@@ -67,7 +69,7 @@ You can download the CSV file here:
 
 Rename it to **domain-whitelist.csv** and move it into the database path:
 
-```text
+```
 $ mv top-1m.csv /usr/local/etc/netcap/db/domain-whitelist.csv
 ```
 
@@ -75,7 +77,9 @@ $ mv top-1m.csv /usr/local/etc/netcap/db/domain-whitelist.csv
 
 To determine the geolocation for a given host, the MaxMind GeoLite database is used. The lite database is freely available, but you have to register on their website to download it.
 
-{% embed url="https://dev.maxmind.com/geoip/geoip2/geolite2/" caption="GeoLite2 MaxMind" %}
+{% embed url="https://dev.maxmind.com/geoip/geoip2/geolite2/" %}
+GeoLite2 MaxMind
+{% endembed %}
 
 Geolocation lookups can provide the Country, City and ASN where an ip adress is registered.
 
@@ -87,21 +91,26 @@ To identify the vendor for a given MAC address, the **macaddress.io** JSON datab
 
 At the time of this writing it contains 39,041 tracked address blocks and 28,961 unique vendors.
 
-{% embed url="https://macaddress.io/database-download" caption="MacAddress.io database" %}
+{% embed url="https://macaddress.io/database-download" %}
+MacAddress.io database
+{% endembed %}
 
 ## Service Identification
 
 Resolving port numbers to service names is done according to the CSV mapping from IANA, which contains 6104 records for TCP and UDP services at the time of this writing:
 
-{% embed url="https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv" caption="IANA service names and ports" %}
+{% embed url="https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv" %}
+IANA service names and ports
+{% endembed %}
 
 ## TLS Fingerprints
 
 To identify hosts that use TLS connections, the Ja3 fingerprint database from **Trisul** is used:
 
-{% embed url="https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend\_scripts/reassembly/ja3/prints/ja3fingerprint.json" caption="" %}
+{% embed url="https://github.com/trisulnsm/trisul-scripts/blob/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json" %}
 
 For more fingerprints, you can load other databases additionally. For example from **ja3erDB**:
 
-{% embed url="https://ja3er.com/downloads.html" caption="Ja3er JSON database downloads" %}
-
+{% embed url="https://ja3er.com/downloads.html" %}
+Ja3er JSON database downloads
+{% endembed %}

@@ -8,8 +8,8 @@
 * [Quickstart](quickstart.md)
 * [Configuration](configuration.md)
 * [Bash Completion](bash-completion.md)
-* [Packet Collection](untitled.md)
-* [Audit Record Labeling](untitled-1.md)
+* [Packet Collection](packet-collection.md)
+* [Audit Record Labeling](audit-record-labeling.md)
 * [HTTP Proxy](http-proxy.md)
 * [USB Capture](usb-capture.md)
 * [Payload Capture](payload-capture.md)
@@ -41,4 +41,3 @@
 * [FAQ](faq.md)
 * [Contributing](contributing.md)
 * [License](license.md)
-

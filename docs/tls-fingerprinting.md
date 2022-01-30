@@ -18,11 +18,15 @@ The official python implementation can be found [here](https://github.com/salesf
 
 More details can be found in their blog post:
 
-{% embed url="https://engineering.salesforce.com/open-sourcing-ja3-92c9e53c3c41" caption="JA3 blog post from salesforce" %}
+{% embed url="https://engineering.salesforce.com/open-sourcing-ja3-92c9e53c3c41" %}
+JA3 blog post from salesforce
+{% endembed %}
 
 Support for JA3 and JA3S in netcap is implemented via:
 
-{% embed url="https://github.com/dreadl0ck/ja3" caption="JA3\(S\) go package" %}
+{% embed url="https://github.com/dreadl0ck/ja3" %}
+JA3(S) go package
+{% endembed %}
 
 The _TLSClientHello_ and _TLSServerHello_ audit records, as well as the _DeviceProfiles_ provide JA3 hashes.
 
@@ -34,13 +38,13 @@ It then concatenates those values together in order, using a “,” to delimit 
 
 **The field order is as follows:**
 
-```text
+```
 SSLVersion,Ciphers,Extensions,EllipticCurves,EllipticCurvePointFormats
 ```
 
 **Example:**
 
-```text
+```
 769,47–53–5–10–49161–49162–49171–49172–50–56–19–4,0–10–11,23–24–25,0
 ```
 
@@ -48,7 +52,7 @@ If there are no SSL Extensions in the Client Hello, the fields are left empty.
 
 **Example:**
 
-```text
+```
 769,4–5–10–9–100–98–3–6–19–18–99,,,
 ```
 
@@ -56,7 +60,7 @@ These strings are then MD5 hashed to produce an easily consumable and shareable 
 
 This is the JA3 SSL Client Fingerprint.
 
-JA3 is a much more effective way to detect malicious activity over SSL than IP or domain based IOCs. Since JA3 detects the client application, it doesn’t matter if malware uses DGA \(Domain Generation Algorithms\), or different IPs for each C2 host, or even if the malware uses Twitter for C2, JA3 can detect the malware itself based on how it communicates rather than what it communicates to.
+JA3 is a much more effective way to detect malicious activity over SSL than IP or domain based IOCs. Since JA3 detects the client application, it doesn’t matter if malware uses DGA (Domain Generation Algorithms), or different IPs for each C2 host, or even if the malware uses Twitter for C2, JA3 can detect the malware itself based on how it communicates rather than what it communicates to.
 
 JA3 is also an excellent detection mechanism in locked-down environments where only a few specific applications are allowed to be installed. In these types of environments one could build a whitelist of expected applications and then alert on any other JA3 hits.
 
@@ -103,7 +107,7 @@ JA3S is JA3 for the Server side of the SSL/TLS communication and fingerprints ho
 
 JA3S uses the following field order:
 
-```text
+```
 SSLVersion,Cipher,SSLExtension
 ```
 
@@ -111,14 +115,14 @@ With JA3S it is possible to fingerprint the entire cryptographic negotiation bet
 
 For the Trickbot example:
 
-```text
+```
 JA3 = 6734f37431670b3ab4292b8f60f29984 ( Fingerprint of Trickbot )
 JA3S = 623de93db17d313345d7ea481e7443cf ( Fingerprint of Command and Control Server Response )
 ```
 
 For the Emotet example:
 
-```text
+```
 JA3 = 4d7a28d6f2263ed61de88ca66eb011e3 ( Fingerprint of Emotet )
 JA3S = 80b3a14bccc8598a1f3bbe83e71f735f ( Fingerprint of Command and Control Server Response )
 ```
@@ -159,4 +163,3 @@ message TLSServerHello {
     string Ja3s                        = 29;
 }
 ```
-

@@ -34,13 +34,13 @@ type SuricataAlert struct {
 }
 ```
 
-In the next iteration, the gathered alerts are mapped onto the collected data. For layer types which are not handled separately, this is currently by using solely the timestamp of the packet, since this is the only field required by Netcap, however multiple alerts might exist for the same timestamp. To detect this and throw an error, the **-strict** flag can be used. The default is to ignore duplicate alerts for the same timestamp, use the first encountered label and ignore the rest. Another option is to collect all labels that match the timestamp, and append them to the final label with the **-collect** flag. To allow filtering out classifications that shall be excluded, the **-excluded** flag can be used. Alerts matching the excluded classi- fication will then be ignored when collecting the generated alerts. Flow, Connection, HTTP and TLS records mapping logic also takes source and destination information into consider- ation. The created output files follow the naming convention: **&lt;NetcapType&gt;\_labeled.csv**.
+In the next iteration, the gathered alerts are mapped onto the collected data. For layer types which are not handled separately, this is currently by using solely the timestamp of the packet, since this is the only field required by Netcap, however multiple alerts might exist for the same timestamp. To detect this and throw an error, the **-strict** flag can be used. The default is to ignore duplicate alerts for the same timestamp, use the first encountered label and ignore the rest. Another option is to collect all labels that match the timestamp, and append them to the final label with the **-collect** flag. To allow filtering out classifications that shall be excluded, the **-excluded** flag can be used. Alerts matching the excluded classi- fication will then be ignored when collecting the generated alerts. Flow, Connection, HTTP and TLS records mapping logic also takes source and destination information into consider- ation. The created output files follow the naming convention: **\<NetcapType>\_labeled.csv**.
 
 ### types
 
 [https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.5/t](https://pkg.go.dev/github.com/dreadl0ck/netcap@v0.4.7/collector)ypes
 
-The types package contains types.AuditRecord interface implementations for each supported protocol, to enable converting data to the CSV format. For this purpose, each protocol must provide a CSVRecord\(\) \[\]string and a CSVHeader\(\) \[\]string function. Additionally, a NetcapTimestamp\(\) string function that returns the Netcap timestamp must be implemented.
+The types package contains types.AuditRecord interface implementations for each supported protocol, to enable converting data to the CSV format. For this purpose, each protocol must provide a CSVRecord() \[]string and a CSVHeader() \[]string function. Additionally, a NetcapTimestamp() string function that returns the Netcap timestamp must be implemented.
 
 ### encoder
 
@@ -70,7 +70,9 @@ Deep Packet Inspection integration, using a fork of **mushorg/go-dpi** that was 
 
 The fork can be found here:
 
-{% embed url="https://github.com/dreadl0ck/go-dpi" caption="Deep Packet Inspection Package" %}
+{% embed url="https://github.com/dreadl0ck/go-dpi" %}
+Deep Packet Inspection Package
+{% endembed %}
 
 ### delimited
 
@@ -102,7 +104,7 @@ Primitives for atomic maps and write operations
 
 ## Caveats
 
-Protocol buffers have a few caveats that developers and researchers should be aware of. First, there are no types for 16 bit signed \(int16\) and unsigned \(uint16\) integers in protobuf, also there is no type for unsigned 8 bit integers \(uint8\). This data type is seen a lot in network protocols, so the question arises how to represent it in protocol buffers. The non-fixed integer types use variable length encoding, so int32 is used instead. The variable-length encoding will take care of not sending the bytes that are not being used. Unfortunately, the mu type is too short for this purpose. Second, protocol buffers require all strings to be encoded as valid UTF-8, otherwise encoding to proto will fail. This means all input data that will be encoded as a string in protobuf must be checked to contain valid UTF-8, or they will create an error upon serialization and end up in the errors.pcap file. If this behavior is not desired strings must be filtered prior to setting them on the protocol buffer instances. Another thing that has to be kept in mind is that Netcap processes packets in parallel, thus the order in which packets are written to the dump file is not guaranteed. In experiments, no mixup was detected, and records were tracked in the correct order. However, under heavy load conditions or with a high number of workers, this might be different. Because of this caveat, the Netcap specification requires each record to preserve the timestamp, in order to allow sorting the packets afterwards, if required.
+Protocol buffers have a few caveats that developers and researchers should be aware of. First, there are no types for 16 bit signed (int16) and unsigned (uint16) integers in protobuf, also there is no type for unsigned 8 bit integers (uint8). This data type is seen a lot in network protocols, so the question arises how to represent it in protocol buffers. The non-fixed integer types use variable length encoding, so int32 is used instead. The variable-length encoding will take care of not sending the bytes that are not being used. Unfortunately, the mu type is too short for this purpose. Second, protocol buffers require all strings to be encoded as valid UTF-8, otherwise encoding to proto will fail. This means all input data that will be encoded as a string in protobuf must be checked to contain valid UTF-8, or they will create an error upon serialization and end up in the errors.pcap file. If this behavior is not desired strings must be filtered prior to setting them on the protocol buffer instances. Another thing that has to be kept in mind is that Netcap processes packets in parallel, thus the order in which packets are written to the dump file is not guaranteed. In experiments, no mixup was detected, and records were tracked in the correct order. However, under heavy load conditions or with a high number of workers, this might be different. Because of this caveat, the Netcap specification requires each record to preserve the timestamp, in order to allow sorting the packets afterwards, if required.
 
 ## Data Race Detection Builds
 
@@ -110,7 +112,6 @@ In concurrent programming, shared resources need to be synchronized, in order to
 
 To compile a netcap binary with the race detection enabled use:
 
-```text
+```
 $ zeus install-race
 ```
-
