@@ -1,4 +1,4 @@
-FROM golang:1.15.1-alpine as builder
+FROM golang:1.17.6-alpine as builder
 RUN apk update
 RUN apk add --no-cache gcc libpcap-dev libnetfilter_queue-dev linux-headers musl-utils musl-dev git vim autoconf automake libtool make g++ bison flex cmake build-base abuild binutils binutils-doc gcc-doc cmake-doc extra-cmake-modules extra-cmake-modules-doc
 

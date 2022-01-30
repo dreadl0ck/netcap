@@ -2,27 +2,25 @@ FROM ubuntu:18.04 as builder
 
 RUN apt-get clean
 RUN apt-get update
-RUN apt-get install -y software-properties-common
+RUN apt-get install -y software-properties-common net-tools
 RUN add-apt-repository ppa:longsleep/golang-backports
 RUN apt-get update
 RUN apt-get install -y golang-go
 
 RUN apt-get install -y apt-transport-https curl lsb-release wget autogen autoconf libtool gcc libpcap-dev linux-headers-generic git vim
-RUN apt-get install apt-transport-https curl
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libwandio/cfg/setup/bash.deb.sh' | bash
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libwandder/cfg/setup/bash.deb.sh' | bash
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libtrace/cfg/setup/bash.deb.sh' | bash
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libflowmanager/cfg/setup/bash.deb.sh' | bash
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libprotoident/cfg/setup/bash.deb.sh' | bash
 RUN apt-get update
+RUN apt install -y liblinear-dev libprotoident libprotoident-dev libprotoident-tools libtrace4-dev libtrace4-tools
 
 # nDPI
 RUN apt-get install -y libjson-c-dev
 RUN wget https://github.com/ntop/nDPI/archive/4.0.tar.gz
 RUN tar xfz 4.0.tar.gz
 RUN cd nDPI-4.0 && ./autogen.sh && ./configure && make && make install
-
-RUN apt install -y liblinear-dev libprotoident libprotoident-dev libprotoident-tools libtrace4-dev libtrace4-tools
 
 WORKDIR /src
 
@@ -63,5 +61,6 @@ COPY --from=builder /usr/lib/libflow* /usr/lib/
 COPY --from=builder /usr/lib/libproto* /usr/lib/
 COPY --from=builder /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 COPY --from=builder /usr/local/lib/* /usr/lib/
+COPY --from=builder /usr/lib/libndpi* /usr/lib/
 
 CMD ["/bin/sh"]

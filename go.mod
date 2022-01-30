@@ -14,7 +14,7 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dlclark/regexp2 v1.4.0
 	github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4
-	github.com/dreadl0ck/go-dpi v1.0.1
+	github.com/dreadl0ck/go-dpi v1.0.2
 	github.com/dreadl0ck/gopacket v1.1.16-0.20201228223815-140074f06498
 	github.com/dreadl0ck/ja3 v1.0.1-dreadl0ck-gopacket.0.20200917082239-a29743a537b2
 	github.com/dreadl0ck/maltego v0.0.2
