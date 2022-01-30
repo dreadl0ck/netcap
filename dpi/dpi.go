@@ -54,7 +54,7 @@ func Init() {
 	godpi.SetModules([]Module{wm, goDPI})
 
 	if err := godpi.Initialize(); err != nil {
-		log.Fatal("goDPI initialization returned error: ", err)
+		log.Fatal("goDPI initialization returned an error: ", err)
 	}
 }
 
@@ -77,13 +77,14 @@ func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 		return protocols
 	}
 
-	// start := time.Now()
-	// fmt.Println("DPI", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
+	//start := time.Now()
+	//fmt.Println("DPI", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
 
 	flow, _ := godpi.GetPacketFlow(packet)
 	results := godpi.ClassifyFlowAllModules(flow)
 
-	// fmt.Println(packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow(), "complete", time.Since(start))
+	//fmt.Println(packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow(), "complete", time.Since(start))
+	//spew.Dump(results)
 
 	// when using all modules we might receive duplicate classifications
 	// so they will be deduplicated by protocol name before counting them later

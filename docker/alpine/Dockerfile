@@ -1,22 +1,22 @@
-FROM golang:1.15.1-alpine as builder
+FROM golang:1.17.6-alpine as builder
 RUN apk update
 RUN apk add --no-cache gcc libpcap-dev libnetfilter_queue-dev linux-headers musl-utils musl-dev git vim autoconf automake libtool make g++ bison flex cmake build-base abuild binutils binutils-doc gcc-doc cmake-doc extra-cmake-modules extra-cmake-modules-doc
 
-RUN wget https://github.com/wanduow/wandio/archive/4.2.2-1.tar.gz
-RUN tar xfz 4.2.2-1.tar.gz
-RUN cd wandio-4.2.2-1 && ./bootstrap.sh && ./configure && make && make install
+RUN wget https://github.com/wanduow/wandio/archive/4.2.3-1.tar.gz
+RUN tar xfz 4.2.3-1.tar.gz
+RUN cd wandio-4.2.3-1 && ./bootstrap.sh && ./configure && make && make install
 
-RUN wget https://github.com/LibtraceTeam/libtrace/archive/4.0.11-1.tar.gz
-RUN tar xfz 4.0.11-1.tar.gz
-RUN cd libtrace-4.0.11-1 && ./bootstrap.sh && ./configure && make && make install
+RUN wget https://github.com/LibtraceTeam/libtrace/archive/4.0.17-1.tar.gz
+RUN tar xfz 4.0.17-1.tar.gz
+RUN cd libtrace-4.0.17-1 && ./bootstrap.sh && ./configure && make && make install
 
 RUN wget https://github.com/wanduow/libflowmanager/archive/3.0.0.tar.gz
 RUN tar xfz 3.0.0.tar.gz
 RUN cd libflowmanager-3.0.0 && ./bootstrap.sh && ./configure && make && make install
 
-RUN wget https://github.com/wanduow/libprotoident/archive/2.0.14-1.tar.gz
-RUN tar xfz 2.0.14-1.tar.gz
-RUN cd libprotoident-2.0.14-1 && ./bootstrap.sh && ./configure && make && make install
+RUN wget https://github.com/wanduow/libprotoident/archive/2.0.15-1.tar.gz
+RUN tar xfz 2.0.15-1.tar.gz
+RUN cd libprotoident-2.0.15-1 && ./bootstrap.sh && ./configure && make && make install
 
 # debug linker search path: ld -llinear --verbose
 #RUN git clone https://github.com/cjlin1/liblinear.git

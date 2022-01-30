@@ -87,6 +87,7 @@ func (c *Collector) Init() (err error) {
 
 	// init deep packet inspection
 	if c.config.DPI {
+		c.printlnStdOut("initializing dpi libs")
 		dpi.Init()
 	}
 
