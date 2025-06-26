@@ -77,7 +77,7 @@ To determine the geolocation for a given host, the MaxMind GeoLite database is u
 
 {% embed url="https://dev.maxmind.com/geoip/geoip2/geolite2/" caption="GeoLite2 MaxMind" %}
 
-Geolocation lookups can provide the Country, City and ASN where an ip adress is registered.
+Geolocation lookups can provide the Country, City and ASN where an ip address is registered.
 
 Download the databases and move them into the database path.
 

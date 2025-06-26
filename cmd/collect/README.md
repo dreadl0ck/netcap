@@ -4,7 +4,7 @@
 
 ## Description
 
-The collection server decrypts messages adressed to itself from the agents, and writes them to the file system.
+The collection server decrypts messages addressed to itself from the agents, and writes them to the file system.
 
 Read more about this tool in the documentation: https://docs.netcap.io
 
@@ -46,7 +46,7 @@ Start the server:
             $ net collect -privkey priv.key -addr 127.0.0.1:4200
             $ net collect -gen-keypair
     
-      -addr="127.0.0.1:1335": specify an adress and port to listen for incoming traffic
+      -addr="127.0.0.1:1335": specify an address and port to listen for incoming traffic
       -config="": read configuration from file at path
       -gen-config=false: generate config
       -gen-keypair=false: generate keypair
