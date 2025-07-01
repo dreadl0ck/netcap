@@ -151,6 +151,7 @@ enum Type {
   NC_IPProfile = 101;
   NC_Mail = 102;
   NC_Alert = 103;
+  NC_Protobuf = 104;
 }
 
 //
@@ -1998,4 +1999,25 @@ message Alert {
   string Domain = 10;
   string Protocol = 11;
   string Notes = 12;
+}
+
+// Protobuf represents general protocol buffer data found in application layer traffic.
+// This decoder attempts to identify and parse protobuf encoded data from network streams.
+message Protobuf {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  int32 PayloadSize = 6;
+  double PayloadEntropy = 7;
+  string ServiceName = 8; // detected service name if available
+  string MessageType = 9; // detected message type if available
+  map<string, string> Fields = 10; // extracted field names and values
+  bytes RawPayload = 11; // original protobuf payload
+  bool IsValid = 12; // whether the protobuf data was successfully parsed
+  string ErrorMsg = 13; // error message if parsing failed
+  string DetectionMethod = 14; // method used to detect protobuf (magic bytes, heuristics, etc.)
+  repeated string FieldTypes = 15; // detected field types
+  int32 MessageCount = 16; // number of messages found in payload
 }
