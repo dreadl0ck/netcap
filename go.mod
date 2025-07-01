@@ -66,7 +66,7 @@ require (
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/net v0.7.0
 	gonum.org/v1/gonum v0.9.1
-	google.golang.org/protobuf v1.25.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0
 	mvdan.cc/xurls/v2 v2.2.0
 )
