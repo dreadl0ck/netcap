@@ -14,9 +14,6 @@
 package collector
 
 import (
-	"github.com/go-echarts/go-echarts/v2/charts"
-	"github.com/go-echarts/go-echarts/v2/components"
-	"github.com/go-echarts/go-echarts/v2/opts"
 	"io"
 	"log"
 	"os"
@@ -24,6 +21,10 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/components"
+	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
 // RenderPacketsPerSecond will render a html chart for the packet ingestion rate of the collector over time.
@@ -81,7 +82,7 @@ func renderPPSChart(interval time.Duration, filename string, pps map[time.Time]f
 		}),
 		charts.WithLegendOpts(
 			opts.Legend{
-				Show: true,
+				Show: opts.Bool(true),
 			},
 		),
 	)
@@ -104,10 +105,10 @@ func renderPPSChart(interval time.Duration, filename string, pps map[time.Time]f
 		AddSeries("pps", generateLineItems(data)).
 		SetSeriesOptions(
 			charts.WithLabelOpts(opts.Label{
-				Show:     true,
+				Show:     opts.Bool(true),
 				Position: "right",
 			}),
-			charts.WithLineChartOpts(opts.LineChart{Smooth: true}),
+			charts.WithLineChartOpts(opts.LineChart{Smooth: opts.Bool(true)}),
 		)
 
 	return chart

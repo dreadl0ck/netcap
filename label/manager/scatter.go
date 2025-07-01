@@ -74,7 +74,7 @@ func scatterShowLabel(filename string, attacks map[time.Time]int, normal map[tim
 		}),
 		charts.WithLegendOpts(
 			opts.Legend{
-				Show: true,
+				Show: opts.Bool(true),
 			},
 		),
 	)
@@ -107,7 +107,7 @@ func scatterShowLabel(filename string, attacks map[time.Time]int, normal map[tim
 		AddSeries("Normal", generateScatterItems(normalData)).
 		SetSeriesOptions(charts.WithLabelOpts(
 			opts.Label{
-				Show:     true,
+				Show:     opts.Bool(true),
 				Position: "right",
 			}),
 		)
