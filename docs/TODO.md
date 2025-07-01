@@ -1,5 +1,25 @@
 # TODOs
 
+-- integrate feeds from https://threatview.io
++- DBs: add country blocklists: "did a user browse a flagged website?"
++  - http://netzsperre.liwest.at
++- DBs: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
++  - would require to retrieve IOCs for a CVE id, maybe via greynoise.io api?
++
++- http host session duration:
++  - how much time did a user spent on a specific host?
++    - eg measure as duration between first and last http request to a host
++
++Install ndpi on m1 mac:
++
++  brew install ndpi
++
++- ip and domain reputation
++  - domain age: mark domains registered in the past 30 days
++  - categorize domains (sector etc)
++  - integrate feeds from https://threatview.io
++- add config to apply extra asset info to audit records: eg employee workstations in internal network etc
+
 - add dpi / nodpi arm64 builds for linux
 - extend api with context to allow stopping collector
 - improve unit tests

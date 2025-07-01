@@ -1,3 +1,4 @@
+.DS_Store
 dist-linux
 analyze/dnn/models/
 analyze/dnn/checkpoints/
