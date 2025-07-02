@@ -97,7 +97,7 @@ func unzipAndMoveToDbs(in string, d *datasource, base string) error {
 	}
 
 	if len(filenames) > 1 {
-		log.Fatal("archive contains more than one file, not sure what to do")
+		log.Printf("WARNING: archive %s contains more than one file, using first file only", d.name)
 	}
 
 	f := filenames[0]
@@ -109,11 +109,27 @@ func unzipAndMoveToDbs(in string, d *datasource, base string) error {
 }
 
 func downloadAndIndexNVD(_ string, _ *datasource, base string) error {
+	var errors []error
+	
 	for _, year := range yearRange(nvdStartYear, time.Now().Year()) {
 		s := makeSource(fmt.Sprintf("https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-%s.json.gz", year), "", nil)
-		fetchResource(s, filepath.Join(base, "build", s.name))
+		err := fetchResource(s, filepath.Join(base, "build", s.name))
+		if err != nil {
+			log.Printf("ERROR: failed to fetch NVD data for year %s: %v", year, err)
+			errors = append(errors, err)
+			continue
+		}
 	}
-	IndexData("nvd", filepath.Join(base, "dbs"), filepath.Join(base, "build"), nvdStartYear, false)
+	
+	// Only proceed with indexing if we have at least some data
+	if len(errors) < len(yearRange(nvdStartYear, time.Now().Year())) {
+		IndexData("nvd", filepath.Join(base, "dbs"), filepath.Join(base, "build"), nvdStartYear, false)
+	}
+	
+	if len(errors) > 0 {
+		return fmt.Errorf("failed to download %d NVD datasets", len(errors))
+	}
+	
 	return nil
 }
 
@@ -135,17 +151,20 @@ func untarAndMoveGeoliteToBuildDbs(in string, d *datasource, base string) error 
 	defer func() {
 		errClose := f.Close()
 		if errClose != nil {
-			log.Fatal(errClose)
+			log.Printf("WARNING: failed to close file %s: %v", in, errClose)
 		}
 	}()
 
 	name, err := unpackTarball(f, filepath.Join(base, "build"))
+	if err != nil {
+		return fmt.Errorf("failed to unpack tarball: %v", err)
+	}
 	fmt.Println("unpacked", name)
 
 	// extract *.mmdb files
 	files, err := filepath.Glob(filepath.Join(base, "build", name, "*.mmdb"))
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to glob for mmdb files: %v", err)
 	}
 
 	for _, file := range files {
@@ -155,11 +174,11 @@ func untarAndMoveGeoliteToBuildDbs(in string, d *datasource, base string) error 
 			filepath.Join(base, "dbs", filepath.Base(file)),
 		)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to move file %s: %v", file, err)
 		}
 	}
 
-	return err
+	return nil
 }
 
 // unpack compressed tarballs and move geolite db files to the dbs directory
@@ -171,17 +190,20 @@ func untarAndMoveGeoliteToDbs(in string, d *datasource, base string) error {
 	defer func() {
 		errClose := f.Close()
 		if errClose != nil {
-			log.Fatal(errClose)
+			log.Printf("WARNING: failed to close file %s: %v", in, errClose)
 		}
 	}()
 
 	name, err := unpackTarball(f, base)
+	if err != nil {
+		return fmt.Errorf("failed to unpack tarball: %v", err)
+	}
 	fmt.Println("unpacked", name)
 
 	// extract *.mmdb files
 	files, err := filepath.Glob(filepath.Join(base, name, "*.mmdb"))
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to glob for mmdb files: %v", err)
 	}
 
 	for _, file := range files {
@@ -192,11 +214,11 @@ func untarAndMoveGeoliteToDbs(in string, d *datasource, base string) error {
 			out,
 		)
 		if err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("failed to move file %s to %s: %v", file, out, err)
 		}
 	}
 
-	return err
+	return nil
 }
 
 /*
@@ -218,6 +240,9 @@ func GenerateDBs(nvdIndexStartYear int) {
 		wg    sync.WaitGroup
 		start = time.Now()
 		total int
+		successCount int
+		failureCount int
+		mu    sync.Mutex // protect counters
 	)
 
 	if nvdIndexStartYear != 0 {
@@ -227,84 +252,127 @@ func GenerateDBs(nvdIndexStartYear int) {
 	for _, s := range sources {
 		total++
 		wg.Add(1)
-		go processSource(s, base, &wg)
+		go func(source *datasource) {
+			defer wg.Done()
+			
+			success := processSource(source, base)
+			mu.Lock()
+			if success {
+				successCount++
+			} else {
+				failureCount++
+			}
+			mu.Unlock()
+		}(s)
 	}
 
 	time.Sleep(1 * time.Second)
 	fmt.Println("waiting for downloads to complete...")
 	wg.Wait()
 
+	// Print summary
+	fmt.Printf("\n=== Download Summary ===\n")
+	fmt.Printf("Total sources: %d\n", total)
+	fmt.Printf("Successful: %d\n", successCount)
+	fmt.Printf("Failed: %d\n", failureCount)
+	fmt.Printf("Total bytes fetched: %s\n", humanize.Bytes(numBytesFetched))
+	fmt.Printf("Duration: %v\n", time.Since(start))
+
+	if failureCount > 0 {
+		log.Printf("WARNING: %d out of %d data sources failed to download. Check logs above for details.", failureCount, total)
+	}
+
 	// shell out to print a directory tree
 	out, err := exec.Command("tree", base).CombinedOutput()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("Unable to display directory tree: %v\n", err)
+	} else {
+		fmt.Println(string(out))
 	}
-	fmt.Println(string(out))
 
 	// save the total size into a file named "size"
 	// will be used to ask the user for confirmation
 	// prior to cloning the repo via the netcap toolchain
 	saveTotalDatabaseSize(base)
 
-	fmt.Println("fetched", total, "sources ("+humanize.Bytes(numBytesFetched)+")", "in", time.Since(start))
+	fmt.Printf("Operation completed: fetched %d sources successfully ("+humanize.Bytes(numBytesFetched)+") in %v\n", successCount, time.Since(start))
 
 	gitLfsPrune()
 }
 
-func processSource(s *datasource, base string, wg *sync.WaitGroup) {
-
+func processSource(s *datasource, base string) bool {
 	outFilePath := filepath.Join(base, "build", s.name)
 
 	// fetch via HTTP GET from single remote source if provided
 	// if multiple sources need to be fetched, the logic can be implemented in the hook
-	fetchResource(s, outFilePath)
+	err := fetchResource(s, outFilePath)
+	if err != nil {
+		log.Printf("ERROR: failed to fetch resource %s: %v", s.name, err)
+		return false
+	}
 
 	// run hook
 	if s.hook != nil {
 		err := s.hook(outFilePath, s, base)
 		if err != nil {
-			log.Println("hook for", s.name, "failed with error", err)
+			log.Printf("ERROR: hook for %s failed: %v", s.name, err)
+			return false
 		}
 	}
 
-	wg.Done()
+	log.Printf("SUCCESS: processed source %s", s.name)
+	return true
 }
 
 // fetchResource will attempt to download a resource
-// TODO: return error instead of fataling on errors, a single failed component should not make the entire process fail.
-func fetchResource(s *datasource, outFilePath string) {
-	if s.url != "" {
+// Returns error instead of fataling on errors, allowing other downloads to continue
+func fetchResource(s *datasource, outFilePath string) error {
+	if s.url == "" {
+		// No URL means this is handled by a hook (like NVD indexing)
+		return nil
+	}
 
-		fmt.Println("fetching", s.name, "from", utils.StripQueryString(s.url))
+	fmt.Printf("fetching %s from %s\n", s.name, utils.StripQueryString(s.url))
 
-		var (
-			numRetries int
-			maxRetries = 2
-		)
+	var (
+		numRetries int
+		maxRetries = 3
+		lastErr    error
+	)
 
-	retry:
+	for numRetries <= maxRetries {
 		// execute GET request
 		resp, err := http.Get(s.url)
 		if err != nil {
+			lastErr = err
 			numRetries++
 			if numRetries <= maxRetries {
-				fmt.Println("failed to retrieve data from", s, "will try again (", numRetries, "/", maxRetries, ")")
-				goto retry
+				fmt.Printf("failed to retrieve data from %s (attempt %d/%d): %v - retrying...\n", s.name, numRetries, maxRetries, err)
+				time.Sleep(time.Duration(numRetries) * time.Second) // exponential backoff
+				continue
 			}
-			log.Fatal("failed to retrieve data from", s)
+			return fmt.Errorf("failed to retrieve data from %s after %d attempts: %v", s.name, maxRetries, lastErr)
 		}
 
 		// check status
 		if resp.StatusCode != http.StatusOK {
-			log.Fatal("failed to retrieve data from", s, resp.Status)
+			resp.Body.Close()
+			lastErr = fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
+			numRetries++
+			if numRetries <= maxRetries {
+				fmt.Printf("received HTTP %d from %s (attempt %d/%d) - retrying...\n", resp.StatusCode, s.name, numRetries, maxRetries)
+				time.Sleep(time.Duration(numRetries) * time.Second)
+				continue
+			}
+			return fmt.Errorf("failed to retrieve data from %s: %s", s.name, lastErr)
 		}
 
 		// read body data
 		data, err := ioutil.ReadAll(resp.Body)
+		resp.Body.Close()
 		if err != nil {
-			log.Fatal("failed to read body data from", s, " error: ", err)
+			return fmt.Errorf("failed to read body data from %s: %v", s.name, err)
 		}
-		defer resp.Body.Close()
 
 		numBytesFetchedMu.Lock()
 		numBytesFetched += uint64(len(data))
@@ -313,21 +381,27 @@ func fetchResource(s *datasource, outFilePath string) {
 		// create output file in build folder
 		f, err := os.Create(outFilePath)
 		if err != nil {
-			log.Fatal("failed to create file in build folder", s, " error: ", err)
+			return fmt.Errorf("failed to create file %s: %v", outFilePath, err)
 		}
 
 		// write data into file
 		_, err = f.Write(data)
 		if err != nil {
-			log.Fatal("failed to write data to file in build folder", s, " error: ", err)
+			f.Close()
+			return fmt.Errorf("failed to write data to file %s: %v", outFilePath, err)
 		}
 
 		// close the file
 		err = f.Close()
 		if err != nil {
-			log.Fatal("failed to close file in build folder", s, " error: ", err)
+			return fmt.Errorf("failed to close file %s: %v", outFilePath, err)
 		}
+
+		fmt.Printf("successfully downloaded %s (%s)\n", s.name, humanize.Bytes(uint64(len(data))))
+		return nil
 	}
+
+	return lastErr
 }
 
 // webTechnologies models different web technologies
