@@ -14,6 +14,7 @@
 package types
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -118,6 +119,86 @@ func (c *Connection) CSVRecord() []string {
 		formatInt32(c.NumNSFlags),
 		formatInt32(c.MeanWindowSize),
 	})
+}
+
+// SQLTable returns the SQL table creation statement.
+func (c *Connection) SQLTable() string {
+	// TODO: use different data types and/or add some additional qualifiers?
+	fields := filter([]string{
+		fmt.Sprintf(`%s DATETIME NOT NULL`, fieldTimestampFirst),
+		fmt.Sprintf(`%s STRING`, fieldLinkProto),
+		fmt.Sprintf(`%s STRING`, fieldNetworkProto),
+		fmt.Sprintf(`%s STRING`, fieldTransportProto),
+		fmt.Sprintf(`%s STRING`, fieldApplicationProto),
+		fmt.Sprintf(`%s STRING`, fieldSrcMAC),
+		fmt.Sprintf(`%s STRING`, fieldDstMAC),
+		fmt.Sprintf(`%s STRING`, fieldSrcIP),
+		fmt.Sprintf(`%s STRING`, fieldSrcPort),
+		fmt.Sprintf(`%s STRING`, fieldDstIP),
+		fmt.Sprintf(`%s STRING`, fieldDstPort),
+		fmt.Sprintf(`%s INTEGER`, fieldTotalSize),
+		fmt.Sprintf(`%s INTEGER`, fieldAppPayloadSize),
+		fmt.Sprintf(`%s INTEGER`, fieldNumPackets),
+		//fmt.Sprintf(`%s STRING`, fieldUID),
+		fmt.Sprintf(`%s INTEGER`, fieldDuration),
+		fmt.Sprintf(`%s DATETIME`, fieldTimestampLast),
+		fmt.Sprintf(`%s INTEGER`, fieldBytesClientToServer),
+		fmt.Sprintf(`%s INTEGER`, fieldBytesServerToClient),
+		fmt.Sprintf(`%s INTEGER`, fieldNumFINFlags),
+		fmt.Sprintf(`%s INTEGER`, fieldNumRSTFlags),
+		fmt.Sprintf(`%s INTEGER`, fieldNumACKFlags),
+		fmt.Sprintf(`%s INTEGER`, fieldNumSYNFlags),
+		fmt.Sprintf(`%s INTEGER`, fieldNumURGFlags),
+		fmt.Sprintf(`%s INTEGER`, fieldNumECEFlags),
+		fmt.Sprintf(`%s INTEGER`, fieldNumPSHFlags),
+		fmt.Sprintf(`%s INTEGER`, fieldNumCWRFlags),
+		fmt.Sprintf(`%s INTEGER`, fieldNumNSFlags),
+		fmt.Sprintf(`%s INTEGER`, fieldMeanWindowSize),
+	})
+
+	stmt := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS Connection(%s);`, strings.Join(fields, ", "))
+
+	return stmt
+}
+
+// SQLInsert returns the SQL insert query and values to insert.
+func (c *Connection) SQLInsert() (string, []any) {
+	fields := filter(fieldsConnection)
+	values := filter([]any{
+		formatTimestamp(c.TimestampFirst),
+		c.LinkProto,
+		c.NetworkProto,
+		c.TransportProto,
+		c.ApplicationProto,
+		c.SrcMAC,
+		c.DstMAC,
+		c.SrcIP,
+		c.SrcPort,
+		c.DstIP,
+		c.DstPort,
+		c.TotalSize,
+		c.AppPayloadSize,
+		c.NumPackets,
+		//c.UID,
+		c.Duration,
+		formatTimestamp(c.TimestampLast),
+		c.BytesClientToServer,
+		c.BytesServerToClient,
+		c.NumFINFlags,
+		c.NumRSTFlags,
+		c.NumACKFlags,
+		c.NumSYNFlags,
+		c.NumURGFlags,
+		c.NumECEFlags,
+		c.NumPSHFlags,
+		c.NumCWRFlags,
+		c.NumNSFlags,
+		c.MeanWindowSize,
+	})
+
+	query := fmt.Sprintf(`INSERT INTO Connection VALUES(%s)`, strings.TrimSuffix(strings.Repeat("?,", len(fields)), ","))
+
+	return query, values
 }
 
 // Time returns the timestamp associated with the audit record.

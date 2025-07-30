@@ -14,6 +14,8 @@
 package dump
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -28,7 +30,11 @@ import (
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
+
+	"github.com/dreadl0ck/netcap/internal/sqlite"
 )
+
+var errAborted = errors.New("operation aborted by user")
 
 // Run parses the subcommand flags and handles the arguments.
 func Run() {
@@ -84,13 +90,49 @@ func Run() {
 		os.Exit(0) // bye bye
 	}
 
-	// set separators for sub structures in CSV
-	types.StructureBegin = *flagBegin
-	types.StructureEnd = *flagEnd
-	types.FieldSeparator = *flagStructSeparator
+	switch {
+	case isAuditRecordDirectory(*flagInput):
+		if *flagSelect != "" {
+			fmt.Println(ansi.Red + "field selection is (currently) not supported when dumping to SQLite" + ansi.Reset)
+			os.Exit(1)
+		}
 
-	// read ncap file and print to stdout
-	if filepath.Ext(*flagInput) == defaults.FileExtension || filepath.Ext(*flagInput) == ".gz" {
+		// ensure we start with a fresh database at all times, so that results
+		// from different directories don't get merged into a single database.
+		if _, err := os.Stat(*flagSQLite); err == nil {
+			shouldPrompt := true // TODO: make this depend on flags, similar to collector init
+			if shouldPrompt {
+				msg := "database output path already exists! Overwrite?"
+				if !utils.Confirm(msg) {
+					fmt.Println(ansi.Red + fmt.Sprintf("> %v", errAborted) + ansi.Reset)
+					os.Exit(1)
+				}
+
+				if err := os.Remove(*flagSQLite); err != nil {
+					fmt.Println(ansi.Red + fmt.Sprintf("> failed removing existing database %q: %v", *flagSQLite, err) + ansi.Reset)
+					os.Exit(1)
+				}
+			}
+		}
+
+		// read all ncap files, and insert into SQLite database
+		err = sqlite.Dump(
+			context.Background(),
+			os.Stdout,
+			sqlite.DumpConfig{
+				Paths:         []string{*flagInput}, // TODO: support multiple (non-directory) paths?
+				Output:        *flagSQLite,
+				MemBufferSize: *flagMemBufferSize,
+				Selection:     *flagSelect,
+				Debug:         *flagDebug,
+			})
+	case isAuditRecordFile(*flagInput):
+		// set separators for sub structures in CSV
+		types.StructureBegin = *flagBegin
+		types.StructureEnd = *flagEnd
+		types.FieldSeparator = *flagStructSeparator
+
+		// read ncap file and print to stdout
 		err = io.Dump(
 			os.Stdout,
 			io.DumpConfig{
@@ -107,10 +149,31 @@ func Run() {
 				ForceColors:  *flagForceColors,
 			},
 		)
+	default:
+		fi, err := os.Open(*flagInput)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(ansi.Red + fmt.Sprintf("> failed opening %q: %v", *flagInput, errors.Unwrap(err)) + ansi.Reset)
+			os.Exit(1)
 		}
 
-		return
+		fmt.Println(ansi.Red + fmt.Sprintf("> input %q doesn't contain audit record file(s)", fi.Name()) + ansi.Reset)
+		os.Exit(1)
 	}
+
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func isAuditRecordDirectory(input string) bool {
+	fi, err := os.Stat(input)
+	if err == nil && fi.IsDir() {
+		return true
+	}
+
+	return false
+}
+
+func isAuditRecordFile(input string) bool {
+	return filepath.Ext(input) == defaults.FileExtension || filepath.Ext(input) == ".gz"
 }

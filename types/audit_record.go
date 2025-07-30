@@ -127,12 +127,12 @@ func Select(msg proto.Message, vals string) {
 }
 
 // filter applies a selection if configured.
-func filter(in []string) []string {
+func filter[T any](in []T) []T {
 	if len(selection) == 0 {
 		return in
 	}
 
-	r := make([]string, len(selection))
+	r := make([]T, len(selection))
 	for i, v := range selection {
 		r[i] = in[v]
 	}
