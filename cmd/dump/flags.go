@@ -40,6 +40,7 @@ var (
 	flagCSV             = fs.Bool("csv", false, "print output data as csv with header line")
 	flagPrintStructured = fs.Bool("struc", true, "print output as structured objects")
 	flagTSV             = fs.Bool("tsv", false, "print output as tab separated values")
+	flagSQLite          = fs.String("sqlite", "", "path of SQLite database to write to")
 	flagHeader          = fs.Bool("header", false, "print audit record file header and exit")
 	flagTable           = fs.Bool("table", false, "print output as table view (thanks @evilsocket)")
 	flagBegin           = fs.String("begin", "(", "begin character for a structure in CSV output")
@@ -50,4 +51,5 @@ var (
 	flagJSON            = fs.Bool("json", false, "print as JSON")
 	flagMemBufferSize   = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")
 	flagForceColors     = fs.Bool("c", false, "force colors")
+	flagDebug           = fs.Bool("debug", false, "display debug information")
 )
