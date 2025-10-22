@@ -18,7 +18,7 @@ The full list of supported protocols can be found here:
 
 ## nDPI
 
-Furthermore **nDPI** \(v3.0\) can be used to identify 244 applications, they are listed here:
+Furthermore **nDPI** \(v4.14 Stable\) can be used to identify 244+ applications, they are listed here:
 
 {% embed url="https://github.com/ntop/nDPI/wiki/Supported-Protocols" caption="nDPI Supported Protocols" %}
 

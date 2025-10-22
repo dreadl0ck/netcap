@@ -22,9 +22,9 @@ RUN apt install -y liblinear-dev libprotoident libprotoident-dev libprotoident-t
 
 # nDPI
 RUN apt-get install -y libjson-c-dev
-RUN wget https://github.com/ntop/nDPI/archive/4.0.tar.gz
-RUN tar xfz 4.0.tar.gz
-RUN cd nDPI-4.0 && ./autogen.sh && ./configure && make && make install
+RUN wget https://github.com/ntop/nDPI/archive/4.14.tar.gz
+RUN tar xfz 4.14.tar.gz
+RUN cd nDPI-4.14 && ./autogen.sh && ./configure && make && make install
 
 # Copy local dependencies first (they will be in the build context)
 WORKDIR /workspace

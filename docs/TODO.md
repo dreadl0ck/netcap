@@ -14,6 +14,8 @@ make releases with gopacket/gopacket and integrate them into project instead of 
 
 add internal package
 
+implement Alerts and Rules
+
 ----
 
 test suite:
@@ -509,7 +511,7 @@ entities:
 ## DPI
 
 - batch DPI calls per flow?
-- add support for nDPI 3.2
+- add support for nDPI 4.14 Stable
 
 ## net collect
 

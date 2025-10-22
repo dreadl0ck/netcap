@@ -3,7 +3,7 @@
 ## Overview
 
 Netcap supports Deep Packet Inspection (DPI) using:
-- **nDPI** (v4.x) - for protocol detection (244+ applications)
+- **nDPI** (v4.14 Stable) - for protocol detection (244+ applications)
 - **libprotoident** (v2.x) - for protocol identification (500+ protocols)
 
 ## macOS
@@ -80,7 +80,7 @@ go build -tags nodpi -ldflags "-s -w" -o bin/net github.com/dreadl0ck/netcap/cmd
 ## Compatibility
 
 - **go-dpi**: v1.1.0+ (required for nDPI v4.x support)
-- **nDPI**: v4.x (v3.x supported by go-dpi v1.0.x)
+- **nDPI**: v4.14 Stable (v3.x supported by go-dpi v1.0.x)
 - **libprotoident**: v2.x
 
 ## Troubleshooting
