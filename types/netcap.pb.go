@@ -5440,7 +5440,7 @@ type SIP struct {
 	// Base information
 	Version int32 `protobuf:"varint,2,opt,name=Version,proto3" json:"Version,omitempty"`
 	Method  int32 `protobuf:"varint,3,opt,name=Method,proto3" json:"Method,omitempty"`
-	//map[string][]string Headers
+	// map[string][]string Headers
 	Headers []string `protobuf:"bytes,4,rep,name=Headers,proto3" json:"Headers,omitempty"`
 	// Response
 	IsResponse     bool   `protobuf:"varint,5,opt,name=IsResponse,proto3" json:"IsResponse,omitempty"`
@@ -33506,10 +33506,7 @@ func (m *Header) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -33683,10 +33680,7 @@ func (m *Batch) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -33838,10 +33832,7 @@ func (m *PacketContext) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -34585,10 +34576,7 @@ func (m *Connection) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -34770,10 +34758,7 @@ func (m *Ethernet) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -35065,10 +35050,7 @@ func (m *ARP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -35214,10 +35196,7 @@ func (m *Dot1Q) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -35619,10 +35598,7 @@ func (m *Dot11) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -35749,10 +35725,7 @@ func (m *Dot11QOS) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -35914,10 +35887,7 @@ func (m *Dot11HTControl) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -36178,10 +36148,7 @@ func (m *Dot11HTControlVHT) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -36364,10 +36331,7 @@ func (m *Dot11HTControlHT) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -36493,10 +36457,7 @@ func (m *Dot11HTControlMFB) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -36679,10 +36640,7 @@ func (m *Dot11LinkAdapationControl) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -36770,10 +36728,7 @@ func (m *Dot11ASEL) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -36967,10 +36922,7 @@ func (m *LinkLayerDiscovery) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -37073,10 +37025,7 @@ func (m *LLDPChassisID) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -37179,10 +37128,7 @@ func (m *LLDPPortID) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -37304,10 +37250,7 @@ func (m *LinkLayerDiscoveryValue) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -37395,10 +37338,7 @@ func (m *EthernetCTP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -37539,10 +37479,7 @@ func (m *EthernetCTPReply) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -37847,10 +37784,7 @@ func (m *LinkLayerDiscoveryInfo) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -37972,10 +37906,7 @@ func (m *LLDPSysCapabilities) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -38245,10 +38176,7 @@ func (m *LLDPCapabilities) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -38421,10 +38349,7 @@ func (m *LLDPMgmtAddress) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -38546,10 +38471,7 @@ func (m *LLDPOrgSpecificTLV) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -39008,10 +38930,7 @@ func (m *IPv4) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -39133,10 +39052,7 @@ func (m *IPv4Option) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -39487,10 +39403,7 @@ func (m *IPv6) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -39776,10 +39689,7 @@ func (m *IPv6Fragment) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -39988,10 +39898,7 @@ func (m *ICMPv4) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -40162,10 +40069,7 @@ func (m *ICMPv6) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -40383,10 +40287,7 @@ func (m *ICMPv6NeighborAdvertisement) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -40648,10 +40549,7 @@ func (m *ICMPv6RouterAdvertisement) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -40754,10 +40652,7 @@ func (m *ICMPv6Option) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -41030,10 +40925,7 @@ func (m *UDP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -41630,10 +41522,7 @@ func (m *TCP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -41755,10 +41644,7 @@ func (m *TCPOption) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -41967,10 +41853,7 @@ func (m *SCTP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -42529,10 +42412,7 @@ func (m *DNS) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -42998,10 +42878,7 @@ func (m *DNSResourceRecord) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -43214,10 +43091,7 @@ func (m *DNSSOA) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -43358,10 +43232,7 @@ func (m *DNSSRV) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -43462,10 +43333,7 @@ func (m *DNSMX) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -43585,10 +43453,7 @@ func (m *DNSQuestion) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -44186,10 +44051,7 @@ func (m *DHCPv4) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -44309,10 +44171,7 @@ func (m *DHCPOption) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -44685,10 +44544,7 @@ func (m *DHCPv6) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -44808,10 +44664,7 @@ func (m *DHCPv6Option) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -44977,10 +44830,7 @@ func (m *LLC) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -45432,10 +45282,7 @@ func (m *NTP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -45747,10 +45594,7 @@ func (m *SIP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -46153,10 +45997,7 @@ func (m *IGMP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -46327,10 +46168,7 @@ func (m *IGMPv3GroupRecord) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -46497,10 +46335,7 @@ func (m *IPv6HopByHop) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -46677,10 +46512,7 @@ func (m *IPv6HopByHopOption) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -46768,10 +46600,7 @@ func (m *IPv6HopByHopOptionAlignment) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -46893,10 +46722,7 @@ func (m *SNAP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -47067,10 +46893,7 @@ func (m *ICMPv6Echo) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -47269,10 +47092,7 @@ func (m *ICMPv6NeighborSolicitation) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -47439,10 +47259,7 @@ func (m *ICMPv6RouterSolicitation) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -48302,7 +48119,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthNetcap
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -48429,7 +48246,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthNetcap
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -48556,7 +48373,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthNetcap
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -48641,10 +48458,7 @@ func (m *HTTP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -48919,10 +48733,7 @@ func (m *HTTPCookie) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -49968,10 +49779,7 @@ func (m *TLSClientHello) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -50780,10 +50588,7 @@ func (m *TLSServerHello) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -51007,10 +50812,7 @@ func (m *IPSecAH) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -51200,10 +51002,7 @@ func (m *IPSecESP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -51422,10 +51221,7 @@ func (m *Geneve) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -51585,10 +51381,7 @@ func (m *GeneveOption) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -51775,10 +51568,7 @@ func (m *VXLAN) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -52225,10 +52015,7 @@ func (m *USB) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -52392,10 +52179,7 @@ func (m *USBRequestBlockSetup) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -52732,10 +52516,7 @@ func (m *LCM) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -52881,10 +52662,7 @@ func (m *MPLS) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -53204,10 +52982,7 @@ func (m *Modbus) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -53668,10 +53443,7 @@ func (m *OSPFv2) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -53930,10 +53702,7 @@ func (m *HelloPkg) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -54211,10 +53980,7 @@ func (m *HelloPkgV2) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -54374,10 +54140,7 @@ func (m *DbDescPkg) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -54838,10 +54601,7 @@ func (m *OSPFv3) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -55043,10 +54803,7 @@ func (m *LSAheader) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -55520,10 +55277,7 @@ func (m *LSA) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -55630,10 +55384,7 @@ func (m *LSReq) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -55736,10 +55487,7 @@ func (m *LSUpdate) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -55899,10 +55647,7 @@ func (m *IntraAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -56153,10 +55898,7 @@ func (m *ASExternalLSA) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -56297,10 +56039,7 @@ func (m *InterAreaPrefixLSA) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -56407,10 +56146,7 @@ func (m *InterAreaRouterLSA) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -56555,10 +56291,7 @@ func (m *ASExternalLSAV2) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -56680,10 +56413,7 @@ func (m *RouterLSA) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -56828,10 +56558,7 @@ func (m *Router) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -56953,10 +56680,7 @@ func (m *RouterLSAV2) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -57082,10 +56806,7 @@ func (m *RouterV2) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -57230,10 +56951,7 @@ func (m *NetworkLSA) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -57408,10 +57126,7 @@ func (m *LinkLSA) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -57552,10 +57267,7 @@ func (m *LSAPrefix) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -57951,10 +57663,7 @@ func (m *BFD) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -58095,10 +57804,7 @@ func (m *BFDAuthHeader) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -58558,10 +58264,7 @@ func (m *GRE) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -58738,10 +58441,7 @@ func (m *GRERouting) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -58912,10 +58612,7 @@ func (m *FDDI) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -59094,10 +58791,7 @@ func (m *EAP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -59223,10 +58917,7 @@ func (m *EAPOL) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -59762,10 +59453,7 @@ func (m *EAPOLKey) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -60082,10 +59770,7 @@ func (m *VRRPv2) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -60245,10 +59930,7 @@ func (m *CiscoDiscovery) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -60370,10 +60052,7 @@ func (m *CiscoDiscoveryValue) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -60461,10 +60140,7 @@ func (m *CDPVLANDialogue) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -60565,10 +60241,7 @@ func (m *CDPLocation) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -60732,10 +60405,7 @@ func (m *CDPPowerDialogue) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -60865,10 +60535,7 @@ func (m *CDPSparePairPoE) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -61732,10 +61399,7 @@ func (m *CiscoDiscoveryInfo) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -62080,10 +61744,7 @@ func (m *CDPHello) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -62620,10 +62281,7 @@ func (m *CDPEnergyWise) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -62853,10 +62511,7 @@ func (m *CDPCapabilities) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -62970,10 +62625,7 @@ func (m *IPNet) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -63248,10 +62900,7 @@ func (m *NortelDiscovery) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -63628,10 +63277,7 @@ func (m *CIP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -63967,10 +63613,7 @@ func (m *ENIP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -64073,10 +63716,7 @@ func (m *ENIPCommandSpecificData) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -64311,10 +63951,7 @@ func (m *DeviceProfile) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -64451,10 +64088,7 @@ func (m *Port) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -64542,10 +64176,7 @@ func (m *PortStats) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -64890,7 +64521,7 @@ func (m *IPProfile) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthNetcap
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -65019,7 +64650,7 @@ func (m *IPProfile) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthNetcap
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -65151,7 +64782,7 @@ func (m *IPProfile) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthNetcap
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -65270,10 +64901,7 @@ func (m *IPProfile) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -65374,10 +65002,7 @@ func (m *Protocol) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -65823,10 +65448,7 @@ func (m *File) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -65959,10 +65581,7 @@ func (m *SMTPResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -66108,10 +65727,7 @@ func (m *SMTPRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -66212,10 +65828,7 @@ func (m *SMTPCommand) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -66490,10 +66103,7 @@ func (m *SMTP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -66831,10 +66441,7 @@ func (m *Diameter) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -67211,10 +66818,7 @@ func (m *AVP) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -67507,10 +67111,7 @@ func (m *POP3) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -68209,10 +67810,7 @@ func (m *Mail) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -68404,7 +68002,7 @@ func (m *MailPart) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthNetcap
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -68485,10 +68083,7 @@ func (m *MailPart) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -68602,10 +68197,7 @@ func (m *POP3Request) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -68719,10 +68311,7 @@ func (m *POP3Response) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -69175,10 +68764,7 @@ func (m *Software) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -69656,10 +69242,7 @@ func (m *Service) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -69888,10 +69471,7 @@ func (m *Credentials) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -70140,10 +69720,7 @@ func (m *SSH) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -70472,10 +70049,7 @@ func (m *Vulnerability) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -70868,10 +70442,7 @@ func (m *Exploit) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {
@@ -71292,10 +70863,7 @@ func (m *Alert) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNetcap
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNetcap
 			}
 			if (iNdEx + skippy) > l {

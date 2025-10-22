@@ -120,6 +120,10 @@ Contributions welcome, there's plenty of stuff to do, from simple additions to l
 
 Please see the [Contributing Page](https://docs.netcap.io/v/v0.5/contributing) for more information.
 
+**Development Setup:**
+- [macOS Development Setup Guide](docs/macos-development-setup.md) - Complete setup instructions for macOS, including Protocol Buffer plugins
+- [Installation Guide](docs/installation.md) - General installation instructions
+
 ## Bug Reports
 
 If you encounter a bug while using Netcap, please fill out the [bugreport template](https://github.com/dreadl0ck/netcap/blob/master/docs/bugreport.md) and open a github issue.

@@ -39,5 +39,6 @@
 * [Docker Containers](docker-containers.md)
 * [FAQ](faq.md)
 * [Contributing](contributing.md)
+* [macOS Development Setup](macos-development-setup.md)
 * [License](license.md)
 
