@@ -11,7 +11,7 @@ RUN wget https://go.dev/dl/go1.25.1.linux-amd64.tar.gz && \
 
 ENV PATH="/usr/local/go/bin:${PATH}"
 
-RUN apt-get install -y apt-transport-https curl lsb-release wget autogen autoconf libtool gcc libpcap-dev linux-headers-generic git vim
+RUN apt-get install -y apt-transport-https curl lsb-release wget autogen autoconf automake libtool gcc libpcap-dev linux-headers-generic git vim pkg-config
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libwandio/cfg/setup/bash.deb.sh' | bash
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libwandder/cfg/setup/bash.deb.sh' | bash
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libtrace/cfg/setup/bash.deb.sh' | bash

@@ -1,6 +1,6 @@
 FROM --platform=linux/amd64 golang:1.25.1-alpine as builder
 RUN apk update
-RUN apk add --no-cache gcc libpcap-dev libnetfilter_queue-dev linux-headers musl-utils musl-dev git vim autoconf automake libtool make g++ bison flex cmake build-base abuild binutils binutils-doc gcc-doc cmake-doc extra-cmake-modules extra-cmake-modules-doc
+RUN apk add --no-cache gcc libpcap-dev libnetfilter_queue-dev linux-headers musl-utils musl-dev git vim autoconf automake libtool make g++ bison flex cmake build-base abuild binutils binutils-doc gcc-doc cmake-doc extra-cmake-modules extra-cmake-modules-doc pkgconfig
 
 RUN wget https://github.com/wanduow/wandio/archive/4.2.3-1.tar.gz
 RUN tar xfz 4.2.3-1.tar.gz
