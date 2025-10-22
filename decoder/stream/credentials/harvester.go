@@ -23,7 +23,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/types"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 )

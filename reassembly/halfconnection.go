@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 )
 
 // one-way connection, i.e. halfconnection

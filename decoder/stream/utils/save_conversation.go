@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 

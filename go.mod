@@ -13,7 +13,6 @@ require (
 	github.com/dlclark/regexp2 v1.11.5
 	github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4
 	github.com/dreadl0ck/go-dpi v1.1.0
-	github.com/dreadl0ck/gopacket v1.1.16-0.20201228223815-140074f06498
 	github.com/dreadl0ck/ja3 v1.0.1-dreadl0ck-gopacket
 	github.com/dreadl0ck/maltego v0.0.3
 	github.com/dreadl0ck/material-icon-gen v0.0.0-20210214144425-b93b94838986
@@ -27,6 +26,7 @@ require (
 	github.com/go-echarts/go-echarts/v2 v2.6.5
 	github.com/go-errors/errors v1.5.1
 	github.com/gogo/protobuf v1.3.2
+	github.com/gopacket/gopacket v1.4.0
 	github.com/klauspost/pgzip v1.2.6
 	github.com/magiconair/properties v1.8.0
 	github.com/mcnijman/go-emailaddress v1.1.1
@@ -69,6 +69,7 @@ require (
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/couchbase/vellum v1.0.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.5 // indirect
+	github.com/dreadl0ck/gopacket v1.1.16-0.20201228223815-140074f06498 // indirect
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect

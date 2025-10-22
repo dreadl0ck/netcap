@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 	"github.com/prometheus/client_golang/prometheus"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"

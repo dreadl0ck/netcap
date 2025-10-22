@@ -31,7 +31,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 	"github.com/dustin/go-humanize"
 	"github.com/evilsocket/islazy/tui"
 	"github.com/mgutz/ansi"

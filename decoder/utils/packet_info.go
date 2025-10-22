@@ -14,7 +14,7 @@
 package utils
 
 import (
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 )
 
 // PacketInfo contains packet meta information.

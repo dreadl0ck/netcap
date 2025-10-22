@@ -15,7 +15,7 @@ package packet
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/gopacket/gopacket/layers"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/utils"
 	"log"
@@ -24,7 +24,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/types"

@@ -17,7 +17,7 @@ package dpi
 
 // this file contains function stubs that do nothing, but allow us to compile
 import (
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 
 	"github.com/dreadl0ck/netcap/types"
 )

@@ -18,7 +18,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 	"github.com/gogo/protobuf/proto"
 
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"

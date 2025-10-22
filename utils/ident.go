@@ -16,7 +16,7 @@ package utils
 import (
 	"strings"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 )
 
 var flowIdentReplacer = strings.NewReplacer(":", "-", "->", "--")

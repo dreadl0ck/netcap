@@ -16,8 +16,8 @@ package tcp
 import (
 	"sync"
 
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/ip4defrag"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/ip4defrag"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/reassembly"

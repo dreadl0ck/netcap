@@ -1,6 +1,6 @@
 package reassembly
 
-import "github.com/dreadl0ck/gopacket"
+import "github.com/gopacket/gopacket"
 
 /* livePacket: implements a byteContainer */
 type livePacket struct {

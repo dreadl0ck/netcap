@@ -17,7 +17,7 @@ import (
 	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"strconv"
 
-	"github.com/dreadl0ck/gopacket/layers"
+	"github.com/gopacket/gopacket/layers"
 
 	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"

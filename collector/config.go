@@ -14,11 +14,11 @@
 package collector
 
 import (
-	"github.com/dreadl0ck/gopacket/pcap"
+	"github.com/gopacket/gopacket/pcap"
 	"os"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/defaults"

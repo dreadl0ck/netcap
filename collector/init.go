@@ -17,7 +17,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/dreadl0ck/gopacket/pcap"
+	"github.com/gopacket/gopacket/pcap"
 	"github.com/mgutz/ansi"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
