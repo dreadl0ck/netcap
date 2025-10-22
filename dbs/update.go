@@ -96,17 +96,5 @@ func UpdateDBs() {
 		utils.CopyFile(filepath.Join("/tmp", filepath.Base(pathCity)), pathCity)
 	}
 
-	gitLfsPrune()
 	fmt.Println("done! Updated databases to", resolvers.ConfigRootPath)
-}
-
-func gitLfsPrune() {
-	fmt.Println("pruning git lfs cache")
-	cmd := exec.Command("git", "lfs", "prune")
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-	err := cmd.Run()
-	if err != nil {
-		log.Fatal("failed to run git lfs prune: ", err)
-	}
 }

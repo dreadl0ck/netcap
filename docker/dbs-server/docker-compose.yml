@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  netcap-dbs-server:
+    build:
+      context: ../..
+      dockerfile: docker/dbs-server/Dockerfile
+    container_name: netcap-dbs-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - netcap-dbs-data:/data
+    environment:
+      - NC_CONFIG_ROOT=/data/netcap-dbs-server
+      - NETCAP_DBS_URL=http://localhost:8080
+      - TZ=UTC
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - netcap
+
+volumes:
+  netcap-dbs-data:
+    driver: local
+
+networks:
+  netcap:
+    driver: bridge
+

@@ -94,6 +94,11 @@ func (c *Collector) Init() (err error) {
 	// initialize resolvers
 	resolvers.Init(c.config.ResolverConfig, c.config.DecoderConfig.Quiet)
 
+	// print database load confirmation in debug mode
+	if c.config.DecoderConfig.Debug {
+		c.printlnStdOut("loaded netcap databases from", resolvers.DataBaseFolderPath)
+	}
+
 	if c.config.ResolverConfig.LocalDNS {
 		packet.LocalDNS = true
 	}

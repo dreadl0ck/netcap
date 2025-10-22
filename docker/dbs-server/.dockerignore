@@ -1,0 +1,91 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Go workspace (development only)
+go.work
+go.work.sum
+
+# Docker
+docker/
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+docs/
+*.md
+README.md
+AUTHORS
+LICENSE
+
+# Test files
+*_test.go
+tests/
+test-params/
+
+# Build artifacts
+bin/
+dist/
+dist-linux/
+*.log
+*.pcap
+*.pcapng
+cover.out
+
+# Data
+data/
+dbs/
+collector.log
+decoder.log
+io.log
+reassembly.log
+resolvers.log
+netcap.log
+errors.log
+db.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Graphics and assets
+graphics/
+FlameGraph/
+mied18.pdf
+
+# GitHub issues documentation
+github_issue_*.md
+github_issues_summary.md
+tcp_reassembly_analysis.md
+
+# Scripts
+scripts/
+deploy.sh
+
+# Maltego
+maltego/
+
+# Analysis
+analyze/
+
+# Configs
+configs/
+
+# Zeus (deployment)
+zeus/
+
+# CLAUDE development docs
+CLAUDE.md
+

@@ -34,7 +34,6 @@ import (
 	"github.com/blevesearch/bleve"
 	"github.com/dustin/go-humanize"
 
-	vuln "github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
@@ -333,7 +332,7 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int, verbo
 			} else {
 				fmt.Println("processing NVD items for year ", year)
 			}
-			file := filepath.Join(buildPath, "nvdcve-1.1-"+year+".json.gz")
+			file := filepath.Join(buildPath, "nvdcve-2.0-"+year+".json.gz")
 
 			f, err := os.Open(file)
 			if err != nil {
@@ -350,48 +349,53 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int, verbo
 				log.Fatal("Could not read file " + file)
 			}
 
-			items := new(vuln.NVDVulnerabilityItems)
+			items := new(NVD2)
 
 			err = json.Unmarshal(data, items)
 			if err != nil {
 				log.Fatal("failed to unmarshal CVE items for file"+file, err)
 			}
 
-			total += len(items.CVEItems)
-			length := len(items.CVEItems)
+			total += len(items.Vulnerabilities)
+			length := len(items.Vulnerabilities)
 
-			for i, v := range items.CVEItems {
+			for i, v := range items.Vulnerabilities {
 
 				if verbose {
 					utils.ClearLine()
 					fmt.Print("processing files for year ", year, ": ", i, " / ", length)
 				}
 
-				for _, entry := range v.Cve.Description.DescriptionData {
+				// Find English description
+				for _, entry := range v.Cve.Descriptions {
 					if entry.Lang == "en" {
 
 						var versions []string
-						for _, n := range v.Configurations.Nodes {
-							if n.Operator == "OR" {
-								for _, cpe := range n.CpeMatch {
-									if cpe.Vulnerable {
-										if cpe.VersionStartIncluding != "" {
-											versions = append(versions, cpe.VersionStartIncluding)
+						// Extract versions from configurations
+						for _, config := range v.Cve.Configurations {
+							for _, node := range config.Nodes {
+								if node.Operator == "OR" {
+									for _, cpe := range node.CpeMatch {
+										if cpe.Vulnerable {
+											if cpe.VersionStartIncluding != "" {
+												versions = append(versions, cpe.VersionStartIncluding)
 
-											// generate array of intermediate versions if end is set
-											if cpe.VersionEndExcluding != "" {
-												patchVersions := intermediatePatchVersions(cpe.VersionStartIncluding, cpe.VersionEndExcluding)
-												if patchVersions != nil {
-													versions = append(versions, patchVersions...)
+												// generate array of intermediate versions if end is set
+												if cpe.VersionEndExcluding != "" {
+													patchVersions := intermediatePatchVersions(cpe.VersionStartIncluding, cpe.VersionEndExcluding)
+													if patchVersions != nil {
+														versions = append(versions, patchVersions...)
+													}
 												}
-											}
-										} else {
-											// try to get version from cpeURI
-											parts := strings.Split(cpe.Cpe23URI, ":")
-											if len(parts) > 5 {
-												ver := parts[5]
-												if ver != "*" && ver != "-" {
-													versions = append(versions, ver)
+											} else {
+												// try to get version from CPE criteria
+												// CPE format: cpe:2.3:part:vendor:product:version:...
+												parts := strings.Split(cpe.Criteria, ":")
+												if len(parts) > 5 {
+													ver := parts[5]
+													if ver != "*" && ver != "-" {
+														versions = append(versions, ver)
+													}
 												}
 											}
 										}
@@ -400,29 +404,55 @@ func IndexData(in string, out string, buildPath string, nvdIndexStart int, verbo
 							}
 						}
 
+						// If no versions found, try to extract from description
 						if len(versions) == 0 {
 							genRes := reSimpleVersion.FindString(entry.Value)
 							if genRes != "" {
 								versions = append(versions, genRes)
 							}
 						}
-						// fmt.Println(" ", v.Cve.CVEDataMeta.ID, entry.Value, " =>", versions)
+
+						// Extract CVSS v2 metrics if available
+						var (
+							severity              string
+							v2Score               string
+							accessVector          string
+							baseScore             float64
+							baseSeverity          string
+							attackComplexity      string
+							confidentialityImpact string
+							integrityImpact       string
+							availabilityImpact    string
+						)
+
+						if len(v.Cve.Metrics.CvssMetricV2) > 0 {
+							metric := v.Cve.Metrics.CvssMetricV2[0]
+							baseSeverity = metric.BaseSeverity
+							severity = metric.BaseSeverity
+							v2Score = strconv.FormatFloat(metric.CvssData.BaseScore, 'f', 1, 64)
+							baseScore = metric.CvssData.BaseScore
+							accessVector = metric.CvssData.AccessVector
+							attackComplexity = metric.CvssData.AccessComplexity
+							confidentialityImpact = metric.CvssData.ConfidentialityImpact
+							integrityImpact = metric.CvssData.IntegrityImpact
+							availabilityImpact = metric.CvssData.AvailabilityImpact
+						}
 
 						e := vulnerability{
-							ID:                    v.Cve.CVEDataMeta.ID,
+							ID:                    v.Cve.ID,
 							Description:           entry.Value,
-							Severity:              v.Impact.BaseMetricV2.Severity,
-							V2Score:               strconv.FormatFloat(v.Impact.BaseMetricV2.CvssV2.BaseScore, 'f', 1, 64),
-							AccessVector:          v.Impact.BaseMetricV2.CvssV2.AccessVector,
-							AttackComplexity:      v.Impact.BaseMetricV3.CvssV3.AttackComplexity,
-							PrivilegesRequired:    v.Impact.BaseMetricV3.CvssV3.PrivilegesRequired,
-							UserInteraction:       v.Impact.BaseMetricV3.CvssV3.UserInteraction,
-							Scope:                 v.Impact.BaseMetricV3.CvssV3.Scope,
-							ConfidentialityImpact: v.Impact.BaseMetricV3.CvssV3.ConfidentialityImpact,
-							IntegrityImpact:       v.Impact.BaseMetricV3.CvssV3.IntegrityImpact,
-							AvailabilityImpact:    v.Impact.BaseMetricV3.CvssV3.AvailabilityImpact,
-							BaseScore:             v.Impact.BaseMetricV3.CvssV3.BaseScore,
-							BaseSeverity:          v.Impact.BaseMetricV3.CvssV3.BaseSeverity,
+							Severity:              severity,
+							V2Score:               v2Score,
+							AccessVector:          accessVector,
+							AttackComplexity:      attackComplexity,
+							PrivilegesRequired:    "", // Not available in v2
+							UserInteraction:       "", // Not available in v2
+							Scope:                 "", // Not available in v2
+							ConfidentialityImpact: confidentialityImpact,
+							IntegrityImpact:       integrityImpact,
+							AvailabilityImpact:    availabilityImpact,
+							BaseScore:             baseScore,
+							BaseSeverity:          baseSeverity,
 							Versions:              versions,
 						}
 
