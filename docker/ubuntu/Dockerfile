@@ -1,11 +1,15 @@
-FROM ubuntu:18.04 as builder
+FROM --platform=linux/amd64 ubuntu:18.04 as builder
 
 RUN apt-get clean
 RUN apt-get update
-RUN apt-get install -y software-properties-common net-tools
-RUN add-apt-repository ppa:longsleep/golang-backports
-RUN apt-get update
-RUN apt-get install -y golang-go
+RUN apt-get install -y software-properties-common net-tools wget
+
+# Install Go 1.25.1 manually
+RUN wget https://go.dev/dl/go1.25.1.linux-amd64.tar.gz && \
+    tar -C /usr/local -xzf go1.25.1.linux-amd64.tar.gz && \
+    rm go1.25.1.linux-amd64.tar.gz
+
+ENV PATH="/usr/local/go/bin:${PATH}"
 
 RUN apt-get install -y apt-transport-https curl lsb-release wget autogen autoconf libtool gcc libpcap-dev linux-headers-generic git vim
 RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libwandio/cfg/setup/bash.deb.sh' | bash
@@ -24,10 +28,8 @@ RUN cd nDPI-4.0 && ./autogen.sh && ./configure && make && make install
 
 WORKDIR /src
 
-COPY go.mod go.sum ./
-RUN go mod download
-
 COPY . .
+RUN go mod download
 ENV VERSION XXX
 
 ARG tags
@@ -44,10 +46,10 @@ RUN find / -iname libprotoident.h
 RUN find / -iname libtrace.h
 RUN ls /usr/lib/*
 
-# compile
-RUN go build -mod=readonly ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+# compile with reduced parallelism to avoid compiler crashes under emulation
+RUN GOOS=linux GOARCH=amd64 go build -p 1 -mod=readonly ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
-FROM ubuntu:18.04
+FROM --platform=linux/amd64 ubuntu:18.04
 ARG IPV6_SUPPORT=true
 
 RUN apt-get update

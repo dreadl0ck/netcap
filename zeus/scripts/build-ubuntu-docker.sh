@@ -1,4 +1,6 @@
 #!/bin/bash
+# Alternate build script for linux binaries in docker container using goreleaser and not the build-linux command.
+# Not used atm.
 
 if [ -z "$NODPI" ]; then
   NODPI=true

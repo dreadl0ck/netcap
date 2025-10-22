@@ -50,6 +50,7 @@ builds:
 archives:
   - id: "netcap"
     builds: [ 'netcap' ]
+    rlcp: true
     files:
       - LICENSE
       - README.md
@@ -64,6 +65,7 @@ archives:
   - id: "netcap_macOS_nodpi"
     builds: [ 'netcap_macOS_nodpi' ]
     name_template: '{{ .ProjectName }}_nodpi_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    rlcp: true
     files:
       - LICENSE
       - README.md
@@ -78,6 +80,7 @@ archives:
   - id: "netcap_nodpi"
     builds: [ 'netcap_nodpi' ]
     name_template: '{{ .ProjectName }}_nodpi_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    rlcp: true
     files:
       - LICENSE
       - README.md
@@ -137,6 +140,8 @@ brews:
 
 before:
   hooks:
+  # Build Linux binaries via Docker and merge artifacts
+  #- bash scripts/build-linux-docker.sh
   # You may remove this if you don't use go modules.
   #- go mod download
   # you may remove this if you don't need go generate

@@ -1,5 +1,6 @@
 .DS_Store
 dist-linux
+.docker-build-timestamp
 analyze/dnn/models/
 analyze/dnn/checkpoints/
 test-params/

@@ -230,7 +230,7 @@ commands:
             - gen-version
             - version-bump-test
             - gen-proto-release
-        exec: goreleaser check && goreleaser release --rm-dist --skip-publish --skip-validate; zeus version-bump-test-undo
+        exec: goreleaser check && goreleaser release --clean --skip-publish --skip-validate; zeus version-bump-test-undo
 
     # run a test release
     release-test-debug:
@@ -239,7 +239,7 @@ commands:
             - gen-version
             - version-bump-test
             - gen-proto-release
-        exec: goreleaser check && goreleaser release --rm-dist --skip-publish --skip-validate --debug; zeus version-bump-test-undo
+        exec: goreleaser check && goreleaser release --clean --skip-publish --skip-validate --debug; zeus version-bump-test-undo
 
     release-test-full:
          dependencies:

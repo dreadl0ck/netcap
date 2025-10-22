@@ -14,13 +14,14 @@ builds:
       - ""
     goarch:
       - amd64
-      - arm64
+    # Note: arm64 builds with CGO require cross-compilation toolchain
+    # Build arm64 separately if needed
 
   - main: ./cmd
     id: netcap_nodpi_linux
     binary: net
     env:
-      - CGO_ENABLED=1
+      - CGO_ENABLED=0
     goos:
       - linux
     ldflags:
@@ -30,10 +31,12 @@ builds:
     goarch:
       - amd64
       - arm64
+    # nodpi builds don't need CGO, so we can build both architectures
 
 archives:
   - id: "netcap_linux"
     builds: [ 'netcap_linux' ]
+    rlcp: true
     files:
       - LICENSE
       - README.md
@@ -49,6 +52,7 @@ archives:
   - id: "netcap_nodpi_linux"
     builds: [ 'netcap_nodpi_linux' ]
     name_template: '{{ .ProjectName }}_nodpi_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    rlcp: true
     files:
       - LICENSE
       - README.md

@@ -1,0 +1,92 @@
+# Dockerfile for building Linux binaries with DPI support
+# Force amd64 platform for consistent builds
+FROM --platform=linux/amd64 golang:1.25.1-bookworm
+
+# Install build dependencies and DPI libraries
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    libpcap-dev \
+    pkg-config \
+    wget \
+    autoconf \
+    automake \
+    libtool \
+    flex \
+    bison \
+    zlib1g-dev \
+    libbz2-dev \
+    liblzma-dev \
+    liblzo2-dev \
+    libcurl4-openssl-dev \
+    libzstd-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install nDPI
+RUN cd /tmp && \
+    git clone --depth 1 --branch 4.6 https://github.com/ntop/nDPI.git && \
+    cd nDPI && \
+    ./autogen.sh && \
+    ./configure && \
+    make && \
+    make install && \
+    ldconfig && \
+    cd / && rm -rf /tmp/nDPI
+
+# Install wandio (required by libtrace)
+RUN cd /tmp && \
+    git clone --depth 1 --branch 4.2.6-1 https://github.com/LibtraceTeam/wandio.git && \
+    cd wandio && \
+    ./bootstrap.sh && \
+    ./configure && \
+    make && \
+    make install && \
+    ldconfig && \
+    cd / && rm -rf /tmp/wandio
+
+# Install libtrace
+RUN cd /tmp && \
+    git clone --depth 1 --branch 4.0.23-1 https://github.com/LibtraceTeam/libtrace.git && \
+    cd libtrace && \
+    ./bootstrap.sh && \
+    ./configure && \
+    make && \
+    make install && \
+    ldconfig && \
+    cd / && rm -rf /tmp/libtrace
+
+# Install libflowmanager (required by libprotoident)
+RUN cd /tmp && \
+    git clone --depth 1 --branch 3.0.0-3 https://github.com/LibtraceTeam/libflowmanager.git && \
+    cd libflowmanager && \
+    ./bootstrap.sh && \
+    ./configure && \
+    make && \
+    make install && \
+    ldconfig && \
+    cd / && rm -rf /tmp/libflowmanager
+
+# Install libprotoident
+RUN cd /tmp && \
+    git clone --depth 1 --branch 2.0.15-2 https://github.com/LibtraceTeam/libprotoident.git && \
+    cd libprotoident && \
+    ./bootstrap.sh && \
+    ./configure && \
+    make && \
+    make install && \
+    ldconfig && \
+    cd / && rm -rf /tmp/libprotoident
+
+# Install goreleaser
+RUN wget -qO- https://github.com/goreleaser/goreleaser/releases/download/v1.23.0/goreleaser_Linux_x86_64.tar.gz | \
+    tar xz -C /usr/local/bin goreleaser && \
+    chmod +x /usr/local/bin/goreleaser
+
+WORKDIR /workspace
+
+# Set environment for CGO
+ENV PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
+ENV LD_LIBRARY_PATH=/usr/local/lib
+
+CMD ["goreleaser", "release", "--config", ".goreleaser-linux.yml", "--snapshot", "--clean", "--skip-publish", "--skip-validate"]
+
