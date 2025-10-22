@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.6.11
+    VERSION: 0.7.0
 
 # command data
 commands:
@@ -105,6 +105,73 @@ commands:
 
     build-ubuntu-nodpi:
         exec: NODPI=true ARGS="--build-arg TAGS=-tags=nodpi" VERSION=nodpi_v${VERSION} zeus/scripts/build-ubuntu-docker.sh
+
+    build-dbs-server:
+        description: build and push the netcap database server container
+        help: |
+            Builds the netcap-dbs-server container and optionally pushes to a registry.
+            Supports multi-platform builds (amd64 and arm64) using Docker Buildx.
+            
+            Environment Variables:
+              NETCAP_CONTAINER_REGISTRY       - Registry URL (default: docker.io)
+              NETCAP_CONTAINER_REGISTRY_USER  - Registry username (default: dreadl0ck)
+              NETCAP_PUSH_IMAGES              - Set to 'true' to push after build
+              NETCAP_USE_BUILDX               - Use buildx for multi-platform (default: true)
+              NETCAP_PLATFORMS                - Target platforms (default: linux/amd64,linux/arm64)
+              VERSION                         - Image version tag (default: from globals)
+            
+            Examples:
+              # Build only (local, single platform)
+              zeus build-dbs-server
+              
+              # Build and push multi-platform to Docker Hub
+              NETCAP_PUSH_IMAGES=true zeus build-dbs-server
+              
+              # Build and push to custom registry
+              NETCAP_CONTAINER_REGISTRY=registry.example.com \
+              NETCAP_CONTAINER_REGISTRY_USER=myorg \
+              NETCAP_PUSH_IMAGES=true \
+              zeus build-dbs-server
+              
+              # Build single platform only
+              NETCAP_USE_BUILDX=false NETCAP_PUSH_IMAGES=true zeus build-dbs-server
+        exec: VERSION=${VERSION} zeus/scripts/build-dbs-server.sh
+
+    pack-dbs-tarball:
+        description: pack databases into versioned tarball for dbs-server with metadata and symlinks
+        help: |
+            Creates a versioned tarball of netcap databases with metadata JSON and latest symlinks.
+            Useful for distributing databases or mounting to dbs-server.
+            
+            The script creates:
+            - YYYY-MM-DD.tar.gz  - Versioned database tarball
+            - YYYY-MM-DD.json    - Metadata with version, size, and creation info
+            - latest.tar.gz      - Symlink/copy to latest version
+            - latest.json        - Symlink/copy to latest metadata
+            
+            Arguments:
+              -d, --dbs-dir PATH      Path to databases directory (default: ~/.config/netcap/dbs)
+              -o, --output-dir PATH   Output directory for tarball (default: current dir)
+              -v, --version DATE      Version string (default: current date YYYY-MM-DD)
+              -s, --start-year YEAR   NVD start year for metadata (default: 2002)
+            
+            Environment Variables:
+              NC_CONFIG_ROOT  - Override default databases location if -d not specified
+              DBS_VERSION     - Default version if -v not specified (format: YYYY-MM-DD)
+            
+            Examples:
+              # Pack databases from default location (~/.config/netcap/dbs)
+              zeus pack-dbs-tarball
+              
+              # Pack with custom output directory
+              zeus pack-dbs-tarball -o ./release
+              
+              # Pack from custom directory with custom version
+              zeus pack-dbs-tarball -d ./netcap-dbs -v 2024-01-15
+              
+              # Use environment variables with custom version
+              DBS_VERSION=2024-01-15 zeus pack-dbs-tarball
+        exec: zeus/scripts/pack-dbs.sh
 
     ## Release
     ##
@@ -374,12 +441,6 @@ commands:
             mergecap -w tests/merged.pcapng "${FILES[@]}"
             du -h tests/merged.pcapng
 
-    pack-dbs:
-        description: pack all dbs that can be shared as a zip archive
-        help: the resulting archive will be put into the resolvers folder
-        exec: |
-            cd /usr/local/etc/netcap && zip -r resolver-dbs.zip dbs -x *.mmdb *hosts* && cd - && cp /usr/local/etc/netcap/resolver-dbs.zip resolvers/resolver-dbs.zip
-            du -sh resolvers/resolver-dbs.zip
 
     install-bash-completion:
         description: install the bash-completion for netcap on macOS

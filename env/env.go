@@ -41,4 +41,7 @@ const (
 
 	// AnalyzerDirectory contains external analyzer tools
 	AnalyzerDirectory = "NETCAP_ANALYZER_DIR"
+
+	// NetcapDBsURL is the URL for downloading netcap databases
+	NetcapDBsURL = "NETCAP_DBS_URL"
 )

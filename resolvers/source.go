@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 
 	"github.com/dreadl0ck/netcap/env"
+	"go.uber.org/zap"
 )
 
 var (
@@ -48,7 +49,14 @@ const (
 func init() {
 	ConfigRootPath = os.Getenv(env.ConfigRoot)
 	if ConfigRootPath == "" {
-		ConfigRootPath = filepath.Join("/usr", "local", "etc", "netcap")
+		// Use XDG-compliant user config directory: ~/.config/netcap
+		home, err := os.UserHomeDir()
+		if err != nil {
+			// Fallback to /usr/local/etc/netcap if home directory cannot be determined
+			ConfigRootPath = filepath.Join("/usr", "local", "etc", "netcap")
+		} else {
+			ConfigRootPath = filepath.Join(home, ".config", "netcap")
+		}
 	}
 	DataBaseFolderPath = filepath.Join(ConfigRootPath, dataBaseFolderName)
 	DataBaseBuildPath = filepath.Join(ConfigRootPath, buildFolderName)
@@ -58,6 +66,13 @@ func init() {
 func Init(c Config, quietMode bool) {
 	quiet = quietMode
 	CurrentConfig = c
+
+	// Log database path when in debug mode (logger is set before Init is called)
+	if !quiet {
+		resolverLog.Info("loading netcap databases",
+			zap.String("path", DataBaseFolderPath),
+		)
+	}
 
 	if c.ReverseDNS {
 		disableReverseDNS = false
@@ -84,5 +99,10 @@ func Init(c Config, quietMode bool) {
 	}
 	if c.GeolocationDB {
 		initGeolocationDB()
+	}
+
+	// Log completion when in debug mode
+	if !quiet {
+		resolverLog.Info("successfully loaded netcap databases")
 	}
 }
