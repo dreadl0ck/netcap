@@ -15,7 +15,6 @@ package dbs
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -24,6 +23,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/netcap/utils"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dustin/go-humanize"
@@ -75,15 +76,19 @@ var sources = []*datasource{
 	// TODO: manage custom netcap probes separately and merge
 	makeSource("https://svn.nmap.org/nmap/nmap-service-probes", "", moveToDbs),
 	makeSource("https://macaddress.io/database/macaddress.io-db.json", "", moveToDbs),
-	makeSource("https://ja3er.com/getAllHashesJson", "ja3erDB.json", moveToDbs),
-	makeSource("https://ja3er.com/getAllUasJson", "ja3UserAgents.json", moveToDbs),
+
+	// ja3er.com has been discontinued ...
+	//makeSource("https://ja3er.com/getAllHashesJson", "ja3erDB.json", moveToDbs),
+	//makeSource("https://ja3er.com/getAllUasJson", "ja3UserAgents.json", moveToDbs),
+
 	makeSource("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/dbs/ja_3_3s.json", "", moveToDbs),
 	makeSource("https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv", "", moveToDbs),
 	makeSource("https://raw.githubusercontent.com/trisulnsm/trisul-scripts/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json", "", moveToDbs),
 	makeSource("https://web.archive.org/web/20191227182527if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
 	makeSource("https://web.archive.org/web/20191227182209if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
+
 	makeSource("", "nvd.bleve", downloadAndIndexNVD),
-	makeSource("https://raw.githubusercontent.com/offensive-security/exploitdb/master/files_exploits.csv", "", downloadAndIndexExploitDB),
+	makeSource("https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_exploits.csv", "", downloadAndIndexExploitDB),
 }
 
 /*
@@ -110,7 +115,7 @@ func unzipAndMoveToDbs(in string, d *datasource, base string) error {
 
 func downloadAndIndexNVD(_ string, _ *datasource, base string) error {
 	for _, year := range yearRange(nvdStartYear, time.Now().Year()) {
-		s := makeSource(fmt.Sprintf("https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-%s.json.gz", year), "", nil)
+		s := makeSource(fmt.Sprintf("https://nvd.nist.gov/feeds/json/cve/2.0/nvdcve-2.0-%s.json.gz", year), "", nil)
 		fetchResource(s, filepath.Join(base, "build", s.name))
 	}
 	IndexData("nvd", filepath.Join(base, "dbs"), filepath.Join(base, "build"), nvdStartYear, false)
@@ -247,8 +252,6 @@ func GenerateDBs(nvdIndexStartYear int) {
 	saveTotalDatabaseSize(base)
 
 	fmt.Println("fetched", total, "sources ("+humanize.Bytes(numBytesFetched)+")", "in", time.Since(start))
-
-	gitLfsPrune()
 }
 
 func processSource(s *datasource, base string, wg *sync.WaitGroup) {

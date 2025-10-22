@@ -72,8 +72,9 @@ func getServiceName(in string) string {
 // InitServiceDB initializes the ports to service names mapping.
 // TODO: include service names for other transport protocols
 func InitServiceDB() {
+	dbPath := filepath.Join(DataBaseFolderPath, "service-names-port-numbers.csv")
 	var (
-		f, err    = os.Open(filepath.Join(DataBaseFolderPath, "service-names-port-numbers.csv"))
+		f, err    = os.Open(dbPath)
 		csvReader = csv.NewReader(f)
 	)
 
@@ -187,8 +188,14 @@ func InitServiceDB() {
 	}
 
 	if !quiet {
-		resolverLog.Info("loaded TCP service records", zap.Int("total", len(tcpPortMap)))
-		resolverLog.Info("loaded UDP service records", zap.Int("total", len(udpPortMap)))
+		resolverLog.Info("loaded TCP service records",
+			zap.Int("total", len(tcpPortMap)),
+			zap.String("from", dbPath),
+		)
+		resolverLog.Info("loaded UDP service records",
+			zap.Int("total", len(udpPortMap)),
+			zap.String("from", dbPath),
+		)
 	}
 }
 

@@ -1,24 +1,92 @@
 # TODOs
 
--- integrate feeds from https://threatview.io
-+- DBs: add country blocklists: "did a user browse a flagged website?"
-+  - http://netzsperre.liwest.at
-+- DBs: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
-+  - would require to retrieve IOCs for a CVE id, maybe via greynoise.io api?
-+
-+- http host session duration:
-+  - how much time did a user spent on a specific host?
-+    - eg measure as duration between first and last http request to a host
-+
-+Install ndpi on m1 mac:
-+
-+  brew install ndpi
-+
-+- ip and domain reputation
-+  - domain age: mark domains registered in the past 30 days
-+  - categorize domains (sector etc)
-+  - integrate feeds from https://threatview.io
-+- add config to apply extra asset info to audit records: eg employee workstations in internal network etc
+switch back to upstream gopacket
+
+----
+
+test suite:
+- check out wireshark / suricata test pcap suite.
+- scrape all files from https://www.malware-traffic-analysis.net/training-exercises.html
+
+Integration Tests as github action:
+
+1) artifact
+
+You can store the .pcap files (or compressed bundles of them) as artifacts attached to a previous workflow.
+Then, your test workflow can download them when it runs.
+
+Example:
+
+Upload job (run once manually):
+
+```
+name: Upload PCAP dataset
+on:
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Upload PCAPs
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-pcaps
+          path: testdata/pcaps/
+```          
+
+test workflow
+
+```
+name: Run Tests
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download PCAP dataset
+        uses: actions/download-artifact@v4
+        with:
+          name: test-pcaps
+          path: ./testdata/pcaps
+      - name: Run tests
+        run: pytest
+```
+
+This works perfectly for datasets ≤5 GB total and ≤2 GB per file.
+Artifacts last up to 90 days by default (you can set a shorter retention if needed).
+
+2) download
+
+name: Download test dataset
+  run: |
+    mkdir testdata/pcaps
+    curl -L https://example.com/pcaps/testset.tar.gz -o testset.tar.gz
+    tar -xzvf testset.tar.gz -C testdata/pcaps
+
+You can download files up to ~20–25 GB safely on a GitHub-hosted runner.
+
+----
+
+https://github.com/florianl/go-nflog
+
+- http host session duration:
+  - how much time did a user spent on a specific host?
+    - eg measure as duration between first and last http request to a host
+
+Install ndpi on m1 mac:
+
+  brew install ndpi
+
+- ip and domain reputation
+  - domain age: mark domains registered in the past 30 days
+  - categorize domains (sector etc)
+  - integrate feeds from https://threatview.io
+- add config to apply extra asset info to audit records: eg employee workstations in internal network etc
 
 - add dpi / nodpi arm64 builds for linux
 - extend api with context to allow stopping collector

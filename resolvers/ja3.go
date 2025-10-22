@@ -93,7 +93,10 @@ func initJa3Resolver() {
 		}
 	}
 
-	resolverLog.Info("loaded JA3 summaries", zap.Int("total", len(ja3DB)))
+	resolverLog.Info("loaded JA3 summaries",
+		zap.Int("total", len(ja3DB)),
+		zap.String("from", DataBaseFolderPath),
+	)
 }
 
 /*

@@ -1,8 +1,6 @@
 module github.com/dreadl0ck/netcap
 
-go 1.23.0
-
-toolchain go1.24.4
+go 1.25.1
 
 require (
 	github.com/Jeffail/gabs/v2 v2.7.0
@@ -19,6 +17,7 @@ require (
 	github.com/dreadl0ck/ja3 v1.0.1-dreadl0ck-gopacket
 	github.com/dreadl0ck/maltego v0.0.3
 	github.com/dreadl0ck/material-icon-gen v0.0.0-20210214144425-b93b94838986
+	github.com/dreadl0ck/netcap/tests/helpers v0.0.0-00010101000000-000000000000
 	github.com/dreadl0ck/tlsx v1.0.1-dreadl0ck-gopacket
 	github.com/dsoprea/go-exif/v2 v2.0.0-20230826092837-6579e82b732d
 	github.com/dustin/go-humanize v1.0.1
@@ -76,7 +75,6 @@ require (
 	github.com/golang/geo v0.0.0-20250630213057-fac2d31592dd // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
-	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20250630185457-6e76a2b096b5 // indirect
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
@@ -113,3 +111,4 @@ require (
 )
 
 //replace github.com/dreadl0ck/maltego => ../maltego
+replace github.com/dreadl0ck/netcap/tests/helpers => ./tests/helpers

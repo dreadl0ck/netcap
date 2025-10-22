@@ -80,7 +80,7 @@ $ net capture -config capture.conf
 
 ## Resolver Database
 
-The environment variable **NC\_DATABASE\_SOURCE** can be used to overwrite the default path for the resolver databases **/usr/local/etc/netcap/db**. Read more about the resolvers package here:
+The environment variable **NC\_CONFIG\_ROOT** can be used to overwrite the default path for the resolver databases **~/.config/netcap/dbs**. Read more about the resolvers package here:
 
 {% page-ref page="resolvers.md" %}
 
