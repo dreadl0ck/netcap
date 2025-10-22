@@ -11,16 +11,36 @@ RUN wget https://go.dev/dl/go1.25.1.linux-amd64.tar.gz && \
 ENV PATH="/usr/local/go/bin:${PATH}"
 RUN apt-get install -y apt-transport-https curl lsb-release wget autogen autoconf libtool gcc libpcap-dev linux-headers-generic git vim
 
-WORKDIR /src
-COPY . .
-RUN go mod download
+# Copy local dependencies first (they will be in the build context)
+WORKDIR /workspace
+COPY gopacket ./gopacket
+COPY go-dpi ./go-dpi
+COPY ja3 ./ja3
+COPY tlsx ./tlsx
+
+# Copy netcap source
+WORKDIR /workspace/netcap
+COPY netcap .
+
+# Create go.work to use local dependencies
+RUN echo "go 1.25.1" > go.work && \
+    echo "" >> go.work && \
+    echo "use (" >> go.work && \
+    echo "	." >> go.work && \
+    echo "	../gopacket" >> go.work && \
+    echo "	../go-dpi" >> go.work && \
+    echo "	../ja3" >> go.work && \
+    echo "	../tlsx" >> go.work && \
+    echo ")" >> go.work
+
+RUN go work sync
 ENV VERSION XXX
 ARG TAGS
 RUN echo "tags: $TAGS"
 
-RUN echo go build -mod=readonly ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
-# Disable CGO for nodpi build and reduce compiler memory usage
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -p 1 -mod=readonly ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+RUN echo go build ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+# CGO is still required for libpcap support even without DPI, reduce compiler memory usage
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -p 1 ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
 #RUN ls -la /usr/lib/
 

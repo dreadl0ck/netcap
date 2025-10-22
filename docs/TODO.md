@@ -2,6 +2,18 @@
 
 switch back to upstream gopacket
 
+VSCode extension to view netcap audit records?
+
+switch to gopacket/reassembly and tcpassembly
+
+make releases with gopacket/gopacket and integrate them into project instead of using go.work replaces and copying local repos into docker container for build (.docker-build-context).
+
+- go-dpi
+- tlsx
+- ja3
+
+add internal package
+
 ----
 
 test suite:

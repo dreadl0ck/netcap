@@ -28,9 +28,29 @@ RUN wget https://github.com/ntop/nDPI/archive/4.0.tar.gz
 RUN tar xfz 4.0.tar.gz
 RUN cd nDPI-4.0 && ./autogen.sh && ./configure && make && make install
 
-WORKDIR /netcap
-COPY . .
-RUN go mod download
+# Copy local dependencies first (they will be in the build context)
+WORKDIR /workspace
+COPY gopacket ./gopacket
+COPY go-dpi ./go-dpi
+COPY ja3 ./ja3
+COPY tlsx ./tlsx
+
+# Copy netcap source
+WORKDIR /workspace/netcap
+COPY netcap .
+
+# Create go.work to use local dependencies
+RUN echo "go 1.25.1" > go.work && \
+    echo "" >> go.work && \
+    echo "use (" >> go.work && \
+    echo "	." >> go.work && \
+    echo "	../gopacket" >> go.work && \
+    echo "	../go-dpi" >> go.work && \
+    echo "	../ja3" >> go.work && \
+    echo "	../tlsx" >> go.work && \
+    echo ")" >> go.work
+
+RUN go work sync
 ENV VERSION XXX
 ARG tags
 ENV TAGS $tags
@@ -59,7 +79,7 @@ RUN ldconfig /go/*
 #RUN find / -iname liblinear.o
 
 # Build with reduced parallelism to avoid compiler crashes under emulation
-RUN GOOS=linux GOARCH=amd64 go build -p 1 -mod=readonly ${TAGS} -ldflags "-r /usr/local/lib -s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+RUN GOOS=linux GOARCH=amd64 go build -p 1 ${TAGS} -ldflags "-r /usr/local/lib -s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
 RUN ls -la /netcap
 RUN file /netcap/bin/net

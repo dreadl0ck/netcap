@@ -203,10 +203,10 @@ netcap/
 
 ### Test Utilities Library
 
-Create `tests/helpers/` with reusable components:
+Create `helpers/` with reusable components:
 
 ```go
-// tests/helpers/fixtures.go
+// helpers/fixtures.go
 type TestFixture struct {
     PcapPath     string
     ExpectedType types.Type
@@ -339,7 +339,7 @@ package packet_test
 import (
     "testing"
     "github.com/dreadl0ck/netcap/decoder/packet"
-    "github.com/dreadl0ck/netcap/tests/helpers"
+    "github.com/dreadl0ck/netcap/helpers"
 )
 
 func TestPROTOCOL_Decode(t *testing.T) {
@@ -1211,7 +1211,7 @@ test-coverage:
 
 # Generate test fixtures
 fixtures-generate:
-	go run ./tests/helpers/pcap_generator.go
+	go run ./helpers/pcap_generator.go
 
 # Download large test fixtures
 fixtures-download:
@@ -1219,7 +1219,7 @@ fixtures-download:
 
 # Generate test databases
 test-databases-generate:
-	go run ./tests/helpers/generate_test_dbs.go
+	go run ./helpers/generate_test_dbs.go
 
 # Run tests with race detector
 test-race:
@@ -1265,7 +1265,7 @@ go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//' |
    
 2. **Week 2: Test Infrastructure**
    - [ ] Create `tests/` directory structure
-   - [ ] Implement test helper library (`tests/helpers/`)
+   - [ ] Implement test helper library (`helpers/`)
    - [ ] Create minimal test PCAP collection (Tier 1)
    - [ ] Setup golden file infrastructure
    - [ ] Create Makefile targets
@@ -1457,7 +1457,7 @@ go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//' |
 ### Generating Synthetic PCAPs
 
 ```go
-// tests/helpers/pcap_generator.go
+// helpers/pcap_generator.go
 package helpers
 
 import "github.com/dreadl0ck/gopacket"

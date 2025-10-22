@@ -22,8 +22,8 @@ The test infrastructure includes:
   - `helpers/` - Test utilities
 
 ### Utilities
-- `tests/helpers/fixtures.go` - Fixture loading and golden file management
-- `tests/helpers/pcap_generator.go` - Synthetic PCAP generation
+- `helpers/fixtures.go` - Fixture loading and golden file management
+- `helpers/pcap_generator.go` - Synthetic PCAP generation
 - `tests/TEMPLATE_test.go` - Test template with examples
 - `Makefile.test` - Test automation targets
 - `scripts/verify-golden-files.sh` - Golden file verification
@@ -202,7 +202,7 @@ package regression
 
 import (
     "testing"
-    "github.com/dreadl0ck/netcap/tests/helpers"
+    "github.com/dreadl0ck/netcap/helpers"
 )
 
 func TestRegression_MyScenario(t *testing.T) {
@@ -231,7 +231,7 @@ go test -tags=regression -v ./tests/regression/
 package main
 
 import (
-    "github.com/dreadl0ck/netcap/tests/helpers"
+    "github.com/dreadl0ck/netcap/helpers"
 )
 
 func main() {

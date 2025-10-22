@@ -6,5 +6,5 @@ use (
 	../gopacket
 	../ja3
 	../tlsx
-	./tests/helpers
+	./helpers
 )

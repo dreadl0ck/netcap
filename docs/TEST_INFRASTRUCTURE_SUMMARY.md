@@ -39,20 +39,20 @@ A comprehensive test infrastructure and 16-week implementation plan for the Netc
    - Usage examples
 
 ### Test Utilities (3 files)
-6. **`tests/helpers/fixtures.go`**
+6. **`helpers/fixtures.go`**
    - Fixture loading and management
    - Golden file comparison utilities
    - Test data path resolution
    - CSV/JSON comparison functions
 
-7. **`tests/helpers/pcap_generator.go`**
+7. **`helpers/pcap_generator.go`**
    - Synthetic PCAP generation
    - PacketBuilder utility
    - TCP handshake generation
    - HTTP request generation
    - DNS query generation (placeholder)
 
-8. **`tests/helpers/go.mod`**
+8. **`helpers/go.mod`**
    - Go module for test helpers
    - Dependency management
 

@@ -92,11 +92,11 @@ fixtures-download:
 
 fixtures-generate:
 	@echo "Generating synthetic test fixtures..."
-	go run ./tests/helpers/pcap_generator.go
+	go run ./helpers/pcap_generator.go
 
 test-databases-generate:
 	@echo "Generating test databases..."
-	go run ./tests/helpers/generate_test_dbs.go
+	go run ./helpers/generate_test_dbs.go
 
 # Clean test artifacts
 test-clean:
