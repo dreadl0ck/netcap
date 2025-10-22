@@ -25,13 +25,28 @@ commands:
     #   -w	disable DWARF generation
     #   -s	disable symbol table
     install:
-        description: install netcap and netlabel to $PATH
+        description: install net tool to $PATH
         buildNumber: true
-        help: Compiles and moves the netcap binary to /usr/local/bin
-        exec: go build -ldflags "-s -w" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+        help: Compiles and moves the netcap binary to /usr/local/bin (auto-detects DPI libraries on macOS)
+        exec: |
+            # Detect OS and handle DPI libraries automatically
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                # macOS - check for DPI libraries
+                if command -v brew &>/dev/null && brew list ndpi &>/dev/null && brew list libprotoident &>/dev/null; then
+                    echo "[INFO] Building with DPI support (nDPI and libprotoident detected)"
+                    # go-dpi v1.1.0+ already includes the correct CGO directives for Homebrew
+                    go build -ldflags "-s -w" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+                else
+                    echo "[INFO] Building without DPI support (install with: brew install ndpi libprotoident)"
+                    go build -tags nodpi -ldflags "-s -w" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+                fi
+            else
+                # Linux or other - use default build
+                go build -ldflags "-s -w" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+            fi
 
     install-linux:
-        description: install netcap and netlabel to $PATH on a linux system
+        description: install netcap tool to $PATH on a linux system
         buildNumber: true
         help: |
             Compiles and moves the netcap binary to /usr/local/bin.

@@ -6,6 +6,13 @@ description: Contributing to the Netcap project
 
 Contributions welcome! If you have an idea or questions, please feel free to reach out!
 
+## Development Setup
+
+Before contributing, make sure to set up your development environment:
+
+- **macOS**: See the [macOS Development Setup](macos-development-setup.md) guide for complete installation instructions, including Protocol Buffer plugins
+- **Linux/Windows**: See the [Installation](installation.md) guide and ensure you have Protocol Buffers compiler and plugins installed
+
 ## Issues & Bug Reports
 
 Please include the Netcap version, the exact error messages and as much log output as possible!
