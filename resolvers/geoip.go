@@ -21,6 +21,7 @@ import (
 
 	"github.com/oschwald/maxminddb-golang"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 var (
@@ -46,12 +47,19 @@ type geoRecord struct {
 
 // initGeolocationDB opens handles to the geolocation databases.
 func initGeolocationDB() {
+	cityPath := filepath.Join(DataBaseFolderPath, "GeoLite2-City.mmdb")
+	asnPath := filepath.Join(DataBaseFolderPath, "GeoLite2-ASN.mmdb")
+
 	if err := initCityReader(); err != nil {
 		logger.WithError(err).Error("failed to open city GeoDB")
+	} else if !quiet {
+		resolverLog.Info("loaded city GeoDB", zap.String("from", cityPath))
 	}
 
 	if err := initAsnReader(); err != nil {
 		logger.WithError(err).Error("failed to open ASN GeoDB")
+	} else if !quiet {
+		resolverLog.Info("loaded ASN GeoDB", zap.String("from", asnPath))
 	}
 }
 

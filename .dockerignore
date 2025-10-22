@@ -1,5 +1,9 @@
 .git
 .idea
+go.work
+go.work.sum
+tests/*
+!tests/helpers/go.mod
 types/python
 types/java
 types/swift
@@ -10,7 +14,6 @@ types/js
 data/
 __pycache__
 pcaps
-tests
 data
 bin
 .vscode
@@ -24,7 +27,6 @@ priv.key
 pub.key
 dist/
 vulnDBs
-tests
 FlameGraph
 test-params
 *.net

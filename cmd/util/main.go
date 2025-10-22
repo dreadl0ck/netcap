@@ -63,6 +63,21 @@ func Run() {
 		return
 	}
 
+	if *flagServeDBs {
+		server := dbs.NewDBServer(*flagServAddr, *flagNVDIndexStart, *flagVerbose)
+		if err := server.Start(); err != nil {
+			log.Fatal("failed to start database server: ", err)
+		}
+		return
+	}
+
+	if *flagDownloadDBs {
+		if err := dbs.DownloadDBs(*flagDBsURL, *flagForce); err != nil {
+			log.Fatal("failed to download databases: ", err)
+		}
+		return
+	}
+
 	// Simple util to construct a IPv4 pcapng packet, with a TCP / UDP layer and a given payload.
 	// Will add dummy values for the Ethernet and IPv4 layers.
 	// Useful to dissect a specific TCP / UDP payload in wireshark, to compare the results with other tools.

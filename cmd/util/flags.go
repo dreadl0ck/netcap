@@ -14,8 +14,9 @@
 package util
 
 import (
-	"github.com/dreadl0ck/netcap/env"
 	"os"
+
+	"github.com/dreadl0ck/netcap/env"
 
 	"github.com/namsral/flag"
 
@@ -52,4 +53,8 @@ var (
 	flagForce           = fs.Bool("force", false, "disable prompts for user interaction")
 	flagVerbose         = fs.Bool("verbose", false, "enable verbose output")
 	flagDownloadGeolite = fs.Bool("download-geolite", false, "download geolite DB, requires API key in environment: "+env.GeoLiteAPIKey)
+	flagServeDBs        = fs.Bool("serve-dbs", false, "start HTTP server to serve databases with nightly rebuilds")
+	flagServAddr        = fs.String("serve-addr", ":8080", "address for database server")
+	flagDownloadDBs     = fs.Bool("download-dbs", false, "download databases from remote server")
+	flagDBsURL          = fs.String("dbs-url", "", "URL to download databases from (default: "+env.NetcapDBsURL+")")
 )
