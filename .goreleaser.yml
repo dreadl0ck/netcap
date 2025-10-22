@@ -1,3 +1,13 @@
+# macOS/Windows goreleaser configuration
+# For Linux builds, use .goreleaser-linux.yml on a Linux system
+# Cross-compiling for Linux from macOS with CGO dependencies is not supported
+#
+# macOS builds include:
+#   - netcap: DPI-enabled (darwin/arm64 only)
+#   - netcap_macOS_nodpi: No-DPI version (darwin/arm64)
+# Windows builds include:
+#   - netcap_nodpi: No-DPI version (windows/amd64)
+
 builds:
   - main: ./cmd
     binary: net
@@ -9,7 +19,7 @@ builds:
     ldflags:
       - ""
     goarch:
-      - amd64
+      - arm64
   - main: ./cmd
     binary: macOS_nodpi/net
     id: netcap_macOS_nodpi
@@ -18,7 +28,6 @@ builds:
     goos:
       - darwin
     goarch:
-      - amd64
       - arm64
     ldflags:
       - ""
@@ -28,23 +37,11 @@ builds:
     id: netcap_nodpi
     binary: net
     env:
-    #- CGO_ENABLED=1
-    # experiments to compile godpi with nDPI module
-    #- CC=/usr/local/Cellar/mingw-w64/7.0.0_2/bin/x86_64-w64-mingw32-gcc
-    #- CXX=/usr/local/Cellar/mingw-w64/7.0.0_2/bin/x86_64-w64-mingw32-g++
-    #- LDFLAGS="-L/usr/local/opt/libpcap/lib -L/usr/local/Cellar/liblinear/2.30/lib -s -w -lndpi -lpcap -lm -pthread"
-    #- CFLAGS="-I/usr/local/Cellar/libpcap/1.9.1/include/"
-    #- CPPFLAGS="-I/usr/local/opt/libpcap/include -I/usr/local/Cellar/liblinear/2.30/include -I/usr/local/Cellar/mingw-w64/7.0.0_1/toolchain-x86_64/x86_64-w64-mingw32/include"
-    #- PKG_CONFIG_PATH="/usr/local/opt/libpcap/lib/pkgconfig"
-
-    # For more info refer to: https://golang.org/doc/install/source#environment
+      - CGO_ENABLED=1
     goos:
       - windows
-
-    # Custom ldflags templates.
-    # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
     ldflags:
-      - "" # -L /usr/local/opt/libpcap/lib -s -w
+      - ""
     flags:
       - -tags=nodpi
     goarch:
@@ -52,7 +49,7 @@ builds:
 
 archives:
   - id: "netcap"
-    builds: [ 'net' ]
+    builds: [ 'netcap' ]
     files:
       - LICENSE
       - README.md
@@ -66,6 +63,7 @@ archives:
       - types/netcap.pb.go
   - id: "netcap_macOS_nodpi"
     builds: [ 'netcap_macOS_nodpi' ]
+    name_template: '{{ .ProjectName }}_nodpi_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
     files:
       - LICENSE
       - README.md
@@ -79,6 +77,7 @@ archives:
       - types/netcap.pb.go
   - id: "netcap_nodpi"
     builds: [ 'netcap_nodpi' ]
+    name_template: '{{ .ProjectName }}_nodpi_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
     files:
       - LICENSE
       - README.md
@@ -118,7 +117,7 @@ archives:
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  name_template: "{{ .Tag }}"
 changelog:
   sort: asc
   filters:
@@ -128,6 +127,8 @@ changelog:
 
 brews:
   -
+    ids:
+      - netcap
     tap:
       owner: dreadl0ck
       name: homebrew-formulas

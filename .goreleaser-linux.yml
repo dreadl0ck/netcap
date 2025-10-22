@@ -1,0 +1,78 @@
+# Linux-specific goreleaser configuration
+# This file should be used on a Linux system to build Linux binaries
+# Usage: goreleaser release --config .goreleaser-linux.yml --snapshot --clean --skip-publish --skip-validate
+
+builds:
+  - main: ./cmd
+    binary: net
+    env:
+      - CGO_ENABLED=1
+    id: netcap_linux
+    goos:
+      - linux
+    ldflags:
+      - ""
+    goarch:
+      - amd64
+      - arm64
+
+  - main: ./cmd
+    id: netcap_nodpi_linux
+    binary: net
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    ldflags:
+      - ""
+    flags:
+      - -tags=nodpi
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: "netcap_linux"
+    builds: [ 'netcap_linux' ]
+    files:
+      - LICENSE
+      - README.md
+      - types/cpp/*
+      - types/csharp/*
+      - types/java/*
+      - types/js/*
+      - types/python/*
+      - types/rust/*
+      - types/swift/*
+      - types/netcap.pb.go
+
+  - id: "netcap_nodpi_linux"
+    builds: [ 'netcap_nodpi_linux' ]
+    name_template: '{{ .ProjectName }}_nodpi_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    files:
+      - LICENSE
+      - README.md
+      - types/cpp/*
+      - types/csharp/*
+      - types/java/*
+      - types/js/*
+      - types/python/*
+      - types/rust/*
+      - types/swift/*
+      - types/netcap.pb.go
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ .Tag }}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+dist: dist-linux
+
