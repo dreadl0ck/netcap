@@ -206,15 +206,19 @@ commands:
 
             cd dist
             # add nodpi darwin build - the build with dpi libs will be used untouched
-            # TODO: fix goreleaser config
-            tar -czvf netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz netcap_macOS_nodpi_darwin_amd64
-
-            # upload nodpi darwin build to release
-            gh release upload --clobber v$VERSION netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz
-
-            # update checksums file with hashes for darwin build
-            shasum -a 256 netcap_nodpi_v${VERSION}_darwin_amd64.tar.gz >> ../dist-linux/checksums.txt
-            shasum -a 256 netcap_${VERSION}_darwin_amd64.tar.gz >> ../dist-linux/checksums.txt
+            # Note: goreleaser builds for darwin/arm64 only
+            if [ -d "netcap_macOS_nodpi_darwin_arm64" ]; then
+                tar -czvf netcap_nodpi_v${VERSION}_darwin_arm64.tar.gz netcap_macOS_nodpi_darwin_arm64
+                # upload nodpi darwin build to release
+                gh release upload --clobber v$VERSION netcap_nodpi_v${VERSION}_darwin_arm64.tar.gz
+                # update checksums file with hashes for darwin build
+                shasum -a 256 netcap_nodpi_v${VERSION}_darwin_arm64.tar.gz >> ../dist-linux/checksums.txt
+            fi
+            
+            # Add checksums for the regular darwin build if it exists
+            if [ -f "netcap_${VERSION}_darwin_arm64.tar.gz" ]; then
+                shasum -a 256 netcap_${VERSION}_darwin_arm64.tar.gz >> ../dist-linux/checksums.txt
+            fi
             cd ..
 
             # append hash of windows build to final checksum file
