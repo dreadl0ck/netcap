@@ -1,4 +1,5 @@
-// +build !windows, !nodpi
+//go:build (!windows && ignore) || !nodpi
+// +build !windows,ignore !nodpi
 
 /*
  * NETCAP - Traffic Analysis Framework
@@ -19,6 +20,7 @@ package dpi
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	godpi "github.com/dreadl0ck/go-dpi"
 	"github.com/dreadl0ck/go-dpi/modules/classifiers"
@@ -39,23 +41,98 @@ func IsEnabled() bool {
 }
 
 // Init initializes the deep packet inspection engines.
-func Init() {
+// modules is a comma-separated list of modules to enable: lpi, ndpi, go
+// If empty, all modules will be enabled.
+func Init(modules string) {
 	disableDPI = false
 
 	var (
-		nDPI  = wrappers.NewNDPIWrapper()
-		lPI   = wrappers.NewLPIWrapper()
-		goDPI = classifiers.NewClassifierModule()
-		wm    = wrappers.NewWrapperModule()
+		selectedModules []Module
+		enabledWrappers []wrappers.Wrapper
 	)
 
-	// init DPI
-	wm.ConfigureModule(wrappers.WrapperModuleConfig{Wrappers: []wrappers.Wrapper{lPI, nDPI}})
-	godpi.SetModules([]Module{wm, goDPI})
+	// Parse the modules string to determine which ones to enable
+	moduleSet := parseModules(modules)
+
+	// Create wrappers based on selection
+	if moduleSet["lpi"] {
+		lPI := wrappers.NewLPIWrapper()
+		enabledWrappers = append(enabledWrappers, lPI)
+		log.Println("DPI: enabled LPI wrapper")
+	}
+
+	if moduleSet["ndpi"] {
+		nDPI := wrappers.NewNDPIWrapper()
+		enabledWrappers = append(enabledWrappers, nDPI)
+		log.Println("DPI: enabled nDPI wrapper")
+	}
+
+	// Configure wrapper module if any wrappers are enabled
+	if len(enabledWrappers) > 0 {
+		wm := wrappers.NewWrapperModule()
+		wm.ConfigureModule(wrappers.WrapperModuleConfig{Wrappers: enabledWrappers})
+		selectedModules = append(selectedModules, wm)
+	}
+
+	// Add go-dpi classifier module if selected
+	if moduleSet["go"] {
+		goDPI := classifiers.NewClassifierModule()
+		selectedModules = append(selectedModules, goDPI)
+		log.Println("DPI: enabled go-dpi classifier")
+	}
+
+	// Set modules and initialize
+	if len(selectedModules) == 0 {
+		log.Println("DPI: no modules enabled, defaulting to all modules")
+		// Default to all modules
+		wm := wrappers.NewWrapperModule()
+		wm.ConfigureModule(wrappers.WrapperModuleConfig{
+			Wrappers: []wrappers.Wrapper{
+				wrappers.NewLPIWrapper(),
+				wrappers.NewNDPIWrapper(),
+			},
+		})
+		selectedModules = append(selectedModules, wm, classifiers.NewClassifierModule())
+	}
+
+	godpi.SetModules(selectedModules)
 
 	if err := godpi.Initialize(); err != nil {
 		log.Fatal("goDPI initialization returned an error: ", err)
 	}
+}
+
+// parseModules parses a comma-separated list of module names and returns a set.
+// Valid modules are: lpi, ndpi, go
+// If the input is empty, all modules are enabled.
+func parseModules(modules string) map[string]bool {
+	moduleSet := make(map[string]bool)
+
+	// If empty, enable all
+	if modules == "" {
+		moduleSet["lpi"] = true
+		moduleSet["ndpi"] = true
+		moduleSet["go"] = true
+		return moduleSet
+	}
+
+	// Parse comma-separated values
+	parts := strings.Split(modules, ",")
+	for _, part := range parts {
+		module := strings.TrimSpace(strings.ToLower(part))
+		switch module {
+		case "lpi":
+			moduleSet["lpi"] = true
+		case "ndpi":
+			moduleSet["ndpi"] = true
+		case "go":
+			moduleSet["go"] = true
+		default:
+			log.Printf("DPI: warning: unknown module '%s', valid modules are: lpi, ndpi, go", part)
+		}
+	}
+
+	return moduleSet
 }
 
 // Destroy tears down godpi and frees the memory allocated for cgo

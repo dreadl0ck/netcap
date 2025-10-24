@@ -1,3 +1,4 @@
+//go:build nodpi
 // +build nodpi
 
 /*
@@ -27,7 +28,8 @@ func IsEnabled() bool {
 	return false
 }
 
-func Init() {}
+// Init is a stub that accepts modules parameter but does nothing when DPI is disabled
+func Init(modules string) {}
 
 func Destroy() {}
 

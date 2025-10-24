@@ -142,6 +142,7 @@ func Run() {
 			GeolocationDB: *flagGeolocationDB,
 		},
 		DPI:           *flagDPI,
+		DPIModules:    *flagDPIModules,
 		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
 	})

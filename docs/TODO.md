@@ -14,7 +14,17 @@ test suite:
 - check out wireshark / suricata test pcap suite.
 - scrape all files from https://www.malware-traffic-analysis.net/training-exercises.html
 
+- https://github.com/ntop/nDPI/tree/dev/tests/cfgs/default/pcap
+- https://wiki.wireshark.org/samplecaptures
+- https://github.com/wireshark/wireshark/tree/master/test/captures
+- https://github.com/OISF/suricata-verify
+- https://wiki.wireshark.org/uploads/2b93239dd0d98241e2173b78a91163b8/The-Ultimate-PCAP.7z
+- https://weberblog.net/tag/pcap/
+- https://www.chappell-university.com/post/check-out-the-ultimate-pcapng
+
 Integration Tests as github action:
+
+
 
 1) artifact
 

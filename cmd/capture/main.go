@@ -292,6 +292,7 @@ func Run() {
 		BaseLayer:             utils.GetBaseLayer(*flagBaseLayer),
 		DecodeOptions:         utils.GetDecodeOptions(*flagDecodeOptions),
 		DPI:                   *flagDPI,
+		DPIModules:            *flagDPIModules,
 		ReassembleConnections: *flagReassembleConnections,
 		FreeOSMem:             *flagFreeOSMemory,
 		LogErrors:             *flagLogErrors,

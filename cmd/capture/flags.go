@@ -104,6 +104,7 @@ var (
 	flagServiceDB     = fs.Bool("serviceDB", true, "use serviceDB for device profiling")
 	flagGeolocationDB = fs.Bool("geoDB", false, "use geolocation for device profiling")
 	flagDPI           = fs.Bool("dpi", false, "use DPI libs to enrich IPProfile audit records")
+	flagDPIModules    = fs.String("dpi-modules", "", "DPI modules to use (comma-separated: lpi,ndpi,go). If empty, all modules will be used")
 
 	flagFreeOSMemory          = fs.Int("free-os-mem", 0, "free OS memory every X minutes, disabled if set to 0")
 	flagReassembleConnections = fs.Bool("reassemble-connections", true, "reassemble TCP connections")

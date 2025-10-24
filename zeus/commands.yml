@@ -343,15 +343,16 @@ commands:
 
     # build base builder images for accelerated Linux builds
     build-builder-images:
+        stopOnError: true
         description: builds and optionally pushes base builder docker images that are reused for faster Linux builds
         exec: zeus/scripts/build-builder-images.sh
 
-    # build and push the Alpine docker container
+    # build and push the linux docker containers
     build-linux:
         description: builds the alpine and ubuntu docker containers
         exec: VERSION=${VERSION} zeus/scripts/build-linux.sh
 
-    # build and push the Alpine docker container
+    # build and push the linux docker containers without dpi support
     build-linux-nodpi:
         description: builds the alpine and ubuntu docker containers without dpi support
         exec: VERSION=${VERSION} zeus/scripts/build-linux-nodpi.sh

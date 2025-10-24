@@ -14,9 +14,10 @@
 package collector
 
 import (
-	"github.com/gopacket/gopacket/pcap"
 	"os"
 	"time"
+
+	"github.com/gopacket/gopacket/pcap"
 
 	"github.com/gopacket/gopacket"
 
@@ -27,6 +28,7 @@ import (
 )
 
 // DefaultConfig is a sane example configuration.
+//
 //goland:noinspection GoUnusedGlobalVariable,GoUnnecessarilyExportedIdentifiers
 var DefaultConfig = Config{
 	Workers:             1000,
@@ -44,6 +46,7 @@ var DefaultConfig = Config{
 }
 
 // DefaultConfigDPI is a sane example configuration for use with Deep Packet Inspection.
+//
 //goland:noinspection GoUnusedGlobalVariable,GoUnnecessarilyExportedIdentifiers
 var DefaultConfigDPI = Config{
 	Workers:             1000,
@@ -99,6 +102,10 @@ type Config struct {
 
 	// Enable deep packet inspection
 	DPI bool
+
+	// DPI modules to use (comma-separated: lpi, ndpi, go)
+	// If empty and DPI is enabled, all modules will be used
+	DPIModules string
 
 	// Use TCP reassembly
 	ReassembleConnections bool

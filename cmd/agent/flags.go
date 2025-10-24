@@ -67,6 +67,7 @@ var (
 	flagServiceDB      = fs.Bool("serviceDB", false, "use serviceDB for device profiling")
 	flagGeolocationDB  = fs.Bool("geoDB", false, "use geolocation for device profiling")
 	flagDPI            = fs.Bool("dpi", false, "use DPI for device profiling")
+	flagDPIModules     = fs.String("dpi-modules", "", "DPI modules to use (comma-separated: lpi,ndpi,go). If empty, all modules will be used")
 
 	flagFlushevery           = fs.Int("flushevery", defaults.FlushEvery, "flush assembler every N packets")
 	flagDefragIPv4           = fs.Bool("ip4defrag", defaults.DefragIPv4, "Defragment IPv4 packets")
