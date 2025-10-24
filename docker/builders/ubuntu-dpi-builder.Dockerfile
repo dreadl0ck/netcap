@@ -1,6 +1,7 @@
 # Base Ubuntu builder image for netcap glibc builds with DPI support
 # This image contains all build dependencies including nDPI and libprotoident
-FROM --platform=linux/amd64 ubuntu:18.04
+ARG TARGETPLATFORM=linux/amd64
+FROM --platform=$TARGETPLATFORM ubuntu:18.04
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
