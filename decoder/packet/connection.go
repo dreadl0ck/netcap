@@ -15,17 +15,19 @@ package packet
 
 import (
 	"fmt"
-	"github.com/gopacket/gopacket/layers"
-	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
-	"github.com/dreadl0ck/netcap/utils"
 	"log"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/gopacket/gopacket"
+	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
+	"github.com/dreadl0ck/netcap/dpi"
+	"github.com/dreadl0ck/netcap/utils"
+	"github.com/gopacket/gopacket/layers"
+
 	"github.com/gogo/protobuf/proto"
+	"github.com/gopacket/gopacket"
 
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -51,6 +53,9 @@ type connection struct {
 	// to break the initialization loop when accessing the connectionDecoder variable within the connection processor
 	// we simply set a reference to it when passing connections to the workers.
 	decoder *Decoder
+
+	// track unique applications detected via DPI
+	applications map[string]struct{}
 }
 
 // atomicConnMap contains all connections and provides synchronized access.
@@ -174,6 +179,15 @@ func handlePacket(p gopacket.Packet) proto.Message {
 			// so there is no need to calculate it in real-time
 		} // else: do nothing, timestamp is still the oldest one
 
+		// DPI: detect applications
+		dpiResults := dpi.GetProtocols(p)
+		for protocol := range dpiResults {
+			if conn.applications == nil {
+				conn.applications = make(map[string]struct{})
+			}
+			conn.applications[protocol] = struct{}{}
+		}
+
 		conn.Unlock()
 	} else { // create a new Connection
 		co := &types.Connection{}
@@ -207,9 +221,17 @@ func handlePacket(p gopacket.Packet) proto.Message {
 		// track amount of transferred bytes
 		co.BytesClientToServer += int64(p.Metadata().Length)
 
+		// DPI: detect applications
+		apps := make(map[string]struct{})
+		dpiResults := dpi.GetProtocols(p)
+		for protocol := range dpiResults {
+			apps[protocol] = struct{}{}
+		}
+
 		conns.Items[connID.String()] = &connection{
-			Connection: co,
-			clientIP:   co.SrcIP,
+			Connection:   co,
+			clientIP:     co.SrcIP,
+			applications: apps,
 		}
 
 		// TODO: add dedicated stats structure for decoder pkg
@@ -290,7 +312,7 @@ func movingAverage(current int32, newValue int32, n int32) int32 {
 }*/
 
 // writeConn writes the connection.
-func (d *Decoder) writeConn(conn *types.Connection, clientIP string) {
+func (d *Decoder) writeConn(conn *types.Connection, clientIP string, apps map[string]struct{}) {
 
 	// calculate duration
 	conn.Duration = time.Unix(0, conn.TimestampLast).Sub(time.Unix(0, conn.TimestampFirst)).Nanoseconds()
@@ -303,6 +325,14 @@ func (d *Decoder) writeConn(conn *types.Connection, clientIP string) {
 
 		// swap num bytes tracked
 		conn.BytesClientToServer, conn.BytesServerToClient = conn.BytesServerToClient, conn.BytesClientToServer
+	}
+
+	// populate Applications from DPI results
+	if len(apps) > 0 {
+		conn.Applications = make([]string, 0, len(apps))
+		for app := range apps {
+			conn.Applications = append(conn.Applications, app)
+		}
 	}
 
 	if conf.ExportMetrics {
@@ -365,7 +395,7 @@ func (cp *connectionProcessor) connectionWorker(wg *sync.WaitGroup) chan *connec
 				return
 			}
 
-			conn.decoder.writeConn(conn.Connection, conn.clientIP)
+			conn.decoder.writeConn(conn.Connection, conn.clientIP, conn.applications)
 
 			cp.Lock()
 			cp.numDone++

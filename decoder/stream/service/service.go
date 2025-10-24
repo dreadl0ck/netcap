@@ -53,6 +53,15 @@ var Decoder = &decoder.AbstractDecoder{
 		var err error
 		for _, item := range Store.Items {
 			item.Lock()
+
+			// populate Applications from DPI results
+			if len(item.applications) > 0 {
+				item.Service.Applications = make([]string, 0, len(item.applications))
+				for app := range item.applications {
+					item.Service.Applications = append(item.Service.Applications, app)
+				}
+			}
+
 			err = e.Writer.Write(item.Service)
 			if err != nil {
 				serviceLog.Error("failed to flush service audit record", zap.Error(err))

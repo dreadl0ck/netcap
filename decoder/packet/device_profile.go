@@ -18,10 +18,11 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/gopacket/gopacket"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gopacket/gopacket"
 
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
+	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -31,6 +32,9 @@ import (
 type deviceProfile struct {
 	sync.Mutex
 	*types.DeviceProfile
+
+	// track unique applications detected via DPI
+	applications map[string]struct{}
 }
 
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
@@ -107,6 +111,13 @@ func newDeviceProfile(i *decoderutils.PacketInfo) *deviceProfile {
 		devices = append(devices, ip.IPProfile.Addr)
 	}
 
+	// DPI: detect applications
+	apps := make(map[string]struct{})
+	dpiResults := dpi.GetProtocols(i.Packet)
+	for protocol := range dpiResults {
+		apps[protocol] = struct{}{}
+	}
+
 	return &deviceProfile{
 		DeviceProfile: &types.DeviceProfile{
 			MacAddr:            i.SrcMAC,
@@ -117,6 +128,7 @@ func newDeviceProfile(i *decoderutils.PacketInfo) *deviceProfile {
 			NumPackets:         1,
 			Bytes:              uint64(len(i.Packet.Data())),
 		},
+		applications: apps,
 	}
 }
 
@@ -168,6 +180,16 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 
 	p.Bytes += uint64(len(i.Packet.Data()))
 	p.NumPackets++
+
+	// DPI: detect and track applications
+	dpiResults := dpi.GetProtocols(i.Packet)
+	for protocol := range dpiResults {
+		if p.applications == nil {
+			p.applications = make(map[string]struct{})
+		}
+		p.applications[protocol] = struct{}{}
+	}
+
 	p.Unlock()
 }
 
@@ -188,7 +210,7 @@ var deviceProfileDecoder = newPacketDecoder(
 		// flush writer
 		for _, item := range DeviceProfiles.Items {
 			item.Lock()
-			d.writeDeviceProfile(item.DeviceProfile)
+			d.writeDeviceProfile(item.DeviceProfile, item.applications)
 			item.Unlock()
 		}
 
@@ -197,7 +219,15 @@ var deviceProfileDecoder = newPacketDecoder(
 )
 
 // writeDeviceProfile writes the profile.
-func (d *Decoder) writeDeviceProfile(dp *types.DeviceProfile) {
+func (d *Decoder) writeDeviceProfile(dp *types.DeviceProfile, apps map[string]struct{}) {
+	// populate Applications from DPI results
+	if len(apps) > 0 {
+		dp.Applications = make([]string, 0, len(apps))
+		for app := range apps {
+			dp.Applications = append(dp.Applications, app)
+		}
+	}
+
 	if conf.ExportMetrics {
 		dp.Inc()
 	}

@@ -94,6 +94,10 @@ github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4 h1:CQVDSWmSo
 github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4/go.mod h1:Hv2i5yZ/n12s4y3LXmn8GfP7FatOIQkJeii8jMIt78s=
 github.com/dreadl0ck/go-dpi v1.2.1 h1:TpbHWPQgQ8+bL5t3x+3gQS3/KqoeitXAdXg9IcxBlhE=
 github.com/dreadl0ck/go-dpi v1.2.1/go.mod h1:HqEJeAzmr5+1I8dQQtb/FK/5tSVNxlROz9dMZFMk5NU=
+github.com/dreadl0ck/go-dpi v1.2.2 h1:epYjl2gLLqb/lJi5yqZ6LqzUCMj7aJZtOySTc70bbtU=
+github.com/dreadl0ck/go-dpi v1.2.2/go.mod h1:HqEJeAzmr5+1I8dQQtb/FK/5tSVNxlROz9dMZFMk5NU=
+github.com/dreadl0ck/go-dpi v1.2.3 h1:YkLSwrheZx6N5sB9PRlURmbplvgimiILkgF+3D2n1JA=
+github.com/dreadl0ck/go-dpi v1.2.3/go.mod h1:HqEJeAzmr5+1I8dQQtb/FK/5tSVNxlROz9dMZFMk5NU=
 github.com/dreadl0ck/ja3 v1.1.0 h1:dkW3YiHi99eJpiaZw5nKFvF4ptdhs5goo7x2YEKoKXU=
 github.com/dreadl0ck/ja3 v1.1.0/go.mod h1:1IRFNy6Yh4eHnKQBYFeXOaSZ630kcB2l9LqKpR1ZwOo=
 github.com/dreadl0ck/maltego v0.0.2-0.20210214142236-84e60c758329/go.mod h1:o52fHyONnsaEkTHIv/CCCfrZqeUBPC/oPYEyi2lvtAs=

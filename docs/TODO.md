@@ -8,6 +8,8 @@ add internal package
 
 implement Alerts and Rules
 
+go-dpi idea: generate port lookup table based on IANA spec for first guess for go classifier
+
 ----
 
 test suite:

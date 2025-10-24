@@ -24,6 +24,9 @@ import (
 type service struct {
 	sync.Mutex
 	*types.Service
+
+	// track unique applications detected via DPI for flows associated with this service
+	applications map[string]struct{}
 }
 
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
@@ -84,5 +87,26 @@ func NewService(ts int64, numBytesServer, numBytesClient int, ip string) *servic
 			BytesClient: int32(numBytesClient),
 			Hostname:    host,
 		},
+		applications: make(map[string]struct{}),
+	}
+}
+
+// AddApplications adds DPI-detected application protocols to a service.
+// This function is thread-safe and can be called from packet decoders.
+func AddApplications(serviceIdent string, applications []string) {
+	Store.Lock()
+	defer Store.Unlock()
+
+	if serv, ok := Store.Items[serviceIdent]; ok {
+		serv.Lock()
+		defer serv.Unlock()
+
+		if serv.applications == nil {
+			serv.applications = make(map[string]struct{})
+		}
+
+		for _, app := range applications {
+			serv.applications[app] = struct{}{}
+		}
 	}
 }

@@ -28,7 +28,16 @@ Furthermore **nDPI** \(v4.14 Stable\) can be used to identify 244+ applications,
 
 The results from all heuristic engines \(lPI, nDPI and go heuristics\) get dedpulicated automatically. Future versions could create a certainity score based on the number of votes from different heuristics.
 
-DPI is currently used to indicate which applications have been seen for which **IPProfile**, when using the **DeviceProfile** decoder.
+## Audit Records with Applications Field
+
+DPI detected applications are stored in the **Applications** field, which is available in the following audit records:
+
+- **Connection**: DPI applications detected for bidirectional flows
+- **Service**: DPI applications detected for services running on specific IP:Port combinations
+- **DeviceProfile**: Aggregated DPI applications seen from/to a specific MAC address
+- **IPProfile**: Aggregated DPI applications seen from/to a specific IP address
+
+The Applications field is a repeated string field (array) that contains the names of all detected applications for that audit record.
 
 Read more about DeviceProfiles here:
 

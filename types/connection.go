@@ -46,6 +46,7 @@ const (
 	fieldNumCWRFlags         = "NumCWRFlags"
 	fieldNumNSFlags          = "NumNSFlags"
 	fieldMeanWindowSize      = "MeanWindowSize"
+	// fieldApplications is defined in types/ip_profile.go
 )
 
 var fieldsConnection = []string{
@@ -78,6 +79,7 @@ var fieldsConnection = []string{
 	fieldNumCWRFlags,
 	fieldNumNSFlags,
 	fieldMeanWindowSize,
+	fieldApplications,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -117,6 +119,7 @@ func (c *Connection) CSVRecord() []string {
 		formatInt32(c.NumCWRFlags),
 		formatInt32(c.NumNSFlags),
 		formatInt32(c.MeanWindowSize),
+		join(c.Applications...),
 	})
 }
 
@@ -260,6 +263,7 @@ func (c *Connection) Encode() []string {
 		connectionEncoder.Int32(fieldNumCWRFlags, c.NumCWRFlags),
 		connectionEncoder.Int32(fieldNumNSFlags, c.NumNSFlags),
 		connectionEncoder.Int32(fieldMeanWindowSize, c.MeanWindowSize),
+		connectionEncoder.String(fieldApplications, join(c.Applications...)),
 	})
 }
 

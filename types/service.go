@@ -14,10 +14,11 @@
 package types
 
 import (
-	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -33,24 +34,26 @@ const (
 	fieldBytesClient = "BytesClient"
 	fieldHostname    = "Hostname"
 	fieldOS          = "OS"
+	// fieldApplications is defined in types/connection.go
 )
 
 var fieldsService = []string{
 	fieldTimestamp,
-	fieldIP,          // string
-	fieldPort,        // int32
-	fieldName,        // string
-	fieldBanner,      // string
-	fieldProtocol,    // string
-	fieldNumFlows,    // []string
-	fieldProduct,     // string
-	fieldVendor,      // string
-	fieldVersion,     // string
-	fieldNotes,       // string
-	fieldBytesServer, // int32
-	fieldBytesClient, // int32
-	fieldHostname,    // string
-	fieldOS,          // string
+	fieldIP,           // string
+	fieldPort,         // int32
+	fieldName,         // string
+	fieldBanner,       // string
+	fieldProtocol,     // string
+	fieldNumFlows,     // []string
+	fieldProduct,      // string
+	fieldVendor,       // string
+	fieldVersion,      // string
+	fieldNotes,        // string
+	fieldBytesServer,  // int32
+	fieldBytesClient,  // int32
+	fieldHostname,     // string
+	fieldOS,           // string
+	fieldApplications, // []string
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -75,6 +78,7 @@ func (a *Service) CSVRecord() []string {
 		formatInt32(a.BytesClient),          // int32
 		a.Hostname,                          // string
 		a.OS,                                // string
+		join(a.Applications...),             // []string
 	})
 }
 
@@ -155,19 +159,20 @@ var serviceEncoder = encoder.NewValueEncoder()
 func (a *Service) Encode() []string {
 	return filter([]string{
 		serviceEncoder.Int64(fieldTimestamp, a.Timestamp),
-		serviceEncoder.String(fieldIP, a.IP),                  // string
-		serviceEncoder.Int32(fieldPort, a.Port),               // int32
-		serviceEncoder.String(fieldName, a.Name),              // string
-		serviceEncoder.String(fieldBanner, a.Banner),          // string
-		serviceEncoder.String(fieldProtocol, a.Protocol),      // string
-		serviceEncoder.Int(fieldNumFlows, len(a.Flows)),       // []string
-		serviceEncoder.String(fieldProduct, a.Product),        // string
-		serviceEncoder.String(fieldVendor, a.Vendor),          // string
-		serviceEncoder.String(fieldVersion, a.Version),        // string
-		serviceEncoder.Int32(fieldBytesServer, a.BytesServer), // int32
-		serviceEncoder.Int32(fieldBytesClient, a.BytesClient), // int32
-		serviceEncoder.String(fieldHostname, a.Hostname),      // string
-		serviceEncoder.String(fieldOS, a.OS),                  // string
+		serviceEncoder.String(fieldIP, a.IP),                              // string
+		serviceEncoder.Int32(fieldPort, a.Port),                           // int32
+		serviceEncoder.String(fieldName, a.Name),                          // string
+		serviceEncoder.String(fieldBanner, a.Banner),                      // string
+		serviceEncoder.String(fieldProtocol, a.Protocol),                  // string
+		serviceEncoder.Int(fieldNumFlows, len(a.Flows)),                   // []string
+		serviceEncoder.String(fieldProduct, a.Product),                    // string
+		serviceEncoder.String(fieldVendor, a.Vendor),                      // string
+		serviceEncoder.String(fieldVersion, a.Version),                    // string
+		serviceEncoder.Int32(fieldBytesServer, a.BytesServer),             // int32
+		serviceEncoder.Int32(fieldBytesClient, a.BytesClient),             // int32
+		serviceEncoder.String(fieldHostname, a.Hostname),                  // string
+		serviceEncoder.String(fieldOS, a.OS),                              // string
+		serviceEncoder.String(fieldApplications, join(a.Applications...)), // []string
 	})
 }
 

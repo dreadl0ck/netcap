@@ -233,6 +233,9 @@ message Connection {
 
   // tcp window size
   int32 MeanWindowSize = 29;
+
+  // DPI detected applications
+  repeated string Applications = 30;
 }
 
 //
@@ -1720,6 +1723,7 @@ message DeviceProfile {
   int64 NumPackets = 5;
   int64 Timestamp = 6; // first seen
   uint64 Bytes = 7;
+  repeated string Applications = 8; // DPI detected applications
 }
 
 // Port models a transport layer port and basic stats such as the number of packets, bytes transferred and protocol type.
@@ -1935,6 +1939,7 @@ message Service {
   int32 BytesClient = 13;
   string Hostname = 14;
   string OS = 15;
+  repeated string Applications = 16; // DPI detected applications
 }
 
 message Credentials {

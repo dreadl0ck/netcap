@@ -82,8 +82,8 @@ $ net capture -overview
 > | TLSServerHello | 27 | Timestamp, Version, Random, SessionID, CipherSuite, CompressionMethod, NextProtoNeg, NextProtos, OCSPStapling, TicketSupported, SecureRenegotiationSupported, SecureRenegotiation, AlpnProtocol, Ems, SupportedVersion, SelectedIdentityPresent, SelectedIdentity, Cookie, SelectedGroup, Extensions, SrcIP, DstIP, SrcMAC, DstMAC, SrcPort, DstPort, Ja3S |
 > | HTTP | 18 | Timestamp, Proto, Method, Host, UserAgent, Referer, ReqCookies, ResCookies, ReqContentLength, URL, ResContentLength, ContentType, StatusCode, SrcIP, DstIP, ReqContentEncoding, ResContentEncoding, ServerName |
 > | Flow | 17 | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, TotalSize, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
-> | Connection | 17 | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, TotalSize, AppPayloadSize, NumPackets, UID, Duration, TimestampLast |
-> | DeviceProfile | 7 | Timestamp, MacAddr, DeviceManufacturer, NumDeviceIPs, NumContacts, NumPackets, Bytes |
+> | Connection | 28 | TimestampFirst, LinkProto, NetworkProto, TransportProto, ApplicationProto, SrcMAC, DstMAC, SrcIP, SrcPort, DstIP, DstPort, TotalSize, AppPayloadSize, NumPackets, Duration, TimestampLast, BytesClientToServer, BytesServerToClient, NumFINFlags, NumRSTFlags, NumACKFlags, NumSYNFlags, NumURGFlags, NumECEFlags, NumPSHFlags, NumCWRFlags, NumNSFlags, MeanWindowSize, Applications |
+> | DeviceProfile | 8 | Timestamp, MacAddr, DeviceManufacturer, NumDeviceIPs, NumContacts, NumPackets, Bytes, Applications |
 > | File | 12 | Timestamp, Name, Length, Hash, Location, Ident, Source, ContentType, SrcIP, DstIP, SrcPort, DstPort |
 > | POP3 | 7 | Timestamp, Client, Server, AuthToken, User, Pass, NumMails |
 

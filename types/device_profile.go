@@ -14,9 +14,10 @@
 package types
 
 import (
-	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 )
 
 const (
@@ -35,6 +36,7 @@ var fieldsDeviceProfile = []string{
 	fieldNumContacts,
 	fieldNumPackets,
 	fieldBytes,
+	fieldApplications,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -52,6 +54,7 @@ func (d *DeviceProfile) CSVRecord() []string {
 		strconv.Itoa(len(d.Contacts)),
 		formatInt64(d.NumPackets),
 		formatUint64(d.Bytes),
+		join(d.Applications...),
 	})
 }
 
@@ -96,6 +99,7 @@ func (d *DeviceProfile) Encode() []string {
 		deviceProfileEncoder.Int(fieldNumContacts, len(d.Contacts)),
 		deviceProfileEncoder.Int64(fieldNumPackets, d.NumPackets),
 		deviceProfileEncoder.Uint64(fieldBytes, d.Bytes),
+		deviceProfileEncoder.String(fieldApplications, join(d.Applications...)),
 	})
 }
 
