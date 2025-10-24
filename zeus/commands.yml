@@ -364,8 +364,10 @@ commands:
     # build base builder images for accelerated Linux builds
     build-builder-images:
         stopOnError: true
+        arguments:
+            - push:Bool? = true
         description: builds and optionally pushes base builder docker images that are reused for faster Linux builds
-        exec: zeus/scripts/build-builder-images.sh
+        exec: PUSH=${push} zeus/scripts/build-builder-images.sh
 
     # build and push the linux docker containers
     build-linux:

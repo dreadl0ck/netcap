@@ -108,7 +108,7 @@ When you run `zeus build-linux`, you should see:
 ```
 [INFO] copying the docker/alpine/Dockerfile into the project root
 ...
-FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-dpi-latest as builder
+FROM --platform=$BUILDPLATFORM dreadl0ck/netcap-builder:alpine-dpi-latest as builder
  => [internal] load metadata for docker.io/dreadl0ck/netcap-builder:alpine-dpi-latest
  => CACHED [builder 1/X] FROM docker.io/dreadl0ck/netcap-builder:alpine-dpi-latest
                            ^^^^^^
