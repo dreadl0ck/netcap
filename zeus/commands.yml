@@ -4,7 +4,7 @@
 #  /_____ \\___  >____//____  >  
 #        \/    \/           \/  
 #                    Build System
-#                          v0.8.4
+#                          v0.9.16
 #
 
 # default language
@@ -203,6 +203,7 @@ commands:
 
     # run a prod release
     release:
+        stopOnError: true
         description: release a new version, bundle and publish on github
         dependencies:
             - remove-dist
