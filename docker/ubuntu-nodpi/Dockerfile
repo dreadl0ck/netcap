@@ -14,7 +14,7 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build ${TAGS} -ldflags "-s -w -X gi
 
 #RUN ls -la /usr/lib/
 
-FROM --platform=linux/amd64 ubuntu:18.04
+FROM --platform=linux/amd64 ubuntu:24.04
 ARG IPV6_SUPPORT=true
 RUN apt-get update
 RUN apt install -y --fix-missing libpcap0.8 software-properties-common ca-certificates liblzo2-2 libkeyutils-dev

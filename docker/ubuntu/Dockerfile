@@ -21,7 +21,7 @@ RUN ls /usr/lib/*
 
 RUN GOOS=linux GOARCH=amd64 go build ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
-FROM --platform=linux/amd64 ubuntu:18.04
+FROM --platform=linux/amd64 ubuntu:24.04
 ARG IPV6_SUPPORT=true
 
 RUN apt-get update
