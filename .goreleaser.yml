@@ -17,7 +17,7 @@ builds:
     goos:
       - darwin
     ldflags:
-      - ""
+      - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14 -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-2
     goarch:
       - arm64
   - main: ./cmd
@@ -30,7 +30,7 @@ builds:
     goarch:
       - arm64
     ldflags:
-      - ""
+      - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}}
     flags:
       - -tags=nodpi
   - main: ./cmd
@@ -41,7 +41,7 @@ builds:
     goos:
       - windows
     ldflags:
-      - ""
+      - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}}
     flags:
       - -tags=nodpi
     goarch:
@@ -149,6 +149,19 @@ release:
     - **Without DPI** (`netcap-nodpi-*`): Choose for basic packet capture and analysis, smaller binary size
     - **libc vs musl**: Use `libc` for standard Linux distros (Ubuntu, Debian, CentOS). Use `musl` for Alpine Linux or minimal containers
     
+    ### Installing on macOS via homebrew
+
+    Builds distributed via homebrew are built with DPI support.
+    You need to install the libprotoident and ndpi libraries via homebrew.
+
+    ```
+      $ brew install libprotoident ndpi
+      $ brew tap dreadl0ck/formulas
+      $ brew install netcap
+    ```
+
+    Afterwards try running 'net' in your terminal.
+
     ### 📚 Documentation
     
     - [Full Documentation](https://github.com/dreadl0ck/netcap/tree/master/docs)
