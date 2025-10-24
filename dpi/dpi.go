@@ -37,13 +37,19 @@ const categoryUnknown = "UNKNOWN"
 
 // IsEnabled will return true if goDPI has been initialized
 func IsEnabled() bool {
-	return disableDPI
+	return !disableDPI
 }
 
 // Init initializes the deep packet inspection engines.
 // modules is a comma-separated list of modules to enable: lpi, ndpi, go
 // If empty, all modules will be enabled.
 func Init(modules string) {
+	// Guard against double initialization - if DPI is already enabled, skip
+	if !disableDPI {
+		log.Println("DPI: already initialized, skipping re-initialization")
+		return
+	}
+
 	disableDPI = false
 
 	var (
@@ -138,10 +144,27 @@ func parseModules(modules string) map[string]bool {
 // Destroy tears down godpi and frees the memory allocated for cgo
 // returned errors are logged to stdout.
 func Destroy() {
+	// Only destroy if DPI is actually enabled
+	if disableDPI {
+		return
+	}
+
 	for _, e := range godpi.Destroy() {
 		if e != nil {
 			fmt.Println(e)
 		}
+	}
+
+	// Reset the flag so DPI can be re-initialized
+	disableDPI = true
+}
+
+// Reset destroys the current DPI state and reinitializes it
+// This should be called when resetting state between processing different files
+func Reset(modules string) {
+	if !disableDPI {
+		Destroy()
+		Init(modules)
 	}
 }
 
@@ -151,6 +174,19 @@ func Destroy() {
 func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 
 	if disableDPI {
+		return nil
+	}
+
+	// Validate that the packet has a transport layer with valid endpoints
+	// This prevents crashes when trying to process packets without proper transport layer data
+	if packet.TransportLayer() == nil {
+		return nil
+	}
+
+	// Check that transport endpoints have valid data
+	// UDP/TCP endpoints need at least 2 bytes for the port number
+	transportFlow := packet.TransportLayer().TransportFlow()
+	if len(transportFlow.Src().Raw()) == 0 || len(transportFlow.Dst().Raw()) == 0 {
 		return nil
 	}
 

@@ -16,6 +16,7 @@ test suite:
 - check out wireshark / suricata test pcap suite.
 - scrape all files from https://www.malware-traffic-analysis.net/training-exercises.html
 
+- https://github.com/brett-fitz/malware-pcap
 - https://github.com/ntop/nDPI/tree/dev/tests/cfgs/default/pcap
 - https://wiki.wireshark.org/samplecaptures
 - https://github.com/wireshark/wireshark/tree/master/test/captures
@@ -144,7 +145,7 @@ created by github.com/dreadl0ck/netcap/reassembly.(*Assembler).FlushAllProgress
 - create elastic indices: netcap-ospf does already exist?
 - censor passwords from dumped config in netcap.log
 - log hint to use pcapfix tool for errors during pcap processing like 'capture length exceeds snap length'
-- add force flag to disable prompts: flagNoPrompt already exists
+- add force flag to disable prompts: -y flag exists (renamed from -noprompt)
 - overwrite check does not include other formats than ncap or ncap.gz
 - service detection seems racy, debug
 - add flag to disable writing files to disk (but: still generating the audit records

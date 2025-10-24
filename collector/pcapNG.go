@@ -20,9 +20,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcapgo"
-	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
 )
 
@@ -116,7 +116,9 @@ func (c *Collector) CollectPcapNG(path string) error {
 		}
 	}()
 
-	c.handleLinkType(r.LinkType())
+	if err = c.handleLinkType(r.LinkType()); err != nil {
+		return err
+	}
 
 	// initialize collector
 	if err = c.Init(); err != nil {

@@ -2,6 +2,8 @@
 
 *net capture* is a commandline tool that provides capturing *Netcap* audit records from PCAP / PCAP-NG files or live from a network interface.
 
+**NEW**: Wildcard support for batch processing! Use patterns like `*.pcap` to process multiple files. Each file gets its own output directory with full state reset between files. See [WILDCARD-CAPTURE.md](../../docs/WILDCARD-CAPTURE.md) for details.
+
 ## Description
 
 Traffic can be captured and written to disk with various options, and decoders used to create the audit records can be included or excluded from the generated output.
@@ -17,6 +19,10 @@ Capture from dumpfile:
 Capture from interface:
 
         $ net capture -iface eth0
+
+Capture without prompts (answer yes to all):
+
+        $ net capture -r dump.pcap -y
 
 ## Help
 

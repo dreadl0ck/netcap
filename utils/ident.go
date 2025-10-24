@@ -36,13 +36,26 @@ func CreateFlowIdentFromLayerFlows(net gopacket.Flow, trans gopacket.Flow) strin
 	// TODO: compare byte slice performance VS strings.Builder
 	b := make([]byte, 0, 45)
 
-	b = append(b, []byte(net.Src().String())...)
+	// Safely handle network endpoints
+	if len(net.Src().Raw()) > 0 {
+		b = append(b, []byte(net.Src().String())...)
+	}
 	b = append(b, []byte(":")...)
-	b = append(b, []byte(trans.Src().String())...)
+
+	// Safely handle transport endpoints - check for valid data before converting to string
+	if len(trans.Src().Raw()) > 0 {
+		b = append(b, []byte(trans.Src().String())...)
+	}
 	b = append(b, []byte("->")...)
-	b = append(b, []byte(net.Dst().String())...)
+
+	if len(net.Dst().Raw()) > 0 {
+		b = append(b, []byte(net.Dst().String())...)
+	}
 	b = append(b, []byte(":")...)
-	b = append(b, []byte(trans.Dst().String())...)
+
+	if len(trans.Dst().Raw()) > 0 {
+		b = append(b, []byte(trans.Dst().String())...)
+	}
 
 	return string(b)
 }

@@ -73,8 +73,12 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				transportLayer = pkt.TransportLayer()
 
 				if netLayer != nil {
-					ctx.SrcIP = netLayer.NetworkFlow().Src().String()
-					ctx.DstIP = netLayer.NetworkFlow().Dst().String()
+					if len(netLayer.NetworkFlow().Src().Raw()) > 0 {
+						ctx.SrcIP = netLayer.NetworkFlow().Src().String()
+					}
+					if len(netLayer.NetworkFlow().Dst().Raw()) > 0 {
+						ctx.DstIP = netLayer.NetworkFlow().Dst().String()
+					}
 				}
 
 				if transportLayer != nil {

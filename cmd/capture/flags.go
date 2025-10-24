@@ -128,7 +128,7 @@ var (
 	flagStreamDecoderBufSize = fs.Int("sbuf-size", 1000, "size for channel used to pass data to the stream decoders. default is unbuffered")
 	flagReassemblyDebug      = fs.Bool("reassembly-debug", false, "if true, the reassembly will log verbose debugging information")
 
-	flagNoPrompt   = fs.Bool("noprompt", false, "don't prompt for interaction during execution")
+	flagYes        = fs.Bool("y", false, "answer yes to all prompts")
 	flagDebug      = fs.Bool("debug", false, "display debug information")
 	flagMemprofile = fs.String("memprofile", "", "write memory profile")
 

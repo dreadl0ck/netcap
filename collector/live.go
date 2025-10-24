@@ -1,3 +1,4 @@
+//go:build !linux
 // +build !linux
 
 /*
@@ -48,7 +49,9 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 		}
 	}
 
-	c.handleLinkType(handle.LinkType())
+	if err = c.handleLinkType(handle.LinkType()); err != nil {
+		return err
+	}
 
 	// initialize collector
 	if err = c.Init(); err != nil {
@@ -100,7 +103,7 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 		}
 	}
 
-	done:
+done:
 
 	// Stop progress reporting
 	stopProgress <- struct{}{}

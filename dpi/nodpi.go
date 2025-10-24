@@ -33,6 +33,9 @@ func Init(modules string) {}
 
 func Destroy() {}
 
+// Reset is a stub that does nothing when DPI is disabled
+func Reset(modules string) {}
+
 func GetProtocols(packet gopacket.Packet) map[string]struct{} {
 	uniqueResults := make(map[string]struct{})
 

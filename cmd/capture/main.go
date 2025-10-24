@@ -42,12 +42,89 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/packet"
+	"github.com/dreadl0ck/netcap/decoder/stream/service"
+	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
+	"github.com/dreadl0ck/netcap/decoder/stream/udp"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/metrics"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
+
+// expandPcapFiles expands wildcards to find all pcap and pcapng files
+func expandPcapFiles(pattern string) ([]string, error) {
+	// Check if pattern contains wildcards
+	if !strings.Contains(pattern, "*") && !strings.Contains(pattern, "?") && !strings.Contains(pattern, "[") {
+		// No wildcard, return as-is
+		return []string{pattern}, nil
+	}
+
+	// Use filepath.Glob to expand the pattern
+	matches, err := filepath.Glob(pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter to only include .pcap and .pcapng files (not directories)
+	var pcapFiles []string
+	for _, match := range matches {
+		// Check if it's a regular file (not a directory)
+		info, err := os.Stat(match)
+		if err != nil {
+			// Skip files that can't be accessed
+			continue
+		}
+
+		if info.IsDir() {
+			// Skip directories
+			continue
+		}
+
+		// Only include files with .pcap or .pcapng extension
+		if strings.HasSuffix(strings.ToLower(match), ".pcap") || strings.HasSuffix(strings.ToLower(match), ".pcapng") {
+			pcapFiles = append(pcapFiles, match)
+		}
+	}
+
+	if len(pcapFiles) == 0 {
+		return nil, fmt.Errorf("no pcap or pcapng files found matching pattern: %s", pattern)
+	}
+
+	return pcapFiles, nil
+}
+
+// getOutputDirForFile creates a unique output directory name for a given input file
+func getOutputDirForFile(inputFile, baseOutDir string) string {
+	// Get the base name without extension
+	baseName := filepath.Base(inputFile)
+	// Remove .pcap or .pcapng extension
+	baseName = strings.TrimSuffix(baseName, filepath.Ext(baseName))
+
+	// If no base output directory specified, use current directory
+	if baseOutDir == "" {
+		return baseName
+	}
+
+	// Create subdirectory within base output directory
+	return filepath.Join(baseOutDir, baseName)
+}
+
+// uniqueFiles removes duplicate file paths from a slice
+func uniqueFiles(files []string) []string {
+	seen := make(map[string]bool)
+	result := []string{}
+
+	for _, file := range files {
+		if !seen[file] {
+			seen[file] = true
+			result = append(result, file)
+		}
+	}
+
+	return result
+}
 
 // Run parses the subcommand flags and handles the arguments.
 func Run() {
@@ -60,10 +137,24 @@ func Run() {
 		log.Fatal(err)
 	}
 
-	// crash if there are two consecutive args provided, to avoid running wrong configurations
-	// fs.Parse does not protect against this
-	// TODO: move to utils and use in other cli tools
-	checkArgs()
+	// Collect any unparsed arguments as potential input files (for shell-expanded wildcards)
+	// When user runs: net capture -read *.pcap -out /tmp/out
+	// The shell expands to: net capture -read file1.pcap file2.pcap file3.pcap -out /tmp/out
+	// fs.Args() will contain the extra files: [file2.pcap, file3.pcap]
+	var additionalFiles []string
+	for _, arg := range fs.Args() {
+		// Check if it's a regular file (not a directory)
+		info, err := os.Stat(arg)
+		if err != nil || info.IsDir() {
+			// Skip directories and inaccessible files
+			continue
+		}
+
+		// Only accept files with .pcap or .pcapng extension
+		if strings.HasSuffix(strings.ToLower(arg), ".pcap") || strings.HasSuffix(strings.ToLower(arg), ".pcapng") {
+			additionalFiles = append(additionalFiles, arg)
+		}
+	}
 
 	if *flagGenerateConfig {
 		io.GenerateConfig(fs, "capture")
@@ -171,6 +262,27 @@ func Run() {
 		os.Exit(1)
 	}
 
+	// Check if input contains wildcards and expand to multiple files
+	// Also handle shell-expanded arguments (multiple files passed on command line)
+	var inputFiles []string
+	if !live && *flagInput != "" {
+		inputFiles, err = expandPcapFiles(*flagInput)
+		if err != nil {
+			log.Fatal("failed to expand input pattern: ", err)
+		}
+
+		// Add any additional files from shell expansion
+		// These come from fs.Args() when shell expands *.pcap before passing to the program
+		inputFiles = append(inputFiles, additionalFiles...)
+
+		// Remove duplicates (in case first file is in both places)
+		inputFiles = uniqueFiles(inputFiles)
+
+		if len(inputFiles) > 1 {
+			fmt.Printf("Found %d pcap files to process\n", len(inputFiles))
+		}
+	}
+
 	var exportMetrics bool
 	if *flagMetricsAddr != "" {
 		metrics.ServeMetricsAt(*flagMetricsAddr, nil)
@@ -180,6 +292,10 @@ func Run() {
 
 	var numEpochs int
 	var analyzerLogFileHandles []*os.File
+
+	// Store original output directory to create subdirectories for each file
+	originalOutDir := *flagOutDir
+
 	if *flagAnalyzer != "" {
 
 		alert.InitSocket()
@@ -296,7 +412,7 @@ func Run() {
 		ReassembleConnections: *flagReassembleConnections,
 		FreeOSMem:             *flagFreeOSMemory,
 		LogErrors:             *flagLogErrors,
-		NoPrompt:              *flagNoPrompt,
+		NoPrompt:              *flagYes,
 		HTTPShutdownEndpoint:  *flagHTTPShutdown,
 		Timeout:               *flagTimeout,
 		Labels:                *flagLabels,
@@ -401,44 +517,259 @@ func Run() {
 		return
 	}
 
-	// start timer
-	start := time.Now()
+	// Track errors for each file when processing multiple files
+	type fileError struct {
+		filename string
+		err      error
+	}
+	var fileErrors []fileError
 
-	// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
-	// setting BPF filters is not yet supported by the pcapgo package
-	if *flagBPF != "" {
-		if err = c.CollectBPF(*flagInput, *flagBPF); err != nil {
-			log.Fatal("failed to set BPF: ", err)
+	// Process each input file
+	for fileIdx, inputFile := range inputFiles {
+		if len(inputFiles) > 1 {
+			fmt.Printf("\n========================================\n")
+			fmt.Printf("Processing file %d/%d: %s\n", fileIdx+1, len(inputFiles), inputFile)
+			fmt.Printf("========================================\n")
+
+			// Reset global state from previous file
+			if fileIdx > 0 {
+				fmt.Println("Resetting global state...")
+
+				// Reset packet-level state
+				packet.ResetDeviceProfiles()
+				packet.ResetIPProfiles()
+				packet.ResetConnections()
+
+				// Reset stream-level state
+				service.ResetStore()
+				tcp.ResetStreamFactory()
+				udp.ResetStreams()
+
+				// Reset DPI flow tracker if DPI is enabled
+				if *flagDPI {
+					dpi.Reset(*flagDPIModules)
+				}
+			}
+
+			// Set output directory for this specific file
+			*flagOutDir = getOutputDirForFile(inputFile, originalOutDir)
+			fmt.Printf("Output directory: %s\n", *flagOutDir)
+
+			// Create a fresh collector instance with updated configuration for this file
+			c = collector.New(collector.Config{
+				Workers:               *flagWorkers,
+				PacketBufferSize:      *flagPacketBuffer,
+				WriteUnknownPackets:   !*flagIgnoreUnknown,
+				Promisc:               *flagPromiscMode,
+				SnapLen:               *flagSnapLen,
+				BaseLayer:             utils.GetBaseLayer(*flagBaseLayer),
+				DecodeOptions:         utils.GetDecodeOptions(*flagDecodeOptions),
+				DPI:                   *flagDPI,
+				DPIModules:            *flagDPIModules,
+				ReassembleConnections: *flagReassembleConnections,
+				FreeOSMem:             *flagFreeOSMemory,
+				LogErrors:             *flagLogErrors,
+				NoPrompt:              *flagYes,
+				HTTPShutdownEndpoint:  false, // Disable for multi-file processing
+				Timeout:               *flagTimeout,
+				Labels:                *flagLabels,
+				Scatter:               *flagScatter,
+				ScatterDuration:       *flagScatterDuration,
+				DecoderConfig: &config.Config{
+					Quiet:         *flagQuiet,
+					PrintProgress: *flagPrintProgress,
+					Buffer:        *flagBuffer,
+					MemBufferSize: *flagMemBufferSize,
+					Compression:   *flagCompress,
+					CSV:           *flagCSV,
+					UnixSocket:    *flagUNIX,
+					Encode:        *flagEncode,
+					Label:         *flagLabels != "",
+					Null:          *flagNull,
+					Elastic:       *flagElastic,
+					ElasticConfig: io.ElasticConfig{
+						ElasticAddrs:   elasticAddrs,
+						ElasticUser:    *flagElasticUser,
+						ElasticPass:    *flagElasticPass,
+						KibanaEndpoint: *flagKibanaEndpoint,
+					},
+					BulkSizeGoPacket:               *flagBulkSizeGoPacket,
+					BulkSizeCustom:                 *flagBulkSizeCustom,
+					IncludeDecoders:                *flagInclude,
+					ExcludeDecoders:                *flagExclude,
+					Out:                            *flagOutDir,
+					Proto:                          *flagProto,
+					JSON:                           *flagJSON,
+					Chan:                           false,
+					Source:                         inputFile,
+					IncludePayloads:                *flagPayload,
+					ExportMetrics:                  exportMetrics,
+					AddContext:                     *flagContext,
+					FlushEvery:                     *flagFlushevery,
+					DefragIPv4:                     *flagDefragIPv4,
+					Checksum:                       *flagChecksum,
+					NoOptCheck:                     *flagNooptcheck,
+					IgnoreFSMerr:                   *flagIgnorefsmerr,
+					AllowMissingInit:               *flagAllowmissinginit,
+					Debug:                          *flagDebug,
+					HexDump:                        *flagHexdump,
+					WaitForConnections:             *flagWaitForConnections,
+					WriteIncomplete:                *flagWriteincomplete,
+					MemProfile:                     *flagMemprofile,
+					ConnFlushInterval:              *flagConnFlushInterval,
+					ConnTimeOut:                    *flagConnTimeOut,
+					FlowFlushInterval:              *flagFlowFlushInterval,
+					FlowTimeOut:                    *flagFlowTimeOut,
+					CloseInactiveTimeOut:           *flagCloseInactiveTimeout,
+					ClosePendingTimeOut:            *flagClosePendingTimeout,
+					FileStorage:                    *flagFileStorage,
+					CalculateEntropy:               *flagCalcEntropy,
+					SaveConns:                      *flagSaveConns,
+					TCPDebug:                       *flagTCPDebug,
+					UseRE2:                         *flagUseRE2,
+					BannerSize:                     *flagBannerSize,
+					StreamDecoderBufSize:           *flagStreamDecoderBufSize,
+					HarvesterBannerSize:            *flagHarvesterBannerSize,
+					StopAfterHarvesterMatch:        *flagStopAfterHarvesterMatch,
+					StopAfterServiceProbeMatch:     *flagStopAfterServiceProbeMatch,
+					StopAfterServiceCategoryMiss:   *flagStopAfterServiceCategoryMiss,
+					CustomRegex:                    *flagCustomCredsRegex,
+					StreamBufferSize:               *flagStreamBufferSize,
+					NumStreamWorkers:               *flagNumStreamWorkers,
+					IgnoreDecoderInitErrors:        *flagIgnoreInitErrs,
+					DisableGenericVersionHarvester: *flagDisableGenericVersionHarvester,
+					RemoveClosedStreams:            *flagRemoveClosedStreams,
+					CompressionBlockSize:           *flagCompressionBlockSize,
+					CompressionLevel:               getCompressionLevel(*flagCompressionLevel),
+				},
+				ResolverConfig: resolvers.Config{
+					ReverseDNS:    *flagReverseDNS,
+					LocalDNS:      *flagLocalDNS,
+					MACDB:         *flagMACDB,
+					Ja3DB:         *flagJa3DB,
+					ServiceDB:     *flagServiceDB,
+					GeolocationDB: *flagGeolocationDB,
+				},
+			})
+			c.Bpf = *flagBPF
+			c.InputFile = inputFile
+			c.PrintTime = *flagTime
+			c.Epochs = numEpochs
+
+			c.PrintConfiguration()
 		}
 
-		return
-	}
+		// start timer
+		start := time.Now()
 
-	// if not, use native pcapgo version
-	isPcap, err := collector.IsPcap(*flagInput)
-	if err != nil {
-		// invalid path
-		fmt.Println("failed to open file:", err)
-		os.Exit(1)
-	}
-
-	if isPcap {
-		if err = c.CollectPcap(*flagInput); err != nil {
-			log.Fatal("failed to collect audit records from pcap file: ", err)
+		// Final safety check: ensure input is a file, not a directory
+		fileInfo, err := os.Stat(inputFile)
+		if err != nil {
+			fmt.Printf("Error: cannot access file %s: %v\n", inputFile, err)
+			if len(inputFiles) > 1 {
+				fmt.Println("Skipping to next file...")
+				continue
+			}
+			os.Exit(1)
 		}
-	} else {
-		if err = c.CollectPcapNG(*flagInput); err != nil {
-			log.Fatal("failed to collect audit records from pcapng file: ", err)
+		if fileInfo.IsDir() {
+			fmt.Printf("Error: %s is a directory, not a file\n", inputFile)
+			if len(inputFiles) > 1 {
+				fmt.Println("Skipping to next file...")
+				continue
+			}
+			os.Exit(1)
+		}
+
+		// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
+		// setting BPF filters is not yet supported by the pcapgo package
+		if *flagBPF != "" {
+			if err = c.CollectBPF(inputFile, *flagBPF); err != nil {
+				if len(inputFiles) > 1 {
+					fmt.Printf("Error: failed to set BPF: %v\n", err)
+					fileErrors = append(fileErrors, fileError{filename: inputFile, err: fmt.Errorf("failed to set BPF: %w", err)})
+					fmt.Println("Skipping to next file...")
+					continue
+				}
+				log.Fatal("failed to set BPF: ", err)
+			}
+
+			continue
+		}
+
+		// if not, use native pcapgo version
+		isPcap, err := collector.IsPcap(inputFile)
+		if err != nil {
+			// invalid path
+			if len(inputFiles) > 1 {
+				fmt.Printf("Error: failed to open file: %v\n", err)
+				fileErrors = append(fileErrors, fileError{filename: inputFile, err: fmt.Errorf("failed to open file: %w", err)})
+				fmt.Println("Skipping to next file...")
+				continue
+			}
+			fmt.Println("failed to open file:", err)
+			os.Exit(1)
+		}
+
+		if isPcap {
+			if err = c.CollectPcap(inputFile); err != nil {
+				if len(inputFiles) > 1 {
+					fmt.Printf("Error: failed to collect audit records from pcap file: %v\n", err)
+					fileErrors = append(fileErrors, fileError{filename: inputFile, err: fmt.Errorf("failed to collect audit records from pcap file: %w", err)})
+					fmt.Println("Skipping to next file...")
+					continue
+				}
+				log.Fatal("failed to collect audit records from pcap file: ", err)
+			}
+		} else {
+			if err = c.CollectPcapNG(inputFile); err != nil {
+				if len(inputFiles) > 1 {
+					fmt.Printf("Error: failed to collect audit records from pcapng file: %v\n", err)
+					fileErrors = append(fileErrors, fileError{filename: inputFile, err: fmt.Errorf("failed to collect audit records from pcapng file: %w", err)})
+					fmt.Println("Skipping to next file...")
+					continue
+				}
+				log.Fatal("failed to collect audit records from pcapng file: ", err)
+			}
+		}
+
+		if *flagTime {
+			// stat input file
+			stat, _ := os.Stat(inputFile)
+			fmt.Println("size", humanize.Bytes(uint64(stat.Size())), "done in", time.Since(start))
+		}
+
+		if *flagPPS {
+			c.RenderPacketsPerSecond(inputFile, *flagOutDir)
+		}
+
+		// Force cleanup after processing each file to reset state
+		if len(inputFiles) > 1 {
+			fmt.Printf("\nCompleted processing: %s\n", inputFile)
 		}
 	}
 
-	if *flagTime {
-		// stat input file
-		stat, _ := os.Stat(*flagInput)
-		fmt.Println("size", humanize.Bytes(uint64(stat.Size())), "done in", time.Since(start))
+	// Print error summary for wildcard mode
+	if len(inputFiles) > 1 {
+		fmt.Printf("\n========================================\n")
+		fmt.Printf("Batch Processing Summary\n")
+		fmt.Printf("========================================\n")
+		fmt.Printf("Total files: %d\n", len(inputFiles))
+		fmt.Printf("Successful: %d\n", len(inputFiles)-len(fileErrors))
+		fmt.Printf("Failed: %d\n", len(fileErrors))
+
+		if len(fileErrors) > 0 {
+			fmt.Printf("\n%sErrors encountered:%s\n", ansi.Red, ansi.Reset)
+			for i, fe := range fileErrors {
+				fmt.Printf("%d. %s%s%s\n   Error: %v\n", i+1, ansi.Yellow, fe.filename, ansi.Reset, fe.err)
+			}
+		} else {
+			fmt.Printf("\n%sAll files processed successfully!%s\n", ansi.Green, ansi.Reset)
+		}
+		fmt.Printf("========================================\n")
 	}
 
-	// memory profiling
+	// memory profiling (after all files processed)
 	if *flagMemProfile {
 		f, errProfile := os.Create("netcap-" + netcap.Version + ".mem.profile")
 		if errProfile != nil {
@@ -453,10 +784,6 @@ func Run() {
 		if err != nil {
 			panic("failed to write memory profile: " + err.Error())
 		}
-	}
-
-	if *flagPPS {
-		c.RenderPacketsPerSecond(*flagInput, *flagOutDir)
 	}
 }
 
@@ -508,25 +835,5 @@ func makeWriterConfig(name string, typ types.Type, elasticAddrs []string) *io.Wr
 		MemBufferSize: *flagMemBufferSize,
 		Version:       netcap.Version,
 		StartTime:     time.Now(),
-	}
-}
-
-func checkArgs() {
-	var expectArg bool
-	for i, a := range os.Args[2:] {
-		if strings.HasPrefix(a, "-") {
-			expectArg = true
-			continue
-		}
-		if expectArg {
-			expectArg = false
-		} else {
-			args := os.Args[2:]
-			index := i - 1
-			if i == 0 {
-				index = 0
-			}
-			log.Fatal("two consecutive args detected, typo? ", ansi.Red, args[index:], ansi.Reset)
-		}
 	}
 }

@@ -21,10 +21,10 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
-	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
 )
 
@@ -145,7 +145,9 @@ func (c *Collector) CollectPcap(path string) error {
 		}
 	}()
 
-	c.handleLinkType(r.LinkType())
+	if err = c.handleLinkType(r.LinkType()); err != nil {
+		return err
+	}
 
 	// initialize collector
 	if err = c.Init(); err != nil {
@@ -192,7 +194,7 @@ func (c *Collector) CollectPcap(path string) error {
 	return nil
 }
 
-func (c *Collector) handleLinkType(lt layers.LinkType) {
+func (c *Collector) handleLinkType(lt layers.LinkType) error {
 	c.printlnStdOut("detected link type:", lt)
 
 	// TODO: why does this not work?
@@ -220,6 +222,10 @@ func (c *Collector) handleLinkType(lt layers.LinkType) {
 	case layers.LinkTypeLinuxSLL:
 		c.config.BaseLayer = layers.LayerTypeLinuxSLL
 	default:
-		log.Fatal("unhandled link type: ", lt)
+		errMsg := fmt.Sprintf("unhandled link type: %s (raw value: %d, hex: 0x%02X)", lt, int(lt), int(lt))
+		log.Println(errMsg)
+		return errors.New(errMsg)
 	}
+
+	return nil
 }
