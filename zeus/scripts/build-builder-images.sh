@@ -35,6 +35,11 @@ build_image() {
     
     echo "[INFO] Successfully built $tag"
     
+    # Create :latest tag by replacing version with 'latest'
+    local latest_tag="${tag%:*}:latest"
+    echo "[INFO] Tagging as $latest_tag"
+    docker tag "$tag" "$latest_tag"
+    
     if [ "$push" = true ]; then
         echo "[INFO] Pushing $tag to registry..."
         docker push "$tag"
@@ -42,6 +47,15 @@ build_image() {
             echo "[INFO] Successfully pushed $tag"
         else
             echo "[ERROR] Failed to push $tag"
+            return 1
+        fi
+        
+        echo "[INFO] Pushing $latest_tag to registry..."
+        docker push "$latest_tag"
+        if [ $? -eq 0 ]; then
+            echo "[INFO] Successfully pushed $latest_tag"
+        else
+            echo "[ERROR] Failed to push $latest_tag"
             return 1
         fi
     fi
@@ -97,7 +111,7 @@ echo "======================================"
 echo "[INFO] All builder images built successfully!"
 echo "======================================"
 echo ""
-echo "Built images:"
+echo "Built images (both versioned and :latest tags):"
 docker images | grep "netcap-builder"
 echo ""
 echo "To push these images to the registry, run:"
@@ -105,5 +119,8 @@ echo "  PUSH=true $0"
 echo ""
 echo "To use a different registry:"
 echo "  REGISTRY=your-registry $0"
+echo ""
+echo "Note: Both versioned tags (e.g., :ubuntu-dpi-0.7.5) and :latest tags"
+echo "      (e.g., :ubuntu-dpi-latest) are automatically created and pushed."
 echo ""
 
