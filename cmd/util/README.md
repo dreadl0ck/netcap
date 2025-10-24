@@ -11,6 +11,10 @@ Read more about this tool in the documentation: https://docs.netcap.io
 
 ## Usage examples
 
+Display tree view of all supported audit record types and their encapsulation levels:
+
+    $ net util -decoders
+
 Check audit records field count offered by the structure VS emitted CSV:
 
     $ net util -read TCP.ncap.gz -check
@@ -41,6 +45,7 @@ Convert a netcap timestamp to UTC time:
     v0.5
     
     util tool usage examples:
+            $ net util -decoders
             $ net util -read TCP.ncap.gz -check
             $ net util -read TCP.ncap.gz -check -sep '/'
             $ net util -ts2utc 1505839354.197231

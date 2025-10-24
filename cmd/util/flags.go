@@ -57,4 +57,5 @@ var (
 	flagServAddr        = fs.String("serve-addr", ":8080", "address for database server")
 	flagDownloadDBs     = fs.Bool("download-dbs", false, "download databases from remote server")
 	flagDBsURL          = fs.String("dbs-url", "", "URL to download databases from (default: "+env.NetcapDBsURL+")")
+	flagDecoders        = fs.Bool("decoders", false, "display tree view of all supported audit record types and their encapsulation levels")
 )

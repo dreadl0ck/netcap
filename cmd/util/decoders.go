@@ -1,0 +1,390 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+
+package util
+
+import (
+	"fmt"
+	"sort"
+	"strings"
+
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
+
+	"github.com/dreadl0ck/netcap/decoder/packet"
+	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/types"
+)
+
+// DecoderInfo contains information about a decoder
+type DecoderInfo struct {
+	Name        string
+	Type        types.Type
+	Description string
+	Layer       string
+}
+
+// printDecoders displays a tree view of all supported audit record types and their encapsulation levels
+func printDecoders() {
+	io.PrintLogo()
+	fmt.Println()
+	fmt.Println("Supported Audit Record Types by Encapsulation Level")
+	fmt.Println("====================================================")
+	fmt.Println()
+
+	// Organize decoders by layer
+	decodersByLayer := organizeDecodersByLayer()
+
+	// Define layer order
+	layerOrder := []string{
+		"Link Layer",
+		"Network Layer",
+		"Transport Layer",
+		"Application Layer",
+		"Stream Decoders",
+		"Abstract Decoders",
+	}
+
+	// Print tree view for each layer
+	for _, layer := range layerOrder {
+		if decoders, ok := decodersByLayer[layer]; ok {
+			printLayer(layer, decoders)
+		}
+	}
+
+	fmt.Println()
+	fmt.Printf("Total Audit Record Types: %d\n", countTotalDecoders(decodersByLayer))
+}
+
+// organizeDecodersByLayer collects and organizes all decoders by their encapsulation level
+func organizeDecodersByLayer() map[string][]DecoderInfo {
+	decodersByLayer := make(map[string][]DecoderInfo)
+	seenDecoders := make(map[string]bool)
+
+	// Add gopacket decoders
+	addGoPacketDecoders(decodersByLayer, seenDecoders)
+
+	// Add packet decoders
+	addPacketDecoders(decodersByLayer, seenDecoders)
+
+	// Add stream decoders
+	addStreamDecoders(decodersByLayer, seenDecoders)
+
+	// Add abstract decoders
+	addAbstractDecoders(decodersByLayer, seenDecoders)
+
+	// Sort each layer's decoders
+	for layer := range decodersByLayer {
+		sort.Slice(decodersByLayer[layer], func(i, j int) bool {
+			return decodersByLayer[layer][i].Name < decodersByLayer[layer][j].Name
+		})
+	}
+
+	return decodersByLayer
+}
+
+// addGoPacketDecoders adds all gopacket layer decoders
+func addGoPacketDecoders(decodersByLayer map[string][]DecoderInfo, seenDecoders map[string]bool) {
+	// Map layer types to audit record types and layers
+	layerMappings := map[gopacket.LayerType]struct {
+		typeName string
+		layer    string
+	}{
+		// Link Layer
+		layers.LayerTypeEthernet:           {typeName: "Ethernet", layer: "Link Layer"},
+		layers.LayerTypeARP:                {typeName: "ARP", layer: "Link Layer"},
+		layers.LayerTypeDot1Q:              {typeName: "Dot1Q", layer: "Link Layer"},
+		layers.LayerTypeDot11:              {typeName: "Dot11", layer: "Link Layer"},
+		layers.LayerTypeLLC:                {typeName: "LLC", layer: "Link Layer"},
+		layers.LayerTypeSNAP:               {typeName: "SNAP", layer: "Link Layer"},
+		layers.LayerTypeLinkLayerDiscovery: {typeName: "LinkLayerDiscovery", layer: "Link Layer"},
+		layers.LayerTypeEthernetCTP:        {typeName: "EthernetCTP", layer: "Link Layer"},
+		layers.LayerTypeEthernetCTPReply:   {typeName: "EthernetCTPReply", layer: "Link Layer"},
+		layers.LayerTypeFDDI:               {typeName: "FDDI", layer: "Link Layer"},
+		layers.LayerTypeUSB:                {typeName: "USB", layer: "Link Layer"},
+		layers.LayerTypeCiscoDiscovery:     {typeName: "CiscoDiscovery", layer: "Link Layer"},
+		layers.LayerTypeNortelDiscovery:    {typeName: "NortelDiscovery", layer: "Link Layer"},
+
+		// Network Layer
+		layers.LayerTypeIPv4:         {typeName: "IPv4", layer: "Network Layer"},
+		layers.LayerTypeIPv6:         {typeName: "IPv6", layer: "Network Layer"},
+		layers.LayerTypeICMPv4:       {typeName: "ICMPv4", layer: "Network Layer"},
+		layers.LayerTypeICMPv6:       {typeName: "ICMPv6", layer: "Network Layer"},
+		layers.LayerTypeIPSecAH:      {typeName: "IPSecAH", layer: "Network Layer"},
+		layers.LayerTypeIPSecESP:     {typeName: "IPSecESP", layer: "Network Layer"},
+		layers.LayerTypeIPv6HopByHop: {typeName: "IPv6HopByHop", layer: "Network Layer"},
+		layers.LayerTypeIPv6Fragment: {typeName: "IPv6Fragment", layer: "Network Layer"},
+		layers.LayerTypeIGMP:         {typeName: "IGMP", layer: "Network Layer"},
+		layers.LayerTypeMPLS:         {typeName: "MPLS", layer: "Network Layer"},
+		layers.LayerTypeGRE:          {typeName: "GRE", layer: "Network Layer"},
+
+		// Transport Layer
+		layers.LayerTypeTCP:  {typeName: "TCP", layer: "Transport Layer"},
+		layers.LayerTypeUDP:  {typeName: "UDP", layer: "Transport Layer"},
+		layers.LayerTypeSCTP: {typeName: "SCTP", layer: "Transport Layer"},
+
+		// Application Layer
+		layers.LayerTypeDNS:    {typeName: "DNS", layer: "Application Layer"},
+		layers.LayerTypeDHCPv4: {typeName: "DHCPv4", layer: "Application Layer"},
+		layers.LayerTypeDHCPv6: {typeName: "DHCPv6", layer: "Application Layer"},
+		layers.LayerTypeNTP:    {typeName: "NTP", layer: "Application Layer"},
+		layers.LayerTypeSIP:    {typeName: "SIP", layer: "Application Layer"},
+		layers.LayerTypeGeneve: {typeName: "Geneve", layer: "Application Layer"},
+		layers.LayerTypeVXLAN:  {typeName: "VXLAN", layer: "Application Layer"},
+	}
+
+	for _, mapping := range layerMappings {
+		if !seenDecoders[mapping.typeName] {
+			seenDecoders[mapping.typeName] = true
+			decodersByLayer[mapping.layer] = append(decodersByLayer[mapping.layer], DecoderInfo{
+				Name:        mapping.typeName,
+				Type:        getTypeForName(mapping.typeName),
+				Description: fmt.Sprintf("%s protocol decoder", mapping.typeName),
+				Layer:       mapping.layer,
+			})
+		}
+	}
+}
+
+// addPacketDecoders adds custom packet decoders
+func addPacketDecoders(decodersByLayer map[string][]DecoderInfo, seenDecoders map[string]bool) {
+	// Get all packet decoders
+	allPacketDecoders := packet.GetPacketDecoders()
+
+	for _, dec := range allPacketDecoders {
+		name := dec.GetName()
+		if !seenDecoders[name] {
+			seenDecoders[name] = true
+			layer := determineLayer(name)
+
+			decodersByLayer[layer] = append(decodersByLayer[layer], DecoderInfo{
+				Name:        name,
+				Type:        dec.GetType(),
+				Description: dec.GetDescription(),
+				Layer:       layer,
+			})
+		}
+	}
+}
+
+// addStreamDecoders adds TCP/UDP stream decoders
+func addStreamDecoders(decodersByLayer map[string][]DecoderInfo, seenDecoders map[string]bool) {
+	streamDecoders := []struct {
+		name        string
+		typeName    string
+		description string
+	}{
+		{"HTTP", "HTTP", "HTTP protocol stream decoder"},
+		{"SSH", "SSH", "SSH protocol stream decoder"},
+		{"SMTP", "SMTP", "SMTP protocol stream decoder"},
+		{"POP3", "POP3", "POP3 protocol stream decoder"},
+	}
+
+	for _, sd := range streamDecoders {
+		if !seenDecoders[sd.name] {
+			seenDecoders[sd.name] = true
+			decodersByLayer["Stream Decoders"] = append(decodersByLayer["Stream Decoders"], DecoderInfo{
+				Name:        sd.name,
+				Type:        getTypeForName(sd.typeName),
+				Description: sd.description,
+				Layer:       "Stream Decoders",
+			})
+		}
+	}
+}
+
+// addAbstractDecoders adds high-level abstract decoders
+func addAbstractDecoders(decodersByLayer map[string][]DecoderInfo, seenDecoders map[string]bool) {
+	abstractDecoders := []struct {
+		name        string
+		typeName    string
+		description string
+	}{
+		{"Connection", "Connection", "Network connection tracking"},
+		{"DeviceProfile", "DeviceProfile", "Device profiling and fingerprinting"},
+		{"File", "File", "File extraction and analysis"},
+		{"Service", "Service", "Service identification"},
+		{"Software", "Software", "Software detection"},
+		{"Credentials", "Credentials", "Credential harvesting"},
+		{"Vulnerability", "Vulnerability", "Vulnerability detection"},
+		{"Exploit", "Exploit", "Exploit detection"},
+		{"IPProfile", "IPProfile", "IP address profiling"},
+		{"Mail", "Mail", "Email message analysis"},
+		{"Alert", "Alert", "Security alerts and events"},
+		{"TLSClientHello", "TLSClientHello", "TLS client hello analysis"},
+		{"TLSServerHello", "TLSServerHello", "TLS server hello analysis"},
+	}
+
+	for _, ad := range abstractDecoders {
+		if !seenDecoders[ad.name] {
+			seenDecoders[ad.name] = true
+			decodersByLayer["Abstract Decoders"] = append(decodersByLayer["Abstract Decoders"], DecoderInfo{
+				Name:        ad.name,
+				Type:        getTypeForName(ad.typeName),
+				Description: ad.description,
+				Layer:       "Abstract Decoders",
+			})
+		}
+	}
+}
+
+// determineLayer determines the OSI layer for a decoder based on its name
+func determineLayer(name string) string {
+	name = strings.ToLower(name)
+
+	// Link Layer protocols
+	linkLayerProtocols := []string{"ethernet", "arp", "dot1q", "dot11", "llc", "snap",
+		"linklayerdiscovery", "ethernetctp", "fddi", "usb", "cisco", "nortel"}
+	for _, proto := range linkLayerProtocols {
+		if strings.Contains(name, proto) {
+			return "Link Layer"
+		}
+	}
+
+	// Network Layer protocols
+	networkLayerProtocols := []string{"ipv4", "ipv6", "icmp", "ipsec", "igmp", "mpls", "gre"}
+	for _, proto := range networkLayerProtocols {
+		if strings.Contains(name, proto) {
+			return "Network Layer"
+		}
+	}
+
+	// Transport Layer protocols
+	transportLayerProtocols := []string{"tcp", "udp", "sctp"}
+	for _, proto := range transportLayerProtocols {
+		if strings.Contains(name, proto) {
+			return "Transport Layer"
+		}
+	}
+
+	// Application Layer protocols
+	applicationLayerProtocols := []string{"dns", "dhcp", "http", "tls", "ntp", "sip",
+		"smtp", "pop3", "ssh", "lcm", "modbus", "ospf", "bfd", "eap", "cip", "enip",
+		"geneve", "vxlan", "vrrp", "diameter"}
+	for _, proto := range applicationLayerProtocols {
+		if strings.Contains(name, proto) {
+			return "Application Layer"
+		}
+	}
+
+	return "Application Layer"
+}
+
+// getTypeForName returns the types.Type for a given name
+func getTypeForName(name string) types.Type {
+	typeMap := map[string]types.Type{
+		"Header":             types.Type_NC_Header,
+		"Batch":              types.Type_NC_Batch,
+		"Connection":         types.Type_NC_Connection,
+		"Ethernet":           types.Type_NC_Ethernet,
+		"ARP":                types.Type_NC_ARP,
+		"Dot1Q":              types.Type_NC_Dot1Q,
+		"Dot11":              types.Type_NC_Dot11,
+		"LinkLayerDiscovery": types.Type_NC_LinkLayerDiscovery,
+		"EthernetCTP":        types.Type_NC_EthernetCTP,
+		"EthernetCTPReply":   types.Type_NC_EthernetCTPReply,
+		"FDDI":               types.Type_NC_FDDI,
+		"USB":                types.Type_NC_USB,
+		"CiscoDiscovery":     types.Type_NC_CiscoDiscovery,
+		"NortelDiscovery":    types.Type_NC_NortelDiscovery,
+		"IPv4":               types.Type_NC_IPv4,
+		"IPv6":               types.Type_NC_IPv6,
+		"ICMPv4":             types.Type_NC_ICMPv4,
+		"ICMPv6":             types.Type_NC_ICMPv6,
+		"IPSecAH":            types.Type_NC_IPSecAH,
+		"IPSecESP":           types.Type_NC_IPSecESP,
+		"IPv6HopByHop":       types.Type_NC_IPv6HopByHop,
+		"IPv6Fragment":       types.Type_NC_IPv6Fragment,
+		"IGMP":               types.Type_NC_IGMP,
+		"MPLS":               types.Type_NC_MPLS,
+		"GRE":                types.Type_NC_GRE,
+		"TCP":                types.Type_NC_TCP,
+		"UDP":                types.Type_NC_UDP,
+		"SCTP":               types.Type_NC_SCTP,
+		"DNS":                types.Type_NC_DNS,
+		"DHCPv4":             types.Type_NC_DHCPv4,
+		"DHCPv6":             types.Type_NC_DHCPv6,
+		"NTP":                types.Type_NC_NTP,
+		"SIP":                types.Type_NC_SIP,
+		"HTTP":               types.Type_NC_HTTP,
+		"TLSClientHello":     types.Type_NC_TLSClientHello,
+		"TLSServerHello":     types.Type_NC_TLSServerHello,
+		"SMTP":               types.Type_NC_SMTP,
+		"POP3":               types.Type_NC_POP3,
+		"SSH":                types.Type_NC_SSH,
+		"LCM":                types.Type_NC_LCM,
+		"Modbus":             types.Type_NC_Modbus,
+		"OSPFv2":             types.Type_NC_OSPFv2,
+		"OSPFv3":             types.Type_NC_OSPFv3,
+		"BFD":                types.Type_NC_BFD,
+		"EAP":                types.Type_NC_EAP,
+		"EAPOL":              types.Type_NC_EAPOL,
+		"EAPOLKey":           types.Type_NC_EAPOLKey,
+		"CIP":                types.Type_NC_CIP,
+		"ENIP":               types.Type_NC_ENIP,
+		"Geneve":             types.Type_NC_Geneve,
+		"VXLAN":              types.Type_NC_VXLAN,
+		"VRRPv2":             types.Type_NC_VRRPv2,
+		"LLC":                types.Type_NC_LLC,
+		"SNAP":               types.Type_NC_SNAP,
+		"DeviceProfile":      types.Type_NC_DeviceProfile,
+		"File":               types.Type_NC_File,
+		"Service":            types.Type_NC_Service,
+		"Software":           types.Type_NC_Software,
+		"Credentials":        types.Type_NC_Credentials,
+		"Vulnerability":      types.Type_NC_Vulnerability,
+		"Exploit":            types.Type_NC_Exploit,
+		"IPProfile":          types.Type_NC_IPProfile,
+		"Mail":               types.Type_NC_Mail,
+		"Alert":              types.Type_NC_Alert,
+		"Diameter":           types.Type_NC_Diameter,
+	}
+
+	if t, ok := typeMap[name]; ok {
+		return t
+	}
+
+	return types.Type_NC_Header
+}
+
+// printLayer prints a layer and its decoders in tree format
+func printLayer(layerName string, decoders []DecoderInfo) {
+	fmt.Printf("├── %s\n", layerName)
+
+	for i, decoder := range decoders {
+		isLast := i == len(decoders)-1
+		prefix := "│   ├──"
+		if isLast {
+			prefix = "│   └──"
+		}
+
+		fmt.Printf("%s %s (Type: %s)\n", prefix, decoder.Name, decoder.Type.String())
+		if decoder.Description != "" {
+			descPrefix := "│   │   "
+			if isLast {
+				descPrefix = "│       "
+			}
+			fmt.Printf("%s    └─ %s\n", descPrefix, decoder.Description)
+		}
+	}
+	fmt.Println("│")
+}
+
+// countTotalDecoders counts the total number of decoders across all layers
+func countTotalDecoders(decodersByLayer map[string][]DecoderInfo) int {
+	total := 0
+	for _, decoders := range decodersByLayer {
+		total += len(decoders)
+	}
+	return total
+}

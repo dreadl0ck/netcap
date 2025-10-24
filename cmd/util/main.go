@@ -123,5 +123,10 @@ func Run() {
 		return
 	}
 
+	if *flagDecoders {
+		printDecoders()
+		return
+	}
+
 	printHeader()
 }

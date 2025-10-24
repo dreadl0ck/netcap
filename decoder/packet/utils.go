@@ -18,8 +18,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
-	"github.com/pkg/errors"
 	"math"
 	"os"
 	"reflect"
@@ -27,6 +25,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
+	"github.com/pkg/errors"
 
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
@@ -37,6 +38,16 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/evilsocket/islazy/tui"
 )
+
+// GetPacketDecoders returns all available packet decoders
+func GetPacketDecoders() []DecoderAPI {
+	return defaultPacketDecoders
+}
+
+// GetGoPacketDecoders returns all available gopacket layer decoders
+func GetGoPacketDecoders() []*GoPacketDecoder {
+	return defaultGoPacketDecoders
+}
 
 var (
 	typeMap      = make(map[string]int)
