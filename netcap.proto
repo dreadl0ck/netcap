@@ -733,7 +733,7 @@ message DHCPv4 {
   int32 Operation = 2;
   int32 HardwareType = 3;
   int32 HardwareLen = 4;
-  int32 HardwareOpts = 5;
+  int32 RelayHops = 5;
   uint32 Xid = 6;
   int32 Secs = 7;
   int32 Flags = 8;

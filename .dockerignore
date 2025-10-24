@@ -3,7 +3,6 @@
 go.work
 go.work.sum
 tests/*
-!tests/helpers/go.mod
 types/python
 types/java
 types/swift

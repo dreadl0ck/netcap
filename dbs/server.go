@@ -36,10 +36,10 @@ type DBServer struct {
 	addr         string
 	buildDir     string
 	dbsDir       string
-	currentDate  string
+	currentDate  string // protected by mu
 	mu           sync.RWMutex
-	verbose      bool
-	nvdStartYear int
+	verbose      bool // read-only after construction
+	nvdStartYear int  // read-only after construction
 }
 
 // NewDBServer creates a new database server instance
@@ -76,7 +76,11 @@ func (s *DBServer) Start() error {
 	if hasExisting {
 		log.Printf("Found existing databases (version: %s)", existingVersion)
 		log.Println("Using existing databases as initial revision")
+
+		// Protect write to currentDate with lock
+		s.mu.Lock()
 		s.currentDate = existingVersion
+		s.mu.Unlock()
 
 		// Ensure latest symlinks/copies exist
 		if err := s.ensureLatestLinks(); err != nil {
@@ -450,11 +454,15 @@ func (s *DBServer) createInitialTarballFromExisting() (bool, string) {
 
 // ensureLatestLinks ensures that 'latest' symlinks/copies exist
 func (s *DBServer) ensureLatestLinks() error {
+	s.mu.RLock()
+	currentDate := s.currentDate
+	s.mu.RUnlock()
+
 	latestTarball := filepath.Join(s.dbsDir, "latest.tar.gz")
 	latestMetadata := filepath.Join(s.dbsDir, "latest.json")
 
-	sourceTarball := filepath.Join(s.dbsDir, s.currentDate+".tar.gz")
-	sourceMetadata := filepath.Join(s.dbsDir, s.currentDate+".json")
+	sourceTarball := filepath.Join(s.dbsDir, currentDate+".tar.gz")
+	sourceMetadata := filepath.Join(s.dbsDir, currentDate+".json")
 
 	// Check if source files exist
 	if _, err := os.Stat(sourceTarball); err != nil {
@@ -469,14 +477,14 @@ func (s *DBServer) ensureLatestLinks() error {
 	os.Remove(latestMetadata)
 
 	// Try to create symlinks, fall back to copying if symlinks fail
-	if err := os.Symlink(s.currentDate+".tar.gz", latestTarball); err != nil {
+	if err := os.Symlink(currentDate+".tar.gz", latestTarball); err != nil {
 		// Symlink failed, try copying
 		if err := copyFile(sourceTarball, latestTarball); err != nil {
 			return fmt.Errorf("failed to create latest tarball link/copy: %w", err)
 		}
 	}
 
-	if err := os.Symlink(s.currentDate+".json", latestMetadata); err != nil {
+	if err := os.Symlink(currentDate+".json", latestMetadata); err != nil {
 		// Symlink failed, try copying
 		if err := copyFile(sourceMetadata, latestMetadata); err != nil {
 			return fmt.Errorf("failed to create latest metadata link/copy: %w", err)
@@ -526,10 +534,12 @@ func (s *DBServer) handleDownload(w http.ResponseWriter, r *http.Request) {
 
 // handleLatest returns metadata about the latest version
 func (s *DBServer) handleLatest(w http.ResponseWriter, r *http.Request) {
+	// Only lock to read currentDate, not during file I/O
 	s.mu.RLock()
-	defer s.mu.RUnlock()
+	currentDate := s.currentDate
+	s.mu.RUnlock()
 
-	metadataPath := filepath.Join(s.buildDir, "dbs", s.currentDate+".json")
+	metadataPath := filepath.Join(s.buildDir, "dbs", currentDate+".json")
 
 	data, err := os.ReadFile(metadataPath)
 	if err != nil {
@@ -543,13 +553,15 @@ func (s *DBServer) handleLatest(w http.ResponseWriter, r *http.Request) {
 
 // handleList lists all available database versions (only latest due to storage optimization)
 func (s *DBServer) handleList(w http.ResponseWriter, r *http.Request) {
+	// Only lock to read currentDate, not during JSON encoding
 	s.mu.RLock()
-	defer s.mu.RUnlock()
+	currentDate := s.currentDate
+	s.mu.RUnlock()
 
 	// Since we only keep the latest version, return just that
 	response := map[string]interface{}{
-		"versions": []string{s.currentDate},
-		"latest":   s.currentDate,
+		"versions": []string{currentDate},
+		"latest":   currentDate,
 		"note":     "Server is configured to keep only the latest version to optimize storage",
 	}
 
@@ -558,10 +570,9 @@ func (s *DBServer) handleList(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleHealth provides a health check endpoint
+// Note: Does not use locking to avoid blocking during long-running database rebuilds.
+// Reading currentDate without a lock is safe for health check purposes.
 func (s *DBServer) handleHealth(w http.ResponseWriter, r *http.Request) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
 	health := map[string]interface{}{
 		"status":          "healthy",
 		"current_version": s.currentDate,

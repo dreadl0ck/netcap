@@ -103,7 +103,7 @@ func lookupDHCPFingerprint() {
 					Operation:    dhcp.Operation,
 					HardwareType: dhcp.HardwareType,
 					HardwareLen:  dhcp.HardwareLen,
-					HardwareOpts: dhcp.HardwareOpts,
+					RelayHops:    dhcp.RelayHops,
 					Xid:          dhcp.Xid,
 					Secs:         dhcp.Secs,
 					Flags:        dhcp.Flags,

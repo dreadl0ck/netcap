@@ -15,9 +15,10 @@ package types
 
 import (
 	"encoding/hex"
-	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -79,7 +80,7 @@ func (d *DHCPv4) CSVRecord() []string {
 		formatInt32(d.Operation),         // int32
 		formatInt32(d.HardwareType),      // int32
 		formatInt32(d.HardwareLen),       // int32
-		formatInt32(d.HardwareOpts),      // int32
+		formatInt32(d.RelayHops),         // int32
 		formatUint32(d.Xid),              // uint32
 		formatInt32(d.Secs),              // int32
 		formatInt32(d.Flags),             // int32
@@ -155,7 +156,7 @@ func (d *DHCPv4) metricValues() []string {
 		formatInt32(d.Operation),
 		formatInt32(d.HardwareType),
 		formatInt32(d.HardwareLen),
-		formatInt32(d.HardwareOpts),
+		formatInt32(d.RelayHops),
 		formatUint32(d.Xid),
 		formatInt32(d.Secs),
 		formatInt32(d.Flags),
@@ -209,7 +210,7 @@ func (d *DHCPv4) Encode() []string {
 		dhcp4Encoder.Int32(fieldOperation, d.Operation),                        // int32
 		dhcp4Encoder.Int32(fieldHardwareType, d.HardwareType),                  // int32
 		dhcp4Encoder.Int32(fieldHardwareLen, d.HardwareLen),                    // int32
-		dhcp4Encoder.Int32(fieldHardwareOpts, d.HardwareOpts),                  // int32
+		dhcp4Encoder.Int32(fieldHardwareOpts, d.RelayHops),                     // int32
 		dhcp4Encoder.Uint32(fieldXid, d.Xid),                                   // uint32
 		dhcp4Encoder.Int32(fieldSecs, d.Secs),                                  // int32
 		dhcp4Encoder.Int32(fieldFlags, d.Flags),                                // int32

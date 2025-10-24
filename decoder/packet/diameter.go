@@ -13,10 +13,14 @@
 
 package packet
 
+// Diameter decoder disabled - requires custom gopacket fork with industrial protocol support
+// The official gopacket/gopacket library does not include Diameter layer support
+
+/*
 import (
+	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
-	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -62,3 +66,4 @@ var diameterDecoder = newGoPacketDecoder(
 		return nil
 	},
 )
+*/

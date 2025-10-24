@@ -17,9 +17,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
-	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -53,7 +53,7 @@ var dhcpv4Decoder = newGoPacketDecoder(
 				Operation:    int32(dhcp4.Operation),
 				HardwareType: int32(dhcp4.HardwareType),
 				HardwareLen:  int32(dhcp4.HardwareLen),
-				HardwareOpts: int32(dhcp4.HardwareOpts),
+				RelayHops:    int32(dhcp4.RelayHops), // TODO rename field to RelayHops: gopacket/gopacket uses RelayHops
 				Xid:          dhcp4.Xid,
 				Secs:         int32(dhcp4.Secs),
 				Flags:        int32(dhcp4.Flags),

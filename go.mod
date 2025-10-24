@@ -12,12 +12,12 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dlclark/regexp2 v1.11.5
 	github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4
-	github.com/dreadl0ck/go-dpi v1.1.0
-	github.com/dreadl0ck/ja3 v1.0.1-dreadl0ck-gopacket
+	github.com/dreadl0ck/go-dpi v1.2.0
+	github.com/dreadl0ck/ja3 v1.1.0
 	github.com/dreadl0ck/maltego v0.0.3
 	github.com/dreadl0ck/material-icon-gen v0.0.0-20210214144425-b93b94838986
 	github.com/dreadl0ck/netcap/helpers v0.0.0-00010101000000-000000000000
-	github.com/dreadl0ck/tlsx v1.0.1-dreadl0ck-gopacket
+	github.com/dreadl0ck/tlsx v1.1.1
 	github.com/dsoprea/go-exif/v2 v2.0.0-20230826092837-6579e82b732d
 	github.com/dustin/go-humanize v1.0.1
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
@@ -69,7 +69,6 @@ require (
 	github.com/cloudflare/circl v1.6.1 // indirect
 	github.com/couchbase/vellum v1.0.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.5 // indirect
-	github.com/dreadl0ck/gopacket v1.1.16-0.20201228223815-140074f06498 // indirect
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect

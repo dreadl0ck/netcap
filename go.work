@@ -2,9 +2,5 @@ go 1.25.1
 
 use (
 	.
-	../go-dpi
-	../gopacket
-	../ja3
-	../tlsx
 	./helpers
 )

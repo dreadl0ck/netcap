@@ -15,7 +15,7 @@
 **Fix:**
 - Added helpers to go.work workspace
 - Added replace directive in go.mod: `replace github.com/dreadl0ck/netcap/helpers => ./helpers`
-- Updated .dockerignore to exclude tests but allow helpers/go.mod
+- Helpers package moved from `tests/helpers/` to top-level `helpers/` directory
 - Modified Dockerfile to copy helpers/go.mod before go mod download
 
 ### 3. DPI Dependencies Not Needed
@@ -56,9 +56,9 @@ RUN apk add --no-cache \
 1. `go.work` - Updated Go version to 1.25.1, added helpers
 2. `go.mod` - Added replace directive for helpers
 3. `helpers/go.mod` - Updated Go version to 1.25.1
-4. `.dockerignore` - Excluded tests but allowed helpers/go.mod, removed go.work files
+4. `.dockerignore` - Removed old `!tests/helpers/go.mod` exception (helpers moved to top level)
 5. `docker/dbs-server/.dockerignore` - Added go.work exclusion
-6. `docker/dbs-server/Dockerfile` - Added nodpi build tag, libpcap dependencies
+6. `docker/dbs-server/Dockerfile` - Updated to copy from `helpers/go.mod`, added nodpi build tag, libpcap dependencies
 
 ## Build Verification
 

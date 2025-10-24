@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.7.0
+    VERSION: 0.7.1
 
 # command data
 commands:
@@ -108,6 +108,8 @@ commands:
 
     build-dbs-server:
         description: build and push the netcap database server container
+        arguments:
+            - push:Bool? = true
         help: |
             Builds the netcap-dbs-server container and optionally pushes to a registry.
             Supports multi-platform builds (amd64 and arm64) using Docker Buildx.
@@ -135,7 +137,7 @@ commands:
               
               # Build single platform only
               NETCAP_USE_BUILDX=false NETCAP_PUSH_IMAGES=true zeus build-dbs-server
-        exec: VERSION=${VERSION} zeus/scripts/build-dbs-server.sh
+        exec: VERSION=${VERSION} NETCAP_PUSH_IMAGES=${push} zeus/scripts/build-dbs-server.sh
 
     pack-dbs-tarball:
         description: pack databases into versioned tarball for dbs-server with metadata and symlinks
