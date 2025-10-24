@@ -96,6 +96,22 @@ v0.7.2
 
 ## Build Configuration
 
+### Automatic Version Detection
+
+The `gen-version` command automatically extracts dependency versions from `go.mod` and updates the appropriate files:
+
+```bash
+# Run gen-version to update all version information
+zeus gen-version
+```
+
+This command will:
+1. Update the main `version.go` file with the project version and commit hash
+2. Extract the gopacket version from `go.mod` and add it to `version.go`
+3. Extract the go-dpi version from `go.mod` and update `dpi/version.go`
+
+This ensures that the displayed versions always match the dependencies specified in `go.mod`.
+
 ### Docker Builds
 
 Docker builds automatically include specific DPI library versions via ldflags:

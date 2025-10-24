@@ -45,22 +45,8 @@ func printDecoders() {
 	// Organize decoders by layer
 	decodersByLayer := organizeDecodersByLayer()
 
-	// Define layer order
-	layerOrder := []string{
-		"Link Layer",
-		"Network Layer",
-		"Transport Layer",
-		"Application Layer",
-		"Stream Decoders",
-		"Abstract Decoders",
-	}
-
-	// Print tree view for each layer
-	for _, layer := range layerOrder {
-		if decoders, ok := decodersByLayer[layer]; ok {
-			printLayer(layer, decoders)
-		}
-	}
+	// Print hierarchical tree view
+	printHierarchicalLayers(decodersByLayer)
 
 	fmt.Println()
 	fmt.Printf("Total Audit Record Types: %d\n", countTotalDecoders(decodersByLayer))
@@ -357,27 +343,109 @@ func getTypeForName(name string) types.Type {
 	return types.Type_NC_Header
 }
 
-// printLayer prints a layer and its decoders in tree format
-func printLayer(layerName string, decoders []DecoderInfo) {
-	fmt.Printf("├── %s\n", layerName)
+// printHierarchicalLayers prints layers in a hierarchical tree structure
+func printHierarchicalLayers(decodersByLayer map[string][]DecoderInfo) {
+	// Print Link Layer
+	fmt.Println("├── Link Layer")
+	if decoders, ok := decodersByLayer["Link Layer"]; ok {
+		printDecoderList(decoders, "│   ", false, true) // hasChildLayer=true because Network Layer follows
+	}
 
+	// Print Network Layer as child of Link Layer
+	fmt.Println("│   └── Network Layer")
+	if decoders, ok := decodersByLayer["Network Layer"]; ok {
+		printDecoderList(decoders, "│       ", false, true) // hasChildLayer=true because Transport Layer follows
+	}
+
+	// Print Transport Layer as child of Network Layer
+	fmt.Println("│       └── Transport Layer")
+	if decoders, ok := decodersByLayer["Transport Layer"]; ok {
+		printDecoderList(decoders, "│           ", false, true) // hasChildLayer=true because Application Layer follows
+	}
+
+	// Print Application Layer as child of Transport Layer
+	fmt.Println("│           └── Application Layer")
+	if decoders, ok := decodersByLayer["Application Layer"]; ok {
+		printDecoderList(decoders, "│               ", true, false) // hasChildLayer=false, this is the end
+	}
+
+	// Print Stream Decoders at root level
+	fmt.Println("│")
+	fmt.Println("├── Stream Decoders")
+	if decoders, ok := decodersByLayer["Stream Decoders"]; ok {
+		printDecoderList(decoders, "│   ", false, false) // hasChildLayer=false
+	}
+
+	// Print Abstract Decoders at root level (last one)
+	fmt.Println("│")
+	fmt.Println("└── Abstract Decoders")
+	if decoders, ok := decodersByLayer["Abstract Decoders"]; ok {
+		printDecoderList(decoders, "    ", true, false) // hasChildLayer=false
+	}
+}
+
+// printDecoderList prints a list of decoders with the given indent
+// hasChildLayer indicates if a child layer follows the decoder list
+func printDecoderList(decoders []DecoderInfo, indent string, isLast bool, hasChildLayer bool) {
 	for i, decoder := range decoders {
-		isLast := i == len(decoders)-1
-		prefix := "│   ├──"
-		if isLast {
-			prefix = "│   └──"
+		isLastDecoder := i == len(decoders)-1
+		prefix := indent + "├──"
+		// Only use └── if it's the last decoder AND there's no child layer following
+		if isLastDecoder && !hasChildLayer {
+			prefix = indent + "└──"
 		}
 
 		fmt.Printf("%s %s (Type: %s)\n", prefix, decoder.Name, decoder.Type.String())
 		if decoder.Description != "" {
-			descPrefix := "│   │   "
-			if isLast {
-				descPrefix = "│       "
+			descPrefix := indent + "│   "
+			// Use spaces for description indent only if this is truly the last item
+			if isLastDecoder && !hasChildLayer {
+				descPrefix = indent + "    "
 			}
 			fmt.Printf("%s    └─ %s\n", descPrefix, decoder.Description)
 		}
 	}
-	fmt.Println("│")
+}
+
+// printLayerWithIndent prints a layer and its decoders with specified indentation level
+func printLayerWithIndent(layerName string, decoders []DecoderInfo, indentLevel int, isLastRoot bool) {
+	// Build indent prefix based on level
+	indent := ""
+	for i := 0; i < indentLevel; i++ {
+		indent += "│   "
+	}
+
+	fmt.Printf("%s├── %s\n", indent, layerName)
+
+	// After branching with ├──, use spaces for items within this layer
+	itemIndent := indent + "    "
+
+	for i, decoder := range decoders {
+		isLast := i == len(decoders)-1
+		prefix := itemIndent + "├──"
+		if isLast {
+			prefix = itemIndent + "└──"
+		}
+
+		fmt.Printf("%s %s (Type: %s)\n", prefix, decoder.Name, decoder.Type.String())
+		if decoder.Description != "" {
+			descPrefix := itemIndent + "│   "
+			if isLast {
+				descPrefix = itemIndent + "    "
+			}
+			fmt.Printf("%s    └─ %s\n", descPrefix, decoder.Description)
+		}
+	}
+
+	// Add spacing between sections, but not after the last root-level section
+	if !isLastRoot {
+		fmt.Printf("%s│\n", indent)
+	}
+}
+
+// printLayer prints a layer and its decoders in tree format (legacy function kept for compatibility)
+func printLayer(layerName string, decoders []DecoderInfo) {
+	printLayerWithIndent(layerName, decoders, 0, false)
 }
 
 // countTotalDecoders counts the total number of decoders across all layers

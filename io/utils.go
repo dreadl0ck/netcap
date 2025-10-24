@@ -87,10 +87,20 @@ func FPrintBuildInfo(w io.Writer) {
 	if ok {
 		for _, d := range b.Deps {
 			if path.Base(d.Path) == "gopacket" {
-				_, _ = fmt.Fprintln(w, "> gopacket:", d.Path, "version:", d.Version)
+				version := d.Version
+				// Use hardcoded version if build info shows "(devel)"
+				if version == "(devel)" {
+					version = netcap.GopacketVersion
+				}
+				_, _ = fmt.Fprintln(w, "> gopacket:", d.Path, "version:", version)
 			}
 			if path.Base(d.Path) == "go-dpi" && dpi.HasDPISupport() {
-				_, _ = fmt.Fprintln(w, "> go-dpi:", d.Path, "version:", d.Version)
+				version := d.Version
+				// Use hardcoded version if build info shows "(devel)"
+				if version == "(devel)" {
+					version = dpi.GoDPIVersion
+				}
+				_, _ = fmt.Fprintln(w, "> go-dpi:", d.Path, "version:", version)
 			}
 		}
 	}

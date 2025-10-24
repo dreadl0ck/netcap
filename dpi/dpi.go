@@ -147,29 +147,34 @@ func Destroy() {
 
 // GetProtocols returns a map of all the identified protocol names to a result datastructure
 // packets are identified with libprotoident, nDPI and a few custom heuristics from godpi.
+// Will return nil if dpi is disabled, or if flow is not yet ready to be classified (need 10 packets).
 func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
-	protocols := make(map[string]ClassificationResult)
 
 	if disableDPI {
-		return protocols
+		return nil
 	}
 
 	//start := time.Now()
 	//fmt.Println("DPI", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
 
 	flow, _ := godpi.GetPacketFlow(packet)
-	results := godpi.ClassifyFlowAllModules(flow)
+	if flow.GetPacketCount() == 10 {
+		results := godpi.ClassifyFlowAllModules(flow)
 
-	//fmt.Println(packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow(), "complete", time.Since(start))
-	//spew.Dump(results)
+		//fmt.Println(packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow(), "complete", time.Since(start))
+		//spew.Dump(results)
 
-	// when using all modules we might receive duplicate classifications
-	// so they will be deduplicated by protocol name before counting them later
-	for _, r := range results {
-		protocols[string(r.Protocol)] = r
+		// when using all modules we might receive duplicate classifications
+		// so they will be deduplicated by protocol name before counting them later
+		protocols := make(map[string]ClassificationResult)
+		for _, r := range results {
+			protocols[string(r.Protocol)] = r
+		}
+
+		return protocols
 	}
 
-	return protocols
+	return nil
 }
 
 // NewProto initializes a new protocol.

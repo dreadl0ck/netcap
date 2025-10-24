@@ -337,9 +337,29 @@ commands:
         help: generates the version.go file
         exec: |
             echo "[INFO] configuring core for version v$VERSION"
-            echo -e "// Package netcap is a framework for network traffic analysis. Learn more at https://netcap.io.\npackage netcap\n\n// Version is the current version identifier for netcap.\nvar Version = \"v${VERSION}\"\n\n// Commit is the git commit id of the current version.\nvar Commit = \"$(git rev-parse HEAD | tr -d "\n")\"" > version.go
+            
+            # Extract dependency versions from go.mod
+            GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
+            GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" go.mod | grep -v indirect | awk '{print $2}')
+            
+            # Generate version.go with all version info
+            echo -e "// Package netcap is a framework for network traffic analysis. Learn more at https://netcap.io.\npackage netcap\n\n// Version is the current version identifier for netcap.\nvar Version = \"v${VERSION}\"\n\n// Commit is the git commit id of the current version.\nvar Commit = \"$(git rev-parse HEAD | tr -d "\n")\"\n\n// GopacketVersion is the version of gopacket library used.\nvar GopacketVersion = \"$GOPACKET_VERSION\"" > version.go
+            
+            # Update Dockerfile version
             sed "s/.*ENV VERSION.*/ENV VERSION ${VERSION}/" Dockerfile > Dockerfile-cp
             mv Dockerfile-cp Dockerfile
+            
+            # Update go-dpi version in dpi/version.go
+            echo "[INFO] updating go-dpi version in dpi/version.go"
+            if [ -n "$GO_DPI_VERSION" ]; then
+                echo "[INFO] found go-dpi version: $GO_DPI_VERSION"
+                sed -i.bak "s/GoDPIVersion = \".*\"/GoDPIVersion = \"$GO_DPI_VERSION\"/" dpi/version.go
+                rm -f dpi/version.go.bak
+            else
+                echo "[WARNING] could not extract go-dpi version from go.mod"
+            fi
+            
+            echo "[INFO] found gopacket version: $GOPACKET_VERSION"
 
     # build base builder images for accelerated Linux builds
     build-builder-images:

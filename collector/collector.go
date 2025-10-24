@@ -26,14 +26,15 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
 
-	"github.com/gopacket/gopacket"
 	"github.com/dustin/go-humanize"
 	"github.com/evilsocket/islazy/tui"
+	"github.com/gopacket/gopacket"
 	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 
@@ -438,6 +439,161 @@ func (c *Collector) stats() {
 
 	// dump label manager stats table if configured
 	manager.Stats(target)
+
+	// print tree view of encountered audit records
+	c.printTreeView(target)
+}
+
+// printTreeView prints a hierarchical tree view of all encountered audit record types
+// organized by their correct encapsulation level (Link -> Network -> Transport -> Application)
+func (c *Collector) printTreeView(target io.Writer) {
+	if c.config.DecoderConfig.Quiet {
+		return
+	}
+
+	fmt.Fprintln(target, "\n========================================")
+	fmt.Fprintln(target, "Encountered Audit Records (Tree View)")
+	fmt.Fprintln(target, "========================================\n")
+
+	// Organize encountered decoders by layer
+	decodersByLayer := make(map[string][]string)
+
+	// Collect GoPacket decoders with count > 0
+	c.unknownProtosAtomic.Lock()
+	for k, v := range c.allProtosAtomic.Items {
+		if v > 0 && k != "Payload" {
+			layer := determineLayerForDecoder(k)
+			decodersByLayer[layer] = append(decodersByLayer[layer], k)
+		}
+	}
+	c.unknownProtosAtomic.Unlock()
+
+	// Collect PacketDecoders with count > 0
+	for _, d := range c.packetDecoders {
+		if d.NumRecords() > 0 {
+			name := d.GetName()
+			layer := determineLayerForDecoder(name)
+			decodersByLayer[layer] = append(decodersByLayer[layer], name)
+		}
+	}
+
+	// Collect StreamDecoders with count > 0
+	for _, d := range c.streamDecoders {
+		if d.NumRecords() > 0 {
+			decodersByLayer["Stream Decoders"] = append(decodersByLayer["Stream Decoders"], d.GetName())
+		}
+	}
+
+	// Collect AbstractDecoders with count > 0
+	for _, d := range c.abstractDecoders {
+		if d.NumRecords() > 0 {
+			decodersByLayer["Abstract Decoders"] = append(decodersByLayer["Abstract Decoders"], d.GetName())
+		}
+	}
+
+	// Print hierarchical tree
+	printEncapsulationTree(target, decodersByLayer)
+
+	fmt.Fprintln(target)
+}
+
+// determineLayerForDecoder determines the OSI layer for a decoder based on its name
+func determineLayerForDecoder(name string) string {
+	nameLower := strings.ToLower(name)
+
+	// Link Layer protocols
+	linkLayerProtocols := []string{"ethernet", "arp", "dot1q", "dot11", "llc", "snap",
+		"linklayerdiscovery", "ethernetctp", "fddi", "usb", "cisco", "nortel", "vlan"}
+	for _, proto := range linkLayerProtocols {
+		if strings.Contains(nameLower, proto) {
+			return "Link Layer"
+		}
+	}
+
+	// Network Layer protocols
+	networkLayerProtocols := []string{"ipv4", "ipv6", "icmp", "ipsec", "igmp", "mpls", "gre"}
+	for _, proto := range networkLayerProtocols {
+		if strings.Contains(nameLower, proto) {
+			return "Network Layer"
+		}
+	}
+
+	// Transport Layer protocols
+	transportLayerProtocols := []string{"tcp", "udp", "sctp"}
+	for _, proto := range transportLayerProtocols {
+		if strings.Contains(nameLower, proto) {
+			return "Transport Layer"
+		}
+	}
+
+	// Application Layer protocols
+	applicationLayerProtocols := []string{"dns", "dhcp", "http", "tls", "ntp", "sip",
+		"smtp", "pop3", "ssh", "lcm", "modbus", "ospf", "bfd", "eap", "cip", "enip",
+		"geneve", "vxlan", "vrrp", "diameter", "connection", "deviceprofile", "ipprofile"}
+	for _, proto := range applicationLayerProtocols {
+		if strings.Contains(nameLower, proto) {
+			return "Application Layer"
+		}
+	}
+
+	return "Application Layer"
+}
+
+// printEncapsulationTree prints layers in a hierarchical tree structure
+// matching the exact layout from net util -decoders
+func printEncapsulationTree(target io.Writer, decodersByLayer map[string][]string) {
+	// Print Link Layer at root
+	fmt.Fprintln(target, "├── Link Layer")
+	if decoders, ok := decodersByLayer["Link Layer"]; ok && len(decoders) > 0 {
+		printDecoderList(target, decoders, "│   ", false, true) // hasChildLayer=true because Network Layer follows
+	}
+
+	// Print Network Layer as child of Link Layer
+	fmt.Fprintln(target, "│   └── Network Layer")
+	if decoders, ok := decodersByLayer["Network Layer"]; ok && len(decoders) > 0 {
+		printDecoderList(target, decoders, "│       ", false, true) // hasChildLayer=true because Transport Layer follows
+	}
+
+	// Print Transport Layer as child of Network Layer
+	fmt.Fprintln(target, "│       └── Transport Layer")
+	if decoders, ok := decodersByLayer["Transport Layer"]; ok && len(decoders) > 0 {
+		printDecoderList(target, decoders, "│           ", false, true) // hasChildLayer=true because Application Layer follows
+	}
+
+	// Print Application Layer as child of Transport Layer
+	fmt.Fprintln(target, "│           └── Application Layer")
+	if decoders, ok := decodersByLayer["Application Layer"]; ok && len(decoders) > 0 {
+		printDecoderList(target, decoders, "│               ", true, false) // hasChildLayer=false, this is the end
+	}
+
+	// Print Stream Decoders at root level (if any exist)
+	if decoders, ok := decodersByLayer["Stream Decoders"]; ok && len(decoders) > 0 {
+		fmt.Fprintln(target, "│")
+		fmt.Fprintln(target, "├── Stream Decoders")
+		printDecoderList(target, decoders, "│   ", false, false) // hasChildLayer=false
+	}
+
+	// Print Abstract Decoders at root level (last one, if any exist)
+	if decoders, ok := decodersByLayer["Abstract Decoders"]; ok && len(decoders) > 0 {
+		fmt.Fprintln(target, "│")
+		fmt.Fprintln(target, "└── Abstract Decoders")
+		printDecoderList(target, decoders, "    ", true, false) // hasChildLayer=false
+	}
+}
+
+// printDecoderList prints a list of decoders with the given indent
+// hasChildLayer indicates if a child layer follows the decoder list
+func printDecoderList(target io.Writer, decoders []string, indent string, isLast bool, hasChildLayer bool) {
+	for i, decoder := range decoders {
+		isLastDecoder := i == len(decoders)-1
+		prefix := indent + "├──"
+		// Only use └── if it's the last decoder AND there's no child layer following
+		if isLastDecoder && !hasChildLayer {
+			prefix = indent + "└──"
+		}
+
+		fmt.Fprintf(target, "%s %s\n", prefix, decoder)
+	}
 }
 
 // updates the progress indicator and writes to stdout.
