@@ -1,58 +1,12 @@
-FROM --platform=linux/amd64 ubuntu:18.04 as builder
-
-RUN apt-get clean
-RUN apt-get update
-RUN apt-get install -y software-properties-common net-tools wget
-
-# Install Go 1.25.1 manually
-RUN wget https://go.dev/dl/go1.25.1.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go1.25.1.linux-amd64.tar.gz && \
-    rm go1.25.1.linux-amd64.tar.gz
-
-ENV PATH="/usr/local/go/bin:${PATH}"
-
-RUN apt-get install -y apt-transport-https curl lsb-release wget autogen autoconf automake libtool gcc libpcap-dev linux-headers-generic git vim pkg-config
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libwandio/cfg/setup/bash.deb.sh' | bash
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libwandder/cfg/setup/bash.deb.sh' | bash
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libtrace/cfg/setup/bash.deb.sh' | bash
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libflowmanager/cfg/setup/bash.deb.sh' | bash
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libprotoident/cfg/setup/bash.deb.sh' | bash
-RUN apt-get update
-RUN apt install -y liblinear-dev libprotoident libprotoident-dev libprotoident-tools libtrace4-dev libtrace4-tools
-
-# nDPI
-RUN apt-get install -y libjson-c-dev
-RUN wget https://github.com/ntop/nDPI/archive/4.14.tar.gz
-RUN tar xfz 4.14.tar.gz
-RUN cd nDPI-4.14 && ./autogen.sh && ./configure && make && make install
-
-# Copy local dependencies first (they will be in the build context)
-WORKDIR /workspace
-COPY gopacket ./gopacket
-COPY go-dpi ./go-dpi
-COPY ja3 ./ja3
-COPY tlsx ./tlsx
+FROM --platform=linux/amd64 dreadl0ck/netcap-builder:ubuntu-dpi-latest as builder
 
 # Copy netcap source
-WORKDIR /workspace/netcap
-COPY netcap .
+WORKDIR /netcap
+COPY . .
 
-# Create go.work to use local dependencies
-RUN echo "go 1.25.1" > go.work && \
-    echo "" >> go.work && \
-    echo "use (" >> go.work && \
-    echo "	." >> go.work && \
-    echo "	../gopacket" >> go.work && \
-    echo "	../go-dpi" >> go.work && \
-    echo "	../ja3" >> go.work && \
-    echo "	../tlsx" >> go.work && \
-    echo ")" >> go.work
-
-RUN go work sync
 ENV VERSION XXX
 
-ARG tags
-ENV TAGS $tags
+ARG TAGS
 RUN echo "tags: $TAGS"
 
 ENV CFLAGS -I/usr/local/include/
@@ -65,8 +19,7 @@ RUN find / -iname libprotoident.h
 RUN find / -iname libtrace.h
 RUN ls /usr/lib/*
 
-# compile with reduced parallelism to avoid compiler crashes under emulation
-RUN GOOS=linux GOARCH=amd64 go build -p 1 ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+RUN GOOS=linux GOARCH=amd64 go build ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
 FROM --platform=linux/amd64 ubuntu:18.04
 ARG IPV6_SUPPORT=true

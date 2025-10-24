@@ -210,16 +210,16 @@ commands:
             # add nodpi darwin build - the build with dpi libs will be used untouched
             # Note: goreleaser builds for darwin/arm64 only
             if [ -d "netcap_macOS_nodpi_darwin_arm64" ]; then
-                tar -czvf netcap_nodpi_v${VERSION}_darwin_arm64.tar.gz netcap_macOS_nodpi_darwin_arm64
+                tar -czvf netcap-nodpi-v${VERSION}-darwin-arm64.tar.gz netcap_macOS_nodpi_darwin_arm64
                 # upload nodpi darwin build to release
-                gh release upload --clobber v$VERSION netcap_nodpi_v${VERSION}_darwin_arm64.tar.gz
+                gh release upload --clobber v$VERSION netcap-nodpi-v${VERSION}-darwin-arm64.tar.gz
                 # update checksums file with hashes for darwin build
-                shasum -a 256 netcap_nodpi_v${VERSION}_darwin_arm64.tar.gz >> ../dist-linux/checksums.txt
+                shasum -a 256 netcap-nodpi-v${VERSION}-darwin-arm64.tar.gz >> ../dist-linux/checksums.txt
             fi
             
             # Add checksums for the regular darwin build if it exists
-            if [ -f "netcap_${VERSION}_darwin_arm64.tar.gz" ]; then
-                shasum -a 256 netcap_${VERSION}_darwin_arm64.tar.gz >> ../dist-linux/checksums.txt
+            if [ -f "netcap-v${VERSION}-darwin-arm64.tar.gz" ]; then
+                shasum -a 256 netcap-v${VERSION}-darwin-arm64.tar.gz >> ../dist-linux/checksums.txt
             fi
             cd ..
 
@@ -320,13 +320,20 @@ commands:
             sed "s/.*ENV VERSION.*/ENV VERSION ${VERSION}/" Dockerfile > Dockerfile-cp
             mv Dockerfile-cp Dockerfile
 
+    # build base builder images for accelerated Linux builds
+    build-builder-images:
+        description: builds and optionally pushes base builder docker images that are reused for faster Linux builds
+        exec: zeus/scripts/build-builder-images.sh
+
     # build and push the Alpine docker container
     build-linux:
         description: builds the alpine and ubuntu docker containers
+        exec: VERSION=${VERSION} zeus/scripts/build-linux.sh
 
     # build and push the Alpine docker container
     build-linux-nodpi:
         description: builds the alpine and ubuntu docker containers without dpi support
+        exec: VERSION=${VERSION} zeus/scripts/build-linux-nodpi.sh
 
     # build windows
     build-windows:

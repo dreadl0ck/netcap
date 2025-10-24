@@ -50,6 +50,7 @@ builds:
 archives:
   - id: "netcap"
     builds: [ 'netcap' ]
+    name_template: '{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     rlcp: true
     files:
       - LICENSE
@@ -64,7 +65,7 @@ archives:
       - types/netcap.pb.go
   - id: "netcap_macOS_nodpi"
     builds: [ 'netcap_macOS_nodpi' ]
-    name_template: '{{ .ProjectName }}_nodpi_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    name_template: '{{ .ProjectName }}-nodpi-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     rlcp: true
     files:
       - LICENSE
@@ -79,7 +80,7 @@ archives:
       - types/netcap.pb.go
   - id: "netcap_nodpi"
     builds: [ 'netcap_nodpi' ]
-    name_template: '{{ .ProjectName }}_nodpi_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    name_template: '{{ .ProjectName }}-nodpi-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     rlcp: true
     files:
       - LICENSE
@@ -128,6 +129,40 @@ changelog:
       - '^docs:'
       - '^test:'
 
+release:
+  header: |
+    ### 📦 Available Builds
+    
+    | Build | OS | Architecture | DPI Support | Description |
+    |-------|----|--------------| ------------|-------------|
+    | `netcap-{{ .Tag }}-darwin-arm64` | macOS | ARM64 | ✅ Yes | Full DPI support with nDPI |
+    | `netcap-{{ .Tag }}-linux-amd64-libc` | Linux | AMD64 | ✅ Yes | glibc-based with DPI |
+    | `netcap-{{ .Tag }}-linux-amd64-musl` | Linux | AMD64 | ✅ Yes | musl-based with DPI (Alpine) |
+    | `netcap-nodpi-{{ .Tag }}-darwin-arm64` | macOS | ARM64 | ❌ No | Static build, no DPI |
+    | `netcap-nodpi-{{ .Tag }}-linux-amd64-libc` | Linux | AMD64 | ❌ No | glibc-based, no DPI |
+    | `netcap-nodpi-{{ .Tag }}-linux-amd64-musl` | Linux | AMD64 | ❌ No | musl-based, no DPI |
+    | `netcap-nodpi-{{ .Tag }}-windows-amd64` | Windows | AMD64 | ❌ No | Windows build |
+    
+    ### 🔍 Choosing the Right Build
+    
+    - **With DPI** (`netcap-*`): Choose if you need Deep Packet Inspection features (protocol classification, application detection)
+    - **Without DPI** (`netcap-nodpi-*`): Choose for basic packet capture and analysis, smaller binary size
+    - **libc vs musl**: Use `libc` for standard Linux distros (Ubuntu, Debian, CentOS). Use `musl` for Alpine Linux or minimal containers
+    
+    ### 📚 Documentation
+    
+    - [Full Documentation](https://github.com/dreadl0ck/netcap/tree/master/docs)
+    - [Installation Guide](https://github.com/dreadl0ck/netcap/blob/master/docs/installation.md)
+    - [Command Reference](https://github.com/dreadl0ck/netcap/blob/master/docs/commands.md)
+    
+    ### ⚠️ Notes
+    
+    - On macOS/Linux, you may need to grant necessary permissions: `sudo chmod +x net`
+    - Live capture requires root/administrator privileges
+    - Verify checksums with `checksums.txt` before use
+  footer: |
+    **Full Changelog**: https://github.com/dreadl0ck/netcap/compare/{{ .PreviousTag }}...{{ .Tag }}
+
 brews:
   -
     ids:
@@ -140,9 +175,3 @@ brews:
 
 before:
   hooks:
-  # Build Linux binaries via Docker and merge artifacts
-  #- bash scripts/build-linux-docker.sh
-  # You may remove this if you don't use go modules.
-  #- go mod download
-  # you may remove this if you don't need go generate
-  #- go generate ./...

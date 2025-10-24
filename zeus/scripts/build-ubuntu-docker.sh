@@ -17,47 +17,22 @@ fi
 # generate version, add update the VERSION env var in the Dockerfile that was moved to the project root
 zeus gen-version
 
-# Prepare Docker build context with local dependencies
-echo "[INFO] preparing Docker build context with local dependencies"
-rm -rf .docker-build-context
-mkdir -p .docker-build-context
-
-# Copy local dependencies
-cp -r ../gopacket .docker-build-context/
-cp -r ../go-dpi .docker-build-context/
-cp -r ../ja3 .docker-build-context/
-cp -r ../tlsx .docker-build-context/
-
-# Copy netcap source, excluding build artifacts and the build context itself
-rsync -av --exclude='.docker-build-context' --exclude='dist' --exclude='test-params' --exclude='docs' --exclude='.git' --exclude='tests' --exclude='dist-linux' --exclude='bin' --exclude='pcaps' --exclude='data' --exclude='*.log' --exclude='*.pcap' --exclude='*.pcapng' . .docker-build-context/netcap/
-
-# Create a custom Dockerfile that references the build context structure
-cp Dockerfile .docker-build-context/Dockerfile
-cd .docker-build-context
+# in case of cache annoyances:
+# docker rm -f $(docker ps -a -q)
+# docker rmi -f $(docker images -a -q)
 
 tag="dreadl0ck/netcap:ubuntu-${VERSION}"
 
 echo "[INFO] $tag args: ${ARGS}"
 
-# in case of cache annoyances:
-# docker rm -f $(docker ps -a -q)
-# docker rmi -f $(docker images -a -q)
-
-# build image from the build context
+# build image directly from project root
 # dont quote ARGS or passing arguments wont work anymore
 if [ -n "${ARGS:-}" ]; then
-  docker build ${ARGS} -t "$tag" .
+  docker build ${ARGS} -t "$tag" -f Dockerfile .
 else
-  docker build -t "$tag" .
+  docker build -t "$tag" -f Dockerfile .
 fi
 BUILD_EXIT_CODE=$?
-
-# Return to netcap directory
-cd ..
-
-# Cleanup build context
-echo "[INFO] cleaning up Docker build context"
-rm -rf .docker-build-context
 
 if (( $BUILD_EXIT_CODE != 0 )); then
 	echo "[ERROR] building container failed"
@@ -79,7 +54,7 @@ if [[ $CONTAINER_ID == "" ]]; then
 	exit 1
 fi
 
-ARCHIVE="netcap_${VERSION}_linux_amd64_libc"
+ARCHIVE="netcap-${VERSION}-linux-amd64-libc"
 
 echo "[INFO] preparing dist-linux folder, CONTAINER_ID: $CONTAINER_ID, archive: $ARCHIVE"
 

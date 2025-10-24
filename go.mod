@@ -16,7 +16,6 @@ require (
 	github.com/dreadl0ck/ja3 v1.1.0
 	github.com/dreadl0ck/maltego v0.0.3
 	github.com/dreadl0ck/material-icon-gen v0.0.0-20210214144425-b93b94838986
-	github.com/dreadl0ck/netcap/helpers v0.0.0-00010101000000-000000000000
 	github.com/dreadl0ck/tlsx v1.1.1
 	github.com/dsoprea/go-exif/v2 v2.0.0-20230826092837-6579e82b732d
 	github.com/dustin/go-humanize v1.0.1
@@ -120,4 +119,3 @@ require (
 )
 
 //replace github.com/dreadl0ck/maltego => ../maltego
-replace github.com/dreadl0ck/netcap/helpers => ./helpers
