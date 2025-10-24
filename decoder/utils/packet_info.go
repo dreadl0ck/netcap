@@ -35,13 +35,21 @@ func NewPacketInfo(p gopacket.Packet) *PacketInfo {
 	i.Packet = p
 
 	if ll := p.LinkLayer(); ll != nil {
-		i.SrcMAC = ll.LinkFlow().Src().String()
-		i.DstMAC = ll.LinkFlow().Dst().String()
+		if len(ll.LinkFlow().Src().Raw()) > 0 {
+			i.SrcMAC = ll.LinkFlow().Src().String()
+		}
+		if len(ll.LinkFlow().Dst().Raw()) > 0 {
+			i.DstMAC = ll.LinkFlow().Dst().String()
+		}
 	}
 
 	if nl := p.NetworkLayer(); nl != nil {
-		i.SrcIP = nl.NetworkFlow().Src().String()
-		i.DstIP = nl.NetworkFlow().Dst().String()
+		if len(nl.NetworkFlow().Src().Raw()) > 0 {
+			i.SrcIP = nl.NetworkFlow().Src().String()
+		}
+		if len(nl.NetworkFlow().Dst().Raw()) > 0 {
+			i.DstIP = nl.NetworkFlow().Dst().String()
+		}
 	}
 
 	return i

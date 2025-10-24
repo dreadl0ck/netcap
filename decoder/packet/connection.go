@@ -76,6 +76,14 @@ var conns = &atomicConnMap{
 	Items: make(map[string]*connection),
 }
 
+// ResetConnections clears all connections from memory
+// This should be called when resetting state between processing different files
+func ResetConnections() {
+	conns.Lock()
+	conns.Items = make(map[string]*connection)
+	conns.Unlock()
+}
+
 var connectionDecoder = newPacketDecoder(
 	types.Type_NC_Connection,
 	"Connection",
@@ -137,19 +145,32 @@ func handlePacket(p gopacket.Packet) proto.Message {
 			// rewrite source and destination parameters
 			// since the first packet decides about the connection direction
 			if ll != nil {
-				conn.SrcMAC = ll.LinkFlow().Src().String()
-				conn.DstMAC = ll.LinkFlow().Dst().String()
+				if len(ll.LinkFlow().Src().Raw()) > 0 {
+					conn.SrcMAC = ll.LinkFlow().Src().String()
+				}
+				if len(ll.LinkFlow().Dst().Raw()) > 0 {
+					conn.DstMAC = ll.LinkFlow().Dst().String()
+				}
 			}
 
 			if nl != nil {
-				conn.SrcIP = nl.NetworkFlow().Src().String()
-				conn.DstIP = nl.NetworkFlow().Dst().String()
+				if len(nl.NetworkFlow().Src().Raw()) > 0 {
+					conn.SrcIP = nl.NetworkFlow().Src().String()
+				}
+				if len(nl.NetworkFlow().Dst().Raw()) > 0 {
+					conn.DstIP = nl.NetworkFlow().Dst().String()
+				}
 			}
 
 			if tl != nil {
 				// TODO: change field type to int and use binary.LittleEndian.Uint16(...Src().Raw())
-				conn.SrcPort = tl.TransportFlow().Src().String()
-				conn.DstPort = tl.TransportFlow().Dst().String()
+				// Check if the endpoint has valid data before converting to string
+				if len(tl.TransportFlow().Src().Raw()) > 0 {
+					conn.SrcPort = tl.TransportFlow().Src().String()
+				}
+				if len(tl.TransportFlow().Dst().Raw()) > 0 {
+					conn.DstPort = tl.TransportFlow().Dst().String()
+				}
 			}
 		}
 
@@ -200,18 +221,31 @@ func handlePacket(p gopacket.Packet) proto.Message {
 
 		if ll != nil {
 			co.LinkProto = ll.LayerType().String()
-			co.SrcMAC = ll.LinkFlow().Src().String()
-			co.DstMAC = ll.LinkFlow().Dst().String()
+			if len(ll.LinkFlow().Src().Raw()) > 0 {
+				co.SrcMAC = ll.LinkFlow().Src().String()
+			}
+			if len(ll.LinkFlow().Dst().Raw()) > 0 {
+				co.DstMAC = ll.LinkFlow().Dst().String()
+			}
 		}
 		if nl != nil {
 			co.NetworkProto = nl.LayerType().String()
-			co.SrcIP = nl.NetworkFlow().Src().String()
-			co.DstIP = nl.NetworkFlow().Dst().String()
+			if len(nl.NetworkFlow().Src().Raw()) > 0 {
+				co.SrcIP = nl.NetworkFlow().Src().String()
+			}
+			if len(nl.NetworkFlow().Dst().Raw()) > 0 {
+				co.DstIP = nl.NetworkFlow().Dst().String()
+			}
 		}
 		if tl != nil {
 			co.TransportProto = tl.LayerType().String()
-			co.SrcPort = tl.TransportFlow().Src().String()
-			co.DstPort = tl.TransportFlow().Dst().String()
+			// Check if the endpoint has valid data before converting to string
+			if len(tl.TransportFlow().Src().Raw()) > 0 {
+				co.SrcPort = tl.TransportFlow().Src().String()
+			}
+			if len(tl.TransportFlow().Dst().Raw()) > 0 {
+				co.DstPort = tl.TransportFlow().Dst().String()
+			}
 		}
 		if al := p.ApplicationLayer(); al != nil {
 			co.ApplicationProto = al.LayerType().String()

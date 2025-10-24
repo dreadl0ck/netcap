@@ -16,10 +16,10 @@ package packet
 import (
 	"encoding/binary"
 
-	"github.com/gopacket/gopacket"
 	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/tlsx"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gopacket/gopacket"
 
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -45,18 +45,30 @@ var tlsServerHelloDecoder = newPacketDecoder(
 			)
 
 			if ll := p.LinkLayer(); ll != nil {
-				srcMac = ll.LinkFlow().Src().String()
-				dstMac = ll.LinkFlow().Dst().String()
+				if len(ll.LinkFlow().Src().Raw()) > 0 {
+					srcMac = ll.LinkFlow().Src().String()
+				}
+				if len(ll.LinkFlow().Dst().Raw()) > 0 {
+					dstMac = ll.LinkFlow().Dst().String()
+				}
 			}
 
 			if nl := p.NetworkLayer(); nl != nil {
-				srcIP = p.NetworkLayer().NetworkFlow().Src().String()
-				dstIP = p.NetworkLayer().NetworkFlow().Dst().String()
+				if len(nl.NetworkFlow().Src().Raw()) > 0 {
+					srcIP = p.NetworkLayer().NetworkFlow().Src().String()
+				}
+				if len(nl.NetworkFlow().Dst().Raw()) > 0 {
+					dstIP = p.NetworkLayer().NetworkFlow().Dst().String()
+				}
 			}
 
 			if tl := p.TransportLayer(); tl != nil {
-				srcPort = int(binary.BigEndian.Uint16(p.TransportLayer().TransportFlow().Src().Raw()))
-				dstPort = int(binary.BigEndian.Uint16(p.TransportLayer().TransportFlow().Dst().Raw()))
+				if len(tl.TransportFlow().Src().Raw()) >= 2 {
+					srcPort = int(binary.BigEndian.Uint16(p.TransportLayer().TransportFlow().Src().Raw()))
+				}
+				if len(tl.TransportFlow().Dst().Raw()) >= 2 {
+					dstPort = int(binary.BigEndian.Uint16(p.TransportLayer().TransportFlow().Dst().Raw()))
+				}
 			}
 
 			return &types.TLSServerHello{

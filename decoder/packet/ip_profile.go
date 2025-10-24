@@ -56,6 +56,14 @@ var ipProfiles = &atomicIPProfileMap{
 	Items: make(map[string]*ipProfile),
 }
 
+// ResetIPProfiles clears all IP profiles from memory
+// This should be called when resetting state between processing different files
+func ResetIPProfiles() {
+	ipProfiles.Lock()
+	ipProfiles.Items = make(map[string]*ipProfile)
+	ipProfiles.Unlock()
+}
+
 // wrapper for the types.IPProfile that can be locked.
 type ipProfile struct {
 	sync.Mutex

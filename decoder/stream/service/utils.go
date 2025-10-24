@@ -49,6 +49,14 @@ var Store = &atomicServiceMap{
 	Items: make(map[string]*service),
 }
 
+// ResetStore clears all services from memory
+// This should be called when resetting state between processing different files
+func ResetStore() {
+	Store.Lock()
+	Store.Items = make(map[string]*service)
+	Store.Unlock()
+}
+
 // addInfo is util to append information to a string using a delimiter
 // information will be deduplicated.
 func addInfo(old string, new string) string {

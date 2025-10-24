@@ -26,9 +26,9 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/evilsocket/islazy/tui"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
-	"github.com/evilsocket/islazy/tui"
 	"go.uber.org/zap"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
@@ -530,6 +530,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 // assembleWithContextTimeout is a function that times out with a log message after a specified interval
 // when the stream reassembly gets stuck
 // used for debugging.
+//
 //goland:noinspection GoUnusedFunction
 func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.Assembler, tcp *layers.TCP) {
 	done := make(chan bool, 1)
@@ -576,7 +577,11 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			}
 		}
 
-		if !decoderconfig.Instance.Quiet {
+		StreamFactory.Lock()
+		numTotal := len(StreamFactory.streamReaders)
+		StreamFactory.Unlock()
+
+		if !decoderconfig.Instance.Quiet && numTotal > 0 {
 			fmt.Println("\nprocessing last TCP streams")
 		}
 
@@ -588,17 +593,13 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 				zap.Int("numAssemblers", len(assemblers)),
 			)
 
-			if i == 0 && (!decoderconfig.Instance.Quiet || decoderconfig.Instance.PrintProgress) {
+			if i == 0 && (!decoderconfig.Instance.Quiet || decoderconfig.Instance.PrintProgress) && numTotal > 0 {
 				// only display progress bar for the first flush, since all following ones will be instant.
 				reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAllProgress()))
 			} else {
 				reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAll()))
 			}
 		}
-
-		StreamFactory.Lock()
-		numTotal := len(StreamFactory.streamReaders)
-		StreamFactory.Unlock()
 
 		startFlush := time.Now()
 		reassemblyLog.Info("flushTCPStreams", zap.Int("numTotal", numTotal))

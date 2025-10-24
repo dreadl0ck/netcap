@@ -36,6 +36,12 @@ var Streams = newUDPStreamPool()
 
 const typeUDP = "udp"
 
+// ResetStreams creates a new UDP stream pool to clear all stream state
+// This should be called when resetting state between processing different files
+func ResetStreams() {
+	Streams = newUDPStreamPool()
+}
+
 // udpData represents a udp data stream.
 type udpStream struct {
 	sync.Mutex
@@ -115,18 +121,27 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 	service.Store.Unlock()
 
 	// nope. lets create a new one
-	serv := service.NewService(firstPacket.UnixNano(), serverBytes, clientBytes, net.Dst().String())
+	// Safely extract network destination
+	var networkDst string
+	if len(net.Dst().Raw()) > 0 {
+		networkDst = net.Dst().String()
+	}
+
+	serv := service.NewService(firstPacket.UnixNano(), serverBytes, clientBytes, networkDst)
 	serv.Banner = string(banner)
-	serv.IP = net.Dst().String()
+	serv.IP = networkDst
 	serv.Port = utils.DecodePort(transport.Dst().Raw())
 
 	// set flow ident, h.parent.ident is the client flow
 	serv.Flows = []string{flowIdent}
 
-	dst, err := strconv.Atoi(transport.Dst().String())
-	if err == nil {
-		serv.Protocol = "UDP"
-		serv.Name = resolvers.LookupServiceByPort(dst, typeUDP)
+	// Safely extract transport destination port for service name lookup
+	if len(transport.Dst().Raw()) > 0 {
+		dst, err := strconv.Atoi(transport.Dst().String())
+		if err == nil {
+			serv.Protocol = "UDP"
+			serv.Name = resolvers.LookupServiceByPort(dst, typeUDP)
+		}
 	}
 
 	service.MatchServiceProbes(serv, banner, flowIdent)

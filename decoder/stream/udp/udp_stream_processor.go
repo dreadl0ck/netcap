@@ -187,10 +187,20 @@ func (usp *udpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan *udpStream 
 			}
 
 			// save service banner
+			// Safely build server address string
+			serverAddr := ""
+			if len(clientNetwork.Dst().Raw()) > 0 {
+				serverAddr = clientNetwork.Dst().String()
+			}
+			serverAddr += ":"
+			if len(clientTransport.Dst().Raw()) > 0 {
+				serverAddr += clientTransport.Dst().String()
+			}
+
 			saveUDPServiceBanner(
 				serverBanner.Bytes(),
 				ident,
-				clientNetwork.Dst().String()+":"+clientTransport.Dst().String(),
+				serverAddr,
 				firstPacket,
 				serverBytes,
 				clientBytes,
@@ -201,7 +211,7 @@ func (usp *udpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan *udpStream 
 			usp.Lock()
 			usp.numDone++
 
-			if !decoderconfig.Instance.Quiet {
+			if !decoderconfig.Instance.Quiet && usp.numTotal > 0 {
 				utils.ClearLine()
 				fmt.Print("processing UDP streams... ", "(", usp.numDone, "/", usp.numTotal, ")")
 			}

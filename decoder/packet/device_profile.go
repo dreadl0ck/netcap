@@ -66,6 +66,15 @@ var (
 	// profileTimeOut       time.Duration.
 )
 
+// ResetDeviceProfiles clears all device profiles from memory
+// This should be called when resetting state between processing different files
+func ResetDeviceProfiles() {
+	DeviceProfiles.Lock()
+	DeviceProfiles.Items = make(map[string]*deviceProfile)
+	DeviceProfiles.Unlock()
+	atomic.StoreInt64(&deviceProfiles, 0)
+}
+
 // getDeviceProfile fetches a known profile and updates it or returns a new one.
 //func getDeviceProfile(macAddr string, i *decoderutils.PacketInfo) *deviceProfile {
 //	DeviceProfiles.Lock()

@@ -65,18 +65,27 @@ func saveTCPServiceBanner(s streamReader) {
 	service.Store.Unlock()
 
 	// nope. lets create a new one
-	serv := service.NewService(s.FirstPacket().UnixNano(), s.NumBytes(), s.Client().NumBytes(), s.Network().Dst().String())
+	// Safely extract network destination
+	var networkDst string
+	if len(s.Network().Dst().Raw()) > 0 {
+		networkDst = s.Network().Dst().String()
+	}
+
+	serv := service.NewService(s.FirstPacket().UnixNano(), s.NumBytes(), s.Client().NumBytes(), networkDst)
 	serv.Banner = string(banner)
-	serv.IP = s.Network().Dst().String()
+	serv.IP = networkDst
 	serv.Port = utils.DecodePort(s.Transport().Dst().Raw())
 
 	// set flow ident, h.parent.ident is the client flow
 	serv.Flows = []string{s.Ident()}
 
-	dst, err := strconv.Atoi(s.Transport().Dst().String())
-	if err == nil {
-		serv.Protocol = "TCP"
-		serv.Name = resolvers.LookupServiceByPort(dst, "TCP")
+	// Safely extract transport destination port for service name lookup
+	if len(s.Transport().Dst().Raw()) > 0 {
+		dst, err := strconv.Atoi(s.Transport().Dst().String())
+		if err == nil {
+			serv.Protocol = "TCP"
+			serv.Name = resolvers.LookupServiceByPort(dst, "TCP")
+		}
 	}
 
 	service.MatchServiceProbes(serv, banner, s.Ident())

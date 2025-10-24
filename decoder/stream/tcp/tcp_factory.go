@@ -37,6 +37,12 @@ func newStreamFactory() *connectionFactory {
 	return f
 }
 
+// ResetStreamFactory creates a new stream factory to clear all stream state
+// This should be called when resetting state between processing different files
+func ResetStreamFactory() {
+	StreamFactory = newStreamFactory()
+}
+
 // GetStreamPool returns the stream pool.
 func GetStreamPool() *reassembly.StreamPool {
 	return StreamFactory.StreamPool
