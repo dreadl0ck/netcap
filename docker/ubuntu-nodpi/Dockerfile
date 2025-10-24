@@ -17,7 +17,7 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build ${TAGS} -ldflags "-s -w -X gi
 FROM --platform=linux/amd64 ubuntu:18.04
 ARG IPV6_SUPPORT=true
 RUN apt-get update
-RUN apt install -y --fix-missing libpcap-dev software-properties-common ca-certificates liblzo2-2 libkeyutils-dev git-lfs
+RUN apt install -y --fix-missing libpcap0.8 software-properties-common ca-certificates liblzo2-2 libkeyutils-dev
 RUN update-ca-certificates
 WORKDIR /netcap
 COPY --from=builder /netcap/bin/* /usr/bin/

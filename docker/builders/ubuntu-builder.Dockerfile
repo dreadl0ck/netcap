@@ -21,7 +21,8 @@ RUN apt-get clean && \
     libpcap-dev \
     linux-headers-generic \
     git \
-    vim && \
+    vim \
+    ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Go 1.25.1 manually

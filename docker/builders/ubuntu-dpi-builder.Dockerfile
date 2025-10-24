@@ -24,7 +24,8 @@ RUN apt-get clean && \
     linux-headers-generic \
     git \
     vim \
-    pkg-config && \
+    pkg-config \
+    ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 # Install Go 1.25.1 manually

@@ -50,7 +50,7 @@ builds:
 archives:
   - id: "netcap"
     builds: [ 'netcap' ]
-    name_template: '{{ .ProjectName }}-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    name_template: '{{ .ProjectName }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}'
     rlcp: true
     files:
       - LICENSE
@@ -65,7 +65,7 @@ archives:
       - types/netcap.pb.go
   - id: "netcap_macOS_nodpi"
     builds: [ 'netcap_macOS_nodpi' ]
-    name_template: '{{ .ProjectName }}-nodpi-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    name_template: '{{ .ProjectName }}-nodpi-{{ .Tag }}-{{ .Os }}-{{ .Arch }}'
     rlcp: true
     files:
       - LICENSE
@@ -80,7 +80,7 @@ archives:
       - types/netcap.pb.go
   - id: "netcap_nodpi"
     builds: [ 'netcap_nodpi' ]
-    name_template: '{{ .ProjectName }}-nodpi-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    name_template: '{{ .ProjectName }}-nodpi-{{ .Tag }}-{{ .Os }}-{{ .Arch }}'
     rlcp: true
     files:
       - LICENSE
