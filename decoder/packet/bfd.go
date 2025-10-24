@@ -14,9 +14,9 @@
 package packet
 
 import (
+	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
-	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -27,6 +27,16 @@ var bfdDecoder = newGoPacketDecoder(
 	"Bidirectional Forwarding Detection (BFD) is a network protocol that is used to detect faults between two forwarding engines connected by a link",
 	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if bfd, ok := layer.(*layers.BFD); ok {
+			var authHeader *types.BFDAuthHeader
+			if bfd.AuthHeader != nil {
+				authHeader = &types.BFDAuthHeader{
+					AuthType:       int32(bfd.AuthHeader.AuthType),
+					KeyID:          int32(bfd.AuthHeader.KeyID),
+					SequenceNumber: int32(bfd.AuthHeader.SequenceNumber),
+					Data:           bfd.AuthHeader.Data,
+				}
+			}
+
 			return &types.BFD{
 				Timestamp:                 timestamp,
 				Version:                   int32(bfd.Version),
@@ -44,12 +54,7 @@ var bfdDecoder = newGoPacketDecoder(
 				DesiredMinTxInterval:      int32(bfd.DesiredMinTxInterval),
 				RequiredMinRxInterval:     int32(bfd.RequiredMinRxInterval),
 				RequiredMinEchoRxInterval: int32(bfd.RequiredMinEchoRxInterval),
-				AuthHeader: &types.BFDAuthHeader{
-					AuthType:       int32(bfd.AuthHeader.AuthType),
-					KeyID:          int32(bfd.AuthHeader.KeyID),
-					SequenceNumber: int32(bfd.AuthHeader.SequenceNumber),
-					Data:           bfd.AuthHeader.Data,
-				},
+				AuthHeader:                authHeader,
 			}
 		}
 
