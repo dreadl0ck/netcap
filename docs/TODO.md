@@ -16,6 +16,7 @@ test suite:
 - check out wireshark / suricata test pcap suite.
 - scrape all files from https://www.malware-traffic-analysis.net/training-exercises.html
 
+- https://github.com/pevma/mrp
 - https://github.com/brett-fitz/malware-pcap
 - https://github.com/ntop/nDPI/tree/dev/tests/cfgs/default/pcap
 - https://wiki.wireshark.org/samplecaptures

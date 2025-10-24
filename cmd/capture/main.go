@@ -57,7 +57,23 @@ import (
 func expandPcapFiles(pattern string) ([]string, error) {
 	// Check if pattern contains wildcards
 	if !strings.Contains(pattern, "*") && !strings.Contains(pattern, "?") && !strings.Contains(pattern, "[") {
-		// No wildcard, return as-is
+		// No wildcard, but still need to check if it's a directory or valid file
+		info, err := os.Stat(pattern)
+		if err != nil {
+			return nil, err
+		}
+
+		if info.IsDir() {
+			// It's a directory, silently skip it
+			return []string{}, nil
+		}
+
+		// Check if it's a valid pcap/pcapng file
+		if !strings.HasSuffix(strings.ToLower(pattern), ".pcap") && !strings.HasSuffix(strings.ToLower(pattern), ".pcapng") {
+			// Not a pcap file, silently skip it
+			return []string{}, nil
+		}
+
 		return []string{pattern}, nil
 	}
 
@@ -277,6 +293,13 @@ func Run() {
 
 		// Remove duplicates (in case first file is in both places)
 		inputFiles = uniqueFiles(inputFiles)
+
+		if len(inputFiles) == 0 {
+			printHeader()
+			fmt.Println(ansi.Red + "> no valid pcap or pcapng files found to process" + ansi.Reset)
+			fmt.Println(ansi.Red + "> directories and non-pcap files were filtered out" + ansi.Reset)
+			os.Exit(1)
+		}
 
 		if len(inputFiles) > 1 {
 			fmt.Printf("Found %d pcap files to process\n", len(inputFiles))
@@ -527,9 +550,9 @@ func Run() {
 	// Process each input file
 	for fileIdx, inputFile := range inputFiles {
 		if len(inputFiles) > 1 {
-			fmt.Printf("\n========================================\n")
-			fmt.Printf("Processing file %d/%d: %s\n", fileIdx+1, len(inputFiles), inputFile)
-			fmt.Printf("========================================\n")
+			fmt.Printf("\n|| ================================================================== ||\n")
+			fmt.Printf("   Processing file %d/%d: %s\n", fileIdx+1, len(inputFiles), inputFile)
+			fmt.Printf("|| ================================================================== ||\n")
 
 			// Reset global state from previous file
 			if fileIdx > 0 {

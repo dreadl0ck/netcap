@@ -581,7 +581,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		numTotal := len(StreamFactory.streamReaders)
 		StreamFactory.Unlock()
 
-		if !decoderconfig.Instance.Quiet && numTotal > 0 {
+		if !decoderconfig.Instance.Quiet && numTotal > 1 {
 			fmt.Println("\nprocessing last TCP streams")
 		}
 
@@ -593,7 +593,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 				zap.Int("numAssemblers", len(assemblers)),
 			)
 
-			if i == 0 && (!decoderconfig.Instance.Quiet || decoderconfig.Instance.PrintProgress) && numTotal > 0 {
+			if i == 0 && (!decoderconfig.Instance.Quiet || decoderconfig.Instance.PrintProgress) && numTotal > 1 {
 				// only display progress bar for the first flush, since all following ones will be instant.
 				reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAllProgress()))
 			} else {

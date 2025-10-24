@@ -54,6 +54,13 @@ import (
 // errInvalidOutputDirectory indicates that a file path was supplied instead of a directory.
 var errInvalidOutputDirectory = errors.New("expected a directory, but got a file for output path")
 
+// headerPrinted tracks whether the netcap header has been printed to prevent duplicate headers
+// when processing multiple input files
+var (
+	headerPrinted     bool
+	headerPrintedLock sync.Mutex
+)
+
 // Collector provides an interface to collect data from PCAP or a network interface.
 // this structure has an optimized field order to avoid excessive padding.
 type Collector struct {
@@ -361,6 +368,11 @@ func (c *Collector) stats() {
 	c.unknownProtosAtomic.Lock()
 
 	for k, v := range c.allProtosAtomic.Items {
+		// Skip records with 0 count
+		if v == 0 {
+			continue
+		}
+
 		if k == "Payload" {
 			rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
 
@@ -390,31 +402,46 @@ func (c *Collector) stats() {
 	if len(c.packetDecoders) > 0 {
 		rows = [][]string{}
 		for _, d := range c.packetDecoders {
-			rows = append(rows, []string{d.GetName(), strconv.FormatInt(d.NumRecords(), 10), share(d.NumRecords(), c.numPackets)})
+			// Skip records with 0 count
+			if d.NumRecords() > 0 {
+				rows = append(rows, []string{d.GetName(), strconv.FormatInt(d.NumRecords(), 10), share(d.NumRecords(), c.numPackets)})
+			}
 		}
 
-		tui.Table(target, []string{"PacketDecoder", "NumRecords", "Share"}, rows)
+		if len(rows) > 0 {
+			tui.Table(target, []string{"PacketDecoder", "NumRecords", "Share"}, rows)
+		}
 	}
 
 	if len(c.streamDecoders) > 0 {
 		rows = [][]string{}
 		for _, d := range c.streamDecoders {
-			rows = append(rows, []string{d.GetName(), strconv.FormatInt(d.NumRecords(), 10), share(d.NumRecords(), c.numPackets)})
+			// Skip records with 0 count
+			if d.NumRecords() > 0 {
+				rows = append(rows, []string{d.GetName(), strconv.FormatInt(d.NumRecords(), 10), share(d.NumRecords(), c.numPackets)})
+			}
 		}
 
-		tui.Table(target, []string{"StreamDecoder", "NumRecords", "Share"}, rows)
+		if len(rows) > 0 {
+			tui.Table(target, []string{"StreamDecoder", "NumRecords", "Share"}, rows)
+		}
 	}
 
 	if len(c.abstractDecoders) > 0 {
 		rows = [][]string{}
 		for _, d := range c.abstractDecoders {
-			rows = append(rows, []string{d.GetName(), strconv.FormatInt(d.NumRecords(), 10), share(d.NumRecords(), c.numPackets)})
+			// Skip records with 0 count
+			if d.NumRecords() > 0 {
+				rows = append(rows, []string{d.GetName(), strconv.FormatInt(d.NumRecords(), 10), share(d.NumRecords(), c.numPackets)})
+			}
 		}
 
-		tui.Table(target, []string{"AbstractDecoder", "NumRecords", "Share"}, rows)
+		if len(rows) > 0 {
+			tui.Table(target, []string{"AbstractDecoder", "NumRecords", "Share"}, rows)
+		}
 	}
 
-	res := "\n-> total bytes of audit record data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
+	res := "-> total bytes of audit record data written to disk: " + humanize.Bytes(uint64(c.totalBytesWritten)) + "\n"
 
 	if c.unkownPcapWriterAtomic != nil {
 		if c.unkownPcapWriterAtomic.count > 0 {
@@ -453,7 +480,7 @@ func (c *Collector) printTreeView(target io.Writer) {
 
 	fmt.Fprintln(target, "\n========================================")
 	fmt.Fprintln(target, "Encountered Audit Records (Tree View)")
-	fmt.Fprintln(target, "========================================\n")
+	fmt.Fprintln(target, "========================================")
 
 	// Organize encountered decoders by layer
 	decodersByLayer := make(map[string][]string)
@@ -727,6 +754,14 @@ func (c *Collector) freeOSMemory() {
 	}
 }
 
+// ResetHeaderPrinted resets the flag that tracks whether the netcap header has been printed.
+// This is useful when starting a new batch of processing or in testing scenarios.
+func ResetHeaderPrinted() {
+	headerPrintedLock.Lock()
+	headerPrinted = false
+	headerPrintedLock.Unlock()
+}
+
 // PrintConfiguration dumps the current collector config to stdout.
 func (c *Collector) PrintConfiguration() {
 	// ensure the logfile handle gets opened
@@ -749,7 +784,17 @@ func (c *Collector) PrintConfiguration() {
 	// always write the entire configuration into the logfile
 	_, _ = c.netcapLogFile.Write(cdata)
 
-	netio.FPrintLogo(target)
+	// Print header only once when processing multiple files
+	headerPrintedLock.Lock()
+	shouldPrintHeader := !headerPrinted
+	if !headerPrinted {
+		headerPrinted = true
+	}
+	headerPrintedLock.Unlock()
+
+	if shouldPrintHeader {
+		netio.FPrintLogo(target)
+	}
 
 	if c.config.DecoderConfig.Debug && !c.config.DecoderConfig.Quiet {
 		// in debug mode and when not silencing stdout via quiet mode: dump config to stdout
@@ -757,12 +802,14 @@ func (c *Collector) PrintConfiguration() {
 	} else {
 		// default: write configuration into netcap.log
 		target = c.netcapLogFile
-		if !c.config.DecoderConfig.Quiet {
+		if !c.config.DecoderConfig.Quiet && shouldPrintHeader {
 			fmt.Println() // add newline
 		}
 	}
 
-	netio.FPrintBuildInfo(target)
+	if shouldPrintHeader {
+		netio.FPrintBuildInfo(target)
+	}
 
 	// print build information
 	_, _ = fmt.Fprintln(target, "> PID:", os.Getpid())
