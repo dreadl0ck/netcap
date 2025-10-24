@@ -358,6 +358,15 @@ func initPorts(i *decoderutils.PacketInfo, source bool) (
 
 // writeIPProfile writes the ip profile.
 func (d *Decoder) writeIPProfile(i *types.IPProfile) {
+	// Populate Applications field from Protocols map
+	// This ensures the Applications field is correctly populated before writing
+	if len(i.Protocols) > 0 {
+		i.Applications = make([]string, 0, len(i.Protocols))
+		for protocol := range i.Protocols {
+			i.Applications = append(i.Applications, protocol)
+		}
+	}
+
 	if conf.ExportMetrics {
 		i.Inc()
 	}

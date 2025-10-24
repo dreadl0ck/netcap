@@ -27,13 +27,13 @@ import (
 
 var (
 	// StructureBegin marks the beginning of a structure in CSV.
-	StructureBegin = "("
+	StructureBegin = ""
 
 	// StructureEnd marks the end of a structure in CSV.
-	StructureEnd = ")"
+	StructureEnd = ""
 
 	// FieldSeparator separates fields within a structure in CSV.
-	FieldSeparator = "-"
+	FieldSeparator = ","
 )
 
 type stringer interface {
