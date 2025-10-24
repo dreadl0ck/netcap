@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.7.2
+    VERSION: 0.7.3
 
 # command data
 commands:
@@ -33,9 +33,15 @@ commands:
             if [[ "$OSTYPE" == "darwin"* ]]; then
                 # macOS - check for DPI libraries
                 if command -v brew &>/dev/null && brew list ndpi &>/dev/null && brew list libprotoident &>/dev/null; then
-                    echo "[INFO] Building with DPI support (nDPI and libprotoident detected)"
+                    # Detect versions
+                    NDPI_VERSION=$(brew list --versions ndpi 2>/dev/null | awk '{print $2}')
+                    LPI_VERSION=$(brew list --versions libprotoident 2>/dev/null | awk '{print $2}')
+                    echo "[INFO] Building with DPI support (nDPI ${NDPI_VERSION}, libprotoident ${LPI_VERSION})"
                     # go-dpi v1.1.0+ already includes the correct CGO directives for Homebrew
-                    go build -ldflags "-s -w" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+                    go build -ldflags "-s -w \
+                        -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=${NDPI_VERSION} \
+                        -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=${LPI_VERSION}" \
+                        -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
                 else
                     echo "[INFO] Building without DPI support (install with: brew install ndpi libprotoident)"
                     go build -tags nodpi -ldflags "-s -w" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
@@ -54,7 +60,21 @@ commands:
             to allow the NETCAP process to attach to a network interface.
         exec: |
             mkdir -p bin
-            go build -ldflags "-s -w" -o bin/net github.com/dreadl0ck/netcap/cmd
+            # Try to detect DPI library versions on Linux
+            LDFLAGS="-s -w"
+            if ldconfig -p 2>/dev/null | grep -q libndpi; then
+                # Attempt to extract version from pkg-config or library files
+                if command -v pkg-config &>/dev/null && pkg-config --exists libndpi 2>/dev/null; then
+                    NDPI_VERSION=$(pkg-config --modversion libndpi 2>/dev/null || echo "unknown")
+                    LDFLAGS="$LDFLAGS -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=${NDPI_VERSION}"
+                fi
+                if command -v pkg-config &>/dev/null && pkg-config --exists libprotoident 2>/dev/null; then
+                    LPI_VERSION=$(pkg-config --modversion libprotoident 2>/dev/null || echo "unknown")
+                    LDFLAGS="$LDFLAGS -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=${LPI_VERSION}"
+                fi
+                echo "[INFO] Building with DPI support"
+            fi
+            go build -ldflags "$LDFLAGS" -o bin/net github.com/dreadl0ck/netcap/cmd
             echo "setting capabilities for attaching to a network interface and moving binary to /usr/local/bin (requires root)..."
             sudo mv bin/net /usr/local/bin
             sudo setcap cap_net_raw,cap_net_admin=eip $(which net)

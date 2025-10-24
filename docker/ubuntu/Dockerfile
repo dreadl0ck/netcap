@@ -19,7 +19,7 @@ RUN find / -iname libprotoident.h
 RUN find / -iname libtrace.h
 RUN ls /usr/lib/*
 
-RUN GOOS=linux GOARCH=amd64 go build ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+RUN GOOS=linux GOARCH=amd64 go build ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION} -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
 FROM --platform=linux/amd64 ubuntu:24.04
 ARG IPV6_SUPPORT=true

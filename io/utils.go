@@ -34,6 +34,7 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -42,7 +43,7 @@ const newline = "\n"
 
 var errMissingInterface = errors.New("type does not implement the types.AuditRecord interface")
 
-var logo = `                       / |
+var logoTemplate = `                       / |
  _______    ______   _10 |_     _______   ______    ______
 /     / \  /    / \ / 01/  |   /     / | /    / \  /    / \
 0010100 /|/011010 /|101010/   /0101010/  001010  |/100110  |
@@ -53,7 +54,9 @@ var logo = `                       / |
                                                   00 |
 Network Protocol Analysis Framework               00 |
 created by Philipp Mieden, 2018                   00/
-` + netcap.Version
+`
+
+var logo = logoTemplate + netcap.Version + " - " + dpi.GetVersionInfo()
 
 // PrintLogo prints the netcap logo.
 func PrintLogo() {
@@ -78,12 +81,16 @@ func FPrintBuildInfo(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "> NETCAP build commit:", netcap.Commit)
 	_, _ = fmt.Fprintln(w, "> go runtime version:", runtime.Version())
 	_, _ = fmt.Fprintln(w, "> number of cores:", runtime.NumCPU(), "cores")
+	_, _ = fmt.Fprintln(w, ">", dpi.GetVersionInfo())
 
 	b, ok := debug.ReadBuildInfo()
 	if ok {
 		for _, d := range b.Deps {
 			if path.Base(d.Path) == "gopacket" {
 				_, _ = fmt.Fprintln(w, "> gopacket:", d.Path, "version:", d.Version)
+			}
+			if path.Base(d.Path) == "go-dpi" && dpi.HasDPISupport() {
+				_, _ = fmt.Fprintln(w, "> go-dpi:", d.Path, "version:", d.Version)
 			}
 		}
 	}

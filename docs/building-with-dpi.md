@@ -30,17 +30,38 @@ If the libraries are detected, it will build with DPI support. Otherwise, it bui
 
 ### Verifying DPI Support
 
-Check if your binary has DPI support:
+#### Check Linked Libraries
+
+Check if your binary has DPI support by examining linked libraries:
 
 ```bash
+# macOS
 otool -L bin/net | grep -E '(ndpi|protoident)'
+
+# Linux
+ldd bin/net | grep -E '(ndpi|protoident)'
 ```
 
-Expected output:
+Expected output (macOS):
 ```
 /opt/homebrew/opt/ndpi/lib/libndpi.so.4.14.0
 /opt/homebrew/opt/libprotoident/lib/libprotoident.2.dylib
 ```
+
+#### Check Version Information
+
+NETCAP displays DPI version information when running any command:
+
+```bash
+./net capture -h
+```
+
+The header will show:
+- For builds **with DPI**: `> DPI support enabled (nDPI: 4.14.0, libprotoident: 2.0.15-1)`
+- For builds **without DPI**: `> DPI support disabled`
+- For local builds with DPI: `> DPI support enabled (nDPI: unknown, libprotoident: unknown)`
+
+**Note:** Docker builds include specific version information set at build time. Local builds will show "unknown" for versions but will still indicate whether DPI is enabled or disabled.
 
 ## Linux
 
@@ -75,6 +96,38 @@ Or manually:
 
 ```bash
 go build -tags nodpi -ldflags "-s -w" -o bin/net github.com/dreadl0ck/netcap/cmd
+```
+
+## Setting DPI Version Information
+
+### Docker Builds
+
+Docker builds automatically include specific DPI library versions in the build metadata:
+
+```dockerfile
+# These versions are set in the Dockerfile
+-X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0
+-X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1
+```
+
+### Local Builds with Version Info
+
+For local builds, you can optionally specify the DPI library versions:
+
+```bash
+# First, check your installed versions
+# macOS
+brew list --versions ndpi libprotoident
+
+# Linux
+dpkg -l | grep -E '(ndpi|protoident)'  # Debian/Ubuntu
+rpm -qa | grep -E '(ndpi|protoident)'  # RedHat/CentOS
+
+# Build with version information
+go build -ldflags "-s -w \
+  -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
+  -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1" \
+  -o bin/net github.com/dreadl0ck/netcap/cmd
 ```
 
 ## Compatibility

@@ -39,24 +39,18 @@ if (( $BUILD_EXIT_CODE != 0 )); then
 	exit 1
 fi
 
-echo "[INFO] running docker image"
-
-docker run "$tag"
-
-# echo "[INFO] docker images"
-# docker image ls
-
-# grab container ID
-echo "[INFO] looking for $tag container ID"
-CONTAINER_ID=$(docker ps -a -f ancestor=$tag -q --latest)
+# Create container without running it (avoids architecture issues on non-Linux hosts)
+echo "[INFO] creating container from image $tag"
+CONTAINER_ID=$(docker create "$tag")
 if [[ $CONTAINER_ID == "" ]]; then
-	echo "[ERROR] no docker container found"
+	echo "[ERROR] failed to create docker container"
 	exit 1
 fi
+echo "[INFO] container ID: $CONTAINER_ID"
 
 ARCHIVE="netcap-${VERSION}-linux-amd64-musl"
 
-echo "[INFO] preparing dist-linux folder, CONTAINER_ID: $CONTAINER_ID"
+echo "[INFO] preparing dist-linux folder"
 
 # clean up
 rm -rf dist-linux/${ARCHIVE}

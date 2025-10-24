@@ -23,7 +23,6 @@ import (
 
 	"flag"
 
-	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/cmd/agent"
 	"github.com/dreadl0ck/netcap/cmd/capture"
 	"github.com/dreadl0ck/netcap/cmd/collect"
@@ -92,7 +91,7 @@ func main() {
 	flag.Parse()
 
 	if *flagVersion {
-		fmt.Println(netcap.Version)
+		io.PrintBuildInfo()
 		os.Exit(0)
 	}
 
@@ -126,7 +125,7 @@ func main() {
 	case cmdAgent:
 		agent.Run()
 	case cmdVersion:
-		fmt.Println(netcap.Version)
+		io.PrintBuildInfo()
 	case cmdHelp, "-h", "--help":
 		help()
 	}
