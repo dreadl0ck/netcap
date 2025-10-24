@@ -1,8 +1,22 @@
+# Version control
 .git
+.gitignore
+
+# IDE files
 .idea
+.vscode
+
+# Go workspace (not needed for Docker builds)
 go.work
 go.work.sum
+
+# Test files and directories
 tests/*
+test-params/
+test
+*.test
+
+# Generated type bindings (keep only Go)
 types/python
 types/java
 types/swift
@@ -10,32 +24,77 @@ types/rust
 types/cpp
 types/csharp
 types/js
+
+# Data and capture files
 data/
+pcaps/
 __pycache__
-pcaps
-data
-bin
-.vscode
 *.log
 *.pcap
 *.pcapng
 *.ncap*
-zeus/.history
-zeus/dumps
+
+# Build artifacts and distributions
+bin/
+dist/
+dist-linux/
+*.net
+cover.out
+
+# Documentation (not needed for build)
+docs/
+README.md
+AUTHORS
+LICENSE
+CLAUDE.md
+*.md
+
+# Profiling and debugging
+FlameGraph/
+graphics/
+
+# Build and deployment scripts
+scripts/
+zeus/
+
+# Docker files (don't need to copy Docker files into Docker)
+docker/
+Dockerfile*
+.dockerignore
+
+# Configuration files not needed for build
+configs/
+*.yml
+*.yaml
+!go.mod
+!go.sum
+
+# Keys and secrets
 priv.key
 pub.key
-dist/
+
+# Database files
 vulnDBs
-FlameGraph
-test-params
-*.net
-docs
 resolver-dbs.zip
+
+# Maltego artifacts
 netcap.mtz
 entities.mtz
 transforms.mtz
+
+# Other artifacts
 mied18.pdf
-test
 overlay2
 deploy.sh
-cover.out
+
+# Python analysis tools (not needed for Go build)
+analyze/examples/
+analyze/dnn/
+analyze/README.md
+
+# Test artifacts in collector
+collector/*.log
+collector/*.pcap
+collector/errors.log
+collector/errors.pcap
+collector/netcap.log
