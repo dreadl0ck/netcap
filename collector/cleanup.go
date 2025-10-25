@@ -114,6 +114,25 @@ func (c *Collector) doCleanup(force bool) {
 	c.teardown()
 }
 
+// FlushAssemblers flushes all TCP assemblers to release their pageCaches
+// This is critical for multi-file processing to prevent unbounded memory growth
+// PageCaches grow to handle traffic and NEVER SHRINK, causing memory leaks
+func (c *Collector) FlushAssemblers() {
+	if c.assemblers == nil {
+		return
+	}
+
+	for i, asm := range c.assemblers {
+		if asm != nil {
+			// FlushAll forces release of all buffered pages and connections
+			// This releases the pageCache which grows unbounded
+			asm.FlushAll()
+			c.assemblers[i] = nil
+		}
+	}
+	c.assemblers = nil
+}
+
 func (c *Collector) teardown() {
 	c.log.Info("teardown")
 

@@ -761,16 +761,25 @@ func Run() {
 				exploit.ResetExploitStore()
 				vulnerability.ResetVulnStore()
 
-				// Step 3: CRITICAL - Nil out collector FIRST to release assemblers
-				// This breaks the reference chain: collector -> assemblers -> old StreamPool
+				// Step 3: CRITICAL - Flush all assemblers to release pageCaches
+				// THE ROOT CAUSE: Assembler.pageCache grows unbounded and NEVER SHRINKS
+				// Each page holds AssemblerContext which references packet data
+				// pageCaches can grow to GB of memory and are NOT released on collector cleanup
+				if c != nil {
+					fmt.Println("Flushing assemblers to release pageCaches...")
+					c.FlushAssemblers()
+				}
+
+				// Step 4: CRITICAL - Nil out collector to release all references
+				// This breaks the reference chain: collector -> assemblers -> pageCaches -> packets
 				c = nil
 
-				// Step 4: Force GC to clear assemblers that hold references to old StreamPool
-				// This is CRITICAL - we must GC the assemblers before resetting the TCP factory
+				// Step 5: Force GC to clear assemblers, pageCaches, and packet data
+				// This is CRITICAL - we must GC everything before resetting the TCP factory
 				runtime.GC()
 
-				// Step 5: NOW reset TCP factory - old StreamPool can be GC'd
-				// Because assemblers are gone, the old pool has no references
+				// Step 6: NOW reset TCP factory - old StreamPool can be GC'd
+				// Because assemblers and their pageCaches are gone, old pool has no references
 				tcp.ResetStreamFactory()
 
 				// Step 6: Reset DPI flow tracker if DPI is enabled
