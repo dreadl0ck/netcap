@@ -35,6 +35,7 @@ func (c *Collector) closePcapFiles() error {
 		if err != nil {
 			return err
 		}
+		c.unkownPcapWriterBuffered = nil
 	}
 
 	if c.unknownPcapFile != nil {
@@ -42,6 +43,8 @@ func (c *Collector) closePcapFiles() error {
 		if err != nil {
 			return err
 		}
+
+		fileName := c.unknownPcapFile.Name()
 
 		if err = c.unknownPcapFile.Sync(); err != nil {
 			return err
@@ -51,12 +54,15 @@ func (c *Collector) closePcapFiles() error {
 			return err
 		}
 
+		// Nil out the file handle to prevent double-close
+		c.unknownPcapFile = nil
+
 		// if file is empty, or a pcap with just the header
 		if i.Size() == 0 || i.Size() == 24 {
 			// println("removing", fd.Name())
-			err = os.Remove(c.unknownPcapFile.Name())
+			err = os.Remove(fileName)
 			if err != nil {
-				return errors.Wrap(err, "failed to remove file: "+c.unknownPcapFile.Name())
+				return errors.Wrap(err, "failed to remove file: "+fileName)
 			}
 		}
 	}
@@ -67,6 +73,7 @@ func (c *Collector) closePcapFiles() error {
 		if err := c.errorsPcapWriterBuffered.Flush(); err != nil {
 			return err
 		}
+		c.errorsPcapWriterBuffered = nil
 	}
 
 	if c.errorsPcapFile != nil {
@@ -76,6 +83,8 @@ func (c *Collector) closePcapFiles() error {
 			return err
 		}
 
+		fileName := c.errorsPcapFile.Name()
+
 		if err = c.errorsPcapFile.Sync(); err != nil {
 			return err
 		}
@@ -84,11 +93,14 @@ func (c *Collector) closePcapFiles() error {
 			return err
 		}
 
+		// Nil out the file handle to prevent double-close
+		c.errorsPcapFile = nil
+
 		// if file is empty, or a pcap with just the header
 		if info.Size() == 0 || info.Size() == 24 {
 			// println("removing", fd.Name())
 
-			if err = os.Remove(c.errorsPcapFile.Name()); err != nil {
+			if err = os.Remove(fileName); err != nil {
 				return err
 			}
 		}
@@ -162,8 +174,12 @@ func (c *Collector) logPacketError(p gopacket.Packet, err string) error {
 		return nil
 	}
 
-	// write entry to errors.log
-	_, _ = c.errorLogFile.WriteString(p.Metadata().Timestamp.String() + "\nError: " + err + "\nPacket:\n" + p.Dump() + "\n")
+	// write entry to errors.log (check if file is still open)
+	c.mu.Lock()
+	if c.errorLogFile != nil {
+		_, _ = c.errorLogFile.WriteString(p.Metadata().Timestamp.String() + "\nError: " + err + "\nPacket:\n" + p.Dump() + "\n")
+	}
+	c.mu.Unlock()
 
 	// write packet to errors.pcap
 	return c.writePacketToErrorsPcap(p)

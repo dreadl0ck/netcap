@@ -37,10 +37,22 @@ func (c *Collector) cleanup(force bool) {
 	if c.log == nil {
 		return
 	}
+
+	// Use sync.Once to ensure cleanup only runs once, preventing double-close of log files
+	c.cleanupOnce.Do(func() {
+		c.doCleanup(force)
+	})
+}
+
+// doCleanup is the actual cleanup implementation, called only once by cleanupOnce
+func (c *Collector) doCleanup(force bool) {
 	c.log.Info("cleanup started", zap.Bool("force", force))
 	c.printlnStdOut("\nstopping workers and waiting for collector to finish...")
 
-	_, _ = c.netcapLogFile.WriteString(newMemStats().String())
+	// Write memory stats (check if file is still open)
+	if c.netcapLogFile != nil {
+		_, _ = c.netcapLogFile.WriteString(newMemStats().String())
+	}
 
 	c.statMutex.Lock()
 	c.shutdown = true
@@ -164,29 +176,35 @@ func (c *Collector) teardown() {
 
 	c.log.Info("decoder teardown complete, closing logfiles")
 
-	// sync the logs
-	for _, l := range c.zapLoggers {
-		err := l.Sync()
-		if err != nil {
-			fmt.Println("failed to sync zap logger:", err)
-		}
-	}
-
-	// close the log file handles
-	for _, l := range c.logFileHandles {
-		if l != nil {
+	// Mark that log files are being closed to prevent double-close attempts
+	if c.logFilesClosed.CompareAndSwap(false, true) {
+		// sync the logs
+		for _, l := range c.zapLoggers {
 			err := l.Sync()
 			if err != nil {
-				fmt.Println("failed to sync logfile:", err)
-			}
-			err = l.Close()
-			if err != nil {
-				fmt.Println("failed to close logfile handle:", err)
+				fmt.Println("failed to sync zap logger:", err)
 			}
 		}
+
+		// close the log file handles
+		for _, l := range c.logFileHandles {
+			if l != nil {
+				err := l.Sync()
+				if err != nil {
+					fmt.Println("failed to sync logfile:", err)
+				}
+				err = l.Close()
+				if err != nil {
+					fmt.Println("failed to close logfile handle:", err)
+				}
+			}
+		}
+		c.logFileHandles = []*os.File{}
+		c.zapLoggers = []*zap.Logger{}
+
+		// Nil out the main log file pointers to prevent any further writes
+		c.netcapLogFile = nil
 	}
-	c.logFileHandles = []*os.File{}
-	c.zapLoggers = []*zap.Logger{}
 
 	manager.Render(c.config.DecoderConfig.Out)
 

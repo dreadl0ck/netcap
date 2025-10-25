@@ -99,6 +99,8 @@ type Collector struct {
 	wg                       sync.WaitGroup
 	shutdown                 bool
 	isLive                   bool
+	cleanupOnce              sync.Once   // ensure cleanup only runs once
+	logFilesClosed           atomic.Bool // track if log files have been closed
 
 	// logging
 	log           *zap.Logger // collector.log
@@ -401,14 +403,19 @@ func (c *Collector) printErrors() {
 
 // closes the logfile for errors.
 func (c *Collector) closeErrorLogFile() {
-	summary := c.getErrorSummary()
-
 	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Check if error log file is already closed
+	if c.errorLogFile == nil {
+		return
+	}
+
+	summary := c.getErrorSummary()
 
 	_, err := c.errorLogFile.WriteString(summary)
 	if err != nil {
 		c.log.Error("failed to write stats into error log", zap.Error(err))
-
 		return
 	}
 
@@ -416,7 +423,6 @@ func (c *Collector) closeErrorLogFile() {
 	err = c.errorLogFile.Sync()
 	if err != nil {
 		c.log.Error("failed to sync error log", zap.Error(err))
-
 		return
 	}
 
@@ -424,15 +430,20 @@ func (c *Collector) closeErrorLogFile() {
 	err = c.errorLogFile.Close()
 	if err != nil {
 		c.log.Error("failed to close error log", zap.Error(err))
-
 		return
 	}
 
-	c.mu.Unlock()
+	// Nil out the file handle to prevent double-close
+	c.errorLogFile = nil
 }
 
 // stats prints collector statistics.
 func (c *Collector) stats() {
+	// Check if log file is still open
+	if c.netcapLogFile == nil {
+		return
+	}
+
 	var target io.Writer
 	if c.config.DecoderConfig.Quiet {
 		target = c.netcapLogFile
