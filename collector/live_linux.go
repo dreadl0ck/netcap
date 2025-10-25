@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 /*
@@ -16,10 +17,10 @@
 package collector
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"sync/atomic"
-	"fmt"
-	"context"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcapgo"
@@ -79,7 +80,25 @@ func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error
 				if errors.Is(err, io.EOF) {
 					break
 				}
-				return errors.Wrap(err, errReadingPacketData+" interface: "+i+" bpf: "+bpf)
+
+				// Check if shutdown has been initiated (e.g., via signal handler)
+				c.statMutex.Lock()
+				isShutdown := c.shutdown
+				c.statMutex.Unlock()
+
+				// If cleanup is already in progress, exit gracefully
+				if isShutdown {
+					goto done
+				}
+
+				// Pcap timeouts are expected during live capture when no packets arrive
+				// within the timeout period. Just continue reading.
+				if err.Error() == "Timeout Expired" {
+					continue
+				}
+
+				// For other errors, perform cleanup and return the error
+				goto done
 			}
 
 			// increment atomic packet counter
@@ -98,14 +117,21 @@ func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error
 		}
 	}
 
-
 done:
 
 	// Stop progress reporting
 	stopProgress <- struct{}{}
 
-	// run cleanup on channel exit
-	c.cleanup(false)
+	// Check if cleanup is already in progress (e.g., triggered by signal handler)
+	c.statMutex.Lock()
+	isShutdown := c.shutdown
+	c.statMutex.Unlock()
+
+	// Only run cleanup if it hasn't been triggered yet
+	// If shutdown is already true, cleanup is being handled elsewhere (e.g., signal handler)
+	if !isShutdown {
+		c.cleanup(false)
+	}
 
 	return nil
 }
