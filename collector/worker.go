@@ -204,6 +204,18 @@ func (c *Collector) initWorkers() []chan gopacket.Packet {
 	// create assemblers
 	for i := range workers {
 		a := reassembly.NewAssembler(tcp.GetStreamPool())
+
+		// Configure stream reassembly limits from config
+		if c.config.DecoderConfig.MaxStreamBytes > 0 {
+			a.MaxStreamBytes = c.config.DecoderConfig.MaxStreamBytes
+		}
+		if c.config.DecoderConfig.MaxBufferedPagesPerConnection > 0 {
+			a.MaxBufferedPagesPerConnection = c.config.DecoderConfig.MaxBufferedPagesPerConnection
+		}
+		if c.config.DecoderConfig.MaxBufferedPagesTotal > 0 {
+			a.MaxBufferedPagesTotal = c.config.DecoderConfig.MaxBufferedPagesTotal
+		}
+
 		c.assemblers = append(c.assemblers, a)
 		workers[i] = c.worker(a)
 	}

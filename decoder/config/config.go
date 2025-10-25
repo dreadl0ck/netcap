@@ -27,51 +27,54 @@ var Instance *Config
 
 // DefaultConfig is a sane example configuration for the decoder package.
 var DefaultConfig = &Config{
-	Buffer:                     true,
-	MemBufferSize:              defaults.BufferSize,
-	Compression:                true,
-	CSV:                        false,
-	IncludeDecoders:            "",
-	ExcludeDecoders:            "",
-	Out:                        "",
-	Chan:                       false,
-	Proto:                      true,
-	Source:                     "",
-	IncludePayloads:            false,
-	ExportMetrics:              false,
-	AddContext:                 true,
-	FlushEvery:                 100,
-	DefragIPv4:                 false,
-	Checksum:                   false,
-	NoOptCheck:                 false,
-	IgnoreFSMerr:               false,
-	AllowMissingInit:           false,
-	Debug:                      false,
-	HexDump:                    false,
-	WaitForConnections:         true,
-	WriteIncomplete:            false,
-	MemProfile:                 "",
-	ConnFlushInterval:          10000,
-	ConnTimeOut:                10 * time.Second,
-	FlowFlushInterval:          2000,
-	FlowTimeOut:                10 * time.Second,
-	CloseInactiveTimeOut:       24 * time.Hour,
-	ClosePendingTimeOut:        5 * time.Second,
-	FileStorage:                defaults.FileStorage,
-	CalculateEntropy:           false,
-	SaveConns:                  false,
-	TCPDebug:                   false,
-	UseRE2:                     true,
-	HarvesterBannerSize:        512,
-	BannerSize:                 512,
-	StopAfterHarvesterMatch:    true,
-	StopAfterServiceProbeMatch: true,
-	IgnoreDecoderInitErrors:    true,
-	RemoveClosedStreams:        false,
-	CompressionBlockSize:       defaults.CompressionBlockSize,
-	CompressionLevel:           defaults.CompressionLevel,
-	NumStreamWorkers:           runtime.NumCPU(),
-	StreamBufferSize:           100,
+	Buffer:                        true,
+	MemBufferSize:                 defaults.BufferSize,
+	Compression:                   true,
+	CSV:                           false,
+	IncludeDecoders:               "",
+	ExcludeDecoders:               "",
+	Out:                           "",
+	Chan:                          false,
+	Proto:                         true,
+	Source:                        "",
+	IncludePayloads:               false,
+	ExportMetrics:                 false,
+	AddContext:                    true,
+	FlushEvery:                    100,
+	DefragIPv4:                    false,
+	Checksum:                      false,
+	NoOptCheck:                    false,
+	IgnoreFSMerr:                  false,
+	AllowMissingInit:              false,
+	Debug:                         false,
+	HexDump:                       false,
+	WaitForConnections:            true,
+	WriteIncomplete:               false,
+	MemProfile:                    "",
+	ConnFlushInterval:             10000,
+	ConnTimeOut:                   10 * time.Second,
+	FlowFlushInterval:             2000,
+	FlowTimeOut:                   10 * time.Second,
+	CloseInactiveTimeOut:          24 * time.Hour,
+	ClosePendingTimeOut:           5 * time.Second,
+	FileStorage:                   defaults.FileStorage,
+	CalculateEntropy:              false,
+	SaveConns:                     false,
+	TCPDebug:                      false,
+	UseRE2:                        true,
+	HarvesterBannerSize:           512,
+	BannerSize:                    512,
+	StopAfterHarvesterMatch:       true,
+	StopAfterServiceProbeMatch:    true,
+	IgnoreDecoderInitErrors:       true,
+	RemoveClosedStreams:           false,
+	CompressionBlockSize:          defaults.CompressionBlockSize,
+	CompressionLevel:              defaults.CompressionLevel,
+	NumStreamWorkers:              runtime.NumCPU(),
+	StreamBufferSize:              100,
+	MaxStreamBytes:                10485760, // 10MB per stream direction by default
+	MaxBufferedPagesPerConnection: 0,        // unlimited by default
+	MaxBufferedPagesTotal:         0,        // unlimited by default
 }
 
 // Config contains configuration parameters
@@ -265,4 +268,19 @@ type Config struct {
 
 	// CompressionLevel is the compression level to use by default
 	CompressionLevel int
+
+	// MaxStreamBytes is the maximum number of bytes to reassemble from a single stream direction
+	// before ignoring the stream for performance reasons. If <= 0, this is unlimited.
+	// Default: 10485760 (10MB) to prevent excessive memory usage from large transfers.
+	MaxStreamBytes int
+
+	// MaxBufferedPagesPerConnection is the maximum number of pages (~1900 bytes each) to buffer
+	// per connection for out-of-order packets. If <= 0, this is unlimited.
+	// When exceeded, forces flush of oldest buffered packet. Default: 0 (unlimited)
+	MaxBufferedPagesPerConnection int
+
+	// MaxBufferedPagesTotal is the maximum total number of pages (~1900 bytes each) to buffer
+	// across all connections for out-of-order packets. If <= 0, this is unlimited.
+	// When exceeded, forces flush globally. Default: 0 (unlimited)
+	MaxBufferedPagesTotal int
 }

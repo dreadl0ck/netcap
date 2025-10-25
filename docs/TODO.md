@@ -1,32 +1,9 @@
 # TODOs
 
 
-
-----
-
-## FIXED: Panic on closed channel during cleanup
-
-**Issue**: Race condition where writers tried to write to already-closed gzip files during cleanup, causing "panic: send on closed channel"
-
-**Solution**: 
-- Added `closed` flag to `protoWriter` to track writer state
-- Modified `Write()` and `WriteHeader()` methods to check closed flag and silently ignore writes to closed writers
-- Modified `Close()` to set closed flag and check if already closed before attempting to close
-- Made `closeGzipWriters()` and `flushWriters()` more robust by handling errors gracefully instead of panicking
-
-**Files modified**:
-- `io/protobuf.go`: Added closed state tracking
-- `io/file_utils.go`: Improved error handling in flush/close operations
-
-  -----
-
-✅ DONE: in multi file mode: write summary table to output and log file on disk, with: input file name, total number of audit records, original file size, generated netcap audit record total size, processing time, errors
-
-TODO catch panics
-
 ---
 
-- stream reassembly: add configurable size limit of max number of bytes to reassemble from a stream before ignoring the stream for performance reasons.
+- ✅ stream reassembly: add configurable size limit of max number of bytes to reassemble from a stream before ignoring the stream for performance reasons. (COMPLETED - default: 10MB per direction, configurable via -max-stream-bytes flag)
 - docs iteration
 - tests iteration
 -----

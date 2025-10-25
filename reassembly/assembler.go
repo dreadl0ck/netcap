@@ -25,8 +25,9 @@ const assemblerReturnValueInitialSize = 16
 // Note that the default options can result in ever-increasing memory usage
 // unless one of the Flush* methods is called on a regular basis.
 var defaultAssemblerOptions = assemblerOptions{
-	MaxBufferedPagesPerConnection: 0, // unlimited
-	MaxBufferedPagesTotal:         0, // unlimited
+	MaxBufferedPagesPerConnection: 0,        // unlimited
+	MaxBufferedPagesTotal:         0,        // unlimited
+	MaxStreamBytes:                10485760, // 10MB per stream direction
 }
 
 // assemblerOptions controls the behavior of each assembler.  Modify the
@@ -42,6 +43,10 @@ type assemblerOptions struct {
 	// particular connection, the smallest sequence number will be flushed, along
 	// with any contiguous data.  If <= 0, this is ignored.
 	MaxBufferedPagesPerConnection int
+	// MaxStreamBytes is the maximum number of bytes to reassemble from a single stream direction
+	// before ignoring the stream for performance reasons. If <= 0, this is unlimited.
+	// Default: 10485760 (10MB) to prevent excessive memory usage from large transfers.
+	MaxStreamBytes int
 }
 
 // Assembler handles reassembling TCP streams.  It is not safe for
@@ -56,7 +61,7 @@ type assemblerOptions struct {
 // applications written in Go.  The Assembler uses the following methods to be
 // as fast as possible, to keep packet processing speedy:
 //
-// Avoids Lock Contention
+// # Avoids Lock Contention
 //
 // Assemblers locks connections, but each connection has an individual lock, and
 // rarely will two Assemblers be looking at the same connection.  Assemblers
@@ -76,7 +81,7 @@ type assemblerOptions struct {
 // avoiding all lock contention.  Only when different Assemblers could receive
 // packets for the same Stream should a StreamPool be shared between them.
 //
-// Avoids Memory Copying
+// # Avoids Memory Copying
 //
 // In the common case, handling of a single TCP packet should result in zero
 // memory allocations.  The Assembler will look up the connection, figure out
@@ -84,7 +89,7 @@ type assemblerOptions struct {
 // the appropriate connection's handling code.  Only if a packet arrives out of
 // order is its contents copied and stored in memory for later.
 //
-// Avoids Memory Allocation
+// # Avoids Memory Allocation
 //
 // Assemblers try very hard to not use memory allocation unless absolutely
 // necessary.  Packet data for sequential packets is passed directly to streams
@@ -175,9 +180,9 @@ type assemblerAction struct {
 //
 // Each AssembleWithContext call results in, in order:
 //
-//    zero or one call to streamFactory.New, creating a stream
-//    zero or one call to ReassembledSG on a single stream
-//    zero or one call to ReassemblyComplete on the same stream
+//	zero or one call to streamFactory.New, creating a stream
+//	zero or one call to ReassembledSG on a single stream
+//	zero or one call to ReassemblyComplete on the same stream
 func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac AssemblerContext) {
 	var (
 		conn    *connection
@@ -427,6 +432,7 @@ func (a *Assembler) checkOverlap(half *halfconnection, queue bool, ac AssemblerC
 		p, p2, numPages := a.cacheLP.convertToPages(a.pc, 0, ac)
 		half.queuedPackets++
 		half.queuedBytes += len(bytes)
+		half.totalBytes += len(bytes)
 		half.pages += numPages
 
 		if cur != nil {
@@ -569,10 +575,32 @@ func (a *Assembler) handleBytes(bytes []byte, seq Sequence, half *halfconnection
 			a.addNextFromConn(half)
 		}
 
+		// Check if maximum stream bytes limit is reached
+		if a.MaxStreamBytes > 0 && half.totalBytes >= a.MaxStreamBytes {
+			if Debug {
+				log.Printf("hit max stream bytes: %d >= %d, closing half connection", half.totalBytes, a.MaxStreamBytes)
+			}
+			half.closed = true
+		}
+
 		a.dump("handleBytes after queue", half)
 	} else {
 		a.cacheLP.bytes, a.cacheLP.seq = a.overlapExisting(half, seq, a.cacheLP.bytes)
 		a.checkOverlap(half, false, ac)
+
+		// Track bytes for non-queued (in-order) data
+		if len(a.cacheLP.bytes) > 0 {
+			half.totalBytes += len(a.cacheLP.bytes)
+
+			// Check if maximum stream bytes limit is reached for in-order data
+			if a.MaxStreamBytes > 0 && half.totalBytes >= a.MaxStreamBytes {
+				if Debug {
+					log.Printf("hit max stream bytes: %d >= %d, closing half connection (in-order path)", half.totalBytes, a.MaxStreamBytes)
+				}
+				half.closed = true
+			}
+		}
+
 		if len(a.cacheLP.bytes) != 0 || end || start {
 			a.Lock()
 			a.ret = append(a.ret, &a.cacheLP)

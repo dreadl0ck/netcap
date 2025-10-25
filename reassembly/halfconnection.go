@@ -29,6 +29,9 @@ type halfconnection struct {
 	queuedPackets int
 	closed        bool
 
+	// track total bytes reassembled for this halfconnection
+	totalBytes int
+
 	dir TCPFlowDirection
 }
 

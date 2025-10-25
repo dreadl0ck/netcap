@@ -152,6 +152,11 @@ var (
 	flagCustomCredsRegex    = fs.String("reCustom", "", "possibility of passing a custom regex for harvesting credentials")
 	flagStreamBufferSize    = fs.Int("stream-buffer", 10000, "input channel size for TCP / UDP stream processors")
 	flagNumStreamWorkers    = fs.Int("stream-workers", 10000, "number of TCP / UDP stream workers")
+	flagMaxStreamBytes      = fs.Int("max-stream-bytes", 10485760, "maximum number of bytes to reassemble per stream direction (0 = unlimited, default = 10MB)")
+
+	// Stream reassembly page buffering limits
+	flagMaxBufferedPagesPerConnection = fs.Int("max-buffered-pages-per-conn", 0, "maximum pages to buffer per connection for out-of-order packets (0 = unlimited, ~1900 bytes per page)")
+	flagMaxBufferedPagesTotal         = fs.Int("max-buffered-pages-total", 0, "maximum total pages to buffer across all connections (0 = unlimited, ~1900 bytes per page)")
 
 	flagCompressionBlockSize = fs.Int("compression-block-size", defaults.CompressionBlockSize, "block size used for parallel compression")
 	flagCompressionLevel     = fs.String("compression-level", compressionLevelToString(defaults.CompressionLevel), "level of compression")
