@@ -774,13 +774,13 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 	Store.Unlock()
 
 	if len(newSoftwareProducts) > 0 {
-		// lookup known issues with identified software in the background
-		go func() {
-			for _, s := range newSoftwareProducts {
-				vulnerability.VulnerabilitiesLookup(s)
-				exploit.ExploitsLookup(s)
-			}
-		}()
+		// lookup known issues with identified software
+		// NOTE: Do NOT spawn goroutine here - causes goroutine leak!
+		// These lookups are fast enough to do synchronously
+		for _, s := range newSoftwareProducts {
+			vulnerability.VulnerabilitiesLookup(s)
+			exploit.ExploitsLookup(s)
+		}
 	}
 }
 

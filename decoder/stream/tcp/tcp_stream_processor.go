@@ -78,8 +78,10 @@ func flushTCPStreams(numTotal int) {
 	sp.wg.Wait()
 
 	// explicitly feed a nil stream to exit the goroutines used for processing
-	for _, w := range sp.workers {
-		w <- nil
+	for i, w := range sp.workers {
+		w <- nil            // Signal worker to exit
+		close(w)            // Close the channel
+		sp.workers[i] = nil // Nil out reference to help GC
 	}
 }
 

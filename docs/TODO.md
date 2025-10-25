@@ -8,6 +8,14 @@
 
   for f in *.pcap *.pcapng; do [ -f "$f" ] && net capture -y -read "$f" -out "${f%.*}"; done
 
+with break on interrupt:
+
+  for f in *.pcap *.pcapng; do [ -f "$f" ] && { net capture -read "$f" -out "${f%.*}" || break; }; done
+
+or with trap:
+
+  trap 'exit 130' INT; for f in *.pcap *.pcapng; do [ -f "$f" ] && net capture -read "$f" -out "${f%.*}"; done
+
 or
 
   find . -maxdepth 1 \( -name "*.pcap" -o -name "*.pcapng" \) -type f -exec sh -c 'net capture -read "$1" -out "${1%.*}"' _ {} \;

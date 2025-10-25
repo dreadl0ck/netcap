@@ -106,6 +106,13 @@ var connectionDecoder = newPacketDecoder(
 		conns.Unlock()
 		cp.wg.Wait()
 
+		// CRITICAL: Stop all workers by sending nil, then close channels
+		for i, w := range cp.workers {
+			w <- nil            // Signal worker to exit
+			close(w)            // Close the channel
+			cp.workers[i] = nil // Nil out reference to help GC
+		}
+
 		return nil
 	},
 )

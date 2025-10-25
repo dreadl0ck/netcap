@@ -37,19 +37,55 @@ func newStreamFactory() *connectionFactory {
 	return f
 }
 
+// CloseStreamReaderChannelsAndWait closes all TCP stream reader channels and waits for goroutines to finish.
+// This MUST be called BEFORE closing log files to avoid write errors.
+// CRITICAL: Each TCP connection spawns 2 goroutines (client + server) that run tcpStreamReader.Run()
+// These goroutines must be properly shut down before log files are closed.
+func CloseStreamReaderChannelsAndWait() {
+	if StreamFactory == nil {
+		return
+	}
+
+	// Close all dataChan channels to signal EOF and let goroutines exit
+	StreamFactory.Lock()
+	for _, reader := range StreamFactory.streamReaders {
+		if reader != nil && reader.DataChan() != nil {
+			// Close the dataChan to send EOF to the reading goroutine
+			// Use defer/recover to handle potential double-close panics safely
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						// Channel already closed or closing caused panic - that's OK
+						reassemblyLog.Debug("dataChan close panic (expected if already closed)", zap.Any("recover", r))
+					}
+				}()
+				close(reader.DataChan())
+			}()
+		}
+	}
+	StreamFactory.Unlock()
+
+	// Now wait for all goroutines to finish
+	// This will block until all tcpStreamReader.Run() goroutines have exited
+	// and called Cleanup() which does wg.Done()
+	StreamFactory.waitGoRoutines()
+}
+
 // ResetStreamFactory creates a new stream factory to clear all stream state.
 // This should be called when resetting state between processing different files.
 // CRITICAL: This explicitly resets the old StreamPool to release backing arrays
 // before creating a new factory, preventing memory leaks.
 func ResetStreamFactory() {
-	// Explicitly reset the old pool to clear its backing arrays
-	// This is CRITICAL to prevent the StreamPool.all slice from accumulating
-	// across multiple file processing runs
-	if StreamFactory != nil && StreamFactory.StreamPool != nil {
-		StreamFactory.StreamPool.Reset()
-		StreamFactory.StreamPool = nil
+	if StreamFactory != nil {
+		// Explicitly reset the old pool to clear its backing arrays
+		// This is CRITICAL to prevent the StreamPool.all slice from accumulating
+		// across multiple file processing runs
+		if StreamFactory.StreamPool != nil {
+			StreamFactory.StreamPool.Reset()
+			StreamFactory.StreamPool = nil
+		}
+		StreamFactory = nil
 	}
-	StreamFactory = nil
 
 	// Create completely fresh factory with new pool
 	StreamFactory = newStreamFactory()

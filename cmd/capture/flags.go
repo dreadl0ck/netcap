@@ -150,8 +150,8 @@ var (
 	flagBannerSize          = fs.Int("bsize", 256, "size of the stored service banners in bytes")
 	flagHarvesterBannerSize = fs.Int("hbsize", 256, "size of the data passed to the credential harvesters in bytes")
 	flagCustomCredsRegex    = fs.String("reCustom", "", "possibility of passing a custom regex for harvesting credentials")
-	flagStreamBufferSize    = fs.Int("stream-buffer", 10000, "input channel size for TCP / UDP stream processors")
-	flagNumStreamWorkers    = fs.Int("stream-workers", 10000, "number of TCP / UDP stream workers")
+	flagStreamBufferSize    = fs.Int("stream-buffer", 1000, "input channel size for TCP / UDP stream processors")
+	flagNumStreamWorkers    = fs.Int("stream-workers", 1000, "number of TCP / UDP stream workers")
 	flagMaxStreamBytes      = fs.Int("max-stream-bytes", 10485760, "maximum number of bytes to reassemble per stream direction (0 = unlimited, default = 10MB)")
 
 	// Stream reassembly page buffering limits
