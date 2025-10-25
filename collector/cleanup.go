@@ -92,6 +92,12 @@ func (c *Collector) doCleanup(force bool) {
 	if c.config.ReassembleConnections {
 		// teardown the TCP stream reassembly and print stats
 		tcp.CleanupReassembly(!force, c.assemblers)
+
+		// Nil out assembler references to allow GC to reclaim memory
+		for i := range c.assemblers {
+			c.assemblers[i] = nil
+		}
+		c.assemblers = nil
 	}
 
 	c.teardown()

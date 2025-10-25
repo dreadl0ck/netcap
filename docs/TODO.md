@@ -1,9 +1,7 @@
 # TODOs
 
-
 ---
 
-- ✅ stream reassembly: add configurable size limit of max number of bytes to reassemble from a stream before ignoring the stream for performance reasons. (COMPLETED - default: 10MB per direction, configurable via -max-stream-bytes flag)
 - docs iteration
 - tests iteration
 -----

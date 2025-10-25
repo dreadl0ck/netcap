@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	godpi "github.com/dreadl0ck/go-dpi"
 	"github.com/dreadl0ck/go-dpi/modules/classifiers"
@@ -141,14 +142,18 @@ func parseModules(modules string) map[string]bool {
 	return moduleSet
 }
 
-// Destroy tears down godpi and frees the memory allocated for cgo
-// returned errors are logged to stdout.
+// Destroy tears down godpi and frees the memory allocated for cgo.
+// It also explicitly resets the internal flow tracker to release all tracked flows.
+// Returned errors are logged to stdout.
 func Destroy() {
 	// Only destroy if DPI is actually enabled
 	if disableDPI {
 		return
 	}
 
+	// Destroy modules and flow tracker
+	// This calls types.DestroyCache() which flushes the flow cache
+	// and nils the FlowTrackerInstance to allow GC
 	for _, e := range godpi.Destroy() {
 		if e != nil {
 			fmt.Println(e)
@@ -159,11 +164,27 @@ func Destroy() {
 	disableDPI = true
 }
 
-// Reset destroys the current DPI state and reinitializes it
-// This should be called when resetting state between processing different files
+// Reset destroys the current DPI state and reinitializes it.
+// This should be called when resetting state between processing different files.
+// It performs the following cleanup:
+//  1. Destroys all DPI modules (nDPI, LPI, go-dpi)
+//  2. Flushes and nils the FlowTrackerInstance (releases all tracked flows)
+//  3. Waits for C libraries to release memory
+//  4. Reinitializes with the same modules
 func Reset(modules string) {
 	if !disableDPI {
+		// Destroy will:
+		// - Call godpi.Destroy() which calls types.DestroyCache()
+		// - types.DestroyCache() flushes the cache and nils FlowTrackerInstance
+		// - This releases all tracked flows and allows GC to reclaim memory
 		Destroy()
+
+		// Allow time for C libraries to fully release memory
+		// This is important because nDPI and LPI use C memory allocation
+		// which may not be immediately returned to the OS
+		time.Sleep(10 * time.Millisecond)
+
+		// Initialize fresh DPI state with new FlowTrackerInstance
 		Init(modules)
 	}
 }

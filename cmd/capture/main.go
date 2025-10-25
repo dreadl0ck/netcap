@@ -22,6 +22,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"runtime/debug"
 	"runtime/pprof"
 	"strings"
 	"time"
@@ -717,28 +719,54 @@ func Run() {
 	// Process each input file
 	for fileIdx, inputFile := range inputFiles {
 		if len(inputFiles) > 1 {
-			fmt.Printf("\n|| ================================================================== ||\n")
-			fmt.Printf("   Processing file %d/%d: %s\n", fileIdx+1, len(inputFiles), inputFile)
-			fmt.Printf("|| ================================================================== ||\n")
+			fmt.Printf("\n|| ================================================================== ||\n")
+			fmt.Printf("   Processing file %d/%d: %s\n", fileIdx+1, len(inputFiles), inputFile)
+			fmt.Printf("|| ================================================================== ||\n")
 
 			// Reset global state from previous file
 			if fileIdx > 0 {
 				fmt.Println("Resetting global state...")
 
-				// Reset packet-level state
+				// Report memory usage before cleanup
+				var m runtime.MemStats
+				runtime.ReadMemStats(&m)
+				fmt.Printf("Memory before cleanup: Heap Alloc=%s, Heap Sys=%s\n",
+					humanize.Bytes(m.HeapAlloc), humanize.Bytes(m.HeapSys))
+
+				// Step 1: Reset packet-level state (lightweight, no heavy allocations)
 				packet.ResetDeviceProfiles()
 				packet.ResetIPProfiles()
 				packet.ResetConnections()
 
-				// Reset stream-level state
+				// Step 2: Reset stream-level state (lightweight)
 				service.ResetStore()
-				tcp.ResetStreamFactory()
 				udp.ResetStreams()
 
-				// Reset DPI flow tracker if DPI is enabled
+				// Step 3: CRITICAL - Nil out collector FIRST to release assemblers
+				// This breaks the reference chain: collector -> assemblers -> old StreamPool
+				c = nil
+
+				// Step 4: Force GC to clear assemblers that hold references to old StreamPool
+				// This is CRITICAL - we must GC the assemblers before resetting the TCP factory
+				runtime.GC()
+
+				// Step 5: NOW reset TCP factory - old StreamPool can be GC'd
+				// Because assemblers are gone, the old pool has no references
+				tcp.ResetStreamFactory()
+
+				// Step 6: Reset DPI flow tracker if DPI is enabled
 				if *flagDPI {
 					dpi.Reset(*flagDPIModules)
 				}
+
+				// Step 7: Final GC and OS memory release
+				runtime.GC()
+				debug.FreeOSMemory()
+
+				// Report memory usage after cleanup
+				runtime.ReadMemStats(&m)
+				fmt.Printf("Memory after cleanup: Heap Alloc=%s, Heap Sys=%s\n",
+					humanize.Bytes(m.HeapAlloc), humanize.Bytes(m.HeapSys))
 			}
 
 			// Set output directory for this specific file
