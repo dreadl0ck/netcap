@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"sync/atomic"
 	"time"
 
@@ -164,6 +165,26 @@ func (c *Collector) teardown() {
 	c.closeErrorLogFile()
 	c.stats()
 
+	// Collect final performance statistics
+	c.perfTracker.SetTotalPacketsAndBytes(c.numPackets, c.totalBytesWritten)
+
+	// Update decoder metrics in performance tracker
+	c.updatePerformanceTrackerWithDecoderStats()
+
+	// Write performance report
+	var perfLogPath string
+	if c.config.DecoderConfig.Out != "" {
+		perfLogPath = filepath.Join(c.config.DecoderConfig.Out, "performance.log")
+	} else {
+		perfLogPath = "performance.log"
+	}
+	if err := c.perfTracker.WriteReport(perfLogPath); err != nil {
+		c.log.Error("failed to write performance report", zap.Error(err))
+		fmt.Println("failed to write performance report:", err)
+	} else {
+		c.printlnStdOut("performance report written to", perfLogPath)
+	}
+
 	if c.config.DecoderConfig.Debug {
 		c.printErrors()
 	}
@@ -186,16 +207,32 @@ func (c *Collector) teardown() {
 			}
 		}
 
-		// close the log file handles
+		// close the log file handles and remove empty log files
 		for _, l := range c.logFileHandles {
 			if l != nil {
-				err := l.Sync()
+				// Get file info before closing
+				info, err := l.Stat()
+				if err != nil {
+					fmt.Println("failed to stat logfile:", err)
+				}
+
+				fileName := l.Name()
+
+				err = l.Sync()
 				if err != nil {
 					fmt.Println("failed to sync logfile:", err)
 				}
 				err = l.Close()
 				if err != nil {
 					fmt.Println("failed to close logfile handle:", err)
+				}
+
+				// Remove log file if it's empty (similar to how audit record files are handled)
+				if info != nil && info.Size() == 0 {
+					err = os.Remove(fileName)
+					if err != nil {
+						fmt.Println("failed to remove empty log file:", fileName, err)
+					}
 				}
 			}
 		}
@@ -287,4 +324,54 @@ func (c *Collector) teardown() {
 // CloseFileHandleOnShutdown allows to register file handles for close on shutdown.
 func (c *Collector) CloseFileHandleOnShutdown(f *os.File) {
 	c.logFileHandles = append(c.logFileHandles, f)
+}
+
+// updatePerformanceTrackerWithDecoderStats updates the performance tracker with final decoder statistics
+func (c *Collector) updatePerformanceTrackerWithDecoderStats() {
+	// Update GoPacket decoder stats
+	c.unknownProtosAtomic.Lock()
+	for k, v := range c.allProtosAtomic.Items {
+		if k != "Payload" {
+			// Find the file size for this decoder
+			var fileSize int64
+			for filename := range c.files {
+				if filename == k+".ncap" || filename == k+".ncap.gz" {
+					// File size tracking is handled at the I/O level
+					fileSize = 0
+					break
+				}
+			}
+			c.perfTracker.UpdateDecoderRecords("gopacket", k, v, fileSize)
+		}
+	}
+	c.unknownProtosAtomic.Unlock()
+
+	// Update packet decoder stats
+	for _, d := range c.packetDecoders {
+		if d.NumRecords() > 0 {
+			// Try to find file size from c.files map
+			var fileSize int64
+			for filename := range c.files {
+				if filename == d.GetName()+".ncap" || filename == d.GetName()+".ncap.gz" {
+					fileSize = 0
+					break
+				}
+			}
+			c.perfTracker.UpdateDecoderRecords("custom", d.GetName(), d.NumRecords(), fileSize)
+		}
+	}
+
+	// Update stream decoder stats
+	for _, d := range c.streamDecoders {
+		if d.NumRecords() > 0 {
+			c.perfTracker.UpdateDecoderRecords("stream", d.GetName(), d.NumRecords(), 0)
+		}
+	}
+
+	// Update abstract decoder stats
+	for _, d := range c.abstractDecoders {
+		if d.NumRecords() > 0 {
+			c.perfTracker.UpdateDecoderRecords("abstract", d.GetName(), d.NumRecords(), 0)
+		}
+	}
 }

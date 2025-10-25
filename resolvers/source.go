@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 
 	"github.com/dreadl0ck/netcap/env"
+	"github.com/dreadl0ck/netcap/performance"
 	"go.uber.org/zap"
 )
 
@@ -26,6 +27,9 @@ var (
 
 	// CurrentConfig holds the current configuration.
 	CurrentConfig Config
+
+	// perfTracker holds the performance tracker for measuring resolver operations
+	perfTracker *performance.Tracker
 
 	// ConfigRootPath points to the path for storing the netcap configuration and databases.
 	// usually: /usr/local/etc/netcap
@@ -64,6 +68,17 @@ func init() {
 
 // Init can be used to initialize the resolvers package according to the provided configuration.
 func Init(c Config, quietMode bool) {
+	quiet = quietMode
+	CurrentConfig = c
+}
+
+// SetPerfTracker sets the performance tracker for resolver operations
+func SetPerfTracker(pt *performance.Tracker) {
+	perfTracker = pt
+}
+
+// initInternal performs the actual initialization after perfTracker is set
+func initInternal(c Config, quietMode bool) {
 	quiet = quietMode
 	CurrentConfig = c
 

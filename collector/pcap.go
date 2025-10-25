@@ -16,7 +16,6 @@ package collector
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"sync/atomic"
 	"time"
@@ -229,7 +228,7 @@ func countPackets(path string) (count int64, err error) {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			log.Fatal("error reading packet data: ", err)
+			return count, errors.Wrap(err, errReadingPacketData)
 		}
 
 		// increment counter

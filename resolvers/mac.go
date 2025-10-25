@@ -23,6 +23,7 @@ import (
 	"log"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gopacket/gopacket/macs"
 	"go.uber.org/zap"
@@ -103,6 +104,14 @@ func initMACResolver() {
 // LookupManufacturer resolves a MAC addr to the manufacturer.
 // It first checks the optional JSON database, then falls back to gopacket's built-in data.
 func LookupManufacturer(mac string) string {
+	startTime := time.Now()
+	cacheHit := false
+	defer func() {
+		if perfTracker != nil {
+			perfTracker.RecordResolver("MAC", time.Since(startTime), cacheHit)
+		}
+	}()
+
 	if len(mac) < 8 {
 		return ""
 	}
@@ -111,6 +120,7 @@ func LookupManufacturer(mac string) string {
 
 	// First check the JSON database if it was loaded
 	if res, ok := macDB[oui]; ok {
+		cacheHit = true
 		// Skip entries that are redacted in free version
 		if !strings.Contains(res.CompanyName, "REDACTED") {
 			return res.CompanyName

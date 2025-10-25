@@ -47,6 +47,7 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/label/manager"
+	"github.com/dreadl0ck/netcap/performance"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -122,6 +123,9 @@ type Collector struct {
 
 	// interval for tracking collector stats
 	statsInterval time.Duration
+
+	// performance tracker
+	perfTracker *performance.Tracker
 }
 
 // GetTotalBytesWritten returns the total bytes written to disk.
@@ -179,6 +183,7 @@ func New(config Config) *Collector {
 		numEpochs:           1,
 		pps:                 map[time.Time]float64{},
 		statsInterval:       5 * time.Second,
+		perfTracker:         performance.NewTracker(),
 	}
 }
 
@@ -419,6 +424,14 @@ func (c *Collector) closeErrorLogFile() {
 		return
 	}
 
+	// Get file info before closing to check if empty
+	info, err := c.errorLogFile.Stat()
+	if err != nil {
+		c.log.Error("failed to stat error log", zap.Error(err))
+	}
+
+	fileName := c.errorLogFile.Name()
+
 	// sync
 	err = c.errorLogFile.Sync()
 	if err != nil {
@@ -435,6 +448,14 @@ func (c *Collector) closeErrorLogFile() {
 
 	// Nil out the file handle to prevent double-close
 	c.errorLogFile = nil
+
+	// Remove error log file if it's empty (similar to how audit record files are handled)
+	if info != nil && info.Size() == 0 {
+		err = os.Remove(fileName)
+		if err != nil {
+			c.log.Error("failed to remove empty error log file", zap.String("file", fileName), zap.Error(err))
+		}
+	}
 }
 
 // stats prints collector statistics.

@@ -20,6 +20,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/performance"
 )
 
 // Instance contains the config at runtime.
@@ -283,4 +284,7 @@ type Config struct {
 	// across all connections for out-of-order packets. If <= 0, this is unlimited.
 	// When exceeded, forces flush globally. Default: 0 (unlimited)
 	MaxBufferedPagesTotal int
+
+	// PerfTracker tracks performance metrics
+	PerfTracker *performance.Tracker
 }

@@ -201,7 +201,11 @@ func handlePacket(p gopacket.Packet) proto.Message {
 		} // else: do nothing, timestamp is still the oldest one
 
 		// DPI: detect applications
+		dpiStart := time.Now()
 		dpiResults := dpi.GetProtocols(p)
+		if dpiResults != nil && conf.PerfTracker != nil {
+			conf.PerfTracker.RecordDPI(time.Since(dpiStart))
+		}
 		for protocol := range dpiResults {
 			if conn.applications == nil {
 				conn.applications = make(map[string]struct{})

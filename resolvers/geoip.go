@@ -18,6 +18,7 @@ import (
 	"net"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/oschwald/maxminddb-golang"
 	"github.com/sirupsen/logrus"
@@ -89,6 +90,14 @@ func (record geoRecord) repr() (geoloc, asn string) {
 // LookupGeolocation returns all associated geolocations for a given address and db handle
 // results are being cached in an atomic map to avoid unnecessary lookups.
 func LookupGeolocation(addr string) (string, string) {
+	startTime := time.Now()
+	cacheHit := false
+	defer func() {
+		if perfTracker != nil {
+			perfTracker.RecordResolver("Geolocation", time.Since(startTime), cacheHit)
+		}
+	}()
+
 	if asnReader == nil || cityReader == nil {
 		return "", ""
 	}
@@ -104,6 +113,7 @@ func LookupGeolocation(addr string) (string, string) {
 	}
 
 	if result, ok := geolocations.Load(ip.String()); ok {
+		cacheHit = true
 		return result.(geoRecord).repr()
 	}
 

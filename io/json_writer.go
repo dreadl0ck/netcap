@@ -17,13 +17,15 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
+	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gogo/protobuf/proto"
@@ -108,6 +110,19 @@ func (w *jsonWriter) Write(msg proto.Message) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
+	// Track disk I/O performance
+	if w.wc.PerfTracker != nil {
+		start := time.Now()
+		n, err := w.jWriter.writeRecord(msg)
+		duration := time.Since(start)
+
+		if err == nil && n > 0 {
+			w.wc.PerfTracker.RecordDiskWrite(w.wc.Name, duration, int64(n))
+		}
+
+		return err
+	}
+
 	_, err := w.jWriter.writeRecord(msg)
 
 	return err
@@ -134,6 +149,13 @@ func (w *jsonWriter) Close(numRecords int64) (name string, size int64) {
 
 	if w.wc.Compress {
 		closeGzipWriters(w.gWriter)
+	}
+
+	// Track file sync performance
+	if w.wc.PerfTracker != nil && w.file != nil {
+		start := time.Now()
+		_ = w.file.Sync()
+		w.wc.PerfTracker.RecordDiskSync(w.wc.Name, time.Since(start))
 	}
 
 	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)

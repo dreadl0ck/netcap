@@ -89,7 +89,9 @@ Info: When you stop the packet capture on windows with ctrl-C you will see sever
 
 This happens because NETCAP creates and opens files for all supported audit records types on startup, and closes them when packet capture is finished or interrupted. Since it often happens that not all supported protocols appeared in the data stream, NETCAP opens the audit record files after closing again, to check if they are empty \(=only contain the NETCAP header\), and if so, removes the empty audit record files.
 
-Unfortunately, windows does not allow closing and opening a file from the same process within such small time interval, which leads to the shown error. As a consequence, empty audit record files are not removed automatically on windows.
+Similarly, NETCAP automatically removes log files (netcap.log, collector.log, decoder.log, io.log, resolvers.log, reassembly.log, db.log, errors.log) that are empty after flushing and closing their file handles.
+
+Unfortunately, windows does not allow closing and opening a file from the same process within such small time interval, which leads to the shown error. As a consequence, empty audit record files and empty log files may not be removed automatically on windows.
 
 If you know a workaround for this, please let me know.
 {% endhint %}

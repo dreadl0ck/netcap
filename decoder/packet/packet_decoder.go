@@ -15,15 +15,15 @@ package packet
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"log"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gopacket/gopacket"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
@@ -31,6 +31,7 @@ import (
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gopacket/gopacket"
 	"github.com/mgutz/ansi"
 	"github.com/pkg/errors"
 )
@@ -221,6 +222,7 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 				StartTime:            time.Now(),
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
+				PerfTracker:          c.PerfTracker,
 			})
 			dec.SetWriter(w)
 

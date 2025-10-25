@@ -49,6 +49,7 @@ func (c *Collector) Init() (err error) {
 	}
 
 	// set configuration for decoder pkgs
+	c.config.DecoderConfig.PerfTracker = c.perfTracker
 	packet.SetConfig(c.config.DecoderConfig)
 
 	decoderconfig.Instance = c.config.DecoderConfig
@@ -92,6 +93,7 @@ func (c *Collector) Init() (err error) {
 	}
 
 	// initialize resolvers
+	resolvers.SetPerfTracker(c.perfTracker)
 	resolvers.Init(c.config.ResolverConfig, c.config.DecoderConfig.Quiet)
 
 	// print database load confirmation in debug mode

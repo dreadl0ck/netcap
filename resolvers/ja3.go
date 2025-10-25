@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -49,7 +50,16 @@ type ja3UserAgent struct {
 // access to the underlying map is not locked
 // because after initialization the map is always read and never written again.
 func LookupJa3(hash string) string {
+	startTime := time.Now()
+	cacheHit := false
+	defer func() {
+		if perfTracker != nil {
+			perfTracker.RecordResolver("Ja3", time.Since(startTime), cacheHit)
+		}
+	}()
+
 	if res, ok := ja3DB[hash]; ok {
+		cacheHit = true
 		return res.Desc
 	}
 	return ""

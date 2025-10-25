@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -116,6 +117,21 @@ func (w *protoWriter) Write(msg proto.Message) error {
 		return nil // Silently ignore writes to closed writer
 	}
 
+	// Track disk I/O performance
+	if w.wc.PerfTracker != nil {
+		start := time.Now()
+		err := w.pWriter.putProto(msg)
+		duration := time.Since(start)
+
+		// Estimate bytes written (proto size + varint length)
+		if err == nil {
+			size := proto.Size(msg)
+			w.wc.PerfTracker.RecordDiskWrite(w.wc.Name, duration, int64(size))
+		}
+
+		return err
+	}
+
 	return w.pWriter.putProto(msg)
 }
 
@@ -151,6 +167,13 @@ func (w *protoWriter) Close(numRecords int64) (name string, size int64) {
 
 	if w.wc.Compress {
 		closeGzipWriters(w.gWriter)
+	}
+
+	// Track file sync performance
+	if w.wc.PerfTracker != nil && w.file != nil {
+		start := time.Now()
+		_ = w.file.Sync()
+		w.wc.PerfTracker.RecordDiskSync(w.wc.Name, time.Since(start))
 	}
 
 	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)

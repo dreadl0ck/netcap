@@ -68,6 +68,13 @@ func IsPrivateIP(ip net.IP) bool {
 
 // LookupDNSNames retrieves the DNS names associated with an IP address.
 func LookupDNSNames(ip string) []string {
+	startTime := time.Now()
+	defer func() {
+		if perfTracker != nil {
+			perfTracker.RecordResolver("DNS", time.Since(startTime), false)
+		}
+	}()
+
 	if disableReverseDNS {
 		return []string{}
 	}
@@ -87,6 +94,11 @@ func LookupDNSNames(ip string) []string {
 	dnsNamesMu.Lock()
 	if res, ok := dnsNamesDB[ip]; ok {
 		dnsNamesMu.Unlock()
+
+		// Record cache hit
+		if perfTracker != nil {
+			perfTracker.RecordResolver("DNS", time.Since(startTime), true)
+		}
 
 		return res
 	}

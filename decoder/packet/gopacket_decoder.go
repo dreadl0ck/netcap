@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gopacket/gopacket"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gopacket/gopacket"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -199,6 +199,7 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 				StartTime:            time.Now(),
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
+				PerfTracker:          c.PerfTracker,
 			})
 
 			// write netcap header

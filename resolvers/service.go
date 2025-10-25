@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -201,12 +202,22 @@ func InitServiceDB() {
 
 // LookupServiceByPort looks up the service name associated with a given port and protocol.
 func LookupServiceByPort(port int, protocol string) string {
+	startTime := time.Now()
+	cacheHit := false
+	defer func() {
+		if perfTracker != nil {
+			perfTracker.RecordResolver("Service", time.Since(startTime), cacheHit)
+		}
+	}()
+
 	if protocol == "TCP" {
 		if res, ok := tcpPortMap[port]; ok {
+			cacheHit = true
 			return res.service
 		}
 	} else {
 		if res, ok := udpPortMap[port]; ok {
+			cacheHit = true
 			return res.service
 		}
 	}

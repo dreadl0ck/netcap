@@ -16,6 +16,7 @@ package io
 import (
 	"time"
 
+	"github.com/dreadl0ck/netcap/performance"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -73,4 +74,7 @@ type WriterConfig struct {
 
 	// Label data on the fly
 	Label bool
+
+	// Performance tracker for measuring disk I/O
+	PerfTracker *performance.Tracker
 }

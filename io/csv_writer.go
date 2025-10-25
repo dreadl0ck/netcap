@@ -15,13 +15,15 @@ package io
 
 import (
 	"bufio"
-	"github.com/gogo/protobuf/proto"
-	"github.com/klauspost/pgzip"
-	"go.uber.org/zap"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/klauspost/pgzip"
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
@@ -96,6 +98,18 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 
 // WriteCSV writes a CSV record.
 func (w *csvWriter) Write(msg proto.Message) error {
+	// Track disk I/O performance
+	if w.wc.PerfTracker != nil {
+		start := time.Now()
+		n, err := w.csvWriter.writeRecord(msg)
+		duration := time.Since(start)
+
+		if err == nil && n > 0 {
+			w.wc.PerfTracker.RecordDiskWrite(w.wc.Name, duration, int64(n))
+		}
+
+		return err
+	}
 
 	_, err := w.csvWriter.writeRecord(msg)
 
@@ -119,6 +133,13 @@ func (w *csvWriter) Close(numRecords int64) (name string, size int64) {
 
 	if w.wc.Compress {
 		closeGzipWriters(w.gWriter)
+	}
+
+	// Track file sync performance
+	if w.wc.PerfTracker != nil && w.file != nil {
+		start := time.Now()
+		_ = w.file.Sync()
+		w.wc.PerfTracker.RecordDiskSync(w.wc.Name, time.Since(start))
 	}
 
 	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)

@@ -62,7 +62,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			if c.config.ReassembleConnections {
 				t := time.Now()
 				tcp.ReassemblePacket(pkt, assembler)
-				reassemblyTime.WithLabelValues().Set(float64(time.Since(t).Nanoseconds()))
+				duration := time.Since(t)
+				reassemblyTime.WithLabelValues().Set(float64(duration.Nanoseconds()))
+				c.perfTracker.RecordReassembly(duration)
 			}
 
 			// create context for packet
@@ -124,7 +126,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 					for _, dec = range decoders {
 						t := time.Now()
 						err = dec.Decode(ctx, pkt, layer)
-						gopacketDecoderTime.WithLabelValues(layer.LayerType().String()).Set(float64(time.Since(t).Nanoseconds()))
+						duration := time.Since(t)
+						gopacketDecoderTime.WithLabelValues(layer.LayerType().String()).Set(float64(duration.Nanoseconds()))
+						c.perfTracker.RecordGoPacketDecoder(layer.LayerType().String(), duration)
 						if err != nil {
 							if c.config.DecoderConfig.ExportMetrics {
 								decodingErrorsTotal.WithLabelValues(layer.LayerType().String(), err.Error()).Inc()
@@ -159,7 +163,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			for _, customDec = range c.packetDecoders {
 				t := time.Now()
 				err = customDec.Decode(pkt)
-				customDecoderTime.WithLabelValues(customDec.GetName()).Set(float64(time.Since(t).Nanoseconds()))
+				duration := time.Since(t)
+				customDecoderTime.WithLabelValues(customDec.GetName()).Set(float64(duration.Nanoseconds()))
+				c.perfTracker.RecordCustomDecoder(customDec.GetName(), duration)
 				if err != nil {
 					if c.config.DecoderConfig.ExportMetrics {
 						decodingErrorsTotal.WithLabelValues(customDec.GetName(), err.Error()).Inc()
