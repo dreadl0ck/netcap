@@ -16,6 +16,7 @@ package collector
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -100,8 +101,9 @@ type Collector struct {
 	wg                       sync.WaitGroup
 	shutdown                 bool
 	isLive                   bool
-	cleanupOnce              sync.Once   // ensure cleanup only runs once
-	logFilesClosed           atomic.Bool // track if log files have been closed
+	cleanupOnce              sync.Once          // ensure cleanup only runs once
+	logFilesClosed           atomic.Bool        // track if log files have been closed
+	freeOSMemCancel          context.CancelFunc // cancel function for freeOSMemory goroutine
 
 	// logging
 	log           *zap.Logger // collector.log
@@ -856,10 +858,19 @@ func (c *Collector) GetNumPackets() int64 {
 	return atomic.LoadInt64(&c.current)
 }
 
-// FreeOSMemory forces freeing memory.
-func (c *Collector) freeOSMemory() {
-	for range time.After(time.Duration(c.config.FreeOSMem) * time.Minute) {
-		debug.FreeOSMemory()
+// FreeOSMemory forces freeing memory periodically until context is cancelled.
+func (c *Collector) freeOSMemory(ctx context.Context) {
+	ticker := time.NewTicker(time.Duration(c.config.FreeOSMem) * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			debug.FreeOSMemory()
+		case <-ctx.Done():
+			// Context cancelled, terminate goroutine
+			return
+		}
 	}
 }
 

@@ -736,8 +736,9 @@ func Run() {
 				// Report memory usage before cleanup
 				var m runtime.MemStats
 				runtime.ReadMemStats(&m)
-				fmt.Printf("Memory before cleanup: Heap Alloc=%s, Heap Sys=%s\n",
-					humanize.Bytes(m.HeapAlloc), humanize.Bytes(m.HeapSys))
+				numGoroutines := runtime.NumGoroutine()
+				fmt.Printf("Memory before cleanup: Heap Alloc=%s, Heap Sys=%s, Goroutines=%d\n",
+					humanize.Bytes(m.HeapAlloc), humanize.Bytes(m.HeapSys), numGoroutines)
 
 				// Step 1: Reset packet-level state (lightweight, no heavy allocations)
 				packet.ResetDeviceProfiles()
@@ -793,8 +794,9 @@ func Run() {
 
 				// Report memory usage after cleanup
 				runtime.ReadMemStats(&m)
-				fmt.Printf("Memory after cleanup: Heap Alloc=%s, Heap Sys=%s\n",
-					humanize.Bytes(m.HeapAlloc), humanize.Bytes(m.HeapSys))
+				numGoroutines = runtime.NumGoroutine()
+				fmt.Printf("Memory after cleanup: Heap Alloc=%s, Heap Sys=%s, Goroutines=%d\n",
+					humanize.Bytes(m.HeapAlloc), humanize.Bytes(m.HeapSys), numGoroutines)
 			}
 
 			// Set output directory for this specific file

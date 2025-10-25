@@ -6,6 +6,12 @@
 - tests iteration
 -----
 
+  for f in *.pcap *.pcapng; do [ -f "$f" ] && net capture -y -read "$f" -out "${f%.*}"; done
+
+or
+
+  find . -maxdepth 1 \( -name "*.pcap" -o -name "*.pcapng" \) -type f -exec sh -c 'net capture -read "$1" -out "${1%.*}"' _ {} \;
+
 VSCode extension to view netcap audit records?
 
 switch to gopacket/reassembly and tcpassembly

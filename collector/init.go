@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -220,8 +221,9 @@ func (c *Collector) Init() (err error) {
 	// this is meant for diagnostic purposes and should not be used in production
 	if c.config.FreeOSMem != 0 {
 		fmt.Println("will free the OS memory every", c.config.FreeOSMem, "minutes")
-
-		go c.freeOSMemory()
+		ctx, cancel := context.WithCancel(context.Background())
+		c.freeOSMemCancel = cancel
+		go c.freeOSMemory(ctx)
 	}
 
 	// wait for decoder init to finish

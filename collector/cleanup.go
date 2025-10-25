@@ -59,6 +59,12 @@ func (c *Collector) doCleanup(force bool) {
 	c.shutdown = true
 	c.statMutex.Unlock()
 
+	// Cancel freeOSMemory goroutine if running
+	if c.freeOSMemCancel != nil {
+		c.freeOSMemCancel()
+		c.freeOSMemCancel = nil
+	}
+
 	// Stop all workers.
 	// this will block until all workers are stopped
 	// all packets left in the packet queues will be processed
