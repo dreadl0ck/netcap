@@ -14,6 +14,7 @@
 package capture
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -35,6 +36,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 
 	"github.com/dustin/go-humanize"
+	"github.com/evilsocket/islazy/tui"
 	"github.com/felixge/fgprof"
 	"github.com/mgutz/ansi"
 
@@ -52,6 +54,22 @@ import (
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
+
+// fileError tracks errors that occurred during file processing
+type fileError struct {
+	filename string
+	err      error
+}
+
+// fileSummary contains summary statistics for a processed file
+type fileSummary struct {
+	filename         string
+	auditRecordCount int64
+	inputFileSize    int64
+	outputTotalSize  int64
+	processingTime   time.Duration
+	err              error
+}
 
 // expandPcapFiles expands wildcards to find all pcap and pcapng files
 func expandPcapFiles(pattern string) ([]string, error) {
@@ -140,6 +158,155 @@ func uniqueFiles(files []string) []string {
 	}
 
 	return result
+}
+
+// writeSummaryTable writes a detailed summary table for multi-file processing
+// to both stdout and a log file on disk using the tui.Table package
+func writeSummaryTable(inputFiles []string, summaries []fileSummary, fileErrors []fileError, outDir string) {
+	// Print header
+	fmt.Println("\n================================================================================")
+	fmt.Println("                         Multi-File Processing Summary                          ")
+	fmt.Println("================================================================================")
+	fmt.Printf("Total files processed: %d\n", len(inputFiles))
+	fmt.Printf("Successful: %d\n", len(inputFiles)-len(fileErrors))
+	fmt.Printf("Failed: %d\n", len(fileErrors))
+	fmt.Printf("Timestamp: %s\n", time.Now().Format(time.RFC3339))
+	fmt.Println("================================================================================")
+
+	// Build table rows
+	var rows [][]string
+	var totalAuditRecords int64
+	var totalInputSize int64
+	var totalOutputSize int64
+	var totalProcessingTime time.Duration
+
+	for _, summary := range summaries {
+		fileName := filepath.Base(summary.filename)
+		if len(fileName) > 45 {
+			fileName = fileName[:42] + "..."
+		}
+
+		status := ansi.Green + "OK" + ansi.Reset
+		if summary.err != nil {
+			status = ansi.Red + "ERROR" + ansi.Reset
+		}
+
+		rows = append(rows, []string{
+			fileName,
+			humanize.Comma(summary.auditRecordCount),
+			humanize.Bytes(uint64(summary.inputFileSize)),
+			humanize.Bytes(uint64(summary.outputTotalSize)),
+			summary.processingTime.Round(time.Millisecond).String(),
+			status,
+		})
+
+		totalAuditRecords += summary.auditRecordCount
+		totalInputSize += summary.inputFileSize
+		totalOutputSize += summary.outputTotalSize
+		totalProcessingTime += summary.processingTime
+	}
+
+	// Add totals row
+	rows = append(rows, []string{
+		ansi.White + "TOTAL" + ansi.Reset,
+		ansi.White + humanize.Comma(totalAuditRecords) + ansi.Reset,
+		ansi.White + humanize.Bytes(uint64(totalInputSize)) + ansi.Reset,
+		ansi.White + humanize.Bytes(uint64(totalOutputSize)) + ansi.Reset,
+		ansi.White + totalProcessingTime.Round(time.Millisecond).String() + ansi.Reset,
+		"",
+	})
+
+	// Print table to stdout (with colors)
+	headers := []string{"Input File", "Audit Records", "Input Size", "Output Size", "Processing Time", "Status"}
+	tui.Table(os.Stdout, headers, rows)
+	fmt.Println()
+
+	// Print error details if any
+	if len(fileErrors) > 0 {
+		fmt.Printf("%sErrors Encountered:%s\n", ansi.Red, ansi.Reset)
+		fmt.Println("================================================================================")
+		for i, fe := range fileErrors {
+			fmt.Printf("%d. %s%s%s\n", i+1, ansi.Yellow, filepath.Base(fe.filename), ansi.Reset)
+			fmt.Printf("   Error: %v\n\n", fe.err)
+		}
+	} else {
+		fmt.Printf("%sAll files processed successfully!%s\n", ansi.Green, ansi.Reset)
+	}
+
+	// Write to log file (without ANSI color codes)
+	summaryLogPath := filepath.Join(outDir, "multi-file-summary.log")
+	summaryFile, err := os.Create(summaryLogPath)
+	if err != nil {
+		fmt.Printf("Warning: failed to create summary log file: %v\n", err)
+		return
+	}
+	defer summaryFile.Close()
+
+	// Write header to log file
+	fmt.Fprintf(summaryFile, "================================================================================\n")
+	fmt.Fprintf(summaryFile, "                         Multi-File Processing Summary                          \n")
+	fmt.Fprintf(summaryFile, "================================================================================\n")
+	fmt.Fprintf(summaryFile, "Total files processed: %d\n", len(inputFiles))
+	fmt.Fprintf(summaryFile, "Successful: %d\n", len(inputFiles)-len(fileErrors))
+	fmt.Fprintf(summaryFile, "Failed: %d\n", len(fileErrors))
+	fmt.Fprintf(summaryFile, "Timestamp: %s\n", time.Now().Format(time.RFC3339))
+	fmt.Fprintf(summaryFile, "================================================================================\n\n")
+
+	// Build rows without color codes for log file
+	var plainRows [][]string
+	for _, summary := range summaries {
+		fileName := filepath.Base(summary.filename)
+		if len(fileName) > 45 {
+			fileName = fileName[:42] + "..."
+		}
+
+		status := "OK"
+		if summary.err != nil {
+			status = "ERROR"
+		}
+
+		plainRows = append(plainRows, []string{
+			fileName,
+			humanize.Comma(summary.auditRecordCount),
+			humanize.Bytes(uint64(summary.inputFileSize)),
+			humanize.Bytes(uint64(summary.outputTotalSize)),
+			summary.processingTime.Round(time.Millisecond).String(),
+			status,
+		})
+	}
+
+	// Add totals row without color codes
+	plainRows = append(plainRows, []string{
+		"TOTAL",
+		humanize.Comma(totalAuditRecords),
+		humanize.Bytes(uint64(totalInputSize)),
+		humanize.Bytes(uint64(totalOutputSize)),
+		totalProcessingTime.Round(time.Millisecond).String(),
+		"",
+	})
+
+	// Write table to log file using a buffer to capture output
+	var buf bytes.Buffer
+	tui.Table(&buf, headers, plainRows)
+	_, err = summaryFile.WriteString(buf.String())
+	if err != nil {
+		fmt.Printf("Warning: failed to write summary table: %v\n", err)
+		return
+	}
+
+	// Write error details to log file
+	if len(fileErrors) > 0 {
+		fmt.Fprintf(summaryFile, "\nErrors Encountered:\n")
+		fmt.Fprintf(summaryFile, "================================================================================\n")
+		for i, fe := range fileErrors {
+			fmt.Fprintf(summaryFile, "%d. %s\n", i+1, filepath.Base(fe.filename))
+			fmt.Fprintf(summaryFile, "   Error: %v\n\n", fe.err)
+		}
+	} else {
+		fmt.Fprintf(summaryFile, "\nAll files processed successfully!\n")
+	}
+
+	fmt.Printf("\n%sSummary table written to: %s%s\n", ansi.Green, summaryLogPath, ansi.Reset)
 }
 
 // Run parses the subcommand flags and handles the arguments.
@@ -540,12 +707,9 @@ func Run() {
 		return
 	}
 
-	// Track errors for each file when processing multiple files
-	type fileError struct {
-		filename string
-		err      error
-	}
+	// Track errors and summary statistics for each file when processing multiple files
 	var fileErrors []fileError
+	var fileSummaries []fileSummary
 
 	// Process each input file
 	for fileIdx, inputFile := range inputFiles {
@@ -769,27 +933,34 @@ func Run() {
 		// Force cleanup after processing each file to reset state
 		if len(inputFiles) > 1 {
 			fmt.Printf("\nCompleted processing: %s\n", inputFile)
+
+			// Collect summary statistics for this file
+			summary := fileSummary{
+				filename:        inputFile,
+				inputFileSize:   fileInfo.Size(),
+				outputTotalSize: c.GetTotalBytesWritten(),
+				processingTime:  time.Since(start),
+				err:             nil,
+			}
+
+			// Count total audit records from all decoders
+			summary.auditRecordCount = c.GetTotalAuditRecords()
+
+			// If there was an error for this file, add it to the summary
+			for _, fe := range fileErrors {
+				if fe.filename == inputFile {
+					summary.err = fe.err
+					break
+				}
+			}
+
+			fileSummaries = append(fileSummaries, summary)
 		}
 	}
 
-	// Print error summary for wildcard mode
+	// Print detailed summary table for multi-file mode
 	if len(inputFiles) > 1 {
-		fmt.Printf("\n========================================\n")
-		fmt.Printf("Batch Processing Summary\n")
-		fmt.Printf("========================================\n")
-		fmt.Printf("Total files: %d\n", len(inputFiles))
-		fmt.Printf("Successful: %d\n", len(inputFiles)-len(fileErrors))
-		fmt.Printf("Failed: %d\n", len(fileErrors))
-
-		if len(fileErrors) > 0 {
-			fmt.Printf("\n%sErrors encountered:%s\n", ansi.Red, ansi.Reset)
-			for i, fe := range fileErrors {
-				fmt.Printf("%d. %s%s%s\n   Error: %v\n", i+1, ansi.Yellow, fe.filename, ansi.Reset, fe.err)
-			}
-		} else {
-			fmt.Printf("\n%sAll files processed successfully!%s\n", ansi.Green, ansi.Reset)
-		}
-		fmt.Printf("========================================\n")
+		writeSummaryTable(inputFiles, fileSummaries, fileErrors, originalOutDir)
 	}
 
 	// memory profiling (after all files processed)

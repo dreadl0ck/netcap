@@ -31,6 +31,8 @@ import (
 // optionally a BPF can be supplied.
 // this is the linux version that uses the pure go version from pcapgo to fetch packets live.
 func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error {
+	// Recover from any panics during processing
+	defer c.recoverFromPanic()
 
 	// use raw socket to fetch packet on linux live mode
 	handle, err := pcapgo.NewEthernetHandle(i)

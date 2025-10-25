@@ -15,12 +15,13 @@ package io
 
 import (
 	"bufio"
-	"go.uber.org/zap"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
+
+	"go.uber.org/zap"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/klauspost/pgzip"
@@ -39,8 +40,9 @@ type protoWriter struct {
 	dWriter *delimited.Writer
 	pWriter *delimitedProtoWriter
 
-	file *os.File
-	wc   *WriterConfig
+	file   *os.File
+	wc     *WriterConfig
+	closed bool
 }
 
 // newProtoWriter initializes and configures a new protoWriter instance.
@@ -109,11 +111,24 @@ func (w *protoWriter) Write(msg proto.Message) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
+	// Check if writer has been closed
+	if w.closed {
+		return nil // Silently ignore writes to closed writer
+	}
+
 	return w.pWriter.putProto(msg)
 }
 
 // WriteHeader writes a netcap file header for protobuf encoded audit record files.
 func (w *protoWriter) WriteHeader(t types.Type) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	// Check if writer has been closed
+	if w.closed {
+		return nil // Silently ignore writes to closed writer
+	}
+
 	return w.pWriter.putProto(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
 }
 
@@ -121,6 +136,14 @@ func (w *protoWriter) WriteHeader(t types.Type) error {
 func (w *protoWriter) Close(numRecords int64) (name string, size int64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
+	// Check if already closed
+	if w.closed {
+		return "", 0
+	}
+
+	// Mark as closed to prevent further writes
+	w.closed = true
 
 	if w.wc.Buffer {
 		flushWriters(w.bWriter)

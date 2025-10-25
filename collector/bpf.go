@@ -24,6 +24,9 @@ import (
 
 // CollectBPF open the named PCAP file and sets the specified BPF filter.
 func (c *Collector) CollectBPF(path, bpf string) error {
+	// Recover from any panics during processing
+	defer c.recoverFromPanic()
+
 	// open pcap file at path
 	handle, err := pcap.OpenOffline(path)
 	if err != nil {

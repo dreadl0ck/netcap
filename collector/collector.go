@@ -122,6 +122,44 @@ type Collector struct {
 	statsInterval time.Duration
 }
 
+// GetTotalBytesWritten returns the total bytes written to disk.
+func (c *Collector) GetTotalBytesWritten() int64 {
+	c.statMutex.Lock()
+	defer c.statMutex.Unlock()
+	return c.totalBytesWritten
+}
+
+// GetTotalAuditRecords returns the total number of audit records generated.
+func (c *Collector) GetTotalAuditRecords() int64 {
+	var total int64
+
+	// Count GoPacket decoder records
+	c.unknownProtosAtomic.Lock()
+	for k, v := range c.allProtosAtomic.Items {
+		if k != "Payload" {
+			total += v
+		}
+	}
+	c.unknownProtosAtomic.Unlock()
+
+	// Count packet decoder records
+	for _, d := range c.packetDecoders {
+		total += d.NumRecords()
+	}
+
+	// Count stream decoder records
+	for _, d := range c.streamDecoders {
+		total += d.NumRecords()
+	}
+
+	// Count abstract decoder records
+	for _, d := range c.abstractDecoders {
+		total += d.NumRecords()
+	}
+
+	return total
+}
+
 // New returns a new Collector instance.
 func New(config Config) *Collector {
 	if config.OutDirPermission == 0 {
@@ -139,6 +177,45 @@ func New(config Config) *Collector {
 		numEpochs:           1,
 		pps:                 map[time.Time]float64{},
 		statsInterval:       5 * time.Second,
+	}
+}
+
+// recoverFromPanic handles panic recovery, logs the panic to netcap.log, and triggers cleanup.
+func (c *Collector) recoverFromPanic() {
+	if r := recover(); r != nil {
+		// Get the stack trace
+		stackTrace := debug.Stack()
+
+		// Log to netcap.log if available
+		if c.netcapLog != nil {
+			c.netcapLog.Printf("PANIC during pcap processing: %v\n", r)
+			c.netcapLog.Printf("Stack trace:\n%s\n", string(stackTrace))
+		}
+
+		// Also log to collector.log if available
+		if c.log != nil {
+			c.log.Error("PANIC during pcap processing",
+				zap.Any("panic", r),
+				zap.String("stackTrace", string(stackTrace)),
+			)
+		}
+
+		// Ensure all files are flushed to disk
+		if c.netcapLogFile != nil {
+			_ = c.netcapLogFile.Sync()
+		}
+
+		// Print to stderr for visibility
+		fmt.Fprintf(os.Stderr, "\n\nPANIC during pcap processing: %v\n", r)
+		fmt.Fprintf(os.Stderr, "Stack trace:\n%s\n", string(stackTrace))
+		fmt.Fprintf(os.Stderr, "Panic details have been written to netcap.log\n")
+
+		// Trigger cleanup to close and flush all files
+		// Use force=true to ensure cleanup happens even if there's an error
+		c.cleanup(true)
+
+		// Exit with error code
+		os.Exit(1)
 	}
 }
 

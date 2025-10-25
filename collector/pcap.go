@@ -241,6 +241,9 @@ func countPackets(path string) (count int64, err error) {
 
 // CollectPcap implements parallel decoding of incoming packets.
 func (c *Collector) CollectPcap(path string) error {
+	// Recover from any panics during processing
+	defer c.recoverFromPanic()
+
 	// stat input file
 	stat, err := os.Stat(path)
 	if err != nil {

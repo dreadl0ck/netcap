@@ -78,6 +78,9 @@ func countPacketsNG(path string) (count int64, err error) {
 
 // CollectPcapNG implements parallel decoding of incoming packets.
 func (c *Collector) CollectPcapNG(path string) error {
+	// Recover from any panics during processing
+	defer c.recoverFromPanic()
+
 	// stat input file
 	stat, err := os.Stat(path)
 	if err != nil {

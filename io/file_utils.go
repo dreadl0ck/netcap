@@ -15,12 +15,13 @@ package io
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"go.uber.org/zap"
 
 	"github.com/klauspost/pgzip"
 
@@ -37,23 +38,34 @@ type flushableWriter interface {
 
 func flushWriters(writers ...flushableWriter) {
 	for _, w := range writers {
+		if w == nil {
+			continue
+		}
+
 		err := w.Flush()
 		if err != nil {
-			panic(err)
+			// Log error but don't panic - writer might already be closed
+			fmt.Println("[ERROR] failed to flush writer:", err)
 		}
 	}
 }
 
 func closeGzipWriters(writers ...*pgzip.Writer) {
 	for _, w := range writers {
+		if w == nil {
+			continue
+		}
+
 		err := w.Flush()
 		if err != nil {
-			panic(err)
+			// Log error but don't panic - writer might already be closed
+			fmt.Println("[ERROR] failed to flush gzip writer:", err)
 		}
 
 		err = w.Close()
 		if err != nil {
-			panic(err)
+			// Log error but don't panic - writer might already be closed
+			fmt.Println("[ERROR] failed to close gzip writer:", err)
 		}
 	}
 }
