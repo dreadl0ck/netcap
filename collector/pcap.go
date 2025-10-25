@@ -174,7 +174,10 @@ func OpenPCAP(file string) (*pcapgo.Reader, *os.File, error) {
 	// try to create pcap reader
 	r, err := pcapgo.NewReader(f)
 	if err != nil {
-		return nil, nil, err
+		// Close the file before returning error
+		f.Close()
+		// Enhance the error with file type detection
+		return nil, nil, enhancePcapError(file, err)
 	}
 
 	return r, f, nil

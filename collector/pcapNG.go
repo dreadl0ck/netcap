@@ -37,7 +37,10 @@ func openPcapNG(file string) (*pcapgo.NgReader, *os.File, error) {
 	// try to create pcap reader
 	r, err := pcapgo.NewNgReader(f, pcapgo.DefaultNgReaderOptions)
 	if err != nil {
-		return nil, nil, err
+		// Close the file before returning error
+		f.Close()
+		// Enhance the error with file type detection
+		return nil, nil, enhancePcapError(file, err)
 	}
 
 	return r, f, nil
