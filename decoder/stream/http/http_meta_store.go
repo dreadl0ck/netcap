@@ -66,6 +66,19 @@ var httpStore = &httpMetaStore{
 	CMSCookies:  make(map[string][]cookie),
 }
 
+// ResetHTTPStore clears the HTTP meta store
+// This should be called when resetting state between processing different files
+func ResetHTTPStore() {
+	httpStore.Lock()
+	httpStore.ServerNames = make(map[string]string)
+	httpStore.UserAgents = make(map[string]string)
+	httpStore.Vias = make(map[string]string)
+	httpStore.XPoweredBy = make(map[string]string)
+	httpStore.CMSHeaders = make(map[string][]header)
+	httpStore.CMSCookies = make(map[string][]cookie)
+	httpStore.Unlock()
+}
+
 // populate the global http meta information store
 // unused at the moment because too inefficient
 func updateHTTPStore(h *types.HTTP) {

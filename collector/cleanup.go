@@ -100,6 +100,17 @@ func (c *Collector) doCleanup(force bool) {
 		c.assemblers = nil
 	}
 
+	// CRITICAL: Close and nil worker channels to allow GC
+	// Worker goroutines have already exited (stopWorkers sent nil to each)
+	// But the channels themselves need to be closed and nil'd
+	c.mu.Lock()
+	for i := range c.workers {
+		close(c.workers[i])
+		c.workers[i] = nil
+	}
+	c.workers = nil
+	c.mu.Unlock()
+
 	c.teardown()
 }
 

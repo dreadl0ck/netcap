@@ -93,6 +93,14 @@ var (
 	credStoreMu sync.Mutex
 )
 
+// ResetCredStore clears the credentials deduplication store
+// This should be called when resetting state between processing different files
+func ResetCredStore() {
+	credStoreMu.Lock()
+	credStore = make(map[string]string)
+	credStoreMu.Unlock()
+}
+
 //goland:noinspection GoUnusedFunction
 func harvesterDebug(ident string, data []byte, args ...interface{}) {
 	fmt.Println(ident, "\n", hex.Dump(data), args)

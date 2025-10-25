@@ -362,6 +362,12 @@ func enumerate(in string) string {
 	return in + "-1"
 }
 
+// ResetProbeEnums clears the service probe enumeration map
+// This should be called when resetting state between processing different files
+func ResetProbeEnums() {
+	serviceProbeIdentEnums = make(map[string]int)
+}
+
 func initServiceProbes() error {
 	// load nmap service probes
 	data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseFolderPath, "nmap-service-probes"))

@@ -816,3 +816,22 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 //	}
 //	s.Unlock()
 //}
+
+// ResetCaches clears all global caches to prevent memory accumulation
+// between multi-file processing runs.
+// CRITICAL: This must be called between file processing to prevent unbounded memory growth.
+func ResetCaches() {
+	// Clear UserAgent cache
+	jaCacheMutex.Lock()
+	UserAgentCache = make(map[string]*userAgent)
+	ja3Cache = make(map[string]string)
+	jaCacheMutex.Unlock()
+
+	// CRITICAL: Clear software store - accumulates ALL software detections
+	Store.Lock()
+	Store.Items = make(map[string]*AtomicSoftware)
+	Store.Unlock()
+
+	// cmsDB is loaded once from file and should not be cleared
+	// CMSCookies and CMSHeaders are also static configuration, not cleared
+}

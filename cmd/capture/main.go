@@ -46,9 +46,15 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/packet"
+	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
+	httpstream "github.com/dreadl0ck/netcap/decoder/stream/http"
 	"github.com/dreadl0ck/netcap/decoder/stream/service"
+	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
 	"github.com/dreadl0ck/netcap/decoder/stream/udp"
+	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
+	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/io"
@@ -740,7 +746,20 @@ func Run() {
 
 				// Step 2: Reset stream-level state (lightweight)
 				service.ResetStore()
+				service.ResetProbeEnums()
 				udp.ResetStreams()
+				httpstream.ResetHTTPStore()
+				streamutils.ResetStats()
+
+				// Step 2a: CRITICAL - Reset global caches that accumulate unbounded
+				// UserAgentCache, ja3Cache, and Software Store accumulate across all files
+				software.ResetCaches()
+
+				// Step 2b: CRITICAL - Reset deduplication stores
+				// These accumulate ALL unique credentials/exploits/vulns across files
+				credentials.ResetCredStore()
+				exploit.ResetExploitStore()
+				vulnerability.ResetVulnStore()
 
 				// Step 3: CRITICAL - Nil out collector FIRST to release assemblers
 				// This breaks the reference chain: collector -> assemblers -> old StreamPool
