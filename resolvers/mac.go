@@ -17,12 +17,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"path/filepath"
 	"strings"
 
+	"github.com/gopacket/gopacket/macs"
 	"go.uber.org/zap"
 )
 
@@ -49,43 +51,57 @@ type macSummary struct {
 
 var macDB = make(map[string]macSummary)
 
-// initMACResolver loads the JSON mac DB into a map in memory.
+// initMACResolver loads the MAC DB into memory.
+// It first attempts to use gopacket's built-in MAC prefix data,
+// and optionally supplements it with the JSON database from macaddress.io if available.
 func initMACResolver() {
 	var sums int
 
+	// First, try to load the optional JSON database as a supplement
 	dbPath := filepath.Join(DataBaseFolderPath, "macaddress.io-db.json")
 	data, err := ioutil.ReadFile(dbPath)
 	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	for _, line := range bytes.Split(data, []byte{'\n'}) {
-		if len(line) == 0 {
-			continue
+		// Not an error - we'll use gopacket's built-in data only
+		if !quiet {
+			resolverLog.Info("macaddress.io-db.json not found, using gopacket's built-in MAC prefix database")
 		}
-
-		var sum macSummary
-		if err = json.Unmarshal(line, &sum); err != nil {
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				break
+	} else {
+		// Load additional entries from JSON database if available
+		for _, line := range bytes.Split(data, []byte{'\n'}) {
+			if len(line) == 0 {
+				continue
 			}
-			log.Println("failed to unmarshal record:", err, string(line), "in macaddress.io-db.json")
-			continue
-		}
 
-		macDB[sum.OUI] = sum
-		sums++
+			var sum macSummary
+			if err = json.Unmarshal(line, &sum); err != nil {
+				if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+					break
+				}
+				log.Println("failed to unmarshal record:", err, string(line), "in macaddress.io-db.json")
+				continue
+			}
+
+			macDB[sum.OUI] = sum
+			sums++
+		}
+		if !quiet {
+			resolverLog.Info("loaded additional OUI summaries from JSON",
+				zap.Int("total", sums),
+				zap.String("from", dbPath),
+			)
+		}
 	}
+
+	// Log that we're also using gopacket's built-in database
 	if !quiet {
-		resolverLog.Info("loaded OUI summaries",
-			zap.Int("total", sums),
-			zap.String("from", dbPath),
+		resolverLog.Info("using gopacket's built-in MAC prefix database",
+			zap.Int("prefixes", len(macs.ValidMACPrefixMap)),
 		)
 	}
 }
 
 // LookupManufacturer resolves a MAC addr to the manufacturer.
+// It first checks the optional JSON database, then falls back to gopacket's built-in data.
 func LookupManufacturer(mac string) string {
 	if len(mac) < 8 {
 		return ""
@@ -93,8 +109,40 @@ func LookupManufacturer(mac string) string {
 
 	oui := strings.ToUpper(mac[:8])
 
+	// First check the JSON database if it was loaded
 	if res, ok := macDB[oui]; ok {
-		return res.CompanyName
+		// Skip entries that are redacted in free version
+		if !strings.Contains(res.CompanyName, "REDACTED") {
+			return res.CompanyName
+		}
+	}
+
+	// Fall back to gopacket's built-in MAC prefix database
+	// The gopacket map uses [3]byte as key (first 3 bytes of MAC)
+	// Parse the MAC address to get the first 3 bytes
+	if len(mac) >= 8 {
+		// Parse "E8:9F:80" or "e8:9f:80" format to bytes
+		parts := strings.Split(oui, ":")
+		if len(parts) >= 3 {
+			var prefix [3]byte
+			for i := 0; i < 3; i++ {
+				// Parse hex string to byte
+				var b byte
+				if _, err := fmt.Sscanf(parts[i], "%02X", &b); err == nil {
+					prefix[i] = b
+				} else {
+					// Try lowercase
+					if _, err := fmt.Sscanf(parts[i], "%02x", &b); err != nil {
+						return ""
+					}
+					prefix[i] = b
+				}
+			}
+
+			if vendor, ok := macs.ValidMACPrefixMap[prefix]; ok {
+				return vendor
+			}
+		}
 	}
 
 	return ""
