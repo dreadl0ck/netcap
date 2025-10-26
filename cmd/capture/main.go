@@ -42,7 +42,8 @@ import (
 	"github.com/felixge/fgprof"
 	"github.com/mgutz/ansi"
 
-	// _ "net/http/pprof"
+	_ "net/http/pprof"
+
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/packet"
@@ -326,6 +327,21 @@ func Run() {
 	err := fs.Parse(os.Args[2:])
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	// Start pprof HTTP server if requested
+	if *flagPprof != "" {
+		go func() {
+			fmt.Printf("Starting pprof HTTP server on %s\n", *flagPprof)
+			fmt.Println("Access profiling endpoints:")
+			fmt.Printf("  - Goroutine profile: http://%s/debug/pprof/goroutine?debug=2\n", *flagPprof)
+			fmt.Printf("  - Heap profile:      http://%s/debug/pprof/heap\n", *flagPprof)
+			fmt.Printf("  - CPU profile:       http://%s/debug/pprof/profile\n", *flagPprof)
+			fmt.Printf("  - All profiles:      http://%s/debug/pprof/\n", *flagPprof)
+			if err := http.ListenAndServe(*flagPprof, nil); err != nil {
+				log.Printf("pprof server error: %v\n", err)
+			}
+		}()
 	}
 
 	// Collect any unparsed arguments as potential input files (for shell-expanded wildcards)

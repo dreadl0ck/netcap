@@ -24,6 +24,22 @@ Capture without prompts (answer yes to all):
 
         $ net capture -r dump.pcap -y
 
+## Debugging and Profiling
+
+For debugging goroutine leaks or performance issues, use the `-pprof` flag to start a pprof HTTP server:
+
+```bash
+$ net capture -r file1.pcap,file2.pcap -pprof localhost:6060
+```
+
+Then access profiling data via:
+- Goroutines: `curl http://localhost:6060/debug/pprof/goroutine?debug=2`
+- Heap profile: `curl http://localhost:6060/debug/pprof/heap`
+- CPU profile: `curl http://localhost:6060/debug/pprof/profile`
+- Interactive: Visit `http://localhost:6060/debug/pprof/` in a browser
+
+See [DEBUGGING.md](../../docs/DEBUGGING.md) for more details.
+
 ## Help
 
     $ net capture -h

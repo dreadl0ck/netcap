@@ -131,6 +131,7 @@ var (
 	flagYes        = fs.Bool("y", false, "answer yes to all prompts")
 	flagDebug      = fs.Bool("debug", false, "display debug information")
 	flagMemprofile = fs.String("memprofile", "", "write memory profile")
+	flagPprof      = fs.String("pprof", "", "start pprof HTTP server on specified address (e.g., localhost:6060)")
 
 	flagConnFlushInterval              = fs.Int("conn-flush-interval", defaults.ConnFlushInterval, "flush connections every X flows")
 	flagConnTimeOut                    = fs.Duration("conn-timeout", defaults.ConnTimeOut, "close connections older than X seconds")
