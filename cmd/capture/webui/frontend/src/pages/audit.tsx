@@ -1,0 +1,479 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  IconButton,
+  LinearProgress,
+  MenuItem,
+  Paper,
+  Select,
+  SelectChangeEvent,
+  Typography,
+} from '@mui/material';
+import {
+  ChevronRight as ChevronRightIcon,
+  ExpandMore as ExpandMoreIcon,
+  Folder as FolderIcon,
+  InsertDriveFile as FileIcon,
+  SwapHoriz as SwapHorizIcon,
+} from '@mui/icons-material';
+import Layout from '@/components/Layout';
+import { api, formatBytes } from '@/lib/api';
+import useSWR from 'swr';
+
+interface LayerGroup {
+  layerName: string;
+  files: any[];
+}
+
+export default function AuditRecords() {
+  const { data: files, error, mutate } = useSWR('auditFiles', () => api.getAuditFiles());
+  const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
+  const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  // Expand all sections by default
+  const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set([
+    'Link Layer', 
+    'Network Layer', 
+    'Transport Layer', 
+    'Application Layer',
+    'Stream Decoders',
+    'Abstract Decoders',
+    'Other',
+    'Unknown Layer'
+  ]));
+  const [switchingFile, setSwitchingFile] = useState(false);
+  
+  // Listen for directory changes and refresh audit files
+  useEffect(() => {
+    const handleDirectoryChange = () => {
+      console.log('Directory changed, refreshing audit files...');
+      mutate(); // Refresh audit files
+    };
+    
+    window.addEventListener('directory-changed', handleDirectoryChange);
+    return () => window.removeEventListener('directory-changed', handleDirectoryChange);
+  }, [mutate]);
+  
+  const [records, setRecords] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [streamError, setStreamError] = useState<string | null>(null);
+
+  const handleViewRecords = (type: string) => {
+    setSelectedType(type);
+    setRecords([]);
+    setProgress(0);
+    setTotal(0);
+    setLoading(true);
+    setStreamError(null);
+
+    const eventSource = api.streamAuditRecords(
+      type,
+      0,
+      1000,
+      (record) => {
+        setRecords((prev) => [...prev, record]);
+      },
+      (count) => {
+        setProgress(count);
+      },
+      (total) => {
+        setTotal(total);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Stream error:', error);
+        setStreamError(error);
+        setLoading(false);
+      }
+    );
+
+    return () => eventSource.close();
+  };
+
+  const handleClose = () => {
+    setSelectedType(null);
+    setRecords([]);
+    setStreamError(null);
+  };
+
+  const toggleLayer = (layerName: string) => {
+    setExpandedLayers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(layerName)) {
+        newSet.delete(layerName);
+      } else {
+        newSet.add(layerName);
+      }
+      return newSet;
+    });
+  };
+
+  const handleFileChange = async (event: SelectChangeEvent<string>) => {
+    const newFile = event.target.value;
+    setSwitchingFile(true);
+    try {
+      const result = await api.setActiveDirectory(newFile);
+      console.log('Directory changed to:', result.outputDir);
+      await mutateStatus(); // Refresh status
+      await mutate(); // Refresh audit files
+      
+      // Trigger global event for other components
+      window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
+    } catch (err) {
+      console.error('Failed to switch file:', err);
+      alert('Failed to switch to this file');
+    } finally {
+      setSwitchingFile(false);
+    }
+  };
+
+  // Get only completed files for the selector
+  const completedFiles = inputFiles?.filter((f: any) => f.isCompleted) || [];
+  const isMultiFile = status?.isMultiFile || false;
+
+  // Group files by layer, filtering out empty files
+  const layerGroups: LayerGroup[] = React.useMemo(() => {
+    if (!files) return [];
+    
+    // Filter out files with no records or zero size
+    const nonEmptyFiles = files.filter((file: any) => {
+      const hasRecords = file.recordCount && file.recordCount > 0;
+      const hasSize = file.size > 0;
+      return hasRecords && hasSize;
+    });
+    
+    const groups = new Map<string, any[]>();
+    nonEmptyFiles.forEach((file: any) => {
+      const layer = file.layer || 'Other';
+      if (!groups.has(layer)) {
+        groups.set(layer, []);
+      }
+      groups.get(layer)!.push(file);
+    });
+
+    // Define layer order matching netcap's hierarchy
+    const layerOrder = [
+      'Link Layer',
+      'Network Layer',
+      'Transport Layer',
+      'Application Layer',
+      'Stream Decoders',
+      'Abstract Decoders',
+      'Other'
+    ];
+
+    // Only return layers that have files with data
+    return layerOrder
+      .filter(layerName => groups.has(layerName) && groups.get(layerName)!.length > 0)
+      .map(layerName => ({
+        layerName,
+        files: groups.get(layerName)!
+      }));
+  }, [files]);
+
+  if (!files && !error) {
+    return (
+      <Layout title="Audit Records">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+          <CircularProgress />
+        </Box>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout title="Audit Records">
+        <Box>
+          <Typography color="error">Error loading audit records</Typography>
+        </Box>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout title="Audit Records">
+      <Box>
+        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3} gap={2}>
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Network Protocol Analysis
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {layerGroups.reduce((sum, group) => sum + group.files.length, 0)} protocol type(s) found • Hierarchical by encapsulation layer
+            </Typography>
+          </Box>
+          
+          {/* File selector for multi-file mode */}
+          {isMultiFile && completedFiles.length > 0 && (
+            <Box sx={{ minWidth: 300 }}>
+              <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                Viewing capture:
+              </Typography>
+              <FormControl fullWidth size="small" disabled={switchingFile}>
+                <Select
+                  value={status?.activeInputFile || ''}
+                  onChange={handleFileChange}
+                  startAdornment={
+                    switchingFile ? (
+                      <CircularProgress size={20} sx={{ mr: 1 }} />
+                    ) : (
+                      <SwapHorizIcon sx={{ mr: 1, color: 'action.active' }} />
+                    )
+                  }
+                  sx={{
+                    '& .MuiSelect-select': {
+                      display: 'flex',
+                      alignItems: 'center',
+                    },
+                  }}
+                >
+                  {completedFiles.map((file: any) => (
+                    <MenuItem key={file.path} value={file.path}>
+                      <Box display="flex" alignItems="center" gap={1} width="100%">
+                        {status?.activeInputFile === file.path && (
+                          <Chip
+                            label="Active"
+                            size="small"
+                            color="success"
+                            sx={{ height: 20, fontSize: '0.7rem' }}
+                          />
+                        )}
+                        <Typography
+                          sx={{
+                            fontFamily: 'monospace',
+                            fontSize: '0.85rem',
+                            flex: 1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {file.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatBytes(file.size)}
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+        </Box>
+
+        {layerGroups.length > 0 ? (
+          <Paper sx={{ p: 2 }}>
+            {layerGroups.map((group, groupIdx) => (
+              <Box key={group.layerName} sx={{ mb: groupIdx < layerGroups.length - 1 ? 2 : 0 }}>
+                {/* Layer Header */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    p: 1,
+                    borderRadius: 1,
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                  onClick={() => toggleLayer(group.layerName)}
+                >
+                  <IconButton size="small" sx={{ mr: 1 }}>
+                    {expandedLayers.has(group.layerName) ? <ExpandMoreIcon /> : <ChevronRightIcon />}
+                  </IconButton>
+                  <Box
+                    sx={{
+                      width: 3,
+                      height: 24,
+                      bgcolor: getLayerColor(group.layerName),
+                      mr: 2,
+                      borderRadius: 1,
+                    }}
+                  />
+                  <Typography variant="h6" sx={{ fontWeight: 600, flex: 1 }}>
+                    {group.layerName}
+                  </Typography>
+                  <Chip
+                    label={`${group.files.length} type${group.files.length !== 1 ? 's' : ''}`}
+                    size="small"
+                    variant="outlined"
+                  />
+                </Box>
+
+                {/* Layer Content */}
+                <Collapse in={expandedLayers.has(group.layerName)}>
+                  <Box sx={{ ml: 6, mt: 1 }}>
+                    {group.files.map((file, fileIdx) => (
+                      <Box
+                        key={file.path}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          p: 1.5,
+                          mb: fileIdx < group.files.length - 1 ? 1 : 0,
+                          borderLeft: 2,
+                          borderColor: 'divider',
+                          bgcolor: 'background.default',
+                          borderRadius: 1,
+                          '&:hover': { bgcolor: 'action.hover' },
+                        }}
+                      >
+                        {/* Tree connector visualization */}
+                        <Box
+                          sx={{
+                            width: 20,
+                            height: 2,
+                            bgcolor: 'divider',
+                            mr: 1,
+                          }}
+                        />
+                        <FileIcon sx={{ mr: 2, color: 'text.secondary', fontSize: 20 }} />
+                        
+                        <Box sx={{ flex: 1 }}>
+                          <Typography
+                            sx={{
+                              fontFamily: 'monospace',
+                              fontWeight: 600,
+                              fontSize: '0.95rem',
+                            }}
+                          >
+                            {file.type}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                            {file.name}
+                          </Typography>
+                        </Box>
+
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mr: 2 }}>
+                          <Box sx={{ textAlign: 'right' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {file.recordCount ? file.recordCount.toLocaleString() : 'N/A'}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              records
+                            </Typography>
+                          </Box>
+                          <Box sx={{ textAlign: 'right', minWidth: 60 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {formatBytes(file.size)}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              size
+                            </Typography>
+                          </Box>
+                        </Box>
+
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => handleViewRecords(file.type)}
+                          sx={{ minWidth: 100 }}
+                        >
+                          View Records
+                        </Button>
+                      </Box>
+                    ))}
+                  </Box>
+                </Collapse>
+              </Box>
+            ))}
+          </Paper>
+        ) : (
+          <Box mt={3}>
+            <Typography color="text.secondary">No audit record files found</Typography>
+          </Box>
+        )}
+      </Box>
+
+      {/* Record Viewer Dialog */}
+      <Dialog open={selectedType !== null} onClose={handleClose} maxWidth="lg" fullWidth>
+        <DialogTitle>
+          {selectedType} Records
+          {loading && <LinearProgress sx={{ mt: 1 }} />}
+        </DialogTitle>
+        <DialogContent>
+          {streamError ? (
+            <Box p={3}>
+              <Typography color="error" variant="h6" gutterBottom>
+                Unable to load records
+              </Typography>
+              <Typography color="text.secondary" paragraph>
+                {streamError}
+              </Typography>
+              {streamError.includes('incomplete') && (
+                <Box mt={2}>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    This file is currently being written. Please wait for processing to complete and try again.
+                  </Typography>
+                  <Button 
+                    variant="outlined" 
+                    onClick={() => handleViewRecords(selectedType!)}
+                    sx={{ mt: 1 }}
+                  >
+                    Retry
+                  </Button>
+                </Box>
+              )}
+            </Box>
+          ) : loading && records.length === 0 ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress />
+            </Box>
+          ) : records.length > 0 ? (
+            <Box>
+              <Typography variant="body2" gutterBottom>
+                Showing {records.length} {total > 0 ? `of ${total}` : ''} records
+              </Typography>
+              <Box
+                sx={{
+                  maxHeight: '60vh',
+                  overflow: 'auto',
+                  fontFamily: 'monospace',
+                  fontSize: '0.85rem',
+                }}
+              >
+                {records.map((record, idx) => (
+                  <Paper key={idx} sx={{ p: 2, mb: 1, bgcolor: 'background.default' }}>
+                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {JSON.stringify(record, null, 2)}
+                    </pre>
+                  </Paper>
+                ))}
+              </Box>
+            </Box>
+          ) : (
+            <Typography>No records available</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </Layout>
+  );
+}
+
+// Helper function to assign colors to layers
+function getLayerColor(layerName: string): string {
+  const colorMap: Record<string, string> = {
+    'Link Layer': '#2196F3',        // Blue
+    'Network Layer': '#4CAF50',     // Green
+    'Transport Layer': '#FF9800',   // Orange
+    'Application Layer': '#9C27B0', // Purple
+    'Stream Decoders': '#00BCD4',   // Cyan
+    'Abstract Decoders': '#F44336', // Red
+    'Other': '#9E9E9E',            // Grey
+  };
+  return colorMap[layerName] || '#9E9E9E';
+}

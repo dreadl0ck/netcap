@@ -1,0 +1,4 @@
+---
+alwaysApply: true
+---
+always compile with command: zeus install

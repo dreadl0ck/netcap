@@ -13,14 +13,17 @@
 
 package main
 
-import "flag"
+import (
+	"flag"
+	"runtime"
+)
 
 var (
 	// commandline flags
 	flagAttackList            = flag.String("attacks", "", "attack list CSV")
 	flagInput                 = flag.String("in", ".", "input directory (default is current directory)")
 	flagOut                   = flag.String("out", ".", "output path")
-	flagNumWorkers            = flag.Int("workers", 100, "number of parallel processed files")
+	flagNumWorkers            = flag.Int("workers", runtime.NumCPU(), "number of parallel processed files")
 	flagMaxFiles              = flag.Int("max", 0, "max number of processed files")
 	flagDebug                 = flag.Bool("debug", false, "toggle debug mode")
 	flagReuseLineBuffer       = flag.Bool("reuse", true, "reuse CSV line buffer")

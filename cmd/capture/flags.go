@@ -125,7 +125,7 @@ var (
 	flagHexdump              = fs.Bool("hexdump", false, "dump packets used in stream reassembly as hex to the reassembly.log file")
 	flagWaitForConnections   = fs.Bool("wait-conns", true, "wait for all connections to finish processing before cleanup")
 	flagWriteincomplete      = fs.Bool("writeincomplete", false, "write incomplete response")
-	flagStreamDecoderBufSize = fs.Int("sbuf-size", 1000, "size for channel used to pass data to the stream decoders. default is unbuffered")
+	flagStreamDecoderBufSize = fs.Int("sbuf-size", 10, "size for channel used to pass data to the stream decoders. default is unbuffered")
 	flagReassemblyDebug      = fs.Bool("reassembly-debug", false, "if true, the reassembly will log verbose debugging information")
 
 	flagYes        = fs.Bool("y", false, "answer yes to all prompts")
@@ -151,8 +151,8 @@ var (
 	flagBannerSize          = fs.Int("bsize", 256, "size of the stored service banners in bytes")
 	flagHarvesterBannerSize = fs.Int("hbsize", 256, "size of the data passed to the credential harvesters in bytes")
 	flagCustomCredsRegex    = fs.String("reCustom", "", "possibility of passing a custom regex for harvesting credentials")
-	flagStreamBufferSize    = fs.Int("stream-buffer", 1000, "input channel size for TCP / UDP stream processors")
-	flagNumStreamWorkers    = fs.Int("stream-workers", 1000, "number of TCP / UDP stream workers")
+	flagStreamBufferSize    = fs.Int("stream-buffer", 10, "input channel size for TCP / UDP stream processors")
+	flagNumStreamWorkers    = fs.Int("stream-workers", runtime.NumCPU(), "number of TCP / UDP stream workers")
 	flagMaxStreamBytes      = fs.Int("max-stream-bytes", 10485760, "maximum number of bytes to reassemble per stream direction (0 = unlimited, default = 10MB)")
 
 	// Stream reassembly page buffering limits
@@ -161,4 +161,8 @@ var (
 
 	flagCompressionBlockSize = fs.Int("compression-block-size", defaults.CompressionBlockSize, "block size used for parallel compression")
 	flagCompressionLevel     = fs.String("compression-level", compressionLevelToString(defaults.CompressionLevel), "level of compression")
+
+	// Web UI flags
+	flagHTTP       = fs.String("http", "", "start web UI server on specified address (e.g., localhost:8080)")
+	flagHTTPAssets = fs.String("http-assets", "", "path to custom frontend assets (for development)")
 )

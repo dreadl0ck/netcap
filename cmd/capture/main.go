@@ -21,11 +21,13 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"runtime/pprof"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/dreadl0ck/netcap/analyze"
@@ -45,6 +47,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/cmd/capture/webui"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
@@ -329,6 +332,19 @@ func Run() {
 		log.Fatal(err)
 	}
 
+	// Initialize web UI server if requested
+	var webUIServer *webui.Server
+	if *flagHTTP != "" {
+		// Will be started later after we know the input files and output directory
+		defer func() {
+			if webUIServer != nil {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				webUIServer.Stop(ctx)
+			}
+		}()
+	}
+
 	// Start pprof HTTP server if requested
 	if *flagPprof != "" {
 		go func() {
@@ -509,6 +525,33 @@ func Run() {
 
 	// Store original output directory to create subdirectories for each file
 	originalOutDir := *flagOutDir
+
+	// Start web UI server if requested (for non-live captures)
+	if *flagHTTP != "" && !live {
+		// For multi-file processing, use the original directory; it will be updated per file
+		// For single-file processing, use the specified directory
+		initialOutDir := *flagOutDir
+		if len(inputFiles) > 1 {
+			initialOutDir = originalOutDir
+		}
+
+		// If output directory is empty, use current working directory
+		if initialOutDir == "" {
+			var err error
+			initialOutDir, err = os.Getwd()
+			if err != nil {
+				log.Printf("Failed to get working directory: %v\n", err)
+				initialOutDir = "."
+			}
+		}
+
+		webUIServer = webui.NewServer(*flagHTTP, initialOutDir, inputFiles, *flagHTTPAssets)
+		if err := webUIServer.Start(); err != nil {
+			log.Printf("Failed to start web UI server: %v\n", err)
+		} else {
+			fmt.Printf("\n%sWeb UI available at: %s%s\n\n", ansi.Green, webUIServer.GetURL(), ansi.Reset)
+		}
+	}
 
 	if *flagAnalyzer != "" {
 
@@ -828,6 +871,16 @@ func Run() {
 			*flagOutDir = getOutputDirForFile(inputFile, originalOutDir)
 			fmt.Printf("Output directory: %s\n", *flagOutDir)
 
+			// Update web UI server with new output directory
+			if webUIServer != nil {
+				webUIServer.UpdateOutputDir(*flagOutDir)
+			}
+
+			// Mark previous file as completed if this is not the first file
+			if webUIServer != nil && fileIdx > 0 {
+				webUIServer.MarkFileCompleted(inputFiles[fileIdx-1])
+			}
+
 			// Create a fresh collector instance with updated configuration for this file
 			c = collector.New(collector.Config{
 				Workers:               *flagWorkers,
@@ -1067,6 +1120,38 @@ func Run() {
 		if err != nil {
 			panic("failed to write memory profile: " + err.Error())
 		}
+	}
+
+	// If web UI server is running, mark processing as complete and wait for interrupt
+	if webUIServer != nil {
+		// Mark the last file as completed
+		if len(inputFiles) > 0 {
+			webUIServer.MarkFileCompleted(inputFiles[len(inputFiles)-1])
+		}
+		webUIServer.SetProcessingComplete()
+
+		fmt.Printf("\n%s========================================%s\n", ansi.Green, ansi.Reset)
+		fmt.Printf("%sProcessing complete!%s\n", ansi.Green, ansi.Reset)
+		fmt.Printf("Web UI available at: %s%s%s\n", ansi.Cyan, webUIServer.GetURL(), ansi.Reset)
+		fmt.Printf("Press %sCtrl+C%s to stop the server and exit\n", ansi.Yellow, ansi.Reset)
+		fmt.Printf("%s========================================%s\n\n", ansi.Green, ansi.Reset)
+
+		// Setup signal handler for graceful shutdown
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+		// Wait for interrupt signal
+		<-sigChan
+
+		fmt.Println("\nShutting down web UI server...")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if err := webUIServer.Stop(ctx); err != nil {
+			log.Printf("Error stopping web UI server: %v\n", err)
+		}
+
+		fmt.Println("Server stopped. Goodbye!")
 	}
 }
 
