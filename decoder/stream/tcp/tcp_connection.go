@@ -710,7 +710,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 }
 
 func waitForConns() chan struct{} {
-	out := make(chan struct{})
+	out := make(chan struct{}, 1) // Buffered channel to prevent goroutine leak when timeout occurs
 
 	go func() {
 		// WaitGoRoutines waits until the goroutines launched to process TCP streams are done
