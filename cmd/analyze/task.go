@@ -95,6 +95,17 @@ func handleTask(t task) {
 	}
 }
 
+// cleanupWorkers closes all worker channels to signal goroutines to exit
+// This prevents goroutine leaks in multi-file processing mode
+func cleanupWorkers() {
+	for i, w := range workers {
+		if w != nil {
+			close(w)
+			workers[i] = nil
+		}
+	}
+}
+
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
 func worker() chan task {
@@ -104,21 +115,18 @@ func worker() chan task {
 
 	// start worker
 	go func() {
-		for {
-			select {
-			case t := <-chanInput:
-				switch t.typ {
-				case typeAnalyze:
-					s := t.analyze()
-					resultMutex.Lock()
-					results[t.file] = s
-					resultMutex.Unlock()
-				case typeLabel:
-					t.label()
-				default:
-					log.Fatal("unknown task type: ", t.typ)
-				}
-				continue
+		// Range over channel automatically handles channel closure
+		for t := range chanInput {
+			switch t.typ {
+			case typeAnalyze:
+				s := t.analyze()
+				resultMutex.Lock()
+				results[t.file] = s
+				resultMutex.Unlock()
+			case typeLabel:
+				t.label()
+			default:
+				log.Fatal("unknown task type: ", t.typ)
 			}
 		}
 	}()

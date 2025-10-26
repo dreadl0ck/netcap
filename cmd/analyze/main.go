@@ -15,13 +15,17 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/dreadl0ck/netcap/encoder"
+	"flag"
+	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 )
 
 // TODO: integrate core functionality into NETCAP and add this tool as cmd/analyze
@@ -29,12 +33,6 @@ import (
 // - a model for encoded values and the option to store and load it between multiple executions.
 // - encoding strategies to map categorical values into numerical ones
 // - normalization strategies
-
-import (
-	"flag"
-	"fmt"
-	"log"
-)
 
 // TODO: make configurable
 var inputHeader = []string{
@@ -210,6 +208,9 @@ func main() {
 		fmt.Println("loaded column summaries:", len(colSums))
 
 		runLabeling(files, &wg, totalFiles)
+
+		// Clean up worker goroutines to prevent leaks
+		cleanupWorkers()
 		fmt.Println("done in", time.Since(start))
 		return
 	}
@@ -232,11 +233,16 @@ func main() {
 	printAnalysisInfo()
 
 	if *flagAnalyzeOnly {
+		// Clean up worker goroutines to prevent leaks
+		cleanupWorkers()
 		fmt.Println("done in", time.Since(start))
 		return
 	}
 
 	// run labeling
 	runLabeling(files, &wg, totalFiles)
+
+	// Clean up worker goroutines to prevent leaks
+	cleanupWorkers()
 	fmt.Println("done in", time.Since(start))
 }

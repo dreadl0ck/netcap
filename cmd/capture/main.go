@@ -766,6 +766,8 @@ func Run() {
 				// THE ROOT CAUSE: Assembler.pageCache grows unbounded and NEVER SHRINKS
 				// Each page holds AssemblerContext which references packet data
 				// pageCaches can grow to GB of memory and are NOT released on collector cleanup
+				// NOTE: cleanup() is already called at the end of CollectPcap(), which stops all goroutines
+				// including workers, TCP stream readers, and freeOSMemory goroutine
 				if c != nil {
 					fmt.Println("Flushing assemblers to release pageCaches...")
 					c.FlushAssemblers()
@@ -779,16 +781,23 @@ func Run() {
 				// This is CRITICAL - we must GC everything before resetting the TCP factory
 				runtime.GC()
 
-				// Step 6: NOW reset TCP factory - old StreamPool can be GC'd
-				// Because assemblers and their pageCaches are gone, old pool has no references
+				// Step 6: CRITICAL - Ensure ALL TCP stream reader goroutines are stopped
+				// Even though cleanup() was called at the end of CollectPcap(), we need to
+				// ensure goroutines have fully exited before resetting the factory
+				// Use quiet version since log files for previous file are already closed
+				fmt.Println("Ensuring TCP stream readers are stopped...")
+				tcp.CloseStreamReaderChannelsAndWaitQuiet()
+
+				// Step 7: NOW reset TCP factory - old StreamPool can be GC'd
+				// Because assemblers, pageCaches, and stream readers are gone, old pool has no references
 				tcp.ResetStreamFactory()
 
-				// Step 6: Reset DPI flow tracker if DPI is enabled
+				// Step 8: Reset DPI flow tracker if DPI is enabled
 				if *flagDPI {
 					dpi.Reset(*flagDPIModules)
 				}
 
-				// Step 7: Final GC and OS memory release
+				// Step 9: Final GC and OS memory release
 				runtime.GC()
 				debug.FreeOSMemory()
 

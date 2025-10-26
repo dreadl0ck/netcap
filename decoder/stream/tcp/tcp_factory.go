@@ -42,6 +42,17 @@ func newStreamFactory() *connectionFactory {
 // CRITICAL: Each TCP connection spawns 2 goroutines (client + server) that run tcpStreamReader.Run()
 // These goroutines must be properly shut down before log files are closed.
 func CloseStreamReaderChannelsAndWait() {
+	closeStreamReaderChannelsAndWaitInternal(true)
+}
+
+// CloseStreamReaderChannelsAndWaitQuiet is like CloseStreamReaderChannelsAndWait but doesn't log.
+// Use this when log files may already be closed (e.g., between multi-file processing).
+func CloseStreamReaderChannelsAndWaitQuiet() {
+	closeStreamReaderChannelsAndWaitInternal(false)
+}
+
+// closeStreamReaderChannelsAndWaitInternal implements the actual cleanup logic.
+func closeStreamReaderChannelsAndWaitInternal(doLog bool) {
 	if StreamFactory == nil {
 		return
 	}
@@ -56,7 +67,9 @@ func CloseStreamReaderChannelsAndWait() {
 				defer func() {
 					if r := recover(); r != nil {
 						// Channel already closed or closing caused panic - that's OK
-						reassemblyLog.Debug("dataChan close panic (expected if already closed)", zap.Any("recover", r))
+						if doLog {
+							reassemblyLog.Debug("dataChan close panic (expected if already closed)", zap.Any("recover", r))
+						}
 					}
 				}()
 				close(reader.DataChan())
@@ -68,7 +81,12 @@ func CloseStreamReaderChannelsAndWait() {
 	// Now wait for all goroutines to finish
 	// This will block until all tcpStreamReader.Run() goroutines have exited
 	// and called Cleanup() which does wg.Done()
-	StreamFactory.waitGoRoutines()
+	if doLog {
+		StreamFactory.Lock()
+		reassemblyLog.Info("waiting for last TCP streams to process", zap.Int64("num", StreamFactory.numActive))
+		StreamFactory.Unlock()
+	}
+	StreamFactory.wg.Wait()
 }
 
 // ResetStreamFactory creates a new stream factory to clear all stream state.
