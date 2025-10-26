@@ -65,6 +65,13 @@ func (c *Collector) doCleanup(force bool) {
 		c.freeOSMemCancel = nil
 	}
 
+	// Stop signal handler goroutines if running
+	// This prevents goroutine leaks in multi-file processing mode
+	if c.signalStop != nil {
+		c.signalStop()
+		c.signalStop = nil
+	}
+
 	// Stop all workers.
 	// this will block until all workers are stopped
 	// all packets left in the packet queues will be processed

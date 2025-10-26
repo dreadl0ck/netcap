@@ -104,6 +104,8 @@ type Collector struct {
 	cleanupOnce              sync.Once          // ensure cleanup only runs once
 	logFilesClosed           atomic.Bool        // track if log files have been closed
 	freeOSMemCancel          context.CancelFunc // cancel function for freeOSMemory goroutine
+	signalChan               chan os.Signal     // signal channel for cleanup
+	signalStop               func()             // function to stop signal handling and cleanup goroutines
 
 	// logging
 	log           *zap.Logger // collector.log
@@ -244,19 +246,33 @@ func (c *Collector) stopWorkers() {
 // handleSignals catches signals and runs the cleanup
 // SIGQUIT is not caught, to allow debugging by producing a stack and goroutine trace.
 func (c *Collector) handleSignals() {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	c.signalChan = make(chan os.Signal, 1)
+	signal.Notify(c.signalChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Store cleanup function to stop signal handling
+	c.signalStop = func() {
+		signal.Stop(c.signalChan)
+		close(c.signalChan)
+	}
 
 	// start signal handler and cleanup routine
 	go func() {
-		sig := <-sigs
+		sig, ok := <-c.signalChan
+		if !ok {
+			// Channel closed, exit goroutine
+			return
+		}
 
 		c.printlnStdOut("\nreceived signal:", sig)
 		c.printlnStdOut("exiting")
 		c.log.Info("received signal", zap.String("sig", sig.String()))
 
 		go func() {
-			sign := <-sigs
+			sign, ok := <-c.signalChan
+			if !ok {
+				// Channel closed, exit goroutine
+				return
+			}
 			c.printlnStdOut("force quitting, signal:", sign)
 			os.Exit(0)
 		}()
