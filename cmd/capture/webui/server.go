@@ -57,10 +57,17 @@ type Server struct {
 	completedFiles  map[string]bool      // Tracks which files have completed processing
 	processingStats ProcessingStats      // Live processing statistics
 	fileErrors      map[string]FileError // Tracks errors for each file
+	debugLogging    bool                 // Runtime debug logging state
+	collector       CollectorInterface   // Reference to collector for runtime config changes
+}
+
+// CollectorInterface defines the methods we need from the Collector
+type CollectorInterface interface {
+	SetLogLevel(debug bool)
 }
 
 // NewServer creates a new web UI server
-func NewServer(addr, outDir string, inputFiles []string, assetsPath string) *Server {
+func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debugLogging bool) *Server {
 	return &Server{
 		addr:           addr,
 		outDir:         outDir,
@@ -73,6 +80,7 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string) *Ser
 		processingStats: ProcessingStats{
 			TotalFiles: len(inputFiles),
 		},
+		debugLogging: debugLogging,
 	}
 }
 
@@ -83,12 +91,22 @@ func (s *Server) Start() error {
 	// API endpoints
 	mux.HandleFunc("/api/status", s.handleStatus)
 	mux.HandleFunc("/api/stats", s.handleStats)
+	mux.HandleFunc("/api/audit-stats", s.handleAuditStats)
 	mux.HandleFunc("/api/files/input", s.handleInputFiles)
 	mux.HandleFunc("/api/files/audit", s.handleAuditFiles)
 	mux.HandleFunc("/api/files/logs", s.handleLogFiles)
 	mux.HandleFunc("/api/audit/", s.handleAuditRecords)
 	mux.HandleFunc("/api/logs/", s.handleLogContent)
 	mux.HandleFunc("/api/set-directory", s.handleSetDirectory)
+	mux.HandleFunc("/api/dbs", s.handleDatabaseInfo)
+	mux.HandleFunc("/api/dbs/update", s.handleUpdateDatabases)
+	mux.HandleFunc("/api/version", s.handleVersion)
+	mux.HandleFunc("/api/dpi", s.handleDPIInfo)
+	mux.HandleFunc("/api/config", s.handleConfig)
+	mux.HandleFunc("/api/config/debug", s.handleDebugToggle)
+	mux.HandleFunc("/api/decoders", s.handleDecoders)
+	mux.HandleFunc("/api/decoders/config", s.handleDecoderConfig)
+	mux.HandleFunc("/api/system-info", s.handleSystemInfo)
 
 	// Static files
 	mux.Handle("/", s.handleStatic())
@@ -217,4 +235,25 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 // GetURL returns the full URL of the web UI
 func (s *Server) GetURL() string {
 	return fmt.Sprintf("http://%s", s.addr)
+}
+
+// SetDebugLogging sets the debug logging state
+func (s *Server) SetDebugLogging(enabled bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.debugLogging = enabled
+}
+
+// GetDebugLogging returns the current debug logging state
+func (s *Server) GetDebugLogging() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.debugLogging
+}
+
+// SetCollector sets the collector reference for runtime configuration changes
+func (s *Server) SetCollector(collector CollectorInterface) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.collector = collector
 }

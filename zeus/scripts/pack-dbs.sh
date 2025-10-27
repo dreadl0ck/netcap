@@ -36,21 +36,28 @@ Options:
     -o, --output-dir PATH   Output directory for tarball (default: current directory)
     -v, --version DATE      Version string (default: current date YYYY-MM-DD)
     -s, --start-year YEAR   NVD start year for metadata (default: 2002)
+    -D, --deploy BOOL       Deploy to remote server via scp (default: true)
     -h, --help              Show this help message
 
 Examples:
-    # Pack databases from default location
+    # Pack databases from default location (with deployment)
     zeus pack-dbs-tarball
+
+    # Pack without deployment
+    zeus pack-dbs-tarball -D false
 
     # Pack from custom directory with custom output
     zeus pack-dbs-tarball -d ./netcap-dbs -o ./release
 
-    # Pack with custom version
-    zeus pack-dbs-tarball -d ./netcap-dbs -v 2024-01-15
+    # Pack with custom version and custom deployment target
+    DBS_DEPLOY_USER=admin DBS_DEPLOY_HOST=myserver.com zeus pack-dbs-tarball -v 2024-01-15
 
 Environment Variables:
     NC_CONFIG_ROOT          Override default databases location if -d not specified
     DBS_VERSION             Default version if -v not specified (format: YYYY-MM-DD)
+    DBS_DEPLOY_USER         Remote server user for deployment (default: root)
+    DBS_DEPLOY_HOST         Remote server hostname for deployment (default: netcap.io)
+    DBS_DEPLOY_PATH         Remote server path for deployment (default: /mnt/storage/netcap-dbs-server)
 
 EOF
 }
@@ -60,6 +67,10 @@ DBS_DIR=""
 OUTPUT_DIR="."
 VERSION="${DBS_VERSION:-$(date +%Y-%m-%d)}"
 NVD_START_YEAR="${NVD_START_YEAR:-2002}"
+DEPLOY="true"
+DEPLOY_USER="${DBS_DEPLOY_USER:-root}"
+DEPLOY_HOST="${DBS_DEPLOY_HOST:-netcap.io}"
+DEPLOY_PATH="${DBS_DEPLOY_PATH:-/mnt/storage/netcap-dbs-server}"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -77,6 +88,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         -s|--start-year)
             NVD_START_YEAR="$2"
+            shift 2
+            ;;
+        -D|--deploy)
+            DEPLOY="$2"
             shift 2
             ;;
         -h|--help)
@@ -204,32 +219,86 @@ else
     info "Copied: latest.json"
 fi
 
+# Deploy to remote server if enabled
+DEPLOYMENT_SUCCESS=false
+if [[ "$DEPLOY" == "true" ]] || [[ "$DEPLOY" == "1" ]] || [[ "$DEPLOY" == "yes" ]]; then
+    echo ""
+    info "Deploying to remote server"
+    info "Target: ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}"
+    
+    # Check if scp is available
+    if ! command -v scp &> /dev/null; then
+        error "scp command not found, skipping deployment"
+    else
+        # Deploy the files
+        if scp -r "${VERSION}.json" "${VERSION}.tar.gz" "latest.json" "latest.tar.gz" "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/dbs"; then
+            info "✓ Deployment successful!"
+            DEPLOYMENT_SUCCESS=true
+        else
+            error "Deployment failed"
+            warn "You can manually deploy with:"
+            echo "  scp -r ${VERSION}.json ${VERSION}.tar.gz latest.json latest.tar.gz ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
+        fi
+    fi
+fi
+
+# Clean up local files after successful deployment
+if [[ "$DEPLOYMENT_SUCCESS" == "true" ]]; then
+    echo ""
+    info "Cleaning up local files after successful deployment"
+    
+    cd "$OUTPUT_DIR"
+    rm -f "${VERSION}.json" "${VERSION}.tar.gz" "latest.json" "latest.tar.gz"
+    
+    info "✓ Local files removed"
+fi
+
 # Display summary
 echo ""
 info "✓ Pack complete!"
 echo ""
-echo "Output files:"
-echo "  ${TARBALL_FILE}"
-echo "  ${METADATA_FILE}"
-echo "  ${LATEST_TARBALL}"
-echo "  ${LATEST_METADATA}"
+
+if [[ "$DEPLOYMENT_SUCCESS" == "true" ]]; then
+    echo "Files deployed to ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/dbs and removed locally:"
+    echo "  ${VERSION}.tar.gz"
+    echo "  ${VERSION}.json"
+    echo "  latest.tar.gz"
+    echo "  latest.json"
+else
+    echo "Output files:"
+    echo "  ${TARBALL_FILE}"
+    echo "  ${METADATA_FILE}"
+    echo "  ${LATEST_TARBALL}"
+    echo "  ${LATEST_METADATA}"
+fi
 echo ""
 echo "Package details:"
 echo "  Version:        ${VERSION}"
 echo "  Size:           ${TARBALL_SIZE}"
 echo "  Files:          ${FILE_COUNT}"
 echo "  NVD Start Year: ${NVD_START_YEAR}"
+echo "  Deploy:         ${DEPLOY}"
+if [[ "$DEPLOY" == "true" ]] || [[ "$DEPLOY" == "1" ]] || [[ "$DEPLOY" == "yes" ]]; then
+    echo "  Deploy Target:  ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}"
+    if [[ "$DEPLOYMENT_SUCCESS" == "true" ]]; then
+        echo "  Local Cleanup:  ✓ Completed"
+    else
+        echo "  Local Cleanup:  Skipped (deployment failed)"
+    fi
+fi
 echo ""
 
-# Show usage examples
-echo "To use this package with dbs-server:"
-echo ""
-echo "  # Copy to server directory"
-echo "  cp ${VERSION}.* /path/to/netcap-dbs-server/dbs/"
-echo ""
-echo "  # Or mount with Docker"
-echo "  docker run -d -p 8080:8080 \\"
-echo "    -v ${OUTPUT_DIR}:/data/netcap-dbs-server/dbs \\"
-echo "    dreadl0ck/netcap-dbs-server:latest"
-echo ""
+# Show usage examples only if files are still local
+if [[ "$DEPLOYMENT_SUCCESS" != "true" ]]; then
+    echo "To use this package with dbs-server:"
+    echo ""
+    echo "  # Copy to server directory"
+    echo "  cp ${VERSION}.* /path/to/netcap-dbs-server/dbs/"
+    echo ""
+    echo "  # Or mount with Docker"
+    echo "  docker run -d -p 8080:8080 \\"
+    echo "    -v ${OUTPUT_DIR}:/data/netcap-dbs-server/dbs \\"
+    echo "    dreadl0ck/netcap-dbs-server:latest"
+    echo ""
+fi
 

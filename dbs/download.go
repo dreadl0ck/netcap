@@ -32,7 +32,8 @@ import (
 )
 
 const (
-	defaultDBsURL = "http://dbs.netcap.io"
+	defaultDBsURL = "https://dbs.netcap.io"
+	httpTimeout   = 30 * time.Second
 )
 
 // DBMetadata represents metadata about a database version
@@ -118,19 +119,27 @@ func DownloadDBs(serverURL string, force bool) error {
 
 // fetchMetadata retrieves metadata about the latest database version
 func fetchMetadata(serverURL string) (*DBMetadata, error) {
-	resp, err := http.Get(fmt.Sprintf("%s/dbs/latest", serverURL))
+	client := &http.Client{
+		Timeout: httpTimeout,
+	}
+	
+	url := fmt.Sprintf("%s/dbs/latest", serverURL)
+	log.Printf("Fetching metadata from: %s", url)
+	
+	resp, err := client.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch metadata from %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server returned status: %s", resp.Status)
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("server returned status %s for %s: %s", resp.Status, url, string(body))
 	}
 
 	var metadata DBMetadata
 	if err := json.NewDecoder(resp.Body).Decode(&metadata); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode metadata: %w", err)
 	}
 
 	return &metadata, nil
@@ -145,16 +154,24 @@ func downloadFile(url, filepath string) error {
 	}
 	defer out.Close()
 
+	// Create HTTP client with timeout
+	// Note: We use a longer timeout for downloads since files can be large
+	client := &http.Client{
+		Timeout: 10 * time.Minute,
+	}
+
 	// Get the data
-	resp, err := http.Get(url)
+	log.Printf("Downloading from: %s", url)
+	resp, err := client.Get(url)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to download from %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
 	// Check server response
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("bad status: %s", resp.Status)
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("bad status %s for %s: %s", resp.Status, url, string(body))
 	}
 
 	// Create a progress writer
@@ -170,7 +187,7 @@ func downloadFile(url, filepath string) error {
 	// Write the body to file
 	_, err = io.Copy(writer, resp.Body)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to write downloaded data: %w", err)
 	}
 
 	// Final progress report
@@ -289,14 +306,22 @@ func ListAvailableVersions(serverURL string) error {
 		}
 	}
 
-	resp, err := http.Get(fmt.Sprintf("%s/dbs/list", serverURL))
+	client := &http.Client{
+		Timeout: httpTimeout,
+	}
+
+	url := fmt.Sprintf("%s/dbs/list", serverURL)
+	log.Printf("Fetching version list from: %s", url)
+	
+	resp, err := client.Get(url)
 	if err != nil {
-		return fmt.Errorf("failed to fetch version list: %w", err)
+		return fmt.Errorf("failed to fetch version list from %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("server returned status: %s", resp.Status)
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("server returned status %s for %s: %s", resp.Status, url, string(body))
 	}
 
 	var result struct {
@@ -305,7 +330,7 @@ func ListAvailableVersions(serverURL string) error {
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return err
+		return fmt.Errorf("failed to decode version list: %w", err)
 	}
 
 	fmt.Println("Available database versions:")

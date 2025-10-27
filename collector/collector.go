@@ -112,8 +112,9 @@ type Collector struct {
 	netcapLog     *log.Logger // netcap.log
 	netcapLogFile *os.File
 
-	zapLoggers     []*zap.Logger
-	logFileHandles []*os.File
+	zapLoggers      []*zap.Logger
+	logFileHandles  []*os.File
+	atomicLogLevels []*zap.AtomicLevel // atomic levels for runtime log level changes
 
 	InputFile string
 	PrintTime bool
@@ -971,4 +972,33 @@ func (c *Collector) Stop() {
 // forceStop will halt packet collection immediately without waiting for processing to finish.
 func (c *Collector) forceStop() {
 	c.cleanup(true)
+}
+
+// SetLogLevel updates the log level for all zap loggers at runtime.
+// This allows enabling/disabling debug logging without restarting.
+func (c *Collector) SetLogLevel(debug bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// Update the config
+	c.config.DecoderConfig.Debug = debug
+
+	// Update all atomic log levels
+	for _, level := range c.atomicLogLevels {
+		if level != nil {
+			if debug {
+				level.SetLevel(zap.DebugLevel)
+			} else {
+				level.SetLevel(zap.InfoLevel)
+			}
+		}
+	}
+
+	if c.log != nil {
+		if debug {
+			c.log.Info("Debug logging enabled at runtime")
+		} else {
+			c.log.Info("Debug logging disabled at runtime")
+		}
+	}
 }

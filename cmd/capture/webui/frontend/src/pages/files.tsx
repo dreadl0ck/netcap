@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Chip,
@@ -19,7 +19,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon } from '@mui/icons-material';
+import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import { api, formatBytes, formatTimestamp } from '@/lib/api';
@@ -32,6 +32,7 @@ export default function InputFiles() {
   const [activating, setActivating] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [copiedFileId, setCopiedFileId] = useState<string | null>(null);
 
   const handleSelectFile = async (file: string) => {
     setActivating(file);
@@ -50,6 +51,21 @@ export default function InputFiles() {
       alert('Failed to switch to this file');
     } finally {
       setActivating(null);
+    }
+  };
+
+  const handleCopyShareLink = async (sessionId: string, filePath: string) => {
+    const protocol = window.location.protocol;
+    const host = window.location.host;
+    const shareUrl = `${protocol}//${host}/view/${sessionId}`;
+    
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedFileId(filePath);
+      setTimeout(() => setCopiedFileId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy share link:', err);
+      alert('Failed to copy share link to clipboard');
     }
   };
 
@@ -157,7 +173,7 @@ export default function InputFiles() {
                   <TableCell>Path</TableCell>
                   <TableCell align="right">Size</TableCell>
                   <TableCell align="right">Modified</TableCell>
-                  {isMultiFile && <TableCell align="right">Actions</TableCell>}
+                  {(isMultiFile || status?.isTryService) && <TableCell align="right">Actions</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -211,31 +227,46 @@ export default function InputFiles() {
                     </TableCell>
                     <TableCell align="right">{formatBytes(file.size)}</TableCell>
                     <TableCell align="right">{formatTimestamp(file.modifiedTime)}</TableCell>
-                    {isMultiFile && (
+                    {(isMultiFile || status?.isTryService) && (
                       <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                        <Tooltip title={
-                          file.error ? "File encountered an error" :
-                          !file.isCompleted ? "Processing not complete" :
-                          isActive(file.path) ? "Currently viewing" : 
-                          "View audit records"
-                        }>
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleSelectFile(file.path)}
-                              disabled={!file.isCompleted || activating === file.path || isActive(file.path) || !!file.error}
-                              color={isActive(file.path) ? "success" : file.error ? "error" : "default"}
-                            >
-                              {activating === file.path ? (
-                                <CircularProgress size={20} />
-                              ) : file.error ? (
-                                <ErrorIcon />
-                              ) : (
-                                <VisibilityIcon />
-                              )}
-                            </IconButton>
-                          </span>
-                        </Tooltip>
+                        <Box display="flex" justifyContent="flex-end" gap={1}>
+                          {isMultiFile && (
+                            <Tooltip title={
+                              file.error ? "File encountered an error" :
+                              !file.isCompleted ? "Processing not complete" :
+                              isActive(file.path) ? "Currently viewing" : 
+                              "View audit records"
+                            }>
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleSelectFile(file.path)}
+                                  disabled={!file.isCompleted || activating === file.path || isActive(file.path) || !!file.error}
+                                  color={isActive(file.path) ? "success" : file.error ? "error" : "default"}
+                                >
+                                  {activating === file.path ? (
+                                    <CircularProgress size={20} />
+                                  ) : file.error ? (
+                                    <ErrorIcon />
+                                  ) : (
+                                    <VisibilityIcon />
+                                  )}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          )}
+                          {status?.isTryService && file.sessionId && (
+                            <Tooltip title={copiedFileId === file.path ? "Copied!" : "Copy Share Link"}>
+                              <IconButton
+                                size="small"
+                                color={copiedFileId === file.path ? "success" : "default"}
+                                onClick={() => file.sessionId && handleCopyShareLink(file.sessionId, file.path)}
+                              >
+                                {copiedFileId === file.path ? <CheckCircleIcon /> : <ShareIcon />}
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Box>
                       </TableCell>
                     )}
                   </TableRow>

@@ -33,6 +33,12 @@ __pycache__
 *.pcap
 *.pcapng
 *.ncap*
+*.tar.gz
+*.json
+!go.mod
+!go.sum
+!package.json
+!package-lock.json
 
 # Build artifacts and distributions
 bin/
@@ -59,6 +65,7 @@ zeus/
 
 # Docker files (don't need to copy Docker files into Docker)
 docker/
+!docker/try/entrypoint.sh
 Dockerfile*
 .dockerignore
 
@@ -98,3 +105,11 @@ collector/*.pcap
 collector/errors.log
 collector/errors.pcap
 collector/netcap.log
+
+# Large test and output directories
+test-output/
+cmd/capture/webui/frontend/node_modules/
+cmd/capture/webui/frontend/.next/
+
+# Cursor history
+.cursor/

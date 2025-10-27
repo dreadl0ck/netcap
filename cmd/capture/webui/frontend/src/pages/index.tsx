@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import {
   Box,
   Card,
@@ -10,23 +10,38 @@ import {
   Chip,
 } from '@mui/material';
 import Layout from '@/components/Layout';
-import { api, formatTimestamp } from '@/lib/api';
+import { api, formatTimestamp, formatBytes } from '@/lib/api';
 import useSWR from 'swr';
+import { useRouter } from 'next/router';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import SpeedIcon from '@mui/icons-material/Speed';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import MemoryIcon from '@mui/icons-material/Memory';
 
 export default function Dashboard() {
-  const { data: status, error: statusError } = useSWR('status', () => api.getStatus(), {
+  const router = useRouter();
+  const { data: status, error: statusError, mutate: mutateStatus } = useSWR('status', () => api.getStatus(), {
     refreshInterval: 2000,
   });
   const { data: stats, mutate: mutateStats } = useSWR('stats', () => api.getStats(), {
     refreshInterval: status?.isProcessing ? 1000 : 0, // Poll every second when processing
   });
+  const { data: auditStats, error: auditStatsError, mutate: mutateAuditStats } = useSWR('auditStats', () => api.getAuditStats(), {
+    refreshInterval: status?.isProcessing ? 5000 : 10000, // Poll every 5 seconds when processing, every 10 seconds otherwise
+  });
   const { data: inputFiles, error: inputError } = useSWR('inputFiles', () => api.getInputFiles());
-  const { data: auditFiles, error: auditError } = useSWR('auditFiles', () => api.getAuditFiles());
-  const { data: logFiles, error: logError } = useSWR('logFiles', () => api.getLogFiles());
+  const { data: auditFiles, error: auditError, mutate: mutateAuditFiles } = useSWR('auditFiles', () => api.getAuditFiles());
+  const { data: logFiles, error: logError, mutate: mutateLogFiles } = useSWR('logFiles', () => api.getLogFiles());
+  const { data: systemInfo, error: systemInfoError } = useSWR('systemInfo', () => api.getSystemInfo());
+
+  // Redirect to upload page if in try service mode and no active session
+  useEffect(() => {
+    // Only redirect if we have status data and confirmed no session/files
+    if (status && status.isTryService && !status.sessionId && inputFiles && inputFiles.length === 0) {
+      router.push('/upload');
+    }
+  }, [status, inputFiles, router]);
 
   // Refresh stats periodically when processing
   useEffect(() => {
@@ -39,8 +54,23 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [status?.isProcessing, mutateStats]);
 
+  // Listen for directory changes and refresh all data
+  useEffect(() => {
+    const handleDirectoryChange = () => {
+      console.log('Directory changed, refreshing dashboard...');
+      mutateStatus();
+      mutateAuditFiles();
+      mutateLogFiles();
+      mutateStats();
+      mutateAuditStats();
+    };
+    
+    window.addEventListener('directory-changed', handleDirectoryChange);
+    return () => window.removeEventListener('directory-changed', handleDirectoryChange);
+  }, [mutateStatus, mutateAuditFiles, mutateLogFiles, mutateStats, mutateAuditStats]);
+
   const isLoading = !status && !statusError;
-  const hasError = statusError || inputError || auditError || logError;
+  const hasError = statusError || inputError || auditError || logError || auditStatsError || systemInfoError;
 
   if (isLoading) {
     return (
@@ -200,6 +230,88 @@ export default function Dashboard() {
           </Box>
         )}
 
+        {/* Audit Statistics Section */}
+        {auditStats && (auditStats.exploitCount > 0 || auditStats.vulnerabilityCount > 0 || auditStats.credentialsCount > 0 || auditStats.softwareCount > 0) && (
+          <Box mb={4}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
+                  Security Audit Records
+                </Typography>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box sx={{ 
+                      p: 2, 
+                      borderRadius: 2, 
+                      backgroundColor: 'error.dark',
+                      color: 'white',
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                        Exploits
+                      </Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                        {auditStats.exploitCount.toLocaleString()}
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box sx={{ 
+                      p: 2, 
+                      borderRadius: 2, 
+                      backgroundColor: 'warning.dark',
+                      color: 'white',
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                        Vulnerabilities
+                      </Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                        {auditStats.vulnerabilityCount.toLocaleString()}
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box sx={{ 
+                      p: 2, 
+                      borderRadius: 2, 
+                      backgroundColor: 'info.dark',
+                      color: 'white',
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                        Credentials
+                      </Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                        {auditStats.credentialsCount.toLocaleString()}
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box sx={{ 
+                      p: 2, 
+                      borderRadius: 2, 
+                      backgroundColor: 'success.dark',
+                      color: 'white',
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                        Software
+                      </Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                        {auditStats.softwareCount.toLocaleString()}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6} md={3}>
             <Card>
@@ -245,6 +357,97 @@ export default function Dashboard() {
             </Card>
           </Grid>
         </Grid>
+
+        {/* System Information Section */}
+        {systemInfo && (
+          <Box mt={4}>
+            <Card>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={1} mb={2}>
+                  <MemoryIcon color="primary" />
+                  <Typography variant="h6">
+                    System Information
+                  </Typography>
+                </Box>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box sx={{ 
+                      p: 2, 
+                      borderRadius: 2, 
+                      backgroundColor: 'primary.dark',
+                      color: 'white',
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                        CPU Cores
+                      </Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                        {systemInfo.numCPU}
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box sx={{ 
+                      p: 2, 
+                      borderRadius: 2, 
+                      backgroundColor: 'success.dark',
+                      color: 'white',
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                        Total Memory
+                      </Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                        {formatBytes(systemInfo.totalMemory)}
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box sx={{ 
+                      p: 2, 
+                      borderRadius: 2, 
+                      backgroundColor: 'info.dark',
+                      color: 'white',
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                        Free Memory
+                      </Typography>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                        {formatBytes(systemInfo.freeMemory)}
+                      </Typography>
+                      <Typography variant="caption" sx={{ opacity: 0.8, display: 'block', mt: 0.5 }}>
+                        {((systemInfo.freeMemory / systemInfo.totalMemory) * 100).toFixed(1)}% free
+                      </Typography>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6} md={3}>
+                    <Box sx={{ 
+                      p: 2, 
+                      borderRadius: 2, 
+                      backgroundColor: 'secondary.dark',
+                      color: 'white',
+                      textAlign: 'center'
+                    }}>
+                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
+                        Platform
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                        {systemInfo.goos}/{systemInfo.goarch}
+                      </Typography>
+                      <Typography variant="caption" sx={{ opacity: 0.8, display: 'block', mt: 0.5 }}>
+                        {systemInfo.numGoroutine} goroutines
+                      </Typography>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
 
         <Box mt={4}>
           <Card>

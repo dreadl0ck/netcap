@@ -24,6 +24,7 @@ import {
   Folder as FolderIcon,
   InsertDriveFile as FileIcon,
   SwapHoriz as SwapHorizIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import { api, formatBytes } from '@/lib/api';
@@ -38,7 +39,12 @@ export default function AuditRecords() {
   const { data: files, error, mutate } = useSWR('auditFiles', () => api.getAuditFiles());
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
+  const { data: sessions } = useSWR(
+    status?.isTryService ? 'try-sessions' : null, 
+    () => api.getAllSessions()
+  );
   const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [switchingSession, setSwitchingSession] = useState(false);
   // Expand all sections by default
   const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set([
     'Link Layer', 
@@ -107,6 +113,22 @@ export default function AuditRecords() {
     setStreamError(null);
   };
 
+  const handleSessionChange = async (event: SelectChangeEvent<string>) => {
+    const sessionId = event.target.value;
+    setSwitchingSession(true);
+    try {
+      await api.selectSession(sessionId);
+      // Refresh data
+      await mutate();
+      await mutateStatus();
+    } catch (error) {
+      console.error('Failed to switch session:', error);
+      alert('Failed to switch to selected session');
+    } finally {
+      setSwitchingSession(false);
+    }
+  };
+
   const toggleLayer = (layerName: string) => {
     setExpandedLayers(prev => {
       const newSet = new Set(prev);
@@ -136,6 +158,20 @@ export default function AuditRecords() {
     } finally {
       setSwitchingFile(false);
     }
+  };
+
+  const handleDownloadAll = () => {
+    // Get session ID from status or construct download URL
+    const sessionId = status?.sessionId;
+    if (!sessionId) {
+      console.error('No session ID available for download');
+      alert('Unable to download: session information not available');
+      return;
+    }
+
+    // Trigger download by opening the download URL
+    const downloadUrl = `/api/download/${sessionId}`;
+    window.open(downloadUrl, '_blank');
   };
 
   // Get only completed files for the selector
@@ -205,6 +241,37 @@ export default function AuditRecords() {
   return (
     <Layout title="Audit Records">
       <Box>
+        {/* Session Selector for Try Service */}
+        {status?.isTryService && sessions && sessions.length > 1 && (
+          <Box mb={3}>
+            <FormControl size="small" sx={{ minWidth: 300 }}>
+              <Select
+                value={status?.sessionId || ''}
+                onChange={handleSessionChange}
+                disabled={switchingSession}
+                displayEmpty
+                renderValue={(value) => {
+                  const session = sessions.find(s => s.sessionId === value);
+                  return session ? `Session: ${session.inputFilename}` : 'Select Session';
+                }}
+              >
+                {sessions
+                  .filter(s => s.resultsReady)
+                  .map((session) => (
+                    <MenuItem key={session.sessionId} value={session.sessionId}>
+                      <Box>
+                        <Typography variant="body2">{session.inputFilename}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(session.uploadTimestamp).toLocaleString()}
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+          </Box>
+        )}
+
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3} gap={2}>
           <Box>
             <Typography variant="h4" gutterBottom>
@@ -215,62 +282,76 @@ export default function AuditRecords() {
             </Typography>
           </Box>
           
-          {/* File selector for multi-file mode */}
-          {isMultiFile && completedFiles.length > 0 && (
-            <Box sx={{ minWidth: 300 }}>
-              <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-                Viewing capture:
-              </Typography>
-              <FormControl fullWidth size="small" disabled={switchingFile}>
-                <Select
-                  value={status?.activeInputFile || ''}
-                  onChange={handleFileChange}
-                  startAdornment={
-                    switchingFile ? (
-                      <CircularProgress size={20} sx={{ mr: 1 }} />
-                    ) : (
-                      <SwapHorizIcon sx={{ mr: 1, color: 'action.active' }} />
-                    )
-                  }
-                  sx={{
-                    '& .MuiSelect-select': {
-                      display: 'flex',
-                      alignItems: 'center',
-                    },
-                  }}
-                >
-                  {completedFiles.map((file: any) => (
-                    <MenuItem key={file.path} value={file.path}>
-                      <Box display="flex" alignItems="center" gap={1} width="100%">
-                        {status?.activeInputFile === file.path && (
-                          <Chip
-                            label="Active"
-                            size="small"
-                            color="success"
-                            sx={{ height: 20, fontSize: '0.7rem' }}
-                          />
-                        )}
-                        <Typography
-                          sx={{
-                            fontFamily: 'monospace',
-                            fontSize: '0.85rem',
-                            flex: 1,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {file.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatBytes(file.size)}
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-          )}
+          <Box display="flex" gap={2} alignItems="flex-start">
+            {/* Download All Button */}
+            <Button
+              variant="contained"
+              color="success"
+              startIcon={<DownloadIcon />}
+              onClick={handleDownloadAll}
+              disabled={!status?.sessionId}
+              sx={{ minWidth: 180 }}
+            >
+              Download All
+            </Button>
+            
+            {/* File selector for multi-file mode */}
+            {isMultiFile && completedFiles.length > 0 && (
+              <Box sx={{ minWidth: 300 }}>
+                <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                  Viewing capture:
+                </Typography>
+                <FormControl fullWidth size="small" disabled={switchingFile}>
+                  <Select
+                    value={status?.activeInputFile || ''}
+                    onChange={handleFileChange}
+                    startAdornment={
+                      switchingFile ? (
+                        <CircularProgress size={20} sx={{ mr: 1 }} />
+                      ) : (
+                        <SwapHorizIcon sx={{ mr: 1, color: 'action.active' }} />
+                      )
+                    }
+                    sx={{
+                      '& .MuiSelect-select': {
+                        display: 'flex',
+                        alignItems: 'center',
+                      },
+                    }}
+                  >
+                    {completedFiles.map((file: any) => (
+                      <MenuItem key={file.path} value={file.path}>
+                        <Box display="flex" alignItems="center" gap={1} width="100%">
+                          {status?.activeInputFile === file.path && (
+                            <Chip
+                              label="Active"
+                              size="small"
+                              color="success"
+                              sx={{ height: 20, fontSize: '0.7rem' }}
+                            />
+                          )}
+                          <Typography
+                            sx={{
+                              fontFamily: 'monospace',
+                              fontSize: '0.85rem',
+                              flex: 1,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {file.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {formatBytes(file.size)}
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
+          </Box>
         </Box>
 
         {layerGroups.length > 0 ? (
@@ -317,6 +398,7 @@ export default function AuditRecords() {
                     {group.files.map((file, fileIdx) => (
                       <Box
                         key={file.path}
+                        onClick={() => handleViewRecords(file.type)}
                         sx={{
                           display: 'flex',
                           alignItems: 'center',
@@ -326,6 +408,7 @@ export default function AuditRecords() {
                           borderColor: 'divider',
                           bgcolor: 'background.default',
                           borderRadius: 1,
+                          cursor: 'pointer',
                           '&:hover': { bgcolor: 'action.hover' },
                         }}
                       >
@@ -377,7 +460,10 @@ export default function AuditRecords() {
                         <Button
                           variant="outlined"
                           size="small"
-                          onClick={() => handleViewRecords(file.type)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewRecords(file.type);
+                          }}
                           sx={{ minWidth: 100 }}
                         >
                           View Records

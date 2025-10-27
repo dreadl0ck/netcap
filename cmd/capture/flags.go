@@ -163,6 +163,6 @@ var (
 	flagCompressionLevel     = fs.String("compression-level", compressionLevelToString(defaults.CompressionLevel), "level of compression")
 
 	// Web UI flags
-	flagHTTP       = fs.String("http", "", "start web UI server on specified address (e.g., localhost:8080)")
+	flagHTTP       = fs.String("http", "localhost:8080", "start web UI server on specified address (e.g., localhost:8080)")
 	flagHTTPAssets = fs.String("http-assets", "", "path to custom frontend assets (for development)")
 )

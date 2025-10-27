@@ -1,9 +1,36 @@
 # TODOs
 
 ---
+UI: two different backend services: cmd/capture/webui and cmd/try
+
+try-service: crash reporting mechanism: when the service panics and crashes, we need the full service log, and all netcap logfiles copied and archived together with the input pcap file for reproduction. An alert should be fired via email. add support to connect an SMTP service to send alert emails to an administrator.
+
+both try and capture services should load frontend from same location on filesystem
+
+add custom data support for dbs and integrate it in UI
+
+Graph view page: threeJS node based graph view to explore data relations.
+
+Flow view page: render interactive, vertical timeline of activity from different hosts, and display additional information when hovering over hosts
+
+webUI: rename Input Files page to Data Sources. Also list network interfaces where live capture is active.
+
+Alerts page
+
+Rules page
+
+Devices / Assets Page
+
+---
+
+- dbs: TorDB (torlookup) databases
+  - https://www.dan.me.uk/tornodes
+  - https://github.com/alireza-rezaee/tor-nodes?tab=readme-ov-file
+
 
 - docs iteration
 - tests iteration
+
 -----
 
   for f in *.pcap *.pcapng; do [ -f "$f" ] && net capture -y -read "$f" -out "${f%.*}"; done
@@ -45,6 +72,7 @@ test suite:
 - https://wiki.wireshark.org/uploads/2b93239dd0d98241e2173b78a91163b8/The-Ultimate-PCAP.7z
 - https://weberblog.net/tag/pcap/
 - https://www.chappell-university.com/post/check-out-the-ultimate-pcapng
+- https://www.netresec.com/?page=PcapFiles
 
 Integration Tests as github action:
 

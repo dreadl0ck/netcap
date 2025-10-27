@@ -1,0 +1,62 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+
+# Build artifacts
+bin/
+dist/
+dist-linux/
+*.log
+*.pcap
+*.pcapng
+
+# Test files
+tests/
+test-output/
+test-params/
+pcaps/
+
+# Data files
+data/
+*.ncap
+*.ncap.gz
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/
+
+# Node modules (for webui frontend)
+node_modules/
+cmd/capture/webui/frontend/node_modules/
+cmd/try/webui/frontend/node_modules/
+
+# Go build cache
+vendor/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Other Docker files (avoid recursion)
+docker/alpine/
+docker/alpine-nodpi/
+docker/ubuntu/
+docker/ubuntu-nodpi/
+docker/dbs-server/
+docker/builders/
+
+# FlameGraph (if present)
+FlameGraph/
+

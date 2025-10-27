@@ -68,6 +68,40 @@ func InitZapLogger(outpath, name string, debug bool) (*zap.Logger, *os.File, err
 	return zap.New(core), fileHandle, nil
 }
 
+// InitZapLoggerWithAtomicLevel creates a zap logger with an atomic level that can be changed at runtime.
+// The name is the log filename and the outpath must exist in advance.
+// Returns the logger, file handle, atomic level, and error.
+func InitZapLoggerWithAtomicLevel(outpath, name string, debug bool) (*zap.Logger, *os.File, *zap.AtomicLevel, error) {
+	fileHandle, err := os.OpenFile(
+		filepath.Join(outpath, name+".log"),
+		os.O_CREATE|os.O_TRUNC|os.O_WRONLY,
+		defaults.FilePermission,
+	)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	// Create atomic level - start with Debug if debug is true, Info otherwise
+	atomicLevel := zap.NewAtomicLevel()
+	if debug {
+		atomicLevel.SetLevel(zapcore.DebugLevel)
+	} else {
+		atomicLevel.SetLevel(zapcore.InfoLevel)
+	}
+
+	// Join the outputs, decoders, and level-handling functions into
+	// zapcore.Cores, then tee the cores together.
+	core := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()),
+		// If the data source only implements io.Writer, we can use zapcore.AddSync to add a no-op Sync
+		// method. If its not safe for concurrent use, we can add a protecting mutex with zapcore.Lock.
+		zapcore.AddSync(fileHandle),
+		atomicLevel,
+	)
+
+	return zap.New(core), fileHandle, &atomicLevel, nil
+}
+
 // InitDebugLogger can be used for ANSI escape sequence colored and multi line debug logging.
 // The name is the log filename and the outpath must exist in advance.
 // When debug mode is not active, this function will init the logger with ioutil.Discard,

@@ -43,11 +43,6 @@ func Run() {
 		return
 	}
 
-	if *flagCloneDBs {
-		dbs.CloneDBs(*flagForce)
-		return
-	}
-
 	if *flagGenerateDBs {
 		dbs.GenerateDBs(*flagNVDIndexStart)
 		return

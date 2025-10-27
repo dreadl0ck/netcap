@@ -63,47 +63,47 @@ func (c *Collector) initLogging() error {
 	c.netcapLog = lNetcap
 	c.netcapLogFile = netcapLogFile
 
-	// setup logger for collector
-	lCollector, collectorLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "collector", c.config.DecoderConfig.Debug)
+	// setup logger for collector with atomic level
+	lCollector, collectorLogFile, collectorLevel, err := logger.InitZapLoggerWithAtomicLevel(c.config.DecoderConfig.Out, "collector", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
 
 	c.log = lCollector
 
-	// setup logger for resolvers
-	lResolvers, resolversLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "resolvers", c.config.DecoderConfig.Debug)
+	// setup logger for resolvers with atomic level
+	lResolvers, resolversLogFile, resolversLevel, err := logger.InitZapLoggerWithAtomicLevel(c.config.DecoderConfig.Out, "resolvers", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
 
 	resolvers.SetLogger(lResolvers)
 
-	// setup logger for io pkg
-	lIO, ioLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "io", c.config.DecoderConfig.Debug)
+	// setup logger for io pkg with atomic level
+	lIO, ioLogFile, ioLevel, err := logger.InitZapLoggerWithAtomicLevel(c.config.DecoderConfig.Out, "io", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
 
 	netio.SetLogger(lIO)
 
-	// setup general logger for decoder pkg
-	lDecoder, decoderLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "decoder", c.config.DecoderConfig.Debug)
+	// setup general logger for decoder pkg with atomic level
+	lDecoder, decoderLogFile, decoderLevel, err := logger.InitZapLoggerWithAtomicLevel(c.config.DecoderConfig.Out, "decoder", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
 
 	packet.SetDecoderLogger(lDecoder)
 
-	lDB, dbLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "db", c.config.DecoderConfig.Debug)
+	lDB, dbLogFile, dbLevel, err := logger.InitZapLoggerWithAtomicLevel(c.config.DecoderConfig.Out, "db", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
 
 	db.SetLogger(lDB)
 
-	// setup logger for reassembly pkg
-	lReassembly, reassemblyLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "reassembly", c.config.DecoderConfig.Debug)
+	// setup logger for reassembly pkg with atomic level
+	lReassembly, reassemblyLogFile, reassemblyLevel, err := logger.InitZapLoggerWithAtomicLevel(c.config.DecoderConfig.Out, "reassembly", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
@@ -130,6 +130,16 @@ func (c *Collector) initLogging() error {
 		decoderLogFile,
 		reassemblyLogFile,
 		dbLogFile,
+	)
+
+	// store atomic levels for runtime log level changes
+	c.atomicLogLevels = append(c.atomicLogLevels,
+		collectorLevel,
+		resolversLevel,
+		ioLevel,
+		decoderLevel,
+		reassemblyLevel,
+		dbLevel,
 	)
 
 	// create errors.log file

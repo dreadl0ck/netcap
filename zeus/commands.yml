@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.7.6
+    VERSION: 0.7.7
 
 # command data
 commands:
@@ -128,6 +128,8 @@ commands:
 
     build-dbs-server:
         description: build and push the netcap database server container
+        dependencies:
+            - build-frontend
         arguments:
             - push:Bool? = true
         help: |
@@ -158,6 +160,43 @@ commands:
               # Build single platform only
               NETCAP_USE_BUILDX=false NETCAP_PUSH_IMAGES=true zeus build-dbs-server
         exec: VERSION=${VERSION} NETCAP_PUSH_IMAGES=${push} zeus/scripts/build-dbs-server.sh
+
+    build-try-server:
+        description: build and push the netcap try server container
+        dependencies:
+            - build-frontend
+        arguments:
+            - push:Bool? = true
+        help: |
+            Builds the netcap-try server container with webUI and optionally pushes to a registry.
+            Supports multi-platform builds (amd64 and arm64) using Docker Buildx.
+            
+            The script automatically copies frontend assets from capture webUI if not present.
+            
+            Environment Variables:
+              NETCAP_CONTAINER_REGISTRY       - Registry URL (default: docker.io)
+              NETCAP_CONTAINER_REGISTRY_USER  - Registry username (default: dreadl0ck)
+              NETCAP_PUSH_IMAGES              - Set to 'true' to push after build
+              NETCAP_USE_BUILDX               - Use buildx for multi-platform (default: true)
+              NETCAP_PLATFORMS                - Target platforms (default: linux/amd64,linux/arm64)
+              VERSION                         - Image version tag (default: from globals)
+            
+            Examples:
+              # Build only (local, single platform)
+              zeus build-try-server
+              
+              # Build and push multi-platform to Docker Hub
+              NETCAP_PUSH_IMAGES=true zeus build-try-server
+              
+              # Build and push to custom registry
+              NETCAP_CONTAINER_REGISTRY=registry.example.com \
+              NETCAP_CONTAINER_REGISTRY_USER=myorg \
+              NETCAP_PUSH_IMAGES=true \
+              zeus build-try-server
+              
+              # Build specific version
+              VERSION=v0.7.6 NETCAP_PUSH_IMAGES=true zeus build-try-server
+        exec: VERSION=${VERSION} NETCAP_PUSH_IMAGES=${push} zeus/scripts/build-try-server.sh
 
     pack-dbs-tarball:
         description: pack databases into versioned tarball for dbs-server with metadata and symlinks
@@ -290,6 +329,46 @@ commands:
             cp /usr/local/etc/netcap/dbs/hosts dist/
             cp /usr/local/etc/netcap/dbs/*.mmdb dist/
             cp /usr/local/etc/netcap/fingerprint_api_key dist/
+
+    ## Frontend
+    ##
+
+    build-frontend:
+        description: build the web UI frontend
+        help: |
+            Builds the Next.js frontend for the web UI and generates static files
+            that are embedded into the Go binary.
+            
+            Requirements:
+              - Node.js 18+ and npm must be installed
+            
+            The build output will be placed in:
+              cmd/capture/webui/frontend/out/
+            
+            This command is automatically run as part of the release process,
+            but can be run manually when developing the web UI.
+            
+            Examples:
+              # Build frontend
+              zeus build-frontend
+              
+              # Build frontend and install netcap
+              zeus build-frontend && zeus install
+        exec: |
+            cd cmd/capture/webui/frontend
+            echo "[INFO] Installing frontend dependencies..."
+            npm install
+            echo "[INFO] Building frontend..."
+            npm run build
+            echo "[INFO] Frontend build complete!"
+            echo "[INFO] Static files are in: cmd/capture/webui/frontend/out/"
+            
+            # Sync webUI frontend from capture to try service
+            cd ../../../..
+            echo "[INFO] Syncing frontend to try service..."
+            bash zeus/scripts/sync-webui.sh || exit 1
+            echo "[INFO] Frontend sync complete!"
+            echo "[INFO] Run 'zeus install' to rebuild netcap with the new frontend"
 
     ## Utils
     ##

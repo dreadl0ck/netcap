@@ -29,6 +29,8 @@ import (
 //go:embed frontend/out/_next/static/chunks/*.js
 //go:embed frontend/out/_next/static/chunks/pages/*.js
 //go:embed frontend/out/_next/static/*/*.js
+//go:embed frontend/out/*.html
+//go:embed frontend/out/*/*.html
 var embeddedAssets embed.FS
 
 // handleStatic serves static frontend assets

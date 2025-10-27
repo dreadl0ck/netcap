@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  netcap-try:
+    image: dreadl0ck/netcap-try:0.7.7
+    container_name: netcap-try
+    restart: unless-stopped
+    volumes:
+      - netcap-try-data:/data
+    environment:
+      - NC_DATA_DIR=/data/netcap-try
+      - NC_HTTP=0.0.0.0:7070
+      - NC_DPI=true
+      - NC_MAX_FILE_SIZE=52428800        # 50MB in bytes
+      - NC_MAX_ANALYSIS_HOUR=2           # Max 2 analyses per hour per IP
+      - NC_SESSION_EXPIRY=60             # Session expiry in minutes
+      - NC_CLEANUP_INTERVAL=10           # Cleanup interval in minutes
+      - TZ=UTC
+    networks:
+      - proxy                             # Traefik network (required!)
+    labels:
+      - "traefik.enable=true"             # REQUIRED: Enable Traefik for this container
+      - "traefik.docker.network=proxy"    # Tell Traefik which network to use
+      - "traefik.http.services.netcap-try.loadbalancer.server.port=7070"
+      - "traefik.http.routers.netcap-try.rule=Host(`try.netcap.io`)"
+      - "traefik.http.routers.netcap-try.tls=true"
+      - "traefik.http.routers.netcap-try.tls.certresolver=le"
+      - "traefik.http.routers.netcap-try.entrypoints=websecure"  # Optional: specify HTTPS entrypoint
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7070/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    # Resource limits (optional but recommended)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+volumes:
+  netcap-try-data:
+    driver: local
+
+networks:
+  proxy:
+    external: true    # This assumes the 'proxy' network already exists for Traefik
+

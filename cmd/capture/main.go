@@ -545,7 +545,7 @@ func Run() {
 			}
 		}
 
-		webUIServer = webui.NewServer(*flagHTTP, initialOutDir, inputFiles, *flagHTTPAssets)
+		webUIServer = webui.NewServer(*flagHTTP, initialOutDir, inputFiles, *flagHTTPAssets, *flagDebug)
 		if err := webUIServer.Start(); err != nil {
 			log.Printf("Failed to start web UI server: %v\n", err)
 		} else {
@@ -767,6 +767,11 @@ func Run() {
 
 	c.PrintConfiguration()
 
+	// Connect collector to webui server for runtime debug logging
+	if webUIServer != nil {
+		webUIServer.SetCollector(c)
+	}
+
 	// collect traffic live from named interface
 	if live {
 		err = c.CollectLive(*flagInterface, *flagBPF, context.Background())
@@ -986,6 +991,11 @@ func Run() {
 			c.Epochs = numEpochs
 
 			c.PrintConfiguration()
+
+			// Connect collector to webui server for runtime debug logging
+			if webUIServer != nil {
+				webUIServer.SetCollector(c)
+			}
 		}
 
 		// start timer

@@ -98,6 +98,7 @@ func (s *DBServer) Start() error {
 	go s.scheduleDailyRebuild()
 
 	// Setup HTTP handlers
+	http.HandleFunc("/", s.handleRoot)
 	http.HandleFunc("/dbs/", s.handleDownload)
 	http.HandleFunc("/dbs/latest", s.handleLatest)
 	http.HandleFunc("/dbs/list", s.handleList)
@@ -109,17 +110,14 @@ func (s *DBServer) Start() error {
 
 // rebuildDatabases generates a new version of the databases
 func (s *DBServer) rebuildDatabases() error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	log.Println("Starting database rebuild...")
 	start := time.Now()
 
-	// Set the current date for versioning
-	s.currentDate = time.Now().Format("2006-01-02")
+	// Set the current date for versioning (in local variable, not shared state yet)
+	newDate := time.Now().Format("2006-01-02")
 
 	// Create versioned directory
-	versionedDir := filepath.Join(s.buildDir, "dbs", s.currentDate)
+	versionedDir := filepath.Join(s.buildDir, "dbs", newDate)
 	if err := os.MkdirAll(versionedDir, defaults.DirectoryPermission); err != nil {
 		return fmt.Errorf("failed to create versioned directory: %w", err)
 	}
@@ -156,19 +154,19 @@ func (s *DBServer) rebuildDatabases() error {
 	wg.Wait()
 
 	// Create tarball of the databases
-	tarballPath := filepath.Join(s.buildDir, "dbs", s.currentDate+".tar.gz")
+	tarballPath := filepath.Join(s.buildDir, "dbs", newDate+".tar.gz")
 	if err := s.createTarball(tempDBsDir, tarballPath); err != nil {
 		return fmt.Errorf("failed to create tarball: %w", err)
 	}
 
 	// Create metadata file
 	metadata := map[string]interface{}{
-		"version":        s.currentDate,
+		"version":        newDate,
 		"created_at":     time.Now().UTC().Format(time.RFC3339),
-		"tarball":        s.currentDate + ".tar.gz",
+		"tarball":        newDate + ".tar.gz",
 		"nvd_start_year": s.nvdStartYear,
 	}
-	metadataPath := filepath.Join(s.buildDir, "dbs", s.currentDate+".json")
+	metadataPath := filepath.Join(s.buildDir, "dbs", newDate+".json")
 	if err := s.writeMetadata(metadata, metadataPath); err != nil {
 		return fmt.Errorf("failed to write metadata: %w", err)
 	}
@@ -180,14 +178,20 @@ func (s *DBServer) rebuildDatabases() error {
 	os.Remove(latestTarball)
 	os.Remove(latestMetadata)
 
-	if err := os.Symlink(s.currentDate+".tar.gz", latestTarball); err != nil {
+	if err := os.Symlink(newDate+".tar.gz", latestTarball); err != nil {
 		log.Printf("Warning: failed to create latest tarball symlink: %v", err)
 	}
-	if err := os.Symlink(s.currentDate+".json", latestMetadata); err != nil {
+	if err := os.Symlink(newDate+".json", latestMetadata); err != nil {
 		log.Printf("Warning: failed to create latest metadata symlink: %v", err)
 	}
 
+	// Now update the shared state - this is the only part that needs to be locked
+	s.mu.Lock()
+	s.currentDate = newDate
+	s.mu.Unlock()
+
 	// Clean up old database versions to save storage space
+	// Note: This reads s.currentDate but we just updated it, so it's safe
 	if err := s.cleanupOldVersions(); err != nil {
 		log.Printf("Warning: failed to clean up old versions: %v", err)
 	}
@@ -198,6 +202,11 @@ func (s *DBServer) rebuildDatabases() error {
 
 // cleanupOldVersions removes all database versions except the current one
 func (s *DBServer) cleanupOldVersions() error {
+	// Get current date with lock
+	s.mu.RLock()
+	currentDate := s.currentDate
+	s.mu.RUnlock()
+
 	dbsPath := filepath.Join(s.buildDir, "dbs")
 
 	entries, err := os.ReadDir(dbsPath)
@@ -214,7 +223,7 @@ func (s *DBServer) cleanupOldVersions() error {
 		name := entry.Name()
 
 		// Skip the current version files
-		if name == s.currentDate+".tar.gz" || name == s.currentDate+".json" {
+		if name == currentDate+".tar.gz" || name == currentDate+".json" {
 			continue
 		}
 
@@ -234,7 +243,7 @@ func (s *DBServer) cleanupOldVersions() error {
 			}
 
 			// If it matches date pattern and is not current version, delete it
-			if len(baseName) == 10 && baseName != s.currentDate {
+			if len(baseName) == 10 && baseName != currentDate {
 				filePath := filepath.Join(dbsPath, name)
 
 				// Get file size before deletion for reporting
@@ -272,8 +281,29 @@ func (s *DBServer) processSourceForServer(source *datasource, buildDir, dbsDir s
 
 	// run hook
 	if source.hook != nil {
-		// Create a temporary base directory structure for the hook
-		tempBase := filepath.Join(buildDir, "..")
+		// The hooks expect a base directory with "build" and "dbs" subdirectories
+		// buildDir is already pointing to base/build, so parent is the base
+		tempBase := filepath.Dir(buildDir)
+
+		// Ensure the dbs directory that hooks will write to exists
+		// and points to our temp-dbs directory
+		hooksDbsDir := filepath.Join(tempBase, "dbs")
+
+		// Remove any existing dbs directory/symlink
+		os.RemoveAll(hooksDbsDir)
+
+		// Create symlink from base/dbs to our actual temp-dbs directory
+		relPath, err := filepath.Rel(tempBase, dbsDir)
+		if err != nil {
+			relPath = dbsDir
+		}
+
+		// Try to create symlink, fall back to using dbsDir directly if it fails
+		if err := os.Symlink(relPath, hooksDbsDir); err != nil {
+			// Symlink failed (maybe Windows?), just ensure dbsDir is what hooks will use
+			// In this case, we need to rewrite the base to point to parent of dbsDir
+			tempBase = filepath.Dir(dbsDir)
+		}
 
 		if err := source.hook(outFilePath, source, tempBase); err != nil {
 			log.Printf("hook for %s failed with error %v", source.name, err)
@@ -569,13 +599,42 @@ func (s *DBServer) handleList(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// handleRoot serves a simple text-based health status page on the root path
+func (s *DBServer) handleRoot(w http.ResponseWriter, r *http.Request) {
+	// Only handle exact root path, let other paths fall through to their handlers
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+
+	s.mu.RLock()
+	currentVersion := s.currentDate
+	s.mu.RUnlock()
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	fmt.Fprintf(w, "NETCAP Database Server\n")
+	fmt.Fprintf(w, "======================\n\n")
+	fmt.Fprintf(w, "Status: HEALTHY\n")
+	fmt.Fprintf(w, "Latest Database Version: %s\n", currentVersion)
+	fmt.Fprintf(w, "Timestamp: %s\n\n", time.Now().UTC().Format(time.RFC3339))
+	fmt.Fprintf(w, "Available Endpoints:\n")
+	fmt.Fprintf(w, "  GET /              - This status page\n")
+	fmt.Fprintf(w, "  GET /health        - Health check (JSON)\n")
+	fmt.Fprintf(w, "  GET /dbs/latest    - Latest version metadata (JSON)\n")
+	fmt.Fprintf(w, "  GET /dbs/list      - List available versions (JSON)\n")
+	fmt.Fprintf(w, "  GET /dbs/<file>    - Download database file\n")
+}
+
 // handleHealth provides a health check endpoint
-// Note: Does not use locking to avoid blocking during long-running database rebuilds.
-// Reading currentDate without a lock is safe for health check purposes.
 func (s *DBServer) handleHealth(w http.ResponseWriter, r *http.Request) {
+	// Read current date with lock (lock is now only held briefly during rebuilds)
+	s.mu.RLock()
+	currentVersion := s.currentDate
+	s.mu.RUnlock()
+
 	health := map[string]interface{}{
 		"status":          "healthy",
-		"current_version": s.currentDate,
+		"current_version": currentVersion,
 		"timestamp":       time.Now().UTC().Format(time.RFC3339),
 	}
 
