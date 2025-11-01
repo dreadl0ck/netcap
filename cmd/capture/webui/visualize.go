@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -27,10 +26,10 @@ import (
 
 // ProtocolHierarchyNode represents a node in the protocol hierarchy
 type ProtocolHierarchyNode struct {
-	Name     string `json:"name"`
-	Layer    string `json:"layer"`
-	Count    int64  `json:"count"`
-	Bytes    int64  `json:"bytes"`
+	Name     string                  `json:"name"`
+	Layer    string                  `json:"layer"`
+	Count    int64                   `json:"count"`
+	Bytes    int64                   `json:"bytes"`
 	Children []ProtocolHierarchyNode `json:"children"`
 }
 
@@ -43,15 +42,15 @@ type SankeyLink struct {
 
 // ProtocolHierarchyResponse is the API response
 type ProtocolHierarchyResponse struct {
-	Links []SankeyLink `json:"links"`
-	Nodes []string     `json:"nodes"`
+	Links []SankeyLink             `json:"links"`
+	Nodes []string                 `json:"nodes"`
 	Stats map[string]ProtocolStats `json:"stats"`
 }
 
 // ProtocolStats contains statistics for a protocol
 type ProtocolStats struct {
-	Count int64 `json:"count"`
-	Bytes int64 `json:"bytes"`
+	Count int64  `json:"count"`
+	Bytes int64  `json:"bytes"`
 	Layer string `json:"layer"`
 }
 
@@ -115,70 +114,70 @@ func HandleProtocolHierarchy(outDir string) http.HandlerFunc {
 func buildProtocolHierarchy(outDir string) (*ProtocolHierarchyResponse, error) {
 	// Map to store protocol statistics
 	stats := make(map[string]ProtocolStats)
-	
+
 	// Map to track protocol relationships (parent -> child -> count)
 	relationships := make(map[string]map[string]int64)
 
 	// Layer mapping for protocols
 	layerMap := map[string]string{
 		// Link Layer
-		"Ethernet": "Link Layer",
-		"Dot1Q": "Link Layer",
-		"Dot11": "Link Layer",
-		"LLC": "Link Layer",
-		"SNAP": "Link Layer",
-		"ARP": "Link Layer",
-		"CiscoDiscovery": "Link Layer",
-		"NortelDiscovery": "Link Layer",
+		"Ethernet":           "Link Layer",
+		"Dot1Q":              "Link Layer",
+		"Dot11":              "Link Layer",
+		"LLC":                "Link Layer",
+		"SNAP":               "Link Layer",
+		"ARP":                "Link Layer",
+		"CiscoDiscovery":     "Link Layer",
+		"NortelDiscovery":    "Link Layer",
 		"LinkLayerDiscovery": "Link Layer",
-		"STP": "Link Layer",
-		"LLDP": "Link Layer",
-		
+		"STP":                "Link Layer",
+		"LLDP":               "Link Layer",
+
 		// Network Layer
-		"IPv4": "Network Layer",
-		"IPv6": "Network Layer",
-		"ICMPv4": "Network Layer",
-		"ICMPv6": "Network Layer",
-		"IGMP": "Network Layer",
-		"IPSecAH": "Network Layer",
+		"IPv4":     "Network Layer",
+		"IPv6":     "Network Layer",
+		"ICMPv4":   "Network Layer",
+		"ICMPv6":   "Network Layer",
+		"IGMP":     "Network Layer",
+		"IPSecAH":  "Network Layer",
 		"IPSecESP": "Network Layer",
-		"GRE": "Network Layer",
-		"MPLS": "Network Layer",
-		
+		"GRE":      "Network Layer",
+		"MPLS":     "Network Layer",
+
 		// Transport Layer
-		"TCP": "Transport Layer",
-		"UDP": "Transport Layer",
+		"TCP":  "Transport Layer",
+		"UDP":  "Transport Layer",
 		"SCTP": "Transport Layer",
-		
+
 		// Application Layer
-		"HTTP": "Application Layer",
-		"TLS": "Application Layer",
+		"HTTP":           "Application Layer",
+		"TLS":            "Application Layer",
 		"TLSClientHello": "Application Layer",
 		"TLSServerHello": "Application Layer",
-		"DNS": "Application Layer",
-		"SMTP": "Application Layer",
-		"POP3": "Application Layer",
-		"SSH": "Application Layer",
-		"FTP": "Application Layer",
-		"Telnet": "Application Layer",
-		"SIP": "Application Layer",
-		"NTP": "Application Layer",
-		"DHCPv4": "Application Layer",
-		"DHCPv6": "Application Layer",
-		"DHCP": "Application Layer",
-		"Modbus": "Application Layer",
-		"ENIP": "Application Layer",
-		"CIP": "Application Layer",
-		"Diameter": "Application Layer",
-		"VXLAN": "Application Layer",
-		"Geneve": "Application Layer",
+		"DNS":            "Application Layer",
+		"SMTP":           "Application Layer",
+		"POP3":           "Application Layer",
+		"SSH":            "Application Layer",
+		"FTP":            "Application Layer",
+		"Telnet":         "Application Layer",
+		"SIP":            "Application Layer",
+		"NTP":            "Application Layer",
+		"DHCPv4":         "Application Layer",
+		"DHCPv6":         "Application Layer",
+		"DHCP":           "Application Layer",
+		"Modbus":         "Application Layer",
+		"ENIP":           "Application Layer",
+		"CIP":            "Application Layer",
+		"Diameter":       "Application Layer",
+		"VXLAN":          "Application Layer",
+		"Geneve":         "Application Layer",
 	}
 
 	// Typical protocol encapsulation hierarchy
 	encapsulationMap := map[string][]string{
-		"Link Layer": {"Ethernet", "Dot1Q", "Dot11", "LLC", "SNAP", "ARP"},
-		"Network Layer": {"IPv4", "IPv6", "ICMPv4", "ICMPv6", "IGMP"},
-		"Transport Layer": {"TCP", "UDP", "SCTP"},
+		"Link Layer":        {"Ethernet", "Dot1Q", "Dot11", "LLC", "SNAP", "ARP"},
+		"Network Layer":     {"IPv4", "IPv6", "ICMPv4", "ICMPv6", "IGMP"},
+		"Transport Layer":   {"TCP", "UDP", "SCTP"},
 		"Application Layer": {"HTTP", "TLS", "DNS", "SMTP", "SSH", "FTP", "DHCPv4", "DHCPv6"},
 	}
 
@@ -200,12 +199,12 @@ func buildProtocolHierarchy(outDir string) (*ProtocolHierarchyResponse, error) {
 		if len(parts) < 1 {
 			continue
 		}
-		
-	protocol := parts[0]
-	layer := layerMap[protocol]
-	if layer == "" {
-		layer = "Custom Abstraction"
-	}
+
+		protocol := parts[0]
+		layer := layerMap[protocol]
+		if layer == "" {
+			layer = "Custom Abstraction"
+		}
 
 		// Get file metadata
 		fullPath := filepath.Join(outDir, file.Name())
@@ -367,12 +366,9 @@ func buildProtocolHierarchy(outDir string) (*ProtocolHierarchyResponse, error) {
 	}
 	sort.Strings(nodes)
 
-	log.Printf("[WebUI] Built protocol hierarchy with %d nodes and %d links", len(nodes), len(links))
-
 	return &ProtocolHierarchyResponse{
 		Links: links,
 		Nodes: nodes,
 		Stats: stats,
 	}, nil
 }
-

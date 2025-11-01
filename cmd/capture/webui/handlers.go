@@ -90,6 +90,10 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 	for k, v := range s.fileBPFFilters {
 		fileBPFFilters[k] = v
 	}
+	fileProcessingTime := make(map[string]float64)
+	for k, v := range s.fileProcessingTime {
+		fileProcessingTime[k] = v
+	}
 	s.mu.RUnlock()
 
 	files := make([]FileInfo, 0)
@@ -100,17 +104,21 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 		}
 
 		fileInfo := FileInfo{
-			Name:         filepath.Base(path),
-			Path:         path,
-			Size:         info.Size(),
-			ModifiedTime: info.ModTime().Unix(),
-			IsCompleted:  completedFiles[path],
-			BPFFilter:    fileBPFFilters[path],
+			Name:           filepath.Base(path),
+			Path:           path,
+			Size:           info.Size(),
+			ModifiedTime:   info.ModTime().Unix(),
+			IsCompleted:    completedFiles[path],
+			BPFFilter:      fileBPFFilters[path],
+			ProcessingTime: fileProcessingTime[path],
 		}
 
 		// Add error information if available
 		if ferr, hasError := fileErrors[path]; hasError {
 			fileInfo.Error = &ferr.Error
+			if ferr.ErrorLogPath != "" {
+				fileInfo.ErrorLogPath = &ferr.ErrorLogPath
+			}
 		}
 
 		files = append(files, fileInfo)

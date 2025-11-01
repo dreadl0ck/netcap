@@ -69,8 +69,39 @@ import (
 
 // fileError tracks errors that occurred during file processing
 type fileError struct {
-	filename string
-	err      error
+	filename     string
+	err          error
+	errorLogPath string // Path to the error log file
+}
+
+// createErrorLog creates an error log file and writes error details to it
+func createErrorLog(inputFile, outDir string, err error, additionalInfo ...string) string {
+	// Create error log file
+	errorLogPath := filepath.Join(outDir, "analysis_error.log")
+	errorLogFile, createErr := os.Create(errorLogPath)
+	if createErr != nil {
+		log.Printf("[WebUI] Failed to create error log file: %v", createErr)
+		return ""
+	}
+	defer errorLogFile.Close()
+
+	// Write error information
+	fmt.Fprintf(errorLogFile, "=== Analysis Error Log ===\n")
+	fmt.Fprintf(errorLogFile, "Timestamp: %s\n", time.Now().Format(time.RFC3339))
+	fmt.Fprintf(errorLogFile, "Input File: %s\n", inputFile)
+	fmt.Fprintf(errorLogFile, "Output Directory: %s\n", outDir)
+	fmt.Fprintf(errorLogFile, "Error: %v\n", err)
+	
+	// Add any additional information
+	if len(additionalInfo) > 0 {
+		fmt.Fprintf(errorLogFile, "\n=== Additional Information ===\n")
+		for _, info := range additionalInfo {
+			fmt.Fprintf(errorLogFile, "%s\n", info)
+		}
+	}
+
+	log.Printf("[WebUI] Error log saved to: %s", errorLogPath)
+	return errorLogPath
 }
 
 // fileSummary contains summary statistics for a processed file
@@ -239,7 +270,11 @@ func writeSummaryTable(inputFiles []string, summaries []fileSummary, fileErrors 
 		fmt.Println("================================================================================")
 		for i, fe := range fileErrors {
 			fmt.Printf("%d. %s%s%s\n", i+1, ansi.Yellow, filepath.Base(fe.filename), ansi.Reset)
-			fmt.Printf("   Error: %v\n\n", fe.err)
+			fmt.Printf("   Error: %v\n", fe.err)
+			if fe.errorLogPath != "" {
+				fmt.Printf("   Error log: %s\n", fe.errorLogPath)
+			}
+			fmt.Println()
 		}
 	} else {
 		fmt.Printf("%sAll files processed successfully!%s\n", ansi.Green, ansi.Reset)
@@ -312,7 +347,11 @@ func writeSummaryTable(inputFiles []string, summaries []fileSummary, fileErrors 
 		fmt.Fprintf(summaryFile, "================================================================================\n")
 		for i, fe := range fileErrors {
 			fmt.Fprintf(summaryFile, "%d. %s\n", i+1, filepath.Base(fe.filename))
-			fmt.Fprintf(summaryFile, "   Error: %v\n\n", fe.err)
+			fmt.Fprintf(summaryFile, "   Error: %v\n", fe.err)
+			if fe.errorLogPath != "" {
+				fmt.Fprintf(summaryFile, "   Error log: %s\n", fe.errorLogPath)
+			}
+			fmt.Fprintf(summaryFile, "\n")
 		}
 	} else {
 		fmt.Fprintf(summaryFile, "\nAll files processed successfully!\n")
@@ -1098,7 +1137,21 @@ func Run() {
 			if err = c.CollectBPF(inputFile, *flagBPF); err != nil {
 				if len(inputFiles) > 1 {
 					fmt.Printf("Error: failed to set BPF: %v\n", err)
-					fileErrors = append(fileErrors, fileError{filename: inputFile, err: fmt.Errorf("failed to set BPF: %w", err)})
+					
+					// Create error log
+					errorMsg := fmt.Errorf("failed to set BPF: %w", err)
+					errorLogPath := createErrorLog(inputFile, *flagOutDir, errorMsg)
+					
+					// Notify webUI server
+					if webUIServer != nil {
+						webUIServer.SetFileError(inputFile, errorMsg.Error(), errorLogPath)
+					}
+					
+					fileErrors = append(fileErrors, fileError{
+						filename:     inputFile,
+						err:          errorMsg,
+						errorLogPath: errorLogPath,
+					})
 					fmt.Println("Skipping to next file...")
 					continue
 				}
@@ -1114,7 +1167,21 @@ func Run() {
 			// invalid path
 			if len(inputFiles) > 1 {
 				fmt.Printf("Error: failed to open file: %v\n", err)
-				fileErrors = append(fileErrors, fileError{filename: inputFile, err: fmt.Errorf("failed to open file: %w", err)})
+				
+				// Create error log
+				errorMsg := fmt.Errorf("failed to open file: %w", err)
+				errorLogPath := createErrorLog(inputFile, *flagOutDir, errorMsg)
+				
+				// Notify webUI server
+				if webUIServer != nil {
+					webUIServer.SetFileError(inputFile, errorMsg.Error(), errorLogPath)
+				}
+				
+				fileErrors = append(fileErrors, fileError{
+					filename:     inputFile,
+					err:          errorMsg,
+					errorLogPath: errorLogPath,
+				})
 				fmt.Println("Skipping to next file...")
 				continue
 			}
@@ -1126,7 +1193,21 @@ func Run() {
 			if err = c.CollectPcap(inputFile); err != nil {
 				if len(inputFiles) > 1 {
 					fmt.Printf("Error: failed to collect audit records from pcap file: %v\n", err)
-					fileErrors = append(fileErrors, fileError{filename: inputFile, err: fmt.Errorf("failed to collect audit records from pcap file: %w", err)})
+					
+					// Create error log
+					errorMsg := fmt.Errorf("failed to collect audit records from pcap file: %w", err)
+					errorLogPath := createErrorLog(inputFile, *flagOutDir, errorMsg)
+					
+					// Notify webUI server
+					if webUIServer != nil {
+						webUIServer.SetFileError(inputFile, errorMsg.Error(), errorLogPath)
+					}
+					
+					fileErrors = append(fileErrors, fileError{
+						filename:     inputFile,
+						err:          errorMsg,
+						errorLogPath: errorLogPath,
+					})
 					fmt.Println("Skipping to next file...")
 					continue
 				}
@@ -1136,7 +1217,21 @@ func Run() {
 			if err = c.CollectPcapNG(inputFile); err != nil {
 				if len(inputFiles) > 1 {
 					fmt.Printf("Error: failed to collect audit records from pcapng file: %v\n", err)
-					fileErrors = append(fileErrors, fileError{filename: inputFile, err: fmt.Errorf("failed to collect audit records from pcapng file: %w", err)})
+					
+					// Create error log
+					errorMsg := fmt.Errorf("failed to collect audit records from pcapng file: %w", err)
+					errorLogPath := createErrorLog(inputFile, *flagOutDir, errorMsg)
+					
+					// Notify webUI server
+					if webUIServer != nil {
+						webUIServer.SetFileError(inputFile, errorMsg.Error(), errorLogPath)
+					}
+					
+					fileErrors = append(fileErrors, fileError{
+						filename:     inputFile,
+						err:          errorMsg,
+						errorLogPath: errorLogPath,
+					})
 					fmt.Println("Skipping to next file...")
 					continue
 				}
@@ -1144,14 +1239,22 @@ func Run() {
 			}
 		}
 
+		// Calculate processing duration for this file
+		processingDuration := time.Since(start)
+
 		if *flagTime {
 			// stat input file
 			stat, _ := os.Stat(inputFile)
-			fmt.Println("size", humanize.Bytes(uint64(stat.Size())), "done in", time.Since(start))
+			fmt.Println("size", humanize.Bytes(uint64(stat.Size())), "done in", processingDuration)
 		}
 
 		if *flagPPS {
 			c.RenderPacketsPerSecond(inputFile, *flagOutDir)
+		}
+
+		// Store processing time in webUI server for all files
+		if webUIServer != nil {
+			webUIServer.SetFileProcessingTime(inputFile, processingDuration.Seconds())
 		}
 
 		// Force cleanup after processing each file to reset state
@@ -1163,7 +1266,7 @@ func Run() {
 				filename:        inputFile,
 				inputFileSize:   fileInfo.Size(),
 				outputTotalSize: c.GetTotalBytesWritten(),
-				processingTime:  time.Since(start),
+				processingTime:  processingDuration,
 				err:             nil,
 			}
 

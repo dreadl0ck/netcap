@@ -39,33 +39,35 @@ type ProcessingStats struct {
 
 // FileError represents an error that occurred during file processing
 type FileError struct {
-	InputFile string `json:"inputFile"`
-	Error     string `json:"error"`
-	Timestamp int64  `json:"timestamp"`
+	InputFile    string `json:"inputFile"`
+	Error        string `json:"error"`
+	Timestamp    int64  `json:"timestamp"`
+	ErrorLogPath string `json:"errorLogPath,omitempty"` // Path to detailed error log file
 }
 
 // Server represents the web UI HTTP server
 type Server struct {
-	addr            string
-	outDir          string
-	baseOutDir      string // Original output directory for multi-file mode
-	inputFiles      []string
-	assetsPath      string
-	httpServer      *http.Server
-	mu              sync.RWMutex
-	isProcessing    bool
-	isLiveMode      bool                 // Whether in live capture mode
-	stopCapture     context.CancelFunc   // Function to stop live capture
-	activeInputFile string               // Currently selected input file for viewing
-	completedFiles  map[string]bool      // Tracks which files have completed processing
-	processingStats ProcessingStats      // Live processing statistics
-	fileErrors      map[string]FileError // Tracks errors for each file
-	debugLogging    bool                 // Runtime debug logging state
-	collector       CollectorInterface   // Reference to collector for runtime config changes
-	uploadCallback  UploadCallbackFunc   // Function to call when files are uploaded
-	fileBPFFilters  map[string]string    // Tracks BPF filter used for each file
-	fileOutputDirs  map[string]string    // Tracks actual output directory for each file
-	dpiPreferences  map[string]*UserDPIPreferences // DPI preferences per user IP
+	addr               string
+	outDir             string
+	baseOutDir         string // Original output directory for multi-file mode
+	inputFiles         []string
+	assetsPath         string
+	httpServer         *http.Server
+	mu                 sync.RWMutex
+	isProcessing       bool
+	isLiveMode         bool                       // Whether in live capture mode
+	stopCapture        context.CancelFunc         // Function to stop live capture
+	activeInputFile    string                     // Currently selected input file for viewing
+	completedFiles     map[string]bool            // Tracks which files have completed processing
+	processingStats    ProcessingStats            // Live processing statistics
+	fileErrors         map[string]FileError       // Tracks errors for each file
+	debugLogging       bool                       // Runtime debug logging state
+	collector          CollectorInterface         // Reference to collector for runtime config changes
+	uploadCallback     UploadCallbackFunc         // Function to call when files are uploaded
+	fileBPFFilters     map[string]string          // Tracks BPF filter used for each file
+	fileOutputDirs     map[string]string          // Tracks actual output directory for each file
+	fileProcessingTime map[string]float64         // Tracks processing time in seconds for each file
+	dpiPreferences     map[string]*UserDPIPreferences // DPI preferences per user IP
 }
 
 // UploadCallbackFunc is called when files are uploaded via the web UI
@@ -79,17 +81,18 @@ type CollectorInterface interface {
 // NewServer creates a new web UI server
 func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debugLogging bool) *Server {
 	return &Server{
-		addr:           addr,
-		outDir:         outDir,
-		baseOutDir:     outDir,
-		inputFiles:     inputFiles,
-		assetsPath:     assetsPath,
-		isProcessing:   true,
-		completedFiles: make(map[string]bool),
-		fileErrors:     make(map[string]FileError),
-		fileBPFFilters: make(map[string]string),
-		fileOutputDirs: make(map[string]string),
-		dpiPreferences: make(map[string]*UserDPIPreferences),
+		addr:               addr,
+		outDir:             outDir,
+		baseOutDir:         outDir,
+		inputFiles:         inputFiles,
+		assetsPath:         assetsPath,
+		isProcessing:       true,
+		completedFiles:     make(map[string]bool),
+		fileErrors:         make(map[string]FileError),
+		fileBPFFilters:     make(map[string]string),
+		fileOutputDirs:     make(map[string]string),
+		fileProcessingTime: make(map[string]float64),
+		dpiPreferences:     make(map[string]*UserDPIPreferences),
 		processingStats: ProcessingStats{
 			TotalFiles: len(inputFiles),
 		},
@@ -243,6 +246,22 @@ func (s *Server) SetFileBPFFilter(inputFile, bpfFilter string) {
 	}
 }
 
+// SetFileProcessingTime stores the processing time for a specific input file
+func (s *Server) SetFileProcessingTime(inputFile string, durationSeconds float64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.fileProcessingTime[inputFile] = durationSeconds
+	log.Printf("[WebUI] Processing time set for %s: %.2f seconds", inputFile, durationSeconds)
+}
+
+// GetFileProcessingTime retrieves the processing time for a specific input file
+func (s *Server) GetFileProcessingTime(inputFile string) (float64, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	time, exists := s.fileProcessingTime[inputFile]
+	return time, exists
+}
+
 // IsFileCompleted checks if a file has completed processing
 func (s *Server) IsFileCompleted(inputFile string) bool {
 	s.mu.RLock()
@@ -270,15 +289,19 @@ func (s *Server) UpdateProcessingStats(stats ProcessingStats) {
 }
 
 // SetFileError records an error for a specific file
-func (s *Server) SetFileError(inputFile, errorMsg string) {
+func (s *Server) SetFileError(inputFile, errorMsg, errorLogPath string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.fileErrors[inputFile] = FileError{
-		InputFile: inputFile,
-		Error:     errorMsg,
-		Timestamp: time.Now().Unix(),
+		InputFile:    inputFile,
+		Error:        errorMsg,
+		ErrorLogPath: errorLogPath,
+		Timestamp:    time.Now().Unix(),
 	}
 	log.Printf("[WebUI] Error recorded for file %s: %s", inputFile, errorMsg)
+	if errorLogPath != "" {
+		log.Printf("[WebUI] Error log saved to: %s", errorLogPath)
+	}
 }
 
 // GetFileError returns the error for a specific file, if any
@@ -289,11 +312,38 @@ func (s *Server) GetFileError(inputFile string) (FileError, bool) {
 	return err, exists
 }
 
+// shouldLogRequest returns true if the request should be logged
+func shouldLogRequest(path string) bool {
+	// Skip logging for static assets
+	if strings.HasPrefix(path, "/_next/static/") ||
+		strings.HasPrefix(path, "/_next/image/") ||
+		strings.HasPrefix(path, "/static/") ||
+		path == "/favicon.ico" ||
+		strings.HasSuffix(path, ".js") ||
+		strings.HasSuffix(path, ".css") ||
+		strings.HasSuffix(path, ".map") ||
+		strings.HasSuffix(path, ".png") ||
+		strings.HasSuffix(path, ".jpg") ||
+		strings.HasSuffix(path, ".jpeg") ||
+		strings.HasSuffix(path, ".gif") ||
+		strings.HasSuffix(path, ".svg") ||
+		strings.HasSuffix(path, ".ico") ||
+		strings.HasSuffix(path, ".woff") ||
+		strings.HasSuffix(path, ".woff2") ||
+		strings.HasSuffix(path, ".ttf") ||
+		strings.HasSuffix(path, ".eot") {
+		return false
+	}
+	return true
+}
+
 // corsMiddleware adds CORS headers
 func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Log incoming request
-		log.Printf("[WebUI] %s %s", r.Method, r.URL.Path)
+		// Log incoming request (skip static assets)
+		if shouldLogRequest(r.URL.Path) {
+			log.Printf("[WebUI] %s %s", r.Method, r.URL.Path)
+		}
 
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")

@@ -880,8 +880,6 @@ func (s *Server) handleUpdateDatabases(w http.ResponseWriter, r *http.Request) {
 
 // handleVersion returns version information
 func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
-	log.Printf("[Service] handleVersion called: method=%s", r.Method)
-
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -898,8 +896,6 @@ func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[Service] handleVersion: failed to encode response: %v", err)
 		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
 	}
-
-	log.Printf("[Service] handleVersion: response sent successfully")
 }
 
 // DPIInfo represents DPI configuration and version information
@@ -2256,7 +2252,6 @@ type NetworkInterfaceInfo struct {
 
 // handleNetworkInterfaces returns list of available network interfaces
 func (s *Server) handleNetworkInterfaces(w http.ResponseWriter, r *http.Request) {
-	log.Printf("[Service] handleNetworkInterfaces called: method=%s", r.Method)
 
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -2297,8 +2292,6 @@ func (s *Server) handleNetworkInterfaces(w http.ResponseWriter, r *http.Request)
 		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
 		return
 	}
-
-	log.Printf("[Service] handleNetworkInterfaces: response sent successfully")
 }
 
 // handleChartData proxies chart data requests to the webUI handler with current session

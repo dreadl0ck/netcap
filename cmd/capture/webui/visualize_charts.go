@@ -14,7 +14,9 @@
 package webui
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -25,6 +27,87 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/go-echarts/go-echarts/v2/types"
 )
+
+// injectFullHeightCSS intercepts the chart HTML and injects CSS to make it fill 100% height
+func injectFullHeightCSS(renderFunc func(w io.Writer) error) ([]byte, error) {
+	var buf bytes.Buffer
+	if err := renderFunc(&buf); err != nil {
+		return nil, err
+	}
+
+	html := buf.String()
+
+	// Inject CSS right after <head> tag to make html, body, and chart container 100% height
+	// Target all possible containers including the .item div and echarts canvas
+	cssInjection := `<head>
+<style>
+html, body {
+	height: 100% !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	overflow: hidden !important;
+	width: 100% !important;
+}
+#main, .item, .container, div[_echarts_instance_] {
+	height: 100% !important;
+	width: 100% !important;
+	min-height: 100% !important;
+}
+body > div {
+	height: 100% !important;
+	width: 100% !important;
+}
+canvas {
+	display: block !important;
+}
+</style>
+<script>
+// Force resize chart to fill viewport after load
+window.addEventListener('load', function() {
+	var charts = document.querySelectorAll('[_echarts_instance_]');
+	charts.forEach(function(el) {
+		if (el && el.style) {
+			el.style.height = window.innerHeight + 'px';
+			el.style.width = window.innerWidth + 'px';
+		}
+		// Trigger echarts resize
+		if (window.echarts) {
+			var chart = echarts.getInstanceByDom(el);
+			if (chart) {
+				setTimeout(function() {
+					chart.resize({
+						width: window.innerWidth,
+						height: window.innerHeight
+					});
+				}, 100);
+			}
+		}
+	});
+});
+// Resize on window resize
+window.addEventListener('resize', function() {
+	var charts = document.querySelectorAll('[_echarts_instance_]');
+	charts.forEach(function(el) {
+		if (el && el.style) {
+			el.style.height = window.innerHeight + 'px';
+			el.style.width = window.innerWidth + 'px';
+		}
+		if (window.echarts) {
+			var chart = echarts.getInstanceByDom(el);
+			if (chart) {
+				chart.resize({
+					width: window.innerWidth,
+					height: window.innerHeight
+				});
+			}
+		}
+	});
+});
+</script>`
+
+	html = strings.Replace(html, "<head>", cssInjection, 1)
+	return []byte(html), nil
+}
 
 // handleVisualizeTreemap returns HTML for treemap chart of audit record types
 func (s *Server) handleVisualizeTreemap(w http.ResponseWriter, r *http.Request) {
@@ -43,8 +126,14 @@ func (s *Server) handleVisualizeTreemap(w http.ResponseWriter, r *http.Request) 
 	}
 
 	chart := generateTreemapChart(outDir)
+	html, err := injectFullHeightCSS(chart.Render)
+	if err != nil {
+		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/html")
-	chart.Render(w)
+	w.Write(html)
 }
 
 // HandleVisualizeTreemap is an exported handler factory for service mode
@@ -61,8 +150,14 @@ func HandleVisualizeTreemap(outDir string) http.HandlerFunc {
 		}
 
 		chart := generateTreemapChart(outDir)
+		html, err := injectFullHeightCSS(chart.Render)
+		if err != nil {
+			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Set("Content-Type", "text/html")
-		chart.Render(w)
+		w.Write(html)
 	}
 }
 
@@ -83,8 +178,14 @@ func (s *Server) handleVisualizeBar3D(w http.ResponseWriter, r *http.Request) {
 	}
 
 	chart := generateBar3DChart(outDir)
+	html, err := injectFullHeightCSS(chart.Render)
+	if err != nil {
+		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/html")
-	chart.Render(w)
+	w.Write(html)
 }
 
 // HandleVisualizeBar3D is an exported handler factory for service mode
@@ -101,8 +202,14 @@ func HandleVisualizeBar3D(outDir string) http.HandlerFunc {
 		}
 
 		chart := generateBar3DChart(outDir)
+		html, err := injectFullHeightCSS(chart.Render)
+		if err != nil {
+			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Set("Content-Type", "text/html")
-		chart.Render(w)
+		w.Write(html)
 	}
 }
 
@@ -123,8 +230,14 @@ func (s *Server) handleVisualizeGraph(w http.ResponseWriter, r *http.Request) {
 	}
 
 	chart := generateGraphChart(outDir)
+	html, err := injectFullHeightCSS(chart.Render)
+	if err != nil {
+		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/html")
-	chart.Render(w)
+	w.Write(html)
 }
 
 // HandleVisualizeGraph is an exported handler factory for service mode
@@ -141,8 +254,14 @@ func HandleVisualizeGraph(outDir string) http.HandlerFunc {
 		}
 
 		chart := generateGraphChart(outDir)
+		html, err := injectFullHeightCSS(chart.Render)
+		if err != nil {
+			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Set("Content-Type", "text/html")
-		chart.Render(w)
+		w.Write(html)
 	}
 }
 
@@ -153,7 +272,7 @@ func generateTreemapChart(outDir string) *charts.TreeMap {
 	// Build treemap data organized by layer
 	layerMap := getLayerMap()
 	layerNodes := make(map[string]*opts.TreeMapNode)
-	
+
 	// Initialize layer nodes
 	for _, layer := range []string{"Link Layer", "Network Layer", "Transport Layer", "Application Layer", "Stream Decoders", "Abstract Decoders"} {
 		layerNodes[layer] = &opts.TreeMapNode{
@@ -168,7 +287,7 @@ func generateTreemapChart(outDir string) *charts.TreeMap {
 		if layer == "" {
 			layer = "Abstract Decoders"
 		}
-		
+
 		if node, ok := layerNodes[layer]; ok {
 			node.Children = append(node.Children, opts.TreeMapNode{
 				Name:  protocol,
@@ -188,9 +307,9 @@ func generateTreemapChart(outDir string) *charts.TreeMap {
 	graph := charts.NewTreeMap()
 	graph.SetGlobalOptions(
 		charts.WithInitializationOpts(opts.Initialization{
-			Theme:  types.ThemeMacarons,
-			Width:  "100%",
-			Height: "600px",
+			Theme:           types.ThemeMacarons,
+			Width:           "100%",
+			Height:          "100%",
 			BackgroundColor: "#1e1e1e",
 		}),
 		charts.WithTitleOpts(opts.Title{
@@ -265,7 +384,7 @@ func generateBar3DChart(outDir string) *charts.Bar3D {
 	// Organize by layer
 	layers := []string{"Link Layer", "Network Layer", "Transport Layer", "Application Layer"}
 	layerProtocols := make(map[string][]string)
-	
+
 	for protocol := range stats {
 		layer := layerMap[protocol]
 		if layer == "" {
@@ -277,7 +396,7 @@ func generateBar3DChart(outDir string) *charts.Bar3D {
 	// Build 3D data
 	data := make([]opts.Chart3DData, 0)
 	protocols := []string{}
-	
+
 	for layerIdx, layer := range layers {
 		protos := layerProtocols[layer]
 		for protoIdx, protocol := range protos {
@@ -295,8 +414,8 @@ func generateBar3DChart(outDir string) *charts.Bar3D {
 	bar3d := charts.NewBar3D()
 	bar3d.SetGlobalOptions(
 		charts.WithInitializationOpts(opts.Initialization{
-			Width:  "100%",
-			Height: "600px",
+			Width:           "100%",
+			Height:          "100%",
 			BackgroundColor: "#1e1e1e",
 		}),
 		charts.WithTitleOpts(opts.Title{
@@ -342,13 +461,13 @@ func generateGraphChart(outDir string) *charts.Graph {
 	// Create nodes for each audit record type
 	nodes := make([]opts.GraphNode, 0)
 	categories := []string{"Link Layer", "Network Layer", "Transport Layer", "Application Layer", "Other"}
-	
+
 	for protocol, pstats := range stats {
 		layer := layerMap[protocol]
 		if layer == "" {
 			layer = "Other"
 		}
-		
+
 		// Determine category index
 		categoryIdx := 4 // default to "Other"
 		for i, cat := range categories {
@@ -357,7 +476,7 @@ func generateGraphChart(outDir string) *charts.Graph {
 				break
 			}
 		}
-		
+
 		// Node size based on record count (logarithmic scale for better visualization)
 		size := float32(10)
 		if pstats.Count > 0 {
@@ -366,7 +485,7 @@ func generateGraphChart(outDir string) *charts.Graph {
 				size = 100
 			}
 		}
-		
+
 		nodes = append(nodes, opts.GraphNode{
 			Name:       protocol,
 			Value:      float32(pstats.Count),
@@ -382,7 +501,7 @@ func generateGraphChart(outDir string) *charts.Graph {
 	networkLayerProtos := []string{}
 	transportLayerProtos := []string{}
 	appLayerProtos := []string{}
-	
+
 	for protocol := range stats {
 		layer := layerMap[protocol]
 		switch layer {
@@ -430,9 +549,9 @@ func generateGraphChart(outDir string) *charts.Graph {
 	graph := charts.NewGraph()
 	graph.SetGlobalOptions(
 		charts.WithInitializationOpts(opts.Initialization{
-			Width:  "100%",
-			Height: "600px",
-			Theme:  types.ThemeMacarons,
+			Width:           "100%",
+			Height:          "100%",
+			Theme:           types.ThemeMacarons,
 			BackgroundColor: "#1e1e1e",
 		}),
 		charts.WithTitleOpts(opts.Title{
@@ -526,10 +645,10 @@ func getAuditRecordStats(outDir string) map[string]ProtocolStats {
 			count = bytes / 100
 		}
 
-	layer := getLayerMap()[protocol]
-	if layer == "" {
-		layer = "Custom Abstraction"
-	}
+		layer := getLayerMap()[protocol]
+		if layer == "" {
+			layer = "Custom Abstraction"
+		}
 
 		stats[protocol] = ProtocolStats{
 			Count: count,
@@ -545,17 +664,17 @@ func getAuditRecordStats(outDir string) map[string]ProtocolStats {
 func getLayerMap() map[string]string {
 	return map[string]string{
 		// Link Layer
-		"Ethernet":          "Link Layer",
-		"Dot1Q":             "Link Layer",
-		"Dot11":             "Link Layer",
-		"LLC":               "Link Layer",
-		"SNAP":              "Link Layer",
-		"ARP":               "Link Layer",
-		"CiscoDiscovery":    "Link Layer",
-		"NortelDiscovery":   "Link Layer",
+		"Ethernet":           "Link Layer",
+		"Dot1Q":              "Link Layer",
+		"Dot11":              "Link Layer",
+		"LLC":                "Link Layer",
+		"SNAP":               "Link Layer",
+		"ARP":                "Link Layer",
+		"CiscoDiscovery":     "Link Layer",
+		"NortelDiscovery":    "Link Layer",
 		"LinkLayerDiscovery": "Link Layer",
-		"STP":               "Link Layer",
-		"LLDP":              "Link Layer",
+		"STP":                "Link Layer",
+		"LLDP":               "Link Layer",
 		// Network Layer
 		"IPv4":     "Network Layer",
 		"IPv6":     "Network Layer",
@@ -571,27 +690,26 @@ func getLayerMap() map[string]string {
 		"UDP":  "Transport Layer",
 		"SCTP": "Transport Layer",
 		// Application Layer
-		"HTTP":            "Application Layer",
-		"TLS":             "Application Layer",
-		"TLSClientHello":  "Application Layer",
-		"TLSServerHello":  "Application Layer",
-		"DNS":             "Application Layer",
-		"SMTP":            "Application Layer",
-		"POP3":            "Application Layer",
-		"SSH":             "Application Layer",
-		"FTP":             "Application Layer",
-		"Telnet":          "Application Layer",
-		"SIP":             "Application Layer",
-		"NTP":             "Application Layer",
-		"DHCPv4":          "Application Layer",
-		"DHCPv6":          "Application Layer",
-		"DHCP":            "Application Layer",
-		"Modbus":          "Application Layer",
-		"ENIP":            "Application Layer",
-		"CIP":             "Application Layer",
-		"Diameter":        "Application Layer",
-		"VXLAN":           "Application Layer",
-		"Geneve":          "Application Layer",
+		"HTTP":           "Application Layer",
+		"TLS":            "Application Layer",
+		"TLSClientHello": "Application Layer",
+		"TLSServerHello": "Application Layer",
+		"DNS":            "Application Layer",
+		"SMTP":           "Application Layer",
+		"POP3":           "Application Layer",
+		"SSH":            "Application Layer",
+		"FTP":            "Application Layer",
+		"Telnet":         "Application Layer",
+		"SIP":            "Application Layer",
+		"NTP":            "Application Layer",
+		"DHCPv4":         "Application Layer",
+		"DHCPv6":         "Application Layer",
+		"DHCP":           "Application Layer",
+		"Modbus":         "Application Layer",
+		"ENIP":           "Application Layer",
+		"CIP":            "Application Layer",
+		"Diameter":       "Application Layer",
+		"VXLAN":          "Application Layer",
+		"Geneve":         "Application Layer",
 	}
 }
-

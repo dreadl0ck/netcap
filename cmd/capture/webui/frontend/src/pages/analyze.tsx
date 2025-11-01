@@ -17,9 +17,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  CircularProgress,
 } from '@mui/material';
 import Layout from '@/components/Layout';
-import { api, TrySession, ConfigResponse, BPFInfoResponse } from '@/lib/api';
+import { api, type TrySession, type ConfigResponse, type BPFInfoResponse } from '@/lib/api';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';

@@ -85,6 +85,7 @@ export interface TrySession {
   outputDir: string;
   status: string;
   errorMessage?: string;
+  errorLogPath?: string;  // Path to detailed error log file
   startTime?: string;
   completionTime?: string;
   packetsTotal?: number;
@@ -102,6 +103,7 @@ export interface FileInfo {
   errorLogPath?: string;  // Path to detailed error log file
   sessionId?: string;  // Optional, only present in try service mode
   bpfFilter?: string;  // Optional, BPF filter applied during capture
+  processingTime?: number;  // Optional, processing duration in seconds
 }
 
 export interface AuditFileInfo extends FileInfo {
@@ -361,11 +363,9 @@ export const api = {
     return res.text();
   },
 
-  async getErrorLogContent(path: string): Promise<string> {
-    // For error logs, we need to pass the full path relative to the output directory
-    // Extract just the filename from the path
-    const filename = path.split('/').pop() || path;
-    const res = await fetch(`${API_BASE}/logs/${filename}`);
+  async getErrorLogContent(sessionId: string): Promise<string> {
+    // Fetch error log content for a specific session by its session ID
+    const res = await fetch(`${API_BASE}/error-log/${sessionId}`);
     if (!res.ok) throw new Error('Failed to fetch error log content');
     return res.text();
   },
@@ -743,5 +743,22 @@ export function formatBytes(bytes: number): string {
 // Format timestamp to human readable string
 export function formatTimestamp(timestamp: number): string {
   return new Date(timestamp * 1000).toLocaleString();
+}
+
+export function formatDuration(seconds: number): string {
+  if (seconds < 1) {
+    return `${Math.round(seconds * 1000)}ms`;
+  }
+  if (seconds < 60) {
+    return `${seconds.toFixed(1)}s`;
+  }
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  if (minutes < 60) {
+    return `${minutes}m ${remainingSeconds}s`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return `${hours}h ${remainingMinutes}m`;
 }
 

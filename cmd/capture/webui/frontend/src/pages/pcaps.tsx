@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import {
   Box,
+  Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   IconButton,
   MenuItem,
@@ -21,10 +26,10 @@ import {
   Typography,
   type SelectChangeEvent,
 } from '@mui/material';
-import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, Description as DescriptionIcon, Search as SearchIcon, BubbleChart as VisualizeIcon, Report as ReportIcon } from '@mui/icons-material';
+import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, Description as DescriptionIcon, Search as SearchIcon, BubbleChart as VisualizeIcon, Report as ReportIcon, BugReport as BugReportIcon } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
-import { api, formatBytes, formatTimestamp } from '@/lib/api';
+import { api, formatBytes, formatTimestamp, formatDuration } from '@/lib/api';
 import useSWR from 'swr';
 import ReportIssueDialog from '@/components/ReportIssueDialog';
 
@@ -38,6 +43,25 @@ export default function PCAPs() {
   });
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const [activating, setActivating] = useState<string | null>(null);
+
+  // Debug: Log files when they change
+  useEffect(() => {
+    if (files) {
+      console.log('[PCAPs] Loaded files:', files.length);
+      const filesWithErrors = files.filter(f => f.error);
+      const filesWithErrorLogs = files.filter(f => f.errorLogPath);
+      console.log('[PCAPs] Files with errors:', filesWithErrors.length);
+      console.log('[PCAPs] Files with errorLogPath:', filesWithErrorLogs.length);
+      if (filesWithErrorLogs.length > 0) {
+        console.log('[PCAPs] Files with errorLogPath:', filesWithErrorLogs.map(f => ({
+          name: f.name,
+          error: f.error,
+          errorLogPath: f.errorLogPath,
+          sessionId: f.sessionId,
+        })));
+      }
+    }
+  }, [files]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [copiedFileId, setCopiedFileId] = useState<string | null>(null);
@@ -46,6 +70,9 @@ export default function PCAPs() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [reportIssueOpen, setReportIssueOpen] = useState(false);
   const [reportingFile, setReportingFile] = useState<{ sessionId: string; filename: string } | null>(null);
+  const [selectedErrorLog, setSelectedErrorLog] = useState<{ sessionId: string; filename: string } | null>(null);
+  const [errorLogContent, setErrorLogContent] = useState<string>('');
+  const [loadingErrorLog, setLoadingErrorLog] = useState(false);
   
   // Listen for directory changes and refresh input files
   useEffect(() => {
@@ -141,6 +168,43 @@ export default function PCAPs() {
   const handleCloseReportDialog = () => {
     setReportIssueOpen(false);
     setReportingFile(null);
+  };
+
+  const handleViewErrorLog = async (file: { path: string; name: string; sessionId?: string; errorLogPath?: string }) => {
+    console.log('[PCAPs] View error log clicked for:', file.name, 'errorLogPath:', file.errorLogPath);
+    
+    if (!file.errorLogPath) {
+      console.log('[PCAPs] No errorLogPath available for this file');
+      alert('Error log not available for this file');
+      return;
+    }
+
+    if (!file.sessionId) {
+      console.log('[PCAPs] No sessionId available for this file');
+      alert('Session ID not available');
+      return;
+    }
+
+    setSelectedErrorLog({ sessionId: file.sessionId, filename: file.name });
+    setLoadingErrorLog(true);
+    setErrorLogContent('');
+    
+    try {
+      console.log('[PCAPs] Fetching error log for session:', file.sessionId);
+      const content = await api.getErrorLogContent(file.sessionId);
+      console.log('[PCAPs] Error log content received, length:', content.length);
+      setErrorLogContent(content);
+    } catch (error) {
+      console.error('[PCAPs] Failed to load error log:', error);
+      setErrorLogContent(`Failed to load error log: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setLoadingErrorLog(false);
+    }
+  };
+
+  const handleCloseErrorLog = () => {
+    setSelectedErrorLog(null);
+    setErrorLogContent('');
   };
 
   const isActive = (file: string) => {
@@ -303,7 +367,6 @@ export default function PCAPs() {
                       Filename
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell>Path</TableCell>
                   <TableCell align="right">
                     <TableSortLabel
                       active={sortField === 'size'}
@@ -322,11 +385,23 @@ export default function PCAPs() {
                       Modified
                     </TableSortLabel>
                   </TableCell>
+                  <TableCell align="right">Processing Time</TableCell>
                   {(isMultiFile || status?.isTryService) && <TableCell align="right">Actions</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {paginatedFiles.map((file) => (
+                {paginatedFiles.map((file) => {
+                  // Debug log for each file
+                  console.log('[PCAPs] File:', file.name, {
+                    error: file.error,
+                    errorLogPath: file.errorLogPath,
+                    sessionId: file.sessionId,
+                    hasError: !!file.error,
+                    hasErrorLogPath: !!file.errorLogPath,
+                    hasSessionId: !!file.sessionId,
+                  });
+                  
+                  return (
                   <TableRow 
                     key={file.path}
                     sx={{ 
@@ -384,13 +459,19 @@ export default function PCAPs() {
                       </Box>
                     </Box>
                   </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                        {file.path}
-                      </Typography>
-                    </TableCell>
                     <TableCell align="right">{formatBytes(file.size)}</TableCell>
                     <TableCell align="right">{formatTimestamp(file.modifiedTime)}</TableCell>
+                    <TableCell align="right">
+                      {file.processingTime && file.isCompleted ? (
+                        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                          {formatDuration(file.processingTime)}
+                        </Typography>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          -
+                        </Typography>
+                      )}
+                    </TableCell>
                     {(isMultiFile || status?.isTryService) && (
                       <TableCell align="right" onClick={(e) => e.stopPropagation()}>
                         <Box display="flex" justifyContent="flex-end" gap={1}>
@@ -466,13 +547,28 @@ export default function PCAPs() {
                                   </IconButton>
                                 </Tooltip>
                               )}
+                              {file.error && file.errorLogPath && file.sessionId && (
+                                <Tooltip title="View Crash Log">
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() => {
+                                      console.log('[PCAPs] Crash log button clicked for:', file.name);
+                                      handleViewErrorLog(file);
+                                    }}
+                                  >
+                                    <BugReportIcon />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
                             </>
                           )}
                         </Box>
                       </TableCell>
                     )}
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
             {sortedFiles.length > rowsPerPage && (
@@ -507,6 +603,58 @@ export default function PCAPs() {
             filename={reportingFile.filename}
           />
         )}
+
+        {/* Crash Log Dialog */}
+        <Dialog
+          open={selectedErrorLog !== null}
+          onClose={handleCloseErrorLog}
+          maxWidth="lg"
+          fullWidth
+        >
+          <DialogTitle>
+            <Box display="flex" alignItems="center" gap={1}>
+              <BugReportIcon color="error" />
+              <Typography variant="h6">Analysis Crash Log</Typography>
+            </Box>
+            {selectedErrorLog && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Session: {selectedErrorLog.sessionId} - {selectedErrorLog.filename}
+              </Typography>
+            )}
+          </DialogTitle>
+          <DialogContent>
+            {loadingErrorLog ? (
+              <Box display="flex" justifyContent="center" alignItems="center" p={3}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <Paper
+                sx={{
+                  p: 2,
+                  bgcolor: 'grey.900',
+                  maxHeight: '70vh',
+                  overflow: 'auto',
+                }}
+              >
+                <pre
+                  style={{
+                    margin: 0,
+                    fontFamily: 'monospace',
+                    fontSize: '0.85rem',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    color: '#ff6b6b',
+                  }}
+                >
+                  {errorLogContent || 'No error log content available'}
+                </pre>
+              </Paper>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseErrorLog}>Close</Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Layout>
   );

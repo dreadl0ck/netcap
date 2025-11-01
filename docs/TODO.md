@@ -4,8 +4,6 @@ add detailed field descriptions for each protocol and show in explore view when 
 
 netcap core should produce info which fields contain data for the audit records, so that UI can use this only show fields that make sense for filtering, without having to parse the entire data again.
 
-service mode logging cleanup
-
 always allow to drag and drop files for upload on the Analyze menu item, even if user is on a different page. Switch to analyze page automatiaclly and start upload
 
 bpf filter doesnt seem to be applied correctly, debug

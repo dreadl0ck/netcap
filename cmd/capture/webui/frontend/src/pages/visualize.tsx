@@ -262,9 +262,9 @@ export default function Visualize() {
 
   return (
     <Layout title="Visualize">
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: selectedChartType === 'sankey' ? 3 : 1 }}>
         {/* File selector and chart type selector on same row */}
-        <Box display="flex" gap={2} mb={2} alignItems="center">
+        <Box display="flex" gap={2} mb={selectedChartType === 'sankey' ? 2 : 1} alignItems="center">
           {/* File selector - show when multiple input files are available */}
           {completedFiles.length > 1 && selectedFile && (
             <Box flex={1}>
@@ -357,14 +357,16 @@ export default function Visualize() {
           </Box>
         </Box>
 
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            Protocol Hierarchy Visualization
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Explore protocol encapsulation and relationships using different chart types
-          </Typography>
-        </Box>
+        {selectedChartType === 'sankey' && (
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Protocol Hierarchy Visualization
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Explore protocol encapsulation and relationships using different chart types
+            </Typography>
+          </Box>
+        )}
       </Box>
 
       <Grid container spacing={3}>
@@ -452,8 +454,8 @@ export default function Visualize() {
 
         {/* Chart Display */}
         <Grid item xs={12} md={selectedChartType === 'sankey' ? 8 : 12}>
-          <Paper sx={{ p: 3, height: 'calc(100vh - 300px)', display: 'flex', flexDirection: 'column' }}>
-            <Typography variant="h6" gutterBottom>
+          <Paper sx={{ p: selectedChartType === 'sankey' ? 3 : 2, height: selectedChartType === 'sankey' ? 'calc(100vh - 300px)' : 'calc(100vh - 180px)', display: 'flex', flexDirection: 'column' }}>
+            <Typography variant="h6" gutterBottom sx={{ mb: selectedChartType === 'sankey' ? 2 : 1 }}>
               {CHART_TYPES.find(ct => ct.value === selectedChartType)?.label || 'Visualization'}
             </Typography>
             
@@ -514,17 +516,20 @@ export default function Visualize() {
 
             {/* ECharts-based visualizations (Treemap, Bar3D, Graph) */}
             {chartUrl && (
-              <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <Alert severity="info" sx={{ mb: 2, flexShrink: 0 }}>
+              <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <Alert severity="info" sx={{ mb: 1, py: 0.5, flexShrink: 0 }}>
                   {selectedChartType === 'treemap' && 'Treemap shows audit record types grouped by protocol layer with size representing record count.'}
                   {selectedChartType === 'bar3d' && '3D bar chart displays audit record types organized by layer with interactive rotation.'}
                   {selectedChartType === 'graph' && 'Network graph visualizes protocol relationships with node size based on record count.'}
                 </Alert>
-                <Box sx={{ flex: 1, position: 'relative', minHeight: 0 }}>
+                <Box sx={{ flex: 1, position: 'relative', minHeight: 650 }}>
                   <iframe
                     key={chartRefreshKey}
                     src={chartUrl}
                     style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
                       width: '100%',
                       height: '100%',
                       border: 'none',

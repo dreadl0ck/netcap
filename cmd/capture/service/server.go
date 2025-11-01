@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -115,6 +116,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/files/logs", s.handleWebUILogFiles)
 	mux.HandleFunc("/api/audit/", s.handleWebUIAuditRecords)
 	mux.HandleFunc("/api/logs/", s.handleWebUILogContent)
+	mux.HandleFunc("/api/error-log/", s.handleErrorLogContent)
 	mux.HandleFunc("/api/set-directory", s.handleSetActiveDirectory)
 	mux.HandleFunc("/api/dbs", s.handleDatabaseInfo)
 	mux.HandleFunc("/api/dbs/update", s.handleUpdateDatabases)
@@ -297,6 +299,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 			errorLogFile.Close()
 		}
 		
+		log.Printf("[Service] Setting error log path for session %s: %s", job.SessionID, errorLogPath)
 		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, fmt.Sprintf("Analysis failed: %v", err), errorLogPath)
 		return
 	}
@@ -309,6 +312,9 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 
 	log.Printf("[Service] Analysis completed for session %s (duration: %v)", job.SessionID, duration)
 	s.sessionManager.UpdateSessionStatus(job.SessionID, StatusCompleted, "", "")
+	
+	// Store the processing time
+	s.sessionManager.UpdateSessionProcessingTime(job.SessionID, duration.Seconds())
 }
 
 // cleanupRoutine periodically cleans up expired sessions
@@ -472,11 +478,19 @@ func (s *Server) handleWebUIInputFiles(w http.ResponseWriter, r *http.Request) {
 			"bpfFilter":    session.BPFFilter, // Include BPF filter
 		}
 
+		// Add processing time if available
+		if session.ProcessingTime > 0 {
+			fileInfo["processingTime"] = session.ProcessingTime
+		}
+
 		// Add error if failed
 		if session.Status == StatusFailed && session.ErrorMessage != "" {
 			fileInfo["error"] = session.ErrorMessage
 			if session.ErrorLogPath != "" {
+				log.Printf("[Service] Adding errorLogPath for failed preloaded session %s: %s", session.SessionID, session.ErrorLogPath)
 				fileInfo["errorLogPath"] = session.ErrorLogPath
+			} else {
+				log.Printf("[Service] Failed preloaded session %s has NO errorLogPath", session.SessionID)
 			}
 		}
 
@@ -501,17 +515,26 @@ func (s *Server) handleWebUIInputFiles(w http.ResponseWriter, r *http.Request) {
 			"bpfFilter":    session.BPFFilter, // Include BPF filter
 		}
 
+		// Add processing time if available
+		if session.ProcessingTime > 0 {
+			fileInfo["processingTime"] = session.ProcessingTime
+		}
+
 		// Add error if failed
 		if session.Status == StatusFailed && session.ErrorMessage != "" {
 			fileInfo["error"] = session.ErrorMessage
 			if session.ErrorLogPath != "" {
+				log.Printf("[Service] Adding errorLogPath for failed session %s: %s", session.SessionID, session.ErrorLogPath)
 				fileInfo["errorLogPath"] = session.ErrorLogPath
+			} else {
+				log.Printf("[Service] Failed session %s has NO errorLogPath", session.SessionID)
 			}
 		}
 
 		files = append(files, fileInfo)
 	}
 
+	log.Printf("[Service] Returning %d files to frontend (user IP: %s, preloaded count: %d)", len(files), clientIP, len(allSessions))
 	respondJSON(w, http.StatusOK, files)
 }
 
@@ -527,7 +550,8 @@ func (s *Server) handleWebUIAuditFiles(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleWebUILogFiles(w http.ResponseWriter, r *http.Request) {
 	session := s.GetCurrentSession()
-	if session == nil || session.Status != StatusCompleted {
+	// Allow log file access for both completed and failed sessions (to view error logs)
+	if session == nil || (session.Status != StatusCompleted && session.Status != StatusFailed) {
 		respondJSON(w, http.StatusOK, []interface{}{})
 		return
 	}
@@ -549,14 +573,71 @@ func (s *Server) handleWebUIAuditRecords(w http.ResponseWriter, r *http.Request)
 
 func (s *Server) handleWebUILogContent(w http.ResponseWriter, r *http.Request) {
 	session := s.GetCurrentSession()
-	if session == nil || session.Status != StatusCompleted {
+	// Allow log content access for both completed and failed sessions (to view error logs)
+	if session == nil {
 		respondJSON(w, http.StatusNotFound, map[string]string{
-			"error": "No active session or analysis not completed",
+			"error": "No active session",
+		})
+		return
+	}
+	
+	// Check if session has any output directory (both completed and failed sessions should have one)
+	if session.Status != StatusCompleted && session.Status != StatusFailed {
+		respondJSON(w, http.StatusNotFound, map[string]string{
+			"error": "Analysis not completed or failed",
 		})
 		return
 	}
 
 	webui.HandleLogContent(session.OutputDir)(w, r)
+}
+
+func (s *Server) handleErrorLogContent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract session ID from URL path: /api/error-log/{sessionId}
+	sessionID := strings.TrimPrefix(r.URL.Path, "/api/error-log/")
+	if sessionID == "" {
+		http.Error(w, "Session ID required", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("[Service] GET /api/error-log/%s from %s", sessionID, r.RemoteAddr)
+
+	// Look up the session
+	session, exists := s.sessionManager.GetSession(sessionID)
+	if !exists || session == nil {
+		log.Printf("[Service] Session not found: %s", sessionID)
+		http.Error(w, "Session not found", http.StatusNotFound)
+		return
+	}
+
+	// Check if session has an error log path
+	if session.ErrorLogPath == "" {
+		log.Printf("[Service] No error log path for session: %s", sessionID)
+		http.Error(w, "No error log available for this session", http.StatusNotFound)
+		return
+	}
+
+	log.Printf("[Service] Reading error log from: %s", session.ErrorLogPath)
+
+	// Read the error log file
+	content, err := os.ReadFile(session.ErrorLogPath)
+	if err != nil {
+		log.Printf("[Service] Failed to read error log for session %s: %v", sessionID, err)
+		http.Error(w, fmt.Sprintf("Failed to read error log: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("[Service] Successfully read error log for session %s (size: %d bytes)", sessionID, len(content))
+
+	// Return raw log content as plain text
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(content)
 }
 
 func (s *Server) handleWebUIAuditStats(w http.ResponseWriter, r *http.Request) {
@@ -641,11 +722,38 @@ func (s *Server) handleSetActiveDirectory(w http.ResponseWriter, r *http.Request
 	})
 }
 
+// shouldLogRequest returns true if the request should be logged
+func shouldLogRequest(path string) bool {
+	// Skip logging for static assets
+	if strings.HasPrefix(path, "/_next/static/") ||
+		strings.HasPrefix(path, "/_next/image/") ||
+		strings.HasPrefix(path, "/static/") ||
+		path == "/favicon.ico" ||
+		strings.HasSuffix(path, ".js") ||
+		strings.HasSuffix(path, ".css") ||
+		strings.HasSuffix(path, ".map") ||
+		strings.HasSuffix(path, ".png") ||
+		strings.HasSuffix(path, ".jpg") ||
+		strings.HasSuffix(path, ".jpeg") ||
+		strings.HasSuffix(path, ".gif") ||
+		strings.HasSuffix(path, ".svg") ||
+		strings.HasSuffix(path, ".ico") ||
+		strings.HasSuffix(path, ".woff") ||
+		strings.HasSuffix(path, ".woff2") ||
+		strings.HasSuffix(path, ".ttf") ||
+		strings.HasSuffix(path, ".eot") {
+		return false
+	}
+	return true
+}
+
 // corsMiddleware adds CORS headers and logs requests
 func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Log incoming request
-		log.Printf("[Service] %s %s from %s", r.Method, r.URL.Path, getClientIP(r))
+		// Log incoming request (skip static assets)
+		if shouldLogRequest(r.URL.Path) {
+			log.Printf("[Service] %s %s from %s", r.Method, r.URL.Path, getClientIP(r))
+		}
 
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -836,7 +944,14 @@ func (s *Server) loadPreloadedPcaps() {
 		return
 	}
 
-	preloadedCount := 0
+	// First pass: collect all valid pcap files with their sizes
+	type pcapFileInfo struct {
+		filename string
+		path     string
+		info     os.FileInfo
+	}
+	var pcapFiles []pcapFileInfo
+
 	for _, file := range files {
 		if file.IsDir() {
 			continue
@@ -859,6 +974,23 @@ func (s *Server) loadPreloadedPcaps() {
 			continue
 		}
 
+		pcapFiles = append(pcapFiles, pcapFileInfo{
+			filename: filename,
+			path:     inputPath,
+			info:     fileInfo,
+		})
+	}
+
+	// Sort pcap files by size (smallest first) for faster initial results in UI
+	sort.Slice(pcapFiles, func(i, j int) bool {
+		return pcapFiles[i].info.Size() < pcapFiles[j].info.Size()
+	})
+
+	log.Printf("[Service] Found %d preloaded pcap files, processing smallest first for faster UI results", len(pcapFiles))
+
+	// Second pass: process files in order of size (smallest first)
+	preloadedCount := 0
+	for _, pcapFile := range pcapFiles {
 		// Generate session ID for this preloaded pcap
 		sessionID := generateSessionID()
 
@@ -866,7 +998,7 @@ func (s *Server) loadPreloadedPcaps() {
 		resultsDir := filepath.Join(s.config.DataDir, "results", sessionID)
 		if err := os.MkdirAll(resultsDir, 0777); err != nil {
 			log.Printf("[Service] Failed to create results directory for preloaded pcap %s: %v (check permissions on %s)",
-				filename, err, filepath.Join(s.config.DataDir, "results"))
+				pcapFile.filename, err, filepath.Join(s.config.DataDir, "results"))
 			continue
 		}
 
@@ -878,10 +1010,10 @@ func (s *Server) loadPreloadedPcaps() {
 		session := &SessionInfo{
 			SessionID:       sessionID,
 			IP:              "system", // Special IP for preloaded pcaps
-			UploadTimestamp: fileInfo.ModTime(),
-			InputFile:       inputPath,
-			InputFilename:   filename,
-			InputFileSize:   fileInfo.Size(),
+			UploadTimestamp: pcapFile.info.ModTime(),
+			InputFile:       pcapFile.path,
+			InputFilename:   pcapFile.filename,
+			InputFileSize:   pcapFile.info.Size(),
 			OutputDir:       resultsDir,
 			Status:          StatusQueued,
 			ResultsReady:    false,
@@ -897,7 +1029,7 @@ func (s *Server) loadPreloadedPcaps() {
 		// Queue analysis job
 		job := &AnalysisJob{
 			SessionID:       sessionID,
-			InputFile:       inputPath,
+			InputFile:       pcapFile.path,
 			OutputDir:       resultsDir,
 			EnableDPI:       s.enableDPI,
 			BPFFilter:       bpfConfig.Filter,
@@ -909,7 +1041,7 @@ func (s *Server) loadPreloadedPcaps() {
 		preloadedCount++
 
 		log.Printf("[Service] Queued preloaded pcap: %s (session: %s, size: %d bytes)",
-			filename, sessionID, fileInfo.Size())
+			pcapFile.filename, sessionID, pcapFile.info.Size())
 	}
 
 	if preloadedCount > 0 {

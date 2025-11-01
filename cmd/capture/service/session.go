@@ -43,6 +43,7 @@ type SessionInfo struct {
 	ErrorLogPath    string        `json:"errorLogPath,omitempty"` // Path to detailed error log file
 	StartTime       time.Time     `json:"startTime,omitempty"`
 	CompletionTime  time.Time     `json:"completionTime,omitempty"`
+	ProcessingTime  float64       `json:"processingTime,omitempty"` // Processing duration in seconds
 	PacketsTotal    int64         `json:"packetsTotal,omitempty"`
 	ResultsReady    bool          `json:"resultsReady"`
 	IsPreloaded     bool   `json:"isPreloaded"` // True if this is a preloaded system pcap
@@ -162,7 +163,10 @@ func (sm *SessionManager) UpdateSessionStatus(sessionID string, status SessionSt
 		session.Status = status
 		session.ErrorMessage = errorMsg
 		if errorLogPath != "" {
+			log.Printf("[SessionManager] Setting errorLogPath for session %s: %s", sessionID, errorLogPath)
 			session.ErrorLogPath = errorLogPath
+		} else if status == StatusFailed {
+			log.Printf("[SessionManager] WARNING: Session %s failed but no errorLogPath provided", sessionID)
 		}
 
 		if status == StatusProcessing && session.StartTime.IsZero() {
@@ -172,6 +176,9 @@ func (sm *SessionManager) UpdateSessionStatus(sessionID string, status SessionSt
 			if status == StatusCompleted {
 				session.ResultsReady = true
 				log.Printf("[SessionManager] Session %s marked as completed and ready", sessionID)
+			} else if status == StatusFailed {
+				log.Printf("[SessionManager] Session %s marked as failed (errorMsg: %s, errorLogPath: %s)", 
+					sessionID, errorMsg, session.ErrorLogPath)
 			}
 		}
 	} else {
@@ -186,6 +193,17 @@ func (sm *SessionManager) UpdateSessionPacketCount(sessionID string, count int64
 
 	if session, exists := sm.sessions[sessionID]; exists {
 		session.PacketsTotal = count
+	}
+}
+
+// UpdateSessionProcessingTime updates the processing time for a session
+func (sm *SessionManager) UpdateSessionProcessingTime(sessionID string, durationSeconds float64) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	if session, exists := sm.sessions[sessionID]; exists {
+		session.ProcessingTime = durationSeconds
+		log.Printf("[SessionManager] Session %s processing time: %.2f seconds", sessionID, durationSeconds)
 	}
 }
 
