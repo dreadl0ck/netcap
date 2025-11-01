@@ -50,7 +50,7 @@ var (
 	flagCalcEntropy          = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")
 	flagSnapLen              = fs.Int("snaplen", defaults.SnapLen, "configure snaplen for live capture from interface")
 	flagBaseLayer            = fs.String("base", "ethernet", "select base layer")
-	flagDecodeOptions        = fs.String("opts", "lazy", "select decoding options")
+	flagDecodeOptions        = fs.String("opts", "default", "select decoding options")
 	flagPayload              = fs.Bool("payload", false, "capture payload for supported layers")
 	flagCompress             = fs.Bool("compress", true, "compress output with gzip")
 	flagBuffer               = fs.Bool("buf", true, "buffer data in memory before writing to disk")

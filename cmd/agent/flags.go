@@ -54,7 +54,7 @@ var (
 	flagServerPubKey  = fs.String("pubkey", "", "path to the hex encoded server public key on disk")
 	flagAddr          = fs.String("addr", "127.0.0.1:1335", "specify the address and port of the collection server")
 	flagBaseLayer     = fs.String("base", "ethernet", "select base layer")
-	flagDecodeOptions = fs.String("opts", "lazy", "select decoding options")
+	flagDecodeOptions = fs.String("opts", "default", "select decoding options")
 	flagPayload       = fs.Bool("payload", false, "capture payload for supported layers")
 	flagContext       = fs.Bool("context", true, "add packet flow context to selected audit records")
 
