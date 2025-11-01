@@ -65,7 +65,7 @@ zeus/
 
 # Docker files (don't need to copy Docker files into Docker)
 docker/
-!docker/try/entrypoint.sh
+!docker/service/entrypoint.sh
 Dockerfile*
 .dockerignore
 

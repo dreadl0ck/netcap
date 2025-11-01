@@ -157,9 +157,9 @@ export default function DatabasesPage() {
 
         {/* Summary Cards */}
         <Grid container spacing={3} mb={4}>
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
+          <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
+            <Card sx={{ width: '100%' }}>
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <Box display="flex" alignItems="center" mb={1}>
                   <InfoIcon color="primary" sx={{ mr: 1 }} />
                   <Typography variant="h6">Version</Typography>
@@ -174,9 +174,9 @@ export default function DatabasesPage() {
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
+          <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
+            <Card sx={{ width: '100%' }}>
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <Box display="flex" alignItems="center" mb={1}>
                   <StorageIcon color="secondary" sx={{ mr: 1 }} />
                   <Typography variant="h6">Total Size</Typography>
@@ -191,9 +191,9 @@ export default function DatabasesPage() {
             </Card>
           </Grid>
 
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
+          <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
+            <Card sx={{ width: '100%' }}>
+              <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <Box display="flex" alignItems="center" mb={1}>
                   <FolderIcon color="success" sx={{ mr: 1 }} />
                   <Typography variant="h6">Location</Typography>

@@ -103,7 +103,7 @@ func init() {
 	}
 	// collect all names for gopacket decoders on startup
 	for _, d := range defaultGoPacketDecoders {
-		decoderutils.AllDecoderNames[d.Layer.String()] = struct{}{}
+		decoderutils.AllDecoderNames[d.GetName()] = struct{}{}
 	}
 }
 

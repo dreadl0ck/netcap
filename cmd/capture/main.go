@@ -332,6 +332,12 @@ func Run() {
 		log.Fatal(err)
 	}
 
+	// Check if running in service mode
+	if *flagService {
+		runServiceMode()
+		return
+	}
+
 	// Initialize web UI server if requested
 	var webUIServer *webui.Server
 	if *flagHTTP != "" {
@@ -526,10 +532,10 @@ func Run() {
 	// Store original output directory to create subdirectories for each file
 	originalOutDir := *flagOutDir
 
-	// Start web UI server if requested (for non-live captures)
-	if *flagHTTP != "" && !live {
+	// Start web UI server if requested
+	if *flagHTTP != "" {
 		// For multi-file processing, use the original directory; it will be updated per file
-		// For single-file processing, use the specified directory
+		// For single-file processing or live capture, use the specified directory
 		initialOutDir := *flagOutDir
 		if len(inputFiles) > 1 {
 			initialOutDir = originalOutDir
@@ -546,6 +552,7 @@ func Run() {
 		}
 
 		webUIServer = webui.NewServer(*flagHTTP, initialOutDir, inputFiles, *flagHTTPAssets, *flagDebug)
+		webUIServer.SetLiveMode(live) // Set live mode flag
 		if err := webUIServer.Start(); err != nil {
 			log.Printf("Failed to start web UI server: %v\n", err)
 		} else {
@@ -774,9 +781,67 @@ func Run() {
 
 	// collect traffic live from named interface
 	if live {
-		err = c.CollectLive(*flagInterface, *flagBPF, context.Background())
-		if err != nil {
-			log.Fatal("failed to collect live packets: ", err)
+		// Create a cancellable context for live capture
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		// If web UI is enabled, give it the cancel function
+		if webUIServer != nil {
+			webUIServer.SetStopCapture(cancel)
+		}
+
+		// Setup signal handler for graceful shutdown
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+		// Start live capture in a goroutine
+		errChan := make(chan error, 1)
+		go func() {
+			err := c.CollectLive(*flagInterface, *flagBPF, ctx)
+			errChan <- err
+		}()
+
+		// Wait for either an error, signal, or context cancellation
+		select {
+		case err := <-errChan:
+			if err != nil {
+				log.Printf("Live capture error: %v\n", err)
+			}
+		case sig := <-sigChan:
+			fmt.Printf("\nReceived signal: %v\n", sig)
+			fmt.Println("Stopping live capture...")
+			cancel()
+			// Wait for capture to stop
+			err := <-errChan
+			if err != nil {
+				log.Printf("Error during shutdown: %v\n", err)
+			}
+		}
+
+		// If web UI server is running, keep it alive for exploring results
+		if webUIServer != nil {
+			webUIServer.SetProcessingComplete()
+
+			fmt.Printf("\n%s========================================%s\n", ansi.Green, ansi.Reset)
+			fmt.Printf("%sLive capture stopped!%s\n", ansi.Green, ansi.Reset)
+			fmt.Printf("Web UI available at: %s%s%s\n", ansi.Cyan, webUIServer.GetURL(), ansi.Reset)
+			fmt.Printf("Press %sCtrl+C%s to stop the server and exit\n", ansi.Yellow, ansi.Reset)
+			fmt.Printf("%s========================================%s\n\n", ansi.Green, ansi.Reset)
+
+			// Wait for another interrupt signal to exit
+			sigChan2 := make(chan os.Signal, 1)
+			signal.Notify(sigChan2, os.Interrupt, syscall.SIGTERM)
+			<-sigChan2
+
+			fmt.Println("\nShutting down web UI server...")
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			if err := webUIServer.Stop(ctx); err != nil {
+				log.Printf("Error stopping web UI server: %v\n", err)
+			}
+
+			fmt.Println("Server stopped. Goodbye!")
 		}
 
 		return
@@ -872,14 +937,16 @@ func Run() {
 					humanize.Bytes(m.HeapAlloc), humanize.Bytes(m.HeapSys), numGoroutines)
 			}
 
-			// Set output directory for this specific file
-			*flagOutDir = getOutputDirForFile(inputFile, originalOutDir)
-			fmt.Printf("Output directory: %s\n", *flagOutDir)
+		// Set output directory for this specific file
+		*flagOutDir = getOutputDirForFile(inputFile, originalOutDir)
+		fmt.Printf("Output directory: %s\n", *flagOutDir)
 
-			// Update web UI server with new output directory
-			if webUIServer != nil {
-				webUIServer.UpdateOutputDir(*flagOutDir)
-			}
+		// Update web UI server with new output directory
+		if webUIServer != nil {
+			webUIServer.UpdateOutputDir(*flagOutDir)
+			// Store the mapping from input file to output directory
+			webUIServer.SetFileOutputDir(inputFile, *flagOutDir)
+		}
 
 			// Mark previous file as completed if this is not the first file
 			if webUIServer != nil && fileIdx > 0 {
@@ -1023,6 +1090,11 @@ func Run() {
 		// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
 		// setting BPF filters is not yet supported by the pcapgo package
 		if *flagBPF != "" {
+			// Record BPF filter for this file in web UI
+			if webUIServer != nil {
+				webUIServer.SetFileBPFFilter(inputFile, *flagBPF)
+			}
+
 			if err = c.CollectBPF(inputFile, *flagBPF); err != nil {
 				if len(inputFiles) > 1 {
 					fmt.Printf("Error: failed to set BPF: %v\n", err)

@@ -112,17 +112,37 @@ This command will:
 
 This ensures that the displayed versions always match the dependencies specified in `go.mod`.
 
+## Gopacket Library Version
+
+Similar to DPI library versions, the gopacket library version is dynamically injected at compile time and displayed in the webUI.
+
+### Where It's Displayed
+
+- **WebUI Decoder Configuration Page**: Shows the gopacket version at the top of the Decoders section with a link to https://github.com/gopacket/gopacket
+- **API Endpoint**: Available via `/api/version` endpoint as `gopacketVersion` field
+
+### Version Injection
+
+The gopacket version is automatically extracted from `go.mod` and injected via ldflags during all builds:
+
+- `zeus install` - macOS/Linux local builds
+- `zeus install-linux` - Linux builds with capabilities
+- Docker container builds (service, alpine, ubuntu)
+- GoReleaser builds for distribution
+
 ### Docker Builds
 
 Docker builds automatically include specific DPI library versions via ldflags:
 
 ```dockerfile
-RUN GOOS=linux GOARCH=amd64 go build ${TAGS} \
-  -ldflags "-s -w \
-    -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
-    -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
-    -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1" \
-  -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
+    GOOS=linux GOARCH=amd64 go build ${TAGS} \
+    -ldflags "-s -w \
+        -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
+        -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
+        -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
+        -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1" \
+    -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 ```
 
 ### Local Builds
@@ -130,8 +150,10 @@ RUN GOOS=linux GOARCH=amd64 go build ${TAGS} \
 For local builds, you can optionally set DPI version information:
 
 ```bash
-# Build with DPI version info
+# Build with DPI and gopacket version info
+GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
 go build -ldflags "-s -w \
+  -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
   -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
   -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1" \
   -o bin/net github.com/dreadl0ck/netcap/cmd

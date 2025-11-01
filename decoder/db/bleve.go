@@ -40,7 +40,7 @@ func CloseBleve(index io.Closer) {
 		return
 	}
 
-	dbLog.Info("closing bleve db", zap.String("index", fmt.Sprint(index)))
+	dbLog.Info("closing bleve db", zap.String("index", index.(bleve.Index).Name()))
 
 	err := index.Close()
 	if err != nil {

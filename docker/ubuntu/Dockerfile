@@ -19,7 +19,17 @@ RUN find / -iname libprotoident.h
 RUN find / -iname libtrace.h
 RUN ls /usr/lib/*
 
-RUN GOOS=linux GOARCH=amd64 go build ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION} -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+# Extract library versions from go.mod
+RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
+    GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
+    GOOS=linux GOARCH=amd64 go build ${TAGS} \
+    -ldflags "-s -w \
+        -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
+        -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
+        -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
+        -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1 \
+        -X github.com/dreadl0ck/netcap/dpi.GoDPIVersion=${GO_DPI_VERSION}" \
+    -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
 FROM --platform=linux/amd64 ubuntu:24.04
 ARG IPV6_SUPPORT=true

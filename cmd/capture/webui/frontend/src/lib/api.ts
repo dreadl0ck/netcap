@@ -43,6 +43,7 @@ export interface StatusResponse {
   isMultiFile: boolean;
   sessionId?: string;  // Optional, only present in try service mode
   isTryService?: boolean;  // Optional, indicates try service mode
+  isLiveMode: boolean;  // Whether in live capture mode
 }
 
 export interface UploadResponse {
@@ -98,7 +99,9 @@ export interface FileInfo {
   modifiedTime: number;
   isCompleted: boolean;
   error?: string;
+  errorLogPath?: string;  // Path to detailed error log file
   sessionId?: string;  // Optional, only present in try service mode
+  bpfFilter?: string;  // Optional, BPF filter applied during capture
 }
 
 export interface AuditFileInfo extends FileInfo {
@@ -146,8 +149,14 @@ export interface DPIInfo {
   goDpiVersion: string;
   activeModules: string[];
   availableModules: string[];
+  moduleProtocols: Record<string, string[]>; // New: protocols supported by each module
   ndpiProtocolsUrl: string;
   libprotoidentProtocolsUrl: string;
+}
+
+export interface UserDPIPreferences {
+  enabledModules: string[];
+  lastUpdated: string;
 }
 
 export interface ConfigOption {
@@ -188,6 +197,27 @@ export interface DecoderConfig {
   enabledDecoders: string[];
 }
 
+export interface DecoderConfigFile {
+  name: string;
+  path: string;
+  modifiedTime: number;
+  size: number;
+}
+
+export interface FieldInfo {
+  name: string;
+  type: string;
+}
+
+export interface DecoderFieldsResponse {
+  decoderName: string;
+  fields: FieldInfo[];
+}
+
+export interface AllDecoderFieldsResponse {
+  [decoderName: string]: FieldInfo[];
+}
+
 export interface SystemInfo {
   numCPU: number;
   numGoroutine: number;
@@ -196,6 +226,58 @@ export interface SystemInfo {
   usedMemory: number;
   goos: string;
   goarch: string;
+}
+
+export interface NetworkInterfaceInfo {
+  index: number;
+  name: string;
+  flags: string;
+  hardwareAddr: string;
+  mtu: number;
+  addrs: string[];
+}
+
+export interface BPFExample {
+  name: string;
+  filter: string;
+  description: string;
+}
+
+export interface BPFInfoResponse {
+  currentFilter: string;
+  examples: BPFExample[];
+  docsUrl: string;
+}
+
+export interface BPFConfig {
+  filter: string;
+}
+
+export interface ChartDataPoint {
+  timestamp: number;
+  value: number;
+}
+
+export interface ChartDataResponse {
+  type: string;
+  field: string;
+  interval: string;
+  data: ChartDataPoint[];
+  count: number;
+  minValue: number;
+  maxValue: number;
+  avgValue: number;
+}
+
+export interface ChartFieldInfo {
+  name: string;
+  type: string;
+  description: string;
+}
+
+export interface ChartFieldsResponse {
+  type: string;
+  fields: ChartFieldInfo[];
 }
 
 export const api = {
@@ -244,6 +326,15 @@ export const api = {
   async getLogContent(name: string): Promise<string> {
     const res = await fetch(`${API_BASE}/logs/${name}`);
     if (!res.ok) throw new Error('Failed to fetch log content');
+    return res.text();
+  },
+
+  async getErrorLogContent(path: string): Promise<string> {
+    // For error logs, we need to pass the full path relative to the output directory
+    // Extract just the filename from the path
+    const filename = path.split('/').pop() || path;
+    const res = await fetch(`${API_BASE}/logs/${filename}`);
+    if (!res.ok) throw new Error('Failed to fetch error log content');
     return res.text();
   },
 
@@ -328,6 +419,27 @@ export const api = {
     return res.json();
   },
 
+  async getDPIPreferences(): Promise<UserDPIPreferences> {
+    const res = await fetch(`${API_BASE}/dpi/preferences`);
+    if (!res.ok) throw new Error('Failed to fetch DPI preferences');
+    return res.json();
+  },
+
+  async setDPIPreferences(enabledModules: string[]): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/dpi/preferences`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ enabledModules }),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || 'Failed to save DPI preferences');
+    }
+    return res.json();
+  },
+
   async getConfig(): Promise<ConfigResponse> {
     const res = await fetch(`${API_BASE}/config`);
     if (!res.ok) throw new Error('Failed to fetch config');
@@ -372,9 +484,92 @@ export const api = {
     return res.json();
   },
 
+  async listDecoderConfigs(): Promise<DecoderConfigFile[]> {
+    const res = await fetch(`${API_BASE}/decoders/config/list`);
+    if (!res.ok) throw new Error('Failed to list decoder configs');
+    return res.json();
+  },
+
+  async loadDecoderConfig(name: string): Promise<{success: boolean; message: string; config: DecoderConfig; warning?: string}> {
+    const res = await fetch(`${API_BASE}/decoders/config/load`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) throw new Error('Failed to load decoder config');
+    return res.json();
+  },
+
+  async uploadDecoderConfig(file: File, name?: string, apply?: boolean): Promise<{success: boolean; message: string; name: string; applied: boolean}> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (name) formData.append('name', name);
+    if (apply) formData.append('apply', 'true');
+
+    const res = await fetch(`${API_BASE}/decoders/config/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || error.message || 'Upload failed');
+    }
+
+    return res.json();
+  },
+
+  async deleteDecoderConfig(name: string): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/decoders/config/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) throw new Error('Failed to delete decoder config');
+    return res.json();
+  },
+
+  async saveDecoderConfigAs(name: string, config: DecoderConfig): Promise<{success: boolean; message: string; name: string}> {
+    const res = await fetch(`${API_BASE}/decoders/config/save-as`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, config }),
+    });
+    if (!res.ok) throw new Error('Failed to save decoder config as');
+    return res.json();
+  },
+
+  async getDecoderFields(decoderName: string): Promise<DecoderFieldsResponse> {
+    const res = await fetch(`${API_BASE}/decoders/${encodeURIComponent(decoderName)}/fields`);
+    if (!res.ok) throw new Error('Failed to fetch decoder fields');
+    return res.json();
+  },
+
+  async getAllDecoderFields(): Promise<AllDecoderFieldsResponse> {
+    const res = await fetch(`${API_BASE}/decoders/fields`);
+    if (!res.ok) throw new Error('Failed to fetch all decoder fields');
+    return res.json();
+  },
+
   async getSystemInfo(): Promise<SystemInfo> {
     const res = await fetch(`${API_BASE}/system-info`);
     if (!res.ok) throw new Error('Failed to fetch system info');
+    return res.json();
+  },
+
+  async getBPFInfo(): Promise<BPFInfoResponse> {
+    const res = await fetch(`${API_BASE}/config/bpf`);
+    if (!res.ok) throw new Error('Failed to fetch BPF info');
+    return res.json();
+  },
+
+  async saveBPFConfig(config: BPFConfig): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/config/bpf`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config),
+    });
+    if (!res.ok) throw new Error('Failed to save BPF configuration');
     return res.json();
   },
 
@@ -437,6 +632,41 @@ export const api = {
     });
 
     return eventSource;
+  },
+
+  async getNetworkInterfaces(): Promise<NetworkInterfaceInfo[]> {
+    const res = await fetch(`${API_BASE}/network-interfaces`);
+    if (!res.ok) throw new Error('Failed to fetch network interfaces');
+    return res.json();
+  },
+
+  async stopCapture(): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/stop-capture`, {
+      method: 'POST',
+    });
+    if (!res.ok) throw new Error('Failed to stop capture');
+    return res.json();
+  },
+
+  async getChartData(type: string, field: string, interval: string): Promise<ChartDataResponse> {
+    const res = await fetch(`${API_BASE}/chart/data?type=${encodeURIComponent(type)}&field=${encodeURIComponent(field)}&interval=${encodeURIComponent(interval)}`);
+    if (!res.ok) throw new Error('Failed to fetch chart data');
+    return res.json();
+  },
+
+  async getChartFields(type: string): Promise<ChartFieldsResponse> {
+    const res = await fetch(`${API_BASE}/chart/fields?type=${encodeURIComponent(type)}`);
+    if (!res.ok) {
+      if (res.status === 404) {
+        throw new Error('Chart API not found');
+      }
+      if (res.status === 503) {
+        throw new Error('No output directory selected - please select or set an output directory first');
+      }
+      const text = await res.text();
+      throw new Error(text || 'Failed to fetch chart fields');
+    }
+    return res.json();
   },
 };
 

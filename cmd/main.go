@@ -31,7 +31,6 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/label"
 	"github.com/dreadl0ck/netcap/cmd/proxy"
 	"github.com/dreadl0ck/netcap/cmd/transform"
-	"github.com/dreadl0ck/netcap/cmd/try"
 	"github.com/dreadl0ck/netcap/cmd/util"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/env"
@@ -48,7 +47,6 @@ const (
 	cmdCollect   = "collect"
 	cmdTransform = "transform"
 	cmdAgent     = "agent"
-	cmdTry       = "try"
 	cmdVersion   = "version"
 	cmdHelp      = "help"
 
@@ -81,7 +79,6 @@ available subcommands:
   > dump          utility to read audit record files
   > collect       collector for audit records from agents
   > transform     maltego plugin
-  > try           web service for uploading and analyzing pcap files
   > help          display this help
 
 usage: ./net <subcommand> [flags]
@@ -127,8 +124,6 @@ func main() {
 		transform.Run()
 	case cmdAgent:
 		agent.Run()
-	case cmdTry:
-		try.Run()
 	case cmdVersion:
 		io.PrintBuildInfo()
 	case cmdHelp, "-h", "--help":
@@ -147,7 +142,6 @@ var completions = []string{
 	cmdCollect,
 	cmdTransform,
 	cmdAgent,
-	cmdTry,
 	cmdHelp,
 	cmdVersion,
 }

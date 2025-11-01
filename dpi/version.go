@@ -26,7 +26,7 @@ var (
 	LibprotoidentVersion = "unknown"
 
 	// GoDPIVersion is the version of go-dpi wrapper used
-	GoDPIVersion = "v1.2.3"
+	GoDPIVersion = "v1.3.0"
 )
 
 // GetVersionInfo returns a formatted string with DPI library versions

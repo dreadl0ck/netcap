@@ -214,7 +214,17 @@ func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 	//start := time.Now()
 	//fmt.Println("DPI", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
 
+	// Get packet flow and validate it to prevent null pointer dereferences
+	// GetPacketFlow returns (flow, exists) where exists indicates if flow was already tracked
 	flow, _ := godpi.GetPacketFlow(packet)
+
+	// Validate that flow is not nil before accessing its methods
+	// This prevents segmentation faults in the nDPI wrapper when DPI libraries
+	// are not properly initialized or protocol data files are missing
+	if flow == nil {
+		return nil
+	}
+
 	if flow.GetPacketCount() == 10 {
 		results := godpi.ClassifyFlowAllModules(flow)
 
@@ -247,4 +257,75 @@ func getCategoryString(in Category) string {
 		return categoryUnknown
 	}
 	return string(in)
+}
+
+// GetModuleProtocols returns a map of module names to their supported protocols
+// using the new GetSupportedProtocols APIs introduced in go-dpi v1.3.0
+// Note: This function initializes temporary wrapper instances to get protocol lists
+// It works independently of whether DPI is currently enabled or not
+func GetModuleProtocols() map[string][]string {
+	result := make(map[string][]string)
+
+	// Get protocols from nDPI wrapper
+	// Initialize a temporary instance just to get the protocol list
+	ndpiWrapper := wrappers.NewNDPIWrapper()
+	initResult := ndpiWrapper.InitializeWrapper()
+	log.Printf("[DPI] nDPI InitializeWrapper returned: %d", initResult)
+	if initResult == 0 {
+		protocols := ndpiWrapper.GetSupportedProtocols()
+		log.Printf("[DPI] nDPI GetSupportedProtocols returned %d protocols", len(protocols))
+		if len(protocols) > 0 {
+			ndpiProtocols := make([]string, len(protocols))
+			for i, p := range protocols {
+				ndpiProtocols[i] = string(p)
+			}
+			result["ndpi"] = ndpiProtocols
+		}
+		ndpiWrapper.DestroyWrapper()
+	} else {
+		log.Printf("[DPI] nDPI initialization failed with code: %d", initResult)
+	}
+
+	// Get protocols from LPI wrapper
+	// Initialize a temporary instance just to get the protocol list
+	lpiWrapper := wrappers.NewLPIWrapper()
+	lpiInitResult := lpiWrapper.InitializeWrapper()
+	log.Printf("[DPI] LPI InitializeWrapper returned: %d", lpiInitResult)
+	if lpiInitResult == 0 {
+		protocols := lpiWrapper.GetSupportedProtocols()
+		log.Printf("[DPI] LPI GetSupportedProtocols returned %d protocols", len(protocols))
+		if len(protocols) > 0 {
+			lpiProtocols := make([]string, len(protocols))
+			for i, p := range protocols {
+				lpiProtocols[i] = string(p)
+			}
+			result["lpi"] = lpiProtocols
+		}
+		lpiWrapper.DestroyWrapper()
+	} else {
+		log.Printf("[DPI] LPI initialization failed with code: %d", lpiInitResult)
+	}
+
+	// Get protocols from go-dpi classifiers
+	// Initialize a temporary instance just to get the protocol list
+	goClassifier := classifiers.NewClassifierModule()
+	err := goClassifier.Initialize()
+	log.Printf("[DPI] go-dpi classifier Initialize returned error: %v", err)
+	if err == nil {
+		protocols := goClassifier.GetSupportedProtocols()
+		log.Printf("[DPI] go-dpi GetSupportedProtocols returned %d protocols", len(protocols))
+		if len(protocols) > 0 {
+			goProtocols := make([]string, len(protocols))
+			for i, p := range protocols {
+				goProtocols[i] = string(p)
+			}
+			result["go"] = goProtocols
+		}
+		goClassifier.Destroy()
+	} else {
+		log.Printf("[DPI] go-dpi classifier initialization failed: %v", err)
+	}
+
+	log.Printf("[DPI] GetModuleProtocols returning %d modules with protocols", len(result))
+	return result
 }

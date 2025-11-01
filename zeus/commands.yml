@@ -29,6 +29,9 @@ commands:
         buildNumber: true
         help: Compiles and moves the netcap binary to /usr/local/bin (auto-detects DPI libraries on macOS)
         exec: |
+            # Extract gopacket version from go.mod
+            GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
+            
             # Detect OS and handle DPI libraries automatically
             if [[ "$OSTYPE" == "darwin"* ]]; then
                 # macOS - check for DPI libraries
@@ -36,19 +39,27 @@ commands:
                     # Detect versions
                     NDPI_VERSION=$(brew list --versions ndpi 2>/dev/null | awk '{print $2}')
                     LPI_VERSION=$(brew list --versions libprotoident 2>/dev/null | awk '{print $2}')
-                    echo "[INFO] Building with DPI support (nDPI ${NDPI_VERSION}, libprotoident ${LPI_VERSION})"
+                    # Extract go-dpi version from go.mod
+                    GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" go.mod | grep -v indirect | awk '{print $2}')
+                    echo "[INFO] Building with DPI support (nDPI ${NDPI_VERSION}, libprotoident ${LPI_VERSION}, go-dpi ${GO_DPI_VERSION})"
                     # go-dpi v1.1.0+ already includes the correct CGO directives for Homebrew
                     go build -ldflags "-s -w \
+                        -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
                         -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=${NDPI_VERSION} \
-                        -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=${LPI_VERSION}" \
+                        -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=${LPI_VERSION} \
+                        -X github.com/dreadl0ck/netcap/dpi.GoDPIVersion=${GO_DPI_VERSION}" \
                         -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
                 else
                     echo "[INFO] Building without DPI support (install with: brew install ndpi libprotoident)"
-                    go build -tags nodpi -ldflags "-s -w" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+                    go build -tags nodpi -ldflags "-s -w \
+                        -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}" \
+                        -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
                 fi
             else
                 # Linux or other - use default build
-                go build -ldflags "-s -w" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+                go build -ldflags "-s -w \
+                    -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}" \
+                    -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
             fi
 
     install-linux:
@@ -60,8 +71,14 @@ commands:
             to allow the NETCAP process to attach to a network interface.
         exec: |
             mkdir -p bin
+            # Extract gopacket version from go.mod
+            GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
+            
             # Try to detect DPI library versions on Linux
             LDFLAGS="-s -w"
+            if [ -n "$GOPACKET_VERSION" ]; then
+                LDFLAGS="$LDFLAGS -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}"
+            fi
             if ldconfig -p 2>/dev/null | grep -q libndpi; then
                 # Attempt to extract version from pkg-config or library files
                 if command -v pkg-config &>/dev/null && pkg-config --exists libndpi 2>/dev/null; then
@@ -71,6 +88,11 @@ commands:
                 if command -v pkg-config &>/dev/null && pkg-config --exists libprotoident 2>/dev/null; then
                     LPI_VERSION=$(pkg-config --modversion libprotoident 2>/dev/null || echo "unknown")
                     LDFLAGS="$LDFLAGS -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=${LPI_VERSION}"
+                fi
+                # Extract go-dpi version from go.mod
+                GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" go.mod | grep -v indirect | awk '{print $2}')
+                if [ -n "$GO_DPI_VERSION" ]; then
+                    LDFLAGS="$LDFLAGS -X github.com/dreadl0ck/netcap/dpi.GoDPIVersion=${GO_DPI_VERSION}"
                 fi
                 echo "[INFO] Building with DPI support"
             fi
@@ -87,7 +109,13 @@ commands:
             to allow the NETCAP process to attach to a network interface.
         exec: |
             mkdir -p bin
-            go build -tags nodpi -ldflags "-s -w" -o bin/net github.com/dreadl0ck/netcap/cmd
+            # Extract gopacket version from go.mod
+            GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
+            LDFLAGS="-s -w"
+            if [ -n "$GOPACKET_VERSION" ]; then
+                LDFLAGS="$LDFLAGS -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}"
+            fi
+            go build -tags nodpi -ldflags "$LDFLAGS" -o bin/net github.com/dreadl0ck/netcap/cmd
             echo "setting capabilities for attaching to a network interface and moving binary to /usr/local/bin (requires root)..."
             sudo mv bin/net /usr/local/bin
             sudo setcap cap_net_raw,cap_net_admin=eip $(which net)
@@ -96,7 +124,14 @@ commands:
         description: install netcap and netlabel to $PATH
         buildNumber: true
         help: Compiles and moves the netcap binary to /usr/local/bin
-        exec: go build -tags nodpi -ldflags "-s -w" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+        exec: |
+            # Extract gopacket version from go.mod
+            GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
+            LDFLAGS="-s -w"
+            if [ -n "$GOPACKET_VERSION" ]; then
+                LDFLAGS="$LDFLAGS -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}"
+            fi
+            go build -tags nodpi -ldflags "$LDFLAGS" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
 
     ## Debug Builds
     ##
@@ -161,17 +196,17 @@ commands:
               NETCAP_USE_BUILDX=false NETCAP_PUSH_IMAGES=true zeus build-dbs-server
         exec: VERSION=${VERSION} NETCAP_PUSH_IMAGES=${push} zeus/scripts/build-dbs-server.sh
 
-    build-try-server:
-        description: build and push the netcap try server container
+    build-service:
+        description: build and push the netcap service mode container
         dependencies:
             - build-frontend
         arguments:
             - push:Bool? = true
         help: |
-            Builds the netcap-try server container with webUI and optionally pushes to a registry.
+            Builds the netcap service mode container with webUI and optionally pushes to a registry.
             Supports multi-platform builds (amd64 and arm64) using Docker Buildx.
             
-            The script automatically copies frontend assets from capture webUI if not present.
+            The service runs using: net capture --service
             
             Environment Variables:
               NETCAP_CONTAINER_REGISTRY       - Registry URL (default: docker.io)
@@ -183,20 +218,128 @@ commands:
             
             Examples:
               # Build only (local, single platform)
-              zeus build-try-server
+              zeus build-service
               
               # Build and push multi-platform to Docker Hub
-              NETCAP_PUSH_IMAGES=true zeus build-try-server
+              NETCAP_PUSH_IMAGES=true zeus build-service
               
               # Build and push to custom registry
               NETCAP_CONTAINER_REGISTRY=registry.example.com \
               NETCAP_CONTAINER_REGISTRY_USER=myorg \
               NETCAP_PUSH_IMAGES=true \
-              zeus build-try-server
+              zeus build-service
               
               # Build specific version
-              VERSION=v0.7.6 NETCAP_PUSH_IMAGES=true zeus build-try-server
-        exec: VERSION=${VERSION} NETCAP_PUSH_IMAGES=${push} zeus/scripts/build-try-server.sh
+              VERSION=v0.7.7 NETCAP_PUSH_IMAGES=true zeus build-service
+        exec: VERSION=${VERSION} NETCAP_PUSH_IMAGES=${push} zeus/scripts/build-service.sh
+
+    build-service-local-dpi:
+        description: build and push the netcap service mode container with local go-dpi
+        dependencies:
+            - build-frontend
+        arguments:
+            - push:Bool? = true
+        help: |
+            Builds the netcap service mode container with a local version of go-dpi instead of the pinned version.
+            Uses a replace directive in go.mod and copies the local go-dpi folder into the build container.
+            Supports multi-platform builds (amd64 and arm64) using Docker Buildx.
+            
+            The service runs using: net capture --service
+            
+            Environment Variables:
+              NETCAP_CONTAINER_REGISTRY       - Registry URL (default: docker.io)
+              NETCAP_CONTAINER_REGISTRY_USER  - Registry username (default: dreadl0ck)
+              NETCAP_PUSH_IMAGES              - Set to 'true' to push after build
+              NETCAP_USE_BUILDX               - Use buildx for multi-platform (default: true)
+              NETCAP_PLATFORMS                - Target platforms (default: linux/amd64,linux/arm64)
+              VERSION                         - Image version tag (default: from globals)
+              GO_DPI_PATH                     - Path to local go-dpi directory (default: ../go-dpi)
+            
+            Examples:
+              # Build only (local, single platform) with default ../go-dpi path
+              zeus build-service-local-dpi
+              
+              # Build with custom go-dpi path
+              GO_DPI_PATH=/path/to/go-dpi zeus build-service-local-dpi
+              
+              # Build and push multi-platform to Docker Hub
+              NETCAP_PUSH_IMAGES=true zeus build-service-local-dpi
+              
+              # Build specific version
+              VERSION=v0.7.7 NETCAP_PUSH_IMAGES=true zeus build-service-local-dpi
+        exec: VERSION=${VERSION} NETCAP_PUSH_IMAGES=${push} zeus/scripts/build-service-local-dpi.sh
+
+    run-service:
+        description: start the netcap service locally for testing
+        dependencies:
+            - build-frontend
+            - install
+        exec: |
+            cd pcaps
+            sleep 3 && open http://localhost:8080 &
+            net capture -dpi -service -read *
+
+    run-service-container:
+        description: run the netcap service mode container locally for testing
+        help: |
+            Runs the netcap-service Docker container locally for testing.
+            This command will:
+              - Pull the latest image from the registry
+              - Stop and remove any existing container with the same name
+              - Create and start a fresh container with the latest image
+            
+            Data is persisted in a volume, so previous session data is preserved.
+            
+            Environment Variables:
+              VERSION                         - Container image version (default: latest)
+              CONTAINER_NAME                  - Custom container name (default: netcap-service-local)
+              HTTP_PORT                       - Port to expose (default: 7070)
+              DATA_DIR                        - Data directory for persistence (default: ~/.netcap/service-data)
+              NC_DPI                          - Enable DPI support (default: true)
+              NC_MAX_FILE_SIZE                - Max upload file size in bytes (default: 104857600 = 100MB)
+              NC_MAX_ANALYSIS_HOUR            - Max analyses per hour per IP (default: 10)
+              NC_SESSION_EXPIRY               - Session expiry in minutes (default: 60)
+              NC_CLEANUP_INTERVAL             - Cleanup interval in minutes (default: 10)
+              OPEN_BROWSER                    - Auto-open browser (default: false)
+              FOLLOW_LOGS                     - Follow container logs after start (default: false)
+              NETCAP_CONTAINER_REGISTRY       - Registry URL (default: docker.io)
+              NETCAP_CONTAINER_REGISTRY_USER  - Registry username (default: dreadl0ck)
+            
+            Examples:
+              # Run with default settings
+              zeus run-service-container
+              
+              # Run on custom port
+              HTTP_PORT=8080 zeus run-service-container
+              
+              # Run and open browser
+              OPEN_BROWSER=true zeus run-service-container
+              
+              # Run and follow logs
+              FOLLOW_LOGS=true zeus run-service-container
+              
+              # Run specific version
+              VERSION=v0.7.7 zeus run-service-container
+              
+            Management:
+              Stop:    docker stop netcap-service-local
+              Start:   docker start netcap-service-local
+              Remove:  docker rm netcap-service-local
+              Logs:    docker logs -f netcap-service-local
+        exec: zeus/scripts/run-service-container.sh
+
+    run-ui:
+        description: start the netcap service locally for testing
+        dependencies:
+            #- install
+        exec: |
+            cd pcaps
+            #sleep 6 && open http://localhost:8080 &
+            #sudo net capture -iface en0 -out livecapture/
+
+            sleep 2 && open http://localhost:8080 &
+            net capture -dpi -y -read 2017-09-19-traffic-analysis-exercise.pcap -out capturetest
+
 
     pack-dbs-tarball:
         description: pack databases into versioned tarball for dbs-server with metadata and symlinks
@@ -345,6 +488,8 @@ commands:
             The build output will be placed in:
               cmd/capture/webui/frontend/out/
             
+            Both capture (standard and service mode) use the frontend from this location.
+            
             This command is automatically run as part of the release process,
             but can be run manually when developing the web UI.
             
@@ -362,12 +507,6 @@ commands:
             npm run build
             echo "[INFO] Frontend build complete!"
             echo "[INFO] Static files are in: cmd/capture/webui/frontend/out/"
-            
-            # Sync webUI frontend from capture to try service
-            cd ../../../..
-            echo "[INFO] Syncing frontend to try service..."
-            bash zeus/scripts/sync-webui.sh || exit 1
-            echo "[INFO] Frontend sync complete!"
             echo "[INFO] Run 'zeus install' to rebuild netcap with the new frontend"
 
     ## Utils

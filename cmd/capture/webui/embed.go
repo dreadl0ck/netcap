@@ -16,11 +16,14 @@ package webui
 import (
 	"embed"
 	"io/fs"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 )
 
+// Embed the frontend assets
+//
 //go:embed frontend/out
 //go:embed frontend/out/_next
 //go:embed frontend/out/_next/static
@@ -31,7 +34,7 @@ import (
 //go:embed frontend/out/_next/static/*/*.js
 //go:embed frontend/out/*.html
 //go:embed frontend/out/*/*.html
-var embeddedAssets embed.FS
+var EmbeddedAssets embed.FS
 
 // handleStatic serves static frontend assets
 func (s *Server) handleStatic() http.Handler {
@@ -43,12 +46,14 @@ func (s *Server) handleStatic() http.Handler {
 				return http.FileServer(http.Dir(absPath))
 			}
 		}
+		log.Printf("[WebUI] Warning: Custom assets path not accessible: %s", s.assetsPath)
 	}
 
 	// Otherwise, serve embedded assets
-	fsSub, err := fs.Sub(embeddedAssets, "frontend/out")
+	fsSub, err := fs.Sub(EmbeddedAssets, "frontend/out")
 	if err != nil {
 		// Fallback to serving a simple message if assets aren't built
+		log.Printf("[WebUI] Warning: Failed to load embedded assets: %v", err)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/html")
 			w.Write([]byte(`

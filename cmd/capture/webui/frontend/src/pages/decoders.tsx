@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Alert,
   Box,
@@ -8,12 +8,26 @@ import {
   Chip,
   CircularProgress,
   Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControlLabel,
   IconButton,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
   Switch,
   TextField,
   Typography,
   Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
 } from '@mui/material';
 import {
   ChevronRight as ChevronRightIcon,
@@ -22,11 +36,20 @@ import {
   Info as InfoIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  KeyboardArrowUp as KeyboardArrowUpIcon,
+  FolderOpen as FolderOpenIcon,
+  Upload as UploadIcon,
+  SaveAs as SaveAsIcon,
+  Delete as DeleteIcon,
+  GetApp as GetAppIcon,
+  OpenInNew as OpenInNewIcon,
+  Code as CodeIcon,
 } from '@mui/icons-material';
 import useSWR from 'swr';
 import Layout from '@/components/Layout';
-import type { DecoderInfo, DecoderConfig } from '@/lib/api';
-import { api } from '@/lib/api';
+import type { DecoderInfo, DecoderConfig, FieldInfo, DecoderConfigFile } from '@/lib/api';
+import { api, formatTimestamp } from '@/lib/api';
 
 interface DecoderCategory {
   name: string;
@@ -45,9 +68,39 @@ const getCategoryColor = (categoryKey: string): string => {
   return colors[categoryKey] || '#757575';
 };
 
+// Convert PascalCase/camelCase to snake_case
+const toSnakeCase = (str: string): string => {
+  return str
+    .replace(/([A-Z])/g, '_$1')
+    .toLowerCase()
+    .replace(/^_/, ''); // Remove leading underscore if present
+};
+
+const getDecoderGitHubUrl = (categoryKey: string, decoderName: string): string => {
+  const baseUrl = 'https://github.com/dreadl0ck/netcap/blob/master/decoder';
+  const snakeCaseName = toSnakeCase(decoderName);
+  
+  switch (categoryKey) {
+    case 'stream':
+      // Stream decoders are in subdirectories: decoder/stream/{name}/{name}.go
+      return `${baseUrl}/stream/${snakeCaseName}/${snakeCaseName}.go`;
+    case 'packet':
+    case 'gopacket':
+      // Packet decoders are directly in the packet directory: decoder/packet/{name}.go
+      return `${baseUrl}/packet/${snakeCaseName}.go`;
+    case 'abstract':
+      // Abstract decoders are in the abstract_decoder.go file or subdirectories
+      return `${baseUrl}/abstract_decoder.go`;
+    default:
+      return baseUrl;
+  }
+};
+
 export default function Decoders() {
   const { data: decodersData, error: decodersError } = useSWR('decoders', () => api.getDecoders());
   const { data: configData, mutate: mutateConfig } = useSWR('decoderConfig', () => api.getDecoderConfig());
+  const { data: savedConfigs, mutate: mutateSavedConfigs } = useSWR('savedDecoderConfigs', () => api.listDecoderConfigs());
+  const { data: versionInfo } = useSWR('version', () => api.getVersion());
   const [searchTerm, setSearchTerm] = useState('');
   const [enabledDecoders, setEnabledDecoders] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
@@ -56,6 +109,18 @@ export default function Decoders() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(['packet', 'gopacket', 'stream', 'abstract'])
   );
+  const [expandedDecoder, setExpandedDecoder] = useState<string | null>(null);
+  const [decoderFields, setDecoderFields] = useState<Record<string, FieldInfo[]>>({});
+  const [loadingAllFields, setLoadingAllFields] = useState(true);
+  
+  // Dialog states
+  const [loadDialogOpen, setLoadDialogOpen] = useState(false);
+  const [saveAsDialogOpen, setSaveAsDialogOpen] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [configName, setConfigName] = useState('');
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [applyOnUpload, setApplyOnUpload] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize enabled decoders state from fetched data
   useEffect(() => {
@@ -71,6 +136,23 @@ export default function Decoders() {
       setEnabledDecoders(enabled);
     }
   }, [decodersData]);
+
+  // Fetch ALL decoder fields on mount
+  useEffect(() => {
+    const fetchAllFields = async () => {
+      try {
+        setLoadingAllFields(true);
+        const allFields = await api.getAllDecoderFields();
+        setDecoderFields(allFields);
+      } catch (error) {
+        console.error('Failed to fetch decoder fields:', error);
+      } finally {
+        setLoadingAllFields(false);
+      }
+    };
+
+    fetchAllFields();
+  }, []);
 
   const toggleCategory = (categoryKey: string) => {
     setExpandedCategories((prev) => {
@@ -89,6 +171,15 @@ export default function Decoders() {
       ...prev,
       [decoderName]: !prev[decoderName],
     }));
+  };
+
+  const handleDecoderClick = (decoderName: string) => {
+    // Toggle expansion - fields are already loaded
+    if (expandedDecoder === decoderName) {
+      setExpandedDecoder(null);
+    } else {
+      setExpandedDecoder(decoderName);
+    }
   };
 
   const handleToggleAll = (category: string, enabled: boolean) => {
@@ -160,6 +251,173 @@ export default function Decoders() {
       setSaveError(err instanceof Error ? err.message : 'Failed to save configuration');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLoadConfig = async (name: string) => {
+    setSaving(true);
+    setSaveError(null);
+    setSaveSuccess(null);
+
+    try {
+      const result = await api.loadDecoderConfig(name);
+      setSaveSuccess(result.message);
+      if (result.warning) {
+        setSaveSuccess(result.message + ' - ' + result.warning);
+      }
+      
+      // Update enabled decoders from loaded config
+      if (result.config) {
+        const newEnabled: Record<string, boolean> = {};
+        
+        // If include list is set, only those decoders are enabled
+        if (result.config.includeDecoders) {
+          const included = result.config.includeDecoders.split(',').map(s => s.trim());
+          Object.keys(enabledDecoders).forEach(name => {
+            newEnabled[name] = included.includes(name);
+          });
+        } else if (result.config.excludeDecoders) {
+          // If exclude list is set, all except those are enabled
+          const excluded = result.config.excludeDecoders.split(',').map(s => s.trim());
+          Object.keys(enabledDecoders).forEach(name => {
+            newEnabled[name] = !excluded.includes(name);
+          });
+        } else {
+          // No lists set, all enabled
+          Object.keys(enabledDecoders).forEach(name => {
+            newEnabled[name] = true;
+          });
+        }
+        
+        setEnabledDecoders(newEnabled);
+      }
+      
+      mutateConfig();
+      setLoadDialogOpen(false);
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSaveSuccess(null), 3000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to load configuration');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveAs = async () => {
+    if (!configName.trim()) {
+      setSaveError('Configuration name is required');
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+    setSaveSuccess(null);
+
+    try {
+      // Build config from current enabled decoders
+      const enabled = Object.entries(enabledDecoders)
+        .filter(([_, isEnabled]) => isEnabled)
+        .map(([name]) => name);
+      
+      const disabled = Object.entries(enabledDecoders)
+        .filter(([_, isEnabled]) => !isEnabled)
+        .map(([name]) => name);
+
+      const totalCount = Object.keys(enabledDecoders).length;
+      const enabledCount = enabled.length;
+      
+      let config: DecoderConfig;
+      if (enabledCount > totalCount / 2) {
+        config = {
+          includeDecoders: '',
+          excludeDecoders: disabled.join(','),
+          enabledDecoders: enabled,
+        };
+      } else {
+        config = {
+          includeDecoders: enabled.join(','),
+          excludeDecoders: '',
+          enabledDecoders: enabled,
+        };
+      }
+
+      const result = await api.saveDecoderConfigAs(configName, config);
+      setSaveSuccess(result.message);
+      mutateSavedConfigs();
+      setSaveAsDialogOpen(false);
+      setConfigName('');
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSaveSuccess(null), 3000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save configuration');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!uploadFile) {
+      setSaveError('Please select a file to upload');
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+    setSaveSuccess(null);
+
+    try {
+      const result = await api.uploadDecoderConfig(uploadFile, configName || undefined, applyOnUpload);
+      setSaveSuccess(result.message);
+      mutateSavedConfigs();
+      
+      if (result.applied) {
+        mutateConfig();
+        // Reload the page to reflect changes
+        window.location.reload();
+      }
+      
+      setUploadDialogOpen(false);
+      setUploadFile(null);
+      setConfigName('');
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSaveSuccess(null), 3000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to upload configuration');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteConfig = async (name: string) => {
+    if (!confirm(`Are you sure you want to delete the configuration "${name}"?`)) {
+      return;
+    }
+
+    setSaving(true);
+    setSaveError(null);
+    setSaveSuccess(null);
+
+    try {
+      const result = await api.deleteDecoderConfig(name);
+      setSaveSuccess(result.message);
+      mutateSavedConfigs();
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSaveSuccess(null), 3000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to delete configuration');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setUploadFile(file);
     }
   };
 
@@ -247,21 +505,86 @@ export default function Decoders() {
             {totalDecoders} decoder(s) available • {enabledCount} enabled • Hierarchical by type
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<SaveIcon />}
-          onClick={handleSave}
-          disabled={saving}
-          sx={{ minWidth: '160px' }}
-        >
-          {saving ? 'Saving...' : 'Save Configuration'}
-        </Button>
+        <Box display="flex" gap={1}>
+          <Button
+            variant="outlined"
+            startIcon={<FolderOpenIcon />}
+            onClick={() => setLoadDialogOpen(true)}
+            disabled={saving}
+          >
+            Load
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<UploadIcon />}
+            onClick={() => setUploadDialogOpen(true)}
+            disabled={saving}
+          >
+            Upload
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<SaveAsIcon />}
+            onClick={() => setSaveAsDialogOpen(true)}
+            disabled={saving}
+          >
+            Save As
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<SaveIcon />}
+            onClick={handleSave}
+            disabled={saving}
+            sx={{ minWidth: '140px' }}
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </Button>
+        </Box>
       </Box>
 
       <Alert severity="info" icon={<InfoIcon />} sx={{ mb: 3 }}>
         Changes will be saved to the configuration file and applied to all future capture executions.
         The current capture session will not be affected.
       </Alert>
+
+      {/* Library Version Section */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            Library Version
+          </Typography>
+          <Paper 
+            elevation={0} 
+            sx={{ 
+              p: 2, 
+              bgcolor: 'background.default',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              '&:hover': {
+                bgcolor: 'action.hover',
+                transform: 'translateY(-2px)',
+                boxShadow: 1,
+              }
+            }}
+            onClick={() => window.open('https://github.com/gopacket/gopacket', '_blank', 'noopener,noreferrer')}
+          >
+            <Box display="flex" justifyContent="space-between" alignItems="start">
+              <Box flex={1}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  gopacket Version
+                </Typography>
+                <Typography variant="h6" sx={{ fontFamily: 'monospace' }}>
+                  {versionInfo?.gopacketVersion || 'Loading...'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  High-performance packet decoding library for Go
+                </Typography>
+              </Box>
+              <OpenInNewIcon fontSize="small" sx={{ color: 'text.secondary', ml: 1 }} />
+            </Box>
+          </Paper>
+        </CardContent>
+      </Card>
 
       <Box sx={{ mb: 3 }}>
         <TextField
@@ -344,94 +667,148 @@ export default function Decoders() {
                   <Box sx={{ ml: 6, mt: 1 }}>
                     {category.decoders.map((decoder, decoderIdx) => {
                       const isEnabled = enabledDecoders[decoder.name] || false;
+                      const isExpanded = expandedDecoder === decoder.name;
+                      const fields = decoderFields[decoder.name] || [];
+                      
                       return (
-                        <Box
-                          key={decoder.name}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            p: 1.5,
-                            mb: decoderIdx < category.decoders.length - 1 ? 1 : 0,
-                            borderLeft: 2,
-                            borderColor: 'divider',
-                            bgcolor: 'background.default',
-                            borderRadius: 1,
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            '&:hover': {
-                              bgcolor: 'action.hover',
-                              borderLeftColor: category.color,
-                            },
-                          }}
-                          onClick={() => handleToggle(decoder.name)}
-                        >
-                          <Box sx={{ mr: 2 }}>
-                            {isEnabled ? (
-                              <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
-                            ) : (
-                              <CancelIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
-                            )}
-                          </Box>
-                          <Box sx={{ flex: 1 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                              <Typography
-                                component="code"
-                                sx={{
-                                  fontFamily: 'monospace',
-                                  fontSize: '0.9rem',
-                                  fontWeight: 600,
-                                  color: isEnabled ? 'text.primary' : 'text.disabled',
-                                }}
-                              >
-                                {decoder.name}
-                              </Typography>
-                              {decoder.port && (
-                                <Chip
-                                  label={`Port ${decoder.port}`}
-                                  size="small"
-                                  sx={{
-                                    height: 20,
-                                    fontSize: '0.7rem',
-                                    bgcolor: category.color + '20',
-                                    color: category.color,
-                                  }}
-                                />
-                              )}
-                              {decoder.layer && (
-                                <Chip
-                                  label={decoder.layer}
-                                  size="small"
-                                  sx={{
-                                    height: 20,
-                                    fontSize: '0.7rem',
-                                    bgcolor: category.color + '20',
-                                    color: category.color,
-                                  }}
-                                />
+                        <Box key={decoder.name} sx={{ mb: decoderIdx < category.decoders.length - 1 ? 1 : 0 }}>
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              p: 1.5,
+                              borderLeft: 2,
+                              borderColor: isExpanded ? category.color : 'divider',
+                              bgcolor: isExpanded ? 'action.selected' : 'background.default',
+                              borderRadius: 1,
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              '&:hover': {
+                                bgcolor: isExpanded ? 'action.selected' : 'action.hover',
+                                borderLeftColor: category.color,
+                              },
+                            }}
+                            onClick={() => handleDecoderClick(decoder.name)}
+                          >
+                            <Box sx={{ mr: 2 }}>
+                              {isEnabled ? (
+                                <CheckCircleIcon sx={{ color: 'success.main', fontSize: 20 }} />
+                              ) : (
+                                <CancelIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
                               )}
                             </Box>
-                            <Typography
-                              variant="body2"
-                              color="text.secondary"
-                              sx={{ fontSize: '0.85rem' }}
-                            >
-                              {decoder.description}
-                            </Typography>
-                          </Box>
-                          <FormControlLabel
-                            control={
-                              <Switch
-                                checked={isEnabled}
-                                onChange={(e) => {
+                            <Box sx={{ flex: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                <Typography
+                                  component="code"
+                                  sx={{
+                                    fontFamily: 'monospace',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600,
+                                    color: isEnabled ? 'text.primary' : 'text.disabled',
+                                  }}
+                                >
+                                  {decoder.name}
+                                </Typography>
+                                {decoder.port && (
+                                  <Chip
+                                    label={`Port ${decoder.port}`}
+                                    size="small"
+                                    sx={{
+                                      height: 20,
+                                      fontSize: '0.7rem',
+                                      bgcolor: category.color + '20',
+                                      color: category.color,
+                                    }}
+                                  />
+                                )}
+                              </Box>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ fontSize: '0.85rem' }}
+                              >
+                                {decoder.description}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
                                   e.stopPropagation();
-                                  handleToggle(decoder.name);
+                                  window.open(getDecoderGitHubUrl(category.key, decoder.name), '_blank', 'noopener,noreferrer');
                                 }}
-                                color="primary"
+                                sx={{ color: 'text.secondary' }}
+                                title="View source code on GitHub"
+                              >
+                                <CodeIcon />
+                              </IconButton>
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDecoderClick(decoder.name);
+                                }}
+                                sx={{ color: 'text.secondary' }}
+                              >
+                                {isExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+                              </IconButton>
+                              <FormControlLabel
+                                control={
+                                  <Switch
+                                    checked={isEnabled}
+                                    onChange={(e) => {
+                                      e.stopPropagation();
+                                      handleToggle(decoder.name);
+                                    }}
+                                    color="primary"
+                                  />
+                                }
+                                label=""
+                                onClick={(e) => e.stopPropagation()}
                               />
-                            }
-                            label=""
-                            onClick={(e) => e.stopPropagation()}
-                          />
+                            </Box>
+                          </Box>
+                          
+                          <Collapse in={isExpanded}>
+                            <Box sx={{ pl: 8, pr: 2, pb: 2, pt: 1 }}>
+                              {loadingAllFields ? (
+                                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                                  <CircularProgress size={24} />
+                                  <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+                                    Loading field information...
+                                  </Typography>
+                                </Box>
+                              ) : fields.length > 0 ? (
+                                <TableContainer component={Paper} variant="outlined">
+                                  <Table size="small">
+                                    <TableHead>
+                                      <TableRow>
+                                        <TableCell sx={{ fontWeight: 600 }}>Field Name</TableCell>
+                                        <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
+                                      </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                      {fields.map((field) => (
+                                        <TableRow key={field.name} sx={{ '&:last-child td': { border: 0 } }}>
+                                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                                            {field.name}
+                                          </TableCell>
+                                          <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'text.secondary' }}>
+                                            {field.type}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </TableContainer>
+                              ) : (
+                                <Typography variant="body2" color="text.secondary" sx={{ p: 2, textAlign: 'center' }}>
+                                  No field information available for this decoder.
+                                </Typography>
+                              )}
+                            </Box>
+                          </Collapse>
                         </Box>
                       );
                     })}
@@ -449,35 +826,139 @@ export default function Decoders() {
         </Paper>
       )}
 
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Configuration Summary
+      {/* Load Configuration Dialog */}
+      <Dialog open={loadDialogOpen} onClose={() => setLoadDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Load Decoder Configuration</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Select a saved configuration to load:
           </Typography>
-          <Box
-            component="pre"
-            sx={{
-              backgroundColor: 'action.hover',
-              p: 2,
-              borderRadius: 1,
-              overflow: 'auto',
-              fontFamily: 'monospace',
-              fontSize: '0.875rem',
-            }}
-          >
-            {JSON.stringify(
-              {
-                includeDecoders: configData.includeDecoders || '(none - all enabled by default)',
-                excludeDecoders: configData.excludeDecoders || '(none)',
-                totalEnabled: enabledCount,
-                totalDecoders: Object.keys(enabledDecoders).length,
-              },
-              null,
-              2
-            )}
+          {!savedConfigs || savedConfigs.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+              No saved configurations found.
+            </Typography>
+          ) : (
+            <List>
+              {savedConfigs.map((config) => (
+                <ListItem
+                  key={config.name}
+                  sx={{
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    mb: 1,
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                >
+                  <ListItemText
+                    primary={config.name}
+                    secondary={`Modified: ${formatTimestamp(config.modifiedTime)}`}
+                  />
+                  <ListItemSecondaryAction>
+                    <IconButton
+                      edge="end"
+                      aria-label="load"
+                      onClick={() => handleLoadConfig(config.name)}
+                      disabled={saving}
+                      sx={{ mr: 1 }}
+                    >
+                      <GetAppIcon />
+                    </IconButton>
+                    <IconButton
+                      edge="end"
+                      aria-label="delete"
+                      onClick={() => handleDeleteConfig(config.name)}
+                      disabled={saving}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </ListItemSecondaryAction>
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLoadDialogOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Save As Dialog */}
+      <Dialog open={saveAsDialogOpen} onClose={() => setSaveAsDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Save Configuration As</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Enter a name for this configuration:
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Configuration Name"
+            value={configName}
+            onChange={(e) => setConfigName(e.target.value)}
+            placeholder="e.g., http-only, minimal-decoders"
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setSaveAsDialogOpen(false); setConfigName(''); }}>Cancel</Button>
+          <Button onClick={handleSaveAs} variant="contained" disabled={saving || !configName.trim()}>
+            {saving ? 'Saving...' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Upload Configuration Dialog */}
+      <Dialog open={uploadDialogOpen} onClose={() => setUploadDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Upload Decoder Configuration</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Upload a decoder configuration JSON file:
+          </Typography>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            style={{ display: 'none' }}
+            onChange={handleFileSelect}
+          />
+          <Box sx={{ mb: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<UploadIcon />}
+              onClick={() => fileInputRef.current?.click()}
+              fullWidth
+            >
+              {uploadFile ? uploadFile.name : 'Select File'}
+            </Button>
           </Box>
-        </CardContent>
-      </Card>
+          <TextField
+            fullWidth
+            label="Configuration Name (Optional)"
+            value={configName}
+            onChange={(e) => setConfigName(e.target.value)}
+            placeholder="Leave empty to use filename"
+            sx={{ mb: 2 }}
+          />
+          <FormControlLabel
+            control={
+              <Switch
+                checked={applyOnUpload}
+                onChange={(e) => setApplyOnUpload(e.target.checked)}
+              />
+            }
+            label="Apply this configuration immediately"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => { setUploadDialogOpen(false); setUploadFile(null); setConfigName(''); }}>
+            Cancel
+          </Button>
+          <Button onClick={handleUpload} variant="contained" disabled={saving || !uploadFile}>
+            {saving ? 'Uploading...' : 'Upload'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Layout>
   );
 }

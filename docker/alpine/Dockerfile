@@ -8,7 +8,17 @@ ENV VERSION XXX
 ARG TAGS
 RUN echo "tags: $TAGS"
 
-RUN GOOS=linux GOARCH=amd64 go build ${TAGS} -ldflags "-r /usr/local/lib -s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION} -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+# Extract library versions from go.mod
+RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
+    GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
+    GOOS=linux GOARCH=amd64 go build ${TAGS} \
+    -ldflags "-r /usr/local/lib -s -w \
+        -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
+        -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
+        -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
+        -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1 \
+        -X github.com/dreadl0ck/netcap/dpi.GoDPIVersion=${GO_DPI_VERSION}" \
+    -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
 RUN ls -la /netcap
 RUN file /netcap/bin/net

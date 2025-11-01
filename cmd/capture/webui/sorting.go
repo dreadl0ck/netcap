@@ -15,19 +15,6 @@ package webui
 
 import "strings"
 
-// LayerType represents the encapsulation layer of a protocol
-type LayerType int
-
-const (
-	LayerLink LayerType = iota
-	LayerNetwork
-	LayerTransport
-	LayerApplication
-	LayerStream
-	LayerAbstract
-	LayerUnknown
-)
-
 // Protocol categories by layer
 var (
 	linkLayerProtocols = []string{

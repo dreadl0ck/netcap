@@ -165,4 +165,13 @@ var (
 	// Web UI flags
 	flagHTTP       = fs.String("http", "localhost:8080", "start web UI server on specified address (e.g., localhost:8080)")
 	flagHTTPAssets = fs.String("http-assets", "", "path to custom frontend assets (for development)")
+
+	// Service mode flags (multi-file upload and analysis)
+	flagService            = fs.Bool("service", false, "run in service mode for multi-file upload and analysis")
+	flagServiceDataDir     = fs.String("service-data-dir", "", "directory for service mode uploads and results (default: auto-detect)")
+	flagServiceMaxFileSize = fs.Int64("service-max-file-size", 100*1024*1024, "maximum upload file size in bytes for service mode (default: 100MB)")
+	flagServiceMaxPerHour  = fs.Int("service-max-per-hour", 10, "maximum number of analyses per IP per hour in service mode (default: 10, 0 = unlimited)")
+	flagServiceExpiry      = fs.Int("service-expiry", 60, "session expiry time in minutes for service mode")
+	flagServiceCleanup     = fs.Int("service-cleanup", 10, "cleanup check interval in minutes for service mode")
+	flagServiceMaxStorage  = fs.Int64("service-max-storage", 10*1024*1024*1024, "maximum total storage in bytes for service mode (default: 10GB, 0 = unlimited)")
 )

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Netcap Try Service has been successfully implemented as specified. This containerized service allows users to upload PCAP/PCAPNG files up to 50MB for analysis via a web interface, with automatic rate limiting, session management, and cleanup.
+The Netcap Try Service has been successfully implemented as specified. This containerized service allows users to upload PCAP/PCAPNG files up to 100MB for analysis via a web interface, with automatic rate limiting, session management, and cleanup.
 
 ## What Was Implemented
 
@@ -18,8 +18,8 @@ The Netcap Try Service has been successfully implemented as specified. This cont
 
 #### Key Features:
 - ✅ HTTP server on port 7070 (configurable)
-- ✅ File upload with validation (50MB max, PCAP/PCAPNG only)
-- ✅ Rate limiting: 2 analyses per IP per hour (configurable)
+- ✅ File upload with validation (100MB max, PCAP/PCAPNG only)
+- ✅ Rate limiting: 10 analyses per IP per hour (configurable)
 - ✅ In-memory session tracking with automatic cleanup
 - ✅ Job queue processing (one job at a time)
 - ✅ DPI-enabled analysis by default
@@ -142,8 +142,8 @@ curl -O http://localhost:7070/api/download/{sessionId}
 | `-http` | `:7070` | HTTP server address (required) |
 | `-data-dir` | `~/.local/share/netcap-try` (local) or `/data/netcap-try` (Docker) | Data directory |
 | `-dpi` | `true` | Enable DPI analysis |
-| `-max-file-size` | `52428800` | Max upload size (50MB) |
-| `-max-analysis-hour` | `2` | Max analyses per IP/hour |
+| `-max-file-size` | `104857600` | Max upload size (100MB) |
+| `-max-analysis-hour` | `10` | Max analyses per IP/hour |
 | `-session-expiry` | `60` | Session expiry (minutes) |
 | `-cleanup-interval` | `10` | Cleanup interval (minutes) |
 
@@ -166,7 +166,7 @@ Detection is based on presence of `/.dockerenv` file (standard Docker indicator)
 
 ## Security Features
 
-1. **Rate Limiting**: 2 analyses per hour per IP (prevents abuse)
+1. **Rate Limiting**: 10 analyses per hour per IP (prevents abuse)
 2. **File Validation**: Size and format checks with magic byte validation
 3. **Session Isolation**: Each upload gets unique session ID
 4. **Non-Root Container**: Runs as UID 1000 (netcap user)
@@ -403,11 +403,11 @@ Possible improvements (not currently implemented):
 
 All original requirements have been met:
 
-1. ✅ Upload pcap/pcapng files up to 50MB
+1. ✅ Upload pcap/pcapng files up to 100MB
 2. ✅ View results of user's own analysis
 3. ✅ Remove user uploads and data after 1 hour
 4. ✅ Allow download of generated audit record files
-5. ✅ Rate limit: max 2 analyses per hour per IP
+5. ✅ Rate limit: max 10 analyses per hour per IP
 6. ✅ Not run as root in Docker container
 7. ✅ Bootstrap with `net util -download-dbs`
 8. ✅ Run analysis with `-dpi` enabled

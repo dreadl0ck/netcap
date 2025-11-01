@@ -12,7 +12,7 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dlclark/regexp2 v1.11.5
 	github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4
-	github.com/dreadl0ck/go-dpi v1.2.3
+	github.com/dreadl0ck/go-dpi v1.4.0 // Pinned: v1.3.1+ has crash in commit 5376956f (protocol mapping changes)
 	github.com/dreadl0ck/ja3 v1.1.0
 	github.com/dreadl0ck/maltego v0.0.3
 	github.com/dreadl0ck/material-icon-gen v0.0.0-20210214144425-b93b94838986

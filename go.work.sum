@@ -35,6 +35,7 @@ github.com/cpuguy83/go-md2man v1.0.10 h1:BSKMNlYxDvnunlTymqtgONjNnaRV1sTpcovwwjF
 github.com/creack/pty v1.1.9 h1:uDmaGzcdjhF4i/plgjmEsriH11Y0o7RKapEf/LDaM3w=
 github.com/cznic/mathutil v0.0.0-20181122101859-297441e03548 h1:iwZdTE0PVqJCos1vaoKsclOGD3ADKpshg3SRtYBbwso=
 github.com/cznic/strutil v0.0.0-20181122101858-275e90344537 h1:MZRmHqDBd0vxNwenEbKSQqRVT24d3C05ft8kduSwlqM=
+github.com/dreadl0ck/go-dpi v1.3.0/go.mod h1:HqEJeAzmr5+1I8dQQtb/FK/5tSVNxlROz9dMZFMk5NU=
 github.com/dsoprea/go-utility v0.0.0-20200711062821-fab8125e9bdf h1:/w4QxepU4AHh3AuO6/g8y/YIIHH5+aKP3Bj8sg5cqhU=
 github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c h1:8ISkoahWXwZR41ois5lSJBSVw4D0OV19Ht/JSTzvSv0=
 github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 h1:JWuenKqqX8nojtoVVWjGfOF9635RETekkoH6Cc9SX0A=

@@ -19,10 +19,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/decoder/stream"
+	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // DecoderInfo represents information about a decoder
@@ -72,7 +75,7 @@ func (s *Server) handleDecoders(w http.ResponseWriter, r *http.Request) {
 	for _, d := range packet.GetPacketDecoders() {
 		name := d.GetName()
 		response.Packet = append(response.Packet, DecoderInfo{
-			Name:        name,
+			Name:        stripNCPrefix(name),
 			Description: d.GetDescription(),
 			Type:        "packet",
 			Enabled:     enabledMap[name],
@@ -81,12 +84,12 @@ func (s *Server) handleDecoders(w http.ResponseWriter, r *http.Request) {
 
 	// Get gopacket decoders
 	for _, d := range packet.GetGoPacketDecoders() {
-		name := d.Layer.String()
+		name := d.GetName()
 		response.GoPacket = append(response.GoPacket, DecoderInfo{
-			Name:        name,
+			Name:        stripNCPrefix(name),
 			Description: d.Description,
 			Type:        "gopacket",
-			Layer:       name,
+			Layer:       d.Layer.String(),
 			Enabled:     enabledMap[name],
 		})
 	}
@@ -95,7 +98,7 @@ func (s *Server) handleDecoders(w http.ResponseWriter, r *http.Request) {
 	for port, d := range stream.DefaultStreamDecoders {
 		name := d.GetName()
 		response.Stream = append(response.Stream, DecoderInfo{
-			Name:        name,
+			Name:        stripNCPrefix(name),
 			Description: d.GetDescription(),
 			Type:        "stream",
 			Port:        port,
@@ -107,7 +110,7 @@ func (s *Server) handleDecoders(w http.ResponseWriter, r *http.Request) {
 	for _, d := range stream.DefaultAbstractDecoders {
 		name := d.GetName()
 		response.Abstract = append(response.Abstract, DecoderInfo{
-			Name:        name,
+			Name:        stripNCPrefix(name),
 			Description: d.GetDescription(),
 			Type:        "abstract",
 			Enabled:     enabledMap[name],
@@ -243,6 +246,11 @@ func (s *Server) getEnabledDecodersMap(config DecoderConfig) map[string]bool {
 	return enabledMap
 }
 
+// stripNCPrefix removes the "NC_" prefix from decoder names for display
+func stripNCPrefix(name string) string {
+	return strings.TrimPrefix(name, "NC_")
+}
+
 // getAllDecoderNames returns a list of all decoder names
 func (s *Server) getAllDecoderNames() []string {
 	names := make([]string, 0)
@@ -254,7 +262,7 @@ func (s *Server) getAllDecoderNames() []string {
 
 	// GoPacket decoders
 	for _, d := range packet.GetGoPacketDecoders() {
-		names = append(names, d.Layer.String())
+		names = append(names, d.GetName())
 	}
 
 	// Stream decoders
@@ -268,4 +276,498 @@ func (s *Server) getAllDecoderNames() []string {
 	}
 
 	return names
+}
+
+// FieldInfo represents information about a field in an audit record
+type FieldInfo struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+// DecoderFieldsResponse represents the response with field information for a decoder
+type DecoderFieldsResponse struct {
+	DecoderName string      `json:"decoderName"`
+	Fields      []FieldInfo `json:"fields"`
+}
+
+// handleDecoderFields returns field information for a specific decoder
+// URL: /api/decoders/{decoderName}/fields
+func (s *Server) handleDecoderFields(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract decoder name from URL path
+	// Path format: /api/decoders/{name}/fields
+	pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/decoders/"), "/")
+
+	// Debug logging
+	fmt.Printf("[WebUI] Decoder fields request: path=%s, parts=%v, len=%d\n", r.URL.Path, pathParts, len(pathParts))
+
+	if len(pathParts) < 2 || pathParts[1] != "fields" {
+		http.Error(w, fmt.Sprintf("Invalid path format. Expected: /api/decoders/{name}/fields, got: %s", r.URL.Path), http.StatusBadRequest)
+		return
+	}
+
+	decoderName := pathParts[0]
+	if decoderName == "" {
+		http.Error(w, "Decoder name is required", http.StatusBadRequest)
+		return
+	}
+
+	// Try to get the audit record type for this decoder
+	record := netio.InitRecord(types.Type(types.Type_value[decoderName]))
+	if record == nil {
+		http.Error(w, fmt.Sprintf("Unknown decoder: %s", decoderName), http.StatusNotFound)
+		return
+	}
+
+	// Get field names from CSVHeader if it implements AuditRecord
+	var fields []FieldInfo
+	if auditRecord, ok := record.(types.AuditRecord); ok {
+		headers := auditRecord.CSVHeader()
+
+		// Use reflection to get field types
+		recordType := reflect.TypeOf(record).Elem()
+		fieldTypes := make(map[string]string)
+
+		for i := 0; i < recordType.NumField(); i++ {
+			field := recordType.Field(i)
+			fieldTypes[field.Name] = getSimplifiedTypeName(field.Type)
+		}
+
+		// Create field info for each CSV header
+		for _, header := range headers {
+			fieldType := "unknown"
+			// Match header name to struct field name (they're usually the same)
+			for i := 0; i < recordType.NumField(); i++ {
+				field := recordType.Field(i)
+				if strings.EqualFold(field.Name, header) || field.Name == header {
+					fieldType = fieldTypes[field.Name]
+					break
+				}
+			}
+
+			fields = append(fields, FieldInfo{
+				Name: header,
+				Type: fieldType,
+			})
+		}
+	} else {
+		// Fallback: use reflection to get all exported fields
+		recordType := reflect.TypeOf(record).Elem()
+		for i := 0; i < recordType.NumField(); i++ {
+			field := recordType.Field(i)
+			if field.IsExported() {
+				fields = append(fields, FieldInfo{
+					Name: field.Name,
+					Type: getSimplifiedTypeName(field.Type),
+				})
+			}
+		}
+	}
+
+	response := DecoderFieldsResponse{
+		DecoderName: stripNCPrefix(decoderName),
+		Fields:      fields,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+	}
+}
+
+// GetTypeValue checks if a decoder name has a corresponding type value
+func GetTypeValue(name string) (int32, bool) {
+	// Add NC_ prefix if not present
+	typeName := name
+	if !strings.HasPrefix(typeName, "NC_") {
+		typeName = "NC_" + name
+	}
+	typeValue, ok := types.Type_value[typeName]
+	return typeValue, ok
+}
+
+// InitRecordForDecoder initializes an audit record for the given decoder name
+func InitRecordForDecoder(decoderName string) interface{} {
+	// Add NC_ prefix if not present
+	typeName := decoderName
+	if !strings.HasPrefix(typeName, "NC_") {
+		typeName = "NC_" + decoderName
+	}
+	return netio.InitRecord(types.Type(types.Type_value[typeName]))
+}
+
+// GetRecordFields extracts field information from an audit record
+func GetRecordFields(record interface{}) []FieldInfo {
+	var fields []FieldInfo
+
+	if auditRecord, ok := record.(types.AuditRecord); ok {
+		headers := auditRecord.CSVHeader()
+
+		// Use reflection to get field types
+		recordType := reflect.TypeOf(record).Elem()
+		fieldTypes := make(map[string]string)
+
+		for i := 0; i < recordType.NumField(); i++ {
+			field := recordType.Field(i)
+			fieldTypes[field.Name] = getSimplifiedTypeName(field.Type)
+		}
+
+		// Create field info for each CSV header
+		for _, header := range headers {
+			fieldType := "unknown"
+			// Match header name to struct field name (they're usually the same)
+			for i := 0; i < recordType.NumField(); i++ {
+				field := recordType.Field(i)
+				if strings.EqualFold(field.Name, header) || field.Name == header {
+					fieldType = fieldTypes[field.Name]
+					break
+				}
+			}
+
+			fields = append(fields, FieldInfo{
+				Name: header,
+				Type: fieldType,
+			})
+		}
+	} else {
+		// Fallback: use reflection to get all exported fields
+		recordType := reflect.TypeOf(record).Elem()
+		for i := 0; i < recordType.NumField(); i++ {
+			field := recordType.Field(i)
+			if field.IsExported() {
+				fields = append(fields, FieldInfo{
+					Name: field.Name,
+					Type: getSimplifiedTypeName(field.Type),
+				})
+			}
+		}
+	}
+
+	return fields
+}
+
+// getSimplifiedTypeName returns a simplified, human-readable type name
+func getSimplifiedTypeName(t reflect.Type) string {
+	switch t.Kind() {
+	case reflect.Bool:
+		return "bool"
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return "int"
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return "uint"
+	case reflect.Float32, reflect.Float64:
+		return "float"
+	case reflect.String:
+		return "string"
+	case reflect.Slice:
+		return "[]" + getSimplifiedTypeName(t.Elem())
+	case reflect.Array:
+		return fmt.Sprintf("[%d]%s", t.Len(), getSimplifiedTypeName(t.Elem()))
+	case reflect.Ptr:
+		return "*" + getSimplifiedTypeName(t.Elem())
+	case reflect.Struct:
+		// For structs, return the type name without package
+		name := t.Name()
+		if name == "" {
+			return "struct"
+		}
+		return name
+	default:
+		return t.String()
+	}
+}
+
+// DecoderConfigFile represents metadata about a saved decoder configuration file
+type DecoderConfigFile struct {
+	Name         string `json:"name"`
+	Path         string `json:"path"`
+	ModifiedTime int64  `json:"modifiedTime"`
+	Size         int64  `json:"size"`
+}
+
+// handleListDecoderConfigs returns a list of saved decoder configuration files
+func (s *Server) handleListDecoderConfigs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	configRoot := getConfigRootPath()
+	configDir := filepath.Join(configRoot, "decoder-configs")
+
+	// Ensure directory exists
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to access config directory: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Read directory
+	files, err := os.ReadDir(configDir)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read config directory: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	configFiles := make([]DecoderConfigFile, 0)
+	for _, file := range files {
+		// Only include .json files
+		if file.IsDir() || !strings.HasSuffix(file.Name(), ".json") {
+			continue
+		}
+
+		info, err := file.Info()
+		if err != nil {
+			continue
+		}
+
+		configFiles = append(configFiles, DecoderConfigFile{
+			Name:         strings.TrimSuffix(file.Name(), ".json"),
+			Path:         filepath.Join(configDir, file.Name()),
+			ModifiedTime: info.ModTime().Unix(),
+			Size:         info.Size(),
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(configFiles); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+	}
+}
+
+// handleLoadDecoderConfig loads a decoder configuration from a file and applies it
+func (s *Server) handleLoadDecoderConfig(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var request struct {
+		Name string `json:"name"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if request.Name == "" {
+		http.Error(w, "Configuration name is required", http.StatusBadRequest)
+		return
+	}
+
+	configRoot := getConfigRootPath()
+	configDir := filepath.Join(configRoot, "decoder-configs")
+	configPath := filepath.Join(configDir, request.Name+".json")
+
+	// Read the configuration file
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read configuration file: %v", err), http.StatusNotFound)
+		return
+	}
+
+	var config DecoderConfig
+	if err := json.Unmarshal(data, &config); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to parse configuration file: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Apply the configuration by saving it as the active config
+	if err := s.saveDecoderConfig(config); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to apply configuration: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": fmt.Sprintf("Configuration '%s' loaded successfully", request.Name),
+		"config":  config,
+	})
+}
+
+// handleUploadDecoderConfig handles uploading a decoder configuration file
+func (s *Server) handleUploadDecoderConfig(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse multipart form (limit to 10MB)
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to parse form: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Get the uploaded file
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "No file provided", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Validate file extension
+	if !strings.HasSuffix(header.Filename, ".json") {
+		http.Error(w, "Invalid file type. Only .json files are allowed", http.StatusBadRequest)
+		return
+	}
+
+	// Read and validate the configuration
+	var config DecoderConfig
+	if err := json.NewDecoder(file).Decode(&config); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid configuration file: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Get configuration name from form or use filename
+	configName := r.FormValue("name")
+	if configName == "" {
+		configName = strings.TrimSuffix(header.Filename, ".json")
+	}
+
+	// Sanitize the name (remove any path separators)
+	configName = strings.ReplaceAll(configName, "/", "_")
+	configName = strings.ReplaceAll(configName, "\\", "_")
+
+	configRoot := getConfigRootPath()
+	configDir := filepath.Join(configRoot, "decoder-configs")
+
+	// Ensure directory exists
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to create config directory: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Save the configuration
+	configPath := filepath.Join(configDir, configName+".json")
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to marshal config: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to write config file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if user wants to apply this configuration immediately
+	applyNow := r.FormValue("apply") == "true"
+	if applyNow {
+		if err := s.saveDecoderConfig(config); err != nil {
+			http.Error(w, fmt.Sprintf("Configuration saved but failed to apply: %v", err), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": fmt.Sprintf("Configuration '%s' uploaded successfully", configName),
+		"name":    configName,
+		"applied": applyNow,
+	})
+}
+
+// handleDeleteDecoderConfig deletes a saved decoder configuration file
+func (s *Server) handleDeleteDecoderConfig(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete && r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var request struct {
+		Name string `json:"name"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if request.Name == "" {
+		http.Error(w, "Configuration name is required", http.StatusBadRequest)
+		return
+	}
+
+	configRoot := getConfigRootPath()
+	configDir := filepath.Join(configRoot, "decoder-configs")
+	configPath := filepath.Join(configDir, request.Name+".json")
+
+	// Delete the file
+	if err := os.Remove(configPath); err != nil {
+		if os.IsNotExist(err) {
+			http.Error(w, "Configuration not found", http.StatusNotFound)
+		} else {
+			http.Error(w, fmt.Sprintf("Failed to delete configuration: %v", err), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": fmt.Sprintf("Configuration '%s' deleted successfully", request.Name),
+	})
+}
+
+// handleSaveDecoderConfigAs saves the current decoder configuration with a specific name
+func (s *Server) handleSaveDecoderConfigAs(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var request struct {
+		Name   string        `json:"name"`
+		Config DecoderConfig `json:"config"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if request.Name == "" {
+		http.Error(w, "Configuration name is required", http.StatusBadRequest)
+		return
+	}
+
+	// Sanitize the name
+	configName := strings.ReplaceAll(request.Name, "/", "_")
+	configName = strings.ReplaceAll(configName, "\\", "_")
+
+	configRoot := getConfigRootPath()
+	configDir := filepath.Join(configRoot, "decoder-configs")
+
+	// Ensure directory exists
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to create config directory: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Save the configuration
+	configPath := filepath.Join(configDir, configName+".json")
+	data, err := json.MarshalIndent(request.Config, "", "  ")
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to marshal config: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to write config file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": fmt.Sprintf("Configuration saved as '%s'", configName),
+		"name":    configName,
+	})
 }

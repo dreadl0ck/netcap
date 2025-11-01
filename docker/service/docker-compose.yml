@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  netcap-service:
+    build:
+      context: ../..
+      dockerfile: docker/service/Dockerfile
+      args:
+        VERSION: ${VERSION:-0.7.7}
+    container_name: netcap-service
+    restart: unless-stopped
+    ports:
+      - "7070:7070"
+    volumes:
+      - netcap-service-data:/data
+    environment:
+      - NC_DATA_DIR=/data/netcap-service
+      - NC_HTTP=0.0.0.0:7070
+      - NC_DPI=true
+      - NC_MAX_FILE_SIZE=104857600       # 100MB in bytes
+      - NC_MAX_ANALYSIS_HOUR=10          # Max 10 analyses per hour per IP
+      - NC_SESSION_EXPIRY=60             # Session expiry in minutes
+      - NC_CLEANUP_INTERVAL=10           # Cleanup interval in minutes
+      - TZ=UTC
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7070/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    networks:
+      - netcap-service
+    # Resource limits (optional but recommended)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+volumes:
+  netcap-service-data:
+    driver: local
+
+networks:
+  netcap-service:
+    driver: bridge
+

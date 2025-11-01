@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Card,
@@ -8,6 +8,8 @@ import {
   LinearProgress,
   Typography,
   Chip,
+  Button,
+  Alert,
 } from '@mui/material';
 import Layout from '@/components/Layout';
 import { api, formatTimestamp, formatBytes } from '@/lib/api';
@@ -18,9 +20,13 @@ import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import SpeedIcon from '@mui/icons-material/Speed';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import MemoryIcon from '@mui/icons-material/Memory';
+import StopIcon from '@mui/icons-material/Stop';
+import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked';
 
 export default function Dashboard() {
   const router = useRouter();
+  const [stopping, setStopping] = useState(false);
+  const [stopMessage, setStopMessage] = useState<string | null>(null);
   const { data: status, error: statusError, mutate: mutateStatus } = useSWR('status', () => api.getStatus(), {
     refreshInterval: 2000,
   });
@@ -30,16 +36,34 @@ export default function Dashboard() {
   const { data: auditStats, error: auditStatsError, mutate: mutateAuditStats } = useSWR('auditStats', () => api.getAuditStats(), {
     refreshInterval: status?.isProcessing ? 5000 : 10000, // Poll every 5 seconds when processing, every 10 seconds otherwise
   });
-  const { data: inputFiles, error: inputError } = useSWR('inputFiles', () => api.getInputFiles());
+  const { data: inputFiles, error: inputError, mutate: mutateInputFiles } = useSWR('inputFiles', () => api.getInputFiles());
   const { data: auditFiles, error: auditError, mutate: mutateAuditFiles } = useSWR('auditFiles', () => api.getAuditFiles());
   const { data: logFiles, error: logError, mutate: mutateLogFiles } = useSWR('logFiles', () => api.getLogFiles());
   const { data: systemInfo, error: systemInfoError } = useSWR('systemInfo', () => api.getSystemInfo());
+
+  const handleStopCapture = async () => {
+    try {
+      setStopping(true);
+      setStopMessage(null);
+      const response = await api.stopCapture();
+      setStopMessage(response.message);
+      // Refresh status after stopping
+      setTimeout(() => {
+        mutateStatus();
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to stop capture:', err);
+      setStopMessage('Failed to stop capture: ' + (err as Error).message);
+    } finally {
+      setStopping(false);
+    }
+  };
 
   // Redirect to upload page if in try service mode and no active session
   useEffect(() => {
     // Only redirect if we have status data and confirmed no session/files
     if (status && status.isTryService && !status.sessionId && inputFiles && inputFiles.length === 0) {
-      router.push('/upload');
+      router.push('/analyze');
     }
   }, [status, inputFiles, router]);
 
@@ -114,18 +138,30 @@ export default function Dashboard() {
           <Typography variant="h4" gutterBottom>
             Netcap Capture Dashboard
           </Typography>
-          <Box display="flex" alignItems="center" gap={2}>
+          <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
             {status?.isProcessing ? (
               <>
                 <Chip
-                  icon={<HourglassEmptyIcon />}
-                  label="Processing"
+                  icon={status?.isLiveMode ? <RadioButtonCheckedIcon /> : <HourglassEmptyIcon />}
+                  label={status?.isLiveMode ? "Live Capture" : "Processing"}
                   color="warning"
                   variant="outlined"
                 />
                 <Typography variant="body2" color="text.secondary">
-                  Capture is currently running...
+                  {status?.isLiveMode ? "Capturing packets live..." : "Capture is currently running..."}
                 </Typography>
+                {status?.isLiveMode && (
+                  <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={<StopIcon />}
+                    onClick={handleStopCapture}
+                    disabled={stopping}
+                    size="small"
+                  >
+                    {stopping ? 'Stopping...' : 'Stop Capture'}
+                  </Button>
+                )}
               </>
             ) : (
               <>
@@ -141,6 +177,11 @@ export default function Dashboard() {
               </>
             )}
           </Box>
+          {stopMessage && (
+            <Alert severity="info" sx={{ mt: 2 }} onClose={() => setStopMessage(null)}>
+              {stopMessage}
+            </Alert>
+          )}
         </Box>
 
         {/* Live Processing Stats */}
@@ -317,7 +358,7 @@ export default function Dashboard() {
             <Card>
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
-                  Input Files
+                  Data Sources
                 </Typography>
                 <Typography variant="h3">{inputFiles?.length || 0}</Typography>
               </CardContent>
@@ -376,7 +417,12 @@ export default function Dashboard() {
                       borderRadius: 2, 
                       backgroundColor: 'primary.dark',
                       color: 'white',
-                      textAlign: 'center'
+                      textAlign: 'center',
+                      height: '100%',
+                      minHeight: 140,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center'
                     }}>
                       <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
                         CPU Cores
@@ -393,7 +439,12 @@ export default function Dashboard() {
                       borderRadius: 2, 
                       backgroundColor: 'success.dark',
                       color: 'white',
-                      textAlign: 'center'
+                      textAlign: 'center',
+                      height: '100%',
+                      minHeight: 140,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center'
                     }}>
                       <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
                         Total Memory
@@ -410,7 +461,12 @@ export default function Dashboard() {
                       borderRadius: 2, 
                       backgroundColor: 'info.dark',
                       color: 'white',
-                      textAlign: 'center'
+                      textAlign: 'center',
+                      height: '100%',
+                      minHeight: 140,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center'
                     }}>
                       <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
                         Free Memory
@@ -430,7 +486,12 @@ export default function Dashboard() {
                       borderRadius: 2, 
                       backgroundColor: 'secondary.dark',
                       color: 'white',
-                      textAlign: 'center'
+                      textAlign: 'center',
+                      height: '100%',
+                      minHeight: 140,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center'
                     }}>
                       <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
                         Platform

@@ -25,7 +25,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoIcon from '@mui/icons-material/Info';
 import useSWR from 'swr';
 import Layout from '@/components/Layout';
-import { api, ConfigOption } from '@/lib/api';
+import { api, type ConfigOption } from '@/lib/api';
 
 export default function Config() {
   const { data: configData, error: configError, mutate } = useSWR('config', () => api.getConfig());
@@ -152,13 +152,14 @@ export default function Config() {
               : ' To change settings, restart the capture process with different flags.'}
           </Alert>
         )}
+      </Box>
 
+      <Box sx={{ mb: 3 }}>
         <TextField
           fullWidth
           placeholder="Search configuration options..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ mt: 3 }}
         />
       </Box>
 

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -53,13 +54,22 @@ type Server struct {
 	httpServer      *http.Server
 	mu              sync.RWMutex
 	isProcessing    bool
+	isLiveMode      bool                 // Whether in live capture mode
+	stopCapture     context.CancelFunc   // Function to stop live capture
 	activeInputFile string               // Currently selected input file for viewing
 	completedFiles  map[string]bool      // Tracks which files have completed processing
 	processingStats ProcessingStats      // Live processing statistics
 	fileErrors      map[string]FileError // Tracks errors for each file
 	debugLogging    bool                 // Runtime debug logging state
 	collector       CollectorInterface   // Reference to collector for runtime config changes
+	uploadCallback  UploadCallbackFunc   // Function to call when files are uploaded
+	fileBPFFilters  map[string]string    // Tracks BPF filter used for each file
+	fileOutputDirs  map[string]string    // Tracks actual output directory for each file
+	dpiPreferences  map[string]*UserDPIPreferences // DPI preferences per user IP
 }
+
+// UploadCallbackFunc is called when files are uploaded via the web UI
+type UploadCallbackFunc func(filePath string) error
 
 // CollectorInterface defines the methods we need from the Collector
 type CollectorInterface interface {
@@ -77,6 +87,9 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		isProcessing:   true,
 		completedFiles: make(map[string]bool),
 		fileErrors:     make(map[string]FileError),
+		fileBPFFilters: make(map[string]string),
+		fileOutputDirs: make(map[string]string),
+		dpiPreferences: make(map[string]*UserDPIPreferences),
 		processingStats: ProcessingStats{
 			TotalFiles: len(inputFiles),
 		},
@@ -102,11 +115,24 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/dbs/update", s.handleUpdateDatabases)
 	mux.HandleFunc("/api/version", s.handleVersion)
 	mux.HandleFunc("/api/dpi", s.handleDPIInfo)
+	mux.HandleFunc("/api/dpi/preferences", s.handleDPIPreferences)
 	mux.HandleFunc("/api/config", s.handleConfig)
 	mux.HandleFunc("/api/config/debug", s.handleDebugToggle)
-	mux.HandleFunc("/api/decoders", s.handleDecoders)
+	mux.HandleFunc("/api/config/bpf", s.handleBPFConfig)
 	mux.HandleFunc("/api/decoders/config", s.handleDecoderConfig)
+	mux.HandleFunc("/api/decoders/config/list", s.handleListDecoderConfigs)
+	mux.HandleFunc("/api/decoders/config/load", s.handleLoadDecoderConfig)
+	mux.HandleFunc("/api/decoders/config/upload", s.handleUploadDecoderConfig)
+	mux.HandleFunc("/api/decoders/config/delete", s.handleDeleteDecoderConfig)
+	mux.HandleFunc("/api/decoders/config/save-as", s.handleSaveDecoderConfigAs)
+	mux.HandleFunc("/api/decoders/", s.handleDecodersRouter) // Custom router for decoder endpoints
+	mux.HandleFunc("/api/decoders", s.handleDecoders)
 	mux.HandleFunc("/api/system-info", s.handleSystemInfo)
+	mux.HandleFunc("/api/network-interfaces", s.handleNetworkInterfaces)
+	mux.HandleFunc("/api/stop-capture", s.handleStopCapture)
+	mux.HandleFunc("/api/upload", s.handleUpload)
+	mux.HandleFunc("/api/chart/data", s.handleChartData)
+	mux.HandleFunc("/api/chart/fields", s.handleChartFields)
 
 	// Static files
 	mux.Handle("/", s.handleStatic())
@@ -127,6 +153,26 @@ func (s *Server) Start() error {
 	}()
 
 	return nil
+}
+
+// handleDecodersRouter routes decoder-related requests to the appropriate handler
+func (s *Server) handleDecodersRouter(w http.ResponseWriter, r *http.Request) {
+	log.Printf("[WebUI] Decoders router: path=%s", r.URL.Path)
+
+	// Check if this is a request for decoder fields
+	if strings.HasSuffix(r.URL.Path, "/fields") && r.URL.Path != "/api/decoders/config" {
+		s.handleDecoderFields(w, r)
+		return
+	}
+
+	// Check if this is a request for decoder config
+	if r.URL.Path == "/api/decoders/config" {
+		s.handleDecoderConfig(w, r)
+		return
+	}
+
+	// Otherwise, it's a list decoders request
+	s.handleDecoders(w, r)
 }
 
 // Stop gracefully stops the HTTP server
@@ -159,12 +205,38 @@ func (s *Server) UpdateOutputDir(outDir string) {
 	log.Printf("[WebUI] Output directory updated to: %s", outDir)
 }
 
+// SetFileOutputDir stores the actual output directory for a specific input file
+func (s *Server) SetFileOutputDir(inputFile, outputDir string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.fileOutputDirs[inputFile] = outputDir
+	log.Printf("[WebUI] Output directory set for %s: %s", inputFile, outputDir)
+}
+
+// GetFileOutputDir retrieves the output directory for a specific input file
+func (s *Server) GetFileOutputDir(inputFile string) (string, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	dir, exists := s.fileOutputDirs[inputFile]
+	return dir, exists
+}
+
 // MarkFileCompleted marks a specific input file as completed
 func (s *Server) MarkFileCompleted(inputFile string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.completedFiles[inputFile] = true
 	log.Printf("[WebUI] File marked as completed: %s", inputFile)
+}
+
+// SetFileBPFFilter stores the BPF filter used for a specific input file
+func (s *Server) SetFileBPFFilter(inputFile, bpfFilter string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.fileBPFFilters[inputFile] = bpfFilter
+	if bpfFilter != "" {
+		log.Printf("[WebUI] BPF filter set for %s: %s", inputFile, bpfFilter)
+	}
 }
 
 // IsFileCompleted checks if a file has completed processing
@@ -213,7 +285,7 @@ func (s *Server) GetFileError(inputFile string) (FileError, bool) {
 	return err, exists
 }
 
-// corsMiddleware adds CORS headers to responses and logs requests
+// corsMiddleware adds CORS headers
 func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Log incoming request
@@ -256,4 +328,79 @@ func (s *Server) SetCollector(collector CollectorInterface) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.collector = collector
+}
+
+// SetLiveMode sets whether the server is in live capture mode
+func (s *Server) SetLiveMode(isLive bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.isLiveMode = isLive
+}
+
+// IsLiveMode returns whether the server is in live capture mode
+func (s *Server) IsLiveMode() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.isLiveMode
+}
+
+// SetStopCapture sets the cancel function for stopping live capture
+func (s *Server) SetStopCapture(cancel context.CancelFunc) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.stopCapture = cancel
+}
+
+// SetUploadCallback sets the callback function for file uploads
+func (s *Server) SetUploadCallback(callback UploadCallbackFunc) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.uploadCallback = callback
+}
+
+// GetUserIP extracts the user's IP address from the request
+func (s *Server) getUserIP(r *http.Request) string {
+	// Check X-Forwarded-For header first (for proxies)
+	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+		// Take the first IP if there are multiple
+		ips := strings.Split(forwarded, ",")
+		if len(ips) > 0 {
+			return strings.TrimSpace(ips[0])
+		}
+	}
+	
+	// Check X-Real-IP header
+	if realIP := r.Header.Get("X-Real-IP"); realIP != "" {
+		return realIP
+	}
+	
+	// Fall back to RemoteAddr
+	ip := r.RemoteAddr
+	// Remove port if present
+	if idx := strings.LastIndex(ip, ":"); idx != -1 {
+		ip = ip[:idx]
+	}
+	return ip
+}
+
+// GetDPIPreferences retrieves DPI preferences for a user
+func (s *Server) GetDPIPreferences(userIP string) *UserDPIPreferences {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	
+	if prefs, exists := s.dpiPreferences[userIP]; exists {
+		return prefs
+	}
+	return nil
+}
+
+// SetDPIPreferences sets DPI preferences for a user
+func (s *Server) SetDPIPreferences(userIP string, prefs *UserDPIPreferences) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	
+	prefs.LastUpdated = time.Now()
+	s.dpiPreferences[userIP] = prefs
+	
+	log.Printf("[WebUI] Updated DPI preferences for %s: %v", userIP, prefs.EnabledModules)
 }

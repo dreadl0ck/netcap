@@ -24,7 +24,7 @@ import {
 import { SwapHoriz as SwapHorizIcon } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import { api, formatBytes, formatTimestamp } from '@/lib/api';
-import useSWR from 'swr';
+import useSWR, { mutate as globalMutate } from 'swr';
 
 export default function Logs() {
   const { data: files, error, mutate } = useSWR('logFiles', () => api.getLogFiles());
@@ -92,8 +92,13 @@ export default function Logs() {
     try {
       const result = await api.setActiveDirectory(newFile);
       console.log('Directory changed to:', result.outputDir);
-      await mutateStatus(); // Refresh status
-      await mutate(); // Refresh log files
+      
+      // Refresh local data
+      await mutateStatus();
+      await mutate();
+      
+      // Globally invalidate status cache for all pages
+      await globalMutate('status');
       
       // Trigger global event for other components
       window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
@@ -105,9 +110,29 @@ export default function Logs() {
     }
   };
 
-  // Get only completed files for the selector
-  const completedFiles = inputFiles?.filter((f: any) => f.isCompleted) || [];
+  // Get only completed files for the selector, sorted alphabetically for consistency
+  // NOTE: Backend should keep initial pcaps marked as isCompleted forever
+  const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
+    .sort((a: any, b: any) => a.path.localeCompare(b.path));
   const isMultiFile = status?.isMultiFile || false;
+  
+  // Current selected value - use backend's activeInputFile or fallback to first file
+  const selectedValue = status?.activeInputFile || completedFiles[0]?.path || '';
+  // Match by comparing both full path and basename (activeInputFile might be just filename or full path)
+  const selectedFile = completedFiles.find((f: any) => 
+    f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
+  );
+
+  // Debug logging
+  console.log('[Logs] Debug info:', {
+    completedFilesCount: completedFiles.length,
+    completedFilesPaths: completedFiles.map((f: any) => f.path),
+    statusActiveInputFile: status?.activeInputFile,
+    selectedValue,
+    selectedFileFound: !!selectedFile,
+    selectedFileName: selectedFile?.name,
+    willShowSelector: completedFiles.length > 1 && !!selectedFile
+  });
 
   if (!files && !error) {
     return (
@@ -163,25 +188,16 @@ export default function Logs() {
           </Box>
         )}
 
-        <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3} gap={2}>
-          <Box>
-            <Typography variant="h4" gutterBottom>
-              Log Files
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {files?.length || 0} log file(s) available
-            </Typography>
-          </Box>
-          
-          {/* File selector for multi-file mode */}
-          {isMultiFile && completedFiles.length > 0 && (
-            <Box sx={{ minWidth: 300 }}>
+        <Box mb={3}>
+          {/* File selector - show when multiple input files are available */}
+          {completedFiles.length > 1 && selectedFile && (
+            <Box mb={2}>
               <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
                 Viewing capture:
               </Typography>
-              <FormControl fullWidth size="small" disabled={switchingFile}>
+              <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 500, maxWidth: 800 }}>
                 <Select
-                  value={status?.activeInputFile || ''}
+                  value={selectedValue}
                   onChange={handleFileChange}
                   startAdornment={
                     switchingFile ? (
@@ -190,6 +206,18 @@ export default function Logs() {
                       <SwapHorizIcon sx={{ mr: 1, color: 'action.active' }} />
                     )
                   }
+                  renderValue={() => (
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                        {selectedFile.name}
+                      </Typography>
+                      <Chip
+                        label={formatBytes(selectedFile.size)}
+                        size="small"
+                        sx={{ height: 20, fontSize: '0.7rem' }}
+                      />
+                    </Box>
+                  )}
                   sx={{
                     '& .MuiSelect-select': {
                       display: 'flex',
@@ -200,7 +228,7 @@ export default function Logs() {
                   {completedFiles.map((file: any) => (
                     <MenuItem key={file.path} value={file.path}>
                       <Box display="flex" alignItems="center" gap={1} width="100%">
-                        {status?.activeInputFile === file.path && (
+                        {selectedValue === file.path && (
                           <Chip
                             label="Active"
                             size="small"
@@ -229,6 +257,15 @@ export default function Logs() {
               </FormControl>
             </Box>
           )}
+
+          <Box>
+            <Typography variant="h4" gutterBottom>
+              Log Files
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {files?.length || 0} log file(s) available
+            </Typography>
+          </Box>
         </Box>
 
         {files && files.length > 0 ? (

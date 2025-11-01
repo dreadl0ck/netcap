@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import {
   Box,
+  Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   IconButton,
   MenuItem,
   Paper,
   Select,
-  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -18,21 +22,27 @@ import {
   TableRow,
   Tooltip,
   Typography,
+  type SelectChangeEvent,
 } from '@mui/material';
-import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon } from '@mui/icons-material';
+import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, BugReport as BugReportIcon } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import { api, formatBytes, formatTimestamp } from '@/lib/api';
 import useSWR from 'swr';
 
-export default function InputFiles() {
+export default function DataSources() {
   const router = useRouter();
   const { data: files, error } = useSWR('inputFiles', () => api.getInputFiles());
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
+  const { data: networkInterfaces } = useSWR('networkInterfaces', () => api.getNetworkInterfaces());
   const [activating, setActivating] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [copiedFileId, setCopiedFileId] = useState<string | null>(null);
+  const [copiedInterface, setCopiedInterface] = useState<string | null>(null);
+  const [selectedErrorLog, setSelectedErrorLog] = useState<{filename: string; path: string} | null>(null);
+  const [errorLogContent, setErrorLogContent] = useState<string>('');
+  const [loadingErrorLog, setLoadingErrorLog] = useState(false);
 
   const handleSelectFile = async (file: string) => {
     setActivating(file);
@@ -54,6 +64,17 @@ export default function InputFiles() {
     }
   };
 
+  const handleCopyInterfaceCommand = async (interfaceName: string) => {
+    const command = `net capture -iface ${interfaceName} -out /path/to/output`;
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopiedInterface(interfaceName);
+      setTimeout(() => setCopiedInterface(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy command:', err);
+    }
+  };
+
   const handleCopyShareLink = async (sessionId: string, filePath: string) => {
     const protocol = window.location.protocol;
     const host = window.location.host;
@@ -67,6 +88,27 @@ export default function InputFiles() {
       console.error('Failed to copy share link:', err);
       alert('Failed to copy share link to clipboard');
     }
+  };
+
+  const handleViewErrorLog = async (filename: string, path: string) => {
+    setSelectedErrorLog({ filename, path });
+    setLoadingErrorLog(true);
+    setErrorLogContent('');
+    
+    try {
+      const content = await api.getErrorLogContent(path);
+      setErrorLogContent(content);
+    } catch (err) {
+      console.error('Failed to load error log:', err);
+      setErrorLogContent(`Failed to load error log: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setLoadingErrorLog(false);
+    }
+  };
+
+  const handleCloseErrorLog = () => {
+    setSelectedErrorLog(null);
+    setErrorLogContent('');
   };
 
   const isActive = (file: string) => {
@@ -90,7 +132,7 @@ export default function InputFiles() {
     page * rowsPerPage + rowsPerPage
   );
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -106,7 +148,7 @@ export default function InputFiles() {
 
   if (!files && !error) {
     return (
-      <Layout title="Input Files">
+      <Layout title="Data Sources">
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
           <CircularProgress />
         </Box>
@@ -116,19 +158,112 @@ export default function InputFiles() {
 
   if (error) {
     return (
-      <Layout title="Input Files">
+      <Layout title="Data Sources">
         <Box>
-          <Typography color="error">Error loading input files</Typography>
+          <Typography color="error">Error loading data sources</Typography>
         </Box>
       </Layout>
     );
   }
 
+  // Check if we're in local mode (not try service) and if we have network interfaces
+  const isLocalMode = !status?.isTryService;
+  const hasNetworkInterfaces = networkInterfaces && networkInterfaces.length > 0;
+
   return (
-    <Layout title="Input Files">
+    <Layout title="Data Sources">
       <Box>
         <Typography variant="h4" gutterBottom>
-          Input PCAP Files
+          Data Sources
+        </Typography>
+
+        {/* Network Interfaces Section (only in local mode) */}
+        {isLocalMode && hasNetworkInterfaces && (
+          <Box mb={4}>
+            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+              Network Interfaces
+            </Typography>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Index</TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Flags</TableCell>
+                    <TableCell>Hardware Address</TableCell>
+                    <TableCell>IP Addresses</TableCell>
+                    <TableCell align="right">MTU</TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {networkInterfaces.map((iface) => (
+                    <TableRow 
+                      key={iface.index}
+                      hover
+                      sx={{ cursor: 'pointer' }}
+                      onClick={() => handleCopyInterfaceCommand(iface.name)}
+                    >
+                      <TableCell>{iface.index}</TableCell>
+                      <TableCell>
+                        <Typography sx={{ fontFamily: 'monospace', fontWeight: 'bold' }}>
+                          {iface.name}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {iface.flags}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                          {iface.hardwareAddr || 'N/A'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {iface.addrs && iface.addrs.length > 0 ? (
+                          <Box>
+                            {iface.addrs.map((addr) => (
+                              <Typography 
+                                key={addr} 
+                                sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
+                              >
+                                {addr}
+                              </Typography>
+                            ))}
+                          </Box>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            N/A
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">{iface.mtu}</TableCell>
+                      <TableCell align="right">
+                        <Tooltip title={copiedInterface === iface.name ? "Command copied!" : "Click to copy capture command"}>
+                          <IconButton
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopyInterfaceCommand(iface.name);
+                            }}
+                            color={copiedInterface === iface.name ? "success" : "primary"}
+                          >
+                            {copiedInterface === iface.name ? <CheckCircleIcon /> : <ShareIcon />}
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
+        )}
+
+        {/* PCAP Files Section */}
+        <Typography variant="h6" gutterBottom sx={{ mt: isLocalMode && hasNetworkInterfaces ? 2 : 0 }}>
+          PCAP Files
         </Typography>
         <Box display="flex" gap={2} alignItems="center" mb={2} flexWrap="wrap">
           <Typography variant="body2" color="text.secondary">
@@ -212,6 +347,21 @@ export default function InputFiles() {
                             </Typography>
                           )}
                         </Typography>
+                        {file.bpfFilter && (
+                          <Box sx={{ mt: 0.5 }}>
+                            <Chip 
+                              label={`BPF: ${file.bpfFilter}`}
+                              size="small"
+                              color="info"
+                              variant="outlined"
+                              sx={{ 
+                                fontFamily: 'monospace',
+                                fontSize: '0.75rem',
+                                height: '20px'
+                              }}
+                            />
+                          </Box>
+                        )}
                         {file.error && (
                           <Typography variant="caption" color="error" display="block" sx={{ mt: 0.5 }}>
                             {file.error}
@@ -255,6 +405,17 @@ export default function InputFiles() {
                               </span>
                             </Tooltip>
                           )}
+                          {file.error && file.errorLogPath && (
+                            <Tooltip title="View detailed error log">
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleViewErrorLog(file.name, file.errorLogPath!)}
+                              >
+                                <BugReportIcon />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                           {status?.isTryService && file.sessionId && (
                             <Tooltip title={copiedFileId === file.path ? "Copied!" : "Copy Share Link"}>
                               <IconButton
@@ -291,6 +452,58 @@ export default function InputFiles() {
             <Typography color="text.secondary">No input files found</Typography>
           </Box>
         )}
+
+        {/* Error Log Dialog */}
+        <Dialog 
+          open={selectedErrorLog !== null} 
+          onClose={handleCloseErrorLog} 
+          maxWidth="lg" 
+          fullWidth
+        >
+          <DialogTitle>
+            <Box display="flex" alignItems="center" gap={1}>
+              <ErrorIcon color="error" />
+              <Typography variant="h6">Analysis Error Log</Typography>
+            </Box>
+            {selectedErrorLog && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                {selectedErrorLog.filename}
+              </Typography>
+            )}
+          </DialogTitle>
+          <DialogContent>
+            {loadingErrorLog ? (
+              <Box display="flex" justifyContent="center" alignItems="center" p={3}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <Paper
+                sx={{
+                  p: 2,
+                  bgcolor: 'grey.900',
+                  maxHeight: '70vh',
+                  overflow: 'auto',
+                }}
+              >
+                <pre
+                  style={{
+                    margin: 0,
+                    fontFamily: 'monospace',
+                    fontSize: '0.85rem',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    color: '#ff6b6b',
+                  }}
+                >
+                  {errorLogContent || 'No error log content available'}
+                </pre>
+              </Paper>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseErrorLog}>Close</Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Layout>
   );
