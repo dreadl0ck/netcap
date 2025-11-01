@@ -17,15 +17,17 @@ import "time"
 
 // FileInfo represents file metadata
 type FileInfo struct {
-	Name           string  `json:"name"`
-	Path           string  `json:"path"`
-	Size           int64   `json:"size"`
-	ModifiedTime   int64   `json:"modifiedTime"`
-	IsCompleted    bool    `json:"isCompleted"`
-	Error          *string `json:"error,omitempty"`
-	ErrorLogPath   *string `json:"errorLogPath,omitempty"`   // Path to detailed error log file
-	BPFFilter      string  `json:"bpfFilter,omitempty"`      // BPF filter used during capture
-	ProcessingTime float64 `json:"processingTime,omitempty"` // Processing duration in seconds
+	Name             string  `json:"name"`
+	Path             string  `json:"path"`
+	Size             int64   `json:"size"`
+	ModifiedTime     int64   `json:"modifiedTime"`
+	IsCompleted      bool    `json:"isCompleted"`
+	Error            *string `json:"error,omitempty"`
+	ErrorLogPath     *string `json:"errorLogPath,omitempty"`   // Path to detailed error log file
+	BPFFilter        string  `json:"bpfFilter,omitempty"`      // BPF filter used during capture
+	ProcessingTime   float64 `json:"processingTime,omitempty"` // Processing duration in seconds
+	Hash             string  `json:"hash,omitempty"`           // SHA256 hash of the file
+	HasReportedIssue bool    `json:"hasReportedIssue"`         // Whether an issue report has been submitted for this file
 }
 
 // AuditFileInfo extends FileInfo with audit record specific metadata

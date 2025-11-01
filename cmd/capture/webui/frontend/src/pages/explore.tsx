@@ -37,6 +37,8 @@ import {
   Code as CodeIcon,
   DataObject as DataObjectIcon,
   SwapHoriz as SwapHorizIcon,
+  Label as LabelIcon,
+  LabelOff as LabelOffIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import { api, type ChartFieldsResponse, formatBytes } from '@/lib/api';
@@ -92,7 +94,7 @@ const DEFAULT_FIELD_MAP: Record<string, { field: string; chartType: string }> = 
   'TLSServerHello': { field: 'CipherSuite', chartType: 'pie' },    // Cipher suite distribution
   
   // Application Layer - DNS
-  'DNS': { field: 'ResponseCode', chartType: 'pie' },              // Success/Error distribution
+  'DNS': { field: 'Questions.Name', chartType: 'pie' },              
   
   // Application Layer - Email
   'SMTP': { field: 'StatusCode', chartType: 'pie' },               // Status code distribution
@@ -175,6 +177,7 @@ export default function Explore() {
   const [showExample, setShowExample] = useState(false);
   const [switchingFile, setSwitchingFile] = useState(false);
   const [autoSelectAttempted, setAutoSelectAttempted] = useState(false);
+  const [showLegend, setShowLegend] = useState(false);
 
   // Auto-select first completed file if no active file is set
   useEffect(() => {
@@ -365,10 +368,10 @@ export default function Explore() {
     
     // Build chart URL - chart will be generated server-side by go-echarts
     // No interval parameter - use all records with actual timestamps
-    const url = `/api/chart/data?type=${encodeURIComponent(selectedAuditType)}&field=${encodeURIComponent(selectedField)}&chartType=${encodeURIComponent(selectedChartType)}`;
+    const url = `/api/chart/data?type=${encodeURIComponent(selectedAuditType)}&field=${encodeURIComponent(selectedField)}&chartType=${encodeURIComponent(selectedChartType)}&showLegend=${showLegend}`;
     setChartUrl(url);
     setLoading(false);
-  }, [selectedAuditType, selectedField, selectedChartType]);
+  }, [selectedAuditType, selectedField, selectedChartType, showLegend]);
 
   // Determine if selected field is categorical
   const isFieldCategorical = useMemo(() => {
@@ -678,29 +681,53 @@ export default function Explore() {
             {chartUrl && !loading && (
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 {/* Toggle between chart and example data */}
-                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
                   <Typography variant="h6">
                     {showExample ? 'Example Audit Record' : 'Chart Visualization'}
                   </Typography>
-                  <ToggleButtonGroup
-                    value={showExample ? 'example' : 'chart'}
-                    exclusive
-                    onChange={(e, newValue) => {
-                      if (newValue !== null) {
-                        setShowExample(newValue === 'example');
-                      }
-                    }}
-                    size="small"
-                  >
-                    <ToggleButton value="chart">
-                      <BarChartIcon sx={{ mr: 1, fontSize: 20 }} />
-                      Chart
-                    </ToggleButton>
-                    <ToggleButton value="example">
-                      <DataObjectIcon sx={{ mr: 1, fontSize: 20 }} />
-                      Example Data
-                    </ToggleButton>
-                  </ToggleButtonGroup>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    {/* Legend toggle - only show when viewing chart */}
+                    {!showExample && (
+                      <ToggleButtonGroup
+                        value={showLegend ? 'on' : 'off'}
+                        exclusive
+                        onChange={(_e, newValue) => {
+                          if (newValue !== null) {
+                            setShowLegend(newValue === 'on');
+                          }
+                        }}
+                        size="small"
+                      >
+                        <ToggleButton value="on">
+                          <LabelIcon sx={{ mr: 0.5, fontSize: 18 }} />
+                          Legend
+                        </ToggleButton>
+                        <ToggleButton value="off">
+                          <LabelOffIcon sx={{ mr: 0.5, fontSize: 18 }} />
+                          No Legend
+                        </ToggleButton>
+                      </ToggleButtonGroup>
+                    )}
+                    <ToggleButtonGroup
+                      value={showExample ? 'example' : 'chart'}
+                      exclusive
+                      onChange={(_e, newValue) => {
+                        if (newValue !== null) {
+                          setShowExample(newValue === 'example');
+                        }
+                      }}
+                      size="small"
+                    >
+                      <ToggleButton value="chart">
+                        <BarChartIcon sx={{ mr: 1, fontSize: 20 }} />
+                        Chart
+                      </ToggleButton>
+                      <ToggleButton value="example">
+                        <DataObjectIcon sx={{ mr: 1, fontSize: 20 }} />
+                        Example Data
+                      </ToggleButton>
+                    </ToggleButtonGroup>
+                  </Box>
                 </Box>
 
                 {showExample ? (

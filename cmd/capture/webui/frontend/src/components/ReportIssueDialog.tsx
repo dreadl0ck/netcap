@@ -39,9 +39,11 @@ export default function ReportIssueDialog({ open, onClose, sessionId, filename }
       const response = await api.reportIssue(sessionId, description);
       setSuccess(true);
       
-      // Wait a moment to show success message
+      // Wait a moment to show success message, then close and refresh the file list
       setTimeout(() => {
         handleClose();
+        // Trigger a refresh of the input files list
+        window.dispatchEvent(new CustomEvent('refresh-input-files'));
       }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit issue report');

@@ -193,6 +193,12 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 
 			c.wg.Done()
 
+			// If using pool mode, dispose of the packet to return it to the pool
+			// This must be done after all packet processing is complete
+			if pooledPkt, ok := pkt.(gopacket.PooledPacket); ok {
+				pooledPkt.Dispose()
+			}
+
 			continue
 		}
 	}()

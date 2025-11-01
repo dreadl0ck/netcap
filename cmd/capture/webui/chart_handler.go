@@ -42,6 +42,7 @@ func HandleChartData(outDir string) http.HandlerFunc {
 		field := r.URL.Query().Get("field")
 		chartType := r.URL.Query().Get("chartType")
 		interval := r.URL.Query().Get("interval")
+		showLegendStr := r.URL.Query().Get("showLegend")
 
 		if auditType == "" || field == "" {
 			http.Error(w, "Missing required parameters: type, field", http.StatusBadRequest)
@@ -52,10 +53,16 @@ func HandleChartData(outDir string) http.HandlerFunc {
 			chartType = "line"
 		}
 
+		// Parse showLegend (default to true)
+		showLegend := true
+		if showLegendStr != "" && showLegendStr != "true" {
+			showLegend = false
+		}
+
 		// No default interval - empty means use all records with actual timestamps
 
 		// Generate chart using go-echarts
-		generator := NewChartGenerator(auditType, field, chartType, interval)
+		generator := NewChartGenerator(auditType, field, chartType, interval, showLegend)
 		chartHTML, err := generator.GenerateChart(outDir)
 		if err != nil {
 			log.Printf("[WebUI] Failed to generate chart: %v", err)
@@ -173,6 +180,7 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	field := r.URL.Query().Get("field")
 	chartType := r.URL.Query().Get("chartType") // line, bar, area, scatter, pie
 	interval := r.URL.Query().Get("interval")   // e.g., "1s", "1m", "1h"
+	showLegendStr := r.URL.Query().Get("showLegend")
 
 	if auditType == "" || field == "" {
 		http.Error(w, "Missing required parameters: type, field", http.StatusBadRequest)
@@ -181,6 +189,12 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 
 	if chartType == "" {
 		chartType = "line" // default to line chart
+	}
+
+	// Parse showLegend (default to true)
+	showLegend := true
+	if showLegendStr != "" && showLegendStr != "true" {
+		showLegend = false
 	}
 
 	// No default interval - empty means use all records with actual timestamps
@@ -196,7 +210,7 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate chart using go-echarts
-	generator := NewChartGenerator(auditType, field, chartType, interval)
+	generator := NewChartGenerator(auditType, field, chartType, interval, showLegend)
 	chartHTML, err := generator.GenerateChart(outDir)
 	if err != nil {
 		log.Printf("[WebUI] Failed to generate chart: %v", err)

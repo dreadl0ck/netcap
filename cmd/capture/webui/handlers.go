@@ -14,6 +14,8 @@
 package webui
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -94,6 +96,10 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 	for k, v := range s.fileProcessingTime {
 		fileProcessingTime[k] = v
 	}
+	reportedIssues := make(map[string]bool)
+	for k, v := range s.reportedIssues {
+		reportedIssues[k] = v
+	}
 	s.mu.RUnlock()
 
 	files := make([]FileInfo, 0)
@@ -103,14 +109,19 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		// Calculate file hash
+		hash := calculateFileHash(path)
+
 		fileInfo := FileInfo{
-			Name:           filepath.Base(path),
-			Path:           path,
-			Size:           info.Size(),
-			ModifiedTime:   info.ModTime().Unix(),
-			IsCompleted:    completedFiles[path],
-			BPFFilter:      fileBPFFilters[path],
-			ProcessingTime: fileProcessingTime[path],
+			Name:             filepath.Base(path),
+			Path:             path,
+			Size:             info.Size(),
+			ModifiedTime:     info.ModTime().Unix(),
+			IsCompleted:      completedFiles[path],
+			BPFFilter:        fileBPFFilters[path],
+			ProcessingTime:   fileProcessingTime[path],
+			Hash:             hash,
+			HasReportedIssue: reportedIssues[hash],
 		}
 
 		// Add error information if available
@@ -1357,5 +1368,135 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		"filename": savedFilename,
 		"path":     inputPath,
 		"size":     written,
+	})
+}
+
+// calculateFileHash calculates the SHA256 hash of a file
+func calculateFileHash(filePath string) string {
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Printf("[WebUI] Failed to open file for hashing: %v", err)
+		return ""
+	}
+	defer file.Close()
+
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, file); err != nil {
+		log.Printf("[WebUI] Failed to calculate file hash: %v", err)
+		return ""
+	}
+
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+// ReportIssueRequest represents the request body for reporting an issue
+type ReportIssueRequest struct {
+	SessionID   string `json:"sessionId"`
+	Description string `json:"description"`
+}
+
+// ReportIssueResponse represents the response for reporting an issue
+type ReportIssueResponse struct {
+	Success bool   `json:"success"`
+	IssueID string `json:"issueId"`
+	Message string `json:"message"`
+}
+
+// handleReportIssue handles issue reports for PCAP files
+func (s *Server) handleReportIssue(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse request body
+	var req ReportIssueRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("[WebUI] Failed to parse report issue request: %v", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":   "Invalid request body",
+			"success": false,
+		})
+		return
+	}
+
+	// Validate input
+	if req.SessionID == "" || req.Description == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":   "SessionID and description are required",
+			"success": false,
+		})
+		return
+	}
+
+	// Find the file by sessionId (in service mode, sessionId is typically the file path or name)
+	// We need to find the corresponding file and calculate its hash
+	s.mu.RLock()
+	inputFiles := s.inputFiles
+	s.mu.RUnlock()
+
+	var fileHash string
+	var fileName string
+	for _, path := range inputFiles {
+		// In service mode, sessionId might be the file path or a derived identifier
+		// For simplicity, we'll match on the base name or full path
+		if strings.Contains(path, req.SessionID) || filepath.Base(path) == req.SessionID {
+			fileHash = calculateFileHash(path)
+			fileName = filepath.Base(path)
+			break
+		}
+	}
+
+	if fileHash == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":   "File not found for the given session",
+			"success": false,
+		})
+		return
+	}
+
+	// Check if issue has already been reported for this file
+	s.mu.RLock()
+	alreadyReported := s.reportedIssues[fileHash]
+	s.mu.RUnlock()
+
+	if alreadyReported {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error":   "An issue has already been reported for this file",
+			"success": false,
+		})
+		return
+	}
+
+	// Mark this file as having an issue reported
+	s.mu.Lock()
+	s.reportedIssues[fileHash] = true
+	s.mu.Unlock()
+
+	// Generate a unique issue ID
+	issueID := fmt.Sprintf("issue-%s-%d", fileHash[:8], time.Now().Unix())
+
+	log.Printf("[WebUI] Issue report submitted: issueId=%s, file=%s, hash=%s", issueID, fileName, fileHash)
+
+	// In a real implementation, you might want to:
+	// - Save the issue details to a file or database
+	// - Send the issue report to a backend service
+	// - Create a GitHub issue or similar
+	// For now, we just log it and mark it as reported
+
+	// Return success response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ReportIssueResponse{
+		Success: true,
+		IssueID: issueID,
+		Message: "Issue report submitted successfully",
 	})
 }

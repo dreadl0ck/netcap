@@ -45,19 +45,21 @@ type kvPair struct {
 
 // ChartGenerator handles chart generation from audit records
 type ChartGenerator struct {
-	auditType string
-	field     string
-	chartType string
-	interval  string
+	auditType  string
+	field      string
+	chartType  string
+	interval   string
+	showLegend bool
 }
 
 // NewChartGenerator creates a new chart generator
-func NewChartGenerator(auditType, field, chartType, interval string) *ChartGenerator {
+func NewChartGenerator(auditType, field, chartType, interval string, showLegend bool) *ChartGenerator {
 	return &ChartGenerator{
-		auditType: auditType,
-		field:     field,
-		chartType: chartType,
-		interval:  interval,
+		auditType:  auditType,
+		field:      field,
+		chartType:  chartType,
+		interval:   interval,
+		showLegend: showLegend,
 	}
 }
 
@@ -357,7 +359,7 @@ func (cg *ChartGenerator) generateLineChart(dataPoints []dataPoint) io.Reader {
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{Show: opts.Bool(true)}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(true),
+			Show:   opts.Bool(cg.showLegend),
 			Right:  "10%",
 			Top:    "5%",
 			Orient: "vertical",
@@ -451,7 +453,7 @@ func (cg *ChartGenerator) generateBarChart(dataPoints []dataPoint) io.Reader {
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{Show: opts.Bool(true)}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(true),
+			Show:   opts.Bool(cg.showLegend),
 			Right:  "10%",
 			Top:    "5%",
 			Orient: "vertical",
@@ -533,7 +535,7 @@ func (cg *ChartGenerator) generateAreaChart(dataPoints []dataPoint) io.Reader {
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{Show: opts.Bool(true)}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(true),
+			Show:   opts.Bool(cg.showLegend),
 			Right:  "10%",
 			Top:    "5%",
 			Orient: "vertical",
@@ -613,7 +615,7 @@ func (cg *ChartGenerator) generateScatterChart(dataPoints []dataPoint) io.Reader
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{Show: opts.Bool(true)}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(true),
+			Show:   opts.Bool(cg.showLegend),
 			Right:  "10%",
 			Top:    "5%",
 			Orient: "vertical",
@@ -683,7 +685,7 @@ func (cg *ChartGenerator) generatePieChart(data []kvPair) io.Reader {
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{Show: opts.Bool(true)}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(true),
+			Show:   opts.Bool(cg.showLegend),
 			Orient: "vertical",
 			Right:  "5%",
 			Top:    "15%",
@@ -739,7 +741,7 @@ func (cg *ChartGenerator) generateCategoryBarChart(data []kvPair) io.Reader {
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{Show: opts.Bool(true)}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(true),
+			Show:   opts.Bool(cg.showLegend),
 			Right:  "10%",
 			Top:    "5%",
 			Orient: "vertical",
@@ -808,7 +810,7 @@ func (cg *ChartGenerator) generateFunnelChart(dataPoints []dataPoint) io.Reader 
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{Show: opts.Bool(true)}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(true),
+			Show:   opts.Bool(cg.showLegend),
 			Right:  "10%",
 			Top:    "5%",
 			Orient: "vertical",
@@ -874,7 +876,7 @@ func (cg *ChartGenerator) generateRadarChart(dataPoints []dataPoint) io.Reader {
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{Show: opts.Bool(true)}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(true),
+			Show:   opts.Bool(cg.showLegend),
 			Right:  "10%",
 			Top:    "5%",
 			Orient: "vertical",
@@ -1001,7 +1003,7 @@ func (cg *ChartGenerator) generateCategoryFunnelChart(data []kvPair) io.Reader {
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{Show: opts.Bool(true)}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(true),
+			Show:   opts.Bool(cg.showLegend),
 			Right:  "10%",
 			Top:    "5%",
 			Orient: "vertical",

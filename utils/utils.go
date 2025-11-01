@@ -184,6 +184,13 @@ func GetBaseLayer(value string) (t gopacket.LayerType) {
 }
 
 // GetDecodeOptions resolves a decode option string to the gopacket.DecodeOptions type.
+// Supported options:
+//   - "default": Safe, eager decoding with buffer copying (slowest but safest)
+//   - "lazy": Lazy decoding - minimum layers decoded (faster, but not concurrency-safe)
+//   - "nocopy": No buffer copy - faster but input buffer must not be modified
+//   - "datagrams": Decode TCP streams as datagrams (enables app-level layer decoding in TCP)
+//   - "pool": Use memory pooling for packet buffers (requires calling Dispose() on packets)
+//            When using pool mode, packets must be disposed via packet.Dispose() once processing is complete
 func GetDecodeOptions(value string) (o gopacket.DecodeOptions) {
 	switch value {
 	case "lazy":
@@ -194,6 +201,8 @@ func GetDecodeOptions(value string) (o gopacket.DecodeOptions) {
 		o = gopacket.NoCopy
 	case "datagrams":
 		o = gopacket.DecodeStreamsAsDatagrams
+	case "pool":
+		o = gopacket.DecodeOptions{Pool: true}
 	default:
 		log.Fatal("invalid decode options:", value)
 	}

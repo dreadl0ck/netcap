@@ -125,7 +125,11 @@ func (s *Server) handleVisualizeTreemap(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	chart := generateTreemapChart(outDir)
+	// Parse showLegend parameter (default to false)
+	showLegendStr := r.URL.Query().Get("showLegend")
+	showLegend := showLegendStr == "true"
+
+	chart := generateTreemapChart(outDir, showLegend)
 	html, err := injectFullHeightCSS(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -149,7 +153,11 @@ func HandleVisualizeTreemap(outDir string) http.HandlerFunc {
 			return
 		}
 
-		chart := generateTreemapChart(outDir)
+		// Parse showLegend parameter (default to false)
+		showLegendStr := r.URL.Query().Get("showLegend")
+		showLegend := showLegendStr == "true"
+
+		chart := generateTreemapChart(outDir, showLegend)
 		html, err := injectFullHeightCSS(chart.Render)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -229,7 +237,11 @@ func (s *Server) handleVisualizeGraph(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	chart := generateGraphChart(outDir)
+	// Parse showLegend parameter (default to false)
+	showLegendStr := r.URL.Query().Get("showLegend")
+	showLegend := showLegendStr == "true"
+
+	chart := generateGraphChart(outDir, showLegend)
 	html, err := injectFullHeightCSS(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -253,7 +265,11 @@ func HandleVisualizeGraph(outDir string) http.HandlerFunc {
 			return
 		}
 
-		chart := generateGraphChart(outDir)
+		// Parse showLegend parameter (default to false)
+		showLegendStr := r.URL.Query().Get("showLegend")
+		showLegend := showLegendStr == "true"
+
+		chart := generateGraphChart(outDir, showLegend)
 		html, err := injectFullHeightCSS(chart.Render)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -266,7 +282,7 @@ func HandleVisualizeGraph(outDir string) http.HandlerFunc {
 }
 
 // generateTreemapChart creates a treemap chart showing audit record types by count
-func generateTreemapChart(outDir string) *charts.TreeMap {
+func generateTreemapChart(outDir string, showLegend bool) *charts.TreeMap {
 	stats := getAuditRecordStats(outDir)
 
 	// Build treemap data organized by layer
@@ -329,7 +345,7 @@ func generateTreemapChart(outDir string) *charts.TreeMap {
 			Formatter: "{b}: {c} records",
 		}),
 		charts.WithLegendOpts(opts.Legend{
-			Show: opts.Bool(false), // Hide legend to prevent overlap issues
+			Show: opts.Bool(showLegend),
 		}),
 	)
 
@@ -454,7 +470,7 @@ func generateBar3DChart(outDir string) *charts.Bar3D {
 }
 
 // generateGraphChart creates a graph chart showing audit record types as nodes
-func generateGraphChart(outDir string) *charts.Graph {
+func generateGraphChart(outDir string, showLegend bool) *charts.Graph {
 	stats := getAuditRecordStats(outDir)
 	layerMap := getLayerMap()
 
@@ -566,7 +582,7 @@ func generateGraphChart(outDir string) *charts.Graph {
 			Trigger: "item",
 		}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(true),
+			Show:   opts.Bool(showLegend),
 			Data:   categories,
 			Bottom: "0",
 			Left:   "center",

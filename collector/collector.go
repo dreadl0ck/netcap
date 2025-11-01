@@ -403,6 +403,11 @@ func (c *Collector) handlePacketTimeout(p gopacket.Packet) {
 		}
 
 		fmt.Println("handle packet timeout", nf, tf)
+
+		// Dispose of the temporary packet if it's pooled
+		if pooledPkt, ok := pkt.(gopacket.PooledPacket); ok {
+			pooledPkt.Dispose()
+		}
 	}
 
 	// increment or reset next

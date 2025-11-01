@@ -96,6 +96,8 @@ github.com/dreadl0ck/go-dpi v1.3.0 h1:hHejxT4uoN/yfhykscJHpHfC14f27VMobAYDBzSacj
 github.com/dreadl0ck/go-dpi v1.3.0/go.mod h1:HqEJeAzmr5+1I8dQQtb/FK/5tSVNxlROz9dMZFMk5NU=
 github.com/dreadl0ck/go-dpi v1.4.0 h1:gRrdeAX488tjmxTe5STIIWtp3WhPYGChivOvZP6IpaM=
 github.com/dreadl0ck/go-dpi v1.4.0/go.mod h1:HqEJeAzmr5+1I8dQQtb/FK/5tSVNxlROz9dMZFMk5NU=
+github.com/dreadl0ck/go-dpi v1.4.1 h1:n+T/6fq7EOtd1sRix0edxSxrBecyYTYKWcWts5aPjvI=
+github.com/dreadl0ck/go-dpi v1.4.1/go.mod h1:HqEJeAzmr5+1I8dQQtb/FK/5tSVNxlROz9dMZFMk5NU=
 github.com/dreadl0ck/ja3 v1.1.0 h1:dkW3YiHi99eJpiaZw5nKFvF4ptdhs5goo7x2YEKoKXU=
 github.com/dreadl0ck/ja3 v1.1.0/go.mod h1:1IRFNy6Yh4eHnKQBYFeXOaSZ630kcB2l9LqKpR1ZwOo=
 github.com/dreadl0ck/maltego v0.0.2-0.20210214142236-84e60c758329/go.mod h1:o52fHyONnsaEkTHIv/CCCfrZqeUBPC/oPYEyi2lvtAs=

@@ -21,6 +21,8 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import {
   AccountTree as SankeyIcon,
@@ -28,6 +30,8 @@ import {
   GridView as TreemapIcon,
   BarChart as Bar3DIcon,
   BubbleChart as GraphIcon,
+  Label as LabelIcon,
+  LabelOff as LabelOffIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import { api, formatBytes, type ProtocolHierarchyResponse } from '@/lib/api';
@@ -56,6 +60,7 @@ export default function Visualize() {
   const [selectedChartType, setSelectedChartType] = useState<string>('sankey');
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [autoSelectAttempted, setAutoSelectAttempted] = useState(false);
+  const [showLegend, setShowLegend] = useState(false);
 
   // Auto-select first completed file if no active file is set
   useEffect(() => {
@@ -246,19 +251,31 @@ export default function Visualize() {
 
   // Get chart URL for echarts-based visualizations
   const getChartUrl = () => {
-    switch (selectedChartType) {
-      case 'treemap':
-        return '/api/visualize/treemap';
-      case 'bar3d':
-        return '/api/visualize/bar3d';
-      case 'graph':
-        return '/api/visualize/graph';
-      default:
-        return null;
-    }
+    const baseUrl = (() => {
+      switch (selectedChartType) {
+        case 'treemap':
+          return '/api/visualize/treemap';
+        case 'bar3d':
+          return '/api/visualize/bar3d';
+        case 'graph':
+          return '/api/visualize/graph';
+        default:
+          return null;
+      }
+    })();
+    
+    if (!baseUrl) return null;
+    
+    // Add showLegend parameter
+    return `${baseUrl}?showLegend=${showLegend}`;
   };
 
   const chartUrl = getChartUrl();
+  
+  // Refresh chart when legend toggle changes
+  useEffect(() => {
+    setChartRefreshKey(prev => prev + 1);
+  }, [showLegend]);
 
   return (
     <Layout title="Visualize">
@@ -355,6 +372,34 @@ export default function Visualize() {
               </Select>
             </FormControl>
           </Box>
+
+          {/* Legend Toggle - Only show for echarts-based visualizations */}
+          {selectedChartType !== 'sankey' && (
+            <Box>
+              <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                Legend:
+              </Typography>
+              <ToggleButtonGroup
+                value={showLegend ? 'on' : 'off'}
+                exclusive
+                onChange={(_e, newValue) => {
+                  if (newValue !== null) {
+                    setShowLegend(newValue === 'on');
+                  }
+                }}
+                size="small"
+              >
+                <ToggleButton value="on">
+                  <LabelIcon sx={{ mr: 0.5, fontSize: 18 }} />
+                  On
+                </ToggleButton>
+                <ToggleButton value="off">
+                  <LabelOffIcon sx={{ mr: 0.5, fontSize: 18 }} />
+                  Off
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+          )}
         </Box>
 
         {selectedChartType === 'sankey' && (

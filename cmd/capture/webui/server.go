@@ -55,19 +55,20 @@ type Server struct {
 	httpServer         *http.Server
 	mu                 sync.RWMutex
 	isProcessing       bool
-	isLiveMode         bool                       // Whether in live capture mode
-	stopCapture        context.CancelFunc         // Function to stop live capture
-	activeInputFile    string                     // Currently selected input file for viewing
-	completedFiles     map[string]bool            // Tracks which files have completed processing
-	processingStats    ProcessingStats            // Live processing statistics
-	fileErrors         map[string]FileError       // Tracks errors for each file
-	debugLogging       bool                       // Runtime debug logging state
-	collector          CollectorInterface         // Reference to collector for runtime config changes
-	uploadCallback     UploadCallbackFunc         // Function to call when files are uploaded
-	fileBPFFilters     map[string]string          // Tracks BPF filter used for each file
-	fileOutputDirs     map[string]string          // Tracks actual output directory for each file
-	fileProcessingTime map[string]float64         // Tracks processing time in seconds for each file
+	isLiveMode         bool                          // Whether in live capture mode
+	stopCapture        context.CancelFunc            // Function to stop live capture
+	activeInputFile    string                        // Currently selected input file for viewing
+	completedFiles     map[string]bool               // Tracks which files have completed processing
+	processingStats    ProcessingStats               // Live processing statistics
+	fileErrors         map[string]FileError          // Tracks errors for each file
+	debugLogging       bool                          // Runtime debug logging state
+	collector          CollectorInterface            // Reference to collector for runtime config changes
+	uploadCallback     UploadCallbackFunc            // Function to call when files are uploaded
+	fileBPFFilters     map[string]string             // Tracks BPF filter used for each file
+	fileOutputDirs     map[string]string             // Tracks actual output directory for each file
+	fileProcessingTime map[string]float64            // Tracks processing time in seconds for each file
 	dpiPreferences     map[string]*UserDPIPreferences // DPI preferences per user IP
+	reportedIssues     map[string]bool               // Tracks which file hashes have had issues reported
 }
 
 // UploadCallbackFunc is called when files are uploaded via the web UI
@@ -93,6 +94,7 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		fileOutputDirs:     make(map[string]string),
 		fileProcessingTime: make(map[string]float64),
 		dpiPreferences:     make(map[string]*UserDPIPreferences),
+		reportedIssues:     make(map[string]bool),
 		processingStats: ProcessingStats{
 			TotalFiles: len(inputFiles),
 		},
@@ -140,6 +142,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/visualize/treemap", s.handleVisualizeTreemap)
 	mux.HandleFunc("/api/visualize/bar3d", s.handleVisualizeBar3D)
 	mux.HandleFunc("/api/visualize/graph", s.handleVisualizeGraph)
+	mux.HandleFunc("/api/report-issue", s.handleReportIssue)
 
 	// Static files
 	mux.Handle("/", s.handleStatic())

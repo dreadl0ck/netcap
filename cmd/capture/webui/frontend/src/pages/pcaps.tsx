@@ -168,6 +168,8 @@ export default function PCAPs() {
   const handleCloseReportDialog = () => {
     setReportIssueOpen(false);
     setReportingFile(null);
+    // Trigger a refresh of the file list
+    mutate();
   };
 
   const handleViewErrorLog = async (file: { path: string; name: string; sessionId?: string; errorLogPath?: string }) => {
@@ -537,14 +539,17 @@ export default function PCAPs() {
                                 </IconButton>
                               </Tooltip>
                               {file.isCompleted && !file.error && (
-                                <Tooltip title="Report Issue">
-                                  <IconButton
-                                    size="small"
-                                    color="error"
-                                    onClick={() => file.sessionId && handleReportIssue(file.sessionId, file.name)}
-                                  >
-                                    <ReportIcon />
-                                  </IconButton>
+                                <Tooltip title={file.hasReportedIssue ? "Issue already reported for this file" : "Report Issue"}>
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      color="error"
+                                      onClick={() => file.sessionId && handleReportIssue(file.sessionId, file.name)}
+                                      disabled={file.hasReportedIssue}
+                                    >
+                                      <ReportIcon />
+                                    </IconButton>
+                                  </span>
                                 </Tooltip>
                               )}
                               {file.error && file.errorLogPath && file.sessionId && (

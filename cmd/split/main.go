@@ -75,5 +75,10 @@ func Run() {
 		//  and write the corresponding packets there
 		p := gopacket.NewPacket(data, layers.LayerTypeEthernet, gopacket.Lazy)
 		fmt.Println(p, ci)
+
+		// If using pool mode, dispose of the packet to return it to the pool
+		if pooledPkt, ok := p.(gopacket.PooledPacket); ok {
+			pooledPkt.Dispose()
+		}
 	}
 }

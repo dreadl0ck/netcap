@@ -104,6 +104,8 @@ export interface FileInfo {
   sessionId?: string;  // Optional, only present in try service mode
   bpfFilter?: string;  // Optional, BPF filter applied during capture
   processingTime?: number;  // Optional, processing duration in seconds
+  hash?: string;  // Optional, SHA256 hash of the file
+  hasReportedIssue?: boolean;  // Optional, whether an issue has been reported for this file
 }
 
 export interface AuditFileInfo extends FileInfo {

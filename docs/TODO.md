@@ -10,6 +10,8 @@ bpf filter doesnt seem to be applied correctly, debug
 
 add local dev mode for webUI
 
+Visualize and Explore Page: add toggle to turn Legend on / off
+
 ---
 
 expose go-dpi types, update ndpi types https://github.com/dreadl0ck/go-dpi/blob/master/modules/wrappers/nDPI_wrapper.go
