@@ -60,6 +60,42 @@ export default function AuditRecords() {
     'Unknown Layer'
   ]));
   const [switchingFile, setSwitchingFile] = useState(false);
+  const [autoSelectAttempted, setAutoSelectAttempted] = useState(false);
+
+  // Auto-select first completed file if no active file is set
+  useEffect(() => {
+    const autoSelectFirstFile = async () => {
+      // Only attempt once
+      if (autoSelectAttempted) return;
+      
+      // Wait for data to be loaded
+      if (!inputFiles || !status) return;
+      
+      const completed = inputFiles.filter((f: any) => f.isCompleted);
+      if (completed.length === 0) return;
+      
+      // Check if we need to auto-select
+      const hasActiveFile = status.activeInputFile && completed.some((f: any) => 
+        f.path === status.activeInputFile || 
+        f.name === status.activeInputFile || 
+        f.path.endsWith('/' + status.activeInputFile)
+      );
+      
+      if (!hasActiveFile) {
+        console.log('[Audit] Auto-selecting first completed file:', completed[0].path);
+        setAutoSelectAttempted(true);
+        try {
+          await api.setActiveDirectory(completed[0].path);
+          await mutateStatus();
+          await mutate();
+        } catch (err) {
+          console.error('[Audit] Failed to auto-select file:', err);
+        }
+      }
+    };
+    
+    autoSelectFirstFile();
+  }, [inputFiles, status, autoSelectAttempted, mutateStatus, mutate]);
   
   // Listen for directory changes and refresh audit files
   useEffect(() => {

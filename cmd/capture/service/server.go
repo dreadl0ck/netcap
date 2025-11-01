@@ -78,7 +78,7 @@ func NewServer(addr string, config *Config, enableDPI bool) (*Server, error) {
 		addr:           addr,
 		config:         config,
 		enableDPI:      enableDPI,
-		sessionManager: NewSessionManager(config.MaxAnalysisHour, config.SessionExpiry),
+		sessionManager: NewSessionManager(config.MaxAnalysisHour, config.SessionExpiry, config.MaxIssueReportsPerDay),
 		jobQueue:       make(chan *AnalysisJob, 100),
 		shutdownChan:   make(chan struct{}),
 	}
@@ -102,6 +102,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/try/sessions", s.handleListSessions)
 	mux.HandleFunc("/api/try/session/", s.handleSessionSelect)
 	mux.HandleFunc("/api/quota", s.handleQuota)
+	mux.HandleFunc("/api/report-issue", s.handleReportIssue)
 	mux.HandleFunc("/health", s.handleHealth)
 	mux.HandleFunc("/view/", s.handleViewSession) // View specific session by ID (shareable link)
 
@@ -133,6 +134,11 @@ func (s *Server) Start() error {
 	// Chart endpoints (proxied to current session)
 	mux.HandleFunc("/api/chart/data", s.handleChartData)
 	mux.HandleFunc("/api/chart/fields", s.handleChartFields)
+	// Visualize endpoints (proxied to current session)
+	mux.HandleFunc("/api/visualize/protocol-hierarchy", s.handleProtocolHierarchy)
+	mux.HandleFunc("/api/visualize/treemap", s.handleVisualizeTreemap)
+	mux.HandleFunc("/api/visualize/bar3d", s.handleVisualizeBar3D)
+	mux.HandleFunc("/api/visualize/graph", s.handleVisualizeGraph)
 
 	// Download endpoint (updated path)
 	mux.HandleFunc("/api/download/", s.handleDownload)
@@ -324,6 +330,7 @@ func (s *Server) cleanupRoutine() {
 }
 
 // performCleanup removes expired sessions and their files
+// Note: Issues directory is NEVER cleaned up - it contains permanent bug reports
 func (s *Server) performCleanup() {
 	log.Println("[Service] Running cleanup...")
 
@@ -348,6 +355,9 @@ func (s *Server) performCleanup() {
 	if len(expiredSessions) > 0 {
 		log.Printf("[Service] Cleaned up %d expired session(s)", len(expiredSessions))
 	}
+	
+	// Note: The 'issues' directory is NEVER cleaned up automatically
+	// It contains permanent bug reports with PCAPs and analysis data
 }
 
 // GetCurrentSession returns the currently selected session for webUI viewing

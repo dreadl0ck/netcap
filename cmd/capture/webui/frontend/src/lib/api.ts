@@ -278,6 +278,38 @@ export interface ChartFieldInfo {
 export interface ChartFieldsResponse {
   type: string;
   fields: ChartFieldInfo[];
+  totalFields: number;   // Total possible fields including empty ones
+  filteredCount: number; // Number of fields filtered out due to no data
+}
+
+export interface SankeyLink {
+  source: string;
+  target: string;
+  value: number;
+}
+
+export interface ProtocolStats {
+  count: number;
+  bytes: number;
+  layer: string;
+}
+
+export interface ProtocolHierarchyResponse {
+  links: SankeyLink[];
+  nodes: string[];
+  stats: Record<string, ProtocolStats>;
+}
+
+export interface ReportIssueRequest {
+  sessionId: string;
+  description: string;
+}
+
+export interface ReportIssueResponse {
+  success: boolean;
+  issueId: string;
+  message: string;
+  remaining: number;
 }
 
 export const api = {
@@ -666,6 +698,35 @@ export const api = {
       const text = await res.text();
       throw new Error(text || 'Failed to fetch chart fields');
     }
+    return res.json();
+  },
+
+  async getProtocolHierarchy(): Promise<ProtocolHierarchyResponse> {
+    const res = await fetch(`${API_BASE}/visualize/protocol-hierarchy`);
+    if (!res.ok) {
+      if (res.status === 503) {
+        throw new Error('No output directory selected - please select or set an output directory first');
+      }
+      const text = await res.text();
+      throw new Error(text || 'Failed to fetch protocol hierarchy');
+    }
+    return res.json();
+  },
+
+  async reportIssue(sessionId: string, description: string): Promise<ReportIssueResponse> {
+    const res = await fetch(`${API_BASE}/report-issue`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sessionId, description }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || error.message || 'Failed to report issue');
+    }
+
     return res.json();
   },
 };

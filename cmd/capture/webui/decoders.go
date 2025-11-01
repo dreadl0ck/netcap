@@ -418,54 +418,186 @@ func InitRecordForDecoder(decoderName string) interface{} {
 }
 
 // GetRecordFields extracts field information from an audit record
+// This includes nested fields using dot notation (e.g., "ReqCookies.Name")
 func GetRecordFields(record interface{}) []FieldInfo {
-	if auditRecord, ok := record.(types.AuditRecord); ok {
-		headers := auditRecord.CSVHeader()
-
-		// Use reflection to get field types
-		recordType := reflect.TypeOf(record).Elem()
-		fieldTypes := make(map[string]string)
-
-		for i := 0; i < recordType.NumField(); i++ {
-			field := recordType.Field(i)
-			fieldTypes[field.Name] = getSimplifiedTypeName(field.Type)
-		}
-
-		fields := make([]FieldInfo, 0, len(headers))
-		// Create field info for each CSV header
-		for _, header := range headers {
-			fieldType := "unknown"
-			// Match header name to struct field name (they're usually the same)
-			for i := 0; i < recordType.NumField(); i++ {
-				field := recordType.Field(i)
-				if strings.EqualFold(field.Name, header) || field.Name == header {
-					fieldType = fieldTypes[field.Name]
-					break
-				}
-			}
-
-			fields = append(fields, FieldInfo{
-				Name: header,
-				Type: fieldType,
-			})
-		}
+	var fields []FieldInfo
+	
+	v := reflect.ValueOf(record)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	
+	if v.Kind() != reflect.Struct {
 		return fields
 	}
+	
+	// Extract fields recursively, including nested fields
+	extractRecordFieldsRecursive(v, "", &fields, 0, 3) // max depth of 3
+	
+	return fields
+}
 
-	// Fallback: use reflection to get all exported fields
-	recordType := reflect.TypeOf(record).Elem()
-	fields := make([]FieldInfo, 0, recordType.NumField())
-	for i := 0; i < recordType.NumField(); i++ {
-		field := recordType.Field(i)
-		if field.IsExported() {
-			fields = append(fields, FieldInfo{
-				Name: field.Name,
-				Type: getSimplifiedTypeName(field.Type),
-			})
+// extractRecordFieldsRecursive recursively extracts fields from a struct, including map keys from actual data
+func extractRecordFieldsRecursive(v reflect.Value, prefix string, fields *[]FieldInfo, depth int, maxDepth int) {
+	if depth >= maxDepth {
+		return
+	}
+
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			v = reflect.New(v.Type().Elem()).Elem()
+		} else {
+			v = v.Elem()
 		}
 	}
 
-	return fields
+	if v.Kind() != reflect.Struct {
+		return
+	}
+
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldType := t.Field(i)
+
+		// Skip unexported fields
+		if !fieldType.IsExported() {
+			continue
+		}
+
+		fieldName := fieldType.Name
+		if prefix != "" {
+			fieldName = prefix + "." + fieldName
+		}
+
+		shouldRecurse := false
+		typeName := ""
+
+		switch field.Kind() {
+		case reflect.Map:
+			// Handle maps by extracting keys from actual data
+			if field.Len() > 0 {
+				// Map has data - extract keys
+				for _, key := range field.MapKeys() {
+					mapKeyName := fieldName + "." + key.String()
+					mapValue := field.MapIndex(key)
+					
+					// Determine type of map values
+					var mapTypeName string
+					switch mapValue.Kind() {
+					case reflect.String:
+						if mapValue.String() != "" {
+							mapTypeName = "string"
+						}
+					case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+						if mapValue.Int() != 0 {
+							mapTypeName = "int"
+						}
+					case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+						if mapValue.Uint() != 0 {
+							mapTypeName = "uint"
+						}
+					case reflect.Float32, reflect.Float64:
+						if mapValue.Float() != 0 {
+							mapTypeName = "float"
+						}
+					case reflect.Bool:
+						mapTypeName = "bool"
+					}
+					
+					if mapTypeName != "" {
+						*fields = append(*fields, FieldInfo{
+							Name: mapKeyName,
+							Type: mapTypeName,
+						})
+					}
+				}
+				shouldRecurse = true // Skip adding the map itself as a field
+			}
+		case reflect.Slice:
+			elemType := field.Type().Elem()
+			if elemType.Kind() == reflect.Struct || (elemType.Kind() == reflect.Ptr && elemType.Elem().Kind() == reflect.Struct) {
+				// Slice of structs - recurse into the first element if available
+				shouldRecurse = true
+				var elemValue reflect.Value
+				if field.Len() > 0 {
+					elemValue = field.Index(0)
+					if elemValue.Kind() == reflect.Ptr {
+						if !elemValue.IsNil() {
+							elemValue = elemValue.Elem()
+						} else {
+							// Create zero value for inspection
+							elemValue = reflect.New(elemType.Elem()).Elem()
+						}
+					}
+				} else if v.IsZero() {
+					// Creating zero value for structure inspection
+					if elemType.Kind() == reflect.Ptr {
+						elemValue = reflect.New(elemType.Elem()).Elem()
+					} else {
+						elemValue = reflect.New(elemType).Elem()
+					}
+				}
+				if elemValue.IsValid() {
+					extractRecordFieldsRecursive(elemValue, fieldName, fields, depth+1, maxDepth)
+				}
+			} else {
+				// Only include slice if it has data or we're doing structure inspection
+				if field.Len() > 0 || v.IsZero() {
+					typeName = getSimplifiedTypeName(field.Type())
+				}
+			}
+		case reflect.Struct:
+			// Nested struct - recurse into it
+			shouldRecurse = true
+			extractRecordFieldsRecursive(field, fieldName, fields, depth+1, maxDepth)
+		case reflect.Ptr:
+			// Pointer to struct - recurse into it
+			if field.Type().Elem().Kind() == reflect.Struct {
+				shouldRecurse = true
+				var elemValue reflect.Value
+				if field.IsNil() {
+					elemValue = reflect.New(field.Type().Elem()).Elem()
+				} else {
+					elemValue = field.Elem()
+				}
+				extractRecordFieldsRecursive(elemValue, fieldName, fields, depth+1, maxDepth)
+			} else {
+				// Pointer to non-struct type
+				typeName = getSimplifiedTypeName(field.Type())
+			}
+		case reflect.String:
+			// Only include strings with data
+			if field.String() != "" || v.IsZero() {
+				typeName = getSimplifiedTypeName(field.Type())
+			}
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			// Only include non-zero integers
+			if field.Int() != 0 || v.IsZero() {
+				typeName = getSimplifiedTypeName(field.Type())
+			}
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			// Only include non-zero unsigned integers
+			if field.Uint() != 0 || v.IsZero() {
+				typeName = getSimplifiedTypeName(field.Type())
+			}
+		case reflect.Float32, reflect.Float64:
+			// Only include non-zero floats
+			if field.Float() != 0 || v.IsZero() {
+				typeName = getSimplifiedTypeName(field.Type())
+			}
+		default:
+			// Regular field type
+			typeName = getSimplifiedTypeName(field.Type())
+		}
+
+		if !shouldRecurse && typeName != "" {
+			*fields = append(*fields, FieldInfo{
+				Name: fieldName,
+				Type: typeName,
+			})
+		}
+	}
 }
 
 // getSimplifiedTypeName returns a simplified, human-readable type name

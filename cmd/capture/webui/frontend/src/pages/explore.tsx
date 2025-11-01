@@ -101,7 +101,7 @@ const DEFAULT_FIELD_MAP: Record<string, { field: string; chartType: string }> = 
   
   // Application Layer - Other
   'SSH': { field: 'Ident', chartType: 'pie' },                   // Version distribution
-  'SIP': { field: 'StatusCode', chartType: 'pie' },                // Status code distribution
+  'SIP': { field: 'ResponseStatus', chartType: 'bar' },                // Status code distribution
   'NTP': { field: 'Stratum', chartType: 'bar' },                   // Time accuracy levels
   'DHCPv4': { field: 'Operation', chartType: 'pie' },               // Operation type distribution
   'DHCPv6': { field: 'MsgType', chartType: 'pie' },                 // Message type distribution
@@ -174,6 +174,42 @@ export default function Explore() {
   const [loadingExample, setLoadingExample] = useState(false);
   const [showExample, setShowExample] = useState(false);
   const [switchingFile, setSwitchingFile] = useState(false);
+  const [autoSelectAttempted, setAutoSelectAttempted] = useState(false);
+
+  // Auto-select first completed file if no active file is set
+  useEffect(() => {
+    const autoSelectFirstFile = async () => {
+      // Only attempt once
+      if (autoSelectAttempted) return;
+      
+      // Wait for data to be loaded
+      if (!inputFiles || !status) return;
+      
+      const completed = inputFiles.filter((f: any) => f.isCompleted);
+      if (completed.length === 0) return;
+      
+      // Check if we need to auto-select
+      const hasActiveFile = status.activeInputFile && completed.some((f: any) => 
+        f.path === status.activeInputFile || 
+        f.name === status.activeInputFile || 
+        f.path.endsWith('/' + status.activeInputFile)
+      );
+      
+      if (!hasActiveFile) {
+        console.log('[Explore] Auto-selecting first completed file:', completed[0].path);
+        setAutoSelectAttempted(true);
+        try {
+          await api.setActiveDirectory(completed[0].path);
+          await mutateStatus();
+          await mutateAuditFiles();
+        } catch (err) {
+          console.error('[Explore] Failed to auto-select file:', err);
+        }
+      }
+    };
+    
+    autoSelectFirstFile();
+  }, [inputFiles, status, autoSelectAttempted, mutateStatus, mutateAuditFiles]);
 
   // Listen for directory changes and refresh audit files (for multi-file/service mode)
   useEffect(() => {
@@ -508,11 +544,20 @@ export default function Explore() {
                   >
                     {fields?.fields.map((field) => (
                       <MenuItem key={field.name} value={field.name}>
-                        {field.name} ({field.type})
+                        {field.name}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
+
+                {/* Info about field filtering */}
+                {fields && fields.fields.length > 0 && fields.filteredCount > 0 && (
+                  <Alert severity="info" sx={{ mt: 1 }}>
+                    <Typography variant="caption">
+                      {fields.filteredCount} field{fields.filteredCount !== 1 ? 's' : ''} without data hidden from this list.
+                    </Typography>
+                  </Alert>
+                )}
 
                 {/* Chart Type Selection */}
                 <FormControl fullWidth>
@@ -538,14 +583,6 @@ export default function Explore() {
                   </Select>
                 </FormControl>
 
-                {isFieldCategorical && (
-                  <Alert severity="info" sx={{ mt: 1 }}>
-                    <Typography variant="caption">
-                      Categorical field selected - showing appropriate chart options
-                    </Typography>
-                  </Alert>
-                )}
-
                 {selectedAuditType && selectedField && (
                   <Alert severity="success" sx={{ mt: 1 }}>
                     <Typography variant="caption">
@@ -555,47 +592,6 @@ export default function Explore() {
                 )}
               </Stack>
 
-              {/* Info Panel */}
-              {selectedField && fields && (
-                <Box sx={{ mt: 3 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Selected Field
-                  </Typography>
-                  <Stack spacing={1}>
-                    {(() => {
-                      const field = fields.fields.find(f => f.name === selectedField);
-                      return field ? (
-                        <>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Name:
-                            </Typography>
-                            <Typography variant="body2">{field.name}</Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <Typography variant="body2" color="text.secondary">
-                              Type:
-                            </Typography>
-                            <Chip 
-                              label={field.type} 
-                              size="small" 
-                              color={field.type.startsWith('numeric') ? 'primary' : 'secondary'}
-                            />
-                          </Box>
-                          <Box>
-                            <Typography variant="body2" color="text.secondary">
-                              Description:
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {field.description}
-                            </Typography>
-                          </Box>
-                        </>
-                      ) : null;
-                    })()}
-                  </Stack>
-                </Box>
-              )}
             </CardContent>
           </Card>
         </Grid>

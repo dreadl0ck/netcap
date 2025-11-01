@@ -20,23 +20,25 @@ import (
 
 // Config holds the service mode configuration
 type Config struct {
-	DataDir         string
-	MaxFileSize     int64
-	MaxAnalysisHour int
-	SessionExpiry   int
-	CleanupInterval int
-	MaxStorageBytes int64
+	DataDir              string
+	MaxFileSize          int64
+	MaxAnalysisHour      int
+	SessionExpiry        int
+	CleanupInterval      int
+	MaxStorageBytes      int64
+	MaxIssueReportsPerDay int // Maximum number of issue reports per IP per day
 }
 
 // DefaultConfig returns the default service configuration
 func DefaultConfig() *Config {
 	return &Config{
-		DataDir:         getDefaultDataDir(),
-		MaxFileSize:     100 * 1024 * 1024, // 100MB
-		MaxAnalysisHour: 10,
-		SessionExpiry:   60,                      // 60 minutes
-		CleanupInterval: 10,                      // 10 minutes
-		MaxStorageBytes: 10 * 1024 * 1024 * 1024, // 10GB
+		DataDir:              getDefaultDataDir(),
+		MaxFileSize:          100 * 1024 * 1024, // 100MB
+		MaxAnalysisHour:      10,
+		SessionExpiry:        60,                      // 60 minutes
+		CleanupInterval:      10,                      // 10 minutes
+		MaxStorageBytes:      10 * 1024 * 1024 * 1024, // 10GB
+		MaxIssueReportsPerDay: 5,                       // 5 issue reports per IP per day
 	}
 }
 

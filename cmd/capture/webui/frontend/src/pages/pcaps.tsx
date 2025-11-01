@@ -21,11 +21,12 @@ import {
   Typography,
   type SelectChangeEvent,
 } from '@mui/material';
-import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, Description as DescriptionIcon, Search as SearchIcon } from '@mui/icons-material';
+import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, Description as DescriptionIcon, Search as SearchIcon, BubbleChart as VisualizeIcon, Report as ReportIcon } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import { api, formatBytes, formatTimestamp } from '@/lib/api';
 import useSWR from 'swr';
+import ReportIssueDialog from '@/components/ReportIssueDialog';
 
 type SortField = 'name' | 'size' | 'modifiedTime';
 type SortOrder = 'asc' | 'desc';
@@ -43,6 +44,8 @@ export default function PCAPs() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [reportIssueOpen, setReportIssueOpen] = useState(false);
+  const [reportingFile, setReportingFile] = useState<{ sessionId: string; filename: string } | null>(null);
   
   // Listen for directory changes and refresh input files
   useEffect(() => {
@@ -95,6 +98,26 @@ export default function PCAPs() {
     }
   };
 
+  const handleVisualize = async (file: string) => {
+    setActivating(file);
+    try {
+      const result = await api.setActiveDirectory(file);
+      console.log('Directory changed to:', result.outputDir);
+      await mutateStatus(); // Refresh status
+      
+      // Force refresh by triggering a global event
+      window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
+      
+      // Navigate to visualize page
+      router.push('/visualize');
+    } catch (err) {
+      console.error('Failed to set active directory:', err);
+      alert('Failed to switch to this file');
+    } finally {
+      setActivating(null);
+    }
+  };
+
   const handleCopyShareLink = async (sessionId: string, filePath: string) => {
     const protocol = window.location.protocol;
     const host = window.location.host;
@@ -108,6 +131,16 @@ export default function PCAPs() {
       console.error('Failed to copy share link:', err);
       alert('Failed to copy share link to clipboard');
     }
+  };
+
+  const handleReportIssue = (sessionId: string, filename: string) => {
+    setReportingFile({ sessionId, filename });
+    setReportIssueOpen(true);
+  };
+
+  const handleCloseReportDialog = () => {
+    setReportIssueOpen(false);
+    setReportingFile(null);
   };
 
   const isActive = (file: string) => {
@@ -387,28 +420,53 @@ export default function PCAPs() {
                                 </span>
                               </Tooltip>
                               {file.isCompleted && !file.error && (
-                                <Tooltip title="View Logs">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleViewLogs(file.path)}
-                                    disabled={activating === file.path}
-                                  >
-                                    <DescriptionIcon />
-                                  </IconButton>
-                                </Tooltip>
+                                <>
+                                  <Tooltip title="View Logs">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleViewLogs(file.path)}
+                                      disabled={activating === file.path}
+                                    >
+                                      <DescriptionIcon />
+                                    </IconButton>
+                                  </Tooltip>
+                                  <Tooltip title="Visualize Protocols">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleVisualize(file.path)}
+                                      disabled={activating === file.path}
+                                      color="primary"
+                                    >
+                                      <VisualizeIcon />
+                                    </IconButton>
+                                  </Tooltip>
+                                </>
                               )}
                             </>
                           )}
                           {status?.isTryService && file.sessionId && (
-                            <Tooltip title={copiedFileId === file.path ? "Copied!" : "Copy Share Link"}>
-                              <IconButton
-                                size="small"
-                                color={copiedFileId === file.path ? "success" : "default"}
-                                onClick={() => file.sessionId && handleCopyShareLink(file.sessionId, file.path)}
-                              >
-                                {copiedFileId === file.path ? <CheckCircleIcon /> : <ShareIcon />}
-                              </IconButton>
-                            </Tooltip>
+                            <>
+                              <Tooltip title={copiedFileId === file.path ? "Copied!" : "Copy Share Link"}>
+                                <IconButton
+                                  size="small"
+                                  color={copiedFileId === file.path ? "success" : "default"}
+                                  onClick={() => file.sessionId && handleCopyShareLink(file.sessionId, file.path)}
+                                >
+                                  {copiedFileId === file.path ? <CheckCircleIcon /> : <ShareIcon />}
+                                </IconButton>
+                              </Tooltip>
+                              {file.isCompleted && !file.error && (
+                                <Tooltip title="Report Issue">
+                                  <IconButton
+                                    size="small"
+                                    color="error"
+                                    onClick={() => file.sessionId && handleReportIssue(file.sessionId, file.name)}
+                                  >
+                                    <ReportIcon />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                            </>
                           )}
                         </Box>
                       </TableCell>
@@ -438,6 +496,16 @@ export default function PCAPs() {
                 : 'No PCAP files found'}
             </Typography>
           </Box>
+        )}
+
+        {/* Report Issue Dialog */}
+        {reportingFile && (
+          <ReportIssueDialog
+            open={reportIssueOpen}
+            onClose={handleCloseReportDialog}
+            sessionId={reportingFile.sessionId}
+            filename={reportingFile.filename}
+          />
         )}
       </Box>
     </Layout>

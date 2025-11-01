@@ -100,6 +100,7 @@ func (cg *ChartGenerator) GenerateChart(outDir string) (io.Reader, error) {
 }
 
 // isFieldNumeric checks if the specified field is numeric
+// Supports nested field access using dot notation
 func (cg *ChartGenerator) isFieldNumeric(reader *AuditRecordReader) (bool, error) {
 	msg, err := reader.NextRecord()
 	if err != nil {
@@ -111,9 +112,10 @@ func (cg *ChartGenerator) isFieldNumeric(reader *AuditRecordReader) (bool, error
 		v = v.Elem()
 	}
 
-	field := v.FieldByName(cg.field)
-	if !field.IsValid() {
-		return false, fmt.Errorf("field %s not found", cg.field)
+	// Navigate to the field using dot notation
+	field, err := navigateToField(v, cg.field)
+	if err != nil {
+		return false, err
 	}
 
 	switch field.Kind() {
@@ -1244,7 +1246,7 @@ func (cg *ChartGenerator) generateGraphChart(data []kvPair) io.Reader {
 }
 
 // extractStringField extracts a string field value from a message
-func extractStringField(msg interface{}, fieldName string) (string, error) {
+func extractStringField(msg interface{}, fieldPath string) (string, error) {
 	v := reflect.ValueOf(msg)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -1254,9 +1256,10 @@ func extractStringField(msg interface{}, fieldName string) (string, error) {
 		return "", fmt.Errorf("message is not a struct")
 	}
 
-	field := v.FieldByName(fieldName)
-	if !field.IsValid() {
-		return "", fmt.Errorf("field %s not found", fieldName)
+	// Navigate to the field using dot notation
+	field, err := navigateToField(v, fieldPath)
+	if err != nil {
+		return "", err
 	}
 
 	switch field.Kind() {

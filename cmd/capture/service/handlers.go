@@ -429,6 +429,215 @@ func (s *Server) handleDownload(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[Service] Results downloaded for session %s by %s", sessionID, clientIP)
 }
 
+// handleReportIssue handles issue report submissions for PCAPs
+func (s *Server) handleReportIssue(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	clientIP := getClientIP(r)
+
+	// Check rate limit for issue reports
+	allowed, remaining := s.sessionManager.CheckIssueReportLimit(clientIP)
+	if !allowed {
+		respondJSON(w, http.StatusTooManyRequests, map[string]interface{}{
+			"error":     "Issue report rate limit exceeded",
+			"message":   "You have reached the maximum number of issue reports per day",
+			"remaining": 0,
+		})
+		return
+	}
+
+	// Parse request body
+	var req struct {
+		SessionID   string `json:"sessionId"`
+		Description string `json:"description"` // Markdown description
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("[Service] Failed to parse issue report request: %v", err)
+		respondJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	// Validate input
+	if req.SessionID == "" {
+		respondJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "Session ID is required",
+		})
+		return
+	}
+
+	if req.Description == "" {
+		respondJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "Issue description is required",
+		})
+		return
+	}
+
+	// Get session info
+	session, exists := s.sessionManager.GetSession(req.SessionID)
+	if !exists {
+		respondJSON(w, http.StatusNotFound, map[string]string{
+			"error": "Session not found",
+		})
+		return
+	}
+
+	// Check if analysis is complete
+	if session.Status != StatusCompleted {
+		respondJSON(w, http.StatusBadRequest, map[string]string{
+			"error":  "Analysis must be completed before reporting issues",
+			"status": string(session.Status),
+		})
+		return
+	}
+
+	// Generate issue ID
+	issueID := generateSessionID()
+
+	// Create issues directory structure
+	issuesBaseDir := filepath.Join(s.config.DataDir, "issues")
+	issueDir := filepath.Join(issuesBaseDir, issueID)
+
+	if err := os.MkdirAll(issueDir, 0755); err != nil {
+		log.Printf("[Service] Failed to create issue directory: %v", err)
+		respondJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to create issue directory",
+		})
+		return
+	}
+
+	// Save issue description as markdown file
+	descriptionPath := filepath.Join(issueDir, "description.md")
+	if err := os.WriteFile(descriptionPath, []byte(req.Description), 0644); err != nil {
+		log.Printf("[Service] Failed to write issue description: %v", err)
+		respondJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to save issue description",
+		})
+		return
+	}
+
+	// Save metadata about the issue
+	metadata := map[string]interface{}{
+		"issueId":        issueID,
+		"sessionId":      session.SessionID,
+		"reportedBy":     clientIP,
+		"reportTime":     time.Now().Unix(),
+		"inputFilename":  session.InputFilename,
+		"inputFileSize":  session.InputFileSize,
+		"packetsTotal":   session.PacketsTotal,
+		"bpfFilter":      session.BPFFilter,
+		"completionTime": session.CompletionTime.Unix(),
+	}
+
+	metadataJSON, err := json.MarshalIndent(metadata, "", "  ")
+	if err != nil {
+		log.Printf("[Service] Failed to marshal issue metadata: %v", err)
+		respondJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to create issue metadata",
+		})
+		return
+	}
+
+	metadataPath := filepath.Join(issueDir, "metadata.json")
+	if err := os.WriteFile(metadataPath, metadataJSON, 0644); err != nil {
+		log.Printf("[Service] Failed to write issue metadata: %v", err)
+		respondJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to save issue metadata",
+		})
+		return
+	}
+
+	// Copy PCAP file to issue directory
+	pcapDestPath := filepath.Join(issueDir, filepath.Base(session.InputFile))
+	if err := copyFile(session.InputFile, pcapDestPath); err != nil {
+		log.Printf("[Service] Failed to copy PCAP file: %v", err)
+		respondJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to copy PCAP file",
+		})
+		return
+	}
+
+	// Copy all netcap data from output directory to issue directory
+	netcapDataDir := filepath.Join(issueDir, "netcap-data")
+	if err := os.MkdirAll(netcapDataDir, 0755); err != nil {
+		log.Printf("[Service] Failed to create netcap data directory: %v", err)
+		respondJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to create netcap data directory",
+		})
+		return
+	}
+
+	// Copy all files from session output directory
+	err = filepath.Walk(session.OutputDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		// Get relative path
+		relPath, err := filepath.Rel(session.OutputDir, path)
+		if err != nil {
+			return err
+		}
+
+		destPath := filepath.Join(netcapDataDir, relPath)
+
+		// Create parent directory if needed
+		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+			return err
+		}
+
+		// Copy file
+		return copyFile(path, destPath)
+	})
+
+	if err != nil {
+		log.Printf("[Service] Failed to copy netcap data: %v", err)
+		respondJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to copy netcap data",
+		})
+		return
+	}
+
+	// Record the issue report for rate limiting
+	s.sessionManager.RecordIssueReport(clientIP)
+
+	log.Printf("[Service] Issue %s reported for session %s by %s", issueID, req.SessionID, clientIP)
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"success":   true,
+		"issueId":   issueID,
+		"message":   "Issue report submitted successfully",
+		"remaining": remaining - 1,
+	})
+}
+
+// copyFile copies a file from src to dst
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
+}
+
 // handleQuota returns the current quota status for the client IP
 func (s *Server) handleQuota(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -2114,4 +2323,49 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 
 	// Proxy to webUI chart handler with session's output directory
 	webui.HandleChartFields(session.OutputDir)(w, r)
+}
+
+// handleProtocolHierarchy proxies protocol hierarchy requests to the webUI handler with current session
+func (s *Server) handleProtocolHierarchy(w http.ResponseWriter, r *http.Request) {
+	session := s.GetCurrentSession()
+	if session == nil || session.Status != StatusCompleted {
+		http.Error(w, "No active session or analysis not completed", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Proxy to webUI visualize handler with session's output directory
+	webui.HandleProtocolHierarchy(session.OutputDir)(w, r)
+}
+
+// handleVisualizeTreemap proxies treemap chart requests to the webUI handler with current session
+func (s *Server) handleVisualizeTreemap(w http.ResponseWriter, r *http.Request) {
+	session := s.GetCurrentSession()
+	if session == nil || session.Status != StatusCompleted {
+		http.Error(w, "No active session or analysis not completed", http.StatusServiceUnavailable)
+		return
+	}
+
+	webui.HandleVisualizeTreemap(session.OutputDir)(w, r)
+}
+
+// handleVisualizeBar3D proxies bar3d chart requests to the webUI handler with current session
+func (s *Server) handleVisualizeBar3D(w http.ResponseWriter, r *http.Request) {
+	session := s.GetCurrentSession()
+	if session == nil || session.Status != StatusCompleted {
+		http.Error(w, "No active session or analysis not completed", http.StatusServiceUnavailable)
+		return
+	}
+
+	webui.HandleVisualizeBar3D(session.OutputDir)(w, r)
+}
+
+// handleVisualizeGraph proxies graph chart requests to the webUI handler with current session
+func (s *Server) handleVisualizeGraph(w http.ResponseWriter, r *http.Request) {
+	session := s.GetCurrentSession()
+	if session == nil || session.Status != StatusCompleted {
+		http.Error(w, "No active session or analysis not completed", http.StatusServiceUnavailable)
+		return
+	}
+
+	webui.HandleVisualizeGraph(session.OutputDir)(w, r)
 }

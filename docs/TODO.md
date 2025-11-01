@@ -1,6 +1,8 @@
 # TODOs
 
-explore: make nested fields available for selection
+add detailed field descriptions for each protocol and show in explore view when selecting a field
+
+netcap core should produce info which fields contain data for the audit records, so that UI can use this only show fields that make sense for filtering, without having to parse the entire data again.
 
 service mode logging cleanup
 

@@ -53,27 +53,30 @@ type SessionInfo struct {
 
 // IPTracker tracks analysis attempts per IP for rate limiting
 type IPTracker struct {
-	IP            string
-	AnalysisTimes []time.Time
-	Sessions      []string // Session IDs
+	IP               string
+	AnalysisTimes    []time.Time
+	Sessions         []string // Session IDs
+	IssueReportTimes []time.Time // Timestamps of issue reports for rate limiting
 }
 
 // SessionManager manages all active sessions and IP tracking
 type SessionManager struct {
-	sessions         map[string]*SessionInfo // sessionID -> SessionInfo
-	ipTrackers       map[string]*IPTracker   // IP -> IPTracker
-	mu               sync.RWMutex
-	maxAnalysisHour  int
-	sessionExpiryMin int
+	sessions              map[string]*SessionInfo // sessionID -> SessionInfo
+	ipTrackers            map[string]*IPTracker   // IP -> IPTracker
+	mu                    sync.RWMutex
+	maxAnalysisHour       int
+	sessionExpiryMin      int
+	maxIssueReportsPerDay int
 }
 
 // NewSessionManager creates a new session manager
-func NewSessionManager(maxAnalysisHour, sessionExpiryMin int) *SessionManager {
+func NewSessionManager(maxAnalysisHour, sessionExpiryMin, maxIssueReportsPerDay int) *SessionManager {
 	return &SessionManager{
-		sessions:         make(map[string]*SessionInfo),
-		ipTrackers:       make(map[string]*IPTracker),
-		maxAnalysisHour:  maxAnalysisHour,
-		sessionExpiryMin: sessionExpiryMin,
+		sessions:              make(map[string]*SessionInfo),
+		ipTrackers:            make(map[string]*IPTracker),
+		maxAnalysisHour:       maxAnalysisHour,
+		sessionExpiryMin:      sessionExpiryMin,
+		maxIssueReportsPerDay: maxIssueReportsPerDay,
 	}
 }
 
@@ -115,9 +118,10 @@ func (sm *SessionManager) AddSession(session *SessionInfo) {
 	tracker, exists := sm.ipTrackers[session.IP]
 	if !exists {
 		tracker = &IPTracker{
-			IP:            session.IP,
-			AnalysisTimes: []time.Time{},
-			Sessions:      []string{},
+			IP:               session.IP,
+			AnalysisTimes:    []time.Time{},
+			Sessions:         []string{},
+			IssueReportTimes: []time.Time{},
 		}
 		sm.ipTrackers[session.IP] = tracker
 	}
@@ -266,4 +270,51 @@ func (sm *SessionManager) GetSessionsForIP(ip string) []*SessionInfo {
 		}
 	}
 	return sessions
+}
+
+// CheckIssueReportLimit checks if an IP has exceeded the issue report rate limit
+func (sm *SessionManager) CheckIssueReportLimit(ip string) (allowed bool, remaining int) {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+
+	tracker, exists := sm.ipTrackers[ip]
+	if !exists {
+		return true, sm.maxIssueReportsPerDay
+	}
+
+	// Count issue reports in the last 24 hours
+	oneDayAgo := time.Now().Add(-24 * time.Hour)
+	recentCount := 0
+	for _, t := range tracker.IssueReportTimes {
+		if t.After(oneDayAgo) {
+			recentCount++
+		}
+	}
+
+	remaining = sm.maxIssueReportsPerDay - recentCount
+	if remaining < 0 {
+		remaining = 0
+	}
+
+	return recentCount < sm.maxIssueReportsPerDay, remaining
+}
+
+// RecordIssueReport records an issue report for an IP
+func (sm *SessionManager) RecordIssueReport(ip string) {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	tracker, exists := sm.ipTrackers[ip]
+	if !exists {
+		tracker = &IPTracker{
+			IP:               ip,
+			AnalysisTimes:    []time.Time{},
+			Sessions:         []string{},
+			IssueReportTimes: []time.Time{},
+		}
+		sm.ipTrackers[ip] = tracker
+	}
+
+	tracker.IssueReportTimes = append(tracker.IssueReportTimes, time.Now())
+	log.Printf("[SessionManager] Issue report recorded for IP %s (total in last 24h: %d)", ip, len(tracker.IssueReportTimes))
 }

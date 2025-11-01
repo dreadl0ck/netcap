@@ -103,27 +103,29 @@ func HandleChartFields(outDir string) http.HandlerFunc {
 			return
 		}
 
-		// Read one record to inspect fields
-		msg, err := reader.NextRecord()
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to read record: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		// Extract all fields (numeric and string) using reflection
-		fields := extractAllFields(msg)
-
-		response := ChartFieldsResponse{
-			Type:   auditType,
-			Fields: fields,
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			log.Printf("[WebUI] Failed to encode chart fields response: %v", err)
-			http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		}
+	// Read one record to inspect fields
+	msg, err := reader.NextRecord()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read record: %v", err), http.StatusInternalServerError)
+		return
 	}
+
+	// Extract all fields (numeric and string) using reflection
+	fields, totalFields := extractAllFieldsWithCount(msg)
+
+	response := ChartFieldsResponse{
+		Type:          auditType,
+		Fields:        fields,
+		TotalFields:   totalFields,
+		FilteredCount: totalFields - len(fields),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("[WebUI] Failed to encode chart fields response: %v", err)
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+	}
+}
 }
 
 // ChartDataPoint represents a single data point in a chart
@@ -146,8 +148,10 @@ type ChartDataResponse struct {
 
 // ChartFieldsResponse lists available numeric fields for charting
 type ChartFieldsResponse struct {
-	Type   string           `json:"type"`
-	Fields []ChartFieldInfo `json:"fields"`
+	Type          string           `json:"type"`
+	Fields        []ChartFieldInfo `json:"fields"`
+	TotalFields   int              `json:"totalFields"`   // Total possible fields including empty ones
+	FilteredCount int              `json:"filteredCount"` // Number of fields filtered out due to no data
 }
 
 // ChartFieldInfo represents metadata about a field for charting
@@ -314,7 +318,8 @@ func (s *Server) extractChartData(filePath, auditType, fieldName, intervalStr st
 }
 
 // extractNumericField uses reflection to extract a numeric field from a message
-func extractNumericField(msg interface{}, fieldName string) (float64, error) {
+// Supports nested field access using dot notation (e.g., "ReqCookies.Name")
+func extractNumericField(msg interface{}, fieldPath string) (float64, error) {
 	v := reflect.ValueOf(msg)
 
 	// Handle pointer
@@ -326,10 +331,10 @@ func extractNumericField(msg interface{}, fieldName string) (float64, error) {
 		return 0, fmt.Errorf("message is not a struct")
 	}
 
-	// Find field by name
-	field := v.FieldByName(fieldName)
-	if !field.IsValid() {
-		return 0, fmt.Errorf("field %s not found", fieldName)
+	// Navigate through nested fields using dot notation
+	field, err := navigateToField(v, fieldPath)
+	if err != nil {
+		return 0, err
 	}
 
 	// Convert to float64 based on type
@@ -346,8 +351,81 @@ func extractNumericField(msg interface{}, fieldName string) (float64, error) {
 		}
 		return 0.0, nil
 	default:
-		return 0, fmt.Errorf("field %s is not a numeric type", fieldName)
+		return 0, fmt.Errorf("field %s is not a numeric type", fieldPath)
 	}
+}
+
+// navigateToField navigates through nested struct fields using dot notation
+// For slice fields, it takes the first element
+// For map fields, it uses the next part as the map key
+func navigateToField(v reflect.Value, fieldPath string) (reflect.Value, error) {
+	parts := strings.Split(fieldPath, ".")
+	
+	for i := 0; i < len(parts); i++ {
+		part := parts[i]
+		
+		// Handle pointer
+		if v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				return reflect.Value{}, fmt.Errorf("nil pointer at %s", strings.Join(parts[:i+1], "."))
+			}
+			v = v.Elem()
+		}
+
+		// Handle slice - take first element if slice is not empty
+		if v.Kind() == reflect.Slice {
+			if v.Len() == 0 {
+				return reflect.Value{}, fmt.Errorf("empty slice at %s", strings.Join(parts[:i], "."))
+			}
+			v = v.Index(0)
+			
+			// Handle pointer in slice element
+			if v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					return reflect.Value{}, fmt.Errorf("nil pointer in slice at %s", strings.Join(parts[:i], "."))
+				}
+				v = v.Elem()
+			}
+		}
+
+		if v.Kind() != reflect.Struct {
+			return reflect.Value{}, fmt.Errorf("not a struct at %s", strings.Join(parts[:i], "."))
+		}
+
+		// Find field by name
+		field := v.FieldByName(part)
+		if !field.IsValid() {
+			return reflect.Value{}, fmt.Errorf("field %s not found", strings.Join(parts[:i+1], "."))
+		}
+
+		// Check if this field is a map and we have more parts
+		if field.Kind() == reflect.Map && i+1 < len(parts) {
+			// The next part is the map key
+			mapKey := parts[i+1]
+			keyValue := reflect.ValueOf(mapKey)
+			
+			// Look up the value in the map
+			mapValue := field.MapIndex(keyValue)
+			if !mapValue.IsValid() {
+				return reflect.Value{}, fmt.Errorf("map key %s not found in %s", mapKey, part)
+			}
+			
+			// Skip the next part since we used it as the map key
+			i++
+			// If this was the last part, we're done
+			if i == len(parts)-1 {
+				return mapValue, nil
+			}
+			
+			// Continue with the map value
+			v = mapValue
+			continue
+		}
+
+		v = field
+	}
+
+	return v, nil
 }
 
 // handleChartFields returns available numeric fields for a given audit record type
@@ -399,11 +477,13 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extract all fields (numeric and string) using reflection
-	fields := extractAllFields(msg)
+	fields, totalFields := extractAllFieldsWithCount(msg)
 
 	response := ChartFieldsResponse{
-		Type:   auditType,
-		Fields: fields,
+		Type:          auditType,
+		Fields:        fields,
+		TotalFields:   totalFields,
+		FilteredCount: totalFields - len(fields),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -414,8 +494,17 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 }
 
 // extractAllFields returns a list of all chartable fields (numeric and string) from a struct
+// This includes nested fields using dot notation (e.g., "ReqCookies.Name")
+// and map keys (e.g., "RequestHeader.Accept", "RequestHeader.Content-Type")
 func extractAllFields(msg interface{}) []ChartFieldInfo {
+	fields, _ := extractAllFieldsWithCount(msg)
+	return fields
+}
+
+// extractAllFieldsWithCount returns a list of all chartable fields and the total count including filtered fields
+func extractAllFieldsWithCount(msg interface{}) ([]ChartFieldInfo, int) {
 	var fields []ChartFieldInfo
+	var totalCount int
 
 	v := reflect.ValueOf(msg)
 	if v.Kind() == reflect.Ptr {
@@ -423,7 +512,33 @@ func extractAllFields(msg interface{}) []ChartFieldInfo {
 	}
 
 	if v.Kind() != reflect.Struct {
-		return fields
+		return fields, totalCount
+	}
+
+	// Extract fields recursively, tracking both populated and total fields
+	extractFieldsRecursive(v, "", &fields, &totalCount, 0, 3) // max depth of 3 to prevent infinite recursion
+
+	return fields, totalCount
+}
+
+// extractFieldsRecursive recursively extracts fields from a struct, including nested structs, slices of structs, and map keys
+// Also counts total possible fields including those filtered out
+func extractFieldsRecursive(v reflect.Value, prefix string, fields *[]ChartFieldInfo, totalCount *int, depth int, maxDepth int) {
+	if depth >= maxDepth {
+		return
+	}
+
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			// Try to create a zero value to inspect its structure
+			v = reflect.New(v.Type().Elem()).Elem()
+		} else {
+			v = v.Elem()
+		}
+	}
+
+	if v.Kind() != reflect.Struct {
+		return
 	}
 
 	t := v.Type()
@@ -432,47 +547,160 @@ func extractAllFields(msg interface{}) []ChartFieldInfo {
 		fieldType := t.Field(i)
 
 		// Skip unexported fields
-		if !field.CanInterface() {
+		if !fieldType.IsExported() {
 			continue
+		}
+
+		fieldName := fieldType.Name
+		if prefix != "" {
+			fieldName = prefix + "." + fieldName
 		}
 
 		// Check field type and categorize
 		typeName := ""
 		isChartable := false
+		shouldRecurse := false
+		isPotentialField := false // Tracks if this is a chartable type, regardless of data
 
 		switch field.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			typeName = "numeric (integer)"
-			isChartable = true
+			isPotentialField = true
+			// Only include if non-zero or we're inspecting structure
+			if field.Int() != 0 || v.IsZero() {
+				typeName = "numeric (integer)"
+				isChartable = true
+			}
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			typeName = "numeric (unsigned)"
-			isChartable = true
+			isPotentialField = true
+			if field.Uint() != 0 || v.IsZero() {
+				typeName = "numeric (unsigned)"
+				isChartable = true
+			}
 		case reflect.Float32, reflect.Float64:
-			typeName = "numeric (float)"
-			isChartable = true
+			isPotentialField = true
+			if field.Float() != 0 || v.IsZero() {
+				typeName = "numeric (float)"
+				isChartable = true
+			}
 		case reflect.Bool:
+			isPotentialField = true
 			typeName = "categorical (boolean)"
 			isChartable = true
 		case reflect.String:
-			typeName = "categorical (string)"
-			isChartable = true
-		case reflect.Slice:
-			if field.Type().Elem().Kind() == reflect.String {
-				typeName = "categorical (string array)"
+			isPotentialField = true
+			// Only include if non-empty or we're inspecting structure
+			if field.String() != "" || v.IsZero() {
+				typeName = "categorical (string)"
 				isChartable = true
+			}
+		case reflect.Map:
+			// Handle maps by extracting keys from actual data
+			if field.Len() > 0 {
+				// Map has data - extract keys
+				for _, key := range field.MapKeys() {
+					mapKeyName := fieldName + "." + key.String()
+					mapValue := field.MapIndex(key)
+					
+					// Determine type of map values
+					var mapTypeName string
+					switch mapValue.Kind() {
+					case reflect.String:
+						if mapValue.String() != "" {
+							mapTypeName = "categorical (string)"
+						}
+					case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+						if mapValue.Int() != 0 {
+							mapTypeName = "numeric (integer)"
+						}
+					case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+						if mapValue.Uint() != 0 {
+							mapTypeName = "numeric (unsigned)"
+						}
+					case reflect.Float32, reflect.Float64:
+						if mapValue.Float() != 0 {
+							mapTypeName = "numeric (float)"
+						}
+					case reflect.Bool:
+						mapTypeName = "categorical (boolean)"
+					}
+					
+					if mapTypeName != "" {
+						*fields = append(*fields, ChartFieldInfo{
+							Name:        mapKeyName,
+							Type:        mapTypeName,
+							Description: getFieldDescription(mapKeyName),
+						})
+					}
+				}
+				shouldRecurse = true // Skip adding the map itself as a field
+			}
+		case reflect.Slice:
+			elemType := field.Type().Elem()
+			if elemType.Kind() == reflect.String {
+				isPotentialField = true
+				// Only include if slice has data
+				if field.Len() > 0 || v.IsZero() {
+					typeName = "categorical (string array)"
+					isChartable = true
+				}
+			} else if elemType.Kind() == reflect.Struct || (elemType.Kind() == reflect.Ptr && elemType.Elem().Kind() == reflect.Struct) {
+				// Slice of structs - recurse into the first element if available, or a zero value
+				shouldRecurse = true
+				var elemValue reflect.Value
+				if field.Len() > 0 {
+					elemValue = field.Index(0)
+					if elemValue.Kind() == reflect.Ptr {
+						if !elemValue.IsNil() {
+							elemValue = elemValue.Elem()
+						} else {
+							// Create zero value for inspection
+							elemValue = reflect.New(elemType.Elem()).Elem()
+						}
+					}
+				} else if v.IsZero() {
+					// Creating zero value for structure inspection
+					if elemType.Kind() == reflect.Ptr {
+						elemValue = reflect.New(elemType.Elem()).Elem()
+					} else {
+						elemValue = reflect.New(elemType).Elem()
+					}
+				}
+				if elemValue.IsValid() {
+					extractFieldsRecursive(elemValue, fieldName, fields, totalCount, depth+1, maxDepth)
+				}
+			}
+		case reflect.Struct:
+			// Nested struct - recurse into it
+			shouldRecurse = true
+			extractFieldsRecursive(field, fieldName, fields, totalCount, depth+1, maxDepth)
+		case reflect.Ptr:
+			// Pointer to struct - recurse into it
+			if field.Type().Elem().Kind() == reflect.Struct {
+				shouldRecurse = true
+				var elemValue reflect.Value
+				if field.IsNil() {
+					elemValue = reflect.New(field.Type().Elem()).Elem()
+				} else {
+					elemValue = field.Elem()
+				}
+				extractFieldsRecursive(elemValue, fieldName, fields, totalCount, depth+1, maxDepth)
 			}
 		}
 
-		if isChartable {
-			fields = append(fields, ChartFieldInfo{
-				Name:        fieldType.Name,
+		// Count all chartable fields (including empty ones)
+		if isPotentialField {
+			*totalCount++
+		}
+
+		// Only add to fields array if there's actual data
+		if isChartable && !shouldRecurse {
+			*fields = append(*fields, ChartFieldInfo{
+				Name:        fieldName,
 				Type:        typeName,
-				Description: getFieldDescription(fieldType.Name),
+				Description: getFieldDescription(fieldName),
 			})
 		}
 	}
-
-	return fields
 }
 
 // getFieldDescription returns a human-readable description for common field names
@@ -533,3 +761,4 @@ func splitCamelCase(s string) []string {
 
 	return words
 }
+

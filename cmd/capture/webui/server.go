@@ -133,6 +133,10 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/upload", s.handleUpload)
 	mux.HandleFunc("/api/chart/data", s.handleChartData)
 	mux.HandleFunc("/api/chart/fields", s.handleChartFields)
+	mux.HandleFunc("/api/visualize/protocol-hierarchy", s.handleProtocolHierarchy)
+	mux.HandleFunc("/api/visualize/treemap", s.handleVisualizeTreemap)
+	mux.HandleFunc("/api/visualize/bar3d", s.handleVisualizeBar3D)
+	mux.HandleFunc("/api/visualize/graph", s.handleVisualizeGraph)
 
 	// Static files
 	mux.Handle("/", s.handleStatic())

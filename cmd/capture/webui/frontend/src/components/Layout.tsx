@@ -26,6 +26,7 @@ import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import BubbleChartIcon from '@mui/icons-material/BubbleChart';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
@@ -254,6 +255,28 @@ export default function Layout({ children, title }: LayoutProps) {
               <BarChartIcon />
             </ListItemIcon>
             <ListItemText primary="Explore" />
+          </ListItemButton>
+        </Link>
+        <Link href="/visualize" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/visualize')}
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <BubbleChartIcon />
+            </ListItemIcon>
+            <ListItemText primary="Visualize" />
           </ListItemButton>
         </Link>
         <Link href="/logs" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
