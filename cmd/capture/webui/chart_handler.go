@@ -95,7 +95,7 @@ func HandleChartFields(outDir string) http.HandlerFunc {
 		// Construct file path
 		filePath := filepath.Join(outDir, auditType+defaults.FileExtension+".gz")
 
-		// Read one record to get field information
+		// Read up to 100 records to get field information
 		reader, err := NewAuditRecordReader(filePath)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Failed to open audit file: %v", err), http.StatusInternalServerError)
@@ -110,29 +110,22 @@ func HandleChartFields(outDir string) http.HandlerFunc {
 			return
 		}
 
-	// Read one record to inspect fields
-	msg, err := reader.NextRecord()
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to read record: %v", err), http.StatusInternalServerError)
-		return
-	}
+		// Read up to 100 records to inspect fields across multiple records
+		fields, totalFields := extractAllFieldsAcrossRecords(reader, 100)
 
-	// Extract all fields (numeric and string) using reflection
-	fields, totalFields := extractAllFieldsWithCount(msg)
+		response := ChartFieldsResponse{
+			Type:          auditType,
+			Fields:        fields,
+			TotalFields:   totalFields,
+			FilteredCount: totalFields - len(fields),
+		}
 
-	response := ChartFieldsResponse{
-		Type:          auditType,
-		Fields:        fields,
-		TotalFields:   totalFields,
-		FilteredCount: totalFields - len(fields),
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			log.Printf("[WebUI] Failed to encode chart fields response: %v", err)
+			http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+		}
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("[WebUI] Failed to encode chart fields response: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-	}
-}
 }
 
 // ChartDataPoint represents a single data point in a chart
@@ -374,10 +367,10 @@ func extractNumericField(msg interface{}, fieldPath string) (float64, error) {
 // For map fields, it uses the next part as the map key
 func navigateToField(v reflect.Value, fieldPath string) (reflect.Value, error) {
 	parts := strings.Split(fieldPath, ".")
-	
+
 	for i := 0; i < len(parts); i++ {
 		part := parts[i]
-		
+
 		// Handle pointer
 		if v.Kind() == reflect.Ptr {
 			if v.IsNil() {
@@ -392,7 +385,7 @@ func navigateToField(v reflect.Value, fieldPath string) (reflect.Value, error) {
 				return reflect.Value{}, fmt.Errorf("empty slice at %s", strings.Join(parts[:i], "."))
 			}
 			v = v.Index(0)
-			
+
 			// Handle pointer in slice element
 			if v.Kind() == reflect.Ptr {
 				if v.IsNil() {
@@ -417,20 +410,20 @@ func navigateToField(v reflect.Value, fieldPath string) (reflect.Value, error) {
 			// The next part is the map key
 			mapKey := parts[i+1]
 			keyValue := reflect.ValueOf(mapKey)
-			
+
 			// Look up the value in the map
 			mapValue := field.MapIndex(keyValue)
 			if !mapValue.IsValid() {
 				return reflect.Value{}, fmt.Errorf("map key %s not found in %s", mapKey, part)
 			}
-			
+
 			// Skip the next part since we used it as the map key
 			i++
 			// If this was the last part, we're done
 			if i == len(parts)-1 {
 				return mapValue, nil
 			}
-			
+
 			// Continue with the map value
 			v = mapValue
 			continue
@@ -468,7 +461,7 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 	// Construct file path
 	filePath := filepath.Join(outDir, auditType+defaults.FileExtension+".gz")
 
-	// Read one record to get field information
+	// Read up to 100 records to get field information
 	reader, err := NewAuditRecordReader(filePath)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to open audit file: %v", err), http.StatusInternalServerError)
@@ -483,15 +476,8 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Read one record to inspect fields
-	msg, err := reader.NextRecord()
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to read record: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Extract all fields (numeric and string) using reflection
-	fields, totalFields := extractAllFieldsWithCount(msg)
+	// Read up to 100 records to inspect fields across multiple records
+	fields, totalFields := extractAllFieldsAcrossRecords(reader, 100)
 
 	response := ChartFieldsResponse{
 		Type:          auditType,
@@ -516,6 +502,57 @@ func extractAllFields(msg interface{}) []ChartFieldInfo {
 }
 
 // extractAllFieldsWithCount returns a list of all chartable fields and the total count including filtered fields
+// extractAllFieldsAcrossRecords reads up to maxRecords records and collects all fields that have values in any of those records
+func extractAllFieldsAcrossRecords(reader *AuditRecordReader, maxRecords int) ([]ChartFieldInfo, int) {
+	// Use a map to track unique fields found across all records
+	fieldMap := make(map[string]ChartFieldInfo)
+	var totalCount int
+	recordsRead := 0
+
+	for recordsRead < maxRecords {
+		msg, err := reader.NextRecord()
+		if err != nil {
+			if err == io.EOF {
+				break // End of file reached
+			}
+			log.Printf("[WebUI] Error reading record %d: %v", recordsRead+1, err)
+			break
+		}
+
+		// Extract fields from this record
+		fields, total := extractAllFieldsWithCount(msg)
+
+		// Use the total count from the first record (structure should be consistent)
+		if recordsRead == 0 {
+			totalCount = total
+		}
+
+		// Add all found fields to the map (union of all fields found)
+		for _, field := range fields {
+			if _, exists := fieldMap[field.Name]; !exists {
+				fieldMap[field.Name] = field
+			}
+		}
+
+		recordsRead++
+	}
+
+	// Convert map to slice and sort by name for consistent output
+	result := make([]ChartFieldInfo, 0, len(fieldMap))
+	for _, field := range fieldMap {
+		result = append(result, field)
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Name < result[j].Name
+	})
+
+	log.Printf("[WebUI] Extracted fields from %d records: found %d fields with data out of %d total fields",
+		recordsRead, len(result), totalCount)
+
+	return result, totalCount
+}
+
 func extractAllFieldsWithCount(msg interface{}) ([]ChartFieldInfo, int) {
 	var fields []ChartFieldInfo
 	var totalCount int
@@ -614,7 +651,7 @@ func extractFieldsRecursive(v reflect.Value, prefix string, fields *[]ChartField
 				for _, key := range field.MapKeys() {
 					mapKeyName := fieldName + "." + key.String()
 					mapValue := field.MapIndex(key)
-					
+
 					// Determine type of map values
 					var mapTypeName string
 					switch mapValue.Kind() {
@@ -637,7 +674,7 @@ func extractFieldsRecursive(v reflect.Value, prefix string, fields *[]ChartField
 					case reflect.Bool:
 						mapTypeName = "categorical (boolean)"
 					}
-					
+
 					if mapTypeName != "" {
 						*fields = append(*fields, ChartFieldInfo{
 							Name:        mapKeyName,
@@ -775,4 +812,3 @@ func splitCamelCase(s string) []string {
 
 	return words
 }
-
