@@ -64,7 +64,7 @@ const CHART_TYPES = [
 const DEFAULT_FIELD_MAP: Record<string, { field: string; chartType: string }> = {
   // Connection and Flow Analysis
   'Connection': { field: 'NumPackets', chartType: 'line' },        // Time series of packet counts
-  'Service': { field: 'NumFlows', chartType: 'bar' },              // Distribution of flow counts
+  'Service': { field: 'BytesServer', chartType: 'line' },            
   
   // Transport Layer - Time series for packet/payload analysis
   'TCP': { field: 'PayloadSize', chartType: 'line' },              // Payload size over time
@@ -74,8 +74,8 @@ const DEFAULT_FIELD_MAP: Record<string, { field: string; chartType: string }> = 
   // Network Layer - Time series for packet analysis
   'IPv4': { field: 'Length', chartType: 'line' },                  // Packet length over time
   'IPv6': { field: 'Length', chartType: 'line' },                  // Packet length over time
-  'ICMP4': { field: 'TypeCode', chartType: 'pie' },                // Message type distribution
-  'ICMP6': { field: 'TypeCode', chartType: 'pie' },                // Message type distribution
+  'ICMPv4': { field: 'TypeCode', chartType: 'pie' },                // Message type distribution
+  'ICMPv6': { field: 'TypeCode', chartType: 'pie' },                // Message type distribution
   'ARP': { field: 'Operation', chartType: 'pie' },                 // Request/Reply distribution
   'IGMP': { field: 'Type', chartType: 'pie' },                     // Message type distribution
   
@@ -87,7 +87,7 @@ const DEFAULT_FIELD_MAP: Record<string, { field: string; chartType: string }> = 
   'SNAP': { field: 'Type', chartType: 'pie' },                     // Protocol distribution
   
   // Application Layer - Web
-  'HTTP': { field: 'ContentLength', chartType: 'bar' },            // Response size distribution
+  'HTTP': { field: 'Method', chartType: 'pie' },            
   'TLSClientHello': { field: 'CipherSuites', chartType: 'wordcloud' }, // Cipher suite popularity
   'TLSServerHello': { field: 'CipherSuite', chartType: 'pie' },    // Cipher suite distribution
   
@@ -97,14 +97,14 @@ const DEFAULT_FIELD_MAP: Record<string, { field: string; chartType: string }> = 
   // Application Layer - Email
   'SMTP': { field: 'StatusCode', chartType: 'pie' },               // Status code distribution
   'POP3': { field: 'StatusCode', chartType: 'pie' },               // Status code distribution
-  'Mail': { field: 'Size', chartType: 'bar' },                     // Email size distribution
+  'Mail': { field: 'From', chartType: 'pie' },                     
   
   // Application Layer - Other
-  'SSH': { field: 'Version', chartType: 'pie' },                   // Version distribution
+  'SSH': { field: 'Ident', chartType: 'pie' },                   // Version distribution
   'SIP': { field: 'StatusCode', chartType: 'pie' },                // Status code distribution
   'NTP': { field: 'Stratum', chartType: 'bar' },                   // Time accuracy levels
-  'DHCP4': { field: 'Operation', chartType: 'pie' },               // Operation type distribution
-  'DHCP6': { field: 'MsgType', chartType: 'pie' },                 // Message type distribution
+  'DHCPv4': { field: 'Operation', chartType: 'pie' },               // Operation type distribution
+  'DHCPv6': { field: 'MsgType', chartType: 'pie' },                 // Message type distribution
   
   // Routing Protocols
   'OSPFv2': { field: 'Type', chartType: 'pie' },                   // Message type distribution
@@ -146,8 +146,8 @@ const DEFAULT_FIELD_MAP: Record<string, { field: string; chartType: string }> = 
   'File': { field: 'Size', chartType: 'bar' },                     // File size distribution
   'Credentials': { field: 'Service', chartType: 'pie' },           // Service distribution
   'Software': { field: 'Product', chartType: 'wordcloud' },        // Product popularity
-  'Vulnerability': { field: 'CVSS', chartType: 'bar' },            // Severity distribution
-  'Exploit': { field: 'Category', chartType: 'pie' },              // Exploit category distribution
+  'Vulnerability': { field: 'V2Score', chartType: 'pie' },          
+  'Exploit': { field: 'Platform', chartType: 'pie' },              
   'Alert': { field: 'Classification', chartType: 'pie' },          // Alert type distribution
   'DeviceProfile': { field: 'DeviceManufacturer', chartType: 'pie' }, // Device manufacturer distribution
   'IPProfile': { field: 'NumPackets', chartType: 'line' },         // Packet count time series

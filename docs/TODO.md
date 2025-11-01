@@ -1,5 +1,7 @@
 # TODOs
 
+explore: make nested fields available for selection
+
 service mode logging cleanup
 
 always allow to drag and drop files for upload on the Analyze menu item, even if user is on a different page. Switch to analyze page automatiaclly and start upload
