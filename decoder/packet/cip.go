@@ -35,7 +35,7 @@ var cipDecoder = newGoPacketDecoder(
 			if conf.IncludePayloads {
 				payload = cip.Data
 			}
-			var additional []uint32
+			additional := make([]uint32, 0, len(cip.AdditionalStatus))
 			if cip.Response {
 				for _, v := range cip.AdditionalStatus {
 					additional = append(additional, uint32(v))

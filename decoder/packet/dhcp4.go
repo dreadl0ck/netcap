@@ -32,7 +32,7 @@ var dhcpv4Decoder = newGoPacketDecoder(
 		if dhcp4, ok := layer.(*layers.DHCPv4); ok {
 
 			var (
-				opts   []*types.DHCPOption
+				opts   = make([]*types.DHCPOption, 0, len(dhcp4.Options))
 				fp     strings.Builder
 				length = len(dhcp4.Options) - 1
 			)

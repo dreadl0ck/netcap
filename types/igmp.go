@@ -59,7 +59,7 @@ func (i *IGMP) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (i *IGMP) CSVRecord() []string {
-	var records []string
+	records := make([]string, 0, len(i.GroupRecords))
 	for _, r := range i.GroupRecords {
 		records = append(records, r.toString())
 	}
@@ -146,7 +146,7 @@ var igmpEncoder = encoder.NewValueEncoder()
 
 // Encode will encode categorical values and normalize according to configuration
 func (i *IGMP) Encode() []string {
-	var records []string
+	records := make([]string, 0, len(i.GroupRecords))
 	for _, r := range i.GroupRecords {
 		records = append(records, r.toString())
 	}

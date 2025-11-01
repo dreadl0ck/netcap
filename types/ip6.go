@@ -73,7 +73,7 @@ func (i *IPv6) Time() int64 {
 }
 
 func (h IPv6HopByHop) toString() string {
-	var opts []string
+	opts := make([]string, 0, len(h.Options))
 	for _, o := range h.Options {
 		opts = append(opts, o.toString())
 	}

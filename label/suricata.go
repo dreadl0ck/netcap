@@ -145,7 +145,7 @@ func Suricata(inputPcap, outputPath string, useDescription bool, separator, sele
 
 	fmt.Println("got", len(labels), "labels")
 
-	var rows [][]string
+	rows := make([][]string, 0, len(classificationMap))
 	for c, num := range classificationMap {
 		rows = append(rows, []string{c, strconv.Itoa(num)})
 	}
@@ -248,7 +248,7 @@ func parseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[in
 	fmt.Println("parsing suricata fast.log")
 
 	if len(excluded) != 0 {
-		var excludedNames []string
+		excludedNames := make([]string, 0, len(excluded))
 		for n := range excluded {
 			excludedNames = append(excludedNames, n)
 		}
@@ -256,7 +256,7 @@ func parseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[in
 	}
 
 	// alerts that have a duplicate timestamp
-	var duplicates []*suricataAlert
+	duplicates := make([]*suricataAlert, 0)
 
 	// ts:alert
 	labelMap = make(map[int64]*suricataAlert)

@@ -253,25 +253,30 @@ func stripNCPrefix(name string) string {
 
 // getAllDecoderNames returns a list of all decoder names
 func (s *Server) getAllDecoderNames() []string {
-	names := make([]string, 0)
+	packetDecoders := packet.GetPacketDecoders()
+	goPacketDecoders := packet.GetGoPacketDecoders()
+	streamDecoders := stream.DefaultStreamDecoders
+	abstractDecoders := stream.DefaultAbstractDecoders
+	
+	names := make([]string, 0, len(packetDecoders)+len(goPacketDecoders)+len(streamDecoders)+len(abstractDecoders))
 
 	// Packet decoders
-	for _, d := range packet.GetPacketDecoders() {
+	for _, d := range packetDecoders {
 		names = append(names, d.GetName())
 	}
 
 	// GoPacket decoders
-	for _, d := range packet.GetGoPacketDecoders() {
+	for _, d := range goPacketDecoders {
 		names = append(names, d.GetName())
 	}
 
 	// Stream decoders
-	for _, d := range stream.DefaultStreamDecoders {
+	for _, d := range streamDecoders {
 		names = append(names, d.GetName())
 	}
 
 	// Abstract decoders
-	for _, d := range stream.DefaultAbstractDecoders {
+	for _, d := range abstractDecoders {
 		names = append(names, d.GetName())
 	}
 
@@ -324,7 +329,6 @@ func (s *Server) handleDecoderFields(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get field names from CSVHeader if it implements AuditRecord
-	var fields []FieldInfo
 	if auditRecord, ok := record.(types.AuditRecord); ok {
 		headers := auditRecord.CSVHeader()
 
@@ -337,6 +341,7 @@ func (s *Server) handleDecoderFields(w http.ResponseWriter, r *http.Request) {
 			fieldTypes[field.Name] = getSimplifiedTypeName(field.Type)
 		}
 
+		fields := make([]FieldInfo, 0, len(headers))
 		// Create field info for each CSV header
 		for _, header := range headers {
 			fieldType := "unknown"
@@ -354,17 +359,29 @@ func (s *Server) handleDecoderFields(w http.ResponseWriter, r *http.Request) {
 				Type: fieldType,
 			})
 		}
-	} else {
-		// Fallback: use reflection to get all exported fields
-		recordType := reflect.TypeOf(record).Elem()
-		for i := 0; i < recordType.NumField(); i++ {
-			field := recordType.Field(i)
-			if field.IsExported() {
-				fields = append(fields, FieldInfo{
-					Name: field.Name,
-					Type: getSimplifiedTypeName(field.Type),
-				})
-			}
+
+		response := DecoderFieldsResponse{
+			DecoderName: stripNCPrefix(decoderName),
+			Fields:      fields,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Fallback: use reflection to get all exported fields
+	recordType := reflect.TypeOf(record).Elem()
+	fields := make([]FieldInfo, 0, recordType.NumField())
+	for i := 0; i < recordType.NumField(); i++ {
+		field := recordType.Field(i)
+		if field.IsExported() {
+			fields = append(fields, FieldInfo{
+				Name: field.Name,
+				Type: getSimplifiedTypeName(field.Type),
+			})
 		}
 	}
 
@@ -402,8 +419,6 @@ func InitRecordForDecoder(decoderName string) interface{} {
 
 // GetRecordFields extracts field information from an audit record
 func GetRecordFields(record interface{}) []FieldInfo {
-	var fields []FieldInfo
-
 	if auditRecord, ok := record.(types.AuditRecord); ok {
 		headers := auditRecord.CSVHeader()
 
@@ -416,6 +431,7 @@ func GetRecordFields(record interface{}) []FieldInfo {
 			fieldTypes[field.Name] = getSimplifiedTypeName(field.Type)
 		}
 
+		fields := make([]FieldInfo, 0, len(headers))
 		// Create field info for each CSV header
 		for _, header := range headers {
 			fieldType := "unknown"
@@ -433,17 +449,19 @@ func GetRecordFields(record interface{}) []FieldInfo {
 				Type: fieldType,
 			})
 		}
-	} else {
-		// Fallback: use reflection to get all exported fields
-		recordType := reflect.TypeOf(record).Elem()
-		for i := 0; i < recordType.NumField(); i++ {
-			field := recordType.Field(i)
-			if field.IsExported() {
-				fields = append(fields, FieldInfo{
-					Name: field.Name,
-					Type: getSimplifiedTypeName(field.Type),
-				})
-			}
+		return fields
+	}
+
+	// Fallback: use reflection to get all exported fields
+	recordType := reflect.TypeOf(record).Elem()
+	fields := make([]FieldInfo, 0, recordType.NumField())
+	for i := 0; i < recordType.NumField(); i++ {
+		field := recordType.Field(i)
+		if field.IsExported() {
+			fields = append(fields, FieldInfo{
+				Name: field.Name,
+				Type: getSimplifiedTypeName(field.Type),
+			})
 		}
 	}
 

@@ -70,7 +70,7 @@ func (d *DHCPv4) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (d *DHCPv4) CSVRecord() []string {
-	var opts []string
+	opts := make([]string, 0, len(d.Options))
 	for _, o := range d.Options {
 		opts = append(opts, o.toString())
 	}
@@ -200,7 +200,7 @@ var dhcp4Encoder = encoder.NewValueEncoder()
 // Encode will encode categorical values and normalize according to configuration
 func (d *DHCPv4) Encode() []string {
 
-	var opts []string
+	opts := make([]string, 0, len(d.Options))
 	for _, o := range d.Options {
 		opts = append(opts, o.toString())
 	}

@@ -27,7 +27,7 @@ var linkLayerDiscoveryDecoder = newGoPacketDecoder(
 	"The Link Layer Discovery Protocol is a vendor-neutral link layer protocol used by network devices for advertising their identity, capabilities, and neighbors on a local area network based on IEEE 802 technology, principally wired Ethernet",
 	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if lld, ok := layer.(*layers.LinkLayerDiscovery); ok {
-			var vals []*types.LinkLayerDiscoveryValue
+			vals := make([]*types.LinkLayerDiscoveryValue, 0, len(lld.Values))
 			for _, v := range lld.Values {
 				vals = append(vals, &types.LinkLayerDiscoveryValue{
 					Type:   int32(v.Type),

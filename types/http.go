@@ -65,11 +65,11 @@ func (h *HTTP) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (h *HTTP) CSVRecord() []string {
-	var reqCookies []string
+	reqCookies := make([]string, 0, len(h.ReqCookies))
 	for _, c := range h.ReqCookies {
 		reqCookies = append(reqCookies, c.toString())
 	}
-	var resCookies []string
+	resCookies := make([]string, 0, len(h.ResCookies))
 	for _, c := range h.ResCookies {
 		resCookies = append(resCookies, c.toString())
 	}

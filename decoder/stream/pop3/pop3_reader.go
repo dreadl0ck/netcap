@@ -120,7 +120,7 @@ func (h *pop3Reader) Decode() {
 
 	// fmt.Println(servicePOP3, h.parent.ident, len(h.pop3Responses), len(h.pop3Requests))
 
-	var commands []string
+	commands := make([]string, 0, len(h.pop3Requests))
 	for _, c := range h.pop3Requests {
 		commands = append(commands, c.Command)
 	}

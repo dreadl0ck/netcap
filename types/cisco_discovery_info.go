@@ -221,7 +221,7 @@ func (c *CDPVLANDialogue) toString() string {
 }
 
 func (c *CDPPowerDialogue) toString() string {
-	var vals []string
+	vals := make([]string, 0, len(c.Values))
 
 	for _, v := range c.Values {
 		vals = append(vals, formatUint32(v))

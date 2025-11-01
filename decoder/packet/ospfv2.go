@@ -59,7 +59,7 @@ var ospfv2Decoder = newGoPacketDecoder(
 					})
 				}
 			case layers.DbDescPkg:
-				var lsas []*types.LSAheader
+				lsas := make([]*types.LSAheader, 0, len(v.LSAinfo))
 				for _, h := range v.LSAinfo {
 					lsas = append(lsas, &types.LSAheader{
 						LSAge:       int32(h.LSAge),

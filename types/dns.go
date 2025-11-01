@@ -76,22 +76,22 @@ func (d *DNS) CSVHeader() []string {
 // CSVRecord returns the CSV record for the audit record.
 func (d *DNS) CSVRecord() []string {
 	var (
-		questions   = make([]string, len(d.Questions))
-		answers     = make([]string, len(d.Answers))
-		authorities = make([]string, len(d.Authorities))
-		additionals = make([]string, len(d.Additionals))
+		questions   = make([]string, 0, len(d.Questions))
+		answers     = make([]string, 0, len(d.Answers))
+		authorities = make([]string, 0, len(d.Authorities))
+		additionals = make([]string, 0, len(d.Additionals))
 	)
 	for _, q := range d.Questions {
 		questions = append(questions, q.toString())
 	}
 	for _, q := range d.Answers {
-		answers = append(questions, q.toString())
+		answers = append(answers, q.toString())
 	}
 	for _, q := range d.Authorities {
-		authorities = append(questions, q.toString())
+		authorities = append(authorities, q.toString())
 	}
 	for _, q := range d.Additionals {
-		additionals = append(questions, q.toString())
+		additionals = append(additionals, q.toString())
 	}
 
 	return filter([]string{
@@ -138,7 +138,7 @@ func (q *DNSQuestion) toString() string {
 }
 
 func (q *DNSResourceRecord) toString() string {
-	var txts []string
+	txts := make([]string, 0, len(q.TXTs))
 	for _, t := range q.TXTs {
 		txts = append(txts, string(t))
 	}
@@ -264,22 +264,22 @@ var dnsEncoder = encoder.NewValueEncoder()
 func (d *DNS) Encode() []string {
 
 	var (
-		questions   = make([]string, len(d.Questions))
-		answers     = make([]string, len(d.Answers))
-		authorities = make([]string, len(d.Authorities))
-		additionals = make([]string, len(d.Additionals))
+		questions   = make([]string, 0, len(d.Questions))
+		answers     = make([]string, 0, len(d.Answers))
+		authorities = make([]string, 0, len(d.Authorities))
+		additionals = make([]string, 0, len(d.Additionals))
 	)
 	for _, q := range d.Questions {
 		questions = append(questions, q.toString())
 	}
 	for _, q := range d.Answers {
-		answers = append(questions, q.toString())
+		answers = append(answers, q.toString())
 	}
 	for _, q := range d.Authorities {
-		authorities = append(questions, q.toString())
+		authorities = append(authorities, q.toString())
 	}
 	for _, q := range d.Additionals {
-		additionals = append(questions, q.toString())
+		additionals = append(additionals, q.toString())
 	}
 
 	return filter([]string{

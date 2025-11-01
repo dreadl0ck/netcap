@@ -156,7 +156,7 @@ func (h *smtpReader) Decode() {
 		},
 	)
 
-	var commands []string
+	commands := make([]string, 0, len(h.smtpRequests))
 
 	for _, c := range h.smtpRequests {
 		commands = append(commands, c.Command)

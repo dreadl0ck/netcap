@@ -45,7 +45,7 @@ var stringColumns = map[string]bool{
 func merge(results map[string]*fileSummary) map[string]*encoder.ColumnSummary {
 
 	if *flagCountAttacks {
-		var attackFiles sort.StringSlice
+		attackFiles := make(sort.StringSlice, 0)
 
 		for _, sum := range results {
 			if sum.attacks != 0 {
@@ -57,7 +57,7 @@ func merge(results map[string]*fileSummary) map[string]*encoder.ColumnSummary {
 
 		for _, file := range attackFiles {
 			sum := results[file]
-			var uniqueAttacks []string
+			uniqueAttacks := make([]string, 0, len(sum.uniqueAttacks))
 			for a := range sum.uniqueAttacks {
 				uniqueAttacks = append(uniqueAttacks, a)
 			}
@@ -122,7 +122,7 @@ func merge(results map[string]*fileSummary) map[string]*encoder.ColumnSummary {
 		if isString {
 
 			// TODO: use new map instead of string array
-			var unique []string
+			unique := make([]string, 0, len(data))
 			for value := range data {
 				unique = append(unique, value)
 			}
@@ -150,7 +150,12 @@ func merge(results map[string]*fileSummary) map[string]*encoder.ColumnSummary {
 			}
 		} else {
 
-			var values []float64
+			// calculate total size for pre-allocation
+			var totalSize int
+			for _, num := range data {
+				totalSize += num
+			}
+			values := make([]float64, 0, totalSize)
 
 			// create series over all data points
 			for value, num := range data {

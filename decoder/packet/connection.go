@@ -334,7 +334,7 @@ func movingAverage(current int32, newValue int32, n int32) int32 {
 }
 
 /*func flushConns(p gopacket.Packet) {
-	var selectConns []*types.Connection
+	selectConns := make([]*types.Connection, 0)
 
 	for id, entry := range conns.Items {
 

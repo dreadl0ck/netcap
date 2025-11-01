@@ -53,7 +53,7 @@ func (d *Diameter) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (d *Diameter) CSVRecord() []string {
-	var avps []string
+	avps := make([]string, 0, len(d.AVPs))
 
 	for _, a := range d.AVPs {
 		avps = append(avps, a.String())

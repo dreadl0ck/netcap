@@ -48,7 +48,7 @@ func (i *Geneve) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (i *Geneve) CSVRecord() []string {
-	var opts []string
+	opts := make([]string, 0, len(i.Options))
 	for _, o := range i.Options {
 		opts = append(opts, o.toString())
 	}
@@ -126,7 +126,7 @@ var geneveEncoder = encoder.NewValueEncoder()
 // Encode will encode categorical values and normalize according to configuration
 func (i *Geneve) Encode() []string {
 
-	var opts []string
+	opts := make([]string, 0, len(i.Options))
 	for _, o := range i.Options {
 		opts = append(opts, o.toString())
 	}

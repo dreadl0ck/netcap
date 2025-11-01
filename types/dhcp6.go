@@ -51,7 +51,7 @@ func (d *DHCPv6) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (d *DHCPv6) CSVRecord() []string {
-	var opts []string
+	opts := make([]string, 0, len(d.Options))
 	for _, o := range d.Options {
 		opts = append(opts, o.toString())
 	}
@@ -156,7 +156,7 @@ var dhcp6Encoder = encoder.NewValueEncoder()
 // Encode will encode categorical values and normalize according to configuration
 func (d *DHCPv6) Encode() []string {
 
-	var opts []string
+	opts := make([]string, 0, len(d.Options))
 	for _, o := range d.Options {
 		opts = append(opts, o.toString())
 	}
