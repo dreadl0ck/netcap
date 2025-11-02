@@ -22,7 +22,7 @@ const (
 	ConfigRoot = "NC_CONFIG_ROOT"
 
 	// FingerbankAPIKey is the authorization token fingerbank.org.
-	FingerbankAPIKey = "FINGERPRINT_API_KEY"
+	FingerbankAPIKey = "FINGERBANK_API_KEY"
 
 	// MaltegoExploitDirectory is used to search for exploit PoC code.
 	MaltegoExploitDirectory = "NC_MALTEGO_EXPLOIT_DIRECTORY"

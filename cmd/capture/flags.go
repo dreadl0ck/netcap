@@ -72,7 +72,7 @@ var (
 	flagTime = fs.Bool("time", false, "print processing time even in quiet mode")
 
 	flagBaseLayer     = fs.String("base", "ethernet", "select base layer")
-	flagDecodeOptions = fs.String("opts", "default", "select decoding options")
+	flagDecodeOptions = fs.String("opts", "datagrams", "select decoding options")
 	flagPayload       = fs.Bool("payload", false, "capture payload for supported layers")
 
 	flagCSV              = fs.Bool("csv", false, "output data as CSV")

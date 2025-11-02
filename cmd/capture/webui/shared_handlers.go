@@ -262,6 +262,12 @@ func HandleAuditStats(outputDir string) http.HandlerFunc {
 func ListAuditFiles(outputDir string) ([]AuditFileInfo, error) {
 	var files []AuditFileInfo
 
+	// Check if directory exists first
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		// Directory doesn't exist yet, return empty list instead of error
+		return files, nil
+	}
+
 	entries, err := os.ReadDir(outputDir)
 	if err != nil {
 		return nil, err

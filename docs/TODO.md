@@ -12,9 +12,17 @@ add local dev mode for webUI
 
 Visualize and Explore Page: add toggle to turn Legend on / off
 
----
+DHCP fingerprinting results for DeviceProfile and IPProfile
 
-expose go-dpi types, update ndpi types https://github.com/dreadl0ck/go-dpi/blob/master/modules/wrappers/nDPI_wrapper.go
+geolocation chart
+
+visualize internal VS external IPs in dump
+
+merge local and service mode servers
+
+expr for filtering audit records
+
+---
 
 try-service: crash reporting mechanism: when the service panics and crashes, we need the full service log, and all netcap logfiles copied and archived together with the input pcap file for reproduction. An alert should be fired via email. add support to connect an SMTP service to send alert emails to an administrator.
 
@@ -26,43 +34,6 @@ Flow view page: render interactive, horizontal timeline of activity from differe
 
 Alerts page
 Rules page
-
----
-
-netcap-try  | 2025-10-28T21:15:21.781124355Z 2025/10/28 21:15:21 DPI: enabled LPI wrapper
-netcap-try  | 2025-10-28T21:15:21.781218652Z 2025/10/28 21:15:21 DPI: enabled nDPI wrapper
-netcap-try  | 2025-10-28T21:15:21.781226618Z 2025/10/28 21:15:21 DPI: enabled go-dpi classifier
-netcap-try  | 2025-10-28T21:15:22.616799422Z SIGSEGV: segmentation violation
-netcap-try  | 2025-10-28T21:15:22.616846881Z PC=0x7f53c4b8f41b m=20 sigcode=1 addr=0x0
-netcap-try  | 2025-10-28T21:15:22.616853454Z signal arrived during cgo execution
-netcap-try  | 2025-10-28T21:15:22.616858303Z 
-netcap-try  | 2025-10-28T21:15:22.616862200Z goroutine 120 gp=0xc0000e36c0 m=20 mp=0xc0000cc808 [syscall]:
-netcap-try  | 2025-10-28T21:15:22.618310111Z runtime.cgocall(0x1656a80, 0xc0000d8d18)
-netcap-try  | 2025-10-28T21:15:22.618353492Z    /usr/local/go/src/runtime/cgocall.go:167 +0x4b fp=0xc0000d8cf0 sp=0xc0000d8cb8 pc=0x481dab
-netcap-try  | 2025-10-28T21:15:22.619081447Z github.com/dreadl0ck/go-dpi/modules/wrappers._Cfunc_ndpiPacketProcess2025/10/28 21:15:22 [Service] GET /api/network-interfaces from 149.88.24.48
-netcap-try  | 2025-10-28T21:15:22.619102856Z 2025/10/28 21:15:22 [Service] handleNetworkInterfaces called: method=GET
-netcap-try  | 2025-10-28T21:15:22.619108195Z (0xc0002bf620, 0xc04006a3f0, 0x7f537ce3ac90)
-netcap-try  | 2025-10-28T21:15:22.619112373Z    _cgo_gotypes.go:297 +0x46 fp=0xc0000d8d18 sp=0xc0000d8cf0 pc=0x1183c86
-netcap-try  | 2025-10-28T21:15:22.619117232Z github.com/dreadl0ck/go-dpi/modules/wrappers.NewNDPIWrapper.func3.1(...)
-netcap-try  | 2025-10-28T21:15:22.619121430Z    /go/pkg/mod/github.com/dreadl0ck/go-dpi@v1.3.1/modules/wrappers/nDPI_wrapper.go:529
-netcap-try  | 2025-10-28T21:15:22.619687912Z github.com/dreadl0ck/go-dpi/modules/wrappers.NewNDPIWrapper.func3({0x1fa35a0, 0xc04007ab00}, 0x7f537ce3ac90)
-netcap-try  | 2025-10-28T21:15:22.619887094Z    2025/10/28 21:15:22 [Service] handleNetworkInterfaces: response sent successfully
-netcap-try  | 2025-10-28T21:15:22.620527764Z /go/pkg/mod/github.com/dreadl0ck/go-dpi@v1.3.1/modules/wrappers/nDPI_wrapper.go:529 +0xa7 fp=0xc0000d8d58 sp=0xc0000d8d18 pc=0x1185707
-netcap-try  | 2025-10-28T21:15:22.620549154Z github.com/dreadl0ck/go-dpi/modules/wrappers.(*NDPIWrapper).ClassifyFlow(0xc0008f00e8, 0xc04007c150?)
-netcap-try  | 2025-10-28T21:15:22.620554244Z    /go/pkg/mod/github.com/dreadl0ck/go-dpi@v1.3.1/modules/wrappers/nDPI_wrapper.go:597 +0x259 fp=0xc0000d8e10 sp=0xc0000d8d58 pc=0x1184f99
-netcap-try  | 2025-10-28T21:15:22.620559603Z github.com/dreadl0ck/go-dpi/modules/wrappers.(*WrapperModule).ClassifyFlowAll(0x108?, 0xc04007c150)
-netcap-try  | 2025-10-28T21:15:22.620710005Z    /go/pkg/mod/github.com/dreadl0ck/go-dpi@v1.3.1/modules/wrappers/wrappers.go:110 +0x9f fp=0xc0000d8ee0 sp=0xc0000d8e10 pc=0x11832ff
-netcap-try  | 2025-10-28T21:15:22.621029945Z github.com/dreadl0ck/go-dpi.ClassifyFlowAllModules.func1({0x1f95e28?, 0xc000aea280?})
-netcap-try  | 2025-10-28T21:15:22.621063777Z    /go/pkg/mod/github.com/dreadl0ck/go-dpi@v1.3.1/godpi.go:186 +0x91 fp=0xc0000d8fc0 sp=0xc0000d8ee0 pc=0x1186811
-netcap-try  | 2025-10-28T21:15:22.621070950Z github.com/dreadl0ck/go-dpi.ClassifyFlowAllModules.gowrap1()
-netcap-try  | 2025-10-28T21:15:22.621076391Z    /go/pkg/mod/github.com/dreadl0ck/go-dpi@v1.3.1/godpi.go:195 +0x28 fp=0xc0000d8fe0 sp=0xc0000d8fc0 pc=0x1186748
-netcap-try  | 2025-10-28T21:15:22.621632964Z runtime.goexit({})
-netcap-try  | 2025-10-28T21:15:22.621651979Z    /usr/local/go/src/runtime/asm_amd64.s:1693 +0x1 fp=0xc0000d8fe8 sp=0xc0000d8fe0 pc=0x48d561
-netcap-try  | 2025-10-28T21:15:22.621656517Z created by github.com/dreadl0ck/go-dpi.ClassifyFlowAllModules in goroutine 13
-netcap-try  | 2025-10-28T21:15:22.621678539Z    /go/pkg/mod/github.com/dreadl0ck/go-dpi@v1.3.1/godpi.go:184 +0x1da
-netcap-try  | 2025-10-28T21:15:22.621681675Z 
-netcap-try  | 2025-10-28T21:15:22.621684149Z goroutine 1 gp=0xc000002380 m=nil [chan receive]:
-
 
 ---
 

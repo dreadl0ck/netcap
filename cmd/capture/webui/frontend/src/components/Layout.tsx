@@ -94,7 +94,22 @@ export default function Layout({ children, title }: LayoutProps) {
             >
               NETCAP
             </Typography>
-            {status && !status.isTryService && (
+            {status && status.isServiceMode && (
+              <Typography 
+                variant="caption" 
+                component="div"
+                sx={{ 
+                  color: 'text.secondary',
+                  fontSize: '0.65rem',
+                  fontWeight: 500,
+                  letterSpacing: '0.1em',
+                  mt: -0.5
+                }}
+              >
+                SERVICE
+              </Typography>
+            )}
+            {status && !status.isTryService && !status.isServiceMode && (
               <Typography 
                 variant="caption" 
                 component="div"

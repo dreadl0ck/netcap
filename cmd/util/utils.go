@@ -35,6 +35,8 @@ func printHeader() {
 	fmt.Println("	$ net util -ts2utc 1505839354.197231")
 	fmt.Println("	$ net util -download-geolite")
 	fmt.Println("	$ net util -update-dbs")
+	fmt.Println("	$ net util -gopacket-coverage")
+	fmt.Println("	$ net util -decoders")
 	fmt.Println()
 }
 

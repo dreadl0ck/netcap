@@ -27,9 +27,9 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/evilsocket/islazy/tui"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
-	"github.com/evilsocket/islazy/tui"
 
 	"github.com/dreadl0ck/netcap/defaults"
 )
@@ -190,7 +190,7 @@ func GetBaseLayer(value string) (t gopacket.LayerType) {
 //   - "nocopy": No buffer copy - faster but input buffer must not be modified
 //   - "datagrams": Decode TCP streams as datagrams (enables app-level layer decoding in TCP)
 //   - "pool": Use memory pooling for packet buffers (requires calling Dispose() on packets)
-//            When using pool mode, packets must be disposed via packet.Dispose() once processing is complete
+//     When using pool mode, packets must be disposed via packet.Dispose() once processing is complete
 func GetDecodeOptions(value string) (o gopacket.DecodeOptions) {
 	switch value {
 	case "lazy":

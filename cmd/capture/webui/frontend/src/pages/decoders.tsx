@@ -70,24 +70,73 @@ const getCategoryColor = (categoryKey: string): string => {
 
 // Convert PascalCase/camelCase to snake_case
 const toSnakeCase = (str: string): string => {
+  // If the string is all uppercase (e.g., MPLS, DNS), just convert to lowercase
+  if (str === str.toUpperCase() && str.match(/^[A-Z0-9]+$/)) {
+    return str.toLowerCase();
+  }
+  
+  // Handle consecutive uppercase letters (acronyms) followed by lowercase letters
+  // E.g., "TLSServerHello" -> "tls_server_hello", not "t_l_s_server_hello"
   return str
-    .replace(/([A-Z])/g, '_$1')
-    .toLowerCase()
-    .replace(/^_/, ''); // Remove leading underscore if present
+    // Insert underscore before an uppercase letter that follows a lowercase letter or digit
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    // Insert underscore between acronym and PascalCase word
+    // E.g., "TLSServer" -> "TLS_Server" (not "TL_SServer")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+    .toLowerCase();
 };
 
 const getDecoderGitHubUrl = (categoryKey: string, decoderName: string): string => {
   const baseUrl = 'https://github.com/dreadl0ck/netcap/blob/master/decoder';
-  const snakeCaseName = toSnakeCase(decoderName);
+  
+  // Special case mappings for abbreviated decoder filenames
+  const specialCases: Record<string, string> = {
+    // ICMPv6 variants (abbreviated)
+    'ICMPv6NeighborSolicitation': 'icmp6ns',
+    'ICMPv6RouterSolicitation': 'icmp6rs',
+    'ICMPv6RouterAdvertisement': 'icmp6ra',
+    'ICMPv6NeighborAdvertisement': 'icmp6na',
+    'ICMPv6Echo': 'icmp6e',
+    // DHCP variants (v -> version number)
+    'DHCPv6': 'dhcp6',
+    'DHCPv4': 'dhcp4',
+    // Ethernet CTP
+    'EthernetCTP': 'ethctp',
+    'EthernetCTPReply': 'ethctpr',
+    // USB
+    'USBRequestBlockSetup': 'usb_request_block_setup',
+    // Versioned protocols (no underscore before version)
+    'OSPFv2': 'ospfv2',
+    'OSPFv3': 'ospfv3',
+    'VRRPv2': 'vrrpv2',
+    // Numbered protocols (no underscore before number)
+    'Dot1Q': 'dot1q',
+    'Dot11': 'dot11',
+    // IPv6 variants (no underscore)
+    'IP6Hop': 'ip6hop',
+    'IPv6Fragment': 'ipv6fragment',
+    // IPSec variants (no underscores)
+    'IPSecAH': 'ipsecah',
+    'IPSecESP': 'ipsecesp',
+    // EAPOL variants (no underscores)
+    'EAPOLKey': 'eapolkey',
+  };
+  
+  // Check if there's a special case mapping
+  let filename = specialCases[decoderName];
+  if (!filename) {
+    // Otherwise use snake_case conversion
+    filename = toSnakeCase(decoderName);
+  }
   
   switch (categoryKey) {
     case 'stream':
       // Stream decoders are in subdirectories: decoder/stream/{name}/{name}.go
-      return `${baseUrl}/stream/${snakeCaseName}/${snakeCaseName}.go`;
+      return `${baseUrl}/stream/${filename}/${filename}.go`;
     case 'packet':
     case 'gopacket':
       // Packet decoders are directly in the packet directory: decoder/packet/{name}.go
-      return `${baseUrl}/packet/${snakeCaseName}.go`;
+      return `${baseUrl}/packet/${filename}.go`;
     case 'abstract':
       // Abstract decoders are in the abstract_decoder.go file or subdirectories
       return `${baseUrl}/abstract_decoder.go`;

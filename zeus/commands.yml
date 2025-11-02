@@ -331,14 +331,16 @@ commands:
     run-ui:
         description: start the netcap service locally for testing
         dependencies:
-            #- install
+            - build-frontend
+            - install
         exec: |
             cd pcaps
             #sleep 6 && open http://localhost:8080 &
             #sudo net capture -iface en0 -out livecapture/
 
+            # lsof -ti:8080 | xargs kill -9
             sleep 2 && open http://localhost:8080 &
-            net capture -dpi -y -read 2017-09-19-traffic-analysis-exercise.pcap -out capturetest
+            net capture -dpi -read 2017-09-19-traffic-analysis-exercise.pcap -out capturetest
 
 
     pack-dbs-tarball:

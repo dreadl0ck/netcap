@@ -62,6 +62,7 @@ type Server struct {
 	processingStats    ProcessingStats               // Live processing statistics
 	fileErrors         map[string]FileError          // Tracks errors for each file
 	debugLogging       bool                          // Runtime debug logging state
+	dpiConfigured      bool                          // Whether DPI was configured at startup (via -dpi flag)
 	collector          CollectorInterface            // Reference to collector for runtime config changes
 	uploadCallback     UploadCallbackFunc            // Function to call when files are uploaded
 	fileBPFFilters     map[string]string             // Tracks BPF filter used for each file
@@ -80,7 +81,7 @@ type CollectorInterface interface {
 }
 
 // NewServer creates a new web UI server
-func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debugLogging bool) *Server {
+func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debugLogging bool, dpiConfigured bool) *Server {
 	return &Server{
 		addr:               addr,
 		outDir:             outDir,
@@ -88,6 +89,7 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		inputFiles:         inputFiles,
 		assetsPath:         assetsPath,
 		isProcessing:       true,
+		dpiConfigured:      dpiConfigured,
 		completedFiles:     make(map[string]bool),
 		fileErrors:         make(map[string]FileError),
 		fileBPFFilters:     make(map[string]string),

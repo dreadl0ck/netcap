@@ -123,5 +123,10 @@ func Run() {
 		return
 	}
 
+	if *flagGoPacketCoverage {
+		analyzeGoPacketCoverage()
+		return
+	}
+
 	printHeader()
 }

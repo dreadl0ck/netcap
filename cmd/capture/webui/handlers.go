@@ -591,8 +591,15 @@ func (s *Server) handleDPIInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Use the configured DPI state (from -dpi flag) rather than runtime state
+	// Runtime state may be false after processing completes and DPI is destroyed,
+	// but we want to show whether DPI was used during processing
+	s.mu.RLock()
+	dpiConfigured := s.dpiConfigured
+	s.mu.RUnlock()
+
 	info := DPIInfo{
-		Enabled:                   dpi.IsEnabled(),
+		Enabled:                   dpiConfigured,
 		HasSupport:                dpi.HasDPISupport(),
 		NDPIVersion:               dpi.NDPIVersion,
 		LibprotoidentVersion:      dpi.LibprotoidentVersion,
@@ -603,11 +610,10 @@ func (s *Server) handleDPIInfo(w http.ResponseWriter, r *http.Request) {
 		LibprotoidentProtocolsURL: "https://github.com/wanduow/libprotoident/wiki/SupportedProtocols",
 	}
 
-	// Determine active modules based on what's enabled
-	// Note: This is informational only - actual module configuration happens at startup
-	if dpi.IsEnabled() {
-		// When DPI is enabled, we assume all modules are active
-		// In a production scenario, you'd track which modules were actually initialized
+	// Determine active modules based on what's configured
+	// Note: This reflects what was configured at startup via the -dpi flag
+	if dpiConfigured {
+		// When DPI was configured, all modules were active during processing
 		info.ActiveModules = []string{"ndpi", "lpi", "go"}
 	} else {
 		info.ActiveModules = []string{}
@@ -628,9 +634,13 @@ func (s *Server) handleDPIPreferences(w http.ResponseWriter, r *http.Request) {
 		// Get user's DPI preferences
 		prefs := s.GetDPIPreferences(userIP)
 		if prefs == nil {
-			// Return default: all modules enabled if DPI is enabled
+			// Return default: all modules enabled if DPI was configured
+			s.mu.RLock()
+			dpiConfigured := s.dpiConfigured
+			s.mu.RUnlock()
+			
 			defaultModules := []string{}
-			if dpi.IsEnabled() {
+			if dpiConfigured {
 				defaultModules = []string{"ndpi", "lpi", "go"}
 			}
 			prefs = &UserDPIPreferences{
@@ -903,7 +913,7 @@ func (s *Server) getConfigOptions() []ConfigOption {
 		},
 		{
 			Name:        "dpi",
-			Value:       dpi.IsEnabled(),
+			Value:       s.dpiConfigured,
 			Default:     false,
 			Type:        "bool",
 			Description: "Use DPI libs to enrich IPProfile audit records",

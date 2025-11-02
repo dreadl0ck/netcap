@@ -43,6 +43,7 @@ export interface StatusResponse {
   isMultiFile: boolean;
   sessionId?: string;  // Optional, only present in try service mode
   isTryService?: boolean;  // Optional, indicates try service mode
+  isServiceMode?: boolean;  // Optional, indicates service mode
   isLiveMode: boolean;  // Whether in live capture mode
 }
 

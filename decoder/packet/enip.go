@@ -13,11 +13,9 @@
 
 package packet
 
-// ENIP decoder disabled - requires custom gopacket fork with industrial protocol support
-// The official gopacket/gopacket library does not include ENIP layer support
-
-/*
 import (
+	"encoding/binary"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
@@ -31,9 +29,15 @@ var ethernetIPDecoder = newGoPacketDecoder(
 	"Industrial network protocol that adapts the Common Industrial Protocol to standard Ethernet",
 	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if enip, ok := layer.(*layers.ENIP); ok {
+			// Convert SenderContext from uint64 to bytes
+			senderContextBytes := make([]byte, 8)
+			binary.BigEndian.PutUint64(senderContextBytes, enip.SenderContext)
+
+			// Get command-specific data from payload
+			payload := layer.LayerPayload()
 			cmdSpecificData := &types.ENIPCommandSpecificData{
-				Cmd:  uint32(enip.CommandSpecific.Cmd),
-				Data: enip.CommandSpecific.Data,
+				Cmd:  uint32(enip.Command),
+				Data: payload,
 			}
 
 			return &types.ENIP{
@@ -41,8 +45,8 @@ var ethernetIPDecoder = newGoPacketDecoder(
 				Command:         uint32(enip.Command),
 				Length:          uint32(enip.Length),
 				SessionHandle:   enip.SessionHandle,
-				Status:          enip.Status,
-				SenderContext:   enip.SenderContext,
+				Status:          uint32(enip.Status),
+				SenderContext:   senderContextBytes,
 				Options:         enip.Options,
 				CommandSpecific: cmdSpecificData,
 			}
@@ -51,4 +55,3 @@ var ethernetIPDecoder = newGoPacketDecoder(
 		return nil
 	},
 )
-*/

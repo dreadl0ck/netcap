@@ -757,8 +757,8 @@ export default function AnalyzePage() {
           </Card>
         )}
 
-        {/* Previous Analyses (service mode) or Available Files (local multi-file mode) */}
-        {((isServiceMode && sessions.length > 0) || (!isServiceMode && isMultiFile && inputFiles.length > 0)) && (
+        {/* Previous Analyses (service mode) or Available Files (local mode) */}
+        {((isServiceMode && sessions.length > 0) || (!isServiceMode && inputFiles.filter(f => f.isCompleted).length > 0)) && (
           <Card sx={{ mt: 3 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>

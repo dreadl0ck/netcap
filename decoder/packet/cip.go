@@ -13,10 +13,6 @@
 
 package packet
 
-// CIP decoder disabled - requires custom gopacket fork with industrial protocol support
-// The official gopacket/gopacket library does not include CIP layer support
-
-/*
 import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
@@ -33,7 +29,7 @@ var cipDecoder = newGoPacketDecoder(
 		if cip, ok := layer.(*layers.CIP); ok {
 			var payload []byte
 			if conf.IncludePayloads {
-				payload = cip.Data
+				payload = layer.LayerPayload()
 			}
 			additional := make([]uint32, 0, len(cip.AdditionalStatus))
 			if cip.Response {
@@ -42,12 +38,21 @@ var cipDecoder = newGoPacketDecoder(
 				}
 			}
 
+			// Handle optional pointer fields
+			var classID, instanceID uint32
+			if cip.ClassID != nil {
+				classID = *cip.ClassID
+			}
+			if cip.InstanceID != nil {
+				instanceID = *cip.InstanceID
+			}
+
 			return &types.CIP{
 				Timestamp:        timestamp,
 				Response:         cip.Response,
-				ServiceID:        int32(cip.ServiceID),
-				ClassID:          uint32(cip.ClassID),
-				InstanceID:       uint32(cip.InstanceID),
+				ServiceID:        int32(cip.Service),
+				ClassID:          classID,
+				InstanceID:       instanceID,
 				Status:           int32(cip.Status),
 				AdditionalStatus: additional,
 				Data:             payload,
@@ -57,4 +62,3 @@ var cipDecoder = newGoPacketDecoder(
 		return nil
 	},
 )
-*/

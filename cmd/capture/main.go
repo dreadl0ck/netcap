@@ -590,7 +590,7 @@ func Run() {
 			}
 		}
 
-		webUIServer = webui.NewServer(*flagHTTP, initialOutDir, inputFiles, *flagHTTPAssets, *flagDebug)
+		webUIServer = webui.NewServer(*flagHTTP, initialOutDir, inputFiles, *flagHTTPAssets, *flagDebug, *flagDPI)
 		webUIServer.SetLiveMode(live) // Set live mode flag
 		if err := webUIServer.Start(); err != nil {
 			log.Printf("Failed to start web UI server: %v\n", err)

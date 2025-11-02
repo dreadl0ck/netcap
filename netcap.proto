@@ -1724,6 +1724,7 @@ message DeviceProfile {
   int64 Timestamp = 6; // first seen
   uint64 Bytes = 7;
   repeated string Applications = 8; // DPI detected applications
+  repeated string Devices = 9; // Devices associated with the MAC address, from DHCP db / fingerbank.org lookups
 }
 
 // Port models a transport layer port and basic stats such as the number of packets, bytes transferred and protocol type.
@@ -1757,6 +1758,7 @@ message IPProfile {
   repeated Port SrcPorts = 12;
   repeated Port DstPorts = 13;
   repeated Port ContactedPorts = 14;
+  repeated string Devices = 15; // Devices associated with the MAC address, from DHCP db / fingerbank.org lookups
 }
 
 message Protocol {

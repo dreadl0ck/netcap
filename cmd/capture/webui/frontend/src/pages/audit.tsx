@@ -231,17 +231,6 @@ export default function AuditRecords() {
     f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
   );
 
-  // Debug logging
-  console.log('[Audit] Debug info:', {
-    completedFilesCount: completedFiles.length,
-    completedFilesPaths: completedFiles.map((f: any) => f.path),
-    statusActiveInputFile: status?.activeInputFile,
-    selectedValue,
-    selectedFileFound: !!selectedFile,
-    selectedFileName: selectedFile?.name,
-    willShowSelector: completedFiles.length > 1 && !!selectedFile
-  });
-
   // Group files by layer, filtering out empty files
   const layerGroups: LayerGroup[] = React.useMemo(() => {
     if (!files) return [];
