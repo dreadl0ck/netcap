@@ -62,7 +62,7 @@ export default function Dashboard() {
   // Redirect to upload page if in try service mode and no active session
   useEffect(() => {
     // Only redirect if we have status data and confirmed no session/files
-    if (status && status.isTryService && !status.sessionId && inputFiles && inputFiles.length === 0) {
+    if (status && status.isServiceMode && !status.sessionId && inputFiles && inputFiles.length === 0) {
       router.push('/analyze');
     }
   }, [status, inputFiles, router]);

@@ -123,7 +123,7 @@ export default function AnalyzePage() {
     const checkServiceMode = async () => {
       try {
         const status = await api.getStatus();
-        setIsServiceMode(status.isTryService === true);
+        setIsServiceMode(status.isServiceMode === true);
         setIsMultiFile(status.isMultiFile === true);
         setActiveInputFile(status.activeInputFile || '');
       } catch (error) {

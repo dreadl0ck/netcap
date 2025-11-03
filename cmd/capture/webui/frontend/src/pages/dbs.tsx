@@ -142,12 +142,12 @@ export default function DatabasesPage() {
               color="primary"
               startIcon={updating ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
               onClick={handleUpdateDatabases}
-              disabled={updating || status?.isTryService}
+              disabled={updating || status?.isServiceMode}
             >
               {updating ? 'Updating...' : 'Update Databases'}
             </Button>
           </Box>
-          {status?.isTryService && (
+          {status?.isServiceMode && (
             <Alert severity="info" sx={{ mt: 2 }}>
               <AlertTitle>Try Service Mode</AlertTitle>
               Database updates are disabled in try service mode. Databases are managed by the service administrator.

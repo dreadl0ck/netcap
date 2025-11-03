@@ -1,5 +1,8 @@
 # TODOs
 
+implement bug reporting in local mode
+cleanup old service directory
+
 add detailed field descriptions for each protocol and show in explore view when selecting a field
 
 netcap core should produce info which fields contain data for the audit records, so that UI can use this only show fields that make sense for filtering, without having to parse the entire data again.
@@ -23,6 +26,8 @@ merge local and service mode servers
 expr for filtering audit records
 
 ---
+
+for local builds always show the short commit hash to the version embedded in the binary in the webUI
 
 try-service: crash reporting mechanism: when the service panics and crashes, we need the full service log, and all netcap logfiles copied and archived together with the input pcap file for reproduction. An alert should be fired via email. add support to connect an SMTP service to send alert emails to an administrator.
 

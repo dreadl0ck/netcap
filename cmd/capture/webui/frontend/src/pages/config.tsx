@@ -147,7 +147,7 @@ export default function Config() {
         {configData.readOnly && (
           <Alert severity="info" icon={<InfoIcon />} sx={{ mt: 2 }}>
             Configuration is read-only. 
-            {configData.isTryService
+            {configData.isServiceMode
               ? ' To change settings for future analysis runs, restart the try service with different flags.'
               : ' To change settings, restart the capture process with different flags.'}
           </Alert>
@@ -279,7 +279,7 @@ export default function Config() {
               fontSize: '0.875rem',
             }}
           >
-            {configData.isTryService
+            {configData.isServiceMode
               ? `net try -http :7070 -dpi -max-file-size 52428800 ...`
               : `net capture -read input.pcap -out output -workers 8 -dpi ...`}
           </Box>

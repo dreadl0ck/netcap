@@ -570,6 +570,17 @@ func Run() {
 
 	// Store original output directory to create subdirectories for each file
 	originalOutDir := *flagOutDir
+	
+	// Convert to absolute path to ensure consistent path handling across the application
+	if originalOutDir != "" {
+		absPath, err := filepath.Abs(originalOutDir)
+		if err != nil {
+			log.Printf("Failed to get absolute path for output directory: %v\n", err)
+		} else {
+			originalOutDir = absPath
+			*flagOutDir = absPath // Update flag as well
+		}
+	}
 
 	// Start web UI server if requested
 	if *flagHTTP != "" {
@@ -590,7 +601,15 @@ func Run() {
 			}
 		}
 
-		webUIServer = webui.NewServer(*flagHTTP, initialOutDir, inputFiles, *flagHTTPAssets, *flagDebug, *flagDPI)
+		// Convert to absolute path to ensure consistent path handling
+		var err error
+		initialOutDir, err = filepath.Abs(initialOutDir)
+		if err != nil {
+			log.Printf("Failed to get absolute path for output directory: %v\n", err)
+		}
+
+		// Create server in local mode (unrestricted)
+		webUIServer = webui.NewServer(*flagHTTP, initialOutDir, inputFiles, *flagHTTPAssets, *flagDebug, *flagDPI, false, nil)
 		webUIServer.SetLiveMode(live) // Set live mode flag
 		if err := webUIServer.Start(); err != nil {
 			log.Printf("Failed to start web UI server: %v\n", err)

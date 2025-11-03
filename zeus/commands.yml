@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.7.7
+    VERSION: 0.8.0
 
 # command data
 commands:
@@ -340,7 +340,7 @@ commands:
 
             # lsof -ti:8080 | xargs kill -9
             sleep 2 && open http://localhost:8080 &
-            net capture -dpi -read 2017-09-19-traffic-analysis-exercise.pcap -out capturetest
+            net capture -y -dpi -read 2017-09-19-traffic-analysis-exercise.pcap -out 2017-09-19-traffic-analysis-exercise
 
 
     pack-dbs-tarball:

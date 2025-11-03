@@ -95,7 +95,7 @@ export default function DPIPage() {
       
       // Debounce server save to avoid too many requests
       const saveTimeout = setTimeout(async () => {
-        if (!status?.isTryService) {
+        if (!status?.isServiceMode) {
           setIsSaving(true);
           try {
             await api.setDPIPreferences(modulesArray);
@@ -175,14 +175,14 @@ export default function DPIPage() {
             </Typography>
           </Box>
           <Typography variant="body1" color="text.secondary">
-            {status?.isTryService 
+            {status?.isServiceMode 
               ? 'View DPI configuration and supported protocols'
               : 'Configure and monitor DPI modules for application layer protocol identification'}
           </Typography>
         </Box>
 
         {/* Try Service Mode Alert */}
-        {status?.isTryService && (
+        {status?.isServiceMode && (
           <Alert severity="info" sx={{ mb: 4 }}>
             <AlertTitle>Try Service Mode</AlertTitle>
             <Typography variant="body2">
@@ -244,7 +244,7 @@ export default function DPIPage() {
                 </Box>
                 <Alert severity="info" sx={{ mt: 2 }}>
                   <Typography variant="body2">
-                    {status?.isTryService 
+                    {status?.isServiceMode 
                       ? 'DPI is configured by the service administrator and applies to all analysis sessions.'
                       : 'DPI is configured at capture startup using the -dpi flag. Modules can be specified with the -dpi-modules flag (e.g., "ndpi,lpi,go").'}
                   </Typography>
@@ -255,7 +255,7 @@ export default function DPIPage() {
         </Grid>
 
         {/* User DPI Preferences Summary */}
-        {!status?.isTryService && (
+        {!status?.isServiceMode && (
           <Card sx={{ mb: 4 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -483,7 +483,7 @@ export default function DPIPage() {
                                     }}
                                     onClick={(e) => e.stopPropagation()}
                                     color="primary"
-                                    disabled={status?.isTryService}
+                                    disabled={status?.isServiceMode}
                                   />
                                 }
                                 label=""
@@ -598,7 +598,7 @@ export default function DPIPage() {
               <Grid item xs={12}>
                 <Alert severity="info" icon={<InfoIcon />}>
                   <AlertTitle>Module Configuration</AlertTitle>
-                  {status?.isTryService ? (
+                  {status?.isServiceMode ? (
                     <Typography variant="body2">
                       The DPI modules shown are configured by the service administrator.
                       Toggle functionality is disabled in try service mode.

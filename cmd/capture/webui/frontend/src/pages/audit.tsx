@@ -43,7 +43,7 @@ export default function AuditRecords() {
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
   const { data: sessions } = useSWR(
-    status?.isTryService ? 'try-sessions' : null, 
+    status?.isServiceMode ? 'try-sessions' : null, 
     () => api.getAllSessions()
   );
   const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -295,7 +295,7 @@ export default function AuditRecords() {
     <Layout title="Audit Records">
       <Box>
         {/* Session Selector for Try Service */}
-        {status?.isTryService && sessions && sessions.length > 1 && (
+        {status?.isServiceMode && sessions && sessions.length > 1 && (
           <Box mb={3}>
             <FormControl size="small" sx={{ minWidth: 300 }}>
               <Select

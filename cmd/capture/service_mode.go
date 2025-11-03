@@ -22,7 +22,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/dreadl0ck/netcap/cmd/capture/service"
+	"github.com/dreadl0ck/netcap/cmd/capture/webui"
 )
 
 // runServiceMode starts the service mode server for multi-file upload and analysis
@@ -31,7 +31,7 @@ func runServiceMode() {
 	fmt.Printf("HTTP server will listen on: http://%s\n", *flagHTTP)
 
 	// Create service configuration
-	config := &service.Config{
+	serviceConfig := &webui.ServiceConfig{
 		MaxFileSize:     *flagServiceMaxFileSize,
 		MaxAnalysisHour: *flagServiceMaxPerHour,
 		SessionExpiry:   *flagServiceExpiry,
@@ -41,49 +41,50 @@ func runServiceMode() {
 
 	// Set data directory from flag or use default
 	if *flagServiceDataDir != "" {
-		config.DataDir = *flagServiceDataDir
+		serviceConfig.DataDir = *flagServiceDataDir
 	} else {
-		config.DataDir = service.DefaultConfig().DataDir
+		serviceConfig.DataDir = webui.DefaultServiceConfig().DataDir
 	}
 
-	fmt.Printf("Data directory: %s\n", config.DataDir)
-	fmt.Printf("Max file size: %d bytes\n", config.MaxFileSize)
-	fmt.Printf("Max analyses per hour per IP: %d\n", config.MaxAnalysisHour)
-	fmt.Printf("Session expiry: %d minutes\n", config.SessionExpiry)
+	fmt.Printf("Data directory: %s\n", serviceConfig.DataDir)
+	fmt.Printf("Max file size: %d bytes\n", serviceConfig.MaxFileSize)
+	fmt.Printf("Max analyses per hour per IP: %d\n", serviceConfig.MaxAnalysisHour)
+	fmt.Printf("Session expiry: %d minutes\n", serviceConfig.SessionExpiry)
 
-	// Create and start server
-	server, err := service.NewServer(*flagHTTP, config, *flagDPI)
-	if err != nil {
-		log.Fatalf("Failed to create service server: %v", err)
-	}
+	// Create unified server in service mode
+	server := webui.NewServer(
+		*flagHTTP,
+		serviceConfig.DataDir,
+		nil,         // no input files in service mode
+		"",          // no custom assets path
+		false,       // debug logging
+		*flagDPI,    // DPI configuration
+		true,        // isServiceMode = true
+		serviceConfig, // service configuration
+	)
 
 	// Setup signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	// Start server in goroutine
-	serverErrChan := make(chan error, 1)
-	go func() {
-		if err := server.Start(); err != nil {
-			serverErrChan <- err
-		}
-	}()
-
-	// Wait for shutdown signal or error
-	select {
-	case err := <-serverErrChan:
-		log.Fatalf("Service server error: %v", err)
-	case sig := <-sigChan:
-		fmt.Printf("\nReceived signal %v, shutting down gracefully...\n", sig)
-
-		// Graceful shutdown with timeout
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		if err := server.Stop(ctx); err != nil {
-			log.Printf("Error during shutdown: %v", err)
-		}
-
-		fmt.Println("Service mode stopped")
+	// Start server
+	if err := server.Start(); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
+	
+	fmt.Printf("\n%sWeb UI available at: http://%s%s\n\n", "\033[32m", *flagHTTP, "\033[0m")
+
+	// Wait for shutdown signal
+	sig := <-sigChan
+	fmt.Printf("\nReceived signal %v, shutting down gracefully...\n", sig)
+
+	// Graceful shutdown with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := server.Stop(ctx); err != nil {
+		log.Printf("Error during shutdown: %v", err)
+	}
+
+	fmt.Println("Service mode stopped")
 }

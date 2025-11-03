@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	godpi "github.com/dreadl0ck/go-dpi"
@@ -32,26 +33,32 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var disableDPI = true
+var disableDPI atomic.Bool
+
+func init() {
+	// Initialize disableDPI to true (DPI is disabled by default)
+	disableDPI.Store(true)
+}
 
 const categoryUnknown = "UNKNOWN"
 
 // IsEnabled will return true if goDPI has been initialized
 func IsEnabled() bool {
-	return !disableDPI
+	return !disableDPI.Load()
 }
 
 // Init initializes the deep packet inspection engines.
 // modules is a comma-separated list of modules to enable: lpi, ndpi, go
 // If empty, all modules will be enabled.
+// This function is thread-safe and will only execute once if called concurrently.
 func Init(modules string) {
-	// Guard against double initialization - if DPI is already enabled, skip
-	if !disableDPI {
+	// Atomically check if DPI is disabled (true) and set it to enabled (false)
+	// If DPI was already enabled (false), this returns false and we skip initialization
+	// This prevents race conditions where multiple goroutines try to initialize simultaneously
+	if !disableDPI.CompareAndSwap(true, false) {
 		log.Println("DPI: already initialized, skipping re-initialization")
 		return
 	}
-
-	disableDPI = false
 
 	var (
 		selectedModules []Module
@@ -145,11 +152,18 @@ func parseModules(modules string) map[string]bool {
 // Destroy tears down godpi and frees the memory allocated for cgo.
 // It also explicitly resets the internal flow tracker to release all tracked flows.
 // Returned errors are logged to stdout.
+// This function is thread-safe and will only execute once if called concurrently.
 func Destroy() {
-	// Only destroy if DPI is actually enabled
-	if disableDPI {
+	// Atomically check if DPI is enabled (false) and set it to disabled (true)
+	// If DPI was already disabled (true), this returns false and we skip destruction
+	// This prevents race conditions where multiple goroutines try to destroy simultaneously
+	if !disableDPI.CompareAndSwap(false, true) {
+		// DPI was already disabled, nothing to do
 		return
 	}
+
+	// At this point, we've atomically transitioned from enabled to disabled
+	// Only one goroutine will reach here even if Destroy() is called concurrently
 
 	// Destroy modules and flow tracker
 	// This calls types.DestroyCache() which flushes the flow cache
@@ -159,9 +173,6 @@ func Destroy() {
 			fmt.Println(e)
 		}
 	}
-
-	// Reset the flag so DPI can be re-initialized
-	disableDPI = true
 }
 
 // Reset destroys the current DPI state and reinitializes it.
@@ -172,7 +183,7 @@ func Destroy() {
 //  3. Waits for C libraries to release memory
 //  4. Reinitializes with the same modules
 func Reset(modules string) {
-	if !disableDPI {
+	if !disableDPI.Load() {
 		// Destroy will:
 		// - Call godpi.Destroy() which calls types.DestroyCache()
 		// - types.DestroyCache() flushes the cache and nils FlowTrackerInstance
@@ -194,7 +205,7 @@ func Reset(modules string) {
 // Will return nil if dpi is disabled, or if flow is not yet ready to be classified (need 10 packets).
 func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 
-	if disableDPI {
+	if disableDPI.Load() {
 		return nil
 	}
 

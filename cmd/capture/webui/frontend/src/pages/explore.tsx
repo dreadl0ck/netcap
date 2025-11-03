@@ -418,17 +418,6 @@ export default function Explore() {
     f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
   );
 
-  // Debug logging
-  console.log('[Explore] Debug info:', {
-    completedFilesCount: completedFiles.length,
-    completedFilesPaths: completedFiles.map((f: any) => f.path),
-    statusActiveInputFile: status?.activeInputFile,
-    selectedValue,
-    selectedFileFound: !!selectedFile,
-    selectedFileName: selectedFile?.name,
-    willShowSelector: completedFiles.length > 1 && !!selectedFile
-  });
-
   return (
     <Layout title="Explore">
       <Box sx={{ mb: 3 }}>

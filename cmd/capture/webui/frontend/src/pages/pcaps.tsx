@@ -325,14 +325,16 @@ export default function PCAPs() {
           <Typography variant="body2" color="text.secondary">
             {sortedFiles.length} of {files?.length || 0} file(s) {searchQuery && 'matching search'}
           </Typography>
-          {(isMultiFile || status?.isTryService) && (
-            <Chip 
-              label="Click a file or use the view button to see its audit records" 
-              color="primary" 
-              size="small" 
-              variant="outlined"
-            />
-          )}
+          <Chip 
+            label={
+              isMultiFile || status?.isServiceMode
+                ? "Click a file or use the view button to see its audit records"
+                : "Use action buttons to view audit records, logs, and visualizations"
+            }
+            color="primary" 
+            size="small" 
+            variant="outlined"
+          />
           {sortedFiles.length > 10 && (
             <Box display="flex" alignItems="center" gap={1} ml="auto">
               <Typography variant="body2" color="text.secondary">
@@ -388,7 +390,7 @@ export default function PCAPs() {
                     </TableSortLabel>
                   </TableCell>
                   <TableCell align="right">Processing Time</TableCell>
-                  {(isMultiFile || status?.isTryService) && <TableCell align="right">Actions</TableCell>}
+                  <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -409,9 +411,9 @@ export default function PCAPs() {
                     sx={{ 
                       backgroundColor: isActive(file.path) ? 'action.selected' : 'inherit',
                       opacity: file.isCompleted ? 1 : 0.6,
-                      '&:hover': ((isMultiFile || status?.isTryService) && file.isCompleted) ? { backgroundColor: 'action.hover', cursor: 'pointer' } : {}
+                      '&:hover': ((isMultiFile || status?.isServiceMode) && file.isCompleted) ? { backgroundColor: 'action.hover', cursor: 'pointer' } : {}
                     }}
-                    onClick={((isMultiFile || status?.isTryService) && file.isCompleted) ? () => handleSelectFile(file.path) : undefined}
+                    onClick={((isMultiFile || status?.isServiceMode) && file.isCompleted) ? () => handleSelectFile(file.path) : undefined}
                   >
                   <TableCell>
                     <Box display="flex" alignItems="center" gap={1}>
@@ -474,60 +476,55 @@ export default function PCAPs() {
                         </Typography>
                       )}
                     </TableCell>
-                    {(isMultiFile || status?.isTryService) && (
-                      <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                        <Box display="flex" justifyContent="flex-end" gap={1}>
-                          {(isMultiFile || status?.isTryService) && (
-                            <>
-                              <Tooltip title={
-                                file.error ? "File encountered an error" :
-                                !file.isCompleted ? "Processing not complete" :
-                                isActive(file.path) ? "Currently viewing" : 
-                                "View audit records"
-                              }>
-                                <span>
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleSelectFile(file.path)}
-                                    disabled={!file.isCompleted || activating === file.path || isActive(file.path) || !!file.error}
-                                    color={isActive(file.path) ? "success" : file.error ? "error" : "default"}
-                                  >
-                                    {activating === file.path ? (
-                                      <CircularProgress size={20} />
-                                    ) : file.error ? (
-                                      <ErrorIcon />
-                                    ) : (
-                                      <VisibilityIcon />
-                                    )}
-                                  </IconButton>
-                                </span>
-                              </Tooltip>
-                              {file.isCompleted && !file.error && (
-                                <>
-                                  <Tooltip title="View Logs">
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleViewLogs(file.path)}
-                                      disabled={activating === file.path}
-                                    >
-                                      <DescriptionIcon />
-                                    </IconButton>
-                                  </Tooltip>
-                                  <Tooltip title="Visualize Protocols">
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleVisualize(file.path)}
-                                      disabled={activating === file.path}
-                                      color="primary"
-                                    >
-                                      <VisualizeIcon />
-                                    </IconButton>
-                                  </Tooltip>
-                                </>
+                    <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                      <Box display="flex" justifyContent="flex-end" gap={1}>
+                        <Tooltip title={
+                          file.error ? "File encountered an error" :
+                          !file.isCompleted ? "Processing not complete" :
+                          isActive(file.path) ? "Currently viewing" : 
+                          "View audit records"
+                        }>
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleSelectFile(file.path)}
+                              disabled={!file.isCompleted || activating === file.path || isActive(file.path) || !!file.error}
+                              color={isActive(file.path) ? "success" : file.error ? "error" : "default"}
+                            >
+                              {activating === file.path ? (
+                                <CircularProgress size={20} />
+                              ) : file.error ? (
+                                <ErrorIcon />
+                              ) : (
+                                <VisibilityIcon />
                               )}
-                            </>
-                          )}
-                          {status?.isTryService && file.sessionId && (
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                        {file.isCompleted && !file.error && (
+                          <>
+                            <Tooltip title="View Logs">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleViewLogs(file.path)}
+                                disabled={activating === file.path}
+                              >
+                                <DescriptionIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Visualize Protocols">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleVisualize(file.path)}
+                                disabled={activating === file.path}
+                                color="primary"
+                              >
+                                <VisualizeIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </>
+                        )}
+                        {status?.isServiceMode && file.sessionId && (
                             <>
                               <Tooltip title={copiedFileId === file.path ? "Copied!" : "Copy Share Link"}>
                                 <IconButton
@@ -561,6 +558,17 @@ export default function PCAPs() {
                                       console.log('[PCAPs] Crash log button clicked for:', file.name);
                                       handleViewErrorLog(file);
                                     }}
+                                    sx={{
+                                      animation: 'glow-red 2s ease-in-out infinite',
+                                      '@keyframes glow-red': {
+                                        '0%, 100%': {
+                                          boxShadow: '0 0 5px rgba(244, 67, 54, 0.5)',
+                                        },
+                                        '50%': {
+                                          boxShadow: '0 0 20px rgba(244, 67, 54, 1), 0 0 30px rgba(244, 67, 54, 0.8)',
+                                        },
+                                      },
+                                    }}
                                   >
                                     <BugReportIcon />
                                   </IconButton>
@@ -568,9 +576,8 @@ export default function PCAPs() {
                               )}
                             </>
                           )}
-                        </Box>
-                      </TableCell>
-                    )}
+                      </Box>
+                    </TableCell>
                   </TableRow>
                   );
                 })}

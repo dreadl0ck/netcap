@@ -28,6 +28,7 @@ type FileInfo struct {
 	ProcessingTime   float64 `json:"processingTime,omitempty"` // Processing duration in seconds
 	Hash             string  `json:"hash,omitempty"`           // SHA256 hash of the file
 	HasReportedIssue bool    `json:"hasReportedIssue"`         // Whether an issue report has been submitted for this file
+	SessionID        string  `json:"sessionId,omitempty"`      // Session ID (service mode only)
 }
 
 // AuditFileInfo extends FileInfo with audit record specific metadata
@@ -76,4 +77,15 @@ const (
 type UserDPIPreferences struct {
 	EnabledModules []string  `json:"enabledModules"`
 	LastUpdated    time.Time `json:"lastUpdated"`
+}
+
+// AnalysisJob represents a job in the analysis queue (service mode only)
+type AnalysisJob struct {
+	SessionID       string
+	InputFile       string
+	OutputDir       string
+	EnableDPI       bool
+	BPFFilter       string // BPF filter to apply during capture
+	IncludeDecoders string // Decoders to include
+	ExcludeDecoders string // Decoders to exclude
 }

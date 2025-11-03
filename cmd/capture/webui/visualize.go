@@ -63,6 +63,13 @@ func (s *Server) handleProtocolHierarchy(w http.ResponseWriter, r *http.Request)
 
 	s.mu.RLock()
 	outDir := s.outDir
+	
+	// In service mode, use the current session's output directory
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
 	s.mu.RUnlock()
 
 	if outDir == "" {

@@ -24,9 +24,10 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import BubbleChartIcon from '@mui/icons-material/BubbleChart';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import GitHubIcon from '@mui/icons-material/GitHub';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
@@ -94,7 +95,7 @@ export default function Layout({ children, title }: LayoutProps) {
             >
               NETCAP
             </Typography>
-            {status && status.isServiceMode && (
+            {status?.isServiceMode && (
               <Typography 
                 variant="caption" 
                 component="div"
@@ -109,7 +110,7 @@ export default function Layout({ children, title }: LayoutProps) {
                 SERVICE
               </Typography>
             )}
-            {status && !status.isTryService && !status.isServiceMode && (
+            {status && !status?.isTryService && !status?.isServiceMode && (
               <Typography 
                 variant="caption" 
                 component="div"
@@ -438,23 +439,62 @@ export default function Layout({ children, title }: LayoutProps) {
         >
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="caption" color="text.secondary">
-              Version: {version.version}
+              {version.version}-
+              <Link
+                href={`https://github.com/dreadl0ck/netcap/commit/${version.commit}`}
+                passHref
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  color: 'inherit',
+                  textDecoration: 'none',
+                }}
+              >
+                <Box
+                  component="span"
+                  sx={{
+                    '&:hover': {
+                      textDecoration: 'underline',
+                      color: 'primary.main',
+                    }
+                  }}
+                >
+                  {version.commit}
+                </Box>
+              </Link>
             </Typography>
-            <IconButton
-              size="small"
-              href="https://docs.netcap.io"
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{ 
-                color: 'text.secondary',
-                '&:hover': {
-                  color: 'primary.main',
-                }
-              }}
-              title="Documentation"
-            >
-              <OpenInNewIcon fontSize="small" />
-            </IconButton>
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <IconButton
+                size="small"
+                href="https://docs.netcap.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ 
+                  color: 'text.secondary',
+                  '&:hover': {
+                    color: 'primary.main',
+                  }
+                }}
+                title="Documentation"
+              >
+                <MenuBookIcon fontSize="small" />
+              </IconButton>
+              <IconButton
+                size="small"
+                href="https://github.com/dreadl0ck/netcap"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ 
+                  color: 'text.secondary',
+                  '&:hover': {
+                    color: 'primary.main',
+                  }
+                }}
+                title="GitHub Repository"
+              >
+                <GitHubIcon fontSize="small" />
+              </IconButton>
+            </Box>
           </Box>
         </Box>
       )}

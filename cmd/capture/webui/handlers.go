@@ -55,6 +55,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		ServerStarted:   serverStartTime,
 		ActiveInputFile: s.activeInputFile,
 		IsMultiFile:     len(inputFiles) > 1,
+		IsServiceMode:   s.isServiceMode,
 		IsLiveMode:      s.isLiveMode,
 	}
 
@@ -78,6 +79,80 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// In service mode, return sessions as files
+	if s.isServiceMode && s.sessionManager != nil {
+		clientIP := s.getUserIP(r)
+		sessions := s.sessionManager.GetSessionsForIP(clientIP)
+
+		files := make([]FileInfo, 0)
+
+		// First, add preloaded pcaps (visible to all users)
+		allSessions := s.sessionManager.GetAllSessions()
+		for _, session := range allSessions {
+			if !session.IsPreloaded {
+				continue
+			}
+
+			fileInfo := FileInfo{
+				Name:             session.InputFilename,
+				Path:             session.InputFile,
+				Size:             session.InputFileSize,
+				ModifiedTime:     session.UploadTimestamp.Unix(),
+				IsCompleted:      session.Status == StatusCompleted,
+				BPFFilter:        session.BPFFilter,
+				ProcessingTime:   session.ProcessingTime,
+				SessionID:        session.SessionID,
+				HasReportedIssue: session.HasReportedIssue,
+			}
+
+			// Add error if failed
+			if session.Status == StatusFailed && session.ErrorMessage != "" {
+				fileInfo.Error = &session.ErrorMessage
+				if session.ErrorLogPath != "" {
+					fileInfo.ErrorLogPath = &session.ErrorLogPath
+				}
+			}
+
+			files = append(files, fileInfo)
+		}
+
+		// Then add user's own uploaded files
+		for _, session := range sessions {
+			if session.IsPreloaded {
+				continue
+			}
+
+			fileInfo := FileInfo{
+				Name:             session.InputFilename,
+				Path:             session.InputFile,
+				Size:             session.InputFileSize,
+				ModifiedTime:     session.UploadTimestamp.Unix(),
+				IsCompleted:      session.Status == StatusCompleted,
+				BPFFilter:        session.BPFFilter,
+				ProcessingTime:   session.ProcessingTime,
+				SessionID:        session.SessionID,
+				HasReportedIssue: session.HasReportedIssue,
+			}
+
+			// Add error if failed
+			if session.Status == StatusFailed && session.ErrorMessage != "" {
+				fileInfo.Error = &session.ErrorMessage
+				if session.ErrorLogPath != "" {
+					fileInfo.ErrorLogPath = &session.ErrorLogPath
+				}
+			}
+
+			files = append(files, fileInfo)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(files); err != nil {
+			http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Local mode: return actual input files
 	s.mu.RLock()
 	completedFiles := make(map[string]bool)
 	for k, v := range s.completedFiles {
@@ -145,6 +220,13 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAuditFiles(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	outDir := s.outDir
+
+	// In service mode, use the current session's output directory
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
 	s.mu.RUnlock()
 
 	HandleAuditFiles(outDir)(w, r)
@@ -154,6 +236,13 @@ func (s *Server) handleAuditFiles(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleLogFiles(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	outDir := s.outDir
+
+	// In service mode, use the current session's output directory
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
 	s.mu.RUnlock()
 
 	HandleLogFiles(outDir)(w, r)
@@ -163,6 +252,13 @@ func (s *Server) handleLogFiles(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAuditRecords(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	outDir := s.outDir
+
+	// In service mode, use the current session's output directory
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
 	s.mu.RUnlock()
 
 	HandleAuditRecords(outDir)(w, r)
@@ -172,6 +268,13 @@ func (s *Server) handleAuditRecords(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleLogContent(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	outDir := s.outDir
+
+	// In service mode, use the current session's output directory
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
 	s.mu.RUnlock()
 
 	HandleLogContent(outDir)(w, r)
@@ -396,6 +499,57 @@ func (s *Server) handleSetDirectory(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	// Service mode: find session by input file path
+	if s.isServiceMode && s.sessionManager != nil {
+		clientIP := s.getUserIP(r)
+
+		// Search in user's sessions and preloaded sessions
+		allSessions := s.sessionManager.GetAllSessions()
+		var matchedSession *SessionInfo
+
+		for _, session := range allSessions {
+			// Match by input file path
+			if session.InputFile == req.InputFile {
+				// For preloaded sessions, any user can access
+				// For user sessions, check IP ownership
+				if session.IsPreloaded || session.IP == clientIP {
+					matchedSession = session
+					break
+				}
+			}
+		}
+
+		if matchedSession == nil {
+			log.Printf("[WebUI] Session not found for input file: %s (IP: %s)", req.InputFile, clientIP)
+			http.Error(w, "File not found or access denied", http.StatusNotFound)
+			return
+		}
+
+		// Check if session is completed
+		if matchedSession.Status != StatusCompleted {
+			log.Printf("[WebUI] Session %s not completed yet (status: %s)", matchedSession.SessionID, matchedSession.Status)
+			http.Error(w, fmt.Sprintf("Analysis not yet complete (status: %s)", matchedSession.Status), http.StatusBadRequest)
+			return
+		}
+
+		// Set active session and output directory
+		s.currentSession = matchedSession.SessionID
+		s.outDir = matchedSession.OutputDir
+		s.activeInputFile = matchedSession.InputFile
+
+		log.Printf("[WebUI] Active session changed to: %s (file: %s, outputDir: %s)",
+			matchedSession.SessionID, matchedSession.InputFilename, matchedSession.OutputDir)
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success":         true,
+			"outputDir":       matchedSession.OutputDir,
+			"activeInputFile": matchedSession.InputFile,
+		})
+		return
+	}
+
+	// Local mode: original logic
 	// Find the input file in our list
 	found := false
 	for _, f := range s.inputFiles {
@@ -419,19 +573,30 @@ func (s *Server) handleSetDirectory(w http.ResponseWriter, r *http.Request) {
 	// Get the actual output directory for this file
 	newOutDir, exists := s.fileOutputDirs[req.InputFile]
 	if !exists {
-		// Fallback: calculate the output directory using the same logic as getOutputDirForFile in main.go
-		// Strip the file extension to get the directory name
-		baseName := filepath.Base(req.InputFile)
-		// Remove all known pcap extensions
-		dirName := baseName
-		for _, ext := range []string{".pcap", ".pcapng", ".cap", ".dmp"} {
-			if strings.HasSuffix(dirName, ext) {
-				dirName = strings.TrimSuffix(dirName, ext)
-				break
+		// For single-file mode, use the current outDir as-is (it's already the correct directory)
+		// For multi-file mode, calculate the subdirectory
+		if len(s.inputFiles) == 1 {
+			// Single file mode: outDir is already the correct per-file directory
+			newOutDir = s.baseOutDir
+			log.Printf("[WebUI] Single-file mode: using baseOutDir as-is: %s", newOutDir)
+		} else {
+			// Multi-file mode: calculate the subdirectory
+			// Strip the file extension to get the directory name
+			baseName := filepath.Base(req.InputFile)
+			// Remove all known pcap extensions
+			dirName := baseName
+			for _, ext := range []string{".pcap", ".pcapng", ".cap", ".dmp"} {
+				if strings.HasSuffix(dirName, ext) {
+					dirName = strings.TrimSuffix(dirName, ext)
+					break
+				}
 			}
+			newOutDir = filepath.Join(s.baseOutDir, dirName)
+			log.Printf("[WebUI] Multi-file mode: calculated path: %s (baseOutDir=%s, dirName=%s)",
+				newOutDir, s.baseOutDir, dirName)
 		}
-		newOutDir = filepath.Join(s.baseOutDir, dirName)
-		log.Printf("[WebUI] Warning: Output directory not found in map, calculated fallback: %s", newOutDir)
+	} else {
+		log.Printf("[WebUI] Output directory found in map for file '%s': %s", req.InputFile, newOutDir)
 	}
 
 	// Update the active directory and file
@@ -455,9 +620,15 @@ func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get short version of commit hash (first 7 characters)
+	shortCommit := netcap.Commit
+	if len(shortCommit) > 7 {
+		shortCommit = shortCommit[:7]
+	}
+
 	response := map[string]string{
 		"version":         netcap.Version,
-		"commit":          netcap.Commit,
+		"commit":          shortCommit,
 		"gopacketVersion": netcap.GopacketVersion,
 	}
 
@@ -638,7 +809,7 @@ func (s *Server) handleDPIPreferences(w http.ResponseWriter, r *http.Request) {
 			s.mu.RLock()
 			dpiConfigured := s.dpiConfigured
 			s.mu.RUnlock()
-			
+
 			defaultModules := []string{}
 			if dpiConfigured {
 				defaultModules = []string{"ndpi", "lpi", "go"}
@@ -1419,13 +1590,27 @@ func (s *Server) handleReportIssue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	clientIP := s.getUserIP(r)
+
+	// Check rate limit for issue reports (only in service mode)
+	if s.isServiceMode && s.sessionManager != nil {
+		allowed, remaining := s.sessionManager.CheckIssueReportLimit(clientIP)
+		if !allowed {
+			RespondJSON(w, http.StatusTooManyRequests, map[string]interface{}{
+				"error":     "Issue report rate limit exceeded",
+				"message":   "You have reached the maximum number of issue reports per hour (3 per hour)",
+				"remaining": remaining,
+				"success":   false,
+			})
+			return
+		}
+	}
+
 	// Parse request body
 	var req ReportIssueRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Printf("[WebUI] Failed to parse report issue request: %v", err)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
 			"error":   "Invalid request body",
 			"success": false,
 		})
@@ -1434,37 +1619,188 @@ func (s *Server) handleReportIssue(w http.ResponseWriter, r *http.Request) {
 
 	// Validate input
 	if req.SessionID == "" || req.Description == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
 			"error":   "SessionID and description are required",
 			"success": false,
 		})
 		return
 	}
 
-	// Find the file by sessionId (in service mode, sessionId is typically the file path or name)
-	// We need to find the corresponding file and calculate its hash
+	// Handle based on mode
+	if s.isServiceMode && s.sessionManager != nil {
+		s.handleServiceModeIssueReport(w, req, clientIP)
+	} else {
+		s.handleLocalModeIssueReport(w, req)
+	}
+}
+
+// handleServiceModeIssueReport handles issue reports in service mode with full session data
+func (s *Server) handleServiceModeIssueReport(w http.ResponseWriter, req ReportIssueRequest, clientIP string) {
+	// Get session info
+	session, exists := s.sessionManager.GetSession(req.SessionID)
+	if !exists {
+		RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+			"error":   "Session not found",
+			"success": false,
+		})
+		return
+	}
+
+	// Check if issue was already reported for this session
+	if session.HasReportedIssue {
+		RespondJSON(w, http.StatusConflict, map[string]interface{}{
+			"error":   "An issue has already been reported for this session",
+			"success": false,
+		})
+		return
+	}
+
+	// Check if analysis is complete
+	if session.Status != StatusCompleted {
+		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"error":   "Analysis must be completed before reporting issues",
+			"status":  string(session.Status),
+			"success": false,
+		})
+		return
+	}
+
+	// Generate issue ID
+	issueID := generateSessionID()
+
+	// Create issues directory structure
+	issuesBaseDir := filepath.Join(s.serviceConfig.DataDir, "issues")
+	issueDir := filepath.Join(issuesBaseDir, issueID)
+
+	if err := os.MkdirAll(issueDir, 0755); err != nil {
+		log.Printf("[Service] Failed to create issue directory: %v", err)
+		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"error":   "Failed to create issue directory",
+			"success": false,
+		})
+		return
+	}
+
+	// Save issue description as markdown file
+	descriptionPath := filepath.Join(issueDir, "description.md")
+	if err := os.WriteFile(descriptionPath, []byte(req.Description), 0644); err != nil {
+		log.Printf("[Service] Failed to write issue description: %v", err)
+		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"error":   "Failed to save issue description",
+			"success": false,
+		})
+		return
+	}
+
+	// Save metadata about the issue
+	metadata := map[string]interface{}{
+		"issueId":        issueID,
+		"sessionId":      session.SessionID,
+		"reportedBy":     clientIP,
+		"reportTime":     time.Now().Unix(),
+		"inputFilename":  session.InputFilename,
+		"inputFileSize":  session.InputFileSize,
+		"bpfFilter":      session.BPFFilter,
+		"completionTime": session.CompletionTime.Unix(),
+	}
+
+	metadataJSON, err := json.MarshalIndent(metadata, "", "  ")
+	if err != nil {
+		log.Printf("[Service] Failed to marshal issue metadata: %v", err)
+		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"error":   "Failed to create issue metadata",
+			"success": false,
+		})
+		return
+	}
+
+	metadataPath := filepath.Join(issueDir, "metadata.json")
+	if err := os.WriteFile(metadataPath, metadataJSON, 0644); err != nil {
+		log.Printf("[Service] Failed to write issue metadata: %v", err)
+		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"error":   "Failed to save issue metadata",
+			"success": false,
+		})
+		return
+	}
+
+	// Copy PCAP file to issue directory
+	pcapDestPath := filepath.Join(issueDir, filepath.Base(session.InputFile))
+	if err := copyFile(session.InputFile, pcapDestPath); err != nil {
+		log.Printf("[Service] Failed to copy PCAP file: %v", err)
+		// Not fatal, continue
+	}
+
+	// Copy all netcap audit records from output directory to issue directory
+	netcapDataDir := filepath.Join(issueDir, "netcap-data")
+	if err := os.MkdirAll(netcapDataDir, 0755); err != nil {
+		log.Printf("[Service] Failed to create netcap data directory: %v", err)
+		// Not fatal, continue
+	} else {
+		// Copy all .ncap.gz files from session output directory
+		err = filepath.Walk(session.OutputDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if info.IsDir() {
+				return nil
+			}
+
+			// Only copy .ncap.gz files
+			if !strings.HasSuffix(info.Name(), ".ncap.gz") {
+				return nil
+			}
+
+			destPath := filepath.Join(netcapDataDir, info.Name())
+			return copyFile(path, destPath)
+		})
+
+		if err != nil {
+			log.Printf("[Service] Warning: Failed to copy some netcap data: %v", err)
+			// Not fatal, continue
+		}
+	}
+
+	log.Printf("[Service] Issue report created: issueId=%s, sessionId=%s, reportedBy=%s", issueID, session.SessionID, clientIP)
+
+	// Mark session as having reported issue
+	s.sessionManager.MarkSessionIssueReported(session.SessionID)
+
+	// Record issue report for rate limiting
+	s.sessionManager.RecordIssueReport(clientIP)
+
+	// Return success response
+	RespondJSON(w, http.StatusOK, ReportIssueResponse{
+		Success: true,
+		IssueID: issueID,
+		Message: "Issue report submitted successfully. Thank you for helping improve netcap!",
+	})
+}
+
+// handleLocalModeIssueReport handles issue reports in local mode (simpler, no session data)
+func (s *Server) handleLocalModeIssueReport(w http.ResponseWriter, req ReportIssueRequest) {
+	// Find the file by sessionId (which is file path or basename in local mode)
 	s.mu.RLock()
 	inputFiles := s.inputFiles
 	s.mu.RUnlock()
 
 	var fileHash string
 	var fileName string
+	var filePath string
+
 	for _, path := range inputFiles {
-		// In service mode, sessionId might be the file path or a derived identifier
-		// For simplicity, we'll match on the base name or full path
+		// Try to match by basename or full path
 		if strings.Contains(path, req.SessionID) || filepath.Base(path) == req.SessionID {
 			fileHash = calculateFileHash(path)
 			fileName = filepath.Base(path)
+			filePath = path
 			break
 		}
 	}
 
 	if fileHash == "" {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		RespondJSON(w, http.StatusNotFound, map[string]interface{}{
 			"error":   "File not found for the given session",
 			"success": false,
 		})
@@ -1477,9 +1813,7 @@ func (s *Server) handleReportIssue(w http.ResponseWriter, r *http.Request) {
 	s.mu.RUnlock()
 
 	if alreadyReported {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		RespondJSON(w, http.StatusConflict, map[string]interface{}{
 			"error":   "An issue has already been reported for this file",
 			"success": false,
 		})
@@ -1494,19 +1828,159 @@ func (s *Server) handleReportIssue(w http.ResponseWriter, r *http.Request) {
 	// Generate a unique issue ID
 	issueID := fmt.Sprintf("issue-%s-%d", fileHash[:8], time.Now().Unix())
 
+	// Try to create issues directory in output dir
+	s.mu.RLock()
+	outDir := s.outDir
+	s.mu.RUnlock()
+
+	issuesDir := filepath.Join(outDir, "issues")
+	issueDir := filepath.Join(issuesDir, issueID)
+
+	if err := os.MkdirAll(issueDir, 0755); err != nil {
+		log.Printf("[WebUI] Warning: Failed to create issue directory: %v", err)
+		// Continue anyway - we'll at least log it
+	} else {
+		// Save description
+		descriptionPath := filepath.Join(issueDir, "description.md")
+		if err := os.WriteFile(descriptionPath, []byte(req.Description), 0644); err != nil {
+			log.Printf("[WebUI] Warning: Failed to write issue description: %v", err)
+		}
+
+		// Save metadata
+		metadata := map[string]interface{}{
+			"issueId":    issueID,
+			"fileName":   fileName,
+			"filePath":   filePath,
+			"fileHash":   fileHash,
+			"reportTime": time.Now().Unix(),
+			"sessionId":  req.SessionID,
+		}
+
+		metadataJSON, err := json.MarshalIndent(metadata, "", "  ")
+		if err == nil {
+			metadataPath := filepath.Join(issueDir, "metadata.json")
+			if err := os.WriteFile(metadataPath, metadataJSON, 0644); err != nil {
+				log.Printf("[WebUI] Warning: Failed to write issue metadata: %v", err)
+			}
+		}
+	}
+
 	log.Printf("[WebUI] Issue report submitted: issueId=%s, file=%s, hash=%s", issueID, fileName, fileHash)
 
-	// In a real implementation, you might want to:
-	// - Save the issue details to a file or database
-	// - Send the issue report to a backend service
-	// - Create a GitHub issue or similar
-	// For now, we just log it and mark it as reported
-
 	// Return success response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ReportIssueResponse{
+	RespondJSON(w, http.StatusOK, ReportIssueResponse{
 		Success: true,
 		IssueID: issueID,
-		Message: "Issue report submitted successfully",
+		Message: "Issue report submitted successfully. Thank you for helping improve netcap!",
 	})
+}
+
+// handleErrorLogContent serves error log content for failed analyses
+func (s *Server) handleErrorLogContent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract session ID from URL path: /api/error-log/{sessionId}
+	sessionID := strings.TrimPrefix(r.URL.Path, "/api/error-log/")
+	if sessionID == "" {
+		http.Error(w, "Session ID required", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("[WebUI] GET /api/error-log/%s", sessionID)
+
+	// Service mode: Look up the session
+	if s.isServiceMode && s.sessionManager != nil {
+		session, exists := s.sessionManager.GetSession(sessionID)
+		if !exists || session == nil {
+			log.Printf("[WebUI] Session not found: %s", sessionID)
+			http.Error(w, "Session not found", http.StatusNotFound)
+			return
+		}
+
+		// Check if session has an error log path
+		if session.ErrorLogPath == "" {
+			log.Printf("[WebUI] No error log path for session: %s", sessionID)
+			http.Error(w, "No error log available for this session", http.StatusNotFound)
+			return
+		}
+
+		log.Printf("[WebUI] Reading error log from: %s", session.ErrorLogPath)
+
+		// Read the error log file
+		content, err := os.ReadFile(session.ErrorLogPath)
+		if err != nil {
+			log.Printf("[WebUI] Failed to read error log for session %s: %v", sessionID, err)
+			http.Error(w, fmt.Sprintf("Failed to read error log: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		log.Printf("[WebUI] Successfully read error log for session %s (size: %d bytes)", sessionID, len(content))
+
+		// Return raw log content as plain text
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		w.Write(content)
+		return
+	}
+
+	// Local mode: sessionID is the file path or error log path
+	s.mu.RLock()
+	fileErrors := s.fileErrors
+	s.mu.RUnlock()
+
+	// Try to find the error log for this file
+	var errorLogPath string
+	for filePath, ferr := range fileErrors {
+		// Match by file path or base name
+		if filePath == sessionID || filepath.Base(filePath) == sessionID {
+			if ferr.ErrorLogPath != "" {
+				errorLogPath = ferr.ErrorLogPath
+				break
+			}
+		}
+	}
+
+	if errorLogPath == "" {
+		log.Printf("[WebUI] No error log found for: %s", sessionID)
+		http.Error(w, "No error log available for this file", http.StatusNotFound)
+		return
+	}
+
+	log.Printf("[WebUI] Reading error log from: %s", errorLogPath)
+
+	// Read the error log file
+	content, err := os.ReadFile(errorLogPath)
+	if err != nil {
+		log.Printf("[WebUI] Failed to read error log: %v", err)
+		http.Error(w, fmt.Sprintf("Failed to read error log: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("[WebUI] Successfully read error log (size: %d bytes)", len(content))
+
+	// Return raw log content as plain text
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(content)
+}
+
+// copyFile copies a file from src to dst
+func copyFile(src, dst string) error {
+	sourceFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer sourceFile.Close()
+
+	destFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+
+	_, err = io.Copy(destFile, sourceFile)
+	return err
 }

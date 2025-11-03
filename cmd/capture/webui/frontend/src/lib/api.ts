@@ -176,7 +176,7 @@ export interface ConfigOption {
 
 export interface ConfigResponse {
   readOnly: boolean;
-  isTryService?: boolean;
+  isServiceMode?: boolean;
   options: ConfigOption[];
 }
 
@@ -415,7 +415,9 @@ export const api = {
   async getAllSessions(): Promise<TrySession[]> {
     const res = await fetch(`${API_BASE}/try/sessions`);
     if (!res.ok) throw new Error('Failed to fetch sessions');
-    return res.json();
+    const data = await res.json();
+    // Backend returns {sessions: [...]} so we need to extract the array
+    return data.sessions || [];
   },
 
   async selectSession(sessionId: string): Promise<void> {

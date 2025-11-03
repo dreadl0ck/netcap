@@ -55,7 +55,7 @@ export default function Interfaces() {
   }
 
   // Check if we're in local mode (not try service)
-  const isServiceMode = status?.isTryService === true;
+  const isServiceMode = status?.isServiceMode === true;
 
   return (
     <Layout title="Network Interfaces">

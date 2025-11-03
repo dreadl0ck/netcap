@@ -167,7 +167,7 @@ export default function DataSources() {
   }
 
   // Check if we're in local mode (not try service) and if we have network interfaces
-  const isLocalMode = !status?.isTryService;
+  const isLocalMode = !status?.isServiceMode;
   const hasNetworkInterfaces = networkInterfaces && networkInterfaces.length > 0;
 
   return (
@@ -308,7 +308,7 @@ export default function DataSources() {
                   <TableCell>Path</TableCell>
                   <TableCell align="right">Size</TableCell>
                   <TableCell align="right">Modified</TableCell>
-                  {(isMultiFile || status?.isTryService) && <TableCell align="right">Actions</TableCell>}
+                  {(isMultiFile || status?.isServiceMode) && <TableCell align="right">Actions</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -377,7 +377,7 @@ export default function DataSources() {
                     </TableCell>
                     <TableCell align="right">{formatBytes(file.size)}</TableCell>
                     <TableCell align="right">{formatTimestamp(file.modifiedTime)}</TableCell>
-                    {(isMultiFile || status?.isTryService) && (
+                    {(isMultiFile || status?.isServiceMode) && (
                       <TableCell align="right" onClick={(e) => e.stopPropagation()}>
                         <Box display="flex" justifyContent="flex-end" gap={1}>
                           {isMultiFile && (
@@ -416,7 +416,7 @@ export default function DataSources() {
                               </IconButton>
                             </Tooltip>
                           )}
-                          {status?.isTryService && file.sessionId && (
+                          {status?.isServiceMode && file.sessionId && (
                             <Tooltip title={copiedFileId === file.path ? "Copied!" : "Copy Share Link"}>
                               <IconButton
                                 size="small"
