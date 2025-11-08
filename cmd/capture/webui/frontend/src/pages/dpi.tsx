@@ -167,32 +167,6 @@ export default function DPIPage() {
   return (
     <Layout title="Deep Packet Inspection">
       <Box>
-        <Box mb={4}>
-          <Box display="flex" alignItems="center" gap={2} mb={2}>
-            <SecurityIcon color="primary" fontSize="large" />
-            <Typography variant="h4" gutterBottom>
-              Deep Packet Inspection Configuration
-            </Typography>
-          </Box>
-          <Typography variant="body1" color="text.secondary">
-            {status?.isServiceMode 
-              ? 'View DPI configuration and supported protocols'
-              : 'Configure and monitor DPI modules for application layer protocol identification'}
-          </Typography>
-        </Box>
-
-        {/* Try Service Mode Alert */}
-        {status?.isServiceMode && (
-          <Alert severity="info" sx={{ mb: 4 }}>
-            <AlertTitle>Try Service Mode</AlertTitle>
-            <Typography variant="body2">
-              You are viewing the DPI configuration in try service mode. 
-              This page is read-only and shows the current DPI settings configured by the service administrator.
-              DPI is {dpiInfo?.enabled ? 'enabled' : 'disabled'} for your analysis sessions.
-            </Typography>
-          </Alert>
-        )}
-
         {/* DPI Support Status */}
         <Grid container spacing={3} mb={4}>
           <Grid item xs={12} md={6}>
@@ -213,13 +187,6 @@ export default function DPIPage() {
                     />
                   </Box>
                 </Box>
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  <Typography variant="body2">
-                    {dpiInfo.hasSupport 
-                      ? 'DPI support is compiled into this build and ready to use.'
-                      : 'DPI support is not compiled into this build. Rebuild with DPI libraries to enable.'}
-                  </Typography>
-                </Alert>
               </CardContent>
             </Card>
           </Grid>
@@ -242,13 +209,6 @@ export default function DPIPage() {
                     />
                   </Box>
                 </Box>
-                <Alert severity="info" sx={{ mt: 2 }}>
-                  <Typography variant="body2">
-                    {status?.isServiceMode 
-                      ? 'DPI is configured by the service administrator and applies to all analysis sessions.'
-                      : 'DPI is configured at capture startup using the -dpi flag. Modules can be specified with the -dpi-modules flag (e.g., "ndpi,lpi,go").'}
-                  </Typography>
-                </Alert>
               </CardContent>
             </Card>
           </Grid>
@@ -594,46 +554,6 @@ export default function DPIPage() {
                     </Accordion>
                   );
                 })}
-              </Grid>
-              <Grid item xs={12}>
-                <Alert severity="info" icon={<InfoIcon />}>
-                  <AlertTitle>Module Configuration</AlertTitle>
-                  {status?.isServiceMode ? (
-                    <Typography variant="body2">
-                      The DPI modules shown are configured by the service administrator.
-                      Toggle functionality is disabled in try service mode.
-                      Click on each module to view its supported protocols.
-                    </Typography>
-                  ) : (
-                    <>
-                      <Typography variant="body2" gutterBottom>
-                        Use the toggle switches to enable or disable individual DPI modules.
-                        Your preferences are saved automatically and will be applied to all future file uploads and analysis sessions.
-                        Click on each module to view its supported protocols.
-                      </Typography>
-                      <Typography variant="body2" gutterBottom sx={{ mt: 1 }}>
-                        When you upload a PCAP file, these DPI module preferences will be automatically applied during analysis.
-                        You can change these settings at any time, and they will be used for subsequent uploads.
-                      </Typography>
-                      <Typography variant="body2" gutterBottom sx={{ mt: 1 }}>
-                        Modules can also be configured at capture startup using the <code>-dpi-modules</code> flag:
-                      </Typography>
-                      <Box
-                        component="pre"
-                        sx={{
-                          mt: 1,
-                          p: 1,
-                          bgcolor: 'background.paper',
-                          borderRadius: 1,
-                          fontSize: '0.875rem',
-                          overflowX: 'auto',
-                        }}
-                      >
-                        net capture -r input.pcap -dpi -dpi-modules &quot;ndpi,lpi,go&quot;
-                      </Box>
-                    </>
-                  )}
-                </Alert>
               </Grid>
             </Grid>
           </CardContent>

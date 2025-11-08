@@ -135,24 +135,6 @@ export default function Config() {
           {updateError}
         </Alert>
       )}
-      
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Configuration
-        </Typography>
-        <Typography variant="body1" color="text.secondary" gutterBottom>
-          Current Netcap configuration options and their values
-        </Typography>
-
-        {configData.readOnly && (
-          <Alert severity="info" icon={<InfoIcon />} sx={{ mt: 2 }}>
-            Configuration is read-only. 
-            {configData.isServiceMode
-              ? ' To change settings for future analysis runs, restart the try service with different flags.'
-              : ' To change settings, restart the capture process with different flags.'}
-          </Alert>
-        )}
-      </Box>
 
       <Box sx={{ mb: 3 }}>
         <TextField

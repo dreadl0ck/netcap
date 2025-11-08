@@ -87,6 +87,10 @@ or: ./net <subcommand> [-h] to get help for the subcommand`)
 }
 
 func main() {
+	// Remove date/time from log output to prevent duplicate timestamps
+	// when running in Docker/systemd (which add their own timestamps)
+	log.SetFlags(0)
+	
 	flag.Usage = help
 	flag.Parse()
 

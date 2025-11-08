@@ -21,23 +21,31 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"sync/atomic"
-	"time"
 
 	godpi "github.com/dreadl0ck/go-dpi"
 	"github.com/dreadl0ck/go-dpi/modules/classifiers"
 	"github.com/dreadl0ck/go-dpi/modules/wrappers"
 	. "github.com/dreadl0ck/go-dpi/types"
 	"github.com/gopacket/gopacket"
+	"github.com/mgutz/ansi"
 
 	"github.com/dreadl0ck/netcap/types"
 )
 
 var disableDPI atomic.Bool
 
+// Cache for module protocols to avoid re-initializing wrappers
+var (
+	moduleProtocolsCache     map[string][]string
+	moduleProtocolsCacheLock sync.RWMutex
+	moduleProtocolsCached    atomic.Bool
+)
+
 func init() {
-	// Initialize disableDPI to true (DPI is disabled by default)
-	disableDPI.Store(true)
+	// Initialize disableDPI to false (DPI is enabled by default)
+	disableDPI.Store(false)
 }
 
 const categoryUnknown = "UNKNOWN"
@@ -52,13 +60,8 @@ func IsEnabled() bool {
 // If empty, all modules will be enabled.
 // This function is thread-safe and will only execute once if called concurrently.
 func Init(modules string) {
-	// Atomically check if DPI is disabled (true) and set it to enabled (false)
-	// If DPI was already enabled (false), this returns false and we skip initialization
-	// This prevents race conditions where multiple goroutines try to initialize simultaneously
-	if !disableDPI.CompareAndSwap(true, false) {
-		log.Println("DPI: already initialized, skipping re-initialization")
-		return
-	}
+
+	log.Println(ansi.Yellow + "[DPI] Init() called" + ansi.Reset)
 
 	var (
 		selectedModules []Module
@@ -72,13 +75,13 @@ func Init(modules string) {
 	if moduleSet["lpi"] {
 		lPI := wrappers.NewLPIWrapper()
 		enabledWrappers = append(enabledWrappers, lPI)
-		log.Println("DPI: enabled LPI wrapper")
+		//log.Println("DPI: enabled LPI wrapper")
 	}
 
 	if moduleSet["ndpi"] {
 		nDPI := wrappers.NewNDPIWrapper()
 		enabledWrappers = append(enabledWrappers, nDPI)
-		log.Println("DPI: enabled nDPI wrapper")
+		//log.Println("DPI: enabled nDPI wrapper")
 	}
 
 	// Configure wrapper module if any wrappers are enabled
@@ -92,7 +95,8 @@ func Init(modules string) {
 	if moduleSet["go"] {
 		goDPI := classifiers.NewClassifierModule()
 		selectedModules = append(selectedModules, goDPI)
-		log.Println("DPI: enabled go-dpi classifier")
+		//log.Println("DPI: enabled go-dpi classifier")
+		//dpiLog.Info("DPI: enabled go-dpi classifier")
 	}
 
 	// Set modules and initialize
@@ -114,6 +118,7 @@ func Init(modules string) {
 	if err := godpi.Initialize(); err != nil {
 		log.Fatal("goDPI initialization returned an error: ", err)
 	}
+	log.Println(ansi.Yellow + "[DPI] Init() done" + ansi.Reset)
 }
 
 // parseModules parses a comma-separated list of module names and returns a set.
@@ -152,18 +157,10 @@ func parseModules(modules string) map[string]bool {
 // Destroy tears down godpi and frees the memory allocated for cgo.
 // It also explicitly resets the internal flow tracker to release all tracked flows.
 // Returned errors are logged to stdout.
-// This function is thread-safe and will only execute once if called concurrently.
+// This function is NOT thread-safe!
 func Destroy() {
-	// Atomically check if DPI is enabled (false) and set it to disabled (true)
-	// If DPI was already disabled (true), this returns false and we skip destruction
-	// This prevents race conditions where multiple goroutines try to destroy simultaneously
-	if !disableDPI.CompareAndSwap(false, true) {
-		// DPI was already disabled, nothing to do
-		return
-	}
 
-	// At this point, we've atomically transitioned from enabled to disabled
-	// Only one goroutine will reach here even if Destroy() is called concurrently
+	log.Println(ansi.Red + "[DPI] Destroy() called" + ansi.Reset)
 
 	// Destroy modules and flow tracker
 	// This calls types.DestroyCache() which flushes the flow cache
@@ -183,21 +180,22 @@ func Destroy() {
 //  3. Waits for C libraries to release memory
 //  4. Reinitializes with the same modules
 func Reset(modules string) {
-	if !disableDPI.Load() {
+
+	disabled := disableDPI.Load()
+	log.Printf(ansi.Red+"[DPI] Reset() called, disabled=%t"+ansi.Reset, disabled)
+
+	if !disabled {
+
+		log.Printf("[DPI] Resetting DPI state with modules: %s", modules)
+
 		// Destroy will:
 		// - Call godpi.Destroy() which calls types.DestroyCache()
 		// - types.DestroyCache() flushes the cache and nils FlowTrackerInstance
 		// - This releases all tracked flows and allows GC to reclaim memory
 		Destroy()
-
-		// Allow time for C libraries to fully release memory
-		// This is important because nDPI and LPI use C memory allocation
-		// which may not be immediately returned to the OS
-		time.Sleep(10 * time.Millisecond)
-
-		// Initialize fresh DPI state with new FlowTrackerInstance
-		Init(modules)
 	}
+
+	log.Println(ansi.Red + "[DPI] Reset() returning" + ansi.Reset)
 }
 
 // GetProtocols returns a map of all the identified protocol names to a result datastructure
@@ -246,6 +244,9 @@ func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 		// so they will be deduplicated by protocol name before counting them later
 		protocols := make(map[string]ClassificationResult)
 		for _, r := range results {
+			if r.Protocol == "UNKNOWN" {
+				continue
+			}
 			protocols[string(r.Protocol)] = r
 		}
 
@@ -272,71 +273,104 @@ func getCategoryString(in Category) string {
 
 // GetModuleProtocols returns a map of module names to their supported protocols
 // using the new GetSupportedProtocols APIs introduced in go-dpi v1.3.0
-// Note: This function initializes temporary wrapper instances to get protocol lists
-// It works independently of whether DPI is currently enabled or not
 func GetModuleProtocols() map[string][]string {
+	// Fast path: return cached results if available
+	if moduleProtocolsCached.Load() {
+		moduleProtocolsCacheLock.RLock()
+		defer moduleProtocolsCacheLock.RUnlock()
+
+		// Return a copy to prevent external modification
+		result := make(map[string][]string, len(moduleProtocolsCache))
+		for k, v := range moduleProtocolsCache {
+			protocols := make([]string, len(v))
+			copy(protocols, v)
+			result[k] = protocols
+		}
+		log.Printf("[DPI] GetModuleProtocols returning %d modules from cache", len(result))
+		return result
+	}
+
+	// Slow path: initialize temporary wrappers to get protocol lists
+	moduleProtocolsCacheLock.Lock()
+	defer moduleProtocolsCacheLock.Unlock()
+
+	// Double-check in case another goroutine initialized while we waited for lock
+	if moduleProtocolsCached.Load() {
+		result := make(map[string][]string, len(moduleProtocolsCache))
+		for k, v := range moduleProtocolsCache {
+			protocols := make([]string, len(v))
+			copy(protocols, v)
+			result[k] = protocols
+		}
+		return result
+	}
+
 	result := make(map[string][]string)
 
 	// Get protocols from nDPI wrapper
 	// Initialize a temporary instance just to get the protocol list
 	ndpiWrapper := wrappers.NewNDPIWrapper()
-	initResult := ndpiWrapper.InitializeWrapper()
-	log.Printf("[DPI] nDPI InitializeWrapper returned: %d", initResult)
-	if initResult == 0 {
-		protocols := ndpiWrapper.GetSupportedProtocols()
-		log.Printf("[DPI] nDPI GetSupportedProtocols returned %d protocols", len(protocols))
-		if len(protocols) > 0 {
-			ndpiProtocols := make([]string, len(protocols))
-			for i, p := range protocols {
-				ndpiProtocols[i] = string(p)
-			}
-			result["ndpi"] = ndpiProtocols
+	// initResult := ndpiWrapper.InitializeWrapper()
+	// log.Printf("[DPI] nDPI InitializeWrapper returned: %d", initResult)
+	// if initResult == 0 {
+	protocols := ndpiWrapper.GetSupportedProtocols()
+	log.Printf("[DPI] nDPI GetSupportedProtocols returned %d protocols", len(protocols))
+	if len(protocols) > 0 {
+		ndpiProtocols := make([]string, len(protocols))
+		for i, p := range protocols {
+			ndpiProtocols[i] = string(p)
 		}
-		ndpiWrapper.DestroyWrapper()
-	} else {
-		log.Printf("[DPI] nDPI initialization failed with code: %d", initResult)
+		result["ndpi"] = ndpiProtocols
 	}
+	//ndpiWrapper.DestroyWrapper()
+	// } else {
+	// 	log.Printf("[DPI] nDPI initialization failed with code: %d", initResult)
+	// }
 
 	// Get protocols from LPI wrapper
 	// Initialize a temporary instance just to get the protocol list
 	lpiWrapper := wrappers.NewLPIWrapper()
-	lpiInitResult := lpiWrapper.InitializeWrapper()
-	log.Printf("[DPI] LPI InitializeWrapper returned: %d", lpiInitResult)
-	if lpiInitResult == 0 {
-		protocols := lpiWrapper.GetSupportedProtocols()
-		log.Printf("[DPI] LPI GetSupportedProtocols returned %d protocols", len(protocols))
-		if len(protocols) > 0 {
-			lpiProtocols := make([]string, len(protocols))
-			for i, p := range protocols {
-				lpiProtocols[i] = string(p)
-			}
-			result["lpi"] = lpiProtocols
+	// lpiInitResult := lpiWrapper.InitializeWrapper()
+	// log.Printf("[DPI] LPI InitializeWrapper returned: %d", lpiInitResult)
+	// if lpiInitResult == 0 {
+	protocols = lpiWrapper.GetSupportedProtocols()
+	log.Printf("[DPI] LPI GetSupportedProtocols returned %d protocols", len(protocols))
+	if len(protocols) > 0 {
+		lpiProtocols := make([]string, len(protocols))
+		for i, p := range protocols {
+			lpiProtocols[i] = string(p)
 		}
-		lpiWrapper.DestroyWrapper()
-	} else {
-		log.Printf("[DPI] LPI initialization failed with code: %d", lpiInitResult)
+		result["lpi"] = lpiProtocols
 	}
+	//lpiWrapper.DestroyWrapper()
+	// } else {
+	// 	log.Printf("[DPI] LPI initialization failed with code: %d", lpiInitResult)
+	// }
 
 	// Get protocols from go-dpi classifiers
 	// Initialize a temporary instance just to get the protocol list
 	goClassifier := classifiers.NewClassifierModule()
-	err := goClassifier.Initialize()
-	log.Printf("[DPI] go-dpi classifier Initialize returned error: %v", err)
-	if err == nil {
-		protocols := goClassifier.GetSupportedProtocols()
-		log.Printf("[DPI] go-dpi GetSupportedProtocols returned %d protocols", len(protocols))
-		if len(protocols) > 0 {
-			goProtocols := make([]string, len(protocols))
-			for i, p := range protocols {
-				goProtocols[i] = string(p)
-			}
-			result["go"] = goProtocols
+	// err := goClassifier.Initialize()
+	// log.Printf("[DPI] go-dpi classifier Initialize returned error: %v", err)
+	// if err == nil {
+	protocols = goClassifier.GetSupportedProtocols()
+	log.Printf("[DPI] go-dpi GetSupportedProtocols returned %d protocols", len(protocols))
+	if len(protocols) > 0 {
+		goProtocols := make([]string, len(protocols))
+		for i, p := range protocols {
+			goProtocols[i] = string(p)
 		}
-		goClassifier.Destroy()
-	} else {
-		log.Printf("[DPI] go-dpi classifier initialization failed: %v", err)
+		result["go"] = goProtocols
 	}
+	//goClassifier.Destroy()
+	// } else {
+	// 	log.Printf("[DPI] go-dpi classifier initialization failed: %v", err)
+	// }
 
-	log.Printf("[DPI] GetModuleProtocols returning %d modules with protocols", len(result))
+	// Cache the result
+	moduleProtocolsCache = result
+	moduleProtocolsCached.Store(true)
+
+	log.Printf("[DPI] GetModuleProtocols cached %d modules with protocols", len(result))
 	return result
 }

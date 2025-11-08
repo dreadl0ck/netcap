@@ -1,0 +1,265 @@
+# Suspicious Traffic Detection Rules
+# These rules detect potentially suspicious network traffic patterns
+
+description: "Detection rules for suspicious network traffic patterns including SSH connection monitoring, high port scanning, internal lateral movement indicators, and anomalous communication patterns requiring further investigation."
+
+rules:
+  # Port Scanning Detection
+  - name: Port Scan High Port
+    description: Detect connections to uncommon high ports that may indicate port scanning
+    type: TCP
+    expression: DstPort > 49152 && SYN && !ACK
+    severity: medium
+    mitre: ["T1046"]
+    tags: ["port-scan"]
+    enabled: true
+
+  # Suspicious Internal-to-Internal Traffic
+  # NOTE: Many legitimate services use high ports. Consider maintaining an allow-list
+  # of known internal services or focusing on specific suspicious port ranges.
+  - name: High Port Internal Communication
+    description: Monitor internal communication on high ports (configure allow-list for known services)
+    type: TCP
+    expression: IsPrivateIP(SrcIP) && IsPrivateIP(DstIP) && DstPort > 49152 && SYN && !ACK
+    severity: low
+    mitre: ["T1021"]
+    tags: ["lateral-movement"]
+    enabled: false  # Disabled - requires allow-list configuration
+
+  # HTTP Base64 Auth Bruteforce
+  - name: HTTP Base64 Auth Bruteforce
+    description: Detect HTTP Basic Authentication attempts that may indicate brute forcing
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)authorization") || StatusCode == 401
+    severity: medium
+    mitre: ["T1110.001"]
+    tags: ["brute-force"]
+    enabled: true
+    threshold: 50
+    threshold_window: 300
+
+  # HTTP Basic Auth Usage
+  - name: HTTP Basic Auth Usage
+    description: Detect usage of HTTP Basic Authentication (insecure)
+    type: HTTP
+    expression: StatusCode == 401 || MatchesPattern(URL, "(?i)www-authenticate")
+    severity: low
+    mitre: ["T1110"]
+    tags: ["insecure"]
+    enabled: true
+
+  # SSH Connection Activity
+  - name: SSH Connection Activity
+    description: Detect SSH connection activity for correlation analysis
+    type: TCP
+    expression: DstPort == 22 && ACK && PayloadSize > 0
+    severity: low
+    mitre: ["T1110.001", "T1021.004"]
+    tags: ["baseline"]
+    enabled: true
+
+  # RADIUS Auth Attempts
+  - name: RADIUS Auth Attempts
+    description: Detect RADIUS authentication traffic that may indicate brute forcing
+    type: UDP
+    expression: DstPort == 1812 || DstPort == 1645
+    severity: medium
+    mitre: ["T1110"]
+    tags: ["brute-force"]
+    enabled: true
+    threshold: 50
+    threshold_window: 120
+
+  # Unknown HTTP Proxy Detection
+  - name: Unknown HTTP Proxy Detection
+    description: Detect servers behaving as HTTP proxies
+    type: HTTP
+    expression: Method == "CONNECT" || MatchesPattern(URL, "^https?://")
+    severity: medium
+    mitre: ["T1090.002"]
+    tags: ["proxy"]
+    enabled: true
+
+  # SSH Suspiciously Long Version
+  # TODO use SSH audit records
+  - name: SSH Suspiciously Long Version
+    description: Detect SSH connections with abnormally long version strings (potential data exfil)
+    type: TCP
+    expression: DstPort == 22 && PayloadSize > 200
+    severity: medium
+    mitre: ["T1048.002"]
+    tags: ["tunneling"]
+    enabled: true
+
+  # MySQL External Connection
+  - name: MySQL External Connection
+    description: Detect MySQL connections crossing private-public boundary
+    type: TCP
+    expression: (DstPort == 3306 && IsPrivateIP(SrcIP) && IsPublicIP(DstIP)) || (SrcPort == 3306 && IsPublicIP(SrcIP) && IsPrivateIP(DstIP))
+    severity: high
+    mitre: ["T1021"]
+    tags: ["exposure"]
+    enabled: true
+
+  # Connection To Unusual Country
+  - name: Connection To Unusual Country
+    description: Monitor external connections (requires GeoIP enrichment for country filtering)
+    type: TCP
+    expression: IsPublicIP(DstIP) && ACK
+    severity: low
+    mitre: ["T1071"]
+    tags: ["geolocation"]
+    enabled: false  # Disabled - requires GeoIP data and allow-list configuration
+
+  # FTP Data Channel Activity
+  - name: FTP Data Channel Activity
+    description: Detect FTP data channel activity (port 20 or ephemeral ports in passive mode)
+    type: TCP
+    expression: (SrcPort == 20 || DstPort == 20) && PayloadSize > 0
+    severity: low
+    mitre: ["T1048.002"]
+    tags: ["file-transfer"]
+    enabled: true
+
+  # HTTP Server Error Spike
+  - name: HTTP Server Error Spike
+    description: Detect server-side errors that may indicate attacks or issues
+    type: HTTP
+    expression: StatusCode >= 500
+    severity: high
+    mitre: ["T1499"]
+    tags: ["dos"]
+    enabled: true
+    threshold: 30
+    threshold_window: 120
+
+  # RDP Connection
+  - name: RDP Connection
+    description: Detect RDP connections that may indicate lateral movement
+    type: TCP
+    expression: DstPort == 3389 || SrcPort == 3389
+    severity: medium
+    mitre: ["T1021.001"]
+    tags: ["lateral-movement"]
+    enabled: true
+
+  # SMB Admin Share Connection
+  - name: SMB Admin Share Connection
+    description: Detect connections to SMB ports that may indicate admin share access
+    type: TCP
+    expression: (DstPort == 445 || DstPort == 139) && SYN && !RST
+    severity: high
+    mitre: ["T1021.002", "T1570"]
+    tags: ["lateral-movement"]
+    enabled: true
+
+  # SSH Internal Lateral Movement
+  - name: SSH Internal Lateral Movement
+    description: Detect internal SSH connections that may indicate lateral movement
+    type: TCP
+    expression: DstPort == 22 && IsPrivateIP(SrcIP) && IsPrivateIP(DstIP)
+    severity: medium
+    mitre: ["T1021.004"]
+    tags: ["lateral-movement"]
+    enabled: true
+
+  # WinRM Connection
+  - name: WinRM Connection
+    description: Detect WinRM connections for remote code execution
+    type: TCP
+    expression: DstPort == 5985 || DstPort == 5986
+    severity: high
+    mitre: ["T1021.006"]
+    tags: ["lateral-movement"]
+    enabled: true
+
+  # LDAP Replication Activity
+  - name: LDAP Replication Activity
+    description: Detect LDAP connections that may indicate DCSync credential dumping
+    type: TCP
+    expression: (DstPort == 389 || DstPort == 636) && SYN
+    severity: high
+    mitre: ["T1003.006"]
+    tags: ["credential-access"]
+    enabled: true
+
+  # Kerberos Activity
+  - name: Kerberos Activity
+    description: Detect Kerberos traffic that may indicate ticket attacks (Golden/Silver Ticket)
+    type: TCP
+    expression: DstPort == 88 || SrcPort == 88
+    severity: medium
+    mitre: ["T1558.001", "T1558.003"]
+    tags: ["credential-access"]
+    enabled: true
+
+  # Authentication Brute Force
+  - name: Authentication Brute Force
+    description: Detect high frequency connections to authentication services
+    type: TCP
+    expression: (DstPort == 389 || DstPort == 636 || DstPort == 88) && SYN && !ACK
+    severity: high
+    mitre: ["T1110.001", "T1110.003"]
+    tags: ["brute-force"]
+    enabled: true
+    threshold: 50
+    threshold_window: 120
+
+  # SMB Service Execution
+  - name: SMB Service Execution
+    description: Detect SMB connections that may indicate remote service execution (PsExec-style)
+    type: TCP
+    expression: DstPort == 445 && PSH && ACK
+    severity: high
+    mitre: ["T1569.002"]
+    tags: ["execution"]
+    enabled: true
+
+  # WinRM PowerShell Execution
+  - name: WinRM PowerShell Execution
+    description: Detect WinRM connections used for PowerShell remote execution
+    type: TCP
+    expression: (DstPort == 5985 || DstPort == 5986) && ACK && PSH
+    severity: high
+    mitre: ["T1059.001", "T1021.006"]
+    tags: ["execution"]
+    enabled: true
+
+  # WMI Activity
+  - name: WMI Activity
+    description: Detect connections to WMI ports for remote execution
+    type: TCP
+    expression: DstPort == 135 || DstPort == 49152
+    severity: medium
+    mitre: ["T1047", "T1021.003"]
+    tags: ["execution"]
+    enabled: true
+
+  # SSH Tunneling Detection
+  - name: SSH Tunneling Detection
+    description: Detect SSH connections with high data transfer that may indicate tunneling
+    type: TCP
+    expression: (DstPort == 22 || SrcPort == 22) && PayloadSize > 1400
+    severity: medium
+    mitre: ["T1572", "T1090"]
+    tags: ["tunneling"]
+    enabled: true
+
+  # High Volume SMB Write
+  - name: High Volume SMB Write
+    description: Detect high volume SMB activity that may indicate ransomware encryption
+    type: TCP
+    expression: DstPort == 445 && ACK && PSH && PayloadSize > 1000
+    severity: critical
+    mitre: ["T1486"]
+    tags: ["ransomware"]
+    enabled: true
+  
+  - name: Suspicious Port 1337 External Connection
+    description: Connection to port 1337 on external IP detected - potential backdoor or malware activity
+    type: TCP
+    expression: DstPort == 1337 && IsPublicIP(DstIP)
+    severity: critical
+    mitre: ["T1071.001", "T1071.004"]
+    tags: ["external", "backdoor", "suspicious"]
+    enabled: true

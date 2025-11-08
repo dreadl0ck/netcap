@@ -79,6 +79,11 @@ func (ad *AbstractDecoder) SetWriter(w netio.AuditRecordWriter) {
 	ad.Writer = w
 }
 
+// GetWriter returns the current writer.
+func (ad *AbstractDecoder) GetWriter() netio.AuditRecordWriter {
+	return ad.Writer
+}
+
 // GetType returns the netcap type of the
 func (ad *AbstractDecoder) GetType() types.Type {
 	return ad.Type

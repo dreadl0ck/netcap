@@ -295,6 +295,86 @@ type DecoderFieldsResponse struct {
 	Fields      []FieldInfo `json:"fields"`
 }
 
+// handleAllDecoderFields returns field information for all decoders
+// URL: /api/decoders/fields
+func (s *Server) handleAllDecoderFields(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get all decoder names
+	allNames := s.getAllDecoderNames()
+	
+	// Build response map: decoder name -> field info array
+	response := make(map[string][]FieldInfo)
+	
+	for _, decoderName := range allNames {
+		// Skip NC_Header as it's a file header type, not an audit record type
+		if decoderName == "NC_Header" {
+			continue
+		}
+		
+		// Add NC_ prefix if not present (needed for stream and abstract decoders)
+		typeName := decoderName
+		if !strings.HasPrefix(typeName, "NC_") {
+			typeName = "NC_" + decoderName
+		}
+		
+		// Check if the type value exists in the type map
+		typeValue, exists := types.Type_value[typeName]
+		if !exists {
+			continue
+		}
+		
+		// Try to get the audit record type for this decoder
+		record := netio.InitRecord(types.Type(typeValue))
+		if record == nil {
+			continue
+		}
+
+		// Get field names from CSVHeader if it implements AuditRecord
+		if auditRecord, ok := record.(types.AuditRecord); ok {
+			headers := auditRecord.CSVHeader()
+
+			// Use reflection to get field types
+			recordType := reflect.TypeOf(record).Elem()
+			fieldTypes := make(map[string]string)
+
+			for i := 0; i < recordType.NumField(); i++ {
+				field := recordType.Field(i)
+				fieldTypes[field.Name] = getSimplifiedTypeName(field.Type)
+			}
+
+			fields := make([]FieldInfo, 0, len(headers))
+			// Create field info for each CSV header
+			for _, header := range headers {
+				fieldType := "unknown"
+				// Match header name to struct field name (they're usually the same)
+				for i := 0; i < recordType.NumField(); i++ {
+					field := recordType.Field(i)
+					if strings.EqualFold(field.Name, header) || field.Name == header {
+						fieldType = fieldTypes[field.Name]
+						break
+					}
+				}
+
+				fields = append(fields, FieldInfo{
+					Name: header,
+					Type: fieldType,
+				})
+			}
+
+			response[stripNCPrefix(decoderName)] = fields
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+	}
+}
+
 // handleDecoderFields returns field information for a specific decoder
 // URL: /api/decoders/{decoderName}/fields
 func (s *Server) handleDecoderFields(w http.ResponseWriter, r *http.Request) {
@@ -321,8 +401,14 @@ func (s *Server) handleDecoderFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Add NC_ prefix if not present (needed for stream and abstract decoders)
+	typeName := decoderName
+	if !strings.HasPrefix(typeName, "NC_") {
+		typeName = "NC_" + decoderName
+	}
+
 	// Try to get the audit record type for this decoder
-	record := netio.InitRecord(types.Type(types.Type_value[decoderName]))
+	record := netio.InitRecord(types.Type(types.Type_value[typeName]))
 	if record == nil {
 		http.Error(w, fmt.Sprintf("Unknown decoder: %s", decoderName), http.StatusNotFound)
 		return

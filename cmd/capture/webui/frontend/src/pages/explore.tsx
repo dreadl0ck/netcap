@@ -1,26 +1,21 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
-  Button,
-  Card,
-  CardContent,
   CircularProgress,
   FormControl,
-  Grid,
   InputLabel,
   MenuItem,
   Paper,
   Select,
-  SelectChangeEvent,
   Typography,
   Alert,
   Chip,
-  Stack,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   ToggleButton,
   ToggleButtonGroup,
+  type SelectChangeEvent,
 } from '@mui/material';
 import {
   BarChart as BarChartIcon,
@@ -163,7 +158,6 @@ export default function Explore() {
   const { data: auditFiles, mutate: mutateAuditFiles } = useSWR('auditFiles', () => api.getAuditFiles());
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
 
-  const [selectedInput, setSelectedInput] = useState<string>('');
   const [selectedAuditType, setSelectedAuditType] = useState<string>('');
   const [selectedField, setSelectedField] = useState<string>('');
   const [selectedChartType, setSelectedChartType] = useState<string>('line');
@@ -178,6 +172,26 @@ export default function Explore() {
   const [switchingFile, setSwitchingFile] = useState(false);
   const [autoSelectAttempted, setAutoSelectAttempted] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
+
+  // Audit type rotation: get/set the index of the last used audit type
+  const getNextAuditTypeIndex = useCallback((availableTypes: string[]): number => {
+    if (availableTypes.length === 0) return 0;
+    
+    const storageKey = 'explore-audit-type-rotation';
+    const storedIndex = localStorage.getItem(storageKey);
+    
+    // If we have a stored index, get the next one (cycling through)
+    if (storedIndex !== null) {
+      const lastIndex = parseInt(storedIndex, 10);
+      const nextIndex = (lastIndex + 1) % availableTypes.length;
+      localStorage.setItem(storageKey, nextIndex.toString());
+      return nextIndex;
+    }
+    
+    // First time - start with 0 and store it
+    localStorage.setItem(storageKey, '0');
+    return 0;
+  }, []);
 
   // Auto-select first completed file if no active file is set
   useEffect(() => {
@@ -327,8 +341,10 @@ export default function Explore() {
     setSelectedField(event.target.value);
   };
 
-  const handleChartTypeChange = (event: SelectChangeEvent) => {
-    setSelectedChartType(event.target.value);
+  const handleChartTypeChange = (_event: React.MouseEvent<HTMLElement>, newType: string | null) => {
+    if (newType !== null) {
+      setSelectedChartType(newType);
+    }
   };
 
   const handleFileChange = async (event: SelectChangeEvent<string>) => {
@@ -406,6 +422,21 @@ export default function Explore() {
     return Array.from(new Set(auditFiles.map((f) => f.type))).sort();
   }, [auditFiles]);
 
+  // Auto-select next audit type in rotation when explore tab is opened
+  useEffect(() => {
+    // Skip if URL has a type parameter
+    if (urlType && typeof urlType === 'string') {
+      return;
+    }
+    
+    // Auto-select next audit type in rotation when auditTypes are available
+    if (auditTypes.length > 0 && !selectedAuditType) {
+      const nextIndex = getNextAuditTypeIndex(auditTypes);
+      const nextType = auditTypes[nextIndex];
+      setSelectedAuditType(nextType);
+    }
+  }, [urlType, auditTypes, selectedAuditType, getNextAuditTypeIndex]);
+
   // Get only completed files for the selector, sorted alphabetically for consistency
   // NOTE: Backend should keep initial pcaps marked as isCompleted forever
   const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
@@ -418,359 +449,386 @@ export default function Explore() {
     f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
   );
 
-  return (
-    <Layout title="Explore">
-      <Box sx={{ mb: 3 }}>
-        {/* File selector - show when multiple input files are available */}
-        {completedFiles.length > 1 && selectedFile && (
-          <Box mb={2}>
-            <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-              Viewing capture:
-            </Typography>
-            <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 500, maxWidth: 800 }}>
-              <Select
-                value={selectedValue}
-                onChange={handleFileChange}
-                startAdornment={
-                  switchingFile ? (
-                    <CircularProgress size={20} sx={{ mr: 1 }} />
-                  ) : (
-                    <SwapHorizIcon sx={{ mr: 1, color: 'action.active' }} />
-                  )
-                }
-                renderValue={() => (
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                      {selectedFile.name}
-                    </Typography>
+  // Header action with audit type, field selects, and file selector
+  const headerAction = (
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', md: 'row' },
+        alignItems: { xs: 'stretch', md: 'center' }, 
+        gap: { xs: 1, md: 2 }, 
+        width: '100%'
+      }}
+    >
+      {/* File selector for multi-file mode - show first on mobile/tablet */}
+      {completedFiles.length > 1 && selectedFile && (
+        <FormControl 
+          size="small" 
+          disabled={switchingFile} 
+          sx={{ 
+            minWidth: { xs: '100%', md: 300 }, 
+            maxWidth: { xs: '100%', md: 400 },
+            order: { xs: 0, md: 2 }
+          }}
+        >
+          <Select
+            value={selectedValue}
+            onChange={handleFileChange}
+            startAdornment={
+              switchingFile ? (
+                <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
+              ) : (
+                <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
+              )
+            }
+            renderValue={() => (
+              <Box display="flex" alignItems="center" gap={1}>
+                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'inherit' }}>
+                  {selectedFile.name}
+                </Typography>
+              </Box>
+            )}
+            sx={{
+              color: 'inherit',
+              '.MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.23)',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.4)',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.light',
+              },
+              '.MuiSelect-icon': {
+                color: 'inherit',
+              },
+              '& .MuiSelect-select': {
+                display: 'flex',
+                alignItems: 'center',
+              },
+            }}
+          >
+            {completedFiles.map((file: any) => (
+              <MenuItem key={file.path} value={file.path}>
+                <Box display="flex" alignItems="center" gap={1} width="100%">
+                  {selectedValue === file.path && (
                     <Chip
-                      label={formatBytes(selectedFile.size)}
+                      label="Active"
                       size="small"
+                      color="success"
                       sx={{ height: 20, fontSize: '0.7rem' }}
                     />
-                  </Box>
-                )}
-                sx={{
-                  '& .MuiSelect-select': {
-                    display: 'flex',
-                    alignItems: 'center',
-                  },
-                }}
-              >
-                {completedFiles.map((file: any) => (
-                  <MenuItem key={file.path} value={file.path}>
-                    <Box display="flex" alignItems="center" gap={1} width="100%">
-                      {selectedValue === file.path && (
-                        <Chip
-                          label="Active"
-                          size="small"
-                          color="success"
-                          sx={{ height: 20, fontSize: '0.7rem' }}
-                        />
-                      )}
-                      <Typography
-                        sx={{
-                          fontFamily: 'monospace',
-                          fontSize: '0.85rem',
-                          flex: 1,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                      >
-                        {file.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {formatBytes(file.size)}
+                  )}
+                  <Typography
+                    sx={{
+                      fontFamily: 'monospace',
+                      fontSize: '0.85rem',
+                      flex: 1,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {file.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {formatBytes(file.size)}
+                  </Typography>
+                </Box>
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      )}
+
+      {/* Container for Audit Type and Field selects - show below file selector on mobile/tablet */}
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 1, md: 2 },
+          flex: 1,
+          order: { xs: 1, md: 0 }
+        }}
+      >
+        {/* Audit Type Selection */}
+        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 200 } }}>
+          <InputLabel sx={{ color: 'inherit' }}>Audit Record Type</InputLabel>
+          <Select
+            value={selectedAuditType}
+            onChange={handleAuditTypeChange}
+            label="Audit Record Type"
+            sx={{
+              color: 'inherit',
+              '.MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.23)',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.4)',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.light',
+              },
+              '.MuiSelect-icon': {
+                color: 'inherit',
+              },
+            }}
+          >
+            {auditTypes.map((type) => (
+              <MenuItem key={type} value={type}>
+                {type}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {/* Field Selection */}
+        <FormControl size="small" disabled={!selectedAuditType || loading} sx={{ minWidth: { xs: '100%', sm: 200 } }}>
+          <InputLabel sx={{ color: 'inherit' }}>Field</InputLabel>
+          <Select
+            value={selectedField}
+            onChange={handleFieldChange}
+            label="Field"
+            sx={{
+              color: 'inherit',
+              '.MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.23)',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.4)',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.light',
+              },
+              '.MuiSelect-icon': {
+                color: 'inherit',
+              },
+            }}
+          >
+            {fields?.fields.map((field) => (
+              <MenuItem key={field.name} value={field.name}>
+                {field.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+    </Box>
+  );
+
+  return (
+    <Layout title="Explore" headerAction={headerAction}>
+      <Paper sx={{ p: 3, minHeight: 680, height: '100%', display: 'flex', flexDirection: 'column' }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        {!chartUrl && !loading && (
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {/* Show example record if available */}
+            {exampleRecord && selectedAuditType && (
+              <Box sx={{ mb: 3 }}>
+                <Accordion defaultExpanded>
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CodeIcon />
+                      <Typography variant="h6">
+                        Example {selectedAuditType} Record
                       </Typography>
                     </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                  </AccordionSummary>
+                  <AccordionDetails>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      This is the first record from the audit file to help you understand the data structure:
+                    </Typography>
+                    <Paper 
+                      sx={{ 
+                        p: 2, 
+                        bgcolor: 'grey.900', 
+                        overflow: 'auto',
+                        maxHeight: 400,
+                      }}
+                    >
+                      <pre style={{ margin: 0, fontSize: '0.85rem', color: '#e0e0e0' }}>
+                        {JSON.stringify(exampleRecord, null, 2)}
+                      </pre>
+                    </Paper>
+                  </AccordionDetails>
+                </Accordion>
+              </Box>
+            )}
+
+            {loadingExample && !exampleRecord && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+                <CircularProgress size={24} />
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+                  Loading example record...
+                </Typography>
+              </Box>
+            )}
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 300,
+                mt: exampleRecord ? 0 : 8,
+              }}
+            >
+              <BarChartIcon sx={{ fontSize: 80, color: 'text.disabled', mb: 2 }} />
+              <Typography variant="h6" color="text.secondary">
+                Select configuration to view chart
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Choose an audit record type and field to automatically generate a chart
+              </Typography>
+              <Typography variant="caption" color="text.secondary" align="center" sx={{ maxWidth: 500 }}>
+                Charts are generated server-side using go-echarts. All audit records are displayed using their actual timestamps. 
+                Numeric fields support line, bar, area, scatter, funnel, and radar charts. 
+                Categorical fields support pie, bar, wordcloud, funnel, sankey, and graph visualizations.
+              </Typography>
+            </Box>
           </Box>
         )}
 
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            Explore Audit Records
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Generate interactive charts from audit record data
-          </Typography>
-        </Box>
-      </Box>
+        {chartUrl && !loading && (
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {/* Chart type selection buttons - horizontal above chart */}
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                  Chart Type:
+                </Typography>
+                <ToggleButtonGroup
+                  value={selectedChartType}
+                  exclusive
+                  onChange={handleChartTypeChange}
+                  size="small"
+                  sx={{
+                    flexWrap: 'wrap',
+                    '& .MuiToggleButtonGroup-grouped': {
+                      borderRadius: 1,
+                      mx: 0.5,
+                      my: 0.5,
+                    },
+                  }}
+                >
+                  {availableChartTypes.map((type) => (
+                    <ToggleButton 
+                      key={type.value} 
+                      value={type.value}
+                      sx={{ 
+                        px: 2,
+                        textTransform: 'none',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        {type.icon}
+                        {type.label}
+                      </Box>
+                    </ToggleButton>
+                  ))}
+                </ToggleButtonGroup>
+              </Box>
 
-      <Grid container spacing={3}>
-        {/* Configuration Panel */}
-        <Grid item xs={12} md={4}>
-          <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <CardContent sx={{ flex: 1, overflow: 'auto' }}>
-              <Typography variant="h6" gutterBottom>
-                Chart Configuration
-              </Typography>
-
-              <Stack spacing={2}>
-                {/* Audit Type Selection */}
-                <FormControl fullWidth>
-                  <InputLabel>Audit Record Type</InputLabel>
-                  <Select
-                    value={selectedAuditType}
-                    onChange={handleAuditTypeChange}
-                    label="Audit Record Type"
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {/* Legend toggle - only show when viewing chart */}
+                {!showExample && (
+                  <ToggleButtonGroup
+                    value={showLegend ? 'on' : 'off'}
+                    exclusive
+                    onChange={(_e, newValue) => {
+                      if (newValue !== null) {
+                        setShowLegend(newValue === 'on');
+                      }
+                    }}
+                    size="small"
                   >
-                    {auditTypes.map((type) => (
-                      <MenuItem key={type} value={type}>
-                        {type}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/* Field Selection */}
-                <FormControl fullWidth disabled={!selectedAuditType || loading}>
-                  <InputLabel>Field</InputLabel>
-                  <Select
-                    value={selectedField}
-                    onChange={handleFieldChange}
-                    label="Field"
-                  >
-                    {fields?.fields.map((field) => (
-                      <MenuItem key={field.name} value={field.name}>
-                        {field.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {/* Info about field filtering */}
-                {fields && fields.fields.length > 0 && fields.filteredCount > 0 && (
-                  <Alert severity="info" sx={{ mt: 1 }}>
-                    <Typography variant="caption">
-                      {fields.filteredCount} field{fields.filteredCount !== 1 ? 's' : ''} without data hidden from this list.
-                    </Typography>
-                  </Alert>
+                    <ToggleButton value="on">
+                      <LabelIcon sx={{ mr: 0.5, fontSize: 18 }} />
+                      Legend
+                    </ToggleButton>
+                    <ToggleButton value="off">
+                      <LabelOffIcon sx={{ mr: 0.5, fontSize: 18 }} />
+                      No Legend
+                    </ToggleButton>
+                  </ToggleButtonGroup>
                 )}
+                <ToggleButtonGroup
+                  value={showExample ? 'example' : 'chart'}
+                  exclusive
+                  onChange={(_e, newValue) => {
+                    if (newValue !== null) {
+                      setShowExample(newValue === 'example');
+                    }
+                  }}
+                  size="small"
+                >
+                  <ToggleButton value="chart">
+                    <BarChartIcon sx={{ mr: 1, fontSize: 20 }} />
+                    Chart
+                  </ToggleButton>
+                  <ToggleButton value="example">
+                    <DataObjectIcon sx={{ mr: 1, fontSize: 20 }} />
+                    Example Data
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+            </Box>
 
-                {/* Chart Type Selection */}
-                <FormControl fullWidth>
-                  <InputLabel>Chart Type</InputLabel>
-                  <Select
-                    value={selectedChartType}
-                    onChange={handleChartTypeChange}
-                    label="Chart Type"
-                  >
-                    {availableChartTypes.map((type) => (
-                      <MenuItem key={type.value} value={type.value}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', py: 0.5 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {type.icon}
-                            {type.label}
-                          </Box>
-                          <Typography variant="caption" color="text.secondary" sx={{ ml: 4 }}>
-                            {type.description}
-                          </Typography>
-                        </Box>
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                {selectedAuditType && selectedField && (
-                  <Alert severity="success" sx={{ mt: 1 }}>
-                    <Typography variant="caption">
-                      Chart auto-generates on configuration change
-                    </Typography>
-                  </Alert>
-                )}
-              </Stack>
-
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Chart Display */}
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3, minHeight: 680, height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-
-            {!chartUrl && !loading && (
+            {showExample ? (
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                {/* Show example record if available */}
-                {exampleRecord && selectedAuditType && (
-                  <Box sx={{ mb: 3 }}>
-                    <Accordion defaultExpanded>
-                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <CodeIcon />
-                          <Typography variant="h6">
-                            Example {selectedAuditType} Record
-                          </Typography>
-                        </Box>
-                      </AccordionSummary>
-                      <AccordionDetails>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                          This is the first record from the audit file to help you understand the data structure:
-                        </Typography>
-                        <Paper 
-                          sx={{ 
-                            p: 2, 
-                            bgcolor: 'grey.900', 
-                            overflow: 'auto',
-                            maxHeight: 400,
-                          }}
-                        >
-                          <pre style={{ margin: 0, fontSize: '0.85rem', color: '#e0e0e0' }}>
-                            {JSON.stringify(exampleRecord, null, 2)}
-                          </pre>
-                        </Paper>
-                      </AccordionDetails>
-                    </Accordion>
-                  </Box>
-                )}
-
-                {loadingExample && !exampleRecord && (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-                    <CircularProgress size={24} />
-                    <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
+                {loadingExample && !exampleRecord ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+                    <CircularProgress size={40} />
+                    <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
                       Loading example record...
                     </Typography>
                   </Box>
-                )}
-
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minHeight: 300,
-                    mt: exampleRecord ? 0 : 8,
-                  }}
-                >
-                  <BarChartIcon sx={{ fontSize: 80, color: 'text.disabled', mb: 2 }} />
-                  <Typography variant="h6" color="text.secondary">
-                    Select configuration to view chart
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    Choose an audit record type and field to automatically generate a chart
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" align="center" sx={{ maxWidth: 500 }}>
-                    Charts are generated server-side using go-echarts. All audit records are displayed using their actual timestamps. 
-                    Numeric fields support line, bar, area, scatter, funnel, and radar charts. 
-                    Categorical fields support pie, bar, wordcloud, funnel, sankey, and graph visualizations.
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-
-            {chartUrl && !loading && (
-              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                {/* Toggle between chart and example data */}
-                <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-                  <Typography variant="h6">
-                    {showExample ? 'Example Audit Record' : 'Chart Visualization'}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    {/* Legend toggle - only show when viewing chart */}
-                    {!showExample && (
-                      <ToggleButtonGroup
-                        value={showLegend ? 'on' : 'off'}
-                        exclusive
-                        onChange={(_e, newValue) => {
-                          if (newValue !== null) {
-                            setShowLegend(newValue === 'on');
-                          }
-                        }}
-                        size="small"
-                      >
-                        <ToggleButton value="on">
-                          <LabelIcon sx={{ mr: 0.5, fontSize: 18 }} />
-                          Legend
-                        </ToggleButton>
-                        <ToggleButton value="off">
-                          <LabelOffIcon sx={{ mr: 0.5, fontSize: 18 }} />
-                          No Legend
-                        </ToggleButton>
-                      </ToggleButtonGroup>
-                    )}
-                    <ToggleButtonGroup
-                      value={showExample ? 'example' : 'chart'}
-                      exclusive
-                      onChange={(_e, newValue) => {
-                        if (newValue !== null) {
-                          setShowExample(newValue === 'example');
-                        }
-                      }}
-                      size="small"
-                    >
-                      <ToggleButton value="chart">
-                        <BarChartIcon sx={{ mr: 1, fontSize: 20 }} />
-                        Chart
-                      </ToggleButton>
-                      <ToggleButton value="example">
-                        <DataObjectIcon sx={{ mr: 1, fontSize: 20 }} />
-                        Example Data
-                      </ToggleButton>
-                    </ToggleButtonGroup>
-                  </Box>
-                </Box>
-
-                {showExample ? (
+                ) : exampleRecord ? (
                   <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    {loadingExample && !exampleRecord ? (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-                        <CircularProgress size={40} />
-                        <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
-                          Loading example record...
-                        </Typography>
-                      </Box>
-                    ) : exampleRecord ? (
-                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <Alert severity="info" sx={{ mb: 2 }}>
-                          This is the first record from the {selectedAuditType} audit file to help you understand the data structure and available fields.
-                        </Alert>
-                        <Paper 
-                          sx={{ 
-                            p: 2, 
-                            bgcolor: 'grey.900', 
-                            overflow: 'auto',
-                            flex: 1,
-                          }}
-                        >
-                          <pre style={{ margin: 0, fontSize: '0.85rem', color: '#e0e0e0', lineHeight: 1.5 }}>
-                            {JSON.stringify(exampleRecord, null, 2)}
-                          </pre>
-                        </Paper>
-                      </Box>
-                    ) : (
-                      <Alert severity="warning">
-                        No example record available
-                      </Alert>
-                    )}
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      This is the first record from the {selectedAuditType} audit file to help you understand the data structure and available fields.
+                    </Alert>
+                    <Paper 
+                      sx={{ 
+                        p: 2, 
+                        bgcolor: 'grey.900', 
+                        overflow: 'auto',
+                        flex: 1,
+                      }}
+                    >
+                      <pre style={{ margin: 0, fontSize: '0.85rem', color: '#e0e0e0', lineHeight: 1.5 }}>
+                        {JSON.stringify(exampleRecord, null, 2)}
+                      </pre>
+                    </Paper>
                   </Box>
                 ) : (
-                  <Box sx={{ width: '100%', flex: 1, position: 'relative', minHeight: 600 }}>
-                    <iframe
-                      src={chartUrl}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        border: 'none',
-                        borderRadius: '4px',
-                      }}
-                      title="Chart Visualization"
-                    />
-                  </Box>
+                  <Alert severity="warning">
+                    No example record available
+                  </Alert>
                 )}
               </Box>
+            ) : (
+              <Box sx={{ width: '100%', flex: 1, position: 'relative', minHeight: 600 }}>
+                <iframe
+                  src={chartUrl}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    borderRadius: '4px',
+                  }}
+                  title="Chart Visualization"
+                />
+              </Box>
             )}
-          </Paper>
-        </Grid>
-      </Grid>
+          </Box>
+        )}
+      </Paper>
     </Layout>
   );
 }

@@ -16,6 +16,8 @@ package webui
 import (
 	"encoding/json"
 	"net/http"
+	"path/filepath"
+	"sync/atomic"
 )
 
 // StatsResponse represents the processing statistics response
@@ -37,7 +39,22 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	for k, v := range s.fileErrors {
 		errors[k] = v
 	}
+	isServiceMode := s.isServiceMode
 	s.mu.RUnlock()
+
+	// Populate service mode specific fields
+	if isServiceMode && s.jobQueue != nil {
+		stats.QueueLength = len(s.jobQueue)
+		stats.JobsScheduled = atomic.LoadInt64(&s.jobsScheduled)
+		stats.JobsProcessed = atomic.LoadInt64(&s.jobsProcessed)
+		
+		// Get currently processing job
+		s.currentJobMutex.RLock()
+		if s.currentProcessing != nil {
+			stats.CurrentFile = filepath.Base(s.currentProcessing.InputFile)
+		}
+		s.currentJobMutex.RUnlock()
+	}
 
 	response := StatsResponse{
 		ProcessingStats: stats,

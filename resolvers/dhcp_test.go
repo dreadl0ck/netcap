@@ -93,11 +93,11 @@ func TestDHCPFingerprintLocal(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		res := lookupDHCPFingerprintLocal(test.fingerprint)
-		if res == nil {
-			t.Fatal("got not result")
+		res := LookupDHCPFingerprintLocal(test.fingerprint)
+		if res == "" {
+			t.Fatal("got no result")
 		}
-		if res.DeviceName != test.expected {
+		if res != test.expected {
 			t.Fatal("got", res, ", expected", test.expected)
 		}
 	}

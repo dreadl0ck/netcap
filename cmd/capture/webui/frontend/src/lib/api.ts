@@ -13,6 +13,10 @@ export interface ProcessingStats {
   profilesCount: number;
   servicesCount: number;
   lastUpdate: number;
+  // Service mode specific fields
+  queueLength?: number;
+  jobsScheduled?: number;
+  jobsProcessed?: number;
 }
 
 export interface FileError {
@@ -177,6 +181,8 @@ export interface ConfigOption {
 export interface ConfigResponse {
   readOnly: boolean;
   isServiceMode?: boolean;
+  sessionId?: string;
+  sessionSpecific?: boolean;
   options: ConfigOption[];
 }
 
@@ -315,6 +321,145 @@ export interface ReportIssueResponse {
   issueId: string;
   message: string;
   remaining: number;
+}
+
+export interface Rule {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  expression: string;
+  severity: string;
+  mitre: string[];
+  tags: string[];
+  enabled: boolean;
+  threshold?: number;
+  thresholdWindow?: number;
+  executionTimeMs?: number;
+  lastExecuted?: number;
+}
+
+export interface RulesResponse {
+  rules: Rule[];
+}
+
+export interface CreateRuleRequest {
+  name: string;
+  description: string;
+  type: string;
+  expression: string;
+  severity: string;
+  mitre: string[];
+  tags: string[];
+  enabled: boolean;
+  threshold?: number;
+  thresholdWindow?: number;
+}
+
+export interface UpdateRuleRequest {
+  name: string;
+  description: string;
+  type: string;
+  expression: string;
+  severity: string;
+  mitre: string[];
+  tags: string[];
+  enabled: boolean;
+  threshold?: number;
+  thresholdWindow?: number;
+}
+
+export interface RuleSet {
+  name: string;
+  filename: string;
+  ruleCount: number;
+  enabled: boolean;
+  description: string;
+}
+
+export interface RuleSetsResponse {
+  ruleSets: RuleSet[];
+}
+
+export interface UpdateRuleSetRequest {
+  enabled: boolean;
+}
+
+export interface Alert {
+  timestamp: number;
+  name: string;
+  description: string;
+  ruleName: string;
+  recordType: string;
+  severity: string;
+  tags: string[];
+  mitre: string;
+  srcIP: string;
+  dstIP: string;
+  matchedRecord: string;
+  ruleExpression: string;
+  threshold: number;
+  thresholdWindow: number;
+}
+
+export interface AlertsResponse {
+  alerts: Alert[];
+  totalCount: number;
+}
+
+export interface GroupedAlert {
+  ruleName: string;
+  description: string;
+  severity: string;
+  recordType: string;
+  tags: string[];
+  mitre: string;
+  ruleExpression: string;
+  threshold: number;
+  thresholdWindow: number;
+  count: number;
+  firstSeen: number;
+  lastSeen: number;
+  uniqueSrcIPs: string[];
+  uniqueDstIPs: string[];
+  uniqueSrcPorts: string[];
+  uniqueDstPorts: string[];
+  sampleAlerts: Alert[];
+}
+
+export interface GroupedAlertsResponse {
+  groups: GroupedAlert[];
+  totalCount: number;
+  groupCount: number;
+}
+
+export interface AlertStatsResponse {
+  totalAlerts: number;
+  bySeverity: Record<string, number>;
+  byRule: Record<string, number>;
+  recentAlerts: Alert[];
+  criticalAlerts: number;
+  lastUpdate: number;
+}
+
+export interface FieldInfo {
+  name: string;
+  type: string;
+  description?: string;
+}
+
+export interface FieldsResponse {
+  recordType: string;
+  fields: FieldInfo[];
+  helpers: string[];
+}
+
+export interface FieldValuesResponse {
+  recordType: string;
+  fieldValues: Record<string, string[]>;
+  sampleSize: number;
+  maxPerField: number;
+  recordsScanned: number;
 }
 
 export const api = {
@@ -616,11 +761,15 @@ export const api = {
     offset: number,
     limit: number,
     onRecord: (record: Record<string, unknown>) => void,
-    onProgress?: (count: number) => void,
-    onComplete?: (total: number) => void,
-    onError?: (error: string) => void
+    onProgress?: (count: number, scanned?: number) => void,
+    onComplete?: (total: number, scanned?: number, executionTimeMs?: number) => void,
+    onError?: (error: string) => void,
+    filter?: string
   ): EventSource {
-    const url = `${API_BASE}/audit/${type}/stream?offset=${offset}&limit=${limit}`;
+    let url = `${API_BASE}/audit/${type}/stream?offset=${offset}&limit=${limit}`;
+    if (filter) {
+      url += `&filter=${encodeURIComponent(filter)}`;
+    }
     const eventSource = new EventSource(url);
 
     eventSource.addEventListener('record', (e) => {
@@ -636,7 +785,7 @@ export const api = {
       eventSource.addEventListener('progress', (e) => {
         try {
           const data = JSON.parse(e.data);
-          onProgress(data.count);
+          onProgress(data.count, data.scanned);
         } catch (err) {
           console.error('Failed to parse progress:', err);
         }
@@ -647,7 +796,7 @@ export const api = {
       eventSource.addEventListener('complete', (e) => {
         try {
           const data = JSON.parse(e.data);
-          onComplete(data.total);
+          onComplete(data.total, data.scanned, data.executionTimeMs);
           eventSource.close();
         } catch (err) {
           console.error('Failed to parse complete:', err);
@@ -732,6 +881,184 @@ export const api = {
       throw new Error(error.error || error.message || 'Failed to report issue');
     }
 
+    return res.json();
+  },
+
+  // Rules API
+  async getRules(): Promise<RulesResponse> {
+    const res = await fetch(`${API_BASE}/rules`);
+    if (!res.ok) throw new Error('Failed to fetch rules');
+    return res.json();
+  },
+
+  async getRule(id: string): Promise<Rule> {
+    const res = await fetch(`${API_BASE}/rules/${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error('Failed to fetch rule');
+    return res.json();
+  },
+
+  async createRule(rule: CreateRuleRequest): Promise<{success: boolean; message: string; rule: Rule}> {
+    const res = await fetch(`${API_BASE}/rules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rule),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to create rule');
+    }
+    return res.json();
+  },
+
+  async updateRule(id: string, rule: UpdateRuleRequest): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/rules/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rule),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to update rule');
+    }
+    return res.json();
+  },
+
+  async deleteRule(id: string): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/rules/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to delete rule');
+    }
+    return res.json();
+  },
+
+  async executeRule(ruleId: string): Promise<{success: boolean; message: string; alertsCount: number; recordsRead: number; executionTimeMs: number}> {
+    const res = await fetch(`${API_BASE}/rules/execute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ruleId }),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to execute rule');
+    }
+    return res.json();
+  },
+
+  async executeAllRules(): Promise<{
+    success: boolean; 
+    message: string; 
+    totalAlerts: number; 
+    totalRecords: number; 
+    executionTimeMs: number;
+    ruleResults: Array<{
+      ruleName: string;
+      alertsCount: number;
+      recordsRead: number;
+      success: boolean;
+      error?: string;
+      executionTimeMs: number;
+    }>;
+  }> {
+    const res = await fetch(`${API_BASE}/rules/execute-all`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to execute all rules');
+    }
+    return res.json();
+  },
+
+  // Rule Sets API
+  async getRuleSets(): Promise<RuleSetsResponse> {
+    const res = await fetch(`${API_BASE}/rule-sets`);
+    if (!res.ok) throw new Error('Failed to fetch rule sets');
+    return res.json();
+  },
+
+  async updateRuleSet(name: string, request: UpdateRuleSetRequest): Promise<{success: boolean; message: string; rulesAffected: number}> {
+    const res = await fetch(`${API_BASE}/rule-sets/${encodeURIComponent(name)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to update rule set');
+    }
+    return res.json();
+  },
+
+  // Alerts API
+  async getAlerts(params?: {
+    limit?: number;
+    offset?: number;
+    severity?: string;
+    ruleName?: string;
+    sort?: 'asc' | 'desc';
+  }): Promise<AlertsResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.set('limit', params.limit.toString());
+    if (params?.offset) queryParams.set('offset', params.offset.toString());
+    if (params?.severity) queryParams.set('severity', params.severity);
+    if (params?.ruleName) queryParams.set('ruleName', params.ruleName);
+    if (params?.sort) queryParams.set('sort', params.sort);
+
+    const res = await fetch(`${API_BASE}/alerts?${queryParams}`);
+    if (!res.ok) throw new Error('Failed to fetch alerts');
+    return res.json();
+  },
+
+  async getGroupedAlerts(params?: {
+    limit?: number;
+    offset?: number;
+    severity?: string;
+    ruleName?: string;
+    sort?: 'asc' | 'desc';
+    sortBy?: 'count' | 'lastSeen' | 'firstSeen' | 'severity';
+  }): Promise<GroupedAlertsResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.set('limit', params.limit.toString());
+    if (params?.offset) queryParams.set('offset', params.offset.toString());
+    if (params?.severity) queryParams.set('severity', params.severity);
+    if (params?.ruleName) queryParams.set('ruleName', params.ruleName);
+    if (params?.sort) queryParams.set('sort', params.sort);
+    if (params?.sortBy) queryParams.set('sortBy', params.sortBy);
+
+    const res = await fetch(`${API_BASE}/alerts/grouped?${queryParams}`);
+    if (!res.ok) throw new Error('Failed to fetch grouped alerts');
+    return res.json();
+  },
+
+  async getAlertStats(): Promise<AlertStatsResponse> {
+    const res = await fetch(`${API_BASE}/alerts/stats`);
+    if (!res.ok) throw new Error('Failed to fetch alert statistics');
+    return res.json();
+  },
+
+  async clearAlerts(): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/alerts/clear`, {
+      method: 'POST',
+    });
+    if (!res.ok) throw new Error('Failed to clear alerts');
+    return res.json();
+  },
+
+  // Get field information for autocomplete
+  async getAuditRecordFields(type: string): Promise<FieldsResponse> {
+    const res = await fetch(`${API_BASE}/audit/${encodeURIComponent(type)}/fields`);
+    if (!res.ok) throw new Error('Failed to fetch field information');
+    return res.json();
+  },
+
+  // Get sample field values for autocomplete
+  async getAuditRecordFieldValues(type: string): Promise<FieldValuesResponse> {
+    const res = await fetch(`${API_BASE}/audit/${encodeURIComponent(type)}/values`);
+    if (!res.ok) throw new Error('Failed to fetch field values');
     return res.json();
   },
 };

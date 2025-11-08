@@ -102,8 +102,8 @@ var (
 	flagMACDB         = fs.Bool("macDB", true, "use mac to vendor database for device profiling")
 	flagJa3DB         = fs.Bool("ja3DB", true, "use ja3 database for device profiling")
 	flagServiceDB     = fs.Bool("serviceDB", true, "use serviceDB for device profiling")
-	flagGeolocationDB = fs.Bool("geoDB", false, "use geolocation for device profiling")
-	flagDPI           = fs.Bool("dpi", false, "use DPI libs to enrich IPProfile audit records")
+	flagGeolocationDB = fs.Bool("geoDB", true, "use geolocation for device profiling")
+	flagDPI           = fs.Bool("dpi", true, "use DPI libs to enrich IPProfile audit records")
 	flagDPIModules    = fs.String("dpi-modules", "", "DPI modules to use (comma-separated: lpi,ndpi,go). If empty, all modules will be used")
 
 	flagFreeOSMemory          = fs.Int("free-os-mem", 0, "free OS memory every X minutes, disabled if set to 0")
@@ -174,4 +174,8 @@ var (
 	flagServiceExpiry      = fs.Int("service-expiry", 60, "session expiry time in minutes for service mode")
 	flagServiceCleanup     = fs.Int("service-cleanup", 10, "cleanup check interval in minutes for service mode")
 	flagServiceMaxStorage  = fs.Int64("service-max-storage", 10*1024*1024*1024, "maximum total storage in bytes for service mode (default: 10GB, 0 = unlimited)")
+
+	// Filtering and Rules flags
+	flagFilter = fs.String("filter", "", "filter audit records using an expr-lang expression (e.g., 'DstPort == 443')")
+	flagRules  = fs.String("rules", "", "path to rules file for alert generation (YAML format)")
 )

@@ -159,9 +159,81 @@ export default function Logs() {
     f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
   );
 
+  // File selector for header
+  const fileSelector = completedFiles.length > 1 && selectedFile ? (
+    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
+      <Select
+        value={selectedValue}
+        onChange={handleFileChange}
+        startAdornment={
+          switchingFile ? (
+            <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
+          ) : (
+            <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
+          )
+        }
+        renderValue={() => (
+          <Box display="flex" alignItems="center" gap={1}>
+            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'inherit' }}>
+              {selectedFile.name}
+            </Typography>
+          </Box>
+        )}
+        sx={{
+          color: 'inherit',
+          '.MuiOutlinedInput-notchedOutline': {
+            borderColor: 'rgba(255, 255, 255, 0.23)',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'rgba(255, 255, 255, 0.4)',
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'primary.light',
+          },
+          '.MuiSelect-icon': {
+            color: 'inherit',
+          },
+          '& .MuiSelect-select': {
+            display: 'flex',
+            alignItems: 'center',
+          },
+        }}
+      >
+        {completedFiles.map((file: any) => (
+          <MenuItem key={file.path} value={file.path}>
+            <Box display="flex" alignItems="center" gap={1} width="100%">
+              {selectedValue === file.path && (
+                <Chip
+                  label="Active"
+                  size="small"
+                  color="success"
+                  sx={{ height: 20, fontSize: '0.7rem' }}
+                />
+              )}
+              <Typography
+                sx={{
+                  fontFamily: 'monospace',
+                  fontSize: '0.85rem',
+                  flex: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {file.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formatBytes(file.size)}
+              </Typography>
+            </Box>
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  ) : null;
+
   if (!files && !error) {
     return (
-      <Layout title="Logs">
+      <Layout title="Logs" headerAction={fileSelector}>
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
           <CircularProgress />
         </Box>
@@ -171,7 +243,7 @@ export default function Logs() {
 
   if (error) {
     return (
-      <Layout title="Logs">
+      <Layout title="Logs" headerAction={fileSelector}>
         <Box>
           <Typography color="error">Error loading log files</Typography>
         </Box>
@@ -180,7 +252,7 @@ export default function Logs() {
   }
 
   return (
-    <Layout title="Logs">
+    <Layout title="Logs" headerAction={fileSelector}>
       <Box>
         {/* Session Selector for Try Service */}
         {status?.isTryService && sessions && sessions.length > 1 && (
@@ -212,86 +284,6 @@ export default function Logs() {
             </FormControl>
           </Box>
         )}
-
-        <Box mb={3}>
-          {/* File selector - show when multiple input files are available */}
-          {completedFiles.length > 1 && selectedFile && (
-            <Box mb={2}>
-              <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-                Viewing capture:
-              </Typography>
-              <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 500, maxWidth: 800 }}>
-                <Select
-                  value={selectedValue}
-                  onChange={handleFileChange}
-                  startAdornment={
-                    switchingFile ? (
-                      <CircularProgress size={20} sx={{ mr: 1 }} />
-                    ) : (
-                      <SwapHorizIcon sx={{ mr: 1, color: 'action.active' }} />
-                    )
-                  }
-                  renderValue={() => (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                        {selectedFile.name}
-                      </Typography>
-                      <Chip
-                        label={formatBytes(selectedFile.size)}
-                        size="small"
-                        sx={{ height: 20, fontSize: '0.7rem' }}
-                      />
-                    </Box>
-                  )}
-                  sx={{
-                    '& .MuiSelect-select': {
-                      display: 'flex',
-                      alignItems: 'center',
-                    },
-                  }}
-                >
-                  {completedFiles.map((file: any) => (
-                    <MenuItem key={file.path} value={file.path}>
-                      <Box display="flex" alignItems="center" gap={1} width="100%">
-                        {selectedValue === file.path && (
-                          <Chip
-                            label="Active"
-                            size="small"
-                            color="success"
-                            sx={{ height: 20, fontSize: '0.7rem' }}
-                          />
-                        )}
-                        <Typography
-                          sx={{
-                            fontFamily: 'monospace',
-                            fontSize: '0.85rem',
-                            flex: 1,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {file.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatBytes(file.size)}
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-          )}
-
-          <Box>
-            <Typography variant="h4" gutterBottom>
-              Log Files
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {files?.length || 0} log file(s) available
-            </Typography>
-          </Box>
-        </Box>
 
         {files && files.length > 0 ? (
           <TableContainer component={Paper} sx={{ mt: 3 }}>

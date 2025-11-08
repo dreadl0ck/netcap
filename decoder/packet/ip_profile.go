@@ -15,6 +15,8 @@ package packet
 
 import (
 	"log"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -22,6 +24,7 @@ import (
 	"github.com/dreadl0ck/tlsx"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/dpi"
@@ -129,15 +132,41 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 			}
 		}
 
+		// Handle JA3 (TLS Client Hello) fingerprinting
 		ja3Hash := ja3.DigestHexPacket(i.Packet)
-		if ja3Hash == "" {
-			ja3Hash = ja3.DigestHexPacketJa3s(i.Packet)
-		}
-
 		if ja3Hash != "" {
 			// add hash to profile if not already present
 			if _, ok = p.Ja3Hashes[ja3Hash]; !ok {
-				p.Ja3Hashes[ja3Hash] = resolvers.LookupJa3(ja3Hash)
+				lookup := resolvers.LookupJa3(ja3Hash)
+				p.Ja3Hashes[ja3Hash] = lookup
+
+				// Add lookup result to Ja3FingerprintMatches if not empty and not duplicate
+				if lookup != "" {
+					p.Ja3FingerprintMatches = addUniqueString(p.Ja3FingerprintMatches, lookup)
+				}
+			}
+		}
+
+		// Handle JA3S (TLS Server Hello) fingerprinting
+		ja3sHash := ja3.DigestHexPacketJa3s(i.Packet)
+		if ja3sHash != "" {
+			// add hash to profile if not already present
+			if _, ok = p.Ja3Hashes[ja3sHash]; !ok {
+				lookup := resolvers.LookupJa3(ja3sHash)
+				p.Ja3Hashes[ja3sHash] = lookup
+
+				// Add lookup result to Ja3SFingerprintMatches if not empty and not duplicate
+				if lookup != "" {
+					p.Ja3SFingerprintMatches = addUniqueString(p.Ja3SFingerprintMatches, lookup)
+				}
+			}
+		}
+
+		// Application Layer: DHCP fingerprinting
+		if dhcpFp := extractDHCPFingerprint(i.Packet); dhcpFp != "" {
+			deviceName := resolvers.LookupDHCPFingerprintLocal(dhcpFp)
+			if deviceName != "" {
+				p.Devices = addUniqueString(p.Devices, deviceName)
 			}
 		}
 
@@ -174,19 +203,40 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 	srcPorts, dstPorts, contactedPorts := initPorts(i, source)
 
 	// Session Layer: TLS
+	var ja3FingerprintMatches, ja3SFingerprintMatches []string
 
+	// Handle JA3 (TLS Client Hello) fingerprinting
 	ja3Hash := ja3.DigestHexPacket(i.Packet)
-	if ja3Hash == "" {
-		ja3Hash = ja3.DigestHexPacketJa3s(i.Packet)
+	if ja3Hash != "" {
+		lookup := resolvers.LookupJa3(ja3Hash)
+		ja3Map[ja3Hash] = lookup
+		if lookup != "" {
+			ja3FingerprintMatches = append(ja3FingerprintMatches, lookup)
+		}
 	}
 
-	if ja3Hash != "" {
-		ja3Map[ja3Hash] = resolvers.LookupJa3(ja3Hash)
+	// Handle JA3S (TLS Server Hello) fingerprinting
+	ja3sHash := ja3.DigestHexPacketJa3s(i.Packet)
+	if ja3sHash != "" {
+		lookup := resolvers.LookupJa3(ja3sHash)
+		ja3Map[ja3sHash] = lookup
+		if lookup != "" {
+			ja3SFingerprintMatches = append(ja3SFingerprintMatches, lookup)
+		}
 	}
 
 	ch := tlsx.GetClientHelloBasic(i.Packet)
 	if ch != nil {
 		sniMap[ch.SNI] = 1
+	}
+
+	// Application Layer: DHCP fingerprinting
+	var devices []string
+	if dhcpFp := extractDHCPFingerprint(i.Packet); dhcpFp != "" {
+		deviceName := resolvers.LookupDHCPFingerprintLocal(dhcpFp)
+		if deviceName != "" {
+			devices = append(devices, deviceName)
+		}
 	}
 
 	// Application Layer: DPI
@@ -207,18 +257,21 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 	// create new profile
 	p := &ipProfile{
 		IPProfile: &types.IPProfile{
-			Addr:           ipAddr,
-			NumPackets:     1,
-			Geolocation:    loc,
-			DNSNames:       names,
-			TimestampFirst: i.Timestamp,
-			Ja3Hashes:      ja3Map,
-			Protocols:      protos,
-			Bytes:          dataLen,
-			SrcPorts:       srcPorts,
-			DstPorts:       dstPorts,
-			ContactedPorts: contactedPorts,
-			SNIs:           sniMap,
+			Addr:                   ipAddr,
+			NumPackets:             1,
+			Geolocation:            loc,
+			DNSNames:               names,
+			TimestampFirst:         i.Timestamp,
+			Ja3Hashes:              ja3Map,
+			Protocols:              protos,
+			Bytes:                  dataLen,
+			SrcPorts:               srcPorts,
+			DstPorts:               dstPorts,
+			ContactedPorts:         contactedPorts,
+			SNIs:                   sniMap,
+			Ja3FingerprintMatches:  ja3FingerprintMatches,
+			Ja3SFingerprintMatches: ja3SFingerprintMatches,
+			Devices:                devices,
 		},
 	}
 
@@ -385,4 +438,50 @@ func (d *Decoder) writeIPProfile(i *types.IPProfile) {
 	if err != nil {
 		log.Fatal("failed to write proto: ", err)
 	}
+}
+
+// addUniqueString adds a string to a slice if it's not already present.
+func addUniqueString(slice []string, item string) []string {
+	for _, existing := range slice {
+		if existing == item {
+			return slice
+		}
+	}
+	return append(slice, item)
+}
+
+// extractDHCPFingerprint extracts the DHCP fingerprint from a packet.
+// Returns the fingerprint as a comma-separated list of DHCP option types.
+func extractDHCPFingerprint(p gopacket.Packet) string {
+	// Try DHCPv4
+	if dhcp4Layer := p.Layer(layers.LayerTypeDHCPv4); dhcp4Layer != nil {
+		if dhcp4, ok := dhcp4Layer.(*layers.DHCPv4); ok {
+			var fp strings.Builder
+			length := len(dhcp4.Options) - 1
+			for i, o := range dhcp4.Options {
+				fp.WriteString(strconv.Itoa(int(o.Type)))
+				if i != length {
+					fp.WriteString(",")
+				}
+			}
+			return fp.String()
+		}
+	}
+
+	// Try DHCPv6
+	if dhcp6Layer := p.Layer(layers.LayerTypeDHCPv6); dhcp6Layer != nil {
+		if dhcp6, ok := dhcp6Layer.(*layers.DHCPv6); ok {
+			var fp strings.Builder
+			length := len(dhcp6.Options) - 1
+			for i, o := range dhcp6.Options {
+				fp.WriteString(strconv.Itoa(int(o.Code)))
+				if i != length {
+					fp.WriteString(",")
+				}
+			}
+			return fp.String()
+		}
+	}
+
+	return ""
 }

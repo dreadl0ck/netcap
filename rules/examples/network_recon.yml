@@ -1,0 +1,126 @@
+# Network Reconnaissance Detection Rules
+# These rules detect network scanning and reconnaissance activities
+
+description: "Detection rules for network scanning and reconnaissance activities including port scans, ping sweeps, ARP scans, DNS zone transfers, SNMP enumeration, and NetBIOS discovery."
+
+rules:
+  # SYN Scan Detection
+  - name: SYN Scan Detection
+    description: Detect TCP SYN scan attempts (SYN without ACK)
+    type: TCP
+    expression: SYN && !ACK && !RST
+    severity: medium
+    mitre: ["T1046"]
+    tags: ["port-scan"]
+    enabled: true
+    threshold: 100
+    threshold_window: 60
+
+  # ICMP Ping Sweep
+  - name: ICMP Echo Request Detected
+    description: Detect ICMP echo requests that may be part of a ping sweep
+    type: ICMPv4
+    expression: TypeCode == 8
+    severity: low
+    mitre: ["T1018"]
+    tags: ["ping-sweep"]
+    enabled: true
+    threshold: 50
+    threshold_window: 30
+
+  # ARP Scan Detection
+  - name: ARP Scan Detection
+    description: Detect ARP requests that may indicate network mapping
+    type: ARP
+    expression: Operation == 1
+    severity: low
+    mitre: ["T1016"]
+    tags: ["network-mapping"]
+    enabled: true
+    threshold: 100
+    threshold_window: 60
+
+  # UDP Port Scan
+  - name: UDP Port Scan
+    description: "Detect UDP traffic to high ports. NOTE: This is prone to false positives from P2P apps (WebRTC, gaming). It should be used with a correlation engine to detect a true scan (one source to many destinations)."
+    type: UDP
+    expression: DstPort > 30000
+    severity: low
+    mitre: ["T1046"]
+    tags: ["port-scan"]
+    enabled: false
+
+  # DNS Zone Transfer Attempt
+  - name: DNS Zone Transfer Attempt
+    description: Detect DNS AXFR requests indicating zone transfer attempts
+    type: DNS
+    expression: len(Questions) > 0 && Questions[0].Type == 252
+    severity: high
+    mitre: ["T1590.002"]
+    tags: ["zone-transfer"]
+    enabled: true
+
+  # SNMP Enumeration
+  - name: SNMP Enumeration
+    description: Detect SNMP traffic that may indicate device enumeration
+    type: UDP
+    expression: DstPort == 161 || DstPort == 162
+    severity: medium
+    mitre: ["T1046"]
+    tags: ["enumeration"]
+    enabled: true
+    threshold: 50
+    threshold_window: 60
+
+  # NetBIOS Name Service Query
+  - name: NetBIOS Name Query
+    description: Detect NetBIOS name service queries used for Windows network discovery
+    type: UDP
+    expression: DstPort == 137 || DstPort == 138
+    severity: low
+    mitre: ["T1016"]
+    tags: ["enumeration", "windows"]
+    enabled: true
+    threshold: 50
+    threshold_window: 60
+
+  # DHCP Traffic Detection - Rogue DHCP Server
+  - name: DHCP Traffic Detected
+    description: "Detects DHCP traffic. NOTE: To detect a rogue DHCP server, this requires correlation to distinguish from known, legitimate DHCP servers."
+    type: UDP
+    expression: (SrcPort == 67 && DstPort == 68) || (SrcPort == 68 && DstPort == 67)
+    severity: high
+    mitre: ["T1557.003"]
+    tags: ["rogue-server"]
+    enabled: true
+
+  # WPAD Query Detection
+  - name: WPAD Query Detection
+    description: Detect WPAD (Web Proxy Auto-Discovery) queries
+    type: DNS
+    expression: len(Questions) > 0 && MatchesPattern(Questions[0].Name, "(?i)wpad")
+    severity: medium
+    mitre: ["T1557"]
+    tags: ["mitm"]
+    enabled: true
+
+  # WPAD HTTP Request
+  - name: WPAD HTTP Request
+    description: Detect HTTP requests for WPAD configuration files
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)wpad\\.dat|proxy\\.pac")
+    severity: medium
+    mitre: ["T1557"]
+    tags: ["mitm"]
+    enabled: true
+
+  # LDAP Enumeration
+  - name: LDAP Enumeration
+    description: Detect LDAP queries that may enumerate domain accounts
+    type: TCP
+    expression: DstPort == 389 || DstPort == 3268
+    severity: low
+    mitre: ["T1087.002"]
+    tags: ["enumeration"]
+    enabled: true
+

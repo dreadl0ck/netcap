@@ -299,10 +299,6 @@ export default function PCAPs() {
   return (
     <Layout title="PCAP Files">
       <Box>
-        <Typography variant="h4" gutterBottom>
-          PCAP Files
-        </Typography>
-
         {/* Search Bar */}
         <Box mb={3}>
           <TextField

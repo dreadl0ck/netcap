@@ -66,28 +66,20 @@ func init() {
 	DataBaseBuildPath = filepath.Join(ConfigRootPath, buildFolderName)
 }
 
-// Init can be used to initialize the resolvers package according to the provided configuration.
-func Init(c Config, quietMode bool) {
-	quiet = quietMode
-	CurrentConfig = c
-}
-
 // SetPerfTracker sets the performance tracker for resolver operations
 func SetPerfTracker(pt *performance.Tracker) {
 	perfTracker = pt
 }
 
-// initInternal performs the actual initialization after perfTracker is set
-func initInternal(c Config, quietMode bool) {
+// Init can be used to initialize the resolvers package according to the provided configuration.
+func Init(c Config, quietMode bool) {
 	quiet = quietMode
 	CurrentConfig = c
 
-	// Log database path when in debug mode (logger is set before Init is called)
-	if !quiet {
-		resolverLog.Info("loading netcap databases",
-			zap.String("path", DataBaseFolderPath),
-		)
-	}
+	// Log database path (logger is set before Init is called)
+	resolverLog.Info("loading netcap databases",
+		zap.String("path", DataBaseFolderPath),
+	)
 
 	if c.ReverseDNS {
 		disableReverseDNS = false
@@ -115,9 +107,10 @@ func initInternal(c Config, quietMode bool) {
 	if c.GeolocationDB {
 		initGeolocationDB()
 	}
-
-	// Log completion when in debug mode
-	if !quiet {
-		resolverLog.Info("successfully loaded netcap databases")
+	if c.DHCPDB {
+		InitDHCPFingerprintDB()
 	}
+
+	// Log completion
+	resolverLog.Info("successfully loaded netcap databases")
 }

@@ -30,6 +30,10 @@ import (
 
 // Run parses the subcommand flags and handles the arguments.
 func Run() {
+	// Remove date/time from log output to prevent duplicate timestamps
+	// when running in Docker/systemd (which add their own timestamps)
+	log.SetFlags(0)
+	
 	// parse commandline flags
 	fs.Usage = printUsage
 

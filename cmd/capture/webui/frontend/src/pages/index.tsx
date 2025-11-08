@@ -135,9 +135,6 @@ export default function Dashboard() {
     <Layout title="Dashboard">
       <Box>
         <Box mb={4}>
-          <Typography variant="h4" gutterBottom>
-            Netcap Capture Dashboard
-          </Typography>
           <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
             {status?.isProcessing ? (
               <>
@@ -196,76 +193,108 @@ export default function Dashboard() {
                   </Typography>
                 </Box>
                 
-                <Grid container spacing={2}>
-                  <Grid item xs={12}>
-                    <Box display="flex" alignItems="center" gap={2} mb={1}>
-                      <InsertDriveFileIcon fontSize="small" color="action" />
-                      <Typography variant="body2">
-                        <strong>Current File:</strong> {stats.processingStats.currentFile || 'N/A'}
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
-                      File {stats.processingStats.fileIndex} of {stats.processingStats.totalFiles}
-                    </Typography>
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <Box mb={1}>
-                      <Box display="flex" justifyContent="space-between" mb={0.5}>
-                        <Typography variant="body2" color="text.secondary">
-                          Progress
-                        </Typography>
-                        <Typography variant="body2" fontWeight="bold">
-                          {stats.processingStats.progressPercent.toFixed(1)}%
+                {status.isServiceMode ? (
+                  // Service mode: simplified view with queue and current file
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} md={6}>
+                      <Box display="flex" alignItems="center" gap={2} mb={1}>
+                        <InsertDriveFileIcon fontSize="small" color="action" />
+                        <Typography variant="body2">
+                          <strong>Currently Processing:</strong>
                         </Typography>
                       </Box>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={stats.processingStats.progressPercent} 
-                        sx={{ height: 8, borderRadius: 1 }}
-                      />
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {stats.processingStats.packetsProcessed.toLocaleString()} / {stats.processingStats.totalPackets.toLocaleString()} packets
-                    </Typography>
-                  </Grid>
+                      <Typography variant="h6" sx={{ ml: 4, fontFamily: 'monospace' }}>
+                        {stats.processingStats.currentFile || 'Idle'}
+                      </Typography>
+                    </Grid>
 
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="body2" color="text.secondary">
-                      Packets/Second
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.processingStats.packetsPerSecond.toLocaleString()}
-                    </Typography>
+                    <Grid item xs={12} md={6}>
+                      <Box display="flex" alignItems="center" gap={2} mb={1}>
+                        <Typography variant="body2">
+                          <strong>Queue Status:</strong>
+                        </Typography>
+                      </Box>
+                      <Typography variant="h6" sx={{ ml: 4 }}>
+                        {stats.processingStats.queueLength || 0} files waiting
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ ml: 4 }}>
+                        {stats.processingStats.jobsProcessed || 0} / {stats.processingStats.jobsScheduled || 0} jobs completed
+                      </Typography>
+                    </Grid>
                   </Grid>
+                ) : (
+                  // Local mode: detailed view with progress
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <Box display="flex" alignItems="center" gap={2} mb={1}>
+                        <InsertDriveFileIcon fontSize="small" color="action" />
+                        <Typography variant="body2">
+                          <strong>Current File:</strong> {stats.processingStats.currentFile || 'N/A'}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
+                        File {stats.processingStats.fileIndex} of {stats.processingStats.totalFiles}
+                      </Typography>
+                    </Grid>
 
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="body2" color="text.secondary">
-                      Profiles
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.processingStats.profilesCount}
-                    </Typography>
-                  </Grid>
+                    <Grid item xs={12}>
+                      <Box mb={1}>
+                        <Box display="flex" justifyContent="space-between" mb={0.5}>
+                          <Typography variant="body2" color="text.secondary">
+                            Progress
+                          </Typography>
+                          <Typography variant="body2" fontWeight="bold">
+                            {stats.processingStats.progressPercent.toFixed(1)}%
+                          </Typography>
+                        </Box>
+                        <LinearProgress 
+                          variant="determinate" 
+                          value={stats.processingStats.progressPercent} 
+                          sx={{ height: 8, borderRadius: 1 }}
+                        />
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {stats.processingStats.packetsProcessed.toLocaleString()} / {stats.processingStats.totalPackets.toLocaleString()} packets
+                      </Typography>
+                    </Grid>
 
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="body2" color="text.secondary">
-                      Services
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.processingStats.servicesCount}
-                    </Typography>
-                  </Grid>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Typography variant="body2" color="text.secondary">
+                        Packets/Second
+                      </Typography>
+                      <Typography variant="h5">
+                        {stats.processingStats.packetsPerSecond.toLocaleString()}
+                      </Typography>
+                    </Grid>
 
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Typography variant="body2" color="text.secondary">
-                      Last Update
-                    </Typography>
-                    <Typography variant="body1">
-                      {new Date(stats.processingStats.lastUpdate * 1000).toLocaleTimeString()}
-                    </Typography>
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Typography variant="body2" color="text.secondary">
+                        Profiles
+                      </Typography>
+                      <Typography variant="h5">
+                        {stats.processingStats.profilesCount}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Typography variant="body2" color="text.secondary">
+                        Services
+                      </Typography>
+                      <Typography variant="h5">
+                        {stats.processingStats.servicesCount}
+                      </Typography>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6} md={3}>
+                      <Typography variant="body2" color="text.secondary">
+                        Last Update
+                      </Typography>
+                      <Typography variant="body1">
+                        {new Date(stats.processingStats.lastUpdate * 1000).toLocaleTimeString()}
+                      </Typography>
+                    </Grid>
                   </Grid>
-                </Grid>
+                )}
               </CardContent>
             </Card>
           </Box>
@@ -509,34 +538,6 @@ export default function Dashboard() {
             </Card>
           </Box>
         )}
-
-        <Box mt={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Capture Information
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Output Directory:
-                  </Typography>
-                  <Typography variant="body1" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                    {status?.outputDir || 'N/A'}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="body2" color="text.secondary">
-                    Server Started:
-                  </Typography>
-                  <Typography variant="body1">
-                    {status?.serverStarted ? formatTimestamp(new Date(status.serverStarted).getTime() / 1000) : 'N/A'}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Box>
       </Box>
     </Layout>
   );

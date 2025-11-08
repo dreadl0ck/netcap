@@ -34,6 +34,9 @@ type Config struct {
 
 	// Enables ip to geolocation lookups via MaxMind GeoLite
 	GeolocationDB bool
+
+	// Enables DHCP fingerprint lookups
+	DHCPDB bool
 }
 
 // DefaultConfig is an example configuration.
@@ -44,4 +47,5 @@ var DefaultConfig = Config{
 	Ja3DB:         true,
 	ServiceDB:     true,
 	GeolocationDB: true,
+	DHCPDB:        true,
 }

@@ -94,6 +94,11 @@ func (sd *StreamDecoder) SetWriter(w netio.AuditRecordWriter) {
 	sd.Writer = w
 }
 
+// GetWriter returns the current writer.
+func (sd *StreamDecoder) GetWriter() netio.AuditRecordWriter {
+	return sd.Writer
+}
+
 // GetType returns the netcap type of the
 func (sd *StreamDecoder) GetType() types.Type {
 	return sd.Type

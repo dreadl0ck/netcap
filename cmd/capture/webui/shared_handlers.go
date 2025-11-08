@@ -14,18 +14,25 @@
 package webui
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/expr-lang/expr/vm"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	netfilter "github.com/dreadl0ck/netcap/filter"
 	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // HandleAuditFiles returns list of audit record files for a given output directory
@@ -68,6 +75,20 @@ func HandleAuditRecords(outputDir string) http.HandlerFunc {
 		action := "stream"
 		if len(parts) > 1 {
 			action = parts[1]
+		}
+
+		// For fields action, we don't need the file to exist
+		if action == "fields" {
+			HandleAuditFields(w, r, auditType)
+			return
+		}
+
+		// For values action, we need the file
+		if action == "values" {
+			fileName := auditType + defaults.FileExtension + ".gz"
+			filePath := filepath.Join(outputDir, fileName)
+			HandleAuditFieldValues(w, r, filePath, auditType)
+			return
 		}
 
 		// Build file path
@@ -357,9 +378,11 @@ func HandleAuditMeta(w http.ResponseWriter, r *http.Request, filePath, auditType
 
 // HandleAuditStream streams audit records via Server-Sent Events
 func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditType string) {
+	startTime := time.Now()
+	
 	// Parse query parameters
 	offset := 0
-	limit := 1000 // Default limit
+	limit := 500 // Default limit (max 500)
 
 	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
 		if val, err := strconv.Atoi(offsetStr); err == nil && val >= 0 {
@@ -368,10 +391,13 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	}
 
 	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		if val, err := strconv.Atoi(limitStr); err == nil && val > 0 && val <= 10000 {
+		if val, err := strconv.Atoi(limitStr); err == nil && val > 0 && val <= 500 {
 			limit = val
 		}
 	}
+
+	// Get filter expression
+	filterExpr := r.URL.Query().Get("filter")
 
 	// Create audit record reader
 	auditReader, err := NewAuditRecordReader(filePath)
@@ -390,7 +416,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	defer auditReader.Close()
 
 	// Read the header first (required before reading records)
-	_, err = auditReader.ReadHeader()
+	header, err := auditReader.ReadHeader()
 	if err != nil {
 		if err == io.EOF {
 			RespondJSON(w, http.StatusServiceUnavailable, map[string]string{
@@ -402,6 +428,18 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			})
 		}
 		return
+	}
+
+	// Compile filter expression if provided
+	var filterProgram *vm.Program
+	if filterExpr != "" {
+		filterProgram, err = netfilter.CompileExpression(filterExpr, header.Type)
+		if err != nil {
+			RespondJSON(w, http.StatusBadRequest, map[string]string{
+				"error": fmt.Sprintf("Invalid filter expression: %v", err),
+			})
+			return
+		}
 	}
 
 	// Setup SSE
@@ -418,17 +456,27 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 		return
 	}
 
-	// Skip to offset
-	if err := auditReader.Skip(offset); err != nil {
-		fmt.Fprintf(w, "event: error\ndata: {\"error\": \"Failed to skip to offset\"}\n\n")
-		flusher.Flush()
-		return
+	// Skip to offset (only if no filter - filtering requires scanning all records)
+	if filterExpr == "" {
+		if err := auditReader.Skip(offset); err != nil {
+			fmt.Fprintf(w, "event: error\ndata: {\"error\": \"Failed to skip to offset\"}\n\n")
+			flusher.Flush()
+			return
+		}
 	}
 
 	// Stream records
 	count := 0
-	for count < limit {
-		jsonData, err := auditReader.NextAsJSON()
+	totalScanned := 0
+	matchedCount := 0
+	
+	for {
+		// Check if we've reached the limit
+		if count >= limit {
+			break
+		}
+
+		record, err := auditReader.NextRecord()
 		if err == io.EOF {
 			break
 		}
@@ -438,19 +486,403 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			break
 		}
 
-		fmt.Fprintf(w, "event: record\ndata: %s\n\n", jsonData)
+		totalScanned++
+
+		// Apply filter if provided
+		if filterProgram != nil {
+			auditRecord, ok := record.(types.AuditRecord)
+			if !ok {
+				continue
+			}
+
+			match, err := netfilter.EvaluateExpression(filterProgram, auditRecord)
+			if err != nil {
+				log.Printf("[WebUI] Filter evaluation error: %v", err)
+				continue
+			}
+
+			if !match {
+				continue
+			}
+			matchedCount++
+		} else {
+			matchedCount++
+		}
+
+		// Skip records before offset (when filtering)
+		if filterExpr != "" && matchedCount <= offset {
+			continue
+		}
+
+		// Convert record to JSON
+		jsonData, err := json.Marshal(record)
+		if err != nil {
+			log.Printf("[WebUI] JSON marshal error: %v", err)
+			continue
+		}
+
+		fmt.Fprintf(w, "event: record\ndata: %s\n\n", string(jsonData))
 		flusher.Flush()
 
 		count++
 
 		// Send progress update every 100 records
 		if count%100 == 0 {
-			fmt.Fprintf(w, "event: progress\ndata: {\"count\": %d}\n\n", count)
+			fmt.Fprintf(w, "event: progress\ndata: {\"count\": %d, \"scanned\": %d}\n\n", count, totalScanned)
 			flusher.Flush()
 		}
 	}
 
-	// Send completion event
-	fmt.Fprintf(w, "event: complete\ndata: {\"total\": %d}\n\n", count)
+	executionTime := time.Since(startTime)
+
+	// Send completion event with execution time
+	fmt.Fprintf(w, "event: complete\ndata: {\"total\": %d, \"scanned\": %d, \"executionTimeMs\": %d}\n\n", 
+		count, totalScanned, executionTime.Milliseconds())
 	flusher.Flush()
+}
+
+// FieldsResponse is the API response for field information
+type FieldsResponse struct {
+	RecordType string      `json:"recordType"`
+	Fields     []FieldInfo `json:"fields"`
+	Helpers    []string    `json:"helpers"`
+}
+
+// HandleAuditFields returns field information for a specific audit record type
+func HandleAuditFields(w http.ResponseWriter, r *http.Request, recordTypeName string) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Convert type name to Type enum
+	recordType := types.Type(types.Type_value["NC_"+recordTypeName])
+	if recordType == 0 { // 0 is the default/unknown type
+		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"error": fmt.Sprintf("Unknown record type: %s", recordTypeName),
+		})
+		return
+	}
+
+	// Create a sample record to extract field information
+	record := netio.InitRecord(recordType)
+	if record == nil {
+		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"error": fmt.Sprintf("Failed to initialize record type: %s", recordTypeName),
+		})
+		return
+	}
+
+	// Extract fields using reflection
+	fields := extractFields(record, "", 0)
+
+	// Add helper functions
+	helpers := []string{
+		"InSubnet",
+		"IsPrivateIP",
+		"IsPublicIP",
+		"ParsePort",
+		"PortInRange",
+		"TimeInRange",
+		"DurationSince",
+		"FormatTime",
+		"ContainsAny",
+		"MatchesPattern",
+	}
+
+	RespondJSON(w, http.StatusOK, FieldsResponse{
+		RecordType: recordTypeName,
+		Fields:     fields,
+		Helpers:    helpers,
+	})
+}
+
+// extractFields recursively extracts field information from a struct
+func extractFields(v interface{}, prefix string, depth int) []FieldInfo {
+	fields := make([]FieldInfo, 0)
+
+	// Limit recursion depth to avoid explosion
+	if depth > 2 {
+		return fields
+	}
+
+	val := reflect.ValueOf(v)
+	if val.Kind() == reflect.Ptr {
+		if val.IsNil() {
+			return fields
+		}
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return fields
+	}
+
+	typ := val.Type()
+
+	for i := 0; i < val.NumField(); i++ {
+		field := typ.Field(i)
+		fieldValue := val.Field(i)
+
+		// Skip unexported fields
+		if !field.IsExported() {
+			continue
+		}
+
+		// Skip XXX_ fields (protobuf internal)
+		if strings.HasPrefix(field.Name, "XXX_") {
+			continue
+		}
+
+		fieldName := field.Name
+		if prefix != "" {
+			fieldName = prefix + "." + field.Name
+		}
+
+		fieldType := field.Type.String()
+
+		// Add the field
+		fields = append(fields, FieldInfo{
+			Name: fieldName,
+			Type: fieldType,
+		})
+
+		// For nested structs, recursively extract fields
+		if field.Type.Kind() == reflect.Struct && depth < 2 {
+			nestedFields := extractFields(fieldValue.Interface(), fieldName, depth+1)
+			fields = append(fields, nestedFields...)
+		}
+
+		// For pointer to struct
+		if field.Type.Kind() == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct && depth < 2 {
+			// Create a new instance for reflection
+			if !fieldValue.IsNil() {
+				nestedFields := extractFields(fieldValue.Interface(), fieldName, depth+1)
+				fields = append(fields, nestedFields...)
+			} else {
+				// Try to create a new instance to get field names
+				newInstance := reflect.New(field.Type.Elem())
+				nestedFields := extractFields(newInstance.Interface(), fieldName, depth+1)
+				fields = append(fields, nestedFields...)
+			}
+		}
+
+		// For slices of structs, show array notation
+		if field.Type.Kind() == reflect.Slice && depth < 2 {
+			elemType := field.Type.Elem()
+			if elemType.Kind() == reflect.Ptr {
+				elemType = elemType.Elem()
+			}
+			if elemType.Kind() == reflect.Struct {
+				// Create sample element for reflection
+				sampleElem := reflect.New(elemType).Interface()
+				nestedFields := extractFields(sampleElem, fieldName+"[0]", depth+1)
+				fields = append(fields, nestedFields...)
+			}
+		}
+	}
+
+	return fields
+}
+
+// FieldValuesResponse is the API response for field values
+type FieldValuesResponse struct {
+	RecordType   string              `json:"recordType"`
+	FieldValues  map[string][]string `json:"fieldValues"`
+	SampleSize   int                 `json:"sampleSize"`
+	MaxPerField  int                 `json:"maxPerField"`
+	RecordScanned int                `json:"recordsScanned"`
+}
+
+// HandleAuditFieldValues returns sample values for fields in a specific audit record type
+func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, recordTypeName string) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+			"error": fmt.Sprintf("Audit file not found: %s", recordTypeName),
+		})
+		return
+	}
+
+	// Open the audit record file
+	reader, err := NewAuditRecordReader(filePath)
+	if err != nil {
+		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"error": fmt.Sprintf("Failed to open audit record file: %v", err),
+		})
+		return
+	}
+	defer reader.Close()
+
+	// Read header
+	_, err = reader.ReadHeader()
+	if err != nil {
+		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"error": fmt.Sprintf("Failed to read header: %v", err),
+		})
+		return
+	}
+
+	const maxValuesPerField = 20
+	const maxRecordsToScan = 200
+
+	// Map to collect unique values per field
+	fieldValues := make(map[string]map[string]bool)
+	recordsScanned := 0
+
+	// Read records and collect values
+	for recordsScanned < maxRecordsToScan {
+		record, err := reader.NextRecord()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Printf("[WebUI] Error reading record: %v", err)
+			continue
+		}
+
+		recordsScanned++
+
+		// Extract field values using reflection
+		extractFieldValues(record, "", fieldValues, maxValuesPerField, 0)
+	}
+
+	// Convert to response format
+	result := make(map[string][]string)
+	for fieldName, valuesMap := range fieldValues {
+		values := make([]string, 0, len(valuesMap))
+		for value := range valuesMap {
+			values = append(values, value)
+		}
+		sort.Strings(values)
+		result[fieldName] = values
+	}
+
+	RespondJSON(w, http.StatusOK, FieldValuesResponse{
+		RecordType:    recordTypeName,
+		FieldValues:   result,
+		SampleSize:    maxRecordsToScan,
+		MaxPerField:   maxValuesPerField,
+		RecordScanned: recordsScanned,
+	})
+}
+
+// extractFieldValues recursively extracts unique field values from a struct
+func extractFieldValues(v interface{}, prefix string, fieldValues map[string]map[string]bool, maxPerField int, depth int) {
+	// Limit recursion depth
+	if depth > 2 {
+		return
+	}
+
+	val := reflect.ValueOf(v)
+	if val.Kind() == reflect.Ptr {
+		if val.IsNil() {
+			return
+		}
+		val = val.Elem()
+	}
+
+	if val.Kind() != reflect.Struct {
+		return
+	}
+
+	typ := val.Type()
+
+	for i := 0; i < val.NumField(); i++ {
+		field := typ.Field(i)
+		fieldValue := val.Field(i)
+
+		// Skip unexported fields
+		if !field.IsExported() {
+			continue
+		}
+
+		// Skip XXX_ fields (protobuf internal)
+		if strings.HasPrefix(field.Name, "XXX_") {
+			continue
+		}
+
+		fieldName := field.Name
+		if prefix != "" {
+			fieldName = prefix + "." + field.Name
+		}
+
+		// Initialize map for this field if needed
+		if _, exists := fieldValues[fieldName]; !exists {
+			fieldValues[fieldName] = make(map[string]bool)
+		}
+
+		// Skip if we already have max values for this field
+		if len(fieldValues[fieldName]) >= maxPerField {
+			continue
+		}
+
+		// Extract value based on type
+		if !fieldValue.CanInterface() {
+			continue
+		}
+
+		switch field.Type.Kind() {
+		case reflect.String:
+			strVal := fieldValue.String()
+			if strVal != "" && len(fieldValues[fieldName]) < maxPerField {
+				fieldValues[fieldName][strVal] = true
+			}
+
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			intVal := fieldValue.Int()
+			if len(fieldValues[fieldName]) < maxPerField {
+				fieldValues[fieldName][fmt.Sprintf("%d", intVal)] = true
+			}
+
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			uintVal := fieldValue.Uint()
+			if len(fieldValues[fieldName]) < maxPerField {
+				fieldValues[fieldName][fmt.Sprintf("%d", uintVal)] = true
+			}
+
+		case reflect.Float32, reflect.Float64:
+			floatVal := fieldValue.Float()
+			if len(fieldValues[fieldName]) < maxPerField {
+				fieldValues[fieldName][fmt.Sprintf("%g", floatVal)] = true
+			}
+
+		case reflect.Bool:
+			boolVal := fieldValue.Bool()
+			if len(fieldValues[fieldName]) < maxPerField {
+				fieldValues[fieldName][fmt.Sprintf("%t", boolVal)] = true
+			}
+
+		case reflect.Struct:
+			// Recurse into nested struct
+			if depth < 2 {
+				extractFieldValues(fieldValue.Interface(), fieldName, fieldValues, maxPerField, depth+1)
+			}
+
+		case reflect.Ptr:
+			if !fieldValue.IsNil() && field.Type.Elem().Kind() == reflect.Struct && depth < 2 {
+				extractFieldValues(fieldValue.Interface(), fieldName, fieldValues, maxPerField, depth+1)
+			}
+
+		case reflect.Slice:
+			// For slices, sample first few elements
+			if fieldValue.Len() > 0 {
+				elemType := field.Type.Elem()
+				if elemType.Kind() == reflect.Ptr {
+					elemType = elemType.Elem()
+				}
+				
+				if elemType.Kind() == reflect.Struct && depth < 2 {
+					// Sample first element with array notation
+					firstElem := fieldValue.Index(0)
+					extractFieldValues(firstElem.Interface(), fieldName+"[0]", fieldValues, maxPerField, depth+1)
+				}
+			}
+		}
+	}
 }

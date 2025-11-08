@@ -14,20 +14,23 @@
 package types
 
 import (
-	"github.com/dreadl0ck/netcap/encoder"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 )
 
 const (
-	fieldAddr         = "Addr"
-	fieldGeolocation  = "Geolocation"
-	fieldDNSNames     = "DNSNames"
-	fieldApplications = "Applications"
-	fieldJa3          = "Ja3"
-	fieldProtocols    = "Protocols"
-	fieldDstPorts     = "DstPorts"
-	fieldSrcPorts     = "SrcPorts"
-	fieldSNIs         = "SNIs"
+	fieldAddr                   = "Addr"
+	fieldGeolocation            = "Geolocation"
+	fieldDNSNames               = "DNSNames"
+	fieldApplications           = "Applications"
+	fieldJa3                    = "Ja3"
+	fieldProtocols              = "Protocols"
+	fieldDstPorts               = "DstPorts"
+	fieldSrcPorts               = "SrcPorts"
+	fieldSNIs                   = "SNIs"
+	fieldJa3FingerprintMatches  = "Ja3FingerprintMatches"
+	fieldJa3SFingerprintMatches = "Ja3SFingerprintMatches"
 )
 
 var fieldsIPProfile = []string{
@@ -38,12 +41,14 @@ var fieldsIPProfile = []string{
 	fieldTimestampFirst, // int64
 	fieldTimestampLast,  // int64
 	fieldApplications,   // []string
-	//fieldJa3,            // map[string]string
-	//fieldProtocols,      // map[string]*Protocol
+	//fieldJa3,                  // map[string]string
+	//fieldProtocols,            // map[string]*Protocol
 	fieldBytes, // uint64
-	//fieldDstPorts,       // map[string]*Port
-	//fieldSrcPorts,       // map[string]*Port
-	//fieldSNIs,           // map[string]int64
+	//fieldDstPorts,             // map[string]*Port
+	//fieldSrcPorts,             // map[string]*Port
+	//fieldSNIs,                 // map[string]int64
+	fieldJa3FingerprintMatches,  // []string
+	fieldJa3SFingerprintMatches, // []string
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -67,6 +72,8 @@ func (d *IPProfile) CSVRecord() []string {
 		// d.DstPorts,
 		// d.SrcPorts,
 		// d.SNIs,
+		join(d.Ja3FingerprintMatches...),
+		join(d.Ja3SFingerprintMatches...),
 	})
 }
 
@@ -113,6 +120,8 @@ func (d *IPProfile) Encode() []string {
 		ipProfileEncoder.Int64(fieldTimestampLast, d.TimestampLast),
 		ipProfileEncoder.String(fieldApplications, join(d.Applications...)),
 		ipProfileEncoder.Uint64(fieldBytes, d.Bytes),
+		ipProfileEncoder.String(fieldJa3FingerprintMatches, join(d.Ja3FingerprintMatches...)),
+		ipProfileEncoder.String(fieldJa3SFingerprintMatches, join(d.Ja3SFingerprintMatches...)),
 	})
 }
 

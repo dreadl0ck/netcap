@@ -150,14 +150,27 @@ func LookupDHCPFingerprint(fp, vendor string, userAgents []string) (*dhcpResult,
 		return nil, nil
 	}
 
+	resolverLog.Debug("attempting DHCP fingerprint lookup in local database",
+		zap.String("fingerprint", fp),
+		zap.String("vendor", vendor),
+	)
+
 	// check if fp has already been resolved
 	dhcpFingerprintMu.Lock()
 	if res, ok := dhcpFingerprintDB[fp]; ok {
 		dhcpFingerprintMu.Unlock()
-
+		resolverLog.Debug("DHCP fingerprint found in local database",
+			zap.String("fingerprint", fp),
+			zap.String("device", res.DeviceName),
+		)
 		return res, nil
 	}
 	dhcpFingerprintMu.Unlock()
+
+	resolverLog.Info("DHCP fingerprint not found in local database, querying Fingerbank API",
+		zap.String("fingerprint", fp),
+		zap.String("vendor", vendor),
+	)
 
 	// create API request
 	req := &dhcpFingerprintRequest{
@@ -225,6 +238,12 @@ func LookupDHCPFingerprint(fp, vendor string, userAgents []string) (*dhcpResult,
 	dhcpFingerprintDB[fp] = res
 	dhcpFingerprintMu.Unlock()
 
+	resolverLog.Info("successfully resolved DHCP fingerprint via Fingerbank API",
+		zap.String("fingerprint", fp),
+		zap.String("device", res.DeviceName),
+		zap.Int("score", res.Score),
+	)
+
 	return res, nil
 }
 
@@ -232,7 +251,12 @@ func LookupDHCPFingerprint(fp, vendor string, userAgents []string) (*dhcpResult,
 func InitDHCPFingerprintDB() {
 	dhcpDBinitialized = true
 
-	data, err := ioutil.ReadFile(filepath.Join(DataBaseFolderPath, dhcpDBFile))
+	dbPath := filepath.Join(DataBaseFolderPath, dhcpDBFile)
+	resolverLog.Info("loading DHCP fingerprint database",
+		zap.String("path", dbPath),
+	)
+
+	data, err := ioutil.ReadFile(dbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -246,11 +270,9 @@ func InitDHCPFingerprintDB() {
 
 	dhcpFingerprintMu.Unlock()
 
-	if !quiet {
-		dhcpFingerprintMu.Lock()
-		resolverLog.Info("loaded DHCP fingerprints", zap.Int("items", len(dhcpFingerprintDB)))
-		dhcpFingerprintMu.Unlock()
-	}
+	dhcpFingerprintMu.Lock()
+	resolverLog.Info("loaded DHCP fingerprints", zap.Int("items", len(dhcpFingerprintDB)))
+	dhcpFingerprintMu.Unlock()
 }
 
 // initDHCPFingerprintDBCSV initializes the DHCP fingerprint database from a CSV formatted source
@@ -287,25 +309,36 @@ func initDHCPFingerprintDBCSV() {
 	}
 	dhcpFingerprintMu.Unlock()
 
-	if !quiet {
-		resolverLog.Info("loaded DHCP fingerprints", zap.Int("items", fingerprints))
-	}
+	resolverLog.Info("loaded DHCP fingerprints", zap.Int("items", fingerprints))
 }
 
-// lookupDHCPFingerprintLocal retrieves the data associated with an DHCP fingerprint.
-func lookupDHCPFingerprintLocal(fp string) *dhcpResult {
+// LookupDHCPFingerprintLocal retrieves the data associated with an DHCP fingerprint from the local database.
+func LookupDHCPFingerprintLocal(fp string) string {
 	if fp == "" {
-		return nil
+		return ""
 	}
+
+	resolverLog.Info("attempting DHCP fingerprint lookup in local database",
+		zap.String("fingerprint", fp),
+	)
 
 	// check if ip has already been resolved
 	dhcpFingerprintMu.Lock()
 	if res, ok := dhcpFingerprintDB[fp]; ok {
 		dhcpFingerprintMu.Unlock()
-
-		return res
+		if res != nil {
+			resolverLog.Debug("DHCP fingerprint found in local database",
+				zap.String("fingerprint", fp),
+				zap.String("device", res.DeviceName),
+			)
+			return res.DeviceName
+		}
 	}
 	dhcpFingerprintMu.Unlock()
 
-	return nil
+	resolverLog.Debug("DHCP fingerprint not found in local database",
+		zap.String("fingerprint", fp),
+	)
+
+	return ""
 }

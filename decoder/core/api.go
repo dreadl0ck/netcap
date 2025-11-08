@@ -33,6 +33,9 @@ type DecoderAPI interface {
 	// SetWriter sets the netcap writer to use for the decoder
 	SetWriter(io.AuditRecordWriter)
 
+	// GetWriter returns the current writer
+	GetWriter() io.AuditRecordWriter
+
 	// GetType returns the netcap type of the decoder
 	GetType() types.Type
 

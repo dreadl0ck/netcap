@@ -73,6 +73,10 @@ func (dec *GoPacketDecoder) SetWriter(writer io.AuditRecordWriter) {
 	dec.writer = writer
 }
 
+func (dec *GoPacketDecoder) GetWriter() io.AuditRecordWriter {
+	return dec.writer
+}
+
 func (dec *GoPacketDecoder) GetType() types.Type {
 	return dec.Type
 }

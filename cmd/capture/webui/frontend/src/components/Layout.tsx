@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   AppBar,
   Badge,
@@ -28,6 +28,8 @@ import BarChartIcon from '@mui/icons-material/BarChart';
 import BubbleChartIcon from '@mui/icons-material/BubbleChart';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import GitHubIcon from '@mui/icons-material/GitHub';
+import RuleIcon from '@mui/icons-material/Rule';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
@@ -38,9 +40,10 @@ const drawerWidth = 240;
 interface LayoutProps {
   children: React.ReactNode;
   title: string;
+  headerAction?: React.ReactNode;
 }
 
-export default function Layout({ children, title }: LayoutProps) {
+export default function Layout({ children, title, headerAction }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const router = useRouter();
 
@@ -59,8 +62,16 @@ export default function Layout({ children, title }: LayoutProps) {
     refreshInterval: 10000, // Refresh every 10 seconds
   });
 
+  // Fetch alert statistics for badge
+  const { data: alertStats, mutate: mutateAlertStats } = useSWR('alertStats', () => api.getAlertStats(), {
+    refreshInterval: 10000, // Refresh every 10 seconds
+  });
+
   // Calculate total PCAP count (including preloaded and user files)
   const pcapCount = inputFiles?.length || 0;
+  
+  // Get total alerts count
+  const alertCount = alertStats?.totalAlerts || 0;
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -71,8 +82,25 @@ export default function Layout({ children, title }: LayoutProps) {
     if (path === '/') {
       return router.pathname === '/';
     }
+    // Exact match for /rules to prevent matching /rulesets
+    if (path === '/rules') {
+      return router.pathname === '/rules';
+    }
     return router.pathname.startsWith(path);
   };
+
+  // Listen for directory-changed events to refresh alert stats
+  useEffect(() => {
+    const handleDirectoryChanged = () => {
+      // Refresh alert statistics when the capture file changes
+      mutateAlertStats();
+    };
+
+    window.addEventListener('directory-changed', handleDirectoryChanged);
+    return () => {
+      window.removeEventListener('directory-changed', handleDirectoryChanged);
+    };
+  }, [mutateAlertStats]);
 
   const drawer = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -317,6 +345,84 @@ export default function Layout({ children, title }: LayoutProps) {
             <ListItemText primary="Logs" />
           </ListItemButton>
         </Link>
+        <Link href="/rules" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/rules')}
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <RuleIcon />
+            </ListItemIcon>
+            <ListItemText primary="Rules" />
+          </ListItemButton>
+        </Link>
+        <Link href="/rulesets" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/rulesets')}
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <SecurityIcon />
+            </ListItemIcon>
+            <ListItemText primary="Rule Sets" />
+          </ListItemButton>
+        </Link>
+        <Link href="/alerts" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/alerts')}
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <Badge 
+                badgeContent={alertCount} 
+                color="error"
+                max={999}
+                sx={{
+                  '& .MuiBadge-badge': {
+                    right: -3,
+                    top: 3,
+                  },
+                }}
+              >
+                <NotificationsActiveIcon />
+              </Badge>
+            </ListItemIcon>
+            <ListItemText primary="Alerts" />
+          </ListItemButton>
+        </Link>
         <Link href="/dbs" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/dbs')}
@@ -510,19 +616,39 @@ export default function Layout({ children, title }: LayoutProps) {
           ml: { sm: `${drawerWidth}px` },
         }}
       >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            {title}
-          </Typography>
+        <Toolbar
+          sx={{
+            minHeight: { xs: 'auto', sm: 64 },
+            py: { xs: 1, sm: 0 },
+            flexDirection: { xs: 'column', md: 'row' },
+            alignItems: { xs: 'flex-start', md: 'center' },
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', width: { xs: '100%', md: 'auto' } }}>
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2, display: { sm: 'none' } }}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: headerAction ? 0 : 1 }}>
+              {title}
+            </Typography>
+          </Box>
+          {headerAction && (
+            <Box sx={{ 
+              ml: { xs: 0, md: 'auto' }, 
+              mt: { xs: 1, md: 0 },
+              width: { xs: '100%', md: 'auto' },
+              display: 'flex', 
+              alignItems: 'center' 
+            }}>
+              {headerAction}
+            </Box>
+          )}
         </Toolbar>
       </AppBar>
       <Box

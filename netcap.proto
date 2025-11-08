@@ -1759,6 +1759,8 @@ message IPProfile {
   repeated Port DstPorts = 13;
   repeated Port ContactedPorts = 14;
   repeated string Devices = 15; // Devices associated with the MAC address, from DHCP db / fingerbank.org lookups
+  repeated string Ja3FingerprintMatches = 16; // JA3 fingerprint descriptions from TLSClientHello lookups
+  repeated string Ja3sFingerprintMatches = 17; // JA3S fingerprint descriptions from TLSServerHello lookups
 }
 
 message Protocol {
@@ -1961,6 +1963,7 @@ message SSH {
   string Ident = 5;
   string Algorithms = 6;
   bool IsClient = 7;
+  repeated string HASSHDescriptions = 8; // HASSH fingerprint lookup results from database
 }
 
 message Vulnerability {
@@ -2005,4 +2008,16 @@ message Alert {
   string Domain = 10;
   string Protocol = 11;
   string Notes = 12;
+  
+  // Additional fields for rules engine
+  string RuleName = 13;
+  string RecordType = 14;
+  string Severity = 15;
+  repeated string Tags = 16;
+  string MatchedRecord = 17; // JSON representation of the matched record
+  string RuleExpression = 18; // The expression that triggered this alert
+  
+  // Threshold-based rule configuration (0 means not a threshold-based rule)
+  int32 Threshold = 19; // Number of matches required to trigger this alert
+  int32 ThresholdWindow = 20; // Time window in seconds within which threshold must be reached
 }

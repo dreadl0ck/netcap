@@ -22,9 +22,11 @@ import (
 	"strings"
 
 	"github.com/evilsocket/islazy/tui"
+	"github.com/expr-lang/expr/vm"
 	"github.com/mgutz/ansi"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/filter"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -32,6 +34,10 @@ import (
 
 // Run parses the subcommand flags and handles the arguments.
 func Run() {
+	// Remove date/time from log output to prevent duplicate timestamps
+	// when running in Docker/systemd (which add their own timestamps)
+	log.SetFlags(0)
+	
 	// parse commandline flags
 	fs.Usage = printUsage
 
@@ -91,20 +97,50 @@ func Run() {
 
 	// read ncap file and print to stdout
 	if filepath.Ext(*flagInput) == defaults.FileExtension || filepath.Ext(*flagInput) == ".gz" {
+		// Compile filter expression if provided
+		var filterProgram *vm.Program
+		if *flagFilter != "" {
+			// We need to read the file header first to determine the record type
+			r, errOpen := io.Open(*flagInput, *flagMemBufferSize)
+			if errOpen != nil {
+				log.Fatal("failed to open file for filter compilation:", errOpen)
+			}
+
+			header, errHeader := r.ReadHeader()
+			if errHeader != nil {
+				log.Fatal("failed to read header for filter compilation:", errHeader)
+			}
+
+			// Close the reader, we'll open it again in Dump()
+			errClose := r.Close()
+			if errClose != nil {
+				log.Fatal("failed to close reader:", errClose)
+			}
+
+			// Compile the filter expression
+			filterProgram, err = filter.CompileExpression(*flagFilter, header.Type)
+			if err != nil {
+				log.Fatal("failed to compile filter expression:", err)
+			}
+
+			fmt.Fprintf(os.Stderr, "Using filter: %s\n", *flagFilter)
+		}
+
 		err = io.Dump(
 			os.Stdout,
 			io.DumpConfig{
-				Path:         *flagInput,
-				Separator:    *flagSeparator,
-				TabSeparated: *flagTSV,
-				Structured:   *flagPrintStructured,
-				Table:        *flagTable,
-				Selection:    *flagSelect,
-				UTC:          *flagUTC,
-				Fields:       *flagFields,
-				JSON:         *flagJSON,
-				CSV:          *flagCSV,
-				ForceColors:  *flagForceColors,
+				Path:          *flagInput,
+				Separator:     *flagSeparator,
+				TabSeparated:  *flagTSV,
+				Structured:    *flagPrintStructured,
+				Table:         *flagTable,
+				Selection:     *flagSelect,
+				UTC:           *flagUTC,
+				Fields:        *flagFields,
+				JSON:          *flagJSON,
+				CSV:           *flagCSV,
+				ForceColors:   *flagForceColors,
+				FilterProgram: filterProgram,
 			},
 		)
 		if err != nil {

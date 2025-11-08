@@ -53,9 +53,7 @@ func initIPWhitelist() {
 		hosts++
 	}
 
-	if !quiet {
-		resolverLog.Info("loaded whitelisted IP hosts", zap.Int("numHosts", hosts))
-	}
+	resolverLog.Info("loaded whitelisted IP hosts", zap.Int("numHosts", hosts))
 }
 
 // isWhitelistedIP checks whether a given ip address is whitelisted.

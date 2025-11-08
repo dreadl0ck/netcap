@@ -112,6 +112,9 @@ var (
  */
 
 func main() {
+	// Remove date/time from log output to prevent duplicate timestamps
+	// when running in Docker/systemd (which add their own timestamps)
+	log.SetFlags(0)
 
 	flag.Parse()
 

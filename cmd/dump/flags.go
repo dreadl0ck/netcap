@@ -50,4 +50,5 @@ var (
 	flagJSON            = fs.Bool("json", false, "print as JSON")
 	flagMemBufferSize   = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")
 	flagForceColors     = fs.Bool("c", false, "force colors")
+	flagFilter          = fs.String("filter", "", "filter audit records using an expr-lang expression (e.g., 'DstPort == 443')")
 )

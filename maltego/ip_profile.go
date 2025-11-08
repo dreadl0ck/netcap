@@ -205,19 +205,21 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 		}
 
 		profiles[profile.Addr] = &types.IPProfile{
-			Addr:           profile.Addr,
-			NumPackets:     profile.NumPackets,
-			Geolocation:    profile.Geolocation,
-			DNSNames:       profile.DNSNames,
-			TimestampFirst: profile.TimestampFirst,
-			TimestampLast:  profile.TimestampLast,
-			Applications:   profile.Applications,
-			Ja3Hashes:      profile.Ja3Hashes,
-			Protocols:      profile.Protocols,
-			Bytes:          profile.Bytes,
-			SrcPorts:       profile.SrcPorts,
-			DstPorts:       profile.DstPorts,
-			SNIs:           profile.SNIs,
+			Addr:                   profile.Addr,
+			NumPackets:             profile.NumPackets,
+			Geolocation:            profile.Geolocation,
+			DNSNames:               profile.DNSNames,
+			TimestampFirst:         profile.TimestampFirst,
+			TimestampLast:          profile.TimestampLast,
+			Applications:           profile.Applications,
+			Ja3Hashes:              profile.Ja3Hashes,
+			Protocols:              profile.Protocols,
+			Bytes:                  profile.Bytes,
+			SrcPorts:               profile.SrcPorts,
+			DstPorts:               profile.DstPorts,
+			SNIs:                   profile.SNIs,
+			Ja3FingerprintMatches:  profile.Ja3FingerprintMatches,
+			Ja3SFingerprintMatches: profile.Ja3SFingerprintMatches,
 		}
 	}
 

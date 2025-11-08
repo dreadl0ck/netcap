@@ -287,6 +287,11 @@ func (pd *Decoder) SetWriter(w io.AuditRecordWriter) {
 	pd.Writer = w
 }
 
+// GetWriter returns the current writer.
+func (pd *Decoder) GetWriter() io.AuditRecordWriter {
+	return pd.Writer
+}
+
 // GetType returns the netcap type of the decoder.
 func (pd *Decoder) GetType() types.Type {
 	return pd.Type

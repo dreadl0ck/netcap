@@ -15,7 +15,9 @@ package resolvers
 
 import (
 	"fmt"
+	"log"
 	"net"
+	"os"
 	"path/filepath"
 	"sync"
 	"time"
@@ -47,21 +49,44 @@ type geoRecord struct {
 }
 
 // initGeolocationDB opens handles to the geolocation databases.
+// This function is called when the GeolocationDB flag is enabled, so it will
+// fail fatally if the databases cannot be found or loaded.
 func initGeolocationDB() {
 	cityPath := filepath.Join(DataBaseFolderPath, "GeoLite2-City.mmdb")
 	asnPath := filepath.Join(DataBaseFolderPath, "GeoLite2-ASN.mmdb")
 
-	if err := initCityReader(); err != nil {
-		logger.WithError(err).Error("failed to open city GeoDB")
-	} else if !quiet {
-		resolverLog.Info("loaded city GeoDB", zap.String("from", cityPath))
+	resolverLog.Info("initializing geolocation databases",
+		zap.String("cityDB", cityPath),
+		zap.String("asnDB", asnPath),
+	)
+
+	// Check if City database file exists
+	if _, err := os.Stat(cityPath); os.IsNotExist(err) {
+		log.Fatalf("geolocation database not found: %s\nPlease download the GeoLite2 databases or disable geolocation with -geoDB=false", cityPath)
 	}
 
-	if err := initAsnReader(); err != nil {
-		logger.WithError(err).Error("failed to open ASN GeoDB")
-	} else if !quiet {
-		resolverLog.Info("loaded ASN GeoDB", zap.String("from", asnPath))
+	// Check if ASN database file exists
+	if _, err := os.Stat(asnPath); os.IsNotExist(err) {
+		log.Fatalf("geolocation database not found: %s\nPlease download the GeoLite2 databases or disable geolocation with -geoDB=false", asnPath)
 	}
+
+	// Initialize City reader
+	if err := initCityReader(); err != nil {
+		log.Fatalf("failed to open city geolocation database at %s: %v\nPlease ensure the database file is valid or disable geolocation with -geoDB=false", cityPath, err)
+	}
+	resolverLog.Info("successfully loaded city geolocation database",
+		zap.String("path", cityPath),
+	)
+
+	// Initialize ASN reader
+	if err := initAsnReader(); err != nil {
+		log.Fatalf("failed to open ASN geolocation database at %s: %v\nPlease ensure the database file is valid or disable geolocation with -geoDB=false", asnPath, err)
+	}
+	resolverLog.Info("successfully loaded ASN geolocation database",
+		zap.String("path", asnPath),
+	)
+
+	resolverLog.Info("geolocation databases initialized successfully")
 }
 
 func initCityReader() (err error) {

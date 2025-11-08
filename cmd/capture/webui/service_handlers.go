@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
@@ -347,6 +348,7 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Queue the job
+	atomic.AddInt64(&s.jobsScheduled, 1)
 	s.jobQueue <- job
 
 	log.Printf("[WebUI] Uploaded file %s for session %s, queued for analysis", filename, sessionID)

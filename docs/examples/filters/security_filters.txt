@@ -1,0 +1,120 @@
+# Security-Focused Filter Examples
+# Filters for detecting suspicious or malicious activity
+
+## Port Scanning Detection
+
+# SYN scan attempts
+SYN && !ACK && !RST
+
+# Connections to unusual high ports
+DstPort > 50000
+
+# Multiple connection attempts (would need aggregation)
+# This is better handled by rules
+
+## Brute Force Detection
+
+# SSH connections from external IPs
+DstPort == 22 && IsPublicIP(SrcIP)
+
+# RDP connections from external IPs
+DstPort == 3389 && IsPublicIP(SrcIP)
+
+# Multiple authentication attempts (better in rules)
+# HTTP auth endpoints
+contains(URL, "login") || contains(URL, "signin") || contains(URL, "auth")
+
+## Data Exfiltration
+
+# Large uploads
+Method == "POST" && ReqContentLength > 10000000
+
+# DNS with suspiciously long queries
+len(Questions) > 0 && len(Questions[0].Name) > 100
+
+# ICMP with large payloads
+PayloadSize > 1024
+
+# FTP data transfers to external hosts
+(SrcPort == 20 || DstPort == 20) && IsPublicIP(DstIP)
+
+## Suspicious User-Agents
+
+# Automated tools (exact match)
+UserAgent in ["curl", "wget", "python", "perl", "powershell", "ruby"]
+
+# Known scanners (exact match)
+UserAgent in ["nikto", "nmap", "masscan", "sqlmap", "burp", "nessus"]
+
+# Empty or missing user-agent
+UserAgent == "" || len(UserAgent) < 5
+
+## Web Application Attacks
+
+# SQL Injection patterns
+MatchesPattern(URL, "(?i)(union.*select|insert.*into|delete.*from|drop.*table)")
+
+# XSS patterns
+MatchesPattern(URL, "(?i)(<script|javascript:|onerror=|onload=)")
+
+# Directory traversal
+MatchesPattern(URL, "\\.\\./|\\.\\\\")
+
+# Command injection
+MatchesPattern(URL, "(?i)(;.*ls|;.*cat|\\|.*ls|\\|.*cat|;.*wget|;.*curl)")
+
+# Access to sensitive files
+MatchesPattern(URL, "(?i)(/etc/passwd|/etc/shadow|web\\.config|wp-config)")
+
+## Malware Communication
+
+# IRC ports (common for botnets)
+DstPort >= 6667 && DstPort <= 6669
+
+# Common backdoor ports
+DstPort == 31337 || DstPort == 12345 || DstPort == 54321
+
+# HTTP POST to IP address (not domain)
+Method == "POST" && MatchesPattern(Host, "^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$")
+
+# TLS on unusual ports (possible C2)
+DstPort != 443 && DstPort != 8443 && DstPort != 993 && DstPort != 995
+
+## Network Reconnaissance
+
+# ICMP echo requests (ping)
+# TypeCode == 8  # For ICMPv4 records
+
+# ARP requests
+# Operation == 1  # For ARP records
+
+# SNMP enumeration
+DstPort == 161 || DstPort == 162
+
+# NetBIOS queries
+DstPort == 137
+
+## Lateral Movement
+
+# SMB traffic between internal hosts
+(DstPort == 445 || DstPort == 139) && IsPrivateIP(SrcIP) && IsPrivateIP(DstIP)
+
+# RDP between internal hosts
+DstPort == 3389 && IsPrivateIP(SrcIP) && IsPrivateIP(DstIP)
+
+# WinRM traffic
+DstPort == 5985 || DstPort == 5986
+
+## Anomalous Traffic
+
+# Traffic on port 80 but not HTTP
+# This requires protocol detection, hard to express simply
+
+# Large number of connections (aggregation needed)
+# Better handled by rules engine
+
+# Unusual protocol-port combinations
+# TLS not on 443
+# HTTP not on 80
+# These need protocol type inspection
+

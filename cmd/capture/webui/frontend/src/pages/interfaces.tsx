@@ -60,10 +60,6 @@ export default function Interfaces() {
   return (
     <Layout title="Network Interfaces">
       <Box>
-        <Typography variant="h4" gutterBottom>
-          Network Interfaces
-        </Typography>
-
         {isServiceMode && (
           <Paper sx={{ p: 2, mb: 3, bgcolor: 'info.main', color: 'info.contrastText' }}>
             <Typography variant="body2">

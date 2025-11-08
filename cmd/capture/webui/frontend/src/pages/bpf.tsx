@@ -86,18 +86,7 @@ export default function BPF() {
 
   return (
     <Layout title="BPF Filter Configuration">
-      <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <FilterAltIcon sx={{ mr: 1, color: 'primary.main', fontSize: 40 }} />
-          <Typography variant="h4" sx={{ fontWeight: 600 }}>
-            BPF Filter Configuration
-          </Typography>
-        </Box>
-        <Typography variant="body1" color="text.secondary">
-          Configure Berkeley Packet Filter (BPF) expressions to filter network traffic before processing
-        </Typography>
-      </Box>
-
+      <Box>
       {bpfSuccess && (
         <Alert severity="success" sx={{ mb: 2 }}>
           {bpfSuccess}
@@ -111,12 +100,6 @@ export default function BPF() {
 
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Alert severity="info" icon={<InfoIcon />} sx={{ mb: 3 }}>
-            Berkeley Packet Filter (BPF) allows you to filter network traffic before processing. 
-            This can significantly improve performance when you&apos;re only interested in specific traffic patterns.
-            Changes will be applied to future capture sessions.
-          </Alert>
-
           <Box sx={{ mb: 3 }}>
             <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
               Current Filter
@@ -293,6 +276,7 @@ export default function BPF() {
           </Typography>
         </CardContent>
       </Card>
+      </Box>
     </Layout>
   );
 }

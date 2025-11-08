@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"reflect"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -28,6 +29,8 @@ import (
 	"time"
 
 	"github.com/evilsocket/islazy/tui"
+	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/vm"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mgutz/ansi"
 	"github.com/namsral/flag"
@@ -112,6 +115,7 @@ type DumpConfig struct {
 	Path          string
 	Separator     string
 	Selection     string
+	FilterProgram *vm.Program
 	MemBufferSize int
 	JSON          bool
 	Table         bool
@@ -127,9 +131,10 @@ type DumpConfig struct {
 // and dumps the output according to the configuration to the specified *io.File.
 func Dump(w *os.File, c DumpConfig) error {
 	var (
-		isTTY  = terminal.IsTerminal(int(w.Fd())) || c.ForceColors
-		count  = 0
-		r, err = Open(c.Path, c.MemBufferSize)
+		isTTY         = terminal.IsTerminal(int(w.Fd())) || c.ForceColors
+		count         = 0
+		filteredCount = 0
+		r, err        = Open(c.Path, c.MemBufferSize)
 	)
 
 	if err != nil {
@@ -190,6 +195,19 @@ func Dump(w *os.File, c DumpConfig) error {
 		count++
 
 		if p, ok := record.(types.AuditRecord); ok {
+
+			// Apply filter if configured
+			if c.FilterProgram != nil {
+				match, errEval := evaluateFilter(c.FilterProgram, p)
+				if errEval != nil {
+					log.Printf("warning: filter evaluation error: %v\n", errEval)
+					continue
+				}
+				if !match {
+					continue
+				}
+			}
+			filteredCount++
 
 			// JSON
 			if c.JSON {
@@ -254,10 +272,61 @@ func Dump(w *os.File, c DumpConfig) error {
 
 	// print number of records when dumping structured
 	if c.Structured || c.Table {
-		_, _ = w.WriteString(strconv.Itoa(count) + " records.\n")
+		if c.FilterProgram != nil {
+			_, _ = w.WriteString(strconv.Itoa(filteredCount) + " records (filtered from " + strconv.Itoa(count) + " total).\n")
+		} else {
+			_, _ = w.WriteString(strconv.Itoa(count) + " records.\n")
+		}
 	}
 
 	return nil
+}
+
+// evaluateFilter evaluates a filter expression against an audit record.
+// This is a simplified version that avoids importing the filter package to prevent import cycles.
+func evaluateFilter(program *vm.Program, record types.AuditRecord) (bool, error) {
+	if program == nil {
+		return true, nil // No filter means all records pass
+	}
+
+	// Create environment from record fields using reflection
+	env := make(map[string]interface{})
+
+	protoMsg, ok := record.(proto.Message)
+	if !ok {
+		return false, fmt.Errorf("record does not implement proto.Message")
+	}
+
+	v := reflect.ValueOf(protoMsg)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		fieldValue := v.Field(i)
+
+		// Skip unexported fields
+		if !fieldValue.CanInterface() {
+			continue
+		}
+
+		// Add the field to the environment
+		env[field.Name] = fieldValue.Interface()
+	}
+
+	result, err := expr.Run(program, env)
+	if err != nil {
+		return false, fmt.Errorf("failed to evaluate expression: %w", err)
+	}
+
+	match, ok := result.(bool)
+	if !ok {
+		return false, fmt.Errorf("expression did not return a boolean value: got %T", result)
+	}
+
+	return match, nil
 }
 
 // GenerateConfig generates a default configuration for the given flag set.

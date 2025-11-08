@@ -173,10 +173,6 @@ export default function DataSources() {
   return (
     <Layout title="Data Sources">
       <Box>
-        <Typography variant="h4" gutterBottom>
-          Data Sources
-        </Typography>
-
         {/* Network Interfaces Section (only in local mode) */}
         {isLocalMode && hasNetworkInterfaces && (
           <Box mb={4}>

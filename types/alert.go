@@ -22,8 +22,14 @@ import (
 )
 
 const (
-	fieldMITRE        = "MITRE"        // string
-	fieldIPReputation = "IPReputation" // string
+	fieldMITRE          = "MITRE"          // string
+	fieldIPReputation   = "IPReputation"   // string
+	fieldRuleName       = "RuleName"       // string
+	fieldRecordType     = "RecordType"     // string
+	fieldAlertSeverity  = "Severity"       // string (renamed to avoid conflict with vulnerability.go)
+	fieldTags           = "Tags"           // string
+	fieldMatchedRecord  = "MatchedRecord"  // string
+	fieldRuleExpression = "RuleExpression" // string
 )
 
 var fieldsAlert = []string{
@@ -36,6 +42,12 @@ var fieldsAlert = []string{
 	fieldDstPort,
 	fieldMITRE,
 	fieldIPReputation,
+	fieldRuleName,
+	fieldRecordType,
+	fieldAlertSeverity,
+	fieldTags,
+	fieldMatchedRecord,
+	fieldRuleExpression,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -55,6 +67,12 @@ func (a *Alert) CSVRecord() []string {
 		a.DstPort,
 		a.MITRE,
 		a.IPReputation,
+		a.RuleName,
+		a.RecordType,
+		a.Severity,
+		strings.Join(a.Tags, ","),
+		a.MatchedRecord,
+		a.RuleExpression,
 	})
 }
 
@@ -113,6 +131,12 @@ func (a *Alert) Encode() []string {
 		aEncoder.String(fieldDstPort, a.DstPort),
 		aEncoder.String(fieldMITRE, a.MITRE),
 		aEncoder.String(fieldIPReputation, a.IPReputation),
+		aEncoder.String(fieldRuleName, a.RuleName),
+		aEncoder.String(fieldRecordType, a.RecordType),
+		aEncoder.String(fieldAlertSeverity, a.Severity),
+		aEncoder.String(fieldTags, strings.Join(a.Tags, ",")),
+		aEncoder.String(fieldMatchedRecord, a.MatchedRecord),
+		aEncoder.String(fieldRuleExpression, a.RuleExpression),
 	})
 }
 

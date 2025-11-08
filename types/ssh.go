@@ -21,13 +21,17 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-const fieldHASSH = "HASSH"
+const (
+	fieldHASSH             = "HASSH"
+	fieldHASSHDescriptions = "HASSHDescriptions"
+)
 
 var fieldsSSH = []string{
 	fieldTimestamp,
 	fieldHASSH,
 	fieldFlow,
 	fieldNotes,
+	fieldHASSHDescriptions,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -42,6 +46,7 @@ func (a *SSH) CSVRecord() []string {
 		a.HASSH,
 		a.Flow,
 		a.Notes,
+		join(a.HASSHDescriptions...),
 	})
 }
 
@@ -107,6 +112,7 @@ func (a *SSH) Encode() []string {
 		sshEncoder.String(fieldHASSH, a.HASSH),
 		sshEncoder.String(fieldFlow, a.Flow),
 		sshEncoder.String(fieldNotes, a.Notes),
+		sshEncoder.String(fieldHASSHDescriptions, join(a.HASSHDescriptions...)),
 	})
 }
 

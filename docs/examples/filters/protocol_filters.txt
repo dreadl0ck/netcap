@@ -1,0 +1,100 @@
+# Protocol-Specific Filter Examples
+# Filters for HTTP, DNS, TLS, and other protocols
+
+## HTTP Filters
+
+# Specific HTTP method
+Method == "POST" || Method == "PUT" || Method == "DELETE"
+
+# HTTP to specific host
+Host == "example.com"
+
+# HTTP with User-Agent containing specific string
+contains(UserAgent, "Mozilla")
+
+# HTTP responses with specific status code
+StatusCode == 404
+
+# HTTP 4xx errors
+StatusCode >= 400 && StatusCode < 500
+
+# HTTP 5xx errors
+StatusCode >= 500 && StatusCode < 600
+
+# Large HTTP request
+ReqContentLength > 1000000
+
+# Large HTTP response
+ResContentLength > 1000000
+
+# HTTP with authentication
+contains(URL, "login") || contains(URL, "auth")
+
+# HTTP API endpoints
+contains(URL, "/api/")
+
+# HTTP file uploads
+Method == "POST" && contains(ContentType, "multipart/form-data")
+
+## DNS Filters
+
+# DNS queries only
+len(Questions) > 0 && len(Answers) == 0
+
+# DNS responses only
+len(Answers) > 0
+
+# DNS queries to specific domain
+len(Questions) > 0 && contains(Questions[0].Name, "example.com")
+
+# Large DNS responses
+len(Answers) > 5
+
+# DNS A record queries
+len(Questions) > 0 && Questions[0].Type == 1
+
+# DNS MX record queries
+len(Questions) > 0 && Questions[0].Type == 15
+
+# DNS TXT record queries
+len(Questions) > 0 && Questions[0].Type == 16
+
+## TLS Filters
+
+# TLS on standard port
+DstPort == 443
+
+# TLS on non-standard port
+DstPort != 443 && DstPort != 8443
+
+# Specific TLS version (if available)
+# Version == "1.3"
+
+## TCP Filters
+
+# TCP SYN packets (connection initiation)
+SYN && !ACK
+
+# TCP SYN-ACK packets (connection response)
+SYN && ACK
+
+# TCP FIN packets (connection termination)
+FIN
+
+# TCP RST packets (connection reset)
+RST
+
+# TCP with payload
+PayloadSize > 0
+
+# Large TCP payloads
+PayloadSize > 10000
+
+## UDP Filters
+
+# Specific UDP service ports
+DstPort == 53 || DstPort == 123 || DstPort == 161
+
+# UDP with large payloads
+PayloadSize > 1000
+

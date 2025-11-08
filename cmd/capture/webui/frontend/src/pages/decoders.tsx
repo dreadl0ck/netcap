@@ -546,14 +546,9 @@ export default function Decoders() {
       )}
 
       <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={3} gap={2}>
-        <Box>
-          <Typography variant="h4" gutterBottom>
-            Decoder Configuration
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {totalDecoders} decoder(s) available • {enabledCount} enabled • Hierarchical by type
-          </Typography>
-        </Box>
+        <Typography variant="body2" color="text.secondary">
+          {totalDecoders} decoder(s) available • {enabledCount} enabled • Hierarchical by type
+        </Typography>
         <Box display="flex" gap={1}>
           <Button
             variant="outlined"
@@ -590,11 +585,6 @@ export default function Decoders() {
           </Button>
         </Box>
       </Box>
-
-      <Alert severity="info" icon={<InfoIcon />} sx={{ mb: 3 }}>
-        Changes will be saved to the configuration file and applied to all future capture executions.
-        The current capture session will not be affected.
-      </Alert>
 
       {/* Library Version Section */}
       <Card sx={{ mb: 3 }}>

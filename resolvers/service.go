@@ -188,16 +188,14 @@ func InitServiceDB() {
 		}
 	}
 
-	if !quiet {
-		resolverLog.Info("loaded TCP service records",
-			zap.Int("total", len(tcpPortMap)),
-			zap.String("from", dbPath),
-		)
-		resolverLog.Info("loaded UDP service records",
-			zap.Int("total", len(udpPortMap)),
-			zap.String("from", dbPath),
-		)
-	}
+	resolverLog.Info("loaded TCP service records",
+		zap.Int("total", len(tcpPortMap)),
+		zap.String("from", dbPath),
+	)
+	resolverLog.Info("loaded UDP service records",
+		zap.Int("total", len(udpPortMap)),
+		zap.String("from", dbPath),
+	)
 }
 
 // LookupServiceByPort looks up the service name associated with a given port and protocol.

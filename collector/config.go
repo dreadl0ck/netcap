@@ -121,6 +121,10 @@ type Config struct {
 	// which can be used as alternative to using OS signals
 	HTTPShutdownEndpoint bool
 
+	// NoSignalHandling disables signal handling in the collector
+	// This is useful when running in service mode where the parent process handles signals
+	NoSignalHandling bool
+
 	// Timeout for live capture
 	// if you set this to 0, the pcap.BlockForever option will be used
 	// From the macOS docs on libpcap:

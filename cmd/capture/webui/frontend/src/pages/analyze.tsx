@@ -68,13 +68,16 @@ export default function AnalyzePage() {
   const [isMultiFile, setIsMultiFile] = useState(false);
   const [activeInputFile, setActiveInputFile] = useState<string>('');
   const [bpfData, setBpfData] = useState<BPFInfoResponse | null>(null);
+  const [quotaError, setQuotaError] = useState<string | null>(null);
 
   const loadQuota = useCallback(async () => {
     try {
       const quotaData = await api.getQuota();
       setQuota(quotaData);
+      setQuotaError(null);
     } catch (error) {
       console.error('Failed to load quota:', error);
+      setQuotaError('Failed to load quota information');
     }
   }, []);
 
@@ -425,6 +428,13 @@ export default function AnalyzePage() {
   return (
     <Layout title="Analyze PCAP Files">
       <Box>
+        {/* Quota Error (service mode only) */}
+        {isServiceMode && quotaError && (
+          <Alert severity="warning" sx={{ mb: 3 }}>
+            {quotaError}. Some features may not work correctly.
+          </Alert>
+        )}
+
         {/* Quota Information (service mode only) */}
         {isServiceMode && quota && (
           <Card sx={{ mb: 3 }}>
@@ -439,11 +449,15 @@ export default function AnalyzePage() {
                   </Typography>
                 </Box>
                 
-                {!quota.storage.unlimited && (
-                  <Box flex={1} minWidth={300}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Storage Usage
+                <Box flex={1} minWidth={300}>
+                  <Typography variant="body2" color="text.secondary" gutterBottom>
+                    Storage Usage
+                  </Typography>
+                  {quota.storage.unlimited ? (
+                    <Typography variant="body1" color="text.primary">
+                      Unlimited
                     </Typography>
+                  ) : (
                     <Box display="flex" alignItems="center" gap={2}>
                       <Box flex={1}>
                         <LinearProgress 
@@ -458,8 +472,8 @@ export default function AnalyzePage() {
                         ({quota.storage.percentUsed.toFixed(1)}%)
                       </Typography>
                     </Box>
-                  </Box>
-                )}
+                  )}
+                </Box>
               </Box>
 
               {quota.remaining === 0 && (
@@ -515,12 +529,6 @@ export default function AnalyzePage() {
         {/* Analyze Area */}
         <Card>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Analyze PCAP Files
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Upload one or multiple PCAP files for network traffic analysis
-            </Typography>
             {isServiceMode && (
               <Alert severity="info" sx={{ mb: 2 }}>
                 You can upload your own PCAP files or browse results from pre-analyzed files. 

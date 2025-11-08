@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -46,10 +47,13 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/udp"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/filter"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/label/manager"
 	"github.com/dreadl0ck/netcap/performance"
 	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/dreadl0ck/netcap/rules"
+	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
@@ -131,6 +135,12 @@ type Collector struct {
 
 	// performance tracker
 	perfTracker *performance.Tracker
+
+	// filtering and rules
+	filterPrograms map[types.Type]*filter.CompiledFilter
+	rulesEngine    *rules.Engine
+	filteredCount  int64
+	alertCount     int64
 }
 
 // GetTotalBytesWritten returns the total bytes written to disk.
@@ -138,6 +148,178 @@ func (c *Collector) GetTotalBytesWritten() int64 {
 	c.statMutex.Lock()
 	defer c.statMutex.Unlock()
 	return c.totalBytesWritten
+}
+
+// SetFilterExpression sets a filter expression for a specific record type.
+func (c *Collector) SetFilterExpression(expression string, recordType types.Type) error {
+	if c.filterPrograms == nil {
+		c.filterPrograms = make(map[types.Type]*filter.CompiledFilter)
+	}
+
+	program, err := filter.CompileExpression(expression, recordType)
+	if err != nil {
+		return fmt.Errorf("failed to compile filter for %s: %w", recordType.String(), err)
+	}
+
+	c.filterPrograms[recordType] = &filter.CompiledFilter{
+		Program:    program,
+		RecordType: recordType,
+		Expression: expression,
+	}
+
+	c.log.Info("compiled filter expression", zap.String("type", recordType.String()), zap.String("expression", expression))
+	return nil
+}
+
+// SetRulesEngine sets the rules engine for alert generation.
+func (c *Collector) SetRulesEngine(engine *rules.Engine) {
+	c.rulesEngine = engine
+	c.log.Info("rules engine enabled")
+}
+
+// ReloadRulesEngine reloads the rules engine configuration from disk.
+// This is used when rules are updated via the webUI at runtime.
+func (c *Collector) ReloadRulesEngine() error {
+	if c.rulesEngine == nil {
+		return nil // No rules engine to reload
+	}
+
+	// Get the rules folder path - use output directory
+	rulesFolder := filepath.Join(c.config.DecoderConfig.Out, "rules")
+
+	// Load all rule files from the rules folder
+	config := &rules.Config{
+		Rules: make([]*rules.Rule, 0),
+	}
+
+	entries, err := os.ReadDir(rulesFolder)
+	if err != nil {
+		return fmt.Errorf("failed to read rules folder: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yml") {
+			continue
+		}
+
+		filePath := filepath.Join(rulesFolder, entry.Name())
+		fileConfig, err := rules.LoadRulesFromFile(filePath)
+		if err != nil {
+			c.log.Warn("failed to load rules file", zap.String("file", entry.Name()), zap.Error(err))
+			continue
+		}
+
+		// Add rules from this file to the overall config
+		config.Rules = append(config.Rules, fileConfig.Rules...)
+	}
+
+	// Update the rules engine with the new config
+	if err := c.rulesEngine.UpdateConfig(config); err != nil {
+		return fmt.Errorf("failed to update rules engine: %w", err)
+	}
+
+	c.log.Info("rules engine reloaded", zap.Int("total_rules", len(config.Rules)))
+	return nil
+}
+
+// ShouldWriteRecord checks if a record should be written based on the filter.
+// Returns true if the record passes the filter (or no filter is set).
+func (c *Collector) ShouldWriteRecord(record types.AuditRecord) bool {
+	if c.filterPrograms == nil {
+		return true
+	}
+
+	recordType := record.NetcapType()
+	compiledFilter, hasFilter := c.filterPrograms[recordType]
+	if !hasFilter {
+		return true
+	}
+
+	match, err := filter.EvaluateExpression(compiledFilter.Program, record)
+	if err != nil {
+		c.log.Warn("filter evaluation error", zap.String("type", recordType.String()), zap.Error(err))
+		return true // On error, allow the record through
+	}
+
+	if !match {
+		atomic.AddInt64(&c.filteredCount, 1)
+	}
+
+	return match
+}
+
+// EvaluateRules evaluates all rules against a record and generates alerts if matched.
+func (c *Collector) EvaluateRules(record types.AuditRecord) {
+	if c.rulesEngine == nil {
+		return
+	}
+
+	alertsGenerated, err := c.rulesEngine.Evaluate(record)
+	if err != nil {
+		c.log.Warn("rules evaluation error", zap.String("type", record.NetcapType().String()), zap.Error(err))
+		return
+	}
+
+	if alertsGenerated > 0 {
+		atomic.AddInt64(&c.alertCount, int64(alertsGenerated))
+	}
+}
+
+// EvaluateRulesWithMetrics evaluates rules and returns the number of alerts generated.
+// This is used by the FilteringWriter to track metrics.
+func (c *Collector) EvaluateRulesWithMetrics(record types.AuditRecord) int {
+	if c.rulesEngine == nil {
+		return 0
+	}
+
+	alertsGenerated, err := c.rulesEngine.Evaluate(record)
+	if err != nil {
+		c.log.Warn("rules evaluation error", zap.String("type", record.NetcapType().String()), zap.Error(err))
+		return 0
+	}
+
+	if alertsGenerated > 0 {
+		atomic.AddInt64(&c.alertCount, int64(alertsGenerated))
+	}
+
+	return alertsGenerated
+}
+
+// WrapWritersWithFiltering wraps all decoder writers with FilteringWriters.
+// This should be called after decoders are initialized and before processing starts.
+func (c *Collector) WrapWritersWithFiltering() {
+	// Only wrap if we have filters or rules
+	if len(c.filterPrograms) == 0 && c.rulesEngine == nil {
+		return
+	}
+
+	c.log.Info("wrapping decoder writers with filtering/rules support")
+
+	// Wrap GoPacket decoders
+	for _, decoderSlice := range c.goPacketDecoders {
+		for _, decoder := range decoderSlice {
+			originalWriter := decoder.GetWriter()
+			decoder.SetWriter(NewFilteringWriter(originalWriter, c))
+		}
+	}
+
+	// Wrap packet decoders
+	for _, decoder := range c.packetDecoders {
+		originalWriter := decoder.GetWriter()
+		decoder.SetWriter(NewFilteringWriter(originalWriter, c))
+	}
+
+	// Wrap stream decoders
+	for _, decoder := range c.streamDecoders {
+		originalWriter := decoder.GetWriter()
+		decoder.SetWriter(NewFilteringWriter(originalWriter, c))
+	}
+
+	// Wrap abstract decoders
+	for _, decoder := range c.abstractDecoders {
+		originalWriter := decoder.GetWriter()
+		decoder.SetWriter(NewFilteringWriter(originalWriter, c))
+	}
 }
 
 // GetTotalAuditRecords returns the total number of audit records generated.

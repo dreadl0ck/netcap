@@ -64,6 +64,7 @@ import (
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/metrics"
 	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/dreadl0ck/netcap/rules"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
@@ -91,7 +92,7 @@ func createErrorLog(inputFile, outDir string, err error, additionalInfo ...strin
 	fmt.Fprintf(errorLogFile, "Input File: %s\n", inputFile)
 	fmt.Fprintf(errorLogFile, "Output Directory: %s\n", outDir)
 	fmt.Fprintf(errorLogFile, "Error: %v\n", err)
-	
+
 	// Add any additional information
 	if len(additionalInfo) > 0 {
 		fmt.Fprintf(errorLogFile, "\n=== Additional Information ===\n")
@@ -362,6 +363,9 @@ func writeSummaryTable(inputFiles []string, summaries []fileSummary, fileErrors 
 
 // Run parses the subcommand flags and handles the arguments.
 func Run() {
+	// Remove date/time from log output to prevent duplicate timestamps
+	// when running in Docker/systemd (which add their own timestamps)
+	log.SetFlags(0)
 
 	// parse commandline flags
 	fs.Usage = printUsage
@@ -570,7 +574,7 @@ func Run() {
 
 	// Store original output directory to create subdirectories for each file
 	originalOutDir := *flagOutDir
-	
+
 	// Convert to absolute path to ensure consistent path handling across the application
 	if originalOutDir != "" {
 		absPath, err := filepath.Abs(originalOutDir)
@@ -611,6 +615,7 @@ func Run() {
 		// Create server in local mode (unrestricted)
 		webUIServer = webui.NewServer(*flagHTTP, initialOutDir, inputFiles, *flagHTTPAssets, *flagDebug, *flagDPI, false, nil)
 		webUIServer.SetLiveMode(live) // Set live mode flag
+
 		if err := webUIServer.Start(); err != nil {
 			log.Printf("Failed to start web UI server: %v\n", err)
 		} else {
@@ -830,6 +835,54 @@ func Run() {
 		}
 	}
 
+	// Initialize filter expression if provided
+	if *flagFilter != "" {
+		// For now, apply the filter to all record types
+		// In the future, this could be made more specific per type
+		fmt.Println("Filter expression:", *flagFilter)
+		fmt.Println("Note: Filter will be applied to all audit record types")
+
+		// We'll set the filter for common types
+		// The actual filter will be applied per-type in the collector's ShouldWriteRecord method
+		// For simplicity, we'll set it for TCP as an example
+		// A more sophisticated approach would parse the expression to determine applicable types
+		if err := c.SetFilterExpression(*flagFilter, types.Type_NC_TCP); err != nil {
+			log.Printf("Warning: failed to compile filter for TCP: %v", err)
+		}
+	}
+
+	// Initialize rules engine if rules file provided
+	if *flagRules != "" {
+		fmt.Println("Loading rules from:", *flagRules)
+
+		// Create alert writer
+		alertWriter, err := rules.NewFileAlertWriter(*flagOutDir)
+		if err != nil {
+			log.Fatal("failed to create alert writer:", err)
+		}
+
+		// Create rules engine
+		rulesEngine, err := rules.NewEngine(*flagRules, alertWriter)
+		if err != nil {
+			log.Fatal("failed to create rules engine:", err)
+		}
+
+		// Set rules engine in collector
+		c.SetRulesEngine(rulesEngine)
+
+		// Register alert writer for cleanup
+		defer func() {
+			if err := rulesEngine.Close(); err != nil {
+				log.Println("error closing rules engine:", err)
+			}
+		}()
+
+		stats := rulesEngine.GetStats()
+		if totalRules, ok := stats["total_rules"].(int); ok {
+			fmt.Printf("Loaded %d rules\n", totalRules)
+		}
+	}
+
 	c.PrintConfiguration()
 
 	// Connect collector to webui server for runtime debug logging
@@ -995,16 +1048,16 @@ func Run() {
 					humanize.Bytes(m.HeapAlloc), humanize.Bytes(m.HeapSys), numGoroutines)
 			}
 
-		// Set output directory for this specific file
-		*flagOutDir = getOutputDirForFile(inputFile, originalOutDir)
-		fmt.Printf("Output directory: %s\n", *flagOutDir)
+			// Set output directory for this specific file
+			*flagOutDir = getOutputDirForFile(inputFile, originalOutDir)
+			fmt.Printf("Output directory: %s\n", *flagOutDir)
 
-		// Update web UI server with new output directory
-		if webUIServer != nil {
-			webUIServer.UpdateOutputDir(*flagOutDir)
-			// Store the mapping from input file to output directory
-			webUIServer.SetFileOutputDir(inputFile, *flagOutDir)
-		}
+			// Update web UI server with new output directory
+			if webUIServer != nil {
+				webUIServer.UpdateOutputDir(*flagOutDir)
+				// Store the mapping from input file to output directory
+				webUIServer.SetFileOutputDir(inputFile, *flagOutDir)
+			}
 
 			// Mark previous file as completed if this is not the first file
 			if webUIServer != nil && fileIdx > 0 {
@@ -1156,16 +1209,16 @@ func Run() {
 			if err = c.CollectBPF(inputFile, *flagBPF); err != nil {
 				if len(inputFiles) > 1 {
 					fmt.Printf("Error: failed to set BPF: %v\n", err)
-					
+
 					// Create error log
 					errorMsg := fmt.Errorf("failed to set BPF: %w", err)
 					errorLogPath := createErrorLog(inputFile, *flagOutDir, errorMsg)
-					
+
 					// Notify webUI server
 					if webUIServer != nil {
 						webUIServer.SetFileError(inputFile, errorMsg.Error(), errorLogPath)
 					}
-					
+
 					fileErrors = append(fileErrors, fileError{
 						filename:     inputFile,
 						err:          errorMsg,
@@ -1186,16 +1239,16 @@ func Run() {
 			// invalid path
 			if len(inputFiles) > 1 {
 				fmt.Printf("Error: failed to open file: %v\n", err)
-				
+
 				// Create error log
 				errorMsg := fmt.Errorf("failed to open file: %w", err)
 				errorLogPath := createErrorLog(inputFile, *flagOutDir, errorMsg)
-				
+
 				// Notify webUI server
 				if webUIServer != nil {
 					webUIServer.SetFileError(inputFile, errorMsg.Error(), errorLogPath)
 				}
-				
+
 				fileErrors = append(fileErrors, fileError{
 					filename:     inputFile,
 					err:          errorMsg,
@@ -1212,16 +1265,16 @@ func Run() {
 			if err = c.CollectPcap(inputFile); err != nil {
 				if len(inputFiles) > 1 {
 					fmt.Printf("Error: failed to collect audit records from pcap file: %v\n", err)
-					
+
 					// Create error log
 					errorMsg := fmt.Errorf("failed to collect audit records from pcap file: %w", err)
 					errorLogPath := createErrorLog(inputFile, *flagOutDir, errorMsg)
-					
+
 					// Notify webUI server
 					if webUIServer != nil {
 						webUIServer.SetFileError(inputFile, errorMsg.Error(), errorLogPath)
 					}
-					
+
 					fileErrors = append(fileErrors, fileError{
 						filename:     inputFile,
 						err:          errorMsg,
@@ -1236,16 +1289,16 @@ func Run() {
 			if err = c.CollectPcapNG(inputFile); err != nil {
 				if len(inputFiles) > 1 {
 					fmt.Printf("Error: failed to collect audit records from pcapng file: %v\n", err)
-					
+
 					// Create error log
 					errorMsg := fmt.Errorf("failed to collect audit records from pcapng file: %w", err)
 					errorLogPath := createErrorLog(inputFile, *flagOutDir, errorMsg)
-					
+
 					// Notify webUI server
 					if webUIServer != nil {
 						webUIServer.SetFileError(inputFile, errorMsg.Error(), errorLogPath)
 					}
-					
+
 					fileErrors = append(fileErrors, fileError{
 						filename:     inputFile,
 						err:          errorMsg,

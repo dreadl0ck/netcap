@@ -1,0 +1,374 @@
+# Industrial Control Systems (ICS/OT) Port Detection Rules
+# These rules detect traffic on ports associated with industrial protocols and OT infrastructure
+# Generated from ics_ports.csv - monitoring critical industrial and SCADA systems
+
+description: "Industrial Control Systems (ICS/OT) detection rules for SCADA, PLCs, and industrial protocols including Modbus, S7comm, OPC-UA, EtherNet/IP, DNP3, BACnet, PROFINET, and MQTT. Monitors critical infrastructure and detects unauthorized ICS protocol exposure."
+
+rules:
+  # ========================================
+  # CRITICAL ICS PROTOCOLS
+  # ========================================
+
+  # Port 102: Siemens S7comm
+  - name: Siemens S7comm Detected
+    description: Siemens S7 PLC communication (S7comm over TCP/ISO RFC1006) detected - high-value target for control/logic access
+    type: TCP
+    expression: DstPort == 102 || SrcPort == 102
+    severity: critical
+    mitre: ["T0855", "T0836"]
+    tags: ["plc", "scada"]
+    enabled: true
+
+  # Port 502: Modbus TCP
+  - name: Modbus TCP Detected
+    description: Modbus over TCP detected - read/write coils/registers used by many PLCs/RTUs (no auth by default)
+    type: TCP
+    expression: DstPort == 502 || SrcPort == 502
+    severity: critical
+    mitre: ["T0855", "T0836"]
+    tags: ["plc", "scada", "unauthenticated"]
+    enabled: true
+
+  # Port 44818: EtherNet/IP (TCP)
+  - name: EtherNet IP TCP Detected
+    description: EtherNet/IP explicit messaging / CIP detected (TCP) - restrict to OT networks
+    type: TCP
+    expression: DstPort == 44818 || SrcPort == 44818
+    severity: critical
+    mitre: ["T0855", "T0836"]
+    tags: ["plc"]
+    enabled: true
+
+  # Port 2222: EtherNet/IP (UDP)
+  - name: EtherNet IP UDP Detected
+    description: EtherNet/IP implicit I/O messaging detected (UDP) - monitor UDP I/O traffic on OT VLANs
+    type: UDP
+    expression: DstPort == 2222 || SrcPort == 2222
+    severity: critical
+    mitre: ["T0855"]
+    tags: ["plc"]
+    enabled: true
+
+  # Port 20000: DNP3
+  - name: DNP3 Detected
+    description: DNP3 over TCP/UDP detected - common in energy/utility SCADA (requires secure channels and network isolation)
+    type: TCP
+    expression: DstPort == 20000 || SrcPort == 20000
+    severity: critical
+    mitre: ["T0855", "T0836"]
+    tags: ["scada"]
+    enabled: true
+
+  # Port 2404: IEC 60870-5-104
+  - name: IEC 104 Detected
+    description: IEC-104 telecontrol protocol detected - critical grid protocol used in electric SCADA
+    type: TCP
+    expression: DstPort == 2404 || SrcPort == 2404
+    severity: critical
+    mitre: ["T0855", "T0836"]
+    tags: ["scada"]
+    enabled: true
+
+  # Port 4840: OPC UA
+  - name: OPC UA Detected
+    description: OPC Unified Architecture detected - use certified security modes and monitor session activity
+    type: TCP
+    expression: DstPort == 4840 || SrcPort == 4840
+    severity: critical
+    mitre: ["T0855", "T1071.001"]
+    tags: ["automation"]
+    enabled: true
+
+  # Port 4843: OPC UA (HTTPS binding)
+  - name: OPC UA HTTPS Detected
+    description: OPC UA over HTTPS or alternate port detected - enforce cert validation and endpoint filtering
+    type: TCP
+    expression: DstPort == 4843 || SrcPort == 4843
+    severity: high
+    mitre: ["T0855", "T1071.001"]
+    tags: ["automation", "encrypted"]
+    enabled: true
+
+  # Port 47808: BACnet/IP
+  - name: BACnet Detected
+    description: Building automation protocol (BACnet/IP) detected - restrict management and monitor for spoofing
+    type: UDP
+    expression: DstPort == 47808 || SrcPort == 47808
+    severity: critical
+    mitre: ["T0855", "T0836"]
+    tags: ["building-automation"]
+    enabled: true
+
+  # Port 34962-34964: PROFINET
+  - name: PROFINET RT Detected
+    description: PROFINET real-time unicast detected - ensure VLAN separation and QoS
+    type: UDP
+    expression: DstPort == 34962 || SrcPort == 34962
+    severity: critical
+    mitre: ["T0855"]
+    tags: ["automation"]
+    enabled: true
+
+  - name: PROFINET RTM Detected
+    description: PROFINET RT multicast detected - multicast anomalies can indicate misconfig or attack
+    type: UDP
+    expression: DstPort == 34963 || SrcPort == 34963
+    severity: critical
+    mitre: ["T0855"]
+    tags: ["automation"]
+    enabled: true
+
+  - name: PROFINET CM Detected
+    description: PROFINET context manager / RPC detected - control-plane functions
+    type: UDP
+    expression: DstPort == 34964 || SrcPort == 34964
+    severity: critical
+    mitre: ["T0855"]
+    tags: ["automation"]
+    enabled: true
+
+  # Port 1883: MQTT (Plain)
+  - name: MQTT Plaintext Detected
+    description: MQTT messaging detected (plaintext) - prefer MQTT over TLS (8883), enforce broker ACLs
+    type: TCP
+    expression: DstPort == 1883 || SrcPort == 1883
+    severity: critical
+    mitre: ["T1071.001", "T0868"]
+    tags: ["iiot", "cleartext"]
+    enabled: true
+
+  # Port 8883: MQTT over TLS
+  - name: MQTT TLS Detected
+    description: MQTT over TLS detected - use mutual TLS where possible and monitor broker sessions
+    type: TCP
+    expression: DstPort == 8883 || SrcPort == 8883
+    severity: high
+    mitre: ["T1071.001", "T0868"]
+    tags: ["iiot", "encrypted"]
+    enabled: true
+
+
+  # ========================================
+  # WINDOWS/ENTERPRISE INTEGRATION (OT Context)
+  # ========================================
+
+  # Port 88: Kerberos (ICS AD Integration)
+  - name: ICS Kerberos Detected
+    description: Kerberos auth detected - used in enterprise integration with OT bridges
+    type: TCP
+    expression: DstPort == 88 || SrcPort == 88
+    severity: medium
+    mitre: ["T1558"]
+    tags: ["authentication"]
+    enabled: true
+
+  # Port 1025: Dynamic RPC
+  - name: ICS Dynamic RPC Detected
+    description: Dynamic RPC ports detected - used by Windows services and DCOM in ICS apps
+    type: TCP
+    expression: DstPort == 1025 || SrcPort == 1025
+    severity: high
+    mitre: ["T1021.003"]
+    tags: ["legacy"]
+    enabled: true
+
+  # Port 5985-5986: WinRM
+  - name: ICS WinRM HTTP Detected
+    description: Windows remote management (HTTP) detected - used for automation/config
+    type: TCP
+    expression: DstPort == 5985 || SrcPort == 5985
+    severity: high
+    mitre: ["T1021.006"]
+    tags: ["remote-management"]
+    enabled: true
+
+  - name: ICS WinRM HTTPS Detected
+    description: Windows remote management (HTTPS) detected - secure WinRM for remote management
+    type: TCP
+    expression: DstPort == 5986 || SrcPort == 5986
+    severity: high
+    mitre: ["T1021.006"]
+    tags: ["remote-management", "encrypted"]
+    enabled: true
+
+
+
+  # ========================================
+  # VENDOR-SPECIFIC & MANAGEMENT PORTS
+  # ========================================
+
+  # Port 5020: OT Management
+  - name: ICS Vendor Management 5020 Detected
+    description: Vendor OT management tools detected (port 5020) - should be inventoried and limited
+    type: TCP
+    expression: DstPort == 5020 || SrcPort == 5020
+    severity: medium
+    mitre: ["T0855"]
+    tags: ["ics", "vendor-tools", "management", "proprietary"]
+    enabled: true
+
+  # Port 5021: Proprietary Vendor
+  - name: ICS Vendor Port 5021 Detected
+    description: Vendor-specific engineering/service port detected - require VPN/jumphost access
+    type: TCP
+    expression: DstPort == 5021 || SrcPort == 5021
+    severity: medium
+    mitre: ["T0855"]
+    tags: ["ics", "vendor-tools", "engineering", "proprietary"]
+    enabled: true
+
+  # Port 22222: Vendor Agent/Telemetry
+  - name: ICS Vendor Telemetry Detected
+    description: Vendor agent/telemetry port detected - should be authenticated and whitelisted
+    type: TCP
+    expression: DstPort == 22222 || SrcPort == 22222
+    severity: medium
+    mitre: ["T0868"]
+    tags: ["ics", "vendor-tools", "telemetry", "iiot", "agent"]
+    enabled: true
+
+  # Port 8880: Vendor Web Admin
+  - name: ICS Vendor Web Admin Detected
+    description: Alternate HTTP admin port detected - used by vendor web UIs
+    type: TCP
+    expression: DstPort == 8880 || SrcPort == 8880
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["ics", "vendor-tools", "web-admin", "http"]
+    enabled: true
+
+  # Port 247: Talk (Legacy)
+  - name: ICS Legacy Talk Detected
+    description: Legacy Talk service detected on older devices - rare but indicates legacy deployments
+    type: TCP
+    expression: DstPort == 247 || SrcPort == 247
+    severity: low
+    mitre: ["T1071.001"]
+    tags: ["ics", "legacy", "deprecated"]
+    enabled: true
+
+  # Port 10250: Kubernetes/Container Management (Modern ICS/IIoT)
+  - name: ICS Kubelet Detected
+    description: Container/kubernetes endpoints detected - used in modern ICS/IIoT infrastructure
+    type: TCP
+    expression: DstPort == 10250 || SrcPort == 10250
+    severity: critical
+    mitre: ["T1610"]
+    tags: ["ics", "kubernetes", "container", "iiot", "orchestration"]
+    enabled: true
+
+  # ========================================
+  # EXTERNAL CONNECTION MONITORING (Critical for ICS)
+  # ========================================
+
+  - name: ICS Modbus External Connection
+    description: Modbus connection to external IP detected - CRITICAL security violation
+    type: TCP
+    expression: DstPort == 502 && IsPublicIP(DstIP)
+    severity: critical
+    mitre: ["T0885", "T0868"]
+    tags: ["ics", "modbus", "external", "internet-exposure", "critical"]
+    enabled: true
+
+  - name: ICS S7comm External Connection
+    description: S7comm connection to external IP detected - CRITICAL PLC exposure
+    type: TCP
+    expression: DstPort == 102 && IsPublicIP(DstIP)
+    severity: critical
+    mitre: ["T0885", "T0868"]
+    tags: ["ics", "s7comm", "plc", "external", "siemens"]
+    enabled: true
+
+  - name: ICS EtherNet IP External Connection
+    description: EtherNet/IP connection to external IP detected - CRITICAL CIP exposure
+    type: TCP
+    expression: DstPort == 44818 && IsPublicIP(DstIP)
+    severity: critical
+    mitre: ["T0885", "T0868"]
+    tags: ["ics", "ethernet-ip", "external", "rockwell"]
+    enabled: true
+
+  - name: ICS DNP3 External Connection
+    description: DNP3 connection to external IP detected - CRITICAL SCADA exposure
+    type: TCP
+    expression: DstPort == 20000 && IsPublicIP(DstIP)
+    severity: critical
+    mitre: ["T0885", "T0868"]
+    tags: ["ics", "dnp3", "scada", "external", "utility"]
+    enabled: true
+
+  - name: ICS IEC104 External Connection
+    description: IEC-104 connection to external IP detected - CRITICAL grid protocol exposure
+    type: TCP
+    expression: DstPort == 2404 && IsPublicIP(DstIP)
+    severity: critical
+    mitre: ["T0885", "T0868"]
+    tags: ["ics", "iec-104", "grid", "external", "telecontrol"]
+    enabled: true
+
+  - name: ICS OPC UA External Connection
+    description: OPC UA connection to external IP detected - monitor for unauthorized data access
+    type: TCP
+    expression: (DstPort == 4840 || DstPort == 4843) && IsPublicIP(DstIP)
+    severity: critical
+    mitre: ["T0885", "T0868"]
+    tags: ["ics", "opc-ua", "external", "data-access"]
+    enabled: true
+
+  - name: ICS BACnet External Connection
+    description: BACnet connection to external IP detected - building automation exposure
+    type: UDP
+    expression: DstPort == 47808 && IsPublicIP(DstIP)
+    severity: critical
+    mitre: ["T0885", "T0868"]
+    tags: ["ics", "bacnet", "bas", "external"]
+    enabled: true
+
+  # ========================================
+  # HIGH-VOLUME THRESHOLD RULES (Attack Detection)
+  # ========================================
+
+  - name: ICS Modbus Scan Pattern
+    description: Multiple Modbus connection attempts detected - possible scanning or enumeration
+    type: TCP
+    expression: DstPort == 502 && SYN && !ACK
+    severity: high
+    mitre: ["T0840", "T0846"]
+    tags: ["ics", "modbus", "scanning", "enumeration"]
+    enabled: true
+    threshold: 50
+    threshold_window: 60
+
+  - name: ICS S7comm Scan Pattern
+    description: Multiple S7comm connection attempts detected - possible PLC scanning
+    type: TCP
+    expression: DstPort == 102 && SYN && !ACK
+    severity: high
+    mitre: ["T0840", "T0846"]
+    tags: ["ics", "s7comm", "plc", "scanning"]
+    enabled: true
+    threshold: 50
+    threshold_window: 60
+
+  - name: ICS Protocol Flooding
+    description: High volume of ICS protocol traffic detected - possible DoS attack
+    type: TCP
+    expression: DstPort == 502 || DstPort == 102 || DstPort == 44818 || DstPort == 20000 || DstPort == 2404
+    severity: critical
+    mitre: ["T0814", "T0826"]
+    tags: ["ics", "dos", "flooding", "availability"]
+    enabled: true
+    threshold: 1000
+    threshold_window: 30
+
+  - name: ICS MQTT Message Storm
+    description: High volume of MQTT messages detected - potential message storm or attack
+    type: TCP
+    expression: (DstPort == 1883 || DstPort == 8883) && PSH
+    severity: high
+    mitre: ["T0814"]
+    tags: ["ics", "mqtt", "iiot", "message-storm"]
+    enabled: true
+    threshold: 500
+    threshold_window: 60
+

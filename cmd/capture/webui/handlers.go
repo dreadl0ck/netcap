@@ -873,12 +873,33 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if we're in service mode with a current session
+	var sessionConfig *SessionInfo
+	sessionID := ""
+
+	s.mu.RLock()
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			sessionConfig = session
+			sessionID = s.currentSession
+		}
+	}
+	s.mu.RUnlock()
+
 	// Configuration is always read-only in webUI
-	config := s.getConfigOptions()
+	// Pass session config if available for session-specific configuration
+	config := s.getConfigOptions(sessionConfig)
 
 	response := map[string]interface{}{
-		"readOnly": true,
-		"options":  config,
+		"readOnly":      true,
+		"isServiceMode": s.isServiceMode,
+		"options":       config,
+	}
+
+	// Add session information if in service mode with active session
+	if sessionID != "" {
+		response["sessionId"] = sessionID
+		response["sessionSpecific"] = true
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -889,14 +910,25 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 
 // getConfigOptions returns the current configuration options from capture package
 // Note: This function accesses internal flags from the capture package
-func (s *Server) getConfigOptions() []ConfigOption {
+// If sessionConfig is provided, it will use session-specific configuration values
+func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 	// Import flag values from the capture package
 	// We use the defaults package for default values
+
+	// Determine input and output based on session or global config
+	inputValue := s.getInputValue()
+	outputValue := s.outDir
+
+	if sessionConfig != nil {
+		inputValue = sessionConfig.InputFile
+		outputValue = sessionConfig.OutputDir
+	}
+
 	options := []ConfigOption{
 		// Input/Output Configuration
 		{
 			Name:        "input",
-			Value:       s.getInputValue(),
+			Value:       inputValue,
 			Default:     "",
 			Type:        "string",
 			Description: "Read specified file, can either be a pcap or netcap audit record file",
@@ -905,7 +937,7 @@ func (s *Server) getConfigOptions() []ConfigOption {
 		},
 		{
 			Name:        "out",
-			Value:       s.outDir,
+			Value:       outputValue,
 			Default:     "",
 			Type:        "string",
 			Description: "Specify output directory, will be created if it does not exist",
@@ -954,7 +986,7 @@ func (s *Server) getConfigOptions() []ConfigOption {
 		// Network Capture Configuration
 		{
 			Name:        "bpf",
-			Value:       "",
+			Value:       s.getBPFValue(sessionConfig),
 			Default:     "",
 			Type:        "string",
 			Description: "Supply a BPF filter to use prior to processing packets with netcap",
@@ -992,7 +1024,7 @@ func (s *Server) getConfigOptions() []ConfigOption {
 		// Decoder Configuration
 		{
 			Name:        "include",
-			Value:       "",
+			Value:       s.getIncludeDecodersValue(sessionConfig),
 			Default:     "",
 			Type:        "string",
 			Description: "Include specific decoders (comma-separated)",
@@ -1001,7 +1033,7 @@ func (s *Server) getConfigOptions() []ConfigOption {
 		},
 		{
 			Name:        "exclude",
-			Value:       "",
+			Value:       s.getExcludeDecodersValue(sessionConfig),
 			Default:     "",
 			Type:        "string",
 			Description: "Exclude specific decoders (comma-separated)",
@@ -1332,6 +1364,30 @@ func (s *Server) getInputValue() string {
 		return s.inputFiles[0]
 	}
 	return fmt.Sprintf("%d files", len(s.inputFiles))
+}
+
+// getBPFValue returns the BPF filter value, preferring session-specific value
+func (s *Server) getBPFValue(sessionConfig *SessionInfo) string {
+	if sessionConfig != nil && sessionConfig.BPFFilter != "" {
+		return sessionConfig.BPFFilter
+	}
+	return ""
+}
+
+// getIncludeDecodersValue returns the include decoders value, preferring session-specific value
+func (s *Server) getIncludeDecodersValue(sessionConfig *SessionInfo) string {
+	if sessionConfig != nil && sessionConfig.IncludeDecoders != "" {
+		return sessionConfig.IncludeDecoders
+	}
+	return ""
+}
+
+// getExcludeDecodersValue returns the exclude decoders value, preferring session-specific value
+func (s *Server) getExcludeDecodersValue(sessionConfig *SessionInfo) string {
+	if sessionConfig != nil && sessionConfig.ExcludeDecoders != "" {
+		return sessionConfig.ExcludeDecoders
+	}
+	return ""
 }
 
 // handleDebugToggle handles runtime debug logging toggle requests

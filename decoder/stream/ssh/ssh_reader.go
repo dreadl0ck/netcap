@@ -223,14 +223,21 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 		// spew.Dump("found SSH KexInit", h.parent.ident, init)
 		hash, raw := computeHASSH(init)
 
+		// Lookup HASSH fingerprint in database to enrich SSH audit record
+		var hasshDescriptions []string
+		for _, soft := range software.HashDBMap[hash] {
+			hasshDescriptions = append(hasshDescriptions, soft.Version)
+		}
+
 		if dir == reassembly.TCPDirClientToServer {
 			err = Decoder.Writer.Write(&types.SSH{
-				Timestamp:  h.conversation.FirstClientPacket.UnixNano(),
-				HASSH:      hash,
-				Flow:       h.conversation.Ident,
-				Ident:      h.clientIdent,
-				Algorithms: raw,
-				IsClient:   true,
+				Timestamp:         h.conversation.FirstClientPacket.UnixNano(),
+				HASSH:             hash,
+				Flow:              h.conversation.Ident,
+				Ident:             h.clientIdent,
+				Algorithms:        raw,
+				IsClient:          true,
+				HASSHDescriptions: hasshDescriptions,
 			})
 			if err != nil {
 				sshLog.Error("failed to flush ssh audit record", zap.Error(err))
@@ -243,12 +250,13 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			sshLog.Info("found clientKexInit", zap.String("ident", h.conversation.Ident))
 		} else {
 			err = Decoder.Writer.Write(&types.SSH{
-				Timestamp:  h.conversation.FirstServerPacket.UnixNano(),
-				HASSH:      hash,
-				Flow:       utils.ReverseFlowIdent(h.conversation.Ident),
-				Ident:      h.serverIdent,
-				Algorithms: raw,
-				IsClient:   false,
+				Timestamp:         h.conversation.FirstServerPacket.UnixNano(),
+				HASSH:             hash,
+				Flow:              utils.ReverseFlowIdent(h.conversation.Ident),
+				Ident:             h.serverIdent,
+				Algorithms:        raw,
+				IsClient:          false,
+				HASSHDescriptions: hasshDescriptions,
 			})
 			if err != nil {
 				sshLog.Error("failed to flush ssh audit record", zap.Error(err))

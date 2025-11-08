@@ -1,0 +1,416 @@
+# Web Application Attack Detection Rules
+# These rules detect common web application attacks
+
+description: "Detection rules for web application attacks including SQL injection, XSS, directory traversal, command injection, web shell uploads, vulnerability scanners, and sensitive file access attempts."
+
+rules:
+  # SQL Injection Attempt
+  - name: SQL Injection Attempt
+    description: Detect potential SQL injection in HTTP requests using common patterns
+    type: HTTP
+    expression: 'MatchesPattern(URL, "(?i)(union.*select|insert.*into|''.*or.*''|\".*or.*\"|;.*drop|exec.*xp_cmdshell|delete.*from|drop.*table)")'
+    severity: critical
+    mitre: ["T1190"]
+    tags: ["sql-injection"]
+    enabled: true
+
+  # Cross-Site Scripting (XSS)
+  - name: XSS Attempt
+    description: Detect potential cross-site scripting attacks
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)(<script|javascript:|onerror=|onload=)")
+    severity: high
+    mitre: ["T1189"]
+    tags: ["xss"]
+    enabled: true
+
+  # Directory Traversal
+  - name: Directory Traversal
+    description: Detect directory traversal attempts
+    type: HTTP
+    expression: MatchesPattern(URL, "\\.\\./|\\.\\.\\\\")
+    severity: high
+    mitre: ["T1083"]
+    tags: ["path-traversal"]
+    enabled: true
+
+  # Command Injection
+  - name: Command Injection
+    description: Detect potential command injection attempts
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)(;.*ls|;.*cat|;.*wget|;.*curl|\\|.*ls|\\|.*cat)")
+    severity: critical
+    mitre: ["T1059"]
+    tags: ["command-injection"]
+    enabled: true
+
+  # Web Shell Upload
+  - name: Webshell Upload Attempt
+    description: "Detects attempts to upload web shells. NOTE: This rule is generic and may generate false positives. Tune it for your environment by making the URL pattern more specific."
+    type: HTTP
+    expression: Method == "POST" && MatchesPattern(ContentType, "multipart/form-data") && MatchesPattern(URL, "(?i)(shell|upload|cmd|pwn|c99|r57|aspx|php|jsp)")
+    severity: high
+    mitre: ["T1505.003"]
+    tags: ["webshell"]
+    enabled: true
+
+  # Suspicious User-Agent
+  - name: Web Vulnerability Scanner
+    description: Detect common web vulnerability scanner user agents
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(nikto|nmap|nessus|openvas|metasploit|burp|acunetix|sqlmap|havij|w3af|webscarab|paros|ZAP)")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner"]
+    enabled: true
+
+  # Directory/File Brute Forcing Tools
+  - name: Directory Brute Force Tool Detected
+    description: Detect directory and file brute forcing tools (Gobuster, Dirsearch, FeroxBuster, Ffuf)
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(gobuster|dirsearch|feroxbuster|ffuf|Fuzz Faster U Fool)")
+    severity: high
+    mitre: ["T1595.002", "T1083"]
+    tags: ["scanner", "brute-force", "enumeration"]
+    enabled: true
+
+  # Port Scanning Tools
+  - name: Port Scanner User Agent Detected
+    description: Detect port scanning tools (Masscan, Masscan-ng, etc.)
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(masscan|l9tcpid|l9explore)")
+    severity: high
+    mitre: ["T1046"]
+    tags: ["scanner", "port-scan"]
+    enabled: true
+
+  # WordPress Scanner
+  - name: WordPress Scanner Detected
+    description: Detect WordPress specific scanning tools (WPScan)
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)wpscan")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "wordpress", "cms"]
+    enabled: true
+
+  # Curl User-Agent
+  - name: Curl User Agent Detected
+    description: Detect curl user agent indicating automated tool or script usage
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)curl/")
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["automated-tool", "suspicious-ua"]
+    enabled: true
+
+  # Python User-Agent
+  - name: Python User Agent Detected
+    description: Detect Python-based user agents (python-requests, urllib, etc.) indicating scripted access
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(python|urllib|requests/)")
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["automated-tool", "suspicious-ua"]
+    enabled: true
+
+  # Go User-Agent
+  - name: Go User Agent Detected
+    description: Detect Go HTTP client user agent indicating automated tool or script usage
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(Go-http-client|golang)")
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["automated-tool", "suspicious-ua"]
+    enabled: true
+
+  # Wget User-Agent
+  - name: Wget User Agent Detected
+    description: Detect wget command-line tool indicating automated downloads or scraping
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)wget")
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["automated-tool", "suspicious-ua"]
+    enabled: true
+
+  # PowerShell User-Agent
+  - name: PowerShell User Agent Detected
+    description: Detect PowerShell Invoke-WebRequest or Invoke-RestMethod usage
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(PowerShell|WindowsPowerShell)")
+    severity: high
+    mitre: ["T1059.001", "T1071.001"]
+    tags: ["automated-tool", "suspicious-ua", "powershell"]
+    enabled: true
+
+  # Java HTTP Client
+  - name: Java HTTP Client Detected
+    description: Detect Java-based HTTP clients (Apache HttpClient, OkHttp, etc.)
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(Java/|Apache-HttpClient|okhttp|jersey)")
+    severity: low
+    mitre: ["T1071.001"]
+    tags: ["automated-tool", "suspicious-ua"]
+    enabled: true
+
+  # Ruby HTTP Client
+  - name: Ruby HTTP Client Detected
+    description: Detect Ruby HTTP libraries indicating scripted access
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(Ruby|rest-client|httparty|faraday)")
+    severity: low
+    mitre: ["T1071.001"]
+    tags: ["automated-tool", "suspicious-ua"]
+    enabled: true
+
+  # Perl HTTP Client
+  - name: Perl HTTP Client Detected
+    description: Detect Perl LWP or other HTTP libraries
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(libwww-perl|LWP::|perl)")
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["automated-tool", "suspicious-ua"]
+    enabled: true
+
+  # Node.js/JavaScript HTTP Clients
+  - name: Node.js HTTP Client Detected
+    description: Detect Node.js axios, node-fetch, got, or other HTTP clients
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(axios|node-fetch|got/|request/|superagent)")
+    severity: low
+    mitre: ["T1071.001"]
+    tags: ["automated-tool", "suspicious-ua", "nodejs"]
+    enabled: true
+
+  # HTTPie User-Agent
+  - name: HTTPie Client Detected
+    description: Detect HTTPie command-line HTTP client
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)HTTPie")
+    severity: low
+    mitre: ["T1071.001"]
+    tags: ["automated-tool", "suspicious-ua"]
+    enabled: true
+
+  # API Testing Tools
+  - name: API Testing Tools Detected
+    description: Detect Postman, Insomnia, and other API testing tools
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(Postman|PostmanRuntime|Insomnia|Paw/|RestClient)")
+    severity: low
+    mitre: ["T1595.002"]
+    tags: ["api-testing", "suspicious-ua"]
+    enabled: true
+
+  # Headless Browsers / Automation
+  - name: Headless Browser Detected
+    description: Detect headless browsers and automation frameworks (Puppeteer, Selenium, PhantomJS)
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(HeadlessChrome|Puppeteer|Selenium|PhantomJS|playwright)")
+    severity: medium
+    mitre: ["T1071.001", "T1589"]
+    tags: ["automation", "scraping", "suspicious-ua"]
+    enabled: true
+
+  # Web Scrapers
+  - name: Web Scraper Detected
+    description: Detect common web scraping tools and libraries
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(scrapy|beautifulsoup|mechanize|jsoup|htmlunit)")
+    severity: medium
+    mitre: ["T1589.002"]
+    tags: ["scraping", "suspicious-ua"]
+    enabled: true
+
+  # Generic Bot Pattern
+  - name: Generic Bot Pattern Detected
+    description: Detect generic bot patterns in user agent
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(bot[^a]|crawler|spider|scraper)")
+    severity: low
+    mitre: ["T1589.002"]
+    tags: ["bot", "crawler", "suspicious-ua"]
+    enabled: true
+
+  # Empty or Missing User-Agent
+  - name: Empty User Agent Detected
+    description: Detect missing or empty user agent string (suspicious for legitimate browsers)
+    type: HTTP
+    expression: UserAgent == "" || UserAgent == "-"
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["suspicious-ua", "anomaly"]
+    enabled: true
+
+  # Short Suspicious User-Agent
+  - name: Suspiciously Short User Agent
+    description: Detect unusually short user agent strings (< 10 chars) often used by tools
+    type: HTTP
+    expression: len(UserAgent) > 0 && len(UserAgent) < 10
+    severity: low
+    mitre: ["T1071.001"]
+    tags: ["suspicious-ua", "anomaly"]
+    enabled: true
+
+  # .NET WebClient
+  - name: DotNet WebClient Detected
+    description: Detect .NET WebClient or HttpClient usage
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(System\\.Net|Microsoft-CryptoAPI|WinHttp)")
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["automated-tool", "suspicious-ua", "dotnet"]
+    enabled: true
+
+  # Linux CLI Tools
+  - name: Linux CLI HTTP Tools Detected
+    description: Detect lynx, links, w3m and other text-based browsers
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(lynx|w3m|links|elinks)")
+    severity: low
+    mitre: ["T1071.001"]
+    tags: ["automated-tool", "suspicious-ua"]
+    enabled: true
+
+  # Exploit Frameworks
+  - name: Exploit Framework User Agent
+    description: Detect user agents from exploit frameworks (Metasploit, Cobalt Strike, Empire)
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(Metasploit|msf|CobaltStrike|Empire|Covenant)")
+    severity: critical
+    mitre: ["T1071.001", "T1595.002"]
+    tags: ["exploit-framework", "c2", "suspicious-ua"]
+    enabled: true
+
+  # Cloud Function / Serverless
+  - name: Cloud Function User Agent
+    description: Detect serverless/cloud function user agents (potential for abuse)
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(AWS-Lambda|Azure-Functions|Cloud-Functions|Netlify)")
+    severity: low
+    mitre: ["T1071.001"]
+    tags: ["cloud", "serverless", "suspicious-ua"]
+    enabled: true
+
+  # Rust HTTP Client
+  - name: Rust HTTP Client Detected
+    description: Detect Rust reqwest or other HTTP clients
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(reqwest|hyper/|ureq)")
+    severity: low
+    mitre: ["T1071.001"]
+    tags: ["automated-tool", "suspicious-ua"]
+    enabled: true
+
+  # Old HTTP Version
+  - name: Old HTTP Version with Modern TLS
+    description: Detect HTTP/1.0 usage (unusual for modern clients, common in scripts)
+    type: HTTP
+    expression: MatchesPattern(Proto, "HTTP/1\\.0")
+    severity: low
+    mitre: ["T1071.001"]
+    tags: ["anomaly", "legacy"]
+    enabled: true
+
+  # Automated Tool Direct IP Access
+  - name: Direct IP Access with Automated Tool
+    description: Detect automated tools accessing via IP instead of hostname
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(curl|wget|python|powershell)") && MatchesPattern(Host, "^\\d+\\.\\d+\\.\\d+\\.\\d+(:|$)")
+    severity: high
+    mitre: ["T1071.001", "T1595.002"]
+    tags: ["scanning", "automation", "suspicious"]
+    enabled: true
+
+  # HTTP Method Anomaly
+  - name: Unusual HTTP Method
+    description: Detect unusual HTTP methods that may indicate tunneling or scanning
+    type: HTTP
+    expression: Method != "GET" && Method != "POST" && Method != "HEAD" && Method != "PUT" && Method != "DELETE" && Method != "OPTIONS" && Method != "PATCH"
+    severity: medium
+    mitre: ["T1090", "T1572"]
+    tags: ["tunneling"]
+    enabled: true
+
+  # Sensitive File Access
+  - name: Sensitive File Access
+    description: Detect attempts to access sensitive files (combined patterns)
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)(/etc/passwd|/etc/shadow|web\\.config|wp-config\\.php|\\.env|\\.git/config|/proc/self/environ|web\\.xml|/WEB-INF/)")
+    severity: high
+    mitre: ["T1005"]
+    tags: ["sensitive-files"]
+    enabled: true
+
+  # Excessive HTTP Errors from Client
+  - name: Excessive HTTP Errors Client
+    description: Detect clients generating excessive HTTP errors (4xx/5xx)
+    type: HTTP
+    expression: StatusCode >= 400
+    severity: medium
+    mitre: ["T1595.002"]
+    tags: ["scanning"]
+    enabled: true
+    threshold: 50
+    threshold_window: 300
+
+  # HTTP 404 Scanning
+  - name: HTTP 404 Scanning
+    description: Detect excessive HTTP 404 errors indicating directory/file scanning
+    type: HTTP
+    expression: StatusCode == 404
+    severity: low
+    mitre: ["T1595.002"]
+    tags: ["scanning"]
+    enabled: true
+    threshold: 100
+    threshold_window: 300
+
+  # HTTP OPTIONS Enumeration
+  - name: HTTP OPTIONS Enumeration
+    description: Detect HTTP OPTIONS method used for service enumeration
+    type: HTTP
+    expression: Method == "OPTIONS"
+    severity: low
+    mitre: ["T1046"]
+    tags: ["enumeration"]
+    enabled: true
+
+  # HTTP Service Abuse
+  - name: HTTP Service Abuse
+    description: Detect potential HTTP service abuse or DoS attempts
+    type: HTTP
+    expression: Method == "POST" && ReqContentLength > 100000
+    severity: medium
+    mitre: ["T1499.002"]
+    tags: ["dos"]
+    enabled: true
+    threshold: 20
+    threshold_window: 120
+
+  # Mass API Endpoint Enumeration
+  - name: API Endpoint Enumeration
+    description: Detect potential API endpoint scanning/enumeration
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)(/api/|/v1/|/v2/|/graphql|/rest/)") && StatusCode == 404
+    severity: medium
+    mitre: ["T1595.002"]
+    tags: ["enumeration", "api"]
+    enabled: true
+    threshold: 20
+    threshold_window: 120
+
+  # Multiple User-Agent Switching
+  - name: User Agent Switching Detected
+    description: Detect rapid user agent changes from same source IP (requires correlation)
+    type: HTTP
+    expression: UserAgent != ""
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["evasion", "fingerprinting"]
+    enabled: false
+    threshold: 5
+    threshold_window: 300
+

@@ -63,9 +63,7 @@ func initMACResolver() {
 	data, err := ioutil.ReadFile(dbPath)
 	if err != nil {
 		// Not an error - we'll use gopacket's built-in data only
-		if !quiet {
-			resolverLog.Info("macaddress.io-db.json not found, using gopacket's built-in MAC prefix database")
-		}
+		resolverLog.Info("macaddress.io-db.json not found, using gopacket's built-in MAC prefix database")
 	} else {
 		// Load additional entries from JSON database if available
 		for _, line := range bytes.Split(data, []byte{'\n'}) {
@@ -85,20 +83,16 @@ func initMACResolver() {
 			macDB[sum.OUI] = sum
 			sums++
 		}
-		if !quiet {
-			resolverLog.Info("loaded additional OUI summaries from JSON",
-				zap.Int("total", sums),
-				zap.String("from", dbPath),
-			)
-		}
+		resolverLog.Info("loaded additional OUI summaries from JSON",
+			zap.Int("total", sums),
+			zap.String("from", dbPath),
+		)
 	}
 
 	// Log that we're also using gopacket's built-in database
-	if !quiet {
-		resolverLog.Info("using gopacket's built-in MAC prefix database",
-			zap.Int("prefixes", len(macs.ValidMACPrefixMap)),
-		)
-	}
+	resolverLog.Info("using gopacket's built-in MAC prefix database",
+		zap.Int("prefixes", len(macs.ValidMACPrefixMap)),
+	)
 }
 
 // LookupManufacturer resolves a MAC addr to the manufacturer.

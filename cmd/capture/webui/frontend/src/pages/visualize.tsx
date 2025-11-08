@@ -6,7 +6,6 @@ import {
   CircularProgress,
   FormControl,
   Grid,
-  InputLabel,
   MenuItem,
   Paper,
   Select,
@@ -14,7 +13,6 @@ import {
   Typography,
   Alert,
   Chip,
-  Stack,
   Table,
   TableBody,
   TableCell,
@@ -177,17 +175,6 @@ export default function Visualize() {
     }
   }, [selectedChartType]);
 
-  const handleChartTypeChange = (event: SelectChangeEvent) => {
-    setSelectedChartType(event.target.value);
-    setError(null);
-    // Refresh chart key to force reload
-    setChartRefreshKey(prev => prev + 1);
-    // Load hierarchy data for sankey
-    if (event.target.value === 'sankey') {
-      loadHierarchy();
-    }
-  };
-
   // Get only completed files for the selector, sorted alphabetically for consistency
   const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
     .sort((a: any, b: any) => a.path.localeCompare(b.path));
@@ -198,6 +185,78 @@ export default function Visualize() {
   const selectedFile = completedFiles.find((f: any) => 
     f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
   );
+
+  // File selector for header
+  const fileSelector = completedFiles.length > 1 && selectedFile ? (
+    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
+      <Select
+        value={selectedValue}
+        onChange={handleFileChange}
+        startAdornment={
+          switchingFile ? (
+            <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
+          ) : (
+            <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
+          )
+        }
+        renderValue={() => (
+          <Box display="flex" alignItems="center" gap={1}>
+            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'inherit' }}>
+              {selectedFile.name}
+            </Typography>
+          </Box>
+        )}
+        sx={{
+          color: 'inherit',
+          '.MuiOutlinedInput-notchedOutline': {
+            borderColor: 'rgba(255, 255, 255, 0.23)',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'rgba(255, 255, 255, 0.4)',
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'primary.light',
+          },
+          '.MuiSelect-icon': {
+            color: 'inherit',
+          },
+          '& .MuiSelect-select': {
+            display: 'flex',
+            alignItems: 'center',
+          },
+        }}
+      >
+        {completedFiles.map((file: any) => (
+          <MenuItem key={file.path} value={file.path}>
+            <Box display="flex" alignItems="center" gap={1} width="100%">
+              {selectedValue === file.path && (
+                <Chip
+                  label="Active"
+                  size="small"
+                  color="success"
+                  sx={{ height: 20, fontSize: '0.7rem' }}
+                />
+              )}
+              <Typography
+                sx={{
+                  fontFamily: 'monospace',
+                  fontSize: '0.85rem',
+                  flex: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {file.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formatBytes(file.size)}
+              </Typography>
+            </Box>
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  ) : null;
 
   // Prepare data for Sankey diagram
   const sankeyData = hierarchyData ? (() => {
@@ -278,146 +337,71 @@ export default function Visualize() {
   }, [showLegend]);
 
   return (
-    <Layout title="Visualize">
-      <Box sx={{ mb: selectedChartType === 'sankey' ? 3 : 1 }}>
-        {/* File selector and chart type selector on same row */}
-        <Box display="flex" gap={2} mb={selectedChartType === 'sankey' ? 2 : 1} alignItems="center">
-          {/* File selector - show when multiple input files are available */}
-          {completedFiles.length > 1 && selectedFile && (
-            <Box flex={1}>
-              <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-                Viewing capture:
-              </Typography>
-              <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 500, maxWidth: 800 }}>
-                <Select
-                  value={selectedValue}
-                  onChange={handleFileChange}
-                  startAdornment={
-                    switchingFile ? (
-                      <CircularProgress size={20} sx={{ mr: 1 }} />
-                    ) : (
-                      <SwapHorizIcon sx={{ mr: 1, color: 'action.active' }} />
-                    )
-                  }
-                  renderValue={() => (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                        {selectedFile.name}
-                      </Typography>
-                      <Chip
-                        label={formatBytes(selectedFile.size)}
-                        size="small"
-                        sx={{ height: 20, fontSize: '0.7rem' }}
-                      />
-                    </Box>
-                  )}
-                  sx={{
-                    '& .MuiSelect-select': {
-                      display: 'flex',
-                      alignItems: 'center',
-                    },
-                  }}
-                >
-                  {completedFiles.map((file: any) => (
-                    <MenuItem key={file.path} value={file.path}>
-                      <Box display="flex" alignItems="center" gap={1} width="100%">
-                        {selectedValue === file.path && (
-                          <Chip
-                            label="Active"
-                            size="small"
-                            color="success"
-                            sx={{ height: 20, fontSize: '0.7rem' }}
-                          />
-                        )}
-                        <Typography
-                          sx={{
-                            fontFamily: 'monospace',
-                            fontSize: '0.85rem',
-                            flex: 1,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {file.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatBytes(file.size)}
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-          )}
+    <Layout title="Visualize" headerAction={fileSelector}>
+      {/* Chart type selector and legend toggle - single line */}
+      <Box 
+        sx={{ 
+          mb: selectedChartType === 'sankey' ? 3 : 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 2
+        }}
+      >
+        {/* Chart Type Buttons */}
+        <ToggleButtonGroup
+          value={selectedChartType}
+          exclusive
+          onChange={(_e, newValue) => {
+            if (newValue !== null) {
+              setSelectedChartType(newValue);
+              setError(null);
+              // Refresh chart key to force reload
+              setChartRefreshKey(prev => prev + 1);
+              // Load hierarchy data for sankey
+              if (newValue === 'sankey') {
+                loadHierarchy();
+              }
+            }
+          }}
+          size="small"
+        >
+          {CHART_TYPES.map((type) => (
+            <ToggleButton key={type.value} value={type.value}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {type.icon}
+                {type.label}
+              </Box>
+            </ToggleButton>
+          ))}
+        </ToggleButtonGroup>
 
-          {/* Chart Type Selector */}
-          <Box>
-            <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-              Chart Type:
-            </Typography>
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <Select
-                value={selectedChartType}
-                onChange={handleChartTypeChange}
-              >
-                {CHART_TYPES.map((type) => (
-                  <MenuItem key={type.value} value={type.value}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {type.icon}
-                      {type.label}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
-
-          {/* Legend Toggle - Only show for echarts-based visualizations */}
-          {selectedChartType !== 'sankey' && (
-            <Box>
-              <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-                Legend:
-              </Typography>
-              <ToggleButtonGroup
-                value={showLegend ? 'on' : 'off'}
-                exclusive
-                onChange={(_e, newValue) => {
-                  if (newValue !== null) {
-                    setShowLegend(newValue === 'on');
-                  }
-                }}
-                size="small"
-              >
-                <ToggleButton value="on">
-                  <LabelIcon sx={{ mr: 0.5, fontSize: 18 }} />
-                  On
-                </ToggleButton>
-                <ToggleButton value="off">
-                  <LabelOffIcon sx={{ mr: 0.5, fontSize: 18 }} />
-                  Off
-                </ToggleButton>
-              </ToggleButtonGroup>
-            </Box>
-          )}
-        </Box>
-
-        {selectedChartType === 'sankey' && (
-          <Box>
-            <Typography variant="h4" gutterBottom>
-              Protocol Hierarchy Visualization
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Explore protocol encapsulation and relationships using different chart types
-            </Typography>
-          </Box>
-        )}
+        {/* Legend Toggle - Always shown on the right */}
+        <ToggleButtonGroup
+          value={showLegend ? 'on' : 'off'}
+          exclusive
+          onChange={(_e, newValue) => {
+            if (newValue !== null) {
+              setShowLegend(newValue === 'on');
+            }
+          }}
+          size="small"
+        >
+          <ToggleButton value="on">
+            <LabelIcon sx={{ mr: 0.5, fontSize: 18 }} />
+            On
+          </ToggleButton>
+          <ToggleButton value="off">
+            <LabelOffIcon sx={{ mr: 0.5, fontSize: 18 }} />
+            Off
+          </ToggleButton>
+        </ToggleButtonGroup>
       </Box>
 
       <Grid container spacing={3}>
         {/* Protocol Statistics Panel - Only show for Sankey */}
         {selectedChartType === 'sankey' && (
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} lg={4} sx={{ order: { xs: 2, lg: 1 } }}>
             <Card sx={{ height: 'calc(100vh - 300px)', display: 'flex', flexDirection: 'column' }}>
               <CardContent sx={{ flex: 1, overflow: 'auto' }}>
                 <Typography variant="h6" gutterBottom>
@@ -498,7 +482,7 @@ export default function Visualize() {
         )}
 
         {/* Chart Display */}
-        <Grid item xs={12} md={selectedChartType === 'sankey' ? 8 : 12}>
+        <Grid item xs={12} lg={selectedChartType === 'sankey' ? 8 : 12} sx={{ order: { xs: 1, lg: 2 } }}>
           <Paper sx={{ p: selectedChartType === 'sankey' ? 3 : 2, height: selectedChartType === 'sankey' ? 'calc(100vh - 300px)' : 'calc(100vh - 180px)', display: 'flex', flexDirection: 'column' }}>
             <Typography variant="h6" gutterBottom sx={{ mb: selectedChartType === 'sankey' ? 2 : 1 }}>
               {CHART_TYPES.find(ct => ct.value === selectedChartType)?.label || 'Visualization'}
@@ -521,10 +505,6 @@ export default function Visualize() {
 
                 {!loading && !error && sankeyData && sankeyData.length > 1 && (
                   <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <Alert severity="info" sx={{ mb: 2 }}>
-                      This diagram shows how protocols are encapsulated within each other. 
-                      The width of the flows represents the number of packets for each protocol relationship.
-                    </Alert>
                     <Box sx={{ width: '100%', height: 'calc(100vh - 460px)' }}>
                       <Chart
                         chartType="Sankey"
@@ -562,11 +542,6 @@ export default function Visualize() {
             {/* ECharts-based visualizations (Treemap, Bar3D, Graph) */}
             {chartUrl && (
               <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <Alert severity="info" sx={{ mb: 1, py: 0.5, flexShrink: 0 }}>
-                  {selectedChartType === 'treemap' && 'Treemap shows audit record types grouped by protocol layer with size representing record count.'}
-                  {selectedChartType === 'bar3d' && '3D bar chart displays audit record types organized by layer with interactive rotation.'}
-                  {selectedChartType === 'graph' && 'Network graph visualizes protocol relationships with node size based on record count.'}
-                </Alert>
                 <Box sx={{ flex: 1, position: 'relative', minHeight: 650 }}>
                   <iframe
                     key={chartRefreshKey}

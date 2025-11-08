@@ -37,7 +37,6 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/udp"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -607,11 +606,6 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		reassemblyLog.Info("flushTCPStreams DONE", zap.String("delta", time.Since(startFlush).String()))
 
 		udp.FlushUDPStreams()
-	}
-
-	if dpi.IsEnabled() {
-		// teardown DPI C libs
-		dpi.Destroy()
 	}
 
 	// create a memory snapshot for debugging

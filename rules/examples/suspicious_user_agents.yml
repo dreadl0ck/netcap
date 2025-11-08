@@ -1,0 +1,1717 @@
+# Suspicious HTTP User Agents Detection Rules
+# Based on: https://raw.githubusercontent.com/mthcht/awesome-lists/refs/heads/main/Lists/suspicious_http_user_agents_list.csv
+# These rules detect suspicious, malicious, and potentially unwanted HTTP user agents
+
+description: "Detection rules for suspicious HTTP user agents including malware C2 communication, offensive security tools, phishing frameworks, stealers, RMM tools, exploitation frameworks, and other potentially malicious software."
+
+rules:
+  # ========================================
+  # CREDENTIAL ACCESS & DISCOVERY TOOLS
+  # ========================================
+
+  - name: Certipy User Agent Detected
+    description: Default user agent for nltm lib of certipy - Active Directory certificate abuse tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)certipy")
+    severity: high
+    mitre: ["T1649", "T1552"]
+    tags: ["credential-access", "discovery", "certipy"]
+    enabled: true
+
+  - name: TruffleHog User Agent Detected
+    description: Find verify and analyze leaked credentials open source github project
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)trufflehog")
+    severity: high
+    mitre: ["T1552"]
+    tags: ["credential-access", "trufflehog"]
+    enabled: true
+
+  - name: AzureHound User Agent Detected
+    description: Azure Data Exporter for BloodHound - default user agent
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)azurehound")
+    severity: critical
+    mitre: ["T1087", "T1069"]
+    tags: ["discovery", "azurehound", "bloodhound"]
+    enabled: true
+
+  # ========================================
+  # MALWARE & STEALER USER AGENTS
+  # ========================================
+
+  - name: DarkCloud Malware User Agent Detected
+    description: User agent used by DarkCloud malware
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(project1sqlite|project1)")
+    severity: high
+    mitre: ["T1071"]
+    tags: ["malware", "darkcloud", "c2"]
+    enabled: true
+
+  - name: Lokibot Malware User Agent Detected
+    description: User agent used by Lokibot malware containing Charon Inferno
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(charon|inferno)")
+    severity: high
+    mitre: ["T1071", "T1003"]
+    tags: ["malware", "lokibot", "stealer"]
+    enabled: true
+
+  - name: Arkei Stealer User Agent Detected
+    description: User agent used by Arkei Stealer malware
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)arkei")
+    severity: high
+    mitre: ["T1071", "T1555"]
+    tags: ["malware", "stealer", "arkei"]
+    enabled: true
+
+  - name: Katz Stealer User Agent Detected
+    description: User agent used by Katz Stealer credential theft malware
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)katz-ontop")
+    severity: high
+    mitre: ["T1071", "T1555", "T1003"]
+    tags: ["malware", "stealer", "katz"]
+    enabled: true
+
+  - name: Matanbuchus Malware User Agent Detected
+    description: Matanbuchus 3.0 using specific user agent mimicking Skype communication
+    type: HTTP
+    expression: UserAgent == "Skype/8.69.0.77 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    severity: high
+    mitre: ["T1071"]
+    tags: ["malware", "matanbuchus", "ransomware"]
+    enabled: true
+
+  - name: DarkRAT Bot Checkin User Agent Detected
+    description: Bot check-in request for DarkRAT malware
+    type: HTTP
+    expression: UserAgent == "SUq1rx"
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["malware", "darkrat", "c2", "rat"]
+    enabled: true
+
+  # ========================================
+  # PHISHING & CREDENTIAL HARVESTING
+  # ========================================
+
+  - name: Undici Phishing Framework User Agent Detected
+    description: HTTP/1.1 client written from scratch for Node.js often seen used in phishing as a service
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)undici")
+    severity: medium
+    mitre: ["T1566"]
+    tags: ["phishing", "undici"]
+    enabled: true
+
+  - name: TeamFiltration Tool User Agent Detected
+    description: Microsoft Teams credential theft and exfiltration tool
+    type: HTTP
+    expression: UserAgent == "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Teams/1.3.00.30866 Chrome/80.0.3987.165 Electron/8.5.1 Safari/537.36"
+    severity: medium
+    mitre: ["T1087", "T1114"]
+    tags: ["phishing", "teamfiltration", "o365"]
+    enabled: true
+
+  - name: DeviceCodePhishing User Agent Detected
+    description: Used by default on a Device Code Phishing project
+    type: HTTP
+    expression: UserAgent == "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edq/135.0.0.0"
+    severity: critical
+    mitre: ["T1528", "T1566"]
+    tags: ["phishing", "device-code", "oauth"]
+    enabled: true
+
+  - name: Raccoon O365 Phishing Framework User Agent Detected
+    description: Phishing as a service package Raccoon0365
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)intel raccoon o365")
+    severity: critical
+    mitre: ["T1566", "T1110"]
+    tags: ["phishing", "raccoon", "o365", "2fa-bypass"]
+    enabled: true
+
+  - name: Axios HTTP Client Suspicious User Agent Detected
+    description: Lightweight HTTP client library for JavaScript - attackers observed bypassing MFA in O365 using axios HTTP client
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^axios")
+    severity: medium
+    mitre: ["T1110"]
+    tags: ["phishing", "axios", "mfa-bypass"]
+    enabled: true
+
+  - name: Aiohttp Suspicious User Agent Detected
+    description: Used by multiple offensive tools including O365 credential stuffing and phishing frameworks
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^aiohttp")
+    severity: medium
+    mitre: ["T1110"]
+    tags: ["phishing", "aiohttp"]
+    enabled: true
+
+  # ========================================
+  # EXPLOITATION TOOLS & FRAMEWORKS
+  # ========================================
+
+  - name: Log4Shell Exploitation Attempt Detected
+    description: Log4j exploit attempts and scans via user agent
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)\\$\\{jndi:ldap://")
+    severity: critical
+    mitre: ["T1190", "T1210"]
+    tags: ["exploitation", "log4shell", "rce"]
+    enabled: true
+
+  - name: PACU AWS Exploitation Framework User Agent Detected
+    description: Static User agent used by PACU AWS exploitation Framework - can also be used by legit tools
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^Boto3/1\\.(7|9)\\.[0-9]+ Python/[0-9]\\.[0-9]\\.[0-9]")
+    severity: high
+    mitre: ["T1078.004", "T1580"]
+    tags: ["exploitation", "pacu", "aws"]
+    enabled: true
+
+  - name: PACU AWS Console User Agent Detected
+    description: Static User agent used by PACU AWS exploitation Framework - console endpoints
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(console\\.amazonaws\\.com|signin\\.amazonaws\\.com)")
+    severity: low
+    mitre: ["T1078.004"]
+    tags: ["exploitation", "pacu", "aws"]
+    enabled: true
+
+  - name: Kali Linux Distribution User Agent Detected
+    description: Kali linux offensive distribution detected
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(kali linux|kali1-686|kali1-amd64)")
+    severity: critical
+    mitre: ["T1595"]
+    tags: ["exploitation", "kali", "offensive-tools"]
+    enabled: true
+
+  # ========================================
+  # REMOTE MANAGEMENT & RAT TOOLS
+  # ========================================
+
+  - name: LogMeIn Remote Access User Agent Detected
+    description: LogMeIn Remote Access application
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^logmein")
+    severity: high
+    mitre: ["T1219"]
+    tags: ["rmm", "remote-access", "logmein"]
+    enabled: true
+
+  - name: Splashtop RAT User Agent Detected
+    description: Used by splashtop remote access tool agent
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)splashtop")
+    severity: low
+    mitre: ["T1219"]
+    tags: ["rmm", "remote-access", "splashtop"]
+    enabled: true
+
+  - name: RemotePC RAT User Agent Detected
+    description: Used by remotepc remote access tool agent
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^remotepc ")
+    severity: medium
+    mitre: ["T1219"]
+    tags: ["rmm", "remote-access", "remotepc"]
+    enabled: true
+
+  - name: Zoho Assist RMM User Agent Detected
+    description: Used by Zoho Assist RMM agent
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)desktopcental agent")
+    severity: medium
+    mitre: ["T1219"]
+    tags: ["rmm", "remote-access", "zoho"]
+    enabled: true
+
+  - name: NetSupport Manager RAT User Agent Detected
+    description: Used by NetSupport RAT client
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^netsupport manager")
+    severity: high
+    mitre: ["T1219"]
+    tags: ["rmm", "remote-access", "netsupport"]
+    enabled: true
+
+  - name: NetSupport Gateway RAT Server User Agent Detected
+    description: Used by NetSupport RAT server
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^netsupport gateway")
+    severity: high
+    mitre: ["T1219"]
+    tags: ["rmm", "remote-access", "netsupport", "c2"]
+    enabled: true
+
+  # ========================================
+  # DATA EXFILTRATION TOOLS
+  # ========================================
+
+  - name: Box File Host User Agent Detected
+    description: Used by Box agent file host for data exfiltration
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(^box edit|^box/2\\.)")
+    severity: low
+    mitre: ["T1567"]
+    tags: ["exfiltration", "box", "file-sharing"]
+    enabled: true
+
+  - name: MEGA Sync User Agent Detected
+    description: Used by MEGASYNC software when installed
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^megaupdater ")
+    severity: low
+    mitre: ["T1567"]
+    tags: ["exfiltration", "mega", "file-sharing"]
+    enabled: true
+
+  - name: Syncthing User Agent Detected
+    description: Used by syncthing file synchronization software
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^syncthing v")
+    severity: medium
+    mitre: ["T1567"]
+    tags: ["exfiltration", "syncthing", "file-sharing"]
+    enabled: true
+
+  # ========================================
+  # DEFENSE EVASION & VPN TOOLS
+  # ========================================
+
+  - name: WireGuard VPN User Agent Detected
+    description: Used by wireguard VPN agent
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^wireguard")
+    severity: low
+    mitre: ["T1090"]
+    tags: ["defense-evasion", "vpn", "wireguard"]
+    enabled: true
+
+  # ========================================
+  # COMPLIANCE & INSTALLERS
+  # ========================================
+
+  - name: Windows Installer Remote Download Detected
+    description: Typically associated with .msi installation processes that perform HTTP downloads - may indicate remotely hosted malicious installers
+    type: HTTP
+    expression: UserAgent == "Windows Installer"
+    severity: info
+    mitre: ["T1218.007"]
+    tags: ["compliance", "installer", "msiexec"]
+    enabled: true
+
+  # ========================================
+  # RECONNAISSANCE & ENUMERATION
+  # ========================================
+
+  - name: Shodan Reconnaissance User Agent Detected
+    description: Shodan internet scanning service
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)shodan")
+    severity: high
+    mitre: ["T1595"]
+    tags: ["recon", "shodan", "scanning"]
+    enabled: true
+
+  - name: Censys Reconnaissance User Agent Detected
+    description: Censys internet scanning and reconnaissance service
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)censys")
+    severity: high
+    mitre: ["T1595"]
+    tags: ["recon", "censys", "scanning"]
+    enabled: true
+
+  - name: Nuclei Scanner User Agent Detected
+    description: Nuclei vulnerability scanner based on templates
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)nuclei")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "nuclei", "vulnerability-scan"]
+    enabled: true
+
+  - name: Jaeles Scanner User Agent Detected
+    description: Jaeles powerful flexible framework for building security tools
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)jaeles")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "jaeles"]
+    enabled: true
+
+  - name: HTTPx Tool User Agent Detected
+    description: HTTPx fast and multi-purpose HTTP toolkit
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)httpx")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["recon", "httpx"]
+    enabled: true
+
+  - name: Subfinder User Agent Detected
+    description: Subfinder subdomain discovery tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)subfinder")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["recon", "subfinder", "subdomain-enum"]
+    enabled: true
+
+  - name: Amass User Agent Detected
+    description: OWASP Amass network mapping and attack surface discovery tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)amass")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["recon", "amass", "subdomain-enum"]
+    enabled: true
+
+  - name: Naabu Port Scanner User Agent Detected
+    description: Naabu fast port scanner written in Go
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)naabu")
+    severity: high
+    mitre: ["T1046"]
+    tags: ["scanner", "naabu", "port-scan"]
+    enabled: true
+
+  - name: RustScan Port Scanner User Agent Detected
+    description: RustScan modern fast port scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)rustscan")
+    severity: high
+    mitre: ["T1046"]
+    tags: ["scanner", "rustscan", "port-scan"]
+    enabled: true
+
+  - name: Katana Crawler User Agent Detected
+    description: Katana next-generation crawling and spidering framework
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)katana")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["recon", "katana", "crawler"]
+    enabled: true
+
+  - name: Gospider Crawler User Agent Detected
+    description: Gospider fast web spider written in Go
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)gospider")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["recon", "gospider", "crawler"]
+    enabled: true
+
+  - name: Hakrawler User Agent Detected
+    description: Hakrawler simple fast web crawler for gathering URLs
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)hakrawler")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["recon", "hakrawler", "crawler"]
+    enabled: true
+
+  - name: GAU User Agent Detected
+    description: GetAllUrls tool fetches known URLs from various sources
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)\\bgau\\b")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["recon", "gau"]
+    enabled: true
+
+  - name: Waybackurls User Agent Detected
+    description: Waybackurls fetch all URLs known by Wayback Machine
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)waybackurls")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["recon", "waybackurls"]
+    enabled: true
+
+  - name: Arjun Parameter Discovery User Agent Detected
+    description: Arjun HTTP parameter discovery suite
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)arjun")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "arjun", "parameter-discovery"]
+    enabled: true
+
+  - name: ParamSpider User Agent Detected
+    description: ParamSpider mining parameters from dark corners of web archives
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)paramspider")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["recon", "paramspider"]
+    enabled: true
+
+  - name: X8 Parameter Discovery User Agent Detected
+    description: X8 hidden parameters discovery tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)\\bx8\\b")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "x8", "parameter-discovery"]
+    enabled: true
+
+  - name: DnsX Tool User Agent Detected
+    description: DnsX fast and multi-purpose DNS toolkit
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)dnsx")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["recon", "dnsx", "dns-enum"]
+    enabled: true
+
+  - name: Wfuzz Fuzzer User Agent Detected
+    description: Wfuzz web application fuzzer
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)wfuzz")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "wfuzz", "fuzzer"]
+    enabled: true
+
+  - name: Ffuf Fuzzer User Agent Detected
+    description: Ffuf fast web fuzzer written in Go
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)ffuf")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "ffuf", "fuzzer"]
+    enabled: true
+
+  - name: Meg Tool User Agent Detected
+    description: Meg tool for fetching lots of URLs without taking down servers
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)\\bmeg\\b")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["recon", "meg"]
+    enabled: true
+
+  - name: Dalfox XSS Scanner User Agent Detected
+    description: Dalfox powerful open source XSS scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)dalfox")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "dalfox", "xss"]
+    enabled: true
+
+  - name: XSStrike XSS Scanner User Agent Detected
+    description: XSStrike advanced XSS detection suite
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)xsstrike")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "xsstrike", "xss"]
+    enabled: true
+
+  - name: Gxss XSS Scanner User Agent Detected
+    description: Gxss tool for finding potential XSS parameters
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)gxss")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "gxss", "xss"]
+    enabled: true
+
+  - name: Corsy CORS Scanner User Agent Detected
+    description: Corsy CORS misconfiguration scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)corsy")
+    severity: medium
+    mitre: ["T1595.002"]
+    tags: ["scanner", "corsy", "cors"]
+    enabled: true
+
+  - name: CORScanner User Agent Detected
+    description: CORScanner CORS misconfiguration scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)corsscanner")
+    severity: medium
+    mitre: ["T1595.002"]
+    tags: ["scanner", "corsscanner", "cors"]
+    enabled: true
+
+  - name: CMSeek CMS Scanner User Agent Detected
+    description: CMSeek CMS detection and exploitation suite
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)cmseek")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "cmseek", "cms"]
+    enabled: true
+
+  - name: Joomscan Joomla Scanner User Agent Detected
+    description: Joomscan Joomla vulnerability scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)joomscan")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "joomscan", "cms"]
+    enabled: true
+
+  - name: Droopescan CMS Scanner User Agent Detected
+    description: Droopescan plugin-based scanner for Drupal Wordpress Joomla
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)droopescan")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "droopescan", "cms"]
+    enabled: true
+
+  - name: WhatWeb Scanner User Agent Detected
+    description: WhatWeb web scanner for identifying technologies used by websites
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)whatweb")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["scanner", "whatweb", "fingerprint"]
+    enabled: true
+
+  - name: Wappalyzer User Agent Detected
+    description: Wappalyzer technology profiler
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)wappalyzer")
+    severity: low
+    mitre: ["T1595"]
+    tags: ["scanner", "wappalyzer", "fingerprint"]
+    enabled: true
+
+  - name: Webtech Scanner User Agent Detected
+    description: Webtech identify technologies used on websites
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)webtech")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["scanner", "webtech", "fingerprint"]
+    enabled: true
+
+  - name: Gitjacker User Agent Detected
+    description: Gitjacker tool to leak .git folder from a website
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)gitjacker")
+    severity: high
+    mitre: ["T1213"]
+    tags: ["scanner", "gitjacker", "git-leak"]
+    enabled: true
+
+  - name: GitDorker User Agent Detected
+    description: GitDorker utilizing GitHub dorking techniques
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)gitdorker")
+    severity: high
+    mitre: ["T1213"]
+    tags: ["recon", "gitdorker", "git-dork"]
+    enabled: true
+
+  - name: Gitleaks User Agent Detected
+    description: Gitleaks SAST tool for detecting hardcoded secrets
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)gitleaks")
+    severity: medium
+    mitre: ["T1552"]
+    tags: ["scanner", "gitleaks", "secrets"]
+    enabled: true
+
+  - name: SSTI Scan User Agent Detected
+    description: SSTI Server Side Template Injection scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)ssti")
+    severity: high
+    mitre: ["T1190"]
+    tags: ["scanner", "ssti"]
+    enabled: true
+
+  - name: NoSQLMap User Agent Detected
+    description: NoSQLMap automated NoSQL injection and exploitation tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)nosqlmap")
+    severity: high
+    mitre: ["T1190"]
+    tags: ["scanner", "nosqlmap", "injection"]
+    enabled: true
+
+  - name: GraphQLmap User Agent Detected
+    description: GraphQLmap scripting engine to interact with GraphQL endpoints
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)graphqlmap")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "graphqlmap"]
+    enabled: true
+
+  - name: GraphW00f User Agent Detected
+    description: GraphW00f GraphQL fingerprinting tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)graphw00f")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["scanner", "graphw00f", "graphql"]
+    enabled: true
+
+  - name: CrackMapExec User Agent Detected
+    description: CrackMapExec post-exploitation tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)(crackmapexec|cmeexec)")
+    severity: critical
+    mitre: ["T1021"]
+    tags: ["exploitation", "crackmapexec", "lateral-movement"]
+    enabled: true
+
+  - name: Evil-WinRM User Agent Detected
+    description: Evil-WinRM ultimate WinRM shell for hacking pentesting
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)evil-winrm")
+    severity: critical
+    mitre: ["T1021.006"]
+    tags: ["exploitation", "evil-winrm", "winrm"]
+    enabled: true
+
+  - name: Responder User Agent Detected
+    description: Responder LLMNR NBT-NS and MDNS poisoner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)responder")
+    severity: critical
+    mitre: ["T1557.001"]
+    tags: ["exploitation", "responder", "poisoning"]
+    enabled: true
+
+  - name: Impacket User Agent Detected
+    description: Impacket collection of Python classes for working with network protocols
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)impacket")
+    severity: critical
+    mitre: ["T1021"]
+    tags: ["exploitation", "impacket"]
+    enabled: true
+
+  - name: Covenant C2 User Agent Detected
+    description: Covenant .NET command and control framework
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)covenant")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["c2", "covenant"]
+    enabled: true
+
+  - name: Sliver C2 User Agent Detected
+    description: Sliver adversary emulation command and control framework
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)sliver")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["c2", "sliver"]
+    enabled: true
+
+  - name: Brute Ratel C4 User Agent Detected
+    description: Brute Ratel C4 adversary simulation tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)brute.?ratel")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["c2", "brute-ratel"]
+    enabled: true
+
+  - name: Mythic C2 User Agent Detected
+    description: Mythic collaborative multi-platform red teaming framework
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)mythic")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["c2", "mythic"]
+    enabled: true
+
+  - name: Havoc C2 User Agent Detected
+    description: Havoc modern and malleable post-exploitation command and control framework
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)havoc")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["c2", "havoc"]
+    enabled: true
+
+  - name: Posh C2 User Agent Detected
+    description: PoshC2 proxy aware C2 framework
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)posh.?c2")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["c2", "poshc2"]
+    enabled: true
+
+  - name: SilentTrinity C2 User Agent Detected
+    description: SilentTrinity asynchronous collaborative post-exploitation agent
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)silenttrinity")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["c2", "silenttrinity"]
+    enabled: true
+
+  - name: Merlin C2 User Agent Detected
+    description: Merlin cross-platform post-exploitation HTTP/2 C2
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)merlin")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["c2", "merlin"]
+    enabled: true
+
+  - name: Koadic C2 User Agent Detected
+    description: Koadic Windows post-exploitation toolkit
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)koadic")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["c2", "koadic"]
+    enabled: true
+
+  - name: Pupy RAT User Agent Detected
+    description: Pupy cross-platform remote administration and post-exploitation tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)pupy")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["rat", "pupy"]
+    enabled: true
+
+  - name: Quasar RAT User Agent Detected
+    description: Quasar remote administration tool for Windows
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)quasar")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["rat", "quasar"]
+    enabled: true
+
+  - name: NjRAT User Agent Detected
+    description: NjRAT remote access trojan
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)njrat")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["rat", "njrat", "malware"]
+    enabled: true
+
+  - name: AsyncRAT User Agent Detected
+    description: AsyncRAT open-source remote administration tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)asyncrat")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["rat", "asyncrat"]
+    enabled: true
+
+  - name: Mimikatz User Agent Detected
+    description: Mimikatz credential dumping tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)mimikatz")
+    severity: critical
+    mitre: ["T1003"]
+    tags: ["credential-access", "mimikatz"]
+    enabled: true
+
+  - name: LaZagne User Agent Detected
+    description: LaZagne credentials recovery project
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)lazagne")
+    severity: critical
+    mitre: ["T1555"]
+    tags: ["credential-access", "lazagne"]
+    enabled: true
+
+  - name: SharpHound User Agent Detected
+    description: SharpHound C# data collector for BloodHound
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)sharphound")
+    severity: high
+    mitre: ["T1087"]
+    tags: ["discovery", "sharphound", "bloodhound"]
+    enabled: true
+
+  - name: BloodHound User Agent Detected
+    description: BloodHound Active Directory reconnaissance tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)bloodhound")
+    severity: high
+    mitre: ["T1087"]
+    tags: ["discovery", "bloodhound"]
+    enabled: true
+
+  - name: Rubeus User Agent Detected
+    description: Rubeus toolset for Kerberos interaction and abuse
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)rubeus")
+    severity: critical
+    mitre: ["T1558"]
+    tags: ["credential-access", "rubeus", "kerberos"]
+    enabled: true
+
+  - name: PowerSploit User Agent Detected
+    description: PowerSploit collection of PowerShell modules for penetration testing
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)powersploit")
+    severity: critical
+    mitre: ["T1059.001"]
+    tags: ["exploitation", "powersploit", "powershell"]
+    enabled: true
+
+  - name: Empire User Agent Detected
+    description: Empire PowerShell and Python post-exploitation framework
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)\\bempire\\b")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["c2", "empire"]
+    enabled: true
+
+  - name: Invoke-Obfuscation User Agent Detected
+    description: Invoke-Obfuscation PowerShell obfuscation framework
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)invoke-obfuscation")
+    severity: high
+    mitre: ["T1027"]
+    tags: ["obfuscation", "powershell"]
+    enabled: true
+
+  - name: PowerUpSQL User Agent Detected
+    description: PowerUpSQL PowerShell toolkit for SQL Server assessment
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)powerupsql")
+    severity: high
+    mitre: ["T1087"]
+    tags: ["discovery", "powerupsql", "sql"]
+    enabled: true
+
+  - name: PowerView User Agent Detected
+    description: PowerView Active Directory enumeration tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)powerview")
+    severity: high
+    mitre: ["T1087"]
+    tags: ["discovery", "powerview"]
+    enabled: true
+
+  - name: ADRecon User Agent Detected
+    description: ADRecon Active Directory reconnaissance tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)adrecon")
+    severity: high
+    mitre: ["T1087"]
+    tags: ["discovery", "adrecon"]
+    enabled: true
+
+  - name: PingCastle User Agent Detected
+    description: PingCastle Active Directory security audit tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)pingcastle")
+    severity: medium
+    mitre: ["T1087"]
+    tags: ["discovery", "pingcastle"]
+    enabled: true
+
+  - name: CobaltStrike User Agent Detected
+    description: CobaltStrike adversary simulation software
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)cobaltstrike")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["c2", "cobaltstrike"]
+    enabled: true
+
+  - name: Meterpreter User Agent Detected
+    description: Meterpreter advanced dynamically extensible payload
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)meterpreter")
+    severity: critical
+    mitre: ["T1071"]
+    tags: ["c2", "meterpreter", "metasploit"]
+    enabled: true
+
+  - name: BeEF User Agent Detected
+    description: BeEF Browser Exploitation Framework
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)\\bbeef\\b")
+    severity: critical
+    mitre: ["T1189"]
+    tags: ["exploitation", "beef", "browser"]
+    enabled: true
+
+  - name: Chisel Tunneling Tool User Agent Detected
+    description: Chisel fast TCP/UDP tunnel over HTTP secured via SSH
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)chisel")
+    severity: high
+    mitre: ["T1090"]
+    tags: ["tunneling", "chisel"]
+    enabled: true
+
+  - name: Ligolo Tunneling Tool User Agent Detected
+    description: Ligolo reverse tunneling tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)ligolo")
+    severity: high
+    mitre: ["T1090"]
+    tags: ["tunneling", "ligolo"]
+    enabled: true
+
+  - name: Plink Tunneling User Agent Detected
+    description: Plink PuTTY Link command-line connection tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)\\bplink\\b")
+    severity: high
+    mitre: ["T1090"]
+    tags: ["tunneling", "plink"]
+    enabled: true
+
+  - name: Proxychains User Agent Detected
+    description: Proxychains force connections through proxy
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)proxychains")
+    severity: medium
+    mitre: ["T1090"]
+    tags: ["proxy", "proxychains"]
+    enabled: true
+
+  - name: Tor Browser User Agent Detected
+    description: Tor Browser anonymity network browser
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)tor browser")
+    severity: low
+    mitre: ["T1090"]
+    tags: ["anonymity", "tor"]
+    enabled: true
+
+  - name: Ngrok Tunneling User Agent Detected
+    description: Ngrok secure introspectable tunnels to localhost
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)ngrok")
+    severity: medium
+    mitre: ["T1090"]
+    tags: ["tunneling", "ngrok"]
+    enabled: true
+
+  - name: SSHuttle VPN User Agent Detected
+    description: SSHuttle transparent proxy server that works as a poor mans VPN
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)sshuttle")
+    severity: medium
+    mitre: ["T1090"]
+    tags: ["vpn", "sshuttle", "tunneling"]
+    enabled: true
+
+  - name: Masscan Port Scanner User Agent Detected
+    description: Masscan fast port scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)masscan")
+    severity: high
+    mitre: ["T1046"]
+    tags: ["scanner", "masscan", "port-scan"]
+    enabled: true
+
+  - name: ZGrab Scanner User Agent Detected
+    description: ZGrab application layer scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)zgrab")
+    severity: high
+    mitre: ["T1046"]
+    tags: ["scanner", "zgrab"]
+    enabled: true
+
+  - name: TestSSL User Agent Detected
+    description: TestSSL checking TLS/SSL encryption
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)testssl")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["scanner", "testssl", "tls"]
+    enabled: true
+
+  - name: SSLyze User Agent Detected
+    description: SSLyze fast and powerful SSL/TLS scanning library
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)sslyze")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["scanner", "sslyze", "tls"]
+    enabled: true
+
+  - name: SSLScan User Agent Detected
+    description: SSLScan queries SSL services to determine ciphers
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)sslscan")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["scanner", "sslscan", "tls"]
+    enabled: true
+
+  - name: Qualys SSL Labs User Agent Detected
+    description: Qualys SSL Labs SSL server test
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)qualys ssl labs")
+    severity: low
+    mitre: ["T1595"]
+    tags: ["scanner", "qualys", "tls"]
+    enabled: true
+
+  - name: Cloudflare Always Online User Agent Detected
+    description: Cloudflare Always Online crawler
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)cloudflare-alwaysonline")
+    severity: info
+    mitre: []
+    tags: ["legitimate", "cloudflare"]
+    enabled: true
+
+  - name: Google Cloud Storage User Agent Detected
+    description: Google Cloud Storage gsutil tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)gsutil")
+    severity: low
+    mitre: ["T1567"]
+    tags: ["cloud", "gcp", "data-transfer"]
+    enabled: true
+
+  - name: AWS CLI User Agent Detected
+    description: AWS Command Line Interface
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^aws-cli")
+    severity: low
+    mitre: ["T1567"]
+    tags: ["cloud", "aws", "data-transfer"]
+    enabled: true
+
+  - name: Azure CLI User Agent Detected
+    description: Azure Command Line Interface
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^azure-cli")
+    severity: low
+    mitre: ["T1567"]
+    tags: ["cloud", "azure", "data-transfer"]
+    enabled: true
+
+  - name: Rclone User Agent Detected
+    description: Rclone command line program to sync files and directories
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)rclone")
+    severity: medium
+    mitre: ["T1567"]
+    tags: ["exfiltration", "rclone", "data-transfer"]
+    enabled: true
+
+  - name: Restic Backup User Agent Detected
+    description: Restic backup program
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)restic")
+    severity: low
+    mitre: ["T1567"]
+    tags: ["backup", "restic"]
+    enabled: true
+
+  - name: Borg Backup User Agent Detected
+    description: BorgBackup deduplicating backup program
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)borg")
+    severity: low
+    mitre: ["T1567"]
+    tags: ["backup", "borgbackup"]
+    enabled: true
+
+  - name: Duplicity Backup User Agent Detected
+    description: Duplicity encrypted bandwidth-efficient backup
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)duplicity")
+    severity: low
+    mitre: ["T1567"]
+    tags: ["backup", "duplicity"]
+    enabled: true
+
+  - name: Git User Agent Detected
+    description: Git version control system
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^git/")
+    severity: info
+    mitre: ["T1213"]
+    tags: ["git", "version-control"]
+    enabled: true
+
+  - name: GitLab Runner User Agent Detected
+    description: GitLab CI/CD runner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)gitlab-runner")
+    severity: info
+    mitre: []
+    tags: ["ci-cd", "gitlab"]
+    enabled: true
+
+  - name: Jenkins User Agent Detected
+    description: Jenkins automation server
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)jenkins")
+    severity: info
+    mitre: []
+    tags: ["ci-cd", "jenkins"]
+    enabled: true
+
+  - name: CircleCI User Agent Detected
+    description: CircleCI continuous integration platform
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)circleci")
+    severity: info
+    mitre: []
+    tags: ["ci-cd", "circleci"]
+    enabled: true
+
+  - name: Ansible User Agent Detected
+    description: Ansible automation tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)ansible")
+    severity: low
+    mitre: ["T1059"]
+    tags: ["automation", "ansible"]
+    enabled: true
+
+  - name: Terraform User Agent Detected
+    description: Terraform infrastructure as code tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)terraform")
+    severity: low
+    mitre: []
+    tags: ["automation", "terraform"]
+    enabled: true
+
+  - name: Kubernetes User Agent Detected
+    description: Kubernetes container orchestration
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)kubernetes")
+    severity: low
+    mitre: []
+    tags: ["orchestration", "kubernetes"]
+    enabled: true
+
+  - name: Docker User Agent Detected
+    description: Docker container platform
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)docker")
+    severity: low
+    mitre: []
+    tags: ["container", "docker"]
+    enabled: true
+
+  - name: Nmap User Agent Detected
+    description: Nmap network exploration tool and security scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)\\bnmap\\b")
+    severity: high
+    mitre: ["T1046"]
+    tags: ["scanner", "nmap", "port-scan"]
+    enabled: true
+
+  - name: Nikto User Agent Detected
+    description: Nikto web server scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)nikto")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "nikto", "web-scan"]
+    enabled: true
+
+  - name: OpenVAS User Agent Detected
+    description: OpenVAS vulnerability scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)openvas")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "openvas", "vulnerability-scan"]
+    enabled: true
+
+  - name: Nessus User Agent Detected
+    description: Nessus vulnerability scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)nessus")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "nessus", "vulnerability-scan"]
+    enabled: true
+
+  - name: Acunetix User Agent Detected
+    description: Acunetix web vulnerability scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)acunetix")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "acunetix", "web-scan"]
+    enabled: true
+
+  - name: Burp Suite User Agent Detected
+    description: Burp Suite web application security testing tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)burp")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "burp", "web-scan"]
+    enabled: true
+
+  - name: SQLMap User Agent Detected
+    description: SQLMap automatic SQL injection and database takeover tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)sqlmap")
+    severity: critical
+    mitre: ["T1190"]
+    tags: ["scanner", "sqlmap", "sql-injection"]
+    enabled: true
+
+  - name: Havij User Agent Detected
+    description: Havij automated SQL injection tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)havij")
+    severity: critical
+    mitre: ["T1190"]
+    tags: ["scanner", "havij", "sql-injection"]
+    enabled: true
+
+  - name: Commix User Agent Detected
+    description: Commix command injection exploitation tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)commix")
+    severity: critical
+    mitre: ["T1190"]
+    tags: ["exploitation", "commix", "command-injection"]
+    enabled: true
+
+  - name: W3AF User Agent Detected
+    description: W3AF web application attack and audit framework
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)w3af")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "w3af", "web-scan"]
+    enabled: true
+
+  - name: WebScarab User Agent Detected
+    description: WebScarab framework for analyzing HTTP and HTTPS applications
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)webscarab")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "webscarab", "web-scan"]
+    enabled: true
+
+  - name: Paros User Agent Detected
+    description: Paros proxy for web application security assessment
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)paros")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "paros", "web-scan"]
+    enabled: true
+
+  - name: OWASP ZAP User Agent Detected
+    description: OWASP ZAP web application security scanner
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)\\bzap\\b")
+    severity: high
+    mitre: ["T1595.002"]
+    tags: ["scanner", "zap", "web-scan"]
+    enabled: true
+
+  - name: Metasploit User Agent Detected
+    description: Metasploit penetration testing framework
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)metasploit")
+    severity: critical
+    mitre: ["T1190"]
+    tags: ["exploitation", "metasploit"]
+    enabled: true
+
+  - name: Hydra User Agent Detected
+    description: Hydra password cracking tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)\\bhydra\\b")
+    severity: critical
+    mitre: ["T1110"]
+    tags: ["brute-force", "hydra", "credential-access"]
+    enabled: true
+
+  - name: Medusa User Agent Detected
+    description: Medusa brute force password cracking tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)medusa")
+    severity: critical
+    mitre: ["T1110"]
+    tags: ["brute-force", "medusa", "credential-access"]
+    enabled: true
+
+  - name: Patator User Agent Detected
+    description: Patator multi-purpose brute-forcer
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)patator")
+    severity: critical
+    mitre: ["T1110"]
+    tags: ["brute-force", "patator"]
+    enabled: true
+
+  - name: Crowbar User Agent Detected
+    description: Crowbar brute forcing tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)crowbar")
+    severity: high
+    mitre: ["T1110"]
+    tags: ["brute-force", "crowbar"]
+    enabled: true
+
+  - name: John The Ripper User Agent Detected
+    description: John The Ripper password cracker
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)john")
+    severity: high
+    mitre: ["T1110"]
+    tags: ["brute-force", "john", "credential-access"]
+    enabled: true
+
+  - name: Hashcat User Agent Detected
+    description: Hashcat advanced password recovery tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)hashcat")
+    severity: high
+    mitre: ["T1110"]
+    tags: ["brute-force", "hashcat", "credential-access"]
+    enabled: true
+
+  - name: Aircrack-ng User Agent Detected
+    description: Aircrack-ng WiFi security auditing tools suite
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)aircrack")
+    severity: high
+    mitre: ["T1040"]
+    tags: ["wireless", "aircrack"]
+    enabled: true
+
+  - name: Reaver User Agent Detected
+    description: Reaver WPS attack tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)reaver")
+    severity: high
+    mitre: ["T1040"]
+    tags: ["wireless", "reaver", "wps"]
+    enabled: true
+
+  - name: Bettercap User Agent Detected
+    description: Bettercap network attack and monitoring framework
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)bettercap")
+    severity: critical
+    mitre: ["T1557"]
+    tags: ["exploitation", "bettercap", "mitm"]
+    enabled: true
+
+  - name: Ettercap User Agent Detected
+    description: Ettercap comprehensive suite for MITM attacks
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)ettercap")
+    severity: critical
+    mitre: ["T1557"]
+    tags: ["exploitation", "ettercap", "mitm"]
+    enabled: true
+
+  - name: MITMf User Agent Detected
+    description: MITMf framework for MITM attacks
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)mitmf")
+    severity: critical
+    mitre: ["T1557"]
+    tags: ["exploitation", "mitmf", "mitm"]
+    enabled: true
+
+  - name: MITMproxy User Agent Detected
+    description: MITMproxy interactive HTTPS proxy
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)mitmproxy")
+    severity: high
+    mitre: ["T1557"]
+    tags: ["proxy", "mitmproxy", "mitm"]
+    enabled: true
+
+  - name: Wireshark User Agent Detected
+    description: Wireshark network protocol analyzer
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)wireshark")
+    severity: medium
+    mitre: ["T1040"]
+    tags: ["network", "wireshark", "capture"]
+    enabled: true
+
+  - name: Tcpdump User Agent Detected
+    description: Tcpdump packet analyzer
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)tcpdump")
+    severity: medium
+    mitre: ["T1040"]
+    tags: ["network", "tcpdump", "capture"]
+    enabled: true
+
+  - name: Scapy User Agent Detected
+    description: Scapy packet manipulation program
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)scapy")
+    severity: medium
+    mitre: ["T1040"]
+    tags: ["network", "scapy", "packet-crafting"]
+    enabled: true
+
+  - name: Hping User Agent Detected
+    description: Hping packet crafting tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)hping")
+    severity: high
+    mitre: ["T1498"]
+    tags: ["network", "hping", "packet-crafting"]
+    enabled: true
+
+  - name: Nping User Agent Detected
+    description: Nping packet generation and analysis tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)nping")
+    severity: medium
+    mitre: ["T1046"]
+    tags: ["network", "nping", "nmap"]
+    enabled: true
+
+  - name: Netcat User Agent Detected
+    description: Netcat networking utility
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)\\bnetcat\\b")
+    severity: medium
+    mitre: ["T1095"]
+    tags: ["network", "netcat"]
+    enabled: true
+
+  - name: Socat User Agent Detected
+    description: Socat relay for bidirectional data transfer
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)socat")
+    severity: medium
+    mitre: ["T1095"]
+    tags: ["network", "socat"]
+    enabled: true
+
+  - name: Cryptcat User Agent Detected
+    description: Cryptcat encrypted netcat
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)cryptcat")
+    severity: high
+    mitre: ["T1095"]
+    tags: ["network", "cryptcat"]
+    enabled: true
+
+  - name: PowerShell User Agent Detected
+    description: PowerShell command-line shell and scripting language
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^powershell")
+    severity: medium
+    mitre: ["T1059.001"]
+    tags: ["scripting", "powershell"]
+    enabled: true
+
+  - name: Python Requests User Agent Detected
+    description: Python Requests HTTP library - often used in automation and scripts
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^python-requests")
+    severity: low
+    mitre: []
+    tags: ["scripting", "python", "automation"]
+    enabled: true
+
+  - name: Python Urllib User Agent Detected
+    description: Python urllib HTTP library
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^python-urllib")
+    severity: low
+    mitre: []
+    tags: ["scripting", "python"]
+    enabled: true
+
+  - name: Go HTTP Client User Agent Detected
+    description: Go programming language HTTP client
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^go-http-client")
+    severity: low
+    mitre: []
+    tags: ["scripting", "golang"]
+    enabled: true
+
+  - name: Java User Agent Detected
+    description: Java HTTP client
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^java/")
+    severity: low
+    mitre: []
+    tags: ["scripting", "java"]
+    enabled: true
+
+  - name: Ruby HTTP Client User Agent Detected
+    description: Ruby HTTP client
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^ruby")
+    severity: low
+    mitre: []
+    tags: ["scripting", "ruby"]
+    enabled: true
+
+  - name: Perl LWP User Agent Detected
+    description: Perl LWP library
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^libwww-perl")
+    severity: low
+    mitre: []
+    tags: ["scripting", "perl"]
+    enabled: true
+
+  - name: Wget User Agent Detected
+    description: Wget file retrieval utility
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^wget")
+    severity: low
+    mitre: ["T1105"]
+    tags: ["download", "wget"]
+    enabled: true
+
+  - name: cURL User Agent Detected
+    description: cURL command line tool for transferring data
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)^curl")
+    severity: low
+    mitre: ["T1105"]
+    tags: ["download", "curl"]
+    enabled: true
+
+  - name: HTTPie User Agent Detected
+    description: HTTPie user-friendly HTTP client
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)httpie")
+    severity: low
+    mitre: []
+    tags: ["http-client", "httpie"]
+    enabled: true
+
+  - name: Postman User Agent Detected
+    description: Postman API development platform
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)postman")
+    severity: info
+    mitre: []
+    tags: ["api", "postman"]
+    enabled: true
+
+  - name: Insomnia User Agent Detected
+    description: Insomnia REST client
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)insomnia")
+    severity: info
+    mitre: []
+    tags: ["api", "insomnia"]
+    enabled: true
+
+  - name: REST Client User Agent Detected
+    description: Generic REST client
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)rest-client")
+    severity: info
+    mitre: []
+    tags: ["api", "rest-client"]
+    enabled: true
+
+  - name: GraphQL Playground User Agent Detected
+    description: GraphQL Playground GraphQL IDE
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)graphql-playground")
+    severity: info
+    mitre: []
+    tags: ["api", "graphql"]
+    enabled: true
+
+  - name: Selenium User Agent Detected
+    description: Selenium browser automation tool
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)selenium")
+    severity: low
+    mitre: []
+    tags: ["automation", "selenium"]
+    enabled: true
+
+  - name: Puppeteer User Agent Detected
+    description: Puppeteer headless Chrome Node API
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)puppeteer")
+    severity: low
+    mitre: []
+    tags: ["automation", "puppeteer"]
+    enabled: true
+
+  - name: Playwright User Agent Detected
+    description: Playwright browser automation library
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)playwright")
+    severity: low
+    mitre: []
+    tags: ["automation", "playwright"]
+    enabled: true
+
+  - name: Headless Chrome User Agent Detected
+    description: Headless Chrome browser
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)headlesschrome")
+    severity: low
+    mitre: []
+    tags: ["automation", "chrome"]
+    enabled: true
+
+  - name: PhantomJS User Agent Detected
+    description: PhantomJS headless WebKit
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)phantomjs")
+    severity: low
+    mitre: []
+    tags: ["automation", "phantomjs"]
+    enabled: true
+
+  - name: Scrapy User Agent Detected
+    description: Scrapy web scraping framework
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)scrapy")
+    severity: low
+    mitre: []
+    tags: ["scraping", "scrapy"]
+    enabled: true
+
+  - name: BeautifulSoup User Agent Detected
+    description: BeautifulSoup Python library for web scraping
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)beautifulsoup")
+    severity: low
+    mitre: []
+    tags: ["scraping", "beautifulsoup"]
+    enabled: true
+
+  - name: MechanicalSoup User Agent Detected
+    description: MechanicalSoup Python library for automating web interaction
+    type: HTTP
+    expression: MatchesPattern(UserAgent, "(?i)mechanicalsoup")
+    severity: low
+    mitre: []
+    tags: ["scraping", "mechanicalsoup"]
+    enabled: true
+

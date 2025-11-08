@@ -125,36 +125,21 @@ export default function DatabasesPage() {
   });
 
   return (
-    <Layout title="Databases">
+    <Layout 
+      title="Databases"
+      headerAction={
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={updating ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
+          onClick={handleUpdateDatabases}
+          disabled={updating || status?.isServiceMode}
+        >
+          {updating ? 'Updating...' : 'Update Databases'}
+        </Button>
+      }
+    >
       <Box>
-        <Box mb={4}>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-            <Box>
-              <Typography variant="h4" gutterBottom>
-                Database Information
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Information about the currently loaded NETCAP databases used for enrichment and analysis.
-              </Typography>
-            </Box>
-            <Button
-              variant="contained"
-              color="primary"
-              startIcon={updating ? <CircularProgress size={20} color="inherit" /> : <RefreshIcon />}
-              onClick={handleUpdateDatabases}
-              disabled={updating || status?.isServiceMode}
-            >
-              {updating ? 'Updating...' : 'Update Databases'}
-            </Button>
-          </Box>
-          {status?.isServiceMode && (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              <AlertTitle>Try Service Mode</AlertTitle>
-              Database updates are disabled in try service mode. Databases are managed by the service administrator.
-            </Alert>
-          )}
-        </Box>
-
         {/* Summary Cards */}
         <Grid container spacing={3} mb={4}>
           <Grid item xs={12} md={4} sx={{ display: 'flex' }}>

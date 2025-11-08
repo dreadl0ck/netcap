@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
+  Autocomplete,
   Box,
   Button,
   Chip,
@@ -11,11 +12,14 @@ import {
   DialogTitle,
   FormControl,
   IconButton,
+  InputAdornment,
   LinearProgress,
   MenuItem,
   Paper,
   Select,
   SelectChangeEvent,
+  TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import {
@@ -26,6 +30,11 @@ import {
   SwapHoriz as SwapHorizIcon,
   Download as DownloadIcon,
   BarChart as BarChartIcon,
+  Search as SearchIcon,
+  Clear as ClearIcon,
+  FilterAlt as FilterAltIcon,
+  HelpOutline as HelpOutlineIcon,
+  ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import { api, formatBytes } from '@/lib/api';
@@ -35,6 +44,289 @@ import { useRouter } from 'next/router';
 interface LayerGroup {
   layerName: string;
   files: any[];
+}
+
+// Helper function to generate consistent colors for field names
+function getFieldColor(fieldName: string): string {
+  // Simple hash function to generate consistent colors
+  let hash = 0;
+  for (let i = 0; i < fieldName.length; i++) {
+    hash = fieldName.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  
+  // Generate HSL color with good saturation and darker lightness for better contrast
+  const hue = Math.abs(hash % 360);
+  const saturation = 65 + (Math.abs(hash) % 20); // 65-85%
+  const lightness = 35 + (Math.abs(hash >> 8) % 15); // 35-50% - darker for better contrast
+  
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
+
+// Component to render record as UI elements
+interface RecordUIProps {
+  data: any;
+  level?: number;
+}
+
+function RecordUI({ data, level = 0 }: RecordUIProps) {
+  if (data === null || data === undefined) {
+    return <Typography variant="body2" color="text.secondary">—</Typography>;
+  }
+  
+  if (typeof data === 'boolean') {
+    return (
+      <Chip 
+        label={String(data)} 
+        size="small" 
+        color={data ? "success" : "default"}
+        sx={{ fontFamily: 'monospace', height: 22 }}
+      />
+    );
+  }
+  
+  if (typeof data === 'number') {
+    return (
+      <Typography 
+        component="span" 
+        sx={{ 
+          fontFamily: 'monospace', 
+          color: 'primary.main',
+          fontWeight: 500,
+          fontSize: '0.9rem'
+        }}
+      >
+        {data.toLocaleString()}
+      </Typography>
+    );
+  }
+  
+  if (typeof data === 'string') {
+    // Check if it's an IP address
+    const isIP = /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(data);
+    // Check if it's a timestamp (ISO format)
+    const isTimestamp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(data);
+    
+    if (isIP) {
+      return (
+        <Chip 
+          label={data} 
+          size="small"
+          sx={{ 
+            fontFamily: 'monospace',
+            bgcolor: 'info.light',
+            color: 'info.contrastText',
+            height: 22,
+            fontSize: '0.8rem'
+          }}
+        />
+      );
+    }
+    
+    if (isTimestamp) {
+      return (
+        <Typography 
+          component="span"
+          sx={{ 
+            fontFamily: 'monospace',
+            color: 'text.secondary',
+            fontSize: '0.85rem'
+          }}
+        >
+          {data}
+        </Typography>
+      );
+    }
+    
+    return (
+      <Typography 
+        component="span"
+        sx={{ 
+          fontFamily: 'monospace',
+          fontSize: '0.9rem'
+        }}
+      >
+        {data}
+      </Typography>
+    );
+  }
+  
+  if (Array.isArray(data)) {
+    if (data.length === 0) {
+      return <Typography variant="body2" color="text.secondary">[]</Typography>;
+    }
+    
+    // For simple arrays (primitives), show inline
+    if (data.every(item => typeof item !== 'object' || item === null)) {
+      return (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+          {data.map((item, idx) => (
+            <RecordUI key={idx} data={item} level={level + 1} />
+          ))}
+        </Box>
+      );
+    }
+    
+    // For complex arrays, show as list
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 0.5 }}>
+        {data.map((item, idx) => (
+          <Paper key={idx} sx={{ p: 1, bgcolor: 'background.default' }}>
+            <RecordUI data={item} level={level + 1} />
+          </Paper>
+        ))}
+      </Box>
+    );
+  }
+  
+  if (typeof data === 'object') {
+    const entries = Object.entries(data);
+    if (entries.length === 0) {
+      return <Typography variant="body2" color="text.secondary">{'{}'}</Typography>;
+    }
+    
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: level === 0 ? 0.75 : 0.5 }}>
+        {entries.map(([key, value]) => {
+          const fieldColor = getFieldColor(key);
+          
+          return (
+            <Box 
+              key={key}
+              sx={{ 
+                display: 'flex',
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                gap: 1.5,
+                borderLeft: level > 0 ? 2 : 0,
+                borderColor: 'divider',
+                pl: level > 0 ? 1.5 : 0
+              }}
+            >
+              <Box 
+                sx={{ 
+                  minWidth: level === 0 ? 180 : 140,
+                  maxWidth: level === 0 ? 180 : 140,
+                  pt: 0.2
+                }}
+              >
+                <Chip
+                  label={key}
+                  size="small"
+                  sx={{
+                    bgcolor: fieldColor,
+                    color: 'white',
+                    fontWeight: 600,
+                    fontFamily: 'monospace',
+                    fontSize: '0.8rem',
+                    height: 22,
+                    maxWidth: '100%',
+                    '& .MuiChip-label': {
+                      px: 1.2
+                    }
+                  }}
+                />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0, pt: 0.2 }}>
+                <RecordUI data={value} level={level + 1} />
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
+    );
+  }
+  
+  return (
+    <Typography component="span" sx={{ fontFamily: 'monospace' }}>
+      {String(data)}
+    </Typography>
+  );
+}
+
+// Helper function to convert unix timestamps to human-readable format
+function convertTimestamps(obj: any): any {
+  if (obj === null || obj === undefined) return obj;
+  
+  if (typeof obj === 'number' && obj > 1000000000) {
+    // Determine if timestamp is in nanoseconds (19 digits), microseconds (16 digits), milliseconds (13 digits), or seconds (10 digits)
+    let timestampMs: number;
+    if (obj > 1e15) {
+      // Nanoseconds (19 digits) or microseconds (16 digits)
+      if (obj > 1e17) {
+        // Nanoseconds - divide by 1,000,000
+        timestampMs = obj / 1000000;
+      } else {
+        // Microseconds - divide by 1,000
+        timestampMs = obj / 1000;
+      }
+    } else if (obj > 1e12) {
+      // Already in milliseconds (13 digits)
+      timestampMs = obj;
+    } else {
+      // Seconds (10 digits) - multiply by 1000
+      timestampMs = obj * 1000;
+    }
+    
+    try {
+      const date = new Date(timestampMs);
+      if (isNaN(date.getTime())) {
+        return obj; // Return original if invalid
+      }
+      return date.toISOString();
+    } catch (e) {
+      return obj; // Return original on error
+    }
+  }
+  
+  if (typeof obj === 'string' && obj.match(/^\d{10,19}$/)) {
+    // String that looks like a unix timestamp
+    const num = parseInt(obj, 10);
+    if (num > 1000000000) {
+      return convertTimestamps(num); // Recursively convert as number
+    }
+  }
+  
+  if (typeof obj !== 'object') return obj;
+  
+  if (Array.isArray(obj)) {
+    return obj.map(item => convertTimestamps(item));
+  }
+  
+  const result: any = {};
+  for (const [key, value] of Object.entries(obj)) {
+    // Check if this is a timestamp field by name
+    if ((key.toLowerCase().includes('timestamp') || 
+         key.toLowerCase().includes('time') ||
+         key === 'Timestamp' ||
+         key === 'Time') && 
+        typeof value === 'number' && 
+        value > 1000000000) {
+      result[key] = convertTimestamps(value);
+    } else {
+      result[key] = convertTimestamps(value);
+    }
+  }
+  return result;
+}
+
+// Syntax highlighting for JSON
+function syntaxHighlight(json: string) {
+  json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+    let cls = 'number';
+    if (/^"/.test(match)) {
+      if (/:$/.test(match)) {
+        cls = 'key';
+      } else {
+        cls = 'string';
+      }
+    } else if (/true|false/.test(match)) {
+      cls = 'boolean';
+    } else if (/null/.test(match)) {
+      cls = 'null';
+    }
+    return '<span class="json-' + cls + '">' + match + '</span>';
+  });
 }
 
 export default function AuditRecords() {
@@ -48,6 +340,7 @@ export default function AuditRecords() {
   );
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [switchingSession, setSwitchingSession] = useState(false);
+  const filterInputRef = React.useRef<HTMLInputElement>(null);
   // Expand all sections by default
   const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set([
     'Link Layer', 
@@ -112,38 +405,316 @@ export default function AuditRecords() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [total, setTotal] = useState(0);
+  const [scanned, setScanned] = useState(0);
+  const [executionTime, setExecutionTime] = useState(0);
   const [streamError, setStreamError] = useState<string | null>(null);
+  const [filterExpression, setFilterExpression] = useState('');
+  const [activeFilter, setActiveFilter] = useState('');
+  const [showFilterHelp, setShowFilterHelp] = useState(false);
+  const [fieldSuggestions, setFieldSuggestions] = useState<string[]>([]);
+  const [fieldValues, setFieldValues] = useState<Record<string, string[]>>({});
+  const [fieldTypes, setFieldTypes] = useState<Record<string, string>>({});
+  const [loadingFields, setLoadingFields] = useState(false);
+  const [valuesSampleInfo, setValuesSampleInfo] = useState<{ sampleSize: number; maxPerField: number; recordsScanned: number } | null>(null);
+  const [autocompleteOpen, setAutocompleteOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'ui' | 'json'>('json');
 
-  const handleViewRecords = (type: string) => {
+  // Load field suggestions and values when record type is selected
+  useEffect(() => {
+    if (!selectedType) {
+      setFieldSuggestions([]);
+      setFieldValues({});
+      setFieldTypes({});
+      setValuesSampleInfo(null);
+      return;
+    }
+
+    const loadFieldsAndValues = async () => {
+      setLoadingFields(true);
+      try {
+        // Load field names and helper functions
+        const fieldsData = await api.getAuditRecordFields(selectedType);
+        const fieldNames = fieldsData.fields.map(f => f.name);
+        const helpers = fieldsData.helpers;
+        
+        // Store field types for smart value quoting
+        const types: Record<string, string> = {};
+        fieldsData.fields.forEach(f => {
+          types[f.name] = f.type;
+        });
+        setFieldTypes(types);
+        
+        // Combine field names and helper functions
+        setFieldSuggestions([...fieldNames, ...helpers]);
+
+        // Load sample field values
+        try {
+          const valuesData = await api.getAuditRecordFieldValues(selectedType);
+          setFieldValues(valuesData.fieldValues);
+          setValuesSampleInfo({
+            sampleSize: valuesData.sampleSize,
+            maxPerField: valuesData.maxPerField,
+            recordsScanned: valuesData.recordsScanned,
+          });
+        } catch (err) {
+          console.warn('Failed to load field values:', err);
+          setFieldValues({});
+          setValuesSampleInfo(null);
+        }
+      } catch (err) {
+        console.error('Failed to load field suggestions:', err);
+        setFieldSuggestions([]);
+        setFieldValues({});
+        setFieldTypes({});
+      } finally {
+        setLoadingFields(false);
+      }
+    };
+
+    loadFieldsAndValues();
+  }, [selectedType]);
+
+  // Prevent browser TAB navigation when dialog is open
+  useEffect(() => {
+    if (!selectedType) return;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, [selectedType]);
+
+  // Auto-focus filter input when dialog opens
+  useEffect(() => {
+    if (selectedType && filterInputRef.current) {
+      // Delay to ensure dialog animation completes
+      const timer = setTimeout(() => {
+        filterInputRef.current?.focus();
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedType]);
+
+  const handleViewRecords = (type: string, filter?: string) => {
     setSelectedType(type);
     setRecords([]);
     setProgress(0);
     setTotal(0);
+    setScanned(0);
+    setExecutionTime(0);
     setLoading(true);
     setStreamError(null);
+    setActiveFilter(filter || '');
 
     const eventSource = api.streamAuditRecords(
       type,
       0,
-      1000,
+      500,
       (record) => {
         setRecords((prev) => [...prev, record]);
       },
-      (count) => {
+      (count, scanned) => {
         setProgress(count);
+        if (scanned !== undefined) setScanned(scanned);
       },
-      (total) => {
+      (total, scanned, executionTimeMs) => {
         setTotal(total);
+        if (scanned !== undefined) setScanned(scanned);
+        if (executionTimeMs !== undefined) setExecutionTime(executionTimeMs);
         setLoading(false);
       },
       (error) => {
         console.error('Stream error:', error);
         setStreamError(error);
         setLoading(false);
-      }
+      },
+      filter
     );
 
     return () => eventSource.close();
+  };
+
+  const handleApplyFilter = () => {
+    if (selectedType) {
+      handleViewRecords(selectedType, filterExpression);
+    }
+  };
+
+  const handleClearFilter = () => {
+    setFilterExpression('');
+    if (selectedType) {
+      handleViewRecords(selectedType, '');
+    }
+  };
+
+  const handleInsertExample = (example: string) => {
+    setFilterExpression(example);
+  };
+
+  // Check if a field type is numeric
+  const isNumericType = (fieldType: string): boolean => {
+    return /^(int|uint|float|int8|int16|int32|int64|uint8|uint16|uint32|uint64|float32|float64|byte)$/i.test(fieldType);
+  };
+
+  // Operators for autocompletion
+  const operators = [
+    '==',  // Equal
+    '!=',  // Not equal
+    '<',   // Less than
+    '>',   // Greater than
+    '<=',  // Less than or equal
+    '>=',  // Greater than or equal
+    '&&',  // Logical AND
+    '||',  // Logical OR
+    '!',   // Logical NOT
+  ];
+
+  // Get smart suggestions based on context
+  const getContextualSuggestions = (inputValue: string): string[] => {
+    if (!inputValue) return fieldSuggestions;
+
+    // Find cursor position (use end of string for simplicity)
+    const cursorPos = inputValue.length;
+    
+    // Find the current token being typed
+    const beforeCursor = inputValue.substring(0, cursorPos);
+    
+    // Check if we just completed a value (e.g., "SrcPort == 1883 " or "DstIP == '192.168.1.1' ")
+    // This suggests logical operators (&&, ||) for chaining conditions
+    // NOTE: Requires a space AFTER the value to consider it "completed"
+    // Changed: Added mandatory space after the value: \s+ instead of \s*
+    const completedValueMatch = beforeCursor.match(/(\w+(?:\[\d+\])?(?:\.\w+)*)\s*(==|!=|<|>|<=|>=)\s+(?:\d+\s+|['"][^'"]*['"]\s+)$/);
+    
+    if (completedValueMatch) {
+      // We've completed a comparison - suggest logical operators to chain conditions
+      return ['&&', '||'];
+    }
+    
+    // Check if we're after a comparison operator (==, !=, <, >, etc.)
+    // This should match partial values being typed, including digits
+    const comparisonMatch = beforeCursor.match(/(\w+(?:\[\d+\])?(?:\.\w+)*)\s*(==|!=|<|>|<=|>=)\s*['"]?([\w.]*)$/);
+    
+    if (comparisonMatch) {
+      // We're typing a value - suggest field values
+      const fieldName = comparisonMatch[1];
+      const partialValue = comparisonMatch[3];
+      
+      if (fieldValues[fieldName]) {
+        const values = fieldValues[fieldName];
+        const fieldType = fieldTypes[fieldName] || '';
+        const isNumeric = isNumericType(fieldType);
+        
+        if (partialValue) {
+          // Case-sensitive matching for values
+          return values
+            .filter(v => v.startsWith(partialValue))
+            .map(v => isNumeric ? v : `"${v}"`); // Only wrap strings in quotes
+        }
+        return values.map(v => isNumeric ? v : `"${v}"`);
+      }
+    }
+
+    // Check if we're after a logical operator (&& or ||) - suggest field names
+    const afterLogicalOpMatch = beforeCursor.match(/(&&|\|\|)\s*$/);
+    if (afterLogicalOpMatch) {
+      return fieldSuggestions;
+    }
+
+    // Check if we might be typing an operator after a field name
+    // Match field name followed by optional whitespace and partial operator
+    const operatorMatch = beforeCursor.match(/(\w+(?:\[\d+\])?(?:\.\w+)*)\s*([=!<>&|]*)$/);
+    
+    if (operatorMatch && operatorMatch[2]) {
+      // We're typing an operator - suggest matching operators
+      const partialOp = operatorMatch[2];
+      const matchingOps = operators.filter(op => 
+        op.startsWith(partialOp) && op !== partialOp
+      );
+      
+      if (matchingOps.length > 0) {
+        return matchingOps;
+      }
+    }
+
+    // Check if we're typing a field name or helper function
+    const words = beforeCursor.split(/[\s()&|,]+/);
+    const currentWord = words[words.length - 1] || '';
+    
+    if (currentWord.length >= 1) {
+      // Case-sensitive matching: field name must start with exact case
+      return fieldSuggestions.filter(option =>
+        option.startsWith(currentWord)
+      );
+    }
+
+    // If we have a complete field name followed by whitespace (no operator yet),
+    // don't show suggestions - wait for user to start typing an operator
+    // This matches: "SrcPort " or "SrcPort && DstPort "
+    const fieldNameWithSpaceMatch = beforeCursor.match(/(\w+(?:\[\d+\])?(?:\.\w+)*)\s+$/);
+    if (fieldNameWithSpaceMatch && !beforeCursor.match(/(==|!=|<|>|<=|>=)\s*$/)) {
+      // We have a field name followed by space, but no operator
+      // Don't show field suggestions - wait for operator input
+      return [];
+    }
+
+    return fieldSuggestions;
+  };
+
+  // Helper function to intelligently insert a suggestion into the current expression
+  const insertSuggestion = (currentExpression: string, suggestion: string): string => {
+    const beforeCursor = currentExpression;
+    const words = beforeCursor.split(/[\s()&|,]+/);
+    const currentWord = words[words.length - 1] || '';
+    
+    // Check if we're completing a value (after comparison operator)
+    // Updated regex to handle partial digits and other characters
+    const comparisonMatch = beforeCursor.match(/(\w+(?:\[\d+\])?(?:\.\w+)*)\s*(==|!=|<|>|<=|>=)\s*['"]?([\w.]*)$/);
+    
+    if (comparisonMatch) {
+      // Completing a value - replace only the partial value part
+      const partialValue = comparisonMatch[3];
+      const beforeValue = beforeCursor.substring(0, beforeCursor.length - partialValue.length);
+      // Add a trailing space after the value for better flow into next operator
+      return beforeValue + suggestion + ' ';
+    }
+    
+    // Check if we're completing an operator
+    const operatorMatch = beforeCursor.match(/(\w+(?:\[\d+\])?(?:\.\w+)*)\s*([=!<>&|]*)$/);
+    
+    if (operatorMatch && operatorMatch[2] && operators.includes(suggestion)) {
+      // Completing an operator
+      const partialOp = operatorMatch[2];
+      const beforeOp = beforeCursor.substring(0, beforeCursor.length - partialOp.length);
+      // Add space before and after operator for readability
+      return beforeOp + ' ' + suggestion + ' ';
+    }
+    
+    // Completing a field name
+    if (currentWord) {
+      // Remove quotes if present in suggestion for comparison
+      const cleanSuggestion = suggestion.replace(/^["']|["']$/g, '');
+      
+      // Case-sensitive matching: must start with exact case
+      if (cleanSuggestion.startsWith(currentWord)) {
+        // Append only the remaining part + space to allow operator suggestions
+        const remainder = cleanSuggestion.substring(currentWord.length);
+        return currentExpression + remainder + ' ';
+      } else {
+        // If it doesn't start with current word, replace the whole word + space
+        const beforeWord = beforeCursor.substring(0, beforeCursor.length - currentWord.length);
+        return beforeWord + suggestion + ' ';
+      }
+    }
+    
+    // No current word, just append
+    return currentExpression + suggestion;
   };
 
   const handleClose = () => {
@@ -231,6 +802,78 @@ export default function AuditRecords() {
     f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
   );
 
+  // File selector for header
+  const fileSelector = completedFiles.length > 1 && selectedFile ? (
+    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
+      <Select
+        value={selectedValue}
+        onChange={handleFileChange}
+        startAdornment={
+          switchingFile ? (
+            <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
+          ) : (
+            <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
+          )
+        }
+        renderValue={() => (
+          <Box display="flex" alignItems="center" gap={1}>
+            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'inherit' }}>
+              {selectedFile.name}
+            </Typography>
+          </Box>
+        )}
+        sx={{
+          color: 'inherit',
+          '.MuiOutlinedInput-notchedOutline': {
+            borderColor: 'rgba(255, 255, 255, 0.23)',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'rgba(255, 255, 255, 0.4)',
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'primary.light',
+          },
+          '.MuiSelect-icon': {
+            color: 'inherit',
+          },
+          '& .MuiSelect-select': {
+            display: 'flex',
+            alignItems: 'center',
+          },
+        }}
+      >
+        {completedFiles.map((file: any) => (
+          <MenuItem key={file.path} value={file.path}>
+            <Box display="flex" alignItems="center" gap={1} width="100%">
+              {selectedValue === file.path && (
+                <Chip
+                  label="Active"
+                  size="small"
+                  color="success"
+                  sx={{ height: 20, fontSize: '0.7rem' }}
+                />
+              )}
+              <Typography
+                sx={{
+                  fontFamily: 'monospace',
+                  fontSize: '0.85rem',
+                  flex: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {file.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formatBytes(file.size)}
+              </Typography>
+            </Box>
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  ) : null;
+
   // Group files by layer, filtering out empty files
   const layerGroups: LayerGroup[] = React.useMemo(() => {
     if (!files) return [];
@@ -273,7 +916,7 @@ export default function AuditRecords() {
 
   if (!files && !error) {
     return (
-      <Layout title="Audit Records">
+      <Layout title="Audit Records" headerAction={fileSelector}>
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
           <CircularProgress />
         </Box>
@@ -283,7 +926,7 @@ export default function AuditRecords() {
 
   if (error) {
     return (
-      <Layout title="Audit Records">
+      <Layout title="Audit Records" headerAction={fileSelector}>
         <Box>
           <Typography color="error">Error loading audit records</Typography>
         </Box>
@@ -292,7 +935,7 @@ export default function AuditRecords() {
   }
 
   return (
-    <Layout title="Audit Records">
+    <Layout title="Audit Records" headerAction={fileSelector}>
       <Box>
         {/* Session Selector for Try Service */}
         {status?.isServiceMode && sessions && sessions.length > 1 && (
@@ -326,84 +969,10 @@ export default function AuditRecords() {
         )}
 
         <Box mb={3}>
-          {/* File selector - show when multiple input files are available */}
-          {completedFiles.length > 1 && selectedFile && (
-            <Box mb={2}>
-              <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
-                Viewing capture:
-              </Typography>
-              <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 500, maxWidth: 800 }}>
-                <Select
-                  value={selectedValue}
-                  onChange={handleFileChange}
-                  startAdornment={
-                    switchingFile ? (
-                      <CircularProgress size={20} sx={{ mr: 1 }} />
-                    ) : (
-                      <SwapHorizIcon sx={{ mr: 1, color: 'action.active' }} />
-                    )
-                  }
-                  renderValue={() => (
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                        {selectedFile.name}
-                      </Typography>
-                      <Chip
-                        label={formatBytes(selectedFile.size)}
-                        size="small"
-                        sx={{ height: 20, fontSize: '0.7rem' }}
-                      />
-                    </Box>
-                  )}
-                  sx={{
-                    '& .MuiSelect-select': {
-                      display: 'flex',
-                      alignItems: 'center',
-                    },
-                  }}
-                >
-                  {completedFiles.map((file: any) => (
-                    <MenuItem key={file.path} value={file.path}>
-                      <Box display="flex" alignItems="center" gap={1} width="100%">
-                        {selectedValue === file.path && (
-                          <Chip
-                            label="Active"
-                            size="small"
-                            color="success"
-                            sx={{ height: 20, fontSize: '0.7rem' }}
-                          />
-                        )}
-                        <Typography
-                          sx={{
-                            fontFamily: 'monospace',
-                            fontSize: '0.85rem',
-                            flex: 1,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {file.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatBytes(file.size)}
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-          )}
-
           <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={2}>
-            <Box>
-              <Typography variant="h4" gutterBottom>
-                Network Protocol Analysis
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {layerGroups.reduce((sum, group) => sum + group.files.length, 0)} protocol type(s) found • Hierarchical by encapsulation layer
-              </Typography>
-            </Box>
+            <Typography variant="body2" color="text.secondary">
+              {layerGroups.reduce((sum, group) => sum + group.files.length, 0)} protocol type(s) found • Hierarchical by encapsulation layer
+            </Typography>
             
             {/* Download All Button */}
             <Button
@@ -563,11 +1132,399 @@ export default function AuditRecords() {
 
       {/* Record Viewer Dialog */}
       <Dialog open={selectedType !== null} onClose={handleClose} maxWidth="lg" fullWidth>
+        <style>{`
+          .json-key { color: #9cdcfe; }
+          .json-string { color: #ce9178; }
+          .json-number { color: #b5cea8; }
+          .json-boolean { color: #569cd6; }
+          .json-null { color: #569cd6; }
+        `}</style>
         <DialogTitle>
-          {selectedType} Records
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Box display="flex" alignItems="center" gap={2}>
+              <Typography variant="h6">{selectedType} Records</Typography>
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                <Button
+                  size="small"
+                  variant={viewMode === 'json' ? 'contained' : 'outlined'}
+                  onClick={() => setViewMode('json')}
+                  sx={{ minWidth: 60 }}
+                >
+                  JSON
+                </Button>
+                <Button
+                  size="small"
+                  variant={viewMode === 'ui' ? 'contained' : 'outlined'}
+                  onClick={() => setViewMode('ui')}
+                  sx={{ minWidth: 60 }}
+                >
+                  UI
+                </Button>
+              </Box>
+            </Box>
+            {executionTime > 0 && (
+              <Tooltip title="Execution time">
+                <Chip 
+                  label={`${executionTime}ms`} 
+                  size="small" 
+                  color="info"
+                  icon={<FilterAltIcon />}
+                />
+              </Tooltip>
+            )}
+          </Box>
           {loading && <LinearProgress sx={{ mt: 1 }} />}
         </DialogTitle>
         <DialogContent>
+          {/* Filter Input */}
+          <Box sx={{ mb: 2, pt: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+              <Autocomplete
+                freeSolo
+                fullWidth
+                open={autocompleteOpen}
+                onOpen={() => {
+                  const suggestions = getContextualSuggestions(filterExpression);
+                  // Only open if there are suggestions
+                  if (suggestions.length > 0) {
+                    setAutocompleteOpen(true);
+                  }
+                }}
+                onClose={(event, reason) => {
+                  // Don't close on blur if we're handling TAB
+                  if (reason === 'blur') return;
+                  setAutocompleteOpen(false);
+                }}
+                options={getContextualSuggestions(filterExpression)}
+                value={filterExpression}
+                onChange={(event, newValue, reason) => {
+                  if (reason === 'selectOption' && typeof newValue === 'string') {
+                    // User selected from dropdown (via click, Enter, or TAB)
+                    const updatedExpression = insertSuggestion(filterExpression, newValue);
+                    setFilterExpression(updatedExpression);
+                    
+                    // Reopen dropdown with new suggestions after a short delay
+                    setTimeout(() => {
+                      const newSuggestions = getContextualSuggestions(updatedExpression);
+                      if (newSuggestions.length > 0) {
+                        setAutocompleteOpen(true);
+                      }
+                    }, 100);
+                  }
+                }}
+                onInputChange={(event, newValue, reason) => {
+                  if (reason === 'input') {
+                    // User is typing
+                    setFilterExpression(newValue);
+                    // Auto-open dropdown when typing
+                    const suggestions = getContextualSuggestions(newValue);
+                    if (suggestions.length > 0) {
+                      setAutocompleteOpen(true);
+                    }
+                  } else if (reason === 'clear') {
+                    setFilterExpression('');
+                    setAutocompleteOpen(false);
+                  }
+                }}
+                loading={loadingFields}
+                disabled={loading}
+                // Auto-select first option when there's only one match
+                autoHighlight
+                selectOnFocus={false}
+                clearOnBlur={false}
+                handleHomeEndKeys
+                disableClearable={true}
+                filterOptions={(options) => options} // Don't filter, we handle it in getContextualSuggestions
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    inputRef={filterInputRef}
+                    size="small"
+                    label="Filter Expression"
+                    placeholder="e.g., DstPort == 443 or SrcIP == '192.168.1.1'"
+                    onKeyDown={(e) => {
+                      // Handle CMD+ENTER or CTRL+ENTER to execute query immediately
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // Close dropdown and execute filter immediately
+                        setAutocompleteOpen(false);
+                        handleApplyFilter();
+                        return;
+                      }
+                      
+                      // Handle TAB key for autocomplete
+                      if (e.key === 'Tab' && !e.shiftKey) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const suggestions = getContextualSuggestions(filterExpression);
+                        
+                        if (autocompleteOpen && suggestions.length > 0) {
+                          // Dropdown is open - select the highlighted option
+                          // The onChange handler will be called automatically by Autocomplete
+                          // We just need to trigger the selection
+                          const firstSuggestion = suggestions[0];
+                          const updatedExpression = insertSuggestion(filterExpression, firstSuggestion);
+                          setFilterExpression(updatedExpression);
+                          
+                          // Reopen with new suggestions
+                          setTimeout(() => {
+                            const newSuggestions = getContextualSuggestions(updatedExpression);
+                            if (newSuggestions.length > 0) {
+                              setAutocompleteOpen(true);
+                            } else {
+                              setAutocompleteOpen(false);
+                            }
+                          }, 100);
+                        } else if (suggestions.length === 1) {
+                          // No dropdown, but we have a single suggestion
+                          const newExpression = insertSuggestion(filterExpression, suggestions[0]);
+                          setFilterExpression(newExpression);
+                          
+                          // Check for new suggestions
+                          setTimeout(() => {
+                            const newSuggestions = getContextualSuggestions(newExpression);
+                            if (newSuggestions.length > 0) {
+                              setAutocompleteOpen(true);
+                            }
+                          }, 100);
+                        }
+                        
+                        // Keep focus and cursor position
+                        requestAnimationFrame(() => {
+                          const inputElement = e.currentTarget.querySelector('input');
+                          if (inputElement) {
+                            inputElement.focus();
+                          }
+                        });
+                      } else if (e.key === 'Enter' && !autocompleteOpen) {
+                        // Only execute filter if dropdown is NOT open
+                        // If dropdown is open, let Autocomplete handle it (select suggestion)
+                        e.preventDefault();
+                        handleApplyFilter();
+                      }
+                    }}
+                    InputProps={{
+                      ...params.InputProps,
+                      startAdornment: (
+                        <>
+                          <InputAdornment position="start">
+                            <FilterAltIcon color="action" />
+                          </InputAdornment>
+                          {params.InputProps.startAdornment}
+                        </>
+                      ),
+                      endAdornment: (
+                        <>
+                          {params.InputProps.endAdornment}
+                          {activeFilter && (
+                            <InputAdornment position="end">
+                              <Tooltip title="Clear filter">
+                                <IconButton size="small" onClick={handleClearFilter} edge="end">
+                                  <ClearIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </InputAdornment>
+                          )}
+                        </>
+                      ),
+                      style: { fontFamily: 'monospace', fontSize: '0.9rem' }
+                    }}
+                    helperText={
+                      activeFilter 
+                        ? `Active filter: ${activeFilter}` 
+                        : valuesSampleInfo
+                        ? `Type field names or values. TAB to autocomplete. CMD+ENTER to execute. Values sampled from ${valuesSampleInfo.recordsScanned} records (max ${valuesSampleInfo.maxPerField} per field).`
+                        : "Start typing field names or functions for suggestions. TAB to autocomplete, CMD+ENTER to execute."
+                    }
+                  />
+                )}
+                slotProps={{
+                  popper: {
+                    sx: {
+                      '& .MuiAutocomplete-listbox': {
+                        fontFamily: 'monospace',
+                        fontSize: '0.85rem',
+                      },
+                      '& .MuiAutocomplete-option': {
+                        '&[data-focus="true"]': {
+                          backgroundColor: 'action.hover',
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+              <Tooltip title="Show filter examples">
+                <IconButton 
+                  size="small" 
+                  onClick={() => {
+                    setShowFilterHelp(!showFilterHelp);
+                    setAutocompleteOpen(false); // Close autocomplete dropdown
+                  }}
+                  color={showFilterHelp ? "primary" : "default"}
+                  sx={{ mt: 0.5 }}
+                >
+                  <HelpOutlineIcon />
+                </IconButton>
+              </Tooltip>
+            </Box>
+            
+            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<SearchIcon />}
+                onClick={handleApplyFilter}
+                disabled={loading || !filterExpression}
+              >
+                Apply Filter
+              </Button>
+              {activeFilter && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<ClearIcon />}
+                  onClick={handleClearFilter}
+                  disabled={loading}
+                >
+                  Clear Filter
+                </Button>
+              )}
+            </Box>
+
+            {/* Filter Help/Examples */}
+            <Collapse in={showFilterHelp}>
+              <Paper 
+                sx={{ 
+                  mt: 2, 
+                  p: 2, 
+                  bgcolor: 'background.default',
+                  border: 1,
+                  borderColor: 'divider',
+                  maxHeight: '70vh',
+                  overflowY: 'auto'
+                }}
+              >
+                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+                  Filter Expression Examples
+                </Typography>
+                
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {/* Helper to render examples with insert button */}
+                  {[
+                    {
+                      category: 'Basic Comparisons',
+                      examples: [
+                        { expr: 'DstPort == 443', desc: 'Exact match' },
+                        { expr: 'SrcPort > 1024', desc: 'Numeric comparison' },
+                        { expr: 'Protocol == "TCP"', desc: 'String match' },
+                      ]
+                    },
+                    {
+                      category: 'Logical Operators',
+                      examples: [
+                        { expr: 'SrcPort == 80 && DstPort == 443', desc: 'AND operator' },
+                        { expr: 'DstPort == 80 || DstPort == 443', desc: 'OR operator' },
+                        { expr: 'SYN && !ACK', desc: 'NOT operator (TCP flags)' },
+                      ]
+                    },
+                    {
+                      category: 'Nested Fields (Arrays & Structs)',
+                      examples: [
+                        { expr: 'SrcPorts[0].PortNumber == 80', desc: 'Array element field' },
+                        { expr: 'DstPorts[0].Protocol == "TCP"', desc: 'Nested string field' },
+                        { expr: 'SrcPorts[0].PortNumber < DstPorts[0].PortNumber', desc: 'Compare nested fields' },
+                      ]
+                    },
+                    {
+                      category: 'Network Helper Functions',
+                      examples: [
+                        { expr: 'IsPrivateIP(SrcIP)', desc: 'Check if IP is private (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, etc.)' },
+                        { expr: 'IsPublicIP(DstIP)', desc: 'Check if IP is public (non-private)' },
+                        { expr: 'InSubnet(SrcIP, "192.168.0.0/16")', desc: 'Check if IP is in a CIDR subnet' },
+                        { expr: 'ParsePort("8080")', desc: 'Convert port string to integer' },
+                        { expr: 'PortInRange(DstPort, 8000, 9000)', desc: 'Check if port is in range (inclusive)' },
+                      ]
+                    },
+                    {
+                      category: 'Time Helper Functions',
+                      examples: [
+                        { expr: 'TimeInRange(Timestamp, 1234567890, 1234567999)', desc: 'Check if timestamp is in range (nanoseconds)' },
+                        { expr: 'DurationSince(Timestamp) > 3600000000000', desc: 'Check if more than 1 hour has passed (nanoseconds)' },
+                        { expr: 'FormatTime(Timestamp, "2006-01-02 15:04:05")', desc: 'Format timestamp to string (Go time format)' },
+                      ]
+                    },
+                    {
+                      category: 'String Helper Functions',
+                      examples: [
+                        { expr: 'ContainsAny(Payload, ["password", "secret"])', desc: 'Check if string contains any substring from array' },
+                        { expr: 'MatchesPattern(Payload, ".*password.*")', desc: 'Check if string matches regex pattern' },
+                      ]
+                    },
+                    {
+                      category: 'Complex Examples',
+                      examples: [
+                        { expr: 'IsPrivateIP(SrcIP) && IsPublicIP(DstIP) && DstPort == 443', desc: 'Private to public HTTPS traffic' },
+                        { expr: '(DstPort == 80 || DstPort == 443) && Length > 1000', desc: 'HTTP/HTTPS with large packets' },
+                        { expr: 'SYN && !ACK && DstPort < 1024', desc: 'SYN scan to privileged ports' },
+                        { expr: 'InSubnet(SrcIP, "10.0.0.0/8") && PortInRange(DstPort, 20, 21)', desc: 'Internal FTP traffic' },
+                      ]
+                    },
+                  ].map((section) => (
+                    <Box key={section.category}>
+                      <Typography variant="caption" color="primary" sx={{ fontWeight: 600 }}>
+                        {section.category}
+                      </Typography>
+                      <Box sx={{ ml: 2, mt: 0.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                        {section.examples.map((example, idx) => (
+                          <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Box component="code" sx={{ 
+                              bgcolor: 'action.hover', 
+                              color: 'text.primary',
+                              px: 0.75, 
+                              py: 0.25, 
+                              borderRadius: 0.5,
+                              border: 1,
+                              borderColor: 'divider',
+                              fontFamily: 'monospace',
+                              fontSize: '0.85rem',
+                              flex: 1,
+                            }}>
+                              {example.expr}
+                            </Box>
+                            <Tooltip title="Insert into filter">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleInsertExample(example.expr)}
+                                sx={{ p: 0.25 }}
+                              >
+                                <ContentCopyIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Typography variant="caption" color="text.secondary" sx={{ flex: 2 }}>
+                              {example.desc}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    </Box>
+                  ))}
+
+                  <Box sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
+                    <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                      💡 <strong>Tip:</strong> Field names are case-sensitive. Use TAB for autocompletion or check the record structure for available fields.
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      📚 <strong>All Helper Functions:</strong> InSubnet, IsPrivateIP, IsPublicIP, ParsePort, PortInRange, TimeInRange, DurationSince, FormatTime, ContainsAny, MatchesPattern
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Collapse>
+          </Box>
+
           {streamError ? (
             <Box p={3}>
               <Typography color="error" variant="h6" gutterBottom>
@@ -583,7 +1540,7 @@ export default function AuditRecords() {
                   </Typography>
                   <Button 
                     variant="outlined" 
-                    onClick={() => handleViewRecords(selectedType!)}
+                    onClick={() => handleViewRecords(selectedType!, activeFilter)}
                     sx={{ mt: 1 }}
                   >
                     Retry
@@ -591,34 +1548,104 @@ export default function AuditRecords() {
                 </Box>
               )}
             </Box>
-          ) : loading && records.length === 0 ? (
+          ) : loading && records.length === 0 && total === 0 ? (
             <Box display="flex" justifyContent="center" p={3}>
               <CircularProgress />
             </Box>
           ) : records.length > 0 ? (
             <Box>
-              <Typography variant="body2" gutterBottom>
-                Showing {records.length} {total > 0 ? `of ${total}` : ''} records
-              </Typography>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1 }}>
+                <Typography variant="body2">
+                  Showing {records.length} of {total > 0 ? total : records.length} records
+                </Typography>
+                {scanned > 0 && scanned !== total && (
+                  <Typography variant="body2" color="text.secondary">
+                    (Scanned: {scanned.toLocaleString()})
+                  </Typography>
+                )}
+                {records.length >= 500 && (
+                  <Chip 
+                    label="Max 500 records" 
+                    size="small" 
+                    color="warning" 
+                    variant="outlined"
+                  />
+                )}
+              </Box>
               <Box
                 sx={{
                   maxHeight: '60vh',
                   overflow: 'auto',
-                  fontFamily: 'monospace',
-                  fontSize: '0.85rem',
                 }}
               >
                 {records.map((record, idx) => (
-                  <Paper key={idx} sx={{ p: 2, mb: 1, bgcolor: 'background.default' }}>
-                    <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                      {JSON.stringify(record, null, 2)}
-                    </pre>
+                  <Paper 
+                    key={idx} 
+                    elevation={2}
+                    sx={{ 
+                      p: 2, 
+                      mb: 1.5, 
+                      bgcolor: viewMode === 'json' ? '#1e1e1e' : 'action.hover',
+                      borderRadius: 2,
+                      border: 1,
+                      borderColor: 'divider',
+                      '&:hover': {
+                        boxShadow: 4,
+                        borderColor: 'primary.main'
+                      }
+                    }}
+                  >
+                    {viewMode === 'json' ? (
+                      <pre
+                        style={{
+                          margin: 0,
+                          fontFamily: 'monospace',
+                          fontSize: '0.85rem',
+                          whiteSpace: 'pre-wrap',
+                          wordBreak: 'break-word',
+                        }}
+                        dangerouslySetInnerHTML={{
+                          __html: syntaxHighlight(JSON.stringify(convertTimestamps(record), null, 2))
+                        }}
+                      />
+                    ) : (
+                      <RecordUI data={convertTimestamps(record)} />
+                    )}
                   </Paper>
                 ))}
               </Box>
             </Box>
+          ) : !loading && total === 0 && activeFilter ? (
+            <Box p={3} textAlign="center">
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                No records match the filter
+              </Typography>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                The filter expression didn't match any records. Try adjusting your filter or clearing it to see all records.
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', mt: 2 }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleClearFilter}
+                  startIcon={<ClearIcon />}
+                >
+                  Clear Filter
+                </Button>
+                <Button
+                  variant="text"
+                  onClick={() => setShowFilterHelp(true)}
+                  startIcon={<HelpOutlineIcon />}
+                >
+                  Show Examples
+                </Button>
+              </Box>
+            </Box>
           ) : (
-            <Typography>No records available</Typography>
+            <Box p={3} textAlign="center">
+              <Typography variant="body2" color="text.secondary">
+                No records available
+              </Typography>
+            </Box>
           )}
         </DialogContent>
         <DialogActions>

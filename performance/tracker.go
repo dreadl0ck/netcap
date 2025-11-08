@@ -60,6 +60,16 @@ type Tracker struct {
 	// Resolver metrics (by resolver type)
 	resolvers map[string]*ResolverMetrics
 
+	// Filter metrics
+	FilterEvaluationsNs int64 // Total time in nanoseconds
+	FilterEvaluations   int64 // Number of filter evaluations
+	FilteredRecords     int64 // Number of records filtered out
+
+	// Rules engine metrics
+	RulesEvaluationsNs int64 // Total time in nanoseconds
+	RulesEvaluations   int64 // Number of rules evaluations
+	AlertsGenerated    int64 // Number of alerts generated
+
 	// Timing
 	StartTime time.Time
 	EndTime   time.Time
@@ -259,6 +269,24 @@ func (t *Tracker) SetTotalPacketsAndBytes(packets, bytes int64) {
 	atomic.StoreInt64(&t.TotalBytes, bytes)
 }
 
+// RecordFilterEvaluation records time spent evaluating a filter
+func (t *Tracker) RecordFilterEvaluation(duration time.Duration, filtered bool) {
+	atomic.AddInt64(&t.FilterEvaluationsNs, int64(duration))
+	atomic.AddInt64(&t.FilterEvaluations, 1)
+	if filtered {
+		atomic.AddInt64(&t.FilteredRecords, 1)
+	}
+}
+
+// RecordRulesEvaluation records time spent evaluating rules and number of alerts generated
+func (t *Tracker) RecordRulesEvaluation(duration time.Duration, alertsGenerated int) {
+	atomic.AddInt64(&t.RulesEvaluationsNs, int64(duration))
+	atomic.AddInt64(&t.RulesEvaluations, 1)
+	if alertsGenerated > 0 {
+		atomic.AddInt64(&t.AlertsGenerated, int64(alertsGenerated))
+	}
+}
+
 // Finalize marks the end time for the tracker
 func (t *Tracker) Finalize() {
 	t.EndTime = time.Now()
@@ -439,6 +467,50 @@ func (t *Tracker) WriteReport(filename string) error {
 			}
 			fmt.Fprintf(f, "%-30s %12d %12d %12s %15v %15v\n",
 				m.Name, m.Count, m.HitCount, hitRate, avg, time.Duration(m.TotalNs))
+		}
+		fmt.Fprintf(f, "\n")
+	}
+
+	// Filter performance
+	if t.FilterEvaluations > 0 {
+		avgFilter := time.Duration(t.FilterEvaluationsNs / t.FilterEvaluations)
+		fmt.Fprintf(f, "FILTER PERFORMANCE\n")
+		fmt.Fprintf(f, "--------------------------------------------------------------------------------\n")
+		fmt.Fprintf(f, "Filter Evaluations:   %d\n", t.FilterEvaluations)
+		fmt.Fprintf(f, "Records Filtered Out: %d (%.2f%%)\n", t.FilteredRecords,
+			float64(t.FilteredRecords)*100.0/float64(t.FilterEvaluations))
+		fmt.Fprintf(f, "Total Time:           %v\n", time.Duration(t.FilterEvaluationsNs))
+		fmt.Fprintf(f, "Average per Record:   %v\n", avgFilter)
+		if avgFilter.Nanoseconds() > 0 {
+			fmt.Fprintf(f, "Evaluation Rate:      %.2f evals/sec\n", 1e9/float64(avgFilter.Nanoseconds()))
+		}
+		
+		// Calculate overhead percentage if we have packet count
+		if t.TotalPackets > 0 {
+			overheadPct := (float64(t.FilterEvaluationsNs) / float64(duration.Nanoseconds())) * 100.0
+			fmt.Fprintf(f, "Processing Overhead:  %.2f%%\n", overheadPct)
+		}
+		fmt.Fprintf(f, "\n")
+	}
+
+	// Rules engine performance
+	if t.RulesEvaluations > 0 {
+		avgRules := time.Duration(t.RulesEvaluationsNs / t.RulesEvaluations)
+		fmt.Fprintf(f, "RULES ENGINE PERFORMANCE\n")
+		fmt.Fprintf(f, "--------------------------------------------------------------------------------\n")
+		fmt.Fprintf(f, "Rules Evaluations:    %d\n", t.RulesEvaluations)
+		fmt.Fprintf(f, "Alerts Generated:     %d (%.2f%%)\n", t.AlertsGenerated,
+			float64(t.AlertsGenerated)*100.0/float64(t.RulesEvaluations))
+		fmt.Fprintf(f, "Total Time:           %v\n", time.Duration(t.RulesEvaluationsNs))
+		fmt.Fprintf(f, "Average per Record:   %v\n", avgRules)
+		if avgRules.Nanoseconds() > 0 {
+			fmt.Fprintf(f, "Evaluation Rate:      %.2f evals/sec\n", 1e9/float64(avgRules.Nanoseconds()))
+		}
+		
+		// Calculate overhead percentage if we have packet count
+		if t.TotalPackets > 0 {
+			overheadPct := (float64(t.RulesEvaluationsNs) / float64(duration.Nanoseconds())) * 100.0
+			fmt.Fprintf(f, "Processing Overhead:  %.2f%%\n", overheadPct)
 		}
 		fmt.Fprintf(f, "\n")
 	}

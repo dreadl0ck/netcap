@@ -340,7 +340,7 @@ commands:
 
             # lsof -ti:8080 | xargs kill -9
             sleep 2 && open http://localhost:8080 &
-            net capture -y -dpi -read 2017-09-19-traffic-analysis-exercise.pcap -out 2017-09-19-traffic-analysis-exercise
+            net capture -y -debug -dpi -read 2017-09-19-traffic-analysis-exercise.pcap -out 2017-09-19-traffic-analysis-exercise
 
 
     pack-dbs-tarball:
@@ -917,3 +917,14 @@ commands:
             go-callvis -format=svg -file=graphics/callvis/dbs -focus dbs -nostd ./...
             go-callvis -format=svg -file=graphics/callvis/dpi -focus dpi -nostd ./...
             go-callvis -format=svg -file=graphics/callvis/core -focus core -nostd ./...
+
+    kill:
+        description: kill leftover processes
+        exec: |
+            lsof -ti:8080 | xargs kill -9
+
+    copy-rules:
+        description: copy the rules to the rules folder
+        exec: |
+            cp rules/examples/* ~/.local/share/netcap-service/rules
+            scp rules/examples/* $DEPLOY_USER@$DEPLOY_HOST:/mnt/storage/netcap-try-server/data/netcap-service/rules

@@ -96,16 +96,16 @@ func (a *ARP) Inc() {
 // SetPacketContext sets the associated packet context for the audit record.
 func (a *ARP) SetPacketContext(*PacketContext) {}
 
-// Src TODO: preserve source and destination mac adresses for ARP and return them here.
 // Src returns the source address of the audit record.
+// For ARP, this returns the source protocol address (typically an IP address).
 func (a *ARP) Src() string {
-	return ""
+	return a.SrcProtocolAddress
 }
 
-// Dst TODO: preserve source and destination mac adresses for ARP and return them here.
 // Dst returns the destination address of the audit record.
+// For ARP, this returns the destination protocol address (typically an IP address).
 func (a *ARP) Dst() string {
-	return ""
+	return a.DstProtocolAddress
 }
 
 var arpEncoder = encoder.NewValueEncoder()

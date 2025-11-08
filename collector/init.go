@@ -64,15 +64,22 @@ func (c *Collector) Init() (err error) {
 		SupportMissingEstablishment: c.config.DecoderConfig.AllowMissingInit,
 	}
 
-	// handle signals for a clean exit
-	c.handleSignals()
+	// handle signals for a clean exit (unless disabled for service mode)
+	if !c.config.NoSignalHandling {
+		c.handleSignals()
+	}
 
 	// init logfile if necessary
-	if c.netcapLogFile == nil && c.config.DecoderConfig.Quiet {
+	if c.netcapLogFile == nil {
 		err = c.initLogging()
 		if err != nil {
 			return err
 		}
+	}
+
+	// Log signal handling status after logger is initialized
+	if c.config.NoSignalHandling {
+		c.log.Info("signal handling disabled (NoSignalHandling=true) - parent process will handle signals")
 	}
 
 	// start workers
@@ -234,6 +241,9 @@ func (c *Collector) Init() (err error) {
 		zap.Int("goPacketDecoders", len(c.goPacketDecoders)),
 		zap.Int("abstractDecoders", len(c.abstractDecoders)),
 	)
+
+	// Wrap decoders with filtering/rules if configured
+	c.WrapWritersWithFiltering()
 
 	c.buildProgressString()
 	c.printlnStdOut("done in", time.Since(start))

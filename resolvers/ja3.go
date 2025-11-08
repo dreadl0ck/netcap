@@ -158,13 +158,11 @@ func parseUserAgents(data []byte, f os.FileInfo) {
 		}
 	}
 
-	if !quiet {
-		resolverLog.Info("updated JA3 summaries",
-			zap.String("source", f.Name()),
-			zap.Int("new", sums),
-			zap.Int("updated", updated),
-		)
-	}
+	resolverLog.Info("updated JA3 summaries",
+		zap.String("source", f.Name()),
+		zap.Int("new", sums),
+		zap.Int("updated", updated),
+	)
 }
 
 func parseSummariesArray(data []byte, f os.FileInfo) {
@@ -186,13 +184,11 @@ func parseSummariesArray(data []byte, f os.FileInfo) {
 		addToJa3DB(sum, &updated, &sums)
 	}
 
-	if !quiet {
-		resolverLog.Info("updated JA3 summaries",
-			zap.String("source", f.Name()),
-			zap.Int("new", sums),
-			zap.Int("updated", updated),
-		)
-	}
+	resolverLog.Info("updated JA3 summaries",
+		zap.String("source", f.Name()),
+		zap.Int("new", sums),
+		zap.Int("updated", updated),
+	)
 }
 
 func parseSummaries(data []byte, f os.FileInfo) {
@@ -222,11 +218,9 @@ func parseSummaries(data []byte, f os.FileInfo) {
 
 		addToJa3DB(sum, &updated, &sums)
 	}
-	if !quiet {
-		resolverLog.Info("updated JA3 summaries",
-			zap.String("source", f.Name()),
-			zap.Int("new", sums),
-			zap.Int("updated", updated),
-		)
-	}
+	resolverLog.Info("updated JA3 summaries",
+		zap.String("source", f.Name()),
+		zap.Int("new", sums),
+		zap.Int("updated", updated),
+	)
 }

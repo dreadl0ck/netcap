@@ -33,18 +33,19 @@ var (
 	}
 
 	applicationLayerProtocols = []string{
-		"Connection", "DHCPv4", "DHCPv6", "DNS", "DeviceProfile",
-		"Geneve", "IPProfile", "NTP", "SIP", "TLSClientHello",
+		"DHCPv4", "DHCPv6", "DNS", "Geneve", "HTTP", "NTP", 
+		"POP3", "SIP", "SMTP", "SSH", "TLSClientHello",
 		"TLSServerHello", "VXLAN",
 	}
 
 	streamDecoders = []string{
-		"HTTP", "POP3", "SMTP", "SSH",
+		// Stream decoders are now shown under Application Layer
 	}
 
 	abstractDecoders = []string{
-		"Alert", "Credentials", "Exploit", "File", "Mail",
-		"Service", "Software", "Vulnerability",
+		"Alert", "Connection", "Credentials", "DeviceProfile", 
+		"Exploit", "File", "IPProfile", "Mail", "Service", 
+		"Software", "Vulnerability",
 	}
 )
 

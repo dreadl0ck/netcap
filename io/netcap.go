@@ -171,6 +171,10 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.Mail)
 	case types.Type_NC_Alert:
 		record = new(types.Alert)
+	case types.Type_NC_Header:
+		// NC_Header is a file header type, not an audit record type
+		// Return nil to indicate this type should not be initialized as a record
+		return nil
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}

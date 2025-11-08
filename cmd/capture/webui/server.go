@@ -20,19 +20,35 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/config"
+	"github.com/dreadl0ck/netcap/decoder/packet"
+	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
+	httpstream "github.com/dreadl0ck/netcap/decoder/stream/http"
+	"github.com/dreadl0ck/netcap/decoder/stream/service"
+	"github.com/dreadl0ck/netcap/decoder/stream/software"
+	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
+	"github.com/dreadl0ck/netcap/decoder/stream/udp"
+	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
+	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/rules"
 	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dustin/go-humanize"
 )
 
 // ProcessingStats represents live processing statistics
@@ -47,6 +63,11 @@ type ProcessingStats struct {
 	ProfilesCount    int     `json:"profilesCount"`
 	ServicesCount    int     `json:"servicesCount"`
 	LastUpdate       int64   `json:"lastUpdate"`
+
+	// Service mode specific fields
+	QueueLength   int   `json:"queueLength"`   // Number of jobs waiting in queue
+	JobsScheduled int64 `json:"jobsScheduled"` // Total jobs scheduled
+	JobsProcessed int64 `json:"jobsProcessed"` // Total jobs completed
 }
 
 // FileError represents an error that occurred during file processing
@@ -83,14 +104,22 @@ type Server struct {
 	dpiPreferences     map[string]*UserDPIPreferences // DPI preferences per user IP
 	reportedIssues     map[string]bool                // Tracks which file hashes have had issues reported
 
+	// Rules cache
+	rulesConfig      interface{} // Cached rules config (uses rules.Config type to avoid circular import)
+	rulesConfigMutex sync.RWMutex
+
 	// Service mode fields (nil in local mode)
-	isServiceMode  bool              // Flag to differentiate modes
-	sessionManager *SessionManager   // Session manager (nil in local mode)
-	serviceConfig  *ServiceConfig    // Service configuration (nil in local mode)
-	jobQueue       chan *AnalysisJob // Job queue (nil in local mode)
-	shutdownChan   chan struct{}     // Shutdown channel for graceful shutdown
-	wg             sync.WaitGroup    // Track background workers
-	currentSession string            // Currently active session for webUI viewing (service mode only)
+	isServiceMode     bool              // Flag to differentiate modes
+	sessionManager    *SessionManager   // Session manager (nil in local mode)
+	serviceConfig     *ServiceConfig    // Service configuration (nil in local mode)
+	jobQueue          chan *AnalysisJob // Job queue (nil in local mode)
+	shutdownChan      chan struct{}     // Shutdown channel for graceful shutdown
+	wg                sync.WaitGroup    // Track background workers
+	currentSession    string            // Currently active session for webUI viewing (service mode only)
+	jobsScheduled     int64             // Total number of jobs scheduled (atomic counter)
+	jobsProcessed     int64             // Total number of jobs processed (atomic counter)
+	currentJobMutex   sync.RWMutex      // Mutex for currentProcessingJob
+	currentProcessing *AnalysisJob      // Currently processing job (service mode only)
 }
 
 // UploadCallbackFunc is called when files are uploaded via the web UI
@@ -99,6 +128,7 @@ type UploadCallbackFunc func(filePath string) error
 // CollectorInterface defines the methods we need from the Collector
 type CollectorInterface interface {
 	SetLogLevel(debug bool)
+	ReloadRulesEngine() error
 }
 
 // NewServer creates a new web UI server
@@ -137,7 +167,7 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 			serviceConfig.SessionExpiry,
 			serviceConfig.MaxIssueReportsPerDay,
 		)
-		s.jobQueue = make(chan *AnalysisJob, 100)
+		s.jobQueue = make(chan *AnalysisJob, 1000)
 		s.shutdownChan = make(chan struct{})
 
 		// In service mode, ensure data directory exists
@@ -199,6 +229,7 @@ func (s *Server) loadPreloadedPcaps() {
 		modTime  time.Time
 	}
 	var pcapFiles []pcapFileInfo
+	var skippedCount int
 
 	for _, file := range files {
 		if file.IsDir() {
@@ -222,10 +253,20 @@ func (s *Server) loadPreloadedPcaps() {
 			continue
 		}
 
+		// Check if file size exceeds the configured maximum
+		fileSize := fileInfo.Size()
+		if s.serviceConfig.MaxFileSize > 0 && fileSize > s.serviceConfig.MaxFileSize {
+			log.Printf("[Server] Skipping preloaded pcap %s: file size %d bytes exceeds maximum allowed size of %d bytes (%.2f MB > %.2f MB)",
+				filename, fileSize, s.serviceConfig.MaxFileSize,
+				float64(fileSize)/(1024*1024), float64(s.serviceConfig.MaxFileSize)/(1024*1024))
+			skippedCount++
+			continue
+		}
+
 		pcapFiles = append(pcapFiles, pcapFileInfo{
 			filename: filename,
 			path:     inputPath,
-			size:     fileInfo.Size(),
+			size:     fileSize,
 			modTime:  fileInfo.ModTime(),
 		})
 	}
@@ -235,7 +276,12 @@ func (s *Server) loadPreloadedPcaps() {
 		return pcapFiles[i].size < pcapFiles[j].size
 	})
 
-	log.Printf("[Server] Found %d preloaded pcap files, processing smallest first for faster UI results", len(pcapFiles))
+	if skippedCount > 0 {
+		log.Printf("[Server] Found %d preloaded pcap files (skipped %d files exceeding max size of %.2f MB), processing smallest first for faster UI results",
+			len(pcapFiles), skippedCount, float64(s.serviceConfig.MaxFileSize)/(1024*1024))
+	} else {
+		log.Printf("[Server] Found %d preloaded pcap files, processing smallest first for faster UI results", len(pcapFiles))
+	}
 
 	// Second pass: process files in order of size (smallest first)
 	preloadedCount := 0
@@ -284,11 +330,11 @@ func (s *Server) loadPreloadedPcaps() {
 			ExcludeDecoders: "",
 		}
 
+		atomic.AddInt64(&s.jobsScheduled, 1)
 		s.jobQueue <- job
 		preloadedCount++
 
-		log.Printf("[Server] Queued preloaded pcap: %s (session: %s, size: %d bytes)",
-			pcapFile.filename, sessionID, pcapFile.size)
+		//log.Printf("[Server] Queued preloaded pcap: %s (session: %s, size: %d bytes)", pcapFile.filename, sessionID, pcapFile.size)
 	}
 
 	if preloadedCount > 0 {
@@ -321,6 +367,16 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/config", s.handleConfig)
 	mux.HandleFunc("/api/config/debug", s.handleDebugToggle)
 	mux.HandleFunc("/api/config/bpf", s.handleBPFConfig)
+	mux.HandleFunc("/api/rules", s.handleRules)
+	mux.HandleFunc("/api/rules/execute", s.handleExecuteRule)
+	mux.HandleFunc("/api/rules/execute-all", s.handleExecuteAllRules)
+	mux.HandleFunc("/api/rules/", s.handleRule)
+	mux.HandleFunc("/api/rule-sets", s.handleRuleSets)
+	mux.HandleFunc("/api/rule-sets/", s.handleRuleSet)
+	mux.HandleFunc("/api/alerts", s.handleAlerts)
+	mux.HandleFunc("/api/alerts/grouped", s.handleGroupedAlerts)
+	mux.HandleFunc("/api/alerts/stats", s.handleAlertStats)
+	mux.HandleFunc("/api/alerts/clear", s.handleClearAlerts)
 	mux.HandleFunc("/api/decoders/config", s.handleDecoderConfig)
 	mux.HandleFunc("/api/decoders/config/list", s.handleListDecoderConfigs)
 	mux.HandleFunc("/api/decoders/config/load", s.handleLoadDecoderConfig)
@@ -380,17 +436,21 @@ func (s *Server) Start() error {
 		s.wg.Add(1)
 		go s.cleanupRoutine()
 		log.Println("[WebUI] Started cleanup routine for service mode")
-
-		// Load and queue preloaded pcaps
-		s.loadPreloadedPcaps()
 	}
 
+	// Start HTTP server first
 	go func() {
 		log.Printf("Web UI server starting on http://%s\n", s.addr)
 		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Printf("Web UI server error: %v\n", err)
 		}
 	}()
+
+	// Load and queue preloaded pcaps after server starts (in goroutine to avoid blocking)
+	// This can take time with many files and the channel may block if queue is full
+	if s.isServiceMode && s.jobQueue != nil {
+		go s.loadPreloadedPcaps()
+	}
 
 	return nil
 }
@@ -399,7 +459,13 @@ func (s *Server) Start() error {
 func (s *Server) handleDecodersRouter(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[WebUI] Decoders router: path=%s", r.URL.Path)
 
-	// Check if this is a request for decoder fields
+	// Check if this is a request for all decoder fields
+	if r.URL.Path == "/api/decoders/fields" {
+		s.handleAllDecoderFields(w, r)
+		return
+	}
+
+	// Check if this is a request for specific decoder fields
 	if strings.HasSuffix(r.URL.Path, "/fields") && r.URL.Path != "/api/decoders/config" {
 		s.handleDecoderFields(w, r)
 		return
@@ -728,7 +794,42 @@ func (s *Server) processJobs() {
 	for {
 		select {
 		case job := <-s.jobQueue:
-			s.runAnalysisInProcess(job)
+			// Set current processing job
+			s.currentJobMutex.Lock()
+			s.currentProcessing = job
+			s.currentJobMutex.Unlock()
+
+			// Increment processed counter and calculate position
+			currentPos := atomic.AddInt64(&s.jobsProcessed, 1)
+			totalScheduled := atomic.LoadInt64(&s.jobsScheduled)
+
+			log.Printf("[WebUI] Job received from queue: processing job %d/%d, session=%s, file=%s",
+				currentPos, totalScheduled, job.SessionID, job.InputFile)
+
+			// Wrap job processing with panic recovery to prevent crashes from killing the service
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						log.Printf("[WebUI] PANIC recovered in job processor for session %s: %v", job.SessionID, r)
+						log.Printf("[WebUI] Stack trace:\n%s", debug.Stack())
+
+						// Mark session as failed
+						if s.sessionManager != nil {
+							errorMsg := fmt.Sprintf("Analysis crashed: %v", r)
+							s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, errorMsg, "")
+						}
+					}
+				}()
+
+				s.runAnalysis(job)
+			}()
+
+			// Clear current processing job
+			s.currentJobMutex.Lock()
+			s.currentProcessing = nil
+			s.currentJobMutex.Unlock()
+
+			log.Printf("[WebUI] Job processing completed: job %d/%d, session=%s", currentPos, totalScheduled, job.SessionID)
 		case <-s.shutdownChan:
 			log.Println("[WebUI] Job processor shutting down")
 			return
@@ -736,14 +837,202 @@ func (s *Server) processJobs() {
 	}
 }
 
+// runAnalysis executes a netcap capture analysis
+func (s *Server) runAnalysis(job *AnalysisJob) {
+	log.Printf("[Service] Starting analysis for session %s", job.SessionID)
+
+	// Update status to processing
+	s.sessionManager.UpdateSessionStatus(job.SessionID, StatusProcessing, "", "")
+
+	// Build netcap capture command
+	args := []string{
+		"capture",
+		"-read", job.InputFile,
+		"-out", job.OutputDir,
+		"-quiet",
+		"-http", "", // Disable web UI server
+	}
+
+	if job.EnableDPI {
+		args = append(args, "-dpi")
+	}
+
+	// Apply BPF filter if set
+	if job.BPFFilter != "" {
+		args = append(args, "-bpf", job.BPFFilter)
+		log.Printf("[Service] Applying BPF filter for session %s: %s", job.SessionID, job.BPFFilter)
+	}
+
+	// Apply decoder config if set
+	if job.IncludeDecoders != "" {
+		args = append(args, "-include", job.IncludeDecoders)
+		log.Printf("[Service] Including decoders for session %s: %s", job.SessionID, job.IncludeDecoders)
+	}
+	if job.ExcludeDecoders != "" {
+		args = append(args, "-exclude", job.ExcludeDecoders)
+		log.Printf("[Service] Excluding decoders for session %s: %s", job.SessionID, job.ExcludeDecoders)
+	}
+
+	// Get the path to the current executable
+	executable, err := os.Executable()
+	if err != nil {
+		log.Printf("[Service] Failed to get executable path: %v", err)
+		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, "Internal error", "")
+		return
+	}
+
+	// Create error log file for capturing stdout/stderr
+	errorLogPath := filepath.Join(job.OutputDir, "analysis_error.log")
+	errorLogFile, err := os.Create(errorLogPath)
+	if err != nil {
+		log.Printf("[Service] Failed to create error log file: %v", err)
+		// Continue without error log file
+		errorLogPath = ""
+	}
+
+	// Run the capture command
+	cmd := exec.Command(executable, args...)
+
+	// If we have an error log file, capture output there; otherwise use standard output
+	if errorLogFile != nil {
+		cmd.Stdout = errorLogFile
+		cmd.Stderr = errorLogFile
+		defer errorLogFile.Close()
+	} else {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
+
+	startTime := time.Now()
+	err = cmd.Run()
+	duration := time.Since(startTime)
+
+	if err != nil {
+		log.Printf("[Service] Analysis failed for session %s: %v (duration: %v)", job.SessionID, err, duration)
+
+		// Write additional error context to log file
+		if errorLogFile != nil {
+			fmt.Fprintf(errorLogFile, "\n\n=== Analysis Error Summary ===\n")
+			fmt.Fprintf(errorLogFile, "Session ID: %s\n", job.SessionID)
+			fmt.Fprintf(errorLogFile, "Input File: %s\n", job.InputFile)
+			fmt.Fprintf(errorLogFile, "Output Directory: %s\n", job.OutputDir)
+			fmt.Fprintf(errorLogFile, "Duration: %v\n", duration)
+			fmt.Fprintf(errorLogFile, "Error: %v\n", err)
+			fmt.Fprintf(errorLogFile, "Command: %s %s\n", executable, strings.Join(args, " "))
+			errorLogFile.Close()
+		}
+
+		log.Printf("[Service] Setting error log path for session %s: %s", job.SessionID, errorLogPath)
+		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, fmt.Sprintf("Analysis failed: %v", err), errorLogPath)
+		return
+	}
+
+	// Close and remove error log file if analysis succeeded (it would be empty or just normal output)
+	if errorLogFile != nil {
+		errorLogFile.Close()
+		os.Remove(errorLogPath)
+	}
+
+	log.Printf("[Service] Analysis completed for session %s (duration: %v)", job.SessionID, duration)
+	s.sessionManager.UpdateSessionStatus(job.SessionID, StatusCompleted, "", "")
+
+	// Store the processing time
+	s.sessionManager.UpdateSessionProcessingTime(job.SessionID, duration.Seconds())
+
+	// Execute rules automatically after successful analysis
+	s.executeRulesForJob(job)
+}
+
+// executeRulesForJob executes all enabled rules for a completed analysis job
+func (s *Server) executeRulesForJob(job *AnalysisJob) {
+	log.Printf("[Service] Starting rule execution for session %s", job.SessionID)
+
+	// Load rules config
+	config, err := s.loadRulesConfig()
+	if err != nil {
+		log.Printf("[Service] Failed to load rules config for session %s: %v", job.SessionID, err)
+		return
+	}
+
+	// Filter for enabled rules only
+	enabledRules := make([]*rules.Rule, 0)
+	for _, rule := range config.Rules {
+		if rule.Enabled {
+			enabledRules = append(enabledRules, rule)
+		}
+	}
+
+	if len(enabledRules) == 0 {
+		log.Printf("[Service] No enabled rules found for session %s, skipping rule execution", job.SessionID)
+		return
+	}
+
+	log.Printf("[Service] Executing %d enabled rules for session %s", len(enabledRules), job.SessionID)
+
+	// Execute all enabled rules
+	startTime := time.Now()
+	totalAlerts := 0
+	totalRecords := 0
+	successCount := 0
+	errorCount := 0
+
+	for _, rule := range enabledRules {
+		ruleStartTime := time.Now()
+		alertsCount, recordsRead, err := s.executeRuleOnCapture(rule, job.OutputDir)
+		ruleExecutionTime := time.Since(ruleStartTime)
+
+		if err != nil {
+			errorCount++
+			log.Printf("[Service] Error executing rule %s for session %s: %v (took %v)",
+				rule.Name, job.SessionID, err, ruleExecutionTime)
+		} else {
+			successCount++
+			totalAlerts += alertsCount
+			totalRecords += recordsRead
+			if alertsCount > 0 {
+				log.Printf("[Service] Rule %s generated %d alerts from %d records for session %s (took %v)",
+					rule.Name, alertsCount, recordsRead, job.SessionID, ruleExecutionTime)
+			}
+		}
+	}
+
+	executionTime := time.Since(startTime)
+
+	log.Printf("[Service] Rule execution completed for session %s: %d/%d rules succeeded, %d total alerts from %d total records (took %v)",
+		job.SessionID, successCount, len(enabledRules), totalAlerts, totalRecords, executionTime)
+}
+
 // runAnalysisInProcess executes a netcap capture analysis in-process
+// TODO: nDPI or libprotoident seem to be leaking memory, causing virtual memory usage to grow unbounded.
+// Needs more debugging.
 func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	log.Printf("[WebUI] Starting in-process analysis for session %s", job.SessionID)
+
+	// Add panic recovery as defense in depth
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("[WebUI] PANIC recovered in runAnalysisInProcess for session %s: %v", job.SessionID, r)
+			log.Printf("[WebUI] Stack trace:\n%s", debug.Stack())
+
+			// Mark session as failed
+			if s.sessionManager != nil {
+				errorMsg := fmt.Sprintf("Analysis crashed during execution: %v", r)
+				s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, errorMsg, "")
+			}
+		}
+	}()
 
 	// Update status to processing
 	if s.sessionManager != nil {
 		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusProcessing, "", "")
 	}
+
+	// Report memory usage before analysis
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	numGoroutines := runtime.NumGoroutine()
+	log.Printf("[WebUI] Memory before analysis (session %s): Heap Alloc=%s, Heap Sys=%s, Goroutines=%d",
+		job.SessionID, humanize.Bytes(m.HeapAlloc), humanize.Bytes(m.HeapSys), numGoroutines)
 
 	startTime := time.Now()
 
@@ -763,6 +1052,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		LogErrors:             false,
 		NoPrompt:              true,
 		HTTPShutdownEndpoint:  false,
+		NoSignalHandling:      true, // Disable signal handling in service mode
 		Timeout:               1 * time.Second,
 		Labels:                "",
 		Scatter:               true,
@@ -838,7 +1128,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			MACDB:         true,
 			Ja3DB:         true,
 			ServiceDB:     true,
-			GeolocationDB: false,
+			GeolocationDB: true,
 		},
 	})
 
@@ -949,6 +1239,84 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		// TODO: Extract packet count from collector if available
 		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusCompleted, "", "")
 	}
+
+	// Execute rules automatically after successful analysis
+	s.executeRulesForJob(job)
+
+	// ==================================================================================
+	// CRITICAL: Memory cleanup after each job to prevent OOM in long-running service
+	// Same cleanup logic as used in multi-file processing to release accumulated state
+	// ==================================================================================
+	log.Printf("[WebUI] Starting memory cleanup for session %s...", job.SessionID)
+
+	// Step 1: Reset packet-level state (lightweight, no heavy allocations)
+	packet.ResetDeviceProfiles()
+	packet.ResetIPProfiles()
+	packet.ResetConnections()
+
+	// Step 2: Reset stream-level state (lightweight)
+	service.ResetStore()
+	service.ResetProbeEnums()
+	udp.ResetStreams()
+	httpstream.ResetHTTPStore()
+	streamutils.ResetStats()
+
+	// Step 2a: Reset global caches that accumulate unbounded
+	// UserAgentCache, ja3Cache, and Software Store accumulate across all files
+	software.ResetCaches()
+
+	// Step 2b: Reset deduplication stores
+	// These accumulate ALL unique credentials/exploits/vulns across files
+	credentials.ResetCredStore()
+	exploit.ResetExploitStore()
+	vulnerability.ResetVulnStore()
+
+	// Step 3: Flush all assemblers to release pageCaches
+	// THE ROOT CAUSE: Assembler.pageCache grows unbounded and NEVER SHRINKS
+	// Each page holds AssemblerContext which references packet data
+	// pageCaches can grow to GB of memory and are NOT released on collector cleanup
+	// NOTE: cleanup() is already called at the end of CollectPcap(), which stops all goroutines
+	// including workers, TCP stream readers, and freeOSMemory goroutine
+	if c != nil {
+		log.Printf("[WebUI] Flushing assemblers to release pageCaches for session %s...", job.SessionID)
+		c.FlushAssemblers()
+	}
+
+	// Step 4: Nil out collector to release all references
+	// This breaks the reference chain: collector -> assemblers -> pageCaches -> packets
+	c = nil
+
+	// Step 5: Force GC to clear assemblers, pageCaches, and packet data
+	// we must GC everything before resetting the TCP factory
+	runtime.GC()
+
+	// Step 6: Ensure ALL TCP stream reader goroutines are stopped
+	// Even though cleanup() was called at the end of CollectPcap(), we need to
+	// ensure goroutines have fully exited before resetting the factory
+	// Use quiet version since log files for previous file are already closed
+	log.Printf("[WebUI] Ensuring TCP stream readers are stopped for session %s...", job.SessionID)
+	tcp.CloseStreamReaderChannelsAndWaitQuiet()
+
+	// Step 7: NOW reset TCP factory - old StreamPool can be GC'd
+	// Because assemblers, pageCaches, and stream readers are gone, old pool has no references
+	tcp.ResetStreamFactory()
+
+	// Step 8: Reset DPI flow tracker if DPI is enabled
+	if job.EnableDPI && dpi.HasDPISupport() {
+		log.Printf("[WebUI] Resetting DPI for session %s...", job.SessionID)
+		dpi.Reset("") // Service mode uses all modules
+	}
+
+	// Step 9: Final GC and OS memory release
+	runtime.GC()
+	debug.FreeOSMemory()
+
+	// Report memory usage after cleanup
+	runtime.ReadMemStats(&m)
+	numGoroutines = runtime.NumGoroutine()
+	log.Printf("[WebUI] Memory after cleanup (session %s): Heap Alloc=%s, Heap Sys=%s, Goroutines=%d",
+		job.SessionID, humanize.Bytes(m.HeapAlloc), humanize.Bytes(m.HeapSys), numGoroutines)
+	log.Printf("[WebUI] Memory cleanup completed for session %s", job.SessionID)
 }
 
 // cleanupRoutine periodically cleans up expired sessions (service mode only)
