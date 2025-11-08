@@ -336,13 +336,16 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 	// Add session to manager
 	s.sessionManager.AddSession(session)
 
+	// Load BPF filter from saved configuration
+	bpfConfig := s.loadBPFConfig()
+
 	// Create analysis job
 	job := &AnalysisJob{
 		SessionID:       sessionID,
 		InputFile:       inputPath,
 		OutputDir:       resultsDir,
 		EnableDPI:       s.dpiConfigured,
-		BPFFilter:       "",       // TODO: Get from request if provided
+		BPFFilter:       bpfConfig.Filter,
 		IncludeDecoders: "",       // TODO: Get from request if provided
 		ExcludeDecoders: "",       // TODO: Get from request if provided
 	}

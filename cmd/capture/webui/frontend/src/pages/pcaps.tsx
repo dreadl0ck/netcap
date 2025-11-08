@@ -26,7 +26,7 @@ import {
   Typography,
   type SelectChangeEvent,
 } from '@mui/material';
-import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, Description as DescriptionIcon, Search as SearchIcon, BubbleChart as VisualizeIcon, Report as ReportIcon, BugReport as BugReportIcon } from '@mui/icons-material';
+import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, Description as DescriptionIcon, Search as SearchIcon, BubbleChart as VisualizeIcon, Report as ReportIcon, BugReport as BugReportIcon, Download as DownloadIcon, Notifications as NotificationsIcon } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import { api, formatBytes, formatTimestamp, formatDuration } from '@/lib/api';
@@ -137,6 +137,37 @@ export default function PCAPs() {
       
       // Navigate to visualize page
       router.push('/visualize');
+    } catch (err) {
+      console.error('Failed to set active directory:', err);
+      alert('Failed to switch to this file');
+    } finally {
+      setActivating(null);
+    }
+  };
+
+  const handleDownload = (identifier: string, filename: string) => {
+    // Create a temporary link element and trigger download
+    const downloadUrl = api.downloadInputFile(identifier);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleShowAlerts = async (file: string) => {
+    setActivating(file);
+    try {
+      const result = await api.setActiveDirectory(file);
+      console.log('Directory changed to:', result.outputDir);
+      await mutateStatus(); // Refresh status
+      
+      // Force refresh by triggering a global event
+      window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
+      
+      // Navigate to alerts page
+      router.push('/alerts');
     } catch (err) {
       console.error('Failed to set active directory:', err);
       alert('Failed to switch to this file');
@@ -525,6 +556,29 @@ export default function PCAPs() {
                                 color="primary"
                               >
                                 <VisualizeIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Download PCAP">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDownload(
+                                  status?.isServiceMode && file.sessionId ? file.sessionId : file.path,
+                                  file.name
+                                )}
+                                disabled={activating === file.path}
+                                color="default"
+                              >
+                                <DownloadIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Show Alerts">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleShowAlerts(file.path)}
+                                disabled={activating === file.path}
+                                color="warning"
+                              >
+                                <NotificationsIcon />
                               </IconButton>
                             </Tooltip>
                           </>

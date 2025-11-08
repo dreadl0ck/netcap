@@ -520,10 +520,15 @@ func Run() {
 		return
 	}
 
-	// abort if there is no input or no live capture
-	if *flagInput == "" && !live {
+	// Check if we should start in upload-only mode (no input, no live capture, but HTTP enabled)
+	uploadOnlyMode := *flagInput == "" && !live && *flagHTTP != ""
+
+	// abort if there is no input, no live capture, and no HTTP server
+	if *flagInput == "" && !live && *flagHTTP == "" {
 		printHeader()
-		fmt.Println(ansi.Red + "> nothing to do. need a pcap file with the read flag (-read) or live mode and an interface (-iface)" + ansi.Reset)
+		fmt.Println(ansi.Red + "> nothing to do. need a pcap file with the read flag (-read), live mode and an interface (-iface), or HTTP server (-http)" + ansi.Reset)
+		fmt.Println(ansi.Green + "\nTo start in upload-only mode, simply run: net capture" + ansi.Reset)
+		fmt.Println(ansi.Green + "This will start a local HTTP server at http://localhost:8080 that accepts PCAP file uploads" + ansi.Reset)
 		os.Exit(1)
 	}
 
@@ -537,7 +542,7 @@ func Run() {
 	// Check if input contains wildcards and expand to multiple files
 	// Also handle shell-expanded arguments (multiple files passed on command line)
 	var inputFiles []string
-	if !live && *flagInput != "" {
+	if !live && *flagInput != "" && !uploadOnlyMode {
 		inputFiles, err = expandPcapFiles(*flagInput)
 		if err != nil {
 			log.Fatal("failed to expand input pattern: ", err)
@@ -574,6 +579,17 @@ func Run() {
 
 	// Store original output directory to create subdirectories for each file
 	originalOutDir := *flagOutDir
+
+	// In upload-only mode, default to current working directory if not specified
+	if uploadOnlyMode && originalOutDir == "" {
+		var err error
+		originalOutDir, err = os.Getwd()
+		if err != nil {
+			log.Fatal("failed to get working directory: ", err)
+		}
+		*flagOutDir = originalOutDir
+		log.Printf("[WebUI] Upload-only mode: using current directory as output: %s", originalOutDir)
+	}
 
 	// Convert to absolute path to ensure consistent path handling across the application
 	if originalOutDir != "" {
@@ -620,6 +636,19 @@ func Run() {
 			log.Printf("Failed to start web UI server: %v\n", err)
 		} else {
 			fmt.Printf("\n%sWeb UI available at: %s%s\n\n", ansi.Green, webUIServer.GetURL(), ansi.Reset)
+
+			// In upload-only mode, print helpful message
+			if uploadOnlyMode {
+				printHeader()
+				fmt.Printf("%s========================================%s\n", ansi.Green, ansi.Reset)
+				fmt.Printf("%sUpload-Only Mode Started!%s\n", ansi.Green, ansi.Reset)
+				fmt.Printf("Web UI available at: %s%s%s\n", ansi.Cyan, webUIServer.GetURL(), ansi.Reset)
+				fmt.Printf("Output directory: %s%s%s\n", ansi.Yellow, initialOutDir, ansi.Reset)
+				fmt.Printf("\nUpload PCAP files via the web interface.\n")
+				fmt.Printf("Each file will be analyzed and stored in its own subdirectory.\n")
+				fmt.Printf("Press %sCtrl+C%s to stop the server and exit\n", ansi.Yellow, ansi.Reset)
+				fmt.Printf("%s========================================%s\n\n", ansi.Green, ansi.Reset)
+			}
 		}
 	}
 
@@ -723,6 +752,29 @@ func Run() {
 		if err != nil {
 			log.Fatal(err)
 		}
+	}
+
+	// If in upload-only mode, skip collector initialization and just keep server running
+	if uploadOnlyMode {
+		// Setup signal handler for graceful shutdown
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+		// Wait for interrupt signal
+		<-sigChan
+
+		fmt.Println("\nShutting down web UI server...")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		if webUIServer != nil {
+			if err := webUIServer.Stop(ctx); err != nil {
+				log.Printf("Error stopping web UI server: %v\n", err)
+			}
+		}
+
+		fmt.Println("Server stopped. Goodbye!")
+		return
 	}
 
 	// init collector

@@ -110,7 +110,7 @@ export default function RulesPage() {
       const tagFromQuery = router.query.tag as string;
       if (allTags.includes(tagFromQuery) && !selectedTags.includes(tagFromQuery)) {
         setSelectedTags([tagFromQuery]);
-        setTagsExpanded(true);
+        setTagsExpanded(false);  // Collapse tags to show results directly
         // Remove the query param from URL after applying it
         router.replace('/rules', undefined, { shallow: true });
       }

@@ -28,6 +28,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/dreadl0ck/netcap"
@@ -1557,8 +1558,15 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save uploaded file
-	timestamp := time.Now().Format("20060102-150405")
-	savedFilename := fmt.Sprintf("uploaded-%s-%s", timestamp, filepath.Base(filename))
+	var savedFilename string
+	if s.isServiceMode {
+		// Service mode: add timestamp prefix to avoid conflicts
+		timestamp := time.Now().Format("20060102-150405")
+		savedFilename = fmt.Sprintf("uploaded-%s-%s", timestamp, filepath.Base(filename))
+	} else {
+		// Local mode: use original filename
+		savedFilename = filepath.Base(filename)
+	}
 	inputPath := filepath.Join(uploadsDir, savedFilename)
 
 	outFile, err := os.Create(inputPath)
@@ -1586,7 +1594,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[WebUI] File uploaded successfully: %s (%d bytes)", inputPath, written)
 
-	// Call the upload callback if provided (for processing)
+	// Call the upload callback if provided (for backwards compatibility)
 	s.mu.RLock()
 	callback := s.uploadCallback
 	s.mu.RUnlock()
@@ -1599,11 +1607,79 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 
+	// Queue analysis job for local mode
+	if !s.isServiceMode && s.jobQueue != nil {
+		// Create output directory based on original filename (without extension)
+		// In local mode, savedFilename is the original filename without timestamp prefix
+		baseFilename := filepath.Base(inputPath)
+		// Remove extension to get directory name
+		dirName := strings.TrimSuffix(baseFilename, filepath.Ext(baseFilename))
+
+		// Create output directory in baseOutDir
+		s.mu.RLock()
+		baseOutDir := s.baseOutDir
+		s.mu.RUnlock()
+
+		if baseOutDir == "" {
+			baseOutDir = outDir
+		}
+
+		outputDir := filepath.Join(baseOutDir, dirName)
+
+		// Create the output directory
+		if err := os.MkdirAll(outputDir, 0755); err != nil {
+			log.Printf("[WebUI] Failed to create output directory %s: %v", outputDir, err)
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":   "Failed to create output directory for analysis",
+				"success": false,
+			})
+			return
+		}
+
+		log.Printf("[WebUI] Created output directory for uploaded file: %s", outputDir)
+
+		// Get DPI configuration from server
+		s.mu.RLock()
+		enableDPI := s.dpiConfigured
+		s.mu.RUnlock()
+
+		// Load BPF filter from saved configuration
+		bpfConfig := s.loadBPFConfig()
+
+		// Create analysis job
+		job := &AnalysisJob{
+			SessionID:       savedFilename, // Use filename as session ID in local mode
+			InputFile:       inputPath,
+			OutputDir:       outputDir,
+			EnableDPI:       enableDPI,
+			BPFFilter:       bpfConfig.Filter,
+			IncludeDecoders: "",
+			ExcludeDecoders: "",
+		}
+
+		// Queue the job
+		log.Printf("[WebUI] Queueing analysis job for uploaded file: %s -> %s", inputPath, outputDir)
+		select {
+		case s.jobQueue <- job:
+			atomic.AddInt64(&s.jobsScheduled, 1)
+			log.Printf("[WebUI] Analysis job queued successfully")
+		default:
+			log.Printf("[WebUI] Job queue is full, cannot queue analysis")
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":   "Analysis queue is full, please try again later",
+				"success": false,
+			})
+			return
+		}
+	}
+
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success":  true,
-		"message":  "File uploaded successfully",
+		"message":  "File uploaded successfully and queued for analysis",
 		"filename": savedFilename,
 		"path":     inputPath,
 		"size":     written,
@@ -2112,6 +2188,104 @@ func (s *Server) handleDownloadExtractedFile(w http.ResponseWriter, r *http.Requ
 	// Stream the file to the response
 	if _, err := io.Copy(w, file); err != nil {
 		log.Printf("[WebUI] Error streaming file %s: %v", relativePath, err)
+	}
+}
+
+// handleDownloadInputFile serves PCAP input files for download
+func (s *Server) handleDownloadInputFile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract identifier from URL: /api/files/input/download/{identifier}
+	// The identifier can be a sessionId (service mode) or file path (local mode)
+	identifier := strings.TrimPrefix(r.URL.Path, "/api/files/input/download/")
+	if identifier == "" {
+		http.Error(w, "File identifier required", http.StatusBadRequest)
+		return
+	}
+
+	var filePath string
+	var fileName string
+
+	// In service mode, identifier is sessionId
+	if s.isServiceMode && s.sessionManager != nil {
+		session, ok := s.sessionManager.GetSession(identifier)
+		if !ok {
+			http.Error(w, "Session not found", http.StatusNotFound)
+			return
+		}
+
+		// Check if user has access to this session
+		clientIP := s.getUserIP(r)
+		if !session.IsPreloaded && session.IP != clientIP {
+			http.Error(w, "Access denied", http.StatusForbidden)
+			return
+		}
+
+		filePath = session.InputFile
+		fileName = session.InputFilename
+	} else {
+		// In local mode, identifier is the file path
+		// Security: ensure the file is one of the registered input files
+		s.mu.RLock()
+		found := false
+		for _, inputFile := range s.inputFiles {
+			if inputFile == identifier {
+				found = true
+				filePath = identifier
+				fileName = filepath.Base(identifier)
+				break
+			}
+		}
+		s.mu.RUnlock()
+
+		if !found {
+			http.Error(w, "File not found or access denied", http.StatusForbidden)
+			return
+		}
+	}
+
+	// Check if file exists
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			http.Error(w, "File not found", http.StatusNotFound)
+		} else {
+			log.Printf("[WebUI] Error accessing file %s: %v", filePath, err)
+			http.Error(w, "Error accessing file", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Ensure it's not a directory
+	if fileInfo.IsDir() {
+		http.Error(w, "Cannot download directory", http.StatusBadRequest)
+		return
+	}
+
+	// Open the file
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Printf("[WebUI] Failed to open file %s: %v", filePath, err)
+		http.Error(w, "Failed to open file", http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	// Set headers for download
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fileName))
+	w.Header().Set("Content-Type", "application/vnd.tcpdump.pcap")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
+
+	// Security headers
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+
+	// Stream the file to the response
+	if _, err := io.Copy(w, file); err != nil {
+		log.Printf("[WebUI] Error streaming file %s: %v", filePath, err)
 	}
 }
 

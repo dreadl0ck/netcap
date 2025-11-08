@@ -60,8 +60,18 @@ func (h *sshReader) New(conversation *core.ConversationInfo) core.StreamDecoderI
 
 // Decode parses the stream according to the SSH protocol.
 func (h *sshReader) Decode() {
+	sshLog.Info("SSH Decode() called",
+		zap.String("ident", h.conversation.Ident),
+		zap.Int("dataFragments", len(h.conversation.Data)),
+		zap.String("clientIP", h.conversation.ClientIP),
+		zap.String("serverIP", h.conversation.ServerIP),
+		zap.Int("clientPort", int(h.conversation.ClientPort)),
+		zap.Int("serverPort", int(h.conversation.ServerPort)),
+	)
+	
 	// prevent nil pointer access if decoder is not initialized
 	if Decoder.Writer == nil {
+		sshLog.Error("SSH Decoder.Writer is nil - cannot write SSH audit records!")
 		return
 	}
 
@@ -87,8 +97,66 @@ func (h *sshReader) Decode() {
 	h.searchKexInit(bufio.NewReader(&clientBuf), reassembly.TCPDirClientToServer)
 	h.searchKexInit(bufio.NewReader(&serverBuf), reassembly.TCPDirServerToClient)
 
+	sshLog.Info("SSH decode complete",
+		zap.String("ident", h.conversation.Ident),
+		zap.Int("softwareRecords", len(h.software)),
+		zap.String("clientIdent", h.clientIdent),
+		zap.String("serverIdent", h.serverIdent),
+		zap.Bool("clientKexInit", h.clientKexInit != nil),
+		zap.Bool("serverKexInit", h.serverKexInit != nil),
+	)
+
+	// If we have idents but no KexInit, create audit records for incomplete handshakes
+	if h.clientKexInit == nil && h.serverKexInit == nil {
+		// Create audit records for ident-only connections (incomplete handshakes)
+		if h.clientIdent != "" {
+			err := Decoder.Writer.Write(&types.SSH{
+				Timestamp: h.conversation.FirstClientPacket.UnixNano(),
+				HASSH:     "", // No HASSH without KexInit
+				Flow:      h.conversation.Ident,
+				Ident:     h.clientIdent,
+				Algorithms: "", // No algorithms without KexInit
+				IsClient:   true,
+				Notes:      "Incomplete handshake - no KexInit",
+			})
+			if err != nil {
+				sshLog.Error("failed to write SSH audit record for client ident", zap.Error(err))
+			} else {
+				sshLog.Info("SSH audit record written (client ident-only)",
+					zap.String("ident", h.conversation.Ident),
+					zap.String("clientIdent", h.clientIdent),
+				)
+				atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+			}
+		}
+
+		if h.serverIdent != "" {
+			err := Decoder.Writer.Write(&types.SSH{
+				Timestamp: h.conversation.FirstServerPacket.UnixNano(),
+				HASSH:     "", // No HASSH without KexInit
+				Flow:      utils.ReverseFlowIdent(h.conversation.Ident),
+				Ident:     h.serverIdent,
+				Algorithms: "", // No algorithms without KexInit
+				IsClient:   false,
+				Notes:      "Incomplete handshake - no KexInit",
+			})
+			if err != nil {
+				sshLog.Error("failed to write SSH audit record for server ident", zap.Error(err))
+			} else {
+				sshLog.Info("SSH audit record written (server ident-only)",
+					zap.String("ident", h.conversation.Ident),
+					zap.String("serverIdent", h.serverIdent),
+				)
+				atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+			}
+		}
+	}
+
 	if len(h.software) == 0 {
-		return
+		sshLog.Debug("No SSH software records generated",
+			zap.String("ident", h.conversation.Ident),
+		)
+		// Don't return early anymore - we may have written ident-only audit records
 	}
 
 	// add new audit records or update existing
@@ -130,12 +198,32 @@ func (h *sshReader) processSSHIdent(ident string, entity string) {
 }
 
 func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirection) {
+	dirStr := "client"
+	if dir != reassembly.TCPDirClientToServer {
+		dirStr = "server"
+	}
+	
+	sshLog.Debug("searchKexInit called",
+		zap.String("ident", h.conversation.Ident),
+		zap.String("direction", dirStr),
+		zap.Bool("serverKexInitAlreadySet", h.serverKexInit != nil),
+		zap.Bool("clientKexInitAlreadySet", h.clientKexInit != nil),
+	)
+	
 	if h.serverKexInit != nil && h.clientKexInit != nil {
+		sshLog.Debug("Both KexInit already set, skipping",
+			zap.String("ident", h.conversation.Ident),
+		)
 		return
 	}
 
 	data, err := ioutil.ReadAll(r)
 	if err != nil && !errors.Is(err, io.EOF) {
+		sshLog.Warn("Failed to read data from buffer",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+			zap.Error(err),
+		)
 		fmt.Println(err)
 
 		return
@@ -143,13 +231,28 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 	// fmt.Println(dir, len(data), "\n", hex.Dump(data))
 
 	if len(data) == 0 {
+		sshLog.Debug("No data to parse",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+		)
 		return
 	}
+	
+	sshLog.Debug("Read data from buffer",
+		zap.String("ident", h.conversation.Ident),
+		zap.String("direction", dirStr),
+		zap.Int("dataLen", len(data)),
+	)
 
 	// length of the ident if it was found
 	offset := 0
 
 	if h.clientIdent == "" || h.serverIdent == "" { // read the SSH ident from the buffer
+		sshLog.Debug("Parsing SSH ident",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+		)
+		
 		var (
 			br       = bytes.NewReader(data)
 			b        byte
@@ -163,9 +266,15 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 				break
 			}
 
-			if lastByte == 0x0d && b == 0x0a {
+			// SSH ident can end with either \n or \r\n
+			// Check for \n (LF) alone
+			if b == 0x0a {
 				offset = len(ident) + 1
-
+				// Don't include the \r if it was the last byte
+				if lastByte == 0x0d && len(ident) > 0 {
+					ident = ident[:len(ident)-1]
+					offset = len(ident) + 2 // +2 because we consumed \r\n
+				}
 				break
 			}
 
@@ -175,37 +284,81 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 		if dir == reassembly.TCPDirClientToServer {
 			h.clientIdent = strings.TrimSpace(string(ident))
+			sshLog.Info("Parsed client SSH ident",
+				zap.String("ident", h.conversation.Ident),
+				zap.String("sshIdent", h.clientIdent),
+				zap.Int("offset", offset),
+			)
 			h.processSSHIdent(h.clientIdent, "client")
 		} else {
 			h.serverIdent = strings.TrimSpace(string(ident))
+			sshLog.Info("Parsed server SSH ident",
+				zap.String("ident", h.conversation.Ident),
+				zap.String("sshIdent", h.serverIdent),
+				zap.Int("offset", offset),
+			)
 			h.processSSHIdent(h.serverIdent, "server")
 		}
 	}
 
 	// search the entire data fragment for the KexInit
+	kexInitFound := false
 	for i, b := range data {
 		// 0x14 marks the beginning of the SSH KexInitMsg
 		if !(b == 0x14) {
 			continue
 		}
 
+		sshLog.Debug("Found KexInit marker (0x14)",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+			zap.Int("position", i),
+			zap.Int("offset", offset),
+		)
+
 		// fmt.Println(dir, offset, len(data), i-1, "data[",offset,":",i-1,"]")
 		// fmt.Println(hex.Dump(data))
 
 		// check if length would have correct length
 		if (i-1)-offset != 4 {
+			sshLog.Debug("Invalid length field size",
+				zap.String("ident", h.conversation.Ident),
+				zap.String("direction", dirStr),
+				zap.Int("lengthFieldSize", (i-1)-offset),
+				zap.Int("expected", 4),
+			)
 			break
 		}
 
 		// check if array access is safe
 		if offset > i-1 || len(data) <= i-1 {
+			sshLog.Debug("Array access unsafe",
+				zap.String("ident", h.conversation.Ident),
+				zap.String("direction", dirStr),
+				zap.Int("offset", offset),
+				zap.Int("i-1", i-1),
+				zap.Int("dataLen", len(data)),
+			)
 			break
 		}
 
 		length := int(binary.BigEndian.Uint32(data[offset : i-1]))
 		padding := int(data[i-1])
+		
+		sshLog.Debug("Parsing SSH packet",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+			zap.Int("packetLength", length),
+			zap.Int("padding", padding),
+		)
 
 		if len(data) < i+length-padding-1 {
+			sshLog.Debug("Insufficient data for KexInit",
+				zap.String("ident", h.conversation.Ident),
+				zap.String("direction", dirStr),
+				zap.Int("dataLen", len(data)),
+				zap.Int("required", i+length-padding-1),
+			)
 			// fmt.Println("break: len(data) < i+length-padding-1")
 			break
 		}
@@ -217,8 +370,20 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 		err = Unmarshal(data[i:i+length-padding-1], &init)
 		if err != nil {
+			sshLog.Warn("Failed to unmarshal KexInit",
+				zap.String("ident", h.conversation.Ident),
+				zap.String("direction", dirStr),
+				zap.Error(err),
+			)
 			fmt.Println(err)
+			break
 		}
+		
+		kexInitFound = true
+		sshLog.Info("Successfully parsed KexInit",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+		)
 
 		// spew.Dump("found SSH KexInit", h.parent.ident, init)
 		hash, raw := computeHASSH(init)
@@ -241,6 +406,12 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			})
 			if err != nil {
 				sshLog.Error("failed to flush ssh audit record", zap.Error(err))
+			} else {
+				sshLog.Info("SSH audit record written (client)",
+					zap.String("ident", h.conversation.Ident),
+					zap.String("hassh", hash),
+					zap.String("clientIdent", h.clientIdent),
+				)
 			}
 
 			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
@@ -260,6 +431,12 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			})
 			if err != nil {
 				sshLog.Error("failed to flush ssh audit record", zap.Error(err))
+			} else {
+				sshLog.Info("SSH audit record written (server)",
+					zap.String("ident", h.conversation.Ident),
+					zap.String("hassh", hash),
+					zap.String("serverIdent", h.serverIdent),
+				)
 			}
 
 			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
@@ -289,6 +466,14 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 		}
 
 		break
+	}
+	
+	if !kexInitFound {
+		sshLog.Warn("No KexInit found in stream",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+			zap.Int("dataLen", len(data)),
+		)
 	}
 }
 

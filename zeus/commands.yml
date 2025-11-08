@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.8.0
+    VERSION: 0.8.1
 
 # command data
 commands:
@@ -340,7 +340,7 @@ commands:
 
             # lsof -ti:8080 | xargs kill -9
             sleep 2 && open http://localhost:8080 &
-            net capture -y -debug -dpi -read 2017-09-19-traffic-analysis-exercise.pcap -out 2017-09-19-traffic-analysis-exercise
+            net capture -y -debug
 
 
     pack-dbs-tarball:
@@ -532,7 +532,15 @@ commands:
     # count lines of code
     cloc:
         description: count lines of code for the project
-        exec: cloc --exclude-ext pb.go,py,rb,js,cpp,cc,rs,java,swift,c,cs,h defaults env analyze logger delimited cmd metrics label types utils io collector encoder decoder maltego resolvers dpi dbs rule
+        exec: |
+            cloc . \
+                --exclude-ext=pb.go \
+                --exclude-dir=types/python,types/java,types/swift,types/rust,types/cpp,types/csharp,types/js \
+                --exclude-dir=cmd/capture/webui/frontend/out,cmd/capture/webui/frontend/.next,cmd/capture/webui/frontend/node_modules \
+                --exclude-dir=dist,dist-linux \
+                --exclude-dir=pcaps,tests,test-output,test-params,data \
+                --exclude-dir=bin,FlameGraph \
+                --exclude-dir=node_modules,.git
 
     # generate protocol buffers for development
     gen-proto-dev:

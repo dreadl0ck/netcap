@@ -174,6 +174,10 @@ func (c *Collector) SetFilterExpression(expression string, recordType types.Type
 // SetRulesEngine sets the rules engine for alert generation.
 func (c *Collector) SetRulesEngine(engine *rules.Engine) {
 	c.rulesEngine = engine
+	// Connect the performance tracker to the rules engine
+	if c.perfTracker != nil {
+		engine.SetPerformanceTracker(c.perfTracker)
+	}
 	c.log.Info("rules engine enabled")
 }
 

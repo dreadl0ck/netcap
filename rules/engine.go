@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/netcap/performance"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -37,6 +38,9 @@ type Engine struct {
 
 	// Threshold tracking
 	thresholdTrackers map[string]*thresholdTracker // map[ruleName]tracker
+
+	// Performance tracking
+	perfTracker *performance.Tracker
 }
 
 // rateCounter tracks alert counts for rate limiting.
@@ -97,6 +101,13 @@ func (e *Engine) SetRateLimit(limit int) {
 	e.rateLimit = limit
 }
 
+// SetPerformanceTracker sets the performance tracker for collecting metrics.
+func (e *Engine) SetPerformanceTracker(tracker *performance.Tracker) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.perfTracker = tracker
+}
+
 // Evaluate evaluates all applicable rules against an audit record.
 // It returns the number of alerts generated.
 func (e *Engine) Evaluate(record types.AuditRecord) (int, error) {
@@ -118,46 +129,71 @@ func (e *Engine) Evaluate(record types.AuditRecord) (int, error) {
 			continue
 		}
 
+		// Start timing for this rule
+		ruleStart := time.Now()
+
 		// Evaluate the rule
 		alert, err := EvaluateRule(rule, record)
 		if err != nil {
 			return alertCount, fmt.Errorf("error evaluating rule %s: %w", rule.Name, err)
 		}
 
-		if alert == nil {
-			continue
-		}
+		matched := alert != nil
+		alertGenerated := false
 
-		// Check threshold - if rule has threshold > 1, track matches
-		if rule.Threshold > 1 {
-			thresholdReached := e.checkThreshold(rule)
-			if !thresholdReached {
-				// Threshold not reached yet, don't generate alert
+		if alert != nil {
+			// Check threshold - if rule has threshold > 1, track matches
+			if rule.Threshold > 1 {
+				thresholdReached := e.checkThreshold(rule)
+				if !thresholdReached {
+					// Threshold not reached yet, don't generate alert
+					matched = true
+					alertGenerated = false
+					if e.perfTracker != nil {
+						e.perfTracker.RecordRuleExecution(rule.Name, time.Since(ruleStart), matched, alertGenerated)
+					}
+					continue
+				}
+				// For threshold-based rules, skip deduplication since the threshold
+				// itself provides rate limiting. The threshold tracker already ensures
+				// we don't alert too frequently, and we want to alert each time the
+				// threshold is reached (not just once per dedup window).
+			} else {
+				// Check deduplication only for non-threshold rules
+				if e.isDuplicate(alert) {
+					matched = true
+					alertGenerated = false
+					if e.perfTracker != nil {
+						e.perfTracker.RecordRuleExecution(rule.Name, time.Since(ruleStart), matched, alertGenerated)
+					}
+					continue
+				}
+			}
+
+			// Check rate limiting
+			if e.isRateLimited(rule.Name) {
+				matched = true
+				alertGenerated = false
+				if e.perfTracker != nil {
+					e.perfTracker.RecordRuleExecution(rule.Name, time.Since(ruleStart), matched, alertGenerated)
+				}
 				continue
 			}
-			// For threshold-based rules, skip deduplication since the threshold
-			// itself provides rate limiting. The threshold tracker already ensures
-			// we don't alert too frequently, and we want to alert each time the
-			// threshold is reached (not just once per dedup window).
-		} else {
-			// Check deduplication only for non-threshold rules
-			if e.isDuplicate(alert) {
-				continue
+
+			// Write the alert
+			err = e.alertWriter.WriteAlert(alert)
+			if err != nil {
+				return alertCount, fmt.Errorf("error writing alert: %w", err)
 			}
+
+			alertCount++
+			alertGenerated = true
 		}
 
-		// Check rate limiting
-		if e.isRateLimited(rule.Name) {
-			continue
+		// Record per-rule metrics if performance tracker is set
+		if e.perfTracker != nil {
+			e.perfTracker.RecordRuleExecution(rule.Name, time.Since(ruleStart), matched, alertGenerated)
 		}
-
-		// Write the alert
-		err = e.alertWriter.WriteAlert(alert)
-		if err != nil {
-			return alertCount, fmt.Errorf("error writing alert: %w", err)
-		}
-
-		alertCount++
 	}
 
 	return alertCount, nil

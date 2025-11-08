@@ -22,6 +22,7 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import MemoryIcon from '@mui/icons-material/Memory';
 import StopIcon from '@mui/icons-material/Stop';
 import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked';
+import PublicIcon from '@mui/icons-material/Public';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -427,6 +428,45 @@ export default function Dashboard() {
             </Card>
           </Grid>
         </Grid>
+
+        {/* Geolocation Chart Section */}
+        {totalAuditRecords > 0 && (
+          <Box mt={4}>
+            <Card>
+              <CardContent>
+                <Box display="flex" alignItems="center" gap={1} mb={2}>
+                  <PublicIcon color="primary" />
+                  <Typography variant="h6">
+                    Global IP Geolocation Distribution
+                  </Typography>
+                </Box>
+                <Box 
+                  sx={{ 
+                    width: '100%', 
+                    height: 600,
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    backgroundColor: '#1e1e1e'
+                  }}
+                >
+                  <iframe
+                    src="/api/visualize/geo-all?showLegend=false"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      border: 'none',
+                      display: 'block'
+                    }}
+                    title="Global Geolocation Chart"
+                  />
+                </Box>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  Aggregated geolocation data from all IPProfiles across all captures
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
 
         {/* System Information Section */}
         {systemInfo && (

@@ -27,6 +27,13 @@ import (
 
 var sshLog = zap.NewNop()
 
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 // Decoder for protocol analysis and writing audit records to disk.
 var Decoder = &decoder.StreamDecoder{
 	Type:        types.Type_NC_SSH,
@@ -42,7 +49,20 @@ var Decoder = &decoder.StreamDecoder{
 		return err
 	},
 	CanDecode: func(client, server []byte) bool {
-		return bytes.Contains(server, sshServiceName)
+		result := bytes.Contains(server, sshServiceName)
+		if result {
+			sshLog.Info("SSH traffic detected - CanDecode matched",
+				zap.Int("clientLen", len(client)),
+				zap.Int("serverLen", len(server)),
+				zap.String("serverPreview", string(server[:min(len(server), 100)])),
+			)
+		} else {
+			sshLog.Debug("SSH CanDecode check failed",
+				zap.Int("clientLen", len(client)),
+				zap.Int("serverLen", len(server)),
+			)
+		}
+		return result
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {
 		return sshLog.Sync()

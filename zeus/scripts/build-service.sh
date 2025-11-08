@@ -179,3 +179,6 @@ echo ""
 echo "Access the service at: http://localhost:7070"
 
 
+cd $HOME/go/src/github.com/dreadl0ck/serverconfig
+zeus deploy service=netcap-try
+zeus logs service=netcap-try

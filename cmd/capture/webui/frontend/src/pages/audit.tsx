@@ -417,6 +417,7 @@ export default function AuditRecords() {
   const [loadingFields, setLoadingFields] = useState(false);
   const [valuesSampleInfo, setValuesSampleInfo] = useState<{ sampleSize: number; maxPerField: number; recordsScanned: number } | null>(null);
   const [autocompleteOpen, setAutocompleteOpen] = useState(false);
+  const [highlightedOption, setHighlightedOption] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'ui' | 'json'>('json');
 
   // Load field suggestions and values when record type is selected
@@ -1217,16 +1218,16 @@ export default function AuditRecords() {
                 fullWidth
                 open={autocompleteOpen}
                 onOpen={() => {
-                  const suggestions = getContextualSuggestions(filterExpression);
-                  // Only open if there are suggestions
-                  if (suggestions.length > 0) {
-                    setAutocompleteOpen(true);
-                  }
+                  // Don't auto-open - only open via Tab key
                 }}
                 onClose={(event, reason) => {
-                  // Don't close on blur if we're handling TAB
-                  if (reason === 'blur') return;
+                  // Close on all reasons including blur (clicking outside)
                   setAutocompleteOpen(false);
+                  setHighlightedOption(null);
+                }}
+                onHighlightChange={(event, option, reason) => {
+                  // Track the currently highlighted option for Tab key selection
+                  setHighlightedOption(option);
                 }}
                 options={getContextualSuggestions(filterExpression)}
                 value={filterExpression}
@@ -1236,27 +1237,22 @@ export default function AuditRecords() {
                     const updatedExpression = insertSuggestion(filterExpression, newValue);
                     setFilterExpression(updatedExpression);
                     
-                    // Reopen dropdown with new suggestions after a short delay
-                    setTimeout(() => {
-                      const newSuggestions = getContextualSuggestions(updatedExpression);
-                      if (newSuggestions.length > 0) {
-                        setAutocompleteOpen(true);
-                      }
-                    }, 100);
+                    // Close the dropdown after selection
+                    setAutocompleteOpen(false);
+                    setHighlightedOption(null);
+                    
+                    // Reopen dropdown with new suggestions after a short delay (only via Tab)
+                    // Remove auto-reopen behavior
                   }
                 }}
                 onInputChange={(event, newValue, reason) => {
                   if (reason === 'input') {
-                    // User is typing
+                    // User is typing - update value but DON'T auto-open dropdown
                     setFilterExpression(newValue);
-                    // Auto-open dropdown when typing
-                    const suggestions = getContextualSuggestions(newValue);
-                    if (suggestions.length > 0) {
-                      setAutocompleteOpen(true);
-                    }
                   } else if (reason === 'clear') {
                     setFilterExpression('');
                     setAutocompleteOpen(false);
+                    setHighlightedOption(null);
                   }
                 }}
                 loading={loadingFields}
@@ -1286,7 +1282,21 @@ export default function AuditRecords() {
                         return;
                       }
                       
-                      // Handle TAB key for autocomplete
+                      // Handle Enter key - close dropdown if open, otherwise apply filter
+                      if (e.key === 'Enter') {
+                        if (autocompleteOpen) {
+                          // Dropdown is open - let Autocomplete handle selection, then close
+                          // The onChange handler will close it
+                          return;
+                        } else {
+                          // Dropdown is closed - apply filter
+                          e.preventDefault();
+                          handleApplyFilter();
+                        }
+                        return;
+                      }
+                      
+                      // Handle TAB key for autocomplete - ONLY way to open dropdown
                       if (e.key === 'Tab' && !e.shiftKey) {
                         e.preventDefault();
                         e.stopPropagation();
@@ -1294,14 +1304,13 @@ export default function AuditRecords() {
                         const suggestions = getContextualSuggestions(filterExpression);
                         
                         if (autocompleteOpen && suggestions.length > 0) {
-                          // Dropdown is open - select the highlighted option
-                          // The onChange handler will be called automatically by Autocomplete
-                          // We just need to trigger the selection
-                          const firstSuggestion = suggestions[0];
-                          const updatedExpression = insertSuggestion(filterExpression, firstSuggestion);
+                          // Dropdown is open - select the currently highlighted option (or first if none highlighted)
+                          const suggestionToUse = highlightedOption || suggestions[0];
+                          const updatedExpression = insertSuggestion(filterExpression, suggestionToUse);
                           setFilterExpression(updatedExpression);
+                          setHighlightedOption(null);
                           
-                          // Reopen with new suggestions
+                          // Keep dropdown open with new suggestions
                           setTimeout(() => {
                             const newSuggestions = getContextualSuggestions(updatedExpression);
                             if (newSuggestions.length > 0) {
@@ -1310,18 +1319,9 @@ export default function AuditRecords() {
                               setAutocompleteOpen(false);
                             }
                           }, 100);
-                        } else if (suggestions.length === 1) {
-                          // No dropdown, but we have a single suggestion
-                          const newExpression = insertSuggestion(filterExpression, suggestions[0]);
-                          setFilterExpression(newExpression);
-                          
-                          // Check for new suggestions
-                          setTimeout(() => {
-                            const newSuggestions = getContextualSuggestions(newExpression);
-                            if (newSuggestions.length > 0) {
-                              setAutocompleteOpen(true);
-                            }
-                          }, 100);
+                        } else if (suggestions.length > 0) {
+                          // Dropdown is closed but we have suggestions - open it
+                          setAutocompleteOpen(true);
                         }
                         
                         // Keep focus and cursor position
@@ -1331,11 +1331,6 @@ export default function AuditRecords() {
                             inputElement.focus();
                           }
                         });
-                      } else if (e.key === 'Enter' && !autocompleteOpen) {
-                        // Only execute filter if dropdown is NOT open
-                        // If dropdown is open, let Autocomplete handle it (select suggestion)
-                        e.preventDefault();
-                        handleApplyFilter();
                       }
                     }}
                     InputProps={{
@@ -1368,8 +1363,8 @@ export default function AuditRecords() {
                       activeFilter 
                         ? `Active filter: ${activeFilter}` 
                         : valuesSampleInfo
-                        ? `Type field names or values. TAB to autocomplete. CMD+ENTER to execute. Values sampled from ${valuesSampleInfo.recordsScanned} records (max ${valuesSampleInfo.maxPerField} per field).`
-                        : "Start typing field names or functions for suggestions. TAB to autocomplete, CMD+ENTER to execute."
+                        ? `Press TAB to show suggestions, ENTER to apply filter. CMD+ENTER to execute immediately. Values sampled from ${valuesSampleInfo.recordsScanned} records (max ${valuesSampleInfo.maxPerField} per field).`
+                        : "Press TAB to show autocomplete suggestions, ENTER to apply filter, CMD+ENTER to execute immediately."
                     }
                   />
                 )}

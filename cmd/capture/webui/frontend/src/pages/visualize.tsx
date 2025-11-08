@@ -30,6 +30,9 @@ import {
   BubbleChart as GraphIcon,
   Label as LabelIcon,
   LabelOff as LabelOffIcon,
+  Public as GeoIcon,
+  ScatterPlot as Scatter3DIcon,
+  Hub as HostsGraphIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import { api, formatBytes, type ProtocolHierarchyResponse } from '@/lib/api';
@@ -42,6 +45,9 @@ const CHART_TYPES = [
   { value: 'treemap', label: 'Treemap', icon: <TreemapIcon /> },
   { value: 'bar3d', label: '3D Bar Chart', icon: <Bar3DIcon /> },
   { value: 'graph', label: 'Network Graph', icon: <GraphIcon /> },
+  { value: 'geo', label: 'Geo Map', icon: <GeoIcon /> },
+  { value: 'scatter3d', label: '3D Scatter', icon: <Scatter3DIcon /> },
+  { value: 'hosts-graph', label: 'Hosts Graph', icon: <HostsGraphIcon /> },
 ];
 
 export default function Visualize() {
@@ -318,6 +324,12 @@ export default function Visualize() {
           return '/api/visualize/bar3d';
         case 'graph':
           return '/api/visualize/graph';
+        case 'geo':
+          return '/api/visualize/geo';
+        case 'scatter3d':
+          return '/api/visualize/scatter3d';
+        case 'hosts-graph':
+          return '/api/visualize/hosts-graph';
         default:
           return null;
       }
@@ -539,7 +551,7 @@ export default function Visualize() {
               </>
             )}
 
-            {/* ECharts-based visualizations (Treemap, Bar3D, Graph) */}
+            {/* ECharts-based visualizations (Treemap, Bar3D, Graph, Geo, Scatter3D, Hosts Graph) */}
             {chartUrl && (
               <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <Box sx={{ flex: 1, position: 'relative', minHeight: 400 }}>

@@ -143,6 +143,10 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		// reset decoder stat in case it is reinitialized at runtime.
 		d.(*decoder.StreamDecoder).NumRecordsWritten = 0
 
+		// Log which decoders are being initialized
+		log.Printf("[StreamDecoder] Initializing stream decoder: %s (type: %s)", 
+			d.GetName(), d.GetType())
+
 		wg.Add(1)
 
 		go func(dec core.StreamDecoderAPI) {
@@ -195,6 +199,9 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 				log.Fatal(errors.Wrap(errInit, "failed to write header for audit record "+dec.GetName()))
 			}
 
+			log.Printf("[StreamDecoder] Successfully initialized %s decoder (writer: %v, type: %s)", 
+				dec.GetName(), w != nil, dec.GetType())
+
 			// append to packet decoders slice
 			mu.Lock()
 			decoders = append(decoders, dec)
@@ -206,7 +213,12 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 
 	wg.Wait()
 
-	// TODO: log to decoderLog
+	// Log summary of initialized decoders
+	log.Printf("[StreamDecoder] Stream decoder initialization complete: %d decoders ready", len(decoders))
+	for _, dec := range decoders {
+		log.Printf("[StreamDecoder]   - %s (type: %s, transport: %s)", 
+			dec.GetName(), dec.GetType(), dec.Transport())
+	}
 
 	return decoders, nil
 }

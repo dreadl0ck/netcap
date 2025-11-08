@@ -315,13 +315,23 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 	// reorder the stream fragments
 	t.reorder(ac, firstFlow)
 
-	reassemblyLog.Debug("ReassemblyComplete",
+	clientSaved := false
+	serverSaved := false
+	if t.client != nil {
+		clientSaved = t.client.Saved()
+	}
+	if t.server != nil {
+		serverSaved = t.server.Saved()
+	}
+
+	reassemblyLog.Info("ReassemblyComplete called",
 		zap.String("ident", t.ident),
 		zap.String("reason", reason),
 		zap.Bool("clientIsNil", t.client == nil),
-		zap.Bool("clientSaved:", t.client.Saved()),
+		zap.Bool("clientSaved", clientSaved),
 		zap.Bool("serverIsNil", t.server == nil),
-		zap.Bool("serverSaved:", t.server.Saved()),
+		zap.Bool("serverSaved", serverSaved),
+		zap.Int("mergedFragments", len(t.merged)),
 	)
 
 	ti := time.Now()
@@ -331,6 +341,11 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		t.client.MarkSaved()
 
 		t.sortAndMergeFragments()
+
+		reassemblyLog.Info("Processing client stream - will call decode()",
+			zap.String("ident", t.ident),
+			zap.Int("mergedFragments", len(t.merged)),
+		)
 
 		// save the full conversation to disk if enabled
 		err := streamutils.SaveConversation("TCP", t.merged, t.client.Ident(), t.client.FirstPacket(), t.client.Transport())
@@ -343,6 +358,12 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		// this needs to be invoked only once, and since ReassemblyComplete is invoked for each side of the connection
 		// decode should be called either when processing the client or the server stream
 		t.decode()
+	} else {
+		reassemblyLog.Debug("Skipping decode() call",
+			zap.String("ident", t.ident),
+			zap.Bool("serverIsNil", t.server == nil),
+			zap.Bool("clientAlreadySaved", t.client != nil && t.client.Saved()),
+		)
 	}
 
 	if t.server != nil && !t.server.Saved() {
@@ -385,23 +406,62 @@ func (t *tcpConnection) decode() {
 		ServerPort:        utils.DecodePort(t.client.Transport().Dst().Raw()),
 	}
 
+	serverPort := utils.DecodePort(t.server.Transport().Dst().Raw())
+	reassemblyLog.Debug("TCP decode() - attempting decoder selection",
+		zap.String("ident", t.ident),
+		zap.Int("serverPort", int(serverPort)),
+		zap.Int("clientDataLen", len(cr)),
+		zap.Int("serverDataLen", len(sr)),
+		zap.Int("mergedFragments", len(t.merged)),
+	)
+
 	// make a good first guess based on the destination port of the connection
-	if sd, exists := stream.DefaultStreamDecoders[utils.DecodePort(t.server.Transport().Dst().Raw())]; exists {
+	if sd, exists := stream.DefaultStreamDecoders[serverPort]; exists {
+		reassemblyLog.Debug("Found decoder for port",
+			zap.String("ident", t.ident),
+			zap.Int("port", int(serverPort)),
+			zap.String("decoder", sd.GetName()),
+		)
 		if sd.Transport() == core.TCP || sd.Transport() == core.All {
 			if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
 				t.decoder = sd.GetReaderFactory().New(conv)
 				found = true
+				reassemblyLog.Info("Stream decoder selected by port",
+					zap.String("ident", t.ident),
+					zap.String("decoder", sd.GetName()),
+					zap.Int("port", int(serverPort)),
+				)
+			} else {
+				reassemblyLog.Debug("Decoder rejected stream by CanDecode",
+					zap.String("ident", t.ident),
+					zap.String("decoder", sd.GetName()),
+					zap.Int("port", int(serverPort)),
+				)
 			}
 		}
+	} else {
+		reassemblyLog.Debug("No decoder registered for port",
+			zap.String("ident", t.ident),
+			zap.Int("port", int(serverPort)),
+		)
 	}
 
 	// if no stream decoder for the port was found, or the stream decoder did not match
 	// try all available decoders and use the first one that matches
 	if !found {
-		for _, sd := range stream.DefaultStreamDecoders {
+		reassemblyLog.Debug("Trying all available decoders",
+			zap.String("ident", t.ident),
+			zap.Int("availableDecoders", len(stream.DefaultStreamDecoders)),
+		)
+		for port, sd := range stream.DefaultStreamDecoders {
 			if sd.Transport() == core.TCP || sd.Transport() == core.All {
 				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
 					t.decoder = sd.GetReaderFactory().New(conv)
+					reassemblyLog.Info("Stream decoder selected by fallback scan",
+						zap.String("ident", t.ident),
+						zap.String("decoder", sd.GetName()),
+						zap.Int("registeredPort", int(port)),
+					)
 					break
 				}
 			}
@@ -412,10 +472,25 @@ func (t *tcpConnection) decode() {
 	if t.decoder != nil {
 		ti := time.Now()
 
+		reassemblyLog.Info("Calling decoder.Decode()",
+			zap.String("ident", t.ident),
+			zap.String("decoderType", reflect.TypeOf(t.decoder).String()),
+		)
+
 		// call the associated decoder
 		t.decoder.Decode()
 
 		tcpStreamDecodeTime.WithLabelValues(reflect.TypeOf(t.decoder).String()).Set(float64(time.Since(ti).Nanoseconds()))
+		
+		reassemblyLog.Info("Decoder.Decode() completed",
+			zap.String("ident", t.ident),
+			zap.Duration("duration", time.Since(ti)),
+		)
+	} else {
+		reassemblyLog.Debug("No decoder selected for stream",
+			zap.String("ident", t.ident),
+			zap.Int("serverPort", int(serverPort)),
+		)
 	}
 }
 

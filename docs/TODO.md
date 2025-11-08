@@ -1,121 +1,34 @@
 # TODOs
 
-netcap-try-1  | 2025-11-05T11:53:55.144412918Z 2025/11/05 11:53:55 [DPI] Reset() called, disabled=false
-netcap-try-1  | 2025-11-05T11:53:55.144417196Z 2025/11/05 11:53:55 [DPI] Resetting DPI state with modules:
-netcap-try-1  | 2025-11-05T11:53:55.190402934Z 2025/11/05 11:53:55 [DPI] Reset() returning
-netcap-try-1  | 2025-11-05T11:53:55.245001582Z 2025/11/05 11:53:55 [WebUI] Memory after cleanup (session 9c12dcde77a5053680fe40aab9c8da6e): Heap Alloc=974 MB, Heap Sys=1.4 GB, Goroutines=10
-netcap-try-1  | 2025-11-05T11:53:55.245036016Z 2025/11/05 11:53:55 [WebUI] Memory cleanup completed for session 9c12dcde77a5053680fe40aab9c8da6e
-netcap-try-1  | 2025-11-05T11:53:55.246852676Z 2025/11/05 11:53:55 [WebUI] Job processing completed: job 1/2, session=9c12dcde77a5053680fe40aab9c8da6e
-netcap-try-1  | 2025-11-05T11:53:55.246874687Z 2025/11/05 11:53:55 [WebUI] Job received from queue: processing job 2/482, session=ed02b4cd33de554c5e9457e0befec086, file=/data/netcap-service/pcaps/ssh_unidirectional.pcap
-netcap-try-1  | 2025-11-05T11:53:55.246897580Z 2025/11/05 11:53:55 [WebUI] Starting in-process analysis for session ed02b4cd33de554c5e9457e0befec086
-netcap-try-1  | 2025-11-05T11:53:55.246902860Z 2025/11/05 11:53:55 [SessionManager] Updating session ed02b4cd33de554c5e9457e0befec086 status: queued -> processing
-netcap-try-1  | 2025-11-05T11:53:55.246908080Z 2025/11/05 11:53:55 [WebUI] Memory before analysis (session ed02b4cd33de554c5e9457e0befec086): Heap Alloc=974 MB, Heap Sys=1.4 GB, Goroutines=10
-netcap-try-1  | 2025-11-05T11:53:55.257466261Z WARNING: lpi_init_library has already been called
-netcap-try-1  | 2025-11-05T11:53:57.223571822Z SIGSEGV: segmentation violation
-netcap-try-1  | 2025-11-05T11:53:57.223659796Z PC=0x7fca283536d0 m=7 sigcode=1 addr=0x7fc9e0478950
-netcap-try-1  | 2025-11-05T11:53:57.223669854Z signal arrived during cgo execution
-netcap-try-1  | 2025-11-05T11:53:57.223676096Z
-netcap-try-1  | 2025-11-05T11:53:57.223681537Z goroutine 21 gp=0xc0000f4380 m=7 mp=0xc0000a0008 [syscall]:
-netcap-try-1  | 2025-11-05T11:53:57.223687718Z runtime.cgocall(0x175cc90, 0xc0007df280)
-netcap-try-1  | 2025-11-05T11:53:57.223694060Z 	/usr/local/go/src/runtime/cgocall.go:167 +0x4b fp=0xc0007df258 sp=0xc0007df220 pc=0x481d8b
-netcap-try-1  | 2025-11-05T11:53:57.223708647Z github.com/dreadl0ck/go-dpi/modules/wrappers._Cfunc_ndpiDestroy()
-netcap-try-1  | 2025-11-05T11:53:57.223718095Z 	_cgo_gotypes.go:186 +0x3a fp=0xc0007df280 sp=0xc0007df258 pc=0x121c61a
-netcap-try-1  | 2025-11-05T11:53:57.223744625Z github.com/dreadl0ck/go-dpi/modules/wrappers.NewNDPIWrapper.func2()
-netcap-try-1  | 2025-11-05T11:53:57.223752048Z 	/go-dpi/modules/wrappers/nDPI_wrapper.go:541 +0xf fp=0xc0007df290 sp=0xc0007df280 pc=0x121df6f
-netcap-try-1  | 2025-11-05T11:53:57.223758280Z github.com/dreadl0ck/go-dpi/modules/wrappers.(*NDPIWrapper).DestroyWrapper(0x12149fd?)
-netcap-try-1  | 2025-11-05T11:53:57.223772737Z 	/go-dpi/modules/wrappers/nDPI_wrapper.go:583 +0x16 fp=0xc0007df2a0 sp=0xc0007df290 pc=0x121d536
-netcap-try-1  | 2025-11-05T11:53:57.223780041Z github.com/dreadl0ck/go-dpi/modules/wrappers.(*WrapperModule).Destroy(0xc04dda4580?)
-netcap-try-1  | 2025-11-05T11:53:57.223786854Z 	/go-dpi/modules/wrappers/wrappers.go:89 +0x2f fp=0xc0007df2c8 sp=0xc0007df2a0 pc=0x121bd8f
-netcap-try-1  | 2025-11-05T11:53:57.223793807Z github.com/dreadl0ck/go-dpi.Destroy()
+- DHCP fingerprinting results for DeviceProfile and IPProfile
+- update dbs
+  - dbs: TorDB (torlookup) databases
+    - https://www.dan.me.uk/tornodes
+    - https://github.com/alireza-rezaee/tor-nodes?tab=readme-ov-file
 
-
-
-
-check OOM killed: sudo dmesg -T | grep -i "killed process"
-
-check for C mem usage: LD_PRELOAD=/usr/lib/libtcmalloc.so <your_program>
-
-check C resource cleanup in go-dpi
-
-remove field filtering count collection in backend - explore page show fields
-
-logging cleanup
-
-audit records page layer order
-
-FIX autompletion: close suggestion dropdown when user clicks enter! only open when activated with tab, maybe close after a few seconds of no action?
-rules add support for triggering alert when a certain threshold is reached (eg rule triggered 100 times -> alert)
-
-
-now integrate into capture command: right after audit record is created, check it against filter and discard if not matching. Then match against any rules for that type and fire alert if it matches rule.
-
-webUI: add Rule page, where rules can be created, edited (with syntax highlighting for expressions!) and deleted. Add Alerts page where are fired Alerts will be displayed.
-
-Collect performance metrics for performance.log about filter and rule execution times
-
-
-load rules/examples and enable filtering by tag in UI
-
-
-review the entire implementation for potential issues
-
-update engine: rules / filters need to be executed in batches so that large amounts of data can be processed.
-
-Alert: eg: any credential audit record
-
-Audit records page: view records: only show max 500 results, render JSON data, display unix timestamp human readable
-
-------
-
-implement bug reporting in local mode
-cleanup old service directory
-
-add detailed field descriptions for each protocol and show in explore view when selecting a field
-
-netcap core should produce info which fields contain data for the audit records, so that UI can use this only show fields that make sense for filtering, without having to parse the entire data again.
-
-always allow to drag and drop files for upload on the Analyze menu item, even if user is on a different page. Switch to analyze page automatiaclly and start upload
-
-bpf filter doesnt seem to be applied correctly, debug
-
-add local dev mode for webUI
-
-Visualize and Explore Page: add toggle to turn Legend on / off
-
-DHCP fingerprinting results for DeviceProfile and IPProfile
-
-geolocation chart
-
-visualize internal VS external IPs in dump
-
-merge local and service mode servers
-
-expr for filtering audit records
-
----
-
-for local builds always show the short commit hash to the version embedded in the binary in the webUI
-
-try-service: crash reporting mechanism: when the service panics and crashes, we need the full service log, and all netcap logfiles copied and archived together with the input pcap file for reproduction. An alert should be fired via email. add support to connect an SMTP service to send alert emails to an administrator.
-
-add custom data support for dbs and integrate it in UI
-
-Graph view page: threeJS node based graph view to explore data relations.
-
-Flow view page: render interactive, horizontal timeline of activity from different hosts (hosts vertical), and display additional information when hovering over hosts
-
-Alerts page
-Rules page
-
----
-
-- dbs: TorDB (torlookup) databases
-  - https://www.dan.me.uk/tornodes
-  - https://github.com/alireza-rezaee/tor-nodes?tab=readme-ov-file
-
+- add some test for stream reassembly that are run with -count flag to ensure number and properties of reassembled streams are consistent
+- audit records filter help box: make suggestions context specific for the current audit record type and data with configurable inputs as template, load a couple audit records to obtain real values and populate the template for help text with real values
+- add guide how to add new protocol support and add show example commit
+- connection data exchange view similar to wireshark: red vs blue
 
 - docs iteration
 - tests iteration
+
+- add toggle in UI to add info panels in UI to explain for first time users
+
+- Dashboard feature to combine save and load multiple charts
+- update engine: rules / filters need to be executed in batches so that large amounts of data can be processed.
+- add rules to alert on the presence of certain audit record types, eg Credentials, Vulns, Exploits etc
+- implement bug reporting in local mode
+- add detailed field descriptions for each protocol and show in explore view when selecting a field
+- netcap core should produce info which fields contain data for the audit records, so that UI can use this only show fields that make sense for filtering, without having to parse the entire data again.
+- always allow to drag and drop files for upload on the Analyze menu item, even if user is on a different page. Switch to analyze page automatiaclly and start upload
+- add local dev mode for webUI
+- try-service: crash reporting mechanism: when the service panics and crashes, we need the full service log, and all netcap logfiles copied and archived together with the input pcap file for reproduction. An alert should be fired via email. add support to connect an SMTP service to send alert emails to an administrator.
+- add custom data support for dbs and integrate it in UI
+- switch to gopacket/reassembly and tcpassembly? implement tests to verify the decoded streams are consistent in between executions
+- add internal package
+- dedicated DPI logfile and dpiLog instance
 
 -----
 
@@ -133,15 +46,6 @@ or
 
   find . -maxdepth 1 \( -name "*.pcap" -o -name "*.pcapng" \) -type f -exec sh -c 'net capture -read "$1" -out "${1%.*}"' _ {} \;
 
-VSCode extension to view netcap audit records?
-
-switch to gopacket/reassembly and tcpassembly
-
-add internal package
-
-implement Alerts and Rules
-
-go-dpi idea: generate port lookup table based on IANA spec for first guess for go classifier
 
 ----
 
@@ -244,10 +148,9 @@ Install ndpi on m1 mac:
 
 - add dpi / nodpi arm64 builds for linux
 - extend api with context to allow stopping collector
-- improve unit tests
+
 - https://github.com/dreadl0ck/netcap/issues/19
-- add test for reading SLL pcaps: https://wiki.wireshark.org/SLL
-- implement rule engine
+
 - check:
 
 panic: runtime error: index out of range [-1]

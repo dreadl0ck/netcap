@@ -19,6 +19,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/gopacket/gopacket/layers"
+	"github.com/gopacket/gopacket/pcap"
 )
 
 // BPFConfig represents the BPF filter configuration
@@ -59,6 +62,14 @@ func (s *Server) handleBPFConfig(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
 			http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
 			return
+		}
+
+		// Validate BPF filter if not empty
+		if config.Filter != "" {
+			if err := validateBPFFilter(config.Filter); err != nil {
+				http.Error(w, fmt.Sprintf("Invalid BPF filter: %v", err), http.StatusBadRequest)
+				return
+			}
 		}
 
 		if err := s.saveBPFConfig(config); err != nil {
@@ -124,6 +135,18 @@ func (s *Server) saveBPFConfig(config BPFConfig) error {
 func (s *Server) getBPFConfigPath() string {
 	configRoot := getConfigRootPath()
 	return filepath.Join(configRoot, "bpf-config.json")
+}
+
+// validateBPFFilter validates a BPF filter expression by attempting to compile it
+func validateBPFFilter(filter string) error {
+	// Try to compile the BPF filter using pcap's BPF compiler
+	// This validates the syntax without needing to open an actual pcap file
+	_, err := pcap.CompileBPFFilter(layers.LinkTypeEthernet, 65535, filter)
+	if err != nil {
+		return fmt.Errorf("invalid BPF syntax: %w", err)
+	}
+
+	return nil
 }
 
 // getBPFExamples returns a list of common BPF filter examples

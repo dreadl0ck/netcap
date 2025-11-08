@@ -1092,6 +1092,12 @@ export const api = {
     return `${API_BASE}/extracted-files/download/${encodeURIComponent(relativePath)}`;
   },
 
+  downloadInputFile(identifier: string): string {
+    // Return the download URL for the input PCAP file
+    // identifier is sessionId in service mode or file path in local mode
+    return `${API_BASE}/files/input/download/${encodeURIComponent(identifier)}`;
+  },
+
   // Get field information for autocomplete
   async getAuditRecordFields(type: string): Promise<FieldsResponse> {
     const res = await fetch(`${API_BASE}/audit/${encodeURIComponent(type)}/fields`);

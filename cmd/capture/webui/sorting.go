@@ -29,13 +29,12 @@ var (
 	}
 
 	transportLayerProtocols = []string{
-		"SCTP", "TCP", "UDP",
+		"SCTP", "TCP", "TLSClientHello", "TLSServerHello", "UDP",
 	}
 
 	applicationLayerProtocols = []string{
 		"DHCPv4", "DHCPv6", "DNS", "Geneve", "HTTP", "NTP", 
-		"POP3", "SIP", "SMTP", "SSH", "TLSClientHello",
-		"TLSServerHello", "VXLAN",
+		"POP3", "SIP", "SMTP", "SSH", "VXLAN",
 	}
 
 	streamDecoders = []string{
