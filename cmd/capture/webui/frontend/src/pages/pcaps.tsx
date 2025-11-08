@@ -298,7 +298,7 @@ export default function PCAPs() {
 
   return (
     <Layout title="PCAP Files">
-      <Box>
+      <Box sx={{ minWidth: 0 }}>
         {/* Search Bar */}
         <Box mb={3}>
           <TextField
@@ -313,11 +313,12 @@ export default function PCAPs() {
             InputProps={{
               startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />,
             }}
-            sx={{ maxWidth: 600 }}
+            size="small"
+            sx={{ maxWidth: { xs: '100%', sm: 600 } }}
           />
         </Box>
 
-        <Box display="flex" gap={2} alignItems="center" mb={2} flexWrap="wrap">
+        <Box display="flex" gap={{ xs: 1, sm: 2 }} alignItems="center" mb={2} flexWrap="wrap">
           <Typography variant="body2" color="text.secondary">
             {sortedFiles.length} of {files?.length || 0} file(s) {searchQuery && 'matching search'}
           </Typography>
@@ -354,8 +355,8 @@ export default function PCAPs() {
         </Box>
 
         {paginatedFiles && paginatedFiles.length > 0 ? (
-          <TableContainer component={Paper} sx={{ mt: 3 }}>
-            <Table>
+          <TableContainer component={Paper} sx={{ mt: 3, overflowX: 'auto', maxWidth: '100%' }}>
+            <Table sx={{ minWidth: { xs: 700, md: 'auto' } }}>
               <TableHead>
                 <TableRow>
                   <TableCell>
@@ -376,7 +377,7 @@ export default function PCAPs() {
                       Size
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                     <TableSortLabel
                       active={sortField === 'modifiedTime'}
                       direction={sortField === 'modifiedTime' ? sortOrder : 'asc'}
@@ -385,7 +386,7 @@ export default function PCAPs() {
                       Modified
                     </TableSortLabel>
                   </TableCell>
-                  <TableCell align="right">Processing Time</TableCell>
+                  <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>Processing Time</TableCell>
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -422,8 +423,16 @@ export default function PCAPs() {
                       ) : !file.isCompleted ? (
                         <HourglassEmptyIcon color="disabled" fontSize="small" />
                       ) : null}
-                      <Box>
-                        <Typography sx={{ fontFamily: 'monospace' }}>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography 
+                          sx={{ 
+                            fontFamily: 'monospace',
+                            maxWidth: { xs: 200, sm: 300, md: 'none' },
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
                           {file.name}
                           {!file.isCompleted && !file.error && (
                             <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
@@ -460,8 +469,8 @@ export default function PCAPs() {
                     </Box>
                   </TableCell>
                     <TableCell align="right">{formatBytes(file.size)}</TableCell>
-                    <TableCell align="right">{formatTimestamp(file.modifiedTime)}</TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{formatTimestamp(file.modifiedTime)}</TableCell>
+                    <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                       {file.processingTime && file.isCompleted ? (
                         <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
                           {formatDuration(file.processingTime)}

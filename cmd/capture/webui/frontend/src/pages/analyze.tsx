@@ -427,7 +427,7 @@ export default function AnalyzePage() {
 
   return (
     <Layout title="Analyze PCAP Files">
-      <Box>
+      <Box sx={{ minWidth: 0 }}>
         {/* Quota Error (service mode only) */}
         {isServiceMode && quotaError && (
           <Alert severity="warning" sx={{ mb: 3 }}>

@@ -253,11 +253,11 @@ export default function Logs() {
 
   return (
     <Layout title="Logs" headerAction={fileSelector}>
-      <Box>
+      <Box sx={{ minWidth: 0 }}>
         {/* Session Selector for Try Service */}
         {status?.isTryService && sessions && sessions.length > 1 && (
           <Box mb={3}>
-            <FormControl size="small" sx={{ minWidth: 300 }}>
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 300 } }}>
               <Select
                 value={status?.sessionId || ''}
                 onChange={handleSessionChange}
@@ -286,13 +286,13 @@ export default function Logs() {
         )}
 
         {files && files.length > 0 ? (
-          <TableContainer component={Paper} sx={{ mt: 3 }}>
-            <Table>
+          <TableContainer component={Paper} sx={{ mt: 3, overflowX: 'auto', maxWidth: '100%' }}>
+            <Table sx={{ minWidth: { xs: 600, md: 'auto' } }}>
               <TableHead>
                 <TableRow>
                   <TableCell>Filename</TableCell>
                   <TableCell align="right">Size</TableCell>
-                  <TableCell align="right">Modified</TableCell>
+                  <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Modified</TableCell>
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -307,10 +307,20 @@ export default function Logs() {
                     }}
                   >
                     <TableCell>
-                      <Typography sx={{ fontFamily: 'monospace' }}>{file.name}</Typography>
+                      <Typography 
+                        sx={{ 
+                          fontFamily: 'monospace',
+                          maxWidth: { xs: 200, sm: 300, md: 'none' },
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
+                      >
+                        {file.name}
+                      </Typography>
                     </TableCell>
                     <TableCell align="right">{formatBytes(file.size)}</TableCell>
-                    <TableCell align="right">{formatTimestamp(file.modifiedTime)}</TableCell>
+                    <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{formatTimestamp(file.modifiedTime)}</TableCell>
                     <TableCell align="right" onClick={(e) => e.stopPropagation()}>
                       <Button
                         variant="outlined"

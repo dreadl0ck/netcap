@@ -86,7 +86,7 @@ export default function BPF() {
 
   return (
     <Layout title="BPF Filter Configuration">
-      <Box>
+      <Box sx={{ minWidth: 0 }}>
       {bpfSuccess && (
         <Alert severity="success" sx={{ mb: 2 }}>
           {bpfSuccess}

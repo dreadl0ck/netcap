@@ -772,9 +772,11 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 2, sm: 3 },
           width: { lg: `calc(100% - ${drawerWidth}px)` },
           mt: { xs: 20, sm: 16, md: 8 },
+          minWidth: 0, // Allow shrinking below content size
+          overflowX: 'hidden', // Prevent horizontal scroll
         }}
       >
         {children}

@@ -59,7 +59,7 @@ export default function Interfaces() {
 
   return (
     <Layout title="Network Interfaces">
-      <Box>
+      <Box sx={{ minWidth: 0 }}>
         {isServiceMode && (
           <Paper sx={{ p: 2, mb: 3, bgcolor: 'info.main', color: 'info.contrastText' }}>
             <Typography variant="body2">
@@ -73,7 +73,7 @@ export default function Interfaces() {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               {networkInterfaces.length} interface(s) available
             </Typography>
-            <TableContainer component={Paper}>
+            <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
               <Table>
                 <TableHead>
                   <TableRow>

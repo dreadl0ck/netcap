@@ -172,7 +172,7 @@ export default function DataSources() {
 
   return (
     <Layout title="Data Sources">
-      <Box>
+      <Box sx={{ minWidth: 0 }}>
         {/* Network Interfaces Section (only in local mode) */}
         {isLocalMode && hasNetworkInterfaces && (
           <Box mb={4}>

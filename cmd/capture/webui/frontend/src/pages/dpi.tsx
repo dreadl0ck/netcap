@@ -166,7 +166,7 @@ export default function DPIPage() {
 
   return (
     <Layout title="Deep Packet Inspection">
-      <Box>
+      <Box sx={{ minWidth: 0 }}>
         {/* DPI Support Status */}
         <Grid container spacing={3} mb={4}>
           <Grid item xs={12} md={6}>

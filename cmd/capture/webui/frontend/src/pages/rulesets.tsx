@@ -84,7 +84,7 @@ export default function RuleSetsPage() {
 
   return (
     <Layout title="Rule Sets">
-      <Box>
+      <Box sx={{ minWidth: 0 }}>
         <Box sx={{ mb: 3 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Total: {ruleSets.length} rule set{ruleSets.length !== 1 ? 's' : ''} • 

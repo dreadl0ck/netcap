@@ -167,9 +167,16 @@ export default function ErrorsPage() {
 
   return (
     <Layout title="Capture Errors">
-      <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Box>
+      <Box sx={{ minWidth: 0 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'stretch', sm: 'center' }, 
+          gap: 2,
+          mb: 3 
+        }}>
+          <Box sx={{ flex: 1 }}>
             <Typography variant="body1" fontWeight="medium">
               {sortedErrorLogs.length} capture file{sortedErrorLogs.length !== 1 ? 's' : ''} with errors
             </Typography>
@@ -177,7 +184,13 @@ export default function ErrorsPage() {
               Showing capture files that have errors recorded in their errors.log files
             </Typography>
           </Box>
-          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefresh}>
+          <Button 
+            variant="outlined" 
+            startIcon={<RefreshIcon />} 
+            onClick={handleRefresh}
+            size="small"
+            sx={{ alignSelf: { xs: 'stretch', sm: 'center' } }}
+          >
             Refresh
           </Button>
         </Box>
@@ -200,7 +213,13 @@ export default function ErrorsPage() {
             {sortedErrorLogs.length > 0 && (
               <Card sx={{ mb: 3 }}>
                 <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    justifyContent: 'space-between', 
+                    alignItems: { xs: 'stretch', sm: 'center' },
+                    gap: 2
+                  }}>
                     <Box>
                       <Typography color="text.secondary" gutterBottom>
                         Total Errors Across All Captures
@@ -213,7 +232,9 @@ export default function ErrorsPage() {
                       variant="contained"
                       startIcon={<AssessmentIcon />}
                       onClick={handleShowAggregated}
+                      size="small"
                       sx={{ height: 'fit-content' }}
+                      fullWidth={false}
                     >
                       Show All Errors
                     </Button>
@@ -223,8 +244,8 @@ export default function ErrorsPage() {
             )}
 
             {/* Errors Table */}
-            <TableContainer component={Paper}>
-              <Table>
+            <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+              <Table sx={{ minWidth: { xs: 600, md: 'auto' } }}>
                 <TableHead>
                   <TableRow>
                     <TableCell>
@@ -236,7 +257,7 @@ export default function ErrorsPage() {
                         Capture File
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                       <TableSortLabel
                         active={sortField === 'inputFileSize'}
                         direction={sortField === 'inputFileSize' ? sortOrder : 'asc'}
@@ -275,23 +296,24 @@ export default function ErrorsPage() {
                         sx={{ cursor: 'pointer' }}
                       >
                         <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <ErrorIcon color="error" fontSize="small" />
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+                            <ErrorIcon color="error" fontSize="small" sx={{ flexShrink: 0 }} />
                             <Typography
                               variant="body2"
                               sx={{
                                 fontFamily: 'monospace',
                                 fontSize: '0.85rem',
-                                maxWidth: 400,
+                                maxWidth: { xs: 200, sm: 300, md: 400 },
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
                               }}
                             >
                               {errorLog.inputFilename}
                             </Typography>
                           </Box>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                           <Typography variant="body2">
                             {formatBytes(errorLog.inputFileSize)}
                           </Typography>

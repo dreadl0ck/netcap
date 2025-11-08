@@ -371,15 +371,28 @@ export default function AlertsPage() {
 
   return (
     <Layout title="Alerts" headerAction={fileSelector}>
-      <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-          <Box>
+      <Box sx={{ minWidth: 0 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', md: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'stretch', md: 'flex-start' }, 
+          gap: 2,
+          mb: 3 
+        }}>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
             {selectedFile && (
-              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mt: 1 }}>
+              <Box sx={{ 
+                display: 'flex', 
+                gap: { xs: 1, sm: 1.5 }, 
+                alignItems: 'center', 
+                mt: 1,
+                flexWrap: 'wrap'
+              }}>
                 <Typography variant="body1" fontWeight="medium">
                   {totalCount.toLocaleString()} alert{totalCount !== 1 ? 's' : ''}
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
                   for capture:
                 </Typography>
                 <Chip
@@ -387,8 +400,8 @@ export default function AlertsPage() {
                   size="small"
                   sx={{ 
                     fontFamily: 'monospace', 
-                    fontSize: '0.8rem',
-                    maxWidth: 400,
+                    fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                    maxWidth: { xs: '200px', sm: '400px' },
                     '& .MuiChip-label': {
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -404,8 +417,19 @@ export default function AlertsPage() {
               </Box>
             )}
           </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefresh}>
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 1,
+            flexWrap: 'wrap',
+            justifyContent: { xs: 'stretch', md: 'flex-end' }
+          }}>
+            <Button 
+              variant="outlined" 
+              startIcon={<RefreshIcon />} 
+              onClick={handleRefresh}
+              size="small"
+              sx={{ flex: { xs: 1, sm: 'none' } }}
+            >
               Refresh
             </Button>
             <Button 
@@ -414,6 +438,8 @@ export default function AlertsPage() {
               startIcon={<DeleteIcon />} 
               onClick={handleClearAlerts}
               disabled={totalCount === 0}
+              size="small"
+              sx={{ flex: { xs: 1, sm: 'none' } }}
             >
               Clear All
             </Button>
@@ -557,8 +583,8 @@ export default function AlertsPage() {
         </Paper>
 
         {/* Grouped Alerts Table */}
-        <TableContainer component={Paper}>
-          <Table>
+        <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+          <Table sx={{ minWidth: { xs: 800, md: 'auto' } }}>
             <TableHead>
               <TableRow>
                 <TableCell width="40px"></TableCell>
@@ -641,7 +667,16 @@ export default function AlertsPage() {
                         </TableCell>
                         <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
                           <Tooltip title={group.description}>
-                            <Typography variant="body2" fontWeight="medium">
+                            <Typography 
+                              variant="body2" 
+                              fontWeight="medium"
+                              sx={{
+                                maxWidth: { xs: 200, sm: 300 },
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
                               {group.ruleName}
                             </Typography>
                           </Tooltip>

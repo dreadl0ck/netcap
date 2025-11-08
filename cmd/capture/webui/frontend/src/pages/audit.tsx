@@ -936,11 +936,11 @@ export default function AuditRecords() {
 
   return (
     <Layout title="Audit Records" headerAction={fileSelector}>
-      <Box>
+      <Box sx={{ minWidth: 0 }}>
         {/* Session Selector for Try Service */}
         {status?.isServiceMode && sessions && sessions.length > 1 && (
           <Box mb={3}>
-            <FormControl size="small" sx={{ minWidth: 300 }}>
+            <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 300 } }}>
               <Select
                 value={status?.sessionId || ''}
                 onChange={handleSessionChange}
@@ -969,8 +969,14 @@ export default function AuditRecords() {
         )}
 
         <Box mb={3}>
-          <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={2}>
-            <Typography variant="body2" color="text.secondary">
+          <Box 
+            display="flex" 
+            flexDirection={{ xs: 'column', sm: 'row' }}
+            justifyContent="space-between" 
+            alignItems={{ xs: 'stretch', sm: 'flex-start' }} 
+            gap={2}
+          >
+            <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
               {layerGroups.reduce((sum, group) => sum + group.files.length, 0)} protocol type(s) found • Hierarchical by encapsulation layer
             </Typography>
             
@@ -981,7 +987,9 @@ export default function AuditRecords() {
               startIcon={<DownloadIcon />}
               onClick={handleDownloadAll}
               disabled={!status?.sessionId}
-              sx={{ minWidth: 180 }}
+              size="small"
+              sx={{ minWidth: { xs: 'auto', sm: 180 } }}
+              fullWidth={false}
             >
               Download All
             </Button>
@@ -1035,7 +1043,8 @@ export default function AuditRecords() {
                         onClick={() => handleViewRecords(file.type)}
                         sx={{
                           display: 'flex',
-                          alignItems: 'center',
+                          flexDirection: { xs: 'column', md: 'row' },
+                          alignItems: { xs: 'stretch', md: 'center' },
                           p: 1.5,
                           mb: fileIdx < group.files.length - 1 ? 1 : 0,
                           borderLeft: 2,
@@ -1044,54 +1053,78 @@ export default function AuditRecords() {
                           borderRadius: 1,
                           cursor: 'pointer',
                           '&:hover': { bgcolor: 'action.hover' },
+                          gap: { xs: 1.5, md: 0 },
                         }}
                       >
-                        {/* Tree connector visualization */}
-                        <Box
-                          sx={{
-                            width: 20,
-                            height: 2,
-                            bgcolor: 'divider',
-                            mr: 1,
-                          }}
-                        />
-                        <FileIcon sx={{ mr: 2, color: 'text.secondary', fontSize: 20 }} />
-                        
-                        <Box sx={{ flex: 1 }}>
-                          <Typography
+                        <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                          {/* Tree connector visualization */}
+                          <Box
                             sx={{
-                              fontFamily: 'monospace',
-                              fontWeight: 600,
-                              fontSize: '0.95rem',
+                              width: 20,
+                              height: 2,
+                              bgcolor: 'divider',
+                              mr: 1,
+                              display: { xs: 'none', md: 'block' },
                             }}
-                          >
-                            {file.type}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-                            {file.name}
-                          </Typography>
+                          />
+                          <FileIcon sx={{ mr: 2, color: 'text.secondary', fontSize: 20, flexShrink: 0 }} />
+                          
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography
+                              sx={{
+                                fontFamily: 'monospace',
+                                fontWeight: 600,
+                                fontSize: '0.95rem',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {file.type}
+                            </Typography>
+                            <Typography 
+                              variant="caption" 
+                              color="text.secondary" 
+                              sx={{ 
+                                fontFamily: 'monospace',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                display: 'block'
+                              }}
+                            >
+                              {file.name}
+                            </Typography>
+                          </Box>
                         </Box>
 
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mr: 2 }}>
-                          <Box sx={{ textAlign: 'right' }}>
-                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          flexDirection: { xs: 'row', md: 'row' },
+                          alignItems: 'center', 
+                          gap: { xs: 1, md: 2 }, 
+                          justifyContent: { xs: 'space-between', md: 'flex-end' },
+                          mr: { xs: 0, md: 2 }
+                        }}>
+                          <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', md: 'inherit' } }}>
                               {file.recordCount ? file.recordCount.toLocaleString() : 'N/A'}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: 'inherit' } }}>
                               records
                             </Typography>
                           </Box>
-                          <Box sx={{ textAlign: 'right', minWidth: 60 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                          <Box sx={{ textAlign: { xs: 'left', md: 'right' }, minWidth: { xs: 50, md: 60 } }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', md: 'inherit' } }}>
                               {formatBytes(file.size)}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: 'inherit' } }}>
                               size
                             </Typography>
                           </Box>
                         </Box>
 
-                        <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
                           <Button
                             variant="outlined"
                             size="small"
@@ -1099,7 +1132,7 @@ export default function AuditRecords() {
                               e.stopPropagation();
                               handleViewRecords(file.type);
                             }}
-                            sx={{ minWidth: 100 }}
+                            sx={{ minWidth: { xs: 'auto', md: 100 }, flex: { xs: 1, sm: 'none' } }}
                           >
                             View Records
                           </Button>
@@ -1111,7 +1144,7 @@ export default function AuditRecords() {
                               e.stopPropagation();
                               router.push(`/explore?type=${encodeURIComponent(file.type)}`);
                             }}
-                            sx={{ minWidth: 100 }}
+                            sx={{ minWidth: { xs: 'auto', md: 100 }, flex: { xs: 1, sm: 'none' } }}
                           >
                             Explore
                           </Button>

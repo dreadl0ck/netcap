@@ -330,15 +330,28 @@ export default function ExtractedFilesPage() {
 
   return (
     <Layout title="Extracted Files" headerAction={fileSelector}>
-      <Box>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-          <Box>
+      <Box sx={{ minWidth: 0 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', md: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'stretch', md: 'flex-start' }, 
+          gap: 2,
+          mb: 3 
+        }}>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
             {selectedFile && (
-              <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mt: 1 }}>
+              <Box sx={{ 
+                display: 'flex', 
+                gap: { xs: 1, sm: 1.5 }, 
+                alignItems: 'center', 
+                mt: 1,
+                flexWrap: 'wrap'
+              }}>
                 <Typography variant="body1" fontWeight="medium">
                   {totalCount.toLocaleString()} file{totalCount !== 1 ? 's' : ''} extracted
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
                   for capture:
                 </Typography>
                 <Chip
@@ -346,8 +359,8 @@ export default function ExtractedFilesPage() {
                   size="small"
                   sx={{ 
                     fontFamily: 'monospace', 
-                    fontSize: '0.8rem',
-                    maxWidth: 400,
+                    fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                    maxWidth: { xs: '200px', sm: '400px' },
                     '& .MuiChip-label': {
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -364,7 +377,14 @@ export default function ExtractedFilesPage() {
             )}
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefresh}>
+            <Button 
+              variant="outlined" 
+              startIcon={<RefreshIcon />} 
+              onClick={handleRefresh}
+              size="small"
+              fullWidth
+              sx={{ display: { xs: 'flex', sm: 'inline-flex' } }}
+            >
               Refresh
             </Button>
           </Box>
@@ -429,15 +449,15 @@ export default function ExtractedFilesPage() {
           </Paper>
         ) : (
           <>
-            <TableContainer component={Paper}>
-              <Table size="small">
+            <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+              <Table size="small" sx={{ minWidth: { xs: 700, md: 'auto' } }}>
                 <TableHead>
                   <TableRow>
                     <TableCell>File Name</TableCell>
-                    <TableCell>MIME Type</TableCell>
-                    <TableCell>Path</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>MIME Type</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Path</TableCell>
                     <TableCell align="right">Size</TableCell>
-                    <TableCell align="right">Modified</TableCell>
+                    <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Modified</TableCell>
                     <TableCell align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -452,12 +472,21 @@ export default function ExtractedFilesPage() {
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {getFileTypeIcon(file.mimeType)}
-                          <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                          <Typography 
+                            sx={{ 
+                              fontFamily: 'monospace', 
+                              fontSize: '0.85rem',
+                              maxWidth: { xs: 150, sm: 250, md: 'none' },
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
                             {file.name}
                           </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                         <Chip
                           label={file.mimeType || 'unknown'}
                           size="small"
@@ -465,13 +494,17 @@ export default function ExtractedFilesPage() {
                           sx={{ fontSize: '0.75rem' }}
                         />
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                         <Typography 
                           variant="body2" 
                           sx={{ 
                             fontFamily: 'monospace', 
                             fontSize: '0.75rem',
-                            color: 'text.secondary'
+                            color: 'text.secondary',
+                            maxWidth: 300,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
                           }}
                         >
                           {file.path}
@@ -482,7 +515,7 @@ export default function ExtractedFilesPage() {
                           {formatBytes(file.size)}
                         </Typography>
                       </TableCell>
-                      <TableCell align="right">
+                      <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
                         <Typography variant="body2">
                           {formatTimestamp(file.modifiedTime)}
                         </Typography>
