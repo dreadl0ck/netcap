@@ -14,7 +14,7 @@ rules:
     description: FTP data channel detected (cleartext file transfers) - cleartext credentials risk
     type: TCP
     expression: DstPort == 20 || SrcPort == 20
-    severity: high
+    severity: medium
     mitre: ["T1071.002"]
     tags: ["cleartext"]
     enabled: true
@@ -33,7 +33,7 @@ rules:
     description: SSH connection detected - secure shell for remote admin (monitor for brute-force and stolen keys)
     type: TCP
     expression: DstPort == 22 || SrcPort == 22
-    severity: high
+    severity: low
     mitre: ["T1021.004", "T1110.001"]
     tags: ["remote-access"]
     enabled: true
@@ -63,7 +63,7 @@ rules:
     description: Unencrypted HTTP traffic detected
     type: TCP
     expression: DstPort == 80 || SrcPort == 80
-    severity: high
+    severity: info
     mitre: ["T1071.001", "T1190"]
     tags: ["cleartext"]
     enabled: true
@@ -73,7 +73,7 @@ rules:
     description: HTTPS traffic detected - monitor for web-based remote admin and exfiltration
     type: TCP
     expression: DstPort == 443 || SrcPort == 443
-    severity: high
+    severity: info
     mitre: ["T1071.001", "T1041"]
     tags: ["encrypted", "web"]
     enabled: true
@@ -121,7 +121,7 @@ rules:
     description: SNMP detected - default community strings leak info, use SNMPv3 with strong auth
     type: TCP
     expression: DstPort == 161 || SrcPort == 161
-    severity: high
+    severity: medium
     mitre: ["T1046", "T1592.001"]
     tags: ["information-disclosure"]
     enabled: true
@@ -151,7 +151,7 @@ rules:
     description: SOCKS proxy detected - often used for tunneling and exfiltration
     type: TCP
     expression: DstPort == 1080 || SrcPort == 1080
-    severity: high
+    severity: medium
     mitre: ["T1090.001", "T1572"]
     tags: ["proxy", "tunneling"]
     enabled: true
@@ -295,7 +295,7 @@ rules:
     description: DNS detected - abuse for amplification and exfiltration, restrict recursion
     type: TCP
     expression: DstPort == 53 || SrcPort == 53
-    severity: high
+    severity: info
     mitre: ["T1071.004", "T1048.003"]
     tags: ["amplification"]
     enabled: true
@@ -325,7 +325,7 @@ rules:
     description: NTP detected - amplification DDoS risk, validate and limit sources
     type: TCP
     expression: DstPort == 123 || SrcPort == 123
-    severity: medium
+    severity: info
     mitre: ["T1498.002"]
     tags: ["amplification"]
     enabled: true
@@ -395,7 +395,7 @@ rules:
     description: Syslog detected - ensure logs are authenticated and protected from tampering
     type: TCP
     expression: DstPort == 514 || SrcPort == 514
-    severity: medium
+    severity: low
     mitre: ["T1070.002"]
     tags: ["logging"]
     enabled: true
@@ -425,7 +425,7 @@ rules:
     description: LDAP over TLS detected - preferred over plain LDAP
     type: TCP
     expression: DstPort == 636 || SrcPort == 636
-    severity: high
+    severity: low
     mitre: ["T1087.002"]
     tags: ["encrypted"]
     enabled: true
@@ -435,7 +435,7 @@ rules:
     description: LDAP over SSL detected (legacy port) - prefer LDAPS on port 636 for directory services
     type: TCP
     expression: DstPort == 686 || SrcPort == 686
-    severity: high
+    severity: low
     mitre: ["T1087.002", "T1069.002"]
     tags: ["encrypted", "ldap"]
     enabled: true
@@ -523,7 +523,7 @@ rules:
     description: SSH on non-standard port 22022 detected - alternate SSH port for remote admin
     type: TCP
     expression: DstPort == 22022 || SrcPort == 22022
-    severity: high
+    severity: medium
     mitre: ["T1021.004"]
     tags: ["remote-access", "alternate-port"]
     enabled: true
@@ -602,7 +602,7 @@ rules:
     description: Alternate HTTP or app dev endpoint detected - unmanaged apps often run here
     type: TCP
     expression: DstPort == 8080 || SrcPort == 8080
-    severity: high
+    severity: medium
     mitre: ["T1071.001", "T1190"]
     tags: ["alternate-port"]
     enabled: true
@@ -612,7 +612,7 @@ rules:
     description: Next.js HTTP dev endpoint detected - unmanaged apps often run here
     type: TCP
     expression: DstPort == 3000 || SrcPort == 3000
-    severity: high
+    severity: medium
     mitre: ["T1071.001", "T1190"]
     tags: ["alternate-port"]
     enabled: true
@@ -622,7 +622,7 @@ rules:
     description: Alternate HTTPS or admin console detected - restrict and monitor
     type: TCP
     expression: DstPort == 8443 || SrcPort == 8443
-    severity: high
+    severity: medium
     mitre: ["T1071.001"]
     tags: ["admin-panel"]
     enabled: true
@@ -632,7 +632,7 @@ rules:
     description: Alternate HTTP port detected - commonly used for proxies, dev servers, and admin panels
     type: TCP
     expression: DstPort == 8888 || SrcPort == 8888
-    severity: high
+    severity: medium
     mitre: ["T1071.001", "T1090.001"]
     tags: ["alternate-port", "proxy"]
     enabled: true
@@ -642,7 +642,7 @@ rules:
     description: Admin panel or dev interface detected - admin interfaces need strict access controls
     type: TCP
     expression: DstPort == 9000 || SrcPort == 9000
-    severity: high
+    severity: medium
     mitre: ["T1078.004"]
     tags: ["admin-panel"]
     enabled: true
@@ -652,7 +652,7 @@ rules:
     description: Webmin or web admin panel detected - should be isolated and MFA-protected
     type: TCP
     expression: DstPort == 10000 || SrcPort == 10000
-    severity: high
+    severity: medium
     mitre: ["T1078.004"]
     tags: ["admin-panel"]
     enabled: true
@@ -666,7 +666,7 @@ rules:
     description: DHCP client responses detected - watch for unexpected servers
     type: TCP
     expression: DstPort == 68 || SrcPort == 68
-    severity: low
+    severity: info
     mitre: ["T1557.002"]
     tags: ["dhcp"]
     enabled: true
@@ -696,7 +696,7 @@ rules:
     description: Minecraft game server detected - can leak user data or be used in DDoS
     type: TCP
     expression: DstPort == 25565 || SrcPort == 25565
-    severity: low
+    severity: info
     mitre: ["T1499"]
     tags: ["gaming"]
     enabled: true
@@ -782,7 +782,7 @@ rules:
     description: SSH on alternate port (22022) to external IP detected - monitor for data exfiltration
     type: TCP
     expression: DstPort == 22022 && IsPublicIP(DstIP)
-    severity: high
+    severity: medium
     mitre: ["T1021.004", "T1041"]
     tags: ["external", "remote-access"]
     enabled: true

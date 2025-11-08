@@ -288,6 +288,7 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[WebUI] Failed to read alerts: %v", err)
 		RespondJSON(w, http.StatusOK, map[string]interface{}{
 			"totalAlerts":    0,
+			"groupCount":     0,
 			"bySeverity":     map[string]int{},
 			"byRule":         map[string]int{},
 			"recentAlerts":   []AlertResponse{},
@@ -300,6 +301,8 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 	bySeverity := make(map[string]int)
 	byRule := make(map[string]int)
 	criticalCount := 0
+	// Track unique alert groups (rule + severity combinations)
+	alertGroups := make(map[string]struct{})
 
 	for _, alert := range alerts {
 		bySeverity[alert.Severity]++
@@ -307,6 +310,9 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 		if strings.EqualFold(alert.Severity, "critical") {
 			criticalCount++
 		}
+		// Create a unique key for each rule + severity combination
+		groupKey := alert.RuleName + "|" + alert.Severity
+		alertGroups[groupKey] = struct{}{}
 	}
 
 	// Get recent alerts (last 10)
@@ -326,6 +332,7 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 
 	RespondJSON(w, http.StatusOK, map[string]interface{}{
 		"totalAlerts":    len(alerts),
+		"groupCount":     len(alertGroups),
 		"bySeverity":     bySeverity,
 		"byRule":         byRule,
 		"recentAlerts":   recentAlerts,

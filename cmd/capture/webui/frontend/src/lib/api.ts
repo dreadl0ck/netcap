@@ -466,6 +466,7 @@ export interface GroupedAlertsResponse {
 
 export interface AlertStatsResponse {
   totalAlerts: number;
+  groupCount: number;
   bySeverity: Record<string, number>;
   byRule: Record<string, number>;
   recentAlerts: Alert[];

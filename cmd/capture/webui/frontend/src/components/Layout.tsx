@@ -81,8 +81,8 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
   // Calculate total PCAP count (including preloaded and user files)
   const pcapCount = inputFiles?.length || 0;
   
-  // Get total alerts count
-  const alertCount = alertStats?.totalAlerts || 0;
+  // Get alert group count for badge (not individual alerts)
+  const alertCount = alertStats?.groupCount || 0;
 
   // Get total extracted files count
   const extractedFilesCount = extractedFilesData?.totalCount || 0;
@@ -699,8 +699,8 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
       <AppBar
         position="fixed"
         sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
+          width: { lg: `calc(100% - ${drawerWidth}px)` },
+          ml: { lg: `${drawerWidth}px` },
         }}
       >
         <Toolbar
@@ -717,7 +717,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
               aria-label="open drawer"
               edge="start"
               onClick={handleDrawerToggle}
-              sx={{ mr: 2, display: { sm: 'none' } }}
+              sx={{ mr: 2, display: { lg: 'none' } }}
             >
               <MenuIcon />
             </IconButton>
@@ -740,7 +740,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
       </AppBar>
       <Box
         component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+        sx={{ width: { lg: drawerWidth }, flexShrink: { lg: 0 } }}
         aria-label="navigation"
       >
         <Drawer
@@ -751,7 +751,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
             keepMounted: true,
           }}
           sx={{
-            display: { xs: 'block', sm: 'none' },
+            display: { xs: 'block', lg: 'none' },
             '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
           }}
         >
@@ -760,7 +760,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Drawer
           variant="permanent"
           sx={{
-            display: { xs: 'none', sm: 'block' },
+            display: { xs: 'none', lg: 'block' },
             '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
           }}
           open
@@ -773,8 +773,8 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: 8,
+          width: { lg: `calc(100% - ${drawerWidth}px)` },
+          mt: { xs: 20, sm: 16, md: 8 },
         }}
       >
         {children}

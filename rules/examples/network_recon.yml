@@ -9,7 +9,7 @@ rules:
     description: Detect TCP SYN scan attempts (SYN without ACK)
     type: TCP
     expression: SYN && !ACK && !RST
-    severity: medium
+    severity: info
     mitre: ["T1046"]
     tags: ["port-scan"]
     enabled: true
@@ -21,7 +21,7 @@ rules:
     description: Detect ICMP echo requests that may be part of a ping sweep
     type: ICMPv4
     expression: TypeCode == 8
-    severity: low
+    severity: info
     mitre: ["T1018"]
     tags: ["ping-sweep"]
     enabled: true
@@ -33,7 +33,7 @@ rules:
     description: Detect ARP requests that may indicate network mapping
     type: ARP
     expression: Operation == 1
-    severity: low
+    severity: info
     mitre: ["T1016"]
     tags: ["network-mapping"]
     enabled: true
@@ -65,7 +65,7 @@ rules:
     description: Detect SNMP traffic that may indicate device enumeration
     type: UDP
     expression: DstPort == 161 || DstPort == 162
-    severity: medium
+    severity: low
     mitre: ["T1046"]
     tags: ["enumeration"]
     enabled: true
@@ -77,7 +77,7 @@ rules:
     description: Detect NetBIOS name service queries used for Windows network discovery
     type: UDP
     expression: DstPort == 137 || DstPort == 138
-    severity: low
+    severity: info
     mitre: ["T1016"]
     tags: ["enumeration", "windows"]
     enabled: true
@@ -89,7 +89,7 @@ rules:
     description: "Detects DHCP traffic. NOTE: To detect a rogue DHCP server, this requires correlation to distinguish from known, legitimate DHCP servers."
     type: UDP
     expression: (SrcPort == 67 && DstPort == 68) || (SrcPort == 68 && DstPort == 67)
-    severity: high
+    severity: info
     mitre: ["T1557.003"]
     tags: ["rogue-server"]
     enabled: true
@@ -99,7 +99,7 @@ rules:
     description: Detect WPAD (Web Proxy Auto-Discovery) queries
     type: DNS
     expression: len(Questions) > 0 && MatchesPattern(Questions[0].Name, "(?i)wpad")
-    severity: medium
+    severity: low
     mitre: ["T1557"]
     tags: ["mitm"]
     enabled: true
@@ -109,7 +109,7 @@ rules:
     description: Detect HTTP requests for WPAD configuration files
     type: HTTP
     expression: MatchesPattern(URL, "(?i)wpad\\.dat|proxy\\.pac")
-    severity: medium
+    severity: low
     mitre: ["T1557"]
     tags: ["mitm"]
     enabled: true

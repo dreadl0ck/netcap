@@ -245,7 +245,7 @@ rules:
       "TOR" in Applications || "SOCKS" in Applications || 
       "SOCKS4" in Applications || "SOCKS5" in Applications || 
       "HTTP_PROXY" in Applications || "HTTP_TUNNEL" in Applications
-    severity: medium
+    severity: low
     mitre: ["T1090"]
     tags: ["vpn"]
     enabled: true

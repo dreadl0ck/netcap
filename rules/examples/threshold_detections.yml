@@ -14,7 +14,7 @@ rules:
     description: Alert when 50+ SSH connection attempts detected within 120 seconds
     type: TCP
     expression: DstPort == 22 && SYN && !ACK
-    severity: critical
+    severity: high
     mitre: ["T1110.001", "T1021.004"]
     tags: ["brute-force"]
     enabled: true
@@ -26,7 +26,7 @@ rules:
     description: Alert when 30+ RDP connection attempts detected within 120 seconds
     type: TCP
     expression: DstPort == 3389 && SYN && !ACK
-    severity: critical
+    severity: high
     mitre: ["T1110.001", "T1021.001"]
     tags: ["brute-force"]
     enabled: true
@@ -54,7 +54,7 @@ rules:
     description: Alert when 200+ DNS queries to external hosts within 60 seconds
     type: DNS
     expression: len(Questions) > 0 && IsPublicIP(DstIP)
-    severity: high
+    severity: medium
     mitre: ["T1071.004"]
     tags: ["tunneling"]
     enabled: true
@@ -110,7 +110,7 @@ rules:
     description: Alert when 50+ small HTTP GET/POST requests within 600 seconds
     type: HTTP
     expression: (Method == "GET" || Method == "POST") && ReqContentLength < 100 && IsPublicIP(DstIP)
-    severity: high
+    severity: medium
     mitre: ["T1071.001"]
     tags: ["beaconing"]
     enabled: true
@@ -122,7 +122,7 @@ rules:
     description: Alert when 100+ DNS queries to same domain within 600 seconds
     type: DNS
     expression: len(Questions) > 0 && IsPublicIP(DstIP)
-    severity: medium
+    severity: low
     mitre: ["T1071.004"]
     tags: ["beaconing"]
     enabled: true
@@ -138,7 +138,7 @@ rules:
     description: Alert when 20+ SQL injection attempts detected within 300 seconds
     type: HTTP
     expression: MatchesPattern(URL, "(?i)(union.*select|insert.*into|delete.*from|drop.*table)")
-    severity: critical
+    severity: high
     mitre: ["T1190"]
     tags: ["sql-injection"]
     enabled: true
@@ -162,7 +162,7 @@ rules:
     description: Alert when 50+ requests with scanner user agents within 120 seconds
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(nikto|nmap|masscan|sqlmap|burp|nessus|acunetix)")
-    severity: medium
+    severity: low
     mitre: ["T1595.002"]
     tags: ["scanner"]
     enabled: true
@@ -178,7 +178,7 @@ rules:
     description: Alert when 30+ internal SMB connections within 60 seconds
     type: TCP
     expression: DstPort == 445 && IsPrivateIP(SrcIP) && IsPrivateIP(DstIP) && SYN && !ACK
-    severity: medium
+    severity: low
     mitre: ["T1021.002", "T1135"]
     tags: ["lateral-movement"]
     enabled: true
@@ -190,7 +190,7 @@ rules:
     description: Alert when 100+ Kerberos packets within 120 seconds (potential ticket attacks)
     type: TCP
     expression: DstPort == 88 || SrcPort == 88
-    severity: medium
+    severity: info
     mitre: ["T1558.001", "T1558.003"]
     tags: ["lateral-movement"]
     enabled: true
@@ -206,7 +206,7 @@ rules:
     description: Alert when 200+ connections to high ports (>49152) within 60 seconds
     type: TCP
     expression: DstPort > 49152 && SYN && !ACK
-    severity: low
+    severity: info
     mitre: ["T1571"]
     tags: ["anomaly"]
     enabled: true
@@ -218,7 +218,7 @@ rules:
     description: Alert when 100+ connections to external IPs within 60 seconds
     type: TCP
     expression: IsPublicIP(DstIP) && SYN && !ACK
-    severity: low
+    severity: info
     mitre: ["T1071"]
     tags: ["anomaly"]
     enabled: true

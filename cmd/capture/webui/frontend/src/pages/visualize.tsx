@@ -542,7 +542,7 @@ export default function Visualize() {
             {/* ECharts-based visualizations (Treemap, Bar3D, Graph) */}
             {chartUrl && (
               <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <Box sx={{ flex: 1, position: 'relative', minHeight: 650 }}>
+                <Box sx={{ flex: 1, position: 'relative', minHeight: 400 }}>
                   <iframe
                     key={chartRefreshKey}
                     src={chartUrl}

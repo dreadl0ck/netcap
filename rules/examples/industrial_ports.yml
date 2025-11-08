@@ -157,7 +157,7 @@ rules:
     description: Kerberos auth detected - used in enterprise integration with OT bridges
     type: TCP
     expression: DstPort == 88 || SrcPort == 88
-    severity: medium
+    severity: low
     mitre: ["T1558"]
     tags: ["authentication"]
     enabled: true
@@ -167,7 +167,7 @@ rules:
     description: Dynamic RPC ports detected - used by Windows services and DCOM in ICS apps
     type: TCP
     expression: DstPort == 1025 || SrcPort == 1025
-    severity: high
+    severity: medium
     mitre: ["T1021.003"]
     tags: ["legacy"]
     enabled: true
@@ -177,7 +177,7 @@ rules:
     description: Windows remote management (HTTP) detected - used for automation/config
     type: TCP
     expression: DstPort == 5985 || SrcPort == 5985
-    severity: high
+    severity: medium
     mitre: ["T1021.006"]
     tags: ["remote-management"]
     enabled: true
@@ -186,7 +186,7 @@ rules:
     description: Windows remote management (HTTPS) detected - secure WinRM for remote management
     type: TCP
     expression: DstPort == 5986 || SrcPort == 5986
-    severity: high
+    severity: medium
     mitre: ["T1021.006"]
     tags: ["remote-management", "encrypted"]
     enabled: true

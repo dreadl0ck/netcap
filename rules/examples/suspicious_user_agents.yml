@@ -102,7 +102,7 @@ rules:
     description: HTTP/1.1 client written from scratch for Node.js often seen used in phishing as a service
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)undici")
-    severity: medium
+    severity: low
     mitre: ["T1566"]
     tags: ["phishing", "undici"]
     enabled: true
@@ -138,7 +138,7 @@ rules:
     description: Lightweight HTTP client library for JavaScript - attackers observed bypassing MFA in O365 using axios HTTP client
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^axios")
-    severity: medium
+    severity: low
     mitre: ["T1110"]
     tags: ["phishing", "axios", "mfa-bypass"]
     enabled: true
@@ -147,7 +147,7 @@ rules:
     description: Used by multiple offensive tools including O365 credential stuffing and phishing frameworks
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^aiohttp")
-    severity: medium
+    severity: low
     mitre: ["T1110"]
     tags: ["phishing", "aiohttp"]
     enabled: true
@@ -169,7 +169,7 @@ rules:
     description: Static User agent used by PACU AWS exploitation Framework - can also be used by legit tools
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^Boto3/1\\.(7|9)\\.[0-9]+ Python/[0-9]\\.[0-9]\\.[0-9]")
-    severity: high
+    severity: medium
     mitre: ["T1078.004", "T1580"]
     tags: ["exploitation", "pacu", "aws"]
     enabled: true
@@ -178,7 +178,7 @@ rules:
     description: Static User agent used by PACU AWS exploitation Framework - console endpoints
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(console\\.amazonaws\\.com|signin\\.amazonaws\\.com)")
-    severity: low
+    severity: info
     mitre: ["T1078.004"]
     tags: ["exploitation", "pacu", "aws"]
     enabled: true
@@ -187,7 +187,7 @@ rules:
     description: Kali linux offensive distribution detected
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(kali linux|kali1-686|kali1-amd64)")
-    severity: critical
+    severity: medium
     mitre: ["T1595"]
     tags: ["exploitation", "kali", "offensive-tools"]
     enabled: true
@@ -200,7 +200,7 @@ rules:
     description: LogMeIn Remote Access application
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^logmein")
-    severity: high
+    severity: low
     mitre: ["T1219"]
     tags: ["rmm", "remote-access", "logmein"]
     enabled: true
@@ -218,7 +218,7 @@ rules:
     description: Used by remotepc remote access tool agent
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^remotepc ")
-    severity: medium
+    severity: low
     mitre: ["T1219"]
     tags: ["rmm", "remote-access", "remotepc"]
     enabled: true
@@ -227,7 +227,7 @@ rules:
     description: Used by Zoho Assist RMM agent
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)desktopcental agent")
-    severity: medium
+    severity: low
     mitre: ["T1219"]
     tags: ["rmm", "remote-access", "zoho"]
     enabled: true
@@ -236,7 +236,7 @@ rules:
     description: Used by NetSupport RAT client
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^netsupport manager")
-    severity: high
+    severity: low
     mitre: ["T1219"]
     tags: ["rmm", "remote-access", "netsupport"]
     enabled: true
@@ -245,7 +245,7 @@ rules:
     description: Used by NetSupport RAT server
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^netsupport gateway")
-    severity: high
+    severity: low
     mitre: ["T1219"]
     tags: ["rmm", "remote-access", "netsupport", "c2"]
     enabled: true
@@ -276,7 +276,7 @@ rules:
     description: Used by syncthing file synchronization software
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^syncthing v")
-    severity: medium
+    severity: low
     mitre: ["T1567"]
     tags: ["exfiltration", "syncthing", "file-sharing"]
     enabled: true
@@ -315,7 +315,7 @@ rules:
     description: Shodan internet scanning service
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)shodan")
-    severity: high
+    severity: medium
     mitre: ["T1595"]
     tags: ["recon", "shodan", "scanning"]
     enabled: true
@@ -324,7 +324,7 @@ rules:
     description: Censys internet scanning and reconnaissance service
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)censys")
-    severity: high
+    severity: medium
     mitre: ["T1595"]
     tags: ["recon", "censys", "scanning"]
     enabled: true
@@ -918,7 +918,7 @@ rules:
     description: PingCastle Active Directory security audit tool
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)pingcastle")
-    severity: medium
+    severity: low
     mitre: ["T1087"]
     tags: ["discovery", "pingcastle"]
     enabled: true
@@ -999,7 +999,7 @@ rules:
     description: Ngrok secure introspectable tunnels to localhost
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)ngrok")
-    severity: medium
+    severity: low
     mitre: ["T1090"]
     tags: ["tunneling", "ngrok"]
     enabled: true
@@ -1008,7 +1008,7 @@ rules:
     description: SSHuttle transparent proxy server that works as a poor mans VPN
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)sshuttle")
-    severity: medium
+    severity: low
     mitre: ["T1090"]
     tags: ["vpn", "sshuttle", "tunneling"]
     enabled: true
@@ -1062,7 +1062,7 @@ rules:
     description: Qualys SSL Labs SSL server test
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)qualys ssl labs")
-    severity: low
+    severity: info
     mitre: ["T1595"]
     tags: ["scanner", "qualys", "tls"]
     enabled: true
@@ -1080,7 +1080,7 @@ rules:
     description: Google Cloud Storage gsutil tool
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)gsutil")
-    severity: low
+    severity: info
     mitre: ["T1567"]
     tags: ["cloud", "gcp", "data-transfer"]
     enabled: true
@@ -1089,7 +1089,7 @@ rules:
     description: AWS Command Line Interface
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^aws-cli")
-    severity: low
+    severity: info
     mitre: ["T1567"]
     tags: ["cloud", "aws", "data-transfer"]
     enabled: true
@@ -1098,7 +1098,7 @@ rules:
     description: Azure Command Line Interface
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^azure-cli")
-    severity: low
+    severity: info
     mitre: ["T1567"]
     tags: ["cloud", "azure", "data-transfer"]
     enabled: true
@@ -1107,7 +1107,7 @@ rules:
     description: Rclone command line program to sync files and directories
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)rclone")
-    severity: medium
+    severity: low
     mitre: ["T1567"]
     tags: ["exfiltration", "rclone", "data-transfer"]
     enabled: true
@@ -1116,7 +1116,7 @@ rules:
     description: Restic backup program
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)restic")
-    severity: low
+    severity: info
     mitre: ["T1567"]
     tags: ["backup", "restic"]
     enabled: true
@@ -1125,7 +1125,7 @@ rules:
     description: BorgBackup deduplicating backup program
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)borg")
-    severity: low
+    severity: info
     mitre: ["T1567"]
     tags: ["backup", "borgbackup"]
     enabled: true
@@ -1134,7 +1134,7 @@ rules:
     description: Duplicity encrypted bandwidth-efficient backup
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)duplicity")
-    severity: low
+    severity: info
     mitre: ["T1567"]
     tags: ["backup", "duplicity"]
     enabled: true
@@ -1179,7 +1179,7 @@ rules:
     description: Ansible automation tool
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)ansible")
-    severity: low
+    severity: info
     mitre: ["T1059"]
     tags: ["automation", "ansible"]
     enabled: true
@@ -1188,7 +1188,7 @@ rules:
     description: Terraform infrastructure as code tool
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)terraform")
-    severity: low
+    severity: info
     mitre: []
     tags: ["automation", "terraform"]
     enabled: true
@@ -1197,7 +1197,7 @@ rules:
     description: Kubernetes container orchestration
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)kubernetes")
-    severity: low
+    severity: info
     mitre: []
     tags: ["orchestration", "kubernetes"]
     enabled: true
@@ -1206,7 +1206,7 @@ rules:
     description: Docker container platform
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)docker")
-    severity: low
+    severity: info
     mitre: []
     tags: ["container", "docker"]
     enabled: true
@@ -1449,7 +1449,7 @@ rules:
     description: Wireshark network protocol analyzer
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)wireshark")
-    severity: medium
+    severity: info
     mitre: ["T1040"]
     tags: ["network", "wireshark", "capture"]
     enabled: true
@@ -1458,7 +1458,7 @@ rules:
     description: Tcpdump packet analyzer
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)tcpdump")
-    severity: medium
+    severity: info
     mitre: ["T1040"]
     tags: ["network", "tcpdump", "capture"]
     enabled: true
@@ -1467,7 +1467,7 @@ rules:
     description: Scapy packet manipulation program
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)scapy")
-    severity: medium
+    severity: low
     mitre: ["T1040"]
     tags: ["network", "scapy", "packet-crafting"]
     enabled: true
@@ -1521,7 +1521,7 @@ rules:
     description: PowerShell command-line shell and scripting language
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^powershell")
-    severity: medium
+    severity: low
     mitre: ["T1059.001"]
     tags: ["scripting", "powershell"]
     enabled: true
@@ -1530,7 +1530,7 @@ rules:
     description: Python Requests HTTP library - often used in automation and scripts
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^python-requests")
-    severity: low
+    severity: info
     mitre: []
     tags: ["scripting", "python", "automation"]
     enabled: true
@@ -1539,7 +1539,7 @@ rules:
     description: Python urllib HTTP library
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^python-urllib")
-    severity: low
+    severity: info
     mitre: []
     tags: ["scripting", "python"]
     enabled: true
@@ -1548,7 +1548,7 @@ rules:
     description: Go programming language HTTP client
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^go-http-client")
-    severity: low
+    severity: info
     mitre: []
     tags: ["scripting", "golang"]
     enabled: true
@@ -1557,7 +1557,7 @@ rules:
     description: Java HTTP client
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^java/")
-    severity: low
+    severity: info
     mitre: []
     tags: ["scripting", "java"]
     enabled: true
@@ -1566,7 +1566,7 @@ rules:
     description: Ruby HTTP client
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^ruby")
-    severity: low
+    severity: info
     mitre: []
     tags: ["scripting", "ruby"]
     enabled: true
@@ -1575,7 +1575,7 @@ rules:
     description: Perl LWP library
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^libwww-perl")
-    severity: low
+    severity: info
     mitre: []
     tags: ["scripting", "perl"]
     enabled: true
@@ -1584,7 +1584,7 @@ rules:
     description: Wget file retrieval utility
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^wget")
-    severity: low
+    severity: info
     mitre: ["T1105"]
     tags: ["download", "wget"]
     enabled: true
@@ -1593,7 +1593,7 @@ rules:
     description: cURL command line tool for transferring data
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)^curl")
-    severity: low
+    severity: info
     mitre: ["T1105"]
     tags: ["download", "curl"]
     enabled: true
@@ -1602,7 +1602,7 @@ rules:
     description: HTTPie user-friendly HTTP client
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)httpie")
-    severity: low
+    severity: info
     mitre: []
     tags: ["http-client", "httpie"]
     enabled: true
@@ -1647,7 +1647,7 @@ rules:
     description: Selenium browser automation tool
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)selenium")
-    severity: low
+    severity: info
     mitre: []
     tags: ["automation", "selenium"]
     enabled: true
@@ -1656,7 +1656,7 @@ rules:
     description: Puppeteer headless Chrome Node API
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)puppeteer")
-    severity: low
+    severity: info
     mitre: []
     tags: ["automation", "puppeteer"]
     enabled: true
@@ -1665,7 +1665,7 @@ rules:
     description: Playwright browser automation library
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)playwright")
-    severity: low
+    severity: info
     mitre: []
     tags: ["automation", "playwright"]
     enabled: true
@@ -1674,7 +1674,7 @@ rules:
     description: Headless Chrome browser
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)headlesschrome")
-    severity: low
+    severity: info
     mitre: []
     tags: ["automation", "chrome"]
     enabled: true
@@ -1683,7 +1683,7 @@ rules:
     description: PhantomJS headless WebKit
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)phantomjs")
-    severity: low
+    severity: info
     mitre: []
     tags: ["automation", "phantomjs"]
     enabled: true
@@ -1692,7 +1692,7 @@ rules:
     description: Scrapy web scraping framework
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)scrapy")
-    severity: low
+    severity: info
     mitre: []
     tags: ["scraping", "scrapy"]
     enabled: true
@@ -1701,7 +1701,7 @@ rules:
     description: BeautifulSoup Python library for web scraping
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)beautifulsoup")
-    severity: low
+    severity: info
     mitre: []
     tags: ["scraping", "beautifulsoup"]
     enabled: true
@@ -1710,7 +1710,7 @@ rules:
     description: MechanicalSoup Python library for automating web interaction
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)mechanicalsoup")
-    severity: low
+    severity: info
     mitre: []
     tags: ["scraping", "mechanicalsoup"]
     enabled: true

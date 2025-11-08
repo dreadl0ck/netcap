@@ -99,7 +99,7 @@ rules:
     description: Detect curl user agent indicating automated tool or script usage
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)curl/")
-    severity: medium
+    severity: info
     mitre: ["T1071.001"]
     tags: ["automated-tool", "suspicious-ua"]
     enabled: true
@@ -109,7 +109,7 @@ rules:
     description: Detect Python-based user agents (python-requests, urllib, etc.) indicating scripted access
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(python|urllib|requests/)")
-    severity: medium
+    severity: info
     mitre: ["T1071.001"]
     tags: ["automated-tool", "suspicious-ua"]
     enabled: true
@@ -119,7 +119,7 @@ rules:
     description: Detect Go HTTP client user agent indicating automated tool or script usage
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(Go-http-client|golang)")
-    severity: medium
+    severity: info
     mitre: ["T1071.001"]
     tags: ["automated-tool", "suspicious-ua"]
     enabled: true
@@ -129,7 +129,7 @@ rules:
     description: Detect wget command-line tool indicating automated downloads or scraping
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)wget")
-    severity: medium
+    severity: info
     mitre: ["T1071.001"]
     tags: ["automated-tool", "suspicious-ua"]
     enabled: true
@@ -139,7 +139,7 @@ rules:
     description: Detect PowerShell Invoke-WebRequest or Invoke-RestMethod usage
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(PowerShell|WindowsPowerShell)")
-    severity: high
+    severity: low
     mitre: ["T1059.001", "T1071.001"]
     tags: ["automated-tool", "suspicious-ua", "powershell"]
     enabled: true
@@ -149,7 +149,7 @@ rules:
     description: Detect Java-based HTTP clients (Apache HttpClient, OkHttp, etc.)
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(Java/|Apache-HttpClient|okhttp|jersey)")
-    severity: low
+    severity: info
     mitre: ["T1071.001"]
     tags: ["automated-tool", "suspicious-ua"]
     enabled: true
@@ -159,7 +159,7 @@ rules:
     description: Detect Ruby HTTP libraries indicating scripted access
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(Ruby|rest-client|httparty|faraday)")
-    severity: low
+    severity: info
     mitre: ["T1071.001"]
     tags: ["automated-tool", "suspicious-ua"]
     enabled: true
@@ -169,7 +169,7 @@ rules:
     description: Detect Perl LWP or other HTTP libraries
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(libwww-perl|LWP::|perl)")
-    severity: medium
+    severity: info
     mitre: ["T1071.001"]
     tags: ["automated-tool", "suspicious-ua"]
     enabled: true
@@ -179,7 +179,7 @@ rules:
     description: Detect Node.js axios, node-fetch, got, or other HTTP clients
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(axios|node-fetch|got/|request/|superagent)")
-    severity: low
+    severity: info
     mitre: ["T1071.001"]
     tags: ["automated-tool", "suspicious-ua", "nodejs"]
     enabled: true
@@ -189,7 +189,7 @@ rules:
     description: Detect HTTPie command-line HTTP client
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)HTTPie")
-    severity: low
+    severity: info
     mitre: ["T1071.001"]
     tags: ["automated-tool", "suspicious-ua"]
     enabled: true
@@ -199,7 +199,7 @@ rules:
     description: Detect Postman, Insomnia, and other API testing tools
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(Postman|PostmanRuntime|Insomnia|Paw/|RestClient)")
-    severity: low
+    severity: info
     mitre: ["T1595.002"]
     tags: ["api-testing", "suspicious-ua"]
     enabled: true
@@ -209,7 +209,7 @@ rules:
     description: Detect headless browsers and automation frameworks (Puppeteer, Selenium, PhantomJS)
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(HeadlessChrome|Puppeteer|Selenium|PhantomJS|playwright)")
-    severity: medium
+    severity: low
     mitre: ["T1071.001", "T1589"]
     tags: ["automation", "scraping", "suspicious-ua"]
     enabled: true
@@ -219,7 +219,7 @@ rules:
     description: Detect common web scraping tools and libraries
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(scrapy|beautifulsoup|mechanize|jsoup|htmlunit)")
-    severity: medium
+    severity: low
     mitre: ["T1589.002"]
     tags: ["scraping", "suspicious-ua"]
     enabled: true
@@ -229,7 +229,7 @@ rules:
     description: Detect generic bot patterns in user agent
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(bot[^a]|crawler|spider|scraper)")
-    severity: low
+    severity: info
     mitre: ["T1589.002"]
     tags: ["bot", "crawler", "suspicious-ua"]
     enabled: true
@@ -239,7 +239,7 @@ rules:
     description: Detect missing or empty user agent string (suspicious for legitimate browsers)
     type: HTTP
     expression: UserAgent == "" || UserAgent == "-"
-    severity: medium
+    severity: low
     mitre: ["T1071.001"]
     tags: ["suspicious-ua", "anomaly"]
     enabled: true
@@ -259,7 +259,7 @@ rules:
     description: Detect .NET WebClient or HttpClient usage
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(System\\.Net|Microsoft-CryptoAPI|WinHttp)")
-    severity: medium
+    severity: info
     mitre: ["T1071.001"]
     tags: ["automated-tool", "suspicious-ua", "dotnet"]
     enabled: true
@@ -269,7 +269,7 @@ rules:
     description: Detect lynx, links, w3m and other text-based browsers
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(lynx|w3m|links|elinks)")
-    severity: low
+    severity: info
     mitre: ["T1071.001"]
     tags: ["automated-tool", "suspicious-ua"]
     enabled: true
@@ -289,7 +289,7 @@ rules:
     description: Detect serverless/cloud function user agents (potential for abuse)
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(AWS-Lambda|Azure-Functions|Cloud-Functions|Netlify)")
-    severity: low
+    severity: info
     mitre: ["T1071.001"]
     tags: ["cloud", "serverless", "suspicious-ua"]
     enabled: true
@@ -299,7 +299,7 @@ rules:
     description: Detect Rust reqwest or other HTTP clients
     type: HTTP
     expression: MatchesPattern(UserAgent, "(?i)(reqwest|hyper/|ureq)")
-    severity: low
+    severity: info
     mitre: ["T1071.001"]
     tags: ["automated-tool", "suspicious-ua"]
     enabled: true
@@ -349,7 +349,7 @@ rules:
     description: Detect clients generating excessive HTTP errors (4xx/5xx)
     type: HTTP
     expression: StatusCode >= 400
-    severity: medium
+    severity: low
     mitre: ["T1595.002"]
     tags: ["scanning"]
     enabled: true

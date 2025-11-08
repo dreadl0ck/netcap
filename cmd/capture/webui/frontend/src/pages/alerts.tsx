@@ -370,7 +370,7 @@ export default function AlertsPage() {
   ) : null;
 
   return (
-    <Layout title="Security Alerts" headerAction={fileSelector}>
+    <Layout title="Alerts" headerAction={fileSelector}>
       <Box>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
           <Box>
