@@ -578,22 +578,68 @@ func groupAlerts(alerts []AlertResponse, severityFilter, ruleNameFilter string) 
 }
 
 // sortGroupedAlerts sorts grouped alerts based on the specified field and order
+// Uses multi-level sorting to ensure deterministic ordering:
+// 1. Primary: user-selected field
+// 2. Secondary: lastSeen (if not already primary)
+// 3. Tertiary: ruleName (for complete determinism)
 func sortGroupedAlerts(groups []GroupedAlert, sortBy, sortOrder string) {
 	sort.Slice(groups, func(i, j int) bool {
 		var less bool
+		
+		// Primary sort by the selected field
 		switch sortBy {
 		case "count":
-			less = groups[i].Count < groups[j].Count
+			if groups[i].Count != groups[j].Count {
+				less = groups[i].Count < groups[j].Count
+			} else {
+				// Secondary: sort by lastSeen when counts are equal
+				if groups[i].LastSeen != groups[j].LastSeen {
+					less = groups[i].LastSeen < groups[j].LastSeen
+				} else {
+					// Tertiary: sort by ruleName for complete determinism
+					less = groups[i].RuleName < groups[j].RuleName
+				}
+			}
 		case "firstSeen":
-			less = groups[i].FirstSeen < groups[j].FirstSeen
+			if groups[i].FirstSeen != groups[j].FirstSeen {
+				less = groups[i].FirstSeen < groups[j].FirstSeen
+			} else {
+				// Secondary: sort by lastSeen when firstSeen are equal
+				if groups[i].LastSeen != groups[j].LastSeen {
+					less = groups[i].LastSeen < groups[j].LastSeen
+				} else {
+					// Tertiary: sort by ruleName for complete determinism
+					less = groups[i].RuleName < groups[j].RuleName
+				}
+			}
 		case "severity":
 			// Sort by severity level: critical > high > medium > low
 			severityOrder := map[string]int{"critical": 4, "high": 3, "medium": 2, "low": 1}
 			iVal := severityOrder[strings.ToLower(groups[i].Severity)]
 			jVal := severityOrder[strings.ToLower(groups[j].Severity)]
-			less = iVal < jVal
+			if iVal != jVal {
+				less = iVal < jVal
+			} else {
+				// Secondary: sort by lastSeen when severity is equal
+				if groups[i].LastSeen != groups[j].LastSeen {
+					less = groups[i].LastSeen < groups[j].LastSeen
+				} else {
+					// Tertiary: sort by ruleName for complete determinism
+					less = groups[i].RuleName < groups[j].RuleName
+				}
+			}
 		default: // lastSeen
-			less = groups[i].LastSeen < groups[j].LastSeen
+			if groups[i].LastSeen != groups[j].LastSeen {
+				less = groups[i].LastSeen < groups[j].LastSeen
+			} else {
+				// Secondary: sort by count when lastSeen are equal
+				if groups[i].Count != groups[j].Count {
+					less = groups[i].Count < groups[j].Count
+				} else {
+					// Tertiary: sort by ruleName for complete determinism
+					less = groups[i].RuleName < groups[j].RuleName
+				}
+			}
 		}
 
 		if sortOrder == "desc" {

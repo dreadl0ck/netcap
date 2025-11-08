@@ -32,11 +32,13 @@ func runServiceMode() {
 
 	// Create service configuration
 	serviceConfig := &webui.ServiceConfig{
-		MaxFileSize:     *flagServiceMaxFileSize,
-		MaxAnalysisHour: *flagServiceMaxPerHour,
-		SessionExpiry:   *flagServiceExpiry,
-		CleanupInterval: *flagServiceCleanup,
-		MaxStorageBytes: *flagServiceMaxStorage,
+		MaxFileSize:           *flagServiceMaxFileSize,
+		MaxAnalysisHour:       *flagServiceMaxPerHour,
+		SessionExpiry:         *flagServiceExpiry,
+		CleanupInterval:       *flagServiceCleanup,
+		MaxStorageBytes:       *flagServiceMaxStorage,
+		PreloadLargestN:       *flagServicePreloadLargestN,
+		EnforceMaxSizePreload: *flagServiceEnforceMaxSizePreload,
 	}
 
 	// Set data directory from flag or use default
@@ -55,6 +57,12 @@ func runServiceMode() {
 	} else {
 		fmt.Printf("Max storage per IP: %d bytes (%.2f GB)\n", serviceConfig.MaxStorageBytes, float64(serviceConfig.MaxStorageBytes)/(1024*1024*1024))
 	}
+	if serviceConfig.PreloadLargestN > 0 {
+		fmt.Printf("Preload largest N files: %d\n", serviceConfig.PreloadLargestN)
+	} else {
+		fmt.Printf("Preload largest N files: all\n")
+	}
+	fmt.Printf("Enforce max size for preloaded pcaps: %v\n", serviceConfig.EnforceMaxSizePreload)
 
 	// Create unified server in service mode
 	server := webui.NewServer(

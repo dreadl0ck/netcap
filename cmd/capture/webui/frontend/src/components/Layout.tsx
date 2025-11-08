@@ -30,6 +30,7 @@ import MenuBookIcon from '@mui/icons-material/MenuBook';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import RuleIcon from '@mui/icons-material/Rule';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
@@ -67,11 +68,27 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
     refreshInterval: 10000, // Refresh every 10 seconds
   });
 
+  // Fetch extracted files for badge
+  const { data: extractedFilesData, mutate: mutateExtractedFiles } = useSWR('extractedFiles', () => api.getExtractedFiles(), {
+    refreshInterval: 10000, // Refresh every 10 seconds
+  });
+
+  // Fetch error logs for badge
+  const { data: errorLogs, mutate: mutateErrorLogs } = useSWR('errorLogs', () => api.getErrorLogs(), {
+    refreshInterval: 10000, // Refresh every 10 seconds
+  });
+
   // Calculate total PCAP count (including preloaded and user files)
   const pcapCount = inputFiles?.length || 0;
   
   // Get total alerts count
   const alertCount = alertStats?.totalAlerts || 0;
+
+  // Get total extracted files count
+  const extractedFilesCount = extractedFilesData?.totalCount || 0;
+
+  // Get total error logs count
+  const errorLogsCount = errorLogs?.length || 0;
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -89,18 +106,20 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
     return router.pathname.startsWith(path);
   };
 
-  // Listen for directory-changed events to refresh alert stats
+  // Listen for directory-changed events to refresh alert stats, extracted files, and error logs count
   useEffect(() => {
     const handleDirectoryChanged = () => {
-      // Refresh alert statistics when the capture file changes
+      // Refresh alert statistics, extracted files, and error logs count when the capture file changes
       mutateAlertStats();
+      mutateExtractedFiles();
+      mutateErrorLogs();
     };
 
     window.addEventListener('directory-changed', handleDirectoryChanged);
     return () => {
       window.removeEventListener('directory-changed', handleDirectoryChanged);
     };
-  }, [mutateAlertStats]);
+  }, [mutateAlertStats, mutateExtractedFiles, mutateErrorLogs]);
 
   const drawer = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -345,6 +364,40 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
             <ListItemText primary="Logs" />
           </ListItemButton>
         </Link>
+        <Link href="/errors" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/errors')}
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <Badge 
+                badgeContent={errorLogsCount} 
+                color="error"
+                max={999}
+                sx={{
+                  '& .MuiBadge-badge': {
+                    right: -3,
+                    top: 3,
+                  },
+                }}
+              >
+                <ErrorOutlineIcon />
+              </Badge>
+            </ListItemIcon>
+            <ListItemText primary="Errors" />
+          </ListItemButton>
+        </Link>
         <Link href="/rules" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/rules')}
@@ -421,6 +474,40 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
               </Badge>
             </ListItemIcon>
             <ListItemText primary="Alerts" />
+          </ListItemButton>
+        </Link>
+        <Link href="/extracted-files" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/extracted-files')}
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <Badge 
+                badgeContent={extractedFilesCount} 
+                color="primary"
+                max={999}
+                sx={{
+                  '& .MuiBadge-badge': {
+                    right: -3,
+                    top: 3,
+                  },
+                }}
+              >
+                <InsertDriveFileIcon />
+              </Badge>
+            </ListItemIcon>
+            <ListItemText primary="Extracted Files" />
           </ListItemButton>
         </Link>
         <Link href="/dbs" passHref style={{ textDecoration: 'none', color: 'inherit' }}>

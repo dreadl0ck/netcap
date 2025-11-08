@@ -14,6 +14,7 @@
 package webui
 
 import (
+	"bufio"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -25,6 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -1931,6 +1933,188 @@ func (s *Server) handleLocalModeIssueReport(w http.ResponseWriter, req ReportIss
 	})
 }
 
+// handleExtractedFiles returns list of extracted files for the current capture
+func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Determine the output directory
+	s.mu.RLock()
+	outDir := s.outDir
+
+	// In service mode, use the current session's output directory
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
+	s.mu.RUnlock()
+
+	if outDir == "" {
+		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"error": "No output directory selected",
+		})
+		return
+	}
+
+	// Get the files directory within the output directory
+	filesDir := filepath.Join(outDir, "files")
+
+	// Check if files directory exists
+	if _, err := os.Stat(filesDir); os.IsNotExist(err) {
+		// Return empty list if directory doesn't exist
+		RespondJSON(w, http.StatusOK, map[string]interface{}{
+			"files":      []map[string]interface{}{},
+			"totalCount": 0,
+			"filesDir":   filesDir,
+		})
+		return
+	}
+
+	// Walk the files directory and collect file information
+	var extractedFiles []map[string]interface{}
+	err := filepath.Walk(filesDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Printf("[WebUI] Error walking files directory: %v", err)
+			return nil // Continue walking
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			return nil
+		}
+
+		// Get relative path from files directory
+		relPath, err := filepath.Rel(filesDir, path)
+		if err != nil {
+			relPath = info.Name()
+		}
+
+		// Determine MIME type from directory structure
+		mimeType := ""
+		pathParts := strings.Split(filepath.ToSlash(relPath), "/")
+		if len(pathParts) >= 2 {
+			mimeType = pathParts[0] + "/" + pathParts[1]
+		}
+
+		fileInfo := map[string]interface{}{
+			"name":         info.Name(),
+			"path":         relPath,
+			"fullPath":     path,
+			"size":         info.Size(),
+			"modifiedTime": info.ModTime().Unix(),
+			"mimeType":     mimeType,
+		}
+
+		extractedFiles = append(extractedFiles, fileInfo)
+		return nil
+	})
+
+	if err != nil {
+		log.Printf("[WebUI] Failed to read extracted files: %v", err)
+		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"error": fmt.Sprintf("Failed to read extracted files: %v", err),
+		})
+		return
+	}
+
+	// Sort by modified time (newest first)
+	// Note: This is a simple sort, could be optimized if needed
+
+	RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"files":      extractedFiles,
+		"totalCount": len(extractedFiles),
+		"filesDir":   filesDir,
+	})
+}
+
+// handleDownloadExtractedFile serves individual extracted files for download
+func (s *Server) handleDownloadExtractedFile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract file path from URL: /api/extracted-files/download/{relativePath}
+	relativePath := strings.TrimPrefix(r.URL.Path, "/api/extracted-files/download/")
+	if relativePath == "" {
+		http.Error(w, "File path required", http.StatusBadRequest)
+		return
+	}
+
+	// Determine the output directory
+	s.mu.RLock()
+	outDir := s.outDir
+
+	// In service mode, use the current session's output directory
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
+	s.mu.RUnlock()
+
+	if outDir == "" {
+		http.Error(w, "No output directory selected", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Build full path to the file
+	filesDir := filepath.Join(outDir, "files")
+	fullPath := filepath.Join(filesDir, filepath.Clean(relativePath))
+
+	// Security check: ensure the file is within the files directory
+	if !strings.HasPrefix(fullPath, filesDir) {
+		log.Printf("[WebUI] Security violation: attempt to access file outside files directory: %s", relativePath)
+		http.Error(w, "Invalid file path", http.StatusForbidden)
+		return
+	}
+
+	// Check if file exists
+	fileInfo, err := os.Stat(fullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			http.Error(w, "File not found", http.StatusNotFound)
+		} else {
+			log.Printf("[WebUI] Error accessing file %s: %v", relativePath, err)
+			http.Error(w, "Error accessing file", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Ensure it's not a directory
+	if fileInfo.IsDir() {
+		http.Error(w, "Cannot download directory", http.StatusBadRequest)
+		return
+	}
+
+	// Open the file
+	file, err := os.Open(fullPath)
+	if err != nil {
+		log.Printf("[WebUI] Failed to open file %s: %v", relativePath, err)
+		http.Error(w, "Failed to open file", http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	// Set headers for download
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", fileInfo.Name()))
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
+
+	// Security headers to prevent XSS and other attacks when files are previewed
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; img-src data: *;")
+
+	// Stream the file to the response
+	if _, err := io.Copy(w, file); err != nil {
+		log.Printf("[WebUI] Error streaming file %s: %v", relativePath, err)
+	}
+}
+
 // handleErrorLogContent serves error log content for failed analyses
 func (s *Server) handleErrorLogContent(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -1956,17 +2140,26 @@ func (s *Server) handleErrorLogContent(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Check if session has an error log path
-		if session.ErrorLogPath == "" {
-			log.Printf("[WebUI] No error log path for session: %s", sessionID)
-			http.Error(w, "No error log available for this session", http.StatusNotFound)
-			return
+		// Determine error log path
+		// Priority 1: Use session.ErrorLogPath if set (for failed analyses)
+		// Priority 2: Check for errors.log in output directory (for successful analyses with packet errors)
+		errorLogPath := session.ErrorLogPath
+		if errorLogPath == "" {
+			// Try standard errors.log in output directory
+			errorLogPath = filepath.Join(session.OutputDir, "errors.log")
+
+			// Check if the file exists
+			if _, err := os.Stat(errorLogPath); os.IsNotExist(err) {
+				log.Printf("[WebUI] No error log found for session: %s (checked %s)", sessionID, errorLogPath)
+				http.Error(w, "No error log available for this session", http.StatusNotFound)
+				return
+			}
 		}
 
-		log.Printf("[WebUI] Reading error log from: %s", session.ErrorLogPath)
+		log.Printf("[WebUI] Reading error log from: %s", errorLogPath)
 
 		// Read the error log file
-		content, err := os.ReadFile(session.ErrorLogPath)
+		content, err := os.ReadFile(errorLogPath)
 		if err != nil {
 			log.Printf("[WebUI] Failed to read error log for session %s: %v", sessionID, err)
 			http.Error(w, fmt.Sprintf("Failed to read error log: %v", err), http.StatusInternalServerError)
@@ -2021,6 +2214,400 @@ func (s *Server) handleErrorLogContent(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write(content)
+}
+
+// handleErrorLogFiles returns list of capture files with errors.log files
+func (s *Server) handleErrorLogFiles(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Service mode
+	if s.isServiceMode && s.sessionManager != nil {
+		clientIP := s.getUserIP(r)
+		sessions := s.sessionManager.GetSessionsForIP(clientIP)
+
+		// Add preloaded sessions
+		allSessions := s.sessionManager.GetAllSessions()
+		for _, session := range allSessions {
+			if session.IsPreloaded {
+				sessions = append(sessions, session)
+			}
+		}
+
+		type ErrorLogInfo struct {
+			SessionID     string `json:"sessionId"`
+			InputFilename string `json:"inputFilename"`
+			InputFileSize int64  `json:"inputFileSize"`
+			ErrorCount    int    `json:"errorCount"`
+			ErrorLogPath  string `json:"errorLogPath"`
+			OutputDir     string `json:"outputDir"`
+		}
+
+		var errorLogs []ErrorLogInfo
+
+		for _, session := range sessions {
+			// Check if session has errors.log
+			errorLogPath := filepath.Join(session.OutputDir, "errors.log")
+			if _, err := os.Stat(errorLogPath); os.IsNotExist(err) {
+				continue
+			}
+
+			// Count errors in the log
+			errorCount, err := countErrorsInLog(errorLogPath)
+			if err != nil {
+				log.Printf("[WebUI] Error counting errors in %s: %v", errorLogPath, err)
+				continue
+			}
+
+			if errorCount > 0 {
+				errorLogs = append(errorLogs, ErrorLogInfo{
+					SessionID:     session.SessionID,
+					InputFilename: session.InputFilename,
+					InputFileSize: session.InputFileSize,
+					ErrorCount:    errorCount,
+					ErrorLogPath:  errorLogPath,
+					OutputDir:     session.OutputDir,
+				})
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(errorLogs); err != nil {
+			http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Local mode
+	s.mu.RLock()
+	inputFiles := s.inputFiles
+	fileOutputDirs := make(map[string]string)
+	for k, v := range s.fileOutputDirs {
+		fileOutputDirs[k] = v
+	}
+	baseOutDir := s.baseOutDir
+	s.mu.RUnlock()
+
+	type ErrorLogInfo struct {
+		InputFile     string `json:"inputFile"`
+		InputFilename string `json:"inputFilename"`
+		InputFileSize int64  `json:"inputFileSize"`
+		ErrorCount    int    `json:"errorCount"`
+		ErrorLogPath  string `json:"errorLogPath"`
+		OutputDir     string `json:"outputDir"`
+	}
+
+	var errorLogs []ErrorLogInfo
+
+	for _, inputFile := range inputFiles {
+		// Get output directory for this file
+		var outputDir string
+		if dir, exists := fileOutputDirs[inputFile]; exists {
+			outputDir = dir
+		} else {
+			// Calculate the subdirectory
+			if len(inputFiles) == 1 {
+				outputDir = baseOutDir
+			} else {
+				baseName := filepath.Base(inputFile)
+				dirName := baseName
+				for _, ext := range []string{".pcap", ".pcapng", ".cap", ".dmp"} {
+					if strings.HasSuffix(dirName, ext) {
+						dirName = strings.TrimSuffix(dirName, ext)
+						break
+					}
+				}
+				outputDir = filepath.Join(baseOutDir, dirName)
+			}
+		}
+
+		// Check if errors.log exists
+		errorLogPath := filepath.Join(outputDir, "errors.log")
+		if _, err := os.Stat(errorLogPath); os.IsNotExist(err) {
+			continue
+		}
+
+		// Count errors in the log
+		errorCount, err := countErrorsInLog(errorLogPath)
+		if err != nil {
+			log.Printf("[WebUI] Error counting errors in %s: %v", errorLogPath, err)
+			continue
+		}
+
+		if errorCount > 0 {
+			// Get file info
+			fileInfo, err := os.Stat(inputFile)
+			if err != nil {
+				continue
+			}
+
+			errorLogs = append(errorLogs, ErrorLogInfo{
+				InputFile:     inputFile,
+				InputFilename: filepath.Base(inputFile),
+				InputFileSize: fileInfo.Size(),
+				ErrorCount:    errorCount,
+				ErrorLogPath:  errorLogPath,
+				OutputDir:     outputDir,
+			})
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(errorLogs); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+	}
+}
+
+// countErrorsInLog counts the number of lines in an errors.log file
+// Any line in the errors.log represents error information (timestamps, error messages, packet dumps, stack traces, etc.)
+func countErrorsInLog(logPath string) (int, error) {
+	file, err := os.Open(logPath)
+	if err != nil {
+		return 0, err
+	}
+	defer file.Close()
+
+	count := 0
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		// Count all lines - every line in errors.log is part of error information
+		count++
+	}
+
+	if err := scanner.Err(); err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+// AggregatedError represents an error message with its occurrence count
+type AggregatedError struct {
+	ErrorMessage string `json:"errorMessage"`
+	Count        int    `json:"count"`
+	FirstSeen    string `json:"firstSeen"`
+}
+
+// handleAggregatedErrors aggregates and deduplicates errors across all error logs
+func (s *Server) handleAggregatedErrors(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	log.Printf("[WebUI] Aggregating errors across all captures")
+
+	// Map to store aggregated errors: error message -> count
+	errorCounts := make(map[string]int)
+	errorFirstSeen := make(map[string]string)
+	filesProcessed := 0
+	filesWithErrors := 0
+
+	// Service mode
+	if s.isServiceMode && s.sessionManager != nil {
+		clientIP := s.getUserIP(r)
+		sessions := s.sessionManager.GetSessionsForIP(clientIP)
+
+		// Add preloaded sessions
+		allSessions := s.sessionManager.GetAllSessions()
+		for _, session := range allSessions {
+			if session.IsPreloaded {
+				sessions = append(sessions, session)
+			}
+		}
+
+		log.Printf("[WebUI] Checking %d sessions for error logs", len(sessions))
+
+		for _, session := range sessions {
+			errorLogPath := filepath.Join(session.OutputDir, "errors.log")
+
+			// Check if file exists
+			fileInfo, err := os.Stat(errorLogPath)
+			if os.IsNotExist(err) {
+				continue
+			} else if err != nil {
+				log.Printf("[WebUI] Error checking error log %s: %v", errorLogPath, err)
+				continue
+			}
+
+			log.Printf("[WebUI] Processing error log: %s (size: %d bytes)", errorLogPath, fileInfo.Size())
+			filesProcessed++
+
+			// Parse errors from this file
+			beforeCount := len(errorCounts)
+			if err := aggregateErrorsFromFile(errorLogPath, errorCounts, errorFirstSeen); err != nil {
+				log.Printf("[WebUI] Error parsing errors from %s: %v", errorLogPath, err)
+			} else {
+				afterCount := len(errorCounts)
+				if afterCount > beforeCount {
+					filesWithErrors++
+					log.Printf("[WebUI] Found %d new unique error types in %s", afterCount-beforeCount, errorLogPath)
+				}
+			}
+		}
+	} else {
+		// Local mode
+		s.mu.RLock()
+		inputFiles := s.inputFiles
+		fileOutputDirs := make(map[string]string)
+		for k, v := range s.fileOutputDirs {
+			fileOutputDirs[k] = v
+		}
+		baseOutDir := s.baseOutDir
+		s.mu.RUnlock()
+
+		log.Printf("[WebUI] Checking %d input files for error logs", len(inputFiles))
+
+		for _, inputFile := range inputFiles {
+			// Get output directory for this file
+			var outputDir string
+			if dir, exists := fileOutputDirs[inputFile]; exists {
+				outputDir = dir
+			} else {
+				if len(inputFiles) == 1 {
+					outputDir = baseOutDir
+				} else {
+					baseName := filepath.Base(inputFile)
+					dirName := baseName
+					for _, ext := range []string{".pcap", ".pcapng", ".cap", ".dmp"} {
+						if strings.HasSuffix(dirName, ext) {
+							dirName = strings.TrimSuffix(dirName, ext)
+							break
+						}
+					}
+					outputDir = filepath.Join(baseOutDir, dirName)
+				}
+			}
+
+			errorLogPath := filepath.Join(outputDir, "errors.log")
+
+			// Check if file exists
+			fileInfo, err := os.Stat(errorLogPath)
+			if os.IsNotExist(err) {
+				continue
+			} else if err != nil {
+				log.Printf("[WebUI] Error checking error log %s: %v", errorLogPath, err)
+				continue
+			}
+
+			log.Printf("[WebUI] Processing error log: %s (size: %d bytes)", errorLogPath, fileInfo.Size())
+			filesProcessed++
+
+			// Parse errors from this file
+			beforeCount := len(errorCounts)
+			if err := aggregateErrorsFromFile(errorLogPath, errorCounts, errorFirstSeen); err != nil {
+				log.Printf("[WebUI] Error parsing errors from %s: %v", errorLogPath, err)
+			} else {
+				afterCount := len(errorCounts)
+				if afterCount > beforeCount {
+					filesWithErrors++
+					log.Printf("[WebUI] Found %d new unique error types in %s", afterCount-beforeCount, errorLogPath)
+				}
+			}
+		}
+	}
+
+	// Convert map to sorted slice
+	aggregated := make([]AggregatedError, 0, len(errorCounts))
+	for errMsg, count := range errorCounts {
+		aggregated = append(aggregated, AggregatedError{
+			ErrorMessage: errMsg,
+			Count:        count,
+			FirstSeen:    errorFirstSeen[errMsg],
+		})
+	}
+
+	// Sort by count (descending)
+	sort.Slice(aggregated, func(i, j int) bool {
+		return aggregated[i].Count > aggregated[j].Count
+	})
+
+	log.Printf("[WebUI] Aggregated %d unique error types from %d error log files (%d files processed)", len(aggregated), filesWithErrors, filesProcessed)
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(aggregated); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
+	}
+}
+
+// aggregateErrorsFromFile parses an errors.log file and aggregates error messages
+// Expected format: [count] error message
+func aggregateErrorsFromFile(logPath string, errorCounts map[string]int, errorFirstSeen map[string]string) error {
+	file, err := os.Open(logPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	var currentTimestamp string
+	errorsFound := 0
+	linesProcessed := 0
+
+	for scanner.Scan() {
+		linesProcessed++
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines
+		if line == "" {
+			continue
+		}
+
+		// Check if this is a timestamp line
+		if strings.Contains(line, "UTC") {
+			currentTimestamp = line
+			continue
+		}
+
+		// Parse error lines in format: [count] error message
+		// Example: [12] Unknown TLS handshake type
+		if strings.HasPrefix(line, "[") {
+			// Find the closing bracket
+			closeBracketIdx := strings.Index(line, "]")
+			if closeBracketIdx > 1 {
+				// Extract count and error message
+				countStr := line[1:closeBracketIdx]
+				count := 0
+				if _, err := fmt.Sscanf(countStr, "%d", &count); err == nil && count > 0 {
+					// Extract error message after the bracket
+					errorMsg := strings.TrimSpace(line[closeBracketIdx+1:])
+					if errorMsg != "" {
+						// Add the count to the total for this error message
+						errorCounts[errorMsg] += count
+						errorsFound++
+
+						// Store first seen timestamp for this error
+						if _, exists := errorFirstSeen[errorMsg]; !exists && currentTimestamp != "" {
+							errorFirstSeen[errorMsg] = currentTimestamp
+						}
+					}
+				}
+			}
+		}
+
+		// Also support old format: Error: message
+		if strings.HasPrefix(line, "Error:") {
+			errorMsg := strings.TrimSpace(strings.TrimPrefix(line, "Error:"))
+			if errorMsg != "" {
+				errorCounts[errorMsg]++
+				errorsFound++
+				// Store first seen timestamp for this error
+				if _, exists := errorFirstSeen[errorMsg]; !exists && currentTimestamp != "" {
+					errorFirstSeen[errorMsg] = currentTimestamp
+				}
+			}
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		log.Printf("[WebUI] Scanner error for %s: %v (processed %d lines, found %d errors)", logPath, err, linesProcessed, errorsFound)
+		return err
+	}
+
+	log.Printf("[WebUI] Parsed %s: %d lines processed, %d error entries found", logPath, linesProcessed, errorsFound)
+	return nil
 }
 
 // copyFile copies a file from src to dst

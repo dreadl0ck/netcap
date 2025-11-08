@@ -267,6 +267,40 @@ The Web UI can only access:
 - Output directory specified with `-out` flag
 - No directory traversal protection needed (Go's `filepath.Join` handles this)
 
+### Extracted Files Preview Security
+
+When previewing extracted files (especially HTML files from network traffic), several security measures are in place to prevent XSS and other attacks:
+
+#### Frontend Protections
+
+1. **HTML Files Default to Raw View**: HTML files open in "Raw Source" tab by default instead of rendered view, preventing accidental script execution
+2. **Strict Iframe Sandboxing**: When viewing HTML in rendered mode, an empty `sandbox=""` attribute is used, which:
+   - Blocks all JavaScript execution
+   - Prevents form submissions
+   - Blocks popups and modals
+   - Prevents plugins from running
+   - Still allows basic HTML/CSS rendering for visual inspection
+3. **Security Warning Banner**: A prominent warning is displayed when viewing HTML files in rendered mode, alerting users to potential risks
+
+#### Backend Security Headers
+
+The backend sets multiple security headers when serving extracted files:
+
+- **X-Content-Type-Options: nosniff**: Prevents MIME type sniffing attacks
+- **X-Frame-Options: SAMEORIGIN**: Prevents clickjacking by restricting iframe embedding
+- **Content-Security-Policy**: Restrictive policy that blocks scripts and limits resource loading
+- **Path Validation**: Ensures requested files are within the designated files directory to prevent directory traversal attacks
+
+#### Best Practices
+
+When working with extracted files from network captures:
+
+1. **Treat all files as potentially malicious**: They may come from compromised or malicious sources
+2. **Use raw view for inspection**: The "Raw Source" tab is the safest way to examine HTML content
+3. **Be cautious with rendered preview**: Only use rendered view when necessary, and understand the risks
+4. **Download with care**: Downloaded files should be scanned with antivirus software before opening
+5. **Isolated environment**: Consider running Netcap Web UI in an isolated/sandboxed environment when analyzing untrusted traffic
+
 ## Troubleshooting
 
 ### Frontend Assets Not Found

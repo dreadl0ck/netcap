@@ -253,9 +253,9 @@ func (s *Server) loadPreloadedPcaps() {
 			continue
 		}
 
-		// Check if file size exceeds the configured maximum
+		// Check if file size exceeds the configured maximum (only if enforce flag is set)
 		fileSize := fileInfo.Size()
-		if s.serviceConfig.MaxFileSize > 0 && fileSize > s.serviceConfig.MaxFileSize {
+		if s.serviceConfig.EnforceMaxSizePreload && s.serviceConfig.MaxFileSize > 0 && fileSize > s.serviceConfig.MaxFileSize {
 			log.Printf("[Server] Skipping preloaded pcap %s: file size %d bytes exceeds maximum allowed size of %d bytes (%.2f MB > %.2f MB)",
 				filename, fileSize, s.serviceConfig.MaxFileSize,
 				float64(fileSize)/(1024*1024), float64(s.serviceConfig.MaxFileSize)/(1024*1024))
@@ -271,14 +271,30 @@ func (s *Server) loadPreloadedPcaps() {
 		})
 	}
 
-	// Sort pcap files by size (smallest first) for faster initial results in UI
+	// Sort pcap files by size (largest first) to select the N largest
+	sort.Slice(pcapFiles, func(i, j int) bool {
+		return pcapFiles[i].size > pcapFiles[j].size
+	})
+
+	// If PreloadLargestN is set and > 0, keep only the N largest files
+	originalCount := len(pcapFiles)
+	if s.serviceConfig.PreloadLargestN > 0 && len(pcapFiles) > s.serviceConfig.PreloadLargestN {
+		pcapFiles = pcapFiles[:s.serviceConfig.PreloadLargestN]
+		log.Printf("[Server] Selected %d largest files from %d total files", s.serviceConfig.PreloadLargestN, originalCount)
+	}
+
+	// Now reverse the order to process smallest first (for faster initial results in UI)
 	sort.Slice(pcapFiles, func(i, j int) bool {
 		return pcapFiles[i].size < pcapFiles[j].size
 	})
 
 	if skippedCount > 0 {
-		log.Printf("[Server] Found %d preloaded pcap files (skipped %d files exceeding max size of %.2f MB), processing smallest first for faster UI results",
-			len(pcapFiles), skippedCount, float64(s.serviceConfig.MaxFileSize)/(1024*1024))
+		if s.serviceConfig.EnforceMaxSizePreload {
+			log.Printf("[Server] Found %d preloaded pcap files (skipped %d files exceeding max size of %.2f MB), processing smallest first for faster UI results",
+				len(pcapFiles), skippedCount, float64(s.serviceConfig.MaxFileSize)/(1024*1024))
+		} else {
+			log.Printf("[Server] Found %d preloaded pcap files, processing smallest first for faster UI results", len(pcapFiles))
+		}
 	} else {
 		log.Printf("[Server] Found %d preloaded pcap files, processing smallest first for faster UI results", len(pcapFiles))
 	}
@@ -377,6 +393,10 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/alerts/grouped", s.handleGroupedAlerts)
 	mux.HandleFunc("/api/alerts/stats", s.handleAlertStats)
 	mux.HandleFunc("/api/alerts/clear", s.handleClearAlerts)
+	mux.HandleFunc("/api/extracted-files", s.handleExtractedFiles)
+	mux.HandleFunc("/api/extracted-files/download/", s.handleDownloadExtractedFile)
+	mux.HandleFunc("/api/error-logs", s.handleErrorLogFiles)
+	mux.HandleFunc("/api/error-logs/aggregated", s.handleAggregatedErrors)
 	mux.HandleFunc("/api/decoders/config", s.handleDecoderConfig)
 	mux.HandleFunc("/api/decoders/config/list", s.handleListDecoderConfigs)
 	mux.HandleFunc("/api/decoders/config/load", s.handleLoadDecoderConfig)
@@ -844,6 +864,17 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	// Update status to processing
 	s.sessionManager.UpdateSessionStatus(job.SessionID, StatusProcessing, "", "")
 
+	// Enable file extraction - create files directory within the output directory
+	// Note: FileStorage must be a RELATIVE path since it gets joined with Out directory
+	fileStorageRelPath := "files"
+	filesDir := filepath.Join(job.OutputDir, fileStorageRelPath)
+	if err := os.MkdirAll(filesDir, 0755); err != nil {
+		log.Printf("[Service] Warning: Failed to create files directory: %v", err)
+		fileStorageRelPath = "" // Disable file storage if we can't create the directory
+	} else {
+		log.Printf("[Service] File extraction enabled for session %s: %s", job.SessionID, filesDir)
+	}
+
 	// Build netcap capture command
 	args := []string{
 		"capture",
@@ -851,6 +882,11 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		"-out", job.OutputDir,
 		"-quiet",
 		"-http", "", // Disable web UI server
+	}
+
+	// Add file extraction flag if directory was created successfully (use relative path!)
+	if fileStorageRelPath != "" {
+		args = append(args, "-fileStorage", fileStorageRelPath)
 	}
 
 	if job.EnableDPI {
@@ -934,6 +970,13 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	}
 
 	log.Printf("[Service] Analysis completed for session %s (duration: %v)", job.SessionID, duration)
+
+	// Count and log extracted files
+	fileCount := s.countExtractedFiles(filesDir)
+	if fileCount > 0 {
+		log.Printf("[Service] Extracted %d file(s) for session %s", fileCount, job.SessionID)
+	}
+
 	s.sessionManager.UpdateSessionStatus(job.SessionID, StatusCompleted, "", "")
 
 	// Store the processing time
@@ -941,6 +984,32 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 
 	// Execute rules automatically after successful analysis
 	s.executeRulesForJob(job)
+}
+
+// countExtractedFiles counts the number of files in the files directory
+func (s *Server) countExtractedFiles(filesDir string) int {
+	if filesDir == "" {
+		return 0
+	}
+
+	// Check if directory exists
+	if _, err := os.Stat(filesDir); os.IsNotExist(err) {
+		return 0
+	}
+
+	count := 0
+	filepath.Walk(filesDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil // Continue walking
+		}
+		// Count only files, not directories
+		if !info.IsDir() {
+			count++
+		}
+		return nil
+	})
+
+	return count
 }
 
 // executeRulesForJob executes all enabled rules for a completed analysis job
@@ -1036,6 +1105,17 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 
 	startTime := time.Now()
 
+	// Enable file extraction - create files directory within the output directory
+	// Note: FileStorage must be a RELATIVE path since it gets joined with Out directory in SaveFile()
+	fileStorageRelPath := "files"
+	filesDir := filepath.Join(job.OutputDir, fileStorageRelPath)
+	if err := os.MkdirAll(filesDir, 0755); err != nil {
+		log.Printf("[WebUI] Warning: Failed to create files directory: %v", err)
+		fileStorageRelPath = "" // Disable file storage if we can't create the directory
+	} else {
+		log.Printf("[WebUI] File extraction enabled for session %s: %s", job.SessionID, filesDir)
+	}
+
 	// Build collector configuration
 	c := collector.New(collector.Config{
 		Workers:               runtime.NumCPU() * 2,
@@ -1099,7 +1179,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			FlowTimeOut:                    defaults.FlowTimeOut,
 			CloseInactiveTimeOut:           defaults.CloseInactiveTimeout,
 			ClosePendingTimeOut:            defaults.ClosePendingTimeout,
-			FileStorage:                    "",
+			FileStorage:                    fileStorageRelPath,
 			CalculateEntropy:               false,
 			SaveConns:                      false,
 			TCPDebug:                       false,
@@ -1233,6 +1313,12 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	}
 
 	log.Printf("[WebUI] Analysis completed for session %s (duration: %v)", job.SessionID, duration)
+
+	// Count and log extracted files
+	fileCount := s.countExtractedFiles(filesDir)
+	if fileCount > 0 {
+		log.Printf("[WebUI] Extracted %d file(s) for session %s", fileCount, job.SessionID)
+	}
 
 	if s.sessionManager != nil {
 		s.sessionManager.UpdateSessionProcessingTime(job.SessionID, duration.Seconds())

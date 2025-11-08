@@ -358,6 +358,16 @@ func (sm *SessionManager) GetStorageUsageForIP(ip string) int64 {
 	var totalSize int64 = 0
 	for _, session := range sm.sessions {
 		if session.IP == ip {
+			// Calculate results directory size (contains all audit records)
+			resultsDirSize, err := calculateDirectorySize(session.OutputDir)
+			if err != nil {
+				log.Printf("[SessionManager] Error calculating results directory size for session %s: %v", session.SessionID, err)
+			} else {
+				totalSize += resultsDirSize
+			}
+			
+			// Add input file size (the uploaded PCAP file stored in uploads directory)
+			// This is stored separately from the results directory
 			totalSize += session.InputFileSize
 		}
 	}

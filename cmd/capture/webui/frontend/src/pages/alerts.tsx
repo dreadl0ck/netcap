@@ -24,6 +24,7 @@ import {
   TableHead,
   TableRow,
   TablePagination,
+  TableSortLabel,
   TextField,
   Tooltip,
   Typography,
@@ -185,6 +186,18 @@ export default function AlertsPage() {
   const handleRefresh = () => {
     mutate(['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy]);
     mutate('alertStats');
+  };
+
+  const handleSort = (column: 'count' | 'lastSeen' | 'firstSeen' | 'severity') => {
+    if (sortBy === column) {
+      // Toggle sort order if clicking the same column
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new column and default to descending
+      setSortBy(column);
+      setSortOrder('desc');
+    }
+    setPage(0); // Reset to first page when sorting changes
   };
 
   const handleFileChange = async (event: SelectChangeEvent<string>) => {
@@ -549,12 +562,44 @@ export default function AlertsPage() {
             <TableHead>
               <TableRow>
                 <TableCell width="40px"></TableCell>
-                <TableCell>Severity</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortBy === 'severity'}
+                    direction={sortBy === 'severity' ? sortOrder : 'desc'}
+                    onClick={() => handleSort('severity')}
+                  >
+                    Severity
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell>Rule Name</TableCell>
                 <TableCell>Type</TableCell>
-                <TableCell>Count</TableCell>
-                <TableCell>First Seen</TableCell>
-                <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Last Seen</TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortBy === 'count'}
+                    direction={sortBy === 'count' ? sortOrder : 'desc'}
+                    onClick={() => handleSort('count')}
+                  >
+                    Count
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell>
+                  <TableSortLabel
+                    active={sortBy === 'firstSeen'}
+                    direction={sortBy === 'firstSeen' ? sortOrder : 'desc'}
+                    onClick={() => handleSort('firstSeen')}
+                  >
+                    First Seen
+                  </TableSortLabel>
+                </TableCell>
+                <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                  <TableSortLabel
+                    active={sortBy === 'lastSeen'}
+                    direction={sortBy === 'lastSeen' ? sortOrder : 'desc'}
+                    onClick={() => handleSort('lastSeen')}
+                  >
+                    Last Seen
+                  </TableSortLabel>
+                </TableCell>
                 <TableCell>Unique IPs</TableCell>
                 <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Tags</TableCell>
               </TableRow>

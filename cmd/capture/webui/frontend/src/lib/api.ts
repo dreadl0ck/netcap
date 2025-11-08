@@ -113,6 +113,37 @@ export interface FileInfo {
   hasReportedIssue?: boolean;  // Optional, whether an issue has been reported for this file
 }
 
+export interface ExtractedFileInfo {
+  name: string;
+  path: string;
+  fullPath: string;
+  size: number;
+  modifiedTime: number;
+  mimeType: string;
+}
+
+export interface ExtractedFilesResponse {
+  files: ExtractedFileInfo[];
+  totalCount: number;
+  filesDir: string;
+}
+
+export interface ErrorLogInfo {
+  sessionId?: string;          // Service mode
+  inputFile?: string;           // Local mode
+  inputFilename: string;
+  inputFileSize: number;
+  errorCount: number;
+  errorLogPath: string;
+  outputDir: string;
+}
+
+export interface AggregatedError {
+  errorMessage: string;
+  count: number;
+  firstSeen: string;
+}
+
 export interface AuditFileInfo extends FileInfo {
   type: string;
   recordCount?: number;
@@ -1048,6 +1079,18 @@ export const api = {
     return res.json();
   },
 
+  // Extracted Files API
+  async getExtractedFiles(): Promise<ExtractedFilesResponse> {
+    const res = await fetch(`${API_BASE}/extracted-files`);
+    if (!res.ok) throw new Error('Failed to fetch extracted files');
+    return res.json();
+  },
+
+  downloadExtractedFile(relativePath: string): string {
+    // Return the download URL for the file
+    return `${API_BASE}/extracted-files/download/${encodeURIComponent(relativePath)}`;
+  },
+
   // Get field information for autocomplete
   async getAuditRecordFields(type: string): Promise<FieldsResponse> {
     const res = await fetch(`${API_BASE}/audit/${encodeURIComponent(type)}/fields`);
@@ -1059,6 +1102,19 @@ export const api = {
   async getAuditRecordFieldValues(type: string): Promise<FieldValuesResponse> {
     const res = await fetch(`${API_BASE}/audit/${encodeURIComponent(type)}/values`);
     if (!res.ok) throw new Error('Failed to fetch field values');
+    return res.json();
+  },
+
+  // Error Logs API
+  async getErrorLogs(): Promise<ErrorLogInfo[]> {
+    const res = await fetch(`${API_BASE}/error-logs`);
+    if (!res.ok) throw new Error('Failed to fetch error logs');
+    return res.json();
+  },
+
+  async getAggregatedErrors(): Promise<AggregatedError[]> {
+    const res = await fetch(`${API_BASE}/error-logs/aggregated`);
+    if (!res.ok) throw new Error('Failed to fetch aggregated errors');
     return res.json();
   },
 };

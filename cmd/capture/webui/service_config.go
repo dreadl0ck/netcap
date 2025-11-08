@@ -20,25 +20,29 @@ import (
 
 // ServiceConfig holds the service mode configuration
 type ServiceConfig struct {
-	DataDir              string
-	MaxFileSize          int64
-	MaxAnalysisHour      int
-	SessionExpiry        int
-	CleanupInterval      int
-	MaxStorageBytes      int64
-	MaxIssueReportsPerDay int // Maximum number of issue reports per IP per day
+	DataDir                   string
+	MaxFileSize               int64
+	MaxAnalysisHour           int
+	SessionExpiry             int
+	CleanupInterval           int
+	MaxStorageBytes           int64
+	MaxIssueReportsPerDay     int  // Maximum number of issue reports per IP per day
+	PreloadLargestN           int  // Load only the N largest files from pcaps folder (0 = all files)
+	EnforceMaxSizePreload     bool // Enforce service max file size for preloaded pcaps
 }
 
 // DefaultServiceConfig returns the default service configuration
 func DefaultServiceConfig() *ServiceConfig {
 	return &ServiceConfig{
-		DataDir:              getDefaultDataDir(),
-		MaxFileSize:          100 * 1024 * 1024, // 100MB
-		MaxAnalysisHour:      10,
-		SessionExpiry:        60,                      // 60 minutes
-		CleanupInterval:      10,                      // 10 minutes
-		MaxStorageBytes:      10 * 1024 * 1024 * 1024, // 10GB
+		DataDir:               getDefaultDataDir(),
+		MaxFileSize:           100 * 1024 * 1024, // 100MB
+		MaxAnalysisHour:       10,
+		SessionExpiry:         60,                      // 60 minutes
+		CleanupInterval:       10,                      // 10 minutes
+		MaxStorageBytes:       10 * 1024 * 1024 * 1024, // 10GB
 		MaxIssueReportsPerDay: 5,                       // 5 issue reports per IP per day
+		PreloadLargestN:       0,                       // 0 = load all files
+		EnforceMaxSizePreload: false,                   // Don't enforce max size by default for preloaded pcaps
 	}
 }
 
