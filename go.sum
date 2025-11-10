@@ -92,10 +92,6 @@ github.com/dlclark/regexp2 v1.11.5 h1:Q/sSnsKerHeCkc/jSTNq1oCm7KiVgUMZRDUoRu0JQZ
 github.com/dlclark/regexp2 v1.11.5/go.mod h1:DHkYz0B9wPfa6wondMfaivmHpzrQ3v9q8cnmRbL6yW8=
 github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4 h1:CQVDSWmSoaOzH65ZxS3b16QiD7cbpFgoYZEy6YHRlNE=
 github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4/go.mod h1:Hv2i5yZ/n12s4y3LXmn8GfP7FatOIQkJeii8jMIt78s=
-github.com/dreadl0ck/go-dpi v1.3.0 h1:hHejxT4uoN/yfhykscJHpHfC14f27VMobAYDBzSacjw=
-github.com/dreadl0ck/go-dpi v1.3.0/go.mod h1:HqEJeAzmr5+1I8dQQtb/FK/5tSVNxlROz9dMZFMk5NU=
-github.com/dreadl0ck/go-dpi v1.4.0 h1:gRrdeAX488tjmxTe5STIIWtp3WhPYGChivOvZP6IpaM=
-github.com/dreadl0ck/go-dpi v1.4.0/go.mod h1:HqEJeAzmr5+1I8dQQtb/FK/5tSVNxlROz9dMZFMk5NU=
 github.com/dreadl0ck/go-dpi v1.4.1 h1:n+T/6fq7EOtd1sRix0edxSxrBecyYTYKWcWts5aPjvI=
 github.com/dreadl0ck/go-dpi v1.4.1/go.mod h1:HqEJeAzmr5+1I8dQQtb/FK/5tSVNxlROz9dMZFMk5NU=
 github.com/dreadl0ck/ja3 v1.1.0 h1:dkW3YiHi99eJpiaZw5nKFvF4ptdhs5goo7x2YEKoKXU=
@@ -190,8 +186,6 @@ github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX
 github.com/google/pprof v0.0.0-20240227163752-401108e1b7e7/go.mod h1:czg5+yv1E0ZGTi6S6vVK1mke0fV+FaUhNGcd6VRS9Ik=
 github.com/google/pprof v0.0.0-20251007162407-5df77e3f7d1d h1:KJIErDwbSHjnp/SGzE5ed8Aol7JsKiI5X7yWKAtzhM0=
 github.com/google/pprof v0.0.0-20251007162407-5df77e3f7d1d/go.mod h1:I6V7YzU0XDpsHqbsyrghnFZLO1gwK6NPTNvmetQIk9U=
-github.com/gopacket/gopacket v1.4.0 h1:cr1OlFpzksCkZHNO0eLjaSSOrMQnpPXg0j6qHIY3y2U=
-github.com/gopacket/gopacket v1.4.0/go.mod h1:EpvsxINeehp5qj4YMKMLf2/dekdhKn2IIAO/ZOifS7o=
 github.com/gopacket/gopacket v1.5.0 h1:9s9fcSUVKFlRV97B77Bq9XNV3ly2gvvsneFMQUGjc+M=
 github.com/gopacket/gopacket v1.5.0/go.mod h1:i3NaGaqfoWKAr1+g7qxEdWsmfT+MXuWkAe9+THv8LME=
 github.com/gopherjs/gopherjs v0.0.0-20190910122728-9d188e94fb99/go.mod h1:wJfORRmW1u3UXTncJ5qlYoELFm8eSnnEO6hX4iZ3EWY=

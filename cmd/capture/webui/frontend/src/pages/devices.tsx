@@ -1,0 +1,732 @@
+import { useState, useMemo } from 'react';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  FormControl,
+  Grid,
+  IconButton,
+  MenuItem,
+  Paper,
+  Select,
+  SelectChangeEvent,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TextField,
+  Tooltip,
+  Typography,
+  Alert,
+  Collapse,
+} from '@mui/material';
+import {
+  Refresh as RefreshIcon,
+  ExpandMore as ExpandMoreIcon,
+  Router as RouterIcon,
+  Memory as MemoryIcon,
+  SwapHoriz as SwapHorizIcon,
+  Devices as DevicesIcon,
+  Business as BusinessIcon,
+  TrendingUp as TrendingUpIcon,
+  Apps as AppsIcon,
+} from '@mui/icons-material';
+import Layout from '@/components/Layout';
+import { api, formatBytes, formatTimestamp } from '@/lib/api';
+import useSWR, { mutate as globalMutate } from 'swr';
+
+interface DeviceProfileSummary {
+  macAddr: string;
+  deviceManufacturer: string;
+  numDeviceIPs: number;
+  numContacts: number;
+  numPackets: number;
+  bytes: number;
+  timestamp: number;
+  applications: string[];
+  devices: string[];
+  deviceIPs: string[];
+  contacts: string[];
+}
+
+interface DevicesResponse {
+  devices: DeviceProfileSummary[];
+  totalCount: number;
+}
+
+export default function DevicesPage() {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [switchingFile, setSwitchingFile] = useState(false);
+  const [chartRefreshKey, setChartRefreshKey] = useState(0);
+
+  // Fetch status and input files for capture selector
+  const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
+  const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
+
+  // Fetch devices data
+  const { data: devicesData, error, mutate } = useSWR<DevicesResponse>(
+    'devices',
+    () => fetch('/api/devices').then(res => res.json()),
+    {
+      refreshInterval: 10000,
+    }
+  );
+
+  const devices = devicesData?.devices || [];
+  const totalCount = devicesData?.totalCount || 0;
+
+  // Apply filters
+  const filteredDevices = useMemo(() => {
+    let filtered = devices;
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(d =>
+        d.macAddr.toLowerCase().includes(query) ||
+        (d.deviceManufacturer || '').toLowerCase().includes(query) ||
+        (d.devices || []).some(dev => dev.toLowerCase().includes(query)) ||
+        (d.applications || []).some(a => a.toLowerCase().includes(query))
+      );
+    }
+
+    return filtered;
+  }, [devices, searchQuery]);
+
+  // Paginate devices
+  const paginatedDevices = filteredDevices.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleRefresh = () => {
+    mutate();
+    // Also refresh charts
+    setChartRefreshKey(prev => prev + 1);
+  };
+
+  const handleFileChange = async (event: SelectChangeEvent<string>) => {
+    const newFile = event.target.value;
+    setSwitchingFile(true);
+    try {
+      const result = await api.setActiveDirectory(newFile);
+      console.log('Directory changed to:', result.outputDir);
+      
+      // Refresh local data
+      await mutateStatus();
+      await mutate();
+      
+      // Globally invalidate status cache for all pages
+      await globalMutate('status');
+      
+      // Trigger global event for other components
+      window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
+      
+      // Refresh charts
+      setChartRefreshKey(prev => prev + 1);
+    } catch (err) {
+      console.error('Failed to switch file:', err);
+      alert('Failed to switch to this capture');
+    } finally {
+      setSwitchingFile(false);
+    }
+  };
+
+  const handleRowClick = (macAddr: string) => {
+    setExpandedRow(expandedRow === macAddr ? null : macAddr);
+  };
+
+  // Get only completed files for the selector, sorted alphabetically for consistency
+  const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
+    .sort((a: any, b: any) => a.path.localeCompare(b.path));
+  
+  // Current selected value - use backend's activeInputFile or fallback to first file
+  const selectedValue = status?.activeInputFile || completedFiles[0]?.path || '';
+  // Match by comparing both full path and basename
+  const selectedFile = completedFiles.find((f: any) => 
+    f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
+  );
+
+  // File selector for header
+  const fileSelector = completedFiles.length > 1 && selectedFile ? (
+    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
+      <Select
+        value={selectedValue}
+        onChange={handleFileChange}
+        startAdornment={
+          switchingFile ? (
+            <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
+          ) : (
+            <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
+          )
+        }
+        renderValue={() => (
+          <Box display="flex" alignItems="center" gap={1}>
+            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'inherit' }}>
+              {selectedFile.name}
+            </Typography>
+          </Box>
+        )}
+        sx={{
+          color: 'inherit',
+          '.MuiOutlinedInput-notchedOutline': {
+            borderColor: 'rgba(255, 255, 255, 0.23)',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'rgba(255, 255, 255, 0.4)',
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'primary.light',
+          },
+          '.MuiSelect-icon': {
+            color: 'inherit',
+          },
+          '& .MuiSelect-select': {
+            display: 'flex',
+            alignItems: 'center',
+          },
+        }}
+      >
+        {completedFiles.map((file: any) => (
+          <MenuItem key={file.path} value={file.path}>
+            <Box display="flex" alignItems="center" gap={1} width="100%">
+              {selectedValue === file.path && (
+                <Chip
+                  label="Active"
+                  size="small"
+                  color="success"
+                  sx={{ height: 20, fontSize: '0.7rem' }}
+                />
+              )}
+              <Typography
+                sx={{
+                  fontFamily: 'monospace',
+                  fontSize: '0.85rem',
+                  flex: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {file.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formatBytes(file.size)}
+              </Typography>
+            </Box>
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  ) : null;
+
+  if (error) {
+    return (
+      <Layout title="Devices" headerAction={fileSelector}>
+        <Alert severity="error">Error loading devices: {error.message}</Alert>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout title="Devices" headerAction={fileSelector}>
+      <Box sx={{ minWidth: 0 }}>
+        {/* Summary Cards */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <RouterIcon color="primary" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Total Devices
+                    </Typography>
+                    <Typography variant="h5">
+                      {totalCount.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <BusinessIcon color="success" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Unique Vendors
+                    </Typography>
+                    <Typography variant="h5">
+                      {new Set(devices.map(d => d.deviceManufacturer).filter(m => m)).size.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <MemoryIcon color="warning" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Device Types
+                    </Typography>
+                    <Typography variant="h5">
+                      {new Set(devices.flatMap(d => d.devices || [])).size.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <TrendingUpIcon color="info" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Total Traffic
+                    </Typography>
+                    <Typography variant="h5">
+                      {formatBytes(devices.reduce((sum, d) => sum + d.bytes, 0))}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Visualization Charts */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: 400 }}>
+              <CardContent sx={{ height: '100%', p: 1 }}>
+                <iframe
+                  key={`mac-vendors-${chartRefreshKey}`}
+                  src="/api/devices/mac-vendors"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                  }}
+                  title="Top MAC Vendors"
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: 400 }}>
+              <CardContent sx={{ height: '100%', p: 1 }}>
+                <iframe
+                  key={`traffic-dist-${chartRefreshKey}`}
+                  src="/api/devices/traffic-distribution"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                  }}
+                  title="Traffic Distribution"
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: 400 }}>
+              <CardContent sx={{ height: '100%', p: 1 }}>
+                <iframe
+                  key={`hardware-${chartRefreshKey}`}
+                  src="/api/devices/hardware"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                  }}
+                  title="Top Device Types"
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: 400 }}>
+              <CardContent sx={{ height: '100%', p: 1 }}>
+                <iframe
+                  key={`operating-systems-${chartRefreshKey}`}
+                  src="/api/devices/operating-systems"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                  }}
+                  title="Operating Systems"
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12}>
+            <Card sx={{ height: 400 }}>
+              <CardContent sx={{ height: '100%', p: 1 }}>
+                <iframe
+                  key={`applications-${chartRefreshKey}`}
+                  src="/api/devices/applications"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                  }}
+                  title="Top Applications"
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+
+        {/* Filters and Actions */}
+        <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <TextField
+            size="small"
+            placeholder="Search devices..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(0);
+            }}
+            sx={{ minWidth: 300 }}
+          />
+          
+          <Button 
+            variant="outlined" 
+            startIcon={<RefreshIcon />} 
+            onClick={handleRefresh}
+            size="small"
+          >
+            Refresh
+          </Button>
+          
+          {searchQuery ? (
+            <Typography variant="body2" color="text.secondary">
+              Showing {filteredDevices.length} of {totalCount} devices
+            </Typography>
+          ) : null}
+        </Box>
+
+        {/* Devices Table */}
+        {!devicesData && !error ? (
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress />
+          </Box>
+        ) : totalCount === 0 ? (
+          <Paper sx={{ p: 4, textAlign: 'center' }}>
+            <RouterIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              No Devices Found
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              No device profiles have been captured yet.
+            </Typography>
+          </Paper>
+        ) : (
+          <>
+            <TableContainer component={Paper}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell width={40}></TableCell>
+                    <TableCell>MAC Address</TableCell>
+                    <TableCell>Manufacturer</TableCell>
+                    <TableCell align="right">Packets</TableCell>
+                    <TableCell align="right">Bytes</TableCell>
+                    <TableCell align="right">IPs</TableCell>
+                    <TableCell align="right">Contacts</TableCell>
+                    <TableCell>Device Types</TableCell>
+                    <TableCell>Applications</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {paginatedDevices.map((device) => (
+                    <>
+                      <TableRow 
+                        key={device.macAddr}
+                        hover
+                        onClick={() => handleRowClick(device.macAddr)}
+                        sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
+                      >
+                        <TableCell>
+                          <IconButton size="small">
+                            <ExpandMoreIcon 
+                              sx={{ 
+                                transform: expandedRow === device.macAddr ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.3s'
+                              }} 
+                            />
+                          </IconButton>
+                        </TableCell>
+                        <TableCell>
+                          <Typography 
+                            sx={{ 
+                              fontFamily: 'monospace', 
+                              fontSize: '0.875rem',
+                              fontWeight: 'medium'
+                            }}
+                          >
+                            {device.macAddr}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {device.deviceManufacturer ? (
+                            <Chip
+                              label={device.deviceManufacturer}
+                              size="small"
+                              color="primary"
+                              sx={{ fontSize: '0.7rem' }}
+                            />
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              Unknown
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2">
+                            {device.numPackets.toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2">
+                            {formatBytes(device.bytes)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2">
+                            {device.numDeviceIPs}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2">
+                            {device.numContacts}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                            {(device.devices || []).slice(0, 2).map((dev, idx) => (
+                              <Chip
+                                key={idx}
+                                label={dev}
+                                size="small"
+                                variant="outlined"
+                                sx={{ fontSize: '0.7rem', height: 20 }}
+                              />
+                            ))}
+                            {(device.devices || []).length > 2 && (
+                              <Chip
+                                label={`+${(device.devices || []).length - 2}`}
+                                size="small"
+                                variant="outlined"
+                                sx={{ fontSize: '0.7rem', height: 20 }}
+                              />
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                            {(device.applications || []).slice(0, 2).map((app, idx) => (
+                              <Chip
+                                key={idx}
+                                label={app}
+                                size="small"
+                                color="info"
+                                sx={{ fontSize: '0.7rem', height: 20 }}
+                              />
+                            ))}
+                            {(device.applications || []).length > 2 && (
+                              <Chip
+                                label={`+${(device.applications || []).length - 2}`}
+                                size="small"
+                                color="info"
+                                sx={{ fontSize: '0.7rem', height: 20 }}
+                              />
+                            )}
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                      
+                      {/* Expandable Row Details */}
+                      <TableRow>
+                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={9}>
+                          <Collapse in={expandedRow === device.macAddr} timeout="auto" unmountOnExit>
+                            <Box sx={{ py: 2 }}>
+                              <Grid container spacing={2}>
+                                {/* Time Info */}
+                                <Grid item xs={12} md={6}>
+                                  <Typography variant="subtitle2" gutterBottom>
+                                    First Seen
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {formatTimestamp(device.timestamp)}
+                                  </Typography>
+                                </Grid>
+                                
+                                {/* Statistics */}
+                                <Grid item xs={12} md={6}>
+                                  <Typography variant="subtitle2" gutterBottom>
+                                    Statistics
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Packets: {device.numPackets.toLocaleString()}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Bytes: {formatBytes(device.bytes)}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Device IPs: {device.numDeviceIPs}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Contacts: {device.numContacts}
+                                  </Typography>
+                                </Grid>
+                                
+                                {/* All Device IPs */}
+                                {(device.deviceIPs || []).length > 0 && (
+                                  <Grid item xs={12}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      Device IP Addresses ({(device.deviceIPs || []).length})
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(device.deviceIPs || []).map((ip, idx) => (
+                                        <Chip
+                                          key={idx}
+                                          label={ip}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{ fontSize: '0.75rem', fontFamily: 'monospace' }}
+                                        />
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+                                
+                                {/* All Device Types */}
+                                {(device.devices || []).length > 0 && (
+                                  <Grid item xs={12}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      All Device Types ({(device.devices || []).length})
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(device.devices || []).map((dev, idx) => (
+                                        <Chip
+                                          key={idx}
+                                          label={dev}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{ fontSize: '0.75rem' }}
+                                        />
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+                                
+                                {/* All Applications */}
+                                {(device.applications || []).length > 0 && (
+                                  <Grid item xs={12}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      All Applications ({(device.applications || []).length})
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(device.applications || []).map((app, idx) => (
+                                        <Chip
+                                          key={idx}
+                                          label={app}
+                                          size="small"
+                                          color="info"
+                                          sx={{ fontSize: '0.75rem' }}
+                                        />
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+                                
+                                {/* Contacted IPs (top 20) */}
+                                {(device.contacts || []).length > 0 && (
+                                  <Grid item xs={12}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      Contacted IPs ({(device.contacts || []).length} total, showing top 20)
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(device.contacts || []).slice(0, 20).map((contact, idx) => (
+                                        <Chip
+                                          key={idx}
+                                          label={contact}
+                                          size="small"
+                                          variant="outlined"
+                                          color="secondary"
+                                          sx={{ fontSize: '0.7rem', fontFamily: 'monospace' }}
+                                        />
+                                      ))}
+                                      {(device.contacts || []).length > 20 && (
+                                        <Chip
+                                          label={`+${(device.contacts || []).length - 20} more`}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{ fontSize: '0.7rem' }}
+                                        />
+                                      )}
+                                    </Box>
+                                  </Grid>
+                                )}
+                              </Grid>
+                            </Box>
+                          </Collapse>
+                        </TableCell>
+                      </TableRow>
+                    </>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <TablePagination
+              component="div"
+              count={filteredDevices.length}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[10, 25, 50, 100]}
+            />
+          </>
+        )}
+      </Box>
+    </Layout>
+  );
+}
+

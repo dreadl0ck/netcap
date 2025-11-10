@@ -23,6 +23,8 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
+import DevicesIcon from '@mui/icons-material/Devices';
+import RouterIcon from '@mui/icons-material/Router';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import BubbleChartIcon from '@mui/icons-material/BubbleChart';
@@ -240,6 +242,50 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
               <NetworkCheckIcon />
             </ListItemIcon>
             <ListItemText primary="Interfaces" />
+          </ListItemButton>
+        </Link>
+        <Link href="/hosts" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/hosts')}
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <DevicesIcon />
+            </ListItemIcon>
+            <ListItemText primary="Hosts" />
+          </ListItemButton>
+        </Link>
+        <Link href="/devices" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/devices')}
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <RouterIcon />
+            </ListItemIcon>
+            <ListItemText primary="Devices" />
           </ListItemButton>
         </Link>
         <Link href="/pcaps" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -476,9 +522,9 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
             <ListItemText primary="Alerts" />
           </ListItemButton>
         </Link>
-        <Link href="/extracted-files" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/files" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
-            selected={isActive('/extracted-files')}
+            selected={isActive('/files')}
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -507,7 +553,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
                 <InsertDriveFileIcon />
               </Badge>
             </ListItemIcon>
-            <ListItemText primary="Extracted Files" />
+            <ListItemText primary="Files" />
           </ListItemButton>
         </Link>
         <Link href="/dbs" passHref style={{ textDecoration: 'none', color: 'inherit' }}>

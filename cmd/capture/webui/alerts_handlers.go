@@ -45,6 +45,9 @@ type AlertResponse struct {
 	RuleExpression  string   `json:"ruleExpression"`
 	Threshold       int32    `json:"threshold"`
 	ThresholdWindow int32    `json:"thresholdWindow"`
+	Resolved        bool     `json:"resolved"`
+	ResolvedAt      int64    `json:"resolvedAt,omitempty"`
+	AlertID         string   `json:"alertId"` // Unique identifier for the alert
 }
 
 // GroupedAlert represents a deduplicated/grouped alert
@@ -66,6 +69,9 @@ type GroupedAlert struct {
 	UniqueSrcPorts  []string `json:"uniqueSrcPorts"`
 	UniqueDstPorts  []string `json:"uniqueDstPorts"`
 	SampleAlerts    []AlertResponse `json:"sampleAlerts"` // Keep a few samples for detail view
+	Resolved        bool     `json:"resolved"`           // True if all alerts in this group are resolved
+	ResolvedCount   int      `json:"resolvedCount"`      // Number of resolved alerts in this group
+	GroupID         string   `json:"groupId"`            // Unique identifier for the group
 }
 
 // AlertsResponse represents the response containing multiple alerts
@@ -79,6 +85,31 @@ type GroupedAlertsResponse struct {
 	Groups     []GroupedAlert `json:"groups"`
 	TotalCount int            `json:"totalCount"` // Total individual alerts
 	GroupCount int            `json:"groupCount"` // Number of unique groups
+}
+
+// ResolvedAlert represents a resolved alert entry
+type ResolvedAlert struct {
+	AlertID    string `json:"alertId"`
+	ResolvedAt int64  `json:"resolvedAt"`
+}
+
+// ResolvedAlertsStore manages the resolved alerts
+type ResolvedAlertsStore struct {
+	Alerts map[string]ResolvedAlert `json:"alerts"` // Map of alertId -> ResolvedAlert
+}
+
+// ResolveAlertRequest represents a request to resolve an alert
+type ResolveAlertRequest struct {
+	AlertID string `json:"alertId"`
+	GroupID string `json:"groupId"` // Optional: resolve entire group
+}
+
+// ResolveAlertResponse represents the response to a resolve request
+type ResolveAlertResponse struct {
+	Success    bool     `json:"success"`
+	Message    string   `json:"message"`
+	ResolvedAt int64    `json:"resolvedAt"`
+	ResolvedIDs []string `json:"resolvedIds,omitempty"` // IDs that were resolved
 }
 
 // handleAlerts handles GET requests for alerts
@@ -211,6 +242,14 @@ func (s *Server) readAlertsFromFile(filePath string) ([]AlertResponse, error) {
 		return nil, fmt.Errorf("failed to read header: %w", err)
 	}
 
+	// Load resolved alerts
+	outDir := filepath.Dir(filePath)
+	resolvedStore, err := s.loadResolvedAlerts(outDir)
+	if err != nil {
+		log.Printf("[WebUI] Failed to load resolved alerts: %v (continuing without resolved status)", err)
+		resolvedStore = &ResolvedAlertsStore{Alerts: make(map[string]ResolvedAlert)}
+	}
+
 	alerts := make([]AlertResponse, 0)
 
 	// Read all records
@@ -234,7 +273,7 @@ func (s *Server) readAlertsFromFile(filePath string) ([]AlertResponse, error) {
 		// Convert timestamp from nanoseconds to milliseconds for JavaScript
 		timestampMs := alert.Timestamp / 1000000
 
-		alerts = append(alerts, AlertResponse{
+		alertResp := AlertResponse{
 			Timestamp:       timestampMs,
 			Name:            alert.Name,
 			Description:     alert.Description,
@@ -249,7 +288,17 @@ func (s *Server) readAlertsFromFile(filePath string) ([]AlertResponse, error) {
 			RuleExpression:  alert.RuleExpression,
 			Threshold:       alert.Threshold,
 			ThresholdWindow: alert.ThresholdWindow,
-		})
+		}
+
+		// Generate alert ID
+		alertResp.AlertID = generateAlertID(alertResp)
+
+		// Check if resolved
+		resolved, resolvedAt := isAlertResolved(alertResp.AlertID, resolvedStore)
+		alertResp.Resolved = resolved
+		alertResp.ResolvedAt = resolvedAt
+
+		alerts = append(alerts, alertResp)
 	}
 
 	return alerts, nil
@@ -531,12 +580,17 @@ func groupAlerts(alerts []AlertResponse, severityFilter, ruleNameFilter string) 
 				UniqueSrcPorts:  []string{},
 				UniqueDstPorts:  []string{},
 				SampleAlerts:    []AlertResponse{},
+				ResolvedCount:   0,
+				GroupID:         generateGroupID(alert.RuleName, alert.Severity),
 			}
 			groupMap[key] = group
 		}
 
 		// Update group statistics
 		group.Count++
+		if alert.Resolved {
+			group.ResolvedCount++
+		}
 		if alert.Timestamp < group.FirstSeen {
 			group.FirstSeen = alert.Timestamp
 		}
@@ -578,6 +632,10 @@ func groupAlerts(alerts []AlertResponse, severityFilter, ruleNameFilter string) 
 		sort.Strings(group.UniqueDstIPs)
 		sort.Strings(group.UniqueSrcPorts)
 		sort.Strings(group.UniqueDstPorts)
+		
+		// Mark group as resolved if all alerts in the group are resolved
+		group.Resolved = group.ResolvedCount > 0 && group.ResolvedCount == group.Count
+		
 		result = append(result, *group)
 	}
 
@@ -685,5 +743,277 @@ func contains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+// generateAlertID generates a unique identifier for an alert
+func generateAlertID(alert AlertResponse) string {
+	// Use combination of rule name, timestamp, srcIP, dstIP to create unique ID
+	return fmt.Sprintf("%s-%d-%s-%s", alert.RuleName, alert.Timestamp, alert.SrcIP, alert.DstIP)
+}
+
+// generateGroupID generates a unique identifier for an alert group
+func generateGroupID(ruleName, severity string) string {
+	return fmt.Sprintf("%s-%s", ruleName, severity)
+}
+
+// getResolvedAlertsPath returns the path to the resolved alerts file
+func (s *Server) getResolvedAlertsPath(outDir string) string {
+	return filepath.Join(outDir, "resolved_alerts.json")
+}
+
+// loadResolvedAlerts loads the resolved alerts from disk
+func (s *Server) loadResolvedAlerts(outDir string) (*ResolvedAlertsStore, error) {
+	filePath := s.getResolvedAlertsPath(outDir)
+	
+	// If file doesn't exist, return empty store
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		return &ResolvedAlertsStore{
+			Alerts: make(map[string]ResolvedAlert),
+		}, nil
+	}
+	
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read resolved alerts: %w", err)
+	}
+	
+	var store ResolvedAlertsStore
+	if err := json.Unmarshal(data, &store); err != nil {
+		return nil, fmt.Errorf("failed to parse resolved alerts: %w", err)
+	}
+	
+	if store.Alerts == nil {
+		store.Alerts = make(map[string]ResolvedAlert)
+	}
+	
+	return &store, nil
+}
+
+// saveResolvedAlerts saves the resolved alerts to disk
+func (s *Server) saveResolvedAlerts(outDir string, store *ResolvedAlertsStore) error {
+	filePath := s.getResolvedAlertsPath(outDir)
+	
+	data, err := json.MarshalIndent(store, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal resolved alerts: %w", err)
+	}
+	
+	if err := os.WriteFile(filePath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write resolved alerts: %w", err)
+	}
+	
+	return nil
+}
+
+// isAlertResolved checks if an alert is resolved
+func isAlertResolved(alertID string, store *ResolvedAlertsStore) (bool, int64) {
+	if resolved, ok := store.Alerts[alertID]; ok {
+		return true, resolved.ResolvedAt
+	}
+	return false, 0
+}
+
+// handleResolveAlert handles POST requests to resolve an alert
+func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	// Parse request body
+	var req ResolveAlertRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"error": "Invalid request body",
+		})
+		return
+	}
+	
+	// Determine the output directory
+	s.mu.RLock()
+	outDir := s.outDir
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
+	s.mu.RUnlock()
+	
+	if outDir == "" {
+		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"error": "No output directory selected",
+		})
+		return
+	}
+	
+	// Load resolved alerts store
+	store, err := s.loadResolvedAlerts(outDir)
+	if err != nil {
+		log.Printf("[WebUI] Failed to load resolved alerts: %v", err)
+		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"error": "Failed to load resolved alerts",
+		})
+		return
+	}
+	
+	resolvedAt := time.Now().UnixMilli()
+	resolvedIDs := []string{}
+	
+	// If GroupID is provided, resolve all alerts in the group
+	if req.GroupID != "" {
+		// Read all alerts to find those in this group
+		alertsFile := filepath.Join(outDir, "Alert.ncap.gz")
+		alerts, err := s.readAlertsFromFile(alertsFile)
+		if err != nil {
+			log.Printf("[WebUI] Failed to read alerts: %v", err)
+			RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+				"error": "Failed to read alerts",
+			})
+			return
+		}
+		
+		// Find all alerts matching this group
+		for i := range alerts {
+			alert := &alerts[i]
+			alertID := generateAlertID(*alert)
+			groupID := generateGroupID(alert.RuleName, alert.Severity)
+			
+			if groupID == req.GroupID {
+				store.Alerts[alertID] = ResolvedAlert{
+					AlertID:    alertID,
+					ResolvedAt: resolvedAt,
+				}
+				resolvedIDs = append(resolvedIDs, alertID)
+			}
+		}
+	} else if req.AlertID != "" {
+		// Resolve single alert
+		store.Alerts[req.AlertID] = ResolvedAlert{
+			AlertID:    req.AlertID,
+			ResolvedAt: resolvedAt,
+		}
+		resolvedIDs = append(resolvedIDs, req.AlertID)
+	} else {
+		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"error": "Either alertId or groupId must be provided",
+		})
+		return
+	}
+	
+	// Save resolved alerts store
+	if err := s.saveResolvedAlerts(outDir, store); err != nil {
+		log.Printf("[WebUI] Failed to save resolved alerts: %v", err)
+		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"error": "Failed to save resolved alerts",
+		})
+		return
+	}
+	
+	log.Printf("[WebUI] Resolved %d alert(s)", len(resolvedIDs))
+	
+	RespondJSON(w, http.StatusOK, ResolveAlertResponse{
+		Success:     true,
+		Message:     fmt.Sprintf("Resolved %d alert(s)", len(resolvedIDs)),
+		ResolvedAt:  resolvedAt,
+		ResolvedIDs: resolvedIDs,
+	})
+}
+
+// handleUnresolveAlert handles POST requests to unresolve an alert
+func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	
+	// Parse request body
+	var req ResolveAlertRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"error": "Invalid request body",
+		})
+		return
+	}
+	
+	// Determine the output directory
+	s.mu.RLock()
+	outDir := s.outDir
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
+	s.mu.RUnlock()
+	
+	if outDir == "" {
+		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"error": "No output directory selected",
+		})
+		return
+	}
+	
+	// Load resolved alerts store
+	store, err := s.loadResolvedAlerts(outDir)
+	if err != nil {
+		log.Printf("[WebUI] Failed to load resolved alerts: %v", err)
+		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"error": "Failed to load resolved alerts",
+		})
+		return
+	}
+	
+	unresolvedIDs := []string{}
+	
+	// If GroupID is provided, unresolve all alerts in the group
+	if req.GroupID != "" {
+		// Read all alerts to find those in this group
+		alertsFile := filepath.Join(outDir, "Alert.ncap.gz")
+		alerts, err := s.readAlertsFromFile(alertsFile)
+		if err != nil {
+			log.Printf("[WebUI] Failed to read alerts: %v", err)
+			RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+				"error": "Failed to read alerts",
+			})
+			return
+		}
+		
+		// Find all alerts matching this group
+		for i := range alerts {
+			alert := &alerts[i]
+			alertID := generateAlertID(*alert)
+			groupID := generateGroupID(alert.RuleName, alert.Severity)
+			
+			if groupID == req.GroupID {
+				delete(store.Alerts, alertID)
+				unresolvedIDs = append(unresolvedIDs, alertID)
+			}
+		}
+	} else if req.AlertID != "" {
+		// Unresolve single alert
+		delete(store.Alerts, req.AlertID)
+		unresolvedIDs = append(unresolvedIDs, req.AlertID)
+	} else {
+		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"error": "Either alertId or groupId must be provided",
+		})
+		return
+	}
+	
+	// Save resolved alerts store
+	if err := s.saveResolvedAlerts(outDir, store); err != nil {
+		log.Printf("[WebUI] Failed to save resolved alerts: %v", err)
+		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			"error": "Failed to save resolved alerts",
+		})
+		return
+	}
+	
+	log.Printf("[WebUI] Unresolved %d alert(s)", len(unresolvedIDs))
+	
+	RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"success":       true,
+		"message":       fmt.Sprintf("Unresolved %d alert(s)", len(unresolvedIDs)),
+		"unresolvedIds": unresolvedIDs,
+	})
 }
 

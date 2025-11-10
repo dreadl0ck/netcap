@@ -172,6 +172,21 @@ The detection rules are organized by security domain and detection objective. Ea
 
 **Best for**: Application visibility, bandwidth monitoring, policy enforcement, and detecting unauthorized application usage.
 
+### `streaming_protocols.yml`
+**Focus**: Real-time media streaming protocol detection  
+**Maturity**: Production-ready  
+**Contains**:
+- RTSP (Real-Time Streaming Protocol) - port 554 TCP/UDP
+- RTMP (Real-Time Messaging Protocol) - port 1935
+- MMS (Microsoft Media Server) - port 1755
+- Icecast streaming - port 8000
+- SHOUTcast streaming - port 8001
+- RTP/RTCP (Real-time Transport Protocol)
+- External streaming connection monitoring
+- IP camera and surveillance system traffic
+
+**Best for**: Monitoring IP cameras, security systems, media streaming servers, and detecting unauthorized streaming or media-based data exfiltration.
+
 ## Rule Maturity Levels
 
 ### 🟢 Production-Ready

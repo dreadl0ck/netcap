@@ -1,6 +1,59 @@
 # TODOs
 
+WIP: Visualize
+
+- add Connections page?
+
 - DHCP fingerprinting results for DeviceProfile and IPProfile
+
+- overview: standard VS non standard ports in use for services
+- Visualize Ja3 Fingerprint Matches
+- Visualize Vulnerabilities and Exploits found
+- Visualize DHCP Fingerprints / Device Infos 
+- Visualize Files
+- Visualize Applications (Clustering)
+- Visualize Software
+- Visualize Services
+- Visualize Domains
+
+- Sankey Diagram for Flows between IPs
+- Sankey Diagram for Flows between Devices
+- treemap explorer: click audit record type, choose field, see all values
+
+- port usage standard port services VS nonstandard 
+
+----
+
+- report generation
+- Ja4
+- enable rules to trigger firewall rules
+- model security rules on top of SIP  protocol fields especially headers
+- model security rules on top of HTTP
+- model security rules on top of DNS
+
+
+common gopacket errors, improve debug output so the issues can be fixed:
+- Unknown TLS record type
+- Unable to decode EthernetType 34962
+- TLS record too short
+- Unknown TLS handshake type
+- TLS packet length mismatch
+- Layer type not currently supported
+- runtime error: slice bounds out of range [:99] with capacity 97
+- Unable to decode EthernetType 267
+- dns name uncomputable: invalid index
+- dns offset pointer too high
+- Unable to decode EthernetType 32922
+- dns name uncomputable: invalid index
+- TLS packet length mismatch
+- DNS packet too short
+- Unknown TLS handshake type
+- Unknown TLS record type
+- TLS record too short
+
+
+- Audit records data duplications: IPProfile Ja3Hashes, Alerts
+
 - update dbs
   - dbs: TorDB (torlookup) databases
     - https://www.dan.me.uk/tornodes

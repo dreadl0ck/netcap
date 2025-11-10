@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Card,
@@ -21,6 +21,7 @@ import {
   TableRow,
   ToggleButtonGroup,
   ToggleButton,
+  Slider,
 } from '@mui/material';
 import {
   AccountTree as SankeyIcon,
@@ -65,6 +66,42 @@ export default function Visualize() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [autoSelectAttempted, setAutoSelectAttempted] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
+  const [chartTypeRotationAttempted, setChartTypeRotationAttempted] = useState(false);
+  const [maxNodes, setMaxNodes] = useState(1000);
+
+  // Chart type rotation: get/set the index of the last used chart type
+  const getNextChartTypeIndex = useCallback((availableTypes: typeof CHART_TYPES): number => {
+    if (availableTypes.length === 0) return 0;
+    
+    const storageKey = 'visualize-chart-type-rotation';
+    const storedIndex = localStorage.getItem(storageKey);
+    
+    // If we have a stored index, get the next one (cycling through)
+    if (storedIndex !== null) {
+      const lastIndex = parseInt(storedIndex, 10);
+      const nextIndex = (lastIndex + 1) % availableTypes.length;
+      localStorage.setItem(storageKey, nextIndex.toString());
+      return nextIndex;
+    }
+    
+    // First time - start with 0 and store it
+    localStorage.setItem(storageKey, '0');
+    return 0;
+  }, []);
+
+  // Auto-select next chart type in rotation when visualize tab is opened
+  useEffect(() => {
+    // Only attempt once per page load
+    if (chartTypeRotationAttempted) return;
+    
+    // Auto-select next chart type in rotation
+    const nextIndex = getNextChartTypeIndex(CHART_TYPES);
+    const nextType = CHART_TYPES[nextIndex].value;
+    setSelectedChartType(nextType);
+    setChartTypeRotationAttempted(true);
+    
+    // Note: If the selected type is sankey, the existing useEffect at line ~178 will handle loading hierarchy
+  }, [chartTypeRotationAttempted, getNextChartTypeIndex]);
 
   // Auto-select first completed file if no active file is set
   useEffect(() => {
@@ -338,15 +375,22 @@ export default function Visualize() {
     if (!baseUrl) return null;
     
     // Add showLegend parameter
-    return `${baseUrl}?showLegend=${showLegend}`;
+    const params = new URLSearchParams({ showLegend: showLegend.toString() });
+    
+    // Add maxNodes parameter for hosts-graph
+    if (selectedChartType === 'hosts-graph') {
+      params.append('maxNodes', maxNodes.toString());
+    }
+    
+    return `${baseUrl}?${params.toString()}`;
   };
 
   const chartUrl = getChartUrl();
   
-  // Refresh chart when legend toggle changes
+  // Refresh chart when legend toggle or maxNodes changes
   useEffect(() => {
     setChartRefreshKey(prev => prev + 1);
-  }, [showLegend]);
+  }, [showLegend, maxNodes]);
 
   return (
     <Layout title="Visualize" headerAction={fileSelector}>
@@ -389,25 +433,48 @@ export default function Visualize() {
         </ToggleButtonGroup>
 
         {/* Legend Toggle - Always shown on the right */}
-        <ToggleButtonGroup
-          value={showLegend ? 'on' : 'off'}
-          exclusive
-          onChange={(_e, newValue) => {
-            if (newValue !== null) {
-              setShowLegend(newValue === 'on');
-            }
-          }}
-          size="small"
-        >
-          <ToggleButton value="on">
-            <LabelIcon sx={{ mr: 0.5, fontSize: 18 }} />
-            On
-          </ToggleButton>
-          <ToggleButton value="off">
-            <LabelOffIcon sx={{ mr: 0.5, fontSize: 18 }} />
-            Off
-          </ToggleButton>
-        </ToggleButtonGroup>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <ToggleButtonGroup
+            value={showLegend ? 'on' : 'off'}
+            exclusive
+            onChange={(_e, newValue) => {
+              if (newValue !== null) {
+                setShowLegend(newValue === 'on');
+              }
+            }}
+            size="small"
+          >
+            <ToggleButton value="on">
+              <LabelIcon sx={{ mr: 0.5, fontSize: 18 }} />
+              On
+            </ToggleButton>
+            <ToggleButton value="off">
+              <LabelOffIcon sx={{ mr: 0.5, fontSize: 18 }} />
+              Off
+            </ToggleButton>
+          </ToggleButtonGroup>
+          
+          {/* Max Nodes Slider - Only for hosts-graph */}
+          {selectedChartType === 'hosts-graph' && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 250 }}>
+              <Typography variant="body2" sx={{ whiteSpace: 'nowrap', minWidth: 85 }}>
+                Max Nodes:
+              </Typography>
+              <Slider
+                value={maxNodes}
+                onChange={(_e, newValue) => setMaxNodes(newValue as number)}
+                min={100}
+                max={5000}
+                step={100}
+                valueLabelDisplay="auto"
+                sx={{ width: 150 }}
+              />
+              <Typography variant="body2" sx={{ minWidth: 40, textAlign: 'right' }}>
+                {maxNodes}
+              </Typography>
+            </Box>
+          )}
+        </Box>
       </Box>
 
       <Grid container spacing={3}>

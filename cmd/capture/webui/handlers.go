@@ -14,6 +14,7 @@
 package webui
 
 import (
+	"archive/zip"
 	"bufio"
 	"crypto/sha256"
 	"encoding/hex"
@@ -35,6 +36,8 @@ import (
 	"github.com/dreadl0ck/netcap/dbs"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
+	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // handleStatus returns the current capture status
@@ -2049,6 +2052,31 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Read File audit records to get hash information
+	fileHashMap := make(map[string]string) // path -> hash
+	fileAuditPath := filepath.Join(outDir, "File.ncap.gz")
+	if _, err := os.Stat(fileAuditPath); err == nil {
+		// File audit exists, read it to get hashes
+		reader, err := netio.Open(fileAuditPath, defaults.BufferSize)
+		if err == nil {
+			var file types.File
+			for {
+				err := reader.Next(&file)
+				if err != nil {
+					if err != io.EOF {
+						log.Printf("[WebUI] Error reading File audit record: %v", err)
+					}
+					break
+				}
+				// Map location (relative path) to hash
+				if file.Location != "" && file.Hash != "" {
+					fileHashMap[file.Location] = file.Hash
+				}
+			}
+			reader.Close()
+		}
+	}
+
 	// Walk the files directory and collect file information
 	var extractedFiles []map[string]interface{}
 	err := filepath.Walk(filesDir, func(path string, info os.FileInfo, err error) error {
@@ -2082,6 +2110,11 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 			"size":         info.Size(),
 			"modifiedTime": info.ModTime().Unix(),
 			"mimeType":     mimeType,
+		}
+
+		// Add hash if available
+		if hash, ok := fileHashMap[relPath]; ok {
+			fileInfo["hash"] = hash
 		}
 
 		extractedFiles = append(extractedFiles, fileInfo)
@@ -2189,6 +2222,137 @@ func (s *Server) handleDownloadExtractedFile(w http.ResponseWriter, r *http.Requ
 	if _, err := io.Copy(w, file); err != nil {
 		log.Printf("[WebUI] Error streaming file %s: %v", relativePath, err)
 	}
+}
+
+// handleDownloadAllExtractedFiles creates a zip archive of all extracted files and streams it to the client
+func (s *Server) handleDownloadAllExtractedFiles(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Determine the output directory
+	s.mu.RLock()
+	outDir := s.outDir
+
+	// In service mode, use the current session's output directory
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
+	s.mu.RUnlock()
+
+	if outDir == "" {
+		http.Error(w, "No output directory selected", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Get the files directory within the output directory
+	filesDir := filepath.Join(outDir, "files")
+
+	// Check if files directory exists
+	if _, err := os.Stat(filesDir); os.IsNotExist(err) {
+		http.Error(w, "No extracted files found", http.StatusNotFound)
+		return
+	}
+
+	// Collect all files to zip
+	var filesToZip []string
+	err := filepath.Walk(filesDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Printf("[WebUI] Error walking files directory: %v", err)
+			return nil // Continue walking
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			return nil
+		}
+
+		filesToZip = append(filesToZip, path)
+		return nil
+	})
+
+	if err != nil {
+		log.Printf("[WebUI] Failed to collect files for zip: %v", err)
+		http.Error(w, "Failed to collect files", http.StatusInternalServerError)
+		return
+	}
+
+	if len(filesToZip) == 0 {
+		http.Error(w, "No files to download", http.StatusNotFound)
+		return
+	}
+
+	// Generate filename based on current time and output directory name
+	timestamp := time.Now().Format("20060102-150405")
+	outputDirName := filepath.Base(outDir)
+	zipFilename := fmt.Sprintf("extracted-files-%s-%s.zip", outputDirName, timestamp)
+
+	// Set headers for download
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", zipFilename))
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+
+	// Create zip writer that streams to response
+	zipWriter := zip.NewWriter(w)
+	defer zipWriter.Close()
+
+	// Add each file to the zip
+	for _, filePath := range filesToZip {
+		// Get relative path from files directory for zip entry
+		relPath, err := filepath.Rel(filesDir, filePath)
+		if err != nil {
+			log.Printf("[WebUI] Failed to get relative path for %s: %v", filePath, err)
+			continue
+		}
+
+		// Open source file
+		file, err := os.Open(filePath)
+		if err != nil {
+			log.Printf("[WebUI] Failed to open file %s for zipping: %v", filePath, err)
+			continue
+		}
+
+		// Get file info
+		fileInfo, err := file.Stat()
+		if err != nil {
+			file.Close()
+			log.Printf("[WebUI] Failed to stat file %s: %v", filePath, err)
+			continue
+		}
+
+		// Create zip entry header
+		header, err := zip.FileInfoHeader(fileInfo)
+		if err != nil {
+			file.Close()
+			log.Printf("[WebUI] Failed to create zip header for %s: %v", filePath, err)
+			continue
+		}
+
+		// Set the name to the relative path to preserve directory structure
+		header.Name = relPath
+		header.Method = zip.Deflate
+
+		// Create zip entry
+		writer, err := zipWriter.CreateHeader(header)
+		if err != nil {
+			file.Close()
+			log.Printf("[WebUI] Failed to create zip entry for %s: %v", relPath, err)
+			continue
+		}
+
+		// Copy file content to zip entry
+		_, err = io.Copy(writer, file)
+		file.Close()
+		if err != nil {
+			log.Printf("[WebUI] Error copying file %s to zip: %v", relPath, err)
+			// Continue with other files
+		}
+	}
+
+	log.Printf("[WebUI] Created zip archive with %d files: %s", len(filesToZip), zipFilename)
 }
 
 // handleDownloadInputFile serves PCAP input files for download

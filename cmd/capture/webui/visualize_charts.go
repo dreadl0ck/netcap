@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
@@ -691,16 +692,19 @@ func generateBar3DChart(outDir string, showLegend bool) *charts.Bar3D {
 				Color: []string{"#313695", "#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#fee090", "#fdae61", "#f46d43", "#d73027", "#a50026"},
 			},
 			Orient: "vertical",
-			Right:  "10",
-			Bottom: "10",
+			Right:  "5%",
+			Bottom: "5%",
 			TextStyle: &opts.TextStyle{
 				Color: "#ffffff",
 			},
 		}),
 		charts.WithGrid3DOpts(opts.Grid3D{
-			BoxWidth:    200,
-			BoxDepth:    80,
-			ViewControl: &opts.ViewControl{AutoRotate: opts.Bool(true), AutoRotateSpeed: 10},
+			BoxWidth: 160,
+			BoxDepth: 60,
+			ViewControl: &opts.ViewControl{
+				AutoRotate:      opts.Bool(true),
+				AutoRotateSpeed: 10,
+			},
 		}),
 		charts.WithXAxis3DOpts(opts.XAxis3D{Data: layers}),
 		charts.WithYAxis3DOpts(opts.YAxis3D{Data: protocols}),
@@ -1023,7 +1027,7 @@ func generateGeoChart(outDir string, showLegend bool) *charts.Geo {
 			Max:    float32(getMaxGeoCount(geoData)),
 			Orient: "vertical",
 			Right:  "10",
-			Bottom: "10",
+			Bottom: "60",
 			TextStyle: &opts.TextStyle{
 				Color: "#ffffff",
 			},
@@ -1231,7 +1235,7 @@ func (s *Server) generateGeoChartAll(showLegend bool) *charts.Geo {
 			Max:    float32(getMaxGeoCount(geoData)),
 			Orient: "vertical",
 			Right:  "10",
-			Bottom: "10",
+			Bottom: "60",
 			TextStyle: &opts.TextStyle{
 				Color: "#ffffff",
 			},
@@ -1474,8 +1478,8 @@ func generateScatter3DChart(outDir string, showLegend bool) *charts.Scatter3D {
 				Color: []string{"#313695", "#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#fee090", "#fdae61", "#f46d43", "#d73027", "#a50026"},
 			},
 			Orient: "vertical",
-			Right:  "10",
-			Bottom: "10",
+			Right:  "5%",
+			Bottom: "5%",
 			TextStyle: &opts.TextStyle{
 				Color: "#ffffff",
 			},
@@ -1493,10 +1497,13 @@ func generateScatter3DChart(outDir string, showLegend bool) *charts.Scatter3D {
 			Type: "value",
 		}),
 		charts.WithGrid3DOpts(opts.Grid3D{
-			BoxWidth:    200,
-			BoxDepth:    80,
-			BoxHeight:   80,
-			ViewControl: &opts.ViewControl{AutoRotate: opts.Bool(true), AutoRotateSpeed: 10},
+			BoxWidth:  160,
+			BoxDepth:  60,
+			BoxHeight: 60,
+			ViewControl: &opts.ViewControl{
+				AutoRotate:      opts.Bool(true),
+				AutoRotateSpeed: 10,
+			},
 		}),
 	)
 
@@ -1670,7 +1677,7 @@ func normalizeValue(value, oldMin, oldMax, newMin, newMax float64) float64 {
 
 // generateHostsGraph creates a network graph showing IP communication patterns
 func generateHostsGraph(outDir string, showLegend bool) *charts.Graph {
-	nodes, links := getHostsCommunicationData(outDir)
+	nodes, links := getHostsCommunicationData(outDir, 5000)
 
 	graph := charts.NewGraph()
 
@@ -1742,7 +1749,7 @@ func generateHostsGraph(outDir string, showLegend bool) *charts.Graph {
 }
 
 // getHostsCommunicationData reads connection data and builds a communication graph
-func getHostsCommunicationData(outDir string) ([]opts.GraphNode, []opts.GraphLink) {
+func getHostsCommunicationData(outDir string, maxNodes int) ([]opts.GraphNode, []opts.GraphLink) {
 	filePath := filepath.Join(outDir, "Connection.ncap.gz")
 
 	// Check if file exists
@@ -1825,12 +1832,43 @@ func getHostsCommunicationData(outDir string) ([]opts.GraphNode, []opts.GraphLin
 		connectionPairs[pairKey]++
 	}
 
-	// Build nodes
-	nodes := make([]opts.GraphNode, 0, len(ipStats))
+	// Build temporary node list with traffic info for sorting
+	type nodeInfo struct {
+		ip           string
+		stats        *ipNodeStats
+		totalPackets int64
+	}
+	nodeInfos := make([]nodeInfo, 0, len(ipStats))
 	for ip, stats := range ipStats {
-		// Calculate node size based on total traffic
 		totalPackets := stats.packetsIn + stats.packetsOut
-		nodeSize := float32(20 + (totalPackets / 100))
+		nodeInfos = append(nodeInfos, nodeInfo{
+			ip:           ip,
+			stats:        stats,
+			totalPackets: totalPackets,
+		})
+	}
+
+	// Sort nodes by total traffic (descending)
+	sort.Slice(nodeInfos, func(i, j int) bool {
+		return nodeInfos[i].totalPackets > nodeInfos[j].totalPackets
+	})
+
+	// Limit to maxNodes
+	if len(nodeInfos) > maxNodes {
+		nodeInfos = nodeInfos[:maxNodes]
+	}
+
+	// Create a set of selected IPs for fast lookup
+	selectedIPs := make(map[string]bool, len(nodeInfos))
+	for _, info := range nodeInfos {
+		selectedIPs[info.ip] = true
+	}
+
+	// Build nodes from top N IPs
+	nodes := make([]opts.GraphNode, 0, len(nodeInfos))
+	for _, info := range nodeInfos {
+		// Calculate node size based on total traffic
+		nodeSize := float32(20 + (info.totalPackets / 100))
 		if nodeSize > 100 {
 			nodeSize = 100
 		}
@@ -1839,8 +1877,8 @@ func getHostsCommunicationData(outDir string) ([]opts.GraphNode, []opts.GraphLin
 		}
 
 		// Determine category based on internal/external and traffic volume
-		isInternal := isPrivateIP(ip)
-		isHighTraffic := totalPackets > 1000 // Consider high traffic threshold
+		isInternal := isPrivateIP(info.ip)
+		isHighTraffic := info.totalPackets > 1000 // Consider high traffic threshold
 
 		category := 0
 		if isInternal {
@@ -1858,19 +1896,24 @@ func getHostsCommunicationData(outDir string) ([]opts.GraphNode, []opts.GraphLin
 		}
 
 		nodes = append(nodes, opts.GraphNode{
-			Name:       ip,
+			Name:       info.ip,
 			SymbolSize: nodeSize,
 			Category:   category,
-			Value:      float32(totalPackets),
+			Value:      float32(info.totalPackets),
 		})
 	}
 
-	// Build links
+	// Build links - only include links between selected nodes
 	links := make([]opts.GraphLink, 0, len(connectionPairs))
 	for pair, count := range connectionPairs {
 		// Parse pair
 		parts := strings.Split(pair, "->")
 		if len(parts) != 2 {
+			continue
+		}
+
+		// Only include link if both nodes are in the selected set
+		if !selectedIPs[parts[0]] || !selectedIPs[parts[1]] {
 			continue
 		}
 
@@ -1884,6 +1927,7 @@ func getHostsCommunicationData(outDir string) ([]opts.GraphNode, []opts.GraphLin
 		})
 	}
 
+	log.Printf("[WebUI] Generated hosts graph with %d nodes (max: %d) and %d links", len(nodes), maxNodes, len(links))
 	return nodes, links
 }
 

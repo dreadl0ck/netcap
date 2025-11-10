@@ -267,7 +267,7 @@ The Web UI can only access:
 - Output directory specified with `-out` flag
 - No directory traversal protection needed (Go's `filepath.Join` handles this)
 
-### Extracted Files Preview Security
+### Files Preview Security
 
 When previewing extracted files (especially HTML files from network traffic), several security measures are in place to prevent XSS and other attacks:
 

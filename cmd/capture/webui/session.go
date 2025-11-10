@@ -351,13 +351,17 @@ func (sm *SessionManager) MarkSessionIssueReported(sessionID string) {
 }
 
 // GetStorageUsageForIP calculates storage usage for a specific IP
+// This includes both the user's own sessions and preloaded/system pcaps
 func (sm *SessionManager) GetStorageUsageForIP(ip string) int64 {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
 	var totalSize int64 = 0
 	for _, session := range sm.sessions {
-		if session.IP == ip {
+		// Include sessions belonging to this IP OR preloaded system pcaps
+		// Preloaded pcaps (IP="system") count towards all users' storage limits
+		// since they consume shared server resources
+		if session.IP == ip || session.IP == "system" {
 			// Calculate results directory size (contains all audit records)
 			resultsDirSize, err := calculateDirectorySize(session.OutputDir)
 			if err != nil {

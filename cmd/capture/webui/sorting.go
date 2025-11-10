@@ -33,8 +33,8 @@ var (
 	}
 
 	applicationLayerProtocols = []string{
-		"DHCPv4", "DHCPv6", "DNS", "Geneve", "HTTP", "NTP", 
-		"POP3", "SIP", "SMTP", "SSH", "VXLAN",
+		"CIP", "DHCPv4", "DHCPv6", "DNS", "ENIP", "Geneve", 
+		"HTTP", "NTP", "POP3", "SIP", "SMTP", "SSH", "VXLAN",
 	}
 
 	streamDecoders = []string{

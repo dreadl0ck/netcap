@@ -399,11 +399,14 @@ func (cg *ChartGenerator) generateLineChart(dataPoints []dataPoint) io.Reader {
 		yAxis[i] = opts.LineData{Value: dp.value}
 	}
 
+	// Only show labels for small datasets (< 50 points) to avoid clutter
+	showLabels := len(dataPoints) < 50
+
 	line.SetXAxis(xAxis).AddSeries(cg.field, yAxis).
 		SetSeriesOptions(
 			charts.WithLineChartOpts(opts.LineChart{Smooth: opts.Bool(true)}),
 			charts.WithLabelOpts(opts.Label{
-				Show:            opts.Bool(true),
+				Show:            opts.Bool(showLabels),
 				Color:           "white",
 				FontSize:        12,
 				FontWeight:      "normal",
@@ -482,10 +485,13 @@ func (cg *ChartGenerator) generateBarChart(dataPoints []dataPoint) io.Reader {
 		yAxis[i] = opts.BarData{Value: dp.value}
 	}
 
+	// Only show labels for small datasets (< 50 points) to avoid clutter
+	showLabels := len(dataPoints) < 50
+
 	bar.SetXAxis(xAxis).AddSeries(cg.field, yAxis).
 		SetSeriesOptions(
 			charts.WithLabelOpts(opts.Label{
-				Show:            opts.Bool(true),
+				Show:            opts.Bool(showLabels),
 				Color:           "white",
 				FontSize:        12,
 				FontWeight:      "normal",
@@ -560,12 +566,15 @@ func (cg *ChartGenerator) generateAreaChart(dataPoints []dataPoint) io.Reader {
 		yAxis[i] = opts.LineData{Value: dp.value}
 	}
 
+	// Only show labels for small datasets (< 50 points) to avoid clutter
+	showLabels := len(dataPoints) < 50
+
 	line.SetXAxis(xAxis).AddSeries(cg.field, yAxis).
 		SetSeriesOptions(
 			charts.WithLineChartOpts(opts.LineChart{Smooth: opts.Bool(true)}),
 			charts.WithAreaStyleOpts(opts.AreaStyle{Opacity: opts.Float(0.5)}),
 			charts.WithLabelOpts(opts.Label{
-				Show:            opts.Bool(true),
+				Show:            opts.Bool(showLabels),
 				Color:           "white",
 				FontSize:        12,
 				FontWeight:      "normal",
@@ -640,10 +649,13 @@ func (cg *ChartGenerator) generateScatterChart(dataPoints []dataPoint) io.Reader
 		yAxis[i] = opts.ScatterData{Value: dp.value}
 	}
 
+	// Only show labels for small datasets (< 50 points) to avoid clutter
+	showLabels := len(dataPoints) < 50
+
 	scatter.SetXAxis(xAxis).AddSeries(cg.field, yAxis).
 		SetSeriesOptions(
 			charts.WithLabelOpts(opts.Label{
-				Show:            opts.Bool(true),
+				Show:            opts.Bool(showLabels),
 				Color:           "white",
 				FontSize:        12,
 				FontWeight:      "normal",
@@ -765,10 +777,13 @@ func (cg *ChartGenerator) generateCategoryBarChart(data []kvPair) io.Reader {
 		yAxis[i] = opts.BarData{Value: kv.value}
 	}
 
+	// Only show labels for small datasets (< 20 categories) to avoid clutter
+	showLabels := len(data) < 20
+
 	bar.SetXAxis(xAxis).AddSeries(cg.field, yAxis).
 		SetSeriesOptions(
 			charts.WithLabelOpts(opts.Label{
-				Show:            opts.Bool(true),
+				Show:            opts.Bool(showLabels),
 				Color:           "white",
 				FontSize:        12,
 				FontWeight:      "normal",
@@ -841,6 +856,7 @@ func (cg *ChartGenerator) generateFunnelChart(dataPoints []dataPoint) io.Reader 
 		})
 	}
 
+	// Always show labels for funnel charts (they're designed for few items)
 	funnel.AddSeries(cg.field, items).
 		SetSeriesOptions(
 			charts.WithLabelOpts(opts.Label{
@@ -1028,6 +1044,7 @@ func (cg *ChartGenerator) generateCategoryFunnelChart(data []kvPair) io.Reader {
 		}
 	}
 
+	// Always show labels for funnel charts (they're designed for few items)
 	funnel.AddSeries(cg.field, items).
 		SetSeriesOptions(
 			charts.WithLabelOpts(opts.Label{
@@ -1147,6 +1164,7 @@ func (cg *ChartGenerator) generateSankeyChart(reader *AuditRecordReader) (io.Rea
 		linkList = linkList[:50]
 	}
 
+	// Always show labels for sankey diagrams (they're designed to show relationships)
 	sankey.AddSeries("flows", nodeList, linkList).
 		SetSeriesOptions(
 			charts.WithLabelOpts(opts.Label{
@@ -1226,6 +1244,7 @@ func (cg *ChartGenerator) generateGraphChart(data []kvPair) io.Reader {
 		categories[i] = &opts.GraphCategory{Name: fmt.Sprintf("Group %d", i+1)}
 	}
 
+	// Always show labels for graph charts (they're designed to show relationships)
 	graph.AddSeries("graph", nodes, links).
 		SetSeriesOptions(
 			charts.WithGraphChartOpts(opts.GraphChart{

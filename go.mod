@@ -46,6 +46,8 @@ require (
 	mvdan.cc/xurls/v2 v2.6.0
 )
 
+require github.com/expr-lang/expr v1.17.6
+
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
@@ -70,7 +72,6 @@ require (
 	github.com/cyphar/filepath-securejoin v0.2.5 // indirect
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/expr-lang/expr v1.17.6 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect

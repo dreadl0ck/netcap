@@ -199,6 +199,7 @@ commands:
     build-service:
         description: build and push the netcap service mode container
         dependencies:
+            - gen-version
             - build-frontend
         arguments:
             - push:Bool? = true
@@ -236,6 +237,7 @@ commands:
     build-service-local-dpi:
         description: build and push the netcap service mode container with local go-dpi
         dependencies:
+            - gen-version
             - build-frontend
         arguments:
             - push:Bool? = true

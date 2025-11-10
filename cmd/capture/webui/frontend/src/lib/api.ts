@@ -120,6 +120,7 @@ export interface ExtractedFileInfo {
   size: number;
   modifiedTime: number;
   mimeType: string;
+  hash?: string;  // SHA256 hash from File audit record
 }
 
 export interface ExtractedFilesResponse {
@@ -431,6 +432,9 @@ export interface Alert {
   ruleExpression: string;
   threshold: number;
   thresholdWindow: number;
+  resolved: boolean;
+  resolvedAt?: number;
+  alertId: string;
 }
 
 export interface AlertsResponse {
@@ -456,6 +460,9 @@ export interface GroupedAlert {
   uniqueSrcPorts: string[];
   uniqueDstPorts: string[];
   sampleAlerts: Alert[];
+  resolved: boolean;
+  resolvedCount: number;
+  groupId: string;
 }
 
 export interface GroupedAlertsResponse {
@@ -1080,7 +1087,31 @@ export const api = {
     return res.json();
   },
 
-  // Extracted Files API
+  async resolveAlert(alertId?: string, groupId?: string): Promise<{success: boolean; message: string; resolvedAt: number; resolvedIds?: string[]}> {
+    const res = await fetch(`${API_BASE}/alerts/resolve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ alertId, groupId }),
+    });
+    if (!res.ok) throw new Error('Failed to resolve alert');
+    return res.json();
+  },
+
+  async unresolveAlert(alertId?: string, groupId?: string): Promise<{success: boolean; message: string; unresolvedIds?: string[]}> {
+    const res = await fetch(`${API_BASE}/alerts/unresolve`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ alertId, groupId }),
+    });
+    if (!res.ok) throw new Error('Failed to unresolve alert');
+    return res.json();
+  },
+
+  // Files API
   async getExtractedFiles(): Promise<ExtractedFilesResponse> {
     const res = await fetch(`${API_BASE}/extracted-files`);
     if (!res.ok) throw new Error('Failed to fetch extracted files');
@@ -1090,6 +1121,11 @@ export const api = {
   downloadExtractedFile(relativePath: string): string {
     // Return the download URL for the file
     return `${API_BASE}/extracted-files/download/${encodeURIComponent(relativePath)}`;
+  },
+
+  downloadAllExtractedFiles(): string {
+    // Return the download URL for all extracted files as a zip
+    return `${API_BASE}/extracted-files/download-all`;
   },
 
   downloadInputFile(identifier: string): string {

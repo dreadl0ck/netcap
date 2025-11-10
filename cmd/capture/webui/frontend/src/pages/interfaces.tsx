@@ -60,14 +60,6 @@ export default function Interfaces() {
   return (
     <Layout title="Network Interfaces">
       <Box sx={{ minWidth: 0 }}>
-        {isServiceMode && (
-          <Paper sx={{ p: 2, mb: 3, bgcolor: 'info.main', color: 'info.contrastText' }}>
-            <Typography variant="body2">
-              ℹ️ Live packet capture is not available in service mode. You can view available interfaces below, but capture functionality is disabled.
-            </Typography>
-          </Paper>
-        )}
-
         {networkInterfaces && networkInterfaces.length > 0 ? (
           <>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>

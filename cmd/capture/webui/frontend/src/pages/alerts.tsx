@@ -42,6 +42,9 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import CheckIcon from '@mui/icons-material/Check';
+import UndoIcon from '@mui/icons-material/Undo';
+import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import Layout from '@/components/Layout';
 import { api, Alert, GroupedAlert, AlertStatsResponse, formatBytes } from '@/lib/api';
 import useSWR, { mutate, mutate as globalMutate } from 'swr';
@@ -137,6 +140,8 @@ export default function AlertsPage() {
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [switchingFile, setSwitchingFile] = useState(false);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const [showResolved, setShowResolved] = useState(true);
+  const [resolvingGroups, setResolvingGroups] = useState<Set<string>>(new Set());
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -169,10 +174,11 @@ export default function AlertsPage() {
     refreshInterval: 5000,
   });
 
-  // Extract grouped alerts data
-  const groups = groupedAlertsData?.groups || [];
+  // Extract grouped alerts data and filter based on showResolved
+  const allGroups = groupedAlertsData?.groups || [];
+  const groups = showResolved ? allGroups : allGroups.filter(g => !g.resolved);
   const totalCount = groupedAlertsData?.totalCount || 0;
-  const groupCount = groupedAlertsData?.groupCount || 0;
+  const groupCount = groups.length;
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -248,6 +254,48 @@ export default function AlertsPage() {
   const handleViewDetails = (alert: Alert) => {
     setSelectedAlert(alert);
     setDetailsDialogOpen(true);
+  };
+
+  const handleResolveGroup = async (groupId: string) => {
+    setResolvingGroups(prev => new Set(prev).add(groupId));
+    try {
+      await api.resolveAlert(undefined, groupId);
+      setSnackbar({ open: true, message: 'Alert group resolved successfully', severity: 'success' });
+      handleRefresh();
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err instanceof Error ? err.message : 'Failed to resolve alert group',
+        severity: 'error',
+      });
+    } finally {
+      setResolvingGroups(prev => {
+        const next = new Set(prev);
+        next.delete(groupId);
+        return next;
+      });
+    }
+  };
+
+  const handleUnresolveGroup = async (groupId: string) => {
+    setResolvingGroups(prev => new Set(prev).add(groupId));
+    try {
+      await api.unresolveAlert(undefined, groupId);
+      setSnackbar({ open: true, message: 'Alert group unresolved successfully', severity: 'success' });
+      handleRefresh();
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err instanceof Error ? err.message : 'Failed to unresolve alert group',
+        severity: 'error',
+      });
+    } finally {
+      setResolvingGroups(prev => {
+        const next = new Set(prev);
+        next.delete(groupId);
+        return next;
+      });
+    }
   };
 
   const getSeverityIcon = (severity: string) => {
@@ -423,6 +471,15 @@ export default function AlertsPage() {
             flexWrap: 'wrap',
             justifyContent: { xs: 'stretch', md: 'flex-end' }
           }}>
+            <Button 
+              variant={showResolved ? "contained" : "outlined"}
+              startIcon={<FilterAltIcon />} 
+              onClick={() => setShowResolved(!showResolved)}
+              size="small"
+              sx={{ flex: { xs: 1, sm: 'none' } }}
+            >
+              {showResolved ? 'Hide Resolved' : 'Show Resolved'}
+            </Button>
             <Button 
               variant="outlined" 
               startIcon={<RefreshIcon />} 
@@ -628,12 +685,13 @@ export default function AlertsPage() {
                 </TableCell>
                 <TableCell>Unique IPs</TableCell>
                 <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Tags</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {groups.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} align="center">
+                  <TableCell colSpan={10} align="center">
                     <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
                       No alerts found. Alerts will appear here when detection rules match network traffic.
                     </Typography>
@@ -646,7 +704,15 @@ export default function AlertsPage() {
                   
                   return (
                     <>
-                      <TableRow key={groupKey} hover sx={{ cursor: 'pointer' }}>
+                      <TableRow 
+                        key={groupKey} 
+                        hover 
+                        sx={{ 
+                          cursor: 'pointer',
+                          opacity: group.resolved ? 0.6 : 1,
+                          backgroundColor: group.resolved ? 'action.selected' : 'inherit',
+                        }}
+                      >
                         <TableCell>
                           <IconButton
                             size="small"
@@ -724,12 +790,45 @@ export default function AlertsPage() {
                             )}
                           </Box>
                         </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 0.5 }}>
+                            {group.resolved ? (
+                              <Tooltip title="Mark as unresolved">
+                                <IconButton
+                                  size="small"
+                                  color="default"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleUnresolveGroup(group.groupId);
+                                  }}
+                                  disabled={resolvingGroups.has(group.groupId)}
+                                >
+                                  <UndoIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            ) : (
+                              <Tooltip title="Mark as resolved">
+                                <IconButton
+                                  size="small"
+                                  color="success"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleResolveGroup(group.groupId);
+                                  }}
+                                  disabled={resolvingGroups.has(group.groupId)}
+                                >
+                                  <CheckIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
+                          </Box>
+                        </TableCell>
                       </TableRow>
                       
                       {/* Expanded Details */}
                       {isExpanded && (
                         <TableRow>
-                          <TableCell colSpan={9} sx={{ backgroundColor: 'action.hover', py: 2 }}>
+                          <TableCell colSpan={10} sx={{ backgroundColor: 'action.hover', py: 2 }}>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, px: 2 }}>
                               <Typography variant="subtitle2" fontWeight="bold">
                                 Alert Details

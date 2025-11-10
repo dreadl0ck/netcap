@@ -1296,8 +1296,8 @@ export default function AuditRecords() {
                         return;
                       }
                       
-                      // Handle TAB key for autocomplete - ONLY way to open dropdown
-                      if (e.key === 'Tab' && !e.shiftKey) {
+                      // Handle TAB or Ctrl+Space for autocomplete - ONLY ways to open dropdown
+                      if ((e.key === 'Tab' && !e.shiftKey) || (e.key === ' ' && e.ctrlKey)) {
                         e.preventDefault();
                         e.stopPropagation();
                         
@@ -1363,8 +1363,8 @@ export default function AuditRecords() {
                       activeFilter 
                         ? `Active filter: ${activeFilter}` 
                         : valuesSampleInfo
-                        ? `Press TAB to show suggestions, ENTER to apply filter. CMD+ENTER to execute immediately. Values sampled from ${valuesSampleInfo.recordsScanned} records (max ${valuesSampleInfo.maxPerField} per field).`
-                        : "Press TAB to show autocomplete suggestions, ENTER to apply filter, CMD+ENTER to execute immediately."
+                        ? `Press TAB or CTRL+SPACE to show suggestions, ENTER to apply filter. CMD+ENTER to execute immediately. Values sampled from ${valuesSampleInfo.recordsScanned} records (max ${valuesSampleInfo.maxPerField} per field).`
+                        : "Press TAB or CTRL+SPACE to show autocomplete suggestions, ENTER to apply filter, CMD+ENTER to execute immediately."
                     }
                   />
                 )}
@@ -1542,7 +1542,7 @@ export default function AuditRecords() {
 
                   <Box sx={{ mt: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
                     <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                      💡 <strong>Tip:</strong> Field names are case-sensitive. Use TAB for autocompletion or check the record structure for available fields.
+                      💡 <strong>Tip:</strong> Field names are case-sensitive. Use TAB or CTRL+SPACE for autocompletion or check the record structure for available fields.
                     </Typography>
                     <Typography variant="caption" color="text.secondary" display="block">
                       📚 <strong>All Helper Functions:</strong> InSubnet, IsPrivateIP, IsPublicIP, ParsePort, PortInRange, TimeInRange, DurationSince, FormatTime, ContainsAny, MatchesPattern
