@@ -117,6 +117,7 @@ export default function RuleSetsPage() {
             {ruleSets.map((ruleSet) => (
               <Grid item xs={12} sm={6} md={4} key={ruleSet.name}>
                 <Card 
+                  data-learn="Rule Set Card: Click to view all detection rules in this rule set and manage individual rules within the collection."
                   variant="outlined"
                   onClick={() => handleCardClick(ruleSet.name)}
                   sx={{ 
@@ -151,6 +152,7 @@ export default function RuleSetsPage() {
                         </Typography>
                       </Box>
                       <FormControlLabel
+                        data-learn="Enable Rule Set: Toggle to enable or disable all rules in this rule set at once, affecting whether these detection rules are applied to network traffic."
                         control={
                           <Switch
                             checked={ruleSet.enabled}

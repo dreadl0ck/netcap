@@ -3,6 +3,32 @@ import { Box, Paper, Typography, Fade, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useLearnMode } from '@/contexts/LearnModeContext';
 
+// Helper function to parse data-learn attribute into title and description
+function parseLearnHint(hint: string): { title: string | null; description: string } {
+  // Check if the hint contains a colon separator for "Title: Description" format
+  const colonIndex = hint.indexOf(':');
+  
+  if (colonIndex > 0 && colonIndex < hint.length - 1) {
+    const potentialTitle = hint.substring(0, colonIndex).trim();
+    const potentialDescription = hint.substring(colonIndex + 1).trim();
+    
+    // Only treat it as a title if it's not too long (reasonable title length)
+    // and the description part is not empty
+    if (potentialTitle.length <= 50 && potentialDescription.length > 0) {
+      return {
+        title: potentialTitle,
+        description: potentialDescription,
+      };
+    }
+  }
+  
+  // If no title format detected, return the entire hint as description
+  return {
+    title: null,
+    description: hint,
+  };
+}
+
 // Helper function to extract element name from the element
 function getElementName(element: HTMLElement): string {
   // Try to get text from the element or its children
@@ -62,14 +88,17 @@ export default function LearnModeOverlay() {
 
     // Helper to add highlight to an element
     const addHighlight = (element: HTMLElement) => {
-      element.style.outline = '2px solid #00bcd4';
-      element.style.outlineOffset = '2px';
+      // Use box-shadow instead of outline to avoid clipping issues with overflow:hidden
+      element.style.boxShadow = '0 0 0 2px #00bcd4, 0 0 8px rgba(0, 188, 212, 0.5)';
+      element.style.position = element.style.position || 'relative';
+      element.style.zIndex = '1';
     };
 
     // Helper to remove highlight from an element
     const removeHighlight = (element: HTMLElement) => {
-      element.style.outline = '';
-      element.style.outlineOffset = '';
+      element.style.boxShadow = '';
+      // Only reset z-index, keep position as it might be needed for layout
+      element.style.zIndex = '';
     };
 
     // Restore highlight if there is a last interacted element
@@ -93,8 +122,9 @@ export default function LearnModeOverlay() {
         
         const hint = learnElement.getAttribute('data-learn');
         if (hint) {
-          setCurrentHint(hint);
-          setCurrentElementTitle(getElementName(learnElement));
+          const { title, description } = parseLearnHint(hint);
+          setCurrentHint(description);
+          setCurrentElementTitle(title || getElementName(learnElement));
           // Add a highlight effect
           addHighlight(learnElement);
           currentHighlightedElement = learnElement;
@@ -156,8 +186,9 @@ export default function LearnModeOverlay() {
             
             shouldBlockNextClickRef.current = true;
             
-            setCurrentHint(hint);
-            setCurrentElementTitle(getElementName(learnElement));
+            const { title, description } = parseLearnHint(hint);
+            setCurrentHint(description);
+            setCurrentElementTitle(title || getElementName(learnElement));
             setLastInteractedElement(learnElement);
             
             // Add highlight to this element
@@ -226,8 +257,8 @@ export default function LearnModeOverlay() {
     return () => {
       // Clean up any remaining highlight
       if (currentHighlightedElement) {
-        currentHighlightedElement.style.outline = '';
-        currentHighlightedElement.style.outlineOffset = '';
+        currentHighlightedElement.style.boxShadow = '';
+        currentHighlightedElement.style.zIndex = '';
       }
       document.removeEventListener('mouseover', handleMouseOver);
       document.removeEventListener('mouseout', handleMouseOut);

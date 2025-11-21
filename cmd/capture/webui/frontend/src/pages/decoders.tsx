@@ -551,6 +551,7 @@ export default function Decoders() {
         </Typography>
         <Box display="flex" gap={1}>
           <Button
+            data-learn="Load Configuration: Load a previously saved decoder configuration to quickly switch between different decoder setups."
             variant="outlined"
             startIcon={<FolderOpenIcon />}
             onClick={() => setLoadDialogOpen(true)}
@@ -559,6 +560,7 @@ export default function Decoders() {
             Load
           </Button>
           <Button
+            data-learn="Upload Configuration: Upload a decoder configuration JSON file from your computer to import custom decoder settings."
             variant="outlined"
             startIcon={<UploadIcon />}
             onClick={() => setUploadDialogOpen(true)}
@@ -567,6 +569,7 @@ export default function Decoders() {
             Upload
           </Button>
           <Button
+            data-learn="Save As: Save the current decoder configuration with a custom name for later reuse without overwriting the active configuration."
             variant="outlined"
             startIcon={<SaveAsIcon />}
             onClick={() => setSaveAsDialogOpen(true)}
@@ -575,6 +578,7 @@ export default function Decoders() {
             Save As
           </Button>
           <Button
+            data-learn="Save Configuration: Apply and save the current decoder settings to make them active for packet analysis."
             variant="contained"
             startIcon={<SaveIcon />}
             onClick={handleSave}
@@ -593,6 +597,7 @@ export default function Decoders() {
             Library Version
           </Typography>
           <Paper 
+            data-learn="GoPacket Library: View the gopacket library repository on GitHub - the high-performance packet decoding library that powers Netcap's decoder infrastructure."
             elevation={0} 
             sx={{ 
               p: 2, 
@@ -627,6 +632,7 @@ export default function Decoders() {
 
       <Box sx={{ mb: 3 }}>
         <TextField
+          data-learn="Search Decoders: Filter the decoder list by name or description to quickly find specific protocol decoders."
           fullWidth
           placeholder="Search decoders by name or description..."
           value={searchTerm}
@@ -679,6 +685,7 @@ export default function Decoders() {
                     sx={{ mr: 2 }}
                   />
                   <Button
+                    data-learn="Enable All Decoders: Enable all decoders in this category to capture comprehensive data for all protocols in this group."
                     size="small"
                     variant="outlined"
                     onClick={(e) => {
@@ -690,6 +697,7 @@ export default function Decoders() {
                     Enable All
                   </Button>
                   <Button
+                    data-learn="Disable All Decoders: Disable all decoders in this category to skip processing these protocol types and improve performance."
                     size="small"
                     variant="outlined"
                     onClick={(e) => {
@@ -712,6 +720,7 @@ export default function Decoders() {
                       return (
                         <Box key={decoder.name} sx={{ mb: decoderIdx < category.decoders.length - 1 ? 1 : 0 }}>
                           <Box
+                            data-learn="Decoder Row: Click to expand and view the data fields that this decoder extracts from network packets (e.g., source/destination addresses, ports, protocol-specific data)."
                             sx={{
                               display: 'flex',
                               alignItems: 'center',
@@ -772,6 +781,7 @@ export default function Decoders() {
                             </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                               <IconButton
+                                data-learn="View Source Code: Open the decoder's implementation on GitHub to see how it parses and extracts data from network packets."
                                 size="small"
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -793,6 +803,7 @@ export default function Decoders() {
                                 {isExpanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                               </IconButton>
                               <FormControlLabel
+                                data-learn="Decoder Toggle: Enable or disable this decoder to control whether this protocol type is analyzed and logged during packet capture."
                                 control={
                                   <Switch
                                     checked={isEnabled}

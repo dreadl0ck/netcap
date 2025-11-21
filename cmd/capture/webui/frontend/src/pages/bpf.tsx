@@ -106,6 +106,7 @@ export default function BPF() {
               Current Filter
             </Typography>
             <TextField
+              data-learn="BPF Filter Expression: Enter a Berkeley Packet Filter expression to capture only specific network traffic (e.g., tcp port 80, host 192.168.1.1, or complex combinations)."
               fullWidth
               multiline
               rows={4}
@@ -127,6 +128,7 @@ export default function BPF() {
             )}
             <Box sx={{ mt: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
               <Button
+                data-learn="Save Filter: Apply this BPF filter to future packet captures, limiting captured traffic to only packets matching the filter expression."
                 variant="contained"
                 startIcon={<SaveIcon />}
                 onClick={handleBPFSave}
@@ -135,6 +137,7 @@ export default function BPF() {
                 {bpfSaving ? 'Saving...' : 'Save Filter'}
               </Button>
               <Button
+                data-learn="Clear Filter: Remove the current BPF filter to capture all network traffic without filtering."
                 variant="outlined"
                 onClick={() => setBpfFilter('')}
                 disabled={!bpfFilter}
@@ -143,6 +146,7 @@ export default function BPF() {
               </Button>
               <Box sx={{ flex: 1 }} />
               <Link
+                data-learn="BPF Documentation: Open the official Berkeley Packet Filter syntax documentation to learn about filter expressions, operators, and advanced filtering techniques."
                 href={bpfData.docsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -171,6 +175,7 @@ export default function BPF() {
               <List>
                 {bpfData.examples.map((example) => (
                   <ListItem
+                    data-learn="Filter Example: Click to copy this pre-configured BPF filter expression to the editor for quick use or modification."
                     key={`${example.name}-${example.filter}`}
                     sx={{
                       border: 1,

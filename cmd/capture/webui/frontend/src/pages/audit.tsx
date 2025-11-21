@@ -818,6 +818,7 @@ export default function AuditRecords() {
   const fileSelector = completedFiles.length > 1 && selectedFile ? (
     <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
       <Select
+        data-learn="Capture Selector: Switch between different analyzed PCAP files to view their audit records and extracted protocol data."
         value={selectedValue}
         onChange={handleFileChange}
         startAdornment={

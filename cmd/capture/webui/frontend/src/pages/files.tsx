@@ -423,6 +423,7 @@ export default function ExtractedFilesPage() {
       </Typography>
       <FormControl size="small" sx={{ minWidth: 300 }}>
         <Select
+          data-learn="Capture Selector: Switch between different analyzed PCAP files to view their extracted files."
           value={selectedValue}
           onChange={handleFileChange}
           disabled={switchingFile}
@@ -541,6 +542,7 @@ export default function ExtractedFilesPage() {
           </Box>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             <ToggleButtonGroup
+              data-learn="View Mode: Switch between table view (all files with details) and gallery view (images only with thumbnails)."
               value={viewMode}
               exclusive
               onChange={handleViewModeChange}
@@ -559,6 +561,7 @@ export default function ExtractedFilesPage() {
               </ToggleButton>
             </ToggleButtonGroup>
             <Button 
+              data-learn="Refresh Files: Reload the list of extracted files to see newly discovered files from the capture."
               variant="outlined" 
               startIcon={<RefreshIcon />} 
               onClick={handleRefresh}
@@ -568,6 +571,7 @@ export default function ExtractedFilesPage() {
               Refresh
             </Button>
             <Button 
+              data-learn="Download All: Download all extracted files as a single archive (ZIP) for offline analysis."
               variant="contained" 
               startIcon={<DownloadForOfflineIcon />} 
               onClick={handleDownloadAll}
@@ -582,7 +586,10 @@ export default function ExtractedFilesPage() {
 
         {/* MIME Type Distribution Pie Chart */}
         {totalCount > 0 && mimeTypeDistribution.length > 0 && (
-          <Paper sx={{ mb: 3, p: 2 }}>
+          <Paper 
+            data-learn="MIME Type Distribution: Visual breakdown of extracted file types showing the proportion of images, documents, text files, and other content extracted from the capture."
+            sx={{ mb: 3, p: 2 }}
+          >
             <Typography variant="h6" gutterBottom>
               MIME Type Distribution
             </Typography>
@@ -597,6 +604,7 @@ export default function ExtractedFilesPage() {
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center' }}>
           <FormControl size="small" sx={{ minWidth: 200 }}>
             <Select
+              data-learn="MIME Type Filter: Filter extracted files by their file type (e.g., images, documents, text files) to quickly find specific content."
               value={mimeTypeFilter}
               onChange={(e) => {
                 setMimeTypeFilter(e.target.value);

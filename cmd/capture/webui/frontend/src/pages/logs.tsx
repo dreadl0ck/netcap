@@ -163,6 +163,7 @@ export default function Logs() {
   const fileSelector = completedFiles.length > 1 && selectedFile ? (
     <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
       <Select
+        data-learn="Capture Selector: Switch between different analyzed PCAP files to view their processing logs and debug information."
         value={selectedValue}
         onChange={handleFileChange}
         startAdornment={

@@ -114,6 +114,153 @@ window.addEventListener('resize', function() {
 	return []byte(html), nil
 }
 
+// inject3DChartControls intercepts the chart HTML and injects CSS, rotation toggle button for 3D charts
+func inject3DChartControls(renderFunc func(w io.Writer) error) ([]byte, error) {
+	var buf bytes.Buffer
+	if err := renderFunc(&buf); err != nil {
+		return nil, err
+	}
+
+	html := buf.String()
+
+	// Inject CSS and rotation toggle button
+	cssInjection := `<head>
+<style>
+html, body {
+	height: 100% !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	overflow: hidden !important;
+	width: 100% !important;
+}
+#main, .item, .container, div[_echarts_instance_] {
+	height: 100% !important;
+	width: 100% !important;
+	min-height: 100% !important;
+}
+body > div {
+	height: 100% !important;
+	width: 100% !important;
+}
+canvas {
+	display: block !important;
+}
+#rotationToggle {
+	position: fixed;
+	top: 10px;
+	right: 10px;
+	z-index: 1000;
+	padding: 10px 20px;
+	background: #4CAF50;
+	color: white;
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: bold;
+	box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+	transition: background 0.3s, transform 0.1s;
+}
+#rotationToggle:hover {
+	background: #45a049;
+	transform: scale(1.05);
+}
+#rotationToggle:active {
+	transform: scale(0.95);
+}
+#rotationToggle.paused {
+	background: #f44336;
+}
+#rotationToggle.paused:hover {
+	background: #da190b;
+}
+</style>
+<script>
+var rotationEnabled = true;
+
+// Force resize chart to fill viewport after load
+window.addEventListener('load', function() {
+	var charts = document.querySelectorAll('[_echarts_instance_]');
+	charts.forEach(function(el) {
+		if (el && el.style) {
+			el.style.height = window.innerHeight + 'px';
+			el.style.width = window.innerWidth + 'px';
+		}
+		// Trigger echarts resize
+		if (window.echarts) {
+			var chart = echarts.getInstanceByDom(el);
+			if (chart) {
+				setTimeout(function() {
+					chart.resize({
+						width: window.innerWidth,
+						height: window.innerHeight
+					});
+				}, 100);
+			}
+		}
+	});
+
+	// Add rotation toggle button
+	var button = document.createElement('button');
+	button.id = 'rotationToggle';
+	button.textContent = '⏸ Pause Rotation';
+	button.onclick = toggleRotation;
+	document.body.appendChild(button);
+});
+
+// Resize on window resize
+window.addEventListener('resize', function() {
+	var charts = document.querySelectorAll('[_echarts_instance_]');
+	charts.forEach(function(el) {
+		if (el && el.style) {
+			el.style.height = window.innerHeight + 'px';
+			el.style.width = window.innerWidth + 'px';
+		}
+		if (window.echarts) {
+			var chart = echarts.getInstanceByDom(el);
+			if (chart) {
+				chart.resize({
+					width: window.innerWidth,
+					height: window.innerHeight
+				});
+			}
+		}
+	});
+});
+
+// Toggle rotation function
+function toggleRotation() {
+	rotationEnabled = !rotationEnabled;
+	var button = document.getElementById('rotationToggle');
+	
+	if (window.echarts) {
+		var charts = document.querySelectorAll('[_echarts_instance_]');
+		charts.forEach(function(el) {
+			var chart = echarts.getInstanceByDom(el);
+			if (chart) {
+				var option = chart.getOption();
+				if (option.grid3D && option.grid3D[0] && option.grid3D[0].viewControl) {
+					option.grid3D[0].viewControl.autoRotate = rotationEnabled;
+					chart.setOption(option);
+					
+					if (rotationEnabled) {
+						button.textContent = '⏸ Pause Rotation';
+						button.classList.remove('paused');
+					} else {
+						button.textContent = '▶ Resume Rotation';
+						button.classList.add('paused');
+					}
+				}
+			}
+		});
+	}
+}
+</script>`
+
+	html = strings.Replace(html, "<head>", cssInjection, 1)
+	return []byte(html), nil
+}
+
 // handleVisualizeTreemap returns HTML for treemap chart of audit record types
 func (s *Server) handleVisualizeTreemap(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -209,7 +356,7 @@ func (s *Server) handleVisualizeBar3D(w http.ResponseWriter, r *http.Request) {
 	showLegend := showLegendStr == "true"
 
 	chart := generateBar3DChart(outDir, showLegend)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := inject3DChartControls(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -237,7 +384,7 @@ func HandleVisualizeBar3D(outDir string) http.HandlerFunc {
 		showLegend := showLegendStr == "true"
 
 		chart := generateBar3DChart(outDir, showLegend)
-		html, err := injectFullHeightCSS(chart.Render)
+		html, err := inject3DChartControls(chart.Render)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 			return
@@ -418,7 +565,7 @@ func (s *Server) handleVisualizeScatter3D(w http.ResponseWriter, r *http.Request
 	}
 
 	chart := generateScatter3DChart(outDir, showLegend, maxConnections)
-	html, err := injectFullHeightCSS(chart.Render)
+	html, err := inject3DChartControls(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 		return
@@ -454,7 +601,7 @@ func HandleVisualizeScatter3D(outDir string) http.HandlerFunc {
 		}
 
 		chart := generateScatter3DChart(outDir, showLegend, maxConnections)
-		html, err := injectFullHeightCSS(chart.Render)
+		html, err := inject3DChartControls(chart.Render)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
 			return
@@ -716,8 +863,8 @@ func generateBar3DChart(outDir string, showLegend bool) *charts.Bar3D {
 				data = append(data, opts.Chart3DData{
 					Name: protocol,
 					Value: []interface{}{
-						layerIdx,     // X: Layer
-						protocolIdx,  // Y: Protocol index
+						protocolIdx,  // X: Protocol index
+						layerIdx,     // Y: Layer
 						pstats.Count, // Z: Count
 					},
 					ItemStyle: &opts.ItemStyle{
@@ -768,14 +915,14 @@ func generateBar3DChart(outDir string, showLegend bool) *charts.Bar3D {
 			},
 		}),
 		charts.WithXAxis3DOpts(opts.XAxis3D{
-			Name: "Layer",
-			Type: "category",
-			Data: layers,
-		}),
-		charts.WithYAxis3DOpts(opts.YAxis3D{
 			Name: "Audit Record Type",
 			Type: "category",
 			Data: allProtocols,
+		}),
+		charts.WithYAxis3DOpts(opts.YAxis3D{
+			Name: "Layer",
+			Type: "category",
+			Data: layers,
 		}),
 		charts.WithZAxis3DOpts(opts.ZAxis3D{
 			Name: "Record Count",
@@ -1011,15 +1158,21 @@ func getLayerMap() map[string]string {
 		"STP":                "Link Layer",
 		"LLDP":               "Link Layer",
 		// Network Layer
-		"IPv4":     "Network Layer",
-		"IPv6":     "Network Layer",
-		"ICMPv4":   "Network Layer",
-		"ICMPv6":   "Network Layer",
-		"IGMP":     "Network Layer",
-		"IPSecAH":  "Network Layer",
-		"IPSecESP": "Network Layer",
-		"GRE":      "Network Layer",
-		"MPLS":     "Network Layer",
+		"IPv4":                        "Network Layer",
+		"IPv6":                        "Network Layer",
+		"IPv6HopByHop":                "Network Layer",
+		"ICMPv4":                      "Network Layer",
+		"ICMPv6":                      "Network Layer",
+		"ICMPv6Echo":                  "Network Layer",
+		"ICMPv6RouterSolicitation":    "Network Layer",
+		"ICMPv6RouterAdvertisement":   "Network Layer",
+		"ICMPv6NeighborSolicitation":  "Network Layer",
+		"ICMPv6NeighborAdvertisement": "Network Layer",
+		"IGMP":                        "Network Layer",
+		"IPSecAH":                     "Network Layer",
+		"IPSecESP":                    "Network Layer",
+		"GRE":                         "Network Layer",
+		"MPLS":                        "Network Layer",
 		// Transport Layer
 		"TCP":  "Transport Layer",
 		"UDP":  "Transport Layer",
@@ -1785,13 +1938,18 @@ func generateHostsGraph(outDir string, showLegend bool, maxNodes int) *charts.Gr
 			Trigger: "item",
 		}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(showLegend),
+			Show:   opts.Bool(true),
 			Data:   []string{"Internal Network", "External Network"},
-			Bottom: "0",
-			Left:   "center",
+			Top:    "30px",
+			Right:  "20px",
+			Orient: "vertical",
 			TextStyle: &opts.TextStyle{
-				Color: "#ffffff",
+				Color:    "#ffffff",
+				FontSize: 14,
 			},
+			ItemWidth:  25,
+			ItemHeight: 14,
+			Padding:    []int{10, 10, 10, 10},
 		}),
 	)
 

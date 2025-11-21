@@ -140,16 +140,22 @@ func buildProtocolHierarchy(outDir string) (*ProtocolHierarchyResponse, error) {
 		"STP":                "Link Layer",
 		"LLDP":               "Link Layer",
 
-		// Network Layer
-		"IPv4":     "Network Layer",
-		"IPv6":     "Network Layer",
-		"ICMPv4":   "Network Layer",
-		"ICMPv6":   "Network Layer",
-		"IGMP":     "Network Layer",
-		"IPSecAH":  "Network Layer",
-		"IPSecESP": "Network Layer",
-		"GRE":      "Network Layer",
-		"MPLS":     "Network Layer",
+	// Network Layer
+	"IPv4":          "Network Layer",
+	"IPv6":          "Network Layer",
+	"IPv6HopByHop":  "Network Layer",
+	"ICMPv4":        "Network Layer",
+	"ICMPv6":        "Network Layer",
+	"ICMPv6Echo":    "Network Layer",
+	"ICMPv6RouterSolicitation":   "Network Layer",
+	"ICMPv6RouterAdvertisement":  "Network Layer",
+	"ICMPv6NeighborSolicitation": "Network Layer",
+	"ICMPv6NeighborAdvertisement": "Network Layer",
+	"IGMP":          "Network Layer",
+	"IPSecAH":       "Network Layer",
+	"IPSecESP":      "Network Layer",
+	"GRE":           "Network Layer",
+	"MPLS":          "Network Layer",
 
 		// Transport Layer
 		"TCP":  "Transport Layer",
@@ -183,7 +189,7 @@ func buildProtocolHierarchy(outDir string) (*ProtocolHierarchyResponse, error) {
 	// Typical protocol encapsulation hierarchy
 	encapsulationMap := map[string][]string{
 		"Link Layer":        {"Ethernet", "Dot1Q", "Dot11", "LLC", "SNAP", "ARP"},
-		"Network Layer":     {"IPv4", "IPv6", "ICMPv4", "ICMPv6", "IGMP"},
+		"Network Layer":     {"IPv4", "IPv6", "IPv6HopByHop", "ICMPv4", "ICMPv6", "ICMPv6Echo", "ICMPv6RouterSolicitation", "ICMPv6RouterAdvertisement", "ICMPv6NeighborSolicitation", "ICMPv6NeighborAdvertisement", "IGMP"},
 		"Transport Layer":   {"TCP", "UDP", "SCTP"},
 		"Application Layer": {"HTTP", "TLS", "DNS", "SMTP", "SSH", "FTP", "DHCPv4", "DHCPv6"},
 	}

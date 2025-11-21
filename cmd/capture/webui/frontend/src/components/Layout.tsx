@@ -734,6 +734,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             </Typography>
             <Box sx={{ display: 'flex', gap: 0.5 }}>
               <IconButton
+                data-learn="Documentation: Open the official Netcap documentation to learn about features, usage, configuration, and best practices."
                 size="small"
                 href="https://docs.netcap.io"
                 target="_blank"
@@ -749,6 +750,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <MenuBookIcon fontSize="small" />
               </IconButton>
               <IconButton
+                data-learn="GitHub Repository: View the Netcap source code, report issues, contribute to development, and access the latest updates."
                 size="small"
                 href="https://github.com/dreadl0ck/netcap"
                 target="_blank"

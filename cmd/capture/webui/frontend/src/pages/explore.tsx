@@ -635,6 +635,134 @@ export default function Explore() {
       headerAction={headerAction}
       topPadding={{ xs: '200px', sm: '140px', md: '100px' }}
     >
+      {/* Chart type selection buttons and controls - above chart box */}
+      {chartUrl && !loading && (
+        <Box sx={{ 
+          mb: 2,
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between', 
+          alignItems: { xs: 'stretch', sm: 'center' }, 
+          gap: { xs: 1, sm: 2 },
+        }}>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+            <ToggleButtonGroup
+              data-learn="Chart Type Selector: Choose the visualization style (line, bar, pie, scatter, etc.) based on your data type."
+              value={selectedChartType}
+              exclusive
+              onChange={handleChartTypeChange}
+              size="small"
+              sx={{
+                flexWrap: 'wrap',
+                gap: 0.5,
+                '& .MuiToggleButtonGroup-grouped': {
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  px: { xs: 1, sm: 2 },
+                  '&:not(:first-of-type)': {
+                    marginLeft: 0,
+                    borderLeft: '1px solid',
+                    borderLeftColor: 'divider',
+                  },
+                  '&:not(:last-of-type)': {
+                    borderRight: '1px solid',
+                    borderRightColor: 'divider',
+                  },
+                },
+              }}
+            >
+              {availableChartTypes.map((type) => (
+                <ToggleButton 
+                  key={type.value} 
+                  value={type.value}
+                  sx={{ 
+                    textTransform: 'none',
+                    minWidth: { xs: 48, lg: 'auto' },
+                    width: { xs: 48, lg: 'auto' },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    {type.icon}
+                    <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+                      {type.label}
+                    </Box>
+                  </Box>
+                </ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </Box>
+
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            {/* Legend toggle - only show when viewing chart */}
+            {!showExample && (
+              <ToggleButtonGroup
+                data-learn="Legend Toggle: Show or hide the chart legend to save space or improve readability."
+                value={showLegend ? 'on' : 'off'}
+                exclusive
+                onChange={(_e, newValue) => {
+                  if (newValue !== null) {
+                    setShowLegend(newValue === 'on');
+                  }
+                }}
+                size="small"
+                sx={{
+                  '& .MuiToggleButton-root': {
+                    px: { xs: 1, lg: 1.5 },
+                    minWidth: { xs: 48, lg: 'auto' },
+                    width: { xs: 48, lg: 'auto' },
+                  }
+                }}
+              >
+                <ToggleButton value="on">
+                  <LabelIcon sx={{ mr: { xs: 0, lg: 0.5 }, fontSize: 18 }} />
+                  <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+                    Legend
+                  </Box>
+                </ToggleButton>
+                <ToggleButton value="off">
+                  <LabelOffIcon sx={{ mr: { xs: 0, lg: 0.5 }, fontSize: 18 }} />
+                  <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+                    No Legend
+                  </Box>
+                </ToggleButton>
+              </ToggleButtonGroup>
+            )}
+            <ToggleButtonGroup
+              data-learn="View Toggle: Switch between viewing the chart visualization or an example data record to understand the data structure."
+              value={showExample ? 'example' : 'chart'}
+              exclusive
+              onChange={(_e, newValue) => {
+                if (newValue !== null) {
+                  setShowExample(newValue === 'example');
+                }
+              }}
+              size="small"
+              sx={{
+                '& .MuiToggleButton-root': {
+                  px: { xs: 1, lg: 1.5 },
+                  minWidth: { xs: 48, lg: 'auto' },
+                  width: { xs: 48, lg: 'auto' },
+                }
+              }}
+            >
+              <ToggleButton value="chart">
+                <BarChartIcon sx={{ mr: { xs: 0, lg: 0.5 }, fontSize: 20 }} />
+                <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+                  Chart
+                </Box>
+              </ToggleButton>
+              <ToggleButton value="example">
+                <DataObjectIcon sx={{ mr: { xs: 0, lg: 0.5 }, fontSize: 20 }} />
+                <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+                  Example Data
+                </Box>
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+        </Box>
+      )}
+
       <Paper sx={{ 
         p: { xs: 2, sm: 2, md: 3 }, 
         height: { xs: 'calc(100vh - 260px)', sm: 'calc(100vh - 220px)', md: 'calc(100vh - 180px)' },
@@ -720,127 +848,6 @@ export default function Explore() {
 
         {chartUrl && !loading && (
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-            {/* Chart type selection buttons - horizontal above chart */}
-            <Box sx={{ 
-              mb: { xs: 1.5, sm: 2 }, 
-              display: 'flex', 
-              flexDirection: { xs: 'column', sm: 'row' },
-              justifyContent: 'space-between', 
-              alignItems: { xs: 'stretch', sm: 'center' }, 
-              gap: { xs: 1, sm: 2 },
-              flexShrink: 0
-            }}>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-                <ToggleButtonGroup
-                  data-learn="Chart Type Selector: Choose the visualization style (line, bar, pie, scatter, etc.) based on your data type."
-                  value={selectedChartType}
-                  exclusive
-                  onChange={handleChartTypeChange}
-                  size="small"
-                  sx={{
-                    flexWrap: 'wrap',
-                    gap: 0.5,
-                    '& .MuiToggleButtonGroup-grouped': {
-                      borderRadius: 1,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      px: { xs: 1, sm: 2 },
-                      '&:not(:first-of-type)': {
-                        marginLeft: 0,
-                        borderLeft: '1px solid',
-                        borderLeftColor: 'divider',
-                      },
-                      '&:not(:last-of-type)': {
-                        borderRight: '1px solid',
-                        borderRightColor: 'divider',
-                      },
-                    },
-                  }}
-                >
-                  {availableChartTypes.map((type) => (
-                    <ToggleButton 
-                      key={type.value} 
-                      value={type.value}
-                      sx={{ 
-                        textTransform: 'none',
-                      }}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        {type.icon}
-                        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                          {type.label}
-                        </Box>
-                      </Box>
-                    </ToggleButton>
-                  ))}
-                </ToggleButtonGroup>
-              </Box>
-
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {/* Legend toggle - only show when viewing chart */}
-                {!showExample && (
-                  <ToggleButtonGroup
-                    data-learn="Legend Toggle: Show or hide the chart legend to save space or improve readability."
-                    value={showLegend ? 'on' : 'off'}
-                    exclusive
-                    onChange={(_e, newValue) => {
-                      if (newValue !== null) {
-                        setShowLegend(newValue === 'on');
-                      }
-                    }}
-                    size="small"
-                    sx={{
-                      '& .MuiToggleButton-root': {
-                        px: { xs: 1, sm: 1.5 }
-                      }
-                    }}
-                  >
-                    <ToggleButton value="on">
-                      <LabelIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
-                      <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                        Legend
-                      </Box>
-                    </ToggleButton>
-                    <ToggleButton value="off">
-                      <LabelOffIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
-                      <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                        No Legend
-                      </Box>
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                )}
-                <ToggleButtonGroup
-                  data-learn="View Toggle: Switch between viewing the chart visualization or an example data record to understand the data structure."
-                  value={showExample ? 'example' : 'chart'}
-                  exclusive
-                  onChange={(_e, newValue) => {
-                    if (newValue !== null) {
-                      setShowExample(newValue === 'example');
-                    }
-                  }}
-                  size="small"
-                  sx={{
-                    '& .MuiToggleButton-root': {
-                      px: { xs: 1, sm: 1.5 }
-                    }
-                  }}
-                >
-                  <ToggleButton value="chart">
-                    <BarChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 20 }} />
-                    <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                      Chart
-                    </Box>
-                  </ToggleButton>
-                  <ToggleButton value="example">
-                    <DataObjectIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 20 }} />
-                    <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                      Example Data
-                    </Box>
-                  </ToggleButton>
-                </ToggleButtonGroup>
-              </Box>
-            </Box>
-
             {showExample ? (
               <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 {loadingExample && !exampleRecord ? (
@@ -877,7 +884,7 @@ export default function Explore() {
               </Box>
             ) : (
               <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <Box sx={{ flex: 1, position: 'relative' }}>
+                <Box sx={{ flex: 1, position: 'relative', paddingBottom: '60px' }}>
                   <iframe
                     key={chartUrl}
                     src={chartUrl}
@@ -892,46 +899,36 @@ export default function Explore() {
                     }}
                     title="Chart Visualization"
                   />
-                  {/* Max Data Points control - positioned bottom right */}
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      bottom: 12,
-                      right: 8,
-                      zIndex: 1000,
+                </Box>
+                {/* Max Data Points control - positioned below chart */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                    mt: 1,
+                    pt: 1,
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                  }}
+                >
+                  <TextField
+                    data-learn="Max Data Points: Limit the number of data points displayed in the chart for better performance (default 1,000)."
+                    size="small"
+                    type="number"
+                    label="Max Data Points"
+                    value={maxDataPoints}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value, 10);
+                      if (!Number.isNaN(value) && value > 0) {
+                        setMaxDataPoints(value);
+                      }
                     }}
-                  >
-                    <TextField
-                      data-learn="Max Data Points: Limit the number of data points displayed in the chart for better performance (default 1,000)."
-                      size="small"
-                      type="number"
-                      label="Max Data Points"
-                      value={maxDataPoints}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value, 10);
-                        if (!Number.isNaN(value) && value > 0) {
-                          setMaxDataPoints(value);
-                        }
-                      }}
-                      inputProps={{ min: 100, max: 100000, step: 1000 }}
-                      sx={{
-                        width: { xs: 110, sm: 130 },
-                        backgroundColor: 'background.paper',
-                        borderRadius: 1,
-                        '& .MuiOutlinedInput-root': {
-                          '& fieldset': {
-                            borderColor: 'divider',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: 'primary.main',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: 'primary.main',
-                          },
-                        },
-                      }}
-                    />
-                  </Box>
+                    inputProps={{ min: 100, max: 100000, step: 1000 }}
+                    sx={{
+                      width: { xs: 110, sm: 130 },
+                    }}
+                  />
                 </Box>
               </Box>
             )}

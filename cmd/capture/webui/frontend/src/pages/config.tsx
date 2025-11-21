@@ -138,6 +138,7 @@ export default function Config() {
 
       <Box sx={{ mb: 3 }}>
         <TextField
+          data-learn="Search Configuration: Filter configuration options by name, description, or category to quickly find specific settings."
           fullWidth
           placeholder="Search configuration options..."
           value={searchTerm}

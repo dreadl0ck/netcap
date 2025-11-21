@@ -276,6 +276,7 @@ export default function DPIPage() {
             <Grid container spacing={3}>
               <Grid item xs={12} md={4}>
                 <Paper 
+                  data-learn="nDPI Library: View the nDPI (Network Deep Packet Inspection) repository on GitHub - an advanced library that identifies 244+ network protocols and applications for traffic analysis."
                   elevation={0} 
                   sx={{ 
                     p: 2, 
@@ -308,6 +309,7 @@ export default function DPIPage() {
               </Grid>
               <Grid item xs={12} md={4}>
                 <Paper 
+                  data-learn="Libprotoident Library: View the libprotoident repository on GitHub - a lightweight library that identifies 500+ applications and 45 protocol categories using efficient pattern matching."
                   elevation={0} 
                   sx={{ 
                     p: 2, 
@@ -340,6 +342,7 @@ export default function DPIPage() {
               </Grid>
               <Grid item xs={12} md={4}>
                 <Paper 
+                  data-learn="go-dpi Library: View the go-dpi repository on GitHub - the Go wrapper that integrates nDPI and libprotoident for deep packet inspection and application protocol detection."
                   elevation={0} 
                   sx={{ 
                     p: 2, 
@@ -577,6 +580,7 @@ export default function DPIPage() {
                     nDPI (Network Deep Packet Inspection) identifies 244+ applications and protocols.
                   </Typography>
                   <MuiLink
+                    data-learn="nDPI Protocols: View the complete list of 244+ applications and protocols that nDPI can identify in network traffic."
                     href={dpiInfo.ndpiProtocolsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -597,6 +601,7 @@ export default function DPIPage() {
                     Libprotoident (LPI) identifies 500+ applications and 45 protocol categories using lightweight pattern matching.
                   </Typography>
                   <MuiLink
+                    data-learn="Libprotoident Protocols: View the complete list of 500+ applications and 45 protocol categories that libprotoident can identify."
                     href={dpiInfo.libprotoidentProtocolsUrl}
                     target="_blank"
                     rel="noopener noreferrer"

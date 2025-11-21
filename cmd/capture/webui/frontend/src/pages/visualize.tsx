@@ -228,6 +228,7 @@ export default function Visualize() {
   const fileSelector = completedFiles.length > 1 && selectedFile ? (
     <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
       <Select
+        data-learn="Capture Selector: Switch between different analyzed PCAP files to visualize their protocol hierarchy and statistics."
         value={selectedValue}
         onChange={handleFileChange}
         startAdornment={
@@ -391,6 +392,7 @@ export default function Visualize() {
           scrollbarWidth: 'none',
         }}>
           <ToggleButtonGroup
+            data-learn="Visualization Type: Choose between Sankey diagram, Treemap, 3D Bar Chart, Network Graph, Geo Map, 3D Scatter plot, or Hosts Graph to visualize protocol data in different ways."
             value={selectedChartType}
             exclusive
             onChange={(_e, newValue) => {
@@ -416,14 +418,15 @@ export default function Visualize() {
                 key={type.value} 
                 value={type.value}
                 sx={{
-                  px: { xs: 1, sm: 2 }, // Less padding on mobile
-                  minWidth: { xs: 'auto', sm: 'auto' },
+                  px: { xs: 1, lg: 2 },
+                  minWidth: { xs: 48, lg: 'auto' },
+                  width: { xs: 48, lg: 'auto' },
                   flexShrink: { xs: 0, md: 1 },
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0, sm: 1 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0, lg: 1 } }}>
                   {type.icon}
-                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                  <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
                     {type.label}
                   </Box>
                 </Box>
@@ -435,6 +438,7 @@ export default function Visualize() {
         {/* Legend Toggle - Always shown on the right */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <ToggleButtonGroup
+            data-learn="Legend Toggle: Show or hide the chart legend that explains the visualization's color coding and labels."
             value={showLegend ? 'on' : 'off'}
             exclusive
             onChange={(_e, newValue) => {
@@ -443,22 +447,23 @@ export default function Visualize() {
               }
             }}
             size="small"
+            sx={{
+              '& .MuiToggleButton-root': {
+                px: { xs: 1, lg: 2 },
+                minWidth: { xs: 48, lg: 'auto' },
+                width: { xs: 48, lg: 'auto' },
+              }
+            }}
           >
-            <ToggleButton 
-              value="on"
-              sx={{ px: { xs: 1, sm: 2 } }}
-            >
-              <LabelIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+            <ToggleButton value="on">
+              <LabelIcon sx={{ mr: { xs: 0, lg: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
                 On
               </Box>
             </ToggleButton>
-            <ToggleButton 
-              value="off"
-              sx={{ px: { xs: 1, sm: 2 } }}
-            >
-              <LabelOffIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+            <ToggleButton value="off">
+              <LabelOffIcon sx={{ mr: { xs: 0, lg: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
                 Off
               </Box>
             </ToggleButton>
@@ -466,12 +471,15 @@ export default function Visualize() {
           
           {/* Max Nodes Slider - Only for hosts-graph */}
           {selectedChartType === 'hosts-graph' && (
-            <Box sx={{ 
-              display: { xs: 'none', sm: 'flex' }, 
-              alignItems: 'center', 
-              gap: 2, 
-              minWidth: 250 
-            }}>
+            <Box 
+              data-learn="Max Nodes Limit: Control the maximum number of host nodes displayed in the network graph to optimize performance and readability."
+              sx={{ 
+                display: { xs: 'none', sm: 'flex' }, 
+                alignItems: 'center', 
+                gap: 2, 
+                minWidth: 250 
+              }}
+            >
               <Typography variant="body2" sx={{ whiteSpace: 'nowrap', minWidth: 85 }}>
                 Max Nodes:
               </Typography>
@@ -492,12 +500,15 @@ export default function Visualize() {
           
           {/* Max Connections Slider - Only for scatter3d */}
           {selectedChartType === 'scatter3d' && (
-            <Box sx={{ 
-              display: { xs: 'none', sm: 'flex' }, 
-              alignItems: 'center', 
-              gap: 2, 
-              minWidth: 280 
-            }}>
+            <Box 
+              data-learn="Max Connections Limit: Control the maximum number of network connections displayed in the 3D scatter plot to optimize rendering performance."
+              sx={{ 
+                display: { xs: 'none', sm: 'flex' }, 
+                alignItems: 'center', 
+                gap: 2, 
+                minWidth: 280 
+              }}
+            >
               <Typography variant="body2" sx={{ whiteSpace: 'nowrap', minWidth: 120 }}>
                 Max Connections:
               </Typography>
@@ -522,7 +533,10 @@ export default function Visualize() {
         {/* Protocol Statistics Panel - Only show for Sankey */}
         {selectedChartType === 'sankey' && (
           <Grid item xs={12} lg={4} sx={{ order: { xs: 2, lg: 1 } }}>
-            <Card sx={{ height: 'calc(100vh - 300px)', display: 'flex', flexDirection: 'column' }}>
+            <Card 
+              data-learn="Protocol Statistics: Detailed breakdown of network protocols found in the capture, organized by OSI layer (Link, Network, Transport, Application) with packet counts."
+              sx={{ height: 'calc(100vh - 300px)', display: 'flex', flexDirection: 'column' }}
+            >
               <CardContent sx={{ flex: 1, overflow: 'auto' }}>
                 <Typography variant="h6" gutterBottom>
                   Protocol Statistics

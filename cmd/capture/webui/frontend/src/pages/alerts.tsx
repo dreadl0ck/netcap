@@ -354,6 +354,7 @@ export default function AlertsPage() {
   const fileSelector = completedFiles.length > 1 && selectedFile ? (
     <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
       <Select
+        data-learn="Capture Selector: Switch between different analyzed PCAP files to view their security alerts and threats."
         value={selectedValue}
         onChange={handleFileChange}
         startAdornment={
@@ -486,6 +487,7 @@ export default function AlertsPage() {
             justifyContent: { xs: 'stretch', md: 'flex-end' }
           }}>
             <Button 
+              data-learn="Toggle Resolved Alerts: Show or hide alerts that have been marked as resolved to focus on active security issues."
               variant={showResolved ? "contained" : "outlined"}
               startIcon={<FilterAltIcon />} 
               onClick={() => setShowResolved(!showResolved)}
@@ -495,6 +497,7 @@ export default function AlertsPage() {
               {showResolved ? 'Hide Resolved' : 'Show Resolved'}
             </Button>
             <Button 
+              data-learn="Refresh Alerts: Reload the alerts list to check for new security alerts and updates from the analysis."
               variant="outlined" 
               startIcon={<RefreshIcon />} 
               onClick={handleRefresh}
@@ -646,6 +649,7 @@ export default function AlertsPage() {
               <FormControl fullWidth size="small">
                 <InputLabel>Sort Order</InputLabel>
                 <Select
+                  data-learn="Sort Order: Choose ascending (lowest to highest) or descending (highest to lowest) order for the selected sort criteria."
                   value={sortOrder}
                   label="Sort Order"
                   onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}

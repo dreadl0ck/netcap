@@ -375,6 +375,7 @@ export default function PCAPs() {
         {/* Search Bar */}
         <Box mb={3}>
           <TextField
+            data-learn="Search Files: Filter the list of PCAP files by filename to quickly find specific captures."
             fullWidth
             variant="outlined"
             placeholder="Search files by name..."
@@ -412,6 +413,7 @@ export default function PCAPs() {
               </Typography>
               <FormControl size="small" variant="outlined">
                 <Select
+                  data-learn="Page Size: Control how many PCAP files are displayed per page (10, 25, 50, 100, or All)."
                   value={rowsPerPage}
                   onChange={handleChangeRowsPerPageSelect}
                   sx={{ minWidth: 80 }}
