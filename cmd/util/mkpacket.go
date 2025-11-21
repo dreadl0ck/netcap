@@ -84,7 +84,9 @@ func makePacket() {
 		}
 	)
 
-	if *flagMkPacket == "udp" {
+	flagMkPacket := currentCtx.String("mkpacket")
+
+	if flagMkPacket == "udp" {
 		packetLayers = append(packetLayers, &layers.UDP{
 			BaseLayer: layers.BaseLayer{},
 			SrcPort:   52,
@@ -96,7 +98,7 @@ func makePacket() {
 		)
 	}
 
-	if *flagMkPacket == "tcp" {
+	if flagMkPacket == "tcp" {
 		packetLayers = append(packetLayers, &layers.TCP{
 			BaseLayer:  layers.BaseLayer{},
 			SrcPort:    8000,

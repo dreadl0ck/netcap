@@ -30,6 +30,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/dreadl0ck/netcap/analyze"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
@@ -362,28 +364,41 @@ func writeSummaryTable(inputFiles []string, summaries []fileSummary, fileErrors 
 }
 
 // Run parses the subcommand flags and handles the arguments.
+// This is a compatibility wrapper for the old Run() interface.
 func Run() {
 	// Remove date/time from log output to prevent duplicate timestamps
 	// when running in Docker/systemd (which add their own timestamps)
 	log.SetFlags(0)
 
-	// parse commandline flags
-	fs.Usage = printUsage
-
-	err := fs.Parse(os.Args[2:])
-	if err != nil {
-		log.Fatal(err)
+	// Create a new CLI app just for parsing flags
+	cmd := &cli.Command{
+		Name:  "capture",
+		Usage: "capture audit records from network traffic",
+		Flags: GetFlags(),
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return RunWithContext(ctx, c)
+		},
 	}
 
+	if err := cmd.Run(context.Background(), os.Args[1:]); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// RunWithContext runs the capture command with a CLI context.
+func RunWithContext(ctx context.Context, c *cli.Command) error {
+	// Populate global variables from CLI context
+	setFlagsFromContext(c)
+
 	// Check if running in service mode
-	if *flagService {
+	if flagService {
 		runServiceMode()
-		return
+		return nil
 	}
 
 	// Initialize web UI server if requested
 	var webUIServer *webui.Server
-	if *flagHTTP != "" {
+	if flagHTTP != "" {
 		// Will be started later after we know the input files and output directory
 		defer func() {
 			if webUIServer != nil {
@@ -395,15 +410,15 @@ func Run() {
 	}
 
 	// Start pprof HTTP server if requested
-	if *flagPprof != "" {
+	if flagPprof != "" {
 		go func() {
-			fmt.Printf("Starting pprof HTTP server on %s\n", *flagPprof)
+			fmt.Printf("Starting pprof HTTP server on %s\n", flagPprof)
 			fmt.Println("Access profiling endpoints:")
-			fmt.Printf("  - Goroutine profile: http://%s/debug/pprof/goroutine?debug=2\n", *flagPprof)
-			fmt.Printf("  - Heap profile:      http://%s/debug/pprof/heap\n", *flagPprof)
-			fmt.Printf("  - CPU profile:       http://%s/debug/pprof/profile\n", *flagPprof)
-			fmt.Printf("  - All profiles:      http://%s/debug/pprof/\n", *flagPprof)
-			if err := http.ListenAndServe(*flagPprof, nil); err != nil {
+			fmt.Printf("  - Goroutine profile: http://%s/debug/pprof/goroutine?debug=2\n", flagPprof)
+			fmt.Printf("  - Heap profile:      http://%s/debug/pprof/heap\n", flagPprof)
+			fmt.Printf("  - CPU profile:       http://%s/debug/pprof/profile\n", flagPprof)
+			fmt.Printf("  - All profiles:      http://%s/debug/pprof/\n", flagPprof)
+			if err := http.ListenAndServe(flagPprof, nil); err != nil {
 				log.Printf("pprof server error: %v\n", err)
 			}
 		}()
@@ -412,9 +427,9 @@ func Run() {
 	// Collect any unparsed arguments as potential input files (for shell-expanded wildcards)
 	// When user runs: net capture -read *.pcap -out /tmp/out
 	// The shell expands to: net capture -read file1.pcap file2.pcap file3.pcap -out /tmp/out
-	// fs.Args() will contain the extra files: [file2.pcap, file3.pcap]
+	// c.Args().Slice() will contain the extra files: [file2.pcap, file3.pcap]
 	var additionalFiles []string
-	for _, arg := range fs.Args() {
+	for _, arg := range c.Args().Slice() {
 		// Check if it's a regular file (not a directory)
 		info, err := os.Stat(arg)
 		if err != nil || info.IsDir() {
@@ -428,29 +443,27 @@ func Run() {
 		}
 	}
 
-	if *flagGenerateConfig {
-		io.GenerateConfig(fs, "capture")
-
-		return
+	if flagGenerateConfig {
+		// TODO: Update GenerateConfig to work with urfave/cli
+		fmt.Println("gen-config not yet implemented with urfave/cli")
+		return nil
 	}
 
 	// print a markdown overview of all available decoders and fields
-	if *flagPrintProtocolOverview {
+	if flagPrintProtocolOverview {
 		packet.MarkdownOverview()
-
-		return
+		return nil
 	}
 
-	if *flagListInterfaces {
+	if flagListInterfaces {
 		utils.ListAllNetworkInterfaces()
-
-		return
+		return nil
 	}
 
 	// configure CPU profiling
-	if *flagCPUProfile {
+	if flagCPUProfile {
 		defer func() func() {
-			if *flagCPUProfile {
+			if flagCPUProfile {
 				f, errCPUProfile := os.Create("netcap-" + netcap.Version + ".cpu.profile")
 				if errCPUProfile != nil {
 					log.Fatalf("could not open cpu profile file %q, error: %s\n", "netcap.cpu.profile", errCPUProfile)
@@ -482,49 +495,47 @@ func Run() {
 	}
 
 	// print decoders and exit
-	if *flagDecoders {
+	if flagDecoders {
 		packet.ShowDecoders(true)
-
-		return
+		return nil
 	}
 
 	// live mode?
 	var live bool
-	if *flagInterface != "" {
+	if flagInterface != "" {
 		live = true
 	}
 
 	// set data source
 	var source string
 	switch {
-	case *flagInput != "":
-		source = *flagInput
-	case *flagInterface != "":
-		source = *flagInterface
+	case flagInput != "":
+		source = flagInput
+	case flagInterface != "":
+		source = flagInterface
 	default:
 		source = "unknown"
 	}
 
-	if *flagReassemblyDebug {
+	if flagReassemblyDebug {
 		reassembly.Debug = true
 	}
 
 	var elasticAddrs []string
-	if *flagElasticAddrs != "" {
-		elasticAddrs = strings.Split(*flagElasticAddrs, ",")
+	if flagElasticAddrs != "" {
+		elasticAddrs = strings.Split(flagElasticAddrs, ",")
 	}
 
-	if *flagGenerateElasticIndices {
+	if flagGenerateElasticIndices {
 		generateElasticIndices(elasticAddrs)
-
-		return
+		return nil
 	}
 
 	// Check if we should start in upload-only mode (no input, no live capture, but HTTP enabled)
-	uploadOnlyMode := *flagInput == "" && !live && *flagHTTP != ""
+	uploadOnlyMode := flagInput == "" && !live && flagHTTP != ""
 
 	// abort if there is no input, no live capture, and no HTTP server
-	if *flagInput == "" && !live && *flagHTTP == "" {
+	if flagInput == "" && !live && flagHTTP == "" {
 		printHeader()
 		fmt.Println(ansi.Red + "> nothing to do. need a pcap file with the read flag (-read), live mode and an interface (-iface), or HTTP server (-http)" + ansi.Reset)
 		fmt.Println(ansi.Green + "\nTo start in upload-only mode, simply run: net capture" + ansi.Reset)
@@ -532,7 +543,7 @@ func Run() {
 		os.Exit(1)
 	}
 
-	if strings.HasSuffix(*flagInput, defaults.FileExtensionCompressed) || strings.HasSuffix(*flagInput, defaults.FileExtension) {
+	if strings.HasSuffix(flagInput, defaults.FileExtensionCompressed) || strings.HasSuffix(flagInput, defaults.FileExtension) {
 		printHeader()
 		fmt.Println(ansi.Red + "> the capture tool is used to create audit records from live traffic or a pcap dumpfile" + ansi.Reset)
 		fmt.Println(ansi.Red + "> use the dump tool to read netcap audit records" + ansi.Reset)
@@ -542,8 +553,9 @@ func Run() {
 	// Check if input contains wildcards and expand to multiple files
 	// Also handle shell-expanded arguments (multiple files passed on command line)
 	var inputFiles []string
-	if !live && *flagInput != "" && !uploadOnlyMode {
-		inputFiles, err = expandPcapFiles(*flagInput)
+	if !live && flagInput != "" && !uploadOnlyMode {
+		var err error
+		inputFiles, err = expandPcapFiles(flagInput)
 		if err != nil {
 			log.Fatal("failed to expand input pattern: ", err)
 		}
@@ -568,8 +580,8 @@ func Run() {
 	}
 
 	var exportMetrics bool
-	if *flagMetricsAddr != "" {
-		metrics.ServeMetricsAt(*flagMetricsAddr, nil)
+	if flagMetricsAddr != "" {
+		metrics.ServeMetricsAt(flagMetricsAddr, nil)
 		// TODO: make the packet metrics configurable separately, for performance analysis it is faster to only use the core metrics
 		// exportMetrics = true
 	}
@@ -578,7 +590,7 @@ func Run() {
 	var analyzerLogFileHandles []*os.File
 
 	// Store original output directory to create subdirectories for each file
-	originalOutDir := *flagOutDir
+	originalOutDir := flagOutDir
 
 	// In upload-only mode, default to current working directory if not specified
 	if uploadOnlyMode && originalOutDir == "" {
@@ -587,7 +599,7 @@ func Run() {
 		if err != nil {
 			log.Fatal("failed to get working directory: ", err)
 		}
-		*flagOutDir = originalOutDir
+		flagOutDir = originalOutDir
 		log.Printf("[WebUI] Upload-only mode: using current directory as output: %s", originalOutDir)
 	}
 
@@ -598,15 +610,15 @@ func Run() {
 			log.Printf("Failed to get absolute path for output directory: %v\n", err)
 		} else {
 			originalOutDir = absPath
-			*flagOutDir = absPath // Update flag as well
+			flagOutDir = absPath // Update flag as well
 		}
 	}
 
 	// Start web UI server if requested
-	if *flagHTTP != "" {
+	if flagHTTP != "" {
 		// For multi-file processing, use the original directory; it will be updated per file
 		// For single-file processing or live capture, use the specified directory
-		initialOutDir := *flagOutDir
+		initialOutDir := flagOutDir
 		if len(inputFiles) > 1 {
 			initialOutDir = originalOutDir
 		}
@@ -629,7 +641,7 @@ func Run() {
 		}
 
 		// Create server in local mode (unrestricted)
-		webUIServer = webui.NewServer(*flagHTTP, initialOutDir, inputFiles, *flagHTTPAssets, *flagDebug, *flagDPI, false, nil)
+		webUIServer = webui.NewServer(flagHTTP, initialOutDir, inputFiles, flagHTTPAssets, flagDebug, flagDPI, false, nil)
 		webUIServer.SetLiveMode(live) // Set live mode flag
 
 		if err := webUIServer.Start(); err != nil {
@@ -652,18 +664,18 @@ func Run() {
 		}
 	}
 
-	if *flagAnalyzer != "" {
+	if flagAnalyzer != "" {
 
 		alert.InitSocket()
 
 		// update config for plugins
-		*flagCompress = false
-		*flagBuffer = false
-		*flagCSV = true
-		*flagUNIX = true
+		flagCompress = false
+		flagBuffer = false
+		flagCSV = true
+		flagUNIX = true
 
 		// disable reassembly for now.
-		*flagReassembleConnections = false
+		flagReassembleConnections = false
 
 		wd, err := os.Getwd()
 		if err != nil {
@@ -673,7 +685,7 @@ func Run() {
 		// get config path
 		dir := os.Getenv(env.AnalyzerDirectory)
 
-		analyzers := strings.Split(*flagAnalyzer, ",")
+		analyzers := strings.Split(flagAnalyzer, ",")
 		for _, a := range analyzers {
 
 			conf := analyze.ParseConfig(filepath.Join(dir, a+".yml"))
@@ -713,7 +725,7 @@ func Run() {
 			cmd.Env = os.Environ()
 			cmd.Env = append(cmd.Env, "LD_LIBRARY_PATH=/usr/local/cuda/lib64/")
 
-			if *flagDebug {
+			if flagDebug {
 				cmd.Stdout = os.Stdout
 				cmd.Stderr = os.Stderr
 			} else {
@@ -774,153 +786,153 @@ func Run() {
 		}
 
 		fmt.Println("Server stopped. Goodbye!")
-		return
+		return nil
 	}
 
 	// init collector
-	c := collector.New(collector.Config{
-		Workers:               *flagWorkers,
-		PacketBufferSize:      *flagPacketBuffer,
-		WriteUnknownPackets:   !*flagIgnoreUnknown,
-		Promisc:               *flagPromiscMode,
-		SnapLen:               *flagSnapLen,
-		BaseLayer:             utils.GetBaseLayer(*flagBaseLayer),
-		DecodeOptions:         utils.GetDecodeOptions(*flagDecodeOptions),
-		DPI:                   *flagDPI,
-		DPIModules:            *flagDPIModules,
-		ReassembleConnections: *flagReassembleConnections,
-		FreeOSMem:             *flagFreeOSMemory,
-		LogErrors:             *flagLogErrors,
-		NoPrompt:              *flagYes,
-		HTTPShutdownEndpoint:  *flagHTTPShutdown,
-		Timeout:               *flagTimeout,
-		Labels:                *flagLabels,
-		Scatter:               *flagScatter,
-		ScatterDuration:       *flagScatterDuration,
+	coll := collector.New(collector.Config{
+		Workers:               flagWorkers,
+		PacketBufferSize:      flagPacketBuffer,
+		WriteUnknownPackets:   !flagIgnoreUnknown,
+		Promisc:               flagPromiscMode,
+		SnapLen:               flagSnapLen,
+		BaseLayer:             utils.GetBaseLayer(flagBaseLayer),
+		DecodeOptions:         utils.GetDecodeOptions(flagDecodeOptions),
+		DPI:                   flagDPI,
+		DPIModules:            flagDPIModules,
+		ReassembleConnections: flagReassembleConnections,
+		FreeOSMem:             flagFreeOSMemory,
+		LogErrors:             flagLogErrors,
+		NoPrompt:              flagYes,
+		HTTPShutdownEndpoint:  flagHTTPShutdown,
+		Timeout:               flagTimeout,
+		Labels:                flagLabels,
+		Scatter:               flagScatter,
+		ScatterDuration:       flagScatterDuration,
 		DecoderConfig: &config.Config{
-			Quiet:         *flagQuiet,
-			PrintProgress: *flagPrintProgress,
-			Buffer:        *flagBuffer,
-			MemBufferSize: *flagMemBufferSize,
-			Compression:   *flagCompress,
-			CSV:           *flagCSV,
-			UnixSocket:    *flagUNIX,
-			Encode:        *flagEncode,
-			Label:         *flagLabels != "",
-			Null:          *flagNull,
-			Elastic:       *flagElastic,
+			Quiet:         flagQuiet,
+			PrintProgress: flagPrintProgress,
+			Buffer:        flagBuffer,
+			MemBufferSize: flagMemBufferSize,
+			Compression:   flagCompress,
+			CSV:           flagCSV,
+			UnixSocket:    flagUNIX,
+			Encode:        flagEncode,
+			Label:         flagLabels != "",
+			Null:          flagNull,
+			Elastic:       flagElastic,
 			ElasticConfig: io.ElasticConfig{
 				ElasticAddrs:   elasticAddrs,
-				ElasticUser:    *flagElasticUser,
-				ElasticPass:    *flagElasticPass,
-				KibanaEndpoint: *flagKibanaEndpoint,
+				ElasticUser:    flagElasticUser,
+				ElasticPass:    flagElasticPass,
+				KibanaEndpoint: flagKibanaEndpoint,
 			},
-			BulkSizeGoPacket:               *flagBulkSizeGoPacket,
-			BulkSizeCustom:                 *flagBulkSizeCustom,
-			IncludeDecoders:                *flagInclude,
-			ExcludeDecoders:                *flagExclude,
-			Out:                            *flagOutDir,
-			Proto:                          *flagProto,
-			JSON:                           *flagJSON,
+			BulkSizeGoPacket:               flagBulkSizeGoPacket,
+			BulkSizeCustom:                 flagBulkSizeCustom,
+			IncludeDecoders:                flagInclude,
+			ExcludeDecoders:                flagExclude,
+			Out:                            flagOutDir,
+			Proto:                          flagProto,
+			JSON:                           flagJSON,
 			Chan:                           false,
 			Source:                         source,
-			IncludePayloads:                *flagPayload,
+			IncludePayloads:                flagPayload,
 			ExportMetrics:                  exportMetrics,
-			AddContext:                     *flagContext,
-			FlushEvery:                     *flagFlushevery,
-			DefragIPv4:                     *flagDefragIPv4,
-			Checksum:                       *flagChecksum,
-			NoOptCheck:                     *flagNooptcheck,
-			IgnoreFSMerr:                   *flagIgnorefsmerr,
-			AllowMissingInit:               *flagAllowmissinginit,
-			Debug:                          *flagDebug,
-			HexDump:                        *flagHexdump,
-			WaitForConnections:             *flagWaitForConnections,
-			WriteIncomplete:                *flagWriteincomplete,
-			MemProfile:                     *flagMemprofile,
-			ConnFlushInterval:              *flagConnFlushInterval,
-			ConnTimeOut:                    *flagConnTimeOut,
-			FlowFlushInterval:              *flagFlowFlushInterval,
-			FlowTimeOut:                    *flagFlowTimeOut,
-			CloseInactiveTimeOut:           *flagCloseInactiveTimeout,
-			ClosePendingTimeOut:            *flagClosePendingTimeout,
-			FileStorage:                    *flagFileStorage,
-			CalculateEntropy:               *flagCalcEntropy,
-			SaveConns:                      *flagSaveConns,
-			TCPDebug:                       *flagTCPDebug,
-			UseRE2:                         *flagUseRE2,
-			BannerSize:                     *flagBannerSize,
-			StreamDecoderBufSize:           *flagStreamDecoderBufSize,
-			HarvesterBannerSize:            *flagHarvesterBannerSize,
-			StopAfterHarvesterMatch:        *flagStopAfterHarvesterMatch,
-			StopAfterServiceProbeMatch:     *flagStopAfterServiceProbeMatch,
-			StopAfterServiceCategoryMiss:   *flagStopAfterServiceCategoryMiss,
-			CustomRegex:                    *flagCustomCredsRegex,
-			StreamBufferSize:               *flagStreamBufferSize,
-			NumStreamWorkers:               *flagNumStreamWorkers,
-			MaxStreamBytes:                 *flagMaxStreamBytes,
-			MaxBufferedPagesPerConnection:  *flagMaxBufferedPagesPerConnection,
-			MaxBufferedPagesTotal:          *flagMaxBufferedPagesTotal,
-			IgnoreDecoderInitErrors:        *flagIgnoreInitErrs,
-			DisableGenericVersionHarvester: *flagDisableGenericVersionHarvester,
-			RemoveClosedStreams:            *flagRemoveClosedStreams,
-			CompressionBlockSize:           *flagCompressionBlockSize,
-			CompressionLevel:               getCompressionLevel(*flagCompressionLevel),
+			AddContext:                     flagContext,
+			FlushEvery:                     flagFlushevery,
+			DefragIPv4:                     flagDefragIPv4,
+			Checksum:                       flagChecksum,
+			NoOptCheck:                     flagNooptcheck,
+			IgnoreFSMerr:                   flagIgnorefsmerr,
+			AllowMissingInit:               flagAllowmissinginit,
+			Debug:                          flagDebug,
+			HexDump:                        flagHexdump,
+			WaitForConnections:             flagWaitForConnections,
+			WriteIncomplete:                flagWriteincomplete,
+			MemProfile:                     flagMemprofile,
+			ConnFlushInterval:              flagConnFlushInterval,
+			ConnTimeOut:                    flagConnTimeOut,
+			FlowFlushInterval:              flagFlowFlushInterval,
+			FlowTimeOut:                    flagFlowTimeOut,
+			CloseInactiveTimeOut:           flagCloseInactiveTimeout,
+			ClosePendingTimeOut:            flagClosePendingTimeout,
+			FileStorage:                    flagFileStorage,
+			CalculateEntropy:               flagCalcEntropy,
+			SaveConns:                      flagSaveConns,
+			TCPDebug:                       flagTCPDebug,
+			UseRE2:                         flagUseRE2,
+			BannerSize:                     flagBannerSize,
+			StreamDecoderBufSize:           flagStreamDecoderBufSize,
+			HarvesterBannerSize:            flagHarvesterBannerSize,
+			StopAfterHarvesterMatch:        flagStopAfterHarvesterMatch,
+			StopAfterServiceProbeMatch:     flagStopAfterServiceProbeMatch,
+			StopAfterServiceCategoryMiss:   flagStopAfterServiceCategoryMiss,
+			CustomRegex:                    flagCustomCredsRegex,
+			StreamBufferSize:               flagStreamBufferSize,
+			NumStreamWorkers:               flagNumStreamWorkers,
+			MaxStreamBytes:                 flagMaxStreamBytes,
+			MaxBufferedPagesPerConnection:  flagMaxBufferedPagesPerConnection,
+			MaxBufferedPagesTotal:          flagMaxBufferedPagesTotal,
+			IgnoreDecoderInitErrors:        flagIgnoreInitErrs,
+			DisableGenericVersionHarvester: flagDisableGenericVersionHarvester,
+			RemoveClosedStreams:            flagRemoveClosedStreams,
+			CompressionBlockSize:           flagCompressionBlockSize,
+			CompressionLevel:               getCompressionLevel(flagCompressionLevel),
 		},
 		ResolverConfig: resolvers.Config{
-			ReverseDNS:    *flagReverseDNS,
-			LocalDNS:      *flagLocalDNS,
-			MACDB:         *flagMACDB,
-			Ja3DB:         *flagJa3DB,
-			ServiceDB:     *flagServiceDB,
-			GeolocationDB: *flagGeolocationDB,
+			ReverseDNS:    flagReverseDNS,
+			LocalDNS:      flagLocalDNS,
+			MACDB:         flagMACDB,
+			Ja3DB:         flagJa3DB,
+			ServiceDB:     flagServiceDB,
+			GeolocationDB: flagGeolocationDB,
 		},
 	})
-	c.Bpf = *flagBPF
-	c.InputFile = *flagInput
-	c.PrintTime = *flagTime
-	c.Epochs = numEpochs
+	coll.Bpf = flagBPF
+	coll.InputFile = flagInput
+	coll.PrintTime = flagTime
+	coll.Epochs = numEpochs
 
 	if len(analyzerLogFileHandles) > 0 {
 		for _, f := range analyzerLogFileHandles {
-			c.CloseFileHandleOnShutdown(f)
+			coll.CloseFileHandleOnShutdown(f)
 		}
 	}
 
 	// Initialize filter expression if provided
-	if *flagFilter != "" {
+	if flagFilter != "" {
 		// For now, apply the filter to all record types
 		// In the future, this could be made more specific per type
-		fmt.Println("Filter expression:", *flagFilter)
+		fmt.Println("Filter expression:", flagFilter)
 		fmt.Println("Note: Filter will be applied to all audit record types")
 
 		// We'll set the filter for common types
 		// The actual filter will be applied per-type in the collector's ShouldWriteRecord method
 		// For simplicity, we'll set it for TCP as an example
 		// A more sophisticated approach would parse the expression to determine applicable types
-		if err := c.SetFilterExpression(*flagFilter, types.Type_NC_TCP); err != nil {
+		if err := coll.SetFilterExpression(flagFilter, types.Type_NC_TCP); err != nil {
 			log.Printf("Warning: failed to compile filter for TCP: %v", err)
 		}
 	}
 
 	// Initialize rules engine if rules file provided
-	if *flagRules != "" {
-		fmt.Println("Loading rules from:", *flagRules)
+	if flagRules != "" {
+		fmt.Println("Loading rules from:", flagRules)
 
 		// Create alert writer
-		alertWriter, err := rules.NewFileAlertWriter(*flagOutDir)
+		alertWriter, err := rules.NewFileAlertWriter(flagOutDir)
 		if err != nil {
 			log.Fatal("failed to create alert writer:", err)
 		}
 
 		// Create rules engine
-		rulesEngine, err := rules.NewEngine(*flagRules, alertWriter)
+		rulesEngine, err := rules.NewEngine(flagRules, alertWriter)
 		if err != nil {
 			log.Fatal("failed to create rules engine:", err)
 		}
 
 		// Set rules engine in collector
-		c.SetRulesEngine(rulesEngine)
+		coll.SetRulesEngine(rulesEngine)
 
 		// Register alert writer for cleanup
 		defer func() {
@@ -935,11 +947,11 @@ func Run() {
 		}
 	}
 
-	c.PrintConfiguration()
+	coll.PrintConfiguration()
 
 	// Connect collector to webui server for runtime debug logging
 	if webUIServer != nil {
-		webUIServer.SetCollector(c)
+		webUIServer.SetCollector(coll)
 	}
 
 	// collect traffic live from named interface
@@ -960,7 +972,7 @@ func Run() {
 		// Start live capture in a goroutine
 		errChan := make(chan error, 1)
 		go func() {
-			err := c.CollectLive(*flagInterface, *flagBPF, ctx)
+			err := coll.CollectLive(flagInterface, flagBPF, ctx)
 			errChan <- err
 		}()
 
@@ -1007,7 +1019,7 @@ func Run() {
 			fmt.Println("Server stopped. Goodbye!")
 		}
 
-		return
+		return nil
 	}
 
 	// Track errors and summary statistics for each file when processing multiple files
@@ -1062,7 +1074,7 @@ func Run() {
 				// including workers, TCP stream readers, and freeOSMemory goroutine
 				if c != nil {
 					fmt.Println("Flushing assemblers to release pageCaches...")
-					c.FlushAssemblers()
+					coll.FlushAssemblers()
 				}
 
 				// Step 4: CRITICAL - Nil out collector to release all references
@@ -1085,8 +1097,8 @@ func Run() {
 				tcp.ResetStreamFactory()
 
 				// Step 8: Reset DPI flow tracker if DPI is enabled
-				if *flagDPI {
-					dpi.Reset(*flagDPIModules)
+				if flagDPI {
+					dpi.Reset(flagDPIModules)
 				}
 
 				// Step 9: Final GC and OS memory release
@@ -1101,14 +1113,14 @@ func Run() {
 			}
 
 			// Set output directory for this specific file
-			*flagOutDir = getOutputDirForFile(inputFile, originalOutDir)
-			fmt.Printf("Output directory: %s\n", *flagOutDir)
+			flagOutDir = getOutputDirForFile(inputFile, originalOutDir)
+			fmt.Printf("Output directory: %s\n", flagOutDir)
 
 			// Update web UI server with new output directory
 			if webUIServer != nil {
-				webUIServer.UpdateOutputDir(*flagOutDir)
+				webUIServer.UpdateOutputDir(flagOutDir)
 				// Store the mapping from input file to output directory
-				webUIServer.SetFileOutputDir(inputFile, *flagOutDir)
+				webUIServer.SetFileOutputDir(inputFile, flagOutDir)
 			}
 
 			// Mark previous file as completed if this is not the first file
@@ -1117,114 +1129,114 @@ func Run() {
 			}
 
 			// Create a fresh collector instance with updated configuration for this file
-			c = collector.New(collector.Config{
-				Workers:               *flagWorkers,
-				PacketBufferSize:      *flagPacketBuffer,
-				WriteUnknownPackets:   !*flagIgnoreUnknown,
-				Promisc:               *flagPromiscMode,
-				SnapLen:               *flagSnapLen,
-				BaseLayer:             utils.GetBaseLayer(*flagBaseLayer),
-				DecodeOptions:         utils.GetDecodeOptions(*flagDecodeOptions),
-				DPI:                   *flagDPI,
-				DPIModules:            *flagDPIModules,
-				ReassembleConnections: *flagReassembleConnections,
-				FreeOSMem:             *flagFreeOSMemory,
-				LogErrors:             *flagLogErrors,
-				NoPrompt:              *flagYes,
+			coll = collector.New(collector.Config{
+				Workers:               flagWorkers,
+				PacketBufferSize:      flagPacketBuffer,
+				WriteUnknownPackets:   !flagIgnoreUnknown,
+				Promisc:               flagPromiscMode,
+				SnapLen:               flagSnapLen,
+				BaseLayer:             utils.GetBaseLayer(flagBaseLayer),
+				DecodeOptions:         utils.GetDecodeOptions(flagDecodeOptions),
+				DPI:                   flagDPI,
+				DPIModules:            flagDPIModules,
+				ReassembleConnections: flagReassembleConnections,
+				FreeOSMem:             flagFreeOSMemory,
+				LogErrors:             flagLogErrors,
+				NoPrompt:              flagYes,
 				HTTPShutdownEndpoint:  false, // Disable for multi-file processing
-				Timeout:               *flagTimeout,
-				Labels:                *flagLabels,
-				Scatter:               *flagScatter,
-				ScatterDuration:       *flagScatterDuration,
+				Timeout:               flagTimeout,
+				Labels:                flagLabels,
+				Scatter:               flagScatter,
+				ScatterDuration:       flagScatterDuration,
 				DecoderConfig: &config.Config{
-					Quiet:         *flagQuiet,
-					PrintProgress: *flagPrintProgress,
-					Buffer:        *flagBuffer,
-					MemBufferSize: *flagMemBufferSize,
-					Compression:   *flagCompress,
-					CSV:           *flagCSV,
-					UnixSocket:    *flagUNIX,
-					Encode:        *flagEncode,
-					Label:         *flagLabels != "",
-					Null:          *flagNull,
-					Elastic:       *flagElastic,
+					Quiet:         flagQuiet,
+					PrintProgress: flagPrintProgress,
+					Buffer:        flagBuffer,
+					MemBufferSize: flagMemBufferSize,
+					Compression:   flagCompress,
+					CSV:           flagCSV,
+					UnixSocket:    flagUNIX,
+					Encode:        flagEncode,
+					Label:         flagLabels != "",
+					Null:          flagNull,
+					Elastic:       flagElastic,
 					ElasticConfig: io.ElasticConfig{
 						ElasticAddrs:   elasticAddrs,
-						ElasticUser:    *flagElasticUser,
-						ElasticPass:    *flagElasticPass,
-						KibanaEndpoint: *flagKibanaEndpoint,
+						ElasticUser:    flagElasticUser,
+						ElasticPass:    flagElasticPass,
+						KibanaEndpoint: flagKibanaEndpoint,
 					},
-					BulkSizeGoPacket:               *flagBulkSizeGoPacket,
-					BulkSizeCustom:                 *flagBulkSizeCustom,
-					IncludeDecoders:                *flagInclude,
-					ExcludeDecoders:                *flagExclude,
-					Out:                            *flagOutDir,
-					Proto:                          *flagProto,
-					JSON:                           *flagJSON,
+					BulkSizeGoPacket:               flagBulkSizeGoPacket,
+					BulkSizeCustom:                 flagBulkSizeCustom,
+					IncludeDecoders:                flagInclude,
+					ExcludeDecoders:                flagExclude,
+					Out:                            flagOutDir,
+					Proto:                          flagProto,
+					JSON:                           flagJSON,
 					Chan:                           false,
 					Source:                         inputFile,
-					IncludePayloads:                *flagPayload,
+					IncludePayloads:                flagPayload,
 					ExportMetrics:                  exportMetrics,
-					AddContext:                     *flagContext,
-					FlushEvery:                     *flagFlushevery,
-					DefragIPv4:                     *flagDefragIPv4,
-					Checksum:                       *flagChecksum,
-					NoOptCheck:                     *flagNooptcheck,
-					IgnoreFSMerr:                   *flagIgnorefsmerr,
-					AllowMissingInit:               *flagAllowmissinginit,
-					Debug:                          *flagDebug,
-					HexDump:                        *flagHexdump,
-					WaitForConnections:             *flagWaitForConnections,
-					WriteIncomplete:                *flagWriteincomplete,
-					MemProfile:                     *flagMemprofile,
-					ConnFlushInterval:              *flagConnFlushInterval,
-					ConnTimeOut:                    *flagConnTimeOut,
-					FlowFlushInterval:              *flagFlowFlushInterval,
-					FlowTimeOut:                    *flagFlowTimeOut,
-					CloseInactiveTimeOut:           *flagCloseInactiveTimeout,
-					ClosePendingTimeOut:            *flagClosePendingTimeout,
-					FileStorage:                    *flagFileStorage,
-					CalculateEntropy:               *flagCalcEntropy,
-					SaveConns:                      *flagSaveConns,
-					TCPDebug:                       *flagTCPDebug,
-					UseRE2:                         *flagUseRE2,
-					BannerSize:                     *flagBannerSize,
-					StreamDecoderBufSize:           *flagStreamDecoderBufSize,
-					HarvesterBannerSize:            *flagHarvesterBannerSize,
-					StopAfterHarvesterMatch:        *flagStopAfterHarvesterMatch,
-					StopAfterServiceProbeMatch:     *flagStopAfterServiceProbeMatch,
-					StopAfterServiceCategoryMiss:   *flagStopAfterServiceCategoryMiss,
-					CustomRegex:                    *flagCustomCredsRegex,
-					StreamBufferSize:               *flagStreamBufferSize,
-					NumStreamWorkers:               *flagNumStreamWorkers,
-					MaxStreamBytes:                 *flagMaxStreamBytes,
-					MaxBufferedPagesPerConnection:  *flagMaxBufferedPagesPerConnection,
-					MaxBufferedPagesTotal:          *flagMaxBufferedPagesTotal,
-					IgnoreDecoderInitErrors:        *flagIgnoreInitErrs,
-					DisableGenericVersionHarvester: *flagDisableGenericVersionHarvester,
-					RemoveClosedStreams:            *flagRemoveClosedStreams,
-					CompressionBlockSize:           *flagCompressionBlockSize,
-					CompressionLevel:               getCompressionLevel(*flagCompressionLevel),
+					AddContext:                     flagContext,
+					FlushEvery:                     flagFlushevery,
+					DefragIPv4:                     flagDefragIPv4,
+					Checksum:                       flagChecksum,
+					NoOptCheck:                     flagNooptcheck,
+					IgnoreFSMerr:                   flagIgnorefsmerr,
+					AllowMissingInit:               flagAllowmissinginit,
+					Debug:                          flagDebug,
+					HexDump:                        flagHexdump,
+					WaitForConnections:             flagWaitForConnections,
+					WriteIncomplete:                flagWriteincomplete,
+					MemProfile:                     flagMemprofile,
+					ConnFlushInterval:              flagConnFlushInterval,
+					ConnTimeOut:                    flagConnTimeOut,
+					FlowFlushInterval:              flagFlowFlushInterval,
+					FlowTimeOut:                    flagFlowTimeOut,
+					CloseInactiveTimeOut:           flagCloseInactiveTimeout,
+					ClosePendingTimeOut:            flagClosePendingTimeout,
+					FileStorage:                    flagFileStorage,
+					CalculateEntropy:               flagCalcEntropy,
+					SaveConns:                      flagSaveConns,
+					TCPDebug:                       flagTCPDebug,
+					UseRE2:                         flagUseRE2,
+					BannerSize:                     flagBannerSize,
+					StreamDecoderBufSize:           flagStreamDecoderBufSize,
+					HarvesterBannerSize:            flagHarvesterBannerSize,
+					StopAfterHarvesterMatch:        flagStopAfterHarvesterMatch,
+					StopAfterServiceProbeMatch:     flagStopAfterServiceProbeMatch,
+					StopAfterServiceCategoryMiss:   flagStopAfterServiceCategoryMiss,
+					CustomRegex:                    flagCustomCredsRegex,
+					StreamBufferSize:               flagStreamBufferSize,
+					NumStreamWorkers:               flagNumStreamWorkers,
+					MaxStreamBytes:                 flagMaxStreamBytes,
+					MaxBufferedPagesPerConnection:  flagMaxBufferedPagesPerConnection,
+					MaxBufferedPagesTotal:          flagMaxBufferedPagesTotal,
+					IgnoreDecoderInitErrors:        flagIgnoreInitErrs,
+					DisableGenericVersionHarvester: flagDisableGenericVersionHarvester,
+					RemoveClosedStreams:            flagRemoveClosedStreams,
+					CompressionBlockSize:           flagCompressionBlockSize,
+					CompressionLevel:               getCompressionLevel(flagCompressionLevel),
 				},
 				ResolverConfig: resolvers.Config{
-					ReverseDNS:    *flagReverseDNS,
-					LocalDNS:      *flagLocalDNS,
-					MACDB:         *flagMACDB,
-					Ja3DB:         *flagJa3DB,
-					ServiceDB:     *flagServiceDB,
-					GeolocationDB: *flagGeolocationDB,
+					ReverseDNS:    flagReverseDNS,
+					LocalDNS:      flagLocalDNS,
+					MACDB:         flagMACDB,
+					Ja3DB:         flagJa3DB,
+					ServiceDB:     flagServiceDB,
+					GeolocationDB: flagGeolocationDB,
 				},
 			})
-			c.Bpf = *flagBPF
-			c.InputFile = inputFile
-			c.PrintTime = *flagTime
-			c.Epochs = numEpochs
+			coll.Bpf = flagBPF
+			coll.InputFile = inputFile
+			coll.PrintTime = flagTime
+			coll.Epochs = numEpochs
 
-			c.PrintConfiguration()
+			coll.PrintConfiguration()
 
 			// Connect collector to webui server for runtime debug logging
 			if webUIServer != nil {
-				webUIServer.SetCollector(c)
+				webUIServer.SetCollector(coll)
 			}
 		}
 
@@ -1252,19 +1264,19 @@ func Run() {
 
 		// in case a BPF should be set, the gopacket/pcap version with libpcap bindings needs to be used
 		// setting BPF filters is not yet supported by the pcapgo package
-		if *flagBPF != "" {
+		if flagBPF != "" {
 			// Record BPF filter for this file in web UI
 			if webUIServer != nil {
-				webUIServer.SetFileBPFFilter(inputFile, *flagBPF)
+				webUIServer.SetFileBPFFilter(inputFile, flagBPF)
 			}
 
-			if err = c.CollectBPF(inputFile, *flagBPF); err != nil {
+			if err = coll.CollectBPF(inputFile, flagBPF); err != nil {
 				if len(inputFiles) > 1 {
 					fmt.Printf("Error: failed to set BPF: %v\n", err)
 
 					// Create error log
 					errorMsg := fmt.Errorf("failed to set BPF: %w", err)
-					errorLogPath := createErrorLog(inputFile, *flagOutDir, errorMsg)
+					errorLogPath := createErrorLog(inputFile, flagOutDir, errorMsg)
 
 					// Notify webUI server
 					if webUIServer != nil {
@@ -1294,7 +1306,7 @@ func Run() {
 
 				// Create error log
 				errorMsg := fmt.Errorf("failed to open file: %w", err)
-				errorLogPath := createErrorLog(inputFile, *flagOutDir, errorMsg)
+				errorLogPath := createErrorLog(inputFile, flagOutDir, errorMsg)
 
 				// Notify webUI server
 				if webUIServer != nil {
@@ -1314,13 +1326,13 @@ func Run() {
 		}
 
 		if isPcap {
-			if err = c.CollectPcap(inputFile); err != nil {
+			if err = coll.CollectPcap(inputFile); err != nil {
 				if len(inputFiles) > 1 {
 					fmt.Printf("Error: failed to collect audit records from pcap file: %v\n", err)
 
 					// Create error log
 					errorMsg := fmt.Errorf("failed to collect audit records from pcap file: %w", err)
-					errorLogPath := createErrorLog(inputFile, *flagOutDir, errorMsg)
+					errorLogPath := createErrorLog(inputFile, flagOutDir, errorMsg)
 
 					// Notify webUI server
 					if webUIServer != nil {
@@ -1338,13 +1350,13 @@ func Run() {
 				log.Fatal("failed to collect audit records from pcap file: ", err)
 			}
 		} else {
-			if err = c.CollectPcapNG(inputFile); err != nil {
+			if err = coll.CollectPcapNG(inputFile); err != nil {
 				if len(inputFiles) > 1 {
 					fmt.Printf("Error: failed to collect audit records from pcapng file: %v\n", err)
 
 					// Create error log
 					errorMsg := fmt.Errorf("failed to collect audit records from pcapng file: %w", err)
-					errorLogPath := createErrorLog(inputFile, *flagOutDir, errorMsg)
+					errorLogPath := createErrorLog(inputFile, flagOutDir, errorMsg)
 
 					// Notify webUI server
 					if webUIServer != nil {
@@ -1366,14 +1378,14 @@ func Run() {
 		// Calculate processing duration for this file
 		processingDuration := time.Since(start)
 
-		if *flagTime {
+		if flagTime {
 			// stat input file
 			stat, _ := os.Stat(inputFile)
 			fmt.Println("size", humanize.Bytes(uint64(stat.Size())), "done in", processingDuration)
 		}
 
-		if *flagPPS {
-			c.RenderPacketsPerSecond(inputFile, *flagOutDir)
+		if flagPPS {
+			coll.RenderPacketsPerSecond(inputFile, flagOutDir)
 		}
 
 		// Store processing time in webUI server for all files
@@ -1389,13 +1401,13 @@ func Run() {
 			summary := fileSummary{
 				filename:        inputFile,
 				inputFileSize:   fileInfo.Size(),
-				outputTotalSize: c.GetTotalBytesWritten(),
+				outputTotalSize: coll.GetTotalBytesWritten(),
 				processingTime:  processingDuration,
 				err:             nil,
 			}
 
 			// Count total audit records from all decoders
-			summary.auditRecordCount = c.GetTotalAuditRecords()
+			summary.auditRecordCount = coll.GetTotalAuditRecords()
 
 			// If there was an error for this file, add it to the summary
 			for _, fe := range fileErrors {
@@ -1415,7 +1427,7 @@ func Run() {
 	}
 
 	// memory profiling (after all files processed)
-	if *flagMemProfile {
+	if flagMemProfile {
 		f, errProfile := os.Create("netcap-" + netcap.Version + ".mem.profile")
 		if errProfile != nil {
 			log.Fatal("failed create memory profile: ", errProfile)
@@ -1425,8 +1437,7 @@ func Run() {
 			log.Fatal("failed to write heap profile: ", errProfile)
 		}
 
-		err = f.Close()
-		if err != nil {
+		if err := f.Close(); err != nil {
 			panic("failed to write memory profile: " + err.Error())
 		}
 	}
@@ -1462,6 +1473,8 @@ func Run() {
 
 		fmt.Println("Server stopped. Goodbye!")
 	}
+	
+	return nil
 }
 
 func generateElasticIndices(elasticAddrs []string) {
@@ -1489,27 +1502,27 @@ func generateElasticIndices(elasticAddrs []string) {
 
 func makeWriterConfig(name string, typ types.Type, elasticAddrs []string) *io.WriterConfig {
 	return &io.WriterConfig{
-		UnixSocket: *flagUNIX,
-		CSV:        *flagCSV,
-		Proto:      *flagProto,
-		JSON:       *flagJSON,
+		UnixSocket: flagUNIX,
+		CSV:        flagCSV,
+		Proto:      flagProto,
+		JSON:       flagJSON,
 		Name:       name,
 		Type:       typ,
-		Null:       *flagNull,
-		Elastic:    *flagElastic,
+		Null:       flagNull,
+		Elastic:    flagElastic,
 		ElasticConfig: io.ElasticConfig{
 			ElasticAddrs:   elasticAddrs,
-			ElasticUser:    *flagElasticUser,
-			ElasticPass:    *flagElasticPass,
-			KibanaEndpoint: *flagKibanaEndpoint,
-			BulkSize:       *flagBulkSizeCustom,
+			ElasticUser:    flagElasticUser,
+			ElasticPass:    flagElasticPass,
+			KibanaEndpoint: flagKibanaEndpoint,
+			BulkSize:       flagBulkSizeCustom,
 		},
-		Buffer:        *flagBuffer,
-		Compress:      *flagCompress,
-		Out:           *flagOutDir,
+		Buffer:        flagBuffer,
+		Compress:      flagCompress,
+		Out:           flagOutDir,
 		Chan:          false,
 		ChanSize:      0,
-		MemBufferSize: *flagMemBufferSize,
+		MemBufferSize: flagMemBufferSize,
 		Version:       netcap.Version,
 		StartTime:     time.Now(),
 	}

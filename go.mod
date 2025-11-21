@@ -30,7 +30,6 @@ require (
 	github.com/magiconair/properties v1.8.0
 	github.com/mcnijman/go-emailaddress v1.1.1
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
-	github.com/namsral/flag v1.7.4-pre
 	github.com/nyaruka/phonenumbers v1.6.6
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/pkg/errors v0.9.1
@@ -46,7 +45,11 @@ require (
 	mvdan.cc/xurls/v2 v2.6.0
 )
 
-require github.com/expr-lang/expr v1.17.6
+require (
+	github.com/expr-lang/expr v1.17.6
+	github.com/namsral/flag v1.7.4-pre
+	github.com/urfave/cli/v3 v3.6.1
+)
 
 require (
 	dario.cat/mergo v1.0.0 // indirect

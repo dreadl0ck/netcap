@@ -1,31 +1,51 @@
 package split
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"os"
 
+	"github.com/dustin/go-humanize"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
-	"github.com/dustin/go-humanize"
-	"github.com/namsral/flag"
+	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/collector"
 )
 
-var flagInput = flag.String("read", "", "input pcap file")
-
+// Run parses the subcommand flags and handles the arguments.
+// This is a compatibility wrapper for the old Run() interface.
 func Run() {
+	// Create a new CLI app just for parsing flags
+	cmd := &cli.Command{
+		Name:  "split",
+		Usage: "split pcap files",
+		Flags: GetFlags(),
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return RunWithContext(ctx, c)
+		},
+	}
+
+	if err := cmd.Run(context.Background(), os.Args[1:]); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// RunWithContext runs the split command with a CLI context.
+func RunWithContext(ctx context.Context, c *cli.Command) error {
+	flagInput := c.String("read")
+
 	// stat input file
-	stat, err := os.Stat(*flagInput)
+	stat, err := os.Stat(flagInput)
 	if err != nil {
 		log.Fatal("failed to open pcap:", err)
 	}
 
 	// file exists.
-	println("opening", *flagInput+" | size:", humanize.Bytes(uint64(stat.Size())))
+	println("opening", flagInput+" | size:", humanize.Bytes(uint64(stat.Size())))
 
 	// TODO: display progress
 	// display total packet count
@@ -38,7 +58,7 @@ func Run() {
 	//clearLine()
 	//fmt.Println("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
-	r, f, err := collector.OpenPCAP(*flagInput)
+	r, f, err := collector.OpenPCAP(flagInput)
 	if err != nil {
 		log.Fatal("failed to open pcap:", err)
 	}
@@ -81,4 +101,6 @@ func Run() {
 			pooledPkt.Dispose()
 		}
 	}
+
+	return nil
 }

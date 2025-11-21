@@ -40,12 +40,6 @@ func printHeader() {
 	fmt.Println()
 }
 
-// usage prints the use.
-func printUsage() {
-	printHeader()
-	fs.PrintDefaults()
-}
-
 // cleanup when receiving OS signals.
 func cleanup() {
 	for _, p := range proxies {

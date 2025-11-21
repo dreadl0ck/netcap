@@ -235,9 +235,9 @@ func buildProtocolHierarchy(outDir string) (*ProtocolHierarchyResponse, error) {
 			}
 		}
 
-		// If no metadata, estimate based on file size (rough estimate)
+		// If no metadata, count records properly instead of estimating
 		if count == 0 {
-			count = bytes / 100 // Rough estimate: ~100 bytes per record
+			count = CountRecords(fullPath)
 		}
 
 		// Store stats
@@ -276,11 +276,6 @@ func buildProtocolHierarchy(outDir string) (*ProtocolHierarchyResponse, error) {
 		if s, ok := stats[proto]; ok {
 			applicationLayerTotal += s.Count
 		}
-	}
-
-	// Create relationships
-	if relationships == nil {
-		relationships = make(map[string]map[string]int64)
 	}
 
 	// Link protocols from Link Layer to Network Layer

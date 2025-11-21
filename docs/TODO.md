@@ -1,8 +1,6 @@
 # TODOs
 
-----
-
-cli refactoring
+dev mode: enable debugging with https://nextjs.org/docs/app/guides/mcp
 
 ---
 
@@ -38,8 +36,6 @@ WIP: Visualize
 - compression for downloading ALL files and pcaps currently disabled
 - investigation notes feature: add text infos to any host, device or field
 
-- change cli interface to https://github.com/urfave/cli 
-
 - report generation
 - Ja4
 - enable rules to trigger firewall rules
@@ -63,8 +59,6 @@ WIP: Visualize
 
 - docs iteration
 - tests iteration
-
-- add toggle in UI to add info panels in UI to explain for first time users
 
 - Dashboard feature to combine save and load multiple charts
 - update engine: rules / filters need to be executed in batches so that large amounts of data can be processed.

@@ -14,38 +14,119 @@
 package proxy
 
 import (
-	"os"
-
-	"github.com/namsral/flag"
+	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/defaults"
 )
 
-// Flags returns all flags.
-func Flags() (flags []string) {
-	fs.VisitAll(func(f *flag.Flag) {
-		flags = append(flags, f.Name)
-	})
+// Global context variables for helper functions
+var (
+	flagDebug            bool
+	flagTrace            bool
+	flagDump             bool
+	flagDumpFormatted    bool
+	flagDialTimeout      int
+	flagMaxIdleConns     int
+	flagIdleConnTimeout  int
+	flagTLSHandshakeTimeout int
+	flagSkipTLSVerify    bool
+	flagMemBufferSize    int
+)
 
-	return
+// Flags returns all flag names for the proxy subcommand.
+func Flags() []string {
+	var flags []string
+	for _, f := range GetFlags() {
+		flags = append(flags, f.Names()[0])
+	}
+	return flags
 }
 
-// flags.
-var (
-	fs                      = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
-	flagGenerateConfig      = fs.Bool("gen-config", false, "generate config")
-	_                       = fs.String("config", "", "read configuration from file at path")
-	flagDialTimeout         = fs.Int("dialTimeout", 30, "seconds until dialing to the backend times out")
-	flagIdleConnTimeout     = fs.Int("idleConnTimeout", 90, "seconds until a connection times out")
-	flagTLSHandshakeTimeout = fs.Int("tlsTimeout", 15, "seconds until a TLS handshake times out")
-	flagSkipTLSVerify       = fs.Bool("skipTlsVerify", false, "skip TLS verification")
-	flagMaxIdleConns        = fs.Int("maxIdle", 120, "maximum number of idle connections")
-	flagLocal               = fs.String("local", "", "set local endpoint")
-	flagProxyConfig         = fs.String("proxy-config", "net.proxy-config.yml", "set config file path")
-	flagRemote              = fs.String("remote", "", "set remote endpoint")
-	flagDebug               = fs.Bool("debug", false, "set debug mode")
-	flagTrace               = fs.Bool("trace", true, "trace HTTP requests to retrieve additional information")
-	flagDump                = fs.Bool("dump", false, "dumps audit record as JSON to stdout")
-	flagDumpFormatted       = fs.Bool("format", true, "format when dumping JSON")
-	flagMemBufferSize       = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")
-)
+// GetFlags returns the CLI flags for the proxy subcommand.
+func GetFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.BoolFlag{
+			Name:    "gen-config",
+			Usage:   "generate config",
+			Sources: cli.EnvVars("NC_GEN_CONFIG"),
+		},
+		&cli.StringFlag{
+			Name:    "config",
+			Usage:   "read configuration from file at path",
+			Sources: cli.EnvVars("NC_CONFIG"),
+		},
+		&cli.IntFlag{
+			Name:    "dialTimeout",
+			Value:   30,
+			Usage:   "seconds until dialing to the backend times out",
+			Sources: cli.EnvVars("NC_DIALTIMEOUT"),
+		},
+		&cli.IntFlag{
+			Name:    "idleConnTimeout",
+			Value:   90,
+			Usage:   "seconds until a connection times out",
+			Sources: cli.EnvVars("NC_IDLECONNTIMEOUT"),
+		},
+		&cli.IntFlag{
+			Name:    "tlsTimeout",
+			Value:   15,
+			Usage:   "seconds until a TLS handshake times out",
+			Sources: cli.EnvVars("NC_TLSTIMEOUT"),
+		},
+		&cli.BoolFlag{
+			Name:    "skipTlsVerify",
+			Usage:   "skip TLS verification",
+			Sources: cli.EnvVars("NC_SKIPTLSVERIFY"),
+		},
+		&cli.IntFlag{
+			Name:    "maxIdle",
+			Value:   120,
+			Usage:   "maximum number of idle connections",
+			Sources: cli.EnvVars("NC_MAXIDLE"),
+		},
+		&cli.StringFlag{
+			Name:    "local",
+			Usage:   "set local endpoint",
+			Sources: cli.EnvVars("NC_LOCAL"),
+		},
+		&cli.StringFlag{
+			Name:    "proxy-config",
+			Value:   "net.proxy-config.yml",
+			Usage:   "set config file path",
+			Sources: cli.EnvVars("NC_PROXY_CONFIG"),
+		},
+		&cli.StringFlag{
+			Name:    "remote",
+			Usage:   "set remote endpoint",
+			Sources: cli.EnvVars("NC_REMOTE"),
+		},
+		&cli.BoolFlag{
+			Name:    "debug",
+			Usage:   "set debug mode",
+			Sources: cli.EnvVars("NC_DEBUG"),
+		},
+		&cli.BoolFlag{
+			Name:    "trace",
+			Value:   true,
+			Usage:   "trace HTTP requests to retrieve additional information",
+			Sources: cli.EnvVars("NC_TRACE"),
+		},
+		&cli.BoolFlag{
+			Name:    "dump",
+			Usage:   "dumps audit record as JSON to stdout",
+			Sources: cli.EnvVars("NC_DUMP"),
+		},
+		&cli.BoolFlag{
+			Name:    "format",
+			Value:   true,
+			Usage:   "format when dumping JSON",
+			Sources: cli.EnvVars("NC_FORMAT"),
+		},
+		&cli.IntFlag{
+			Name:    "membuf-size",
+			Value:   defaults.BufferSize,
+			Usage:   "set size for membuf",
+			Sources: cli.EnvVars("NC_MEMBUF_SIZE"),
+		},
+	}
+}

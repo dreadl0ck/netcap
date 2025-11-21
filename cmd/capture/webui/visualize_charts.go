@@ -559,7 +559,7 @@ func generateTreemapChart(outDir string, showLegend bool) *charts.TreeMap {
 	layerNodes := make(map[string]*opts.TreeMapNode)
 
 	// Initialize layer nodes
-	for _, layer := range []string{"Link Layer", "Network Layer", "Transport Layer", "Application Layer", "Stream Decoders", "Abstract Decoders"} {
+	for _, layer := range []string{"Link Layer", "Network Layer", "Transport Layer", "Application Layer", "Abstract Decoders"} {
 		layerNodes[layer] = &opts.TreeMapNode{
 			Name:     layer,
 			Children: []opts.TreeMapNode{},
@@ -583,7 +583,7 @@ func generateTreemapChart(outDir string, showLegend bool) *charts.TreeMap {
 
 	// Build final tree structure
 	treeData := []opts.TreeMapNode{}
-	for _, layer := range []string{"Link Layer", "Network Layer", "Transport Layer", "Application Layer", "Stream Decoders", "Abstract Decoders"} {
+	for _, layer := range []string{"Link Layer", "Network Layer", "Transport Layer", "Application Layer", "Abstract Decoders"} {
 		if node, ok := layerNodes[layer]; ok && len(node.Children) > 0 {
 			treeData = append(treeData, *node)
 		}
@@ -662,13 +662,12 @@ func generateBar3DChart(outDir string, showLegend bool) *charts.Bar3D {
 	layerMap := getLayerMap()
 
 	// Define layer order and colors
-	layers := []string{"Link Layer", "Network Layer", "Transport Layer", "Application Layer", "Stream Decoders", "Abstract Decoders"}
+	layers := []string{"Link Layer", "Network Layer", "Transport Layer", "Application Layer", "Abstract Decoders"}
 	layerColors := map[string]string{
 		"Link Layer":        "#4CAF50", // Green
 		"Network Layer":     "#2196F3", // Blue
 		"Transport Layer":   "#FF9800", // Orange
 		"Application Layer": "#9C27B0", // Purple
-		"Stream Decoders":   "#00BCD4", // Cyan
 		"Abstract Decoders": "#607D8B", // Blue Grey
 	}
 
@@ -976,8 +975,9 @@ func getAuditRecordStats(outDir string) map[string]ProtocolStats {
 			}
 		}
 
+		// If no metadata, count records properly instead of estimating
 		if count == 0 {
-			count = bytes / 100
+			count = CountRecords(fullPath)
 		}
 
 		layer := getLayerMap()[protocol]
@@ -1750,12 +1750,21 @@ func generateHostsGraph(outDir string, showLegend bool, maxNodes int) *charts.Gr
 
 	graph := charts.NewGraph()
 
-	// Define categories for internal vs external IPs
+	// Define categories for internal vs external IPs with explicit colors
+	// Node size already indicates traffic volume
 	categories := []*opts.GraphCategory{
-		{Name: "Internal Network"},
-		{Name: "External Network"},
-		{Name: "High Traffic Internal"},
-		{Name: "High Traffic External"},
+		{
+			Name: "Internal Network",
+			ItemStyle: &opts.ItemStyle{
+				Color: "#4CAF50", // Green for internal networks
+			},
+		},
+		{
+			Name: "External Network",
+			ItemStyle: &opts.ItemStyle{
+				Color: "#FF9800", // Orange for external networks
+			},
+		},
 	}
 
 	graph.SetGlobalOptions(
@@ -1776,8 +1785,8 @@ func generateHostsGraph(outDir string, showLegend bool, maxNodes int) *charts.Gr
 			Trigger: "item",
 		}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(true),
-			Data:   []string{"Internal Network", "External Network", "High Traffic Internal", "High Traffic External"},
+			Show:   opts.Bool(showLegend),
+			Data:   []string{"Internal Network", "External Network"},
 			Bottom: "0",
 			Left:   "center",
 			TextStyle: &opts.TextStyle{
@@ -1941,23 +1950,14 @@ func getHostsCommunicationData(outDir string, maxNodes int) ([]opts.GraphNode, [
 			nodeSize = 15
 		}
 
-		// Determine category based on internal/external and traffic volume
+		// Determine category based on internal/external
+		// Node size already indicates traffic volume
 		isInternal := isPrivateIP(info.ip)
-		isHighTraffic := info.totalPackets > 1000 // Consider high traffic threshold
-
 		category := 0
 		if isInternal {
-			if isHighTraffic {
-				category = 2 // High Traffic Internal
-			} else {
-				category = 0 // Internal Network
-			}
+			category = 0 // Internal Network
 		} else {
-			if isHighTraffic {
-				category = 3 // High Traffic External
-			} else {
-				category = 1 // External Network
-			}
+			category = 1 // External Network
 		}
 
 		nodes = append(nodes, opts.GraphNode{

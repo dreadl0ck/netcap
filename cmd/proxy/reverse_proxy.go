@@ -91,21 +91,21 @@ func newReverseProxy(proxyName string, targetURL *url.URL) *reverseProxy {
 
 			// setup DialContext
 			DialContext: (&net.Dialer{
-				Timeout:   time.Duration(*flagDialTimeout) * time.Second,
+				Timeout:   time.Duration(flagDialTimeout) * time.Second,
 				KeepAlive: 30 * time.Second,
 			}).DialContext,
 
 			Proxy:        http.ProxyFromEnvironment,
-			MaxIdleConns: *flagMaxIdleConns,
+			MaxIdleConns: flagMaxIdleConns,
 
 			// set timeouts
-			IdleConnTimeout:       time.Duration(*flagIdleConnTimeout) * time.Second,
-			TLSHandshakeTimeout:   time.Duration(*flagTLSHandshakeTimeout) * time.Second,
+			IdleConnTimeout:       time.Duration(flagIdleConnTimeout) * time.Second,
+			TLSHandshakeTimeout:   time.Duration(flagTLSHandshakeTimeout) * time.Second,
 			ExpectContinueTimeout: 5 * time.Second,
 
 			/* #nosec */
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: *flagSkipTLSVerify,
+				InsecureSkipVerify: flagSkipTLSVerify,
 			},
 		},
 	}
@@ -118,7 +118,7 @@ func newReverseProxy(proxyName string, targetURL *url.URL) *reverseProxy {
 		Buffer:           false,
 		Compress:         false,
 		Out:              "",
-		MemBufferSize:    *flagMemBufferSize,
+		MemBufferSize:    flagMemBufferSize,
 		Source:           targetURL.String(),
 		Version:          netcap.Version,
 		IncludesPayloads: false,

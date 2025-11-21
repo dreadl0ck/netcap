@@ -30,11 +30,6 @@ func printHeader() {
 	fmt.Println()
 }
 
-// usage prints the use.
-func printUsage() {
-	printHeader()
-	fs.PrintDefaults()
-}
 
 const (
 	pgzipMaxSpeed       = "max-speed"

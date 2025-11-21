@@ -328,6 +328,8 @@ github.com/ua-parser/uap-go v0.0.0-20250917011043-9c86a9b0f8f0/go.mod h1:gwANdYm
 github.com/ugorji/go/codec v0.0.0-20181204163529-d75b2dcb6bc8/go.mod h1:VFNgLljTbGfSG7qAOspJ7OScBnGdDN/yBr0sguwnwf0=
 github.com/umisama/go-cpe v0.0.0-20190323060751-cdd6c3c28a23 h1:+168JmE638t0OxroPRx7BUbkB91hF3GWS1OkvITgdT0=
 github.com/umisama/go-cpe v0.0.0-20190323060751-cdd6c3c28a23/go.mod h1:Jv/KoYWD3+46wW8r3pEwISwtgv5Q8NTfFto2wFRKvoA=
+github.com/urfave/cli/v3 v3.6.1 h1:j8Qq8NyUawj/7rTYdBGrxcH7A/j7/G8Q5LhWEW4G3Mo=
+github.com/urfave/cli/v3 v3.6.1/go.mod h1:ysVLtOEmg2tOy6PknnYVhDoouyC/6N42TMeoMzskhso=
 github.com/vishvananda/netlink v1.1.0 h1:1iyaYNBLmP6L0220aDnYQpo1QEV4t4hJ+xEEhhJH8j0=
 github.com/vishvananda/netlink v1.1.0/go.mod h1:cTgwzPIzzgDAYoQrMm0EdrjRUBkTqKYppBueQtXaqoE=
 github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 h1:gga7acRE695APm9hlsSMoOoE65U4/TcqNj90mc69Rlg=

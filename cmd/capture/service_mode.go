@@ -28,22 +28,22 @@ import (
 // runServiceMode starts the service mode server for multi-file upload and analysis
 func runServiceMode() {
 	fmt.Println("Starting Netcap in service mode...")
-	fmt.Printf("HTTP server will listen on: http://%s\n", *flagHTTP)
+	fmt.Printf("HTTP server will listen on: http://%s\n", flagHTTP)
 
 	// Create service configuration
 	serviceConfig := &webui.ServiceConfig{
-		MaxFileSize:           *flagServiceMaxFileSize,
-		MaxAnalysisHour:       *flagServiceMaxPerHour,
-		SessionExpiry:         *flagServiceExpiry,
-		CleanupInterval:       *flagServiceCleanup,
-		MaxStorageBytes:       *flagServiceMaxStorage,
-		PreloadLargestN:       *flagServicePreloadLargestN,
-		EnforceMaxSizePreload: *flagServiceEnforceMaxSizePreload,
+		MaxFileSize:           flagServiceMaxFileSize,
+		MaxAnalysisHour:       flagServiceMaxPerHour,
+		SessionExpiry:         flagServiceExpiry,
+		CleanupInterval:       flagServiceCleanup,
+		MaxStorageBytes:       flagServiceMaxStorage,
+		PreloadLargestN:       flagServicePreloadLargestN,
+		EnforceMaxSizePreload: flagServiceEnforceMaxSizePreload,
 	}
 
 	// Set data directory from flag or use default
-	if *flagServiceDataDir != "" {
-		serviceConfig.DataDir = *flagServiceDataDir
+	if flagServiceDataDir != "" {
+		serviceConfig.DataDir = flagServiceDataDir
 	} else {
 		serviceConfig.DataDir = webui.DefaultServiceConfig().DataDir
 	}
@@ -66,12 +66,12 @@ func runServiceMode() {
 
 	// Create unified server in service mode
 	server := webui.NewServer(
-		*flagHTTP,
+		flagHTTP,
 		serviceConfig.DataDir,
 		nil,           // no input files in service mode
 		"",            // no custom assets path
 		false,         // debug logging
-		*flagDPI,      // DPI configuration
+		flagDPI,      // DPI configuration
 		true,          // isServiceMode = true
 		serviceConfig, // service configuration
 	)
@@ -86,7 +86,7 @@ func runServiceMode() {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 
-	fmt.Printf("\n%sWeb UI available at: http://%s%s\n\n", "\033[32m", *flagHTTP, "\033[0m")
+	fmt.Printf("\n%sWeb UI available at: http://%s%s\n\n", "\033[32m", flagHTTP, "\033[0m")
 	log.Printf("[Service] Server started successfully, waiting for shutdown signal...")
 
 	// Wait for shutdown signal

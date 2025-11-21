@@ -173,7 +173,7 @@ export default function Explore() {
   const [switchingFile, setSwitchingFile] = useState(false);
   const [autoSelectAttempted, setAutoSelectAttempted] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
-  const [maxDataPoints, setMaxDataPoints] = useState<number>(10000);
+  const [maxDataPoints, setMaxDataPoints] = useState<number>(1000);
 
   // Audit type rotation: get/set the index of the last used audit type
   const getNextAuditTypeIndex = useCallback((availableTypes: string[]): number => {
@@ -879,6 +879,7 @@ export default function Explore() {
               <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <Box sx={{ flex: 1, position: 'relative' }}>
                   <iframe
+                    key={chartUrl}
                     src={chartUrl}
                     style={{
                       position: 'absolute',
@@ -901,7 +902,7 @@ export default function Explore() {
                     }}
                   >
                     <TextField
-                      data-learn="Max Data Points: Limit the number of data points displayed in the chart for better performance (default 10,000)."
+                      data-learn="Max Data Points: Limit the number of data points displayed in the chart for better performance (default 1,000)."
                       size="small"
                       type="number"
                       label="Max Data Points"

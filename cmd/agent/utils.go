@@ -26,9 +26,3 @@ func printHeader() {
 	fmt.Println("	$ net agent -pubkey pub.key -addr 127.0.0.1:4200")
 	fmt.Println()
 }
-
-// usage prints the use.
-func printUsage() {
-	printHeader()
-	fs.PrintDefaults()
-}

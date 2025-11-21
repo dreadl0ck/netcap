@@ -53,7 +53,7 @@ func (t *netcapTransport) RoundTrip(req *http.Request) (resp *http.Response, err
 	req.Host = t.targetURL.Host
 	req.Header.Set("Host", t.targetURL.Host)
 
-	if *flagDebug {
+	if flagDebug {
 		dumpHTTPRequest(req, t.proxyName)
 	}
 
@@ -71,7 +71,7 @@ func (t *netcapTransport) RoundTrip(req *http.Request) (resp *http.Response, err
 		destIP                    string
 	)
 
-	if *flagTrace {
+	if flagTrace {
 		// create http client trace
 		trace := &httptrace.ClientTrace{
 			GotConn: func(connInfo httptrace.GotConnInfo) {
@@ -162,7 +162,7 @@ makeHTTPRequest:
 		resp.ContentLength = int64(len(rawbody))
 	}
 
-	if *flagDebug {
+	if flagDebug {
 		dumpHTTPResponse(resp, t.proxyName, rawbody)
 	}
 
@@ -214,14 +214,14 @@ makeHTTPRequest:
 	}
 
 	// dump as JSON if configured
-	if *flagDump {
+	if flagDump {
 		j, errJSON := r.JSON()
 		if errJSON != nil {
 			log.Fatal(errJSON)
 		}
 
 		// pretty print if configured
-		if *flagDumpFormatted {
+		if flagDumpFormatted {
 			var b bytes.Buffer
 
 			err = json.Indent(&b, []byte(j), "", " ")

@@ -31,12 +31,6 @@ func printHeader() {
 	fmt.Println()
 }
 
-// usage prints the use.
-func printUsage() {
-	printHeader()
-	fs.PrintDefaults()
-}
-
 func cleanup() {
 	fmt.Println("cleanup")
 

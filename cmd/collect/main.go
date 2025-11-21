@@ -30,10 +30,17 @@ import (
 
 	"github.com/dreadl0ck/cryptoutils"
 	"github.com/gogo/protobuf/proto"
+	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
+)
+
+// Global context variables for helper functions
+var (
+	currentPrivKey       string
+	files                = make(map[string]*auditRecordHandle)
 )
 
 // maxBufferSize specifies the size of the buffers that
@@ -44,29 +51,38 @@ const (
 )
 
 // Run parses the subcommand flags and handles the arguments.
+// This is a compatibility wrapper for the old Run() interface.
 func Run() {
 	// Remove date/time from log output to prevent duplicate timestamps
 	// when running in Docker/systemd (which add their own timestamps)
 	log.SetFlags(0)
-	
-	// parse commandline flags
-	fs.Usage = printUsage
 
-	err := fs.Parse(os.Args[2:])
-	if err != nil {
-		log.Fatal(err)
+	// Create a new CLI app just for parsing flags
+	cmd := &cli.Command{
+		Name:  "collect",
+		Usage: "collector for audit records from agents",
+		Flags: GetFlags(),
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return RunWithContext(ctx, c)
+		},
 	}
 
-	if *flagGenerateConfig {
-		netio.GenerateConfig(fs, "collect")
+	if err := cmd.Run(context.Background(), os.Args[1:]); err != nil {
+		log.Fatal(err)
+	}
+}
 
-		return
+// RunWithContext runs the collect command with a CLI context.
+func RunWithContext(ctx context.Context, c *cli.Command) error {
+	if c.Bool("gen-config") {
+		// TODO: Update GenerateConfig to work with urfave/cli
+		fmt.Println("gen-config not yet implemented with urfave/cli")
+		return nil
 	}
 
 	netio.PrintBuildInfo()
 
-	if *flagGenKeypair {
-
+	if c.Bool("gen-keypair") {
 		// generate a new keypair
 		pub, priv, errGenKey := cryptoutils.GenerateKeypair()
 		if errGenKey != nil {
@@ -84,7 +100,7 @@ func Run() {
 		}
 
 		// close file handle
-		err = pubFile.Close()
+		err := pubFile.Close()
 		if err != nil {
 			panic(err)
 		}
@@ -107,16 +123,21 @@ func Run() {
 
 		fmt.Println("wrote keys")
 
-		return
+		return nil
 	}
 
-	if *flagPrivKey == "" {
+	flagPrivKey := c.String("privkey")
+	if flagPrivKey == "" {
 		log.Fatal("no path to private key specified")
 	}
 
+	// Set global context variables for helper functions
+	currentMemBufferSize = c.Int("membuf-size")
+	currentPrivKey = flagPrivKey
+
 	// serve
-	ctx := context.Background()
-	log.Fatal(udpServer(ctx, *flagAddr))
+	log.Fatal(udpServer(ctx, c.String("addr")))
+	return nil
 }
 
 // udpServer implements a simple UDP server.
@@ -151,7 +172,7 @@ func udpServer(ctx context.Context, address string) (err error) {
 	handleSignals()
 
 	// read private key file contents
-	privKeyContents, err = ioutil.ReadFile(*flagPrivKey)
+	privKeyContents, err = ioutil.ReadFile(currentPrivKey)
 	if err != nil {
 		log.Fatal("failed to read private key file: ", err)
 	}

@@ -14,34 +14,57 @@
 package collect
 
 import (
-	"os"
-
-	"github.com/namsral/flag"
+	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/defaults"
 )
 
-// Flags returns all flags.
-func Flags() (flags []string) {
-	fs.VisitAll(func(f *flag.Flag) {
-		flags = append(flags, f.Name)
-	})
+// Global context for helper functions - defined in main.go
+var currentMemBufferSize int
 
-	return
+// Flags returns all flag names for the collect subcommand.
+func Flags() []string {
+	var flags []string
+	for _, f := range GetFlags() {
+		flags = append(flags, f.Names()[0])
+	}
+	return flags
 }
 
-var (
-	fs                 = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
-	flagGenerateConfig = fs.Bool("gen-config", false, "generate config")
-	_                  = fs.String("config", "", "read configuration from file at path")
-	flagGenKeypair     = fs.Bool("gen-keypair", false, "generate keypair")
-	flagPrivKey        = fs.String("privkey", "", "path to the hex encoded server private key")
-	flagAddr           = fs.String("addr", "127.0.0.1:1335", "specify an address and port to listen for incoming traffic")
-
-	files             = make(map[string]*auditRecordHandle)
-	flagMemBufferSize = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")
-
-	// not configurable at the moment
-	// flagCompress   = flag.Bool("comp", true, "compress data when writing to disk")
-	// flagBuffer     = flag.Bool("buf", true, "buffer data before writing to disk").
-)
+// GetFlags returns the CLI flags for the collect subcommand.
+func GetFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.BoolFlag{
+			Name:    "gen-config",
+			Usage:   "generate config",
+			Sources: cli.EnvVars("NC_GEN_CONFIG"),
+		},
+		&cli.StringFlag{
+			Name:    "config",
+			Usage:   "read configuration from file at path",
+			Sources: cli.EnvVars("NC_CONFIG"),
+		},
+		&cli.BoolFlag{
+			Name:    "gen-keypair",
+			Usage:   "generate keypair",
+			Sources: cli.EnvVars("NC_GEN_KEYPAIR"),
+		},
+		&cli.StringFlag{
+			Name:    "privkey",
+			Usage:   "path to the hex encoded server private key",
+			Sources: cli.EnvVars("NC_PRIVKEY"),
+		},
+		&cli.StringFlag{
+			Name:    "addr",
+			Value:   "127.0.0.1:1335",
+			Usage:   "specify an address and port to listen for incoming traffic",
+			Sources: cli.EnvVars("NC_ADDR"),
+		},
+		&cli.IntFlag{
+			Name:    "membuf-size",
+			Value:   defaults.BufferSize,
+			Usage:   "set size for membuf",
+			Sources: cli.EnvVars("NC_MEMBUF_SIZE"),
+		},
+	}
+}

@@ -40,16 +40,10 @@ func printHeader() {
 	fmt.Println()
 }
 
-// usage prints the use.
-func printUsage() {
-	printHeader()
-	fs.PrintDefaults()
-}
-
 // CheckFields checks if the separator occurs inside fields of audit records
 // to prevent this breaking the generated CSV file.
 func checkFields() {
-	r, err := io.Open(*flagInput, *flagMemBufferSize)
+	r, err := io.Open(currentCtx.String("read"), currentCtx.Int("membuf-size"))
 	if err != nil {
 		panic(err)
 	}
@@ -133,16 +127,18 @@ func checkFields() {
 
 	// call netcap and parse output line by line
 	// TODO refactor to use netcap lib to read file instead of calling it as command
-	out, err := exec.Command("net.capture", "-r", *flagInput).Output()
+	out, err := exec.Command("net.capture", "-r", currentCtx.String("read")).Output()
 	if err != nil {
 		panic(err)
 	}
 
+	flagSeparator := currentCtx.String("sep")
+
 	// iterate over lines
 	for _, line := range strings.Split(string(out), "\n") {
-		count := strings.Count(line, *flagSeparator)
+		count := strings.Count(line, flagSeparator)
 		if count != numExpectedFields-1 {
-			fmt.Println(strings.Replace(line, *flagSeparator, ansi.Red+*flagSeparator+ansi.Reset, -1), ansi.Red, count, ansi.Reset)
+			fmt.Println(strings.Replace(line, flagSeparator, ansi.Red+flagSeparator+ansi.Reset, -1), ansi.Red, count, ansi.Reset)
 		}
 	}
 }

@@ -14,90 +14,110 @@
 package util
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/dreadl0ck/netcap/dbs"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
-
-	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+// Global context for helper functions
+var currentCtx *cli.Command
+
 // Run parses the subcommand flags and handles the arguments.
+// This is a compatibility wrapper for the old Run() interface.
 func Run() {
 	// Remove date/time from log output to prevent duplicate timestamps
 	// when running in Docker/systemd (which add their own timestamps)
 	log.SetFlags(0)
-	
-	// parse commandline flags
-	fs.Usage = printUsage
 
-	err := fs.Parse(os.Args[2:])
-	if err != nil {
+	// Create a new CLI app just for parsing flags
+	cmd := &cli.Command{
+		Name:  "util",
+		Usage: "general utility tool",
+		Flags: GetFlags(),
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return RunWithContext(ctx, c)
+		},
+	}
+
+	if err := cmd.Run(context.Background(), os.Args[1:]); err != nil {
 		log.Fatal(err)
 	}
+}
 
-	if *flagGenerateConfig {
-		io.GenerateConfig(fs, "util")
-		return
+// RunWithContext runs the util command with a CLI context.
+func RunWithContext(ctx context.Context, c *cli.Command) error {
+	// Store context for helper functions
+	currentCtx = c
+
+	if c.Bool("gen-config") {
+		// TODO: Update GenerateConfig to work with urfave/cli
+		fmt.Println("gen-config not yet implemented with urfave/cli")
+		return nil
 	}
 
-	if *flagGenerateDBs {
-		dbs.GenerateDBs(*flagNVDIndexStart)
-		return
+	if c.Bool("generate-dbs") {
+		dbs.GenerateDBs(c.Int("nvd-start-year"))
+		return nil
 	}
 
-	if *flagUpdateDBs {
+	if c.Bool("update-dbs") {
 		dbs.UpdateDBs()
-		return
+		return nil
 	}
 
-	if *flagDownloadGeolite {
+	if c.Bool("download-geolite") {
 		dbs.DownloadGeoLite()
-		return
+		return nil
 	}
 
-	if *flagServeDBs {
-		server := dbs.NewDBServer(*flagServAddr, *flagNVDIndexStart, *flagVerbose)
+	if c.Bool("serve-dbs") {
+		server := dbs.NewDBServer(c.String("serve-addr"), c.Int("nvd-start-year"), c.Bool("verbose"))
 		if err := server.Start(); err != nil {
 			log.Fatal("failed to start database server: ", err)
 		}
-		return
+		return nil
 	}
 
-	if *flagDownloadDBs {
-		if err := dbs.DownloadDBs(*flagDBsURL, *flagForce); err != nil {
+	if c.Bool("download-dbs") {
+		if err := dbs.DownloadDBs(c.String("dbs-url"), c.Bool("force")); err != nil {
 			log.Fatal("failed to download databases: ", err)
 		}
-		return
+		return nil
 	}
 
 	// Simple util to construct a IPv4 pcapng packet, with a TCP / UDP layer and a given payload.
 	// Will add dummy values for the Ethernet and IPv4 layers.
 	// Useful to dissect a specific TCP / UDP payload in wireshark, to compare the results with other tools.
-	if *flagMkPacket != "" {
+	flagMkPacket := c.String("mkpacket")
+	if flagMkPacket != "" {
 		makePacket()
-		return
+		return nil
 	}
 
 	// util to convert netcap timestamp to UTC time
-	if *flagToUTC != "" {
-		fmt.Println(utils.TimeToUTC(*flagToUTC))
-		return
+	flagToUTC := c.String("ts2utc")
+	if flagToUTC != "" {
+		fmt.Println(utils.TimeToUTC(flagToUTC))
+		return nil
 	}
 
 	// util to check if fields count matches for all generated rows
-	if *flagCheckFields {
+	if c.Bool("check") {
 		checkFields()
-		return
+		return nil
 	}
 
-	if *flagEnv {
+	if c.Bool("env") {
 		out, errEnv := exec.Command("env").CombinedOutput()
 		if errEnv != nil {
 			log.Fatal(errEnv)
@@ -109,28 +129,30 @@ func Run() {
 			}
 		}
 
-		return
+		return nil
 	}
 
-	if *flagInterfaces {
+	if c.Bool("interfaces") {
 		utils.ListAllNetworkInterfaces()
-		return
+		return nil
 	}
 
-	if *flagIndex != "" {
-		dbs.IndexData(*flagIndex, resolvers.DataBaseFolderPath, resolvers.DataBaseBuildPath, *flagNVDIndexStart, *flagVerbose)
-		return
+	flagIndex := c.String("index")
+	if flagIndex != "" {
+		dbs.IndexData(flagIndex, resolvers.DataBaseFolderPath, resolvers.DataBaseBuildPath, c.Int("nvd-start-year"), c.Bool("verbose"))
+		return nil
 	}
 
-	if *flagDecoders {
+	if c.Bool("decoders") {
 		printDecoders()
-		return
+		return nil
 	}
 
-	if *flagGoPacketCoverage {
+	if c.Bool("gopacket-coverage") {
 		analyzeGoPacketCoverage()
-		return
+		return nil
 	}
 
 	printHeader()
+	return nil
 }

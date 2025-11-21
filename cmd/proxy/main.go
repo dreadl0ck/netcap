@@ -14,6 +14,7 @@
 package proxy
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -21,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/urfave/cli/v3"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/io"
@@ -31,40 +33,70 @@ import (
 var proxies []*reverseProxy
 
 // Run parses the subcommand flags and handles the arguments.
+// This is a compatibility wrapper for the old Run() interface.
 func Run() {
 	// Remove date/time from log output to prevent duplicate timestamps
 	// when running in Docker/systemd (which add their own timestamps)
 	log.SetFlags(0)
-	
-	// parse commandline flags
-	fs.Usage = printUsage
-	err := fs.Parse(os.Args[2:])
-	if err != nil {
-		log.Fatal(err)
+
+	// Create a new CLI app just for parsing flags
+	cmd := &cli.Command{
+		Name:  "proxy",
+		Usage: "HTTP proxy for traffic inspection",
+		Flags: GetFlags(),
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return RunWithContext(ctx, c)
+		},
 	}
 
-	if *flagGenerateConfig {
-		io.GenerateConfig(fs, "proxy")
-		return
+	if err := cmd.Run(context.Background(), os.Args[1:]); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// RunWithContext runs the proxy command with a CLI context.
+func RunWithContext(ctx context.Context, c *cli.Command) error {
+	if c.Bool("gen-config") {
+		// TODO: Update GenerateConfig to work with urfave/cli
+		fmt.Println("gen-config not yet implemented with urfave/cli")
+		return nil
 	}
 
 	io.PrintBuildInfo()
 
+	// Set global variables for helper functions
+	flagDebug = c.Bool("debug")
+	flagTrace = c.Bool("trace")
+	flagDump = c.Bool("dump")
+	flagDumpFormatted = c.Bool("format")
+	flagDialTimeout = c.Int("dialTimeout")
+	flagMaxIdleConns = c.Int("maxIdle")
+	flagIdleConnTimeout = c.Int("idleConnTimeout")
+	flagTLSHandshakeTimeout = c.Int("tlsTimeout")
+	flagSkipTLSVerify = c.Bool("skipTlsVerify")
+	flagMemBufferSize = c.Int("membuf-size")
+
+	var proxyConf *config
+	var err error
+
 	// check if flags have been used to configure a single instance proxy
-	if *flagLocal == "" || *flagRemote == "" {
+	flagLocal := c.String("local")
+	flagRemote := c.String("remote")
+	flagProxyConfig := c.String("proxy-config")
+
+	if flagLocal == "" || flagRemote == "" {
 		// parse config file
-		var errParseConfig error
-		c, errParseConfig = parseConfiguration(*flagProxyConfig)
-		if errParseConfig != nil {
-			log.Fatal("failed to parse config: ", errParseConfig)
+		proxyConf, err = parseConfiguration(flagProxyConfig)
+		if err != nil {
+			log.Fatal("failed to parse config: ", err)
 		}
 	} else {
 		// setup single proxy instance
-		c = &config{
+		proxyConf = &config{
 			Proxies: map[string]reverseProxyConfig{
 				"customproxy": {
-					Remote: *flagRemote,
-					Local:  *flagLocal,
+					Remote: flagRemote,
+					Local:  flagLocal,
 				},
 			},
 		}
@@ -75,10 +107,10 @@ func Run() {
 
 	// print configuration
 	fmt.Println("Configuration:")
-	c.dump(os.Stdout)
+	proxyConf.dump(os.Stdout)
 
 	// configure logger
-	configureLogger(*flagDebug, filepath.Join(c.Logdir, logFileName))
+	configureLogger(c.Bool("debug"), filepath.Join(proxyConf.Logdir, logFileName))
 
 	// synchronize the logger on exit
 	defer func() {
@@ -90,11 +122,11 @@ func Run() {
 
 	proxyLog.Info("setup complete",
 		zap.String("logfile", logFileName),
-		zap.String("config", *flagProxyConfig),
+		zap.String("config", flagProxyConfig),
 	)
 
 	// iterate over proxies from config
-	for name, p := range c.Proxies { // copy variables to avoid capturing them
+	for name, p := range proxyConf.Proxies { // copy variables to avoid capturing them
 		// when dispatching a goroutine
 		var (
 			proxyName = name
@@ -122,12 +154,12 @@ func Run() {
 			proxies = append(proxies, proxy)
 
 			if tls { // check if key and cert file have been specified
-				if c.CertFile == "" || c.KeyFile == "" {
+				if proxyConf.CertFile == "" || proxyConf.KeyFile == "" {
 					log.Fatal(proxyName, " configured to use TLS for local endpoint, but no missing cert and key in config.")
 				}
 
 				// start serving HTTPS
-				err = http.ListenAndServeTLS(local, c.CertFile, c.KeyFile, proxy)
+				err = http.ListenAndServeTLS(local, proxyConf.CertFile, proxyConf.KeyFile, proxy)
 				if err != nil {
 					log.Fatal(proxyName, " failed. error: ", err)
 				}
@@ -143,4 +175,6 @@ func Run() {
 
 	// wait until the end of time
 	<-make(chan bool)
+	
+	return nil
 }

@@ -56,7 +56,7 @@ func newAuditRecordHandle(b *types.Batch, path string) *auditRecordHandle {
 	conf := config.DefaultConfig
 	conf.Source = b.ClientID
 	conf.IncludePayloads = b.ContainsPayloads
-	conf.MemBufferSize = *flagMemBufferSize
+	conf.MemBufferSize = currentMemBufferSize
 
 	var (
 		// create buffered writer that writes into the file handle

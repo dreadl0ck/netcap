@@ -39,10 +39,16 @@ func printHeader() {
 	fmt.Println()
 }
 
+// Helper variables to pass context from RunWithContext to utility functions
+var (
+	currentMemBufferSize int
+	currentReplayMode    bool
+	currentDumpJSON      bool
+)
+
 // usage prints the use.
 func printUsage() {
 	printHeader()
-	fs.PrintDefaults()
 }
 
 func exportDir(path string) {
@@ -64,7 +70,7 @@ func exportDir(path string) {
 		)
 
 		if ext == defaults.FileExtension || ext == ".gz" {
-			if !*flagReplay {
+			if !currentReplayMode {
 				fmt.Println("exporting", fName)
 
 				// add to waitgroup
@@ -85,7 +91,7 @@ func exportDir(path string) {
 		}
 	}
 
-	if *flagReplay {
+	if currentReplayMode {
 		// determine the first timestamp
 		var (
 			begin     = time.Now()
@@ -207,7 +213,7 @@ func firstTimestamp(path string) time.Time {
 func exportFile(path string) {
 	var (
 		count  = 0
-		r, err = netio.Open(path, *flagMemBufferSize)
+		r, err = netio.Open(path, currentMemBufferSize)
 	)
 
 	if err != nil {
@@ -249,7 +255,7 @@ func exportFile(path string) {
 		// assert to AuditRecord
 		if p, ok := record.(types.AuditRecord); ok {
 
-			if *flagReplay {
+			if currentReplayMode {
 				t := time.Unix(0, p.Time())
 
 				if count == 1 {
@@ -269,7 +275,7 @@ func exportFile(path string) {
 				}
 			}
 
-			if *flagDumpJSON {
+			if currentDumpJSON {
 				// dump as JSON
 				j, errJSON := p.JSON()
 				if errJSON != nil {

@@ -29,9 +29,3 @@ func printHeader() {
 	fmt.Println("	$ net label -read taffic.pcap -collect")
 	fmt.Println()
 }
-
-// usage prints the use.
-func printUsage() {
-	printHeader()
-	fs.PrintDefaults()
-}

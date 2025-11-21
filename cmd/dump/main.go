@@ -14,6 +14,7 @@
 package dump
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"github.com/evilsocket/islazy/tui"
 	"github.com/expr-lang/expr/vm"
 	"github.com/mgutz/ansi"
+	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/filter"
@@ -33,33 +35,45 @@ import (
 )
 
 // Run parses the subcommand flags and handles the arguments.
+// This is a compatibility wrapper for the old Run() interface.
 func Run() {
 	// Remove date/time from log output to prevent duplicate timestamps
 	// when running in Docker/systemd (which add their own timestamps)
 	log.SetFlags(0)
-	
-	// parse commandline flags
-	fs.Usage = printUsage
 
-	err := fs.Parse(os.Args[2:])
-	if err != nil {
+	// Create a new CLI app just for parsing flags
+	cmd := &cli.Command{
+		Name:  "dump",
+		Usage: "utility to read audit record files",
+		Flags: GetFlags(),
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return RunWithContext(ctx, c)
+		},
+	}
+
+	if err := cmd.Run(context.Background(), os.Args[1:]); err != nil {
 		log.Fatal(err)
 	}
+}
 
-	if *flagGenerateConfig {
-		io.GenerateConfig(fs, "dump")
-
-		return
+// RunWithContext runs the dump command with a CLI context.
+func RunWithContext(ctx context.Context, c *cli.Command) error {
+	if c.Bool("gen-config") {
+		// TODO: Update GenerateConfig to work with urfave/cli
+		fmt.Println("gen-config not yet implemented with urfave/cli")
+		return nil
 	}
 
+	flagInput := c.String("read")
+
 	// abort if there is no input or no live capture
-	if *flagInput == "" {
+	if flagInput == "" {
 		printHeader()
 		fmt.Println(ansi.Red + "> nothing to do. need a NETCAP audit record file (.ncap.gz or .ncap) with the read flag (-read)" + ansi.Reset)
 		os.Exit(1)
 	}
 
-	if strings.HasSuffix(*flagInput, ".pcap") || strings.HasSuffix(*flagInput, ".pcapng") {
+	if strings.HasSuffix(flagInput, ".pcap") || strings.HasSuffix(flagInput, ".pcapng") {
 		printHeader()
 		fmt.Println(ansi.Red + "> the dump tool is used to read netcap audit records" + ansi.Reset)
 		fmt.Println(ansi.Red + "> use the capture tool create audit records from live traffic or a pcap dumpfile" + ansi.Reset)
@@ -67,8 +81,8 @@ func Run() {
 	}
 
 	// read dumpfile header and exit
-	if *flagHeader { // open input file for reading
-		r, errOpen := io.Open(*flagInput, *flagMemBufferSize)
+	if c.Bool("header") { // open input file for reading
+		r, errOpen := io.Open(flagInput, c.Int("membuf-size"))
 		if errOpen != nil {
 			panic(errOpen)
 		}
@@ -91,17 +105,18 @@ func Run() {
 	}
 
 	// set separators for sub structures in CSV
-	types.StructureBegin = *flagBegin
-	types.StructureEnd = *flagEnd
-	types.FieldSeparator = *flagStructSeparator
+	types.StructureBegin = c.String("begin")
+	types.StructureEnd = c.String("end")
+	types.FieldSeparator = c.String("struct-sep")
 
 	// read ncap file and print to stdout
-	if filepath.Ext(*flagInput) == defaults.FileExtension || filepath.Ext(*flagInput) == ".gz" {
+	if filepath.Ext(flagInput) == defaults.FileExtension || filepath.Ext(flagInput) == ".gz" {
 		// Compile filter expression if provided
 		var filterProgram *vm.Program
-		if *flagFilter != "" {
+		flagFilter := c.String("filter")
+		if flagFilter != "" {
 			// We need to read the file header first to determine the record type
-			r, errOpen := io.Open(*flagInput, *flagMemBufferSize)
+			r, errOpen := io.Open(flagInput, c.Int("membuf-size"))
 			if errOpen != nil {
 				log.Fatal("failed to open file for filter compilation:", errOpen)
 			}
@@ -118,28 +133,29 @@ func Run() {
 			}
 
 			// Compile the filter expression
-			filterProgram, err = filter.CompileExpression(*flagFilter, header.Type)
+			var err error
+			filterProgram, err = filter.CompileExpression(flagFilter, header.Type)
 			if err != nil {
 				log.Fatal("failed to compile filter expression:", err)
 			}
 
-			fmt.Fprintf(os.Stderr, "Using filter: %s\n", *flagFilter)
+			fmt.Fprintf(os.Stderr, "Using filter: %s\n", flagFilter)
 		}
 
-		err = io.Dump(
+		err := io.Dump(
 			os.Stdout,
 			io.DumpConfig{
-				Path:          *flagInput,
-				Separator:     *flagSeparator,
-				TabSeparated:  *flagTSV,
-				Structured:    *flagPrintStructured,
-				Table:         *flagTable,
-				Selection:     *flagSelect,
-				UTC:           *flagUTC,
-				Fields:        *flagFields,
-				JSON:          *flagJSON,
-				CSV:           *flagCSV,
-				ForceColors:   *flagForceColors,
+				Path:          flagInput,
+				Separator:     c.String("sep"),
+				TabSeparated:  c.Bool("tsv"),
+				Structured:    c.Bool("struc"),
+				Table:         c.Bool("table"),
+				Selection:     c.String("select"),
+				UTC:           c.Bool("utc"),
+				Fields:        c.Bool("fields"),
+				JSON:          c.Bool("json"),
+				CSV:           c.Bool("csv"),
+				ForceColors:   c.Bool("c"),
 				FilterProgram: filterProgram,
 			},
 		)
@@ -147,6 +163,8 @@ func Run() {
 			log.Fatal(err)
 		}
 
-		return
+		return nil
 	}
+
+	return nil
 }
