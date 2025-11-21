@@ -24,6 +24,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -63,6 +64,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		IsMultiFile:     len(inputFiles) > 1,
 		IsServiceMode:   s.isServiceMode,
 		IsLiveMode:      s.isLiveMode,
+		SessionID:       s.currentSession, // Include current session ID in service mode
 	}
 
 	// Add completed files info
@@ -100,6 +102,7 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			}
 
 			fileInfo := FileInfo{
+				ID:               session.SessionID, // Use session ID as file ID
 				Name:             session.InputFilename,
 				Path:             session.InputFile,
 				Size:             session.InputFileSize,
@@ -129,6 +132,7 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			}
 
 			fileInfo := FileInfo{
+				ID:               session.SessionID, // Use session ID as file ID
 				Name:             session.InputFilename,
 				Path:             session.InputFile,
 				Size:             session.InputFileSize,
@@ -190,10 +194,21 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		// Calculate file hash
+		// Calculate file hash - use this as the file ID
 		hash := calculateFileHash(path)
+		fileID := hash
+		if fileID == "" {
+			// Fallback to basename if hash calculation fails
+			fileID = filepath.Base(path)
+		}
+
+		// Store the mapping from ID to path
+		s.mu.Lock()
+		s.fileIDToPath[fileID] = path
+		s.mu.Unlock()
 
 		fileInfo := FileInfo{
+			ID:               fileID,
 			Name:             filepath.Base(path),
 			Path:             path,
 			Size:             info.Size(),
@@ -506,6 +521,7 @@ func (s *Server) handleSetDirectory(w http.ResponseWriter, r *http.Request) {
 	defer s.mu.Unlock()
 
 	// Service mode: find session by input file path
+	// This handles both preloaded pcaps and user-uploaded captures
 	if s.isServiceMode && s.sessionManager != nil {
 		clientIP := s.getUserIP(r)
 
@@ -516,7 +532,7 @@ func (s *Server) handleSetDirectory(w http.ResponseWriter, r *http.Request) {
 		for _, session := range allSessions {
 			// Match by input file path
 			if session.InputFile == req.InputFile {
-				// For preloaded sessions, any user can access
+				// For preloaded sessions (IsPreloaded=true), any user can access
 				// For user sessions, check IP ownership
 				if session.IsPreloaded || session.IP == clientIP {
 					matchedSession = session
@@ -1484,8 +1500,13 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse multipart form (limit to 200MB + overhead)
-	maxMemory := int64(210 * 1024 * 1024) // 210MB
+	// Parse multipart form
+	// In service mode: 200MB + overhead
+	// In local mode: allow larger files (10GB max for form parsing)
+	maxMemory := int64(210 * 1024 * 1024) // 210MB for service mode
+	if !s.isServiceMode {
+		maxMemory = int64(10 * 1024 * 1024 * 1024) // 10GB for local mode
+	}
 	if err := r.ParseMultipartForm(maxMemory); err != nil {
 		log.Printf("[WebUI] Failed to parse multipart form: %v", err)
 		w.Header().Set("Content-Type", "application/json")
@@ -1508,15 +1529,18 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Validate file size (200MB limit)
-	maxSize := int64(200 * 1024 * 1024)
-	if header.Size > maxSize {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error":   fmt.Sprintf("File size (%d bytes) exceeds maximum allowed size (%d bytes)", header.Size, maxSize),
-			"success": false,
-		})
-		return
+	// Validate file size (only in service mode; no limit in local mode)
+	// Note: In local mode, users can upload files of any size
+	if s.isServiceMode {
+		maxSize := int64(200 * 1024 * 1024)
+		if header.Size > maxSize {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error":   fmt.Sprintf("File size (%d bytes) exceeds maximum allowed size (%d bytes)", header.Size, maxSize),
+				"success": false,
+			})
+			return
+		}
 	}
 
 	// Validate file extension
@@ -1667,6 +1691,22 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		case s.jobQueue <- job:
 			atomic.AddInt64(&s.jobsScheduled, 1)
 			log.Printf("[WebUI] Analysis job queued successfully")
+
+			// Add the uploaded file to inputFiles so it appears in the UI
+			s.mu.Lock()
+			// Check if file is already in the list to avoid duplicates
+			fileExists := false
+			for _, existingFile := range s.inputFiles {
+				if existingFile == inputPath {
+					fileExists = true
+					break
+				}
+			}
+			if !fileExists {
+				s.inputFiles = append(s.inputFiles, inputPath)
+				log.Printf("[WebUI] Added uploaded file to inputFiles list: %s", inputPath)
+			}
+			s.mu.Unlock()
 		default:
 			log.Printf("[WebUI] Job queue is full, cannot queue analysis")
 			w.Header().Set("Content-Type", "application/json")
@@ -1678,6 +1718,20 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Calculate file ID (hash) for the uploaded file
+	fileID := calculateFileHash(inputPath)
+	if fileID == "" {
+		// Fallback to basename if hash calculation fails
+		fileID = filepath.Base(inputPath)
+	}
+	
+	// Store the mapping from ID to path
+	s.mu.Lock()
+	s.fileIDToPath[fileID] = inputPath
+	s.mu.Unlock()
+	
+	log.Printf("[WebUI] Generated file ID %s for uploaded file %s", fileID, inputPath)
+
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -1686,6 +1740,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		"filename": savedFilename,
 		"path":     inputPath,
 		"size":     written,
+		"id":       fileID, // Include file ID in response
 	})
 }
 
@@ -2071,10 +2126,12 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 				// Map location (relative path) to hash
 				if file.Location != "" && file.Hash != "" {
 					fileHashMap[file.Location] = file.Hash
+					log.Printf("[WebUI] File audit record: Location=%s, Hash=%s", file.Location, file.Hash)
 				}
 			}
 			reader.Close()
 		}
+		log.Printf("[WebUI] Loaded %d file hashes from File audit records", len(fileHashMap))
 	}
 
 	// Walk the files directory and collect file information
@@ -2093,6 +2150,7 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		// Get relative path from files directory
 		relPath, err := filepath.Rel(filesDir, path)
 		if err != nil {
+			log.Printf("[WebUI] Warning: filepath.Rel failed for path=%s, filesDir=%s, error=%v. Using filename only.", path, filesDir, err)
 			relPath = info.Name()
 		}
 
@@ -2105,12 +2163,14 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 		fileInfo := map[string]interface{}{
 			"name":         info.Name(),
-			"path":         relPath,
-			"fullPath":     path,
+			"path":         relPath,  // Relative path from files directory (used for downloads)
+			"fullPath":     path,      // Absolute path (not used by frontend)
 			"size":         info.Size(),
 			"modifiedTime": info.ModTime().Unix(),
 			"mimeType":     mimeType,
 		}
+		
+		log.Printf("[WebUI] Extracted file: name=%s, relPath=%s, mimeType=%s", info.Name(), relPath, mimeType)
 
 		// Add hash if available
 		if hash, ok := fileHashMap[relPath]; ok {
@@ -2147,11 +2207,21 @@ func (s *Server) handleDownloadExtractedFile(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Extract file path from URL: /api/extracted-files/download/{relativePath}
-	relativePath := strings.TrimPrefix(r.URL.Path, "/api/extracted-files/download/")
-	if relativePath == "" {
+	encodedPath := strings.TrimPrefix(r.URL.Path, "/api/extracted-files/download/")
+	if encodedPath == "" {
 		http.Error(w, "File path required", http.StatusBadRequest)
 		return
 	}
+
+	// URL-decode the path (frontend encodes it with encodeURIComponent)
+	relativePath, err := url.PathUnescape(encodedPath)
+	if err != nil {
+		log.Printf("[WebUI] Failed to decode file path: %v", err)
+		http.Error(w, "Invalid path encoding", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("[WebUI] Download extracted file request: encodedPath=%s, decodedPath=%s", encodedPath, relativePath)
 
 	// Determine the output directory
 	s.mu.RLock()
@@ -2174,6 +2244,8 @@ func (s *Server) handleDownloadExtractedFile(w http.ResponseWriter, r *http.Requ
 	filesDir := filepath.Join(outDir, "files")
 	fullPath := filepath.Join(filesDir, filepath.Clean(relativePath))
 
+	log.Printf("[WebUI] File download: filesDir=%s, relativePath=%s, fullPath=%s", filesDir, relativePath, fullPath)
+
 	// Security check: ensure the file is within the files directory
 	if !strings.HasPrefix(fullPath, filesDir) {
 		log.Printf("[WebUI] Security violation: attempt to access file outside files directory: %s", relativePath)
@@ -2185,6 +2257,7 @@ func (s *Server) handleDownloadExtractedFile(w http.ResponseWriter, r *http.Requ
 	fileInfo, err := os.Stat(fullPath)
 	if err != nil {
 		if os.IsNotExist(err) {
+			log.Printf("[WebUI] File not found: %s (fullPath: %s)", relativePath, fullPath)
 			http.Error(w, "File not found", http.StatusNotFound)
 		} else {
 			log.Printf("[WebUI] Error accessing file %s: %v", relativePath, err)
@@ -2364,9 +2437,17 @@ func (s *Server) handleDownloadInputFile(w http.ResponseWriter, r *http.Request)
 
 	// Extract identifier from URL: /api/files/input/download/{identifier}
 	// The identifier can be a sessionId (service mode) or file path (local mode)
-	identifier := strings.TrimPrefix(r.URL.Path, "/api/files/input/download/")
-	if identifier == "" {
+	encodedIdentifier := strings.TrimPrefix(r.URL.Path, "/api/files/input/download/")
+	if encodedIdentifier == "" {
 		http.Error(w, "File identifier required", http.StatusBadRequest)
+		return
+	}
+
+	// URL-decode the identifier (frontend encodes it with encodeURIComponent)
+	identifier, err := url.PathUnescape(encodedIdentifier)
+	if err != nil {
+		log.Printf("[WebUI] Failed to decode identifier: %v", err)
+		http.Error(w, "Invalid identifier encoding", http.StatusBadRequest)
 		return
 	}
 
@@ -2453,6 +2534,220 @@ func (s *Server) handleDownloadInputFile(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// handleDownloadAllAuditRecords creates a zip archive of all audit record files and streams it to the client
+func (s *Server) handleDownloadAllAuditRecords(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	log.Printf("[WebUI] Download all audit records request received")
+
+	// Extract identifier from URL: /api/download/{identifier}
+	// The identifier can be a sessionId (service mode) or file path (local mode)
+	encodedIdentifier := strings.TrimPrefix(r.URL.Path, "/api/download/")
+	if encodedIdentifier == "" {
+		log.Printf("[WebUI] No identifier provided for download")
+		http.Error(w, "Identifier required", http.StatusBadRequest)
+		return
+	}
+
+	// URL-decode the identifier (frontend encodes it with encodeURIComponent)
+	identifier, err := url.PathUnescape(encodedIdentifier)
+	if err != nil {
+		log.Printf("[WebUI] Failed to decode identifier: %v", err)
+		http.Error(w, "Invalid identifier encoding", http.StatusBadRequest)
+		return
+	}
+
+	log.Printf("[WebUI] Download all audit records: identifier=%s", identifier)
+
+	var outDir string
+	var sessionId string
+
+	// Determine output directory based on mode
+	if s.isServiceMode && s.sessionManager != nil {
+		// Try to use identifier as sessionId
+		// This works for both preloaded pcaps and user-uploaded captures
+		session, ok := s.sessionManager.GetSession(identifier)
+		if !ok {
+			log.Printf("[WebUI] Session not found: %s", identifier)
+			http.Error(w, "Session not found", http.StatusNotFound)
+			return
+		}
+
+		// Check if user has access to this session
+		// Preloaded sessions (IsPreloaded=true) are accessible to all users
+		// User sessions require IP match
+		clientIP := s.getUserIP(r)
+		if !session.IsPreloaded && session.IP != clientIP {
+			log.Printf("[WebUI] Access denied for session %s: client IP %s != session IP %s", identifier, clientIP, session.IP)
+			http.Error(w, "Access denied", http.StatusForbidden)
+			return
+		}
+
+		outDir = session.OutputDir
+		sessionId = session.SessionID
+		log.Printf("[WebUI] Service mode: using session %s, outDir=%s", sessionId, outDir)
+	} else {
+		// Local mode: determine output directory from input file
+		s.mu.RLock()
+		
+		// Check if identifier matches activeInputFile or any registered input file
+		var matchedInputFile string
+		if s.activeInputFile == identifier {
+			matchedInputFile = s.activeInputFile
+		} else {
+			// Search through input files
+			for _, inputFile := range s.inputFiles {
+				if inputFile == identifier || filepath.Base(inputFile) == identifier {
+					matchedInputFile = inputFile
+					break
+				}
+			}
+		}
+		
+		if matchedInputFile == "" {
+			s.mu.RUnlock()
+			log.Printf("[WebUI] Input file not found or not authorized: %s", identifier)
+			http.Error(w, "File not found or access denied", http.StatusForbidden)
+			return
+		}
+
+		// Get the output directory for this input file
+		outDir = s.outDir
+		s.mu.RUnlock()
+		
+		log.Printf("[WebUI] Local mode: using input file %s, outDir=%s", matchedInputFile, outDir)
+	}
+
+	if outDir == "" {
+		log.Printf("[WebUI] No output directory available")
+		http.Error(w, "No output directory selected", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Check if output directory exists
+	if _, err := os.Stat(outDir); os.IsNotExist(err) {
+		log.Printf("[WebUI] Output directory does not exist: %s", outDir)
+		http.Error(w, "Output directory not found", http.StatusNotFound)
+		return
+	}
+
+	// Collect all audit record files (*.ncap.gz)
+	var auditFiles []string
+	err = filepath.Walk(outDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Printf("[WebUI] Error walking output directory: %v", err)
+			return nil // Continue walking
+		}
+
+		// Skip directories
+		if info.IsDir() {
+			return nil
+		}
+
+		// Only include .ncap.gz files (audit record files)
+		if strings.HasSuffix(info.Name(), ".ncap.gz") {
+			auditFiles = append(auditFiles, path)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		log.Printf("[WebUI] Failed to collect audit files: %v", err)
+		http.Error(w, "Failed to collect audit files", http.StatusInternalServerError)
+		return
+	}
+
+	if len(auditFiles) == 0 {
+		log.Printf("[WebUI] No audit record files found in %s", outDir)
+		http.Error(w, "No audit record files available", http.StatusNotFound)
+		return
+	}
+
+	log.Printf("[WebUI] Found %d audit record files to download", len(auditFiles))
+
+	// Generate filename based on current time and identifier
+	timestamp := time.Now().Format("20060102-150405")
+	var baseIdentifier string
+	if sessionId != "" {
+		baseIdentifier = sessionId
+	} else {
+		baseIdentifier = filepath.Base(identifier)
+		// Remove file extension for cleaner name
+		baseIdentifier = strings.TrimSuffix(baseIdentifier, filepath.Ext(baseIdentifier))
+	}
+	zipFilename := fmt.Sprintf("audit-records-%s-%s.zip", baseIdentifier, timestamp)
+
+	log.Printf("[WebUI] Creating zip archive: %s", zipFilename)
+
+	// Set headers for download
+	w.Header().Set("Content-Type", "application/zip")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", zipFilename))
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+
+	// Create zip writer that streams to response
+	zipWriter := zip.NewWriter(w)
+	defer zipWriter.Close()
+
+	// Add each audit file to the zip
+	for _, filePath := range auditFiles {
+		// Get relative path from output directory for zip entry
+		relPath, err := filepath.Rel(outDir, filePath)
+		if err != nil {
+			log.Printf("[WebUI] Failed to get relative path for %s: %v", filePath, err)
+			continue
+		}
+
+		// Open source file
+		file, err := os.Open(filePath)
+		if err != nil {
+			log.Printf("[WebUI] Failed to open file %s for zipping: %v", filePath, err)
+			continue
+		}
+
+		// Get file info
+		fileInfo, err := file.Stat()
+		if err != nil {
+			file.Close()
+			log.Printf("[WebUI] Failed to stat file %s: %v", filePath, err)
+			continue
+		}
+
+		// Create zip entry header
+		header, err := zip.FileInfoHeader(fileInfo)
+		if err != nil {
+			file.Close()
+			log.Printf("[WebUI] Failed to create zip header for %s: %v", filePath, err)
+			continue
+		}
+
+		// Set the name to the relative path to preserve directory structure
+		header.Name = relPath
+		header.Method = zip.Deflate
+
+		// Create zip entry
+		writer, err := zipWriter.CreateHeader(header)
+		if err != nil {
+			file.Close()
+			log.Printf("[WebUI] Failed to create zip entry for %s: %v", relPath, err)
+			continue
+		}
+
+		// Copy file content to zip entry
+		_, err = io.Copy(writer, file)
+		file.Close()
+		if err != nil {
+			log.Printf("[WebUI] Error copying file %s to zip: %v", relPath, err)
+			// Continue with other files
+		}
+	}
+
+	log.Printf("[WebUI] Successfully created zip archive with %d audit record files: %s", len(auditFiles), zipFilename)
+}
+
 // handleErrorLogContent serves error log content for failed analyses
 func (s *Server) handleErrorLogContent(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -2461,9 +2756,17 @@ func (s *Server) handleErrorLogContent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extract session ID from URL path: /api/error-log/{sessionId}
-	sessionID := strings.TrimPrefix(r.URL.Path, "/api/error-log/")
-	if sessionID == "" {
+	encodedSessionID := strings.TrimPrefix(r.URL.Path, "/api/error-log/")
+	if encodedSessionID == "" {
 		http.Error(w, "Session ID required", http.StatusBadRequest)
+		return
+	}
+
+	// URL-decode the session ID
+	sessionID, err := url.PathUnescape(encodedSessionID)
+	if err != nil {
+		log.Printf("[WebUI] Failed to decode session ID: %v", err)
+		http.Error(w, "Invalid session ID encoding", http.StatusBadRequest)
 		return
 	}
 

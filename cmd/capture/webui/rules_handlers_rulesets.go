@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -132,9 +133,18 @@ func (s *Server) handleRuleSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extract rule set name from URL path: /api/rule-sets/{name}
-	ruleSetName := strings.TrimPrefix(r.URL.Path, "/api/rule-sets/")
-	if ruleSetName == "" || ruleSetName == "/api/rule-sets" {
+	encodedRuleSetName := strings.TrimPrefix(r.URL.Path, "/api/rule-sets/")
+	if encodedRuleSetName == "" || encodedRuleSetName == "/api/rule-sets" {
 		http.Error(w, "Rule set name required", http.StatusBadRequest)
+		return
+	}
+
+	// URL-decode the rule set name
+	ruleSetName, err := url.PathUnescape(encodedRuleSetName)
+	if err != nil {
+		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+			"error": "Invalid rule set name encoding",
+		})
 		return
 	}
 

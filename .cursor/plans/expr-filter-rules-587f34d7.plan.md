@@ -76,14 +76,14 @@ String helper functions:
 Replace existing `rule/rule.go` with comprehensive implementation:
 
 - `Rule` struct with fields:
-    - `Name string` - unique rule identifier
-    - `Description string` - human-readable description
-    - `Type types.Type` - audit record type to apply to
-    - `Expression string` - expr-lang expression
-    - `Severity string` - alert severity (low, medium, high, critical)
-    - `MITRE []string` - MITRE ATT&CK IDs
-    - `Tags []string` - custom tags
-    - `Enabled bool` - whether rule is active
+                - `Name string` - unique rule identifier
+                - `Description string` - human-readable description
+                - `Type types.Type` - audit record type to apply to
+                - `Expression string` - expr-lang expression
+                - `Severity string` - alert severity (low, medium, high, critical)
+                - `MITRE []string` - MITRE ATT&CK IDs
+                - `Tags []string` - custom tags
+                - `Enabled bool` - whether rule is active
 - `Config` struct for rule configuration with `Rules []*Rule`
 - `LoadRulesFromFile(path string) (*Config, error)` - load rules from YAML
 - `CompileRules(config *Config) error` - compile all rule expressions

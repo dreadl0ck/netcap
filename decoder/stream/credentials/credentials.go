@@ -32,7 +32,7 @@ var credLog = zap.NewNop()
 // Decoder for protocol analysis and writing audit records to disk.
 var Decoder = &decoder.AbstractDecoder{
 	Name:        DecoderName,
-	Description: "Credentials represent a user and password combination to authenticate to a service",
+	Description: "Credentials to authenticate to a service, like a username and password combination, or a token, api key, etc.",
 	Type:        types.Type_NC_Credentials,
 	PostInit: func(d *decoder.AbstractDecoder) (err error) {
 

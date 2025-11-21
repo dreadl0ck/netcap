@@ -1,6 +1,22 @@
 // API client for Netcap Web UI backend
 
-const API_BASE = typeof window !== 'undefined' ? '/api' : 'http://localhost:8080/api';
+// Get backend URL - defaults to localhost:8080
+// In production builds, this can be overridden via NEXT_PUBLIC_BACKEND_URL
+export function getBackendUrl(): string {
+  // Check if running in browser
+  if (typeof window !== 'undefined') {
+    // Allow override via window object (for embedded scenarios)
+    const windowWithBackend = window as { __BACKEND_URL__?: string };
+    if (windowWithBackend.__BACKEND_URL__) {
+      return windowWithBackend.__BACKEND_URL__;
+    }
+  }
+  
+  // Use environment variable if set, otherwise default to localhost:8080
+  return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+}
+
+const API_BASE = `${getBackendUrl()}/api`;
 
 export interface ProcessingStats {
   currentFile: string;
@@ -52,11 +68,17 @@ export interface StatusResponse {
 }
 
 export interface UploadResponse {
-  sessionId: string;
-  status: string;
+  sessionId?: string;  // Service mode
+  status?: string;     // Service mode
   message: string;
-  remaining: number;
-  shareUrl: string;
+  remaining?: number;  // Service mode
+  shareUrl?: string;   // Service mode
+  // Local mode fields
+  success?: boolean;
+  filename?: string;
+  path?: string;
+  size?: number;
+  id?: string;  // Local mode: file ID for progress tracking
 }
 
 export interface QuotaResponse {
@@ -80,6 +102,14 @@ export interface SessionStatus {
   startTime?: string;
 }
 
+export interface ProgressInfo {
+  sessionId: string;
+  status: string;
+  progressPercent: number;
+  message: string;
+  errorMessage?: string;
+}
+
 export interface TrySession {
   sessionId: string;
   ip: string;
@@ -99,6 +129,7 @@ export interface TrySession {
 }
 
 export interface FileInfo {
+  id: string;  // Unique identifier for the file (used for API calls)
   name: string;
   path: string;
   size: number;
@@ -596,6 +627,12 @@ export const api = {
     return res.json();
   },
 
+  async getProgress(sessionId: string): Promise<ProgressInfo> {
+    const res = await fetch(`${API_BASE}/progress/${sessionId}`);
+    if (!res.ok) throw new Error('Failed to fetch progress');
+    return res.json();
+  },
+
   async getAllSessions(): Promise<TrySession[]> {
     const res = await fetch(`${API_BASE}/try/sessions`);
     if (!res.ok) throw new Error('Failed to fetch sessions');
@@ -809,9 +846,36 @@ export const api = {
     if (filter) {
       url += `&filter=${encodeURIComponent(filter)}`;
     }
+    
+    console.log('[API] Creating EventSource for:', url);
     const eventSource = new EventSource(url);
+    
+    let hasReceivedData = false;
+    let timeoutId: NodeJS.Timeout | null = null;
+    
+    // Set a timeout to detect stalled connections (30 seconds)
+    const resetTimeout = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        console.error('[API] Stream timeout - no data received for 30 seconds');
+        if (!hasReceivedData && onError) {
+          onError('Connection timeout - no response from server');
+        }
+        eventSource.close();
+      }, 30000);
+    };
+    
+    resetTimeout();
+
+    eventSource.addEventListener('open', () => {
+      console.log('[API] EventSource connection opened');
+      hasReceivedData = true; // Consider connection open as "data received" to prevent premature timeout
+      resetTimeout();
+    });
 
     eventSource.addEventListener('record', (e) => {
+      hasReceivedData = true;
+      resetTimeout();
       try {
         const record = JSON.parse(e.data);
         onRecord(record);
@@ -822,6 +886,8 @@ export const api = {
 
     if (onProgress) {
       eventSource.addEventListener('progress', (e) => {
+        hasReceivedData = true;
+        resetTimeout();
         try {
           const data = JSON.parse(e.data);
           onProgress(data.count, data.scanned);
@@ -833,6 +899,8 @@ export const api = {
 
     if (onComplete) {
       eventSource.addEventListener('complete', (e) => {
+        hasReceivedData = true;
+        if (timeoutId) clearTimeout(timeoutId);
         try {
           const data = JSON.parse(e.data);
           onComplete(data.total, data.scanned, data.executionTimeMs);
@@ -843,18 +911,42 @@ export const api = {
       });
     }
 
+    // Handle custom error events sent from server (with data)
     eventSource.addEventListener('error', (e: Event) => {
       const messageEvent = e as MessageEvent;
+      
+      // Only handle if this is a custom error event with data from the server
       if (messageEvent.data) {
+        if (timeoutId) clearTimeout(timeoutId);
         try {
           const error = JSON.parse(messageEvent.data);
+          console.error('[API] Custom error from server:', error);
           if (onError) onError(error.error);
-        } catch {
+          eventSource.close();
+        } catch (err) {
+          console.error('[API] Failed to parse error data:', err);
           if (onError) onError('Stream error occurred');
+          eventSource.close();
         }
       }
-      eventSource.close();
     });
+    
+    // Handle standard EventSource connection errors (built-in onerror)
+    eventSource.onerror = (e) => {
+      if (timeoutId) clearTimeout(timeoutId);
+      console.error('[API] EventSource onerror fired, readyState:', eventSource.readyState);
+      
+      // Only report error if we haven't received any data yet or if truly closed
+      if (!hasReceivedData) {
+        if (onError) {
+          onError('Failed to connect to audit record stream. The file may not exist or be incomplete.');
+        }
+        eventSource.close();
+      } else if (eventSource.readyState === EventSource.CLOSED) {
+        console.log('[API] EventSource closed after receiving data (this is normal on completion)');
+        // Don't report error if we successfully received data and then closed
+      }
+    };
 
     return eventSource;
   },
@@ -1173,7 +1265,42 @@ export function formatBytes(bytes: number): string {
 
 // Format timestamp to human readable string
 export function formatTimestamp(timestamp: number): string {
-  return new Date(timestamp * 1000).toLocaleString();
+  // Handle invalid timestamps
+  if (!timestamp || timestamp === 0 || Number.isNaN(timestamp)) {
+    return 'N/A';
+  }
+  
+  // Detect timestamp format based on magnitude
+  // Timestamps > 10^15 are likely nanoseconds (e.g., 1700000000000000000)
+  // Timestamps < 10^12 are likely seconds (e.g., 1700000000)
+  // Timestamps between 10^12 and 10^15 are likely milliseconds
+  let dateMs: number;
+  
+  if (timestamp > 1e15) {
+    // Nanoseconds - divide by 1,000,000 to get milliseconds
+    dateMs = timestamp / 1e6;
+  } else if (timestamp > 1e12) {
+    // Already in milliseconds
+    dateMs = timestamp;
+  } else {
+    // Seconds - multiply by 1000 to get milliseconds
+    dateMs = timestamp * 1000;
+  }
+  
+  const date = new Date(dateMs);
+  
+  // Check if the date is valid
+  if (Number.isNaN(date.getTime())) {
+    return 'Invalid Date';
+  }
+  
+  // Additional validation: check if date is reasonable (between 1970 and 2100)
+  const year = date.getFullYear();
+  if (year < 1970 || year > 2100) {
+    return 'Invalid Date';
+  }
+  
+  return date.toLocaleString();
 }
 
 export function formatDuration(seconds: number): string {

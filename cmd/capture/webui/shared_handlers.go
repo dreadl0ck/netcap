@@ -19,6 +19,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -65,13 +66,20 @@ func HandleAuditFiles(outputDir string) http.HandlerFunc {
 func HandleAuditRecords(outputDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Extract audit type from URL path
-		parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/audit/"), "/")
+		encodedPath := strings.TrimPrefix(r.URL.Path, "/api/audit/")
+		parts := strings.Split(encodedPath, "/")
 		if len(parts) < 1 {
 			http.Error(w, "Invalid audit type", http.StatusBadRequest)
 			return
 		}
 
-		auditType := parts[0]
+		// URL-decode the audit type
+		auditType, err := url.PathUnescape(parts[0])
+		if err != nil {
+			http.Error(w, "Invalid audit type encoding", http.StatusBadRequest)
+			return
+		}
+
 		action := "stream"
 		if len(parts) > 1 {
 			action = parts[1]
@@ -183,9 +191,16 @@ func HandleLogContent(outputDir string) http.HandlerFunc {
 		}
 
 		// Extract log name from URL
-		logName := strings.TrimPrefix(r.URL.Path, "/api/logs/")
-		if logName == "" {
+		encodedLogName := strings.TrimPrefix(r.URL.Path, "/api/logs/")
+		if encodedLogName == "" {
 			http.Error(w, "Log name required", http.StatusBadRequest)
+			return
+		}
+
+		// URL-decode the log name
+		logName, err := url.PathUnescape(encodedLogName)
+		if err != nil {
+			http.Error(w, "Invalid log name encoding", http.StatusBadRequest)
 			return
 		}
 
@@ -379,7 +394,7 @@ func HandleAuditMeta(w http.ResponseWriter, r *http.Request, filePath, auditType
 // HandleAuditStream streams audit records via Server-Sent Events
 func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditType string) {
 	startTime := time.Now()
-	
+
 	// Parse query parameters
 	offset := 0
 	limit := 500 // Default limit (max 500)
@@ -399,17 +414,34 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	// Get filter expression
 	filterExpr := r.URL.Query().Get("filter")
 
+	// Check if streaming is supported BEFORE setting headers
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+		return
+	}
+
+	// Setup SSE headers - must be done before any writes
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	// Helper function to send SSE error event
+	sendError := func(errorMsg string) {
+		errorJSON, _ := json.Marshal(map[string]string{"error": errorMsg})
+		fmt.Fprintf(w, "event: error\ndata: %s\n\n", string(errorJSON))
+		flusher.Flush()
+	}
+
 	// Create audit record reader
 	auditReader, err := NewAuditRecordReader(filePath)
 	if err != nil {
+		log.Printf("[WebUI] Failed to open audit record file %s: %v", filePath, err)
 		if err == io.EOF {
-			RespondJSON(w, http.StatusServiceUnavailable, map[string]string{
-				"error": "Audit record file is incomplete or being written",
-			})
+			sendError("Audit record file is incomplete or being written")
 		} else {
-			RespondJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": fmt.Sprintf("Failed to open audit record file: %v", err),
-			})
+			sendError(fmt.Sprintf("Failed to open audit record file: %v", err))
 		}
 		return
 	}
@@ -418,14 +450,11 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	// Read the header first (required before reading records)
 	header, err := auditReader.ReadHeader()
 	if err != nil {
+		log.Printf("[WebUI] Failed to read header from %s: %v", filePath, err)
 		if err == io.EOF {
-			RespondJSON(w, http.StatusServiceUnavailable, map[string]string{
-				"error": "Audit record file is incomplete or being written",
-			})
+			sendError("Audit record file is incomplete or being written")
 		} else {
-			RespondJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": fmt.Sprintf("Failed to read header: %v", err),
-			})
+			sendError(fmt.Sprintf("Failed to read header: %v", err))
 		}
 		return
 	}
@@ -435,25 +464,10 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	if filterExpr != "" {
 		filterProgram, err = netfilter.CompileExpression(filterExpr, header.Type)
 		if err != nil {
-			RespondJSON(w, http.StatusBadRequest, map[string]string{
-				"error": fmt.Sprintf("Invalid filter expression: %v", err),
-			})
+			log.Printf("[WebUI] Failed to compile filter expression: %v", err)
+			sendError(fmt.Sprintf("Invalid filter expression: %v", err))
 			return
 		}
-	}
-
-	// Setup SSE
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		RespondJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "Streaming not supported",
-		})
-		return
 	}
 
 	// Skip to offset (only if no filter - filtering requires scanning all records)
@@ -469,7 +483,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	count := 0
 	totalScanned := 0
 	matchedCount := 0
-	
+
 	for {
 		// Check if we've reached the limit
 		if count >= limit {
@@ -536,7 +550,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	executionTime := time.Since(startTime)
 
 	// Send completion event with execution time
-	fmt.Fprintf(w, "event: complete\ndata: {\"total\": %d, \"scanned\": %d, \"executionTimeMs\": %d}\n\n", 
+	fmt.Fprintf(w, "event: complete\ndata: {\"total\": %d, \"scanned\": %d, \"executionTimeMs\": %d}\n\n",
 		count, totalScanned, executionTime.Milliseconds())
 	flusher.Flush()
 }
@@ -687,11 +701,11 @@ func extractFields(v interface{}, prefix string, depth int) []FieldInfo {
 
 // FieldValuesResponse is the API response for field values
 type FieldValuesResponse struct {
-	RecordType   string              `json:"recordType"`
-	FieldValues  map[string][]string `json:"fieldValues"`
-	SampleSize   int                 `json:"sampleSize"`
-	MaxPerField  int                 `json:"maxPerField"`
-	RecordScanned int                `json:"recordsScanned"`
+	RecordType    string              `json:"recordType"`
+	FieldValues   map[string][]string `json:"fieldValues"`
+	SampleSize    int                 `json:"sampleSize"`
+	MaxPerField   int                 `json:"maxPerField"`
+	RecordScanned int                 `json:"recordsScanned"`
 }
 
 // HandleAuditFieldValues returns sample values for fields in a specific audit record type
@@ -876,7 +890,7 @@ func extractFieldValues(v interface{}, prefix string, fieldValues map[string]map
 				if elemType.Kind() == reflect.Ptr {
 					elemType = elemType.Elem()
 				}
-				
+
 				if elemType.Kind() == reflect.Struct && depth < 2 {
 					// Sample first element with array notation
 					firstElem := fieldValue.Index(0)

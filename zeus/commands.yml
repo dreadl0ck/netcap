@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.8.1
+    VERSION: latest
 
 # command data
 commands:
@@ -200,7 +200,7 @@ commands:
         description: build and push the netcap service mode container
         dependencies:
             - gen-version
-            - build-frontend
+            - build-frontend-service
         arguments:
             - push:Bool? = true
         help: |
@@ -238,7 +238,7 @@ commands:
         description: build and push the netcap service mode container with local go-dpi
         dependencies:
             - gen-version
-            - build-frontend
+            - build-frontend-service
         arguments:
             - push:Bool? = true
         help: |
@@ -271,6 +271,43 @@ commands:
               VERSION=v0.7.7 NETCAP_PUSH_IMAGES=true zeus build-service-local-dpi
         exec: VERSION=${VERSION} NETCAP_PUSH_IMAGES=${push} zeus/scripts/build-service-local-dpi.sh
 
+    build-service-local-gopacket:
+        description: build and push the netcap service mode container with local gopacket
+        dependencies:
+            - gen-version
+            - build-frontend-service
+        arguments:
+            - push:Bool? = true
+        help: |
+            Builds the netcap service mode container with a local version of gopacket instead of the pinned version.
+            Uses a replace directive in go.mod and copies the local gopacket folder into the build container.
+            Supports multi-platform builds (amd64 and arm64) using Docker Buildx.
+            
+            The service runs using: net capture --service
+            
+            Environment Variables:
+              NETCAP_CONTAINER_REGISTRY       - Registry URL (default: docker.io)
+              NETCAP_CONTAINER_REGISTRY_USER  - Registry username (default: dreadl0ck)
+              NETCAP_PUSH_IMAGES              - Set to 'true' to push after build
+              NETCAP_USE_BUILDX               - Use buildx for multi-platform (default: true)
+              NETCAP_PLATFORMS                - Target platforms (default: linux/amd64,linux/arm64)
+              VERSION                         - Image version tag (default: from globals)
+              GOPACKET_PATH                   - Path to local gopacket directory (default: ../gopacket-community)
+            
+            Examples:
+              # Build only (local, single platform) with default ../gopacket-community path
+              zeus build-service-local-gopacket
+              
+              # Build with custom gopacket path
+              GOPACKET_PATH=/path/to/gopacket-community zeus build-service-local-gopacket
+              
+              # Build and push multi-platform to Docker Hub
+              NETCAP_PUSH_IMAGES=true zeus build-service-local-gopacket
+              
+              # Build specific version
+              VERSION=v0.7.7 NETCAP_PUSH_IMAGES=true zeus build-service-local-gopacket
+        exec: VERSION=${VERSION} NETCAP_PUSH_IMAGES=${push} zeus/scripts/build-service-local-gopacket.sh
+
     run-service:
         description: start the netcap service locally for testing
         dependencies:
@@ -280,6 +317,54 @@ commands:
             cd pcaps
             sleep 3 && open http://localhost:8080 &
             net capture -dpi -service -read *
+
+    dev-service:
+        description: run service mode locally with hot-reloading for development
+        help: |
+            Runs the service mode backend with air for hot-reloading and the frontend
+            in Next.js dev mode. Both processes run concurrently.
+            
+            Backend: http://localhost:8080 (via air with -tags nodpi for fast rebuilds)
+            Frontend: Proxied through Next.js dev server
+            
+            Requirements:
+              - air (go install github.com/air-verse/air@latest)
+              - Node.js 18+ and npm
+            
+            Press Ctrl+C to stop both processes.
+        exec: |
+            # Check if air is installed
+            if ! command -v air &> /dev/null; then
+                echo "[ERROR] air is not installed. Install with: go install github.com/air-verse/air@latest"
+                exit 1
+            fi
+            
+            # Ensure data directory exists
+            mkdir -p data/service-local
+            
+            echo "[INFO] Starting service mode in development..."
+            echo "[INFO] Backend: http://localhost:8080 (hot-reload enabled)"
+            echo "[INFO] Frontend: Next.js dev mode"
+            echo "[INFO] Press Ctrl+C to stop"
+            echo ""
+            
+            # Trap to cleanup background processes
+            trap 'echo "\n[INFO] Stopping dev-service..."; kill 0' INT TERM
+            
+            # Start backend with air in background
+            air &
+            AIR_PID=$!
+            
+            # Start frontend dev server in background with backend URL configured
+            cd cmd/capture/webui/frontend
+            NEXT_PUBLIC_BACKEND_URL=http://localhost:8080 npm run dev &
+            FRONTEND_PID=$!
+            cd ../../../..
+            
+            sleep 2 && open http://localhost:3000 &
+
+            # Wait for both processes
+            wait $AIR_PID $FRONTEND_PID
 
     run-service-container:
         description: run the netcap service mode container locally for testing
@@ -512,6 +597,38 @@ commands:
             echo "[INFO] Frontend build complete!"
             echo "[INFO] Static files are in: cmd/capture/webui/frontend/out/"
             echo "[INFO] Run 'zeus install' to rebuild netcap with the new frontend"
+
+    build-frontend-service:
+        description: build the web UI frontend for service mode (try.netcap.io)
+        help: |
+            Builds the Next.js frontend for service mode deployment at https://try.netcap.io
+            
+            This variant of build-frontend sets NEXT_PUBLIC_BACKEND_URL=https://try.netcap.io
+            so the frontend connects to the correct backend in production.
+            
+            Requirements:
+              - Node.js 18+ and npm must be installed
+            
+            The build output will be placed in:
+              cmd/capture/webui/frontend/out/
+            
+            This command is automatically run by build-service and build-service-* commands.
+            
+            Examples:
+              # Build frontend for service mode
+              zeus build-frontend-service
+              
+              # Build frontend for service mode and create container
+              zeus build-frontend-service && zeus build-service
+        exec: |
+            cd cmd/capture/webui/frontend
+            echo "[INFO] Installing frontend dependencies..."
+            npm install
+            echo "[INFO] Building frontend for service mode (https://try.netcap.io)..."
+            NEXT_PUBLIC_BACKEND_URL=https://try.netcap.io npm run build
+            echo "[INFO] Frontend build complete!"
+            echo "[INFO] Static files are in: cmd/capture/webui/frontend/out/"
+            echo "[INFO] Frontend configured to connect to: https://try.netcap.io"
 
     ## Utils
     ##

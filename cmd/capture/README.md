@@ -78,7 +78,7 @@ See [DEBUGGING.md](../../docs/DEBUGGING.md) for more details.
       -dpi=false: use DPI for device profiling
       -decoders=false: show all available decoders
       -exclude="LinkFlow,NetworkFlow,TransportFlow": exclude specific decoders
-      -fileStorage="": path to created extracted files (currently only for HTTP)
+      -fileStorage="files": path to created extracted files (relative to output directory, empty string disables file extraction)
       -flow-flush-interval=2000: flushes flows every X flows
       -flow-timeout=10s: closes flows older than flowTimeout
       -flushevery=100: flush assembler every N packets

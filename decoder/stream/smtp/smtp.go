@@ -29,7 +29,6 @@ import (
 
 var (
 	smtpLog               *zap.Logger
-	smtpLogSugared        *zap.SugaredLogger
 	smtpServiceReadyBytes = []byte(strconv.Itoa(smtpServiceReady))
 	smtpName              = []byte("SMTP")
 )
@@ -49,8 +48,6 @@ var Decoder = &decoder.StreamDecoder{
 		if err != nil {
 			return err
 		}
-
-		smtpLogSugared = smtpLog.Sugar()
 
 		return nil
 	},

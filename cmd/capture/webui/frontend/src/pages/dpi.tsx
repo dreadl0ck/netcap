@@ -637,15 +637,202 @@ function getModuleDescription(module: string): string {
   }
 }
 
+// Helper function to check if a protocol is likely implemented via IP lists
+function isLikelyIPListProtocol(protocol: string): boolean {
+  const ipListProtocols = new Set([
+    // Cloud providers with IP-based detection (not in ndpi_content_match.c.inc)
+    'MICROSOFT_AZURE',
+    'AWS_CLOUDFRONT', 'AWS_API_GATEWAY', 'AWS_COGNITO',
+    'AWS_DYNAMODB', 'AWS_KINESIS', 'AWS_EC2', 'AWS_S3', 'AWS_EMR',
+    'GOOGLE_CLOUD',
+    'DIGITALOCEAN', 'HUAWEI_CLOUD',
+    'YANDEX_CLOUD',
+    
+    // VPN/Security services that use IP lists (not domain-based)
+    'TOR', 'OPENVPN',
+  ]);
+  
+  return ipListProtocols.has(protocol.toUpperCase());
+}
+
+// Helper function to check if a protocol is likely detected via hardcoded IPs/domains
+// in ndpi_content_match.c.inc file
+function isLikelyContentMatchProtocol(protocol: string): boolean {
+  const contentMatchProtocols = new Set([
+    // Services detected via hardcoded IPs/domains in ndpi_content_match.c.inc
+    'OCS',         // Orange Cinéma Séries
+    'TEAMVIEWER',  // TeamViewer (many hardcoded IPs)
+    
+    // Advertising/tracking networks (detected via domain matching)
+    'TRACKER_ADS', // Generic ad tracking
+    
+    // Streaming services (detected via domain matching in ndpi_content_match.c.inc)
+    'SOUNDCLOUD',   // soundcloud.com
+    'SPOTIFY',      // spotify.com
+    'PANDORA',      // pandora.com
+    'TIDAL',        // tidal.com
+    'IHEARTRADIO',  // iheartradio.com
+    'LASTFM',       // last.fm
+    'DEEZER',       // deezer.com
+    'NETFLIX',      // netflix.com
+    'HULU',         // hulu.com
+    'DISNEYPLUS',   // disneyplus.com
+    'HBO',          // hbo.com
+    'PARAMOUNTPLUS',// paramountplus.com
+    'YOUTUBE',      // youtube.com
+    'YOUTUBE_UPLOAD', // youtube.com
+    'TWITCH',       // twitch.tv
+    'VIMEO',        // vimeo.com
+    
+    // Social media (detected via domain matching in ndpi_content_match.c.inc)
+    'FACEBOOK',     // facebook.com
+    'FACEBOOK_MESSENGER', // messenger.com
+    'FACEBOOK_VOIP',
+    'FACEBOOK_REEL_STORY',
+    'INSTAGRAM',    // instagram.com
+    'TWITTER',      // twitter.com, x.com
+    'LINKEDIN',     // linkedin.com
+    'REDDIT',       // reddit.com
+    'PINTEREST',    // pinterest.com
+    'TIKTOK',       // tiktok.com
+    'SNAPCHAT',     // snapchat.com
+    'SNAPCHAT_CALL',
+    'THREADS',      // threads.net
+    'TUMBLR',       // tumblr.com
+    'VK',           // vk.com
+    'MASTODON',     // mastodon instances
+    
+    // Enterprise/Corporate (detected via domain matching in ndpi_content_match.c.inc)
+    'SLACK',        // slack.com
+    'MSTEAMS',      // teams.microsoft.com
+    'MSTEAMS_CALL',
+    'ZOOM',         // zoom.us
+    'WEBEX',        // webex.com
+    'GOTO',         // goto.com
+    'FUZE',         // fuze.com
+    
+    // Cloud services (detected via domain matching in ndpi_content_match.c.inc)
+    'MICROSOFT',    // microsoft.com
+    'MICROSOFT_365', // office.com, outlook.com
+    'MS_OUTLOOK',   // outlook.com
+    'MS_ONE_DRIVE', // onedrive.com
+    'GOOGLE',       // google.com
+    'GOOGLE_SERVICES', // googleapis.com
+    'GOOGLE_DOCS',  // docs.google.com
+    'GOOGLE_DRIVE', // drive.google.com
+    'GOOGLE_MAPS',  // maps.google.com
+    'GOOGLE_MEET',  // meet.google.com
+    'GOOGLE_CHAT',  // chat.google.com
+    'GOOGLE_CALL',
+    'GOOGLE_CLASSROOM', // classroom.google.com
+    'GMAIL',        // gmail.com
+    'APPLE',        // apple.com
+    'APPLE_ICLOUD', // icloud.com
+    'APPLE_ITUNES', // itunes.apple.com
+    'APPLE_SIRI',   // siri.apple.com
+    'APPLESTORE',   // apps.apple.com
+    'APPLETVPLUS',  // tv.apple.com
+    
+    // VoIP/calling services (detected via domain/IP matching in ndpi_content_match.c.inc)
+    'TRUPHONE',
+    'VIBER_VOIP',   // viber.com
+    'TELEGRAM_VOIP', // telegram.org
+    'WHATSAPP_CALL', // whatsapp.com
+    'WHATSAPP_FILES',
+    'SIGNAL_VOIP',  // signal.org
+    'KAKAOTALK_VOICE', // kakao.com
+    'WECHAT',       // wechat.com
+    
+    // Gaming platforms (detected via domain matching in ndpi_content_match.c.inc)
+    'PLAYSTATION',  // playstation.com
+    'XBOX',         // xbox.com
+    'NINTENDO',     // nintendo.com
+    'EPICGAMES',    // epicgames.com
+    'VALVE_SDR',    // steampowered.com
+    'RIOTGAMES',    // riotgames.com
+    'ELECTRONICARTS', // ea.com
+    'ACTIVISION',   // activision.com
+    'BLIZZARD',     // blizzard.com
+    'ROCKSTAR_GAMES', // rockstargames.com
+    
+    // CDN/Infrastructure (detected via domain matching in ndpi_content_match.c.inc)
+    'CLOUDFLARE',   // cloudflare.com
+    'CLOUDFLARE_WARP',
+    'AKAMAI',       // akamai.com
+    'EDGECAST',     // edgecast.com
+    'CACHEFLY',     // cachefly.com
+    
+    // Chinese services (detected via domain matching in ndpi_content_match.c.inc)
+    'TENCENT',      // tencent.com
+    'TENCENTVIDEO', // v.qq.com
+    'TENCENTGAMES',
+    'ALIBABA',      // alibaba.com
+    'ALICLOUD',     // aliyun.com
+    'TAOBAO',       // taobao.com
+    'KAKAOTALK',    // kakao.com
+    'NAVER',        // naver.com
+    
+    // VPN services (detected via domain matching in ndpi_content_match.c.inc)
+    'NORDVPN',      // nordvpn.com
+    'PROTONVPN',    // protonvpn.com
+    'MULLVAD',      // mullvad.net
+    'SURFSHARK',    // surfshark.com
+    'TUNNELBEAR',   // tunnelbear.com
+    'OPERA_VPN',    // opera.com
+    'PSIPHON',      // psiphon.ca
+    'WINDSCRIBE',   // windscribe.com
+    'CACTUSVPN',    // cactusvpn.com
+    'HOTSPOT_SHIELD', // hotspotshield.com
+    'ULTRASURF',    // ultrasurf.us
+    
+    // Other web services (detected via domain matching in ndpi_content_match.c.inc)
+    'GITHUB',       // github.com
+    'GITLAB',       // gitlab.com
+    'WIKIPEDIA',    // wikipedia.org
+    'MOZILLA',      // mozilla.org
+    'YAHOO',        // yahoo.com
+    'EBAY',         // ebay.com
+    'CNN',          // cnn.com
+    'ESPN',         // espn.com
+    
+    // Networking equipment (detected via domain matching in ndpi_content_match.c.inc)
+    'UBIQUITI',     // ubiquiti.com, ui.com
+  ]);
+  
+  return contentMatchProtocols.has(protocol.toUpperCase());
+}
+
 function getProtocolSourceUrl(module: string, protocol: string): string {
   const protocolLower = protocol.toLowerCase();
+  
   switch (module) {
     case 'go':
       return `https://github.com/dreadl0ck/go-dpi/blob/master/modules/classifiers/${protocolLower}.go`;
+      
     case 'ndpi':
+      // Special case: Salesforce has its own dedicated IP list file
+      if (protocol.toUpperCase() === 'SALESFORCE') {
+        return `https://github.com/ntop/nDPI/blob/dev/lists/protocols/266_salesforce.list`;
+      }
+      // For protocols detected via hardcoded IPs/domains in ndpi_content_match.c.inc
+      if (isLikelyContentMatchProtocol(protocol)) {
+        return `https://github.com/ntop/nDPI/blob/dev/src/lib/ndpi_content_match.c.inc`;
+      }
+      // For IP-list based protocols, link to the lists directory where they can search
+      if (isLikelyIPListProtocol(protocol)) {
+        return `https://github.com/ntop/nDPI/tree/dev/lists/protocols`;
+      }
+      // Otherwise, link to the traditional C implementation
       return `https://github.com/ntop/nDPI/blob/dev/src/lib/protocols/${protocolLower}.c`;
+      
     case 'lpi':
+      // UDP protocols are in a separate directory
+      if (protocol.toUpperCase().startsWith('UDP_')) {
+        return `https://github.com/LibtraceTeam/libprotoident/blob/master/lib/udp/lpi_${protocolLower}.cc`;
+      }
+      // TCP protocols
       return `https://github.com/LibtraceTeam/libprotoident/blob/master/lib/tcp/lpi_${protocolLower}.cc`;
+      
     default:
       return '#';
   }

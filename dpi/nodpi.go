@@ -45,3 +45,8 @@ func GetProtocols(packet gopacket.Packet) map[string]struct{} {
 func NewProto(i *struct{}) *types.Protocol {
 	return &types.Protocol{}
 }
+
+// GetModuleProtocols returns an empty map when DPI is disabled
+func GetModuleProtocols() map[string][]string {
+	return make(map[string][]string)
+}

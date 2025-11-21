@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react';
-import {
-  AppBar,
-  Badge,
-  Box,
-  Drawer,
-  IconButton,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Toolbar,
-  Typography,
-} from '@mui/material';
+import AppBar from '@mui/material/AppBar';
+import Badge from '@mui/material/Badge';
+import Box from '@mui/material/Box';
+import Drawer from '@mui/material/Drawer';
+import IconButton from '@mui/material/IconButton';
+import List from '@mui/material/List';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
 import MenuIcon from '@mui/icons-material/Menu';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -37,6 +35,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
 import { api } from '@/lib/api';
+import LearnModeToggle from './LearnModeToggle';
+import LearnModeOverlay from './LearnModeOverlay';
 
 const drawerWidth = 240;
 
@@ -44,9 +44,11 @@ interface LayoutProps {
   children: React.ReactNode;
   title: string;
   headerAction?: React.ReactNode;
+  /** Optional custom top padding override. If not provided, uses responsive defaults based on screen size and headerAction. */
+  topPadding?: string | { xs?: string; sm?: string; md?: string; lg?: string };
 }
 
-export default function Layout({ children, title, headerAction }: LayoutProps) {
+export default function Layout({ children, title, headerAction, topPadding }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const router = useRouter();
 
@@ -123,10 +125,17 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
     };
   }, [mutateAlertStats, mutateExtractedFiles, mutateErrorLogs]);
 
+  // Calculate default top padding based on whether headerAction exists
+  const defaultTopPadding = topPadding || {
+    xs: headerAction ? '140px' : '80px',  // Mobile: more space when header has actions
+    sm: headerAction ? '120px' : '88px',  // Tablet: moderate space
+    md: '88px',                            // Desktop: header doesn't wrap
+  };
+
   const drawer = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Toolbar>
-        <Link href="/analyze" passHref style={{ textDecoration: 'none', width: '100%' }}>
+      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Link href="/analyze" passHref style={{ textDecoration: 'none', flexGrow: 1 }}>
           <Box>
             <Typography 
               variant="h6" 
@@ -176,11 +185,13 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
             )}
           </Box>
         </Link>
+        <LearnModeToggle />
       </Toolbar>
       <List sx={{ flexGrow: 1 }}>
         <Link href="/" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/')}
+            data-learn="Dashboard: Overview of system status, processing statistics, and quick access to key metrics."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -203,6 +214,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/analyze" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/analyze')}
+            data-learn="Analyze: Upload and process PCAP files to extract network traffic information and generate audit records."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -225,6 +237,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/interfaces" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/interfaces')}
+            data-learn="View available network interfaces for live packet capture and monitoring."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -247,28 +260,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/hosts" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/hosts')}
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
-          >
-            <ListItemIcon>
-              <DevicesIcon />
-            </ListItemIcon>
-            <ListItemText primary="Hosts" />
-          </ListItemButton>
-        </Link>
-        <Link href="/devices" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-          <ListItemButton
-            selected={isActive('/devices')}
+            data-learn="Browse discovered network hosts with geolocation, device profiles, and communication patterns."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -285,12 +277,36 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
             <ListItemIcon>
               <RouterIcon />
             </ListItemIcon>
+            <ListItemText primary="Hosts" />
+          </ListItemButton>
+        </Link>
+        <Link href="/devices" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/devices')}
+            data-learn="View hardware devices identified by MAC addresses, vendors, and network layer information."
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <DevicesIcon />
+            </ListItemIcon>
             <ListItemText primary="Devices" />
           </ListItemButton>
         </Link>
         <Link href="/pcaps" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/pcaps')}
+            data-learn="Manage uploaded packet capture files, view processing status, and download results."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -325,6 +341,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/audit" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/audit')}
+            data-learn="Audit Explore detailed network traffic records organized by protocol type with advanced filtering."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -347,6 +364,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/explore" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/explore')}
+            data-learn="Create custom charts and time-series visualizations of audit record fields."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -369,6 +387,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/visualize" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/visualize')}
+            data-learn="Interactive protocol hierarchy flow diagram showing network traffic relationships."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -391,6 +410,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/logs" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/logs')}
+            data-learn="View system logs, processing information, and debug output from Netcap operations."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -413,6 +433,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/errors" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/errors')}
+            data-learn="Review processing errors, failed packets, and troubleshooting information."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -447,6 +468,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/rules" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/rules')}
+            data-learn="Create and manage detection rules using expression-based filtering to identify network anomalies."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -469,6 +491,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/rulesets" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/rulesets')}
+            data-learn="Organize detection rules into collections for different security scenarios and threat models."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -491,6 +514,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/alerts" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/alerts')}
+            data-learn="Review security alerts triggered by detection rules with severity levels and details."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -525,6 +549,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/files" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/files')}
+            data-learn="Access files extracted from network streams (HTTP, FTP, SMTP) with metadata and hashes."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -559,6 +584,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/dbs" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/dbs')}
+            data-learn="Manage GeoIP, vulnerability, and MAC vendor databases for enriched traffic analysis."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -581,6 +607,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/dpi" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/dpi')}
+            data-learn="Configure Deep Packet Inspection modules for advanced protocol detection and analysis."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -603,6 +630,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/decoders" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/decoders')}
+            data-learn="Enable or disable packet and stream decoders for specific protocols and layers."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -625,6 +653,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/bpf" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/bpf')}
+            data-learn="BPF Apply Berkeley Packet Filter expressions to capture specific network traffic."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -647,6 +676,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
         <Link href="/config" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/config')}
+            data-learn="Adjust system configuration settings, debug mode, and processing parameters."
             sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
@@ -755,6 +785,7 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
             py: { xs: 1, sm: 0 },
             flexDirection: { xs: 'column', md: 'row' },
             alignItems: { xs: 'flex-start', md: 'center' },
+            gap: { xs: 1, md: 0 },
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', width: { xs: '100%', md: 'auto' } }}>
@@ -773,11 +804,11 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
           </Box>
           {headerAction && (
             <Box sx={{ 
-              ml: { xs: 0, md: 'auto' }, 
-              mt: { xs: 1, md: 0 },
+              ml: { xs: 0, md: 'auto' },
               width: { xs: '100%', md: 'auto' },
               display: 'flex', 
-              alignItems: 'center' 
+              alignItems: 'center',
+              flexGrow: { xs: 1, md: 0 },
             }}>
               {headerAction}
             </Box>
@@ -820,13 +851,16 @@ export default function Layout({ children, title, headerAction }: LayoutProps) {
           flexGrow: 1,
           p: { xs: 2, sm: 3 },
           width: { lg: `calc(100% - ${drawerWidth}px)` },
-          mt: { xs: 20, sm: 16, md: 8 },
           minWidth: 0, // Allow shrinking below content size
           overflowX: 'hidden', // Prevent horizontal scroll
+          // Top padding ensures header never overlaps main content
+          // Can be customized per-page via topPadding prop
+          pt: defaultTopPadding,
         }}
       >
         {children}
       </Box>
+      <LearnModeOverlay />
     </Box>
   );
 }

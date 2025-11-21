@@ -15,6 +15,7 @@ import {
   AccordionDetails,
   ToggleButton,
   ToggleButtonGroup,
+  TextField,
   type SelectChangeEvent,
 } from '@mui/material';
 import {
@@ -36,7 +37,7 @@ import {
   LabelOff as LabelOffIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
-import { api, type ChartFieldsResponse, formatBytes } from '@/lib/api';
+import { api, type ChartFieldsResponse, formatBytes, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useRouter } from 'next/router';
 
@@ -172,6 +173,7 @@ export default function Explore() {
   const [switchingFile, setSwitchingFile] = useState(false);
   const [autoSelectAttempted, setAutoSelectAttempted] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
+  const [maxDataPoints, setMaxDataPoints] = useState<number>(10000);
 
   // Audit type rotation: get/set the index of the last used audit type
   const getNextAuditTypeIndex = useCallback((availableTypes: string[]): number => {
@@ -384,10 +386,10 @@ export default function Explore() {
     
     // Build chart URL - chart will be generated server-side by go-echarts
     // No interval parameter - use all records with actual timestamps
-    const url = `/api/chart/data?type=${encodeURIComponent(selectedAuditType)}&field=${encodeURIComponent(selectedField)}&chartType=${encodeURIComponent(selectedChartType)}&showLegend=${showLegend}`;
+    const url = `${getBackendUrl()}/api/chart/data?type=${encodeURIComponent(selectedAuditType)}&field=${encodeURIComponent(selectedField)}&chartType=${encodeURIComponent(selectedChartType)}&showLegend=${showLegend}&maxDataPoints=${maxDataPoints}`;
     setChartUrl(url);
     setLoading(false);
-  }, [selectedAuditType, selectedField, selectedChartType, showLegend]);
+  }, [selectedAuditType, selectedField, selectedChartType, showLegend, maxDataPoints]);
 
   // Determine if selected field is categorical
   const isFieldCategorical = useMemo(() => {
@@ -454,24 +456,100 @@ export default function Explore() {
     <Box 
       sx={{ 
         display: 'flex', 
-        flexDirection: { xs: 'column', md: 'row' },
+        flexDirection: { xs: 'column', sm: 'column', md: 'row' },
         alignItems: { xs: 'stretch', md: 'center' }, 
-        gap: { xs: 1, md: 2 }, 
+        gap: { xs: 0.75, sm: 1, md: 2 }, 
         width: '100%'
       }}
     >
-      {/* File selector for multi-file mode - show first on mobile/tablet */}
+      {/* Container for Audit Type and Field selects - show first on mobile */}
+      <Box 
+        sx={{ 
+          display: 'flex', 
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: { xs: 0.75, sm: 1, md: 2 },
+          flex: 1,
+          order: { xs: 1, md: 0 }
+        }}
+      >
+        {/* Audit Type Selection */}
+        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150, md: 200 } }}>
+          <InputLabel sx={{ color: 'inherit' }}>Audit Record Type</InputLabel>
+          <Select
+            data-learn="Audit Type Selector: Choose which protocol or record type to visualize (e.g., HTTP, TCP, DNS)."
+            value={selectedAuditType}
+            onChange={handleAuditTypeChange}
+            label="Audit Record Type"
+            sx={{
+              color: 'inherit',
+              '.MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.23)',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.4)',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.light',
+              },
+              '.MuiSelect-icon': {
+                color: 'inherit',
+              },
+            }}
+          >
+            {auditTypes.map((type) => (
+              <MenuItem key={type} value={type}>
+                {type}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
+        {/* Field Selection */}
+        <FormControl size="small" disabled={!selectedAuditType || loading} sx={{ minWidth: { xs: '100%', sm: 150, md: 200 } }}>
+          <InputLabel sx={{ color: 'inherit' }}>Field</InputLabel>
+          <Select
+            data-learn="Field Selector: Choose which data field from the audit records to visualize in the chart."
+            value={selectedField}
+            onChange={handleFieldChange}
+            label="Field"
+            sx={{
+              color: 'inherit',
+              '.MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.23)',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.4)',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.light',
+              },
+              '.MuiSelect-icon': {
+                color: 'inherit',
+              },
+            }}
+          >
+            {fields?.fields.map((field) => (
+              <MenuItem key={field.name} value={field.name}>
+                {field.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
+
+      {/* File selector for multi-file mode - show last on mobile */}
       {completedFiles.length > 1 && selectedFile && (
         <FormControl 
           size="small" 
           disabled={switchingFile} 
           sx={{ 
-            minWidth: { xs: '100%', md: 300 }, 
+            minWidth: { xs: '100%', sm: '100%', md: 280 }, 
             maxWidth: { xs: '100%', md: 400 },
-            order: { xs: 0, md: 2 }
+            order: { xs: 2, md: 2 }
           }}
         >
           <Select
+            data-learn="File Selector: Switch between different analyzed PCAP files to explore their data."
             value={selectedValue}
             onChange={handleFileChange}
             startAdornment={
@@ -482,8 +560,17 @@ export default function Explore() {
               )
             }
             renderValue={() => (
-              <Box display="flex" alignItems="center" gap={1}>
-                <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'inherit' }}>
+              <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
+                <Typography sx={{ 
+                  fontFamily: 'monospace', 
+                  fontSize: '0.85rem', 
+                  color: 'inherit',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flex: 1,
+                  minWidth: 0,
+                }}>
                   {selectedFile.name}
                 </Typography>
               </Box>
@@ -539,85 +626,22 @@ export default function Explore() {
           </Select>
         </FormControl>
       )}
-
-      {/* Container for Audit Type and Field selects - show below file selector on mobile/tablet */}
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          flexDirection: { xs: 'column', sm: 'row' },
-          gap: { xs: 1, md: 2 },
-          flex: 1,
-          order: { xs: 1, md: 0 }
-        }}
-      >
-        {/* Audit Type Selection */}
-        <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 200 } }}>
-          <InputLabel sx={{ color: 'inherit' }}>Audit Record Type</InputLabel>
-          <Select
-            value={selectedAuditType}
-            onChange={handleAuditTypeChange}
-            label="Audit Record Type"
-            sx={{
-              color: 'inherit',
-              '.MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.23)',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.4)',
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'primary.light',
-              },
-              '.MuiSelect-icon': {
-                color: 'inherit',
-              },
-            }}
-          >
-            {auditTypes.map((type) => (
-              <MenuItem key={type} value={type}>
-                {type}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        {/* Field Selection */}
-        <FormControl size="small" disabled={!selectedAuditType || loading} sx={{ minWidth: { xs: '100%', sm: 200 } }}>
-          <InputLabel sx={{ color: 'inherit' }}>Field</InputLabel>
-          <Select
-            value={selectedField}
-            onChange={handleFieldChange}
-            label="Field"
-            sx={{
-              color: 'inherit',
-              '.MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.23)',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.4)',
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'primary.light',
-              },
-              '.MuiSelect-icon': {
-                color: 'inherit',
-              },
-            }}
-          >
-            {fields?.fields.map((field) => (
-              <MenuItem key={field.name} value={field.name}>
-                {field.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
     </Box>
   );
 
   return (
-    <Layout title="Explore" headerAction={headerAction}>
-      <Paper sx={{ p: 3, minHeight: 680, height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Layout 
+      title="Explore" 
+      headerAction={headerAction}
+      topPadding={{ xs: '200px', sm: '140px', md: '100px' }}
+    >
+      <Paper sx={{ 
+        p: { xs: 2, sm: 2, md: 3 }, 
+        height: { xs: 'calc(100vh - 260px)', sm: 'calc(100vh - 220px)', md: 'calc(100vh - 180px)' },
+        display: 'flex', 
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
@@ -695,24 +719,41 @@ export default function Explore() {
         )}
 
         {chartUrl && !loading && (
-          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
             {/* Chart type selection buttons - horizontal above chart */}
-            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ 
+              mb: { xs: 1.5, sm: 2 }, 
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' },
+              justifyContent: 'space-between', 
+              alignItems: { xs: 'stretch', sm: 'center' }, 
+              gap: { xs: 1, sm: 2 },
+              flexShrink: 0
+            }}>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                  Chart Type:
-                </Typography>
                 <ToggleButtonGroup
+                  data-learn="Chart Type Selector: Choose the visualization style (line, bar, pie, scatter, etc.) based on your data type."
                   value={selectedChartType}
                   exclusive
                   onChange={handleChartTypeChange}
                   size="small"
                   sx={{
                     flexWrap: 'wrap',
+                    gap: 0.5,
                     '& .MuiToggleButtonGroup-grouped': {
                       borderRadius: 1,
-                      mx: 0.5,
-                      my: 0.5,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      px: { xs: 1, sm: 2 },
+                      '&:not(:first-of-type)': {
+                        marginLeft: 0,
+                        borderLeft: '1px solid',
+                        borderLeftColor: 'divider',
+                      },
+                      '&:not(:last-of-type)': {
+                        borderRight: '1px solid',
+                        borderRightColor: 'divider',
+                      },
                     },
                   }}
                 >
@@ -721,23 +762,25 @@ export default function Explore() {
                       key={type.value} 
                       value={type.value}
                       sx={{ 
-                        px: 2,
                         textTransform: 'none',
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         {type.icon}
-                        {type.label}
+                        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                          {type.label}
+                        </Box>
                       </Box>
                     </ToggleButton>
                   ))}
                 </ToggleButtonGroup>
               </Box>
 
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 {/* Legend toggle - only show when viewing chart */}
                 {!showExample && (
                   <ToggleButtonGroup
+                    data-learn="Legend Toggle: Show or hide the chart legend to save space or improve readability."
                     value={showLegend ? 'on' : 'off'}
                     exclusive
                     onChange={(_e, newValue) => {
@@ -746,18 +789,28 @@ export default function Explore() {
                       }
                     }}
                     size="small"
+                    sx={{
+                      '& .MuiToggleButton-root': {
+                        px: { xs: 1, sm: 1.5 }
+                      }
+                    }}
                   >
                     <ToggleButton value="on">
-                      <LabelIcon sx={{ mr: 0.5, fontSize: 18 }} />
-                      Legend
+                      <LabelIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+                      <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                        Legend
+                      </Box>
                     </ToggleButton>
                     <ToggleButton value="off">
-                      <LabelOffIcon sx={{ mr: 0.5, fontSize: 18 }} />
-                      No Legend
+                      <LabelOffIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+                      <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                        No Legend
+                      </Box>
                     </ToggleButton>
                   </ToggleButtonGroup>
                 )}
                 <ToggleButtonGroup
+                  data-learn="View Toggle: Switch between viewing the chart visualization or an example data record to understand the data structure."
                   value={showExample ? 'example' : 'chart'}
                   exclusive
                   onChange={(_e, newValue) => {
@@ -766,21 +819,30 @@ export default function Explore() {
                     }
                   }}
                   size="small"
+                  sx={{
+                    '& .MuiToggleButton-root': {
+                      px: { xs: 1, sm: 1.5 }
+                    }
+                  }}
                 >
                   <ToggleButton value="chart">
-                    <BarChartIcon sx={{ mr: 1, fontSize: 20 }} />
-                    Chart
+                    <BarChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 20 }} />
+                    <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                      Chart
+                    </Box>
                   </ToggleButton>
                   <ToggleButton value="example">
-                    <DataObjectIcon sx={{ mr: 1, fontSize: 20 }} />
-                    Example Data
+                    <DataObjectIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 20 }} />
+                    <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                      Example Data
+                    </Box>
                   </ToggleButton>
                 </ToggleButtonGroup>
               </Box>
             </Box>
 
             {showExample ? (
-              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 {loadingExample && !exampleRecord ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
                     <CircularProgress size={40} />
@@ -789,8 +851,8 @@ export default function Explore() {
                     </Typography>
                   </Box>
                 ) : exampleRecord ? (
-                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <Alert severity="info" sx={{ mb: 2 }}>
+                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                    <Alert severity="info" sx={{ mb: 2, flexShrink: 0 }}>
                       This is the first record from the {selectedAuditType} audit file to help you understand the data structure and available fields.
                     </Alert>
                     <Paper 
@@ -799,6 +861,7 @@ export default function Explore() {
                         bgcolor: 'grey.900', 
                         overflow: 'auto',
                         flex: 1,
+                        minHeight: 0
                       }}
                     >
                       <pre style={{ margin: 0, fontSize: '0.85rem', color: '#e0e0e0', lineHeight: 1.5 }}>
@@ -813,17 +876,62 @@ export default function Explore() {
                 )}
               </Box>
             ) : (
-              <Box sx={{ width: '100%', flex: 1, position: 'relative', minHeight: 600 }}>
-                <iframe
-                  src={chartUrl}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    border: 'none',
-                    borderRadius: '4px',
-                  }}
-                  title="Chart Visualization"
-                />
+              <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <Box sx={{ flex: 1, position: 'relative' }}>
+                  <iframe
+                    src={chartUrl}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      border: 'none',
+                      borderRadius: '4px',
+                    }}
+                    title="Chart Visualization"
+                  />
+                  {/* Max Data Points control - positioned bottom right */}
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: 12,
+                      right: 8,
+                      zIndex: 1000,
+                    }}
+                  >
+                    <TextField
+                      data-learn="Max Data Points: Limit the number of data points displayed in the chart for better performance (default 10,000)."
+                      size="small"
+                      type="number"
+                      label="Max Data Points"
+                      value={maxDataPoints}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value, 10);
+                        if (!Number.isNaN(value) && value > 0) {
+                          setMaxDataPoints(value);
+                        }
+                      }}
+                      inputProps={{ min: 100, max: 100000, step: 1000 }}
+                      sx={{
+                        width: { xs: 110, sm: 130 },
+                        backgroundColor: 'background.paper',
+                        borderRadius: 1,
+                        '& .MuiOutlinedInput-root': {
+                          '& fieldset': {
+                            borderColor: 'divider',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: 'primary.main',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: 'primary.main',
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+                </Box>
               </Box>
             )}
           </Box>

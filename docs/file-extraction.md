@@ -44,10 +44,16 @@ The Hash field currently holds an MD5 hash of the file, Location points to the p
 
 ## Usage
 
-To enable file capture, set the **-fileStorage** flag and supply a path to store the files to \(will be created if it does not exist\):
+File capture is enabled by default and will store extracted files in the **files** subdirectory within your output directory. The **-fileStorage** flag allows you to customize this path (relative to the output directory):
 
 ```text
 $ net capture -read traffic.pcap -fileStorage files
+```
+
+To disable file extraction, set an empty string:
+
+```text
+$ net capture -read traffic.pcap -fileStorage ""
 ```
 
 After capturing, lets inspect the directory contents:

@@ -19,6 +19,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -364,7 +365,8 @@ func (s *Server) saveRulesConfig(config *rules.Config) error {
 func sanitizeFilename(name string) string {
 	// Replace any characters that are not alphanumeric, dash, or underscore
 	safe := strings.Map(func(r rune) rune {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+		// Allow forward slashes now that we are not using file paths for temp rules
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' || r == '/' {
 			return r
 		}
 		return '_'
@@ -552,9 +554,16 @@ func (s *Server) handleCreateRule(w http.ResponseWriter, r *http.Request) {
 // handleRule handles GET (get specific rule), PUT (update rule), and DELETE (delete rule) requests
 func (s *Server) handleRule(w http.ResponseWriter, r *http.Request) {
 	// Extract rule ID from URL path: /api/rules/{id}
-	ruleID := strings.TrimPrefix(r.URL.Path, "/api/rules/")
-	if ruleID == "" || ruleID == "/api/rules" {
+	encodedRuleID := strings.TrimPrefix(r.URL.Path, "/api/rules/")
+	if encodedRuleID == "" || encodedRuleID == "/api/rules" {
 		http.Error(w, "Rule ID required", http.StatusBadRequest)
+		return
+	}
+
+	// URL-decode the rule ID
+	ruleID, err := url.PathUnescape(encodedRuleID)
+	if err != nil {
+		http.Error(w, "Invalid rule ID encoding", http.StatusBadRequest)
 		return
 	}
 
@@ -1023,21 +1032,14 @@ func (s *Server) executeRuleOnCapture(rule *rules.Rule, outDir string) (alertsCo
 	// Create a rules engine with just this rule
 	// Note: We can't use NewEngine as it expects a file path, so we create manually
 	engine := &rules.Engine{}
-	// Initialize engine with our config and writer by creating a temporary rules file
-	tempRulesPath := filepath.Join(outDir, fmt.Sprintf(".temp_rule_%s.yml", rule.Name))
-	defer os.Remove(tempRulesPath)
-
-	// Save temporary rules config
-	tempData, err := yaml.Marshal(tempConfig)
-	if err != nil {
-		return 0, 0, fmt.Errorf("failed to marshal temp config: %w", err)
+	
+	// Ensure the output directory exists
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		return 0, 0, fmt.Errorf("failed to create output directory: %w", err)
 	}
-	if err := os.WriteFile(tempRulesPath, tempData, 0644); err != nil {
-		return 0, 0, fmt.Errorf("failed to write temp rules file: %w", err)
-	}
-
-	// Create engine with the temp file
-	engine, err = rules.NewEngine(tempRulesPath, alertWriter)
+	
+	// Initialize engine with our config
+	engine, err = rules.NewEngineFromConfig(tempConfig, alertWriter)
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to create rules engine: %w", err)
 	}

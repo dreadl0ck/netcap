@@ -992,12 +992,28 @@ func printDecoderList(target io.Writer, decoders []string, indent string, isLast
 func (c *Collector) printProgressInterval() chan struct{} {
 	stop := make(chan struct{})
 
+	// Create separate ticker for quiet mode netcap.log progress updates (every minute)
+	var quietProgressTicker *time.Ticker
+	if c.config.DecoderConfig.Quiet && !c.config.DecoderConfig.PrintProgress {
+		quietProgressTicker = time.NewTicker(1 * time.Minute)
+	}
+
 	go func() {
+		// Clean up ticker on exit
+		defer func() {
+			if quietProgressTicker != nil {
+				quietProgressTicker.Stop()
+			}
+		}()
+
+		statsTicker := time.NewTicker(c.statsInterval)
+		defer statsTicker.Stop()
+
 		for {
 			select {
 			case <-stop:
 				return
-			case <-time.After(c.statsInterval):
+			case <-statsTicker.C:
 				// must be locked, otherwise a race occurs when sending a SIGINT
 				// and triggering wg.Wait() in another goroutine...
 				c.statMutex.Lock()
@@ -1046,6 +1062,29 @@ func (c *Collector) printProgressInterval() chan struct{} {
 						service.Store.Size(),
 						int(curr),
 						pps)
+				}
+			case <-func() <-chan time.Time {
+				if quietProgressTicker != nil {
+					return quietProgressTicker.C
+				}
+				// Return a channel that never receives if ticker is nil
+				return make(<-chan time.Time)
+			}():
+				// Log progress to netcap.log in quiet mode every minute
+				c.statMutex.Lock()
+				if c.shutdown {
+					c.statMutex.Unlock()
+					return
+				}
+				c.statMutex.Unlock()
+
+				var (
+					curr = atomic.LoadInt64(&c.current)
+					num  = atomic.LoadInt64(&c.numPackets)
+				)
+
+				if c.netcapLog != nil {
+					c.netcapLog.Printf("progress: %s", utils.Progress(curr, num))
 				}
 			}
 		}
@@ -1192,4 +1231,31 @@ func (c *Collector) SetLogLevel(debug bool) {
 			c.log.Info("Debug logging disabled at runtime")
 		}
 	}
+}
+
+// GetCurrentPacketCount returns the current packet count (for live statistics)
+func (c *Collector) GetCurrentPacketCount() int64 {
+	return atomic.LoadInt64(&c.current)
+}
+
+// GetTotalPacketCount returns the total packet count (for live statistics)
+func (c *Collector) GetTotalPacketCount() int64 {
+	return atomic.LoadInt64(&c.numPackets)
+}
+
+// GetPacketsPerSecond returns the current packets per second rate (for live statistics)
+func (c *Collector) GetPacketsPerSecond() int64 {
+	curr := atomic.LoadInt64(&c.current)
+	last := atomic.LoadInt64(&c.numPacketsLast)
+	return (curr - last) / int64(c.statsInterval.Seconds())
+}
+
+// GetProfilesCount returns the current number of device profiles (for live statistics)
+func (c *Collector) GetProfilesCount() int {
+	return packet.DeviceProfiles.Size()
+}
+
+// GetServicesCount returns the current number of services (for live statistics)
+func (c *Collector) GetServicesCount() int {
+	return service.Store.Size()
 }

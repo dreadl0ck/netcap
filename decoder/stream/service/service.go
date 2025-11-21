@@ -24,8 +24,7 @@ import (
 )
 
 var (
-	serviceLog        *zap.Logger
-	serviceLogSugared *zap.SugaredLogger
+	serviceLog *zap.Logger
 )
 
 // Decoder for protocol analysis and writing audit records to disk.
@@ -43,8 +42,6 @@ var Decoder = &decoder.AbstractDecoder{
 		if err != nil {
 			return err
 		}
-
-		serviceLogSugared = serviceLog.Sugar()
 
 		return initServiceProbes()
 	},

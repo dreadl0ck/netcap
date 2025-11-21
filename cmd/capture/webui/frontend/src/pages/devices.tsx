@@ -20,6 +20,7 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  TableSortLabel,
   TextField,
   Tooltip,
   Typography,
@@ -38,7 +39,7 @@ import {
   Apps as AppsIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
-import { api, formatBytes, formatTimestamp } from '@/lib/api';
+import { api, formatBytes, formatTimestamp, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 interface DeviceProfileSummary {
@@ -48,7 +49,7 @@ interface DeviceProfileSummary {
   numContacts: number;
   numPackets: number;
   bytes: number;
-  timestamp: number;
+  timestamp: number;  // Unix timestamp in nanoseconds from backend
   applications: string[];
   devices: string[];
   deviceIPs: string[];
@@ -60,6 +61,9 @@ interface DevicesResponse {
   totalCount: number;
 }
 
+type DeviceSortField = 'macAddr' | 'manufacturer' | 'packets' | 'bytes' | 'ips' | 'contacts';
+type SortOrder = 'asc' | 'desc';
+
 export default function DevicesPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
@@ -67,6 +71,8 @@ export default function DevicesPage() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [switchingFile, setSwitchingFile] = useState(false);
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
+  const [sortField, setSortField] = useState<DeviceSortField>('macAddr');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -75,7 +81,7 @@ export default function DevicesPage() {
   // Fetch devices data
   const { data: devicesData, error, mutate } = useSWR<DevicesResponse>(
     'devices',
-    () => fetch('/api/devices').then(res => res.json()),
+    () => fetch(`${getBackendUrl()}/api/devices`).then(res => res.json()),
     {
       refreshInterval: 10000,
     }
@@ -84,7 +90,20 @@ export default function DevicesPage() {
   const devices = devicesData?.devices || [];
   const totalCount = devicesData?.totalCount || 0;
 
-  // Apply filters
+  // Handle sort column click
+  const handleSort = (field: DeviceSortField) => {
+    if (sortField === field) {
+      // Toggle sort order if clicking the same field
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new field and default to ascending
+      setSortField(field);
+      setSortOrder('asc');
+    }
+    setPage(0); // Reset to first page when sorting changes
+  };
+
+  // Apply filters and sorting
   const filteredDevices = useMemo(() => {
     let filtered = devices;
 
@@ -99,8 +118,34 @@ export default function DevicesPage() {
       );
     }
 
+    // Apply sorting
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'macAddr':
+          comparison = a.macAddr.localeCompare(b.macAddr);
+          break;
+        case 'manufacturer':
+          comparison = (a.deviceManufacturer || '').localeCompare(b.deviceManufacturer || '');
+          break;
+        case 'packets':
+          comparison = a.numPackets - b.numPackets;
+          break;
+        case 'bytes':
+          comparison = a.bytes - b.bytes;
+          break;
+        case 'ips':
+          comparison = a.numDeviceIPs - b.numDeviceIPs;
+          break;
+        case 'contacts':
+          comparison = a.numContacts - b.numContacts;
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
     return filtered;
-  }, [devices, searchQuery]);
+  }, [devices, searchQuery, sortField, sortOrder]);
 
   // Paginate devices
   const paginatedDevices = filteredDevices.slice(
@@ -179,8 +224,17 @@ export default function DevicesPage() {
           )
         }
         renderValue={() => (
-          <Box display="flex" alignItems="center" gap={1}>
-            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'inherit' }}>
+          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
+            <Typography sx={{ 
+              fontFamily: 'monospace', 
+              fontSize: '0.85rem', 
+              color: 'inherit',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+              minWidth: 0,
+            }}>
               {selectedFile.name}
             </Typography>
           </Box>
@@ -326,11 +380,11 @@ export default function DevicesPage() {
         {/* Visualization Charts */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`mac-vendors-${chartRefreshKey}`}
-                  src="/api/devices/mac-vendors"
+                  src={`${getBackendUrl()}/api/devices/mac-vendors`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -343,11 +397,11 @@ export default function DevicesPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`traffic-dist-${chartRefreshKey}`}
-                  src="/api/devices/traffic-distribution"
+                  src={`${getBackendUrl()}/api/devices/traffic-distribution?showLegend=false`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -360,11 +414,11 @@ export default function DevicesPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`hardware-${chartRefreshKey}`}
-                  src="/api/devices/hardware"
+                  src={`${getBackendUrl()}/api/devices/hardware`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -377,11 +431,11 @@ export default function DevicesPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`operating-systems-${chartRefreshKey}`}
-                  src="/api/devices/operating-systems"
+                  src={`${getBackendUrl()}/api/devices/operating-systems?showLegend=false`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -394,11 +448,11 @@ export default function DevicesPage() {
           </Grid>
           
           <Grid item xs={12}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`applications-${chartRefreshKey}`}
-                  src="/api/devices/applications"
+                  src={`${getBackendUrl()}/api/devices/applications`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -462,12 +516,60 @@ export default function DevicesPage() {
                 <TableHead>
                   <TableRow>
                     <TableCell width={40}></TableCell>
-                    <TableCell>MAC Address</TableCell>
-                    <TableCell>Manufacturer</TableCell>
-                    <TableCell align="right">Packets</TableCell>
-                    <TableCell align="right">Bytes</TableCell>
-                    <TableCell align="right">IPs</TableCell>
-                    <TableCell align="right">Contacts</TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={sortField === 'macAddr'}
+                        direction={sortField === 'macAddr' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('macAddr')}
+                      >
+                        MAC Address
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={sortField === 'manufacturer'}
+                        direction={sortField === 'manufacturer' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('manufacturer')}
+                      >
+                        Manufacturer
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right">
+                      <TableSortLabel
+                        active={sortField === 'packets'}
+                        direction={sortField === 'packets' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('packets')}
+                      >
+                        Packets
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right">
+                      <TableSortLabel
+                        active={sortField === 'bytes'}
+                        direction={sortField === 'bytes' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('bytes')}
+                      >
+                        Bytes
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right">
+                      <TableSortLabel
+                        active={sortField === 'ips'}
+                        direction={sortField === 'ips' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('ips')}
+                      >
+                        IPs
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right">
+                      <TableSortLabel
+                        active={sortField === 'contacts'}
+                        direction={sortField === 'contacts' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('contacts')}
+                      >
+                        Contacts
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell>Device Types</TableCell>
                     <TableCell>Applications</TableCell>
                   </TableRow>

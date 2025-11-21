@@ -18,7 +18,6 @@ import (
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
-	echartstypes "github.com/go-echarts/go-echarts/v2/types"
 )
 
 // handleHostsTopTalkers returns HTML for bar chart showing top hosts by traffic
@@ -200,12 +199,7 @@ func generateHostsTopTalkersChart(outDir string, showLegend bool) *charts.Bar {
 
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			Theme:           echartstypes.ThemeMacarons,
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Hosts by Traffic",
 			Subtitle: "Packets and Bytes Transferred",
@@ -294,12 +288,7 @@ func generateHostsTrafficDistributionChart(outDir string, showLegend bool) *char
 
 	pie := charts.NewPie()
 	pie.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			Theme:           echartstypes.ThemeMacarons,
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Traffic Distribution",
 			Subtitle: "Internal vs External",
@@ -392,12 +381,7 @@ func generateHostsApplicationsChart(outDir string, showLegend bool) *charts.Bar 
 
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			Theme:           echartstypes.ThemeMacarons,
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Applications",
 			Subtitle: "Detected by DPI",
@@ -493,12 +477,7 @@ func generateHostsProtocolsChart(outDir string, showLegend bool) *charts.Sunburs
 
 	sunburst := charts.NewSunburst()
 	sunburst.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			Theme:           echartstypes.ThemeMacarons,
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Protocol Distribution",
 			Subtitle: "By Category",
@@ -515,7 +494,10 @@ func generateHostsProtocolsChart(outDir string, showLegend bool) *charts.Sunburs
 			Trigger: "item",
 		}),
 		charts.WithLegendOpts(opts.Legend{
-			Show: opts.Bool(showLegend),
+			Show:   opts.Bool(showLegend),
+			Orient: "vertical",
+			Right:  "10",
+			Top:    "middle",
 			TextStyle: &opts.TextStyle{
 				Color: "#ffffff",
 			},

@@ -22,7 +22,6 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
@@ -162,7 +161,11 @@ func (h *smtpReader) Decode() {
 		commands = append(commands, c.Command)
 	}
 
-	smtpDebug(ansi.LightGreen, serviceSMTP, h.conversation.Ident, "requests", len(h.smtpRequests), "responses", len(h.smtpResponses), ansi.Reset)
+	smtpDebug("SMTP conversation summary",
+		zap.String("ident", h.conversation.Ident),
+		zap.Int("requests", len(h.smtpRequests)),
+		zap.Int("responses", len(h.smtpResponses)),
+	)
 
 	mails := h.processSMTPConversation()
 
@@ -190,8 +193,8 @@ func (h *smtpReader) Decode() {
 	}
 }
 
-func smtpDebug(args ...interface{}) {
-	smtpLogSugared.Info(args...)
+func smtpDebug(msg string, fields ...zap.Field) {
+	smtpLog.Info(msg, fields...)
 }
 
 func (h *smtpReader) readRequest(b *bufio.Reader) error {
@@ -215,13 +218,18 @@ nextLine:
 		return err
 	}
 
-	smtpDebug(ansi.Red, h.conversation.Ident, "readSMTPRequest", line, ansi.Reset)
+	smtpDebug("read SMTP request",
+		zap.String("ident", h.conversation.Ident),
+		zap.String("line", line),
+	)
 
 	cmd, args := getSMTPCommand(line)
 
 	if cmd == smtpDot {
 
-		smtpDebug("collected data", strings.Join(data, "\n"))
+		smtpDebug("collected data",
+			zap.String("data", strings.Join(data, "\n")),
+		)
 
 		h.smtpRequests = append(h.smtpRequests, &types.SMTPRequest{
 			Command: smtpDATA,
@@ -295,7 +303,10 @@ nextLine:
 		return err
 	}
 
-	smtpDebug(ansi.Blue, h.conversation.Ident, "readSMTPResponse", line, ansi.Reset)
+	smtpDebug("read SMTP response",
+		zap.String("ident", h.conversation.Ident),
+		zap.String("line", line),
+	)
 
 	cmd, args = getSMTPCommand(line)
 
@@ -308,7 +319,10 @@ nextLine:
 
 	code, err := strconv.Atoi(cmd)
 	if err != nil {
-		smtpDebug(ansi.Red, h.conversation.Ident, "invalid response code", cmd)
+		smtpDebug("invalid response code",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("cmd", cmd),
+		)
 	}
 
 	h.smtpResponses = append(h.smtpResponses, &types.SMTPResponse{
@@ -351,7 +365,11 @@ func (h *smtpReader) processSMTPConversation() (mailIDs []string) {
 		r = next()
 		h.reqIndex++
 
-		smtpDebug("CMD", r.Command, r.Argument, "h.resIndex", h.resIndex)
+		smtpDebug("processing SMTP command",
+			zap.String("command", r.Command),
+			zap.String("argument", r.Argument),
+			zap.Int("resIndex", h.resIndex),
+		)
 
 		switch r.Command {
 		case smtpEHLO, smtpHELO:
@@ -360,7 +378,7 @@ func (h *smtpReader) processSMTPConversation() (mailIDs []string) {
 			continue
 		case smtpDATA:
 
-			m := mail.Parse(h.conversation, []byte(r.Data), from, to, smtpLogSugared, serviceSMTP)
+			m := mail.Parse(h.conversation, []byte(r.Data), from, to, smtpLog, serviceSMTP)
 			mail.WriteMail(m)
 			mailIDs = append(mailIDs, m.ID)
 			numMails++
@@ -399,7 +417,9 @@ func (h *smtpReader) processSMTPConversation() (mailIDs []string) {
 		case "QUIT":
 			return
 		default:
-			smtpDebug("unhandled SMTP command: ", r.Command)
+			smtpDebug("unhandled SMTP command",
+				zap.String("command", r.Command),
+			)
 			h.resIndex++
 		}
 	}

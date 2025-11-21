@@ -2,6 +2,16 @@ import * as React from 'react';
 import type { AppProps } from 'next/app';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { LearnModeProvider } from '@/contexts/LearnModeContext';
+
+// Import self-hosted Roboto fonts (only the weights needed by MUI)
+import '@fontsource/roboto/300.css'; // Light
+import '@fontsource/roboto/400.css'; // Regular
+import '@fontsource/roboto/500.css'; // Medium
+import '@fontsource/roboto/700.css'; // Bold
+// Import Roboto Mono for code/monospace content
+import '@fontsource/roboto-mono/400.css';
+import '@fontsource/roboto-mono/700.css';
 
 const theme = createTheme({
   palette: {
@@ -14,8 +24,23 @@ const theme = createTheme({
     },
   },
   typography: {
+    // Use self-hosted Roboto font
+    fontFamily: [
+      'Roboto',
+      '-apple-system',
+      'BlinkMacSystemFont',
+      '"Segoe UI"',
+      '"Helvetica Neue"',
+      'Arial',
+      'sans-serif',
+    ].join(','),
     // Slightly smaller font sizes for mobile devices
     fontSize: 14, // Base font size (default is 14)
+    // Font rendering optimizations for self-hosted fonts
+    fontWeightLight: 300,
+    fontWeightRegular: 400,
+    fontWeightMedium: 500,
+    fontWeightBold: 700,
     h1: {
       fontSize: '2rem',
       '@media (min-width:600px)': {
@@ -77,13 +102,36 @@ const theme = createTheme({
       },
     },
   },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        html: {
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
+        },
+        body: {
+          WebkitFontSmoothing: 'antialiased',
+          MozOsxFontSmoothing: 'grayscale',
+          textRendering: 'optimizeLegibility',
+        },
+        '@font-face': [
+          {
+            fontFamily: 'Roboto',
+            fontDisplay: 'swap',
+          },
+        ],
+      },
+    },
+  },
 });
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Component {...pageProps} />
+      <LearnModeProvider>
+        <Component {...pageProps} />
+      </LearnModeProvider>
     </ThemeProvider>
   );
 }

@@ -138,7 +138,7 @@ func EvaluateExpression(program *vm.Program, record types.AuditRecord) (bool, er
 	}
 
 	env := CreateEnvironment(record)
-	
+
 	// Add helper functions to the evaluation environment
 	// These are used at runtime, while type information comes from expr.Function() at compile time
 	env["InSubnet"] = InSubnet
@@ -286,4 +286,3 @@ func MustCompileExpression(expression string, recordType types.Type) *vm.Program
 	}
 	return program
 }
-

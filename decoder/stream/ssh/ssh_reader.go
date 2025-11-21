@@ -482,20 +482,46 @@ func parseSSHInfoFromHasshDB(soft string) (sshVersion string, product string, ve
 		firstSplit    = strings.Split(soft, " ? ")
 		sshVersionTmp = firstSplit[0]
 		sshVersionArr = strings.Split(sshVersionTmp, " | ")
-		vendorVersion = strings.Split(sshVersionArr[1], " ")
 	)
+
+	// Check if we have at least 2 parts after splitting by " | "
+	if len(sshVersionArr) < 2 {
+		// Handle malformed entries - return what we can
+		if len(sshVersionArr) > 0 {
+			sshVersion = sshVersionArr[0]
+		}
+		if len(firstSplit) > 1 {
+			os = firstSplit[len(firstSplit)-1]
+		}
+		return sshVersion, product, version, os
+	}
+
+	// Now safe to access sshVersionArr[1]
+	vendorVersion := strings.Split(sshVersionArr[1], " ")
 
 	if len(firstSplit) > 1 {
 		os = firstSplit[len(firstSplit)-1]
-
-		return sshVersionArr[0], vendorVersion[0], vendorVersion[1], os
+		
+		// Check bounds before accessing vendorVersion elements
+		if len(vendorVersion) > 0 {
+			product = vendorVersion[0]
+		}
+		if len(vendorVersion) > 1 {
+			version = vendorVersion[1]
+		}
+		
+		return sshVersionArr[0], product, version, os
 	}
 
+	// Check bounds before accessing vendorVersion elements
+	if len(vendorVersion) > 0 {
+		product = vendorVersion[0]
+	}
 	if len(vendorVersion) > 1 {
 		version = vendorVersion[1]
 	}
 
-	return sshVersionArr[0], vendorVersion[0], version, os
+	return sshVersionArr[0], product, version, os
 }
 
 type sshVersionInfo struct {

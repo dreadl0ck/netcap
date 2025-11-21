@@ -40,6 +40,7 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 		errors[k] = v
 	}
 	isServiceMode := s.isServiceMode
+	collector := s.collector
 	s.mu.RUnlock()
 
 	// Populate service mode specific fields
@@ -54,6 +55,18 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 			stats.CurrentFile = filepath.Base(s.currentProcessing.InputFile)
 		}
 		s.currentJobMutex.RUnlock()
+	} else if !isServiceMode && collector != nil {
+		// Local mode: populate stats from collector (similar to service mode)
+		stats.PacketsProcessed = collector.GetCurrentPacketCount()
+		stats.TotalPackets = collector.GetTotalPacketCount()
+		stats.PacketsPerSecond = collector.GetPacketsPerSecond()
+		stats.ProfilesCount = collector.GetProfilesCount()
+		stats.ServicesCount = collector.GetServicesCount()
+		
+		// Calculate progress percentage
+		if stats.TotalPackets > 0 {
+			stats.ProgressPercent = (float64(stats.PacketsProcessed) / float64(stats.TotalPackets)) * 100.0
+		}
 	}
 
 	response := StatsResponse{

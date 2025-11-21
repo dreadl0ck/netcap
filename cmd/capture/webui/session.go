@@ -14,7 +14,12 @@
 package webui
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -183,6 +188,14 @@ func (sm *SessionManager) UpdateSessionStatus(sessionID string, status SessionSt
 					sessionID, errorMsg, session.ErrorLogPath)
 			}
 		}
+
+		// Save session metadata to disk after status update
+		go func() {
+			metadataPath := filepath.Join(session.OutputDir, "session.json")
+			if err := saveSessionMetadata(metadataPath, session); err != nil {
+				log.Printf("[SessionManager] Warning: Failed to save session metadata for %s: %v", sessionID, err)
+			}
+		}()
 	} else {
 		log.Printf("[SessionManager] WARNING: Attempted to update non-existent session %s to status %s", sessionID, status)
 	}
@@ -376,5 +389,220 @@ func (sm *SessionManager) GetStorageUsageForIP(ip string) int64 {
 		}
 	}
 	return totalSize
+}
+
+// RestoreSessionsFromDisk scans the results directory and restores session information
+// This allows sessions to persist across server restarts
+func (sm *SessionManager) RestoreSessionsFromDisk(resultsDir, pcapsDir, uploadsDir string) error {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	log.Printf("[SessionManager] Restoring sessions from disk...")
+	log.Printf("[SessionManager] Results directory: %s", resultsDir)
+	log.Printf("[SessionManager] Pcaps directory: %s", pcapsDir)
+	log.Printf("[SessionManager] Uploads directory: %s", uploadsDir)
+
+	// Check if results directory exists
+	if _, err := os.Stat(resultsDir); os.IsNotExist(err) {
+		log.Printf("[SessionManager] Results directory does not exist, skipping session restoration")
+		return nil
+	}
+
+	// Read all session directories in results
+	entries, err := os.ReadDir(resultsDir)
+	if err != nil {
+		return fmt.Errorf("failed to read results directory: %w", err)
+	}
+
+	restoredCount := 0
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		sessionID := entry.Name()
+		sessionDir := filepath.Join(resultsDir, sessionID)
+
+		// Try to load session metadata file
+		metadataPath := filepath.Join(sessionDir, "session.json")
+		session, err := loadSessionMetadata(metadataPath)
+		
+		if err != nil {
+			// If metadata file doesn't exist or is invalid, try to reconstruct session info
+			session, err = sm.reconstructSession(sessionID, sessionDir, pcapsDir, uploadsDir)
+			if err != nil {
+				log.Printf("[SessionManager] Failed to restore session %s: %v", sessionID, err)
+				continue
+			}
+			
+			// Save reconstructed session metadata for next time
+			if saveErr := saveSessionMetadata(metadataPath, session); saveErr != nil {
+				log.Printf("[SessionManager] Warning: Failed to save reconstructed session metadata for %s: %v", sessionID, saveErr)
+			}
+		}
+
+		// Add session to manager
+		sm.sessions[sessionID] = session
+		
+		// Update IP tracker (don't count towards rate limits for restored sessions)
+		tracker, exists := sm.ipTrackers[session.IP]
+		if !exists {
+			tracker = &IPTracker{
+				IP:               session.IP,
+				AnalysisTimes:    []time.Time{},
+				Sessions:         []string{},
+				IssueReportTimes: []time.Time{},
+			}
+			sm.ipTrackers[session.IP] = tracker
+		}
+		tracker.Sessions = append(tracker.Sessions, session.SessionID)
+		
+		restoredCount++
+		log.Printf("[SessionManager] Restored session %s (IP: %s, file: %s, status: %s)", 
+			sessionID, session.IP, session.InputFilename, session.Status)
+	}
+
+	log.Printf("[SessionManager] Successfully restored %d session(s) from disk", restoredCount)
+	return nil
+}
+
+// reconstructSession attempts to reconstruct session information from filesystem
+func (sm *SessionManager) reconstructSession(sessionID, sessionDir, pcapsDir, uploadsDir string) (*SessionInfo, error) {
+	// Get directory info for timestamp
+	dirInfo, err := os.Stat(sessionDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat session directory: %w", err)
+	}
+
+	// Try to find the input file
+	// 1. Check uploads directory (user uploads)
+	inputFile := filepath.Join(uploadsDir, sessionID+".pcap")
+	inputFilename := sessionID + ".pcap"
+	isPreloaded := false
+	ip := "unknown"
+
+	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
+		// 2. Check pcaps directory (preloaded pcaps)
+		// Search for any pcap file that might correspond to this session
+		if pcapsDir != "" {
+			if entries, err := os.ReadDir(pcapsDir); err == nil {
+				for _, entry := range entries {
+					if entry.IsDir() {
+						continue
+					}
+					filename := entry.Name()
+					ext := strings.ToLower(filepath.Ext(filename))
+					if ext == ".pcap" || ext == ".pcapng" {
+						// Use the first pcap file found as a guess
+						// This is not perfect but better than nothing
+						inputFile = filepath.Join(pcapsDir, filename)
+						inputFilename = filename
+						isPreloaded = true
+						ip = "system"
+						break
+					}
+				}
+			}
+		}
+		
+		// If still not found, use a placeholder path
+		if inputFile == filepath.Join(uploadsDir, sessionID+".pcap") {
+			inputFile = "unknown"
+			inputFilename = "unknown"
+		}
+	}
+
+	// Get file size if file exists
+	var fileSize int64 = 0
+	if fileInfo, err := os.Stat(inputFile); err == nil {
+		fileSize = fileInfo.Size()
+	}
+
+	// Determine status by checking for completion markers
+	status := StatusCompleted
+	resultsReady := true
+	
+	// Check if there's an error log
+	errorLogPath := filepath.Join(sessionDir, "analysis_error.log")
+	errorMessage := ""
+	if _, err := os.Stat(errorLogPath); err == nil {
+		status = StatusFailed
+		resultsReady = false
+		errorMessage = "Analysis failed (see error log)"
+	}
+
+	// Check if there are any .ncap or .ncap.gz files (indicates successful completion)
+	hasResults := false
+	if entries, err := os.ReadDir(sessionDir); err == nil {
+		for _, entry := range entries {
+			if strings.HasSuffix(entry.Name(), ".ncap") || strings.HasSuffix(entry.Name(), ".ncap.gz") {
+				hasResults = true
+				break
+			}
+		}
+	}
+	
+	if !hasResults && status != StatusFailed {
+		status = StatusQueued
+		resultsReady = false
+	}
+
+	session := &SessionInfo{
+		SessionID:       sessionID,
+		IP:              ip,
+		UploadTimestamp: dirInfo.ModTime(),
+		InputFile:       inputFile,
+		InputFilename:   inputFilename,
+		InputFileSize:   fileSize,
+		OutputDir:       sessionDir,
+		Status:          status,
+		ErrorMessage:    errorMessage,
+		ErrorLogPath:    errorLogPath,
+		ResultsReady:    resultsReady,
+		ShareUrl:        fmt.Sprintf("/view/%s", sessionID),
+		IsPreloaded:     isPreloaded,
+	}
+
+	return session, nil
+}
+
+// loadSessionMetadata loads session metadata from JSON file
+func loadSessionMetadata(path string) (*SessionInfo, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var session SessionInfo
+	if err := json.Unmarshal(data, &session); err != nil {
+		return nil, err
+	}
+
+	return &session, nil
+}
+
+// saveSessionMetadata saves session metadata to JSON file
+func saveSessionMetadata(path string, session *SessionInfo) error {
+	data, err := json.MarshalIndent(session, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path, data, 0644)
+}
+
+// SaveSessionMetadata is a public method to save session metadata
+// Call this after creating or updating a session to persist it to disk
+func (sm *SessionManager) SaveSessionMetadata(sessionID string) error {
+	sm.mu.RLock()
+	session, exists := sm.sessions[sessionID]
+	sm.mu.RUnlock()
+
+	if !exists {
+		return fmt.Errorf("session %s not found", sessionID)
+	}
+
+	metadataPath := filepath.Join(session.OutputDir, "session.json")
+	return saveSessionMetadata(metadataPath, session)
 }
 

@@ -72,7 +72,6 @@ var (
 func init() {
 	decoderconfig.Instance = decoderconfig.DefaultConfig
 	serviceLog = zap.NewNop()
-	serviceLogSugared = serviceLog.Sugar()
 }
 
 const (
@@ -184,7 +183,13 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 		if probes, ok := serviceProbes[expectedCategory]; ok {
 			serviceLog.Debug("matching probes", zap.String("ident", ident), zap.String("expectedCategory", expectedCategory))
 			found, matched = matchProbes(serv, probes, banner, ident)
-			serviceLogSugared.Info(ident, "found?", found, "at", matched, "of", len(probes), "expected", expectedCategory)
+			serviceLog.Info("service probe result",
+				zap.String("ident", ident),
+				zap.Bool("found", found),
+				zap.Int("matched", matched),
+				zap.Int("total", len(probes)),
+				zap.String("expected", expectedCategory),
+			)
 		}
 		if !found && decoderconfig.Instance.StopAfterServiceCategoryMiss {
 			return
@@ -202,7 +207,12 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 
 			found, matched = matchProbes(serv, probes, banner, ident)
 			if found && decoderconfig.Instance.StopAfterServiceProbeMatch {
-				serviceLogSugared.Info(ident, "FOUND at", matched, "of", len(probes), "expected", expectedCategory)
+				serviceLog.Info("service probe match found",
+					zap.String("ident", ident),
+					zap.Int("matched", matched),
+					zap.Int("total", len(probes)),
+					zap.String("expected", expectedCategory),
+				)
 				return
 			}
 		}
@@ -224,8 +234,12 @@ func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident str
 				serv.Version = addInfo(serv.Version, extractGroup(&probe.Version, m))
 
 				if decoderconfig.Instance.Debug { // prevent evaluating the log statement if not in debug mode
-					serviceLogSugared.Info("\n\nMATCH!", ident)
-					serviceLogSugared.Info(probe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
+					serviceLog.Info("service probe match",
+						zap.String("ident", ident),
+						zap.String("probe", fmt.Sprintf("%+v", probe)),
+						zap.String("service", proto.MarshalTextString(serv.Service)),
+						zap.String("banner", hex.Dump(banner)),
+					)
 				}
 
 				writeSoftwareFromBanner(serv, ident, probe.Ident)
@@ -249,8 +263,12 @@ func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident str
 				serv.Version = addInfo(serv.Version, extractGroupDotNet(&probe.Version, m))
 
 				if decoderconfig.Instance.Debug { // prevent evaluating the log statement if not in debug mode
-					serviceLogSugared.Info("\n\nMATCH!", ident)
-					serviceLogSugared.Info(probe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
+					serviceLog.Info("service probe match (dotnet)",
+						zap.String("ident", ident),
+						zap.String("probe", fmt.Sprintf("%+v", probe)),
+						zap.String("service", proto.MarshalTextString(serv.Service)),
+						zap.String("banner", hex.Dump(banner)),
+					)
 				}
 
 				writeSoftwareFromBanner(serv, ident, probe.Ident)
@@ -596,13 +614,22 @@ func initServiceProbes() error {
 				if decoderconfig.Instance.Debug {
 					if decoderconfig.Instance.UseRE2 {
 						if before != finalReg {
-							serviceLogSugared.Info("before != finalReg:", before)
+							serviceLog.Info("regex before != finalReg",
+								zap.String("before", before),
+							)
 						}
 
-						serviceLogSugared.Info("failed to compile regex:", ansi.Yellow, s.Ident, ansi.Red, errCompile, ansi.White, finalReg, ansi.Reset) // stdlib regexp only logs the broken part of the regex. this logs the full regex string for debugging
+						serviceLog.Info("failed to compile regex",
+							zap.String("ident", s.Ident),
+							zap.Error(errCompile),
+							zap.String("regex", finalReg),
+						) // stdlib regexp only logs the broken part of the regex. this logs the full regex string for debugging
 					} else {
-						serviceLogSugared.Info("failed to compile regex:", ansi.Yellow, s.Ident, ansi.Red, errCompile, ansi.Reset)
-						serviceLogSugared.Info(ansi.White, line, ansi.Reset)
+						serviceLog.Info("failed to compile regex",
+							zap.String("ident", s.Ident),
+							zap.Error(errCompile),
+							zap.String("line", line),
+						)
 					}
 				}
 			} else {

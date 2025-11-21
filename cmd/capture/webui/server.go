@@ -14,6 +14,7 @@
 package webui
 
 import (
+	"compress/gzip"
 	"context"
 	"fmt"
 	stdio "io"
@@ -47,6 +48,7 @@ import (
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/rules"
+	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/dustin/go-humanize"
 )
@@ -103,6 +105,7 @@ type Server struct {
 	fileProcessingTime map[string]float64             // Tracks processing time in seconds for each file
 	dpiPreferences     map[string]*UserDPIPreferences // DPI preferences per user IP
 	reportedIssues     map[string]bool                // Tracks which file hashes have had issues reported
+	fileIDToPath       map[string]string              // Maps file IDs to file paths (local mode)
 
 	// Rules cache
 	rulesConfig      interface{} // Cached rules config (uses rules.Config type to avoid circular import)
@@ -120,6 +123,8 @@ type Server struct {
 	jobsProcessed     int64             // Total number of jobs processed (atomic counter)
 	currentJobMutex   sync.RWMutex      // Mutex for currentProcessingJob
 	currentProcessing *AnalysisJob      // Currently processing job (service mode only)
+	currentCmd        *exec.Cmd         // Currently running net capture command (for cleanup)
+	currentCmdMutex   sync.RWMutex      // Mutex for currentCmd
 }
 
 // UploadCallbackFunc is called when files are uploaded via the web UI
@@ -129,6 +134,12 @@ type UploadCallbackFunc func(filePath string) error
 type CollectorInterface interface {
 	SetLogLevel(debug bool)
 	ReloadRulesEngine() error
+	// Live statistics methods
+	GetCurrentPacketCount() int64
+	GetTotalPacketCount() int64
+	GetPacketsPerSecond() int64
+	GetProfilesCount() int
+	GetServicesCount() int
 }
 
 // NewServer creates a new web UI server
@@ -150,6 +161,7 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		fileProcessingTime: make(map[string]float64),
 		dpiPreferences:     make(map[string]*UserDPIPreferences),
 		reportedIssues:     make(map[string]bool),
+		fileIDToPath:       make(map[string]string),
 		processingStats: ProcessingStats{
 			TotalFiles: len(inputFiles),
 		},
@@ -188,6 +200,12 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		}
 
 		log.Printf("[Server] Service mode enabled with data directory: %s", serviceConfig.DataDir)
+
+		// Restore sessions from disk (persist sessions across restarts)
+		// pcapsDir := filepath.Join(serviceConfig.DataDir, "pcaps")
+		// if err := s.sessionManager.RestoreSessionsFromDisk(resultsDir, pcapsDir, uploadsDir); err != nil {
+		// 	log.Printf("[Server] Warning: Failed to restore sessions from disk: %v", err)
+		// }
 	} else {
 		// Initialize job queue for local mode as well (for upload processing)
 		s.jobQueue = make(chan *AnalysisJob, 100)
@@ -304,6 +322,9 @@ func (s *Server) loadPreloadedPcaps() {
 		log.Printf("[Server] Found %d preloaded pcap files, processing smallest first for faster UI results", len(pcapFiles))
 	}
 
+	// Load BPF filter from saved configuration (shared across all preloaded pcaps)
+	bpfConfig := s.loadBPFConfig()
+
 	// Second pass: process files in order of size (smallest first)
 	preloadedCount := 0
 	for _, pcapFile := range pcapFiles {
@@ -332,7 +353,7 @@ func (s *Server) loadPreloadedPcaps() {
 			ResultsReady:    false,
 			ShareUrl:        shareURL,
 			IsPreloaded:     true,
-			BPFFilter:       "", // No BPF filter for preloaded pcaps
+			BPFFilter:       bpfConfig.Filter, // Store BPF filter in session
 			IncludeDecoders: "",
 			ExcludeDecoders: "",
 		}
@@ -340,8 +361,10 @@ func (s *Server) loadPreloadedPcaps() {
 		// Add session to manager (preloaded sessions don't count against IP limits)
 		s.sessionManager.AddSession(session)
 
-		// Load BPF filter from saved configuration
-		bpfConfig := s.loadBPFConfig()
+		// Save session metadata to disk
+		if err := s.sessionManager.SaveSessionMetadata(sessionID); err != nil {
+			log.Printf("[Server] Warning: Failed to save session metadata for %s: %v", sessionID, err)
+		}
 
 		// Queue analysis job
 		job := &AnalysisJob{
@@ -380,6 +403,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/files/input/download/", s.handleDownloadInputFile)
 	mux.HandleFunc("/api/files/audit", s.handleAuditFiles)
 	mux.HandleFunc("/api/files/logs", s.handleLogFiles)
+	mux.HandleFunc("/api/download/", s.handleDownloadAllAuditRecords)
 	mux.HandleFunc("/api/audit/", s.handleAuditRecords)
 	mux.HandleFunc("/api/logs/", s.handleLogContent)
 	mux.HandleFunc("/api/error-log/", s.handleErrorLogContent)
@@ -431,6 +455,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/chart/data", s.handleChartData)
 	mux.HandleFunc("/api/chart/fields", s.handleChartFields)
 	mux.HandleFunc("/api/visualize/protocol-hierarchy", s.handleProtocolHierarchy)
+	mux.HandleFunc("/api/visualize/sankey", s.handleVisualizeSankey)
 	mux.HandleFunc("/api/visualize/treemap", s.handleVisualizeTreemap)
 	mux.HandleFunc("/api/visualize/bar3d", s.handleVisualizeBar3D)
 	mux.HandleFunc("/api/visualize/graph", s.handleVisualizeGraph)
@@ -450,6 +475,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/devices/applications", s.handleDevicesApplications)
 	mux.HandleFunc("/api/devices/traffic-distribution", s.handleDevicesTrafficDistribution)
 	mux.HandleFunc("/api/report-issue", s.handleReportIssue)
+	mux.HandleFunc("/api/progress/", s.handleProgress)
 
 	// Service-specific endpoints (only registered in service mode)
 	if s.isServiceMode {
@@ -461,12 +487,13 @@ func (s *Server) Start() error {
 		mux.HandleFunc("/health", s.handleHealth)
 	}
 
-	// Static files
+	// Static files - echarts assets and frontend
+	// Note: /static/ is served from Next.js public/ directory automatically
 	mux.Handle("/", s.handleStatic())
 
 	s.httpServer = &http.Server{
 		Addr:         s.addr,
-		Handler:      s.corsMiddleware(mux),
+		Handler:      gzipMiddleware(s.corsMiddleware(mux)),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  120 * time.Second,
@@ -538,8 +565,21 @@ func (s *Server) handleDecodersRouter(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Stop(ctx context.Context) error {
 	log.Println("[WebUI] Shutting down server...")
 
-	// Signal shutdown to background workers (service mode)
-	if s.isServiceMode && s.shutdownChan != nil {
+	// Kill any running net capture process (both service and local mode)
+	s.currentCmdMutex.Lock()
+	if s.currentCmd != nil && s.currentCmd.Process != nil {
+		log.Printf("[WebUI] Killing running net capture process (PID: %d)", s.currentCmd.Process.Pid)
+		if err := s.currentCmd.Process.Kill(); err != nil {
+			log.Printf("[WebUI] Error killing process: %v", err)
+		} else {
+			log.Println("[WebUI] Net capture process killed successfully")
+		}
+		s.currentCmd = nil
+	}
+	s.currentCmdMutex.Unlock()
+
+	// Signal shutdown to background workers
+	if s.shutdownChan != nil {
 		close(s.shutdownChan)
 	}
 
@@ -550,8 +590,8 @@ func (s *Server) Stop(ctx context.Context) error {
 		}
 	}
 
-	// Wait for background workers to finish (service mode)
-	if s.isServiceMode {
+	// Wait for background workers to finish
+	if s.isServiceMode || s.jobQueue != nil {
 		// Wait with timeout
 		done := make(chan struct{})
 		go func() {
@@ -695,6 +735,10 @@ func (s *Server) GetFileError(inputFile string) (FileError, bool) {
 
 // shouldLogRequest returns true if the request should be logged
 func shouldLogRequest(path string) bool {
+
+	// TODO disable logging these requests for now
+	return false
+
 	// Skip logging for static assets
 	if strings.HasPrefix(path, "/_next/static/") ||
 		strings.HasPrefix(path, "/_next/image/") ||
@@ -736,6 +780,85 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 		}
 
 		next.ServeHTTP(w, r)
+	})
+}
+
+// gzipResponseWriter wraps http.ResponseWriter to compress responses with gzip
+type gzipResponseWriter struct {
+	stdio.Writer
+	http.ResponseWriter
+	wroteHeader bool
+}
+
+func (w *gzipResponseWriter) WriteHeader(status int) {
+	w.wroteHeader = true
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func (w *gzipResponseWriter) Write(b []byte) (int, error) {
+	if !w.wroteHeader {
+		w.WriteHeader(http.StatusOK)
+	}
+	return w.Writer.Write(b)
+}
+
+// gzipMiddleware compresses HTTP responses with gzip when supported by client
+func gzipMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Check if client accepts gzip encoding
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Skip compression for SSE streams
+		if strings.Contains(r.Header.Get("Accept"), "text/event-stream") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Skip compression for file download endpoints
+		// These handle Content-Length and streaming themselves
+		path := r.URL.Path
+		if strings.HasPrefix(path, "/api/files/input/download/") ||
+			strings.HasPrefix(path, "/api/extracted-files/download") ||
+			strings.HasPrefix(path, "/api/chart/data") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Don't compress certain file types that are already compressed
+		if strings.HasSuffix(path, ".png") ||
+			strings.HasSuffix(path, ".jpg") ||
+			strings.HasSuffix(path, ".jpeg") ||
+			strings.HasSuffix(path, ".gif") ||
+			strings.HasSuffix(path, ".webp") ||
+			strings.HasSuffix(path, ".woff") ||
+			strings.HasSuffix(path, ".woff2") ||
+			strings.HasSuffix(path, ".gz") ||
+			strings.HasSuffix(path, ".zip") ||
+			strings.HasSuffix(path, ".br") ||
+			strings.HasSuffix(path, ".pcap") ||
+			strings.HasSuffix(path, ".pcapng") {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Set headers for gzip compression
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Add("Vary", "Accept-Encoding")
+
+		// Create gzip writer
+		gz := gzip.NewWriter(w)
+		defer gz.Close()
+
+		// Wrap response writer
+		gzw := &gzipResponseWriter{
+			Writer:         gz,
+			ResponseWriter: w,
+		}
+
+		next.ServeHTTP(gzw, r)
 	})
 }
 
@@ -1027,8 +1150,33 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		cmd.Stderr = os.Stderr
 	}
 
+	// Store the command for potential cleanup during shutdown
+	s.currentCmdMutex.Lock()
+	s.currentCmd = cmd
+	s.currentCmdMutex.Unlock()
+
+	// Ensure command reference is cleared when done
+	defer func() {
+		s.currentCmdMutex.Lock()
+		s.currentCmd = nil
+		s.currentCmdMutex.Unlock()
+	}()
+
+	// Start the command
 	startTime := time.Now()
-	err = cmd.Run()
+	err = cmd.Start()
+	if err != nil {
+		log.Printf("[Service] Failed to start command for session %s: %v", job.SessionID, err)
+		if s.sessionManager != nil {
+			s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, fmt.Sprintf("Failed to start analysis: %v", err), "")
+		} else {
+			s.SetFileError(job.InputFile, fmt.Sprintf("Failed to start analysis: %v", err), "")
+		}
+		return
+	}
+
+	// Wait for command to complete
+	err = cmd.Wait()
 	duration := time.Since(startTime)
 
 	if err != nil {
@@ -1105,11 +1253,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		s.MarkFileCompleted(job.InputFile)
 		s.SetFileProcessingTime(job.InputFile, duration.Seconds())
 		s.SetFileOutputDir(job.InputFile, job.OutputDir)
-
-		// Add to input files list so it appears in the UI
-		s.mu.Lock()
-		s.inputFiles = append(s.inputFiles, job.InputFile)
-		s.mu.Unlock()
+		s.SetFileBPFFilter(job.InputFile, job.BPFFilter)
 	}
 
 	// Execute rules automatically after successful analysis
@@ -1176,33 +1320,113 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 	startTime := time.Now()
 	totalAlerts := 0
 	totalRecords := 0
-	successCount := 0
-	errorCount := 0
+	totalRulesProcessed := 0
 
+	// Create a single alert writer for the entire job
+	// This ensures we read existing alerts once and write all new alerts at the end
+	alertWriter, err := rules.NewFileAlertWriter(job.OutputDir)
+	if err != nil {
+		log.Printf("%s Failed to create alert writer for session %s: %v", mode, job.SessionID, err)
+		return
+	}
+	defer alertWriter.Close()
+
+	// Group rules by type to minimize file reads
+	// We want to read each audit file (e.g. TCP.ncap.gz) only once
+	rulesByType := make(map[string][]*rules.Rule)
 	for _, rule := range enabledRules {
-		ruleStartTime := time.Now()
-		alertsCount, recordsRead, err := s.executeRuleOnCapture(rule, job.OutputDir)
-		ruleExecutionTime := time.Since(ruleStartTime)
+		rulesByType[rule.Type] = append(rulesByType[rule.Type], rule)
+	}
 
-		if err != nil {
-			errorCount++
-			log.Printf("%s Error executing rule %s for session %s: %v (took %v)",
-				mode, rule.Name, job.SessionID, err, ruleExecutionTime)
-		} else {
-			successCount++
-			totalAlerts += alertsCount
-			totalRecords += recordsRead
-			if alertsCount > 0 {
-				log.Printf("%s Rule %s generated %d alerts from %d records for session %s (took %v)",
-					mode, rule.Name, alertsCount, recordsRead, job.SessionID, ruleExecutionTime)
+	for typeStr, typeRules := range rulesByType {
+		// Skip if no rules for this type
+		if len(typeRules) == 0 {
+			continue
+		}
+
+		// Check if audit file exists for this type
+		auditFile := filepath.Join(job.OutputDir, typeStr+".ncap.gz")
+		if _, err := os.Stat(auditFile); os.IsNotExist(err) {
+			// Try without extension just in case (though ncap usually produces .ncap.gz or .ncap)
+			auditFile = filepath.Join(job.OutputDir, typeStr+".ncap")
+			if _, err := os.Stat(auditFile); os.IsNotExist(err) {
+				continue
 			}
 		}
+
+		// Create a temporary config with rules for this type
+		typeConfig := &rules.Config{
+			Rules: typeRules,
+		}
+
+		// Create engine with these rules
+		engine, err := rules.NewEngineFromConfig(typeConfig, alertWriter)
+		if err != nil {
+			log.Printf("%s Failed to create rules engine for type %s: %v", mode, typeStr, err)
+			continue
+		}
+
+		// Open audit record reader
+		reader, err := NewAuditRecordReader(auditFile)
+		if err != nil {
+			log.Printf("%s Failed to open audit file %s: %v", mode, auditFile, err)
+			continue
+		}
+
+		// Read header
+		if _, err := reader.ReadHeader(); err != nil {
+			reader.Close()
+			log.Printf("%s Failed to read header for %s: %v", mode, auditFile, err)
+			continue
+		}
+
+		// Process records
+		batchStart := time.Now()
+		batchRecords := 0
+		batchAlerts := 0
+
+		for {
+			record, err := reader.NextRecord()
+			if err != nil {
+				if err == stdio.EOF {
+					break
+				}
+				log.Printf("%s Error reading record from %s: %v", mode, auditFile, err)
+				break
+			}
+
+			batchRecords++
+
+			// Type assert to AuditRecord
+			auditRecord, ok := record.(types.AuditRecord)
+			if !ok {
+				continue
+			}
+
+			// Evaluate
+			alerts, err := engine.Evaluate(auditRecord)
+			if err != nil {
+				// Log error but continue
+				// log.Printf("%s Error evaluating record: %v", mode, err)
+				continue
+			}
+			batchAlerts += alerts
+		}
+
+		reader.Close()
+
+		totalAlerts += batchAlerts
+		totalRecords += batchRecords
+		totalRulesProcessed += len(typeRules)
+
+		log.Printf("%s Processed %s: %d rules, %d records, %d alerts (took %v)",
+			mode, typeStr, len(typeRules), batchRecords, batchAlerts, time.Since(batchStart))
 	}
 
 	executionTime := time.Since(startTime)
 
-	log.Printf("%s Rule execution completed for session %s: %d/%d rules succeeded, %d total alerts from %d total records (took %v)",
-		mode, job.SessionID, successCount, len(enabledRules), totalAlerts, totalRecords, executionTime)
+	log.Printf("%s Rule execution completed for session %s: %d rules processed, %d total alerts from %d total records (took %v)",
+		mode, job.SessionID, totalRulesProcessed, totalAlerts, totalRecords, executionTime)
 }
 
 // runAnalysisInProcess executes a netcap capture analysis in-process

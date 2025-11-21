@@ -173,8 +173,17 @@ export default function Logs() {
           )
         }
         renderValue={() => (
-          <Box display="flex" alignItems="center" gap={1}>
-            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'inherit' }}>
+          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
+            <Typography sx={{ 
+              fontFamily: 'monospace', 
+              fontSize: '0.85rem', 
+              color: 'inherit',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+              minWidth: 0,
+            }}>
               {selectedFile.name}
             </Typography>
           </Box>

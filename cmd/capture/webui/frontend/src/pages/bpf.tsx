@@ -26,6 +26,7 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import useSWR from 'swr';
 import Layout from '@/components/Layout';
 import { api } from '@/lib/api';
+import BPFExpressionHighlight, { BPFExpressionBlock } from '@/components/BPFExpressionHighlight';
 
 export default function BPF() {
   const { data: bpfData, error: bpfError, mutate: mutateBPF } = useSWR('bpfInfo', () => api.getBPFInfo());
@@ -116,6 +117,14 @@ export default function BPF() {
                 '& textarea': { fontFamily: 'monospace', fontSize: '0.95rem' },
               }}
             />
+            {bpfFilter && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="caption" color="text.secondary" gutterBottom>
+                  Preview:
+                </Typography>
+                <BPFExpressionBlock expression={bpfFilter} />
+              </Box>
+            )}
             <Box sx={{ mt: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
               <Button
                 variant="contained"
@@ -194,20 +203,21 @@ export default function BPF() {
                       }
                       secondary={
                         <>
-                          <Typography
-                            component="code"
+                          <Box
                             sx={{
                               display: 'block',
-                              fontFamily: 'monospace',
-                              fontSize: '0.9rem',
                               bgcolor: 'action.hover',
                               p: 1,
                               borderRadius: 1,
                               my: 1,
                             }}
                           >
-                            {example.filter}
-                          </Typography>
+                            <BPFExpressionHighlight 
+                              expression={example.filter}
+                              fontSize="0.9rem"
+                              wrap={true}
+                            />
+                          </Box>
                           <Typography variant="body2" color="text.secondary">
                             {example.description}
                           </Typography>

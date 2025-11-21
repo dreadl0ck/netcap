@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import Layout from '@/components/Layout';
 import { api, type TrySession, type ConfigResponse, type BPFInfoResponse } from '@/lib/api';
+import { BPFExpressionBlock } from '@/components/BPFExpressionHighlight';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
@@ -147,7 +148,7 @@ export default function AnalyzePage() {
     }
   }, [isServiceMode, loadQuota, loadConfig, loadSessions]);
 
-  // Poll session status when uploading
+  // Poll session status and progress when uploading
   useEffect(() => {
     if (sessionIds.length === 0 || uploadStatus.type === 'completed' || uploadStatus.type === 'error') {
       return;
@@ -158,30 +159,43 @@ export default function AnalyzePage() {
         // Check status of all sessions
         const allCompleted = [];
         for (const sessionId of sessionIds) {
-          const status = await api.getSessionStatus(sessionId);
-          
-          if (status.status === 'completed') {
-            allCompleted.push(sessionId);
-          } else if (status.status === 'failed') {
-            setUploadStatus({
-              type: 'error',
-              message: `Analysis failed for ${status.inputFilename}: ${status.errorMessage || 'Unknown error'}`,
-            });
-            loadQuota();
-            return;
-          } else if (status.status === 'processing') {
-            const elapsed = status.startTime 
-              ? Math.floor((Date.now() - new Date(status.startTime).getTime()) / 1000)
-              : 0;
-            setUploadStatus({
-              type: 'processing',
-              message: `Processing ${status.inputFilename}... (${elapsed}s elapsed, ${allCompleted.length}/${sessionIds.length} completed)`,
-            });
-          } else if (status.status === 'queued') {
-            setUploadStatus({
-              type: 'processing',
-              message: `Queued for analysis... (${allCompleted.length}/${sessionIds.length} completed)`,
-            });
+          // Use progress endpoint for both service and local mode
+          // It returns both status and progress information
+          try {
+            const progress = await api.getProgress(sessionId);
+            
+            if (progress.status === 'completed') {
+              allCompleted.push(sessionId);
+            } else if (progress.status === 'failed') {
+              setUploadStatus({
+                type: 'error',
+                message: `Analysis failed: ${progress.errorMessage || 'Unknown error'}`,
+              });
+              if (isServiceMode) {
+                loadQuota();
+              }
+              return;
+            } else if (progress.status === 'processing') {
+              if (progress.progressPercent > 0) {
+                setUploadStatus({
+                  type: 'processing',
+                  message: `${progress.message} (${allCompleted.length}/${sessionIds.length} completed)`,
+                });
+              } else {
+                setUploadStatus({
+                  type: 'processing',
+                  message: `Processing... (${allCompleted.length}/${sessionIds.length} completed)`,
+                });
+              }
+            } else if (progress.status === 'queued') {
+              setUploadStatus({
+                type: 'processing',
+                message: `Queued for analysis... (${allCompleted.length}/${sessionIds.length} completed)`,
+              });
+            }
+          } catch (progressError) {
+            console.error(`Failed to get progress for ${sessionId}:`, progressError);
+            // Continue checking other sessions
           }
         }
 
@@ -191,6 +205,13 @@ export default function AnalyzePage() {
             type: 'completed',
             message: `All ${sessionIds.length} file(s) analyzed successfully! Redirecting to results...`,
           });
+          
+          // Reload file lists
+          if (isServiceMode) {
+            await loadQuota();
+            await loadSessions();
+          }
+          await loadInputFiles();
           
           // Redirect to dashboard after 1 second
           setTimeout(() => {
@@ -203,7 +224,7 @@ export default function AnalyzePage() {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [sessionIds, uploadStatus.type, loadQuota]);
+  }, [sessionIds, uploadStatus.type, isServiceMode, loadQuota, loadSessions, loadInputFiles]);
 
   const handleFileSelect = (selectedFiles: File[]) => {
     setFiles(selectedFiles);
@@ -250,26 +271,27 @@ export default function AnalyzePage() {
       return;
     }
 
-    // Get max file size from config or use defaults
-    let maxSize = 200 * 1024 * 1024; // 200MB default for local mode
-    if (isServiceMode && config) {
-      const maxFileSizeOption = config.options.find(opt => opt.name === 'max-file-size');
-      if (maxFileSizeOption && typeof maxFileSizeOption.value === 'number') {
-        maxSize = maxFileSizeOption.value;
-      } else {
-        maxSize = 100 * 1024 * 1024; // 100MB fallback for service mode
+    // Validate file sizes (only in service mode; no limit in local mode)
+    if (isServiceMode) {
+      let maxSize = 100 * 1024 * 1024; // 100MB default for service mode
+      if (config) {
+        const maxFileSizeOption = config.options.find(opt => opt.name === 'max-file-size');
+        if (maxFileSizeOption && typeof maxFileSizeOption.value === 'number') {
+          maxSize = maxFileSizeOption.value;
+        }
+      }
+
+      for (const file of files) {
+        if (file.size > maxSize) {
+          const maxSizeMB = Math.round(maxSize / (1024 * 1024));
+          setUploadStatus({ type: 'error', message: `File ${file.name} exceeds ${maxSizeMB}MB limit` });
+          return;
+        }
       }
     }
 
-    // Validate file sizes
+    // Validate file extensions
     for (const file of files) {
-      if (file.size > maxSize) {
-        const maxSizeMB = Math.round(maxSize / (1024 * 1024));
-        setUploadStatus({ type: 'error', message: `File ${file.name} exceeds ${maxSizeMB}MB limit` });
-        return;
-      }
-
-      // Validate file extension
       const ext = file.name.toLowerCase();
       if (!ext.endsWith('.pcap') && !ext.endsWith('.pcapng')) {
         setUploadStatus({ type: 'error', message: `Invalid file format for ${file.name}. Only .pcap and .pcapng files are allowed.` });
@@ -294,9 +316,12 @@ export default function AnalyzePage() {
         const response = await api.uploadFile(file);
         
         // Service mode returns sessionId and shareUrl
-        if (isServiceMode && response.sessionId) {
+        if (isServiceMode && response.sessionId && response.shareUrl) {
           allSessionIds.push(response.sessionId);
           allShareUrls.push(response.shareUrl);
+        } else if (!isServiceMode && response.id) {
+          // Local mode returns id - use it for progress tracking
+          allSessionIds.push(response.id);
         }
         
         setUploadProgress(Math.floor(((i + 1) / files.length) * 100));
@@ -315,20 +340,16 @@ export default function AnalyzePage() {
         // Invalidate SWR cache for input files so other pages (like PCAPs) will refresh
         globalMutate('inputFiles');
       } else {
-        // Local mode - files are saved and ready for manual analysis
+        // Local mode - files are queued for analysis, track progress
+        setSessionIds(allSessionIds);
         setUploadStatus({ 
-          type: 'completed', 
-          message: `All ${files.length} file(s) uploaded successfully! Files saved to uploads directory.` 
+          type: 'success', 
+          message: `All ${files.length} file(s) uploaded successfully! Starting analysis...` 
         });
         setFiles([]);
         
         // Invalidate SWR cache for input files
         globalMutate('inputFiles');
-        
-        // Redirect to dashboard after 2 seconds
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 2000);
       }
     } catch (error) {
       setUploadProgress(0);
@@ -504,20 +525,14 @@ export default function AnalyzePage() {
               <Alert severity="info" sx={{ mb: 2 }}>
                 The following Berkeley Packet Filter will be applied to your analysis:
               </Alert>
-              <Paper
-                sx={{
-                  p: 2,
-                  bgcolor: 'action.hover',
-                  fontFamily: 'monospace',
-                  fontSize: '0.95rem',
-                  overflow: 'auto',
-                }}
-              >
-                {bpfData.currentFilter}
-              </Paper>
+              <BPFExpressionBlock expression={bpfData.currentFilter} />
               <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
                 <Link href="/bpf" style={{ color: 'inherit', textDecoration: 'none' }}>
-                  <Button variant="outlined" size="small">
+                  <Button 
+                    data-learn="Edit BPF Filter: Modify the Berkeley Packet Filter to include or exclude specific network traffic."
+                    variant="outlined" 
+                    size="small"
+                  >
                     Edit Filter
                   </Button>
                 </Link>
@@ -537,6 +552,7 @@ export default function AnalyzePage() {
             )}
 
             <Paper
+              data-learn="Upload Area: Drag and drop PCAP files here or click to browse. Supports .pcap and .pcapng formats for network traffic analysis."
               sx={{
                 p: 6,
                 textAlign: 'center',
@@ -660,6 +676,7 @@ export default function AnalyzePage() {
                         {url}
                       </Paper>
                       <Button
+                        data-learn="Copy Share Link: Copy the shareable URL to clipboard to share analysis results with others."
                         variant="contained"
                         size="small"
                         startIcon={copySuccess ? <CheckCircleIcon /> : <ContentCopyIcon />}
@@ -684,6 +701,7 @@ export default function AnalyzePage() {
 
             {/* Analyze Button */}
             <Button
+              data-learn="Analyze Button: Start processing selected PCAP files to extract network traffic data and generate audit records."
               fullWidth
               variant="contained"
               size="large"
@@ -749,7 +767,13 @@ export default function AnalyzePage() {
               </Typography>
               <Box component="ul" sx={{ m: 0, pl: 2 }}>
                 <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Maximum file size: 200MB
+                  Maximum file size: {isServiceMode ? (() => {
+                    const maxFileSizeOption = config?.options.find(opt => opt.name === 'max-file-size');
+                    if (maxFileSizeOption && typeof maxFileSizeOption.value === 'number') {
+                      return Math.round(maxFileSizeOption.value / (1024 * 1024)) + 'MB';
+                    }
+                    return '100MB';
+                  })() : 'No limit (local mode)'}
                 </Typography>
                 <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                   Supported formats: PCAP, PCAPNG
@@ -817,6 +841,7 @@ export default function AnalyzePage() {
                               <>
                                 <Tooltip title="View Results">
                                   <IconButton
+                                    data-learn="View Analysis Results: Open the audit records page to explore the analyzed network traffic data."
                                     size="small"
                                     color="primary"
                                     onClick={() => handleViewSession(session.sessionId)}
@@ -826,6 +851,7 @@ export default function AnalyzePage() {
                                 </Tooltip>
                                 <Tooltip title="View Logs">
                                   <IconButton
+                                    data-learn="View Processing Logs: Check logs for details about the analysis process and any errors encountered."
                                     size="small"
                                     color="default"
                                     onClick={() => handleViewLogs(session.sessionId)}
@@ -837,6 +863,7 @@ export default function AnalyzePage() {
                             )}
                             <Tooltip title={copiedSessionId === session.sessionId ? "Copied!" : "Copy Share Link"}>
                               <IconButton
+                                data-learn="Copy Share Link: Copy the shareable URL for this analysis session to share with others."
                                 size="small"
                                 color={copiedSessionId === session.sessionId ? "success" : "default"}
                                 onClick={() => handleCopySessionLink(session.shareUrl, session.sessionId)}
@@ -877,6 +904,7 @@ export default function AnalyzePage() {
                               <>
                                 <Tooltip title="View Results">
                                   <IconButton
+                                    data-learn="View File Results: Open the audit records page for this specific PCAP file."
                                     size="small"
                                     color="primary"
                                     onClick={() => handleViewFile(file.path)}
@@ -886,6 +914,7 @@ export default function AnalyzePage() {
                                 </Tooltip>
                                 <Tooltip title="View Logs">
                                   <IconButton
+                                    data-learn="View File Logs: Check processing logs for this specific PCAP file."
                                     size="small"
                                     color="default"
                                     onClick={() => handleViewFileLogs(file.path)}

@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -88,6 +89,34 @@ func LoadRulesFromFile(path string) (*Config, error) {
 	return &config, nil
 }
 
+// LoadRulesFromDirectory loads all rule files from a directory and returns a merged configuration.
+func LoadRulesFromDirectory(dirPath string) (*Config, error) {
+	config := &Config{
+		Rules: []*Rule{},
+	}
+
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read rules directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yml") {
+			continue
+		}
+
+		filePath := filepath.Join(dirPath, entry.Name())
+		fileConfig, err := LoadRulesFromFile(filePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load rules from %s: %w", entry.Name(), err)
+		}
+
+		config.Rules = append(config.Rules, fileConfig.Rules...)
+	}
+
+	return config, nil
+}
+
 // CompileRules compiles all rule expressions in the configuration.
 func CompileRules(config *Config) error {
 	for i, rule := range config.Rules {
@@ -145,15 +174,15 @@ func EvaluateRule(rule *Rule, record types.AuditRecord) (*types.Alert, error) {
 
 	// Create alert
 	alert := &types.Alert{
-		Timestamp:      time.Now().UnixNano(),
-		Name:           rule.Name,
-		Description:    rule.Description,
-		RuleName:       rule.Name,
-		RecordType:     record.NetcapType().String(),
-		Severity:       rule.Severity,
-		Tags:           tags,
-		RuleExpression: rule.Expression,
-		Threshold:      int32(rule.Threshold),
+		Timestamp:       time.Now().UnixNano(),
+		Name:            rule.Name,
+		Description:     rule.Description,
+		RuleName:        rule.Name,
+		RecordType:      record.NetcapType().String(),
+		Severity:        rule.Severity,
+		Tags:            tags,
+		RuleExpression:  rule.Expression,
+		Threshold:       int32(rule.Threshold),
 		ThresholdWindow: int32(rule.ThresholdWindow),
 	}
 
@@ -194,7 +223,7 @@ func parseRecordType(typeStr string) (types.Type, error) {
 // ValidateSeverity checks if a severity string is valid.
 func ValidateSeverity(severity string) bool {
 	switch strings.ToLower(severity) {
-	case "low", "medium", "high", "critical":
+	case "info", "low", "medium", "high", "critical":
 		return true
 	default:
 		return false

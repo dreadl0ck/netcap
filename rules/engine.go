@@ -15,6 +15,7 @@ package rules
 
 import (
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -52,25 +53,46 @@ type rateCounter struct {
 
 // thresholdTracker tracks rule matches for threshold-based alerting.
 type thresholdTracker struct {
-	matches     []int64 // timestamps of matches
-	mu          sync.Mutex
+	matches []int64 // timestamps of matches
+	mu      sync.Mutex
 }
 
 // NewEngine creates a new rules engine with the given configuration and alert writer.
+// rulesPath can be a path to a single YAML file or a directory containing multiple YAML files.
 func NewEngine(rulesPath string, alertWriter AlertWriter) (*Engine, error) {
 	if alertWriter == nil {
 		return nil, fmt.Errorf("alert writer cannot be nil")
 	}
 
-	// Load rules from file
-	config, err := LoadRulesFromFile(rulesPath)
+	// Check if path is a directory or file
+	info, err := os.Stat(rulesPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat rules path: %w", err)
+	}
+
+	var config *Config
+	if info.IsDir() {
+		config, err = LoadRulesFromDirectory(rulesPath)
+	} else {
+		config, err = LoadRulesFromFile(rulesPath)
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
+	return NewEngineFromConfig(config, alertWriter)
+}
+
+// NewEngineFromConfig creates a new rules engine from an existing configuration.
+// This allows creating an engine without reading from a file.
+func NewEngineFromConfig(config *Config, alertWriter AlertWriter) (*Engine, error) {
+	if alertWriter == nil {
+		return nil, fmt.Errorf("alert writer cannot be nil")
+	}
+
 	// Compile all rules
-	err = CompileRules(config)
-	if err != nil {
+	if err := CompileRules(config); err != nil {
 		return nil, err
 	}
 
@@ -340,12 +362,12 @@ func (e *Engine) GetStats() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"total_rules":      len(e.config.Rules),
-		"enabled_rules":    enabledRules,
-		"threshold_rules":  thresholdRules,
-		"recent_alerts":    len(e.recentAlerts),
-		"dedup_window":     e.dedupWindow.String(),
-		"rate_limit":       e.rateLimit,
+		"total_rules":        len(e.config.Rules),
+		"enabled_rules":      enabledRules,
+		"threshold_rules":    thresholdRules,
+		"recent_alerts":      len(e.recentAlerts),
+		"dedup_window":       e.dedupWindow.String(),
+		"rate_limit":         e.rateLimit,
 		"tracked_thresholds": len(e.thresholdTrackers),
 	}
 }
@@ -354,8 +376,7 @@ func (e *Engine) GetStats() map[string]interface{} {
 // This allows for runtime updates of rules without recreating the engine.
 func (e *Engine) UpdateConfig(config *Config) error {
 	// Compile all rules in the new config
-	err := CompileRules(config)
-	if err != nil {
+	if err := CompileRules(config); err != nil {
 		return fmt.Errorf("failed to compile rules: %w", err)
 	}
 

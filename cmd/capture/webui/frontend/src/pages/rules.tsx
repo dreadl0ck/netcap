@@ -48,6 +48,7 @@ import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import { api, Rule, CreateRuleRequest, UpdateRuleRequest, formatBytes } from '@/lib/api';
 import useSWR, { mutate, mutate as globalMutate } from 'swr';
+import { FilterExpressionInline, FilterExpressionBlock } from '@/components/FilterExpressionHighlight';
 
 export default function RulesPage() {
   const router = useRouter();
@@ -145,7 +146,7 @@ export default function RulesPage() {
       
       switch (sortBy) {
         case 'severity':
-          const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+          const severityOrder = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
           comparison = (severityOrder[a.severity.toLowerCase() as keyof typeof severityOrder] || 0) - 
                        (severityOrder[b.severity.toLowerCase() as keyof typeof severityOrder] || 0);
           break;
@@ -405,6 +406,8 @@ export default function RulesPage() {
         return 'info';
       case 'low':
         return 'success';
+      case 'info':
+        return 'default';
       default:
         return 'default';
     }
@@ -459,8 +462,17 @@ export default function RulesPage() {
           )
         }
         renderValue={() => (
-          <Box display="flex" alignItems="center" gap={1}>
-            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'inherit' }}>
+          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
+            <Typography sx={{ 
+              fontFamily: 'monospace', 
+              fontSize: '0.85rem', 
+              color: 'inherit',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+              minWidth: 0,
+            }}>
               {selectedFile.name}
             </Typography>
           </Box>
@@ -526,6 +538,7 @@ export default function RulesPage() {
           </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
+              data-learn="Execute All Rules: Run all enabled detection rules against the current PCAP data to generate alerts."
               variant="outlined"
               color="success"
               startIcon={executingAllRules ? <CircularProgress size={20} /> : <PlayArrowIcon />}
@@ -535,6 +548,7 @@ export default function RulesPage() {
               {executingAllRules ? 'Executing...' : 'Execute All Rules'}
             </Button>
             <Button
+              data-learn="Create Rule: Open a dialog to create a new detection rule with custom filter expressions."
               variant="contained"
               color="primary"
               startIcon={<AddIcon />}
@@ -548,6 +562,7 @@ export default function RulesPage() {
         {/* Search Input */}
         <Box sx={{ mb: 3 }}>
           <TextField
+            data-learn="Search Rules: Filter the rules list by typing keywords from rule names, descriptions, or expressions."
             fullWidth
             placeholder="Search rules by name, description, or expression..."
             value={searchQuery}
@@ -726,17 +741,8 @@ export default function RulesPage() {
                     </TableCell>
                     <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                       <Tooltip title={rule.expression}>
-                        <Box
-                          sx={{
-                            fontFamily: 'monospace',
-                            fontSize: '0.85rem',
-                            maxWidth: 300,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {rule.expression}
+                        <Box>
+                          <FilterExpressionInline expression={rule.expression} maxWidth={300} />
                         </Box>
                       </Tooltip>
                     </TableCell>
@@ -796,10 +802,10 @@ export default function RulesPage() {
                     </TableCell>
                     <TableCell align="right">
                       <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                        <IconButton size="small" onClick={() => handleOpenDialog(rule)} color="primary">
+                        <IconButton data-learn="Edit Rule: Modify this rule's properties, expression, severity, and settings." size="small" onClick={() => handleOpenDialog(rule)} color="primary">
                           <EditIcon />
                         </IconButton>
-                        <IconButton size="small" onClick={() => handleDelete(rule.id)} color="error">
+                        <IconButton data-learn="Delete Rule: Permanently remove this rule from the system." size="small" onClick={() => handleDelete(rule.id)} color="error">
                           <DeleteIcon />
                         </IconButton>
                       </Box>
@@ -808,6 +814,7 @@ export default function RulesPage() {
                       <Tooltip title="Execute this rule on current capture">
                         <span>
                           <IconButton 
+                            data-learn="Execute Rule: Run this specific rule against the current PCAP data to generate matching alerts."
                             size="small" 
                             onClick={() => handleExecuteRule(rule.id)} 
                             color="success"
@@ -871,45 +878,114 @@ export default function RulesPage() {
                   label="Record Type"
                   onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                 >
-                  <MenuItem value="TCP">TCP</MenuItem>
-                  <MenuItem value="UDP">UDP</MenuItem>
-                  <MenuItem value="ICMP">ICMP</MenuItem>
+                  <MenuItem value="Alert">Alert</MenuItem>
+                  <MenuItem value="ARP">ARP</MenuItem>
+                  <MenuItem value="BFD">BFD</MenuItem>
+                  <MenuItem value="CIP">CIP</MenuItem>
+                  <MenuItem value="CiscoDiscovery">CiscoDiscovery</MenuItem>
+                  <MenuItem value="Connection">Connection</MenuItem>
+                  <MenuItem value="Credentials">Credentials</MenuItem>
+                  <MenuItem value="DeviceProfile">DeviceProfile</MenuItem>
+                  <MenuItem value="DHCPv4">DHCPv4</MenuItem>
+                  <MenuItem value="DHCPv6">DHCPv6</MenuItem>
+                  <MenuItem value="Diameter">Diameter</MenuItem>
+                  <MenuItem value="DNS">DNS</MenuItem>
+                  <MenuItem value="Dot11">Dot11</MenuItem>
+                  <MenuItem value="Dot1Q">Dot1Q</MenuItem>
+                  <MenuItem value="EAP">EAP</MenuItem>
+                  <MenuItem value="EAPOL">EAPOL</MenuItem>
+                  <MenuItem value="EAPOLKey">EAPOLKey</MenuItem>
+                  <MenuItem value="ENIP">ENIP</MenuItem>
+                  <MenuItem value="Ethernet">Ethernet</MenuItem>
+                  <MenuItem value="EthernetCTP">EthernetCTP</MenuItem>
+                  <MenuItem value="EthernetCTPReply">EthernetCTPReply</MenuItem>
+                  <MenuItem value="Exploit">Exploit</MenuItem>
+                  <MenuItem value="FDDI">FDDI</MenuItem>
+                  <MenuItem value="File">File</MenuItem>
+                  <MenuItem value="Geneve">Geneve</MenuItem>
+                  <MenuItem value="GRE">GRE</MenuItem>
+                  <MenuItem value="HTTP">HTTP</MenuItem>
                   <MenuItem value="ICMPv4">ICMPv4</MenuItem>
                   <MenuItem value="ICMPv6">ICMPv6</MenuItem>
-                  <MenuItem value="HTTP">HTTP</MenuItem>
-                  <MenuItem value="DNS">DNS</MenuItem>
-                  <MenuItem value="TLS">TLS</MenuItem>
-                  <MenuItem value="ARP">ARP</MenuItem>
+                  <MenuItem value="ICMPv6Echo">ICMPv6Echo</MenuItem>
+                  <MenuItem value="ICMPv6NeighborAdvertisement">ICMPv6NeighborAdvertisement</MenuItem>
+                  <MenuItem value="ICMPv6NeighborSolicitation">ICMPv6NeighborSolicitation</MenuItem>
+                  <MenuItem value="ICMPv6RouterAdvertisement">ICMPv6RouterAdvertisement</MenuItem>
+                  <MenuItem value="ICMPv6RouterSolicitation">ICMPv6RouterSolicitation</MenuItem>
+                  <MenuItem value="IGMP">IGMP</MenuItem>
+                  <MenuItem value="IPProfile">IPProfile</MenuItem>
+                  <MenuItem value="IPSecAH">IPSecAH</MenuItem>
+                  <MenuItem value="IPSecESP">IPSecESP</MenuItem>
                   <MenuItem value="IPv4">IPv4</MenuItem>
                   <MenuItem value="IPv6">IPv6</MenuItem>
+                  <MenuItem value="IPv6Fragment">IPv6Fragment</MenuItem>
+                  <MenuItem value="IPv6HopByHop">IPv6HopByHop</MenuItem>
+                  <MenuItem value="LCM">LCM</MenuItem>
+                  <MenuItem value="LinkLayerDiscovery">LinkLayerDiscovery</MenuItem>
+                  <MenuItem value="LinkLayerDiscoveryInfo">LinkLayerDiscoveryInfo</MenuItem>
+                  <MenuItem value="LLC">LLC</MenuItem>
+                  <MenuItem value="Mail">Mail</MenuItem>
+                  <MenuItem value="Modbus">Modbus</MenuItem>
+                  <MenuItem value="MPLS">MPLS</MenuItem>
+                  <MenuItem value="NortelDiscovery">NortelDiscovery</MenuItem>
+                  <MenuItem value="NTP">NTP</MenuItem>
+                  <MenuItem value="OSPFv2">OSPFv2</MenuItem>
+                  <MenuItem value="OSPFv3">OSPFv3</MenuItem>
+                  <MenuItem value="POP3">POP3</MenuItem>
+                  <MenuItem value="SCTP">SCTP</MenuItem>
+                  <MenuItem value="Service">Service</MenuItem>
+                  <MenuItem value="SIP">SIP</MenuItem>
+                  <MenuItem value="SMTP">SMTP</MenuItem>
+                  <MenuItem value="SNAP">SNAP</MenuItem>
+                  <MenuItem value="Software">Software</MenuItem>
+                  <MenuItem value="SSH">SSH</MenuItem>
+                  <MenuItem value="TCP">TCP</MenuItem>
+                  <MenuItem value="TLSClientHello">TLSClientHello</MenuItem>
+                  <MenuItem value="TLSServerHello">TLSServerHello</MenuItem>
+                  <MenuItem value="UDP">UDP</MenuItem>
+                  <MenuItem value="USB">USB</MenuItem>
+                  <MenuItem value="USBRequestBlockSetup">USBRequestBlockSetup</MenuItem>
+                  <MenuItem value="VRRPv2">VRRPv2</MenuItem>
+                  <MenuItem value="Vulnerability">Vulnerability</MenuItem>
+                  <MenuItem value="VXLAN">VXLAN</MenuItem>
                 </Select>
               </FormControl>
 
-              <TextField
-                label="Expression"
-                fullWidth
-                required
-                multiline
-                rows={4}
-                value={formData.expression}
-                onChange={(e) => setFormData({ ...formData, expression: e.target.value })}
-                helperText="Expr-lang expression to evaluate (e.g., 'SYN && !ACK', 'DstPort == 22')"
-                InputProps={{
-                  style: { 
-                    fontFamily: 'monospace',
-                    fontSize: '0.95rem',
-                  },
-                }}
-                sx={{
-                  '& .MuiInputBase-root': {
-                    fontFamily: 'monospace',
-                    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                  },
-                  '& .MuiInputBase-input': {
-                    color: 'text.primary',
-                  },
-                }}
-              />
+              <Box>
+                <TextField
+                  label="Expression"
+                  fullWidth
+                  required
+                  multiline
+                  rows={4}
+                  value={formData.expression}
+                  onChange={(e) => setFormData({ ...formData, expression: e.target.value })}
+                  helperText="Expr-lang expression to evaluate (e.g., 'SYN && !ACK', 'DstPort == 22')"
+                  InputProps={{
+                    style: { 
+                      fontFamily: 'monospace',
+                      fontSize: '0.95rem',
+                    },
+                  }}
+                  sx={{
+                    '& .MuiInputBase-root': {
+                      fontFamily: 'monospace',
+                      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                    },
+                    '& .MuiInputBase-input': {
+                      color: 'text.primary',
+                    },
+                  }}
+                />
+                {formData.expression && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="caption" color="text.secondary" gutterBottom>
+                      Preview:
+                    </Typography>
+                    <FilterExpressionBlock expression={formData.expression} />
+                  </Box>
+                )}
+              </Box>
 
               <FormControl fullWidth required>
                 <InputLabel>Severity</InputLabel>
@@ -918,6 +994,7 @@ export default function RulesPage() {
                   label="Severity"
                   onChange={(e) => setFormData({ ...formData, severity: e.target.value })}
                 >
+                  <MenuItem value="info">Info</MenuItem>
                   <MenuItem value="low">Low</MenuItem>
                   <MenuItem value="medium">Medium</MenuItem>
                   <MenuItem value="high">High</MenuItem>

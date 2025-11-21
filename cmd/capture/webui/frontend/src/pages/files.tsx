@@ -1,39 +1,36 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  FormControl,
-  IconButton,
-  MenuItem,
-  Paper,
-  Select,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  Tooltip,
-  Typography,
-  type SelectChangeEvent,
-  Alert,
-  Tab,
-  Tabs,
-  Card,
-  CardMedia,
-  CardContent,
-  CardActions,
-  Grid,
-  ToggleButtonGroup,
-  ToggleButton,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import FormControl from '@mui/material/FormControl';
+import IconButton from '@mui/material/IconButton';
+import MenuItem from '@mui/material/MenuItem';
+import Paper from '@mui/material/Paper';
+import Select, { type SelectChangeEvent } from '@mui/material/Select';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TablePagination from '@mui/material/TablePagination';
+import TableRow from '@mui/material/TableRow';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
+import Alert from '@mui/material/Alert';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
+import Card from '@mui/material/Card';
+import CardMedia from '@mui/material/CardMedia';
+import CardContent from '@mui/material/CardContent';
+import CardActions from '@mui/material/CardActions';
+import Grid from '@mui/material/Grid';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import ToggleButton from '@mui/material/ToggleButton';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DownloadIcon from '@mui/icons-material/Download';
 import DownloadForOfflineIcon from '@mui/icons-material/DownloadForOffline';
@@ -52,7 +49,7 @@ import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import Layout from '@/components/Layout';
 import { api, formatBytes, formatTimestamp, type ExtractedFileInfo } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
-import ReactECharts from 'echarts-for-react';
+import OptimizedPieChart from '@/components/OptimizedPieChart';
 
 export default function ExtractedFilesPage() {
   const [page, setPage] = useState(0);
@@ -199,6 +196,23 @@ export default function ExtractedFilesPage() {
     ? imageFiles.filter(f => f.mimeType === mimeTypeFilter)
     : imageFiles;
 
+  // Sort images in gallery mode - prioritize common image formats (jpg, png, tiff, webp)
+  const sortedGalleryImages = useMemo(() => {
+    const priorityImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/tiff', 'image/webp'];
+    
+    return [...filteredImageFiles].sort((a, b) => {
+      const aPriority = priorityImageTypes.includes(a.mimeType || '');
+      const bPriority = priorityImageTypes.includes(b.mimeType || '');
+      
+      // Sort priority images first
+      if (aPriority && !bPriority) return -1;
+      if (!aPriority && bPriority) return 1;
+      
+      // Within same priority level, maintain original order
+      return 0;
+    });
+  }, [filteredImageFiles]);
+
   // Paginate files (table view)
   const paginatedFiles = filteredFiles.slice(
     page * rowsPerPage,
@@ -206,7 +220,7 @@ export default function ExtractedFilesPage() {
   );
 
   // Paginate image files (gallery view)
-  const paginatedImageFiles = filteredImageFiles.slice(
+  const paginatedImageFiles = sortedGalleryImages.slice(
     galleryPage * galleryRowsPerPage,
     galleryPage * galleryRowsPerPage + galleryRowsPerPage
   );
@@ -329,10 +343,10 @@ export default function ExtractedFilesPage() {
   // Get the current file list based on view mode and filter
   const getCurrentFileList = useCallback(() => {
     if (viewMode === 'gallery') {
-      return filteredImageFiles;
+      return sortedGalleryImages;
     }
     return filteredFiles;
-  }, [viewMode, filteredImageFiles, filteredFiles]);
+  }, [viewMode, sortedGalleryImages, filteredFiles]);
 
   // Navigate to previous file
   const handlePreviousFile = useCallback(() => {
@@ -413,6 +427,23 @@ export default function ExtractedFilesPage() {
           onChange={handleFileChange}
           disabled={switchingFile}
           sx={{ bgcolor: 'background.paper' }}
+          renderValue={() => (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1 }}>
+              <Typography 
+                sx={{ 
+                  fontFamily: 'monospace',
+                  fontSize: '0.875rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  flex: 1,
+                  minWidth: 0,
+                }}
+              >
+                {selectedFile.name}
+              </Typography>
+            </Box>
+          )}
         >
           {completedFiles.map((file: any) => (
             <MenuItem key={file.path} value={file.path}>
@@ -555,10 +586,9 @@ export default function ExtractedFilesPage() {
             <Typography variant="h6" gutterBottom>
               MIME Type Distribution
             </Typography>
-            <ReactECharts 
+            <OptimizedPieChart 
               option={pieChartOption} 
               style={{ height: '250px', width: '100%' }}
-              opts={{ renderer: 'canvas' }}
             />
           </Paper>
         )}
@@ -713,7 +743,7 @@ export default function ExtractedFilesPage() {
 
                 <TablePagination
                   component="div"
-                  count={filteredImageFiles.length}
+                  count={sortedGalleryImages.length}
                   page={galleryPage}
                   onPageChange={handleGalleryChangePage}
                   rowsPerPage={galleryRowsPerPage}
@@ -948,52 +978,48 @@ export default function ExtractedFilesPage() {
                     <>
                       {previewTab === 'rendered' ? (
                         // Rendered view for HTML
-                        previewFile.mimeType === 'text/html' ? (
-                          <>
-                            <Alert severity="warning" sx={{ m: 2, mb: 1 }}>
-                              <strong>Security Warning:</strong> Viewing untrusted HTML in rendered mode. 
-                              JavaScript execution is disabled, but CSS and images will be loaded.
-                            </Alert>
-                            <iframe
-                              srcDoc={previewContent}
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                minHeight: '500px',
-                                border: 'none',
-                                backgroundColor: 'white'
-                              }}
-                              sandbox=""
-                              title={previewFile.name}
-                            />
-                          </>
-                        ) : (
-                          // Code view for other text files
-                          <Paper
-                            sx={{
-                              bgcolor: 'grey.900',
-                              p: 2,
-                              overflow: 'auto',
-                              maxHeight: 'calc(90vh - 200px)'
+                        (previewFile.mimeType === 'text/html' ? (<>
+                          <Alert severity="warning" sx={{ m: 2, mb: 1 }}>
+                            <strong>Security Warning:</strong> Viewing untrusted HTML in rendered mode. 
+                            JavaScript execution is disabled, but CSS and images will be loaded.
+                          </Alert>
+                          <iframe
+                            srcDoc={previewContent}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              minHeight: '500px',
+                              border: 'none',
+                              backgroundColor: 'white'
+                            }}
+                            sandbox=""
+                            title={previewFile.name}
+                          />
+                        </>) : // Code view for other text files
+                        (<Paper
+                          sx={{
+                            bgcolor: 'grey.900',
+                            p: 2,
+                            overflow: 'auto',
+                            maxHeight: 'calc(90vh - 200px)'
+                          }}
+                        >
+                          <pre
+                            style={{
+                              margin: 0,
+                              fontFamily: 'monospace',
+                              fontSize: '0.875rem',
+                              whiteSpace: 'pre-wrap',
+                              wordBreak: 'break-word',
+                              color: '#e0e0e0',
                             }}
                           >
-                            <pre
-                              style={{
-                                margin: 0,
-                                fontFamily: 'monospace',
-                                fontSize: '0.875rem',
-                                whiteSpace: 'pre-wrap',
-                                wordBreak: 'break-word',
-                                color: '#e0e0e0',
-                              }}
-                            >
-                              {previewContent}
-                            </pre>
-                          </Paper>
-                        )
+                            {previewContent}
+                          </pre>
+                        </Paper>))
                       ) : (
                         // Raw source view
-                        <Paper
+                        (<Paper
                           sx={{
                             bgcolor: 'grey.900',
                             p: 2,
@@ -1013,7 +1039,7 @@ export default function ExtractedFilesPage() {
                           >
                             {previewContent}
                           </pre>
-                        </Paper>
+                        </Paper>)
                       )}
                     </>
                   )}

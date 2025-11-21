@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -385,7 +386,8 @@ func (s *Server) handleDecoderFields(w http.ResponseWriter, r *http.Request) {
 
 	// Extract decoder name from URL path
 	// Path format: /api/decoders/{name}/fields
-	pathParts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/decoders/"), "/")
+	encodedPath := strings.TrimPrefix(r.URL.Path, "/api/decoders/")
+	pathParts := strings.Split(encodedPath, "/")
 
 	// Debug logging
 	fmt.Printf("[WebUI] Decoder fields request: path=%s, parts=%v, len=%d\n", r.URL.Path, pathParts, len(pathParts))
@@ -395,7 +397,13 @@ func (s *Server) handleDecoderFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	decoderName := pathParts[0]
+	// URL-decode the decoder name
+	decoderName, err := url.PathUnescape(pathParts[0])
+	if err != nil {
+		http.Error(w, "Invalid decoder name encoding", http.StatusBadRequest)
+		return
+	}
+
 	if decoderName == "" {
 		http.Error(w, "Decoder name is required", http.StatusBadRequest)
 		return
@@ -797,7 +805,7 @@ func (s *Server) handleLoadDecoderConfig(w http.ResponseWriter, r *http.Request)
 
 	configRoot := getConfigRootPath()
 	configDir := filepath.Join(configRoot, "decoder-configs")
-	configPath := filepath.Join(configDir, request.Name+".json")
+	configPath := filepath.Join(configDir, sanitizeFilename(request.Name)+".json")
 
 	// Read the configuration file
 	data, err := os.ReadFile(configPath)
@@ -866,9 +874,8 @@ func (s *Server) handleUploadDecoderConfig(w http.ResponseWriter, r *http.Reques
 		configName = strings.TrimSuffix(header.Filename, ".json")
 	}
 
-	// Sanitize the name (remove any path separators)
-	configName = strings.ReplaceAll(configName, "/", "_")
-	configName = strings.ReplaceAll(configName, "\\", "_")
+	// Sanitize the name to ensure it's safe for use as a filename
+	configName = sanitizeFilename(configName)
 
 	configRoot := getConfigRootPath()
 	configDir := filepath.Join(configRoot, "decoder-configs")
@@ -933,7 +940,7 @@ func (s *Server) handleDeleteDecoderConfig(w http.ResponseWriter, r *http.Reques
 
 	configRoot := getConfigRootPath()
 	configDir := filepath.Join(configRoot, "decoder-configs")
-	configPath := filepath.Join(configDir, request.Name+".json")
+	configPath := filepath.Join(configDir, sanitizeFilename(request.Name)+".json")
 
 	// Delete the file
 	if err := os.Remove(configPath); err != nil {
@@ -974,9 +981,8 @@ func (s *Server) handleSaveDecoderConfigAs(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Sanitize the name
-	configName := strings.ReplaceAll(request.Name, "/", "_")
-	configName = strings.ReplaceAll(configName, "\\", "_")
+	// Sanitize the name to ensure it's safe for use as a filename
+	configName := sanitizeFilename(request.Name)
 
 	configRoot := getConfigRootPath()
 	configDir := filepath.Join(configRoot, "decoder-configs")

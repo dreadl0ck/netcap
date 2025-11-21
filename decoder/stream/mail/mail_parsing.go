@@ -26,7 +26,6 @@ import (
 
 	"github.com/araddon/dateparse"
 	"github.com/dreadl0ck/cryptoutils"
-	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
@@ -98,8 +97,13 @@ func newMailID() string {
 }
 
 // Parse attempts to read a mail from the conversation.
-func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap.SugaredLogger, origin string) *types.Mail {
-	logger.Info(ansi.Yellow, "parseMail, from:", from, "to:", to, conv.Ident, "\n", string(buf), ansi.Reset)
+func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap.Logger, origin string) *types.Mail {
+	logger.Info("parsing mail",
+		zap.String("from", from),
+		zap.String("to", to),
+		zap.String("ident", conv.Ident),
+		zap.String("buffer", string(buf)),
+	)
 
 	var (
 		hdr, body = splitMailHeaderAndBody(buf)
@@ -212,7 +216,7 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 	return mail
 }
 
-func parseMailParts(conv *core.ConversationInfo, body string, logger *zap.SugaredLogger) []*types.MailPart {
+func parseMailParts(conv *core.ConversationInfo, body string, logger *zap.Logger) []*types.MailPart {
 	var (
 		parts        []*types.MailPart
 		currentPart  *types.MailPart
@@ -220,7 +224,10 @@ func parseMailParts(conv *core.ConversationInfo, body string, logger *zap.Sugare
 		tr           = textproto.NewReader(bufio.NewReader(bytes.NewReader([]byte(body))))
 	)
 
-	logger.Info(ansi.White, "parseMailParts", conv.Ident, "body:", body, ansi.Reset)
+	logger.Info("parsing mail parts",
+		zap.String("ident", conv.Ident),
+		zap.String("body", body),
+	)
 
 	for {
 		line, err := tr.ReadLine()
@@ -228,19 +235,27 @@ func parseMailParts(conv *core.ConversationInfo, body string, logger *zap.Sugare
 			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 				break
 			} else {
-				logger.Info(ansi.Yellow, conv.Ident, "failed to read line: "+err.Error())
+				logger.Info("failed to read line",
+					zap.String("ident", conv.Ident),
+					zap.Error(err),
+				)
 
 				return parts
 			}
 		}
 
-		logger.Info(ansi.Green, conv.Ident, "readLine", line)
+		logger.Info("read line",
+			zap.String("ident", conv.Ident),
+			zap.String("line", line),
+		)
 
 		if currentPart != nil {
 			if parsePayload {
 				// check if its an end marker for the current part
 				if strings.HasSuffix(line, currentPart.ID+"--") {
-					logger.Info(ansi.Cyan, "end", currentPart.ID, ansi.Reset)
+					logger.Info("mail part end",
+						zap.String("part_id", currentPart.ID),
+					)
 					parts = append(parts, copyMailPart(currentPart))
 					parsePayload = false
 					currentPart = nil
@@ -253,7 +268,9 @@ func parseMailParts(conv *core.ConversationInfo, body string, logger *zap.Sugare
 						Header: make(map[string]string),
 					}
 					parsePayload = false
-					logger.Info(ansi.Red, "start", currentPart.ID, ansi.Reset)
+					logger.Info("mail part start",
+						zap.String("part_id", currentPart.ID),
+					)
 
 					// second type of start marker
 				} else if strings.HasPrefix(line, "--") && len(line) > 25 && !strings.Contains(line, ">") {
@@ -263,30 +280,40 @@ func parseMailParts(conv *core.ConversationInfo, body string, logger *zap.Sugare
 						Header: make(map[string]string),
 					}
 					parsePayload = false
-					logger.Info(ansi.Red, "start", currentPart.ID, ansi.Reset)
+					logger.Info("mail part start",
+						zap.String("part_id", currentPart.ID),
+					)
 
 					// its content
 				} else {
 					currentPart.Content += line + "\n"
-					logger.Info(ansi.Blue, "adding content", line, ansi.Reset)
+					logger.Info("adding content to mail part",
+						zap.String("line", line),
+					)
 				}
 				continue
 			}
 			pts := strings.Split(line, ": ")
 			if len(pts) == 2 {
 				currentPart.Header[pts[0]] = pts[1]
-				logger.Info(ansi.Yellow, conv.Ident, "parsed header field: "+pts[0], ansi.Reset)
+				logger.Info("parsed header field",
+					zap.String("ident", conv.Ident),
+					zap.String("field", pts[0]),
+				)
 			} else {
 				pts = strings.Split(line, "filename=")
 				if len(pts) == 2 {
 					currentPart.Filename = strings.Trim(pts[1], "\"")
-					logger.Info(ansi.Yellow, conv.Ident, "parsed filename field: "+currentPart.Filename, ansi.Reset)
+					logger.Info("parsed filename field",
+						zap.String("ident", conv.Ident),
+						zap.String("filename", currentPart.Filename),
+					)
 				}
 			}
 
 			if line == "\n" || line == "" {
 				parsePayload = true
-				logger.Info(ansi.Green, "start parsing payload", ansi.Reset)
+				logger.Info("start parsing payload")
 			}
 
 			continue
@@ -297,7 +324,10 @@ func parseMailParts(conv *core.ConversationInfo, body string, logger *zap.Sugare
 				ID:     strings.TrimPrefix(line, partIdent),
 				Header: make(map[string]string),
 			}
-			logger.Info(ansi.Red, conv.Ident, "start: "+currentPart.ID, ansi.Reset)
+			logger.Info("mail part start",
+				zap.String("ident", conv.Ident),
+				zap.String("part_id", currentPart.ID),
+			)
 
 			continue
 		}
@@ -307,13 +337,18 @@ func parseMailParts(conv *core.ConversationInfo, body string, logger *zap.Sugare
 				ID:     strings.TrimPrefix(line, "--"),
 				Header: make(map[string]string),
 			}
-			logger.Info(ansi.Red, conv.Ident, "start: "+currentPart.ID, ansi.Reset)
+			logger.Info("mail part start",
+				zap.String("ident", conv.Ident),
+				zap.String("part_id", currentPart.ID),
+			)
 
 			continue
 		}
 
 		// single parts have no markers
-		logger.Info(ansi.Red, "no marker found", line, ansi.Reset)
+		logger.Info("no marker found",
+			zap.String("line", line),
+		)
 
 		currentPart = &types.MailPart{
 			ID:     "none",
@@ -323,17 +358,22 @@ func parseMailParts(conv *core.ConversationInfo, body string, logger *zap.Sugare
 
 		if len(pts) == 2 {
 			currentPart.Header[pts[0]] = pts[1]
-			logger.Info(ansi.Yellow, conv.Ident, "parsed header field: "+pts[0])
+			logger.Info("parsed header field",
+				zap.String("ident", conv.Ident),
+				zap.String("field", pts[0]),
+			)
 		} else {
 			pts = strings.Split(line, "filename=")
 			if len(pts) == 2 {
 				currentPart.Filename = strings.Trim(pts[1], "\"")
-				logger.Info(ansi.Yellow, "parsed filename field", currentPart.Filename, ansi.Reset)
+				logger.Info("parsed filename field",
+					zap.String("filename", currentPart.Filename),
+				)
 			}
 		}
 		if line == "\n" || line == "" {
 			parsePayload = true
-			logger.Info(ansi.Green, "start parsing payload", ansi.Reset)
+			logger.Info("start parsing payload")
 		}
 	}
 

@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/go-echarts/go-echarts/v2/charts"
@@ -408,7 +409,15 @@ func (s *Server) handleVisualizeScatter3D(w http.ResponseWriter, r *http.Request
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
-	chart := generateScatter3DChart(outDir, showLegend)
+	// Parse maxConnections parameter (default to 100000)
+	maxConnections := 100000
+	if maxConnStr := r.URL.Query().Get("maxConnections"); maxConnStr != "" {
+		if val, err := strconv.Atoi(maxConnStr); err == nil && val > 0 {
+			maxConnections = val
+		}
+	}
+
+	chart := generateScatter3DChart(outDir, showLegend, maxConnections)
 	html, err := injectFullHeightCSS(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -436,7 +445,15 @@ func HandleVisualizeScatter3D(outDir string) http.HandlerFunc {
 		showLegendStr := r.URL.Query().Get("showLegend")
 		showLegend := showLegendStr == "true"
 
-		chart := generateScatter3DChart(outDir, showLegend)
+		// Parse maxConnections parameter (default to 100000)
+		maxConnections := 100000
+		if maxConnStr := r.URL.Query().Get("maxConnections"); maxConnStr != "" {
+			if val, err := strconv.Atoi(maxConnStr); err == nil && val > 0 {
+				maxConnections = val
+			}
+		}
+
+		chart := generateScatter3DChart(outDir, showLegend, maxConnections)
 		html, err := injectFullHeightCSS(chart.Render)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -475,7 +492,16 @@ func (s *Server) handleVisualizeHostsGraph(w http.ResponseWriter, r *http.Reques
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
-	chart := generateHostsGraph(outDir, showLegend)
+	// Parse maxNodes parameter (default to 100)
+	maxNodes := 100
+	maxNodesStr := r.URL.Query().Get("maxNodes")
+	if maxNodesStr != "" {
+		if parsedMaxNodes, err := strconv.Atoi(maxNodesStr); err == nil && parsedMaxNodes > 0 {
+			maxNodes = parsedMaxNodes
+		}
+	}
+
+	chart := generateHostsGraph(outDir, showLegend, maxNodes)
 	html, err := injectFullHeightCSS(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -503,7 +529,16 @@ func HandleVisualizeHostsGraph(outDir string) http.HandlerFunc {
 		showLegendStr := r.URL.Query().Get("showLegend")
 		showLegend := showLegendStr == "true"
 
-		chart := generateHostsGraph(outDir, showLegend)
+		// Parse maxNodes parameter (default to 100)
+		maxNodes := 100
+		maxNodesStr := r.URL.Query().Get("maxNodes")
+		if maxNodesStr != "" {
+			if parsedMaxNodes, err := strconv.Atoi(maxNodesStr); err == nil && parsedMaxNodes > 0 {
+				maxNodes = parsedMaxNodes
+			}
+		}
+
+		chart := generateHostsGraph(outDir, showLegend, maxNodes)
 		html, err := injectFullHeightCSS(chart.Render)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -556,12 +591,7 @@ func generateTreemapChart(outDir string, showLegend bool) *charts.TreeMap {
 
 	graph := charts.NewTreeMap()
 	graph.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Theme:           echartstypes.ThemeMacarons,
-			Width:           "100%",
-			Height:          "100%",
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Audit Record Types Distribution",
 			Subtitle: "Grouped by protocol layer",
@@ -631,53 +661,93 @@ func generateBar3DChart(outDir string, showLegend bool) *charts.Bar3D {
 	stats := getAuditRecordStats(outDir)
 	layerMap := getLayerMap()
 
-	// Organize by layer
-	layers := []string{"Link Layer", "Network Layer", "Transport Layer", "Application Layer"}
-	layerProtocols := make(map[string][]string)
+	// Define layer order and colors
+	layers := []string{"Link Layer", "Network Layer", "Transport Layer", "Application Layer", "Stream Decoders", "Abstract Decoders"}
+	layerColors := map[string]string{
+		"Link Layer":        "#4CAF50", // Green
+		"Network Layer":     "#2196F3", // Blue
+		"Transport Layer":   "#FF9800", // Orange
+		"Application Layer": "#9C27B0", // Purple
+		"Stream Decoders":   "#00BCD4", // Cyan
+		"Abstract Decoders": "#607D8B", // Blue Grey
+	}
 
+	// Organize protocols by layer and sort them
+	layerProtocols := make(map[string][]string)
 	for protocol := range stats {
 		layer := layerMap[protocol]
 		if layer == "" {
-			continue
+			layer = "Abstract Decoders"
 		}
 		layerProtocols[layer] = append(layerProtocols[layer], protocol)
 	}
 
-	// Build 3D data
-	data := make([]opts.Chart3DData, 0)
-	protocols := []string{}
+	// Sort protocols within each layer alphabetically
+	for layer := range layerProtocols {
+		protocols := layerProtocols[layer]
+		sort.Strings(protocols)
+		layerProtocols[layer] = protocols
+	}
 
-	for layerIdx, layer := range layers {
+	// Build list of all protocols in layer order
+	var allProtocols []string
+	for _, layer := range layers {
+		if protos, ok := layerProtocols[layer]; ok {
+			allProtocols = append(allProtocols, protos...)
+		}
+	}
+
+	// Build 3D data with proper indices
+	data := make([]opts.Chart3DData, 0)
+	protocolIdx := 0
+
+	for _, layer := range layers {
 		protos := layerProtocols[layer]
-		for protoIdx, protocol := range protos {
+		for _, protocol := range protos {
 			if pstats, ok := stats[protocol]; ok {
-				data = append(data, opts.Chart3DData{
-					Value: []interface{}{layerIdx, protoIdx, pstats.Count},
-				})
-				if layerIdx == 0 {
-					protocols = append(protocols, protocol)
+				// Get layer index for coloring
+				layerIdx := 0
+				for i, l := range layers {
+					if l == layer {
+						layerIdx = i
+						break
+					}
 				}
+
+				data = append(data, opts.Chart3DData{
+					Name: protocol,
+					Value: []interface{}{
+						layerIdx,     // X: Layer
+						protocolIdx,  // Y: Protocol index
+						pstats.Count, // Z: Count
+					},
+					ItemStyle: &opts.ItemStyle{
+						Color: layerColors[layer],
+					},
+				})
+				protocolIdx++
 			}
 		}
 	}
 
 	bar3d := charts.NewBar3D()
 	bar3d.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
-			Title: "Audit Record Types by Layer (3D)",
-			Left:  "center",
-			Top:   "5px",
+			Title:    "Audit Record Types by Layer (3D)",
+			Subtitle: "Each bar represents an audit record type, colored by layer",
+			Left:     "center",
+			Top:      "5px",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
+			},
+			SubtitleStyle: &opts.TextStyle{
+				Color: "#cccccc",
 			},
 		}),
 		charts.WithLegendOpts(opts.Legend{
 			Show:   opts.Bool(showLegend),
+			Data:   layers,
 			Right:  "10",
 			Top:    "10",
 			Orient: "vertical",
@@ -685,33 +755,41 @@ func generateBar3DChart(outDir string, showLegend bool) *charts.Bar3D {
 				Color: "#ffffff",
 			},
 		}),
-		charts.WithVisualMapOpts(opts.VisualMap{
-			Calculable: opts.Bool(true),
-			Max:        100000,
-			InRange: &opts.VisualMapInRange{
-				Color: []string{"#313695", "#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#fee090", "#fdae61", "#f46d43", "#d73027", "#a50026"},
-			},
-			Orient: "vertical",
-			Right:  "5%",
-			Bottom: "5%",
-			TextStyle: &opts.TextStyle{
-				Color: "#ffffff",
-			},
+		charts.WithTooltipOpts(opts.Tooltip{
+			Show:    opts.Bool(true),
+			Trigger: "item",
 		}),
 		charts.WithGrid3DOpts(opts.Grid3D{
-			BoxWidth: 160,
-			BoxDepth: 60,
+			BoxWidth:  200,
+			BoxDepth:  80,
+			BoxHeight: 100,
 			ViewControl: &opts.ViewControl{
 				AutoRotate:      opts.Bool(true),
-				AutoRotateSpeed: 10,
+				AutoRotateSpeed: 5,
 			},
 		}),
-		charts.WithXAxis3DOpts(opts.XAxis3D{Data: layers}),
-		charts.WithYAxis3DOpts(opts.YAxis3D{Data: protocols}),
-		charts.WithZAxis3DOpts(opts.ZAxis3D{Name: "Record Count"}),
+		charts.WithXAxis3DOpts(opts.XAxis3D{
+			Name: "Layer",
+			Type: "category",
+			Data: layers,
+		}),
+		charts.WithYAxis3DOpts(opts.YAxis3D{
+			Name: "Audit Record Type",
+			Type: "category",
+			Data: allProtocols,
+		}),
+		charts.WithZAxis3DOpts(opts.ZAxis3D{
+			Name: "Record Count",
+			Type: "value",
+		}),
 	)
 
-	bar3d.AddSeries("Audit Records", data, charts.WithBar3DChartOpts(opts.Bar3DChart{Shading: "lambert"}))
+	bar3d.AddSeries("Audit Records", data,
+		charts.WithBar3DChartOpts(opts.Bar3DChart{
+			Shading: "realistic",
+		}),
+	)
+
 	return bar3d
 }
 
@@ -810,12 +888,7 @@ func generateGraphChart(outDir string, showLegend bool) *charts.Graph {
 
 	graph := charts.NewGraph()
 	graph.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			Theme:           echartstypes.ThemeMacarons,
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title: "Protocol Relationship Graph",
 			Left:  "center",
@@ -982,11 +1055,7 @@ func generateGeoChart(outDir string, showLegend bool) *charts.Geo {
 
 	geo := charts.NewGeo()
 	geo.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "IP Geolocation Distribution",
 			Subtitle: "Based on IPProfile data",
@@ -1190,11 +1259,7 @@ func (s *Server) generateGeoChartAll(showLegend bool) *charts.Geo {
 
 	geo := charts.NewGeo()
 	geo.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Global IP Geolocation Distribution",
 			Subtitle: "Aggregated data across all captures",
@@ -1442,16 +1507,12 @@ func getLocationCoordinates() map[string][]float64 {
 }
 
 // generateScatter3DChart creates a 3D scatter chart showing connection patterns
-func generateScatter3DChart(outDir string, showLegend bool) *charts.Scatter3D {
-	scatter3DData := getConnectionScatter3DData(outDir)
+func generateScatter3DChart(outDir string, showLegend bool, maxConnections int) *charts.Scatter3D {
+	scatter3DData := getConnectionScatter3DData(outDir, maxConnections)
 
 	scatter3d := charts.NewScatter3D()
 	scatter3d.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Connection Pattern Analysis (3D)",
 			Subtitle: "Packets vs Bytes vs Duration",
@@ -1512,7 +1573,7 @@ func generateScatter3DChart(outDir string, showLegend bool) *charts.Scatter3D {
 }
 
 // getConnectionScatter3DData reads connection data and extracts 3D scatter data
-func getConnectionScatter3DData(outDir string) []opts.Chart3DData {
+func getConnectionScatter3DData(outDir string, maxConnections int) []opts.Chart3DData {
 	filePath := filepath.Join(outDir, "Connection.ncap.gz")
 
 	// Check if file exists
@@ -1537,10 +1598,10 @@ func getConnectionScatter3DData(outDir string) []opts.Chart3DData {
 	}
 
 	data := make([]opts.Chart3DData, 0)
-	maxRecords := 1000 // Limit to 1000 points for performance
+	count := 0
 
 	// Read records
-	for i := 0; i < maxRecords; i++ {
+	for {
 		record, err := reader.NextRecord()
 		if err != nil {
 			if err == io.EOF {
@@ -1578,7 +1639,15 @@ func getConnectionScatter3DData(outDir string) []opts.Chart3DData {
 				int(dur),
 			},
 		})
+
+		count++
+		if count >= maxConnections {
+			log.Printf("[WebUI] Connection Pattern Analysis: Reached max connections limit (%d), stopping read", maxConnections)
+			break
+		}
 	}
+
+	log.Printf("[WebUI] Connection Pattern Analysis: Loaded %d connections", count)
 
 	// If no connection data, try IPProfile
 	if len(data) == 0 {
@@ -1676,8 +1745,8 @@ func normalizeValue(value, oldMin, oldMax, newMin, newMax float64) float64 {
 }
 
 // generateHostsGraph creates a network graph showing IP communication patterns
-func generateHostsGraph(outDir string, showLegend bool) *charts.Graph {
-	nodes, links := getHostsCommunicationData(outDir, 5000)
+func generateHostsGraph(outDir string, showLegend bool, maxNodes int) *charts.Graph {
+	nodes, links := getHostsCommunicationData(outDir, maxNodes)
 
 	graph := charts.NewGraph()
 
@@ -1690,11 +1759,7 @@ func generateHostsGraph(outDir string, showLegend bool) *charts.Graph {
 	}
 
 	graph.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Host Communication Graph",
 			Subtitle: "Network connections between IP addresses (Internal vs External)",
@@ -1728,7 +1793,7 @@ func generateHostsGraph(outDir string, showLegend bool) *charts.Graph {
 				Gravity:    0.1,
 				EdgeLength: 150,
 			},
-			Layout:             "force",
+			Layout:             "circular",
 			Roam:               opts.Bool(true),
 			FocusNodeAdjacency: opts.Bool(true),
 			Categories:         categories,
@@ -1946,30 +2011,76 @@ func isPrivateIP(ipStr string) bool {
 		return false
 	}
 
-	// Check for IPv4 private ranges
-	if ip.To4() != nil {
-		// 10.0.0.0/8
-		if ip[0] == 10 {
+	// Check for IPv4 private and special-use ranges
+	ipv4 := ip.To4()
+	if ipv4 != nil {
+		// Use ipv4 (4-byte representation) for correct byte indexing
+		// 0.0.0.0/8 (RFC 1122 - "This" Network)
+		if ipv4[0] == 0 {
 			return true
 		}
-		// 172.16.0.0/12
-		if ip[0] == 172 && ip[1] >= 16 && ip[1] <= 31 {
+		// 10.0.0.0/8 (RFC 1918)
+		if ipv4[0] == 10 {
 			return true
 		}
-		// 192.168.0.0/16
-		if ip[0] == 192 && ip[1] == 168 {
+		// 100.64.0.0/10 (RFC 6598 - Shared Address Space/CGN)
+		if ipv4[0] == 100 && ipv4[1] >= 64 && ipv4[1] <= 127 {
 			return true
 		}
-		// 127.0.0.0/8 (loopback)
-		if ip[0] == 127 {
+		// 127.0.0.0/8 (RFC 1122 - Loopback)
+		if ipv4[0] == 127 {
 			return true
 		}
-		// 169.254.0.0/16 (link-local)
-		if ip[0] == 169 && ip[1] == 254 {
+		// 169.254.0.0/16 (RFC 3927 - Link-Local)
+		if ipv4[0] == 169 && ipv4[1] == 254 {
+			return true
+		}
+		// 172.16.0.0/12 (RFC 1918)
+		if ipv4[0] == 172 && ipv4[1] >= 16 && ipv4[1] <= 31 {
+			return true
+		}
+		// 192.0.0.0/24 (RFC 6890 - IETF Protocol Assignments)
+		if ipv4[0] == 192 && ipv4[1] == 0 && ipv4[2] == 0 {
+			return true
+		}
+		// 192.0.2.0/24 (RFC 5737 - TEST-NET-1)
+		if ipv4[0] == 192 && ipv4[1] == 0 && ipv4[2] == 2 {
+			return true
+		}
+		// 192.168.0.0/16 (RFC 1918)
+		if ipv4[0] == 192 && ipv4[1] == 168 {
+			return true
+		}
+		// 198.18.0.0/15 (RFC 2544 - Benchmarking)
+		if ipv4[0] == 198 && (ipv4[1] == 18 || ipv4[1] == 19) {
+			return true
+		}
+		// 198.51.100.0/24 (RFC 5737 - TEST-NET-2)
+		if ipv4[0] == 198 && ipv4[1] == 51 && ipv4[2] == 100 {
+			return true
+		}
+		// 203.0.113.0/24 (RFC 5737 - TEST-NET-3)
+		if ipv4[0] == 203 && ipv4[1] == 0 && ipv4[2] == 113 {
+			return true
+		}
+		// 224.0.0.0/4 (RFC 5771 - Multicast)
+		if ipv4[0] >= 224 && ipv4[0] <= 239 {
+			return true
+		}
+		// 240.0.0.0/4 (RFC 1112 - Reserved)
+		if ipv4[0] >= 240 {
 			return true
 		}
 	} else {
-		// Check for IPv6 private ranges
+		// Check for IPv6 private and special-use ranges
+		// ::/128 (Unspecified)
+		if ip.IsUnspecified() {
+			return true
+		}
+		// ::1/128 (Loopback)
+		if ip.IsLoopback() {
+			return true
+		}
 		// fc00::/7 (Unique Local Address)
 		if ip[0] == 0xfc || ip[0] == 0xfd {
 			return true
@@ -1978,11 +2089,161 @@ func isPrivateIP(ipStr string) bool {
 		if ip[0] == 0xfe && (ip[1]&0xc0) == 0x80 {
 			return true
 		}
-		// ::1/128 (loopback)
-		if ip.IsLoopback() {
+		// ff00::/8 (Multicast)
+		if ip[0] == 0xff {
+			return true
+		}
+		// 2001:db8::/32 (RFC 3849 - Documentation)
+		if ip[0] == 0x20 && ip[1] == 0x01 && ip[2] == 0x0d && ip[3] == 0xb8 {
 			return true
 		}
 	}
 
 	return false
+}
+
+// handleVisualizeSankey returns HTML for Sankey diagram of protocol hierarchy
+func (s *Server) handleVisualizeSankey(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	s.mu.RLock()
+	outDir := s.outDir
+
+	// In service mode, use the current session's output directory
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
+	s.mu.RUnlock()
+
+	if outDir == "" {
+		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
+		return
+	}
+
+	chart := generateSankeyChart(outDir)
+	html, err := injectFullHeightCSS(chart.Render)
+	if err != nil {
+		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html")
+	w.Write(html)
+}
+
+// HandleVisualizeSankey is an exported handler factory for service mode
+func HandleVisualizeSankey(outDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if outDir == "" {
+			http.Error(w, "No output directory set", http.StatusServiceUnavailable)
+			return
+		}
+
+		chart := generateSankeyChart(outDir)
+		html, err := injectFullHeightCSS(chart.Render)
+		if err != nil {
+			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html")
+		w.Write(html)
+	}
+}
+
+// generateSankeyChart creates a Sankey diagram showing protocol hierarchy
+func generateSankeyChart(outDir string) *charts.Sankey {
+	// Build protocol hierarchy
+	hierarchy, err := buildProtocolHierarchy(outDir)
+	if err != nil {
+		log.Printf("[WebUI] Failed to build protocol hierarchy: %v", err)
+		hierarchy = &ProtocolHierarchyResponse{
+			Links: []SankeyLink{},
+			Nodes: []string{},
+			Stats: map[string]ProtocolStats{},
+		}
+	}
+
+	sankey := charts.NewSankey()
+	sankey.SetGlobalOptions(
+		charts.WithInitializationOpts(opts.Initialization{
+			Theme:      echartstypes.ThemeWesteros,
+			Width:      "100%",
+			Height:     "100%",
+			AssetsHost: "/static/echarts/",
+		}),
+		charts.WithTitleOpts(opts.Title{
+			Title:    "Protocol Hierarchy",
+			Subtitle: "Network protocol encapsulation flow",
+			TitleStyle: &opts.TextStyle{
+				Color:           "white",
+				FontSize:        18,
+				FontWeight:      "bold",
+				TextBorderWidth: 0,
+			},
+			SubtitleStyle: &opts.TextStyle{
+				Color:           "white",
+				FontSize:        12,
+				TextBorderWidth: 0,
+			},
+		}),
+		charts.WithTooltipOpts(opts.Tooltip{
+			Show:      opts.Bool(true),
+			Trigger:   "item",
+			TriggerOn: "mousemove",
+		}),
+		charts.WithToolboxOpts(opts.Toolbox{
+			Show: opts.Bool(true),
+			Feature: &opts.ToolBoxFeature{
+				SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{Show: opts.Bool(true), Title: "Save"},
+			},
+		}),
+	)
+
+	// Convert nodes
+	nodes := make([]opts.SankeyNode, len(hierarchy.Nodes))
+	for i, nodeName := range hierarchy.Nodes {
+		nodes[i] = opts.SankeyNode{Name: nodeName}
+	}
+
+	// Convert links
+	links := make([]opts.SankeyLink, len(hierarchy.Links))
+	for i, link := range hierarchy.Links {
+		links[i] = opts.SankeyLink{
+			Source: link.Source,
+			Target: link.Target,
+			Value:  float32(link.Value),
+		}
+	}
+
+	// Add series with styling
+	sankey.AddSeries("Protocol Flow", nodes, links).
+		SetSeriesOptions(
+			charts.WithLabelOpts(opts.Label{
+				Show:     opts.Bool(true),
+				Color:    "white",
+				FontSize: 12,
+			}),
+			charts.WithLineStyleOpts(opts.LineStyle{
+				Color:     "gradient",
+				Opacity:   opts.Float(0.3),
+				Curveness: 0.5,
+			}),
+			charts.WithItemStyleOpts(opts.ItemStyle{
+				BorderWidth: 1,
+				BorderColor: "#aaa",
+			}),
+		)
+
+	return sankey
 }

@@ -10,6 +10,7 @@ import {
   DialogTitle,
   FormControl,
   IconButton,
+  LinearProgress,
   MenuItem,
   Paper,
   Select,
@@ -43,6 +44,7 @@ export default function PCAPs() {
   });
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const [activating, setActivating] = useState<string | null>(null);
+  const [progressData, setProgressData] = useState<Record<string, { percent: number; message: string }>>({});
 
   // Debug: Log files when they change
   useEffect(() => {
@@ -84,6 +86,46 @@ export default function PCAPs() {
     window.addEventListener('directory-changed', handleDirectoryChange);
     return () => window.removeEventListener('directory-changed', handleDirectoryChange);
   }, [mutate]);
+
+  // Poll progress for non-completed files
+  useEffect(() => {
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    // Find files that are being processed (not completed and no error)
+    const processingFiles = files.filter(f => !f.isCompleted && !f.error);
+    
+    if (processingFiles.length === 0) {
+      return;
+    }
+
+    console.log('[PCAPs] Polling progress for', processingFiles.length, 'file(s)');
+
+    const interval = setInterval(async () => {
+      const newProgressData: Record<string, { percent: number; message: string }> = {};
+      
+      for (const file of processingFiles) {
+        try {
+          // Use file ID for progress tracking
+          console.log(`[PCAPs] Fetching progress for file: ${file.name}, ID: ${file.id}`);
+          const progress = await api.getProgress(file.id);
+          
+          newProgressData[file.path] = {
+            percent: progress.progressPercent,
+            message: progress.message,
+          };
+          console.log(`[PCAPs] Progress received for ${file.name}: ${progress.progressPercent}%`);
+        } catch (error) {
+          console.error(`[PCAPs] Failed to get progress for ${file.name}:`, error);
+        }
+      }
+      
+      setProgressData(prev => ({ ...prev, ...newProgressData }));
+    }, 2000); // Poll every 2 seconds
+
+    return () => clearInterval(interval);
+  }, [files]);
 
   const handleSelectFile = async (file: string) => {
     setActivating(file);
@@ -467,7 +509,10 @@ export default function PCAPs() {
                           {file.name}
                           {!file.isCompleted && !file.error && (
                             <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                              (processing...)
+                              {progressData[file.path]?.percent > 0 
+                                ? `(${progressData[file.path].percent.toFixed(1)}%)`
+                                : '(processing...)'
+                              }
                             </Typography>
                           )}
                           {file.error && (
@@ -476,6 +521,16 @@ export default function PCAPs() {
                             </Typography>
                           )}
                         </Typography>
+                        {/* Progress bar for processing files */}
+                        {!file.isCompleted && !file.error && progressData[file.path]?.percent > 0 && (
+                          <Box sx={{ mt: 0.5, width: '100%', maxWidth: 300 }}>
+                            <LinearProgress 
+                              variant="determinate" 
+                              value={progressData[file.path].percent}
+                              sx={{ height: 4, borderRadius: 1 }}
+                            />
+                          </Box>
+                        )}
                         {file.bpfFilter && (
                           <Box sx={{ mt: 0.5 }}>
                             <Chip 
@@ -723,7 +778,7 @@ export default function PCAPs() {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseErrorLog}>Close</Button>
+            <Button data-learn="Close Dialog: Close the error log viewer dialog." onClick={handleCloseErrorLog}>Close</Button>
           </DialogActions>
         </Dialog>
       </Box>

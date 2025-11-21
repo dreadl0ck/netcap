@@ -39,7 +39,6 @@ var Decoder = &decoder.StreamDecoder{
 		if err != nil {
 			return err
 		}
-		pop3LogSugared = pop3Log.Sugar()
 		return nil
 	},
 	CanDecode: func(client, server []byte) bool {
@@ -53,8 +52,7 @@ var Decoder = &decoder.StreamDecoder{
 }
 
 var (
-	pop3Ident      = []byte("POP server ready")
-	servicePOP3    = "POP3"
-	pop3Log        *zap.Logger
-	pop3LogSugared *zap.SugaredLogger
+	pop3Ident   = []byte("POP server ready")
+	servicePOP3 = "POP3"
+	pop3Log     *zap.Logger
 )

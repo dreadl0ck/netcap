@@ -21,7 +21,6 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
@@ -161,8 +160,8 @@ func (h *pop3Reader) Decode() {
 	}
 }
 
-func pop3Debug(args ...interface{}) {
-	pop3LogSugared.Info(args...)
+func pop3Debug(msg string, fields ...zap.Field) {
+	pop3Log.Info(msg, fields...)
 }
 
 func (h *pop3Reader) readRequest(b *bufio.Reader) error {
@@ -181,7 +180,10 @@ func (h *pop3Reader) readRequest(b *bufio.Reader) error {
 		return err
 	}
 
-	pop3Debug(ansi.Red, h.conversation.Ident, "readRequest", line, ansi.Reset)
+	pop3Debug("read POP3 request",
+		zap.String("ident", h.conversation.Ident),
+		zap.String("line", line),
+	)
 
 	cmd, args := getCommand(line)
 
@@ -213,7 +215,10 @@ func (h *pop3Reader) readResponse(b *bufio.Reader) error {
 		return err
 	}
 
-	pop3Debug(ansi.Blue, h.conversation.Ident, "readResponse", line, ansi.Reset)
+	pop3Debug("read POP3 response",
+		zap.String("ident", h.conversation.Ident),
+		zap.String("line", line),
+	)
 
 	cmd, args := getCommand(line)
 
@@ -316,7 +321,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 
 				for _, reply := range h.pop3Responses[h.resIndex:] {
 					if reply.Command == pop3Dot {
-						m := mail.Parse(h.conversation, []byte(mailBuf), "", "", pop3LogSugared, servicePOP3)
+						m := mail.Parse(h.conversation, []byte(mailBuf), "", "", pop3Log, servicePOP3)
 						mail.WriteMail(m)
 						mailIDs = append(mailIDs, m.ID)
 						mailBuf = ""
@@ -427,7 +432,9 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 
 				continue
 			default:
-				pop3Debug("unhandled POP3 command: ", r.Command)
+				pop3Debug("unhandled POP3 command",
+					zap.String("command", r.Command),
+				)
 				h.resIndex++
 			}
 		}

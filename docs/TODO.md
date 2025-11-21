@@ -1,5 +1,11 @@
 # TODOs
 
+----
+
+cli refactoring
+
+---
+
 WIP: Visualize
 
 - add Connections page?
@@ -22,7 +28,17 @@ WIP: Visualize
 
 - port usage standard port services VS nonstandard 
 
+- services on non standard ports
+
+- mimicry rule: alert if traffic on standard port does not match the expected protocol (using DPI results)
+
 ----
+
+- compression for /api/chart/data - Chart data endpoints - currently disabled 
+- compression for downloading ALL files and pcaps currently disabled
+- investigation notes feature: add text infos to any host, device or field
+
+- change cli interface to https://github.com/urfave/cli 
 
 - report generation
 - Ja4
@@ -31,26 +47,7 @@ WIP: Visualize
 - model security rules on top of HTTP
 - model security rules on top of DNS
 
-
-common gopacket errors, improve debug output so the issues can be fixed:
-- Unknown TLS record type
-- Unable to decode EthernetType 34962
-- TLS record too short
-- Unknown TLS handshake type
-- TLS packet length mismatch
-- Layer type not currently supported
-- runtime error: slice bounds out of range [:99] with capacity 97
-- Unable to decode EthernetType 267
-- dns name uncomputable: invalid index
-- dns offset pointer too high
-- Unable to decode EthernetType 32922
-- dns name uncomputable: invalid index
-- TLS packet length mismatch
-- DNS packet too short
-- Unknown TLS handshake type
-- Unknown TLS record type
-- TLS record too short
-
+- https://echarts.apache.org/en/index.html v6
 
 - Audit records data duplications: IPProfile Ja3Hashes, Alerts
 
@@ -77,6 +74,7 @@ common gopacket errors, improve debug output so the issues can be fixed:
 - netcap core should produce info which fields contain data for the audit records, so that UI can use this only show fields that make sense for filtering, without having to parse the entire data again.
 - always allow to drag and drop files for upload on the Analyze menu item, even if user is on a different page. Switch to analyze page automatiaclly and start upload
 - add local dev mode for webUI
+- ✓ webUI: implement Learn Mode - interactive help tooltips that appear when hovering/clicking UI elements (see docs/webui-learn-mode.md)
 - try-service: crash reporting mechanism: when the service panics and crashes, we need the full service log, and all netcap logfiles copied and archived together with the input pcap file for reproduction. An alert should be fired via email. add support to connect an SMTP service to send alert emails to an administrator.
 - add custom data support for dbs and integrate it in UI
 - switch to gopacket/reassembly and tcpassembly? implement tests to verify the decoded streams are consistent in between executions

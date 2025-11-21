@@ -37,9 +37,10 @@ import {
   ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
-import { api, formatBytes } from '@/lib/api';
+import { api, formatBytes, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useRouter } from 'next/router';
+import FilterExpressionHighlight, { FilterExpressionBlock } from '@/components/FilterExpressionHighlight';
 
 interface LayerGroup {
   layerName: string;
@@ -777,16 +778,26 @@ export default function AuditRecords() {
   };
 
   const handleDownloadAll = () => {
-    // Get session ID from status or construct download URL
-    const sessionId = status?.sessionId;
-    if (!sessionId) {
-      console.error('No session ID available for download');
-      alert('Unable to download: session information not available');
+    console.log('[Audit] Download All clicked');
+    console.log('[Audit] Status:', status);
+    console.log('[Audit] Layer groups count:', layerGroups.length);
+    console.log('[Audit] Total files:', layerGroups.reduce((sum, group) => sum + group.files.length, 0));
+    
+    // In service mode, use sessionId. In local mode, use activeInputFile
+    const identifier = status?.sessionId || status?.activeInputFile;
+    
+    if (!identifier) {
+      console.error('[Audit] No identifier available for download (sessionId or activeInputFile)');
+      console.error('[Audit] Status object:', JSON.stringify(status, null, 2));
+      alert('Unable to download: no session or file information available');
       return;
     }
 
+    console.log('[Audit] Using identifier:', identifier);
+    
     // Trigger download by opening the download URL
-    const downloadUrl = `/api/download/${sessionId}`;
+    const downloadUrl = `${getBackendUrl()}/api/download/${encodeURIComponent(identifier)}`;
+    console.log('[Audit] Opening download URL:', downloadUrl);
     window.open(downloadUrl, '_blank');
   };
 
@@ -817,8 +828,17 @@ export default function AuditRecords() {
           )
         }
         renderValue={() => (
-          <Box display="flex" alignItems="center" gap={1}>
-            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'inherit' }}>
+          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
+            <Typography sx={{ 
+              fontFamily: 'monospace', 
+              fontSize: '0.85rem', 
+              color: 'inherit',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+              minWidth: 0,
+            }}>
               {selectedFile.name}
             </Typography>
           </Box>
@@ -983,11 +1003,17 @@ export default function AuditRecords() {
             
             {/* Download All Button */}
             <Button
+              data-learn="Download All Audit Records: Download all audit record files as a compressed archive for offline analysis."
               variant="contained"
               color="success"
               startIcon={<DownloadIcon />}
               onClick={handleDownloadAll}
-              disabled={!status?.sessionId}
+              disabled={
+                // Require either sessionId (service mode) or activeInputFile (local mode)
+                (!status?.sessionId && !status?.activeInputFile) || 
+                // Also require at least one audit file available
+                layerGroups.reduce((sum, group) => sum + group.files.length, 0) === 0
+              }
               size="small"
               sx={{ minWidth: { xs: 'auto', sm: 180 } }}
               fullWidth={false}
@@ -1127,6 +1153,7 @@ export default function AuditRecords() {
 
                         <Box sx={{ display: 'flex', gap: 1, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
                           <Button
+                            data-learn="View Records: Open a detailed view of all records for this protocol type with filtering capabilities."
                             variant="outlined"
                             size="small"
                             onClick={(e) => {
@@ -1138,6 +1165,7 @@ export default function AuditRecords() {
                             View Records
                           </Button>
                           <Button
+                            data-learn="Explore in Charts: Create interactive visualizations and charts for this protocol's data fields."
                             variant="contained"
                             size="small"
                             startIcon={<BarChartIcon />}
@@ -1179,6 +1207,7 @@ export default function AuditRecords() {
               <Typography variant="h6">{selectedType} Records</Typography>
               <Box sx={{ display: 'flex', gap: 0.5 }}>
                 <Button
+                  data-learn="JSON View: Display records as raw JSON format for technical analysis and debugging."
                   size="small"
                   variant={viewMode === 'json' ? 'contained' : 'outlined'}
                   onClick={() => setViewMode('json')}
@@ -1187,6 +1216,7 @@ export default function AuditRecords() {
                   JSON
                 </Button>
                 <Button
+                  data-learn="UI View: Display records in a structured, user-friendly format with visual elements."
                   size="small"
                   variant={viewMode === 'ui' ? 'contained' : 'outlined'}
                   onClick={() => setViewMode('ui')}
@@ -1214,6 +1244,7 @@ export default function AuditRecords() {
           <Box sx={{ mb: 2, pt: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
               <Autocomplete
+                data-learn="Filter Expression: Enter conditions to filter records (e.g., DstPort == 443). Press TAB or CTRL+SPACE for autocomplete suggestions, ENTER to apply."
                 freeSolo
                 fullWidth
                 open={autocompleteOpen}
@@ -1386,6 +1417,7 @@ export default function AuditRecords() {
               />
               <Tooltip title="Show filter examples">
                 <IconButton 
+                  data-learn="Filter Help: Toggle display of example filter expressions and syntax documentation."
                   size="small" 
                   onClick={() => {
                     setShowFilterHelp(!showFilterHelp);
@@ -1401,6 +1433,7 @@ export default function AuditRecords() {
             
             <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
               <Button
+                data-learn="Apply Filter: Execute the filter expression to show only matching records."
                 variant="contained"
                 size="small"
                 startIcon={<SearchIcon />}
@@ -1411,6 +1444,7 @@ export default function AuditRecords() {
               </Button>
               {activeFilter && (
                 <Button
+                  data-learn="Clear Filter: Remove the active filter and show all records."
                   variant="outlined"
                   size="small"
                   startIcon={<ClearIcon />}
@@ -1421,6 +1455,26 @@ export default function AuditRecords() {
                 </Button>
               )}
             </Box>
+
+            {/* Filter Preview with Syntax Highlighting */}
+            {filterExpression && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="caption" color="text.secondary" gutterBottom>
+                  Filter Preview:
+                </Typography>
+                <FilterExpressionBlock expression={filterExpression} />
+              </Box>
+            )}
+
+            {/* Active Filter Display */}
+            {activeFilter && activeFilter !== filterExpression && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="caption" color="text.secondary" gutterBottom>
+                  Active Filter:
+                </Typography>
+                <FilterExpressionBlock expression={activeFilter} sx={{ bgcolor: 'success.dark', opacity: 0.7 }} />
+              </Box>
+            )}
 
             {/* Filter Help/Examples */}
             <Collapse in={showFilterHelp}>
@@ -1508,22 +1562,24 @@ export default function AuditRecords() {
                       <Box sx={{ ml: 2, mt: 0.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                         {section.examples.map((example, idx) => (
                           <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Box component="code" sx={{ 
+                            <Box sx={{ 
                               bgcolor: 'action.hover', 
-                              color: 'text.primary',
                               px: 0.75, 
                               py: 0.25, 
                               borderRadius: 0.5,
                               border: 1,
                               borderColor: 'divider',
-                              fontFamily: 'monospace',
-                              fontSize: '0.85rem',
                               flex: 1,
                             }}>
-                              {example.expr}
+                              <FilterExpressionHighlight 
+                                expression={example.expr} 
+                                fontSize="0.85rem"
+                                wrap={true}
+                              />
                             </Box>
                             <Tooltip title="Insert into filter">
                               <IconButton
+                                data-learn="Insert Example: Copy this example filter expression into the filter input field."
                                 size="small"
                                 onClick={() => handleInsertExample(example.expr)}
                                 sx={{ p: 0.25 }}
@@ -1653,6 +1709,7 @@ export default function AuditRecords() {
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', mt: 2 }}>
                 <Button
+                  data-learn="Clear Filter: Remove the current filter to show all available records."
                   variant="outlined"
                   onClick={handleClearFilter}
                   startIcon={<ClearIcon />}
@@ -1660,6 +1717,7 @@ export default function AuditRecords() {
                   Clear Filter
                 </Button>
                 <Button
+                  data-learn="Show Examples: Display filter expression examples and syntax help."
                   variant="text"
                   onClick={() => setShowFilterHelp(true)}
                   startIcon={<HelpOutlineIcon />}
@@ -1677,7 +1735,7 @@ export default function AuditRecords() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Close</Button>
+          <Button data-learn="Close Dialog: Close the record viewer and return to the audit records list." onClick={handleClose}>Close</Button>
         </DialogActions>
       </Dialog>
     </Layout>

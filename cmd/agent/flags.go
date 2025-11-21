@@ -40,7 +40,7 @@ var (
 	flagChanSize       = fs.Int("chan-size", 1024, "chunk size for internal data channels")
 	flagLogErrors      = fs.Bool("log-errors", false, "enable verbose packet decoding error logging")
 	flagCalcEntropy    = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")
-	flagFileStorage    = fs.String("fileStorage", "", "path to created extracted files (currently only for HTTP)")
+	flagFileStorage    = fs.String("fileStorage", "files", "path to created extracted files (relative to output directory, empty string disables file extraction, currently only for HTTP)")
 	flagBPF            = fs.String("bpf", "", "supply a BPF filter to use for netcap collection")
 	flagInclude        = fs.String("include", "", "include specific decoders")
 	flagExclude        = fs.String("exclude", "", "exclude specific decoders")

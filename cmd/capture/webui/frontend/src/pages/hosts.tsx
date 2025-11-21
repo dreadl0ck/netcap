@@ -20,6 +20,7 @@ import {
   TableHead,
   TablePagination,
   TableRow,
+  TableSortLabel,
   TextField,
   Tooltip,
   Typography,
@@ -38,7 +39,7 @@ import {
   TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
-import { api, formatBytes, formatTimestamp } from '@/lib/api';
+import { api, formatBytes, formatTimestamp, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 interface ProtocolInfo {
@@ -83,6 +84,9 @@ interface HostsResponse {
   totalCount: number;
 }
 
+type HostSortField = 'addr' | 'type' | 'packets' | 'bytes';
+type SortOrder = 'asc' | 'desc';
+
 export default function HostsPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
@@ -91,6 +95,8 @@ export default function HostsPage() {
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [switchingFile, setSwitchingFile] = useState(false);
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
+  const [sortField, setSortField] = useState<HostSortField>('addr');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -99,7 +105,7 @@ export default function HostsPage() {
   // Fetch hosts data
   const { data: hostsData, error, mutate } = useSWR<HostsResponse>(
     'hosts',
-    () => fetch('/api/hosts').then(res => res.json()),
+    () => fetch(`${getBackendUrl()}/api/hosts`).then(res => res.json()),
     {
       refreshInterval: 10000,
     }
@@ -108,7 +114,20 @@ export default function HostsPage() {
   const hosts = hostsData?.hosts || [];
   const totalCount = hostsData?.totalCount || 0;
 
-  // Apply filters
+  // Handle sort column click
+  const handleSort = (field: HostSortField) => {
+    if (sortField === field) {
+      // Toggle sort order if clicking the same field
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new field and default to ascending
+      setSortField(field);
+      setSortOrder('asc');
+    }
+    setPage(0); // Reset to first page when sorting changes
+  };
+
+  // Apply filters and sorting
   const filteredHosts = useMemo(() => {
     let filtered = hosts;
 
@@ -130,8 +149,33 @@ export default function HostsPage() {
       );
     }
 
+    // Apply sorting
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'addr':
+          comparison = a.addr.localeCompare(b.addr);
+          break;
+        case 'type':
+          // Sort internal first (true > false), then by address
+          if (a.isInternal === b.isInternal) {
+            comparison = a.addr.localeCompare(b.addr);
+          } else {
+            comparison = a.isInternal ? -1 : 1;
+          }
+          break;
+        case 'packets':
+          comparison = a.numPackets - b.numPackets;
+          break;
+        case 'bytes':
+          comparison = a.bytes - b.bytes;
+          break;
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
     return filtered;
-  }, [hosts, filterType, searchQuery]);
+  }, [hosts, filterType, searchQuery, sortField, sortOrder]);
 
   // Paginate hosts
   const paginatedHosts = filteredHosts.slice(
@@ -210,8 +254,17 @@ export default function HostsPage() {
           )
         }
         renderValue={() => (
-          <Box display="flex" alignItems="center" gap={1}>
-            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'inherit' }}>
+          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
+            <Typography sx={{ 
+              fontFamily: 'monospace', 
+              fontSize: '0.85rem', 
+              color: 'inherit',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+              minWidth: 0,
+            }}>
               {selectedFile.name}
             </Typography>
           </Box>
@@ -357,11 +410,11 @@ export default function HostsPage() {
         {/* Visualization Charts */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`top-talkers-${chartRefreshKey}`}
-                  src="/api/hosts/top-talkers"
+                  src={`${getBackendUrl()}/api/hosts/top-talkers`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -374,11 +427,11 @@ export default function HostsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`traffic-dist-${chartRefreshKey}`}
-                  src="/api/hosts/traffic-distribution"
+                  src={`${getBackendUrl()}/api/hosts/traffic-distribution?showLegend=false`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -391,11 +444,11 @@ export default function HostsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`applications-${chartRefreshKey}`}
-                  src="/api/hosts/applications"
+                  src={`${getBackendUrl()}/api/hosts/applications`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -408,11 +461,11 @@ export default function HostsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`protocols-${chartRefreshKey}`}
-                  src="/api/hosts/protocols"
+                  src={`${getBackendUrl()}/api/hosts/protocols?showLegend=false`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -490,10 +543,42 @@ export default function HostsPage() {
                 <TableHead>
                   <TableRow>
                     <TableCell width={40}></TableCell>
-                    <TableCell>IP Address</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell align="right">Packets</TableCell>
-                    <TableCell align="right">Bytes</TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={sortField === 'addr'}
+                        direction={sortField === 'addr' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('addr')}
+                      >
+                        IP Address
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={sortField === 'type'}
+                        direction={sortField === 'type' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('type')}
+                      >
+                        Type
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right">
+                      <TableSortLabel
+                        active={sortField === 'packets'}
+                        direction={sortField === 'packets' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('packets')}
+                      >
+                        Packets
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right">
+                      <TableSortLabel
+                        active={sortField === 'bytes'}
+                        direction={sortField === 'bytes' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('bytes')}
+                      >
+                        Bytes
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell>Geolocation</TableCell>
                     <TableCell>DNS Names</TableCell>
                     <TableCell>Applications</TableCell>

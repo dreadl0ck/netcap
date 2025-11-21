@@ -17,6 +17,7 @@ import "time"
 
 // FileInfo represents file metadata
 type FileInfo struct {
+	ID               string  `json:"id"`                       // Unique identifier for the file (used for API calls)
 	Name             string  `json:"name"`
 	Path             string  `json:"path"`
 	Size             int64   `json:"size"`
@@ -49,6 +50,7 @@ type StatusResponse struct {
 	IsMultiFile     bool      `json:"isMultiFile"`
 	IsServiceMode   bool      `json:"isServiceMode,omitempty"`
 	IsLiveMode      bool      `json:"isLiveMode"`
+	SessionID       string    `json:"sessionId,omitempty"` // Current session ID (service mode only)
 }
 
 // AuditStatsResponse represents the audit record statistics response

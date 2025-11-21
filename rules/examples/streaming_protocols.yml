@@ -65,7 +65,7 @@ rules:
 
   # Port 443: RTMPS (often uses standard HTTPS port)
   - name: RTMPS Traffic Detected
-    description: RTMP over TLS detected - encrypted streaming protocol (note: shares port 443 with HTTPS)
+    description: "RTMP over TLS detected - encrypted streaming protocol (note: shares port 443 with HTTPS)"
     type: TCP
     expression: DstPort == 443 || SrcPort == 443
     severity: info
@@ -134,7 +134,7 @@ rules:
   # ========================================
 
   # Ports 5004-5005: RTP/RTCP
-  - name: RTP Audio/Video Stream Detected
+  - name: RTP Audio Video Stream Detected
     description: Real-time Transport Protocol (RTP) detected - carries audio/video streams (often paired with RTSP)
     type: UDP
     expression: (DstPort >= 5004 && DstPort <= 5005) || (SrcPort >= 5004 && SrcPort <= 5005)

@@ -1,18 +1,16 @@
 import { useEffect, useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CircularProgress,
-  Grid,
-  LinearProgress,
-  Typography,
-  Chip,
-  Button,
-  Alert,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CircularProgress from '@mui/material/CircularProgress';
+import Grid from '@mui/material/Grid';
+import LinearProgress from '@mui/material/LinearProgress';
+import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import Button from '@mui/material/Button';
+import Alert from '@mui/material/Alert';
 import Layout from '@/components/Layout';
-import { api, formatTimestamp, formatBytes } from '@/lib/api';
+import { api, formatTimestamp, formatBytes, getBackendUrl } from '@/lib/api';
 import useSWR from 'swr';
 import { useRouter } from 'next/router';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -135,57 +133,10 @@ export default function Dashboard() {
   return (
     <Layout title="Dashboard">
       <Box>
-        <Box mb={4}>
-          <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
-            {status?.isProcessing ? (
-              <>
-                <Chip
-                  icon={status?.isLiveMode ? <RadioButtonCheckedIcon /> : <HourglassEmptyIcon />}
-                  label={status?.isLiveMode ? "Live Capture" : "Processing"}
-                  color="warning"
-                  variant="outlined"
-                />
-                <Typography variant="body2" color="text.secondary">
-                  {status?.isLiveMode ? "Capturing packets live..." : "Capture is currently running..."}
-                </Typography>
-                {status?.isLiveMode && (
-                  <Button
-                    variant="contained"
-                    color="error"
-                    startIcon={<StopIcon />}
-                    onClick={handleStopCapture}
-                    disabled={stopping}
-                    size="small"
-                  >
-                    {stopping ? 'Stopping...' : 'Stop Capture'}
-                  </Button>
-                )}
-              </>
-            ) : (
-              <>
-                <Chip
-                  icon={<CheckCircleIcon />}
-                  label="Complete"
-                  color="success"
-                  variant="outlined"
-                />
-                <Typography variant="body2" color="text.secondary">
-                  Processing completed
-                </Typography>
-              </>
-            )}
-          </Box>
-          {stopMessage && (
-            <Alert severity="info" sx={{ mt: 2 }} onClose={() => setStopMessage(null)}>
-              {stopMessage}
-            </Alert>
-          )}
-        </Box>
-
         {/* Live Processing Stats */}
         {status?.isProcessing && stats?.processingStats && (
           <Box mb={4}>
-            <Card>
+            <Card data-learn="Live Processing: Real-time statistics showing current PCAP analysis progress, packet counts, and processing speed.">
               <CardContent>
                 <Box display="flex" alignItems="center" gap={1} mb={2}>
                   <SpeedIcon color="primary" />
@@ -196,7 +147,7 @@ export default function Dashboard() {
                 
                 {status.isServiceMode ? (
                   // Service mode: simplified view with queue and current file
-                  <Grid container spacing={3}>
+                  (<Grid container spacing={3}>
                     <Grid item xs={12} md={6}>
                       <Box display="flex" alignItems="center" gap={2} mb={1}>
                         <InsertDriveFileIcon fontSize="small" color="action" />
@@ -208,7 +159,6 @@ export default function Dashboard() {
                         {stats.processingStats.currentFile || 'Idle'}
                       </Typography>
                     </Grid>
-
                     <Grid item xs={12} md={6}>
                       <Box display="flex" alignItems="center" gap={2} mb={1}>
                         <Typography variant="body2">
@@ -222,10 +172,10 @@ export default function Dashboard() {
                         {stats.processingStats.jobsProcessed || 0} / {stats.processingStats.jobsScheduled || 0} jobs completed
                       </Typography>
                     </Grid>
-                  </Grid>
+                  </Grid>)
                 ) : (
                   // Local mode: detailed view with progress
-                  <Grid container spacing={2}>
+                  (<Grid container spacing={2}>
                     <Grid item xs={12}>
                       <Box display="flex" alignItems="center" gap={2} mb={1}>
                         <InsertDriveFileIcon fontSize="small" color="action" />
@@ -237,7 +187,6 @@ export default function Dashboard() {
                         File {stats.processingStats.fileIndex} of {stats.processingStats.totalFiles}
                       </Typography>
                     </Grid>
-
                     <Grid item xs={12}>
                       <Box mb={1}>
                         <Box display="flex" justifyContent="space-between" mb={0.5}>
@@ -258,7 +207,6 @@ export default function Dashboard() {
                         {stats.processingStats.packetsProcessed.toLocaleString()} / {stats.processingStats.totalPackets.toLocaleString()} packets
                       </Typography>
                     </Grid>
-
                     <Grid item xs={12} sm={6} md={3}>
                       <Typography variant="body2" color="text.secondary">
                         Packets/Second
@@ -267,7 +215,6 @@ export default function Dashboard() {
                         {stats.processingStats.packetsPerSecond.toLocaleString()}
                       </Typography>
                     </Grid>
-
                     <Grid item xs={12} sm={6} md={3}>
                       <Typography variant="body2" color="text.secondary">
                         Profiles
@@ -276,7 +223,6 @@ export default function Dashboard() {
                         {stats.processingStats.profilesCount}
                       </Typography>
                     </Grid>
-
                     <Grid item xs={12} sm={6} md={3}>
                       <Typography variant="body2" color="text.secondary">
                         Services
@@ -285,7 +231,6 @@ export default function Dashboard() {
                         {stats.processingStats.servicesCount}
                       </Typography>
                     </Grid>
-
                     <Grid item xs={12} sm={6} md={3}>
                       <Typography variant="body2" color="text.secondary">
                         Last Update
@@ -294,7 +239,7 @@ export default function Dashboard() {
                         {new Date(stats.processingStats.lastUpdate * 1000).toLocaleTimeString()}
                       </Typography>
                     </Grid>
-                  </Grid>
+                  </Grid>)
                 )}
               </CardContent>
             </Card>
@@ -304,7 +249,7 @@ export default function Dashboard() {
         {/* Audit Statistics Section */}
         {auditStats && (auditStats.exploitCount > 0 || auditStats.vulnerabilityCount > 0 || auditStats.credentialsCount > 0 || auditStats.softwareCount > 0) && (
           <Box mb={4}>
-            <Card>
+            <Card data-learn="Security Audit Summary: Quick overview of security-relevant findings including exploits, vulnerabilities, credentials, and detected software.">
               <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
                   Security Audit Records
@@ -385,7 +330,7 @@ export default function Dashboard() {
 
         <Grid container spacing={3}>
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
+            <Card data-learn="Data Sources: Number of input PCAP files that have been analyzed.">
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
                   Data Sources
@@ -396,7 +341,7 @@ export default function Dashboard() {
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
+            <Card data-learn="Audit Record Types: Number of different protocol types found in the analyzed traffic.">
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
                   Audit Record Types
@@ -407,7 +352,7 @@ export default function Dashboard() {
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
+            <Card data-learn="Total Records: Total number of audit records extracted from all analyzed PCAP files.">
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
                   Total Records
@@ -418,7 +363,7 @@ export default function Dashboard() {
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
+            <Card data-learn="Log Files: Number of log files generated during processing, useful for debugging and monitoring.">
               <CardContent>
                 <Typography color="text.secondary" gutterBottom>
                   Log Files
@@ -432,7 +377,7 @@ export default function Dashboard() {
         {/* Geolocation Chart Section */}
         {totalAuditRecords > 0 && (
           <Box mt={4}>
-            <Card>
+            <Card data-learn="Geolocation Map: Interactive world map showing the geographic distribution of IP addresses found in network traffic.">
               <CardContent>
                 <Box display="flex" alignItems="center" gap={1} mb={2}>
                   <PublicIcon color="primary" />
@@ -450,7 +395,7 @@ export default function Dashboard() {
                   }}
                 >
                   <iframe
-                    src="/api/visualize/geo-all?showLegend=false"
+                    src={`${getBackendUrl()}/api/visualize/geo-all?showLegend=false`}
                     style={{
                       width: '100%',
                       height: '100%',
@@ -471,7 +416,7 @@ export default function Dashboard() {
         {/* System Information Section */}
         {systemInfo && (
           <Box mt={4}>
-            <Card>
+            <Card data-learn="System Information: Hardware and runtime statistics of the Netcap server including CPU cores, memory usage, and platform details.">
               <CardContent>
                 <Box display="flex" alignItems="center" gap={1} mb={2}>
                   <MemoryIcon color="primary" />

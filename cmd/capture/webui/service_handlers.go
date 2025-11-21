@@ -21,6 +21,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -132,10 +133,19 @@ func (s *Server) handleSessionSelect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extract session ID from URL path
-	sessionID := strings.TrimPrefix(r.URL.Path, "/api/try/session/")
-	if sessionID == "" {
+	encodedSessionID := strings.TrimPrefix(r.URL.Path, "/api/try/session/")
+	if encodedSessionID == "" {
 		respondJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "Session ID required",
+		})
+		return
+	}
+
+	// URL-decode the session ID
+	sessionID, err := url.PathUnescape(encodedSessionID)
+	if err != nil {
+		respondJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "Invalid session ID encoding",
 		})
 		return
 	}
@@ -171,10 +181,17 @@ func (s *Server) handleViewSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Extract session ID from URL path
-	sessionID := strings.TrimPrefix(r.URL.Path, "/view/")
+	encodedSessionID := strings.TrimPrefix(r.URL.Path, "/view/")
 
-	if sessionID == "" {
+	if encodedSessionID == "" {
 		http.Error(w, "Session ID required", http.StatusBadRequest)
+		return
+	}
+
+	// URL-decode the session ID
+	sessionID, err := url.PathUnescape(encodedSessionID)
+	if err != nil {
+		http.Error(w, "Invalid session ID encoding", http.StatusBadRequest)
 		return
 	}
 
@@ -318,6 +335,9 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Load BPF filter from saved configuration
+	bpfConfig := s.loadBPFConfig()
+
 	// Create session info
 	shareURL := fmt.Sprintf("/view/%s", sessionID)
 	session := &SessionInfo{
@@ -331,13 +351,16 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 		Status:          StatusQueued,
 		ResultsReady:    false,
 		ShareUrl:        shareURL,
+		BPFFilter:       bpfConfig.Filter, // Store BPF filter in session
 	}
 
 	// Add session to manager
 	s.sessionManager.AddSession(session)
 
-	// Load BPF filter from saved configuration
-	bpfConfig := s.loadBPFConfig()
+	// Save session metadata to disk
+	if err := s.sessionManager.SaveSessionMetadata(sessionID); err != nil {
+		log.Printf("[WebUI] Warning: Failed to save session metadata for %s: %v", sessionID, err)
+	}
 
 	// Create analysis job
 	job := &AnalysisJob{

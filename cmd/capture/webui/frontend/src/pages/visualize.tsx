@@ -1,54 +1,48 @@
 import { useState, useEffect, useCallback } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  CircularProgress,
-  FormControl,
-  Grid,
-  MenuItem,
-  Paper,
-  Select,
-  SelectChangeEvent,
-  Typography,
-  Alert,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  ToggleButtonGroup,
-  ToggleButton,
-  Slider,
-} from '@mui/material';
-import {
-  AccountTree as SankeyIcon,
-  SwapHoriz as SwapHorizIcon,
-  GridView as TreemapIcon,
-  BarChart as Bar3DIcon,
-  BubbleChart as GraphIcon,
-  Label as LabelIcon,
-  LabelOff as LabelOffIcon,
-  Public as GeoIcon,
-  ScatterPlot as Scatter3DIcon,
-  Hub as HostsGraphIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import CircularProgress from '@mui/material/CircularProgress';
+import FormControl from '@mui/material/FormControl';
+import Grid from '@mui/material/Grid';
+import MenuItem from '@mui/material/MenuItem';
+import Paper from '@mui/material/Paper';
+import Select, { type SelectChangeEvent } from '@mui/material/Select';
+import Typography from '@mui/material/Typography';
+import Alert from '@mui/material/Alert';
+import Chip from '@mui/material/Chip';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import ToggleButton from '@mui/material/ToggleButton';
+import Slider from '@mui/material/Slider';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import GridViewIcon from '@mui/icons-material/GridView';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import BubbleChartIcon from '@mui/icons-material/BubbleChart';
+import LabelIcon from '@mui/icons-material/Label';
+import LabelOffIcon from '@mui/icons-material/LabelOff';
+import PublicIcon from '@mui/icons-material/Public';
+import ScatterPlotIcon from '@mui/icons-material/ScatterPlot';
+import HubIcon from '@mui/icons-material/Hub';
 import Layout from '@/components/Layout';
-import { api, formatBytes, type ProtocolHierarchyResponse } from '@/lib/api';
+import { api, formatBytes, getBackendUrl, type ProtocolHierarchyResponse } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useRouter } from 'next/router';
-import { Chart } from 'react-google-charts';
 
 const CHART_TYPES = [
-  { value: 'sankey', label: 'Sankey Diagram', icon: <SankeyIcon /> },
-  { value: 'treemap', label: 'Treemap', icon: <TreemapIcon /> },
-  { value: 'bar3d', label: '3D Bar Chart', icon: <Bar3DIcon /> },
-  { value: 'graph', label: 'Network Graph', icon: <GraphIcon /> },
-  { value: 'geo', label: 'Geo Map', icon: <GeoIcon /> },
-  { value: 'scatter3d', label: '3D Scatter', icon: <Scatter3DIcon /> },
-  { value: 'hosts-graph', label: 'Hosts Graph', icon: <HostsGraphIcon /> },
+  { value: 'sankey', label: 'Sankey Diagram', icon: <AccountTreeIcon /> },
+  { value: 'treemap', label: 'Treemap', icon: <GridViewIcon /> },
+  { value: 'bar3d', label: '3D Bar Chart', icon: <BarChartIcon /> },
+  { value: 'graph', label: 'Network Graph', icon: <BubbleChartIcon /> },
+  { value: 'geo', label: 'Geo Map', icon: <PublicIcon /> },
+  { value: 'scatter3d', label: '3D Scatter', icon: <ScatterPlotIcon /> },
+  { value: 'hosts-graph', label: 'Hosts Graph', icon: <HubIcon /> },
 ];
 
 export default function Visualize() {
@@ -67,7 +61,8 @@ export default function Visualize() {
   const [autoSelectAttempted, setAutoSelectAttempted] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
   const [chartTypeRotationAttempted, setChartTypeRotationAttempted] = useState(false);
-  const [maxNodes, setMaxNodes] = useState(1000);
+  const [maxNodes, setMaxNodes] = useState(100);
+  const [maxConnections, setMaxConnections] = useState(100000);
 
   // Chart type rotation: get/set the index of the last used chart type
   const getNextChartTypeIndex = useCallback((availableTypes: typeof CHART_TYPES): number => {
@@ -243,8 +238,17 @@ export default function Visualize() {
           )
         }
         renderValue={() => (
-          <Box display="flex" alignItems="center" gap={1}>
-            <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'inherit' }}>
+          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
+            <Typography sx={{ 
+              fontFamily: 'monospace', 
+              fontSize: '0.85rem', 
+              color: 'inherit',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+              minWidth: 0,
+            }}>
               {selectedFile.name}
             </Typography>
           </Box>
@@ -301,43 +305,6 @@ export default function Visualize() {
     </FormControl>
   ) : null;
 
-  // Prepare data for Sankey diagram
-  const sankeyData = hierarchyData ? (() => {
-    // Google Charts Sankey format: [['From', 'To', Weight], ...]
-    const data: Array<[string, string, string | number]> = [['From', 'To', 'Packet Count']];
-    
-    hierarchyData.links.forEach(link => {
-      data.push([link.source, link.target, link.value]);
-    });
-    
-    return data;
-  })() : null;
-
-  // Chart options
-  const sankeyOptions = {
-    sankey: {
-      node: {
-        colors: ['#a61d4c'],
-        label: {
-          fontName: 'Roboto',
-          fontSize: 14,
-          color: '#333',
-        },
-        nodePadding: 20,
-        width: 8,
-      },
-      link: {
-        colorMode: 'gradient',
-        colors: ['#b3d9ff', '#66b3ff', '#3399ff', '#0073e6', '#004d99'],
-      },
-    },
-    tooltip: {
-      textStyle: {
-        fontName: 'Roboto',
-        fontSize: 13,
-      },
-    },
-  };
 
   // Get layer color
   const getLayerColor = (layer: string) => {
@@ -354,19 +321,22 @@ export default function Visualize() {
   // Get chart URL for echarts-based visualizations
   const getChartUrl = () => {
     const baseUrl = (() => {
+      const backend = getBackendUrl();
       switch (selectedChartType) {
+        case 'sankey':
+          return `${backend}/api/visualize/sankey`;
         case 'treemap':
-          return '/api/visualize/treemap';
+          return `${backend}/api/visualize/treemap`;
         case 'bar3d':
-          return '/api/visualize/bar3d';
+          return `${backend}/api/visualize/bar3d`;
         case 'graph':
-          return '/api/visualize/graph';
+          return `${backend}/api/visualize/graph`;
         case 'geo':
-          return '/api/visualize/geo';
+          return `${backend}/api/visualize/geo`;
         case 'scatter3d':
-          return '/api/visualize/scatter3d';
+          return `${backend}/api/visualize/scatter3d`;
         case 'hosts-graph':
-          return '/api/visualize/hosts-graph';
+          return `${backend}/api/visualize/hosts-graph`;
         default:
           return null;
       }
@@ -382,55 +352,85 @@ export default function Visualize() {
       params.append('maxNodes', maxNodes.toString());
     }
     
+    // Add maxConnections parameter for scatter3d
+    if (selectedChartType === 'scatter3d') {
+      params.append('maxConnections', maxConnections.toString());
+    }
+    
     return `${baseUrl}?${params.toString()}`;
   };
 
   const chartUrl = getChartUrl();
   
-  // Refresh chart when legend toggle or maxNodes changes
+  // Refresh chart when legend toggle, maxNodes, or maxConnections changes
   useEffect(() => {
     setChartRefreshKey(prev => prev + 1);
-  }, [showLegend, maxNodes]);
+  }, [showLegend, maxNodes, maxConnections]);
 
   return (
     <Layout title="Visualize" headerAction={fileSelector}>
-      {/* Chart type selector and legend toggle - single line */}
+      {/* Chart type selector and legend toggle - wraps on mobile */}
       <Box 
         sx={{ 
           mb: selectedChartType === 'sankey' ? 3 : 1,
           display: 'flex',
-          alignItems: 'center',
+          flexDirection: { xs: 'column', md: 'row' },
+          alignItems: { xs: 'stretch', md: 'center' },
           justifyContent: 'space-between',
           gap: 2
         }}
       >
-        {/* Chart Type Buttons */}
-        <ToggleButtonGroup
-          value={selectedChartType}
-          exclusive
-          onChange={(_e, newValue) => {
-            if (newValue !== null) {
-              setSelectedChartType(newValue);
-              setError(null);
-              // Refresh chart key to force reload
-              setChartRefreshKey(prev => prev + 1);
-              // Load hierarchy data for sankey
-              if (newValue === 'sankey') {
-                loadHierarchy();
+        {/* Chart Type Buttons - scrollable on mobile */}
+        <Box sx={{ 
+          overflowX: { xs: 'auto', md: 'visible' },
+          overflowY: 'visible',
+          width: { xs: '100%', md: 'auto' },
+          // Hide scrollbar on webkit browsers
+          '&::-webkit-scrollbar': { display: 'none' },
+          msOverflowStyle: 'none',
+          scrollbarWidth: 'none',
+        }}>
+          <ToggleButtonGroup
+            value={selectedChartType}
+            exclusive
+            onChange={(_e, newValue) => {
+              if (newValue !== null) {
+                setSelectedChartType(newValue);
+                setError(null);
+                // Refresh chart key to force reload
+                setChartRefreshKey(prev => prev + 1);
+                // Load hierarchy data for sankey
+                if (newValue === 'sankey') {
+                  loadHierarchy();
+                }
               }
-            }
-          }}
-          size="small"
-        >
-          {CHART_TYPES.map((type) => (
-            <ToggleButton key={type.value} value={type.value}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {type.icon}
-                {type.label}
-              </Box>
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
+            }}
+            size="small"
+            sx={{
+              display: 'flex',
+              flexWrap: { xs: 'nowrap', md: 'wrap' },
+            }}
+          >
+            {CHART_TYPES.map((type) => (
+              <ToggleButton 
+                key={type.value} 
+                value={type.value}
+                sx={{
+                  px: { xs: 1, sm: 2 }, // Less padding on mobile
+                  minWidth: { xs: 'auto', sm: 'auto' },
+                  flexShrink: { xs: 0, md: 1 },
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0, sm: 1 } }}>
+                  {type.icon}
+                  <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                    {type.label}
+                  </Box>
+                </Box>
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        </Box>
 
         {/* Legend Toggle - Always shown on the right */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -444,19 +444,34 @@ export default function Visualize() {
             }}
             size="small"
           >
-            <ToggleButton value="on">
-              <LabelIcon sx={{ mr: 0.5, fontSize: 18 }} />
-              On
+            <ToggleButton 
+              value="on"
+              sx={{ px: { xs: 1, sm: 2 } }}
+            >
+              <LabelIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                On
+              </Box>
             </ToggleButton>
-            <ToggleButton value="off">
-              <LabelOffIcon sx={{ mr: 0.5, fontSize: 18 }} />
-              Off
+            <ToggleButton 
+              value="off"
+              sx={{ px: { xs: 1, sm: 2 } }}
+            >
+              <LabelOffIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Off
+              </Box>
             </ToggleButton>
           </ToggleButtonGroup>
           
           {/* Max Nodes Slider - Only for hosts-graph */}
           {selectedChartType === 'hosts-graph' && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, minWidth: 250 }}>
+            <Box sx={{ 
+              display: { xs: 'none', sm: 'flex' }, 
+              alignItems: 'center', 
+              gap: 2, 
+              minWidth: 250 
+            }}>
               <Typography variant="body2" sx={{ whiteSpace: 'nowrap', minWidth: 85 }}>
                 Max Nodes:
               </Typography>
@@ -471,6 +486,32 @@ export default function Visualize() {
               />
               <Typography variant="body2" sx={{ minWidth: 40, textAlign: 'right' }}>
                 {maxNodes}
+              </Typography>
+            </Box>
+          )}
+          
+          {/* Max Connections Slider - Only for scatter3d */}
+          {selectedChartType === 'scatter3d' && (
+            <Box sx={{ 
+              display: { xs: 'none', sm: 'flex' }, 
+              alignItems: 'center', 
+              gap: 2, 
+              minWidth: 280 
+            }}>
+              <Typography variant="body2" sx={{ whiteSpace: 'nowrap', minWidth: 120 }}>
+                Max Connections:
+              </Typography>
+              <Slider
+                value={maxConnections}
+                onChange={(_e, newValue) => setMaxConnections(newValue as number)}
+                min={1000}
+                max={500000}
+                step={1000}
+                valueLabelDisplay="auto"
+                sx={{ width: 150 }}
+              />
+              <Typography variant="body2" sx={{ minWidth: 60, textAlign: 'right' }}>
+                {maxConnections.toLocaleString()}
               </Typography>
             </Box>
           )}
@@ -549,7 +590,7 @@ export default function Visualize() {
                       minHeight: 200,
                     }}
                   >
-                    <SankeyIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
+                    <AccountTreeIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
                     <Typography variant="body2" color="text.secondary">
                       No protocol data available
                     </Typography>
@@ -573,52 +614,7 @@ export default function Visualize() {
               </Alert>
             )}
 
-            {/* Sankey Diagram */}
-            {selectedChartType === 'sankey' && (
-              <>
-                {loading && (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-                    <CircularProgress size={60} />
-                  </Box>
-                )}
-
-                {!loading && !error && sankeyData && sankeyData.length > 1 && (
-                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <Box sx={{ width: '100%', height: 'calc(100vh - 460px)' }}>
-                      <Chart
-                        chartType="Sankey"
-                        width="100%"
-                        height="100%"
-                        data={sankeyData}
-                        options={sankeyOptions}
-                      />
-                    </Box>
-                  </Box>
-                )}
-
-                {!loading && !error && sankeyData && sankeyData.length === 1 && (
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flex: 1,
-                    }}
-                  >
-                    <SankeyIcon sx={{ fontSize: 80, color: 'text.disabled', mb: 2 }} />
-                    <Typography variant="h6" color="text.secondary">
-                      No protocol relationships found
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      The capture file may not contain enough data to build a protocol hierarchy.
-                    </Typography>
-                  </Box>
-                )}
-              </>
-            )}
-
-            {/* ECharts-based visualizations (Treemap, Bar3D, Graph, Geo, Scatter3D, Hosts Graph) */}
+            {/* ECharts-based visualizations (Sankey, Treemap, Bar3D, Graph, Geo, Scatter3D, Hosts Graph) */}
             {chartUrl && (
               <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <Box sx={{ flex: 1, position: 'relative', minHeight: 400 }}>

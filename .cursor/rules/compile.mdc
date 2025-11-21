@@ -1,7 +1,6 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
-
 after making changes to the frontend React / typescript code always compile with command: 'zeus build-frontend' 
 
 after making changes to the Go code always compile with command: 'zeus install‘ to check if project compiles

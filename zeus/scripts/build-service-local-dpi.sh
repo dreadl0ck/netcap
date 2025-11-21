@@ -32,8 +32,8 @@ echo "[INFO] Local go-dpi path: ${GO_DPI_PATH}"
 if [ ! -d "$NETCAP_ROOT/cmd/capture/webui/frontend/out" ]; then
     echo "[ERROR] Frontend assets not found at $NETCAP_ROOT/cmd/capture/webui/frontend/out"
     echo "[INFO] Please build the frontend first:"
-    echo "       zeus build-frontend"
-    echo "       (or manually: cd cmd/capture/webui/frontend && npm install && npm run build)"
+    echo "       zeus build-frontend-service"
+    echo "       (or manually: cd cmd/capture/webui/frontend && NEXT_PUBLIC_BACKEND_URL=https://try.netcap.io npm run build)"
     exit 1
 fi
 
@@ -81,8 +81,11 @@ ARG VERSION=0.7.7
 # Add replace directive to use local go-dpi
 RUN echo "replace github.com/dreadl0ck/go-dpi => /go-dpi" >> go.mod
 
-# Clear Go build cache to ensure fresh build
-RUN go clean -cache -modcache -i -r
+# Download dependencies with replace directive in effect
+RUN GOWORK=off go mod download
+
+# Clear Go build cache (but not modcache) to ensure fresh build
+RUN go clean -cache -i -r
 
 # Remove any existing binary
 RUN rm -rf /netcap/bin
@@ -351,3 +354,6 @@ echo ""
 echo "Access the service at: http://localhost:7070"
 
 
+cd $HOME/go/src/github.com/dreadl0ck/serverconfig
+zeus deploy service=netcap-try
+zeus logs service=netcap-try

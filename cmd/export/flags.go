@@ -46,7 +46,7 @@ var (
 	flagIngoreUnknown        = fs.Bool("ignore-unknown", false, "disable writing unknown packets into a pcap file")
 	flagPromiscMode          = fs.Bool("promisc", true, "toggle promiscuous mode for live capture")
 	flagLogErrors            = fs.Bool("log-errors", false, "enable verbose packet decoding error logging")
-	flagFileStorage          = fs.String("fileStorage", "", "path to created extracted files (currently only for HTTP)")
+	flagFileStorage          = fs.String("fileStorage", "files", "path to created extracted files (relative to output directory, empty string disables file extraction, currently only for HTTP)")
 	flagCalcEntropy          = fs.Bool("entropy", false, "enable entropy calculation for Eth,IP,TCP and UDP payloads")
 	flagSnapLen              = fs.Int("snaplen", defaults.SnapLen, "configure snaplen for live capture from interface")
 	flagBaseLayer            = fs.String("base", "ethernet", "select base layer")

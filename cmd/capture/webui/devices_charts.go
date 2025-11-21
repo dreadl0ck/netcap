@@ -19,7 +19,6 @@ import (
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
-	echartstypes "github.com/go-echarts/go-echarts/v2/types"
 )
 
 // handleDevicesMACVendors returns HTML for bar chart showing top MAC vendors
@@ -266,12 +265,7 @@ func generateDevicesMACVendorsChart(outDir string, showLegend bool) *charts.Bar 
 
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			Theme:           echartstypes.ThemeMacarons,
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top MAC Vendors",
 			Subtitle: "By Device Count",
@@ -375,12 +369,7 @@ func generateDevicesHardwareChart(outDir string, showLegend bool) *charts.Bar {
 
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			Theme:           echartstypes.ThemeMacarons,
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Device Types",
 			Subtitle: "Hardware and Devices",
@@ -479,12 +468,7 @@ func generateDevicesOperatingSystemsChart(outDir string, showLegend bool) *chart
 
 	pie := charts.NewPie()
 	pie.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			Theme:           echartstypes.ThemeMacarons,
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Operating Systems",
 			Subtitle: "Detected from Device Profiles",
@@ -582,12 +566,7 @@ func generateDevicesApplicationsChart(outDir string, showLegend bool) *charts.Ba
 
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			Theme:           echartstypes.ThemeMacarons,
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Applications",
 			Subtitle: "Detected by DPI",
@@ -669,12 +648,7 @@ func generateDevicesTrafficDistributionChart(outDir string, showLegend bool) *ch
 
 	pie := charts.NewPie()
 	pie.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Width:           "100%",
-			Height:          "100%",
-			Theme:           echartstypes.ThemeMacarons,
-			BackgroundColor: "#1e1e1e",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Traffic Distribution",
 			Subtitle: "Top Devices by Bytes",
