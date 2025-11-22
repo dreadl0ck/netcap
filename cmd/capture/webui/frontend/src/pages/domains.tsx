@@ -81,7 +81,8 @@ export default function DomainsPage() {
     'domains',
     () => fetch(`${getBackendUrl()}/api/domains`).then(res => res.json()),
     {
-      refreshInterval: 10000,
+      // Disable auto-refresh to prevent table from reordering while user is viewing
+      refreshInterval: 0,
     }
   );
 

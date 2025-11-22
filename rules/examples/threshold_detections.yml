@@ -79,26 +79,26 @@ rules:
   
   # SYN Flood Detection
   - name: SYN Flood Detection
-    description: Alert when 1000+ SYN packets to same destination within 10 seconds
+    description: Alert when 10.000+ SYN packets to same destination within 10 seconds
     type: TCP
     expression: SYN && !ACK && !RST
-    severity: critical
+    severity: medium
     mitre: ["T1499.002"]
     tags: ["dos"]
     enabled: true
-    threshold: 1000
+    threshold: 10000
     threshold_window: 10
 
   # UDP Flood Detection
   - name: UDP Flood Detection
-    description: Alert when 1000+ UDP packets to same destination within 10 seconds
+    description: Alert when 10.000+ UDP packets to same destination within 10 seconds
     type: UDP
     expression: PayloadSize > 0
-    severity: critical
+    severity: medium
     mitre: ["T1499.002"]
     tags: ["dos"]
     enabled: true
-    threshold: 1000
+    threshold: 10000
     threshold_window: 10
 
   # ========================================

@@ -81,7 +81,8 @@ export default function SoftwarePage() {
     'software',
     () => fetch(`${getBackendUrl()}/api/software`).then(res => res.json()),
     {
-      refreshInterval: 10000,
+      // Disable auto-refresh to prevent table from reordering while user is viewing
+      refreshInterval: 0,
     }
   );
 

@@ -326,16 +326,9 @@ func readDHCPFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 			continue
 		}
 
-		// Use fingerprint if available (from DHCP fingerprinting)
-		// Note: DHCPv4 doesn't have a direct fingerprint field in the proto,
-		// but we can create one from relevant options
-		fingerprint := ""
-		for _, opt := range dhcp.Options {
-			if opt.Type == 55 { // Parameter Request List - commonly used for fingerprinting
-				fingerprint = string(opt.Data)
-				break
-			}
-		}
+		// Use the Fingerprint field which contains comma-separated option types
+		// e.g., "1,3,6,15,..." created during decoding
+		fingerprint := dhcp.Fingerprint
 
 		if fingerprint == "" {
 			continue

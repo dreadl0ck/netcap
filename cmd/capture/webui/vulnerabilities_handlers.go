@@ -62,8 +62,8 @@ type HostVulnerabilitySummary struct {
 	SoftwareCount   int    `json:"softwareCount"`
 }
 
-// ExploitsResponse contains the aggregated data
-type ExploitsResponse struct {
+// VulnerabilitiesResponse contains the aggregated data
+type VulnerabilitiesResponse struct {
 	Vulnerabilities []VulnerabilitySummary     `json:"vulnerabilities"`
 	Exploits        []ExploitSummary           `json:"exploits"`
 	AffectedHosts   []HostVulnerabilitySummary `json:"affectedHosts"`
@@ -71,8 +71,8 @@ type ExploitsResponse struct {
 	TotalExploits   int                        `json:"totalExploits"`
 }
 
-// handleExploits returns aggregated vulnerability and exploit data
-func (s *Server) handleExploits(w http.ResponseWriter, r *http.Request) {
+// handleVulnerabilities returns aggregated vulnerability and exploit data
+func (s *Server) handleVulnerabilities(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -94,10 +94,10 @@ func (s *Server) handleExploits(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := readExploitsAndVulns(outDir)
+	data, err := readVulnerabilitiesAndExploits(outDir)
 	if err != nil {
-		log.Printf("[WebUI] Failed to read exploits/vulns: %v", err)
-		http.Error(w, "Failed to read exploits/vulns", http.StatusInternalServerError)
+		log.Printf("[WebUI] Failed to read vulnerabilities/exploits: %v", err)
+		http.Error(w, "Failed to read vulnerabilities/exploits", http.StatusInternalServerError)
 		return
 	}
 
@@ -105,9 +105,9 @@ func (s *Server) handleExploits(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(data)
 }
 
-// readExploitsAndVulns reads and aggregates Vulnerability and Exploit records
-func readExploitsAndVulns(outDir string) (*ExploitsResponse, error) {
-	response := &ExploitsResponse{
+// readVulnerabilitiesAndExploits reads and aggregates Vulnerability and Exploit records
+func readVulnerabilitiesAndExploits(outDir string) (*VulnerabilitiesResponse, error) {
+	response := &VulnerabilitiesResponse{
 		Vulnerabilities: []VulnerabilitySummary{},
 		Exploits:        []ExploitSummary{},
 		AffectedHosts:   []HostVulnerabilitySummary{},
@@ -117,11 +117,14 @@ func readExploitsAndVulns(outDir string) (*ExploitsResponse, error) {
 	vulnMap := make(map[string]*VulnerabilitySummary)
 	exploitMap := make(map[string]*ExploitSummary)
 	hostMap := make(map[string]*HostVulnerabilitySummary)
+	
+	// Create a map of software product+version to hosts (from IPProfile)
+	softwareToHosts := buildSoftwareToHostsMap(outDir)
 
 	// 1. Read Vulnerabilities
 	vulnPath := filepath.Join(outDir, "Vulnerability.ncap.gz")
 	if _, err := os.Stat(vulnPath); err == nil {
-		if err := processVulnerabilities(vulnPath, vulnMap, hostMap); err != nil {
+		if err := processVulnerabilities(vulnPath, vulnMap, hostMap, softwareToHosts); err != nil {
 			log.Printf("[WebUI] Warning: Failed to process vulnerabilities: %v", err)
 		}
 	}
@@ -129,7 +132,7 @@ func readExploitsAndVulns(outDir string) (*ExploitsResponse, error) {
 	// 2. Read Exploits
 	exploitPath := filepath.Join(outDir, "Exploit.ncap.gz")
 	if _, err := os.Stat(exploitPath); err == nil {
-		if err := processExploits(exploitPath, exploitMap, hostMap); err != nil {
+		if err := processExploits(exploitPath, exploitMap, hostMap, softwareToHosts); err != nil {
 			log.Printf("[WebUI] Warning: Failed to process exploits: %v", err)
 		}
 	}
@@ -162,7 +165,52 @@ func readExploitsAndVulns(outDir string) (*ExploitsResponse, error) {
 	return response, nil
 }
 
-func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummary, hostMap map[string]*HostVulnerabilitySummary) error {
+// buildSoftwareToHostsMap creates a mapping from software product+version to host IPs
+func buildSoftwareToHostsMap(outDir string) map[string][]string {
+	softwareToHosts := make(map[string][]string)
+	
+	// Read IPProfile records to find which hosts have which software
+	ipProfilePath := filepath.Join(outDir, "IPProfile.ncap.gz")
+	if _, err := os.Stat(ipProfilePath); err != nil {
+		return softwareToHosts
+	}
+
+	reader, err := NewAuditRecordReader(ipProfilePath)
+	if err != nil {
+		return softwareToHosts
+	}
+	defer reader.Close()
+
+	if _, err := reader.ReadHeader(); err != nil {
+		return softwareToHosts
+	}
+
+	for {
+		record, err := reader.NextRecord()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			continue
+		}
+
+		ipProfile, ok := record.(*types.IPProfile)
+		if !ok || ipProfile.Addr == "" {
+			continue
+		}
+
+		// Index by application names (which often match software product names)
+		for _, app := range ipProfile.Applications {
+			if app != "" {
+				softwareToHosts[app] = append(softwareToHosts[app], ipProfile.Addr)
+			}
+		}
+	}
+
+	return softwareToHosts
+}
+
+func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummary, hostMap map[string]*HostVulnerabilitySummary, softwareToHosts map[string][]string) error {
 	reader, err := NewAuditRecordReader(path)
 	if err != nil {
 		return err
@@ -203,35 +251,51 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 		}
 		vulnMap[v.ID].Count++
 
-		// Count affected hosts based on software device profiles
+		// Count affected hosts based on software device profiles AND software-to-hosts mapping
 		if v.Software != nil {
-			hostCount := 0
+			hostsAffected := make(map[string]bool) // Use map to deduplicate hosts
+			
+			// Try to get hosts from DeviceProfiles (MAC addresses)
 			for _, dev := range v.Software.DeviceProfiles {
-				if dev == "" {
-					continue
-				}
-				hostCount++
-				
-				if _, exists := hostMap[dev]; !exists {
-					hostMap[dev] = &HostVulnerabilitySummary{
-						Host: dev,
-					}
-				}
-				hostMap[dev].Vulnerabilities++
-				// Simple top severity logic
-				currentSev := severityToScore(hostMap[dev].TopSeverity)
-				newSev := severityToScore(v.Severity)
-				if newSev > currentSev {
-					hostMap[dev].TopSeverity = v.Severity
+				if dev != "" {
+					hostsAffected[dev] = true
 				}
 			}
-			vulnMap[v.ID].Affected += hostCount
+			
+			// Also try to get hosts from software product name
+			if v.Software.Product != "" {
+				if hosts, found := softwareToHosts[v.Software.Product]; found {
+					for _, host := range hosts {
+						if host != "" {
+							hostsAffected[host] = true
+						}
+					}
+				}
+			}
+			
+			// Update host map with all affected hosts
+			for host := range hostsAffected {
+				if _, exists := hostMap[host]; !exists {
+					hostMap[host] = &HostVulnerabilitySummary{
+						Host: host,
+					}
+				}
+				hostMap[host].Vulnerabilities++
+				// Simple top severity logic
+				currentSev := severityToScore(hostMap[host].TopSeverity)
+				newSev := severityToScore(v.Severity)
+				if newSev > currentSev {
+					hostMap[host].TopSeverity = v.Severity
+				}
+			}
+			
+			vulnMap[v.ID].Affected = len(hostsAffected)
 		}
 	}
 	return nil
 }
 
-func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap map[string]*HostVulnerabilitySummary) error {
+func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap map[string]*HostVulnerabilitySummary, softwareToHosts map[string][]string) error {
 	reader, err := NewAuditRecordReader(path)
 	if err != nil {
 		return err
@@ -274,23 +338,39 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 		}
 		exploitMap[e.ID].Count++
 
-		// Count affected hosts
+		// Count affected hosts from DeviceProfiles AND software-to-hosts mapping
 		if e.Software != nil {
-			hostCount := 0
+			hostsAffected := make(map[string]bool) // Use map to deduplicate hosts
+			
+			// Try to get hosts from DeviceProfiles (MAC addresses)
 			for _, dev := range e.Software.DeviceProfiles {
-				if dev == "" {
-					continue
+				if dev != "" {
+					hostsAffected[dev] = true
 				}
-				hostCount++
-
-				if _, exists := hostMap[dev]; !exists {
-					hostMap[dev] = &HostVulnerabilitySummary{
-						Host: dev,
+			}
+			
+			// Also try to get hosts from software product name
+			if e.Software.Product != "" {
+				if hosts, found := softwareToHosts[e.Software.Product]; found {
+					for _, host := range hosts {
+						if host != "" {
+							hostsAffected[host] = true
+						}
 					}
 				}
-				hostMap[dev].Exploits++
 			}
-			exploitMap[e.ID].Affected += hostCount
+			
+			// Update host map with all affected hosts
+			for host := range hostsAffected {
+				if _, exists := hostMap[host]; !exists {
+					hostMap[host] = &HostVulnerabilitySummary{
+						Host: host,
+					}
+				}
+				hostMap[host].Exploits++
+			}
+			
+			exploitMap[e.ID].Affected = len(hostsAffected)
 		}
 	}
 	return nil

@@ -2,9 +2,7 @@
 
 explore charts: height wrong, bottom is cut off. max data points seems to cause re render but number of data points in chart dont change
 
-dev mode: enable debugging with https://nextjs.org/docs/app/guides/mcp
-
-Connections VS Conversations
+webUI: show raw conversation data for TCP and UDP connections
 
 ---
 
@@ -35,6 +33,9 @@ WIP: Visualize
 - mimicry rule: alert if traffic on standard port does not match the expected protocol (using DPI results)
 
 ----
+
+- dev mode: enable debugging with https://nextjs.org/docs/app/guides/mcp
+- Connections VS Conversations (= all Connections between two hosts) Abstraction
 
 - compression for /api/chart/data - Chart data endpoints - currently disabled 
 - compression for downloading ALL files and pcaps currently disabled

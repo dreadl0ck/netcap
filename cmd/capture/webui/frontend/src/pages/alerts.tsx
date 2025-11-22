@@ -977,26 +977,13 @@ export default function AlertsPage() {
                                     <Typography variant="caption" color="text.secondary" display="block">
                                       Rule Expression
                                     </Typography>
-                                    <Paper
+                                    <FilterExpressionBlock
+                                      expression={group.ruleExpression}
                                       sx={{
-                                        p: 1.5,
-                                        backgroundColor: 'grey.900',
-                                        overflow: 'auto',
                                         mt: 0.5,
+                                        p: 1.5,
                                       }}
-                                    >
-                                      <Typography
-                                        variant="body2"
-                                        sx={{
-                                          fontFamily: 'monospace',
-                                          fontSize: '0.85rem',
-                                          whiteSpace: 'pre-wrap',
-                                          wordBreak: 'break-word',
-                                        }}
-                                      >
-                                        {group.ruleExpression}
-                                      </Typography>
-                                    </Paper>
+                                    />
                                   </Grid>
                                 )}
                               </Grid>

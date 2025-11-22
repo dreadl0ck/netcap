@@ -78,7 +78,7 @@ export default function FingerprintsPage() {
     'fingerprints',
     () => fetch(`${getBackendUrl()}/api/fingerprints`).then(res => res.json()),
     {
-      refreshInterval: 10000,
+      refreshInterval: 0,
     }
   );
 

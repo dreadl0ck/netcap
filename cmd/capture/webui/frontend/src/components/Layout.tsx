@@ -262,6 +262,110 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemText primary="Interfaces" />
           </ListItemButton>
         </Link>
+        <Link href="/pcaps" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/pcaps')}
+            data-learn="Manage uploaded packet capture files, view processing status, and download results."
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <Badge 
+                badgeContent={pcapCount} 
+                color="primary"
+                max={999}
+                sx={{
+                  '& .MuiBadge-badge': {
+                    right: -3,
+                    top: 3,
+                  },
+                }}
+              >
+                <InsertDriveFileIcon />
+              </Badge>
+            </ListItemIcon>
+            <ListItemText primary="PCAPs" />
+          </ListItemButton>
+        </Link>
+        <Link href="/audit" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/audit')}
+            data-learn="Audit Explore detailed network traffic records organized by protocol type with advanced filtering."
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <StorageIcon />
+            </ListItemIcon>
+            <ListItemText primary="Audit Records" />
+          </ListItemButton>
+        </Link>
+        <Link href="/explore" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/explore')}
+            data-learn="Create custom charts and time-series visualizations of audit record fields."
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <BarChartIcon />
+            </ListItemIcon>
+            <ListItemText primary="Explore" />
+          </ListItemButton>
+        </Link>
+        <Link href="/visualize" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/visualize')}
+            data-learn="Interactive protocol hierarchy flow diagram showing network traffic relationships."
+                sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+                  },
+                }}
+              >
+            <ListItemIcon>
+              <BubbleChartIcon />
+            </ListItemIcon>
+            <ListItemText primary="Visualize" />
+          </ListItemButton>
+        </Link>
         <Link href="/hosts" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/hosts')}
@@ -400,9 +504,9 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemText primary="Software" />
           </ListItemButton>
         </Link>
-        <Link href="/exploits" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/vulnerabilities" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
-            selected={isActive('/exploits')}
+            selected={isActive('/vulnerabilities')}
             data-learn="Review discovered vulnerabilities and applicable exploits with severity ratings and affected hosts."
             sx={{
               '&.Mui-selected': {
@@ -420,157 +524,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemIcon>
               <BugReportIcon />
             </ListItemIcon>
-            <ListItemText primary="Exploits" />
-          </ListItemButton>
-        </Link>
-        <Link href="/pcaps" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-          <ListItemButton
-            selected={isActive('/pcaps')}
-            data-learn="Manage uploaded packet capture files, view processing status, and download results."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
-          >
-            <ListItemIcon>
-              <Badge 
-                badgeContent={pcapCount} 
-                color="primary"
-                max={999}
-                sx={{
-                  '& .MuiBadge-badge': {
-                    right: -3,
-                    top: 3,
-                  },
-                }}
-              >
-                <InsertDriveFileIcon />
-              </Badge>
-            </ListItemIcon>
-            <ListItemText primary="PCAPs" />
-          </ListItemButton>
-        </Link>
-        <Link href="/audit" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-          <ListItemButton
-            selected={isActive('/audit')}
-            data-learn="Audit Explore detailed network traffic records organized by protocol type with advanced filtering."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
-          >
-            <ListItemIcon>
-              <StorageIcon />
-            </ListItemIcon>
-            <ListItemText primary="Audit Records" />
-          </ListItemButton>
-        </Link>
-        <Link href="/explore" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-          <ListItemButton
-            selected={isActive('/explore')}
-            data-learn="Create custom charts and time-series visualizations of audit record fields."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
-          >
-            <ListItemIcon>
-              <BarChartIcon />
-            </ListItemIcon>
-            <ListItemText primary="Explore" />
-          </ListItemButton>
-        </Link>
-        <Link href="/visualize" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-          <ListItemButton
-            selected={isActive('/visualize')}
-            data-learn="Interactive protocol hierarchy flow diagram showing network traffic relationships."
-                sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-                  },
-                }}
-              >
-            <ListItemIcon>
-              <BubbleChartIcon />
-            </ListItemIcon>
-            <ListItemText primary="Visualize" />
-          </ListItemButton>
-        </Link>
-        <Link href="/rules" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-          <ListItemButton
-            selected={isActive('/rules')}
-            data-learn="Create and manage detection rules using expression-based filtering to identify network anomalies."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
-          >
-            <ListItemIcon>
-              <RuleIcon />
-            </ListItemIcon>
-            <ListItemText primary="Rules" />
-          </ListItemButton>
-        </Link>
-        <Link href="/rulesets" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-          <ListItemButton
-            selected={isActive('/rulesets')}
-            data-learn="Organize detection rules into collections for different security scenarios and threat models."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
-          >
-            <ListItemIcon>
-              <SecurityIcon />
-            </ListItemIcon>
-            <ListItemText primary="Rule Sets" />
+            <ListItemText primary="Vulnerabilities" />
           </ListItemButton>
         </Link>
         <Link href="/alerts" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -641,6 +595,52 @@ export default function Layout({ children, title, headerAction, topPadding }: La
               </Badge>
             </ListItemIcon>
             <ListItemText primary="Files" />
+          </ListItemButton>
+        </Link>
+        <Link href="/rules" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/rules')}
+            data-learn="Create and manage detection rules using expression-based filtering to identify network anomalies."
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <RuleIcon />
+            </ListItemIcon>
+            <ListItemText primary="Rules" />
+          </ListItemButton>
+        </Link>
+        <Link href="/rulesets" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/rulesets')}
+            data-learn="Organize detection rules into collections for different security scenarios and threat models."
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <SecurityIcon />
+            </ListItemIcon>
+            <ListItemText primary="Rule Sets" />
           </ListItemButton>
         </Link>
         <Link href="/dbs" passHref style={{ textDecoration: 'none', color: 'inherit' }}>

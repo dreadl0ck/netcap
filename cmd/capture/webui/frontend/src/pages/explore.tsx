@@ -765,7 +765,7 @@ export default function Explore() {
 
       <Paper sx={{ 
         p: { xs: 2, sm: 2, md: 3 }, 
-        height: { xs: 'calc(100vh - 260px)', sm: 'calc(100vh - 220px)', md: 'calc(100vh - 180px)' },
+        height: { xs: 'calc(100vh - 280px)', sm: 'calc(100vh - 240px)', md: 'calc(100vh - 200px)' },
         display: 'flex', 
         flexDirection: 'column',
         overflow: 'hidden'
@@ -884,7 +884,7 @@ export default function Explore() {
               </Box>
             ) : (
               <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <Box sx={{ flex: 1, position: 'relative' }}>
+                <Box sx={{ flex: 1, position: 'relative', pb: 2 }}>
                   <iframe
                     key={chartUrl}
                     src={chartUrl}
@@ -893,7 +893,7 @@ export default function Explore() {
                       top: 0,
                       left: 0,
                       width: '100%',
-                      height: '100%',
+                      height: 'calc(100% - 16px)',
                       border: 'none',
                       borderRadius: '4px',
                     }}

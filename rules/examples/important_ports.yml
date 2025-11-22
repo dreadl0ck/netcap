@@ -171,7 +171,7 @@ rules:
     description: Microsoft SQL Server detected - exposed DBs risk data breach/RCE
     type: TCP
     expression: DstPort == 1433 || SrcPort == 1433
-    severity: critical
+    severity: medium
     mitre: ["T1190", "T1078.001"]
     tags: ["database"]
     enabled: true

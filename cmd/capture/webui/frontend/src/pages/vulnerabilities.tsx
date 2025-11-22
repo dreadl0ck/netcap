@@ -76,7 +76,7 @@ interface HostVulnerabilitySummary {
   softwareCount: number;
 }
 
-interface ExploitsResponse {
+interface VulnerabilitiesResponse {
   vulnerabilities: VulnerabilitySummary[];
   exploits: ExploitSummary[];
   affectedHosts: HostVulnerabilitySummary[];
@@ -86,7 +86,7 @@ interface ExploitsResponse {
 
 type SortOrder = 'asc' | 'desc';
 
-export default function ExploitsPage() {
+export default function VulnerabilitiesPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [searchQuery, setSearchQuery] = useState('');
@@ -101,20 +101,21 @@ export default function ExploitsPage() {
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
 
-  // Fetch exploits data
-  const { data: exploitsData, error, mutate } = useSWR<ExploitsResponse>(
-    'exploits',
-    () => fetch(`${getBackendUrl()}/api/exploits`).then(res => res.json()),
+  // Fetch vulnerabilities data
+  const { data: vulnerabilitiesData, error, mutate } = useSWR<VulnerabilitiesResponse>(
+    'vulnerabilities',
+    () => fetch(`${getBackendUrl()}/api/vulnerabilities`).then(res => res.json()),
     {
-      refreshInterval: 10000,
+      // Disable auto-refresh to prevent table from reordering while user is viewing
+      refreshInterval: 0,
     }
   );
 
-  const vulnerabilities = exploitsData?.vulnerabilities || [];
-  const exploits = exploitsData?.exploits || [];
-  const affectedHosts = exploitsData?.affectedHosts || [];
-  const totalVulns = exploitsData?.totalVulns || 0;
-  const totalExploits = exploitsData?.totalExploits || 0;
+  const vulnerabilities = vulnerabilitiesData?.vulnerabilities || [];
+  const exploits = vulnerabilitiesData?.exploits || [];
+  const affectedHosts = vulnerabilitiesData?.affectedHosts || [];
+  const totalVulns = vulnerabilitiesData?.totalVulns || 0;
+  const totalExploits = vulnerabilitiesData?.totalExploits || 0;
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -234,10 +235,10 @@ export default function ExploitsPage() {
     </FormControl>
   ) : null;
 
-  if (error) return <Layout title="Exploits" headerAction={fileSelector}><Alert severity="error">Error: {error.message}</Alert></Layout>;
+  if (error) return <Layout title="Vulnerabilities" headerAction={fileSelector}><Alert severity="error">Error: {error.message}</Alert></Layout>;
 
   return (
-    <Layout title="Exploits" headerAction={fileSelector}>
+    <Layout title="Vulnerabilities" headerAction={fileSelector}>
       <Box sx={{ minWidth: 0 }}>
         {/* Summary Cards */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -289,9 +290,9 @@ export default function ExploitsPage() {
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`severity-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/exploits/severity`}
+                  src={`${getBackendUrl()}/api/vulnerabilities/severity`}
                   style={{ width: '100%', height: '100%', border: 'none' }}
-                  title="Severity"
+                  title="Vulnerability Severity"
                 />
               </CardContent>
             </Card>
@@ -301,9 +302,45 @@ export default function ExploitsPage() {
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`top-software-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/exploits/top-vulnerable-software`}
+                  src={`${getBackendUrl()}/api/vulnerabilities/top-vulnerable-software`}
                   style={{ width: '100%', height: '100%', border: 'none' }}
                   title="Top Vulnerable Software"
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: 400 }}>
+              <CardContent sx={{ height: '100%', p: 1 }}>
+                <iframe
+                  key={`access-vectors-${chartRefreshKey}`}
+                  src={`${getBackendUrl()}/api/vulnerabilities/access-vectors`}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  title="Access Vectors"
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: 400 }}>
+              <CardContent sx={{ height: '100%', p: 1 }}>
+                <iframe
+                  key={`exploit-types-${chartRefreshKey}`}
+                  src={`${getBackendUrl()}/api/vulnerabilities/exploit-types`}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  title="Exploit Types"
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12}>
+            <Card sx={{ height: 400 }}>
+              <CardContent sx={{ height: '100%', p: 1 }}>
+                <iframe
+                  key={`top-affected-hosts-${chartRefreshKey}`}
+                  src={`${getBackendUrl()}/api/vulnerabilities/top-affected-hosts`}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  title="Top Affected Hosts"
                 />
               </CardContent>
             </Card>

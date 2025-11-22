@@ -61,10 +61,10 @@ rules:
 
   # Port 2404: IEC 60870-5-104
   - name: IEC 104 Detected
-    description: IEC-104 telecontrol protocol detected - critical grid protocol used in electric SCADA
+    description: IEC-104 telecontrol protocol port usage detected - critical grid protocol used in electric SCADA
     type: TCP
     expression: DstPort == 2404 || SrcPort == 2404
-    severity: critical
+    severity: medium
     mitre: ["T0855", "T0836"]
     tags: ["scada"]
     enabled: true

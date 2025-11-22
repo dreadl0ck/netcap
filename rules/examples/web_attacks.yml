@@ -305,7 +305,7 @@ rules:
     enabled: true
 
   # Old HTTP Version
-  - name: Old HTTP Version with Modern TLS
+  - name: Old HTTP Version
     description: Detect HTTP/1.0 usage (unusual for modern clients, common in scripts)
     type: HTTP
     expression: MatchesPattern(Proto, "HTTP/1\\.0")
