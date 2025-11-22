@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -43,6 +44,7 @@ func HandleChartData(outDir string) http.HandlerFunc {
 		chartType := r.URL.Query().Get("chartType")
 		interval := r.URL.Query().Get("interval")
 		showLegendStr := r.URL.Query().Get("showLegend")
+		maxDataPointsStr := r.URL.Query().Get("maxDataPoints")
 
 		if auditType == "" || field == "" {
 			http.Error(w, "Missing required parameters: type, field", http.StatusBadRequest)
@@ -59,10 +61,18 @@ func HandleChartData(outDir string) http.HandlerFunc {
 			showLegend = false
 		}
 
+		// Parse maxDataPoints (default to 1000)
+		maxDataPoints := 1000
+		if maxDataPointsStr != "" {
+			if parsed, err := strconv.Atoi(maxDataPointsStr); err == nil && parsed > 0 {
+				maxDataPoints = parsed
+			}
+		}
+
 		// No default interval - empty means use all records with actual timestamps
 
 		// Generate chart using go-echarts
-		generator := NewChartGenerator(auditType, field, chartType, interval, showLegend)
+		generator := NewChartGenerator(auditType, field, chartType, interval, showLegend, maxDataPoints)
 		chartHTML, err := generator.GenerateChart(outDir)
 		if err != nil {
 			log.Printf("[WebUI] Failed to generate chart: %v", err)
@@ -174,6 +184,7 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	chartType := r.URL.Query().Get("chartType") // line, bar, area, scatter, pie
 	interval := r.URL.Query().Get("interval")   // e.g., "1s", "1m", "1h"
 	showLegendStr := r.URL.Query().Get("showLegend")
+	maxDataPointsStr := r.URL.Query().Get("maxDataPoints")
 
 	if auditType == "" || field == "" {
 		http.Error(w, "Missing required parameters: type, field", http.StatusBadRequest)
@@ -188,6 +199,14 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	showLegend := true
 	if showLegendStr != "" && showLegendStr != "true" {
 		showLegend = false
+	}
+
+	// Parse maxDataPoints (default to 1000)
+	maxDataPoints := 1000
+	if maxDataPointsStr != "" {
+		if parsed, err := strconv.Atoi(maxDataPointsStr); err == nil && parsed > 0 {
+			maxDataPoints = parsed
+		}
 	}
 
 	// No default interval - empty means use all records with actual timestamps
@@ -210,7 +229,7 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate chart using go-echarts
-	generator := NewChartGenerator(auditType, field, chartType, interval, showLegend)
+	generator := NewChartGenerator(auditType, field, chartType, interval, showLegend, maxDataPoints)
 	chartHTML, err := generator.GenerateChart(outDir)
 	if err != nil {
 		log.Printf("[WebUI] Failed to generate chart: %v", err)

@@ -884,7 +884,7 @@ export default function Explore() {
               </Box>
             ) : (
               <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <Box sx={{ flex: 1, position: 'relative', paddingBottom: '60px' }}>
+                <Box sx={{ flex: 1, position: 'relative' }}>
                   <iframe
                     key={chartUrl}
                     src={chartUrl}
@@ -910,6 +910,7 @@ export default function Explore() {
                     pt: 1,
                     borderTop: '1px solid',
                     borderColor: 'divider',
+                    flexShrink: 0,
                   }}
                 >
                   <TextField

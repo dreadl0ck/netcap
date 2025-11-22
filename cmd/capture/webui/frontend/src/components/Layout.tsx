@@ -23,6 +23,7 @@ import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import DevicesIcon from '@mui/icons-material/Devices';
 import RouterIcon from '@mui/icons-material/Router';
+import CableIcon from '@mui/icons-material/Cable';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import BubbleChartIcon from '@mui/icons-material/BubbleChart';
@@ -301,6 +302,29 @@ export default function Layout({ children, title, headerAction, topPadding }: La
               <DevicesIcon />
             </ListItemIcon>
             <ListItemText primary="Devices" />
+          </ListItemButton>
+        </Link>
+        <Link href="/connections" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/connections')}
+            data-learn="View network connections with protocol analysis, traffic statistics, and flow information."
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <CableIcon />
+            </ListItemIcon>
+            <ListItemText primary="Connections" />
           </ListItemButton>
         </Link>
         <Link href="/pcaps" passHref style={{ textDecoration: 'none', color: 'inherit' }}>

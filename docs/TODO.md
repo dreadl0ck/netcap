@@ -1,6 +1,10 @@
 # TODOs
 
+explore charts: height wrong, bottom is cut off. max data points seems to cause re render but number of data points in chart dont change
+
 dev mode: enable debugging with https://nextjs.org/docs/app/guides/mcp
+
+Connections VS Conversations
 
 ---
 

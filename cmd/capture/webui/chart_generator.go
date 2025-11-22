@@ -45,21 +45,27 @@ type kvPair struct {
 
 // ChartGenerator handles chart generation from audit records
 type ChartGenerator struct {
-	auditType  string
-	field      string
-	chartType  string
-	interval   string
-	showLegend bool
+	auditType     string
+	field         string
+	chartType     string
+	interval      string
+	showLegend    bool
+	maxDataPoints int
 }
 
 // NewChartGenerator creates a new chart generator
-func NewChartGenerator(auditType, field, chartType, interval string, showLegend bool) *ChartGenerator {
+func NewChartGenerator(auditType, field, chartType, interval string, showLegend bool, maxDataPoints int) *ChartGenerator {
+	// Default to 1000 if not specified or invalid
+	if maxDataPoints <= 0 {
+		maxDataPoints = 1000
+	}
 	return &ChartGenerator{
-		auditType:  auditType,
-		field:      field,
-		chartType:  chartType,
-		interval:   interval,
-		showLegend: showLegend,
+		auditType:     auditType,
+		field:         field,
+		chartType:     chartType,
+		interval:      interval,
+		showLegend:    showLegend,
+		maxDataPoints: maxDataPoints,
 	}
 }
 
@@ -136,8 +142,9 @@ func (cg *ChartGenerator) generateNumericChart(reader *AuditRecordReader) (io.Re
 
 	// If interval is empty or not specified, use all records with actual timestamps
 	if cg.interval == "" {
-		// Read all records and extract field values with actual timestamps
-		for {
+		// Read records up to maxDataPoints and extract field values with actual timestamps
+		recordCount := 0
+		for recordCount < cg.maxDataPoints {
 			msg, err := reader.NextRecord()
 			if err == io.EOF {
 				break
@@ -164,6 +171,7 @@ func (cg *ChartGenerator) generateNumericChart(reader *AuditRecordReader) (io.Re
 				time:  time.Unix(0, timestamp),
 				value: value,
 			})
+			recordCount++
 		}
 
 		if len(dataPoints) == 0 {
@@ -184,8 +192,9 @@ func (cg *ChartGenerator) generateNumericChart(reader *AuditRecordReader) (io.Re
 		// Map to aggregate values by time bucket
 		timeBuckets := make(map[int64][]float64)
 
-		// Read all records and extract field values
-		for {
+		// Read records up to maxDataPoints and extract field values
+		recordCount := 0
+		for recordCount < cg.maxDataPoints {
 			msg, err := reader.NextRecord()
 			if err == io.EOF {
 				break
@@ -211,6 +220,7 @@ func (cg *ChartGenerator) generateNumericChart(reader *AuditRecordReader) (io.Re
 			// Calculate time bucket
 			bucket := (timestamp / int64(duration)) * int64(duration)
 			timeBuckets[bucket] = append(timeBuckets[bucket], value)
+			recordCount++
 		}
 
 		if len(timeBuckets) == 0 {
@@ -259,7 +269,8 @@ func (cg *ChartGenerator) generateCategoricalChart(reader *AuditRecordReader, ou
 	// Count occurrences of each value
 	valueCounts := make(map[string]int)
 
-	for {
+	recordCount := 0
+	for recordCount < cg.maxDataPoints {
 		msg, err := reader.NextRecord()
 		if err == io.EOF {
 			break
@@ -282,6 +293,7 @@ func (cg *ChartGenerator) generateCategoricalChart(reader *AuditRecordReader, ou
 		}
 
 		valueCounts[value]++
+		recordCount++
 	}
 
 	if len(valueCounts) == 0 {

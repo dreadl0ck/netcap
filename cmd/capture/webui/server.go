@@ -474,6 +474,11 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/devices/operating-systems", s.handleDevicesOperatingSystems)
 	mux.HandleFunc("/api/devices/applications", s.handleDevicesApplications)
 	mux.HandleFunc("/api/devices/traffic-distribution", s.handleDevicesTrafficDistribution)
+	mux.HandleFunc("/api/connections", s.handleConnections)
+	mux.HandleFunc("/api/connections/top-by-traffic", s.handleConnectionsTopByTraffic)
+	mux.HandleFunc("/api/connections/protocols", s.handleConnectionsProtocols)
+	mux.HandleFunc("/api/connections/applications", s.handleConnectionsApplications)
+	mux.HandleFunc("/api/connections/duration", s.handleConnectionsDuration)
 	mux.HandleFunc("/api/report-issue", s.handleReportIssue)
 	mux.HandleFunc("/api/progress/", s.handleProgress)
 
