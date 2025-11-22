@@ -24,6 +24,10 @@ import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import DevicesIcon from '@mui/icons-material/Devices';
 import RouterIcon from '@mui/icons-material/Router';
 import CableIcon from '@mui/icons-material/Cable';
+import LanguageIcon from '@mui/icons-material/Language';
+import FingerprintIcon from '@mui/icons-material/Fingerprint';
+import AppsIcon from '@mui/icons-material/Apps';
+import BugReportIcon from '@mui/icons-material/BugReport';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import BubbleChartIcon from '@mui/icons-material/BubbleChart';
@@ -327,6 +331,98 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemText primary="Connections" />
           </ListItemButton>
         </Link>
+        <Link href="/domains" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/domains')}
+            data-learn="View DNS domains discovered in traffic with query statistics, TLD distribution, and resolved IP addresses."
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <LanguageIcon />
+            </ListItemIcon>
+            <ListItemText primary="Domains" />
+          </ListItemButton>
+        </Link>
+        <Link href="/fingerprints" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/fingerprints')}
+            data-learn="View device and application fingerprints including JA3 (TLS), HASSH (SSH), and DHCP fingerprinting results."
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <FingerprintIcon />
+            </ListItemIcon>
+            <ListItemText primary="Fingerprints" />
+          </ListItemButton>
+        </Link>
+        <Link href="/software" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/software')}
+            data-learn="Browse detected software products, versions, and operating systems identified in the traffic."
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <AppsIcon />
+            </ListItemIcon>
+            <ListItemText primary="Software" />
+          </ListItemButton>
+        </Link>
+        <Link href="/exploits" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/exploits')}
+            data-learn="Review discovered vulnerabilities and applicable exploits with severity ratings and affected hosts."
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <BugReportIcon />
+            </ListItemIcon>
+            <ListItemText primary="Exploits" />
+          </ListItemButton>
+        </Link>
         <Link href="/pcaps" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
           <ListItemButton
             selected={isActive('/pcaps')}
@@ -412,7 +508,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
           <ListItemButton
             selected={isActive('/visualize')}
             data-learn="Interactive protocol hierarchy flow diagram showing network traffic relationships."
-            sx={{
+                sx={{
               '&.Mui-selected': {
                 backgroundColor: 'primary.main',
                 color: 'primary.contrastText',
@@ -422,71 +518,13 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 '& .MuiListItemIcon-root': {
                   color: 'primary.contrastText',
                 },
-              },
-            }}
-          >
+                  },
+                }}
+              >
             <ListItemIcon>
               <BubbleChartIcon />
             </ListItemIcon>
             <ListItemText primary="Visualize" />
-          </ListItemButton>
-        </Link>
-        <Link href="/logs" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-          <ListItemButton
-            selected={isActive('/logs')}
-            data-learn="View system logs, processing information, and debug output from Netcap operations."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
-          >
-            <ListItemIcon>
-              <DescriptionIcon />
-            </ListItemIcon>
-            <ListItemText primary="Logs" />
-          </ListItemButton>
-        </Link>
-        <Link href="/errors" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-          <ListItemButton
-            selected={isActive('/errors')}
-            data-learn="Review processing errors, failed packets, and troubleshooting information."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
-          >
-            <ListItemIcon>
-              <Badge 
-                badgeContent={errorLogsCount} 
-                color="error"
-                max={999}
-                sx={{
-                  '& .MuiBadge-badge': {
-                    right: -3,
-                    top: 3,
-                  },
-                }}
-              >
-                <ErrorOutlineIcon />
-              </Badge>
-            </ListItemIcon>
-            <ListItemText primary="Errors" />
           </ListItemButton>
         </Link>
         <Link href="/rules" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -695,6 +733,64 @@ export default function Layout({ children, title, headerAction, topPadding }: La
               <FilterAltIcon />
             </ListItemIcon>
             <ListItemText primary="BPF Filters" />
+          </ListItemButton>
+        </Link>
+        <Link href="/logs" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/logs')}
+            data-learn="View system logs, processing information, and debug output from Netcap operations."
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <DescriptionIcon />
+            </ListItemIcon>
+            <ListItemText primary="Logs" />
+          </ListItemButton>
+        </Link>
+        <Link href="/errors" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+          <ListItemButton
+            selected={isActive('/errors')}
+            data-learn="Review processing errors, failed packets, and troubleshooting information."
+            sx={{
+              '&.Mui-selected': {
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+                '& .MuiListItemIcon-root': {
+                  color: 'primary.contrastText',
+                },
+              },
+            }}
+          >
+            <ListItemIcon>
+              <Badge 
+                badgeContent={errorLogsCount} 
+                color="error"
+                max={999}
+                sx={{
+                  '& .MuiBadge-badge': {
+                    right: -3,
+                    top: 3,
+                  },
+                }}
+              >
+                <ErrorOutlineIcon />
+              </Badge>
+            </ListItemIcon>
+            <ListItemText primary="Errors" />
           </ListItemButton>
         </Link>
         <Link href="/config" passHref style={{ textDecoration: 'none', color: 'inherit' }}>

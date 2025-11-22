@@ -1062,7 +1062,7 @@ export default function RulesPage() {
                       }
                     }}
                   />
-                  <Button variant="outlined" onClick={handleAddMitre}>
+                  <Button data-learn="Add MITRE Technique: Add this MITRE ATT&CK technique ID to the rule to categorize the attack pattern." variant="outlined" onClick={handleAddMitre}>
                     Add
                   </Button>
                 </Box>
@@ -1096,7 +1096,7 @@ export default function RulesPage() {
                       }
                     }}
                   />
-                  <Button variant="outlined" onClick={handleAddTag}>
+                  <Button data-learn="Add Tag: Add this tag to the rule for easier filtering and organization of detection rules." variant="outlined" onClick={handleAddTag}>
                     Add
                   </Button>
                 </Box>
@@ -1119,8 +1119,9 @@ export default function RulesPage() {
             </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button data-learn="Cancel: Close the rule editor without saving changes." onClick={handleCloseDialog}>Cancel</Button>
             <Button
+              data-learn="Save Rule: Save the rule with the current configuration to the rules database."
               onClick={handleSave}
               variant="contained"
               disabled={!formData.name || !formData.type || !formData.expression || !formData.severity}
@@ -1168,7 +1169,7 @@ export default function RulesPage() {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setErrorDialogOpen(false)}>Close</Button>
+            <Button data-learn="Close Dialog: Close the rule execution error viewer." onClick={() => setErrorDialogOpen(false)}>Close</Button>
           </DialogActions>
         </Dialog>
 

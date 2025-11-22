@@ -30,68 +30,66 @@ import {
 import {
   Refresh as RefreshIcon,
   ExpandMore as ExpandMoreIcon,
-  Router as RouterIcon,
-  Memory as MemoryIcon,
   SwapHoriz as SwapHorizIcon,
-  Devices as DevicesIcon,
-  Business as BusinessIcon,
+  Language as LanguageIcon,
   TrendingUp as TrendingUpIcon,
-  Apps as AppsIcon,
+  Public as PublicIcon,
+  AccountTree as AccountTreeIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
-import { api, formatBytes, formatTimestamp, getBackendUrl } from '@/lib/api';
+import { api, formatTimestamp, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 
-interface DeviceProfileSummary {
-  macAddr: string;
-  deviceManufacturer: string;
-  numDeviceIPs: number;
-  numContacts: number;
-  numPackets: number;
-  bytes: number;
-  timestamp: number;  // Unix timestamp in nanoseconds from backend
-  applications: string[];
-  devices: string[];
-  deviceIPs: string[];
-  contacts: string[];
+interface DomainSummary {
+  domain: string;
+  queryCount: number;
+  uniqueClients: number;
+  recordTypes: string[];
+  responseCodes: number[];
+  firstSeen: number;
+  lastSeen: number;
+  isSubdomain: boolean;
+  parentDomain: string;
+  resolvedIPs: string[];
 }
 
-interface DevicesResponse {
-  devices: DeviceProfileSummary[];
+interface DomainsResponse {
+  domains: DomainSummary[];
   totalCount: number;
 }
 
-type DeviceSortField = 'macAddr' | 'manufacturer' | 'packets' | 'bytes' | 'ips' | 'contacts';
+type DomainSortField = 'domain' | 'queries' | 'clients' | 'type';
 type SortOrder = 'asc' | 'desc';
 
-export default function DevicesPage() {
+export default function DomainsPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'root' | 'subdomain'>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [switchingFile, setSwitchingFile] = useState(false);
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
-  const [sortField, setSortField] = useState<DeviceSortField>('macAddr');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [sortField, setSortField] = useState<DomainSortField>('queries');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
 
-  // Fetch devices data
-  const { data: devicesData, error, mutate } = useSWR<DevicesResponse>(
-    'devices',
-    () => fetch(`${getBackendUrl()}/api/devices`).then(res => res.json()),
+  // Fetch domains data
+  const { data: domainsData, error, mutate } = useSWR<DomainsResponse>(
+    'domains',
+    () => fetch(`${getBackendUrl()}/api/domains`).then(res => res.json()),
     {
       refreshInterval: 10000,
     }
   );
 
-  const devices = devicesData?.devices || [];
-  const totalCount = devicesData?.totalCount || 0;
+  const domains = domainsData?.domains || [];
+  const totalCount = domainsData?.totalCount || 0;
 
   // Handle sort column click
-  const handleSort = (field: DeviceSortField) => {
+  const handleSort = (field: DomainSortField) => {
     if (sortField === field) {
       // Toggle sort order if clicking the same field
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -104,17 +102,24 @@ export default function DevicesPage() {
   };
 
   // Apply filters and sorting
-  const filteredDevices = useMemo(() => {
-    let filtered = devices;
+  const filteredDomains = useMemo(() => {
+    let filtered = domains;
+
+    // Apply type filter
+    if (filterType === 'root') {
+      filtered = filtered.filter(d => !d.isSubdomain);
+    } else if (filterType === 'subdomain') {
+      filtered = filtered.filter(d => d.isSubdomain);
+    }
 
     // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(d =>
-        d.macAddr.toLowerCase().includes(query) ||
-        (d.deviceManufacturer || '').toLowerCase().includes(query) ||
-        (d.devices || []).some(dev => dev.toLowerCase().includes(query)) ||
-        (d.applications || []).some(a => a.toLowerCase().includes(query))
+        d.domain.toLowerCase().includes(query) ||
+        (d.parentDomain || '').toLowerCase().includes(query) ||
+        (d.recordTypes || []).some(rt => rt.toLowerCase().includes(query)) ||
+        (d.resolvedIPs || []).some(ip => ip.toLowerCase().includes(query))
       );
     }
 
@@ -122,33 +127,32 @@ export default function DevicesPage() {
     filtered = [...filtered].sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
-        case 'macAddr':
-          comparison = a.macAddr.localeCompare(b.macAddr);
+        case 'domain':
+          comparison = a.domain.localeCompare(b.domain);
           break;
-        case 'manufacturer':
-          comparison = (a.deviceManufacturer || '').localeCompare(b.deviceManufacturer || '');
+        case 'queries':
+          comparison = a.queryCount - b.queryCount;
           break;
-        case 'packets':
-          comparison = a.numPackets - b.numPackets;
+        case 'clients':
+          comparison = a.uniqueClients - b.uniqueClients;
           break;
-        case 'bytes':
-          comparison = a.bytes - b.bytes;
-          break;
-        case 'ips':
-          comparison = a.numDeviceIPs - b.numDeviceIPs;
-          break;
-        case 'contacts':
-          comparison = a.numContacts - b.numContacts;
+        case 'type':
+          // Sort root domains first
+          if (a.isSubdomain === b.isSubdomain) {
+            comparison = a.domain.localeCompare(b.domain);
+          } else {
+            comparison = a.isSubdomain ? 1 : -1;
+          }
           break;
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
     return filtered;
-  }, [devices, searchQuery, sortField, sortOrder]);
+  }, [domains, filterType, searchQuery, sortField, sortOrder]);
 
-  // Paginate devices
-  const paginatedDevices = filteredDevices.slice(
+  // Paginate domains
+  const paginatedDomains = filteredDomains.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
@@ -195,8 +199,8 @@ export default function DevicesPage() {
     }
   };
 
-  const handleRowClick = (macAddr: string) => {
-    setExpandedRow(expandedRow === macAddr ? null : macAddr);
+  const handleRowClick = (domain: string) => {
+    setExpandedRow(expandedRow === domain ? null : domain);
   };
 
   // Get only completed files for the selector, sorted alphabetically for consistency
@@ -214,7 +218,7 @@ export default function DevicesPage() {
   const fileSelector = completedFiles.length > 1 && selectedFile ? (
     <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
       <Select
-        data-learn="Capture Selector: Switch between different analyzed PCAP files to view their identified network devices and hardware."
+        data-learn="Capture Selector: Switch between different analyzed PCAP files to view their DNS domains and queries."
         value={selectedValue}
         onChange={handleFileChange}
         startAdornment={
@@ -265,6 +269,7 @@ export default function DevicesPage() {
             <Box display="flex" alignItems="center" gap={1} width="100%">
               {selectedValue === file.path && (
                 <Chip
+                  data-learn="Active File Indicator: Shows which PCAP file is currently being analyzed."
                   label="Active"
                   size="small"
                   color="success"
@@ -282,9 +287,6 @@ export default function DevicesPage() {
               >
                 {file.name}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatBytes(file.size)}
-              </Typography>
             </Box>
           </MenuItem>
         ))}
@@ -292,27 +294,35 @@ export default function DevicesPage() {
     </FormControl>
   ) : null;
 
+  // Calculate summary statistics
+  const totalQueries = domains.reduce((sum, d) => sum + d.queryCount, 0);
+  const uniqueTLDs = new Set(domains.map(d => {
+    const parts = d.domain.split('.');
+    return parts[parts.length - 1];
+  })).size;
+  const subdomainCount = domains.filter(d => d.isSubdomain).length;
+
   if (error) {
     return (
-      <Layout title="Devices" headerAction={fileSelector}>
-        <Alert severity="error">Error loading devices: {error.message}</Alert>
+      <Layout title="Domains" headerAction={fileSelector}>
+        <Alert severity="error">Error loading domains: {error.message}</Alert>
       </Layout>
     );
   }
 
   return (
-    <Layout title="Devices" headerAction={fileSelector}>
+    <Layout title="Domains" headerAction={fileSelector}>
       <Box sx={{ minWidth: 0 }}>
         {/* Summary Cards */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
+            <Card data-learn="Unique Domains: Total number of unique domain names found in DNS queries.">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <RouterIcon color="primary" />
+                  <LanguageIcon color="primary" />
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      Total Devices
+                      Unique Domains
                     </Typography>
                     <Typography variant="h5">
                       {totalCount.toLocaleString()}
@@ -324,16 +334,16 @@ export default function DevicesPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
+            <Card data-learn="Total Queries: Sum of all DNS queries made to all domains.">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <BusinessIcon color="success" />
+                  <TrendingUpIcon color="success" />
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      Unique Vendors
+                      Total Queries
                     </Typography>
                     <Typography variant="h5">
-                      {new Set(devices.map(d => d.deviceManufacturer).filter(m => m)).size.toLocaleString()}
+                      {totalQueries.toLocaleString()}
                     </Typography>
                   </Box>
                 </Box>
@@ -342,16 +352,16 @@ export default function DevicesPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
+            <Card data-learn="Top-Level Domains: Number of different TLDs (.com, .org, .net, etc.) found.">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <MemoryIcon color="warning" />
+                  <PublicIcon color="warning" />
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      Device Types
+                      Unique TLDs
                     </Typography>
                     <Typography variant="h5">
-                      {new Set(devices.flatMap(d => d.devices || [])).size.toLocaleString()}
+                      {uniqueTLDs.toLocaleString()}
                     </Typography>
                   </Box>
                 </Box>
@@ -360,16 +370,16 @@ export default function DevicesPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
+            <Card data-learn="Subdomains: Number of subdomain entries (e.g., www.example.com, api.service.com).">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <TrendingUpIcon color="info" />
+                  <AccountTreeIcon color="info" />
                   <Box>
                     <Typography variant="body2" color="text.secondary">
-                      Total Traffic
+                      Subdomains
                     </Typography>
                     <Typography variant="h5">
-                      {formatBytes(devices.reduce((sum, d) => sum + d.bytes, 0))}
+                      {subdomainCount.toLocaleString()}
                     </Typography>
                   </Box>
                 </Box>
@@ -384,14 +394,15 @@ export default function DevicesPage() {
             <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
-                  key={`mac-vendors-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/devices/mac-vendors`}
+                  data-learn="Top Domains Chart: Bar chart showing the most frequently queried domain names."
+                  key={`top-by-queries-${chartRefreshKey}`}
+                  src={`${getBackendUrl()}/api/domains/top-by-queries`}
                   style={{
                     width: '100%',
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Top MAC Vendors"
+                  title="Top Domains by Query Count"
                 />
               </CardContent>
             </Card>
@@ -401,14 +412,15 @@ export default function DevicesPage() {
             <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
-                  key={`traffic-dist-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/devices/traffic-distribution?showLegend=false`}
+                  data-learn="TLD Distribution: Pie chart showing the distribution of top-level domains (.com, .org, etc.)."
+                  key={`tlds-${chartRefreshKey}`}
+                  src={`${getBackendUrl()}/api/domains/tlds?showLegend=false`}
                   style={{
                     width: '100%',
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Traffic Distribution"
+                  title="TLD Distribution"
                 />
               </CardContent>
             </Card>
@@ -418,14 +430,15 @@ export default function DevicesPage() {
             <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
-                  key={`hardware-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/devices/hardware`}
+                  data-learn="Record Types: Bar chart showing DNS query types (A, AAAA, CNAME, MX, etc.)."
+                  key={`record-types-${chartRefreshKey}`}
+                  src={`${getBackendUrl()}/api/domains/record-types`}
                   style={{
                     width: '100%',
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Top Device Types"
+                  title="DNS Record Types"
                 />
               </CardContent>
             </Card>
@@ -435,31 +448,15 @@ export default function DevicesPage() {
             <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
-                  key={`operating-systems-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/devices/operating-systems?showLegend=false`}
+                  data-learn="Subdomain Distribution: Pie chart comparing root domain queries vs subdomain queries."
+                  key={`subdomain-distribution-${chartRefreshKey}`}
+                  src={`${getBackendUrl()}/api/domains/subdomain-distribution`}
                   style={{
                     width: '100%',
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Operating Systems"
-                />
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12}>
-            <Card sx={{ height: 500 }}>
-              <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
-                  key={`applications-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/devices/applications`}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    border: 'none',
-                  }}
-                  title="Top Applications"
+                  title="Subdomain Distribution"
                 />
               </CardContent>
             </Card>
@@ -469,9 +466,9 @@ export default function DevicesPage() {
         {/* Filters and Actions */}
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField
-            data-learn="Search Devices: Filter the devices table by MAC address, manufacturer, device type, or application name."
+            data-learn="Domain Search: Filter domains by name, parent domain, record type, or resolved IP address."
             size="small"
-            placeholder="Search devices..."
+            placeholder="Search domains..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -480,8 +477,23 @@ export default function DevicesPage() {
             sx={{ minWidth: 300 }}
           />
           
-          <Button 
-            data-learn="Refresh Devices: Reload device data and visualization charts from the server."
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <Select
+              data-learn="Domain Type Filter: Filter to show all domains, only root domains, or only subdomains."
+              value={filterType}
+              onChange={(e) => {
+                setFilterType(e.target.value as 'all' | 'root' | 'subdomain');
+                setPage(0);
+              }}
+            >
+              <MenuItem value="all">All Domains</MenuItem>
+              <MenuItem value="root">Root Domains</MenuItem>
+              <MenuItem value="subdomain">Subdomains</MenuItem>
+            </Select>
+          </FormControl>
+          
+          <Button
+            data-learn="Refresh Button: Reload domain data and charts from the server."
             variant="outlined" 
             startIcon={<RefreshIcon />} 
             onClick={handleRefresh}
@@ -490,107 +502,94 @@ export default function DevicesPage() {
             Refresh
           </Button>
           
-          {searchQuery ? (
+          {(searchQuery || filterType !== 'all') ? (
             <Typography variant="body2" color="text.secondary">
-              Showing {filteredDevices.length} of {totalCount} devices
+              Showing {filteredDomains.length} of {totalCount} domains
             </Typography>
           ) : null}
         </Box>
 
-        {/* Devices Table */}
-        {!devicesData && !error ? (
+        {/* Domains Table */}
+        {!domainsData && !error ? (
           <Box display="flex" justifyContent="center" py={4}>
             <CircularProgress />
           </Box>
         ) : totalCount === 0 ? (
           <Paper sx={{ p: 4, textAlign: 'center' }}>
-            <RouterIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+            <LanguageIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
-              No Devices Found
+              No Domains Found
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              No device profiles have been captured yet.
+              No DNS queries have been captured yet.
             </Typography>
           </Paper>
         ) : (
           <>
             <TableContainer component={Paper}>
-              <Table size="small">
+              <Table size="small" data-learn="Domains Table: Detailed list of all discovered domains with query statistics and sorting capabilities.">
                 <TableHead>
                   <TableRow>
                     <TableCell width={40}></TableCell>
                     <TableCell>
                       <TableSortLabel
-                        active={sortField === 'macAddr'}
-                        direction={sortField === 'macAddr' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('macAddr')}
+                        data-learn="Sort by Domain: Click to sort domains alphabetically by name."
+                        active={sortField === 'domain'}
+                        direction={sortField === 'domain' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('domain')}
                       >
-                        MAC Address
+                        Domain Name
                       </TableSortLabel>
                     </TableCell>
                     <TableCell>
                       <TableSortLabel
-                        active={sortField === 'manufacturer'}
-                        direction={sortField === 'manufacturer' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('manufacturer')}
+                        data-learn="Sort by Type: Click to sort by domain type (root domain vs subdomain)."
+                        active={sortField === 'type'}
+                        direction={sortField === 'type' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('type')}
                       >
-                        Manufacturer
+                        Type
                       </TableSortLabel>
                     </TableCell>
                     <TableCell align="right">
                       <TableSortLabel
-                        active={sortField === 'packets'}
-                        direction={sortField === 'packets' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('packets')}
+                        data-learn="Sort by Queries: Click to sort domains by number of DNS queries."
+                        active={sortField === 'queries'}
+                        direction={sortField === 'queries' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('queries')}
                       >
-                        Packets
+                        Queries
                       </TableSortLabel>
                     </TableCell>
                     <TableCell align="right">
                       <TableSortLabel
-                        active={sortField === 'bytes'}
-                        direction={sortField === 'bytes' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('bytes')}
+                        data-learn="Sort by Clients: Click to sort by number of unique clients querying this domain."
+                        active={sortField === 'clients'}
+                        direction={sortField === 'clients' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('clients')}
                       >
-                        Bytes
+                        Clients
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell align="right">
-                      <TableSortLabel
-                        active={sortField === 'ips'}
-                        direction={sortField === 'ips' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('ips')}
-                      >
-                        IPs
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell align="right">
-                      <TableSortLabel
-                        active={sortField === 'contacts'}
-                        direction={sortField === 'contacts' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('contacts')}
-                      >
-                        Contacts
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>Device Types</TableCell>
-                    <TableCell>Applications</TableCell>
+                    <TableCell>Record Types</TableCell>
+                    <TableCell>Resolved IPs</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {paginatedDevices.map((device) => (
+                  {paginatedDomains.map((domain) => (
                     <>
                       <TableRow 
-                        key={device.macAddr}
+                        key={domain.domain}
                         hover
-                        onClick={() => handleRowClick(device.macAddr)}
+                        onClick={() => handleRowClick(domain.domain)}
                         sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
+                        data-learn="Domain Row: Click to expand and view detailed information about this domain."
                       >
                         <TableCell>
-                          <IconButton size="small">
+                          <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed domain information.">
                             <ExpandMoreIcon 
                               sx={{ 
-                                transform: expandedRow === device.macAddr ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transform: expandedRow === domain.domain ? 'rotate(180deg)' : 'rotate(0deg)',
                                 transition: 'transform 0.3s'
                               }} 
                             />
@@ -601,84 +600,75 @@ export default function DevicesPage() {
                             sx={{ 
                               fontFamily: 'monospace', 
                               fontSize: '0.875rem',
-                              fontWeight: 'medium'
+                              fontWeight: 'medium',
+                              wordBreak: 'break-word'
                             }}
+                            data-learn="Domain Name: The fully qualified domain name extracted from DNS queries."
                           >
-                            {device.macAddr}
+                            {domain.domain}
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          {device.deviceManufacturer ? (
-                            <Chip
-                              label={device.deviceManufacturer}
-                              size="small"
-                              color="primary"
-                              sx={{ fontSize: '0.7rem' }}
-                            />
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">
-                              Unknown
-                            </Typography>
-                          )}
+                          <Chip
+                            data-learn="Domain Type Tag: Indicates whether this is a root domain or a subdomain."
+                            label={domain.isSubdomain ? 'Subdomain' : 'Root'}
+                            size="small"
+                            color={domain.isSubdomain ? 'secondary' : 'primary'}
+                            sx={{ fontSize: '0.7rem' }}
+                          />
                         </TableCell>
                         <TableCell align="right">
                           <Typography variant="body2">
-                            {device.numPackets.toLocaleString()}
+                            {domain.queryCount.toLocaleString()}
                           </Typography>
                         </TableCell>
                         <TableCell align="right">
                           <Typography variant="body2">
-                            {formatBytes(device.bytes)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography variant="body2">
-                            {device.numDeviceIPs}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography variant="body2">
-                            {device.numContacts}
+                            {domain.uniqueClients.toLocaleString()}
                           </Typography>
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {(device.devices || []).slice(0, 2).map((dev, idx) => (
+                            {(domain.recordTypes || []).slice(0, 3).map((rt, idx) => (
                               <Chip
                                 key={idx}
-                                label={dev}
+                                label={rt}
                                 size="small"
                                 variant="outlined"
                                 sx={{ fontSize: '0.7rem', height: 20 }}
+                                data-learn="Record Type: DNS query type (A for IPv4, AAAA for IPv6, CNAME for alias, etc.)."
                               />
                             ))}
-                            {(device.devices || []).length > 2 && (
+                            {(domain.recordTypes || []).length > 3 && (
                               <Chip
-                                label={`+${(device.devices || []).length - 2}`}
+                                label={`+${(domain.recordTypes || []).length - 3}`}
                                 size="small"
                                 variant="outlined"
                                 sx={{ fontSize: '0.7rem', height: 20 }}
+                                data-learn="More Record Types: Click the row to see all DNS record types."
                               />
                             )}
                           </Box>
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {(device.applications || []).slice(0, 2).map((app, idx) => (
+                            {(domain.resolvedIPs || []).slice(0, 2).map((ip, idx) => (
                               <Chip
                                 key={idx}
-                                label={app}
+                                label={ip}
                                 size="small"
                                 color="info"
-                                sx={{ fontSize: '0.7rem', height: 20 }}
+                                sx={{ fontSize: '0.7rem', height: 20, fontFamily: 'monospace' }}
+                                data-learn="Resolved IP: IP address that this domain name resolved to in DNS responses."
                               />
                             ))}
-                            {(device.applications || []).length > 2 && (
+                            {(domain.resolvedIPs || []).length > 2 && (
                               <Chip
-                                label={`+${(device.applications || []).length - 2}`}
+                                label={`+${(domain.resolvedIPs || []).length - 2}`}
                                 size="small"
                                 color="info"
                                 sx={{ fontSize: '0.7rem', height: 20 }}
+                                data-learn="More IPs: Click the row to see all resolved IP addresses."
                               />
                             )}
                           </Box>
@@ -687,17 +677,20 @@ export default function DevicesPage() {
                       
                       {/* Expandable Row Details */}
                       <TableRow>
-                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={9}>
-                          <Collapse in={expandedRow === device.macAddr} timeout="auto" unmountOnExit>
-                            <Box sx={{ py: 2 }}>
+                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
+                          <Collapse in={expandedRow === domain.domain} timeout="auto" unmountOnExit>
+                            <Box sx={{ py: 2 }} data-learn="Domain Details: Extended information about DNS queries and responses for this domain.">
                               <Grid container spacing={2}>
-                                {/* Time Info */}
+                                {/* Time Range */}
                                 <Grid item xs={12} md={6}>
                                   <Typography variant="subtitle2" gutterBottom>
-                                    First Seen
+                                    Query Timeline
                                   </Typography>
                                   <Typography variant="body2" color="text.secondary">
-                                    {formatTimestamp(device.timestamp)}
+                                    First Seen: {formatTimestamp(domain.firstSeen)}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Last Seen: {formatTimestamp(domain.lastSeen)}
                                   </Typography>
                                 </Grid>
                                 
@@ -707,104 +700,84 @@ export default function DevicesPage() {
                                     Statistics
                                   </Typography>
                                   <Typography variant="body2" color="text.secondary">
-                                    Packets: {device.numPackets.toLocaleString()}
+                                    Total Queries: {domain.queryCount.toLocaleString()}
                                   </Typography>
                                   <Typography variant="body2" color="text.secondary">
-                                    Bytes: {formatBytes(device.bytes)}
+                                    Unique Clients: {domain.uniqueClients.toLocaleString()}
                                   </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Device IPs: {device.numDeviceIPs}
-                                  </Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Contacts: {device.numContacts}
-                                  </Typography>
+                                  {domain.isSubdomain && domain.parentDomain && (
+                                    <Typography variant="body2" color="text.secondary">
+                                      Parent Domain: {domain.parentDomain}
+                                    </Typography>
+                                  )}
                                 </Grid>
                                 
-                                {/* All Device IPs */}
-                                {(device.deviceIPs || []).length > 0 && (
+                                {/* All Record Types */}
+                                {(domain.recordTypes || []).length > 0 && (
                                   <Grid item xs={12}>
                                     <Typography variant="subtitle2" gutterBottom>
-                                      Device IP Addresses ({(device.deviceIPs || []).length})
+                                      All Record Types ({(domain.recordTypes || []).length})
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(device.deviceIPs || []).map((ip, idx) => (
+                                      {(domain.recordTypes || []).map((rt, idx) => (
+                                        <Chip
+                                          key={idx}
+                                          label={rt}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{ fontSize: '0.75rem' }}
+                                        />
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+                                
+                                {/* Response Codes */}
+                                {(domain.responseCodes || []).length > 0 && (
+                                  <Grid item xs={12}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      DNS Response Codes
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(domain.responseCodes || []).map((rc, idx) => {
+                                        const responseCodeName = rc === 0 ? 'Success' : 
+                                                               rc === 1 ? 'Format Error' :
+                                                               rc === 2 ? 'Server Failure' :
+                                                               rc === 3 ? 'Name Error' :
+                                                               rc === 4 ? 'Not Implemented' :
+                                                               rc === 5 ? 'Refused' :
+                                                               `Code ${rc}`;
+                                        return (
+                                          <Chip
+                                            key={idx}
+                                            label={`${responseCodeName} (${rc})`}
+                                            size="small"
+                                            color={rc === 0 ? 'success' : 'error'}
+                                            variant="outlined"
+                                            sx={{ fontSize: '0.75rem' }}
+                                          />
+                                        );
+                                      })}
+                                    </Box>
+                                  </Grid>
+                                )}
+                                
+                                {/* All Resolved IPs */}
+                                {(domain.resolvedIPs || []).length > 0 && (
+                                  <Grid item xs={12}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      All Resolved IP Addresses ({(domain.resolvedIPs || []).length})
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(domain.resolvedIPs || []).map((ip, idx) => (
                                         <Chip
                                           key={idx}
                                           label={ip}
                                           size="small"
-                                          variant="outlined"
+                                          color="info"
                                           sx={{ fontSize: '0.75rem', fontFamily: 'monospace' }}
                                         />
                                       ))}
-                                    </Box>
-                                  </Grid>
-                                )}
-                                
-                                {/* All Device Types */}
-                                {(device.devices || []).length > 0 && (
-                                  <Grid item xs={12}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      All Device Types ({(device.devices || []).length})
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(device.devices || []).map((dev, idx) => (
-                                        <Chip
-                                          key={idx}
-                                          label={dev}
-                                          size="small"
-                                          variant="outlined"
-                                          sx={{ fontSize: '0.75rem' }}
-                                        />
-                                      ))}
-                                    </Box>
-                                  </Grid>
-                                )}
-                                
-                                {/* All Applications */}
-                                {(device.applications || []).length > 0 && (
-                                  <Grid item xs={12}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      All Applications ({(device.applications || []).length})
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(device.applications || []).map((app, idx) => (
-                                        <Chip
-                                          key={idx}
-                                          label={app}
-                                          size="small"
-                                          color="info"
-                                          sx={{ fontSize: '0.75rem' }}
-                                        />
-                                      ))}
-                                    </Box>
-                                  </Grid>
-                                )}
-                                
-                                {/* Contacted IPs (top 20) */}
-                                {(device.contacts || []).length > 0 && (
-                                  <Grid item xs={12}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      Contacted IPs ({(device.contacts || []).length} total, showing top 20)
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(device.contacts || []).slice(0, 20).map((contact, idx) => (
-                                        <Chip
-                                          key={idx}
-                                          label={contact}
-                                          size="small"
-                                          variant="outlined"
-                                          color="secondary"
-                                          sx={{ fontSize: '0.7rem', fontFamily: 'monospace' }}
-                                        />
-                                      ))}
-                                      {(device.contacts || []).length > 20 && (
-                                        <Chip
-                                          label={`+${(device.contacts || []).length - 20} more`}
-                                          size="small"
-                                          variant="outlined"
-                                          sx={{ fontSize: '0.7rem' }}
-                                        />
-                                      )}
                                     </Box>
                                   </Grid>
                                 )}
@@ -820,8 +793,9 @@ export default function DevicesPage() {
             </TableContainer>
 
             <TablePagination
+              data-learn="Table Pagination: Navigate through pages of domains and change how many rows to display per page."
               component="div"
-              count={filteredDevices.length}
+              count={filteredDomains.length}
               page={page}
               onPageChange={handleChangePage}
               rowsPerPage={rowsPerPage}

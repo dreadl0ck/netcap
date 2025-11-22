@@ -1138,7 +1138,7 @@ export default function ExtractedFilesPage() {
             ) : null}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleClosePreview}>Close</Button>
+            <Button data-learn="Close Dialog: Close the file preview viewer." onClick={handleClosePreview}>Close</Button>
             {previewFile && (
               <Button
                 variant="contained"

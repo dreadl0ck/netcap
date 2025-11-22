@@ -185,6 +185,7 @@ export default function ErrorsPage() {
             </Typography>
           </Box>
           <Button 
+            data-learn="Refresh Error Logs: Reload the list of captures with errors to check for new error logs."
             variant="outlined" 
             startIcon={<RefreshIcon />} 
             onClick={handleRefresh}
@@ -229,6 +230,7 @@ export default function ErrorsPage() {
                       </Typography>
                     </Box>
                     <Button
+                      data-learn="Show All Errors: View a consolidated list of all unique errors across all captures, sorted by frequency."
                       variant="contained"
                       startIcon={<AssessmentIcon />}
                       onClick={handleShowAggregated}
@@ -328,6 +330,7 @@ export default function ErrorsPage() {
                         </TableCell>
                         <TableCell>
                           <Button
+                            data-learn="View Errors: Open a detailed view of all errors from this capture's error log file."
                             size="small"
                             variant="outlined"
                             startIcon={<VisibilityIcon />}
@@ -426,7 +429,7 @@ export default function ErrorsPage() {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog}>Close</Button>
+            <Button data-learn="Close Dialog: Close the error details viewer." onClick={handleCloseDialog}>Close</Button>
           </DialogActions>
         </Dialog>
 
@@ -511,7 +514,7 @@ export default function ErrorsPage() {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseAggregated}>Close</Button>
+            <Button data-learn="Close Dialog: Close the aggregated errors viewer." onClick={handleCloseAggregated}>Close</Button>
           </DialogActions>
         </Dialog>
       </Box>

@@ -269,6 +269,7 @@ export default function Logs() {
           <Box mb={3}>
             <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 300 } }}>
               <Select
+                data-learn="Session Selector: Switch between different analysis sessions to view their logs."
                 value={status?.sessionId || ''}
                 onChange={handleSessionChange}
                 disabled={switchingSession}
@@ -333,6 +334,7 @@ export default function Logs() {
                     <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{formatTimestamp(file.modifiedTime)}</TableCell>
                     <TableCell align="right" onClick={(e) => e.stopPropagation()}>
                       <Button
+                        data-learn="View Log: Open this log file in a viewer to see its contents."
                         variant="outlined"
                         size="small"
                         onClick={() => handleViewLog(file.name)}
@@ -383,7 +385,7 @@ export default function Logs() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Close</Button>
+          <Button data-learn="Close Dialog: Close the log file viewer." onClick={handleClose}>Close</Button>
         </DialogActions>
       </Dialog>
     </Layout>

@@ -929,7 +929,7 @@ export default function Decoders() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setLoadDialogOpen(false)}>Cancel</Button>
+          <Button data-learn="Cancel: Close the load configuration dialog without loading." onClick={() => setLoadDialogOpen(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
 
@@ -951,8 +951,8 @@ export default function Decoders() {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => { setSaveAsDialogOpen(false); setConfigName(''); }}>Cancel</Button>
-          <Button onClick={handleSaveAs} variant="contained" disabled={saving || !configName.trim()}>
+          <Button data-learn="Cancel: Close the save dialog without saving." onClick={() => { setSaveAsDialogOpen(false); setConfigName(''); }}>Cancel</Button>
+          <Button data-learn="Save Configuration: Save the current decoder configuration with the specified name." onClick={handleSaveAs} variant="contained" disabled={saving || !configName.trim()}>
             {saving ? 'Saving...' : 'Save'}
           </Button>
         </DialogActions>
@@ -1001,10 +1001,10 @@ export default function Decoders() {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => { setUploadDialogOpen(false); setUploadFile(null); setConfigName(''); }}>
+          <Button data-learn="Cancel: Close the upload dialog without uploading." onClick={() => { setUploadDialogOpen(false); setUploadFile(null); setConfigName(''); }}>
             Cancel
           </Button>
-          <Button onClick={handleUpload} variant="contained" disabled={saving || !uploadFile}>
+          <Button data-learn="Upload Configuration File: Upload the selected configuration file to import decoder settings." onClick={handleUpload} variant="contained" disabled={saving || !uploadFile}>
             {saving ? 'Uploading...' : 'Upload'}
           </Button>
         </DialogActions>

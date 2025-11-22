@@ -482,6 +482,7 @@ export default function HostsPage() {
         {/* Filters and Actions */}
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField
+            data-learn="Search Hosts: Filter the hosts table by IP address, DNS name, geolocation, or application name."
             size="small"
             placeholder="Search hosts..."
             value={searchQuery}
@@ -494,6 +495,7 @@ export default function HostsPage() {
           
           <FormControl size="small" sx={{ minWidth: 150 }}>
             <Select
+              data-learn="Host Type Filter: Show all hosts, only internal network hosts, or only external hosts."
               value={filterType}
               onChange={(e) => {
                 setFilterType(e.target.value as 'all' | 'internal' | 'external');
@@ -507,6 +509,7 @@ export default function HostsPage() {
           </FormControl>
           
           <Button 
+            data-learn="Refresh Hosts: Reload host data and visualization charts from the server."
             variant="outlined" 
             startIcon={<RefreshIcon />} 
             onClick={handleRefresh}

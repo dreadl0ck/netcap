@@ -437,6 +437,7 @@ export default function DPIPage() {
                             )}
                             <Tooltip title={isEnabledInSession ? `Disable ${module} for future analysis` : `Enable ${module} for future analysis`}>
                               <FormControlLabel
+                                data-learn="Module Enable Toggle: Enable or disable this DPI module for your future analysis sessions and uploads."
                                 control={
                                   <Switch
                                     checked={isEnabledInSession}
@@ -464,6 +465,7 @@ export default function DPIPage() {
                           <Box>
                             <Box sx={{ mb: 2 }}>
                               <TextField
+                                data-learn="Search Protocols: Filter the list of supported protocols by name to quickly find specific protocols."
                                 fullWidth
                                 size="small"
                                 placeholder={`Search protocols...`}

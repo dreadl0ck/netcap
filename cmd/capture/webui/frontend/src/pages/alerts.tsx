@@ -1225,7 +1225,7 @@ export default function AlertsPage() {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDetailsDialogOpen(false)}>Close</Button>
+            <Button data-learn="Close Dialog: Close the alert details viewer." onClick={() => setDetailsDialogOpen(false)}>Close</Button>
           </DialogActions>
         </Dialog>
 

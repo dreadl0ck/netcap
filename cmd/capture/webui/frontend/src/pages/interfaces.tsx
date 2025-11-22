@@ -128,6 +128,7 @@ export default function Interfaces() {
                         <TableCell align="right">
                           <Tooltip title={copiedInterface === iface.name ? "Command copied!" : "Click to copy capture command"}>
                             <IconButton
+                              data-learn="Copy Command: Copy the Netcap capture command for this network interface to your clipboard."
                               size="small"
                               onClick={(e) => {
                                 e.stopPropagation();

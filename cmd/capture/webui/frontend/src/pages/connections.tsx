@@ -610,16 +610,32 @@ export default function ConnectionsPage() {
                             </IconButton>
                           </TableCell>
                           <TableCell>
-                            <Typography 
+                            <Box 
                               sx={{ 
                                 fontFamily: 'monospace', 
                                 fontSize: '0.875rem',
-                                fontWeight: 'medium'
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
                               }}
                               data-learn="Connection Endpoints: Source IP:port → Destination IP:port showing the direction of the connection."
                             >
-                              {conn.srcIP}:{conn.srcPort} → {conn.dstIP}:{conn.dstPort}
-                            </Typography>
+                              <Box component="span" sx={{ color: '#4FC3F7', fontWeight: 'bold' }}>
+                                {conn.srcIP}
+                              </Box>
+                              <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
+                              <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
+                                {conn.srcPort}
+                              </Box>
+                              <Box component="span" sx={{ color: 'text.secondary', mx: 0.5 }}>→</Box>
+                              <Box component="span" sx={{ color: '#81C784', fontWeight: 'bold' }}>
+                                {conn.dstIP}
+                              </Box>
+                              <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
+                              <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
+                                {conn.dstPort}
+                              </Box>
+                            </Box>
                           </TableCell>
                           <TableCell>
                             <Chip

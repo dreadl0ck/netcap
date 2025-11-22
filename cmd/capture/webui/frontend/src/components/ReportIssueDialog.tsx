@@ -89,6 +89,7 @@ export default function ReportIssueDialog({ open, onClose, sessionId, filename }
             </Typography>
 
             <TextField
+              data-learn="Issue Description: Provide a detailed description of the issue you encountered with this PCAP file using Markdown formatting."
               multiline
               rows={10}
               fullWidth
@@ -107,11 +108,12 @@ export default function ReportIssueDialog({ open, onClose, sessionId, filename }
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose} disabled={submitting}>
+        <Button data-learn="Cancel: Close the issue report dialog without submitting." onClick={handleClose} disabled={submitting}>
           Cancel
         </Button>
         {!success && (
           <Button
+            data-learn="Submit Issue Report: Send the issue report with the PCAP file and generated data for analysis."
             onClick={handleSubmit}
             variant="contained"
             color="error"
