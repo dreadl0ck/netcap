@@ -43,6 +43,7 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import RuleIcon from '@mui/icons-material/Rule';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
@@ -51,6 +52,69 @@ import LearnModeToggle from './LearnModeToggle';
 import LearnModeOverlay from './LearnModeOverlay';
 
 const drawerWidth = 240;
+
+// Extracted sx styles to prevent object recreation on every render
+// This is a critical performance optimization for the navigation menu
+const SELECTED_MENU_ITEM_SX = {
+  '&.Mui-selected': {
+    backgroundColor: 'primary.main',
+    color: 'primary.contrastText',
+    '&:hover': {
+      backgroundColor: 'primary.dark',
+    },
+    '& .MuiListItemIcon-root': {
+      color: 'primary.contrastText',
+    },
+  },
+};
+
+const BADGE_SX = {
+  '& .MuiBadge-badge': {
+    right: -3,
+    top: 3,
+  },
+};
+
+const LINK_STYLE = { textDecoration: 'none', color: 'inherit' };
+
+const TOOLBAR_LOGO_SX = {
+  color: 'primary.main',
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  lineHeight: 1.2,
+  '&:hover': {
+    color: 'primary.dark',
+  },
+};
+
+const SERVICE_MODE_CAPTION_SX = {
+  color: 'text.secondary',
+  fontSize: '0.65rem',
+  fontWeight: 500,
+  letterSpacing: '0.1em',
+  mt: -0.5,
+};
+
+const VERSION_BOX_SX = {
+  p: 2,
+  borderTop: '1px solid',
+  borderColor: 'divider',
+  mt: 'auto',
+};
+
+const VERSION_LINK_HOVER_SX = {
+  '&:hover': {
+    textDecoration: 'underline',
+    color: 'primary.main',
+  },
+};
+
+const ICON_BUTTON_SX = {
+  color: 'text.secondary',
+  '&:hover': {
+    color: 'primary.main',
+  },
+};
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -66,7 +130,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
   
   // Initialize dataMenuOpen based on current route to prevent re-rendering
   const [dataMenuOpen, setDataMenuOpen] = useState(() => {
-    const dataRoutes = ['/audit', '/explore', '/visualize', '/hosts', '/devices', '/connections', 
+    const dataRoutes = ['/audit', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/credentials',
                         '/services', '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files', '/logs'];
     return dataRoutes.some(route => router.pathname.startsWith(route));
   });
@@ -127,6 +191,12 @@ export default function Layout({ children, title, headerAction, topPadding }: La
     revalidateOnReconnect: false,
   });
 
+  const { data: credentialsCount, mutate: mutateCredentialsCount } = useSWR('credentialsCount', () => api.getCredentialsCount(), {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
   const { data: domainsCount, mutate: mutateDomainsCount } = useSWR('domainsCount', () => api.getDomainsCount(), {
     refreshInterval: 0,
     revalidateOnFocus: false,
@@ -152,6 +222,12 @@ export default function Layout({ children, title, headerAction, topPadding }: La
   });
 
   const { data: servicesCount, mutate: mutateServicesCount } = useSWR('servicesCount', () => api.getServicesCount(), {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
+  const { data: logsCount, mutate: mutateLogsCount } = useSWR('logsCount', () => api.getLogsCount(), {
     refreshInterval: 0,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
@@ -185,19 +261,16 @@ export default function Layout({ children, title, headerAction, topPadding }: La
     return router.pathname.startsWith(path);
   };
 
-  // Keep Data menu open when navigating between data routes, close when leaving
+  // Auto-expand Data menu when navigating to data routes, but don't auto-collapse when leaving
   useEffect(() => {
-    const dataRoutes = ['/audit', '/explore', '/visualize', '/hosts', '/devices', '/connections', 
+    const dataRoutes = ['/audit', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/credentials',
                         '/services', '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files', '/logs'];
     const isDataRoute = dataRoutes.some(route => router.pathname.startsWith(route));
     
-    // Only update state if it needs to change to prevent unnecessary re-renders
-    setDataMenuOpen(prevState => {
-      if (prevState !== isDataRoute) {
-        return isDataRoute;
-      }
-      return prevState;
-    });
+    // Only auto-expand when navigating to a data route, never auto-collapse
+    if (isDataRoute) {
+      setDataMenuOpen(true);
+    }
   }, [router.pathname]);
 
   // Listen for directory-changed events to refresh alert stats, extracted files, and error logs count
@@ -212,18 +285,20 @@ export default function Layout({ children, title, headerAction, topPadding }: La
       mutateHostsCount();
       mutateDevicesCount();
       mutateConnectionsCount();
+      mutateCredentialsCount();
       mutateDomainsCount();
       mutateFingerprintsCount();
       mutateSoftwareCount();
       mutateVulnerabilitiesCount();
       mutateServicesCount();
+      mutateLogsCount();
     };
 
     window.addEventListener('directory-changed', handleDirectoryChanged);
     return () => {
       window.removeEventListener('directory-changed', handleDirectoryChanged);
     };
-  }, [mutateAlertStats, mutateExtractedFiles, mutateErrorLogs, mutateAuditRecordsCount, mutateHostsCount, mutateDevicesCount, mutateConnectionsCount, mutateServicesCount, mutateDomainsCount, mutateFingerprintsCount, mutateSoftwareCount, mutateVulnerabilitiesCount]);
+  }, [mutateAlertStats, mutateExtractedFiles, mutateErrorLogs, mutateAuditRecordsCount, mutateHostsCount, mutateDevicesCount, mutateConnectionsCount, mutateCredentialsCount, mutateServicesCount, mutateDomainsCount, mutateFingerprintsCount, mutateSoftwareCount, mutateVulnerabilitiesCount, mutateLogsCount]);
 
   // Calculate default top padding based on whether headerAction exists
   const defaultTopPadding = topPadding || {
@@ -241,15 +316,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
               variant="h6" 
               noWrap 
               component="div" 
-              sx={{ 
-                color: 'primary.main', 
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                lineHeight: 1.2,
-                '&:hover': {
-                  color: 'primary.dark',
-                }
-              }}
+              sx={TOOLBAR_LOGO_SX}
             >
               NETCAP
             </Typography>
@@ -257,13 +324,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
               <Typography 
                 variant="caption" 
                 component="div"
-                sx={{ 
-                  color: 'text.secondary',
-                  fontSize: '0.65rem',
-                  fontWeight: 500,
-                  letterSpacing: '0.1em',
-                  mt: -0.5
-                }}
+                sx={SERVICE_MODE_CAPTION_SX}
               >
                 SERVICE
               </Typography>
@@ -272,13 +333,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
               <Typography 
                 variant="caption" 
                 component="div"
-                sx={{ 
-                  color: 'text.secondary',
-                  fontSize: '0.65rem',
-                  fontWeight: 500,
-                  letterSpacing: '0.1em',
-                  mt: -0.5
-                }}
+                sx={SERVICE_MODE_CAPTION_SX}
               >
                 LOCAL
               </Typography>
@@ -288,22 +343,11 @@ export default function Layout({ children, title, headerAction, topPadding }: La
         <LearnModeToggle />
       </Toolbar>
       <List sx={{ flexGrow: 1 }}>
-        <Link href="/" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={isActive('/')}
             data-learn="Dashboard: Overview of system status, processing statistics, and quick access to key metrics."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
+            sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <DashboardIcon />
@@ -311,22 +355,11 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemText primary="Dashboard" />
           </ListItemButton>
         </Link>
-        <Link href="/analyze" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/analyze" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={isActive('/analyze')}
             data-learn="Analyze: Upload and process PCAP files to extract network traffic information and generate audit records."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
+            sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <CloudUploadIcon />
@@ -334,22 +367,11 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemText primary="Analyze" />
           </ListItemButton>
         </Link>
-        <Link href="/interfaces" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/interfaces" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={isActive('/interfaces')}
             data-learn="View available network interfaces for live packet capture and monitoring."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
+            sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <NetworkCheckIcon />
@@ -357,34 +379,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemText primary="Interfaces" />
           </ListItemButton>
         </Link>
-        <Link href="/pcaps" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/pcaps" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={isActive('/pcaps')}
             data-learn="Manage uploaded packet capture files, view processing status, and download results."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
+            sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <Badge 
                 badgeContent={pcapCount} 
                 color="primary"
                 max={999}
-                sx={{
-                  '& .MuiBadge-badge': {
-                    right: -3,
-                    top: 3,
-                  },
-                }}
+                sx={BADGE_SX}
               >
                 <InsertDriveFileIcon />
               </Badge>
@@ -395,18 +401,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
         <ListItemButton
           onClick={() => setDataMenuOpen(!dataMenuOpen)}
           data-learn="Data: Access network traffic data including audit records, visualizations, hosts, devices, connections, and more."
-          sx={{
-            '&.Mui-selected': {
-              backgroundColor: 'primary.main',
-              color: 'primary.contrastText',
-              '&:hover': {
-                backgroundColor: 'primary.dark',
-              },
-              '& .MuiListItemIcon-root': {
-                color: 'primary.contrastText',
-              },
-            },
-          }}
+          sx={SELECTED_MENU_ITEM_SX}
         >
           <ListItemIcon>
             <FolderIcon />
@@ -416,35 +411,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
         </ListItemButton>
         <Collapse in={dataMenuOpen} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
-            <Link href="/audit" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/audit" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/audit')}
                 data-learn="Audit Records: Explore detailed network traffic records organized by protocol type with advanced filtering."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <Badge 
                     badgeContent={auditRecordsCount} 
                     color="primary"
                     max={999}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        right: -3,
-                        top: 3,
-                      },
-                    }}
+                    sx={BADGE_SX}
                   >
                     <StorageIcon />
                   </Badge>
@@ -452,23 +430,11 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Audit Records" />
               </ListItemButton>
             </Link>
-            <Link href="/explore" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/explore" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/explore')}
                 data-learn="Explore: Create custom charts and time-series visualizations of audit record fields."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <BarChartIcon />
@@ -476,23 +442,11 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Explore" />
               </ListItemButton>
             </Link>
-            <Link href="/visualize" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/visualize" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/visualize')}
                 data-learn="Visualize: Interactive protocol hierarchy flow diagram showing network traffic relationships."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <BubbleChartIcon />
@@ -500,35 +454,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Visualize" />
               </ListItemButton>
             </Link>
-            <Link href="/hosts" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/hosts" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/hosts')}
                 data-learn="Hosts: Browse discovered network hosts with geolocation, device profiles, and communication patterns."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <Badge 
                     badgeContent={hostsCount} 
                     color="primary"
                     max={999}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        right: -3,
-                        top: 3,
-                      },
-                    }}
+                    sx={BADGE_SX}
                   >
                     <RouterIcon />
                   </Badge>
@@ -536,35 +473,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Hosts" />
               </ListItemButton>
             </Link>
-            <Link href="/devices" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/devices" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/devices')}
                 data-learn="Devices: View hardware devices identified by MAC addresses, vendors, and network layer information."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <Badge 
                     badgeContent={devicesCount} 
                     color="primary"
                     max={999}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        right: -3,
-                        top: 3,
-                      },
-                    }}
+                    sx={BADGE_SX}
                   >
                     <DevicesIcon />
                   </Badge>
@@ -572,35 +492,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Devices" />
               </ListItemButton>
             </Link>
-            <Link href="/connections" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/connections" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/connections')}
                 data-learn="Connections: View network connections with protocol analysis, traffic statistics, and flow information."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <Badge 
                     badgeContent={connectionsCount} 
                     color="primary"
                     max={999}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        right: -3,
-                        top: 3,
-                      },
-                    }}
+                    sx={BADGE_SX}
                   >
                     <SyncAltIcon />
                   </Badge>
@@ -608,35 +511,37 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Connections" />
               </ListItemButton>
             </Link>
-            <Link href="/services" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/credentials" passHref style={LINK_STYLE}>
+              <ListItemButton
+                selected={isActive('/credentials')}
+                data-learn="Credentials: View captured credentials from network traffic including usernames, passwords, and authentication attempts."
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
+              >
+                <ListItemIcon>
+                  <Badge 
+                    badgeContent={credentialsCount} 
+                    color="primary"
+                    max={999}
+                    sx={BADGE_SX}
+                  >
+                    <VpnKeyIcon />
+                  </Badge>
+                </ListItemIcon>
+                <ListItemText primary="Credentials" />
+              </ListItemButton>
+            </Link>
+            <Link href="/services" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/services')}
                 data-learn="Services: View discovered network services with protocol detection, version information, and traffic statistics."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <Badge 
                     badgeContent={servicesCount} 
                     color="primary"
                     max={999}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        right: -3,
-                        top: 3,
-                      },
-                    }}
+                    sx={BADGE_SX}
                   >
                     <DnsIcon />
                   </Badge>
@@ -644,35 +549,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Services" />
               </ListItemButton>
             </Link>
-            <Link href="/domains" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/domains" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/domains')}
                 data-learn="Domains: View DNS domains discovered in traffic with query statistics, TLD distribution, and resolved IP addresses."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <Badge 
                     badgeContent={domainsCount} 
                     color="primary"
                     max={999}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        right: -3,
-                        top: 3,
-                      },
-                    }}
+                    sx={BADGE_SX}
                   >
                     <LanguageIcon />
                   </Badge>
@@ -680,35 +568,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Domains" />
               </ListItemButton>
             </Link>
-            <Link href="/fingerprints" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/fingerprints" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/fingerprints')}
                 data-learn="Fingerprints: View device and application fingerprints including JA3 (TLS), HASSH (SSH), and DHCP fingerprinting results."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <Badge 
                     badgeContent={fingerprintsCount} 
                     color="primary"
                     max={999}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        right: -3,
-                        top: 3,
-                      },
-                    }}
+                    sx={BADGE_SX}
                   >
                     <FingerprintIcon />
                   </Badge>
@@ -716,35 +587,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Fingerprints" />
               </ListItemButton>
             </Link>
-            <Link href="/software" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/software" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/software')}
                 data-learn="Software: Browse detected software products, versions, and operating systems identified in the traffic."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <Badge 
                     badgeContent={softwareCount} 
                     color="primary"
                     max={999}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        right: -3,
-                        top: 3,
-                      },
-                    }}
+                    sx={BADGE_SX}
                   >
                     <AppsIcon />
                   </Badge>
@@ -752,35 +606,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Software" />
               </ListItemButton>
             </Link>
-            <Link href="/vulnerabilities" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/vulnerabilities" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/vulnerabilities')}
                 data-learn="Vulnerabilities: Review discovered vulnerabilities and applicable exploits with severity ratings and affected hosts."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <Badge 
                     badgeContent={vulnerabilitiesCount} 
                     color="primary"
                     max={999}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        right: -3,
-                        top: 3,
-                      },
-                    }}
+                    sx={BADGE_SX}
                   >
                     <BugReportIcon />
                   </Badge>
@@ -788,35 +625,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Vulnerabilities" />
               </ListItemButton>
             </Link>
-            <Link href="/alerts" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/alerts" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/alerts')}
                 data-learn="Alerts: Review security alerts triggered by detection rules with severity levels and details."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <Badge 
                     badgeContent={alertCount} 
                     color="error"
                     max={999}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        right: -3,
-                        top: 3,
-                      },
-                    }}
+                    sx={BADGE_SX}
                   >
                     <NotificationsActiveIcon />
                   </Badge>
@@ -824,35 +644,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Alerts" />
               </ListItemButton>
             </Link>
-            <Link href="/files" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/files" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/files')}
                 data-learn="Files: Access files extracted from network streams (HTTP, FTP, SMTP) with metadata and hashes."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
                   <Badge 
                     badgeContent={extractedFilesCount} 
                     color="primary"
                     max={999}
-                    sx={{
-                      '& .MuiBadge-badge': {
-                        right: -3,
-                        top: 3,
-                      },
-                    }}
+                    sx={BADGE_SX}
                   >
                     <InsertDriveFileIcon />
                   </Badge>
@@ -860,48 +663,32 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Files" />
               </ListItemButton>
             </Link>
-            <Link href="/logs" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link href="/logs" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/logs')}
                 data-learn="Logs: View system logs, processing information, and debug output from Netcap operations."
-                sx={{
-                  pl: 4,
-                  '&.Mui-selected': {
-                    backgroundColor: 'primary.main',
-                    color: 'primary.contrastText',
-                    '&:hover': {
-                      backgroundColor: 'primary.dark',
-                    },
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.contrastText',
-                    },
-                  },
-                }}
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
-                  <DescriptionIcon />
+                  <Badge 
+                    badgeContent={logsCount} 
+                    color="primary"
+                    max={999}
+                    sx={BADGE_SX}
+                  >
+                    <DescriptionIcon />
+                  </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Logs" />
               </ListItemButton>
             </Link>
           </List>
         </Collapse>
-        <Link href="/rules" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/rules" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={isActive('/rules')}
             data-learn="Create and manage detection rules using expression-based filtering to identify network anomalies."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
+            sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <RuleIcon />
@@ -909,22 +696,11 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemText primary="Rules" />
           </ListItemButton>
         </Link>
-        <Link href="/rulesets" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/rulesets" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={isActive('/rulesets')}
             data-learn="Organize detection rules into collections for different security scenarios and threat models."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
+            sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <SecurityIcon />
@@ -932,22 +708,11 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemText primary="Rule Sets" />
           </ListItemButton>
         </Link>
-        <Link href="/dbs" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/dbs" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={isActive('/dbs')}
             data-learn="Manage GeoIP, vulnerability, and MAC vendor databases for enriched traffic analysis."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
+            sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <DataObjectIcon />
@@ -955,22 +720,11 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemText primary="Databases" />
           </ListItemButton>
         </Link>
-        <Link href="/dpi" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/dpi" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={isActive('/dpi')}
             data-learn="Configure Deep Packet Inspection modules for advanced protocol detection and analysis."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
+            sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <SecurityIcon />
@@ -978,22 +732,11 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemText primary="DPI" />
           </ListItemButton>
         </Link>
-        <Link href="/decoders" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/decoders" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={isActive('/decoders')}
             data-learn="Enable or disable packet and stream decoders for specific protocols and layers."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
+            sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <AccountTreeIcon />
@@ -1001,22 +744,11 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemText primary="Decoders" />
           </ListItemButton>
         </Link>
-        <Link href="/bpf" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/bpf" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={isActive('/bpf')}
             data-learn="BPF Apply Berkeley Packet Filter expressions to capture specific network traffic."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
+            sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <FilterAltIcon />
@@ -1024,34 +756,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemText primary="BPF Filters" />
           </ListItemButton>
         </Link>
-        <Link href="/errors" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/errors" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={isActive('/errors')}
             data-learn="Review processing errors, failed packets, and troubleshooting information."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
+            sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <Badge 
                 badgeContent={errorLogsCount} 
                 color="error"
                 max={999}
-                sx={{
-                  '& .MuiBadge-badge': {
-                    right: -3,
-                    top: 3,
-                  },
-                }}
+                sx={BADGE_SX}
               >
                 <ErrorOutlineIcon />
               </Badge>
@@ -1059,22 +775,11 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             <ListItemText primary="Errors" />
           </ListItemButton>
         </Link>
-        <Link href="/config" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Link href="/config" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={isActive('/config')}
             data-learn="Adjust system configuration settings, debug mode, and processing parameters."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
+            sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
               <SettingsIcon />
@@ -1084,14 +789,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
         </Link>
       </List>
       {version && (
-        <Box
-          sx={{
-            p: 2,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            mt: 'auto',
-          }}
-        >
+        <Box sx={VERSION_BOX_SX}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="caption" color="text.secondary">
               {version.version}-
@@ -1105,15 +803,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                   textDecoration: 'none',
                 }}
               >
-                <Box
-                  component="span"
-                  sx={{
-                    '&:hover': {
-                      textDecoration: 'underline',
-                      color: 'primary.main',
-                    }
-                  }}
-                >
+                <Box component="span" sx={VERSION_LINK_HOVER_SX}>
                   {version.commit}
                 </Box>
               </Link>
@@ -1125,12 +815,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 href="https://docs.netcap.io"
                 target="_blank"
                 rel="noopener noreferrer"
-                sx={{ 
-                  color: 'text.secondary',
-                  '&:hover': {
-                    color: 'primary.main',
-                  }
-                }}
+                sx={ICON_BUTTON_SX}
                 title="Documentation"
               >
                 <MenuBookIcon fontSize="small" />
@@ -1141,12 +826,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 href="https://github.com/dreadl0ck/netcap"
                 target="_blank"
                 rel="noopener noreferrer"
-                sx={{ 
-                  color: 'text.secondary',
-                  '&:hover': {
-                    color: 'primary.main',
-                  }
-                }}
+                sx={ICON_BUTTON_SX}
                 title="GitHub Repository"
               >
                 <GitHubIcon fontSize="small" />

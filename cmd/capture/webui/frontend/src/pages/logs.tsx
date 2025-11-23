@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -21,8 +21,8 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
-import { SwapHoriz as SwapHorizIcon } from '@mui/icons-material';
 import Layout from '@/components/Layout';
+import FileSelectorHeader from '@/components/FileSelectorHeader';
 import { api, formatBytes, formatTimestamp } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 
@@ -122,11 +122,11 @@ export default function Logs() {
     }
   };
 
-  const handleFileChange = async (event: SelectChangeEvent<string>) => {
-    const newFile = event.target.value;
+  // Memoize event handler to prevent recreation on every render
+  const handleFileChange = useCallback(async (filePath: string) => {
     setSwitchingFile(true);
     try {
-      const result = await api.setActiveDirectory(newFile);
+      const result = await api.setActiveDirectory(filePath);
       console.log('Directory changed to:', result.outputDir);
       
       // Refresh local data
@@ -144,102 +144,18 @@ export default function Logs() {
     } finally {
       setSwitchingFile(false);
     }
-  };
+  }, [mutateStatus, mutate]);
 
-  // Get only completed files for the selector, sorted alphabetically for consistency
-  // NOTE: Backend should keep initial pcaps marked as isCompleted forever
-  const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
-    .sort((a: any, b: any) => a.path.localeCompare(b.path));
-  const isMultiFile = status?.isMultiFile || false;
-  
-  // Current selected value - use backend's activeInputFile or fallback to first file
-  const selectedValue = status?.activeInputFile || completedFiles[0]?.path || '';
-  // Match by comparing both full path and basename (activeInputFile might be just filename or full path)
-  const selectedFile = completedFiles.find((f: any) => 
-    f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
+  // Use shared FileSelectorHeader component
+  const fileSelector = (
+    <FileSelectorHeader
+      inputFiles={inputFiles || []}
+      status={status}
+      switchingFile={switchingFile}
+      onFileChange={handleFileChange}
+      learnHint="Capture Selector: Switch between different analyzed PCAP files to view their processing logs and debug information."
+    />
   );
-
-  // File selector for header
-  const fileSelector = completedFiles.length > 1 && selectedFile ? (
-    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
-      <Select
-        data-learn="Capture Selector: Switch between different analyzed PCAP files to view their processing logs and debug information."
-        value={selectedValue}
-        onChange={handleFileChange}
-        startAdornment={
-          switchingFile ? (
-            <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
-          ) : (
-            <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
-          )
-        }
-        renderValue={() => (
-          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
-            <Typography sx={{ 
-              fontFamily: 'monospace', 
-              fontSize: '0.85rem', 
-              color: 'inherit',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flex: 1,
-              minWidth: 0,
-            }}>
-              {selectedFile.name}
-            </Typography>
-          </Box>
-        )}
-        sx={{
-          color: 'inherit',
-          '.MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.23)',
-          },
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.4)',
-          },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'primary.light',
-          },
-          '.MuiSelect-icon': {
-            color: 'inherit',
-          },
-          '& .MuiSelect-select': {
-            display: 'flex',
-            alignItems: 'center',
-          },
-        }}
-      >
-        {completedFiles.map((file: any) => (
-          <MenuItem key={file.path} value={file.path}>
-            <Box display="flex" alignItems="center" gap={1} width="100%">
-              {selectedValue === file.path && (
-                <Chip
-                  label="Active"
-                  size="small"
-                  color="success"
-                  sx={{ height: 20, fontSize: '0.7rem' }}
-                />
-              )}
-              <Typography
-                sx={{
-                  fontFamily: 'monospace',
-                  fontSize: '0.85rem',
-                  flex: 1,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {file.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatBytes(file.size)}
-              </Typography>
-            </Box>
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  ) : null;
 
   if (!files && !error) {
     return (

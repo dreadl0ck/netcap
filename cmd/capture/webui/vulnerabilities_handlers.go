@@ -25,6 +25,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
+	"github.com/dreadl0ck/netcap/utils"
 )
 
 // VulnerabilitySummary represents aggregated vulnerability information
@@ -365,12 +366,28 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 		}
 		vulnMap[v.ID].Count++
 
-		// Count affected hosts based on software device profiles AND software-to-hosts mapping
+		// Count affected hosts based on software flows, device profiles, AND software-to-hosts mapping
 		if v.Software != nil {
 			vulnsWithSoftware++
 			hostsAffected := make(map[string]bool) // Use map to deduplicate hosts
 			
-			// Try to get hosts from DeviceProfiles (MAC addresses) and map to IPs
+			// PRIORITY 1: Parse flows to directly extract source and destination IPs
+			flowHostCount := 0
+			for _, flowIdent := range v.Software.Flows {
+				if flowIdent != "" {
+					srcIP, _, dstIP, _ := utils.ParseFlowIdent(flowIdent)
+					if srcIP != "" {
+						hostsAffected[srcIP] = true
+						flowHostCount++
+					}
+					if dstIP != "" {
+						hostsAffected[dstIP] = true
+						flowHostCount++
+					}
+				}
+			}
+			
+			// PRIORITY 2: Try to get hosts from DeviceProfiles (MAC addresses) and map to IPs
 			deviceProfileCount := 0
 			for _, macAddr := range v.Software.DeviceProfiles {
 				if macAddr != "" {
@@ -394,7 +411,7 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 				vulnsWithDeviceProfiles++
 			}
 			
-			// Also try to get hosts from software product name
+			// PRIORITY 3: Also try to get hosts from software product name
 			softwareMapHosts := 0
 			if v.Software.Product != "" {
 				if hosts, found := softwareToHosts[v.Software.Product]; found {
@@ -432,8 +449,8 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 			
 			// Log details for first few vulnerabilities for debugging
 			if recordCount <= 3 {
-				log.Printf("[WebUI][Vulnerabilities] Vuln #%d: ID=%s, Software=%s, DeviceProfiles=%d, HostsFromSoftwareMap=%d, TotalAffected=%d",
-					recordCount, v.ID, v.Software.Product, deviceProfileCount, softwareMapHosts, len(hostsAffected))
+				log.Printf("[WebUI][Vulnerabilities] Vuln #%d: ID=%s, Software=%s, Flows=%d, HostsFromFlows=%d, DeviceProfiles=%d, HostsFromSoftwareMap=%d, TotalAffected=%d",
+					recordCount, v.ID, v.Software.Product, len(v.Software.Flows), flowHostCount, deviceProfileCount, softwareMapHosts, len(hostsAffected))
 			}
 		}
 	}
@@ -499,12 +516,28 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 		}
 		exploitMap[e.ID].Count++
 
-		// Count affected hosts from DeviceProfiles AND software-to-hosts mapping
+		// Count affected hosts from flows, DeviceProfiles, AND software-to-hosts mapping
 		if e.Software != nil {
 			exploitsWithSoftware++
 			hostsAffected := make(map[string]bool) // Use map to deduplicate hosts
 			
-			// Try to get hosts from DeviceProfiles (MAC addresses) and map to IPs
+			// PRIORITY 1: Parse flows to directly extract source and destination IPs
+			flowHostCount := 0
+			for _, flowIdent := range e.Software.Flows {
+				if flowIdent != "" {
+					srcIP, _, dstIP, _ := utils.ParseFlowIdent(flowIdent)
+					if srcIP != "" {
+						hostsAffected[srcIP] = true
+						flowHostCount++
+					}
+					if dstIP != "" {
+						hostsAffected[dstIP] = true
+						flowHostCount++
+					}
+				}
+			}
+			
+			// PRIORITY 2: Try to get hosts from DeviceProfiles (MAC addresses) and map to IPs
 			deviceProfileCount := 0
 			for _, macAddr := range e.Software.DeviceProfiles {
 				if macAddr != "" {
@@ -528,7 +561,7 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 				exploitsWithDeviceProfiles++
 			}
 			
-			// Also try to get hosts from software product name
+			// PRIORITY 3: Also try to get hosts from software product name
 			softwareMapHosts := 0
 			if e.Software.Product != "" {
 				if hosts, found := softwareToHosts[e.Software.Product]; found {
@@ -560,8 +593,8 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 			
 			// Log details for first few exploits for debugging
 			if recordCount <= 3 {
-				log.Printf("[WebUI][Exploits] Exploit #%d: ID=%s, Software=%s, DeviceProfiles=%d, HostsFromSoftwareMap=%d, TotalAffected=%d",
-					recordCount, e.ID, e.Software.Product, deviceProfileCount, softwareMapHosts, len(hostsAffected))
+				log.Printf("[WebUI][Exploits] Exploit #%d: ID=%s, Software=%s, Flows=%d, HostsFromFlows=%d, DeviceProfiles=%d, HostsFromSoftwareMap=%d, TotalAffected=%d",
+					recordCount, e.ID, e.Software.Product, len(e.Software.Flows), flowHostCount, deviceProfileCount, softwareMapHosts, len(hostsAffected))
 			}
 		}
 	}
@@ -602,7 +635,6 @@ func (s *Server) handleExploitFileContent(w http.ResponseWriter, r *http.Request
 	}
 
 	// Security: prevent path traversal attacks by cleaning the path
-	// Remove any .. or other suspicious patterns
 	cleanPath := filepath.Clean(filePath)
 	if strings.Contains(cleanPath, "..") {
 		log.Printf("[WebUI][Exploit] Path traversal attempt detected: %s", filePath)
@@ -610,57 +642,25 @@ func (s *Server) handleExploitFileContent(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// The file path from the database often starts with "exploitdb/"
-	// Strip this prefix if present since we'll add it back in our search paths
+	// The file path from the database starts with "exploitdb/" (e.g., "exploitdb/exploits/linux/dos/34133.txt")
+	// Strip this prefix since we'll construct the full path using DataBaseFolderPath
 	cleanPath = strings.TrimPrefix(cleanPath, "exploitdb/")
 	cleanPath = strings.TrimPrefix(cleanPath, "exploitdb\\") // Windows path separator
 
-	// Try multiple possible locations for the exploitdb files
-	var possiblePaths []string
-	
-	// 1. Build directory with exploitdb prefix
-	possiblePaths = append(possiblePaths, filepath.Join(resolvers.DataBaseBuildPath, "exploitdb", cleanPath))
-	
-	// 2. Build directory without exploitdb prefix (in case files are directly in build)
-	possiblePaths = append(possiblePaths, filepath.Join(resolvers.DataBaseBuildPath, cleanPath))
-	
-	// 3. Config root directory with exploitdb prefix
-	possiblePaths = append(possiblePaths, filepath.Join(resolvers.ConfigRootPath, "exploitdb", cleanPath))
-	
-	// 4. Database folder with exploitdb prefix
-	possiblePaths = append(possiblePaths, filepath.Join(resolvers.DataBaseFolderPath, "exploitdb", cleanPath))
-	
-	// 5. Direct path with original file path (in case it's absolute or has custom structure)
-	possiblePaths = append(possiblePaths, filepath.Join(resolvers.DataBaseBuildPath, filePath))
+	// Construct the correct path: ~/.config/netcap/dbs/exploitdb/<relative-path>
+	fullPath := filepath.Join(resolvers.DataBaseFolderPath, "exploitdb", cleanPath)
 
-	var fileContent []byte
-	var err error
-	var foundPath string
-	var lastErr error
-
-	for _, tryPath := range possiblePaths {
-		fileContent, err = os.ReadFile(tryPath)
-		if err == nil {
-			foundPath = tryPath
-			break
-		}
-		lastErr = err
-		log.Printf("[WebUI][Exploit] Path not found: %s (error: %v)", tryPath, err)
-	}
-
+	// Read the file
+	fileContent, err := os.ReadFile(fullPath)
 	if err != nil {
-		log.Printf("[WebUI][Exploit] Failed to read exploit file from any location.")
-		log.Printf("[WebUI][Exploit] Original file path: %s", filePath)
-		log.Printf("[WebUI][Exploit] All attempted paths:")
-		for i, path := range possiblePaths {
-			log.Printf("[WebUI][Exploit]   %d. %s", i+1, path)
-		}
-		log.Printf("[WebUI][Exploit] Last error: %v", lastErr)
+		log.Printf("[WebUI][Exploit] Failed to read exploit file: %s", fullPath)
+		log.Printf("[WebUI][Exploit] Original file path from database: %s", filePath)
+		log.Printf("[WebUI][Exploit] Error: %v", err)
 		
-		// Return a more helpful error message
+		// Return a helpful error message
 		response := map[string]interface{}{
 			"error": "Exploit file not found. The exploitdb files may not be installed on this server.",
-			"hint":  "To enable this feature, clone the exploitdb repository to " + filepath.Join(resolvers.DataBaseBuildPath, "exploitdb"),
+			"hint":  "Run 'net util -download-dbs' to download the latest database bundle including exploit files.",
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
@@ -668,7 +668,7 @@ func (s *Server) handleExploitFileContent(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	log.Printf("[WebUI][Exploit] Successfully read exploit file: %s (size: %d bytes)", foundPath, len(fileContent))
+	log.Printf("[WebUI][Exploit] Successfully read exploit file: %s (size: %d bytes)", fullPath, len(fileContent))
 
 	// Detect language from file extension
 	language := detectLanguageFromPath(cleanPath)

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -12,7 +12,6 @@ import {
   MenuItem,
   Paper,
   Select,
-  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -30,13 +29,13 @@ import {
 import {
   Refresh as RefreshIcon,
   ExpandMore as ExpandMoreIcon,
-  SwapHoriz as SwapHorizIcon,
   Language as LanguageIcon,
   TrendingUp as TrendingUpIcon,
   Public as PublicIcon,
   AccountTree as AccountTreeIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
+import FileSelectorHeader from '@/components/FileSelectorHeader';
 import { api, formatTimestamp, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 
@@ -167,17 +166,17 @@ export default function DomainsPage() {
     setPage(0);
   };
 
-  const handleRefresh = () => {
+  // Memoize event handlers to prevent recreation on every render
+  const handleRefresh = useCallback(() => {
     mutate();
     // Also refresh charts
     setChartRefreshKey(prev => prev + 1);
-  };
+  }, [mutate]);
 
-  const handleFileChange = async (event: SelectChangeEvent<string>) => {
-    const newFile = event.target.value;
+  const handleFileChange = useCallback(async (filePath: string) => {
     setSwitchingFile(true);
     try {
-      const result = await api.setActiveDirectory(newFile);
+      const result = await api.setActiveDirectory(filePath);
       console.log('Directory changed to:', result.outputDir);
       
       // Refresh local data
@@ -198,110 +197,32 @@ export default function DomainsPage() {
     } finally {
       setSwitchingFile(false);
     }
-  };
+  }, [mutateStatus, mutate]);
 
-  const handleRowClick = (domain: string) => {
-    setExpandedRow(expandedRow === domain ? null : domain);
-  };
+  const handleRowClick = useCallback((domain: string) => {
+    setExpandedRow(prev => prev === domain ? null : domain);
+  }, []);
 
-  // Get only completed files for the selector, sorted alphabetically for consistency
-  const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
-    .sort((a: any, b: any) => a.path.localeCompare(b.path));
-  
-  // Current selected value - use backend's activeInputFile or fallback to first file
-  const selectedValue = status?.activeInputFile || completedFiles[0]?.path || '';
-  // Match by comparing both full path and basename
-  const selectedFile = completedFiles.find((f: any) => 
-    f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
+  // Use shared FileSelectorHeader component
+  const fileSelector = (
+    <FileSelectorHeader
+      inputFiles={inputFiles || []}
+      status={status}
+      switchingFile={switchingFile}
+      onFileChange={handleFileChange}
+      learnHint="Capture Selector: Switch between different analyzed PCAP files to view their DNS domains and queries."
+    />
   );
 
-  // File selector for header
-  const fileSelector = completedFiles.length > 1 && selectedFile ? (
-    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
-      <Select
-        data-learn="Capture Selector: Switch between different analyzed PCAP files to view their DNS domains and queries."
-        value={selectedValue}
-        onChange={handleFileChange}
-        startAdornment={
-          switchingFile ? (
-            <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
-          ) : (
-            <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
-          )
-        }
-        renderValue={() => (
-          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
-            <Typography sx={{ 
-              fontFamily: 'monospace', 
-              fontSize: '0.85rem', 
-              color: 'inherit',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flex: 1,
-              minWidth: 0,
-            }}>
-              {selectedFile.name}
-            </Typography>
-          </Box>
-        )}
-        sx={{
-          color: 'inherit',
-          '.MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.23)',
-          },
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.4)',
-          },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'primary.light',
-          },
-          '.MuiSelect-icon': {
-            color: 'inherit',
-          },
-          '& .MuiSelect-select': {
-            display: 'flex',
-            alignItems: 'center',
-          },
-        }}
-      >
-        {completedFiles.map((file: any) => (
-          <MenuItem key={file.path} value={file.path}>
-            <Box display="flex" alignItems="center" gap={1} width="100%">
-              {selectedValue === file.path && (
-                <Chip
-                  data-learn="Active File Indicator: Shows which PCAP file is currently being analyzed."
-                  label="Active"
-                  size="small"
-                  color="success"
-                  sx={{ height: 20, fontSize: '0.7rem' }}
-                />
-              )}
-              <Typography
-                sx={{
-                  fontFamily: 'monospace',
-                  fontSize: '0.85rem',
-                  flex: 1,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {file.name}
-              </Typography>
-            </Box>
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  ) : null;
-
-  // Calculate summary statistics
-  const totalQueries = domains.reduce((sum, d) => sum + d.queryCount, 0);
-  const uniqueTLDs = new Set(domains.map(d => {
-    const parts = d.domain.split('.');
-    return parts[parts.length - 1];
-  })).size;
-  const subdomainCount = domains.filter(d => d.isSubdomain).length;
+  // Memoize summary statistics to avoid recalculation on every render
+  const stats = useMemo(() => ({
+    totalQueries: domains.reduce((sum, d) => sum + d.queryCount, 0),
+    uniqueTLDs: new Set(domains.map(d => {
+      const parts = d.domain.split('.');
+      return parts[parts.length - 1];
+    })).size,
+    subdomainCount: domains.filter(d => d.isSubdomain).length
+  }), [domains]);
 
   if (error) {
     return (
@@ -344,7 +265,7 @@ export default function DomainsPage() {
                       Total Queries
                     </Typography>
                     <Typography variant="h5">
-                      {totalQueries.toLocaleString()}
+                      {stats.totalQueries.toLocaleString()}
                     </Typography>
                   </Box>
                 </Box>
@@ -362,7 +283,7 @@ export default function DomainsPage() {
                       Unique TLDs
                     </Typography>
                     <Typography variant="h5">
-                      {uniqueTLDs.toLocaleString()}
+                      {stats.uniqueTLDs.toLocaleString()}
                     </Typography>
                   </Box>
                 </Box>
@@ -380,7 +301,7 @@ export default function DomainsPage() {
                       Subdomains
                     </Typography>
                     <Typography variant="h5">
-                      {subdomainCount.toLocaleString()}
+                      {stats.subdomainCount.toLocaleString()}
                     </Typography>
                   </Box>
                 </Box>
@@ -630,9 +551,9 @@ export default function DomainsPage() {
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {(domain.recordTypes || []).slice(0, 3).map((rt, idx) => (
+                            {(domain.recordTypes || []).slice(0, 3).map((rt) => (
                               <Chip
-                                key={idx}
+                                key={rt}
                                 label={rt}
                                 size="small"
                                 variant="outlined"
@@ -653,9 +574,9 @@ export default function DomainsPage() {
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {(domain.resolvedIPs || []).slice(0, 2).map((ip, idx) => (
+                            {(domain.resolvedIPs || []).slice(0, 2).map((ip) => (
                               <Chip
-                                key={idx}
+                                key={ip}
                                 label={ip}
                                 size="small"
                                 color="info"
@@ -720,9 +641,9 @@ export default function DomainsPage() {
                                       All Record Types ({(domain.recordTypes || []).length})
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(domain.recordTypes || []).map((rt, idx) => (
+                                      {(domain.recordTypes || []).map((rt) => (
                                         <Chip
-                                          key={idx}
+                                          key={rt}
                                           label={rt}
                                           size="small"
                                           variant="outlined"
@@ -740,7 +661,7 @@ export default function DomainsPage() {
                                       DNS Response Codes
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(domain.responseCodes || []).map((rc, idx) => {
+                                      {(domain.responseCodes || []).map((rc) => {
                                         const responseCodeName = rc === 0 ? 'Success' : 
                                                                rc === 1 ? 'Format Error' :
                                                                rc === 2 ? 'Server Failure' :
@@ -750,7 +671,7 @@ export default function DomainsPage() {
                                                                `Code ${rc}`;
                                         return (
                                           <Chip
-                                            key={idx}
+                                            key={rc}
                                             label={`${responseCodeName} (${rc})`}
                                             size="small"
                                             color={rc === 0 ? 'success' : 'error'}
@@ -770,9 +691,9 @@ export default function DomainsPage() {
                                       All Resolved IP Addresses ({(domain.resolvedIPs || []).length})
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(domain.resolvedIPs || []).map((ip, idx) => (
+                                      {(domain.resolvedIPs || []).map((ip) => (
                                         <Chip
-                                          key={idx}
+                                          key={ip}
                                           label={ip}
                                           size="small"
                                           color="info"

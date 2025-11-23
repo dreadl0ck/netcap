@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Autocomplete,
   Box,
@@ -27,7 +27,6 @@ import {
   ExpandMore as ExpandMoreIcon,
   Folder as FolderIcon,
   InsertDriveFile as FileIcon,
-  SwapHoriz as SwapHorizIcon,
   Download as DownloadIcon,
   BarChart as BarChartIcon,
   Search as SearchIcon,
@@ -37,6 +36,7 @@ import {
   ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
+import FileSelectorHeader from '@/components/FileSelectorHeader';
 import { api, formatBytes, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useRouter } from 'next/router';
@@ -161,7 +161,7 @@ function RecordUI({ data, level = 0 }: RecordUIProps) {
       return (
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
           {data.map((item, idx) => (
-            <RecordUI key={idx} data={item} level={level + 1} />
+            <RecordUI key={`${String(item)}-${idx}`} data={item} level={level + 1} />
           ))}
         </Box>
       );
@@ -171,7 +171,7 @@ function RecordUI({ data, level = 0 }: RecordUIProps) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 0.5 }}>
         {data.map((item, idx) => (
-          <Paper key={idx} sx={{ p: 1, bgcolor: 'background.default' }}>
+          <Paper key={`item-${idx}-${JSON.stringify(item).substring(0, 50)}`} sx={{ p: 1, bgcolor: 'background.default' }}>
             <RecordUI data={item} level={level + 1} />
           </Paper>
         ))}
@@ -753,11 +753,11 @@ export default function AuditRecords() {
     });
   };
 
-  const handleFileChange = async (event: SelectChangeEvent<string>) => {
-    const newFile = event.target.value;
+  // Memoize event handler to prevent recreation on every render
+  const handleFileChange = useCallback(async (filePath: string) => {
     setSwitchingFile(true);
     try {
-      const result = await api.setActiveDirectory(newFile);
+      const result = await api.setActiveDirectory(filePath);
       console.log('Directory changed to:', result.outputDir);
       
       // Refresh local data
@@ -775,7 +775,7 @@ export default function AuditRecords() {
     } finally {
       setSwitchingFile(false);
     }
-  };
+  }, [mutateStatus, mutate]);
 
   const handleDownloadAll = () => {
     console.log('[Audit] Download All clicked');
@@ -801,100 +801,16 @@ export default function AuditRecords() {
     window.open(downloadUrl, '_blank');
   };
 
-  // Get only completed files for the selector, sorted alphabetically for consistency
-  // NOTE: Backend should keep initial pcaps marked as isCompleted forever
-  const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
-    .sort((a: any, b: any) => a.path.localeCompare(b.path));
-  const isMultiFile = status?.isMultiFile || false;
-  
-  // Current selected value - use backend's activeInputFile or fallback to first file
-  const selectedValue = status?.activeInputFile || completedFiles[0]?.path || '';
-  // Match by comparing both full path and basename (activeInputFile might be just filename or full path)
-  const selectedFile = completedFiles.find((f: any) => 
-    f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
+  // Use shared FileSelectorHeader component
+  const fileSelector = (
+    <FileSelectorHeader
+      inputFiles={inputFiles || []}
+      status={status}
+      switchingFile={switchingFile}
+      onFileChange={handleFileChange}
+      learnHint="Capture Selector: Switch between different analyzed PCAP files to view their audit records and extracted protocol data."
+    />
   );
-
-  // File selector for header
-  const fileSelector = completedFiles.length > 1 && selectedFile ? (
-    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
-      <Select
-        data-learn="Capture Selector: Switch between different analyzed PCAP files to view their audit records and extracted protocol data."
-        value={selectedValue}
-        onChange={handleFileChange}
-        startAdornment={
-          switchingFile ? (
-            <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
-          ) : (
-            <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
-          )
-        }
-        renderValue={() => (
-          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
-            <Typography sx={{ 
-              fontFamily: 'monospace', 
-              fontSize: '0.85rem', 
-              color: 'inherit',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flex: 1,
-              minWidth: 0,
-            }}>
-              {selectedFile.name}
-            </Typography>
-          </Box>
-        )}
-        sx={{
-          color: 'inherit',
-          '.MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.23)',
-          },
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.4)',
-          },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'primary.light',
-          },
-          '.MuiSelect-icon': {
-            color: 'inherit',
-          },
-          '& .MuiSelect-select': {
-            display: 'flex',
-            alignItems: 'center',
-          },
-        }}
-      >
-        {completedFiles.map((file: any) => (
-          <MenuItem key={file.path} value={file.path}>
-            <Box display="flex" alignItems="center" gap={1} width="100%">
-              {selectedValue === file.path && (
-                <Chip
-                  label="Active"
-                  size="small"
-                  color="success"
-                  sx={{ height: 20, fontSize: '0.7rem' }}
-                />
-              )}
-              <Typography
-                sx={{
-                  fontFamily: 'monospace',
-                  fontSize: '0.85rem',
-                  flex: 1,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {file.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatBytes(file.size)}
-              </Typography>
-            </Box>
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  ) : null;
 
   // Group files by layer, filtering out empty files
   const layerGroups: LayerGroup[] = React.useMemo(() => {
@@ -1562,7 +1478,7 @@ export default function AuditRecords() {
                       </Typography>
                       <Box sx={{ ml: 2, mt: 0.5, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                         {section.examples.map((example, idx) => (
-                          <Box key={idx} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <Box key={example.expr} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             <Box sx={{ 
                               bgcolor: 'action.hover', 
                               px: 0.75, 
@@ -1665,7 +1581,7 @@ export default function AuditRecords() {
               >
                 {records.map((record, idx) => (
                   <Paper 
-                    key={idx} 
+                    key={`record-${idx}-${JSON.stringify(record).substring(0, 100)}`} 
                     elevation={2}
                     sx={{ 
                       p: 2, 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -6,13 +6,9 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  FormControl,
   Grid,
   IconButton,
-  MenuItem,
   Paper,
-  Select,
-  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -29,7 +25,6 @@ import {
 import {
   Refresh as RefreshIcon,
   ExpandMore as ExpandMoreIcon,
-  SwapHoriz as SwapHorizIcon,
   Cable as CableIcon,
   Speed as SpeedIcon,
   TrendingUp as TrendingUpIcon,
@@ -42,6 +37,7 @@ import {
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import ConversationModal from '@/components/ConversationModal';
+import FileSelectorHeader from '@/components/FileSelectorHeader';
 import { api, formatBytes, formatTimestamp, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useRouter } from 'next/router';
@@ -152,16 +148,18 @@ export default function ConnectionsPage() {
     filtered = [...filtered].sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
-        case 'endpoints':
+        case 'endpoints': {
           const endpointA = `${a.srcIP}:${a.srcPort}-${a.dstIP}:${a.dstPort}`;
           const endpointB = `${b.srcIP}:${b.srcPort}-${b.dstIP}:${b.dstPort}`;
           comparison = endpointA.localeCompare(endpointB);
           break;
-        case 'protocol':
+        }
+        case 'protocol': {
           const protoA = a.applicationProto || a.transportProto || '';
           const protoB = b.applicationProto || b.transportProto || '';
           comparison = protoA.localeCompare(protoB);
           break;
+        }
         case 'packets':
           comparison = a.numPackets - b.numPackets;
           break;
@@ -193,17 +191,17 @@ export default function ConnectionsPage() {
     setPage(0);
   };
 
-  const handleRefresh = () => {
+  // Memoize event handlers to prevent recreation on every render
+  const handleRefresh = useCallback(() => {
     mutate();
     // Also refresh charts
     setChartRefreshKey(prev => prev + 1);
-  };
+  }, [mutate]);
 
-  const handleFileChange = async (event: SelectChangeEvent<string>) => {
-    const newFile = event.target.value;
+  const handleFileChange = useCallback(async (filePath: string) => {
     setSwitchingFile(true);
     try {
-      const result = await api.setActiveDirectory(newFile);
+      const result = await api.setActiveDirectory(filePath);
       console.log('Directory changed to:', result.outputDir);
       
       // Refresh local data
@@ -224,23 +222,23 @@ export default function ConnectionsPage() {
     } finally {
       setSwitchingFile(false);
     }
-  };
+  }, [mutateStatus, mutate]);
 
-  const handleRowClick = (key: string) => {
-    setExpandedRow(expandedRow === key ? null : key);
-  };
+  const handleRowClick = useCallback((key: string) => {
+    setExpandedRow(prev => prev === key ? null : key);
+  }, []);
 
-  const handleViewConversation = (conn: ConnectionSummary) => {
+  const handleViewConversation = useCallback((conn: ConnectionSummary) => {
     setSelectedConnection(conn);
     setConversationModalOpen(true);
-  };
+  }, []);
 
-  const handleCloseConversationModal = () => {
+  const handleCloseConversationModal = useCallback(() => {
     setConversationModalOpen(false);
     setSelectedConnection(null);
-  };
+  }, []);
 
-  const handleDownloadPCAP = async (conn: ConnectionSummary) => {
+  const handleDownloadPCAP = useCallback(async (conn: ConnectionSummary) => {
     try {
       // Generate download URL
       const params = new URLSearchParams({
@@ -278,108 +276,27 @@ export default function ConnectionsPage() {
       console.error('Download failed:', error);
       alert(`Failed to download PCAP: ${error}`);
     }
-  };
+  }, []);
 
-  // Get only completed files for the selector, sorted alphabetically for consistency
-  const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
-    .sort((a: any, b: any) => a.path.localeCompare(b.path));
-  
-  // Current selected value - use backend's activeInputFile or fallback to first file
-  const selectedValue = status?.activeInputFile || completedFiles[0]?.path || '';
-  // Match by comparing both full path and basename
-  const selectedFile = completedFiles.find((f: any) => 
-    f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
+  // Use shared FileSelectorHeader component
+  const fileSelector = (
+    <FileSelectorHeader
+      inputFiles={inputFiles || []}
+      status={status}
+      switchingFile={switchingFile}
+      onFileChange={handleFileChange}
+      learnHint="Capture Selector: Switch between different analyzed PCAP files to view their network connections and flows."
+    />
   );
 
-  // File selector for header
-  const fileSelector = completedFiles.length > 1 && selectedFile ? (
-    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
-      <Select
-        data-learn="Capture Selector: Switch between different analyzed PCAP files to view their network connections and flows."
-        value={selectedValue}
-        onChange={handleFileChange}
-        startAdornment={
-          switchingFile ? (
-            <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
-          ) : (
-            <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
-          )
-        }
-        renderValue={() => (
-          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
-            <Typography sx={{ 
-              fontFamily: 'monospace', 
-              fontSize: '0.85rem', 
-              color: 'inherit',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flex: 1,
-              minWidth: 0,
-            }}>
-              {selectedFile.name}
-            </Typography>
-          </Box>
-        )}
-        sx={{
-          color: 'inherit',
-          '.MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.23)',
-          },
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.4)',
-          },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'primary.light',
-          },
-          '.MuiSelect-icon': {
-            color: 'inherit',
-          },
-          '& .MuiSelect-select': {
-            display: 'flex',
-            alignItems: 'center',
-          },
-        }}
-      >
-        {completedFiles.map((file: any) => (
-          <MenuItem key={file.path} value={file.path}>
-            <Box display="flex" alignItems="center" gap={1} width="100%">
-              {selectedValue === file.path && (
-                <Chip
-                  data-learn="Active File Indicator: Shows which PCAP file is currently being analyzed."
-                  label="Active"
-                  size="small"
-                  color="success"
-                  sx={{ height: 20, fontSize: '0.7rem' }}
-                />
-              )}
-              <Typography
-                sx={{
-                  fontFamily: 'monospace',
-                  fontSize: '0.85rem',
-                  flex: 1,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {file.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatBytes(file.size)}
-              </Typography>
-            </Box>
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  ) : null;
-
-  // Calculate summary statistics
-  const totalBytes = connections.reduce((sum, c) => sum + c.totalSize, 0);
-  const avgDuration = connections.length > 0 
-    ? connections.reduce((sum, c) => sum + c.duration, 0) / connections.length 
-    : 0;
-  const uniqueProtocols = new Set(connections.map(c => c.applicationProto || c.transportProto)).size;
+  // Memoize summary statistics to avoid recalculation on every render
+  const stats = useMemo(() => ({
+    totalBytes: connections.reduce((sum, c) => sum + c.totalSize, 0),
+    avgDuration: connections.length > 0 
+      ? connections.reduce((sum, c) => sum + c.duration, 0) / connections.length 
+      : 0,
+    uniqueProtocols: new Set(connections.map(c => c.applicationProto || c.transportProto)).size
+  }), [connections]);
 
   if (error) {
     return (
@@ -422,7 +339,7 @@ export default function ConnectionsPage() {
                       Total Traffic
                     </Typography>
                     <Typography variant="h5">
-                      {formatBytes(totalBytes)}
+                      {formatBytes(stats.totalBytes)}
                     </Typography>
                   </Box>
                 </Box>
@@ -440,7 +357,7 @@ export default function ConnectionsPage() {
                       Avg Duration
                     </Typography>
                     <Typography variant="h5">
-                      {(avgDuration / 1e9).toFixed(2)}s
+                      {(stats.avgDuration / 1e9).toFixed(2)}s
                     </Typography>
                   </Box>
                 </Box>
@@ -458,7 +375,7 @@ export default function ConnectionsPage() {
                       Unique Protocols
                     </Typography>
                     <Typography variant="h5">
-                      {uniqueProtocols.toLocaleString()}
+                      {stats.uniqueProtocols.toLocaleString()}
                     </Typography>
                   </Box>
                 </Box>
@@ -764,9 +681,9 @@ export default function ConnectionsPage() {
                           </TableCell>
                           <TableCell>
                             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                              {(conn.applications || []).slice(0, 2).map((app, appIdx) => (
+                              {(conn.applications || []).slice(0, 2).map((app) => (
                                 <Chip
-                                  key={appIdx}
+                                  key={`${rowKey}-app-${app}`}
                                   label={app}
                                   size="small"
                                   color="info"
@@ -933,9 +850,9 @@ export default function ConnectionsPage() {
                                         All Detected Applications ({(conn.applications || []).length})
                                       </Typography>
                                       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                        {(conn.applications || []).map((app, appIdx) => (
+                                        {(conn.applications || []).map((app) => (
                                           <Chip
-                                            key={appIdx}
+                                            key={`${rowKey}-app-detail-${app}`}
                                             label={app}
                                             size="small"
                                             color="info"

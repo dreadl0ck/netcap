@@ -47,6 +47,7 @@ import VideocamIcon from '@mui/icons-material/Videocam';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import Layout from '@/components/Layout';
+import FileSelectorHeader from '@/components/FileSelectorHeader';
 import { api, formatBytes, formatTimestamp, type ExtractedFileInfo } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import OptimizedPieChart from '@/components/OptimizedPieChart';
@@ -93,6 +94,12 @@ export default function ExtractedFilesPage() {
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
+
+  // Compute selected file from status and inputFiles
+  const selectedFile = useMemo(() => {
+    if (!status?.outputDir || !inputFiles) return null;
+    return inputFiles.find(f => f.path === status.outputDir) || null;
+  }, [status?.outputDir, inputFiles]);
 
   // Fetch extracted files
   const { data: extractedFilesData, error, mutate } = useSWR(
@@ -257,11 +264,11 @@ export default function ExtractedFilesPage() {
     }
   };
 
-  const handleFileChange = async (event: SelectChangeEvent<string>) => {
-    const newFile = event.target.value;
+  // Memoize event handler to prevent recreation on every render
+  const handleFileChange = useCallback(async (filePath: string) => {
     setSwitchingFile(true);
     try {
-      const result = await api.setActiveDirectory(newFile);
+      const result = await api.setActiveDirectory(filePath);
       console.log('Directory changed to:', result.outputDir);
       
       // Refresh local data
@@ -279,7 +286,7 @@ export default function ExtractedFilesPage() {
     } finally {
       setSwitchingFile(false);
     }
-  };
+  }, [mutateStatus, mutate]);
 
   const handleDownloadFile = (relativePath: string) => {
     const downloadUrl = api.downloadExtractedFile(relativePath);
@@ -405,73 +412,16 @@ export default function ExtractedFilesPage() {
   };
 
   // Get only completed files for the selector, sorted alphabetically for consistency
-  const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
-    .sort((a: any, b: any) => a.path.localeCompare(b.path));
-  
-  // Current selected value - use backend's activeInputFile or fallback to first file
-  const selectedValue = status?.activeInputFile || completedFiles[0]?.path || '';
-  // Match by comparing both full path and basename
-  const selectedFile = completedFiles.find((f: any) => 
-    f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
+  // Use shared FileSelectorHeader component
+  const fileSelector = (
+    <FileSelectorHeader
+      inputFiles={inputFiles || []}
+      status={status}
+      switchingFile={switchingFile}
+      onFileChange={handleFileChange}
+      learnHint="Capture Selector: Switch between different analyzed PCAP files to view their extracted files."
+    />
   );
-
-  // File selector for header
-  const fileSelector = completedFiles.length > 1 && selectedFile ? (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-      <Typography variant="body2" color="text.secondary">
-        Capture:
-      </Typography>
-      <FormControl size="small" sx={{ minWidth: 300 }}>
-        <Select
-          data-learn="Capture Selector: Switch between different analyzed PCAP files to view their extracted files."
-          value={selectedValue}
-          onChange={handleFileChange}
-          disabled={switchingFile}
-          sx={{ bgcolor: 'background.paper' }}
-          renderValue={() => (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1 }}>
-              <Typography 
-                sx={{ 
-                  fontFamily: 'monospace',
-                  fontSize: '0.875rem',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  flex: 1,
-                  minWidth: 0,
-                }}
-              >
-                {selectedFile.name}
-              </Typography>
-            </Box>
-          )}
-        >
-          {completedFiles.map((file: any) => (
-            <MenuItem key={file.path} value={file.path}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
-                <Typography 
-                  sx={{ 
-                    fontFamily: 'monospace',
-                    fontSize: '0.875rem',
-                    flex: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  {file.name}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  ({formatBytes(file.size)})
-                </Typography>
-              </Box>
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-      {switchingFile && <CircularProgress size={20} />}
-    </Box>
-  ) : null;
 
   if (error) {
     return (

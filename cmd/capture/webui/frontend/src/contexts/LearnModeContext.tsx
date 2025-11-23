@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useMemo, ReactNode } from 'react';
 
 interface LearnModeContextType {
   isLearnModeActive: boolean;
@@ -28,19 +28,30 @@ export function LearnModeProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Memoize context value to prevent unnecessary re-renders of all consumers
+  // This is critical because every component using useLearnMode() will re-render
+  // whenever this value changes, even if they only use a subset of the state
+  const value = useMemo(
+    () => ({
+      isLearnModeActive,
+      toggleLearnMode,
+      currentHint,
+      setCurrentHint,
+      currentElementTitle,
+      setCurrentElementTitle,
+      lastInteractedElement,
+      setLastInteractedElement,
+    }),
+    [
+      isLearnModeActive,
+      currentHint,
+      currentElementTitle,
+      lastInteractedElement,
+    ]
+  );
+
   return (
-    <LearnModeContext.Provider
-      value={{
-        isLearnModeActive,
-        toggleLearnMode,
-        currentHint,
-        setCurrentHint,
-        currentElementTitle,
-        setCurrentElementTitle,
-        lastInteractedElement,
-        setLastInteractedElement,
-      }}
-    >
+    <LearnModeContext.Provider value={value}>
       {children}
     </LearnModeContext.Provider>
   );

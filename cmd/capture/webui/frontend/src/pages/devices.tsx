@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -6,13 +6,9 @@ import {
   CardContent,
   Chip,
   CircularProgress,
-  FormControl,
   Grid,
   IconButton,
-  MenuItem,
   Paper,
-  Select,
-  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -32,13 +28,13 @@ import {
   ExpandMore as ExpandMoreIcon,
   Router as RouterIcon,
   Memory as MemoryIcon,
-  SwapHoriz as SwapHorizIcon,
   Devices as DevicesIcon,
   Business as BusinessIcon,
   TrendingUp as TrendingUpIcon,
   Apps as AppsIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
+import FileSelectorHeader from '@/components/FileSelectorHeader';
 import { api, formatBytes, formatTimestamp, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useRouter } from 'next/router';
@@ -172,17 +168,17 @@ export default function DevicesPage() {
     setPage(0);
   };
 
-  const handleRefresh = () => {
+  // Memoize event handlers to prevent recreation on every render
+  const handleRefresh = useCallback(() => {
     mutate();
     // Also refresh charts
     setChartRefreshKey(prev => prev + 1);
-  };
+  }, [mutate]);
 
-  const handleFileChange = async (event: SelectChangeEvent<string>) => {
-    const newFile = event.target.value;
+  const handleFileChange = useCallback(async (filePath: string) => {
     setSwitchingFile(true);
     try {
-      const result = await api.setActiveDirectory(newFile);
+      const result = await api.setActiveDirectory(filePath);
       console.log('Directory changed to:', result.outputDir);
       
       // Refresh local data
@@ -203,104 +199,22 @@ export default function DevicesPage() {
     } finally {
       setSwitchingFile(false);
     }
-  };
+  }, [mutateStatus, mutate]);
 
-  const handleRowClick = (macAddr: string) => {
-    setExpandedRow(expandedRow === macAddr ? null : macAddr);
-  };
+  const handleRowClick = useCallback((macAddr: string) => {
+    setExpandedRow(prev => prev === macAddr ? null : macAddr);
+  }, []);
 
-  // Get only completed files for the selector, sorted alphabetically for consistency
-  const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
-    .sort((a: any, b: any) => a.path.localeCompare(b.path));
-  
-  // Current selected value - use backend's activeInputFile or fallback to first file
-  const selectedValue = status?.activeInputFile || completedFiles[0]?.path || '';
-  // Match by comparing both full path and basename
-  const selectedFile = completedFiles.find((f: any) => 
-    f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
+  // Use shared FileSelectorHeader component
+  const fileSelector = (
+    <FileSelectorHeader
+      inputFiles={inputFiles || []}
+      status={status}
+      switchingFile={switchingFile}
+      onFileChange={handleFileChange}
+      learnHint="Capture Selector: Switch between different analyzed PCAP files to view their identified network devices and hardware."
+    />
   );
-
-  // File selector for header
-  const fileSelector = completedFiles.length > 1 && selectedFile ? (
-    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
-      <Select
-        data-learn="Capture Selector: Switch between different analyzed PCAP files to view their identified network devices and hardware."
-        value={selectedValue}
-        onChange={handleFileChange}
-        startAdornment={
-          switchingFile ? (
-            <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
-          ) : (
-            <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
-          )
-        }
-        renderValue={() => (
-          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
-            <Typography sx={{ 
-              fontFamily: 'monospace', 
-              fontSize: '0.85rem', 
-              color: 'inherit',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flex: 1,
-              minWidth: 0,
-            }}>
-              {selectedFile.name}
-            </Typography>
-          </Box>
-        )}
-        sx={{
-          color: 'inherit',
-          '.MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.23)',
-          },
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.4)',
-          },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'primary.light',
-          },
-          '.MuiSelect-icon': {
-            color: 'inherit',
-          },
-          '& .MuiSelect-select': {
-            display: 'flex',
-            alignItems: 'center',
-          },
-        }}
-      >
-        {completedFiles.map((file: any) => (
-          <MenuItem key={file.path} value={file.path}>
-            <Box display="flex" alignItems="center" gap={1} width="100%">
-              {selectedValue === file.path && (
-                <Chip
-                  label="Active"
-                  size="small"
-                  color="success"
-                  sx={{ height: 20, fontSize: '0.7rem' }}
-                />
-              )}
-              <Typography
-                sx={{
-                  fontFamily: 'monospace',
-                  fontSize: '0.85rem',
-                  flex: 1,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {file.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatBytes(file.size)}
-              </Typography>
-            </Box>
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  ) : null;
 
   if (error) {
     return (
@@ -653,9 +567,9 @@ export default function DevicesPage() {
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {(device.devices || []).slice(0, 2).map((dev, idx) => (
+                            {(device.devices || []).slice(0, 2).map((dev) => (
                               <Chip
-                                key={idx}
+                                key={dev}
                                 label={dev}
                                 size="small"
                                 variant="outlined"
@@ -674,9 +588,9 @@ export default function DevicesPage() {
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {(device.applications || []).slice(0, 2).map((app, idx) => (
+                            {(device.applications || []).slice(0, 2).map((app) => (
                               <Chip
-                                key={idx}
+                                key={app}
                                 label={app}
                                 size="small"
                                 color="info"
@@ -737,9 +651,9 @@ export default function DevicesPage() {
                                       Device IP Addresses ({(device.deviceIPs || []).length})
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(device.deviceIPs || []).map((ip, idx) => (
+                                      {(device.deviceIPs || []).map((ip) => (
                                         <Chip
-                                          key={idx}
+                                          key={ip}
                                           label={ip}
                                           size="small"
                                           variant="outlined"
@@ -757,9 +671,9 @@ export default function DevicesPage() {
                                       All Device Types ({(device.devices || []).length})
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(device.devices || []).map((dev, idx) => (
+                                      {(device.devices || []).map((dev) => (
                                         <Chip
-                                          key={idx}
+                                          key={dev}
                                           label={dev}
                                           size="small"
                                           variant="outlined"
@@ -777,9 +691,9 @@ export default function DevicesPage() {
                                       All Applications ({(device.applications || []).length})
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(device.applications || []).map((app, idx) => (
+                                      {(device.applications || []).map((app) => (
                                         <Chip
-                                          key={idx}
+                                          key={app}
                                           label={app}
                                           size="small"
                                           color="info"
@@ -797,9 +711,9 @@ export default function DevicesPage() {
                                       Contacted IPs ({(device.contacts || []).length} total, showing top 20)
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(device.contacts || []).slice(0, 20).map((contact, idx) => (
+                                      {(device.contacts || []).slice(0, 20).map((contact) => (
                                         <Chip
-                                          key={idx}
+                                          key={contact}
                                           label={contact}
                                           size="small"
                                           variant="outlined"

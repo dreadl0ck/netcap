@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Button,
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -16,7 +15,6 @@ import {
   MenuItem,
   Paper,
   Select,
-  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -39,13 +37,13 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CheckIcon from '@mui/icons-material/Check';
 import UndoIcon from '@mui/icons-material/Undo';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import Layout from '@/components/Layout';
+import FileSelectorHeader from '@/components/FileSelectorHeader';
 import { api, Alert, GroupedAlert, AlertStatsResponse, formatBytes } from '@/lib/api';
 import useSWR, { mutate, mutate as globalMutate } from 'swr';
 import { FilterExpressionBlock } from '@/components/FilterExpressionHighlight';
@@ -153,6 +151,12 @@ export default function AlertsPage() {
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
 
+  // Compute selected file from status and inputFiles
+  const selectedFile = useMemo(() => {
+    if (!status?.outputDir || !inputFiles) return null;
+    return inputFiles.find(f => f.path === status.outputDir) || null;
+  }, [status?.outputDir, inputFiles]);
+
   // Fetch grouped alerts
   const { data: groupedAlertsData, error } = useSWR(
     ['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy],
@@ -207,11 +211,11 @@ export default function AlertsPage() {
     setPage(0); // Reset to first page when sorting changes
   };
 
-  const handleFileChange = async (event: SelectChangeEvent<string>) => {
-    const newFile = event.target.value;
+  // Memoize event handler to prevent recreation on every render
+  const handleFileChange = useCallback(async (filePath: string) => {
     setSwitchingFile(true);
     try {
-      const result = await api.setActiveDirectory(newFile);
+      const result = await api.setActiveDirectory(filePath);
       console.log('Directory changed to:', result.outputDir);
       
       // Refresh local data
@@ -234,7 +238,7 @@ export default function AlertsPage() {
     } finally {
       setSwitchingFile(false);
     }
-  };
+  }, [mutateStatus, mutate, page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy]);
 
   const handleClearAlerts = async () => {
     if (!confirm('Are you sure you want to clear all alerts? This action cannot be undone.')) return;
@@ -341,96 +345,16 @@ export default function AlertsPage() {
   const uniqueRules = Array.from(new Set(stats?.byRule ? Object.keys(stats.byRule) : []));
 
   // Get only completed files for the selector
-  const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
-    .sort((a: any, b: any) => a.path.localeCompare(b.path));
-  
-  // Current selected value
-  const selectedValue = status?.activeInputFile || completedFiles[0]?.path || '';
-  const selectedFile = completedFiles.find((f: any) => 
-    f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
+  // Use shared FileSelectorHeader component
+  const fileSelector = (
+    <FileSelectorHeader
+      inputFiles={inputFiles || []}
+      status={status}
+      switchingFile={switchingFile}
+      onFileChange={handleFileChange}
+      learnHint="Capture Selector: Switch between different analyzed PCAP files to view their security alerts and threats."
+    />
   );
-
-  // File selector for header
-  const fileSelector = completedFiles.length > 1 && selectedFile ? (
-    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
-      <Select
-        data-learn="Capture Selector: Switch between different analyzed PCAP files to view their security alerts and threats."
-        value={selectedValue}
-        onChange={handleFileChange}
-        startAdornment={
-          switchingFile ? (
-            <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
-          ) : (
-            <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
-          )
-        }
-        renderValue={() => (
-          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
-            <Typography sx={{ 
-              fontFamily: 'monospace', 
-              fontSize: '0.85rem', 
-              color: 'inherit',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flex: 1,
-              minWidth: 0,
-            }}>
-              {selectedFile.name}
-            </Typography>
-          </Box>
-        )}
-        sx={{
-          color: 'inherit',
-          '.MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.23)',
-          },
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.4)',
-          },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'primary.light',
-          },
-          '.MuiSelect-icon': {
-            color: 'inherit',
-          },
-          '& .MuiSelect-select': {
-            display: 'flex',
-            alignItems: 'center',
-          },
-        }}
-      >
-        {completedFiles.map((file: any) => (
-          <MenuItem key={file.path} value={file.path}>
-            <Box display="flex" alignItems="center" gap={1} width="100%">
-              {selectedValue === file.path && (
-                <Chip
-                  label="Active"
-                  size="small"
-                  color="success"
-                  sx={{ height: 20, fontSize: '0.7rem' }}
-                />
-              )}
-              <Typography
-                sx={{
-                  fontFamily: 'monospace',
-                  fontSize: '0.85rem',
-                  flex: 1,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {file.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatBytes(file.size)}
-              </Typography>
-            </Box>
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  ) : null;
 
   return (
     <Layout title="Alerts" headerAction={fileSelector}>
@@ -997,7 +921,7 @@ export default function AlertsPage() {
                                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                     {group.sampleAlerts.map((alert, idx) => (
                                       <Button
-                                        key={idx}
+                                        key={`${alert.timestamp}-${idx}`}
                                         size="small"
                                         variant="outlined"
                                         startIcon={<VisibilityIcon />}

@@ -1319,6 +1319,13 @@ export const api = {
     return data.totalCount || 0;
   },
 
+  async getCredentialsCount(): Promise<number> {
+    const res = await fetch(`${API_BASE}/credentials`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.totalCount || 0;
+  },
+
   async getDomainsCount(): Promise<number> {
     const res = await fetch(`${API_BASE}/domains`);
     if (!res.ok) return 0;
@@ -1359,6 +1366,13 @@ export const api = {
     if (!res.ok) return 0;
     const data = await res.json();
     return data.totalCount || 0;
+  },
+
+  async getLogsCount(): Promise<number> {
+    const res = await fetch(`${API_BASE}/files/logs`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.length || 0;
   },
 };
 

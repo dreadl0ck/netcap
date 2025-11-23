@@ -5,8 +5,9 @@ AI page for generating reports or AI assisted analysis agent
 
 MCP
 
----
+----
 
+- Table with PCAPs and number of audit records of each type, sortable ("eg: which capture file had the most Credentials")
 - DHCP fingerprinting results for DeviceProfile and IPProfile
 - overview: standard VS non standard ports in use for services
 - Visualize Applications (Clustering)
@@ -20,7 +21,7 @@ MCP
 - Ja4
 - dashboards feature
 
-----
+----    
 
 - mimicry rule: alert if traffic on standard port does not match the expected protocol (using DPI results)
 - dev mode: enable debugging with https://nextjs.org/docs/app/guides/mcp

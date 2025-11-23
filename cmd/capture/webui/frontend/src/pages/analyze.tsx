@@ -595,7 +595,7 @@ export default function AnalyzePage() {
                   <Box sx={{ mt: 2, maxHeight: 200, overflow: 'auto' }}>
                     {files.map((file, index) => (
                       <Chip
-                        key={index}
+                        key={`${file.name}-${file.size}-${index}`}
                         label={`${file.name} (${formatBytes(file.size)})`}
                         onDelete={() => handleRemoveFile(index)}
                         sx={{ m: 0.5 }}
@@ -657,7 +657,7 @@ export default function AnalyzePage() {
                       : `Share these ${shareUrls.length} links with others to view the analysis results:`}
                   </Typography>
                   {shareUrls.map((url, index) => (
-                    <Box key={index} display="flex" gap={1} alignItems="center" sx={{ mb: shareUrls.length > 1 ? 1 : 0 }}>
+                    <Box key={url} display="flex" gap={1} alignItems="center" sx={{ mb: shareUrls.length > 1 ? 1 : 0 }}>
                       {shareUrls.length > 1 && (
                         <Chip label={`File ${index + 1}`} size="small" sx={{ minWidth: 60 }} />
                       )}

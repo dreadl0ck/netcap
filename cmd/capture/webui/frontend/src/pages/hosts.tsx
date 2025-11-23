@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -12,7 +12,6 @@ import {
   MenuItem,
   Paper,
   Select,
-  SelectChangeEvent,
   Table,
   TableBody,
   TableCell,
@@ -32,13 +31,13 @@ import {
   ExpandMore as ExpandMoreIcon,
   Public as GeoIcon,
   Devices as DevicesIcon,
-  SwapHoriz as SwapHorizIcon,
   Security as SecurityIcon,
   Language as LanguageIcon,
   LocalOffer as TagIcon,
   TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
+import FileSelectorHeader from '@/components/FileSelectorHeader';
 import { api, formatBytes, formatTimestamp, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useRouter } from 'next/router';
@@ -202,17 +201,17 @@ export default function HostsPage() {
     setPage(0);
   };
 
-  const handleRefresh = () => {
+  // Memoize event handlers to prevent recreation on every render
+  const handleRefresh = useCallback(() => {
     mutate();
     // Also refresh charts
     setChartRefreshKey(prev => prev + 1);
-  };
+  }, [mutate]);
 
-  const handleFileChange = async (event: SelectChangeEvent<string>) => {
-    const newFile = event.target.value;
+  const handleFileChange = useCallback(async (filePath: string) => {
     setSwitchingFile(true);
     try {
-      const result = await api.setActiveDirectory(newFile);
+      const result = await api.setActiveDirectory(filePath);
       console.log('Directory changed to:', result.outputDir);
       
       // Refresh local data
@@ -233,104 +232,22 @@ export default function HostsPage() {
     } finally {
       setSwitchingFile(false);
     }
-  };
+  }, [mutateStatus, mutate]);
 
-  const handleRowClick = (addr: string) => {
-    setExpandedRow(expandedRow === addr ? null : addr);
-  };
+  const handleRowClick = useCallback((addr: string) => {
+    setExpandedRow(prev => prev === addr ? null : addr);
+  }, []);
 
-  // Get only completed files for the selector, sorted alphabetically for consistency
-  const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
-    .sort((a: any, b: any) => a.path.localeCompare(b.path));
-  
-  // Current selected value - use backend's activeInputFile or fallback to first file
-  const selectedValue = status?.activeInputFile || completedFiles[0]?.path || '';
-  // Match by comparing both full path and basename
-  const selectedFile = completedFiles.find((f: any) => 
-    f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
+  // Use shared FileSelectorHeader component
+  const fileSelector = (
+    <FileSelectorHeader
+      inputFiles={inputFiles || []}
+      status={status}
+      switchingFile={switchingFile}
+      onFileChange={handleFileChange}
+      learnHint="Capture Selector: Switch between different analyzed PCAP files to view their discovered network hosts and connections."
+    />
   );
-
-  // File selector for header
-  const fileSelector = completedFiles.length > 1 && selectedFile ? (
-    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
-      <Select
-        data-learn="Capture Selector: Switch between different analyzed PCAP files to view their discovered network hosts and connections."
-        value={selectedValue}
-        onChange={handleFileChange}
-        startAdornment={
-          switchingFile ? (
-            <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
-          ) : (
-            <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
-          )
-        }
-        renderValue={() => (
-          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
-            <Typography sx={{ 
-              fontFamily: 'monospace', 
-              fontSize: '0.85rem', 
-              color: 'inherit',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              flex: 1,
-              minWidth: 0,
-            }}>
-              {selectedFile.name}
-            </Typography>
-          </Box>
-        )}
-        sx={{
-          color: 'inherit',
-          '.MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.23)',
-          },
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'rgba(255, 255, 255, 0.4)',
-          },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: 'primary.light',
-          },
-          '.MuiSelect-icon': {
-            color: 'inherit',
-          },
-          '& .MuiSelect-select': {
-            display: 'flex',
-            alignItems: 'center',
-          },
-        }}
-      >
-        {completedFiles.map((file: any) => (
-          <MenuItem key={file.path} value={file.path}>
-            <Box display="flex" alignItems="center" gap={1} width="100%">
-              {selectedValue === file.path && (
-                <Chip
-                  label="Active"
-                  size="small"
-                  color="success"
-                  sx={{ height: 20, fontSize: '0.7rem' }}
-                />
-              )}
-              <Typography
-                sx={{
-                  fontFamily: 'monospace',
-                  fontSize: '0.85rem',
-                  flex: 1,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {file.name}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                {formatBytes(file.size)}
-              </Typography>
-            </Box>
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
-  ) : null;
 
   if (error) {
     return (
@@ -658,9 +575,9 @@ export default function HostsPage() {
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {(host.dnsNames || []).slice(0, 2).map((name, idx) => (
+                            {(host.dnsNames || []).slice(0, 2).map((name) => (
                               <Chip
-                                key={idx}
+                                key={name}
                                 label={name}
                                 size="small"
                                 variant="outlined"
@@ -679,9 +596,9 @@ export default function HostsPage() {
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {(host.applications || []).slice(0, 2).map((app, idx) => (
+                            {(host.applications || []).slice(0, 2).map((app) => (
                               <Chip
-                                key={idx}
+                                key={app}
                                 label={app}
                                 size="small"
                                 color="info"
@@ -748,9 +665,9 @@ export default function HostsPage() {
                                       Top Protocols
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(host.topProtocols || []).map((proto, idx) => (
+                                      {(host.topProtocols || []).map((proto) => (
                                         <Tooltip
-                                          key={idx}
+                                          key={proto.name}
                                           title={`${proto.packets.toLocaleString()} packets (${proto.category})`}
                                         >
                                           <Chip
@@ -772,9 +689,9 @@ export default function HostsPage() {
                                       Top Contacted Ports
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(host.topContactedPorts || []).map((port, idx) => (
+                                      {(host.topContactedPorts || []).map((port) => (
                                         <Tooltip
-                                          key={idx}
+                                          key={`${port.port}-${port.packets}`}
                                           title={`${port.packets.toLocaleString()} packets, ${formatBytes(port.bytes)}`}
                                         >
                                           <Chip
@@ -797,9 +714,9 @@ export default function HostsPage() {
                                       All DNS Names ({(host.dnsNames || []).length})
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(host.dnsNames || []).map((name, idx) => (
+                                      {(host.dnsNames || []).map((name) => (
                                         <Chip
-                                          key={idx}
+                                          key={name}
                                           label={name}
                                           size="small"
                                           variant="outlined"
@@ -817,9 +734,9 @@ export default function HostsPage() {
                                       All Applications ({(host.applications || []).length})
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(host.applications || []).map((app, idx) => (
+                                      {(host.applications || []).map((app) => (
                                         <Chip
-                                          key={idx}
+                                          key={app}
                                           label={app}
                                           size="small"
                                           color="info"
@@ -842,9 +759,9 @@ export default function HostsPage() {
                                           JA3 (Client):
                                         </Typography>
                                         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                          {(host.ja3FingerprintMatches || []).map((match, idx) => (
+                                          {(host.ja3FingerprintMatches || []).map((match) => (
                                             <Chip
-                                              key={idx}
+                                              key={match}
                                               label={match}
                                               size="small"
                                               variant="outlined"
@@ -861,9 +778,9 @@ export default function HostsPage() {
                                           JA3S (Server):
                                         </Typography>
                                         <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                          {(host.ja3sFingerprintMatches || []).map((match, idx) => (
+                                          {(host.ja3sFingerprintMatches || []).map((match) => (
                                             <Chip
-                                              key={idx}
+                                              key={match}
                                               label={match}
                                               size="small"
                                               variant="outlined"

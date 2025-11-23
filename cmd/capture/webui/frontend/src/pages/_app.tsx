@@ -13,6 +13,9 @@ import '@fontsource/roboto/700.css'; // Bold
 import '@fontsource/roboto-mono/400.css';
 import '@fontsource/roboto-mono/700.css';
 
+// Create theme once outside component to prevent recreation on every render
+// This is a critical performance optimization that prevents unnecessary re-renders
+// of all child components wrapped by ThemeProvider
 const theme = createTheme({
   palette: {
     mode: 'dark',

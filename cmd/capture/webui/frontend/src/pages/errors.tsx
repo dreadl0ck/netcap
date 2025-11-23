@@ -290,9 +290,9 @@ export default function ErrorsPage() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedErrorLogs.map((errorLog, index) => (
+                    paginatedErrorLogs.map((errorLog) => (
                       <TableRow 
-                        key={index} 
+                        key={errorLog.inputFilename} 
                         hover 
                         onClick={() => handleViewErrors(errorLog)}
                         sx={{ cursor: 'pointer' }}
@@ -470,7 +470,7 @@ export default function ErrorsPage() {
                   <List>
                     {aggregatedErrors.map((error, index) => (
                       <ListItem
-                        key={index}
+                        key={error.errorMessage}
                         sx={{
                           borderBottom: index < aggregatedErrors.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none',
                           '&:hover': { backgroundColor: 'rgba(0,0,0,0.02)' },
