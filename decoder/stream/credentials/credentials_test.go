@@ -135,12 +135,19 @@ Authorization: Digest username="Mufasa", realm="testrealm@host.com", nonce="dcd9
 		t.Fatal("no credentials found")
 	}
 
-	if c.User != "username=\"Mufasa\", realm=\"testrealm@host.com\", nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", uri=\"/dir/index.html\", qop=auth, nc=00000001, cnonce=\"0a4f113b\", response=\"6629fae49393a05397450978507c4ef1\", opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"" {
-		t.Fatal("incorrect pass, got:", c.User, "expected: the long digest headers")
+	// Enhanced HTTP Digest now extracts the actual username
+	if c.User != "Mufasa" {
+		t.Fatal("incorrect username, got:", c.User, "expected: Mufasa")
 	}
 
-	if c.Password != "" {
-		t.Fatal("incorrect pass, got:", c.Password, "expected: ")
+	// Password field now contains Hashcat format
+	if c.Password == "" {
+		t.Fatal("expected Hashcat format in password field, got empty string")
+	}
+
+	// Verify it contains key Digest parameters
+	if !strings.Contains(c.Password, "Mufasa") || !strings.Contains(c.Password, "testrealm@host.com") {
+		t.Fatal("password field should contain Hashcat format with username and realm, got:", c.Password)
 	}
 }
 

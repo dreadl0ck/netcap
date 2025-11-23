@@ -1,9 +1,15 @@
 # TODOs
 
+decoder/stream/credentials/ASN1_IMPLEMENTATION_PLAN.md
+
+update db server for exploitdb 
+
 Investigate: graph analysis page
 AI page for generating reports or AI assisted analysis agent
 
 MCP
+
+- make credential harvesters configurable in UI
 
 ----
 

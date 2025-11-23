@@ -124,6 +124,10 @@ type Config struct {
 	FlushEvery int
 
 	// Maximum number of bytes of the client and server conversation to be used for the harvesters
+	// This is a performance-critical setting that prevents harvesters from processing large data streams
+	// (e.g., file transfers) which could cause excessive CPU and memory usage.
+	// Default: 512 bytes - increase if credential detection is failing for protocols with longer auth sequences.
+	// Recommended range: 512-8192 bytes depending on your use case.
 	HarvesterBannerSize int
 
 	// Maximum number of bytes stored as service banner

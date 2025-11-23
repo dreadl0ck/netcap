@@ -198,21 +198,33 @@ retry:
 
 func createBannerFromConversation(conversation core.DataFragments) []byte {
 	var (
-		banner    = make([]byte, 0, decoderconfig.Instance.HarvesterBannerSize)
-		processed int
+		banner      = make([]byte, 0, decoderconfig.Instance.HarvesterBannerSize)
+		processed   int
+		totalSize   = conversation.Size()
+		maxSize     = decoderconfig.Instance.HarvesterBannerSize
 	)
 
 	// copy c.HarvesterBannerSize number of bytes from the raw conversation
 	// to use for the credential harvesters
+	// This limits the amount of data processed to prevent performance issues with large streams
 	for _, d := range conversation {
 		for _, b := range d.Raw() {
-			if processed >= decoderconfig.Instance.HarvesterBannerSize {
+			if processed >= maxSize {
 				break
 			}
 
 			processed++
 			banner = append(banner, b)
 		}
+	}
+
+	// Log when data is truncated for visibility into harvester behavior
+	if totalSize > maxSize && decoderconfig.Instance.Debug {
+		reassemblyLog.Debug("harvester banner truncated",
+			zap.Int("totalSize", totalSize),
+			zap.Int("processedSize", processed),
+			zap.Int("maxSize", maxSize),
+		)
 	}
 
 	return banner

@@ -551,7 +551,7 @@ func GetFlags() []cli.Flag {
 		&cli.IntFlag{
 			Name:    "hbsize",
 			Value:   256,
-			Usage:   "size of the data passed to the credential harvesters in bytes",
+			Usage:   "max bytes per stream passed to credential harvesters (prevents processing large file transfers, recommended: 512-8192)",
 			Sources: cli.EnvVars("NC_HBSIZE"),
 		},
 		&cli.StringFlag{

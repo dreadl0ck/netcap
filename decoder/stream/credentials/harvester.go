@@ -53,23 +53,72 @@ var (
 	// harvesters to be ran against all seen bi-directional communication in a TCP session
 	// new harvesters must be added here in order to get called.
 	tcpConnectionHarvesters = []credentialHarvester{
+		// Original harvesters
 		ftpHarvester,
 		httpHarvester,
 		smtpHarvester,
 		telnetHarvester,
 		imapHarvester,
+
+		// Hash-based authentication
+		ntlmsspHarvester,
+		kerberosASReqHarvester, // Also works on TCP (Kerberos can use TCP with 4-byte length prefix)
+
+		// New harvesters - Phase 1 (Quick Wins)
+		httpNTLMHarvester, // HTTP NTLM with base64
+		pop3Harvester,     // POP3 email
+		redisHarvester,    // Redis AUTH
+		snmpHarvester,     // SNMP community strings
+
+		// New harvesters - Phase 2 (Database & Directory)
+		ldapHarvester,         // LDAP Simple Bind
+		postgresHarvester,     // PostgreSQL plaintext
+		postgresHashHarvester, // PostgreSQL MD5 hashes
+		mysqlHarvester,        // MySQL challenge-response
+
+		// New harvesters - Phase 3 (Optional)
+		vncHarvester,                      // VNC DES challenge-response
+		mongodbHarvester,                  // MongoDB SCRAM-SHA
+		mongodbChallengeResponseHarvester, // MongoDB wire protocol
+		// creditCardHarvester,  // Credit card detection (disabled by default - enable via config)
 	}
 
 	// mapped port number to the harvester based on the IANA standards
 	// used for the first guess which harvester to use.
 	harvesterPortMapping = map[int]credentialHarvester{
-		21:  ftpHarvester,
-		80:  httpHarvester,
-		587: smtpHarvester,
-		465: smtpHarvester,
-		25:  smtpHarvester,
-		23:  telnetHarvester,
-		143: imapHarvester,
+		// Original mappings
+		21:    ftpHarvester,
+		23:    telnetHarvester,
+		25:    smtpHarvester,
+		80:    httpHarvester,
+		110:   pop3Harvester, // POP3
+		143:   imapHarvester,
+		161:   snmpHarvester,     // SNMP
+		162:   snmpHarvester,     // SNMP Trap
+		389:   ldapHarvester,     // LDAP
+		445:   ntlmsspHarvester,  // SMB
+		465:   smtpHarvester,     // SMTP over SSL
+		587:   smtpHarvester,     // SMTP submission
+		636:   ldapHarvester,     // LDAPS
+		995:   pop3Harvester,     // POP3 over SSL
+		3306:  mysqlHarvester,    // MySQL/MariaDB
+		5432:  postgresHarvester, // PostgreSQL
+		5900:  vncHarvester,      // VNC (5900-5909 for displays 0-9)
+		5901:  vncHarvester,
+		5902:  vncHarvester,
+		5903:  vncHarvester,
+		5904:  vncHarvester,
+		5905:  vncHarvester,
+		5906:  vncHarvester,
+		5907:  vncHarvester,
+		5908:  vncHarvester,
+		5909:  vncHarvester,
+		6379:  redisHarvester,   // Redis
+		8080:  httpHarvester,    // HTTP alternate / dev servers etc
+		3000:  httpHarvester,    // HTTP alternate / dev servers etc
+		9090:  httpHarvester,    // HTTP alternate / dev servers etc
+		8888:  httpHarvester,    // HTTP alternate / dev servers etc
+		27017: mongodbHarvester, // MongoDB
 	}
 
 	// regular expressions for the harvesters.
@@ -107,11 +156,21 @@ func harvesterDebug(ident string, data []byte, args ...interface{}) {
 }
 
 // RunHarvesters will use the service probes to determine the service type based on the provided banner.
+// The banner parameter contains at most HarvesterBannerSize bytes from the stream conversation,
+// which is pre-truncated to prevent performance issues when processing large data streams
+// (e.g., file transfers, database dumps, video streaming, etc.).
 func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPacket time.Time) {
 	// only use harvesters when credential audit record type is loaded
 	// useHarvesters is set after the custom decoder initialization
 	if !useHarvesters {
 		return
+	}
+
+	// Additional safety check: ensure we don't process more than the configured limit
+	// This should already be enforced by createBannerFromConversation, but we add
+	// a safeguard here in case the banner is created elsewhere
+	if len(banner) > decoderconfig.Instance.HarvesterBannerSize {
+		banner = banner[:decoderconfig.Instance.HarvesterBannerSize]
 	}
 
 	var (
@@ -177,6 +236,4 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 			}
 		}
 	}
-
-	return
 }
