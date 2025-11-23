@@ -33,7 +33,7 @@ const (
 // PostgreSQL protocol messages have format: [length:4][type:1][data...]
 // Startup message has format: [length:4][version:4][param=value\0]...
 // Password message has format: [type:1='p'][length:4][password\0]
-func postgresHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func postgresHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(data) < 8 {
 		return nil
 	}
@@ -134,6 +134,11 @@ func parsePostgresParams(data []byte) (username, database string) {
 	params := bytes.Split(data, []byte{0})
 
 	for i := 0; i < len(params)-1; i += 2 {
+		// Safety check: ensure we have both key and value
+		if i+1 >= len(params) {
+			break
+		}
+		
 		key := string(params[i])
 		value := string(params[i+1])
 
@@ -151,7 +156,7 @@ func parsePostgresParams(data []byte) (username, database string) {
 // postgresHashHarvester extracts MD5 challenge-response hashes from PostgreSQL
 // MD5 authentication: server sends salt, client responds with md5(md5(password+username)+salt)
 // This is useful for offline cracking with tools like Hashcat
-func postgresHashHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func postgresHashHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(data) < 20 {
 		return nil
 	}
@@ -253,5 +258,19 @@ func postgresHashHarvester(data []byte, ident string, ts time.Time) *types.Crede
 	}
 
 	return nil
+}
+
+// postgresHarvester is the harvester definition for PostgreSQL
+var postgresHarvester = Harvester{
+	Name:          "PostgreSQL",
+	Description:   "PostgreSQL database - captures plaintext passwords and MD5 challenge-response hashes (Hashcat mode 11100)",
+	HarvesterFunc: postgresHarvesterFunc,
+}
+
+// postgresHashHarvester is the harvester definition for PostgreSQL Hash
+var postgresHashHarvester = Harvester{
+	Name:          "PostgreSQL Hash",
+	Description:   "PostgreSQL MD5 hash harvester - extracts MD5 challenge-response authentication (Hashcat mode 11100)",
+	HarvesterFunc: postgresHashHarvesterFunc,
 }
 

@@ -39,10 +39,10 @@ const (
 	ntlmStateWaitResponse
 )
 
-// ntlmsspHarvester extracts NTLM credentials from a TCP session
+// ntlmsspHarvesterFunc extracts NTLM credentials from a TCP session
 // It implements a state machine to match challenge-response pairs
 // Works with SMB, HTTP, IMAP, SMTP, etc.
-func ntlmsspHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func ntlmsspHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	var (
 		challenge   []byte
 		username    string
@@ -215,4 +215,11 @@ func formatNTLMForHashcat(username, domain string, challenge []byte, lmHash, ntH
 	}
 
 	return ""
+}
+
+// ntlmsspHarvester is the harvester definition for NTLMSSP
+var ntlmsspHarvester = Harvester{
+	Name:          "NTLMSSP",
+	Description:   "NT LAN Manager Security Support Provider - captures NTLM challenge-response hashes for offline cracking",
+	HarvesterFunc: ntlmsspHarvesterFunc,
 }

@@ -28,10 +28,10 @@ const (
 	snmpVersion2c = 1
 )
 
-// snmpHarvester extracts community strings from SNMP v1/v2c traffic
+// snmpHarvesterFunc extracts community strings from SNMP v1/v2c traffic
 // SNMP v1 and v2c use community strings as authentication
 // Structure: [0x30][length][0x02][0x01][version][0x04][comm_len][community_string]...
-func snmpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func snmpHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(data) < 10 {
 		return nil
 	}
@@ -118,8 +118,54 @@ func snmpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	return nil
 }
 
+// getSNMPMinCommunityLength returns configured minimum community string length
+func getSNMPMinCommunityLength() int {
+	if harvesterConfig != nil {
+		for _, hConfig := range harvesterConfig.Harvesters {
+			if hConfig.Name == "SNMP" && hConfig.Parameters != nil {
+				if params, ok := hConfig.Parameters["min_community_length"]; ok {
+					switch v := params.(type) {
+					case int:
+						return v
+					case float64:
+						return int(v)
+					}
+				}
+			}
+		}
+	}
+	return 1 // Default minimum length
+}
+
+// getSNMPMaxCommunityLength returns configured maximum community string length
+func getSNMPMaxCommunityLength() int {
+	if harvesterConfig != nil {
+		for _, hConfig := range harvesterConfig.Harvesters {
+			if hConfig.Name == "SNMP" && hConfig.Parameters != nil {
+				if params, ok := hConfig.Parameters["max_community_length"]; ok {
+					switch v := params.(type) {
+					case int:
+						return v
+					case float64:
+						return int(v)
+					}
+				}
+			}
+		}
+	}
+	return 255 // Default maximum length
+}
+
 // isPrintableASCII checks if the bytes are all printable ASCII characters
 func isPrintableASCII(data []byte) bool {
+	minLen := getSNMPMinCommunityLength()
+	maxLen := getSNMPMaxCommunityLength()
+
+	// Check length constraints
+	if len(data) < minLen || len(data) > maxLen {
+		return false
+	}
+
 	for _, b := range data {
 		// Allow space (0x20) through tilde (0x7e)
 		if b < 0x20 || b > 0x7e {
@@ -132,7 +178,7 @@ func isPrintableASCII(data []byte) bool {
 // snmpUDPHarvester is a variant that can be used for UDP packets
 // It's essentially the same but may be called from a different context
 func snmpUDPHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
-	return snmpHarvester(data, ident, ts)
+	return snmpHarvesterFunc(data, ident, ts)
 }
 
 // extractSNMPv3Credentials extracts credentials from SNMP v3
@@ -161,4 +207,11 @@ func extractSNMPv3Credentials(data []byte, ident string, ts time.Time) *types.Cr
 	// For now, return nil as this requires more complex ASN.1 handling
 
 	return nil
+}
+
+// snmpHarvester is the harvester definition for SNMP
+var snmpHarvester = Harvester{
+	Name:          "SNMP",
+	Description:   "Simple Network Management Protocol - captures community strings from SNMPv1 and SNMPv2c",
+	HarvesterFunc: snmpHarvesterFunc,
 }

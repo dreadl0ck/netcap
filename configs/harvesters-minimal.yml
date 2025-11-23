@@ -1,0 +1,116 @@
+# Minimal Harvesters Configuration - EXAMPLE TEMPLATE
+#
+# This is an example showing how to create a minimal configuration
+# that disables most harvesters and only keeps basic ones enabled.
+#
+# Copy and modify this file to create your own custom configuration.
+#
+# Usage: net capture -r input.pcap --harvesters-config my-minimal-config.yml
+
+# Minimal Harvesters Configuration
+# This is a minimal configuration with only the most common harvesters enabled
+
+harvesters:
+  - name: "HTTP"
+    enabled: true
+    ports: [80, 8080]
+    parameters:
+      sensitive_params: ["key", "token", "api_key", "password"]
+  
+  - name: "FTP"
+    enabled: true
+    ports: [21]
+    parameters: {}
+  
+  - name: "SMTP"
+    enabled: true
+    ports: [25]
+    parameters: {}
+  
+  - name: "Telnet"
+    enabled: true
+    ports: [23]
+    parameters: {}
+  
+  - name: "IMAP"
+    enabled: false
+    ports: [143]
+    parameters: {}
+  
+  - name: "NTLMSSP"
+    enabled: false
+    ports: [445]
+    parameters: {}
+  
+  - name: "Kerberos AS-REQ"
+    enabled: false
+    ports: [88]
+    parameters: {}
+  
+  - name: "Kerberos AS-REP"
+    enabled: false
+    ports: [88]
+    parameters: {}
+  
+  - name: "Kerberos TGS-REP"
+    enabled: false
+    ports: [88]
+    parameters: {}
+  
+  - name: "HTTP NTLM"
+    enabled: false
+    ports: [80, 8080]
+    parameters: {}
+  
+  - name: "POP3"
+    enabled: false
+    ports: [110, 995]
+    parameters: {}
+  
+  - name: "Redis"
+    enabled: false
+    ports: [6379]
+    parameters: {}
+  
+  - name: "SNMP"
+    enabled: false
+    ports: [161, 162]
+    parameters: {}
+  
+  - name: "LDAP"
+    enabled: false
+    ports: [389, 636]
+    parameters: {}
+  
+  - name: "PostgreSQL"
+    enabled: false
+    ports: [5432]
+    parameters: {}
+  
+  - name: "PostgreSQL Hash"
+    enabled: false
+    ports: [5432]
+    parameters: {}
+  
+  - name: "MySQL"
+    enabled: false
+    ports: [3306]
+    parameters: {}
+  
+  - name: "VNC"
+    enabled: false
+    ports: [5900]
+    parameters: {}
+  
+  - name: "MongoDB"
+    enabled: false
+    ports: [27017]
+    parameters: {}
+  
+  - name: "MongoDB Challenge Response"
+    enabled: false
+    ports: [27017]
+    parameters: {}
+
+custom_harvesters: []
+

@@ -559,6 +559,11 @@ func GetFlags() []cli.Flag {
 			Usage:   "possibility of passing a custom regex for harvesting credentials",
 			Sources: cli.EnvVars("NC_RECUSTOM"),
 		},
+		&cli.StringFlag{
+			Name:    "harvesters-config",
+			Usage:   "path to harvesters configuration YAML file",
+			Sources: cli.EnvVars("NC_HARVESTERS_CONFIG"),
+		},
 		&cli.IntFlag{
 			Name:    "stream-buffer",
 			Value:   10,

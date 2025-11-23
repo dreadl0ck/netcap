@@ -44,6 +44,7 @@ import RuleIcon from '@mui/icons-material/Rule';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
+import SearchIcon from '@mui/icons-material/Search';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
@@ -742,6 +743,30 @@ export default function Layout({ children, title, headerAction, topPadding }: La
               <AccountTreeIcon />
             </ListItemIcon>
             <ListItemText primary="Decoders" />
+          </ListItemButton>
+        </Link>
+        <Link href="/harvesters" passHref style={LINK_STYLE}>
+          <ListItemButton
+            selected={isActive('/harvesters')}
+            data-learn="View credential harvesters that extract authentication data from various protocols."
+            sx={SELECTED_MENU_ITEM_SX}
+          >
+            <ListItemIcon>
+              <VpnKeyIcon />
+            </ListItemIcon>
+            <ListItemText primary="Harvesters" />
+          </ListItemButton>
+        </Link>
+        <Link href="/probes" passHref style={LINK_STYLE}>
+          <ListItemButton
+            selected={isActive('/probes')}
+            data-learn="Manage nmap service probes for network service fingerprinting and identification."
+            sx={SELECTED_MENU_ITEM_SX}
+          >
+            <ListItemIcon>
+              <SearchIcon />
+            </ListItemIcon>
+            <ListItemText primary="Service Probes" />
           </ListItemButton>
         </Link>
         <Link href="/bpf" passHref style={LINK_STYLE}>

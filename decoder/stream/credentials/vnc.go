@@ -38,11 +38,11 @@ const (
 	vncAuthMSLogonII = 113
 )
 
-// vncHarvester extracts VNC authentication hashes
+// vncHarvesterFunc extracts VNC authentication hashes
 // VNC uses DES-encrypted challenge-response authentication
 // The challenge is 16 bytes, the response is 16 bytes
 // The password is DES-encrypted with the challenge as the key
-func vncHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func vncHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(data) < 50 {
 		return nil
 	}
@@ -223,7 +223,7 @@ func vncMSLogonHarvester(data []byte, ident string, ts time.Time) *types.Credent
 
 	if bytes.Contains(data, []byte{vncAuthMSLogonII}) {
 		// Try to extract NTLM from the session
-		ntlmCreds := ntlmsspHarvester(data, ident, ts)
+		ntlmCreds := ntlmsspHarvesterFunc(data, ident, ts)
 		if ntlmCreds != nil {
 			ntlmCreds.Service = "VNC MS Logon II"
 			ntlmCreds.Notes = "VNC with Microsoft Logon (NTLM)"
@@ -232,5 +232,12 @@ func vncMSLogonHarvester(data []byte, ident string, ts time.Time) *types.Credent
 	}
 
 	return nil
+}
+
+// vncHarvester is the harvester definition for VNC
+var vncHarvester = Harvester{
+	Name:          "VNC",
+	Description:   "Virtual Network Computing - captures DES challenge-response authentication (Hashcat mode 20200)",
+	HarvesterFunc: vncHarvesterFunc,
 }
 

@@ -32,7 +32,7 @@ const (
 	ldapAuthSimple = 0x80 // Simple authentication (plaintext)
 )
 
-// ldapHarvester extracts credentials from LDAP Simple Bind operations
+// ldapHarvesterFunc extracts credentials from LDAP Simple Bind operations
 // LDAP uses ASN.1 BER encoding, but Simple Bind is simple enough to parse manually
 // Structure: SEQUENCE { messageID, BindRequest { version, name, simple_auth } }
 // BindRequest: [APPLICATION 0] (0x60)
@@ -41,7 +41,7 @@ const (
 //   authentication: CHOICE {
 //     simple: [0] OCTET STRING (0x80) <- plaintext password
 //   }
-func ldapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func ldapHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(data) < 20 {
 		return nil
 	}
@@ -162,28 +162,80 @@ func parseASN1Length(data []byte) (int, int) {
 	return length, lengthBytes + 1
 }
 
+// getLDAPUsernameAttributes returns configured DN attributes or defaults
+func getLDAPUsernameAttributes() []string {
+	if harvesterConfig != nil {
+		for _, hConfig := range harvesterConfig.Harvesters {
+			if hConfig.Name == "LDAP" && hConfig.Parameters != nil {
+				if params, ok := hConfig.Parameters["username_attributes"]; ok {
+					if paramSlice, ok := params.([]interface{}); ok {
+						result := make([]string, 0, len(paramSlice))
+						for _, p := range paramSlice {
+							if strParam, ok := p.(string); ok {
+								result = append(result, strParam)
+							}
+						}
+						if len(result) > 0 {
+							return result
+						}
+					}
+				}
+			}
+		}
+	}
+	return []string{"cn", "uid", "mail", "sAMAccountName"}
+}
+
+// shouldExtractSimpleLDAPUsername returns whether to extract simple username or return full DN
+func shouldExtractSimpleLDAPUsername() bool {
+	if harvesterConfig != nil {
+		for _, hConfig := range harvesterConfig.Harvesters {
+			if hConfig.Name == "LDAP" && hConfig.Parameters != nil {
+				if params, ok := hConfig.Parameters["extract_simple_username"]; ok {
+					if boolParam, ok := params.(bool); ok {
+						return boolParam
+					}
+				}
+			}
+		}
+	}
+	return true // Default to extracting simple username
+}
+
 // extractLDAPUsername extracts a simple username from an LDAP DN
 // For example: "cn=admin,dc=example,dc=com" -> "admin"
 func extractLDAPUsername(dn string) string {
-	// Look for cn= (Common Name)
-	cnIdx := bytes.Index([]byte(dn), []byte("cn="))
-	if cnIdx == -1 {
-		// Look for uid=
-		cnIdx = bytes.Index([]byte(dn), []byte("uid="))
-		if cnIdx == -1 {
-			return dn // Return full DN if we can't parse it
+	// If configured to return full DN, do so
+	if !shouldExtractSimpleLDAPUsername() {
+		return dn
+	}
+
+	// Try each configured attribute in order
+	for _, attr := range getLDAPUsernameAttributes() {
+		searchStr := attr + "="
+		attrIdx := bytes.Index([]byte(dn), []byte(searchStr))
+		if attrIdx == -1 {
+			continue
 		}
-		cnIdx += 4 // len("uid=")
-	} else {
-		cnIdx += 3 // len("cn=")
+		
+		attrIdx += len(searchStr)
+		
+		// Find the end of the attribute value (comma or end of string)
+		commaIdx := bytes.IndexByte([]byte(dn[attrIdx:]), ',')
+		if commaIdx == -1 {
+			return dn[attrIdx:]
+		}
+		
+		return dn[attrIdx : attrIdx+commaIdx]
 	}
 
-	// Find the end of the CN value (comma or end of string)
-	commaIdx := bytes.IndexByte([]byte(dn[cnIdx:]), ',')
-	if commaIdx == -1 {
-		return dn[cnIdx:]
-	}
+	return dn // Return full DN if we can't parse it
+}
 
-	return dn[cnIdx : cnIdx+commaIdx]
+// ldapHarvester is the harvester definition for LDAP
+var ldapHarvester = Harvester{
+	Name:          "LDAP",
+	Description:   "Lightweight Directory Access Protocol - captures Simple Bind credentials (plaintext)",
+	HarvesterFunc: ldapHarvesterFunc,
 }
 

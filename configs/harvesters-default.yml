@@ -1,0 +1,172 @@
+# Harvesters Configuration - EXAMPLE/REFERENCE ONLY
+# 
+# This file is provided as a reference to show the default configuration.
+# YOU DO NOT NEED THIS FILE to use Netcap - all these defaults are built into the code.
+#
+# Only create a custom configuration file when you want to:
+# - Disable specific harvesters
+# - Change port mappings
+# - Customize parameters (like HTTP sensitive param names)
+# - Add custom regex-based harvesters
+#
+# Usage: net capture -r input.pcap --harvesters-config custom-config.yml
+
+# Harvesters Configuration
+# This file controls which credential harvesters are enabled and their parameters
+
+harvesters:
+  - name: "HTTP"
+    enabled: true
+    ports: [80, 8080, 3000, 9090, 8888]
+    parameters:
+      sensitive_params: 
+        - "key"
+        - "token"
+        - "api_key"
+        - "apikey"
+        - "secret"
+        - "password"
+        - "pwd"
+        - "pass"
+        - "auth"
+        - "access_token"
+        - "refresh_token"
+      sensitive_headers:
+        - "Authorization"
+        - "X-API-Key"
+        - "X-Auth-Token"
+        - "X-Access-Token"
+      session_cookie_names:
+        - "PHPSESSID"
+        - "phpsessid"
+        - "JSESSIONID"
+        - "jsessionid"
+        - "ASP.NET_SessionId"
+        - "ASPSESSIONId"
+        - "sessionid"
+        - "session"
+        - "_session_id"
+        - "connect.sid"
+        - "express.sid"
+        - "sid"
+        - "SESSION"
+        - "SESSIONID"
+        - "sess"
+        - "SESS"
+        - "auth_token"
+        - "authtoken"
+        - "auth"
+        - "token"
+        - "access_token"
+      min_cookie_length: 8
+  
+  - name: "FTP"
+    enabled: true
+    ports: [21]
+    parameters: {}
+  
+  - name: "SMTP"
+    enabled: true
+    ports: [25, 465, 587]
+    parameters: {}
+  
+  - name: "Telnet"
+    enabled: true
+    ports: [23]
+    parameters:
+      login_patterns: ["login:", "username:", "Username:", "login as:", "Login:"]
+      password_patterns: ["Password:", "password:", "Pass:", "passwd:"]
+  
+  - name: "IMAP"
+    enabled: true
+    ports: [143]
+    parameters: {}
+  
+  - name: "NTLMSSP"
+    enabled: true
+    ports: [445]
+    parameters: {}
+  
+  - name: "Kerberos AS-REQ"
+    enabled: true
+    ports: [88]
+    parameters: {}
+  
+  - name: "Kerberos AS-REP"
+    enabled: true
+    ports: [88]
+    parameters: {}
+  
+  - name: "Kerberos TGS-REP"
+    enabled: true
+    ports: [88]
+    parameters: {}
+  
+  - name: "HTTP NTLM"
+    enabled: true
+    ports: [80, 8080, 3000, 9090, 8888]
+    parameters: {}
+  
+  - name: "POP3"
+    enabled: true
+    ports: [110, 995]
+    parameters: {}
+  
+  - name: "Redis"
+    enabled: true
+    ports: [6379]
+    parameters: {}
+  
+  - name: "SNMP"
+    enabled: true
+    ports: [161, 162]
+    parameters:
+      min_community_length: 1
+      max_community_length: 255
+  
+  - name: "LDAP"
+    enabled: true
+    ports: [389, 636]
+    parameters:
+      username_attributes: ["cn", "uid", "mail", "sAMAccountName"]
+      extract_simple_username: true
+  
+  - name: "PostgreSQL"
+    enabled: true
+    ports: [5432]
+    parameters: {}
+  
+  - name: "PostgreSQL Hash"
+    enabled: true
+    ports: [5432]
+    parameters: {}
+  
+  - name: "MySQL"
+    enabled: true
+    ports: [3306]
+    parameters: {}
+  
+  - name: "VNC"
+    enabled: true
+    ports: [5900, 5901, 5902, 5903, 5904, 5905, 5906, 5907, 5908, 5909]
+    parameters: {}
+  
+  - name: "MongoDB"
+    enabled: true
+    ports: [27017]
+    parameters: {}
+  
+  - name: "MongoDB Challenge Response"
+    enabled: true
+    ports: [27017]
+    parameters: {}
+
+# Custom harvesters allow you to define regex-based credential extraction
+custom_harvesters: []
+  # Example:
+  # - name: "Custom Credit Card"
+  #   enabled: false
+  #   ports: []
+  #   regex: "\\b(?:\\d{4}[- ]?){3}\\d{4}\\b"
+  #   parameters: {}
+

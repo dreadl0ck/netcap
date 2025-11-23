@@ -40,7 +40,7 @@ const (
 // mongodbHarvester extracts credentials from MongoDB SCRAM-SHA-1 and SCRAM-SHA-256 authentication
 // MongoDB uses SASL SCRAM (Salted Challenge Response Authentication Mechanism)
 // SCRAM-SHA-1 and SCRAM-SHA-256 are similar to SMTP/IMAP CRAM-MD5 but more complex
-func mongodbHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func mongodbHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(data) < 50 {
 		return nil
 	}
@@ -80,13 +80,24 @@ func mongodbHarvester(data []byte, ident string, ts time.Time) *types.Credential
 			clientFirstIdx += saslStartIdx
 			// Extract username
 			usernameStart := clientFirstIdx + 5 // len("n,,n=")
-			commaIdx := bytes.IndexByte(data[usernameStart:usernameStart+200], ',')
+			
+			// Bounds check for username extraction
+			usernameEnd := usernameStart + 200
+			if usernameEnd > len(data) {
+				usernameEnd = len(data)
+			}
+			commaIdx := bytes.IndexByte(data[usernameStart:usernameEnd], ',')
 			if commaIdx != -1 {
 				username = string(data[usernameStart : usernameStart+commaIdx])
 			}
 
 			// Extract client nonce (not stored, just validated)
-			nonceIdx := bytes.Index(data[usernameStart:usernameStart+300], []byte(",r="))
+			// Bounds check for nonce extraction
+			nonceSearchEnd := usernameStart + 300
+			if nonceSearchEnd > len(data) {
+				nonceSearchEnd = len(data)
+			}
+			nonceIdx := bytes.Index(data[usernameStart:nonceSearchEnd], []byte(",r="))
 			if nonceIdx != -1 {
 				// Client nonce is present, validation successful
 				_ = nonceIdx
@@ -97,31 +108,67 @@ func mongodbHarvester(data []byte, ident string, ts time.Time) *types.Credential
 	// Search for server challenge response
 	// Contains: r=serverNonce,s=salt,i=iterations
 	serverChallengeIdx := bytes.Index(data, []byte("r="))
-	if serverChallengeIdx != -1 && bytes.Contains(data[serverChallengeIdx:serverChallengeIdx+200], []byte(",s=")) {
-		// Extract server nonce (includes client nonce + server nonce)
-		nonceStart := serverChallengeIdx + 2
-		nonceEnd := bytes.IndexByte(data[nonceStart:nonceStart+100], ',')
-		if nonceEnd != -1 {
-			serverNonce = string(data[nonceStart : nonceStart+nonceEnd])
+	if serverChallengeIdx != -1 {
+		// Bounds check for server challenge search
+		challengeSearchEnd := serverChallengeIdx + 200
+		if challengeSearchEnd > len(data) {
+			challengeSearchEnd = len(data)
 		}
-
-		// Extract salt
-		saltIdx := bytes.Index(data[serverChallengeIdx:serverChallengeIdx+300], []byte(",s="))
-		if saltIdx != -1 {
-			saltStart := serverChallengeIdx + saltIdx + 3
-			saltEnd := bytes.IndexByte(data[saltStart:saltStart+100], ',')
-			if saltEnd != -1 {
-				salt = string(data[saltStart : saltStart+saltEnd])
+		
+		if bytes.Contains(data[serverChallengeIdx:challengeSearchEnd], []byte(",s=")) {
+			// Extract server nonce (includes client nonce + server nonce)
+			nonceStart := serverChallengeIdx + 2
+			
+			// Bounds check for nonce extraction
+			nonceSearchEnd := nonceStart + 100
+			if nonceSearchEnd > len(data) {
+				nonceSearchEnd = len(data)
 			}
-		}
+			nonceEnd := bytes.IndexByte(data[nonceStart:nonceSearchEnd], ',')
+			if nonceEnd != -1 {
+				serverNonce = string(data[nonceStart : nonceStart+nonceEnd])
+			}
 
-		// Extract iterations
-		iterIdx := bytes.Index(data[serverChallengeIdx:serverChallengeIdx+400], []byte(",i="))
-		if iterIdx != -1 {
-			iterStart := serverChallengeIdx + iterIdx + 3
-			iterEnd := bytes.IndexAny(data[iterStart:iterStart+20], ",\x00\r\n")
-			if iterEnd != -1 {
-				iterations = string(data[iterStart : iterStart+iterEnd])
+			// Extract salt
+			// Bounds check for salt search
+			saltSearchEnd := serverChallengeIdx + 300
+			if saltSearchEnd > len(data) {
+				saltSearchEnd = len(data)
+			}
+			saltIdx := bytes.Index(data[serverChallengeIdx:saltSearchEnd], []byte(",s="))
+			if saltIdx != -1 {
+				saltStart := serverChallengeIdx + saltIdx + 3
+				
+				// Bounds check for salt extraction
+				saltEnd := saltStart + 100
+				if saltEnd > len(data) {
+					saltEnd = len(data)
+				}
+				saltEndIdx := bytes.IndexByte(data[saltStart:saltEnd], ',')
+				if saltEndIdx != -1 {
+					salt = string(data[saltStart : saltStart+saltEndIdx])
+				}
+			}
+
+			// Extract iterations
+			// Bounds check for iterations search
+			iterSearchEnd := serverChallengeIdx + 400
+			if iterSearchEnd > len(data) {
+				iterSearchEnd = len(data)
+			}
+			iterIdx := bytes.Index(data[serverChallengeIdx:iterSearchEnd], []byte(",i="))
+			if iterIdx != -1 {
+				iterStart := serverChallengeIdx + iterIdx + 3
+				
+				// Bounds check for iteration extraction
+				iterEnd := iterStart + 20
+				if iterEnd > len(data) {
+					iterEnd = len(data)
+				}
+				iterEndIdx := bytes.IndexAny(data[iterStart:iterEnd], ",\x00\r\n")
+				if iterEndIdx != -1 {
+					iterations = string(data[iterStart : iterStart+iterEndIdx])
+				}
 			}
 		}
 	}
@@ -131,7 +178,13 @@ func mongodbHarvester(data []byte, ident string, ts time.Time) *types.Credential
 	proofIdx := bytes.Index(data, []byte(",p="))
 	if proofIdx != -1 {
 		proofStart := proofIdx + 3
-		proofEnd := bytes.IndexAny(data[proofStart:proofStart+100], ",\x00\r\n")
+		
+		// Bounds check for proof extraction
+		proofSearchEnd := proofStart + 100
+		if proofSearchEnd > len(data) {
+			proofSearchEnd = len(data)
+		}
+		proofEnd := bytes.IndexAny(data[proofStart:proofSearchEnd], ",\x00\r\n")
 		if proofEnd != -1 {
 			clientProof = string(data[proofStart : proofStart+proofEnd])
 		}
@@ -162,7 +215,7 @@ func mongodbHarvester(data []byte, ident string, ts time.Time) *types.Credential
 }
 
 // mongodbChallengeResponseHarvester is an alternative approach focusing on the wire protocol
-func mongodbChallengeResponseHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func mongodbChallengeResponseHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	// Parse MongoDB wire protocol messages
 	// Standard message header: [messageLength:4][requestID:4][responseTo:4][opCode:4][message...]
 
@@ -190,7 +243,7 @@ func mongodbChallengeResponseHarvester(data []byte, ident string, ts time.Time) 
 				bytes.Contains(messageData, []byte("authenticate")) {
 
 				// Process with main harvester
-				return mongodbHarvester(messageData, ident, ts)
+				return mongodbHarvesterFunc(messageData, ident, ts)
 			}
 		}
 
@@ -228,7 +281,7 @@ func decodeSCRAMBase64(encoded string) string {
 
 // mongodbPlaintextHarvester detects old MongoDB versions that might use plaintext
 // Very old MongoDB versions (pre-2.6) had weaker authentication
-func mongodbPlaintextHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func mongodbPlaintextHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	// Look for old-style "getnonce" and "authenticate" commands
 	// Format: {authenticate: 1, user: "username", nonce: "nonce", key: "key"}
 
@@ -253,5 +306,19 @@ func mongodbPlaintextHarvester(data []byte, ident string, ts time.Time) *types.C
 		Password:  "",
 		Notes:     "MongoDB old-style authentication detected (pre-2.6)",
 	}
+}
+
+// mongodbHarvester is the harvester definition for MongoDB
+var mongodbHarvester = Harvester{
+	Name:          "MongoDB",
+	Description:   "MongoDB database - captures SCRAM-SHA-1 and SCRAM-SHA-256 authentication data",
+	HarvesterFunc: mongodbHarvesterFunc,
+}
+
+// mongodbChallengeResponseHarvester is the harvester definition for MongoDB Challenge-Response
+var mongodbChallengeResponseHarvester = Harvester{
+	Name:          "MongoDB Challenge-Response",
+	Description:   "MongoDB wire protocol - captures challenge-response authentication from MongoDB wire protocol",
+	HarvesterFunc: mongodbChallengeResponseHarvesterFunc,
 }
 

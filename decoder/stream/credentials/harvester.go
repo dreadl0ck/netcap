@@ -16,7 +16,6 @@ package credentials
 import (
 	"encoding/hex"
 	"fmt"
-	"regexp"
 	"strconv"
 	"sync"
 	"time"
@@ -29,111 +28,70 @@ import (
 )
 
 const (
-	smtpAuthPlain   = "SMTP Auth Plain"
-	smtpAuthLogin   = "SMTP Auth Login"
-	smtpAuthCramMd5 = "SMTP Auth CRAM-MD5"
-
-	serviceTelnet = "Telnet"
-	serviceFTP    = "FTP"
-	serviceHTTP   = "HTTP"
-
 	// DecoderName is the name for the credentials decoder
 	DecoderName = "Credentials"
 )
+
+// HarvesterInfo contains metadata about a credential harvester for API responses
+type HarvesterInfo struct {
+	Name        string
+	Description string
+	Ports       []int
+}
 
 // credentialHarvester is a function that takes the data of a bi-directional network stream over TCP
 // as well as meta information and searches for credentials in the data
 // on success a pointer to a types.Credential is returned, nil otherwise.
 type credentialHarvester func(data []byte, ident string, ts time.Time) *types.Credentials
 
+// Harvester represents a credential harvester with its function and metadata
+type Harvester struct {
+	Name          string
+	Description   string
+	HarvesterFunc credentialHarvester
+}
+
+// Harvester definitions are now in their respective protocol files
+
 var (
 	// useHarvesters controls whether the harvesters should be invoked or not.
 	useHarvesters = false
 
-	// harvesters to be ran against all seen bi-directional communication in a TCP session
-	// new harvesters must be added here in order to get called.
-	tcpConnectionHarvesters = []credentialHarvester{
-		// Original harvesters
-		ftpHarvester,
-		httpHarvester,
-		smtpHarvester,
-		telnetHarvester,
-		imapHarvester,
-
-		// Hash-based authentication
-		ntlmsspHarvester,
-		kerberosASReqHarvester, // Also works on TCP (Kerberos can use TCP with 4-byte length prefix)
-
-		// New harvesters - Phase 1 (Quick Wins)
-		httpNTLMHarvester, // HTTP NTLM with base64
-		pop3Harvester,     // POP3 email
-		redisHarvester,    // Redis AUTH
-		snmpHarvester,     // SNMP community strings
-
-		// New harvesters - Phase 2 (Database & Directory)
-		ldapHarvester,         // LDAP Simple Bind
-		postgresHarvester,     // PostgreSQL plaintext
-		postgresHashHarvester, // PostgreSQL MD5 hashes
-		mysqlHarvester,        // MySQL challenge-response
-
-		// New harvesters - Phase 3 (Optional)
-		vncHarvester,                      // VNC DES challenge-response
-		mongodbHarvester,                  // MongoDB SCRAM-SHA
-		mongodbChallengeResponseHarvester, // MongoDB wire protocol
-		// creditCardHarvester,  // Credit card detection (disabled by default - enable via config)
+	// allHarvesters contains all available harvesters (used for lookup)
+	allHarvesters = map[string]Harvester{
+		"FTP":                        ftpHarvester,
+		"HTTP":                       httpHarvester,
+		"SMTP":                       smtpHarvester,
+		"Telnet":                     telnetHarvester,
+		"IMAP":                       imapHarvester,
+		"NTLMSSP":                    ntlmsspHarvester,
+		"Kerberos AS-REQ":            kerberosASReqHarvester,
+		"Kerberos AS-REP":            kerberosASRepHarvester,
+		"Kerberos TGS-REP":           kerberosTGSRepHarvester,
+		"HTTP NTLM":                  httpNTLMHarvester,
+		"POP3":                       pop3Harvester,
+		"Redis":                      redisHarvester,
+		"SNMP":                       snmpHarvester,
+		"LDAP":                       ldapHarvester,
+		"PostgreSQL":                 postgresHarvester,
+		"PostgreSQL Hash":            postgresHashHarvester,
+		"MySQL":                      mysqlHarvester,
+		"VNC":                        vncHarvester,
+		"MongoDB":                    mongodbHarvester,
+		"MongoDB Challenge Response": mongodbChallengeResponseHarvester,
 	}
+
+	// harvesters to be ran against all seen bi-directional communication in a TCP session
+	// This is dynamically populated based on configuration
+	tcpConnectionHarvesters = []Harvester{}
 
 	// mapped port number to the harvester based on the IANA standards
 	// used for the first guess which harvester to use.
-	harvesterPortMapping = map[int]credentialHarvester{
-		// Original mappings
-		21:    ftpHarvester,
-		23:    telnetHarvester,
-		25:    smtpHarvester,
-		80:    httpHarvester,
-		110:   pop3Harvester, // POP3
-		143:   imapHarvester,
-		161:   snmpHarvester,     // SNMP
-		162:   snmpHarvester,     // SNMP Trap
-		389:   ldapHarvester,     // LDAP
-		445:   ntlmsspHarvester,  // SMB
-		465:   smtpHarvester,     // SMTP over SSL
-		587:   smtpHarvester,     // SMTP submission
-		636:   ldapHarvester,     // LDAPS
-		995:   pop3Harvester,     // POP3 over SSL
-		3306:  mysqlHarvester,    // MySQL/MariaDB
-		5432:  postgresHarvester, // PostgreSQL
-		5900:  vncHarvester,      // VNC (5900-5909 for displays 0-9)
-		5901:  vncHarvester,
-		5902:  vncHarvester,
-		5903:  vncHarvester,
-		5904:  vncHarvester,
-		5905:  vncHarvester,
-		5906:  vncHarvester,
-		5907:  vncHarvester,
-		5908:  vncHarvester,
-		5909:  vncHarvester,
-		6379:  redisHarvester,   // Redis
-		8080:  httpHarvester,    // HTTP alternate / dev servers etc
-		3000:  httpHarvester,    // HTTP alternate / dev servers etc
-		9090:  httpHarvester,    // HTTP alternate / dev servers etc
-		8888:  httpHarvester,    // HTTP alternate / dev servers etc
-		27017: mongodbHarvester, // MongoDB
-	}
+	// This is dynamically populated based on configuration
+	harvesterPortMapping = map[int]Harvester{}
 
-	// regular expressions for the harvesters.
-	reFTP               = regexp.MustCompile(`220(?:.*?)\r\n(?:.*)\r?\n?(?:.*)\r?\n?USER\s(.*?)\r\n331(?:.*?)\r\nPASS\s(.*?)\r\n`)
-	reHTTPBasic         = regexp.MustCompile(`(?:.*?)HTTP(?:[\s\S]*)(?:Authorization: Basic )(.*?)\r\n`)
-	reHTTPDigest        = regexp.MustCompile(`(?:.*?)Authorization: Digest (.*?)\r\n`)
-	reSMTPPlainSeparate = regexp.MustCompile(`(?:.*?)AUTH PLAIN\r\n334\r\n(.*?)\r\n(?:.*?)Authentication successful(?:.*?)$`)
-	reSMTPPlainSingle   = regexp.MustCompile(`(?:.*?)AUTH PLAIN (.*?)\s\*\r\n235(?:.*?)`)
-	reSMTPLogin         = regexp.MustCompile(`(?:.*?)AUTH LOGIN\r\n334 VXNlcm5hbWU6\r\n(.*?)\r\n334 UGFzc3dvcmQ6\r\n(.*?)\r\n235(?:.*?)`)
-	reSMTPCramMd5       = regexp.MustCompile(`(?:.*?)AUTH CRAM-MD5(?:\r\n)334\s(.*?)(?:\r\n)(.*?)(\r\n)235(?:.*?)`)
-	reTelnet            = regexp.MustCompile(`(?:.*?)login:(?:.*?)(\w*?)\r\n(?:.*?)\r\nPassword:\s(.*?)\r\n(?:.*?)`)
-	reIMAPPlainSingle   = regexp.MustCompile(`(?:.*?)(?:LOGIN|login)\s(.*?)\s(.*?)\r\n(?:.*?)`)
-	reIMATPlainSeparate = regexp.MustCompile(`(?:.*?)(?:LOGIN|login)\r\n(?:.*?)\sVXNlcm5hbWU6\r\n(.*?)\r\n(?:.*?)\sUGFzc3dvcmQ6\r\n(.*?)\r\n(?:.*?)`)
-	reIMAPPlainAuth     = regexp.MustCompile(`(?:.*?)(?:AUTHENTICATE PLAIN|authenticate plain)\r\n(?:.*?)\r\n(.*?)\r\n(?:.*?)`)
-	reIMAPPCramMd5      = regexp.MustCompile(`(?:.*?)AUTHENTICATE CRAM-MD5\r\n(?:.*?)\s(.*?)\r\n(.*?)\r\n(?:.*?)`)
+	// harvesterConfig stores the current harvester configuration
+	harvesterConfig *HarvestersConfigFile
 
 	// credStore is used to deduplicate the credentials written to disk
 	// it maps an identifier in the format: c.Service + c.User + c.Password
@@ -153,6 +111,81 @@ func ResetCredStore() {
 //goland:noinspection GoUnusedFunction
 func harvesterDebug(ident string, data []byte, args ...interface{}) {
 	fmt.Println(ident, "\n", hex.Dump(data), args)
+}
+
+// InitializeHarvesters sets up the harvesters based on the provided configuration
+func InitializeHarvesters(config *HarvestersConfigFile) error {
+	if config == nil {
+		// Use default configuration if none provided
+		config = GetDefaultHarvestersConfig()
+	}
+
+	harvesterConfig = config
+
+	// Clear existing harvesters
+	tcpConnectionHarvesters = []Harvester{}
+	harvesterPortMapping = map[int]Harvester{}
+
+	// Build harvesters list and port mappings from config
+	for _, hConfig := range config.Harvesters {
+		if !hConfig.Enabled {
+			continue
+		}
+
+		// Lookup harvester from all available harvesters
+		harvester, ok := allHarvesters[hConfig.Name]
+		if !ok {
+			fmt.Printf("Warning: harvester %s not found in available harvesters\n", hConfig.Name)
+			continue
+		}
+
+		// Add to active harvesters list
+		tcpConnectionHarvesters = append(tcpConnectionHarvesters, harvester)
+
+		// Add port mappings
+		for _, port := range hConfig.Ports {
+			harvesterPortMapping[port] = harvester
+		}
+	}
+
+	// Handle custom harvesters
+	for _, customConfig := range config.CustomHarvesters {
+		if !customConfig.Enabled {
+			continue
+		}
+
+		// Create custom harvester from regex
+		customHarvester := createCustomRegexHarvester(customConfig)
+		tcpConnectionHarvesters = append(tcpConnectionHarvesters, customHarvester)
+
+		// Add port mappings for custom harvester
+		for _, port := range customConfig.Ports {
+			harvesterPortMapping[port] = customHarvester
+		}
+	}
+
+	return nil
+}
+
+// GetHarvesterConfig returns the current harvester configuration
+func GetHarvesterConfig() *HarvestersConfigFile {
+	if harvesterConfig == nil {
+		return GetDefaultHarvestersConfig()
+	}
+	return harvesterConfig
+}
+
+// createCustomRegexHarvester creates a harvester from a custom regex configuration
+func createCustomRegexHarvester(config CustomHarvesterConfig) Harvester {
+	return Harvester{
+		Name:        config.Name,
+		Description: config.Description,
+		HarvesterFunc: func(data []byte, ident string, ts time.Time) *types.Credentials {
+			// This will be implemented similar to the custom regex in credentials.go
+			// For now, return nil - will be enhanced when we integrate with credentials.go
+			return nil
+		},
+	}
 }
 
 // RunHarvesters will use the service probes to determine the service type based on the provided banner.
@@ -175,7 +208,7 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 
 	var (
 		found bool
-		tried *credentialHarvester
+		tried *Harvester
 	)
 
 	// convert service port to integer
@@ -190,8 +223,8 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 	}
 
 	// check if its a well known port and use the harvester for that one
-	if ch, ok := harvesterPortMapping[dstPort]; ok {
-		if creds := ch(banner, ident, firstPacket); creds != nil { // write audit record
+	if h, ok := harvesterPortMapping[dstPort]; ok {
+		if creds := h.HarvesterFunc(banner, ident, firstPacket); creds != nil { // write audit record
 			WriteCredentials(creds)
 
 			// we found a match and will stop processing
@@ -199,13 +232,12 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 				found = true
 			}
 		}
-		// save the address of the harvester function
-		// we dont need to run it again
-		tried = &ch
+		// save the harvester reference so we dont need to run it again
+		tried = &h
 	}
 
-	if ch, ok := harvesterPortMapping[srcPort]; ok {
-		if creds := ch(banner, ident, firstPacket); creds != nil { // write audit record
+	if h, ok := harvesterPortMapping[srcPort]; ok {
+		if creds := h.HarvesterFunc(banner, ident, firstPacket); creds != nil { // write audit record
 			WriteCredentials(creds)
 
 			// we found a match and will stop processing
@@ -213,19 +245,18 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 				found = true
 			}
 		}
-		// save the address of the harvester function
-		// we dont need to run it again
-		tried = &ch
+		// save the harvester reference so we dont need to run it again
+		tried = &h
 	}
 
 	// if we dont have a match yet, match against all available harvesters
 	if !found {
 		// iterate over all harvesters
-		for _, ch := range tcpConnectionHarvesters {
+		for _, h := range tcpConnectionHarvesters {
 			// if the port based first guess has not been found, do not run this harvester again
-			if &ch != tried {
+			if &h != tried {
 				// execute harvester
-				if creds := ch(banner, ident, firstPacket); creds != nil { // write audit record
+				if creds := h.HarvesterFunc(banner, ident, firstPacket); creds != nil { // write audit record
 					WriteCredentials(creds)
 
 					// stop after a match if configured
@@ -236,4 +267,83 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 			}
 		}
 	}
+}
+
+// GetHarvesters returns information about all registered credential harvesters
+// including their names, descriptions, and associated port mappings
+func GetHarvesters() []HarvesterInfo {
+	// If we have a config, use it to return enabled harvesters with their configured ports
+	if harvesterConfig != nil {
+		result := make([]HarvesterInfo, 0)
+
+		for _, hConfig := range harvesterConfig.Harvesters {
+			// Get the harvester to access its description
+			harvester, ok := allHarvesters[hConfig.Name]
+			if !ok {
+				continue
+			}
+
+			info := HarvesterInfo{
+				Name:        hConfig.Name,
+				Description: hConfig.Description,
+				Ports:       hConfig.Ports,
+			}
+
+			// Use description from harvester if not set in config
+			if info.Description == "" {
+				info.Description = harvester.Description
+			}
+
+			result = append(result, info)
+		}
+
+		// Add custom harvesters
+		for _, customConfig := range harvesterConfig.CustomHarvesters {
+			info := HarvesterInfo{
+				Name:        customConfig.Name,
+				Description: customConfig.Description,
+				Ports:       customConfig.Ports,
+			}
+			result = append(result, info)
+		}
+
+		return result
+	}
+
+	// Fallback: Build a map to track which harvesters have which ports
+	portsByName := make(map[string][]int)
+
+	// Iterate through port mappings and collect ports for each harvester by name
+	for port, h := range harvesterPortMapping {
+		portsByName[h.Name] = append(portsByName[h.Name], port)
+	}
+
+	// Build result from unique harvesters (use a map to deduplicate)
+	seen := make(map[string]bool)
+	result := make([]HarvesterInfo, 0)
+
+	// Iterate through all registered harvesters to get their info
+	for _, h := range tcpConnectionHarvesters {
+		// Skip if we've already added this harvester
+		if seen[h.Name] {
+			continue
+		}
+		seen[h.Name] = true
+
+		// Get ports for this harvester, ensuring we always have a slice (not nil)
+		ports := portsByName[h.Name]
+		if ports == nil {
+			ports = []int{} // Empty slice instead of nil
+		}
+
+		// Create HarvesterInfo with ports from the mapping
+		info := HarvesterInfo{
+			Name:        h.Name,
+			Description: h.Description,
+			Ports:       ports,
+		}
+		result = append(result, info)
+	}
+
+	return result
 }

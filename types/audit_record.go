@@ -134,7 +134,13 @@ func filter(in []string) []string {
 
 	r := make([]string, len(selection))
 	for i, v := range selection {
-		r[i] = in[v]
+		// Safety check: ensure index is within bounds
+		if v >= 0 && v < len(in) {
+			r[i] = in[v]
+		} else {
+			// Use empty string for out-of-bounds indices
+			r[i] = ""
+		}
 	}
 
 	return r

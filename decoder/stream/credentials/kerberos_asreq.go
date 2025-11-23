@@ -34,10 +34,10 @@ var (
 	paDataSig2 = []byte{0xa2, 0x35, 0x04, 0x33} // Hash length = 53 (0x35)
 )
 
-// kerberosASReqHarvester extracts AS-REQ pre-authentication hashes from UDP data
+// kerberosASReqHarvesterFunc extracts AS-REQ pre-authentication hashes from UDP data
 // This extracts hashes that can be cracked offline with Hashcat mode 7500
 // Note: This is designed to work with UDP packets on port 88
-func kerberosASReqHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func kerberosASReqHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(data) < 150 {
 		return nil
 	}
@@ -130,5 +130,12 @@ func extractKerberosItem(data []byte, offset int) string {
 	}
 
 	return string(data[offset+1 : offset+1+itemLen])
+}
+
+// kerberosASReqHarvester is the harvester definition for Kerberos AS-REQ
+var kerberosASReqHarvester = Harvester{
+	Name:          "Kerberos AS-REQ",
+	Description:   "Kerberos Authentication Service Request - captures pre-authentication data for offline password cracking",
+	HarvesterFunc: kerberosASReqHarvesterFunc,
 }
 

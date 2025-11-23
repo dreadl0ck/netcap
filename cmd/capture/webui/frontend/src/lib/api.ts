@@ -292,6 +292,90 @@ export interface AllDecoderFieldsResponse {
   [decoderName: string]: FieldInfo[];
 }
 
+export interface HarvesterInfo {
+  name: string;
+  description: string;
+  ports: number[];
+}
+
+export interface HarvestersResponse {
+  harvesters: HarvesterInfo[];
+}
+
+export interface HarvesterConfigItem {
+  name: string;
+  description?: string;
+  enabled: boolean;
+  ports: number[];
+  parameters?: { [key: string]: any };
+}
+
+export interface CustomHarvesterConfig {
+  name: string;
+  description?: string;
+  enabled: boolean;
+  ports: number[];
+  regex: string;
+  parameters?: { [key: string]: any };
+}
+
+export interface HarvestersConfig {
+  harvesters: HarvesterConfigItem[];
+  custom_harvesters?: CustomHarvesterConfig[];
+}
+
+export interface HarvesterPresetInfo {
+  name: string;
+  description: string;
+  created_at: string;
+  modified_at: string;
+  harvester_count: number;
+}
+
+export interface HarvesterPresetListResponse {
+  presets: HarvesterPresetInfo[];
+}
+
+export interface ServiceProbeInfo {
+  id: string;
+  protocol: string;
+  probeName: string;
+  service: string;
+  pattern: string;
+  product: string;
+  version: string;
+  info: string;
+  hostname: string;
+  os: string;
+  deviceType: string;
+  cpes: string[];
+  ports: number[];
+  sslPorts: number[];
+  rarity: number;
+  isSoftMatch: boolean;
+  sendString: string;
+  rawLine: string;
+  lineNumber: number;
+  probeProtocol: string;
+}
+
+export interface ServiceProbesResponse {
+  probes: ServiceProbeInfo[];
+  totalCount: number;
+}
+
+export interface TestProbeRequest {
+  pattern: string;
+  sampleInput: string;
+  flags?: string;
+}
+
+export interface TestProbeResponse {
+  matches: boolean;
+  capturedGroups: Record<string, string>;
+  error?: string;
+}
+
 export interface SystemInfo {
   numCPU: number;
   numGoroutine: number;
@@ -739,6 +823,156 @@ export const api = {
   async getDecoders(): Promise<DecodersResponse> {
     const res = await fetch(`${API_BASE}/decoders`);
     if (!res.ok) throw new Error('Failed to fetch decoders');
+    return res.json();
+  },
+
+  async getHarvesters(): Promise<HarvestersResponse> {
+    const res = await fetch(`${API_BASE}/harvesters`);
+    if (!res.ok) throw new Error('Failed to fetch harvesters');
+    return res.json();
+  },
+
+  async getHarvestersConfig(): Promise<HarvestersConfig> {
+    const res = await fetch(`${API_BASE}/harvesters/config`);
+    if (!res.ok) throw new Error('Failed to fetch harvesters config');
+    return res.json();
+  },
+
+  async saveHarvestersConfig(config: HarvestersConfig): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/harvesters/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config),
+    });
+    if (!res.ok) throw new Error('Failed to save harvesters config');
+    return res.json();
+  },
+
+  async getHarvesterPresets(): Promise<HarvesterPresetListResponse> {
+    const res = await fetch(`${API_BASE}/harvesters/presets`);
+    if (!res.ok) throw new Error('Failed to fetch harvester presets');
+    return res.json();
+  },
+
+  async saveHarvesterPreset(name: string, config: HarvestersConfig): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/harvesters/presets/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, config }),
+    });
+    if (!res.ok) throw new Error('Failed to save harvester preset');
+    return res.json();
+  },
+
+  async loadHarvesterPreset(name: string): Promise<{success: boolean; message: string; config: HarvestersConfig}> {
+    const res = await fetch(`${API_BASE}/harvesters/presets/load`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) throw new Error('Failed to load harvester preset');
+    return res.json();
+  },
+
+  async deleteHarvesterPreset(name: string): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/harvesters/presets/delete`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) throw new Error('Failed to delete harvester preset');
+    return res.json();
+  },
+
+  async uploadHarvesterPreset(file: File, name?: string): Promise<{success: boolean; message: string; name: string}> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (name) {
+      formData.append('name', name);
+    }
+
+    const res = await fetch(`${API_BASE}/harvesters/presets/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Failed to upload harvester preset');
+    return res.json();
+  },
+
+  async downloadHarvesterPreset(name: string): Promise<Blob> {
+    const res = await fetch(`${API_BASE}/harvesters/presets/download?name=${encodeURIComponent(name)}`);
+    if (!res.ok) throw new Error('Failed to download harvester preset');
+    return res.blob();
+  },
+
+  async getServiceProbes(params?: {
+    limit?: number;
+    offset?: number;
+    search?: string;
+    protocol?: string;
+    service?: string;
+    matchType?: string;
+  }): Promise<ServiceProbesResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) queryParams.set('limit', params.limit.toString());
+    if (params?.offset) queryParams.set('offset', params.offset.toString());
+    if (params?.search) queryParams.set('search', params.search);
+    if (params?.protocol) queryParams.set('protocol', params.protocol);
+    if (params?.service) queryParams.set('service', params.service);
+    if (params?.matchType) queryParams.set('matchType', params.matchType);
+
+    const res = await fetch(`${API_BASE}/service-probes?${queryParams}`);
+    if (!res.ok) throw new Error('Failed to fetch service probes');
+    return res.json();
+  },
+
+  async getServiceProbe(id: string): Promise<ServiceProbeInfo> {
+    const res = await fetch(`${API_BASE}/service-probes/${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error('Failed to fetch service probe');
+    return res.json();
+  },
+
+  async updateServiceProbe(id: string, probe: Partial<ServiceProbeInfo>): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/service-probes/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(probe),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to update service probe');
+    }
+    return res.json();
+  },
+
+  async testServiceProbe(request: TestProbeRequest): Promise<TestProbeResponse> {
+    const res = await fetch(`${API_BASE}/service-probes/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+    if (!res.ok) throw new Error('Failed to test service probe');
+    return res.json();
+  },
+
+  exportServiceProbes(): string {
+    return `${API_BASE}/service-probes/export`;
+  },
+
+  async importServiceProbes(file: File): Promise<{success: boolean; message: string; importedCount: number}> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(`${API_BASE}/service-probes/import`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || error.message || 'Import failed');
+    }
+
     return res.json();
   },
 

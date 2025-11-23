@@ -116,6 +116,7 @@ var (
 	flagBannerSize                     int
 	flagHarvesterBannerSize            int
 	flagCustomCredsRegex               string
+	flagHarvestersConfig               string
 	flagStreamBufferSize               int
 	flagNumStreamWorkers               int
 	flagMaxStreamBytes                 int
@@ -235,6 +236,7 @@ func setFlagsFromContext(c *cli.Command) {
 	flagBannerSize = c.Int("bsize")
 	flagHarvesterBannerSize = c.Int("hbsize")
 	flagCustomCredsRegex = c.String("reCustom")
+	flagHarvestersConfig = c.String("harvesters-config")
 	flagStreamBufferSize = c.Int("stream-buffer")
 	flagNumStreamWorkers = c.Int("stream-workers")
 	flagMaxStreamBytes = c.Int("max-stream-bytes")

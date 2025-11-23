@@ -73,7 +73,8 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 
 		// should be an uppercase char if header field
 		// multi line values start with a whitespace
-		if len(parts[0]) > 0 && unicode.IsUpper(rune(parts[0][0])) {
+		// Safety check: ensure parts[0] exists and is not empty before accessing its first character
+		if len(parts) > 0 && len(parts[0]) > 0 && unicode.IsUpper(rune(parts[0][0])) {
 			if parts[0] == "Envelope-To" {
 				// Envelope-To means begin of email body for POP3
 				collectBody = true
@@ -197,12 +198,21 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 	// software detection: check X-Mailer header
 	if xm := hdr["X-Mailer"]; xm != "" {
 		if matches := software.RegexGenericVersion.FindStringSubmatch(xm); len(matches) > 0 {
+			// Safety check: extract vendor from product name
+			vendor := ""
+			if len(matches) > 1 {
+				vendorParts := strings.Split(matches[1], " ")
+				if len(vendorParts) > 0 {
+					vendor = vendorParts[0]
+				}
+			}
+			
 			software.WriteSoftware([]*software.AtomicSoftware{
 				{
 					Software: &types.Software{
 						Timestamp:  ti,
 						Product:    strings.TrimSpace(matches[1]),
-						Vendor:     strings.Split(matches[1], " ")[0],
+						Vendor:     vendor,
 						Version:    strings.TrimPrefix(matches[0], matches[1]),
 						SourceName: "X-Mailer",
 						Service:    origin,

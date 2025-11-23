@@ -26,15 +26,15 @@ const serviceMySQL = "MySQL"
 
 // MySQL protocol constants
 const (
-	mysqlProtocol10       = 10
-	mysqlServerGreeting   = 0x0a // Protocol version in greeting
-	mysqlClientAuth       = 0x00 // Client authentication packet has no command byte at start
+	mysqlProtocol10     = 10
+	mysqlServerGreeting = 0x0a // Protocol version in greeting
+	mysqlClientAuth     = 0x00 // Client authentication packet has no command byte at start
 )
 
 // mysqlHarvester extracts MySQL challenge-response authentication hashes
 // MySQL uses a challenge-response mechanism that can be extracted and cracked offline
 // Format: SHA1(password) XOR SHA1(challenge + SHA1(SHA1(password)))
-func mysqlHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func mysqlHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(data) < 50 {
 		return nil
 	}
@@ -180,7 +180,7 @@ func mysqlHarvester(data []byte, ident string, ts time.Time) *types.Credentials 
 
 // mysqlOldPasswordHarvester extracts MySQL old password hashes (pre-4.1)
 // Old password hashing is weaker and uses a different algorithm
-func mysqlOldPasswordHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func mysqlOldPasswordHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	// Old password authentication is similar but uses 8-byte challenge
 	// and 8-byte response with a different hashing algorithm
 	// This is less common but still worth detecting
@@ -238,3 +238,9 @@ func parseMySQLLengthEncodedInteger(data []byte) (value int, bytesRead int) {
 	return 0, 0
 }
 
+// mysqlHarvester is the harvester definition for MySQL
+var mysqlHarvester = Harvester{
+	Name:          "MySQL",
+	Description:   "MySQL/MariaDB - captures challenge-response authentication hashes (Hashcat mode 11200)",
+	HarvesterFunc: mysqlHarvesterFunc,
+}

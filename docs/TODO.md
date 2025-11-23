@@ -1,7 +1,5 @@
 # TODOs
 
-decoder/stream/credentials/ASN1_IMPLEMENTATION_PLAN.md
-
 update db server for exploitdb 
 
 Investigate: graph analysis page
@@ -9,10 +7,9 @@ AI page for generating reports or AI assisted analysis agent
 
 MCP
 
-- make credential harvesters configurable in UI
-
 ----
 
+- Geolocation chart with ingress / egress based coloring switch
 - Table with PCAPs and number of audit records of each type, sortable ("eg: which capture file had the most Credentials")
 - DHCP fingerprinting results for DeviceProfile and IPProfile
 - overview: standard VS non standard ports in use for services

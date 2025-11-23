@@ -21,12 +21,12 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// httpNTLMHarvester extracts NTLM credentials from HTTP Authorization headers
+// httpNTLMHarvesterFunc extracts NTLM credentials from HTTP Authorization headers
 // HTTP NTLM encodes the NTLMSSP messages in base64 within HTTP headers:
 // - Server: WWW-Authenticate: NTLM <base64-challenge>
 // - Client: Authorization: NTLM <base64-response>
 // This harvester decodes the base64 and passes to the regular NTLMSSP harvester
-func httpNTLMHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func httpNTLMHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	// Look for "Authorization: NTLM " in the HTTP headers
 	authIdx := bytes.Index(data, []byte("Authorization: NTLM "))
 	if authIdx == -1 {
@@ -134,15 +134,22 @@ func extractHTTPNTLMFromSession(data []byte, ident string, ts time.Time) *types.
 	if len(challenge) > 0 && len(authMessage) > 0 {
 		// Create a combined data buffer with both messages
 		combined := append(challenge, authMessage...)
-		return ntlmsspHarvester(combined, ident, ts)
+		return ntlmsspHarvesterFunc(combined, ident, ts)
 	}
 
 	// If we only have the auth message, try to extract from it alone
 	// (some implementations may work with just the Type 3 message if challenge is stored elsewhere)
 	if len(authMessage) > 0 {
-		return ntlmsspHarvester(authMessage, ident, ts)
+		return ntlmsspHarvesterFunc(authMessage, ident, ts)
 	}
 
 	return nil
+}
+
+// httpNTLMHarvester is the harvester definition for HTTP NTLM
+var httpNTLMHarvester = Harvester{
+	Name:          "HTTP NTLM",
+	Description:   "HTTP NTLM authentication with base64 encoding - extracts NTLM challenge-response hashes",
+	HarvesterFunc: httpNTLMHarvesterFunc,
 }
 

@@ -33,10 +33,10 @@ var (
 	reRedisRESP = regexp.MustCompile(`\*2\r\n\$4\r\n(?i:AUTH)\r\n\$(\d+)\r\n`)
 )
 
-// redisHarvester extracts credentials from Redis AUTH commands
+// redisHarvesterFunc extracts credentials from Redis AUTH commands
 // Redis uses a simple text protocol and RESP (Redis Serialization Protocol)
 // Both plaintext AUTH and RESP format are supported
-func redisHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func redisHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	// Try simple AUTH command first
 	matches := reRedisAuth.FindSubmatch(data)
 	if len(matches) > 1 {
@@ -110,5 +110,12 @@ func redisHarvester(data []byte, ident string, ts time.Time) *types.Credentials 
 	}
 
 	return nil
+}
+
+// redisHarvester is the harvester definition for Redis
+var redisHarvester = Harvester{
+	Name:          "Redis",
+	Description:   "Redis in-memory database - captures AUTH command passwords and ACL authentication",
+	HarvesterFunc: redisHarvesterFunc,
 }
 

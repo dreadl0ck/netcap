@@ -48,27 +48,50 @@ var Decoder = &decoder.AbstractDecoder{
 			return err
 		}
 
+		// Load harvesters configuration
+		var config *HarvestersConfigFile
+		if decoderconfig.Instance.HarvestersConfigPath != "" {
+			config, err = LoadHarvestersConfig(decoderconfig.Instance.HarvestersConfigPath)
+			if err != nil {
+				log.Printf("Failed to load harvesters config from %s: %v. Using default configuration.\n", 
+					decoderconfig.Instance.HarvestersConfigPath, err)
+				config = nil
+			}
+		}
+
+		// Initialize harvesters with config (will use defaults if config is nil)
+		if err := InitializeHarvesters(config); err != nil {
+			return err
+		}
+
+		// Handle legacy custom regex flag (if provided, add to harvesters)
 		if decoderconfig.Instance.CustomRegex != "" {
 			r, errCompile := regexp.Compile(decoderconfig.Instance.CustomRegex)
 			if errCompile != nil {
 				return errCompile
 			}
 
-			tcpConnectionHarvesters = append(tcpConnectionHarvesters, func(data []byte, ident string, ts time.Time) *types.Credentials {
-				matches := r.FindSubmatch(data)
-				if len(matches) > 1 {
-					notes := ""
-					for _, m := range matches {
-						notes += " " + string(m) + " "
+			// Create a Harvester struct for the custom regex
+			customRegexHarvester := Harvester{
+				Name:        "Custom Regex",
+				Description: "Custom regex pattern: " + decoderconfig.Instance.CustomRegex,
+				HarvesterFunc: func(data []byte, ident string, ts time.Time) *types.Credentials {
+					matches := r.FindSubmatch(data)
+					if len(matches) > 1 {
+						notes := ""
+						for _, m := range matches {
+							notes += " " + string(m) + " "
+						}
+
+						return &types.Credentials{
+							Notes: notes,
+						}
 					}
 
-					return &types.Credentials{
-						Notes: notes,
-					}
-				}
-
-				return nil
-			})
+					return nil
+				},
+			}
+			tcpConnectionHarvesters = append(tcpConnectionHarvesters, customRegexHarvester)
 		}
 
 		return nil

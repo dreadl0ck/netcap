@@ -93,6 +93,9 @@ type Config struct {
 	// CustomRegex to use for credentials harvester
 	CustomRegex string
 
+	// HarvestersConfigPath is the path to the harvesters configuration file
+	HarvestersConfigPath string
+
 	// Will create a memory dump at the specified path for debugging and profiling
 	MemProfile string
 

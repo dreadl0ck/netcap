@@ -15,14 +15,28 @@ package credentials
 
 import (
 	"encoding/base64"
+	"regexp"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
 	"go.uber.org/zap"
 )
 
-// harvester for the SMTP protocol.
-func smtpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+const (
+	smtpAuthPlain   = "SMTP Auth Plain"
+	smtpAuthLogin   = "SMTP Auth Login"
+	smtpAuthCramMd5 = "SMTP Auth CRAM-MD5"
+)
+
+var (
+	reSMTPPlainSeparate = regexp.MustCompile(`(?:.*?)AUTH PLAIN\r\n334\r\n(.*?)\r\n(?:.*?)Authentication successful(?:.*?)$`)
+	reSMTPPlainSingle   = regexp.MustCompile(`(?:.*?)AUTH PLAIN (.*?)\s\*\r\n235(?:.*?)`)
+	reSMTPLogin         = regexp.MustCompile(`(?:.*?)AUTH LOGIN\r\n334 VXNlcm5hbWU6\r\n(.*?)\r\n334 UGFzc3dvcmQ6\r\n(.*?)\r\n235(?:.*?)`)
+	reSMTPCramMd5       = regexp.MustCompile(`(?:.*?)AUTH CRAM-MD5(?:\r\n)334\s(.*?)(?:\r\n)(.*?)(\r\n)235(?:.*?)`)
+)
+
+// smtpHarvesterFunc is the harvester function for the SMTP protocol.
+func smtpHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	var (
 		username             string
 		password             string
@@ -108,4 +122,11 @@ func decodeSMTPAuthPlain(in string) (user, pass string) {
 	}
 
 	return string(newDataUsername), string(newDataPassword)
+}
+
+// smtpHarvester is the harvester definition for SMTP
+var smtpHarvester = Harvester{
+	Name:          "SMTP",
+	Description:   "Simple Mail Transfer Protocol - captures PLAIN, LOGIN, and CRAM-MD5 authentication",
+	HarvesterFunc: smtpHarvesterFunc,
 }

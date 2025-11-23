@@ -14,13 +14,18 @@
 package credentials
 
 import (
+	"regexp"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// harvester for the FTP protocol.
-func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+const serviceFTP = "FTP"
+
+var reFTP = regexp.MustCompile(`220(?:.*?)\r\n(?:.*)\r?\n?(?:.*)\r?\n?USER\s(.*?)\r\n331(?:.*?)\r\nPASS\s(.*?)\r\n`)
+
+// ftpHarvesterFunc is the harvester function for the FTP protocol.
+func ftpHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	// harvesterDebug(ident, data, serviceFTP)
 
 	matches := reFTP.FindSubmatch(data)
@@ -35,4 +40,11 @@ func ftpHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	}
 
 	return nil
+}
+
+// ftpHarvester is the harvester definition for FTP
+var ftpHarvester = Harvester{
+	Name:          "FTP",
+	Description:   "File Transfer Protocol - captures plaintext username and password",
+	HarvesterFunc: ftpHarvesterFunc,
 }

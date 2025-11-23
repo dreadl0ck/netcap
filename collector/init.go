@@ -253,7 +253,14 @@ func (c *Collector) Init() (err error) {
 
 func handleDecoderInitError(err error, target string) {
 	if errors.Is(err, packet.ErrInvalidDecoder) {
-		invalidDecoder(strings.Split(errors.Unwrap(err).Error(), ":")[0])
+		// Safety check: extract decoder name from error message
+		errMsg := errors.Unwrap(err).Error()
+		parts := strings.Split(errMsg, ":")
+		if len(parts) > 0 {
+			invalidDecoder(parts[0])
+		} else {
+			invalidDecoder(errMsg)
+		}
 	} else if err != nil {
 		log.Fatal("failed to initialize "+target+" decoders: ", err)
 	}

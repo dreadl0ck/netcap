@@ -15,14 +15,22 @@ package credentials
 
 import (
 	"encoding/base64"
+	"regexp"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
 	"go.uber.org/zap"
 )
 
-// harvester for the IMAP protocol.
-func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
+var (
+	reIMAPPlainSingle   = regexp.MustCompile(`(?:.*?)(?:LOGIN|login)\s(.*?)\s(.*?)\r\n(?:.*?)`)
+	reIMATPlainSeparate = regexp.MustCompile(`(?:.*?)(?:LOGIN|login)\r\n(?:.*?)\sVXNlcm5hbWU6\r\n(.*?)\r\n(?:.*?)\sUGFzc3dvcmQ6\r\n(.*?)\r\n(?:.*?)`)
+	reIMAPPlainAuth     = regexp.MustCompile(`(?:.*?)(?:AUTHENTICATE PLAIN|authenticate plain)\r\n(?:.*?)\r\n(.*?)\r\n(?:.*?)`)
+	reIMAPPCramMd5      = regexp.MustCompile(`(?:.*?)AUTHENTICATE CRAM-MD5\r\n(?:.*?)\s(.*?)\r\n(.*?)\r\n(?:.*?)`)
+)
+
+// imapHarvesterFunc is the harvester function for the IMAP protocol.
+func imapHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	var (
 		username             string
 		password             string
@@ -124,4 +132,11 @@ func imapHarvester(data []byte, ident string, ts time.Time) *types.Credentials {
 		}
 	}
 	return nil
+}
+
+// imapHarvester is the harvester definition for IMAP
+var imapHarvester = Harvester{
+	Name:          "IMAP",
+	Description:   "Internet Message Access Protocol - captures plaintext username and password",
+	HarvesterFunc: imapHarvesterFunc,
 }

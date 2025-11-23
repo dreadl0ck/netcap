@@ -41,12 +41,12 @@ var (
 	rePOP3AuthLogin = regexp.MustCompile(`AUTH LOGIN\r\n\+OK.*?\r\n(.*?)\r\n\+OK.*?\r\n(.*?)\r\n`)
 )
 
-// pop3Harvester extracts credentials from POP3 (Post Office Protocol v3) traffic
+// pop3HarvesterFunc extracts credentials from POP3 (Post Office Protocol v3) traffic
 // Supports:
 // - USER/PASS plaintext authentication
 // - AUTH PLAIN (base64)
 // - AUTH LOGIN (base64)
-func pop3Harvester(data []byte, ident string, ts time.Time) *types.Credentials {
+func pop3HarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	// Try USER/PASS first (most common)
 	matches := rePOP3.FindSubmatch(data)
 	if len(matches) > 2 {
@@ -105,5 +105,12 @@ func pop3Harvester(data []byte, ident string, ts time.Time) *types.Credentials {
 	}
 
 	return nil
+}
+
+// pop3Harvester is the harvester definition for POP3
+var pop3Harvester = Harvester{
+	Name:          "POP3",
+	Description:   "Post Office Protocol v3 - captures USER/PASS, AUTH PLAIN, and AUTH LOGIN credentials",
+	HarvesterFunc: pop3HarvesterFunc,
 }
 
