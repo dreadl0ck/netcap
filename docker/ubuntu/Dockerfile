@@ -35,7 +35,7 @@ FROM --platform=linux/amd64 ubuntu:24.04
 ARG IPV6_SUPPORT=true
 
 RUN apt-get update
-RUN apt install -y --fix-missing libpcap0.8 software-properties-common ca-certificates liblzo2-2 libkeyutils-dev
+RUN apt install -y --fix-missing libpcap0.8 software-properties-common ca-certificates liblzo2-2 libkeyutils-dev tcpdump
 RUN update-ca-certificates
 
 WORKDIR /netcap

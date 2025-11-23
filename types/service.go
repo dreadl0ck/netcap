@@ -54,6 +54,8 @@ var fieldsService = []string{
 	fieldHostname,     // string
 	fieldOS,           // string
 	fieldApplications, // []string
+	"PortName",              // string
+	"DetectedProtocolName",  // string
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -79,6 +81,8 @@ func (a *Service) CSVRecord() []string {
 		a.Hostname,                          // string
 		a.OS,                                // string
 		join(a.Applications...),             // []string
+		a.PortName,                          // string
+		a.DetectedProtocolName,              // string
 	})
 }
 
@@ -173,6 +177,8 @@ func (a *Service) Encode() []string {
 		serviceEncoder.String(fieldHostname, a.Hostname),                  // string
 		serviceEncoder.String(fieldOS, a.OS),                              // string
 		serviceEncoder.String(fieldApplications, join(a.Applications...)), // []string
+		serviceEncoder.String("PortName", a.PortName),                     // string
+		serviceEncoder.String("DetectedProtocolName", a.DetectedProtocolName), // string
 	})
 }
 

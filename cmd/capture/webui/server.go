@@ -475,10 +475,17 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/devices/applications", s.handleDevicesApplications)
 	mux.HandleFunc("/api/devices/traffic-distribution", s.handleDevicesTrafficDistribution)
 	mux.HandleFunc("/api/connections", s.handleConnections)
+	mux.HandleFunc("/api/connections/conversation", s.handleConnectionConversation)
+	mux.HandleFunc("/api/connections/download-pcap", s.handleConnectionDownloadPCAP)
 	mux.HandleFunc("/api/connections/top-by-traffic", s.handleConnectionsTopByTraffic)
 	mux.HandleFunc("/api/connections/protocols", s.handleConnectionsProtocols)
 	mux.HandleFunc("/api/connections/applications", s.handleConnectionsApplications)
 	mux.HandleFunc("/api/connections/duration", s.handleConnectionsDuration)
+	mux.HandleFunc("/api/services", s.handleServices)
+	mux.HandleFunc("/api/services/top-by-traffic", s.handleServicesTopByTraffic)
+	mux.HandleFunc("/api/services/protocols", s.handleServicesProtocols)
+	mux.HandleFunc("/api/services/top-ports", s.handleServicesTopPorts)
+	mux.HandleFunc("/api/services/top-products", s.handleServicesTopProducts)
 	mux.HandleFunc("/api/domains", s.handleDomains)
 	mux.HandleFunc("/api/domains/top-by-queries", s.handleDomainsTopByQueries)
 	mux.HandleFunc("/api/domains/tlds", s.handleDomainsTLDs)
@@ -848,6 +855,7 @@ func gzipMiddleware(next http.Handler) http.Handler {
 		path := r.URL.Path
 		if strings.HasPrefix(path, "/api/files/input/download/") ||
 			strings.HasPrefix(path, "/api/extracted-files/download") ||
+			strings.HasPrefix(path, "/api/connections/download-pcap") ||
 			strings.HasPrefix(path, "/api/chart/data") {
 			next.ServeHTTP(w, r)
 			return
@@ -1097,9 +1105,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		"-writeincomplete=true",        // Write incomplete streams immediately
 		"-ignorefsmerr=true",           // Ignore FSM errors for better reliability
 		"-allowmissinginit=true",       // Allow streams without handshake
-		// NOTE: Do NOT use -wait-conns=false! It prevents ReassemblyComplete from being called,
-		// which means stream decoders never run. For offline pcaps, we need to wait for streams
-		// to complete so that decode() gets invoked.
+		"-conns",                       // Save raw conversation data to tcp/udp folders (corresponds to SaveConns config)
 	)
 
 	// Add file extraction flag if directory was created successfully (use relative path!)
@@ -1274,6 +1280,21 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusCompleted, "", "")
 		// Store the processing time
 		s.sessionManager.UpdateSessionProcessingTime(job.SessionID, duration.Seconds())
+
+		// Auto-select this file if no active file is currently set (service mode only)
+		// This makes the first completed capture immediately available for viewing
+		s.mu.Lock()
+		if s.activeInputFile == "" {
+			// Get session info to set as active
+			if session, ok := s.sessionManager.GetSession(job.SessionID); ok {
+				s.currentSession = job.SessionID
+				s.outDir = job.OutputDir
+				s.activeInputFile = session.InputFile
+				log.Printf("[Service] Auto-selected first completed capture: session=%s, file=%s",
+					job.SessionID, session.InputFilename)
+			}
+		}
+		s.mu.Unlock()
 	} else {
 		// Local mode: track completion
 		s.MarkFileCompleted(job.InputFile)
@@ -1561,7 +1582,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			// Default values (24 hours for timeouts) work correctly for both online and offline captures.
 			FileStorage:                    fileStorageRelPath,
 			CalculateEntropy:               false,
-			SaveConns:                      false,
+			SaveConns:                      true, // Enable saving raw conversation data to tcp/udp folders
 			TCPDebug:                       false,
 			UseRE2:                         false,
 			BannerSize:                     256,
@@ -1704,6 +1725,21 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		s.sessionManager.UpdateSessionProcessingTime(job.SessionID, duration.Seconds())
 		// TODO: Extract packet count from collector if available
 		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusCompleted, "", "")
+
+		// Auto-select this file if no active file is currently set (service mode only)
+		// This makes the first completed capture immediately available for viewing
+		s.mu.Lock()
+		if s.activeInputFile == "" {
+			// Get session info to set as active
+			if session, ok := s.sessionManager.GetSession(job.SessionID); ok {
+				s.currentSession = job.SessionID
+				s.outDir = job.OutputDir
+				s.activeInputFile = session.InputFile
+				log.Printf("[WebUI] Auto-selected first completed capture: session=%s, file=%s",
+					job.SessionID, session.InputFilename)
+			}
+		}
+		s.mu.Unlock()
 	}
 
 	// Execute rules automatically after successful analysis

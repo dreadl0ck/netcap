@@ -80,6 +80,8 @@ var fieldsConnection = []string{
 	fieldNumNSFlags,
 	fieldMeanWindowSize,
 	fieldApplications,
+	"ServerPortName",
+	"DetectedProtocolName",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -120,6 +122,8 @@ func (c *Connection) CSVRecord() []string {
 		formatInt32(c.NumNSFlags),
 		formatInt32(c.MeanWindowSize),
 		join(c.Applications...),
+		c.ServerPortName,
+		c.DetectedProtocolName,
 	})
 }
 

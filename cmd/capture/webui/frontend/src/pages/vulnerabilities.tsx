@@ -290,7 +290,7 @@ export default function VulnerabilitiesPage() {
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`severity-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/vulnerabilities/severity`}
+                  src={`${getBackendUrl()}/api/vulnerabilities/severity?showLegend=false`}
                   style={{ width: '100%', height: '100%', border: 'none' }}
                   title="Vulnerability Severity"
                 />
@@ -302,7 +302,7 @@ export default function VulnerabilitiesPage() {
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`top-software-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/vulnerabilities/top-vulnerable-software`}
+                  src={`${getBackendUrl()}/api/vulnerabilities/top-vulnerable-software?showLegend=false`}
                   style={{ width: '100%', height: '100%', border: 'none' }}
                   title="Top Vulnerable Software"
                 />
@@ -314,7 +314,7 @@ export default function VulnerabilitiesPage() {
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`access-vectors-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/vulnerabilities/access-vectors`}
+                  src={`${getBackendUrl()}/api/vulnerabilities/access-vectors?showLegend=false`}
                   style={{ width: '100%', height: '100%', border: 'none' }}
                   title="Access Vectors"
                 />
@@ -326,7 +326,7 @@ export default function VulnerabilitiesPage() {
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`exploit-types-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/vulnerabilities/exploit-types`}
+                  src={`${getBackendUrl()}/api/vulnerabilities/exploit-types?showLegend=false`}
                   style={{ width: '100%', height: '100%', border: 'none' }}
                   title="Exploit Types"
                 />
@@ -338,7 +338,7 @@ export default function VulnerabilitiesPage() {
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`top-affected-hosts-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/vulnerabilities/top-affected-hosts`}
+                  src={`${getBackendUrl()}/api/vulnerabilities/top-affected-hosts?showLegend=false`}
                   style={{ width: '100%', height: '100%', border: 'none' }}
                   title="Top Affected Hosts"
                 />

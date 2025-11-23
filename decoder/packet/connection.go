@@ -23,6 +23,7 @@ import (
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/dpi"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 	"github.com/gopacket/gopacket/layers"
 
@@ -378,6 +379,35 @@ func (d *Decoder) writeConn(conn *types.Connection, clientIP string, apps map[st
 		for app := range apps {
 			conn.Applications = append(conn.Applications, app)
 		}
+	}
+
+	// Lookup service name for the destination (server) port
+	if conn.DstPort != "" {
+		if dstPort, err := strconv.Atoi(conn.DstPort); err == nil {
+			// Use the transport protocol for lookup
+			protocol := ""
+			if conn.TransportProto == "TCP" {
+				protocol = "TCP"
+			} else if conn.TransportProto == "UDP" {
+				protocol = "UDP"
+			}
+			
+			if protocol != "" {
+				conn.ServerPortName = resolvers.LookupServiceByPort(dstPort, protocol)
+			}
+		}
+	}
+
+	// Set detected protocol name from DPI or transport protocol
+	if len(conn.Applications) > 0 {
+		// Use the first DPI-detected application as the protocol name
+		conn.DetectedProtocolName = conn.Applications[0]
+	} else if conn.ApplicationProto != "" && conn.ApplicationProto != "Payload" && conn.ApplicationProto != "DecodeFailure" {
+		// Fallback to application layer protocol if available and meaningful
+		conn.DetectedProtocolName = conn.ApplicationProto
+	} else if conn.ServerPortName != "" {
+		// Fallback to the service name if we have one
+		conn.DetectedProtocolName = conn.ServerPortName
 	}
 
 	if conf.ExportMetrics {

@@ -17,6 +17,7 @@ package collector
 import (
 	"bufio"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -545,8 +546,69 @@ func (c *Collector) serveCleanupHTTPEndpoint() {
 	}
 }
 
+// getSymmetricWorkerIndex calculates a worker index based on symmetric flow hashing.
+// This ensures packets A->B and B->A are processed by the same worker.
+func (c *Collector) getSymmetricWorkerIndex(p gopacket.Packet) int {
+	if c.numWorkers <= 1 {
+		return 0
+	}
+
+	var hash uint64
+
+	// Helper to hash flow endpoints symmetrically
+	hashFlow := func(src, dst []byte) uint64 {
+		var h uint64
+		// XOR is symmetric: A ^ B == B ^ A
+		if len(src) == 4 && len(dst) == 4 { // IPv4
+			h = uint64(binary.BigEndian.Uint32(src)) ^ uint64(binary.BigEndian.Uint32(dst))
+		} else if len(src) == 16 && len(dst) == 16 { // IPv6
+			// Fold IPv6 into 64 bits and XOR
+			h = (binary.BigEndian.Uint64(src[0:8]) ^ binary.BigEndian.Uint64(src[8:16])) ^
+				(binary.BigEndian.Uint64(dst[0:8]) ^ binary.BigEndian.Uint64(dst[8:16]))
+		} else {
+			// Generic byte slice sum for other types
+			for _, b := range src {
+				h += uint64(b)
+			}
+			for _, b := range dst {
+				h += uint64(b)
+			}
+		}
+		return h
+	}
+
+	// Network Layer
+	if nl := p.NetworkLayer(); nl != nil {
+		hash ^= hashFlow(nl.NetworkFlow().Src().Raw(), nl.NetworkFlow().Dst().Raw())
+	}
+
+	// Transport Layer
+	if tl := p.TransportLayer(); tl != nil {
+		src := tl.TransportFlow().Src().Raw()
+		dst := tl.TransportFlow().Dst().Raw()
+		if len(src) >= 2 && len(dst) >= 2 {
+			hash ^= uint64(binary.BigEndian.Uint16(src)) ^ uint64(binary.BigEndian.Uint16(dst))
+		}
+	}
+
+	// Fallback for non-IP/Transport
+	if hash == 0 {
+		// Use Link Layer if available
+		if ll := p.LinkLayer(); ll != nil {
+			hash = hashFlow(ll.LinkFlow().Src().Raw(), ll.LinkFlow().Dst().Raw())
+		} else {
+			// Round robin fallback
+			idx := c.next
+			c.next = (c.next + 1) % c.numWorkers
+			return idx
+		}
+	}
+
+	return int(hash % uint64(c.numWorkers))
+}
+
 // to decode incoming packets in parallel
-// they are passed to several worker goroutines in round robin style.
+// they are passed to several worker goroutines using flow sharding.
 func (c *Collector) handlePacket(p gopacket.Packet) {
 	// make it work for 1 worker only, can be used for debugging
 	if c.numWorkers == 1 {
@@ -555,23 +617,18 @@ func (c *Collector) handlePacket(p gopacket.Packet) {
 		return
 	}
 
-	c.workers[c.next] <- p
-
-	// increment or reset next
-	if c.config.Workers == c.next+1 {
-		// reset
-		c.next = 0
-	} else {
-		c.next++
-	}
+	idx := c.getSymmetricWorkerIndex(p)
+	c.workers[idx] <- p
 }
 
 // to decode incoming packets in parallel
-// they are passed to several worker goroutines in round robin style.
+// they are passed to several worker goroutines using flow sharding.
 func (c *Collector) handlePacketTimeout(p gopacket.Packet) {
+	idx := c.getSymmetricWorkerIndex(p)
+
 	select {
 	// send the packetInfo to the decoder routine
-	case c.workers[c.next] <- p:
+	case c.workers[idx] <- p:
 	case <-time.After(3 * time.Second):
 		pkt := gopacket.NewPacket(p.Data(), c.config.BaseLayer, gopacket.Default)
 
@@ -594,14 +651,6 @@ func (c *Collector) handlePacketTimeout(p gopacket.Packet) {
 		if pooledPkt, ok := pkt.(gopacket.PooledPacket); ok {
 			pooledPkt.Dispose()
 		}
-	}
-
-	// increment or reset next
-	if c.config.Workers == c.next+1 {
-		// reset
-		c.next = 0
-	} else {
-		c.next++
 	}
 }
 

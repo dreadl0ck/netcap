@@ -363,10 +363,9 @@ export default function Explore() {
       // Trigger global event for other components
       window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
       
-      // Clear current chart
+      // Clear current chart to trigger regeneration, but keep audit type and field selections
       setChartUrl(null);
-      setSelectedAuditType('');
-      setSelectedField('');
+      // Note: selectedAuditType and selectedField are preserved for better UX
     } catch (err) {
       console.error('Failed to switch file:', err);
       alert('Failed to switch to this file');
@@ -893,7 +892,7 @@ export default function Explore() {
                       top: 0,
                       left: 0,
                       width: '100%',
-                      height: 'calc(100% - 16px)',
+                      height: 'calc(100% - 32px)',
                       border: 'none',
                       borderRadius: '4px',
                     }}

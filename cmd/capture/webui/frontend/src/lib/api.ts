@@ -532,6 +532,22 @@ export interface FieldValuesResponse {
   recordsScanned: number;
 }
 
+export interface ConversationData {
+  srcIP: string;
+  srcPort: string;
+  dstIP: string;
+  dstPort: string;
+  protocol: string;
+  conversationData: string; // base64-encoded chunk
+  exists: boolean;
+  filePath: string;
+  totalSize: number;  // Total file size in bytes
+  chunkSize: number;  // Size of this chunk
+  offset: number;     // Current offset
+  hasMore: boolean;   // Whether there's more data
+  errorMessage?: string;
+}
+
 export const api = {
   async getStatus(): Promise<StatusResponse> {
     const res = await fetch(`${API_BASE}/status`);
@@ -1251,6 +1267,98 @@ export const api = {
     const res = await fetch(`${API_BASE}/error-logs/aggregated`);
     if (!res.ok) throw new Error('Failed to fetch aggregated errors');
     return res.json();
+  },
+
+  // Conversation Data API
+  async getConnectionConversation(
+    srcIP: string,
+    srcPort: string,
+    dstIP: string,
+    dstPort: string,
+    protocol: string,
+    offset?: number,
+    limit?: number
+  ): Promise<ConversationData> {
+    const params = new URLSearchParams({
+      srcIP,
+      srcPort,
+      dstIP,
+      dstPort,
+      protocol,
+    });
+    if (offset !== undefined) {
+      params.set('offset', offset.toString());
+    }
+    if (limit !== undefined) {
+      params.set('limit', limit.toString());
+    }
+    const res = await fetch(`${API_BASE}/connections/conversation?${params}`);
+    if (!res.ok) throw new Error('Failed to fetch conversation data');
+    return res.json();
+  },
+
+  // Count APIs for menu badges
+  async getHostsCount(): Promise<number> {
+    const res = await fetch(`${API_BASE}/hosts`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.totalCount || 0;
+  },
+
+  async getDevicesCount(): Promise<number> {
+    const res = await fetch(`${API_BASE}/devices`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.totalCount || 0;
+  },
+
+  async getConnectionsCount(): Promise<number> {
+    const res = await fetch(`${API_BASE}/connections`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.totalCount || 0;
+  },
+
+  async getDomainsCount(): Promise<number> {
+    const res = await fetch(`${API_BASE}/domains`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.totalCount || 0;
+  },
+
+  async getFingerprintsCount(): Promise<number> {
+    const res = await fetch(`${API_BASE}/fingerprints`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.totalCount || 0;
+  },
+
+  async getSoftwareCount(): Promise<number> {
+    const res = await fetch(`${API_BASE}/software`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.totalCount || 0;
+  },
+
+  async getVulnerabilitiesCount(): Promise<number> {
+    const res = await fetch(`${API_BASE}/vulnerabilities`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.totalVulns || 0;
+  },
+
+  async getAuditRecordsCount(): Promise<number> {
+    const res = await fetch(`${API_BASE}/files/audit`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.length || 0;
+  },
+
+  async getServicesCount(): Promise<number> {
+    const res = await fetch(`${API_BASE}/services`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.totalCount || 0;
   },
 };
 

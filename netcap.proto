@@ -236,6 +236,12 @@ message Connection {
 
   // DPI detected applications
   repeated string Applications = 30;
+
+  // Server port service name lookup result
+  string ServerPortName = 31;
+
+  // Detected protocol name for the server port
+  string DetectedProtocolName = 32;
 }
 
 //
@@ -1944,6 +1950,8 @@ message Service {
   string Hostname = 14;
   string OS = 15;
   repeated string Applications = 16; // DPI detected applications
+  string PortName = 17; // Service port name lookup result
+  string DetectedProtocolName = 18; // Detected protocol name for the port
 }
 
 message Credentials {

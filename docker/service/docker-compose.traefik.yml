@@ -7,6 +7,9 @@ services:
     restart: unless-stopped
     volumes:
       - netcap-service-data:/data
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
     environment:
       - NC_DATA_DIR=/data/netcap-service
       - NC_HTTP=0.0.0.0:7070

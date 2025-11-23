@@ -141,6 +141,7 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 		if err == nil {
 			serv.Protocol = "UDP"
 			serv.Name = resolvers.LookupServiceByPort(dst, typeUDP)
+			serv.PortName = serv.Name // Set PortName to the same lookup result
 		}
 	}
 

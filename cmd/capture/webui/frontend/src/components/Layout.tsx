@@ -28,6 +28,7 @@ import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import DevicesIcon from '@mui/icons-material/Devices';
 import RouterIcon from '@mui/icons-material/Router';
 import CableIcon from '@mui/icons-material/Cable';
+import BuildIcon from '@mui/icons-material/Build';
 import LanguageIcon from '@mui/icons-material/Language';
 import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import AppsIcon from '@mui/icons-material/Apps';
@@ -64,7 +65,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
   // Initialize dataMenuOpen based on current route to prevent re-rendering
   const [dataMenuOpen, setDataMenuOpen] = useState(() => {
     const dataRoutes = ['/audit', '/explore', '/visualize', '/hosts', '/devices', '/connections', 
-                        '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files'];
+                        '/services', '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files', '/logs'];
     return dataRoutes.some(route => router.pathname.startsWith(route));
   });
 
@@ -98,6 +99,62 @@ export default function Layout({ children, title, headerAction, topPadding }: La
     refreshInterval: 10000, // Refresh every 10 seconds
   });
 
+  // Fetch counts for Data menu items - only load once and cache, no auto-refresh
+  // These counts are static once data is processed and only change when a new PCAP is analyzed
+  const { data: auditRecordsCount, mutate: mutateAuditRecordsCount } = useSWR('auditRecordsCount', () => api.getAuditRecordsCount(), {
+    refreshInterval: 0, // No auto-refresh
+    revalidateOnFocus: false, // Don't refetch when window regains focus
+    revalidateOnReconnect: false, // Don't refetch on reconnect
+  });
+
+  const { data: hostsCount, mutate: mutateHostsCount } = useSWR('hostsCount', () => api.getHostsCount(), {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
+  const { data: devicesCount, mutate: mutateDevicesCount } = useSWR('devicesCount', () => api.getDevicesCount(), {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
+  const { data: connectionsCount, mutate: mutateConnectionsCount } = useSWR('connectionsCount', () => api.getConnectionsCount(), {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
+  const { data: domainsCount, mutate: mutateDomainsCount } = useSWR('domainsCount', () => api.getDomainsCount(), {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
+  const { data: fingerprintsCount, mutate: mutateFingerprintsCount } = useSWR('fingerprintsCount', () => api.getFingerprintsCount(), {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
+  const { data: softwareCount, mutate: mutateSoftwareCount } = useSWR('softwareCount', () => api.getSoftwareCount(), {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
+  const { data: vulnerabilitiesCount, mutate: mutateVulnerabilitiesCount } = useSWR('vulnerabilitiesCount', () => api.getVulnerabilitiesCount(), {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
+  const { data: servicesCount, mutate: mutateServicesCount } = useSWR('servicesCount', () => api.getServicesCount(), {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
   // Calculate total PCAP count (including preloaded and user files)
   const pcapCount = inputFiles?.length || 0;
   
@@ -129,7 +186,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
   // Keep Data menu open when navigating between data routes, close when leaving
   useEffect(() => {
     const dataRoutes = ['/audit', '/explore', '/visualize', '/hosts', '/devices', '/connections', 
-                        '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files'];
+                        '/services', '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files', '/logs'];
     const isDataRoute = dataRoutes.some(route => router.pathname.startsWith(route));
     
     // Only update state if it needs to change to prevent unnecessary re-renders
@@ -148,13 +205,23 @@ export default function Layout({ children, title, headerAction, topPadding }: La
       mutateAlertStats();
       mutateExtractedFiles();
       mutateErrorLogs();
+      // Also refresh all data menu counts since new data was processed
+      mutateAuditRecordsCount();
+      mutateHostsCount();
+      mutateDevicesCount();
+      mutateConnectionsCount();
+      mutateDomainsCount();
+      mutateFingerprintsCount();
+      mutateSoftwareCount();
+      mutateVulnerabilitiesCount();
+      mutateServicesCount();
     };
 
     window.addEventListener('directory-changed', handleDirectoryChanged);
     return () => {
       window.removeEventListener('directory-changed', handleDirectoryChanged);
     };
-  }, [mutateAlertStats, mutateExtractedFiles, mutateErrorLogs]);
+  }, [mutateAlertStats, mutateExtractedFiles, mutateErrorLogs, mutateAuditRecordsCount, mutateHostsCount, mutateDevicesCount, mutateConnectionsCount, mutateServicesCount, mutateDomainsCount, mutateFingerprintsCount, mutateSoftwareCount, mutateVulnerabilitiesCount]);
 
   // Calculate default top padding based on whether headerAction exists
   const defaultTopPadding = topPadding || {
@@ -366,7 +433,19 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 }}
               >
                 <ListItemIcon>
-                  <StorageIcon />
+                  <Badge 
+                    badgeContent={auditRecordsCount} 
+                    color="primary"
+                    max={999}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        right: -3,
+                        top: 3,
+                      },
+                    }}
+                  >
+                    <StorageIcon />
+                  </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Audit Records" />
               </ListItemButton>
@@ -438,7 +517,19 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 }}
               >
                 <ListItemIcon>
-                  <RouterIcon />
+                  <Badge 
+                    badgeContent={hostsCount} 
+                    color="primary"
+                    max={999}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        right: -3,
+                        top: 3,
+                      },
+                    }}
+                  >
+                    <RouterIcon />
+                  </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Hosts" />
               </ListItemButton>
@@ -462,7 +553,19 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 }}
               >
                 <ListItemIcon>
-                  <DevicesIcon />
+                  <Badge 
+                    badgeContent={devicesCount} 
+                    color="primary"
+                    max={999}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        right: -3,
+                        top: 3,
+                      },
+                    }}
+                  >
+                    <DevicesIcon />
+                  </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Devices" />
               </ListItemButton>
@@ -486,9 +589,57 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 }}
               >
                 <ListItemIcon>
-                  <CableIcon />
+                  <Badge 
+                    badgeContent={connectionsCount} 
+                    color="primary"
+                    max={999}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        right: -3,
+                        top: 3,
+                      },
+                    }}
+                  >
+                    <CableIcon />
+                  </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Connections" />
+              </ListItemButton>
+            </Link>
+            <Link href="/services" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+              <ListItemButton
+                selected={isActive('/services')}
+                data-learn="Services: View discovered network services with protocol detection, version information, and traffic statistics."
+                sx={{
+                  pl: 4,
+                  '&.Mui-selected': {
+                    backgroundColor: 'primary.main',
+                    color: 'primary.contrastText',
+                    '&:hover': {
+                      backgroundColor: 'primary.dark',
+                    },
+                    '& .MuiListItemIcon-root': {
+                      color: 'primary.contrastText',
+                    },
+                  },
+                }}
+              >
+                <ListItemIcon>
+                  <Badge 
+                    badgeContent={servicesCount} 
+                    color="primary"
+                    max={999}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        right: -3,
+                        top: 3,
+                      },
+                    }}
+                  >
+                    <BuildIcon />
+                  </Badge>
+                </ListItemIcon>
+                <ListItemText primary="Services" />
               </ListItemButton>
             </Link>
             <Link href="/domains" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -510,7 +661,19 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 }}
               >
                 <ListItemIcon>
-                  <LanguageIcon />
+                  <Badge 
+                    badgeContent={domainsCount} 
+                    color="primary"
+                    max={999}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        right: -3,
+                        top: 3,
+                      },
+                    }}
+                  >
+                    <LanguageIcon />
+                  </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Domains" />
               </ListItemButton>
@@ -534,7 +697,19 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 }}
               >
                 <ListItemIcon>
-                  <FingerprintIcon />
+                  <Badge 
+                    badgeContent={fingerprintsCount} 
+                    color="primary"
+                    max={999}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        right: -3,
+                        top: 3,
+                      },
+                    }}
+                  >
+                    <FingerprintIcon />
+                  </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Fingerprints" />
               </ListItemButton>
@@ -558,7 +733,19 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 }}
               >
                 <ListItemIcon>
-                  <AppsIcon />
+                  <Badge 
+                    badgeContent={softwareCount} 
+                    color="primary"
+                    max={999}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        right: -3,
+                        top: 3,
+                      },
+                    }}
+                  >
+                    <AppsIcon />
+                  </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Software" />
               </ListItemButton>
@@ -582,7 +769,19 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 }}
               >
                 <ListItemIcon>
-                  <BugReportIcon />
+                  <Badge 
+                    badgeContent={vulnerabilitiesCount} 
+                    color="primary"
+                    max={999}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        right: -3,
+                        top: 3,
+                      },
+                    }}
+                  >
+                    <BugReportIcon />
+                  </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Vulnerabilities" />
               </ListItemButton>
@@ -657,6 +856,30 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                   </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Files" />
+              </ListItemButton>
+            </Link>
+            <Link href="/logs" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
+              <ListItemButton
+                selected={isActive('/logs')}
+                data-learn="Logs: View system logs, processing information, and debug output from Netcap operations."
+                sx={{
+                  pl: 4,
+                  '&.Mui-selected': {
+                    backgroundColor: 'primary.main',
+                    color: 'primary.contrastText',
+                    '&:hover': {
+                      backgroundColor: 'primary.dark',
+                    },
+                    '& .MuiListItemIcon-root': {
+                      color: 'primary.contrastText',
+                    },
+                  },
+                }}
+              >
+                <ListItemIcon>
+                  <DescriptionIcon />
+                </ListItemIcon>
+                <ListItemText primary="Logs" />
               </ListItemButton>
             </Link>
           </List>
@@ -797,29 +1020,6 @@ export default function Layout({ children, title, headerAction, topPadding }: La
               <FilterAltIcon />
             </ListItemIcon>
             <ListItemText primary="BPF Filters" />
-          </ListItemButton>
-        </Link>
-        <Link href="/logs" passHref style={{ textDecoration: 'none', color: 'inherit' }}>
-          <ListItemButton
-            selected={isActive('/logs')}
-            data-learn="View system logs, processing information, and debug output from Netcap operations."
-            sx={{
-              '&.Mui-selected': {
-                backgroundColor: 'primary.main',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-                '& .MuiListItemIcon-root': {
-                  color: 'primary.contrastText',
-                },
-              },
-            }}
-          >
-            <ListItemIcon>
-              <DescriptionIcon />
-            </ListItemIcon>
-            <ListItemText primary="Logs" />
           </ListItemButton>
         </Link>
         <Link href="/errors" passHref style={{ textDecoration: 'none', color: 'inherit' }}>

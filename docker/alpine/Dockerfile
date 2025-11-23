@@ -26,7 +26,7 @@ RUN file /netcap/bin/net
 FROM --platform=linux/amd64 alpine:latest
 ARG IPV6_SUPPORT=true
 
-RUN apk add --no-cache ca-certificates iptables libpcap libnetfilter_queue ${IPV6_SUPPORT:+ip6tables}
+RUN apk add --no-cache ca-certificates iptables libpcap libnetfilter_queue tcpdump ${IPV6_SUPPORT:+ip6tables}
 
 WORKDIR /
 

@@ -14,7 +14,6 @@
 package io
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -54,8 +53,8 @@ func NewAuditRecordWriter(wc *WriterConfig) AuditRecordWriter {
 	case wc.Proto:
 		return newProtoWriter(wc)
 	default:
-		spew.Dump(wc)
-		panic("invalid WriterConfig")
+		// Default to proto when no writer type is specified
+		return newProtoWriter(wc)
 	}
 
 	return nil //nolint:govet // stop complaining that this is unreachable

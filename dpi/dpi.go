@@ -200,7 +200,9 @@ func Reset(modules string) {
 
 // GetProtocols returns a map of all the identified protocol names to a result datastructure
 // packets are identified with libprotoident, nDPI and a few custom heuristics from godpi.
-// Will return nil if dpi is disabled, or if flow is not yet ready to be classified (need 10 packets).
+// Will return nil if dpi is disabled.
+// Classification is invoked for each packet up to MaxPacketsPerFlow; godpi internally
+// manages when to actually perform classification based on MinPacketsForClassification.
 func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 
 	if disableDPI.Load() {
@@ -234,7 +236,10 @@ func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 		return nil
 	}
 
-	if flow.GetPacketCount() == 10 {
+	// godpi only stores up to MaxPacketsPerFlow packets per flow.
+	// Try classification on each packet up to this limit.
+	// godpi internally checks MinPacketsForClassification before actually classifying.
+	if flow.GetPacketCount() <= MaxPacketsPerFlow {
 		results := godpi.ClassifyFlowAllModules(flow)
 
 		//fmt.Println(packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow(), "complete", time.Since(start))
@@ -244,7 +249,7 @@ func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 		// so they will be deduplicated by protocol name before counting them later
 		protocols := make(map[string]ClassificationResult)
 		for _, r := range results {
-			if r.Protocol == "UNKNOWN" {
+			if r.Protocol == "UNKNOWN" || r.Protocol == "NO_PAYLOAD" {
 				continue
 			}
 			protocols[string(r.Protocol)] = r

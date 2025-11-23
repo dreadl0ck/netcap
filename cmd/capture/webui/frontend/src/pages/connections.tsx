@@ -35,8 +35,11 @@ import {
   Speed as SpeedIcon,
   TrendingUp as TrendingUpIcon,
   Timer as TimerIcon,
+  Article as ArticleIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
+import ConversationModal from '@/components/ConversationModal';
 import { api, formatBytes, formatTimestamp, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 
@@ -70,6 +73,8 @@ interface ConnectionSummary {
   numNSFlags: number;
   meanWindowSize: number;
   applications: string[];
+  serverPortName: string;
+  detectedProtocolName: string;
 }
 
 interface ConnectionsResponse {
@@ -89,6 +94,8 @@ export default function ConnectionsPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<ConnectionSortField>('bytes');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [conversationModalOpen, setConversationModalOpen] = useState(false);
+  const [selectedConnection, setSelectedConnection] = useState<ConnectionSummary | null>(null);
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -217,6 +224,56 @@ export default function ConnectionsPage() {
 
   const handleRowClick = (key: string) => {
     setExpandedRow(expandedRow === key ? null : key);
+  };
+
+  const handleViewConversation = (conn: ConnectionSummary) => {
+    setSelectedConnection(conn);
+    setConversationModalOpen(true);
+  };
+
+  const handleCloseConversationModal = () => {
+    setConversationModalOpen(false);
+    setSelectedConnection(null);
+  };
+
+  const handleDownloadPCAP = async (conn: ConnectionSummary) => {
+    try {
+      // Generate download URL
+      const params = new URLSearchParams({
+        srcIP: conn.srcIP,
+        srcPort: conn.srcPort,
+        dstIP: conn.dstIP,
+        dstPort: conn.dstPort,
+      });
+      const downloadUrl = `${getBackendUrl()}/api/connections/download-pcap?${params}`;
+      
+      // Fetch the file as a blob
+      const response = await fetch(downloadUrl);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        alert(`Failed to download PCAP: ${errorText}`);
+        return;
+      }
+      
+      // Get the blob and create a download link
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `connection_${conn.srcIP}-${conn.srcPort}_${conn.dstIP}-${conn.dstPort}.pcap`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert(`Failed to download PCAP: ${error}`);
+    }
   };
 
   // Get only completed files for the selector, sorted alphabetically for consistency
@@ -584,6 +641,9 @@ export default function ConnectionsPage() {
                         Duration
                       </TableSortLabel>
                     </TableCell>
+                    <TableCell data-learn="Server Port: Service name associated with the destination port from IANA database.">
+                      Server Port
+                    </TableCell>
                     <TableCell>Applications</TableCell>
                   </TableRow>
                 </TableHead>
@@ -616,25 +676,46 @@ export default function ConnectionsPage() {
                                 fontSize: '0.875rem',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 0.5,
                               }}
-                              data-learn="Connection Endpoints: Source IP:port → Destination IP:port showing the direction of the connection."
+                              data-learn="Connection Endpoints: Source IP:port → Destination IP:port showing the direction of the connection. For link-layer only connections, shows MAC addresses."
                             >
-                              <Box component="span" sx={{ color: '#4FC3F7', fontWeight: 'bold' }}>
-                                {conn.srcIP}
-                              </Box>
-                              <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
-                              <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
-                                {conn.srcPort}
-                              </Box>
-                              <Box component="span" sx={{ color: 'text.secondary', mx: 0.5 }}>→</Box>
-                              <Box component="span" sx={{ color: '#81C784', fontWeight: 'bold' }}>
-                                {conn.dstIP}
-                              </Box>
-                              <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
-                              <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
-                                {conn.dstPort}
-                              </Box>
+                              {conn.srcIP ? (
+                                <>
+                                  <Box component="span" sx={{ color: '#f44336', fontWeight: 'bold' }}>
+                                    {conn.srcIP}
+                                  </Box>
+                                  {conn.srcPort && (
+                                    <>
+                                      <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
+                                      <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
+                                        {conn.srcPort}
+                                      </Box>
+                                    </>
+                                  )}
+                                  <Box component="span" sx={{ color: 'text.secondary', mx: 0.5 }}>→</Box>
+                                  <Box component="span" sx={{ color: '#2196f3', fontWeight: 'bold' }}>
+                                    {conn.dstIP}
+                                  </Box>
+                                  {conn.dstPort && (
+                                    <>
+                                      <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
+                                      <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
+                                        {conn.dstPort}
+                                      </Box>
+                                    </>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  <Box component="span" sx={{ color: '#f44336', fontWeight: 'bold' }}>
+                                    {conn.srcMAC || 'N/A'}
+                                  </Box>
+                                  <Box component="span" sx={{ color: 'text.secondary', mx: 0.5 }}>→</Box>
+                                  <Box component="span" sx={{ color: '#2196f3', fontWeight: 'bold' }}>
+                                    {conn.dstMAC || 'N/A'}
+                                  </Box>
+                                </>
+                              )}
                             </Box>
                           </TableCell>
                           <TableCell>
@@ -660,6 +741,22 @@ export default function ConnectionsPage() {
                             <Typography variant="body2">
                               {(conn.duration / 1e9).toFixed(3)}s
                             </Typography>
+                          </TableCell>
+                          <TableCell>
+                            {conn.serverPortName ? (
+                              <Chip
+                                data-learn="Server Port Name: Official service name for this destination port from IANA port registry."
+                                label={conn.serverPortName}
+                                size="small"
+                                color="secondary"
+                                variant="outlined"
+                                sx={{ fontSize: '0.7rem' }}
+                              />
+                            ) : (
+                              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                {conn.dstPort || '-'}
+                              </Typography>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
@@ -688,7 +785,7 @@ export default function ConnectionsPage() {
                         
                         {/* Expandable Row Details */}
                         <TableRow>
-                          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
+                          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
                             <Collapse in={expandedRow === rowKey} timeout="auto" unmountOnExit>
                               <Box sx={{ py: 2 }} data-learn="Connection Details: Extended information about this network connection including timestamps, MAC addresses, protocols, flags, and statistics.">
                                 <Grid container spacing={2}>
@@ -738,6 +835,28 @@ export default function ConnectionsPage() {
                                     {conn.applicationProto && (
                                       <Typography variant="body2" color="text.secondary">
                                         Application Protocol: {conn.applicationProto}
+                                      </Typography>
+                                    )}
+                                  </Grid>
+                                  
+                                  {/* Protocol Detection */}
+                                  <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      Protocol Detection
+                                    </Typography>
+                                    {conn.serverPortName && (
+                                      <Typography variant="body2" color="text.secondary">
+                                        Server Port Name: {conn.serverPortName}
+                                      </Typography>
+                                    )}
+                                    {conn.detectedProtocolName && (
+                                      <Typography variant="body2" color="text.secondary">
+                                        Detected Protocol: {conn.detectedProtocolName}
+                                      </Typography>
+                                    )}
+                                    {!conn.serverPortName && !conn.detectedProtocolName && (
+                                      <Typography variant="body2" color="text.secondary">
+                                        No protocol detection information available
                                       </Typography>
                                     )}
                                   </Grid>
@@ -822,6 +941,38 @@ export default function ConnectionsPage() {
                                       </Box>
                                     </Grid>
                                   )}
+                                  
+                                  {/* Action Buttons */}
+                                  {(conn.transportProto === 'TCP' || conn.transportProto === 'UDP') && (
+                                    <Grid item xs={12}>
+                                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                        <Button
+                                          data-learn="View Raw Conversation: Display the raw conversation data in Wireshark-style hex dump format, with client data in red and server data in blue."
+                                          variant="outlined"
+                                          startIcon={<ArticleIcon />}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleViewConversation(conn);
+                                          }}
+                                          size="small"
+                                        >
+                                          View Raw Conversation
+                                        </Button>
+                                        <Button
+                                          data-learn="Download as PCAP: Download a filtered PCAP file containing only the packets from this connection."
+                                          variant="outlined"
+                                          startIcon={<DownloadIcon />}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDownloadPCAP(conn);
+                                          }}
+                                          size="small"
+                                        >
+                                          Download as PCAP
+                                        </Button>
+                                      </Box>
+                                    </Grid>
+                                  )}
                                 </Grid>
                               </Box>
                             </Collapse>
@@ -847,6 +998,19 @@ export default function ConnectionsPage() {
           </>
         )}
       </Box>
+
+      {/* Conversation Modal */}
+      {selectedConnection && (
+        <ConversationModal
+          open={conversationModalOpen}
+          onClose={handleCloseConversationModal}
+          srcIP={selectedConnection.srcIP}
+          srcPort={selectedConnection.srcPort}
+          dstIP={selectedConnection.dstIP}
+          dstPort={selectedConnection.dstPort}
+          protocol={selectedConnection.transportProto}
+        />
+      )}
     </Layout>
   );
 }

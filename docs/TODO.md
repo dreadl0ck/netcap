@@ -1,12 +1,20 @@
 # TODOs
 
-explore charts: height wrong, bottom is cut off. max data points seems to cause re render but number of data points in chart dont change
+dpi does not detect SMB?
 
-webUI: show raw conversation data for TCP and UDP connections
+
+empty writer config: default to proto 
+
+explore charts: bottom of chart is cut off: slightly reduce height of canvas element
+webUI: prevent zooming in on page on mobile devices
+
+Investigate: graph analysis page
+AI page for generating reports or AI assisted analysis
+MCP
 
 ---
 
-WIP: Visualize
+WIP: Visualize and Explore
 
 - add Connections page?
 
@@ -34,6 +42,14 @@ WIP: Visualize
 
 ----
 
+- configure fingerbank lookups and caching
+- Ja4
+- report generation
+- Ja4
+- dashboards feature
+
+----
+
 - dev mode: enable debugging with https://nextjs.org/docs/app/guides/mcp
 - Connections VS Conversations (= all Connections between two hosts) Abstraction
 
@@ -41,8 +57,6 @@ WIP: Visualize
 - compression for downloading ALL files and pcaps currently disabled
 - investigation notes feature: add text infos to any host, device or field
 
-- report generation
-- Ja4
 - enable rules to trigger firewall rules
 - model security rules on top of SIP  protocol fields especially headers
 - model security rules on top of HTTP

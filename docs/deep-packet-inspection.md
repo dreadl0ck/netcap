@@ -39,6 +39,19 @@ DPI detected applications are stored in the **Applications** field, which is ava
 
 The Applications field is a repeated string field (array) that contains the names of all detected applications for that audit record.
 
+### DPI Classification Strategy
+
+NETCAP invokes DPI classification for each packet up to `MaxPacketsPerFlow` (10 packets):
+
+- **Invocation**: DPI is called for each of the first 10 packets per flow
+- **Internal Management**: godpi internally checks `MinPacketsForClassification` (default: 1) before actually performing classification
+- **Efficiency**: Results are cached after first successful classification
+- **Performance**: Automatically stops after 10 packets per flow
+
+This ensures short HTTP/REST API connections (typically 3-8 packets) are properly classified while maintaining performance on long-lived flows.
+
+**Note:** The `ApplicationProto` field in Connection records may show "Payload" for HTTP connections. This is expected because gopacket does not decode HTTP at the individual packet level (only at the TCP stream reassembly level). The DPI `Applications` field contains the actual protocol identification.
+
 Read more about DeviceProfiles here:
 
 {% page-ref page="device-profiles.md" %}

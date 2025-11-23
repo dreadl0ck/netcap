@@ -85,6 +85,7 @@ func saveTCPServiceBanner(s streamReader) {
 		if err == nil {
 			serv.Protocol = "TCP"
 			serv.Name = resolvers.LookupServiceByPort(dst, "TCP")
+			serv.PortName = serv.Name // Set PortName to the same lookup result
 		}
 	}
 

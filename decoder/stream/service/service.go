@@ -59,6 +59,18 @@ var Decoder = &decoder.AbstractDecoder{
 				}
 			}
 
+			// Set DetectedProtocolName based on available information
+			if len(item.Service.Applications) > 0 {
+				// Use the first DPI-detected application as the protocol name
+				item.Service.DetectedProtocolName = item.Service.Applications[0]
+			} else if item.Service.Product != "" {
+				// Use product name if available from service probe matching
+				item.Service.DetectedProtocolName = item.Service.Product
+			} else if item.Service.Name != "" {
+				// Fallback to the service name from port lookup
+				item.Service.DetectedProtocolName = item.Service.Name
+			}
+
 			err = e.Writer.Write(item.Service)
 			if err != nil {
 				serviceLog.Error("failed to flush service audit record", zap.Error(err))
