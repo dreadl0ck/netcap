@@ -37,10 +37,16 @@ import {
   Warning as WarningIcon,
   Security as SecurityIcon,
   Computer as ComputerIcon,
+  Code as CodeIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
-import { api, getBackendUrl } from '@/lib/api';
+import { api, formatBytes, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
+import dynamic from 'next/dynamic';
+
+// Dynamically import SyntaxHighlighter to avoid SSR issues
+const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
+import { tomorrow } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 interface VulnerabilitySummary {
   id: string;
@@ -96,6 +102,7 @@ export default function VulnerabilitiesPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<string>('count');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [exploitCode, setExploitCode] = useState<{[key: string]: {content: string, language: string, loading: boolean, error?: string}}>({});
 
   // Fetch status and input files
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -209,6 +216,45 @@ export default function VulnerabilitiesPage() {
     setExpandedRow(expandedRow === key ? null : key);
   };
 
+  const fetchExploitCode = async (exploitId: string, filePath: string) => {
+    // If already loaded, don't fetch again
+    if (exploitCode[exploitId]) {
+      return;
+    }
+
+    // Set loading state
+    setExploitCode(prev => ({
+      ...prev,
+      [exploitId]: { content: '', language: 'text', loading: true }
+    }));
+
+    try {
+      const response = await fetch(`${getBackendUrl()}/api/vulnerabilities/exploit-file?file=${encodeURIComponent(filePath)}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: response.statusText }));
+        const errorMessage = errorData.error || `Failed to fetch exploit file: ${response.statusText}`;
+        const hint = errorData.hint || '';
+        throw new Error(hint ? `${errorMessage}\n${hint}` : errorMessage);
+      }
+      const data = await response.json();
+      setExploitCode(prev => ({
+        ...prev,
+        [exploitId]: { content: data.content, language: data.language, loading: false }
+      }));
+    } catch (error) {
+      console.error('Error fetching exploit code:', error);
+      setExploitCode(prev => ({
+        ...prev,
+        [exploitId]: { 
+          content: '', 
+          language: 'text', 
+          loading: false, 
+          error: error instanceof Error ? error.message : 'Failed to load exploit code'
+        }
+      }));
+    }
+  };
+
   const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
     .sort((a: any, b: any) => a.path.localeCompare(b.path));
   
@@ -223,12 +269,76 @@ export default function VulnerabilitiesPage() {
         data-learn="Capture Selector"
         value={selectedValue}
         onChange={handleFileChange}
-        startAdornment={switchingFile ? <CircularProgress size={20} sx={{ mr: 1 }} /> : <SwapHorizIcon sx={{ mr: 1 }} />}
-        renderValue={() => <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{selectedFile.name}</Typography>}
+        startAdornment={
+          switchingFile ? (
+            <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
+          ) : (
+            <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
+          )
+        }
+        renderValue={() => (
+          <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
+            <Typography sx={{ 
+              fontFamily: 'monospace', 
+              fontSize: '0.85rem', 
+              color: 'inherit',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              flex: 1,
+              minWidth: 0,
+            }}>
+              {selectedFile.name}
+            </Typography>
+          </Box>
+        )}
+        sx={{
+          color: 'inherit',
+          '.MuiOutlinedInput-notchedOutline': {
+            borderColor: 'rgba(255, 255, 255, 0.23)',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'rgba(255, 255, 255, 0.4)',
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'primary.light',
+          },
+          '.MuiSelect-icon': {
+            color: 'inherit',
+          },
+          '& .MuiSelect-select': {
+            display: 'flex',
+            alignItems: 'center',
+          },
+        }}
       >
         {completedFiles.map((file: any) => (
           <MenuItem key={file.path} value={file.path}>
-            <Typography sx={{ fontFamily: 'monospace' }}>{file.name}</Typography>
+            <Box display="flex" alignItems="center" gap={1} width="100%">
+              {selectedValue === file.path && (
+                <Chip
+                  data-learn="Active File Indicator: Shows which PCAP file is currently being analyzed."
+                  label="Active"
+                  size="small"
+                  color="success"
+                  sx={{ height: 20, fontSize: '0.7rem' }}
+                />
+              )}
+              <Typography
+                sx={{
+                  fontFamily: 'monospace',
+                  fontSize: '0.85rem',
+                  flex: 1,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {file.name}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formatBytes(file.size)}
+              </Typography>
+            </Box>
           </MenuItem>
         ))}
       </Select>
@@ -417,9 +527,14 @@ export default function VulnerabilitiesPage() {
                           <TableCell>{row.id}</TableCell>
                           <TableCell>
                             <Chip 
-                              label={row.severity} 
+                              label={row.severity || 'UNKNOWN'} 
                               size="small" 
-                              color={row.severity === 'HIGH' ? 'error' : row.severity === 'MEDIUM' ? 'warning' : 'info'} 
+                              color={
+                                row.severity === 'HIGH' ? 'error' : 
+                                row.severity === 'MEDIUM' ? 'warning' : 
+                                row.severity === 'LOW' ? 'info' :
+                                'default'
+                              } 
                             />
                           </TableCell>
                           <TableCell>{row.software}</TableCell>
@@ -447,11 +562,24 @@ export default function VulnerabilitiesPage() {
                           <TableCell align="right">{row.vulnerabilities}</TableCell>
                           <TableCell align="right">{row.exploits}</TableCell>
                           <TableCell>
-                            {row.topSeverity && <Chip 
-                              label={row.topSeverity} 
-                              size="small" 
-                              color={row.topSeverity === 'HIGH' ? 'error' : row.topSeverity === 'MEDIUM' ? 'warning' : 'info'} 
-                            />}
+                            {row.topSeverity ? (
+                              <Chip 
+                                label={row.topSeverity} 
+                                size="small" 
+                                color={
+                                  row.topSeverity === 'HIGH' ? 'error' : 
+                                  row.topSeverity === 'MEDIUM' ? 'warning' : 
+                                  row.topSeverity === 'LOW' ? 'info' :
+                                  'default'
+                                } 
+                              />
+                            ) : (
+                              <Chip 
+                                label="UNKNOWN" 
+                                size="small" 
+                                color="default" 
+                              />
+                            )}
                           </TableCell>
                         </>
                       )}
@@ -460,31 +588,295 @@ export default function VulnerabilitiesPage() {
                       <TableRow>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
                           <Collapse in={expandedRow === key} timeout="auto" unmountOnExit>
-                            <Box sx={{ py: 2 }}>
-                              <Typography variant="subtitle2">Description</Typography>
-                              <Typography variant="body2" color="text.secondary" paragraph>{row.description}</Typography>
+                            <Box sx={{ py: 2, px: 2 }}>
                               {tabValue === 0 && (
-                                <Grid container spacing={2}>
-                                  <Grid item xs={6}>
-                                    <Typography variant="caption">CVSS Score: {row.v2Score}</Typography>
+                                <>
+                                  <Typography variant="h6" gutterBottom>
+                                    {row.id}
+                                  </Typography>
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                      Description
+                                    </Typography>
+                                    <Typography variant="body2" paragraph>
+                                      {row.description || 'No description available'}
+                                    </Typography>
+                                  </Box>
+                                  <Grid container spacing={2}>
+                                    <Grid item xs={12} md={6}>
+                                      <Card variant="outlined" sx={{ p: 2 }}>
+                                        <Typography variant="subtitle2" gutterBottom>
+                                          Severity & Scoring
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                              Severity:
+                                            </Typography>
+                                            <Chip 
+                                              label={row.severity || 'UNKNOWN'} 
+                                              size="small" 
+                                              color={
+                                                row.severity === 'HIGH' ? 'error' : 
+                                                row.severity === 'MEDIUM' ? 'warning' : 
+                                                row.severity === 'LOW' ? 'info' :
+                                                'default'
+                                              } 
+                                            />
+                                          </Box>
+                                          {row.v2Score && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                              <Typography variant="body2" color="text.secondary">
+                                                CVSS v2 Score:
+                                              </Typography>
+                                              <Typography variant="body2" fontWeight="medium">
+                                                {row.v2Score}
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                          {row.accessVector && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                              <Typography variant="body2" color="text.secondary">
+                                                Access Vector:
+                                              </Typography>
+                                              <Typography variant="body2" fontWeight="medium">
+                                                {row.accessVector}
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                        </Box>
+                                      </Card>
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                      <Card variant="outlined" sx={{ p: 2 }}>
+                                        <Typography variant="subtitle2" gutterBottom>
+                                          Impact
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                              Software:
+                                            </Typography>
+                                            <Typography variant="body2" fontWeight="medium">
+                                              {row.software || 'N/A'}
+                                            </Typography>
+                                          </Box>
+                                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                              Occurrences:
+                                            </Typography>
+                                            <Typography variant="body2" fontWeight="medium">
+                                              {row.count}
+                                            </Typography>
+                                          </Box>
+                                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                              Affected Hosts:
+                                            </Typography>
+                                            <Typography variant="body2" fontWeight="medium">
+                                              {row.affected}
+                                            </Typography>
+                                          </Box>
+                                        </Box>
+                                      </Card>
+                                    </Grid>
+                                    {row.versions && row.versions.length > 0 && (
+                                      <Grid item xs={12}>
+                                        <Card variant="outlined" sx={{ p: 2 }}>
+                                          <Typography variant="subtitle2" gutterBottom>
+                                            Affected Versions
+                                          </Typography>
+                                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                            {row.versions.map((version: string, idx: number) => (
+                                              <Chip 
+                                                key={idx} 
+                                                label={version} 
+                                                size="small" 
+                                                variant="outlined"
+                                              />
+                                            ))}
+                                          </Box>
+                                        </Card>
+                                      </Grid>
+                                    )}
                                   </Grid>
-                                  <Grid item xs={6}>
-                                    <Typography variant="caption">Access Vector: {row.accessVector}</Typography>
-                                  </Grid>
-                                </Grid>
+                                </>
                               )}
                               {tabValue === 1 && (
-                                <Grid container spacing={2}>
-                                  <Grid item xs={4}>
-                                    <Typography variant="caption">Author: {row.author}</Typography>
+                                <>
+                                  <Typography variant="h6" gutterBottom>
+                                    {row.id}
+                                  </Typography>
+                                  <Box sx={{ mb: 2 }}>
+                                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                      Description
+                                    </Typography>
+                                    <Typography variant="body2" paragraph>
+                                      {row.description || 'No description available'}
+                                    </Typography>
+                                  </Box>
+                                  <Grid container spacing={2}>
+                                    <Grid item xs={12} md={6}>
+                                      <Card variant="outlined" sx={{ p: 2 }}>
+                                        <Typography variant="subtitle2" gutterBottom>
+                                          Exploit Details
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                          {row.type && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                              <Typography variant="body2" color="text.secondary">
+                                                Type:
+                                              </Typography>
+                                              <Typography variant="body2" fontWeight="medium">
+                                                {row.type}
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                          {row.platform && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                              <Typography variant="body2" color="text.secondary">
+                                                Platform:
+                                              </Typography>
+                                              <Typography variant="body2" fontWeight="medium">
+                                                {row.platform}
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                          {row.port && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                              <Typography variant="body2" color="text.secondary">
+                                                Port:
+                                              </Typography>
+                                              <Typography variant="body2" fontWeight="medium">
+                                                {row.port}
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                          {row.file && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                              <Typography variant="body2" color="text.secondary">
+                                                File:
+                                              </Typography>
+                                              <Typography variant="body2" fontWeight="medium" sx={{ 
+                                                maxWidth: 200, 
+                                                overflow: 'hidden', 
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap'
+                                              }}>
+                                                {row.file}
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                        </Box>
+                                      </Card>
+                                    </Grid>
+                                    <Grid item xs={12} md={6}>
+                                      <Card variant="outlined" sx={{ p: 2 }}>
+                                        <Typography variant="subtitle2" gutterBottom>
+                                          Impact & Metadata
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                              Software:
+                                            </Typography>
+                                            <Typography variant="body2" fontWeight="medium">
+                                              {row.software || 'N/A'}
+                                            </Typography>
+                                          </Box>
+                                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                              Occurrences:
+                                            </Typography>
+                                            <Typography variant="body2" fontWeight="medium">
+                                              {row.count}
+                                            </Typography>
+                                          </Box>
+                                          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                              Affected Hosts:
+                                            </Typography>
+                                            <Typography variant="body2" fontWeight="medium">
+                                              {row.affected}
+                                            </Typography>
+                                          </Box>
+                                          {row.author && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                              <Typography variant="body2" color="text.secondary">
+                                                Author:
+                                              </Typography>
+                                              <Typography variant="body2" fontWeight="medium">
+                                                {row.author}
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                          {row.date && (
+                                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                              <Typography variant="body2" color="text.secondary">
+                                                Date:
+                                              </Typography>
+                                              <Typography variant="body2" fontWeight="medium">
+                                                {row.date}
+                                              </Typography>
+                                            </Box>
+                                          )}
+                                        </Box>
+                                      </Card>
+                                    </Grid>
+                                    {row.file && (
+                                      <Grid item xs={12}>
+                                        <Card variant="outlined" sx={{ p: 2, mt: 2 }}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                          <Typography variant="subtitle2">
+                                            Exploit POC Code
+                                          </Typography>
+                                          {!exploitCode[row.id] && (
+                                            <Button
+                                              size="small"
+                                              startIcon={<CodeIcon />}
+                                              onClick={() => fetchExploitCode(row.id, row.file)}
+                                              variant="outlined"
+                                            >
+                                              Load Code
+                                            </Button>
+                                          )}
+                                        </Box>
+                                        {exploitCode[row.id]?.loading && (
+                                          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                                            <CircularProgress size={24} />
+                                          </Box>
+                                        )}
+                                        {exploitCode[row.id]?.error && (
+                                          <Alert severity="warning">
+                                            <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-line' }}>
+                                              {exploitCode[row.id].error}
+                                            </Typography>
+                                          </Alert>
+                                        )}
+                                        {exploitCode[row.id]?.content && (
+                                          <Box sx={{ 
+                                            maxHeight: 600, 
+                                            overflow: 'auto',
+                                            '& pre': {
+                                              margin: 0,
+                                              fontSize: '0.85rem',
+                                            }
+                                          }}>
+                                            <SyntaxHighlighter
+                                              language={exploitCode[row.id].language}
+                                              style={tomorrow}
+                                              showLineNumbers
+                                              wrapLines
+                                            >
+                                              {exploitCode[row.id].content}
+                                            </SyntaxHighlighter>
+                                          </Box>
+                                        )}
+                                        </Card>
+                                      </Grid>
+                                    )}
                                   </Grid>
-                                  <Grid item xs={4}>
-                                    <Typography variant="caption">Date: {row.date}</Typography>
-                                  </Grid>
-                                  <Grid item xs={4}>
-                                    <Typography variant="caption">Port: {row.port}</Typography>
-                                  </Grid>
-                                </Grid>
+                                </>
                               )}
                             </Box>
                           </Collapse>

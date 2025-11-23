@@ -21,7 +21,9 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -118,23 +120,34 @@ func readVulnerabilitiesAndExploits(outDir string) (*VulnerabilitiesResponse, er
 	exploitMap := make(map[string]*ExploitSummary)
 	hostMap := make(map[string]*HostVulnerabilitySummary)
 	
+	// Create a map of MAC addresses to IP addresses (from DeviceProfile)
+	log.Printf("[WebUI][Vulnerabilities] Building MAC-to-IP mapping from directory: %s", outDir)
+	macToIP := buildMacToIPMap(outDir)
+	
 	// Create a map of software product+version to hosts (from IPProfile)
+	log.Printf("[WebUI][Vulnerabilities] Building software-to-hosts mapping from directory: %s", outDir)
 	softwareToHosts := buildSoftwareToHostsMap(outDir)
 
 	// 1. Read Vulnerabilities
 	vulnPath := filepath.Join(outDir, "Vulnerability.ncap.gz")
 	if _, err := os.Stat(vulnPath); err == nil {
-		if err := processVulnerabilities(vulnPath, vulnMap, hostMap, softwareToHosts); err != nil {
+		log.Printf("[WebUI][Vulnerabilities] Processing vulnerability records from: %s", vulnPath)
+		if err := processVulnerabilities(vulnPath, vulnMap, hostMap, macToIP, softwareToHosts); err != nil {
 			log.Printf("[WebUI] Warning: Failed to process vulnerabilities: %v", err)
 		}
+	} else {
+		log.Printf("[WebUI][Vulnerabilities] No vulnerability file found at: %s", vulnPath)
 	}
 
 	// 2. Read Exploits
 	exploitPath := filepath.Join(outDir, "Exploit.ncap.gz")
 	if _, err := os.Stat(exploitPath); err == nil {
-		if err := processExploits(exploitPath, exploitMap, hostMap, softwareToHosts); err != nil {
+		log.Printf("[WebUI][Vulnerabilities] Processing exploit records from: %s", exploitPath)
+		if err := processExploits(exploitPath, exploitMap, hostMap, macToIP, softwareToHosts); err != nil {
 			log.Printf("[WebUI] Warning: Failed to process exploits: %v", err)
 		}
+	} else {
+		log.Printf("[WebUI][Vulnerabilities] No exploit file found at: %s", exploitPath)
 	}
 
 	// Convert maps to slices
@@ -161,8 +174,78 @@ func readVulnerabilitiesAndExploits(outDir string) (*VulnerabilitiesResponse, er
 
 	response.TotalVulns = len(response.Vulnerabilities)
 	response.TotalExploits = len(response.Exploits)
+	
+	log.Printf("[WebUI][Vulnerabilities] Summary: %d unique vulnerabilities, %d unique exploits, %d affected hosts",
+		response.TotalVulns, response.TotalExploits, len(response.AffectedHosts))
 
 	return response, nil
+}
+
+// buildMacToIPMap creates a mapping from MAC addresses to IP addresses
+func buildMacToIPMap(outDir string) map[string][]string {
+	macToIP := make(map[string][]string)
+	
+	// Read DeviceProfile records to find MAC to IP mappings
+	deviceProfilePath := filepath.Join(outDir, "DeviceProfile.ncap.gz")
+	if _, err := os.Stat(deviceProfilePath); err != nil {
+		log.Printf("[WebUI][Vulnerabilities] DeviceProfile file not found: %s", deviceProfilePath)
+		return macToIP
+	}
+
+	reader, err := NewAuditRecordReader(deviceProfilePath)
+	if err != nil {
+		log.Printf("[WebUI][Vulnerabilities] Failed to create reader for DeviceProfile: %v", err)
+		return macToIP
+	}
+	defer reader.Close()
+
+	if _, err := reader.ReadHeader(); err != nil {
+		log.Printf("[WebUI][Vulnerabilities] Failed to read DeviceProfile header: %v", err)
+		return macToIP
+	}
+
+	deviceProfileCount := 0
+	totalIPMappings := 0
+	for {
+		record, err := reader.NextRecord()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			continue
+		}
+
+		deviceProfile, ok := record.(*types.DeviceProfile)
+		if !ok || deviceProfile.MacAddr == "" {
+			continue
+		}
+		
+		deviceProfileCount++
+
+		// Map MAC address to all associated IP addresses
+		for _, ip := range deviceProfile.DeviceIPs {
+			if ip != "" {
+				macToIP[deviceProfile.MacAddr] = append(macToIP[deviceProfile.MacAddr], ip)
+				totalIPMappings++
+			}
+		}
+	}
+
+	log.Printf("[WebUI][Vulnerabilities] Built MAC-to-IP map: %d device profiles, %d total IP mappings, %d unique MACs", 
+		deviceProfileCount, totalIPMappings, len(macToIP))
+	
+	// Log a few sample mappings for debugging
+	if len(macToIP) > 0 {
+		sampleCount := 0
+		for mac, ips := range macToIP {
+			if sampleCount < 5 {
+				log.Printf("[WebUI][Vulnerabilities] Sample MAC mapping: %s -> %d IPs", mac, len(ips))
+				sampleCount++
+			}
+		}
+	}
+
+	return macToIP
 }
 
 // buildSoftwareToHostsMap creates a mapping from software product+version to host IPs
@@ -172,19 +255,24 @@ func buildSoftwareToHostsMap(outDir string) map[string][]string {
 	// Read IPProfile records to find which hosts have which software
 	ipProfilePath := filepath.Join(outDir, "IPProfile.ncap.gz")
 	if _, err := os.Stat(ipProfilePath); err != nil {
+		log.Printf("[WebUI][Vulnerabilities] IPProfile file not found: %s", ipProfilePath)
 		return softwareToHosts
 	}
 
 	reader, err := NewAuditRecordReader(ipProfilePath)
 	if err != nil {
+		log.Printf("[WebUI][Vulnerabilities] Failed to create reader for IPProfile: %v", err)
 		return softwareToHosts
 	}
 	defer reader.Close()
 
 	if _, err := reader.ReadHeader(); err != nil {
+		log.Printf("[WebUI][Vulnerabilities] Failed to read IPProfile header: %v", err)
 		return softwareToHosts
 	}
 
+	ipProfileCount := 0
+	appCount := 0
 	for {
 		record, err := reader.NextRecord()
 		if err != nil {
@@ -198,11 +286,28 @@ func buildSoftwareToHostsMap(outDir string) map[string][]string {
 		if !ok || ipProfile.Addr == "" {
 			continue
 		}
+		
+		ipProfileCount++
 
 		// Index by application names (which often match software product names)
 		for _, app := range ipProfile.Applications {
 			if app != "" {
 				softwareToHosts[app] = append(softwareToHosts[app], ipProfile.Addr)
+				appCount++
+			}
+		}
+	}
+
+	log.Printf("[WebUI][Vulnerabilities] Built software-to-hosts map: %d IP profiles, %d applications, %d unique software products", 
+		ipProfileCount, appCount, len(softwareToHosts))
+	
+	// Log a few sample mappings for debugging
+	if len(softwareToHosts) > 0 {
+		sampleCount := 0
+		for software, hosts := range softwareToHosts {
+			if sampleCount < 5 {
+				log.Printf("[WebUI][Vulnerabilities] Sample mapping: %s -> %d hosts", software, len(hosts))
+				sampleCount++
 			}
 		}
 	}
@@ -210,7 +315,7 @@ func buildSoftwareToHostsMap(outDir string) map[string][]string {
 	return softwareToHosts
 }
 
-func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummary, hostMap map[string]*HostVulnerabilitySummary, softwareToHosts map[string][]string) error {
+func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummary, hostMap map[string]*HostVulnerabilitySummary, macToIP map[string][]string, softwareToHosts map[string][]string) error {
 	reader, err := NewAuditRecordReader(path)
 	if err != nil {
 		return err
@@ -220,6 +325,13 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 	if _, err := reader.ReadHeader(); err != nil {
 		return err
 	}
+
+	recordCount := 0
+	vulnsWithSoftware := 0
+	vulnsWithDeviceProfiles := 0
+	vulnsWithMatchedHosts := 0
+	totalHostsFromDeviceProfiles := 0
+	totalHostsFromSoftwareMap := 0
 
 	for {
 		record, err := reader.NextRecord()
@@ -234,6 +346,8 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 		if !ok {
 			continue
 		}
+		
+		recordCount++
 
 		// Update vuln summary
 		if _, exists := vulnMap[v.ID]; !exists {
@@ -253,21 +367,42 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 
 		// Count affected hosts based on software device profiles AND software-to-hosts mapping
 		if v.Software != nil {
+			vulnsWithSoftware++
 			hostsAffected := make(map[string]bool) // Use map to deduplicate hosts
 			
-			// Try to get hosts from DeviceProfiles (MAC addresses)
-			for _, dev := range v.Software.DeviceProfiles {
-				if dev != "" {
-					hostsAffected[dev] = true
+			// Try to get hosts from DeviceProfiles (MAC addresses) and map to IPs
+			deviceProfileCount := 0
+			for _, macAddr := range v.Software.DeviceProfiles {
+				if macAddr != "" {
+					deviceProfileCount++
+					// Map MAC address to IP addresses
+					if ips, found := macToIP[macAddr]; found {
+						for _, ip := range ips {
+							if ip != "" {
+								hostsAffected[ip] = true
+								totalHostsFromDeviceProfiles++
+							}
+						}
+					} else {
+						// If no IP mapping found, still use the MAC address as a fallback
+						hostsAffected[macAddr] = true
+						totalHostsFromDeviceProfiles++
+					}
 				}
+			}
+			if deviceProfileCount > 0 {
+				vulnsWithDeviceProfiles++
 			}
 			
 			// Also try to get hosts from software product name
+			softwareMapHosts := 0
 			if v.Software.Product != "" {
 				if hosts, found := softwareToHosts[v.Software.Product]; found {
 					for _, host := range hosts {
 						if host != "" {
 							hostsAffected[host] = true
+							softwareMapHosts++
+							totalHostsFromSoftwareMap++
 						}
 					}
 				}
@@ -289,13 +424,30 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 				}
 			}
 			
+			if len(hostsAffected) > 0 {
+				vulnsWithMatchedHosts++
+			}
+			
 			vulnMap[v.ID].Affected = len(hostsAffected)
+			
+			// Log details for first few vulnerabilities for debugging
+			if recordCount <= 3 {
+				log.Printf("[WebUI][Vulnerabilities] Vuln #%d: ID=%s, Software=%s, DeviceProfiles=%d, HostsFromSoftwareMap=%d, TotalAffected=%d",
+					recordCount, v.ID, v.Software.Product, deviceProfileCount, softwareMapHosts, len(hostsAffected))
+			}
 		}
 	}
+	
+	log.Printf("[WebUI][Vulnerabilities] Processed %d vulnerability records, %d with software, %d with device profiles, %d with matched hosts",
+		recordCount, vulnsWithSoftware, vulnsWithDeviceProfiles, vulnsWithMatchedHosts)
+	log.Printf("[WebUI][Vulnerabilities] Total hosts found: %d from DeviceProfiles, %d from software-to-hosts map",
+		totalHostsFromDeviceProfiles, totalHostsFromSoftwareMap)
+	log.Printf("[WebUI][Vulnerabilities] Final unique hosts in hostMap: %d", len(hostMap))
+		
 	return nil
 }
 
-func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap map[string]*HostVulnerabilitySummary, softwareToHosts map[string][]string) error {
+func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap map[string]*HostVulnerabilitySummary, macToIP map[string][]string, softwareToHosts map[string][]string) error {
 	reader, err := NewAuditRecordReader(path)
 	if err != nil {
 		return err
@@ -305,6 +457,13 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 	if _, err := reader.ReadHeader(); err != nil {
 		return err
 	}
+
+	recordCount := 0
+	exploitsWithSoftware := 0
+	exploitsWithDeviceProfiles := 0
+	exploitsWithMatchedHosts := 0
+	totalHostsFromDeviceProfiles := 0
+	totalHostsFromSoftwareMap := 0
 
 	for {
 		record, err := reader.NextRecord()
@@ -319,6 +478,8 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 		if !ok {
 			continue
 		}
+		
+		recordCount++
 
 		// Update exploit summary
 		if _, exists := exploitMap[e.ID]; !exists {
@@ -340,21 +501,42 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 
 		// Count affected hosts from DeviceProfiles AND software-to-hosts mapping
 		if e.Software != nil {
+			exploitsWithSoftware++
 			hostsAffected := make(map[string]bool) // Use map to deduplicate hosts
 			
-			// Try to get hosts from DeviceProfiles (MAC addresses)
-			for _, dev := range e.Software.DeviceProfiles {
-				if dev != "" {
-					hostsAffected[dev] = true
+			// Try to get hosts from DeviceProfiles (MAC addresses) and map to IPs
+			deviceProfileCount := 0
+			for _, macAddr := range e.Software.DeviceProfiles {
+				if macAddr != "" {
+					deviceProfileCount++
+					// Map MAC address to IP addresses
+					if ips, found := macToIP[macAddr]; found {
+						for _, ip := range ips {
+							if ip != "" {
+								hostsAffected[ip] = true
+								totalHostsFromDeviceProfiles++
+							}
+						}
+					} else {
+						// If no IP mapping found, still use the MAC address as a fallback
+						hostsAffected[macAddr] = true
+						totalHostsFromDeviceProfiles++
+					}
 				}
+			}
+			if deviceProfileCount > 0 {
+				exploitsWithDeviceProfiles++
 			}
 			
 			// Also try to get hosts from software product name
+			softwareMapHosts := 0
 			if e.Software.Product != "" {
 				if hosts, found := softwareToHosts[e.Software.Product]; found {
 					for _, host := range hosts {
 						if host != "" {
 							hostsAffected[host] = true
+							softwareMapHosts++
+							totalHostsFromSoftwareMap++
 						}
 					}
 				}
@@ -370,9 +552,25 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 				hostMap[host].Exploits++
 			}
 			
+			if len(hostsAffected) > 0 {
+				exploitsWithMatchedHosts++
+			}
+			
 			exploitMap[e.ID].Affected = len(hostsAffected)
+			
+			// Log details for first few exploits for debugging
+			if recordCount <= 3 {
+				log.Printf("[WebUI][Exploits] Exploit #%d: ID=%s, Software=%s, DeviceProfiles=%d, HostsFromSoftwareMap=%d, TotalAffected=%d",
+					recordCount, e.ID, e.Software.Product, deviceProfileCount, softwareMapHosts, len(hostsAffected))
+			}
 		}
 	}
+	
+	log.Printf("[WebUI][Exploits] Processed %d exploit records, %d with software, %d with device profiles, %d with matched hosts",
+		recordCount, exploitsWithSoftware, exploitsWithDeviceProfiles, exploitsWithMatchedHosts)
+	log.Printf("[WebUI][Exploits] Total hosts found: %d from DeviceProfiles, %d from software-to-hosts map",
+		totalHostsFromDeviceProfiles, totalHostsFromSoftwareMap)
+		
 	return nil
 }
 
@@ -387,5 +585,153 @@ func severityToScore(severity string) int {
 	default:
 		return 0
 	}
+}
+
+// handleExploitFileContent returns the contents of an exploit file
+func (s *Server) handleExploitFileContent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get the file path from query parameter
+	filePath := r.URL.Query().Get("file")
+	if filePath == "" {
+		http.Error(w, "File path is required", http.StatusBadRequest)
+		return
+	}
+
+	// Security: prevent path traversal attacks by cleaning the path
+	// Remove any .. or other suspicious patterns
+	cleanPath := filepath.Clean(filePath)
+	if strings.Contains(cleanPath, "..") {
+		log.Printf("[WebUI][Exploit] Path traversal attempt detected: %s", filePath)
+		http.Error(w, "Invalid file path", http.StatusBadRequest)
+		return
+	}
+
+	// The file path from the database often starts with "exploitdb/"
+	// Strip this prefix if present since we'll add it back in our search paths
+	cleanPath = strings.TrimPrefix(cleanPath, "exploitdb/")
+	cleanPath = strings.TrimPrefix(cleanPath, "exploitdb\\") // Windows path separator
+
+	// Try multiple possible locations for the exploitdb files
+	var possiblePaths []string
+	
+	// 1. Build directory with exploitdb prefix
+	possiblePaths = append(possiblePaths, filepath.Join(resolvers.DataBaseBuildPath, "exploitdb", cleanPath))
+	
+	// 2. Build directory without exploitdb prefix (in case files are directly in build)
+	possiblePaths = append(possiblePaths, filepath.Join(resolvers.DataBaseBuildPath, cleanPath))
+	
+	// 3. Config root directory with exploitdb prefix
+	possiblePaths = append(possiblePaths, filepath.Join(resolvers.ConfigRootPath, "exploitdb", cleanPath))
+	
+	// 4. Database folder with exploitdb prefix
+	possiblePaths = append(possiblePaths, filepath.Join(resolvers.DataBaseFolderPath, "exploitdb", cleanPath))
+	
+	// 5. Direct path with original file path (in case it's absolute or has custom structure)
+	possiblePaths = append(possiblePaths, filepath.Join(resolvers.DataBaseBuildPath, filePath))
+
+	var fileContent []byte
+	var err error
+	var foundPath string
+	var lastErr error
+
+	for _, tryPath := range possiblePaths {
+		fileContent, err = os.ReadFile(tryPath)
+		if err == nil {
+			foundPath = tryPath
+			break
+		}
+		lastErr = err
+		log.Printf("[WebUI][Exploit] Path not found: %s (error: %v)", tryPath, err)
+	}
+
+	if err != nil {
+		log.Printf("[WebUI][Exploit] Failed to read exploit file from any location.")
+		log.Printf("[WebUI][Exploit] Original file path: %s", filePath)
+		log.Printf("[WebUI][Exploit] All attempted paths:")
+		for i, path := range possiblePaths {
+			log.Printf("[WebUI][Exploit]   %d. %s", i+1, path)
+		}
+		log.Printf("[WebUI][Exploit] Last error: %v", lastErr)
+		
+		// Return a more helpful error message
+		response := map[string]interface{}{
+			"error": "Exploit file not found. The exploitdb files may not be installed on this server.",
+			"hint":  "To enable this feature, clone the exploitdb repository to " + filepath.Join(resolvers.DataBaseBuildPath, "exploitdb"),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	log.Printf("[WebUI][Exploit] Successfully read exploit file: %s (size: %d bytes)", foundPath, len(fileContent))
+
+	// Detect language from file extension
+	language := detectLanguageFromPath(cleanPath)
+
+	// Return the content with metadata
+	response := map[string]interface{}{
+		"content":  string(fileContent),
+		"language": language,
+		"path":     cleanPath,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// detectLanguageFromPath attempts to determine the programming language from the file path
+func detectLanguageFromPath(path string) string {
+	ext := strings.ToLower(filepath.Ext(path))
+	
+	// Common exploit file extensions and their languages
+	languageMap := map[string]string{
+		".py":   "python",
+		".rb":   "ruby",
+		".pl":   "perl",
+		".php":  "php",
+		".sh":   "bash",
+		".c":    "c",
+		".cpp":  "cpp",
+		".h":    "c",
+		".java": "java",
+		".js":   "javascript",
+		".asp":  "vbscript",
+		".vbs":  "vbscript",
+		".ps1":  "powershell",
+		".txt":  "text",
+		".html": "html",
+		".htm":  "html",
+		".xml":  "xml",
+		".sql":  "sql",
+		".go":   "go",
+		".cs":   "csharp",
+		".vb":   "vbnet",
+	}
+
+	if lang, ok := languageMap[ext]; ok {
+		return lang
+	}
+
+	// Check for common patterns in path
+	lowerPath := strings.ToLower(path)
+	if strings.Contains(lowerPath, "python") {
+		return "python"
+	} else if strings.Contains(lowerPath, "ruby") {
+		return "ruby"
+	} else if strings.Contains(lowerPath, "perl") {
+		return "perl"
+	} else if strings.Contains(lowerPath, "php") {
+		return "php"
+	} else if strings.Contains(lowerPath, "shell") || strings.Contains(lowerPath, "bash") {
+		return "bash"
+	}
+
+	// Default to text
+	return "text"
 }
 

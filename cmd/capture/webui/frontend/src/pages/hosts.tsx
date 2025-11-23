@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -41,6 +41,7 @@ import {
 import Layout from '@/components/Layout';
 import { api, formatBytes, formatTimestamp, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
+import { useRouter } from 'next/router';
 
 interface ProtocolInfo {
   name: string;
@@ -88,6 +89,7 @@ type HostSortField = 'addr' | 'type' | 'packets' | 'bytes';
 type SortOrder = 'asc' | 'desc';
 
 export default function HostsPage() {
+  const router = useRouter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [searchQuery, setSearchQuery] = useState('');
@@ -97,6 +99,14 @@ export default function HostsPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<HostSortField>('addr');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+  // Initialize search query from URL parameter
+  useEffect(() => {
+    if (router.isReady && router.query.search && typeof router.query.search === 'string') {
+      setSearchQuery(router.query.search);
+      setPage(0);
+    }
+  }, [router.isReady, router.query.search]);
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());

@@ -1248,8 +1248,7 @@ func (cg *ChartGenerator) generateGraphChart(data []kvPair) io.Reader {
 	graph.AddSeries("graph", nodes, links).
 		SetSeriesOptions(
 			charts.WithGraphChartOpts(opts.GraphChart{
-				Force:              &opts.GraphForce{Repulsion: 1000},
-				Layout:             "force",
+				Layout:             "circular",
 				Roam:               opts.Bool(true),
 				FocusNodeAdjacency: opts.Bool(true),
 				Categories:         categories,

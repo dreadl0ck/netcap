@@ -363,9 +363,20 @@ export default function Explore() {
       // Trigger global event for other components
       window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
       
-      // Clear current chart to trigger regeneration, but keep audit type and field selections
+      // Clear current chart, but keep audit type and field selections
       setChartUrl(null);
       // Note: selectedAuditType and selectedField are preserved for better UX
+      
+      // Reload example record for the new data source if an audit type is selected
+      if (selectedAuditType) {
+        loadExampleRecord(selectedAuditType);
+      }
+      
+      // Regenerate chart URL for the new data source if we have audit type and field
+      if (selectedAuditType && selectedField) {
+        const url = `${getBackendUrl()}/api/chart/data?type=${encodeURIComponent(selectedAuditType)}&field=${encodeURIComponent(selectedField)}&chartType=${encodeURIComponent(selectedChartType)}&showLegend=${showLegend}&maxDataPoints=${maxDataPoints}`;
+        setChartUrl(url);
+      }
     } catch (err) {
       console.error('Failed to switch file:', err);
       alert('Failed to switch to this file');
@@ -775,7 +786,7 @@ export default function Explore() {
           </Alert>
         )}
 
-        {!chartUrl && !loading && (
+        {!chartUrl && !loading && !switchingFile && (
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             {/* Show example record if available */}
             {exampleRecord && selectedAuditType && (
@@ -845,6 +856,27 @@ export default function Explore() {
           </Box>
         )}
 
+        {switchingFile && (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              minHeight: 300,
+              flex: 1,
+            }}
+          >
+            <CircularProgress size={60} sx={{ mb: 2 }} />
+            <Typography variant="h6" color="text.secondary">
+              Switching data source...
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Loading chart for new capture file
+            </Typography>
+          </Box>
+        )}
+
         {chartUrl && !loading && (
           <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
             {showExample ? (
@@ -892,7 +924,7 @@ export default function Explore() {
                       top: 0,
                       left: 0,
                       width: '100%',
-                      height: 'calc(100% - 32px)',
+                      height: '100%',
                       border: 'none',
                       borderRadius: '4px',
                     }}

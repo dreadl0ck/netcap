@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -39,6 +39,7 @@ import {
 import Layout from '@/components/Layout';
 import { api, formatBytes, formatTimestamp, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
+import { useRouter } from 'next/router';
 
 interface ServiceSummary {
   timestamp: number;
@@ -70,6 +71,7 @@ type ServiceSortField = 'ip' | 'port' | 'protocol' | 'flows' | 'bytes';
 type SortOrder = 'asc' | 'desc';
 
 export default function ServicesPage() {
+  const router = useRouter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,6 +80,14 @@ export default function ServicesPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<ServiceSortField>('bytes');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  // Initialize search query from URL parameter
+  useEffect(() => {
+    if (router.isReady && router.query.search && typeof router.query.search === 'string') {
+      setSearchQuery(router.query.search);
+      setPage(0);
+    }
+  }, [router.isReady, router.query.search]);
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -784,7 +794,7 @@ export default function ServicesPage() {
                                             wordBreak: 'break-all'
                                           }}
                                         >
-                                          Banner: {svc.banner}
+                                          Banner:{'\n'}{svc.banner}
                                         </Typography>
                                       )}
                                     </Grid>

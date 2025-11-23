@@ -1724,12 +1724,12 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		// Fallback to basename if hash calculation fails
 		fileID = filepath.Base(inputPath)
 	}
-	
+
 	// Store the mapping from ID to path
 	s.mu.Lock()
 	s.fileIDToPath[fileID] = inputPath
 	s.mu.Unlock()
-	
+
 	log.Printf("[WebUI] Generated file ID %s for uploaded file %s", fileID, inputPath)
 
 	// Return success response
@@ -2126,7 +2126,7 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 				// Map location (relative path) to hash
 				if file.Location != "" && file.Hash != "" {
 					fileHashMap[file.Location] = file.Hash
-					log.Printf("[WebUI] File audit record: Location=%s, Hash=%s", file.Location, file.Hash)
+					//log.Printf("[WebUI] File audit record: Location=%s, Hash=%s", file.Location, file.Hash)
 				}
 			}
 			reader.Close()
@@ -2163,14 +2163,14 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 		fileInfo := map[string]interface{}{
 			"name":         info.Name(),
-			"path":         relPath,  // Relative path from files directory (used for downloads)
-			"fullPath":     path,      // Absolute path (not used by frontend)
+			"path":         relPath, // Relative path from files directory (used for downloads)
+			"fullPath":     path,    // Absolute path (not used by frontend)
 			"size":         info.Size(),
 			"modifiedTime": info.ModTime().Unix(),
 			"mimeType":     mimeType,
 		}
-		
-		log.Printf("[WebUI] Extracted file: name=%s, relPath=%s, mimeType=%s", info.Name(), relPath, mimeType)
+
+		//log.Printf("[WebUI] Extracted file: name=%s, relPath=%s, mimeType=%s", info.Name(), relPath, mimeType)
 
 		// Add hash if available
 		if hash, ok := fileHashMap[relPath]; ok {
@@ -2592,7 +2592,7 @@ func (s *Server) handleDownloadAllAuditRecords(w http.ResponseWriter, r *http.Re
 	} else {
 		// Local mode: determine output directory from input file
 		s.mu.RLock()
-		
+
 		// Check if identifier matches activeInputFile or any registered input file
 		var matchedInputFile string
 		if s.activeInputFile == identifier {
@@ -2606,7 +2606,7 @@ func (s *Server) handleDownloadAllAuditRecords(w http.ResponseWriter, r *http.Re
 				}
 			}
 		}
-		
+
 		if matchedInputFile == "" {
 			s.mu.RUnlock()
 			log.Printf("[WebUI] Input file not found or not authorized: %s", identifier)
@@ -2617,7 +2617,7 @@ func (s *Server) handleDownloadAllAuditRecords(w http.ResponseWriter, r *http.Re
 		// Get the output directory for this input file
 		outDir = s.outDir
 		s.mu.RUnlock()
-		
+
 		log.Printf("[WebUI] Local mode: using input file %s, outDir=%s", matchedInputFile, outDir)
 	}
 

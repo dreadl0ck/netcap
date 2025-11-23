@@ -67,12 +67,12 @@ canvas {
 }
 </style>
 <script>
-// Force resize chart to fill viewport after load
+// Force resize chart to fill viewport after load (95% height to prevent bottom cutoff)
 window.addEventListener('load', function() {
 	var charts = document.querySelectorAll('[_echarts_instance_]');
 	charts.forEach(function(el) {
 		if (el && el.style) {
-			el.style.height = window.innerHeight + 'px';
+			el.style.height = (window.innerHeight * 0.95) + 'px';
 			el.style.width = window.innerWidth + 'px';
 		}
 		// Trigger echarts resize
@@ -82,7 +82,7 @@ window.addEventListener('load', function() {
 				setTimeout(function() {
 					chart.resize({
 						width: window.innerWidth,
-						height: window.innerHeight
+						height: window.innerHeight * 0.95
 					});
 				}, 100);
 			}
@@ -94,7 +94,7 @@ window.addEventListener('resize', function() {
 	var charts = document.querySelectorAll('[_echarts_instance_]');
 	charts.forEach(function(el) {
 		if (el && el.style) {
-			el.style.height = window.innerHeight + 'px';
+			el.style.height = (window.innerHeight * 0.95) + 'px';
 			el.style.width = window.innerWidth + 'px';
 		}
 		if (window.echarts) {
@@ -102,7 +102,7 @@ window.addEventListener('resize', function() {
 			if (chart) {
 				chart.resize({
 					width: window.innerWidth,
-					height: window.innerHeight
+					height: window.innerHeight * 0.95
 				});
 			}
 		}
@@ -178,12 +178,12 @@ canvas {
 <script>
 var rotationEnabled = true;
 
-// Force resize chart to fill viewport after load
+// Force resize chart to fill viewport after load (95% height to prevent bottom cutoff)
 window.addEventListener('load', function() {
 	var charts = document.querySelectorAll('[_echarts_instance_]');
 	charts.forEach(function(el) {
 		if (el && el.style) {
-			el.style.height = window.innerHeight + 'px';
+			el.style.height = (window.innerHeight * 0.95) + 'px';
 			el.style.width = window.innerWidth + 'px';
 		}
 		// Trigger echarts resize
@@ -193,7 +193,7 @@ window.addEventListener('load', function() {
 				setTimeout(function() {
 					chart.resize({
 						width: window.innerWidth,
-						height: window.innerHeight
+						height: window.innerHeight * 0.95
 					});
 				}, 100);
 			}
@@ -213,7 +213,7 @@ window.addEventListener('resize', function() {
 	var charts = document.querySelectorAll('[_echarts_instance_]');
 	charts.forEach(function(el) {
 		if (el && el.style) {
-			el.style.height = window.innerHeight + 'px';
+			el.style.height = (window.innerHeight * 0.95) + 'px';
 			el.style.width = window.innerWidth + 'px';
 		}
 		if (window.echarts) {
@@ -221,7 +221,7 @@ window.addEventListener('resize', function() {
 			if (chart) {
 				chart.resize({
 					width: window.innerWidth,
-					height: window.innerHeight
+					height: window.innerHeight * 0.95
 				});
 			}
 		}
@@ -422,7 +422,13 @@ func (s *Server) handleVisualizeGraph(w http.ResponseWriter, r *http.Request) {
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
-	chart := generateGraphChart(outDir, showLegend)
+	// Parse layout parameter (default to "circular")
+	layout := r.URL.Query().Get("layout")
+	if layout == "" {
+		layout = "circular"
+	}
+
+	chart := generateGraphChart(outDir, showLegend, layout)
 	html, err := injectFullHeightCSS(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -450,7 +456,13 @@ func HandleVisualizeGraph(outDir string) http.HandlerFunc {
 		showLegendStr := r.URL.Query().Get("showLegend")
 		showLegend := showLegendStr == "true"
 
-		chart := generateGraphChart(outDir, showLegend)
+		// Parse layout parameter (default to "circular")
+		layout := r.URL.Query().Get("layout")
+		if layout == "" {
+			layout = "circular"
+		}
+
+		chart := generateGraphChart(outDir, showLegend, layout)
 		html, err := injectFullHeightCSS(chart.Render)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -648,7 +660,13 @@ func (s *Server) handleVisualizeHostsGraph(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	chart := generateHostsGraph(outDir, showLegend, maxNodes)
+	// Parse layout parameter (default to "circular")
+	layout := r.URL.Query().Get("layout")
+	if layout == "" {
+		layout = "circular"
+	}
+
+	chart := generateHostsGraph(outDir, showLegend, maxNodes, layout)
 	html, err := injectFullHeightCSS(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -685,7 +703,13 @@ func HandleVisualizeHostsGraph(outDir string) http.HandlerFunc {
 			}
 		}
 
-		chart := generateHostsGraph(outDir, showLegend, maxNodes)
+		// Parse layout parameter (default to "circular")
+		layout := r.URL.Query().Get("layout")
+		if layout == "" {
+			layout = "circular"
+		}
+
+		chart := generateHostsGraph(outDir, showLegend, maxNodes, layout)
 		html, err := injectFullHeightCSS(chart.Render)
 		if err != nil {
 			http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -940,7 +964,7 @@ func generateBar3DChart(outDir string, showLegend bool) *charts.Bar3D {
 }
 
 // generateGraphChart creates a graph chart showing audit record types as nodes
-func generateGraphChart(outDir string, showLegend bool) *charts.Graph {
+func generateGraphChart(outDir string, showLegend bool, layout string) *charts.Graph {
 	stats := getAuditRecordStats(outDir)
 	layerMap := getLayerMap()
 
@@ -1063,13 +1087,24 @@ func generateGraphChart(outDir string, showLegend bool) *charts.Graph {
 		graphCategories = append(graphCategories, &opts.GraphCategory{Name: cat})
 	}
 
+	// Configure graph options based on layout
+	graphOpts := opts.GraphChart{
+		Layout:     layout,
+		Roam:       opts.Bool(true),
+		Categories: graphCategories,
+	}
+	
+	// Add Force settings only for "force" layout
+	if layout == "force" {
+		graphOpts.Force = &opts.GraphForce{
+			Repulsion:  1000,
+			Gravity:    0.1,
+			EdgeLength: 150,
+		}
+	}
+
 	graph.AddSeries("protocols", nodes, links,
-		charts.WithGraphChartOpts(opts.GraphChart{
-			Force:      &opts.GraphForce{Repulsion: 1000, Gravity: 0.1, EdgeLength: 150},
-			Layout:     "force",
-			Roam:       opts.Bool(true),
-			Categories: graphCategories,
-		}),
+		charts.WithGraphChartOpts(graphOpts),
 		charts.WithLabelOpts(opts.Label{
 			Show:     opts.Bool(true),
 			Position: "right",
@@ -1898,7 +1933,7 @@ func normalizeValue(value, oldMin, oldMax, newMin, newMax float64) float64 {
 }
 
 // generateHostsGraph creates a network graph showing IP communication patterns
-func generateHostsGraph(outDir string, showLegend bool, maxNodes int) *charts.Graph {
+func generateHostsGraph(outDir string, showLegend bool, maxNodes int, layout string) *charts.Graph {
 	nodes, links := getHostsCommunicationData(outDir, maxNodes)
 
 	graph := charts.NewGraph()
@@ -1953,18 +1988,25 @@ func generateHostsGraph(outDir string, showLegend bool, maxNodes int) *charts.Gr
 		}),
 	)
 
+	// Configure graph options based on layout
+	graphOpts := opts.GraphChart{
+		Layout:             layout,
+		Roam:               opts.Bool(true),
+		FocusNodeAdjacency: opts.Bool(true),
+		Categories:         categories,
+	}
+	
+	// Add Force settings only for "force" layout
+	if layout == "force" {
+		graphOpts.Force = &opts.GraphForce{
+			Repulsion:  3000,
+			Gravity:    0.1,
+			EdgeLength: 150,
+		}
+	}
+
 	graph.AddSeries("hosts", nodes, links,
-		charts.WithGraphChartOpts(opts.GraphChart{
-			Force: &opts.GraphForce{
-				Repulsion:  3000,
-				Gravity:    0.1,
-				EdgeLength: 150,
-			},
-			Layout:             "circular",
-			Roam:               opts.Bool(true),
-			FocusNodeAdjacency: opts.Bool(true),
-			Categories:         categories,
-		}),
+		charts.WithGraphChartOpts(graphOpts),
 		charts.WithLabelOpts(opts.Label{
 			Show:     opts.Bool(true),
 			Position: "right",

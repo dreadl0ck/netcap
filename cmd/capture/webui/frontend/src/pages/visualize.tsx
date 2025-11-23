@@ -63,6 +63,7 @@ export default function Visualize() {
   const [chartTypeRotationAttempted, setChartTypeRotationAttempted] = useState(false);
   const [maxNodes, setMaxNodes] = useState(100);
   const [maxConnections, setMaxConnections] = useState(100000);
+  const [graphLayout, setGraphLayout] = useState('circular');
 
   // Chart type rotation: get/set the index of the last used chart type
   const getNextChartTypeIndex = useCallback((availableTypes: typeof CHART_TYPES): number => {
@@ -358,15 +359,20 @@ export default function Visualize() {
       params.append('maxConnections', maxConnections.toString());
     }
     
+    // Add layout parameter for graph-based charts
+    if (selectedChartType === 'graph' || selectedChartType === 'hosts-graph') {
+      params.append('layout', graphLayout);
+    }
+    
     return `${baseUrl}?${params.toString()}`;
   };
 
   const chartUrl = getChartUrl();
   
-  // Refresh chart when legend toggle, maxNodes, or maxConnections changes
+  // Refresh chart when legend toggle, maxNodes, maxConnections, or graphLayout changes
   useEffect(() => {
     setChartRefreshKey(prev => prev + 1);
-  }, [showLegend, maxNodes, maxConnections]);
+  }, [showLegend, maxNodes, maxConnections, graphLayout]);
 
   return (
     <Layout title="Visualize" headerAction={fileSelector}>
@@ -435,8 +441,34 @@ export default function Visualize() {
           </ToggleButtonGroup>
         </Box>
 
-        {/* Legend Toggle - Always shown on the right */}
+        {/* Legend Toggle and Layout Selector - Always shown on the right */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Graph Layout Selector - Only for graph-based charts */}
+          {(selectedChartType === 'graph' || selectedChartType === 'hosts-graph') && (
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <Select
+                data-learn="Graph Layout: Choose the layout algorithm for the graph visualization. Force uses physics simulation, Circular arranges nodes in a circle, and None uses fixed positions."
+                value={graphLayout}
+                onChange={(e) => setGraphLayout(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255, 255, 255, 0.23)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255, 255, 255, 0.4)',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'primary.light',
+                  },
+                }}
+              >
+                <MenuItem value="force">Force Layout</MenuItem>
+                <MenuItem value="circular">Circular Layout</MenuItem>
+                <MenuItem value="none">Fixed Layout</MenuItem>
+              </Select>
+            </FormControl>
+          )}
+          
           <ToggleButtonGroup
             data-learn="Legend Toggle: Show or hide the chart legend that explains the visualization's color coding and labels."
             value={showLegend ? 'on' : 'off'}

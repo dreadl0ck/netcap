@@ -507,6 +507,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/vulnerabilities/access-vectors", s.handleVulnerabilitiesAccessVectors)
 	mux.HandleFunc("/api/vulnerabilities/exploit-types", s.handleVulnerabilitiesExploitTypes)
 	mux.HandleFunc("/api/vulnerabilities/top-affected-hosts", s.handleVulnerabilitiesTopAffectedHosts)
+	mux.HandleFunc("/api/vulnerabilities/exploit-file", s.handleExploitFileContent)
 	mux.HandleFunc("/api/report-issue", s.handleReportIssue)
 	mux.HandleFunc("/api/progress/", s.handleProgress)
 

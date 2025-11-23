@@ -308,11 +308,19 @@ export default function ConversationModal({
             <Typography variant="h6">Raw Conversation Data</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
               <Box component="span" sx={{ color: '#f44336', fontWeight: 'bold' }}>
-                {srcIP}:{srcPort}
+                {srcIP}
+              </Box>
+              <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
+              <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
+                {srcPort}
               </Box>
               {' → '}
               <Box component="span" sx={{ color: '#2196f3', fontWeight: 'bold' }}>
-                {dstIP}:{dstPort}
+                {dstIP}
+              </Box>
+              <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
+              <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
+                {dstPort}
               </Box>
               {' '}
               ({protocol})

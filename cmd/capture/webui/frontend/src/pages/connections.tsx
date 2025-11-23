@@ -22,7 +22,6 @@ import {
   TableRow,
   TableSortLabel,
   TextField,
-  Tooltip,
   Typography,
   Alert,
   Collapse,
@@ -37,11 +36,15 @@ import {
   Timer as TimerIcon,
   Article as ArticleIcon,
   Download as DownloadIcon,
+  Computer as ComputerIcon,
+  Router as RouterIcon,
+  Build as BuildIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import ConversationModal from '@/components/ConversationModal';
 import { api, formatBytes, formatTimestamp, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
+import { useRouter } from 'next/router';
 
 interface ConnectionSummary {
   timestampFirst: number;
@@ -86,6 +89,7 @@ type ConnectionSortField = 'endpoints' | 'protocol' | 'packets' | 'bytes' | 'dur
 type SortOrder = 'asc' | 'desc';
 
 export default function ConnectionsPage() {
+  const router = useRouter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [searchQuery, setSearchQuery] = useState('');
@@ -943,36 +947,123 @@ export default function ConnectionsPage() {
                                   )}
                                   
                                   {/* Action Buttons */}
-                                  {(conn.transportProto === 'TCP' || conn.transportProto === 'UDP') && (
-                                    <Grid item xs={12}>
-                                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                  <Grid item xs={12}>
+                                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                      {(conn.transportProto === 'TCP' || conn.transportProto === 'UDP') && (
+                                        <>
+                                          <Button
+                                            data-learn="View Raw Conversation: Display the raw conversation data in Wireshark-style hex dump format, with client data in red and server data in blue."
+                                            variant="outlined"
+                                            startIcon={<ArticleIcon />}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleViewConversation(conn);
+                                            }}
+                                            size="small"
+                                          >
+                                            View Raw Conversation
+                                          </Button>
+                                          <Button
+                                            data-learn="Download as PCAP: Download a filtered PCAP file containing only the packets from this connection."
+                                            variant="outlined"
+                                            startIcon={<DownloadIcon />}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDownloadPCAP(conn);
+                                            }}
+                                            size="small"
+                                          >
+                                            Download as PCAP
+                                          </Button>
+                                        </>
+                                      )}
+                                      
+                                      {/* Navigation Buttons */}
+                                      {conn.srcIP && (
                                         <Button
-                                          data-learn="View Raw Conversation: Display the raw conversation data in Wireshark-style hex dump format, with client data in red and server data in blue."
+                                          data-learn="View Client in Hosts: Navigate to the Hosts page filtered for the client IP address."
                                           variant="outlined"
-                                          startIcon={<ArticleIcon />}
+                                          color="secondary"
+                                          startIcon={<ComputerIcon />}
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            handleViewConversation(conn);
+                                            router.push(`/hosts?search=${encodeURIComponent(conn.srcIP)}`);
                                           }}
                                           size="small"
                                         >
-                                          View Raw Conversation
+                                          Client IP in Hosts
                                         </Button>
+                                      )}
+                                      
+                                      {conn.dstIP && (
                                         <Button
-                                          data-learn="Download as PCAP: Download a filtered PCAP file containing only the packets from this connection."
+                                          data-learn="View Server in Hosts: Navigate to the Hosts page filtered for the server IP address."
                                           variant="outlined"
-                                          startIcon={<DownloadIcon />}
+                                          color="secondary"
+                                          startIcon={<ComputerIcon />}
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            handleDownloadPCAP(conn);
+                                            router.push(`/hosts?search=${encodeURIComponent(conn.dstIP)}`);
                                           }}
                                           size="small"
                                         >
-                                          Download as PCAP
+                                          Server IP in Hosts
                                         </Button>
-                                      </Box>
-                                    </Grid>
-                                  )}
+                                      )}
+                                      
+                                      {(conn.srcMAC || conn.dstMAC) && (
+                                        <>
+                                          {conn.srcMAC && (
+                                            <Button
+                                              data-learn="View Client MAC in Devices: Navigate to the Devices page filtered for the client MAC address."
+                                              variant="outlined"
+                                              color="secondary"
+                                              startIcon={<RouterIcon />}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                router.push(`/devices?search=${encodeURIComponent(conn.srcMAC)}`);
+                                              }}
+                                              size="small"
+                                            >
+                                              Client MAC in Devices
+                                            </Button>
+                                          )}
+                                          
+                                          {conn.dstMAC && (
+                                            <Button
+                                              data-learn="View Server MAC in Devices: Navigate to the Devices page filtered for the server MAC address."
+                                              variant="outlined"
+                                              color="secondary"
+                                              startIcon={<RouterIcon />}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                router.push(`/devices?search=${encodeURIComponent(conn.dstMAC)}`);
+                                              }}
+                                              size="small"
+                                            >
+                                              Server MAC in Devices
+                                            </Button>
+                                          )}
+                                        </>
+                                      )}
+                                      
+                                      {conn.dstIP && (
+                                        <Button
+                                          data-learn="View Service: Navigate to the Services page filtered for the server IP address."
+                                          variant="outlined"
+                                          color="secondary"
+                                          startIcon={<BuildIcon />}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            router.push(`/services?search=${encodeURIComponent(conn.dstIP)}`);
+                                          }}
+                                          size="small"
+                                        >
+                                          Service
+                                        </Button>
+                                      )}
+                                    </Box>
+                                  </Grid>
                                 </Grid>
                               </Box>
                             </Collapse>

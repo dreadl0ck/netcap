@@ -108,11 +108,15 @@ const theme = createTheme({
         html: {
           WebkitFontSmoothing: 'antialiased',
           MozOsxFontSmoothing: 'grayscale',
+          touchAction: 'manipulation',
+          WebkitTextSizeAdjust: '100%',
         },
         body: {
           WebkitFontSmoothing: 'antialiased',
           MozOsxFontSmoothing: 'grayscale',
           textRendering: 'optimizeLegibility',
+          touchAction: 'manipulation',
+          WebkitTextSizeAdjust: '100%',
         },
         '@font-face': [
           {

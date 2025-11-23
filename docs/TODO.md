@@ -1,55 +1,28 @@
 # TODOs
 
-dpi does not detect SMB?
-
-
-empty writer config: default to proto 
-
-explore charts: bottom of chart is cut off: slightly reduce height of canvas element
-webUI: prevent zooming in on page on mobile devices
-
 Investigate: graph analysis page
-AI page for generating reports or AI assisted analysis
+AI page for generating reports or AI assisted analysis agent
+
 MCP
 
 ---
 
-WIP: Visualize and Explore
-
-- add Connections page?
-
 - DHCP fingerprinting results for DeviceProfile and IPProfile
-
 - overview: standard VS non standard ports in use for services
-- Visualize Ja3 Fingerprint Matches
-- Visualize Vulnerabilities and Exploits found
-- Visualize DHCP Fingerprints / Device Infos 
-- Visualize Files
 - Visualize Applications (Clustering)
-- Visualize Software
-- Visualize Services
-- Visualize Domains
-
 - Sankey Diagram for Flows between IPs
 - Sankey Diagram for Flows between Devices
 - treemap explorer: click audit record type, choose field, see all values
-
-- port usage standard port services VS nonstandard 
-
-- services on non standard ports
-
-- mimicry rule: alert if traffic on standard port does not match the expected protocol (using DPI results)
 
 ----
 
 - configure fingerbank lookups and caching
 - Ja4
-- report generation
-- Ja4
 - dashboards feature
 
 ----
 
+- mimicry rule: alert if traffic on standard port does not match the expected protocol (using DPI results)
 - dev mode: enable debugging with https://nextjs.org/docs/app/guides/mcp
 - Connections VS Conversations (= all Connections between two hosts) Abstraction
 

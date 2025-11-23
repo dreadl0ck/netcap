@@ -28,7 +28,9 @@ import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import DevicesIcon from '@mui/icons-material/Devices';
 import RouterIcon from '@mui/icons-material/Router';
 import CableIcon from '@mui/icons-material/Cable';
+import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import BuildIcon from '@mui/icons-material/Build';
+import DnsIcon from '@mui/icons-material/Dns';
 import LanguageIcon from '@mui/icons-material/Language';
 import FingerprintIcon from '@mui/icons-material/Fingerprint';
 import AppsIcon from '@mui/icons-material/Apps';
@@ -600,7 +602,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                       },
                     }}
                   >
-                    <CableIcon />
+                    <SyncAltIcon />
                   </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Connections" />
@@ -636,7 +638,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                       },
                     }}
                   >
-                    <BuildIcon />
+                    <DnsIcon />
                   </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Services" />
