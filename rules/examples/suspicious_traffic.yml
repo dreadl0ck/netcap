@@ -71,6 +71,13 @@ rules:
     threshold_window: 120
 
   # Unknown HTTP Proxy Detection
+  # Standard Traffic: Standard web servers (hosting a website) rarely accept the CONNECT method.
+  # Proxy Traffic: The CONNECT method is explicitly designed for HTTP tunneling (usually to tunnel HTTPS traffic through a proxy). If an internal server receives a CONNECT packet, it is almost certainly acting as a proxy.
+  # Standard Traffic: When a browser talks to a web server, the request line usually contains a relative path:
+  # GET /index.html HTTP/1.1
+  # Proxy Traffic: When a browser talks to a Forward Proxy, it sends the absolute URI so the proxy knows where to go:
+  # GET http://www.google.com/index.html HTTP/1.1
+  # Authorized Proxies: If this rule runs on traffic flowing to your corporate Secure Web Gateway (SWG), Firewall, or Load Balancer, it will flag every single outbound web request.
   - name: Unknown HTTP Proxy Detection
     description: Detect servers behaving as HTTP proxies
     type: HTTP
@@ -81,11 +88,10 @@ rules:
     enabled: true
 
   # SSH Suspiciously Long Version
-  # TODO use SSH audit records
   - name: SSH Suspiciously Long Version
     description: Detect SSH connections with abnormally long version strings (potential data exfil)
-    type: TCP
-    expression: DstPort == 22 && PayloadSize > 200
+    type: SSH
+    expression: len(Ident) > 200
     severity: info
     mitre: ["T1048.002"]
     tags: ["tunneling"]
@@ -95,7 +101,7 @@ rules:
   - name: MySQL External Connection
     description: Detect MySQL connections crossing private-public boundary
     type: TCP
-    expression: (DstPort == 3306 && IsPrivateIP(SrcIP) && IsPublicIP(DstIP)) || (SrcPort == 3306 && IsPublicIP(SrcIP) && IsPrivateIP(DstIP))
+    expression: DstPort == 3306 && IsPrivateIP(SrcIP) && IsPublicIP(DstIP)
     severity: high
     mitre: ["T1021"]
     tags: ["exposure"]
@@ -115,7 +121,7 @@ rules:
   - name: FTP Data Channel Activity
     description: Detect FTP data channel activity (port 20 or ephemeral ports in passive mode)
     type: TCP
-    expression: (SrcPort == 20 || DstPort == 20) && PayloadSize > 0
+    expression: DstPort == 20 && PayloadSize > 0
     severity: info
     mitre: ["T1048.002"]
     tags: ["file-transfer"]
@@ -137,7 +143,7 @@ rules:
   - name: RDP Connection
     description: Detect RDP connections that may indicate lateral movement
     type: TCP
-    expression: DstPort == 3389 || SrcPort == 3389
+    expression: DstPort == 3389
     severity: low
     mitre: ["T1021.001"]
     tags: ["lateral-movement"]
@@ -187,7 +193,7 @@ rules:
   - name: Kerberos Activity
     description: Detect Kerberos traffic that may indicate ticket attacks (Golden/Silver Ticket)
     type: TCP
-    expression: DstPort == 88 || SrcPort == 88
+    expression: DstPort == 88
     severity: info
     mitre: ["T1558.001", "T1558.003"]
     tags: ["credential-access"]
@@ -239,7 +245,7 @@ rules:
   - name: SSH Tunneling Detection
     description: Detect SSH connections with high data transfer that may indicate tunneling
     type: TCP
-    expression: (DstPort == 22 || SrcPort == 22) && PayloadSize > 1400
+    expression: DstPort == 22 && PayloadSize > 1400
     severity: low
     mitre: ["T1572", "T1090"]
     tags: ["tunneling"]
@@ -255,11 +261,12 @@ rules:
     tags: ["ransomware"]
     enabled: true
   
-  - name: Suspicious Port 1337 External Connection
-    description: Connection to port 1337 on external IP detected - potential backdoor or malware activity
+  # Port 1337: Leet Port
+  - name: Port 1337 Detected
+    description: Traffic on port 1337 detected - unusual port often used by malware, backdoors, and hackers
     type: TCP
-    expression: DstPort == 1337 && IsPublicIP(DstIP)
-    severity: critical
-    mitre: ["T1071.001", "T1071.004"]
-    tags: ["external", "backdoor", "suspicious"]
+    expression: DstPort == 1337
+    severity: high
+    mitre: ["T1071.001"]
+    tags: ["suspicious", "backdoor", "unusual-port"]
     enabled: true

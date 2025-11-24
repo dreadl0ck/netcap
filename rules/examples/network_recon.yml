@@ -88,7 +88,7 @@ rules:
   - name: DHCP Traffic Detected
     description: "Detects DHCP traffic. NOTE: To detect a rogue DHCP server, this requires correlation to distinguish from known, legitimate DHCP servers."
     type: UDP
-    expression: (SrcPort == 67 && DstPort == 68) || (SrcPort == 68 && DstPort == 67)
+    expression: DstPort == 68 || DstPort == 67
     severity: info
     mitre: ["T1557.003"]
     tags: ["rogue-server"]

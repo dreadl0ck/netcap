@@ -106,6 +106,7 @@ rules:
   # ========================================
   
   # Beaconing Pattern - regular HTTP requests with small payloads
+  # Noisy, disabled by default.
   - name: C2 Beaconing Pattern
     description: Alert when 50+ small HTTP GET/POST requests within 600 seconds
     type: HTTP
@@ -113,7 +114,7 @@ rules:
     severity: medium
     mitre: ["T1071.001"]
     tags: ["beaconing"]
-    enabled: true
+    enabled: false
     threshold: 50
     threshold_window: 600
 
@@ -189,7 +190,7 @@ rules:
   - name: Kerberos Authentication Spike
     description: Alert when 100+ Kerberos packets within 120 seconds (potential ticket attacks)
     type: TCP
-    expression: DstPort == 88 || SrcPort == 88
+    expression: DstPort == 88
     severity: info
     mitre: ["T1558.001", "T1558.003"]
     tags: ["lateral-movement"]

@@ -12,7 +12,7 @@ rules:
   - name: RTSP Traffic Detected
     description: Real-Time Streaming Protocol (RTSP) detected on port 554 - commonly used for IP cameras, security systems, and media streaming servers
     type: TCP
-    expression: DstPort == 554 || SrcPort == 554
+    expression: DstPort == 554
     severity: medium
     mitre: ["T1071.001"]
     tags: ["streaming", "media", "rtsp"]
@@ -21,7 +21,7 @@ rules:
   - name: RTSP Traffic Detected (UDP)
     description: Real-Time Streaming Protocol (RTSP) detected on UDP port 554 - used for real-time audio/video streaming
     type: UDP
-    expression: DstPort == 554 || SrcPort == 554
+    expression: DstPort == 554
     severity: medium
     mitre: ["T1071.001"]
     tags: ["streaming", "media", "rtsp", "voip"]
@@ -30,7 +30,7 @@ rules:
   - name: RTSP External Connection
     description: RTSP connection to external IP detected - potential unauthorized streaming or data exfiltration via media streams
     type: TCP
-    expression: (DstPort == 554 || SrcPort == 554) && IsPublicIP(DstIP)
+    expression: DstPort == 554 && IsPublicIP(DstIP)
     severity: high
     mitre: ["T1071.001", "T1041"]
     tags: ["streaming", "external", "rtsp"]
@@ -44,7 +44,7 @@ rules:
   - name: RTMP Traffic Detected
     description: Real-Time Messaging Protocol (RTMP) detected on port 1935 - used for streaming audio, video, and data (Flash-based streaming)
     type: TCP
-    expression: DstPort == 1935 || SrcPort == 1935
+    expression: DstPort == 1935
     severity: medium
     mitre: ["T1071.001"]
     tags: ["streaming", "media", "rtmp"]
@@ -53,7 +53,7 @@ rules:
   - name: RTMP External Connection
     description: RTMP connection to external IP detected - monitor for unauthorized live streaming or data channels
     type: TCP
-    expression: (DstPort == 1935 || SrcPort == 1935) && IsPublicIP(DstIP)
+    expression: DstPort == 1935 && IsPublicIP(DstIP)
     severity: medium
     mitre: ["T1071.001", "T1041"]
     tags: ["streaming", "external", "rtmp"]
@@ -67,7 +67,7 @@ rules:
   - name: RTMPS Traffic Detected
     description: "RTMP over TLS detected - encrypted streaming protocol (note: shares port 443 with HTTPS)"
     type: TCP
-    expression: DstPort == 443 || SrcPort == 443
+    expression: DstPort == 443
     severity: info
     mitre: ["T1071.001"]
     tags: ["streaming", "media", "rtmps", "encrypted"]
@@ -81,7 +81,7 @@ rules:
   - name: HTTP Streaming Alternate Port Detected
     description: HTTP-based streaming on alternate ports detected - commonly used for HLS, DASH, or custom streaming servers
     type: TCP
-    expression: DstPort == 8080 || SrcPort == 8080 || DstPort == 8081 || SrcPort == 8081
+    expression: DstPort == 8080 || DstPort == 8081
     severity: low
     mitre: ["T1071.001"]
     tags: ["streaming", "http", "alternate-port"]
@@ -95,7 +95,7 @@ rules:
   - name: MMS Protocol Detected
     description: Microsoft Media Server (MMS) protocol detected on port 1755 - legacy Windows Media streaming
     type: TCP
-    expression: DstPort == 1755 || SrcPort == 1755
+    expression: DstPort == 1755
     severity: low
     mitre: ["T1071.001"]
     tags: ["streaming", "media", "mms", "legacy", "microsoft"]
@@ -109,7 +109,7 @@ rules:
   - name: Icecast Streaming Server Detected
     description: Icecast streaming server detected on port 8000 - open source audio streaming
     type: TCP
-    expression: DstPort == 8000 || SrcPort == 8000
+    expression: DstPort == 8000
     severity: info
     mitre: ["T1071.001"]
     tags: ["streaming", "audio", "icecast"]
@@ -123,7 +123,7 @@ rules:
   - name: SHOUTcast Server Detected
     description: SHOUTcast streaming server detected on port 8001 - internet radio streaming
     type: TCP
-    expression: DstPort == 8001 || SrcPort == 8001
+    expression: DstPort == 8001
     severity: info
     mitre: ["T1071.001"]
     tags: ["streaming", "audio", "shoutcast"]
@@ -137,7 +137,7 @@ rules:
   - name: RTP Audio Video Stream Detected
     description: Real-time Transport Protocol (RTP) detected - carries audio/video streams (often paired with RTSP)
     type: UDP
-    expression: (DstPort >= 5004 && DstPort <= 5005) || (SrcPort >= 5004 && SrcPort <= 5005)
+    expression: DstPort >= 5004 && DstPort <= 5005
     severity: info
     mitre: ["T1071.001"]
     tags: ["streaming", "rtp", "voip", "media"]
@@ -147,7 +147,7 @@ rules:
   - name: RTP Dynamic Port Range Detected
     description: RTP on dynamic port range detected (16384-32767) - commonly used for VoIP and streaming media
     type: UDP
-    expression: (DstPort >= 16384 && DstPort <= 32767) || (SrcPort >= 16384 && SrcPort <= 32767)
+    expression: DstPort >= 16384 && DstPort <= 32767
     severity: info
     mitre: ["T1071.001"]
     tags: ["streaming", "rtp", "voip", "dynamic-ports"]
@@ -160,7 +160,7 @@ rules:
   - name: SRTP Encrypted Stream Detected
     description: Secure Real-time Transport Protocol (SRTP) detected - encrypted audio/video streams
     type: UDP
-    expression: (DstPort >= 5004 && DstPort <= 5005) || (SrcPort >= 5004 && SrcPort <= 5005)
+    expression: DstPort >= 5004 && DstPort <= 5005
     severity: info
     mitre: ["T1071.001"]
     tags: ["streaming", "srtp", "encrypted", "voip"]

@@ -94,16 +94,6 @@ rules:
     tags: ["scanner", "wordpress", "cms"]
     enabled: true
 
-  # Curl User-Agent
-  - name: Curl User Agent Detected
-    description: Detect curl user agent indicating automated tool or script usage
-    type: HTTP
-    expression: MatchesPattern(UserAgent, "(?i)curl/")
-    severity: info
-    mitre: ["T1071.001"]
-    tags: ["automated-tool", "suspicious-ua"]
-    enabled: true
-
   # Python User-Agent
   - name: Python User Agent Detected
     description: Detect Python-based user agents (python-requests, urllib, etc.) indicating scripted access
@@ -238,7 +228,7 @@ rules:
   - name: Empty User Agent Detected
     description: Detect missing or empty user agent string (suspicious for legitimate browsers)
     type: HTTP
-    expression: UserAgent == "" || UserAgent == "-"
+    expression: UserAgent == ""
     severity: low
     mitre: ["T1071.001"]
     tags: ["suspicious-ua", "anomaly"]

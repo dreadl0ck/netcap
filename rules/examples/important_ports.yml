@@ -13,7 +13,7 @@ rules:
   - name: FTP Data Channel Detected
     description: FTP data channel detected (cleartext file transfers) - cleartext credentials risk
     type: TCP
-    expression: DstPort == 20 || SrcPort == 20
+    expression: DstPort == 20
     severity: medium
     mitre: ["T1071.002"]
     tags: ["cleartext"]
@@ -22,7 +22,7 @@ rules:
   - name: FTP Control Channel Detected
     description: FTP control channel detected (cleartext authentication & commands) - use SFTP/FTPS instead
     type: TCP
-    expression: DstPort == 21 || SrcPort == 21
+    expression: DstPort == 21
     severity: high
     mitre: ["T1071.002", "T1078"]
     tags: ["cleartext", "legacy"]
@@ -32,7 +32,7 @@ rules:
   - name: SSH Connection Detected
     description: SSH connection detected - secure shell for remote admin (monitor for brute-force and stolen keys)
     type: TCP
-    expression: DstPort == 22 || SrcPort == 22
+    expression: DstPort == 22
     severity: low
     mitre: ["T1021.004", "T1110.001"]
     tags: ["remote-access"]
@@ -42,7 +42,7 @@ rules:
   - name: Telnet Detected
     description: Telnet detected (legacy cleartext protocol) - insecure, should be disabled and replaced with SSH
     type: TCP
-    expression: DstPort == 23 || SrcPort == 23
+    expression: DstPort == 23
     severity: critical
     mitre: ["T1021.004"]
     tags: ["cleartext", "legacy"]
@@ -52,7 +52,7 @@ rules:
   - name: TFTP Detected
     description: TFTP detected (unauthenticated file transfer) - often used in device provisioning
     type: TCP
-    expression: DstPort == 69 || SrcPort == 69
+    expression: DstPort == 69
     severity: high
     mitre: ["T1071.002"]
     tags: ["unauthenticated"]
@@ -62,27 +62,27 @@ rules:
   - name: HTTP Traffic Detected
     description: Unencrypted HTTP traffic detected
     type: TCP
-    expression: DstPort == 80 || SrcPort == 80
+    expression: DstPort == 80
     severity: info
     mitre: ["T1071.001", "T1190"]
     tags: ["cleartext"]
-    enabled: true
+    enabled: false
 
   # Port 443: HTTPS
   - name: HTTPS Traffic Detected
     description: HTTPS traffic detected - monitor for web-based remote admin and exfiltration
     type: TCP
-    expression: DstPort == 443 || SrcPort == 443
+    expression: DstPort == 443
     severity: info
     mitre: ["T1071.001", "T1041"]
     tags: ["encrypted", "web"]
-    enabled: true
+    enabled: false
 
   # Port 135: Windows RPC
   - name: Windows RPC Detected
     description: Windows RPC endpoint mapper detected - used in reconnaissance and lateral movement
     type: TCP
-    expression: DstPort == 135 || SrcPort == 135
+    expression: DstPort == 135
     severity: high
     mitre: ["T1021.003", "T1047"]
     tags: ["lateral-movement"]
@@ -92,7 +92,7 @@ rules:
   - name: NetBIOS Name Service Detected
     description: NetBIOS name service detected (Windows legacy) - information leakage risk
     type: TCP
-    expression: DstPort == 137 || SrcPort == 137
+    expression: DstPort == 137
     severity: high
     mitre: ["T1016", "T1018"]
     tags: ["legacy"]
@@ -101,7 +101,7 @@ rules:
   - name: NetBIOS Datagram Detected
     description: NetBIOS datagram service detected (legacy) - should be blocked externally
     type: TCP
-    expression: DstPort == 138 || SrcPort == 138
+    expression: DstPort == 138
     severity: high
     mitre: ["T1016"]
     tags: ["legacy"]
@@ -110,7 +110,7 @@ rules:
   - name: NetBIOS Session Detected
     description: NetBIOS session service detected (legacy SMB transport) - block on internet-facing interfaces
     type: TCP
-    expression: DstPort == 139 || SrcPort == 139
+    expression: DstPort == 139
     severity: high
     mitre: ["T1021.002"]
     tags: ["legacy"]
@@ -120,7 +120,7 @@ rules:
   - name: SNMP Detected
     description: SNMP detected - default community strings leak info, use SNMPv3 with strong auth
     type: TCP
-    expression: DstPort == 161 || SrcPort == 161
+    expression: DstPort == 161
     severity: medium
     mitre: ["T1046", "T1592.001"]
     tags: ["information-disclosure"]
@@ -130,7 +130,7 @@ rules:
   - name: LDAP Cleartext Detected
     description: LDAP detected (cleartext) - information disclosure and auth abuse risk, prefer LDAPS (636)
     type: TCP
-    expression: DstPort == 389 || SrcPort == 389
+    expression: DstPort == 389
     severity: high
     mitre: ["T1087.002", "T1069.002"]
     tags: ["cleartext"]
@@ -140,7 +140,7 @@ rules:
   - name: SMB Traffic Detected
     description: SMB file sharing detected - frequent vector for ransomware and lateral movement
     type: TCP
-    expression: DstPort == 445 || SrcPort == 445
+    expression: DstPort == 445
     severity: critical
     mitre: ["T1021.002", "T1570", "T1486"]
     tags: ["ransomware", "lateral-movement"]
@@ -150,27 +150,17 @@ rules:
   - name: SOCKS Proxy Detected
     description: SOCKS proxy detected - often used for tunneling and exfiltration
     type: TCP
-    expression: DstPort == 1080 || SrcPort == 1080
+    expression: DstPort == 1080
     severity: medium
     mitre: ["T1090.001", "T1572"]
     tags: ["proxy", "tunneling"]
-    enabled: true
-
-  # Port 1337: Leet Port
-  - name: Port 1337 Detected
-    description: Traffic on port 1337 detected - unusual port often used by malware, backdoors, and hackers
-    type: TCP
-    expression: DstPort == 1337 || SrcPort == 1337
-    severity: high
-    mitre: ["T1071.001"]
-    tags: ["suspicious", "backdoor", "unusual-port"]
     enabled: true
 
   # Port 1433: Microsoft SQL Server
   - name: MSSQL Detected
     description: Microsoft SQL Server detected - exposed DBs risk data breach/RCE
     type: TCP
-    expression: DstPort == 1433 || SrcPort == 1433
+    expression: DstPort == 1433
     severity: medium
     mitre: ["T1190", "T1078.001"]
     tags: ["database"]
@@ -180,7 +170,7 @@ rules:
   - name: MSSQL Browser Service Detected
     description: Microsoft SQL Server Browser Service detected - enumerates SQL instances, disable if not needed
     type: UDP
-    expression: DstPort == 1434 || SrcPort == 1434
+    expression: DstPort == 1434
     severity: high
     mitre: ["T1046", "T1590.001"]
     tags: ["database", "enumeration"]
@@ -190,7 +180,7 @@ rules:
   - name: Oracle Database Detected
     description: Oracle database listener detected - protect and restrict to app tier
     type: TCP
-    expression: DstPort == 1521 || SrcPort == 1521
+    expression: DstPort == 1521
     severity: critical
     mitre: ["T1190", "T1078.001"]
     tags: ["database"]
@@ -200,7 +190,7 @@ rules:
   - name: PPTP VPN Detected
     description: PPTP VPN detected - weak crypto, avoid and use modern VPNs
     type: TCP
-    expression: DstPort == 1723 || SrcPort == 1723
+    expression: DstPort == 1723
     severity: high
     mitre: ["T1133"]
     tags: ["weak-crypto", "legacy"]
@@ -210,7 +200,7 @@ rules:
   - name: NFS Detected
     description: Network File System detected - file-share exposures lead to data theft and ransomware
     type: TCP
-    expression: DstPort == 2049 || SrcPort == 2049
+    expression: DstPort == 2049
     severity: critical
     mitre: ["T1039", "T1005"]
     tags: ["ransomware"]
@@ -220,7 +210,7 @@ rules:
   - name: Docker API Unencrypted Detected
     description: Docker remote API detected (unencrypted) - exposed API permits container and host takeover
     type: TCP
-    expression: DstPort == 2375 || SrcPort == 2375
+    expression: DstPort == 2375
     severity: critical
     mitre: ["T1610", "T1133"]
     tags: ["exposure", "rce"]
@@ -230,7 +220,7 @@ rules:
   - name: MySQL Detected
     description: MySQL/MariaDB database detected - protect with network ACLs
     type: TCP
-    expression: DstPort == 3306 || SrcPort == 3306
+    expression: DstPort == 3306
     severity: critical
     mitre: ["T1190", "T1078.001"]
     tags: ["database"]
@@ -240,7 +230,7 @@ rules:
   - name: RDP Detected
     description: Remote Desktop Protocol detected - common ransomware vector, require VPN + MFA
     type: TCP
-    expression: DstPort == 3389 || SrcPort == 3389
+    expression: DstPort == 3389
     severity: critical
     mitre: ["T1021.001", "T1110.001"]
     tags: ["remote-desktop", "ransomware"]
@@ -250,7 +240,7 @@ rules:
   - name: VNC Detected
     description: VNC remote desktop detected - often unauthenticated or weak auth
     type: TCP
-    expression: DstPort == 5900 || SrcPort == 5900
+    expression: DstPort == 5900
     severity: critical
     mitre: ["T1021.005"]
     tags: ["remote-desktop"]
@@ -260,7 +250,7 @@ rules:
   - name: Redis Detected
     description: Redis detected (often no auth by default) - exposed instances can be commandeered
     type: TCP
-    expression: DstPort == 6379 || SrcPort == 6379
+    expression: DstPort == 6379
     severity: critical
     mitre: ["T1190"]
     tags: ["database"]
@@ -270,7 +260,7 @@ rules:
   - name: MongoDB Detected
     description: MongoDB detected - historically leaked unsecured DBs, never expose without auth and encryption
     type: TCP
-    expression: DstPort == 27017 || SrcPort == 27017
+    expression: DstPort == 27017
     severity: critical
     mitre: ["T1190"]
     tags: ["database"]
@@ -284,7 +274,7 @@ rules:
   - name: SMTP Detected
     description: SMTP mail transfer detected - monitor for open relays and outbound spam
     type: TCP
-    expression: DstPort == 25 || SrcPort == 25
+    expression: DstPort == 25
     severity: medium
     mitre: ["T1071.003"]
     tags: ["email"]
@@ -294,17 +284,17 @@ rules:
   - name: DNS Traffic Detected
     description: DNS detected - abuse for amplification and exfiltration, restrict recursion
     type: TCP
-    expression: DstPort == 53 || SrcPort == 53
+    expression: DstPort == 53
     severity: info
     mitre: ["T1071.004", "T1048.003"]
     tags: ["amplification"]
-    enabled: true
+    enabled: false
 
   # Port 67-68: DHCP
   - name: DHCP Server Detected
     description: DHCP server detected - rogue DHCP can hijack traffic
     type: TCP
-    expression: DstPort == 67 || SrcPort == 67
+    expression: DstPort == 67
     severity: medium
     mitre: ["T1557.002"]
     tags: ["rogue-server"]
@@ -314,7 +304,7 @@ rules:
   - name: POP3 Detected
     description: POP3 mail retrieval detected (cleartext) - use TLS variants
     type: TCP
-    expression: DstPort == 110 || SrcPort == 110
+    expression: DstPort == 110
     severity: medium
     mitre: ["T1114.001"]
     tags: ["email", "cleartext"]
@@ -324,7 +314,7 @@ rules:
   - name: NTP Detected
     description: NTP detected - amplification DDoS risk, validate and limit sources
     type: TCP
-    expression: DstPort == 123 || SrcPort == 123
+    expression: DstPort == 123
     severity: info
     mitre: ["T1498.002"]
     tags: ["amplification"]
@@ -334,7 +324,7 @@ rules:
   - name: IMAP Detected
     description: IMAP mail retrieval detected (often cleartext) - prefer IMAPS (993)
     type: TCP
-    expression: DstPort == 143 || SrcPort == 143
+    expression: DstPort == 143
     severity: medium
     mitre: ["T1114.001"]
     tags: ["email", "cleartext"]
@@ -344,7 +334,7 @@ rules:
   - name: SNMP Trap Detected
     description: SNMP traps/notifications detected - monitor for unexpected trap sources
     type: TCP
-    expression: DstPort == 162 || SrcPort == 162
+    expression: DstPort == 162
     severity: medium
     mitre: ["T1046"]
     tags: ["monitoring"]
@@ -354,7 +344,7 @@ rules:
   - name: BGP Detected
     description: Border Gateway Protocol detected - routing hijacks have large impact
     type: TCP
-    expression: DstPort == 179 || SrcPort == 179
+    expression: DstPort == 179
     severity: high
     mitre: ["T1557.002"]
     tags: ["routing"]
@@ -364,7 +354,7 @@ rules:
   - name: IRC Detected
     description: IRC detected (legacy command/control) - can be abused for C2
     type: TCP
-    expression: DstPort == 194 || SrcPort == 194
+    expression: DstPort == 194
     severity: medium
     mitre: ["T1071.001"]
     tags: ["c2", "legacy"]
@@ -374,7 +364,7 @@ rules:
   - name: IRC Extended Range Detected
     description: IRC traffic on ports 6660-6669 detected - can be used for C2 communication
     type: TCP
-    expression: (DstPort >= 6660 && DstPort <= 6669) || (SrcPort >= 6660 && SrcPort <= 6669)
+    expression: DstPort >= 6660 && DstPort <= 6669
     severity: medium
     mitre: ["T1071.001"]
     tags: ["c2", "irc", "legacy"]
@@ -384,7 +374,7 @@ rules:
   - name: SMTPS Deprecated Detected
     description: SMTP over SSL/TLS detected (deprecated port) - enforce modern TLS and auth
     type: TCP
-    expression: DstPort == 465 || SrcPort == 465
+    expression: DstPort == 465
     severity: medium
     mitre: ["T1071.003"]
     tags: ["email", "deprecated"]
@@ -394,7 +384,7 @@ rules:
   - name: Syslog Detected
     description: Syslog detected - ensure logs are authenticated and protected from tampering
     type: TCP
-    expression: DstPort == 514 || SrcPort == 514
+    expression: DstPort == 514
     severity: low
     mitre: ["T1070.002"]
     tags: ["logging"]
@@ -404,7 +394,7 @@ rules:
   - name: SMTP Submission Detected
     description: Authenticated mail submission detected (client to MTA) - require TLS and strong auth
     type: TCP
-    expression: DstPort == 587 || SrcPort == 587
+    expression: DstPort == 587
     severity: medium
     mitre: ["T1071.003"]
     tags: ["email"]
@@ -414,7 +404,7 @@ rules:
   - name: IPP Printing Detected
     description: Internet Printing Protocol detected - printers often insecure, isolate management
     type: TCP
-    expression: DstPort == 631 || SrcPort == 631
+    expression: DstPort == 631
     severity: medium
     mitre: ["T1559"]
     tags: ["printer"]
@@ -424,7 +414,7 @@ rules:
   - name: LDAPS Detected
     description: LDAP over TLS detected - preferred over plain LDAP
     type: TCP
-    expression: DstPort == 636 || SrcPort == 636
+    expression: DstPort == 636
     severity: low
     mitre: ["T1087.002"]
     tags: ["encrypted"]
@@ -434,7 +424,7 @@ rules:
   - name: LDAP over SSL Detected
     description: LDAP over SSL detected (legacy port) - prefer LDAPS on port 636 for directory services
     type: TCP
-    expression: DstPort == 686 || SrcPort == 686
+    expression: DstPort == 686
     severity: low
     mitre: ["T1087.002", "T1069.002"]
     tags: ["encrypted", "ldap"]
@@ -444,7 +434,7 @@ rules:
   - name: Rsync Detected
     description: rsync remote file sync detected - auth and access controls necessary
     type: TCP
-    expression: DstPort == 873 || SrcPort == 873
+    expression: DstPort == 873
     severity: medium
     mitre: ["T1039"]
     tags: ["file-sync"]
@@ -454,7 +444,7 @@ rules:
   - name: FTPS Data Detected
     description: FTP over TLS data channel detected - secure alternative to FTP
     type: TCP
-    expression: DstPort == 989 || SrcPort == 989
+    expression: DstPort == 989
     severity: medium
     mitre: ["T1071.002"]
     tags: ["encrypted"]
@@ -463,7 +453,7 @@ rules:
   - name: FTPS Control Detected
     description: FTP over TLS control channel detected - prefer SFTP if possible
     type: TCP
-    expression: DstPort == 990 || SrcPort == 990
+    expression: DstPort == 990
     severity: medium
     mitre: ["T1071.002"]
     tags: ["encrypted"]
@@ -473,7 +463,7 @@ rules:
   - name: IMAPS Detected
     description: IMAP over TLS detected - preferred over IMAP, monitor auth patterns
     type: TCP
-    expression: DstPort == 993 || SrcPort == 993
+    expression: DstPort == 993
     severity: medium
     mitre: ["T1114.001"]
     tags: ["email", "encrypted"]
@@ -483,7 +473,7 @@ rules:
   - name: POP3S Detected
     description: POP3 over TLS detected - preferred over POP3
     type: TCP
-    expression: DstPort == 995 || SrcPort == 995
+    expression: DstPort == 995
     severity: medium
     mitre: ["T1114.001"]
     tags: ["email", "encrypted"]
@@ -493,7 +483,7 @@ rules:
   - name: cPanel HTTP Detected
     description: cPanel control panel detected (HTTP) - admin panels must be access-limited and patched
     type: TCP
-    expression: DstPort == 2082 || SrcPort == 2082
+    expression: DstPort == 2082
     severity: medium
     mitre: ["T1078.004"]
     tags: ["admin-panel"]
@@ -502,7 +492,7 @@ rules:
   - name: cPanel HTTPS Detected
     description: cPanel over HTTPS detected - secure admin traffic, still restrict access
     type: TCP
-    expression: DstPort == 2083 || SrcPort == 2083
+    expression: DstPort == 2083
     severity: medium
     mitre: ["T1078.004"]
     tags: ["admin-panel"]
@@ -512,7 +502,7 @@ rules:
   - name: Alternate SSH Detected
     description: Alternate SSH or admin panel port detected - obscurity only, enforce strong auth
     type: TCP
-    expression: DstPort == 2222 || SrcPort == 2222
+    expression: DstPort == 2222
     severity: medium
     mitre: ["T1021.004"]
     tags: ["remote-access"]
@@ -522,7 +512,7 @@ rules:
   - name: SSH Alternate Port 22022 Detected
     description: SSH on non-standard port 22022 detected - alternate SSH port for remote admin
     type: TCP
-    expression: DstPort == 22022 || SrcPort == 22022
+    expression: DstPort == 22022
     severity: medium
     mitre: ["T1021.004"]
     tags: ["remote-access", "alternate-port"]
@@ -532,7 +522,7 @@ rules:
   - name: RDP over UDP Detected
     description: RDP over UDP detected - used in RD Gateway configurations for improved performance
     type: UDP
-    expression: DstPort == 3391 || SrcPort == 3391
+    expression: DstPort == 3391
     severity: critical
     mitre: ["T1021.001"]
     tags: ["remote-desktop", "rd-gateway"]
@@ -542,7 +532,7 @@ rules:
   - name: RD Connection Broker Detected
     description: Remote Desktop Connection Broker (RD Web Access) detected - part of RDS infrastructure
     type: TCP
-    expression: DstPort == 5504 || SrcPort == 5504
+    expression: DstPort == 5504
     severity: high
     mitre: ["T1021.001"]
     tags: ["remote-desktop", "rd-gateway"]
@@ -552,7 +542,7 @@ rules:
   - name: Remote Utilities Direct Connection Detected
     description: Remote Utilities direct connection detected - commercial remote access software
     type: TCP
-    expression: DstPort == 5650 || SrcPort == 5650
+    expression: DstPort == 5650
     severity: high
     mitre: ["T1219"]
     tags: ["remote-access", "remote-utilities"]
@@ -562,7 +552,7 @@ rules:
   - name: Remote Utilities Server Detected
     description: Remote Utilities server-side connection detected - monitor for unauthorized remote access
     type: TCP
-    expression: DstPort == 5655 || SrcPort == 5655
+    expression: DstPort == 5655
     severity: high
     mitre: ["T1219"]
     tags: ["remote-access", "remote-utilities"]
@@ -572,7 +562,7 @@ rules:
   - name: UPnP Dev Server Detected
     description: UPnP or dev server detected - UPnP can expose internal services
     type: TCP
-    expression: DstPort == 5000 || SrcPort == 5000
+    expression: DstPort == 5000
     severity: medium
     mitre: ["T1021.001"]
     tags: ["exposure"]
@@ -582,7 +572,7 @@ rules:
   - name: SIP Detected
     description: SIP detected (VoIP plaintext) - toll fraud and call interception risk
     type: TCP
-    expression: DstPort == 5060 || SrcPort == 5060
+    expression: DstPort == 5060
     severity: medium
     mitre: ["T1499"]
     tags: ["voip", "cleartext"]
@@ -591,7 +581,7 @@ rules:
   - name: SIPS Detected
     description: SIP over TLS detected - prefer encrypted signaling for VoIP
     type: TCP
-    expression: DstPort == 5061 || SrcPort == 5061
+    expression: DstPort == 5061
     severity: medium
     mitre: ["T1499"]
     tags: ["voip", "encrypted"]
@@ -601,7 +591,7 @@ rules:
   - name: HTTP Alternate 8080 Detected
     description: Alternate HTTP or app dev endpoint detected - unmanaged apps often run here
     type: TCP
-    expression: DstPort == 8080 || SrcPort == 8080
+    expression: DstPort == 8080
     severity: medium
     mitre: ["T1071.001", "T1190"]
     tags: ["alternate-port"]
@@ -611,7 +601,7 @@ rules:
   - name: Next.js Detected
     description: Next.js HTTP dev endpoint detected - unmanaged apps often run here
     type: TCP
-    expression: DstPort == 3000 || SrcPort == 3000
+    expression: DstPort == 3000
     severity: medium
     mitre: ["T1071.001", "T1190"]
     tags: ["alternate-port"]
@@ -621,7 +611,7 @@ rules:
   - name: HTTPS Alternate 8443 Detected
     description: Alternate HTTPS or admin console detected - restrict and monitor
     type: TCP
-    expression: DstPort == 8443 || SrcPort == 8443
+    expression: DstPort == 8443
     severity: medium
     mitre: ["T1071.001"]
     tags: ["admin-panel"]
@@ -631,7 +621,7 @@ rules:
   - name: HTTP Alternate 8888 Detected
     description: Alternate HTTP port detected - commonly used for proxies, dev servers, and admin panels
     type: TCP
-    expression: DstPort == 8888 || SrcPort == 8888
+    expression: DstPort == 8888
     severity: medium
     mitre: ["T1071.001", "T1090.001"]
     tags: ["alternate-port", "proxy"]
@@ -641,7 +631,7 @@ rules:
   - name: Admin Panel 9000 Detected
     description: Admin panel or dev interface detected - admin interfaces need strict access controls
     type: TCP
-    expression: DstPort == 9000 || SrcPort == 9000
+    expression: DstPort == 9000
     severity: medium
     mitre: ["T1078.004"]
     tags: ["admin-panel"]
@@ -651,7 +641,7 @@ rules:
   - name: Webmin Detected
     description: Webmin or web admin panel detected - should be isolated and MFA-protected
     type: TCP
-    expression: DstPort == 10000 || SrcPort == 10000
+    expression: DstPort == 10000
     severity: medium
     mitre: ["T1078.004"]
     tags: ["admin-panel"]
@@ -665,7 +655,7 @@ rules:
   - name: DHCP Client Detected
     description: DHCP client responses detected - watch for unexpected servers
     type: TCP
-    expression: DstPort == 68 || SrcPort == 68
+    expression: DstPort == 68
     severity: info
     mitre: ["T1557.002"]
     tags: ["dhcp"]
@@ -675,7 +665,7 @@ rules:
   - name: NNTP Detected
     description: Network News Transfer Protocol detected - rare but can be abused for spam
     type: TCP
-    expression: DstPort == 119 || SrcPort == 119
+    expression: DstPort == 119
     severity: low
     mitre: ["T1071.001"]
     tags: ["legacy"]
@@ -685,7 +675,7 @@ rules:
   - name: RIP Detected
     description: Routing Information Protocol detected (legacy) - routing protocol spoofing risk
     type: TCP
-    expression: DstPort == 520 || SrcPort == 520
+    expression: DstPort == 520
     severity: low
     mitre: ["T1557.002"]
     tags: ["routing", "legacy"]
@@ -695,7 +685,7 @@ rules:
   - name: Minecraft Server Detected
     description: Minecraft game server detected - can leak user data or be used in DDoS
     type: TCP
-    expression: DstPort == 25565 || SrcPort == 25565
+    expression: DstPort == 25565
     severity: info
     mitre: ["T1499"]
     tags: ["gaming"]

@@ -14,16 +14,15 @@ rules:
     tags: ["exfiltration"]
     enabled: true
 
-  # TODO ICMP records does not carry size information atm
   # Large ICMP Packet
-  # - name: ICMP_Large_Packet
-  #   description: Detect unusually large ICMP packets that may contain exfiltrated data
-  #   type: ICMPv4
-  #   expression: Payload > 1024
-  #   severity: medium
-  #   mitre: ["T1048.003"]
-  #   tags: ["exfiltration", "icmp"]
-  #   enabled: true
+  - name: Large ICMP Packet
+    description: Detect unusually large ICMP packets that may contain exfiltrated data
+    type: IPv4
+    expression: Protocol == 1 && PayloadSize > 1024
+    severity: medium
+    mitre: ["T1048.003"]
+    tags: ["exfiltration", "icmp"]
+    enabled: true
 
   # Large Outbound Data Transfer
   - name: Large Outbound Data Transfer
@@ -89,7 +88,7 @@ rules:
   - name: FTP External Transfer
     description: Detect FTP control/data connections to external hosts (potential exfiltration)
     type: TCP
-    expression: (DstPort == 21 || DstPort == 20 || SrcPort == 20) && IsPublicIP(DstIP)
+    expression: (DstPort == 21 || DstPort == 20) && IsPublicIP(DstIP)
     severity: medium
     mitre: ["T1048.002"]
     tags: ["exfiltration"]

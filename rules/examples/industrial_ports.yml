@@ -13,7 +13,7 @@ rules:
   - name: Siemens S7comm Detected
     description: Siemens S7 PLC communication (S7comm over TCP/ISO RFC1006) detected - high-value target for control/logic access
     type: TCP
-    expression: DstPort == 102 || SrcPort == 102
+    expression: DstPort == 102
     severity: critical
     mitre: ["T0855", "T0836"]
     tags: ["plc", "scada"]
@@ -23,7 +23,7 @@ rules:
   - name: Modbus TCP Detected
     description: Modbus over TCP detected - read/write coils/registers used by many PLCs/RTUs (no auth by default)
     type: TCP
-    expression: DstPort == 502 || SrcPort == 502
+    expression: DstPort == 502
     severity: critical
     mitre: ["T0855", "T0836"]
     tags: ["plc", "scada", "unauthenticated"]
@@ -33,7 +33,7 @@ rules:
   - name: EtherNet IP TCP Detected
     description: EtherNet/IP explicit messaging / CIP detected (TCP) - restrict to OT networks
     type: TCP
-    expression: DstPort == 44818 || SrcPort == 44818
+    expression: DstPort == 44818
     severity: critical
     mitre: ["T0855", "T0836"]
     tags: ["plc"]
@@ -43,7 +43,7 @@ rules:
   - name: EtherNet IP UDP Detected
     description: EtherNet/IP implicit I/O messaging detected (UDP) - monitor UDP I/O traffic on OT VLANs
     type: UDP
-    expression: DstPort == 2222 || SrcPort == 2222
+    expression: DstPort == 2222
     severity: critical
     mitre: ["T0855"]
     tags: ["plc"]
@@ -53,7 +53,7 @@ rules:
   - name: DNP3 Detected
     description: DNP3 over TCP/UDP detected - common in energy/utility SCADA (requires secure channels and network isolation)
     type: TCP
-    expression: DstPort == 20000 || SrcPort == 20000
+    expression: DstPort == 20000
     severity: critical
     mitre: ["T0855", "T0836"]
     tags: ["scada"]
@@ -63,7 +63,7 @@ rules:
   - name: IEC 104 Detected
     description: IEC-104 telecontrol protocol port usage detected - critical grid protocol used in electric SCADA
     type: TCP
-    expression: DstPort == 2404 || SrcPort == 2404
+    expression: DstPort == 2404
     severity: medium
     mitre: ["T0855", "T0836"]
     tags: ["scada"]
@@ -73,7 +73,7 @@ rules:
   - name: OPC UA Detected
     description: OPC Unified Architecture detected - use certified security modes and monitor session activity
     type: TCP
-    expression: DstPort == 4840 || SrcPort == 4840
+    expression: DstPort == 4840
     severity: critical
     mitre: ["T0855", "T1071.001"]
     tags: ["automation"]
@@ -83,7 +83,7 @@ rules:
   - name: OPC UA HTTPS Detected
     description: OPC UA over HTTPS or alternate port detected - enforce cert validation and endpoint filtering
     type: TCP
-    expression: DstPort == 4843 || SrcPort == 4843
+    expression: DstPort == 4843
     severity: high
     mitre: ["T0855", "T1071.001"]
     tags: ["automation", "encrypted"]
@@ -93,7 +93,7 @@ rules:
   - name: BACnet Detected
     description: Building automation protocol (BACnet/IP) detected - restrict management and monitor for spoofing
     type: UDP
-    expression: DstPort == 47808 || SrcPort == 47808
+    expression: DstPort == 47808
     severity: critical
     mitre: ["T0855", "T0836"]
     tags: ["building-automation"]
@@ -103,7 +103,7 @@ rules:
   - name: PROFINET RT Detected
     description: PROFINET real-time unicast detected - ensure VLAN separation and QoS
     type: UDP
-    expression: DstPort == 34962 || SrcPort == 34962
+    expression: DstPort == 34962
     severity: critical
     mitre: ["T0855"]
     tags: ["automation"]
@@ -112,7 +112,7 @@ rules:
   - name: PROFINET RTM Detected
     description: PROFINET RT multicast detected - multicast anomalies can indicate misconfig or attack
     type: UDP
-    expression: DstPort == 34963 || SrcPort == 34963
+    expression: DstPort == 34963
     severity: critical
     mitre: ["T0855"]
     tags: ["automation"]
@@ -121,7 +121,7 @@ rules:
   - name: PROFINET CM Detected
     description: PROFINET context manager / RPC detected - control-plane functions
     type: UDP
-    expression: DstPort == 34964 || SrcPort == 34964
+    expression: DstPort == 34964
     severity: critical
     mitre: ["T0855"]
     tags: ["automation"]
@@ -131,7 +131,7 @@ rules:
   - name: MQTT Plaintext Detected
     description: MQTT messaging detected (plaintext) - prefer MQTT over TLS (8883), enforce broker ACLs
     type: TCP
-    expression: DstPort == 1883 || SrcPort == 1883
+    expression: DstPort == 1883
     severity: critical
     mitre: ["T1071.001", "T0868"]
     tags: ["iiot", "cleartext"]
@@ -141,7 +141,7 @@ rules:
   - name: MQTT TLS Detected
     description: MQTT over TLS detected - use mutual TLS where possible and monitor broker sessions
     type: TCP
-    expression: DstPort == 8883 || SrcPort == 8883
+    expression: DstPort == 8883
     severity: high
     mitre: ["T1071.001", "T0868"]
     tags: ["iiot", "encrypted"]
@@ -156,7 +156,7 @@ rules:
   - name: ICS Kerberos Detected
     description: Kerberos auth detected - used in enterprise integration with OT bridges
     type: TCP
-    expression: DstPort == 88 || SrcPort == 88
+    expression: DstPort == 88
     severity: low
     mitre: ["T1558"]
     tags: ["authentication"]
@@ -166,7 +166,7 @@ rules:
   - name: ICS Dynamic RPC Detected
     description: Dynamic RPC ports detected - used by Windows services and DCOM in ICS apps
     type: TCP
-    expression: DstPort == 1025 || SrcPort == 1025
+    expression: DstPort == 1025
     severity: medium
     mitre: ["T1021.003"]
     tags: ["legacy"]
@@ -176,7 +176,7 @@ rules:
   - name: ICS WinRM HTTP Detected
     description: Windows remote management (HTTP) detected - used for automation/config
     type: TCP
-    expression: DstPort == 5985 || SrcPort == 5985
+    expression: DstPort == 5985
     severity: medium
     mitre: ["T1021.006"]
     tags: ["remote-management"]
@@ -185,7 +185,7 @@ rules:
   - name: ICS WinRM HTTPS Detected
     description: Windows remote management (HTTPS) detected - secure WinRM for remote management
     type: TCP
-    expression: DstPort == 5986 || SrcPort == 5986
+    expression: DstPort == 5986
     severity: medium
     mitre: ["T1021.006"]
     tags: ["remote-management", "encrypted"]
@@ -201,7 +201,7 @@ rules:
   - name: ICS Vendor Management 5020 Detected
     description: Vendor OT management tools detected (port 5020) - should be inventoried and limited
     type: TCP
-    expression: DstPort == 5020 || SrcPort == 5020
+    expression: DstPort == 5020
     severity: medium
     mitre: ["T0855"]
     tags: ["ics", "vendor-tools", "management", "proprietary"]
@@ -211,7 +211,7 @@ rules:
   - name: ICS Vendor Port 5021 Detected
     description: Vendor-specific engineering/service port detected - require VPN/jumphost access
     type: TCP
-    expression: DstPort == 5021 || SrcPort == 5021
+    expression: DstPort == 5021
     severity: medium
     mitre: ["T0855"]
     tags: ["ics", "vendor-tools", "engineering", "proprietary"]
@@ -221,7 +221,7 @@ rules:
   - name: ICS Vendor Telemetry Detected
     description: Vendor agent/telemetry port detected - should be authenticated and whitelisted
     type: TCP
-    expression: DstPort == 22222 || SrcPort == 22222
+    expression: DstPort == 22222
     severity: medium
     mitre: ["T0868"]
     tags: ["ics", "vendor-tools", "telemetry", "iiot", "agent"]
@@ -231,7 +231,7 @@ rules:
   - name: ICS Vendor Web Admin Detected
     description: Alternate HTTP admin port detected - used by vendor web UIs
     type: TCP
-    expression: DstPort == 8880 || SrcPort == 8880
+    expression: DstPort == 8880
     severity: medium
     mitre: ["T1071.001"]
     tags: ["ics", "vendor-tools", "web-admin", "http"]
@@ -241,7 +241,7 @@ rules:
   - name: ICS Legacy Talk Detected
     description: Legacy Talk service detected on older devices - rare but indicates legacy deployments
     type: TCP
-    expression: DstPort == 247 || SrcPort == 247
+    expression: DstPort == 247
     severity: low
     mitre: ["T1071.001"]
     tags: ["ics", "legacy", "deprecated"]
@@ -251,7 +251,7 @@ rules:
   - name: ICS Kubelet Detected
     description: Container/kubernetes endpoints detected - used in modern ICS/IIoT infrastructure
     type: TCP
-    expression: DstPort == 10250 || SrcPort == 10250
+    expression: DstPort == 10250
     severity: critical
     mitre: ["T1610"]
     tags: ["ics", "kubernetes", "container", "iiot", "orchestration"]
