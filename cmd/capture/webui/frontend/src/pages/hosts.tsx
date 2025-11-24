@@ -39,6 +39,8 @@ import {
   TrendingUp as TrendingUpIcon,
   TableChart as TableChartIcon,
   BarChart as BarChartIcon,
+  Download as DownloadIcon,
+  Cable as CableIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import FileSelectorHeader from '@/components/FileSelectorHeader';
@@ -241,6 +243,43 @@ export default function HostsPage() {
 
   const handleRowClick = useCallback((addr: string) => {
     setExpandedRow(prev => prev === addr ? null : addr);
+  }, []);
+
+  const handleDownloadPCAP = useCallback(async (host: IPProfileSummary) => {
+    try {
+      // Generate download URL with host IP filter
+      const params = new URLSearchParams({
+        host: host.addr,
+      });
+      const downloadUrl = `${getBackendUrl()}/api/hosts/download-pcap?${params}`;
+      
+      // Fetch the file as a blob
+      const response = await fetch(downloadUrl);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        alert(`Failed to download PCAP: ${errorText}`);
+        return;
+      }
+      
+      // Get the blob and create a download link
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `host_${host.addr.replace(/[:.]/g, '_')}.pcap`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert(`Failed to download PCAP: ${error}`);
+    }
   }, []);
 
   // Use shared FileSelectorHeader component
@@ -659,6 +698,34 @@ export default function HostsPage() {
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
                           <Collapse in={expandedRow === host.addr} timeout="auto" unmountOnExit>
                             <Box sx={{ py: 2 }}>
+                              {/* Action Buttons */}
+                              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                                <Button
+                                  data-learn="Show Connections: Navigate to the Connections page filtered for this host IP to view all network connections involving this host."
+                                  variant="outlined"
+                                  size="small"
+                                  startIcon={<CableIcon />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push(`/connections?search=${encodeURIComponent(host.addr)}`);
+                                  }}
+                                >
+                                  Show Connections
+                                </Button>
+                                <Button
+                                  data-learn="Download Host PCAP: Download a filtered PCAP file containing all packets from or to this host."
+                                  variant="outlined"
+                                  size="small"
+                                  startIcon={<DownloadIcon />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDownloadPCAP(host);
+                                  }}
+                                >
+                                  Download as PCAP
+                                </Button>
+                              </Box>
+                              
                               <Grid container spacing={2}>
                                 {/* Time Range */}
                                 <Grid item xs={12} md={6}>

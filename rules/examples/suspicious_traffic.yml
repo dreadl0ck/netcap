@@ -266,7 +266,7 @@ rules:
     description: Traffic on port 1337 detected - unusual port often used by malware, backdoors, and hackers
     type: TCP
     expression: DstPort == 1337
-    severity: high
+    severity: info
     mitre: ["T1071.001"]
     tags: ["suspicious", "backdoor", "unusual-port"]
     enabled: true

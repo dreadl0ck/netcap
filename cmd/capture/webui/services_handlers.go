@@ -45,6 +45,7 @@ type ServiceSummary struct {
 	Applications          []string `json:"applications"`
 	PortName              string   `json:"portName"`
 	DetectedProtocolName  string   `json:"detectedProtocolName"`
+	MatchedProbeID        string   `json:"matchedProbeID"`
 }
 
 // ServicesResponse contains the list of services
@@ -153,6 +154,7 @@ func readServices(outDir string) ([]ServiceSummary, error) {
 			Applications:         svc.Applications,
 			PortName:             svc.PortName,
 			DetectedProtocolName: svc.DetectedProtocolName,
+			MatchedProbeID:       svc.MatchedProbeID,
 		})
 	}
 

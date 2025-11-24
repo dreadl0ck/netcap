@@ -1053,5 +1053,6 @@ commands:
     copy-rules:
         description: copy the rules to the rules folder
         exec: |
+            cp rules/examples/* data/service-local/rules
             cp rules/examples/* ~/.local/share/netcap-service/rules
             scp rules/examples/* $DEPLOY_USER@$DEPLOY_HOST:/mnt/storage/netcap-try-server/data/netcap-service/rules

@@ -216,17 +216,20 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 	defer t.parent.Unlock()
 
 	if t.serviceBanner.Len() == 0 {
-		// save server stream for banner identification
-		// stores c.BannerSize number of bytes of the server side stream
-		for _, d := range t.parent.server.DataSlice() {
-			for _, b := range d.Raw() {
-				t.serviceBanner.WriteByte(b)
-				t.serviceBannerBytes++
-
-				if t.serviceBannerBytes == decoderconfig.Instance.BannerSize {
-					return t.serviceBanner.Bytes()
-				}
+		// Save ONLY the first server packet for banner identification
+		// Nmap service probes are designed to match against the initial server greeting,
+		// not the entire conversation including responses to client commands.
+		// This stores up to BannerSize bytes from the FIRST server packet only.
+		dataSlice := t.parent.server.DataSlice()
+		if len(dataSlice) > 0 {
+			// Extract only from the first packet
+			firstPacket := dataSlice[0].Raw()
+			limit := len(firstPacket)
+			if limit > decoderconfig.Instance.BannerSize {
+				limit = decoderconfig.Instance.BannerSize
 			}
+			t.serviceBanner.Write(firstPacket[:limit])
+			t.serviceBannerBytes = limit
 		}
 	}
 

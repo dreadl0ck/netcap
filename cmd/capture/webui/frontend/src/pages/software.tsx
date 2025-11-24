@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -34,11 +34,13 @@ import {
   Apps as AppsIcon,
   TableChart as TableChartIcon,
   BarChart as BarChartIcon,
+  Cable as CableIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import FileSelectorHeader from '@/components/FileSelectorHeader';
 import { api, formatTimestamp, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
+import { useRouter } from 'next/router';
 
 interface SoftwareSummary {
   product: string;
@@ -52,6 +54,7 @@ interface SoftwareSummary {
   firstSeen: number;
   lastSeen: number;
   sourceNames: string[];
+  flows: string[];
 }
 
 interface SoftwareResponse {
@@ -63,6 +66,7 @@ type SoftwareSortField = 'product' | 'vendor' | 'version' | 'count' | 'devices';
 type SortOrder = 'asc' | 'desc';
 
 export default function SoftwarePage() {
+  const router = useRouter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,6 +76,14 @@ export default function SoftwarePage() {
   const [sortField, setSortField] = useState<SoftwareSortField>('count');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+
+  // Initialize search query from URL parameter
+  useEffect(() => {
+    if (router.isReady && router.query.search && typeof router.query.search === 'string') {
+      setSearchQuery(router.query.search);
+      setPage(0);
+    }
+  }, [router.isReady, router.query.search]);
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -699,6 +711,50 @@ export default function SoftwarePage() {
                                             color="info"
                                             sx={{ fontSize: '0.75rem' }}
                                           />
+                                        ))}
+                                      </Box>
+                                    </Grid>
+                                  )}
+                                  
+                                  {/* Action Buttons */}
+                                  {((sw.devices || []).length > 0 || (sw.flows || []).length > 0) && (
+                                    <Grid item xs={12}>
+                                      <Typography variant="subtitle2" gutterBottom>
+                                        Navigation
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                        {/* Show Connections button if flows are available */}
+                                        {(sw.flows || []).length > 0 && (
+                                          <Button
+                                            data-learn="Show Connections: Navigate to Connections page with the first flow identifier to see network connections associated with this software."
+                                            variant="outlined"
+                                            color="primary"
+                                            startIcon={<CableIcon />}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              router.push(`/connections?search=${encodeURIComponent(sw.flows[0])}`);
+                                            }}
+                                            size="small"
+                                          >
+                                            Show Connections
+                                          </Button>
+                                        )}
+                                        {/* Device-specific buttons */}
+                                        {(sw.devices || []).map((device) => (
+                                          <Button
+                                            key={device}
+                                            data-learn="View Connections: Navigate to Connections page filtered for this host to see all network connections from/to this device."
+                                            variant="outlined"
+                                            color="secondary"
+                                            startIcon={<CableIcon />}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              router.push(`/connections?search=${encodeURIComponent(device)}`);
+                                            }}
+                                            size="small"
+                                          >
+                                            Connections for {device}
+                                          </Button>
                                         ))}
                                       </Box>
                                     </Grid>

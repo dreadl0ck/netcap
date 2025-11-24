@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -39,6 +39,7 @@ import {
   Close as CloseIcon,
 } from '@mui/icons-material';
 import useSWR from 'swr';
+import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import type { ServiceProbeInfo, TestProbeRequest, TestProbeResponse } from '@/lib/api';
 import { api } from '@/lib/api';
@@ -46,7 +47,16 @@ import { RegexBlock } from '@/components/RegexHighlight';
 import { SyntaxHighlightedTextArea } from '@/components/SyntaxHighlightedInput';
 
 export default function ServiceProbes() {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Initialize search term from URL parameter
+  useEffect(() => {
+    if (router.isReady && router.query.search && typeof router.query.search === 'string') {
+      setSearchTerm(router.query.search);
+      setPage(0);
+    }
+  }, [router.isReady, router.query.search]);
   const [protocol, setProtocol] = useState('all');
   const [service, setService] = useState('all');
   const [matchType, setMatchType] = useState('all');

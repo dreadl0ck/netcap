@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import { Box, InputLabel, FormHelperText, useTheme, OutlinedInput } from '@mui/material';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
+import { Box, InputLabel, FormHelperText, useTheme } from '@mui/material';
 import { highlightFilterExpression } from '@/lib/filterSyntaxHighlight';
 import { highlightBPFExpression } from '@/lib/bpfSyntaxHighlight';
 import { highlightRegexPattern } from '@/lib/regexSyntaxHighlight';
@@ -39,8 +39,7 @@ interface SyntaxHighlightedInputProps {
 
 /**
  * A text input field with inline syntax highlighting
- * Uses an overlay approach with transparent text to show highlighting
- * Optimized with memoization to prevent lag
+ * Uses contentEditable div for native colored text rendering and scrolling
  */
 export default function SyntaxHighlightedInput({
   syntaxType,
@@ -57,8 +56,12 @@ export default function SyntaxHighlightedInput({
   ...otherProps
 }: SyntaxHighlightedInputProps) {
   const theme = useTheme();
-  const textareaRef = useRef<HTMLTextAreaElement | HTMLInputElement>(null);
+  const editableRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const isUpdatingRef = useRef(false);
+  const isTypingRef = useRef(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Memoize tokens to prevent re-computation on every render
   const tokens = useMemo(() => {
@@ -87,23 +90,223 @@ export default function SyntaxHighlightedInput({
     return newTokens;
   }, [value, syntaxType, enableHighlighting]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    onChange(e.target.value);
-  };
-
-  const handleFocus = () => setIsFocused(true);
-  const handleBlur = () => setIsFocused(false);
-
   const inputPadding = size === 'small' ? '8.5px 14px' : '16.5px 14px';
   const lineHeight = '1.4375em';
   const fontSize = size === 'small' ? '0.875rem' : '0.95rem';
 
-  // Only show highlighting when not focused to improve performance
-  const showHighlighting = enableHighlighting && tokens.length > 0 && !isFocused;
-
   // Get text color from theme (for both light and dark modes)
   const textColor = theme.palette.text.primary;
-  const bgColor = theme.palette.background.default;
+  const bgColor = theme.palette.background.paper;
+
+  // Show highlighting only when not typing and highlighting is enabled
+  const showHighlighting = enableHighlighting && tokens.length > 0 && !isTyping;
+
+  // Calculate height based on rows
+  const minHeight = multiline ? `calc(${rows} * ${lineHeight} + 17px)` : undefined;
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Update contentEditable div when highlighting state changes (but not while typing)
+  useEffect(() => {
+    if (!editableRef.current || isUpdatingRef.current || isTyping) {
+      return;
+    }
+
+    // Only update if content has changed or we need to apply syntax highlighting
+    const currentText = editableRef.current.innerText || '';
+    if (currentText === value) {
+      // Value is same, just need to update highlighting
+      const selection = window.getSelection();
+      const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+      const cursorOffset = range ? getCursorOffset(editableRef.current, range) : 0;
+
+      updateContent();
+
+      if (cursorOffset !== null && isFocused) {
+        requestAnimationFrame(() => {
+          setCursorOffset(editableRef.current!, cursorOffset);
+        });
+      }
+    }
+  }, [showHighlighting, isTyping]);
+
+  // Update when value changes externally (from prop)
+  useEffect(() => {
+    if (!editableRef.current || isUpdatingRef.current) {
+      return;
+    }
+
+    const currentText = editableRef.current.innerText || '';
+    if (currentText !== value) {
+      // Value changed externally
+      const selection = window.getSelection();
+      const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+      const cursorOffset = range ? getCursorOffset(editableRef.current, range) : 0;
+
+      updateContent();
+
+      if (cursorOffset !== null && isFocused) {
+        requestAnimationFrame(() => {
+          setCursorOffset(editableRef.current!, cursorOffset);
+        });
+      }
+    }
+  }, [value]);
+
+  // Get cursor offset from start of contentEditable
+  function getCursorOffset(element: HTMLElement, range: Range): number {
+    const preRange = range.cloneRange();
+    preRange.selectNodeContents(element);
+    preRange.setEnd(range.endContainer, range.endOffset);
+    return preRange.toString().length;
+  }
+
+  // Set cursor offset from start of contentEditable
+  function setCursorOffset(element: HTMLElement, offset: number) {
+    const selection = window.getSelection();
+    if (!selection) return;
+
+    let currentOffset = 0;
+    let found = false;
+
+    function traverse(node: Node): boolean {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const textLength = node.textContent?.length || 0;
+        if (currentOffset + textLength >= offset) {
+          const range = document.createRange();
+          range.setStart(node, Math.min(offset - currentOffset, textLength));
+          range.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          return true;
+        }
+        currentOffset += textLength;
+      } else {
+        for (let i = 0; i < node.childNodes.length; i++) {
+          if (traverse(node.childNodes[i])) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    traverse(element);
+  }
+
+  // Update the contentEditable div with highlighted content
+  function updateContent() {
+    if (!editableRef.current) return;
+
+    if (showHighlighting) {
+      // Render with syntax highlighting
+      editableRef.current.innerHTML = tokens
+        .map((token) => {
+          const color = token.type === 'text' && token.color === 'inherit' ? textColor : token.color;
+          const escapedValue = escapeHTML(token.value);
+          return `<span style="color: ${color}">${escapedValue}</span>`;
+        })
+        .join('');
+    } else {
+      // Render as plain text but preserve line breaks
+      const escapedValue = value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+      editableRef.current.innerHTML = escapedValue;
+    }
+
+    // Show placeholder if empty
+    if (!value && placeholder) {
+      editableRef.current.setAttribute('data-placeholder', placeholder);
+    } else {
+      editableRef.current.removeAttribute('data-placeholder');
+    }
+  }
+
+  function escapeHTML(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+      .replace(/\n/g, '<br>');
+  }
+
+  // Handle input changes
+  const handleInput = () => {
+    if (!editableRef.current) return;
+
+    // Mark as typing using ref to avoid re-renders on every keystroke
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      setIsTyping(true);
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Get value - use innerText to preserve line breaks from <br> tags
+    isUpdatingRef.current = true;
+    const newValue = editableRef.current.innerText || '';
+    
+    // Use queueMicrotask to defer onChange slightly without blocking input
+    queueMicrotask(() => {
+      onChange(newValue);
+      isUpdatingRef.current = false;
+    });
+
+    // Re-enable syntax highlighting after user stops typing
+    typingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      setIsTyping(false);
+      typingTimeoutRef.current = null;
+    }, 150);
+  };
+
+  const handleFocus = () => setIsFocused(true);
+  
+  const handleBlur = () => {
+    setIsFocused(false);
+    // Apply syntax highlighting immediately when losing focus
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    isTypingRef.current = false;
+    setIsTyping(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Allow tab key to insert tab character
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      document.execCommand('insertText', false, '  ');
+    }
+    // Handle Enter key to insert line break consistently
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.execCommand('insertLineBreak');
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    // Prevent default paste behavior and insert plain text only
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
+  };
 
   return (
     <Box sx={{ width: fullWidth ? '100%' : 'auto' }}>
@@ -121,83 +324,48 @@ export default function SyntaxHighlightedInput({
         </InputLabel>
       )}
       
-      <Box sx={{ position: 'relative', width: '100%' }}>
-        {/* Syntax-highlighted overlay - only when not focused */}
-        {showHighlighting && (
-          <Box
+      <Box
+        ref={editableRef}
+        contentEditable
+        onInput={handleInput}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        spellCheck={false}
             sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              pointerEvents: 'none',
-              overflow: 'hidden',
-              padding: inputPadding,
               fontFamily: 'monospace',
               fontSize: fontSize,
               lineHeight: lineHeight,
+          padding: inputPadding,
+          border: `1px solid ${isFocused ? theme.palette.primary.main : theme.palette.divider}`,
+          borderRadius: '4px',
+          backgroundColor: bgColor,
+          color: textColor,
+          minHeight: minHeight,
+          maxHeight: multiline ? '400px' : undefined,
+          overflowY: multiline ? 'auto' : 'hidden',
+          overflowX: 'auto',
               whiteSpace: multiline ? 'pre-wrap' : 'pre',
               wordBreak: multiline ? 'break-word' : 'normal',
-              color: 'transparent',
-              userSelect: 'none',
-              border: '1px solid transparent',
-              borderRadius: '4px',
-              zIndex: 0,
-              backgroundColor: 'transparent', // Ensure overlay is transparent
-            }}
-          >
-            {tokens.map((token, i) => {
-              if (token.type === 'text' && token.color === 'inherit') {
-                return <span key={i} style={{ color: textColor }}>{token.value}</span>;
-              }
-              return (
-                <span key={i} style={{ color: token.color }}>
-                  {token.value}
-                </span>
-              );
-            })}
-          </Box>
-        )}
-
-        {/* Actual input */}
-        <OutlinedInput
-          {...otherProps}
-          inputRef={textareaRef}
-          value={value}
-          onChange={handleChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          placeholder={placeholder}
-          multiline={multiline}
-          rows={multiline ? rows : undefined}
-          fullWidth={fullWidth}
-          size={size}
-          sx={{
-            fontFamily: 'monospace',
-            fontSize: fontSize,
-            position: 'relative',
-            zIndex: 1,
-            backgroundColor: bgColor, // Use theme background color
-            '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: theme.palette.divider,
-            },
-            '& textarea, & input': {
-              fontFamily: 'monospace',
-              fontSize: fontSize,
-              lineHeight: lineHeight,
-              // Only make text transparent when showing highlighting and not focused
-              color: showHighlighting ? 'transparent' : textColor,
-              // Always show caret
-              caretColor: `${textColor} !important`,
-              backgroundColor: 'transparent',
-              '&::selection': {
-                backgroundColor: showHighlighting ? 'rgba(100, 150, 255, 0.3)' : undefined,
-              },
+          outline: 'none',
+          cursor: 'text',
+          transition: 'border-color 0.2s',
+          '&:hover': {
+            borderColor: isFocused ? theme.palette.primary.main : theme.palette.text.primary,
+          },
+          '&:focus': {
+            borderColor: theme.palette.primary.main,
+            borderWidth: '2px',
+            padding: size === 'small' ? '7.5px 13px' : '15.5px 13px',
+          },
+          '&[data-placeholder]:empty::before': {
+            content: 'attr(data-placeholder)',
+            color: theme.palette.text.disabled,
+            fontStyle: 'italic',
             },
           }}
         />
-      </Box>
 
       {helperText && (
         <FormHelperText sx={{ mx: 1.75, mt: 0.5 }}>
@@ -231,4 +399,3 @@ export function SyntaxHighlightedTextArea({
     />
   );
 }
-

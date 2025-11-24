@@ -107,8 +107,16 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 	// check if we already have a banner for the IP + Port combination
 	service.Store.Lock()
 	if serv, ok := service.Store.Items[serviceIdent]; ok {
-		defer service.Store.Unlock()
+		service.Store.Unlock()
 
+		// Lock the individual service to ensure thread-safe modification
+		serv.Lock()
+		defer serv.Unlock()
+
+		// invoke the service probe matching on all streams towards this service
+		service.MatchServiceProbes(serv, banner, flowIdent)
+
+		// ensure we don't duplicate any flows
 		for _, f := range serv.Flows {
 			if f == flowIdent {
 				return
@@ -116,6 +124,15 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 		}
 
 		serv.Flows = append(serv.Flows, flowIdent)
+
+		// if this flow had a longer response from the server then what we have previously (in case we dont have c.Banner bytes yet)
+		// set this service response on the service and update the timestamp
+		// more data means more information and is therefore preferred for identification purposes
+		if len(serv.Banner) < len(banner) {
+			serv.Banner = string(banner)
+			serv.Timestamp = firstPacket.UnixNano()
+		}
+
 		return
 	}
 	service.Store.Unlock()

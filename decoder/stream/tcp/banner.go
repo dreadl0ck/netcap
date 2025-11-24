@@ -36,7 +36,11 @@ func saveTCPServiceBanner(s streamReader) {
 	// we will keep the first banner that reaches the size configured in c.BannerSize
 	service.Store.Lock()
 	if sv, ok := service.Store.Items[s.ServiceIdent()]; ok {
-		defer service.Store.Unlock()
+		service.Store.Unlock()
+
+		// Lock the individual service to ensure thread-safe modification
+		sv.Lock()
+		defer sv.Unlock()
 
 		// invoke the service probe matching on all streams towards this service
 		// TODO: make matching more banners than the first one configurable

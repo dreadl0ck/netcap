@@ -38,6 +38,7 @@ type SoftwareSummary struct {
 	FirstSeen   int64    `json:"firstSeen"`
 	LastSeen    int64    `json:"lastSeen"`
 	SourceNames []string `json:"sourceNames"`
+	Flows       []string `json:"flows"`
 }
 
 // SoftwareResponse contains the list of software
@@ -142,6 +143,7 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 				services:    make(map[string]bool),
 				dpiResults:  make(map[string]bool),
 				sourceNames: make(map[string]bool),
+				flows:       make(map[string]bool),
 				firstSeen:   sw.Timestamp,
 				lastSeen:    sw.Timestamp,
 			}
@@ -172,6 +174,13 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 		// Track source names
 		if sw.SourceName != "" {
 			agg.sourceNames[sw.SourceName] = true
+		}
+
+		// Aggregate flows
+		for _, flow := range sw.Flows {
+			if flow != "" {
+				agg.flows[flow] = true
+			}
 		}
 
 		if sw.Timestamp < agg.firstSeen {
@@ -205,6 +214,11 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 			sourceNames = append(sourceNames, source)
 		}
 
+		flows := make([]string, 0, len(agg.flows))
+		for flow := range agg.flows {
+			flows = append(flows, flow)
+		}
+
 		software = append(software, SoftwareSummary{
 			Product:     agg.product,
 			Vendor:      agg.vendor,
@@ -217,6 +231,7 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 			FirstSeen:   agg.firstSeen,
 			LastSeen:    agg.lastSeen,
 			SourceNames: sourceNames,
+			Flows:       flows,
 		})
 	}
 
@@ -239,6 +254,7 @@ type softwareAggregator struct {
 	services    map[string]bool
 	dpiResults  map[string]bool
 	sourceNames map[string]bool
+	flows       map[string]bool
 	firstSeen   int64
 	lastSeen    int64
 }

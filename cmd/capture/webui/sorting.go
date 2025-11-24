@@ -18,23 +18,36 @@ import "strings"
 // Protocol categories by layer
 var (
 	linkLayerProtocols = []string{
-		"ARP", "CiscoDiscovery", "Dot11", "Dot1Q", "Ethernet",
+		"ARP", "CiscoDiscovery", "CiscoDiscoveryInfo", "Dot11", "Dot11QOS", 
+		"Dot11HTControl", "Dot11HTControlVHT", "Dot11HTControlHT", 
+		"Dot11HTControlMFB", "Dot11LinkAdapationControl", "Dot11ASEL",
+		"Dot1Q", "EAP", "EAPOL", "EAPOLKey", "Ethernet",
 		"EthernetCTP", "EthernetCTPReply", "FDDI", "LLC",
-		"LinkLayerDiscovery", "NortelDiscovery", "SNAP", "USB",
+		"LinkLayerDiscovery", "LinkLayerDiscoveryInfo", "LinkLayerDiscoveryValue",
+		"LLDPChassisID", "LLDPPortID", "LLDPSysCapabilities", "LLDPCapabilities",
+		"LLDPMgmtAddress", "LLDPOrgSpecificTLV",
+		"NortelDiscovery", "SNAP", "USB", "USBRequestBlockSetup",
 	}
 
 	networkLayerProtocols = []string{
-		"GRE", "ICMPv4", "ICMPv6", "IGMP", "IPSecAH", "IPSecESP",
-		"IPv4", "IPv6", "IPv6Fragment", "IPv6HopByHop", "MPLS",
+		"BFD", "GRE", "ICMPv4", "ICMPv6", "ICMPv6Echo", 
+		"ICMPv6NeighborAdvertisement", "ICMPv6NeighborSolicitation",
+		"ICMPv6RouterAdvertisement", "ICMPv6RouterSolicitation", "ICMPv6Option",
+		"IGMP", "IGMPv3GroupRecord", "IPSecAH", "IPSecESP",
+		"IPv4", "IPv4Option", "IPv6", "IPv6Fragment", "IPv6HopByHop", 
+		"IPv6HopByHopOption", "IPv6HopByHopOptionAlignment",
+		"MPLS", "OSPFv2", "OSPFv3", "VRRPv2",
 	}
 
 	transportLayerProtocols = []string{
-		"SCTP", "TCP", "TLSClientHello", "TLSServerHello", "UDP",
+		"SCTP", "TCP", "TCPOption", "TLSClientHello", "TLSServerHello", "UDP",
 	}
 
 	applicationLayerProtocols = []string{
-		"CIP", "DHCPv4", "DHCPv6", "DNS", "ENIP", "Geneve", 
-		"HTTP", "NTP", "POP3", "SIP", "SMTP", "SSH", "VXLAN",
+		"CIP", "DHCPv4", "DHCPv6", "DHCPOption", "DHCPv6Option",
+		"Diameter", "DNS", "DNSQuestion", "DNSResourceRecord", "DNSSOA", "DNSSRV", "DNSMX",
+		"ENIP", "Geneve", 
+		"HTTP", "LCM", "Modbus", "NTP", "POP3", "SIP", "SMTP", "SSH", "VXLAN",
 	}
 
 	streamDecoders = []string{

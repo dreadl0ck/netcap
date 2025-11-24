@@ -28,32 +28,40 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+// SoftwareInfo contains software details including flows
+type SoftwareInfo struct {
+	Product string   `json:"product"`
+	Vendor  string   `json:"vendor"`
+	Version string   `json:"version"`
+	Flows   []string `json:"flows"`
+}
+
 // VulnerabilitySummary represents aggregated vulnerability information
 type VulnerabilitySummary struct {
-	ID           string   `json:"id"`
-	Description  string   `json:"description"`
-	Severity     string   `json:"severity"`
-	V2Score      string   `json:"v2Score"`
-	AccessVector string   `json:"accessVector"`
-	Versions     []string `json:"versions"`
-	Count        int      `json:"count"`
-	Software     string   `json:"software"` // Product name
-	Affected     int      `json:"affected"` // Number of affected hosts
+	ID           string        `json:"id"`
+	Description  string        `json:"description"`
+	Severity     string        `json:"severity"`
+	V2Score      string        `json:"v2Score"`
+	AccessVector string        `json:"accessVector"`
+	Versions     []string      `json:"versions"`
+	Count        int           `json:"count"`
+	Software     *SoftwareInfo `json:"software"` // Software details including flows
+	Affected     int           `json:"affected"` // Number of affected hosts
 }
 
 // ExploitSummary represents aggregated exploit information
 type ExploitSummary struct {
-	ID          string `json:"id"`
-	Description string `json:"description"`
-	File        string `json:"file"`
-	Date        string `json:"date"`
-	Author      string `json:"author"`
-	Type        string `json:"type"`
-	Platform    string `json:"platform"`
-	Port        string `json:"port"`
-	Count       int    `json:"count"`
-	Software    string `json:"software"` // Product name
-	Affected    int    `json:"affected"` // Number of affected hosts
+	ID          string        `json:"id"`
+	Description string        `json:"description"`
+	File        string        `json:"file"`
+	Date        string        `json:"date"`
+	Author      string        `json:"author"`
+	Type        string        `json:"type"`
+	Platform    string        `json:"platform"`
+	Port        string        `json:"port"`
+	Count       int           `json:"count"`
+	Software    *SoftwareInfo `json:"software"` // Software details including flows
+	Affected    int           `json:"affected"` // Number of affected hosts
 }
 
 // HostVulnerabilitySummary represents a host and its vulnerabilities
@@ -120,11 +128,11 @@ func readVulnerabilitiesAndExploits(outDir string) (*VulnerabilitiesResponse, er
 	vulnMap := make(map[string]*VulnerabilitySummary)
 	exploitMap := make(map[string]*ExploitSummary)
 	hostMap := make(map[string]*HostVulnerabilitySummary)
-	
+
 	// Create a map of MAC addresses to IP addresses (from DeviceProfile)
 	log.Printf("[WebUI][Vulnerabilities] Building MAC-to-IP mapping from directory: %s", outDir)
 	macToIP := buildMacToIPMap(outDir)
-	
+
 	// Create a map of software product+version to hosts (from IPProfile)
 	log.Printf("[WebUI][Vulnerabilities] Building software-to-hosts mapping from directory: %s", outDir)
 	softwareToHosts := buildSoftwareToHostsMap(outDir)
@@ -175,7 +183,7 @@ func readVulnerabilitiesAndExploits(outDir string) (*VulnerabilitiesResponse, er
 
 	response.TotalVulns = len(response.Vulnerabilities)
 	response.TotalExploits = len(response.Exploits)
-	
+
 	log.Printf("[WebUI][Vulnerabilities] Summary: %d unique vulnerabilities, %d unique exploits, %d affected hosts",
 		response.TotalVulns, response.TotalExploits, len(response.AffectedHosts))
 
@@ -185,7 +193,7 @@ func readVulnerabilitiesAndExploits(outDir string) (*VulnerabilitiesResponse, er
 // buildMacToIPMap creates a mapping from MAC addresses to IP addresses
 func buildMacToIPMap(outDir string) map[string][]string {
 	macToIP := make(map[string][]string)
-	
+
 	// Read DeviceProfile records to find MAC to IP mappings
 	deviceProfilePath := filepath.Join(outDir, "DeviceProfile.ncap.gz")
 	if _, err := os.Stat(deviceProfilePath); err != nil {
@@ -220,7 +228,7 @@ func buildMacToIPMap(outDir string) map[string][]string {
 		if !ok || deviceProfile.MacAddr == "" {
 			continue
 		}
-		
+
 		deviceProfileCount++
 
 		// Map MAC address to all associated IP addresses
@@ -232,9 +240,9 @@ func buildMacToIPMap(outDir string) map[string][]string {
 		}
 	}
 
-	log.Printf("[WebUI][Vulnerabilities] Built MAC-to-IP map: %d device profiles, %d total IP mappings, %d unique MACs", 
+	log.Printf("[WebUI][Vulnerabilities] Built MAC-to-IP map: %d device profiles, %d total IP mappings, %d unique MACs",
 		deviceProfileCount, totalIPMappings, len(macToIP))
-	
+
 	// Log a few sample mappings for debugging
 	if len(macToIP) > 0 {
 		sampleCount := 0
@@ -252,7 +260,7 @@ func buildMacToIPMap(outDir string) map[string][]string {
 // buildSoftwareToHostsMap creates a mapping from software product+version to host IPs
 func buildSoftwareToHostsMap(outDir string) map[string][]string {
 	softwareToHosts := make(map[string][]string)
-	
+
 	// Read IPProfile records to find which hosts have which software
 	ipProfilePath := filepath.Join(outDir, "IPProfile.ncap.gz")
 	if _, err := os.Stat(ipProfilePath); err != nil {
@@ -287,7 +295,7 @@ func buildSoftwareToHostsMap(outDir string) map[string][]string {
 		if !ok || ipProfile.Addr == "" {
 			continue
 		}
-		
+
 		ipProfileCount++
 
 		// Index by application names (which often match software product names)
@@ -299,9 +307,9 @@ func buildSoftwareToHostsMap(outDir string) map[string][]string {
 		}
 	}
 
-	log.Printf("[WebUI][Vulnerabilities] Built software-to-hosts map: %d IP profiles, %d applications, %d unique software products", 
+	log.Printf("[WebUI][Vulnerabilities] Built software-to-hosts map: %d IP profiles, %d applications, %d unique software products",
 		ipProfileCount, appCount, len(softwareToHosts))
-	
+
 	// Log a few sample mappings for debugging
 	if len(softwareToHosts) > 0 {
 		sampleCount := 0
@@ -347,11 +355,20 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 		if !ok {
 			continue
 		}
-		
+
 		recordCount++
 
 		// Update vuln summary
 		if _, exists := vulnMap[v.ID]; !exists {
+			var softwareInfo *SoftwareInfo
+			if v.Software != nil && (v.Software.Product != "" || v.Software.Vendor != "" || v.Software.Version != "") {
+				softwareInfo = &SoftwareInfo{
+					Product: v.Software.Product,
+					Vendor:  v.Software.Vendor,
+					Version: v.Software.Version,
+					Flows:   v.Software.Flows,
+				}
+			}
 			vulnMap[v.ID] = &VulnerabilitySummary{
 				ID:           v.ID,
 				Description:  v.Description,
@@ -359,9 +376,19 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 				V2Score:      v.V2Score,
 				AccessVector: v.AccessVector,
 				Versions:     v.Versions,
-				Software:     v.Software.Product,
+				Software:     softwareInfo,
 				Count:        0,
 				Affected:     0,
+			}
+		} else {
+			// Update software info if we don't have it yet but this record does
+			if vulnMap[v.ID].Software == nil && v.Software != nil && (v.Software.Product != "" || v.Software.Vendor != "" || v.Software.Version != "") {
+				vulnMap[v.ID].Software = &SoftwareInfo{
+					Product: v.Software.Product,
+					Vendor:  v.Software.Vendor,
+					Version: v.Software.Version,
+					Flows:   v.Software.Flows,
+				}
 			}
 		}
 		vulnMap[v.ID].Count++
@@ -370,7 +397,7 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 		if v.Software != nil {
 			vulnsWithSoftware++
 			hostsAffected := make(map[string]bool) // Use map to deduplicate hosts
-			
+
 			// PRIORITY 1: Parse flows to directly extract source and destination IPs
 			flowHostCount := 0
 			for _, flowIdent := range v.Software.Flows {
@@ -386,7 +413,7 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 					}
 				}
 			}
-			
+
 			// PRIORITY 2: Try to get hosts from DeviceProfiles (MAC addresses) and map to IPs
 			deviceProfileCount := 0
 			for _, macAddr := range v.Software.DeviceProfiles {
@@ -410,7 +437,7 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 			if deviceProfileCount > 0 {
 				vulnsWithDeviceProfiles++
 			}
-			
+
 			// PRIORITY 3: Also try to get hosts from software product name
 			softwareMapHosts := 0
 			if v.Software.Product != "" {
@@ -424,7 +451,7 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 					}
 				}
 			}
-			
+
 			// Update host map with all affected hosts
 			for host := range hostsAffected {
 				if _, exists := hostMap[host]; !exists {
@@ -440,13 +467,13 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 					hostMap[host].TopSeverity = v.Severity
 				}
 			}
-			
+
 			if len(hostsAffected) > 0 {
 				vulnsWithMatchedHosts++
 			}
-			
+
 			vulnMap[v.ID].Affected = len(hostsAffected)
-			
+
 			// Log details for first few vulnerabilities for debugging
 			if recordCount <= 3 {
 				log.Printf("[WebUI][Vulnerabilities] Vuln #%d: ID=%s, Software=%s, Flows=%d, HostsFromFlows=%d, DeviceProfiles=%d, HostsFromSoftwareMap=%d, TotalAffected=%d",
@@ -454,13 +481,13 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 			}
 		}
 	}
-	
+
 	log.Printf("[WebUI][Vulnerabilities] Processed %d vulnerability records, %d with software, %d with device profiles, %d with matched hosts",
 		recordCount, vulnsWithSoftware, vulnsWithDeviceProfiles, vulnsWithMatchedHosts)
 	log.Printf("[WebUI][Vulnerabilities] Total hosts found: %d from DeviceProfiles, %d from software-to-hosts map",
 		totalHostsFromDeviceProfiles, totalHostsFromSoftwareMap)
 	log.Printf("[WebUI][Vulnerabilities] Final unique hosts in hostMap: %d", len(hostMap))
-		
+
 	return nil
 }
 
@@ -495,11 +522,20 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 		if !ok {
 			continue
 		}
-		
+
 		recordCount++
 
 		// Update exploit summary
 		if _, exists := exploitMap[e.ID]; !exists {
+			var softwareInfo *SoftwareInfo
+			if e.Software != nil && (e.Software.Product != "" || e.Software.Vendor != "" || e.Software.Version != "") {
+				softwareInfo = &SoftwareInfo{
+					Product: e.Software.Product,
+					Vendor:  e.Software.Vendor,
+					Version: e.Software.Version,
+					Flows:   e.Software.Flows,
+				}
+			}
 			exploitMap[e.ID] = &ExploitSummary{
 				ID:          e.ID,
 				Description: e.Description,
@@ -509,9 +545,19 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 				Type:        e.Typ,
 				Platform:    e.Platform,
 				Port:        e.Port,
-				Software:    e.Software.Product,
+				Software:    softwareInfo,
 				Count:       0,
 				Affected:    0,
+			}
+		} else {
+			// Update software info if we don't have it yet but this record does
+			if exploitMap[e.ID].Software == nil && e.Software != nil && (e.Software.Product != "" || e.Software.Vendor != "" || e.Software.Version != "") {
+				exploitMap[e.ID].Software = &SoftwareInfo{
+					Product: e.Software.Product,
+					Vendor:  e.Software.Vendor,
+					Version: e.Software.Version,
+					Flows:   e.Software.Flows,
+				}
 			}
 		}
 		exploitMap[e.ID].Count++
@@ -520,7 +566,7 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 		if e.Software != nil {
 			exploitsWithSoftware++
 			hostsAffected := make(map[string]bool) // Use map to deduplicate hosts
-			
+
 			// PRIORITY 1: Parse flows to directly extract source and destination IPs
 			flowHostCount := 0
 			for _, flowIdent := range e.Software.Flows {
@@ -536,7 +582,7 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 					}
 				}
 			}
-			
+
 			// PRIORITY 2: Try to get hosts from DeviceProfiles (MAC addresses) and map to IPs
 			deviceProfileCount := 0
 			for _, macAddr := range e.Software.DeviceProfiles {
@@ -560,7 +606,7 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 			if deviceProfileCount > 0 {
 				exploitsWithDeviceProfiles++
 			}
-			
+
 			// PRIORITY 3: Also try to get hosts from software product name
 			softwareMapHosts := 0
 			if e.Software.Product != "" {
@@ -574,7 +620,7 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 					}
 				}
 			}
-			
+
 			// Update host map with all affected hosts
 			for host := range hostsAffected {
 				if _, exists := hostMap[host]; !exists {
@@ -584,13 +630,13 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 				}
 				hostMap[host].Exploits++
 			}
-			
+
 			if len(hostsAffected) > 0 {
 				exploitsWithMatchedHosts++
 			}
-			
+
 			exploitMap[e.ID].Affected = len(hostsAffected)
-			
+
 			// Log details for first few exploits for debugging
 			if recordCount <= 3 {
 				log.Printf("[WebUI][Exploits] Exploit #%d: ID=%s, Software=%s, Flows=%d, HostsFromFlows=%d, DeviceProfiles=%d, HostsFromSoftwareMap=%d, TotalAffected=%d",
@@ -598,12 +644,12 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 			}
 		}
 	}
-	
+
 	log.Printf("[WebUI][Exploits] Processed %d exploit records, %d with software, %d with device profiles, %d with matched hosts",
 		recordCount, exploitsWithSoftware, exploitsWithDeviceProfiles, exploitsWithMatchedHosts)
 	log.Printf("[WebUI][Exploits] Total hosts found: %d from DeviceProfiles, %d from software-to-hosts map",
 		totalHostsFromDeviceProfiles, totalHostsFromSoftwareMap)
-		
+
 	return nil
 }
 
@@ -656,7 +702,7 @@ func (s *Server) handleExploitFileContent(w http.ResponseWriter, r *http.Request
 		log.Printf("[WebUI][Exploit] Failed to read exploit file: %s", fullPath)
 		log.Printf("[WebUI][Exploit] Original file path from database: %s", filePath)
 		log.Printf("[WebUI][Exploit] Error: %v", err)
-		
+
 		// Return a helpful error message
 		response := map[string]interface{}{
 			"error": "Exploit file not found. The exploitdb files may not be installed on this server.",
@@ -687,7 +733,7 @@ func (s *Server) handleExploitFileContent(w http.ResponseWriter, r *http.Request
 // detectLanguageFromPath attempts to determine the programming language from the file path
 func detectLanguageFromPath(path string) string {
 	ext := strings.ToLower(filepath.Ext(path))
-	
+
 	// Common exploit file extensions and their languages
 	languageMap := map[string]string{
 		".py":   "python",
@@ -734,4 +780,3 @@ func detectLanguageFromPath(path string) string {
 	// Default to text
 	return "text"
 }
-

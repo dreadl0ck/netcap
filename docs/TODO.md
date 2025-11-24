@@ -1,5 +1,11 @@
 # TODOs
 
+- EthernetCTP has only Timestamp set?
+- support to enable / disable service probes
+- software audit records: remove Vendor Field and use only Product?
+- fix capture and inspect local results
+- HTTP page
+
 update db server for exploitdb 
 
 Investigate: graph analysis page

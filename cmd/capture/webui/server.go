@@ -117,6 +117,7 @@ type Server struct {
 	serviceConfig     *ServiceConfig    // Service configuration (nil in local mode)
 	jobQueue          chan *AnalysisJob // Job queue (nil in local mode)
 	shutdownChan      chan struct{}     // Shutdown channel for graceful shutdown
+	shutdownOnce      sync.Once         // Ensure shutdown channel is only closed once
 	wg                sync.WaitGroup    // Track background workers
 	currentSession    string            // Currently active session for webUI viewing (service mode only)
 	jobsScheduled     int64             // Total number of jobs scheduled (atomic counter)
@@ -477,6 +478,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/visualize/scatter3d", s.handleVisualizeScatter3D)
 	mux.HandleFunc("/api/visualize/hosts-graph", s.handleVisualizeHostsGraph)
 	mux.HandleFunc("/api/hosts", s.handleHosts)
+	mux.HandleFunc("/api/hosts/download-pcap", s.handleHostDownloadPCAP)
 	mux.HandleFunc("/api/hosts/top-talkers", s.handleHostsTopTalkers)
 	mux.HandleFunc("/api/hosts/traffic-distribution", s.handleHostsTrafficDistribution)
 	mux.HandleFunc("/api/hosts/applications", s.handleHostsApplications)
@@ -630,9 +632,11 @@ func (s *Server) Stop(ctx context.Context) error {
 	}
 	s.currentCmdMutex.Unlock()
 
-	// Signal shutdown to background workers
+	// Signal shutdown to background workers (only close once)
 	if s.shutdownChan != nil {
-		close(s.shutdownChan)
+		s.shutdownOnce.Do(func() {
+			close(s.shutdownChan)
+		})
 	}
 
 	// Stop HTTP server
@@ -875,6 +879,7 @@ func gzipMiddleware(next http.Handler) http.Handler {
 		if strings.HasPrefix(path, "/api/files/input/download/") ||
 			strings.HasPrefix(path, "/api/extracted-files/download") ||
 			strings.HasPrefix(path, "/api/connections/download-pcap") ||
+			strings.HasPrefix(path, "/api/hosts/download-pcap") ||
 			strings.HasPrefix(path, "/api/chart/data") {
 			next.ServeHTTP(w, r)
 			return

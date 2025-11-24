@@ -34,6 +34,8 @@ import {
   DeviceHub as DeviceHubIcon,
   TableChart as TableChartIcon,
   BarChart as BarChartIcon,
+  Cable as CableIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import FileSelectorHeader from '@/components/FileSelectorHeader';
@@ -60,6 +62,7 @@ interface ServiceSummary {
   applications: string[];
   portName: string;
   detectedProtocolName: string;
+  matchedProbeID: string;
 }
 
 interface ServicesResponse {
@@ -782,6 +785,40 @@ export default function ServicesPage() {
                                       </Typography>
                                     </Grid>
                                   )}
+                                  
+                                  {/* Action Buttons */}
+                                  <Grid item xs={12}>
+                                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                      <Button
+                                        data-learn="Show Connections: Navigate to the Connections page filtered for this service's IP address and port."
+                                        variant="outlined"
+                                        color="primary"
+                                        startIcon={<CableIcon />}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          router.push(`/connections?search=${encodeURIComponent(`${svc.ip}:${svc.port}`)}`);
+                                        }}
+                                        size="small"
+                                      >
+                                        Show Connections
+                                      </Button>
+                                      {svc.product && svc.matchedProbeID && (
+                                        <Button
+                                          data-learn="View Probe: Navigate to the Probes page to view details about the probe that matched this service."
+                                          variant="outlined"
+                                          color="primary"
+                                          startIcon={<SearchIcon />}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            router.push(`/probes?search=${encodeURIComponent(svc.matchedProbeID)}`);
+                                          }}
+                                          size="small"
+                                        >
+                                          View Probe
+                                        </Button>
+                                      )}
+                                    </Box>
+                                  </Grid>
                                 </Grid>
                               </Box>
                             </Collapse>

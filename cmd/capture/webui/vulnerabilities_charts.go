@@ -205,8 +205,8 @@ func generateAccessVectorsChart(outDir string, showLegend bool) *charts.Pie {
 	pie.SetGlobalOptions(
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
-			Title: "Access Vectors",
-			Left:  "center",
+			Title:      "Access Vectors",
+			Left:       "center",
 			TitleStyle: &opts.TextStyle{Color: "#ffffff"},
 		}),
 		charts.WithLegendOpts(opts.Legend{Show: opts.Bool(showLegend), TextStyle: &opts.TextStyle{Color: "#ffffff"}}),
@@ -242,8 +242,8 @@ func generateExploitTypesChart(outDir string, showLegend bool) *charts.Pie {
 	pie.SetGlobalOptions(
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
-			Title: "Exploit Types",
-			Left:  "center",
+			Title:      "Exploit Types",
+			Left:       "center",
 			TitleStyle: &opts.TextStyle{Color: "#ffffff"},
 		}),
 		charts.WithLegendOpts(opts.Legend{Show: opts.Bool(showLegend), TextStyle: &opts.TextStyle{Color: "#ffffff"}}),
@@ -274,7 +274,7 @@ func generateTopAffectedHostsChart(outDir string, showLegend bool) *charts.Bar {
 			ss = append(ss, kv{h.Host, total})
 		}
 	}
-	
+
 	// Sort desc
 	for i := 0; i < len(ss); i++ {
 		for j := i + 1; j < len(ss); j++ {
@@ -300,8 +300,8 @@ func generateTopAffectedHostsChart(outDir string, showLegend bool) *charts.Bar {
 	bar.SetGlobalOptions(
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
-			Title: "Top Affected Hosts",
-			Left:  "center",
+			Title:      "Top Affected Hosts",
+			Left:       "center",
 			TitleStyle: &opts.TextStyle{Color: "#ffffff"},
 		}),
 		charts.WithXAxisOpts(opts.XAxis{
@@ -339,8 +339,8 @@ func generateVulnerabilitiesSeverityChart(outDir string, showLegend bool) *chart
 	pie.SetGlobalOptions(
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
-			Title: "Vulnerability Severity",
-			Left:  "center",
+			Title:      "Vulnerability Severity",
+			Left:       "center",
 			TitleStyle: &opts.TextStyle{Color: "#ffffff"},
 		}),
 		charts.WithLegendOpts(opts.Legend{Show: opts.Bool(showLegend), TextStyle: &opts.TextStyle{Color: "#ffffff"}}),
@@ -360,8 +360,16 @@ func generateTopVulnerableSoftwareChart(outDir string, showLegend bool) *charts.
 
 	softwareVulns := make(map[string]int)
 	for _, v := range data.Vulnerabilities {
-		if v.Software != "" {
-			softwareVulns[v.Software]++
+		if v.Software != nil && v.Software.Product != "" {
+			// Create a string representation of the software
+			softwareKey := v.Software.Product
+			if v.Software.Vendor != "" {
+				softwareKey = v.Software.Vendor + " " + softwareKey
+			}
+			if v.Software.Version != "" {
+				softwareKey += " " + v.Software.Version
+			}
+			softwareVulns[softwareKey]++
 		}
 	}
 
@@ -399,8 +407,8 @@ func generateTopVulnerableSoftwareChart(outDir string, showLegend bool) *charts.
 	bar.SetGlobalOptions(
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
-			Title: "Top Vulnerable Software",
-			Left:  "center",
+			Title:      "Top Vulnerable Software",
+			Left:       "center",
 			TitleStyle: &opts.TextStyle{Color: "#ffffff"},
 		}),
 		charts.WithXAxisOpts(opts.XAxis{
@@ -414,4 +422,3 @@ func generateTopVulnerableSoftwareChart(outDir string, showLegend bool) *charts.
 	bar.SetXAxis(xAxis).AddSeries("Vulnerabilities", barData)
 	return bar
 }
-

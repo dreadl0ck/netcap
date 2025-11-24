@@ -161,22 +161,30 @@ func (usp *udpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan *udpStream 
 				continue
 			}
 
-			var serverBanner bytes.Buffer
+		var serverBanner bytes.Buffer
 
-			for _, d := range s.data {
-				if d.Transport() == clientTransport {
-					clientBytes += len(d.Raw())
-				} else {
-					// server
-					serverBytes += len(d.Raw())
-					for _, b := range d.Raw() {
-						if serverBanner.Len() == decoderconfig.Instance.BannerSize {
-							break
-						}
-						serverBanner.WriteByte(b)
+		// Track if we've captured the first server packet for banner extraction
+		var firstServerPacketCaptured bool
+
+		for _, d := range s.data {
+			if d.Transport() == clientTransport {
+				clientBytes += len(d.Raw())
+			} else {
+				// server
+				serverBytes += len(d.Raw())
+				
+				// Extract banner ONLY from the first server packet
+				// Nmap service probes are designed to match against the initial server greeting
+				if !firstServerPacketCaptured {
+					limit := len(d.Raw())
+					if limit > decoderconfig.Instance.BannerSize {
+						limit = decoderconfig.Instance.BannerSize
 					}
+					serverBanner.Write(d.Raw()[:limit])
+					firstServerPacketCaptured = true
 				}
 			}
+		}
 			s.Unlock()
 
 			// call stream decoders

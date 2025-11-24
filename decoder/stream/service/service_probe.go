@@ -59,6 +59,7 @@ var (
 		"crossmatchverifier": {},
 		"landesk-rc":         {},
 		"nagios-nsca":        {},
+		"smtp-proxy":         {}, // Contains non-capturing groups that clean() converts to .*, matching everything
 	}
 
 	// ignored probes for .NET compatible engine (supports backtracking).
@@ -183,13 +184,6 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 		if probes, ok := serviceProbes[expectedCategory]; ok {
 			serviceLog.Debug("matching probes", zap.String("ident", ident), zap.String("expectedCategory", expectedCategory))
 			found, matched = matchProbes(serv, probes, banner, ident)
-			serviceLog.Info("service probe result",
-				zap.String("ident", ident),
-				zap.Bool("found", found),
-				zap.Int("matched", matched),
-				zap.Int("total", len(probes)),
-				zap.String("expected", expectedCategory),
-			)
 		}
 		if !found && decoderconfig.Instance.StopAfterServiceCategoryMiss {
 			return
@@ -227,14 +221,25 @@ func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident str
 			if m := probe.RegEx.FindStringSubmatch(string(banner)); m != nil {
 
 				// add initial values, may contain group identifiers ($1, $2 etc)
-				serv.Product = addInfo(serv.Product, extractGroup(&probe.Product, m))
-				serv.Vendor = addInfo(serv.Vendor, extractGroup(&probe.Vendor, m))
-				serv.Hostname = addInfo(serv.Hostname, extractGroup(&probe.Hostname, m))
-				serv.OS = addInfo(serv.OS, extractGroup(&probe.OS, m))
-				serv.Version = addInfo(serv.Version, extractGroup(&probe.Version, m))
+				product := extractGroup(&probe.Product, m)
+				vendor := extractGroup(&probe.Vendor, m)
+				hostname := extractGroup(&probe.Hostname, m)
+				os := extractGroup(&probe.OS, m)
+				version := extractGroup(&probe.Version, m)
+
+				serv.Product = addInfo(serv.Product, product)
+				serv.Vendor = addInfo(serv.Vendor, vendor)
+				serv.Hostname = addInfo(serv.Hostname, hostname)
+				serv.OS = addInfo(serv.OS, os)
+				serv.Version = addInfo(serv.Version, version)
+
+				// Store the matched probe ID for UI navigation
+				if serv.MatchedProbeID == "" {
+					serv.MatchedProbeID = probe.Ident
+				}
 
 				if decoderconfig.Instance.Debug { // prevent evaluating the log statement if not in debug mode
-					serviceLog.Info("service probe match",
+					serviceLog.Info("service probe match detail",
 						zap.String("ident", ident),
 						zap.String("probe", fmt.Sprintf("%+v", probe)),
 						zap.String("service", proto.MarshalTextString(serv.Service)),
@@ -256,14 +261,25 @@ func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident str
 			if m, err := probe.RegExDotNet.FindStringMatch(string(banner)); err == nil && m != nil {
 
 				// add initial values, may contain group identifiers ($1, $2 etc)
-				serv.Product = addInfo(serv.Product, extractGroupDotNet(&probe.Product, m))
-				serv.Vendor = addInfo(serv.Vendor, extractGroupDotNet(&probe.Vendor, m))
-				serv.Hostname = addInfo(serv.Hostname, extractGroupDotNet(&probe.Hostname, m))
-				serv.OS = addInfo(serv.OS, extractGroupDotNet(&probe.OS, m))
-				serv.Version = addInfo(serv.Version, extractGroupDotNet(&probe.Version, m))
+				product := extractGroupDotNet(&probe.Product, m)
+				vendor := extractGroupDotNet(&probe.Vendor, m)
+				hostname := extractGroupDotNet(&probe.Hostname, m)
+				os := extractGroupDotNet(&probe.OS, m)
+				version := extractGroupDotNet(&probe.Version, m)
+
+				serv.Product = addInfo(serv.Product, product)
+				serv.Vendor = addInfo(serv.Vendor, vendor)
+				serv.Hostname = addInfo(serv.Hostname, hostname)
+				serv.OS = addInfo(serv.OS, os)
+				serv.Version = addInfo(serv.Version, version)
+
+				// Store the matched probe ID for UI navigation
+				if serv.MatchedProbeID == "" {
+					serv.MatchedProbeID = probe.Ident
+				}
 
 				if decoderconfig.Instance.Debug { // prevent evaluating the log statement if not in debug mode
-					serviceLog.Info("service probe match (dotnet)",
+					serviceLog.Info("service probe match detail",
 						zap.String("ident", ident),
 						zap.String("probe", fmt.Sprintf("%+v", probe)),
 						zap.String("service", proto.MarshalTextString(serv.Service)),
@@ -635,7 +651,9 @@ func initServiceProbes() error {
 			} else {
 				s.RegExRaw = finalReg
 				if arr, ok := serviceProbes[ident]; ok {
-					arr = append(arr, s)
+					// MUST assign the result back to the map!
+					// append() may create a new slice if capacity is exceeded
+					serviceProbes[ident] = append(arr, s)
 				} else {
 					serviceProbes[ident] = []*serviceProbe{s}
 				}

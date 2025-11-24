@@ -210,9 +210,13 @@ func parseServiceProbes(data string) ([]ServiceProbeInfo, error) {
 		}
 	}
 
-	// Generate IDs for all probes
+	// Generate IDs for all probes using the same enumeration as the service matching code
+	// This creates IDs like "http-1", "http-2", "smtp-1", etc.
+	serviceCounters := make(map[string]int)
 	for i := range probes {
-		probes[i].ID = generateProbeID(&probes[i])
+		service := probes[i].Service
+		serviceCounters[service]++
+		probes[i].ID = fmt.Sprintf("%s-%d", service, serviceCounters[service])
 	}
 
 	return probes, nil
@@ -390,7 +394,8 @@ func (s *Server) handleServiceProbes(w http.ResponseWriter, r *http.Request) {
 			searchMatch := strings.Contains(strings.ToLower(probe.Service), search) ||
 				strings.Contains(strings.ToLower(probe.Product), search) ||
 				strings.Contains(strings.ToLower(probe.Pattern), search) ||
-				strings.Contains(strings.ToLower(probe.ProbeName), search)
+				strings.Contains(strings.ToLower(probe.ProbeName), search) ||
+				strings.Contains(strings.ToLower(probe.ID), search)
 			if !searchMatch {
 				continue
 			}

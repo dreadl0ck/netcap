@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -35,7 +35,7 @@ import {
   Download as DownloadIcon,
   Computer as ComputerIcon,
   Router as RouterIcon,
-  Build as BuildIcon,
+  Dns as DnsIcon,
   TableChart as TableChartIcon,
   BarChart as BarChartIcon,
 } from '@mui/icons-material';
@@ -106,6 +106,13 @@ export default function ConnectionsPage() {
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
 
+  // Initialize search query from URL parameter
+  useEffect(() => {
+    if (router.isReady && router.query.search) {
+      setSearchQuery(router.query.search as string);
+    }
+  }, [router.isReady, router.query.search]);
+
   // Fetch connections data
   const { data: connectionsData, error, mutate } = useSWR<ConnectionsResponse>(
     'connections',
@@ -137,16 +144,37 @@ export default function ConnectionsPage() {
 
     // Apply search filter
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(c =>
-        c.srcIP.toLowerCase().includes(query) ||
-        c.dstIP.toLowerCase().includes(query) ||
-        c.srcPort.toLowerCase().includes(query) ||
-        c.dstPort.toLowerCase().includes(query) ||
-        (c.applicationProto || '').toLowerCase().includes(query) ||
-        (c.transportProto || '').toLowerCase().includes(query) ||
-        (c.applications || []).some(a => a.toLowerCase().includes(query))
-      );
+      // Split search query by comma or space to support multiple search terms
+      const searchTerms = searchQuery
+        .split(/[,\s]+/)  // Split by comma or whitespace
+        .map(term => term.trim())
+        .filter(term => term.length > 0);  // Remove empty strings
+      
+      filtered = filtered.filter(c => {
+        // Build full connection string in multiple formats to support various search patterns
+        const fullConnectionArrow = `${c.srcIP}:${c.srcPort}->${c.dstIP}:${c.dstPort}`.toLowerCase();
+        const fullConnectionDash = `${c.srcIP}:${c.srcPort}-${c.dstIP}:${c.dstPort}`.toLowerCase();
+        const fullConnectionUnicode = `${c.srcIP}:${c.srcPort}→${c.dstIP}:${c.dstPort}`.toLowerCase();
+        
+        // Check if connection matches ANY of the search terms (OR logic)
+        return searchTerms.some(query => {
+          const queryLower = query.toLowerCase();
+          return (
+            // Check full connection strings
+            fullConnectionArrow.includes(queryLower) ||
+            fullConnectionDash.includes(queryLower) ||
+            fullConnectionUnicode.includes(queryLower) ||
+            // Check individual fields
+            c.srcIP.toLowerCase().includes(queryLower) ||
+            c.dstIP.toLowerCase().includes(queryLower) ||
+            c.srcPort.toLowerCase().includes(queryLower) ||
+            c.dstPort.toLowerCase().includes(queryLower) ||
+            (c.applicationProto || '').toLowerCase().includes(queryLower) ||
+            (c.transportProto || '').toLowerCase().includes(queryLower) ||
+            (c.applications || []).some(a => a.toLowerCase().includes(queryLower))
+          );
+        });
+      });
     }
 
     // Apply sorting
@@ -499,9 +527,9 @@ export default function ConnectionsPage() {
         <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField
-            data-learn="Connection Search: Filter connections by IP addresses, ports, protocols, or applications."
+            data-learn="Connection Search: Filter connections by IP addresses, ports, protocols, applications, or full connection strings. Multiple search terms can be separated by commas or spaces (e.g., 192.168.1.1:80->10.0.0.1:443, 172.16.1.1)."
             size="small"
-            placeholder="Search connections..."
+            placeholder="Search connections (comma or space separated)..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -1006,7 +1034,7 @@ export default function ConnectionsPage() {
                                           data-learn="View Service: Navigate to the Services page filtered for the server IP address."
                                           variant="outlined"
                                           color="secondary"
-                                          startIcon={<BuildIcon />}
+                                          startIcon={<DnsIcon />}
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             router.push(`/services?search=${encodeURIComponent(conn.dstIP)}`);

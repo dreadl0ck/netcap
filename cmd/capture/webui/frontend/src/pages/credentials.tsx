@@ -34,11 +34,13 @@ import {
   AccessTime as AccessTimeIcon,
   TableChart as TableChartIcon,
   BarChart as BarChartIcon,
+  SyncAlt as SyncAltIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import FileSelectorHeader from '@/components/FileSelectorHeader';
 import { api, formatTimestamp, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
+import { useRouter } from 'next/router';
 
 interface CredentialSummary {
   timestamp: number;
@@ -58,6 +60,7 @@ type CredentialSortField = 'timestamp' | 'service' | 'user' | 'password';
 type SortOrder = 'asc' | 'desc';
 
 export default function CredentialsPage() {
+  const router = useRouter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
@@ -523,12 +526,9 @@ export default function CredentialsPage() {
                             </IconButton>
                           </TableCell>
                           <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }} data-learn="Capture Time: Exact timestamp when this credential was captured from network traffic.">
-                              <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                              <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
-                                {formatTimestamp(cred.timestamp)}
-                              </Typography>
-                            </Box>
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }} data-learn="Capture Time: Exact timestamp when this credential was captured from network traffic.">
+                              {formatTimestamp(cred.timestamp)}
+                            </Typography>
                           </TableCell>
                           <TableCell>
                             <Chip
@@ -540,45 +540,23 @@ export default function CredentialsPage() {
                             />
                           </TableCell>
                           <TableCell>
-                            <Box 
-                              sx={{ 
-                                fontFamily: 'monospace', 
-                                fontSize: '0.875rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
-                              }}
-                              data-learn="Username: The captured username from the authentication attempt."
-                            >
-                              <PersonIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                              <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                                {cred.user || '(empty)'}
-                              </Typography>
-                            </Box>
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }} data-learn="Username: The captured username from the authentication attempt.">
+                              {cred.user || '(empty)'}
+                            </Typography>
                           </TableCell>
                           <TableCell>
-                            <Box 
+                            <Typography 
+                              variant="body2" 
                               sx={{ 
-                                fontFamily: 'monospace', 
+                                fontFamily: 'monospace',
                                 fontSize: '0.875rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 0.5,
+                                color: 'error.main',
+                                fontWeight: 'bold',
                               }}
                               data-learn="Password: The captured password from the authentication attempt."
                             >
-                              <LockIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                              <Typography 
-                                variant="body2" 
-                                sx={{ 
-                                  fontFamily: 'monospace',
-                                  color: 'error.main',
-                                  fontWeight: 'bold',
-                                }}
-                              >
-                                {cred.password || '(empty)'}
-                              </Typography>
-                            </Box>
+                              {cred.password || '(empty)'}
+                            </Typography>
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }} data-learn="Flow ID: Network flow identifier showing source and destination IPs and ports where credential was seen.">
@@ -646,9 +624,21 @@ export default function CredentialsPage() {
                                     <Typography variant="subtitle2" gutterBottom data-learn="Network Flow Field: Complete 5-tuple flow identifier (protocol, src IP:port, dst IP:port) showing the network connection where credential was captured.">
                                       Network Flow
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all', mb: 2 }}>
                                       {cred.flow || 'N/A'}
                                     </Typography>
+                                    {cred.flow && (
+                                      <Button
+                                        data-learn="View Connection: Navigate to the Connections page to see detailed information about this network flow."
+                                        variant="outlined"
+                                        size="small"
+                                        startIcon={<SyncAltIcon />}
+                                        onClick={() => router.push(`/connections?search=${encodeURIComponent(cred.flow)}`)}
+                                        sx={{ mt: 1 }}
+                                      >
+                                        View Connection Details
+                                      </Button>
+                                    )}
                                   </Grid>
                                   
                                   {/* Notes */}

@@ -1952,6 +1952,7 @@ message Service {
   repeated string Applications = 16; // DPI detected applications
   string PortName = 17; // Service port name lookup result
   string DetectedProtocolName = 18; // Detected protocol name for the port
+  string MatchedProbeID = 19; // ID of the nmap service probe that matched (e.g., "http-3924")
 }
 
 message Credentials {

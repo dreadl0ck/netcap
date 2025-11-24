@@ -37,6 +37,9 @@ import {
   Code as CodeIcon,
   TableChart as TableChartIcon,
   BarChart as BarChartIcon,
+  Apps as AppsIcon,
+  OpenInNew as OpenInNewIcon,
+  Cable as CableIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import FileSelectorHeader from '@/components/FileSelectorHeader';
@@ -49,6 +52,13 @@ import { useRouter } from 'next/router';
 const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
 import { tomorrow } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
+interface SoftwareInfo {
+  product: string;
+  vendor: string;
+  version: string;
+  flows: string[];
+}
+
 interface VulnerabilitySummary {
   id: string;
   description: string;
@@ -57,7 +67,7 @@ interface VulnerabilitySummary {
   accessVector: string;
   versions: string[];
   count: number;
-  software: string;
+  software: SoftwareInfo | null;
   affected: number;
 }
 
@@ -71,7 +81,7 @@ interface ExploitSummary {
   platform: string;
   port: string;
   count: number;
-  software: string;
+  software: SoftwareInfo | null;
   affected: number;
 }
 
@@ -146,10 +156,10 @@ export default function VulnerabilitiesPage() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       data = data.filter((item: any) => 
-        (item.id && item.id.toLowerCase().includes(query)) ||
-        (item.description && item.description.toLowerCase().includes(query)) ||
-        (item.software && item.software.toLowerCase().includes(query)) ||
-        (item.host && item.host.toLowerCase().includes(query))
+        item.id?.toLowerCase().includes(query) ||
+        item.description?.toLowerCase().includes(query) ||
+        item.software?.product?.toLowerCase().includes(query) ||
+        item.host?.toLowerCase().includes(query)
       );
     }
 
@@ -221,6 +231,47 @@ export default function VulnerabilitiesPage() {
 
   const handleHostClick = useCallback((host: string) => {
     router.push(`/hosts?search=${encodeURIComponent(host)}`);
+  }, [router]);
+
+  const handleSoftwareClick = useCallback((software: string) => {
+    router.push(`/software?search=${encodeURIComponent(software)}`);
+  }, [router]);
+
+  // Helper function to get display name for software
+  const getSoftwareDisplayName = useCallback((software: SoftwareInfo | null | undefined): string => {
+    if (!software) return 'N/A';
+    
+    // Prefer Product, fall back to Vendor
+    const name = software.product || software.vendor || 'N/A';
+    
+    // Add version if available
+    if (software.version && name !== 'N/A') {
+      return `${name} ${software.version}`;
+    }
+    
+    return name;
+  }, []);
+
+  // Helper function to get search term for software (for navigation)
+  const getSoftwareSearchTerm = useCallback((software: SoftwareInfo | null | undefined): string => {
+    if (!software) return '';
+    return software.product || software.vendor || '';
+  }, []);
+
+  const handleViewAffectedHosts = useCallback(() => {
+    setTabValue(2); // Switch to Affected Hosts tab
+    setExpandedRow(null); // Close expanded row
+  }, []);
+
+  const handleViewConnections = useCallback((software: string) => {
+    router.push(`/connections?search=${encodeURIComponent(software)}`);
+  }, [router]);
+
+  const handleViewConnectionsByFlow = useCallback((flows: string[]) => {
+    if (flows && flows.length > 0) {
+      // Use the first flow to search on the connections page
+      router.push(`/connections?search=${encodeURIComponent(flows[0])}`);
+    }
   }, [router]);
 
   const fetchExploitCode = async (exploitId: string, filePath: string) => {
@@ -497,7 +548,7 @@ export default function VulnerabilitiesPage() {
                               } 
                             />
                           </TableCell>
-                          <TableCell>{row.software}</TableCell>
+                          <TableCell>{getSoftwareDisplayName(row.software)}</TableCell>
                           <TableCell align="right">{row.count}</TableCell>
                           <TableCell align="right">{row.affected}</TableCell>
                         </>
@@ -512,7 +563,7 @@ export default function VulnerabilitiesPage() {
                           <TableCell>{row.id}</TableCell>
                           <TableCell>{row.type}</TableCell>
                           <TableCell>{row.platform}</TableCell>
-                          <TableCell>{row.software}</TableCell>
+                          <TableCell>{getSoftwareDisplayName(row.software)}</TableCell>
                           <TableCell align="right">{row.count}</TableCell>
                         </>
                       )}
@@ -629,7 +680,7 @@ export default function VulnerabilitiesPage() {
                                               Software:
                                             </Typography>
                                             <Typography variant="body2" fontWeight="medium">
-                                              {row.software || 'N/A'}
+                                              {getSoftwareDisplayName(row.software)}
                                             </Typography>
                                           </Box>
                                           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -650,6 +701,48 @@ export default function VulnerabilitiesPage() {
                                           </Box>
                                         </Box>
                                       </Card>
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                        {row.software && (
+                                          <>
+                                            <Button
+                                              variant="outlined"
+                                              color="primary"
+                                              size="small"
+                                              startIcon={<AppsIcon />}
+                                              endIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
+                                              onClick={() => handleSoftwareClick(getSoftwareSearchTerm(row.software))}
+                                              data-learn="View in Software Page: Navigate to the Software page to see all instances of this software across the network."
+                                            >
+                                              View Software Details
+                                            </Button>
+                                            <Button
+                                              variant="outlined"
+                                              color="info"
+                                              size="small"
+                                              startIcon={<CableIcon />}
+                                              endIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
+                                              onClick={() => row.software?.flows && row.software.flows.length > 0 ? handleViewConnectionsByFlow(row.software.flows) : handleViewConnections(getSoftwareSearchTerm(row.software))}
+                                              data-learn="View Connection: Navigate to the Connections page to search for network flows associated with this vulnerability (uses first flow if available, otherwise searches by software name)."
+                                            >
+                                              View Connection
+                                            </Button>
+                                          </>
+                                        )}
+                                        {row.affected > 0 && (
+                                          <Button
+                                            variant="outlined"
+                                            color="secondary"
+                                            size="small"
+                                            startIcon={<ComputerIcon />}
+                                            onClick={handleViewAffectedHosts}
+                                            data-learn="View Affected Hosts: Switch to the Affected Hosts tab to see all hosts with vulnerabilities."
+                                          >
+                                            View Affected Hosts ({row.affected})
+                                          </Button>
+                                        )}
+                                      </Box>
                                     </Grid>
                                     {row.versions && row.versions.length > 0 && (
                                       <Grid item xs={12}>
@@ -752,7 +845,7 @@ export default function VulnerabilitiesPage() {
                                               Software:
                                             </Typography>
                                             <Typography variant="body2" fontWeight="medium">
-                                              {row.software || 'N/A'}
+                                              {getSoftwareDisplayName(row.software)}
                                             </Typography>
                                           </Box>
                                           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -793,6 +886,48 @@ export default function VulnerabilitiesPage() {
                                           )}
                                         </Box>
                                       </Card>
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                        {row.software && (
+                                          <>
+                                            <Button
+                                              variant="outlined"
+                                              color="primary"
+                                              size="small"
+                                              startIcon={<AppsIcon />}
+                                              endIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
+                                              onClick={() => handleSoftwareClick(getSoftwareSearchTerm(row.software))}
+                                              data-learn="View in Software Page: Navigate to the Software page to see all instances of this software across the network."
+                                            >
+                                              View Software Details
+                                            </Button>
+                                            <Button
+                                              variant="outlined"
+                                              color="info"
+                                              size="small"
+                                              startIcon={<CableIcon />}
+                                              endIcon={<OpenInNewIcon sx={{ fontSize: 16 }} />}
+                                              onClick={() => row.software?.flows && row.software.flows.length > 0 ? handleViewConnectionsByFlow(row.software.flows) : handleViewConnections(getSoftwareSearchTerm(row.software))}
+                                              data-learn="View Connection: Navigate to the Connections page to search for network flows associated with this exploit (uses first flow if available, otherwise searches by software name)."
+                                            >
+                                              View Connection
+                                            </Button>
+                                          </>
+                                        )}
+                                        {row.affected > 0 && (
+                                          <Button
+                                            variant="outlined"
+                                            color="secondary"
+                                            size="small"
+                                            startIcon={<ComputerIcon />}
+                                            onClick={handleViewAffectedHosts}
+                                            data-learn="View Affected Hosts: Switch to the Affected Hosts tab to see all hosts with this exploit."
+                                          >
+                                            View Affected Hosts ({row.affected})
+                                          </Button>
+                                        )}
+                                      </Box>
                                     </Grid>
                                     {row.file && (
                                       <Grid item xs={12}>

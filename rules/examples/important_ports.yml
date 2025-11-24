@@ -342,10 +342,10 @@ rules:
 
   # Port 179: BGP
   - name: BGP Detected
-    description: Border Gateway Protocol detected - routing hijacks have large impact
+    description: Border Gateway Protocol detected
     type: TCP
     expression: DstPort == 179
-    severity: high
+    severity: info
     mitre: ["T1557.002"]
     tags: ["routing"]
     enabled: true

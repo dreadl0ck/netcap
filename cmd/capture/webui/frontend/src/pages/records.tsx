@@ -1311,8 +1311,10 @@ export default function AuditRecords() {
                           }
                           
                           // Keep focus and cursor position
+                          // Capture the element before requestAnimationFrame
+                          const currentTarget = e.currentTarget;
                           requestAnimationFrame(() => {
-                            const inputElement = e.currentTarget.querySelector('input');
+                            const inputElement = currentTarget?.querySelector('input');
                             if (inputElement) {
                               inputElement.focus();
                             }
