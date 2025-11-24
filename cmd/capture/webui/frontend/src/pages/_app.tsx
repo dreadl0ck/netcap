@@ -111,15 +111,36 @@ const theme = createTheme({
         html: {
           WebkitFontSmoothing: 'antialiased',
           MozOsxFontSmoothing: 'grayscale',
-          touchAction: 'manipulation',
           WebkitTextSizeAdjust: '100%',
+          // Prevent iOS Safari overscroll/rubber-banding
+          height: '100%',
+          width: '100%',
+          overflow: 'hidden',
         },
         body: {
           WebkitFontSmoothing: 'antialiased',
           MozOsxFontSmoothing: 'grayscale',
           textRendering: 'optimizeLegibility',
-          touchAction: 'manipulation',
           WebkitTextSizeAdjust: '100%',
+          // Prevent iOS Safari overscroll/rubber-banding
+          height: '100%',
+          width: '100%',
+          margin: 0,
+          padding: 0,
+          overflow: 'hidden',
+          position: 'fixed',
+          // Prevent pull-to-refresh and bounce
+          overscrollBehavior: 'none',
+          touchAction: 'pan-x pan-y',
+        },
+        // Target Next.js root div
+        '#__next': {
+          height: '100%',
+          width: '100%',
+          overflow: 'auto',
+          position: 'relative',
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'none',
         },
         '@font-face': [
           {

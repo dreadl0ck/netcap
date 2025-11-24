@@ -27,6 +27,7 @@ import useSWR from 'swr';
 import Layout from '@/components/Layout';
 import { api } from '@/lib/api';
 import BPFExpressionHighlight, { BPFExpressionBlock } from '@/components/BPFExpressionHighlight';
+import { SyntaxHighlightedTextArea } from '@/components/SyntaxHighlightedInput';
 
 export default function BPF() {
   const { data: bpfData, error: bpfError, mutate: mutateBPF } = useSWR('bpfInfo', () => api.getBPFInfo());
@@ -102,30 +103,16 @@ export default function BPF() {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
-              Current Filter
-            </Typography>
-            <TextField
-              data-learn="BPF Filter Expression: Enter a Berkeley Packet Filter expression to capture only specific network traffic (e.g., tcp port 80, host 192.168.1.1, or complex combinations)."
-              fullWidth
-              multiline
-              rows={4}
-              placeholder="Enter BPF filter expression (e.g., tcp port 80 or udp port 53)"
+            <SyntaxHighlightedTextArea
+              syntaxType="bpf"
               value={bpfFilter}
-              onChange={(e) => setBpfFilter(e.target.value)}
-              sx={{
-                fontFamily: 'monospace',
-                '& textarea': { fontFamily: 'monospace', fontSize: '0.95rem' },
-              }}
+              onChange={setBpfFilter}
+              label="Current Filter"
+              placeholder="Enter BPF filter expression (e.g., tcp port 80 or udp port 53)"
+              rows={4}
+              fullWidth
+              data-learn="BPF Filter Expression: Enter a Berkeley Packet Filter expression to capture only specific network traffic (e.g., tcp port 80, host 192.168.1.1, or complex combinations)."
             />
-            {bpfFilter && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="caption" color="text.secondary" gutterBottom>
-                  Preview:
-                </Typography>
-                <BPFExpressionBlock expression={bpfFilter} />
-              </Box>
-            )}
             <Box sx={{ mt: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
               <Button
                 data-learn="Save Filter: Apply this BPF filter to future packet captures, limiting captured traffic to only packets matching the filter expression."

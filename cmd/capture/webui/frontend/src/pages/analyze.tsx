@@ -377,7 +377,7 @@ export default function AnalyzePage() {
   const handleViewSession = async (sessionId: string) => {
     try {
       await api.selectSession(sessionId);
-      window.location.href = '/audit';
+      window.location.href = '/records';
     } catch (error) {
       console.error('Failed to select session:', error);
       alert('Failed to load session');
@@ -397,7 +397,7 @@ export default function AnalyzePage() {
   const handleViewFile = async (filePath: string) => {
     try {
       await api.setActiveDirectory(filePath);
-      window.location.href = '/audit';
+      window.location.href = '/records';
     } catch (error) {
       console.error('Failed to select file:', error);
       alert('Failed to load file');

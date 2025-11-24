@@ -485,11 +485,6 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	matchedCount := 0
 
 	for {
-		// Check if we've reached the limit
-		if count >= limit {
-			break
-		}
-
 		record, err := auditReader.NextRecord()
 		if err == io.EOF {
 			break
@@ -528,23 +523,30 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			continue
 		}
 
-		// Convert record to JSON
-		jsonData, err := json.Marshal(record)
-		if err != nil {
-			log.Printf("[WebUI] JSON marshal error: %v", err)
-			continue
-		}
+		// Only send records if we haven't reached the limit yet
+		// But continue scanning to get accurate totalScanned count
+		if count < limit {
+			// Convert record to JSON
+			jsonData, err := json.Marshal(record)
+			if err != nil {
+				log.Printf("[WebUI] JSON marshal error: %v", err)
+				continue
+			}
 
-		fmt.Fprintf(w, "event: record\ndata: %s\n\n", string(jsonData))
-		flusher.Flush()
-
-		count++
-
-		// Send progress update every 100 records
-		if count%100 == 0 {
-			fmt.Fprintf(w, "event: progress\ndata: {\"count\": %d, \"scanned\": %d}\n\n", count, totalScanned)
+			fmt.Fprintf(w, "event: record\ndata: %s\n\n", string(jsonData))
 			flusher.Flush()
+
+			count++
+
+			// Send progress update every 100 records returned
+			if count%100 == 0 {
+				fmt.Fprintf(w, "event: progress\ndata: {\"count\": %d, \"scanned\": %d}\n\n", count, totalScanned)
+				flusher.Flush()
+			}
 		}
+
+		// Continue scanning all records even after reaching limit
+		// to get accurate totalScanned count
 	}
 
 	executionTime := time.Since(startTime)

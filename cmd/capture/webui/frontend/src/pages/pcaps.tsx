@@ -137,8 +137,8 @@ export default function PCAPs() {
       // Force refresh of audit files by triggering a global event
       window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
       
-      // Navigate to audit records page
-      router.push('/audit');
+      // Navigate to records page
+      router.push('/records');
     } catch (err) {
       console.error('Failed to set active directory:', err);
       alert('Failed to switch to this file');

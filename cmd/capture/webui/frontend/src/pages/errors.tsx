@@ -40,7 +40,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function ErrorsPage() {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const [sortField, setSortField] = useState<SortField>('errorCount');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [selectedError, setSelectedError] = useState<ErrorLogInfo | null>(null);

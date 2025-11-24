@@ -2,15 +2,15 @@
 
 ## Overview
 
-This document describes the comprehensive syntax highlighting implementation for filter expressions throughout the NETCAP webUI.
+This document describes the comprehensive **inline** syntax highlighting implementation for filter expressions throughout the NETCAP webUI. All syntax highlighting now happens **directly within the input fields** - no separate preview boxes are shown.
 
 ## Components
 
-### 1. Filter Expression Highlighting (expr-lang)
+### 1. Core Highlighting Libraries
 
-**Files:**
-- `src/lib/filterSyntaxHighlight.ts` - Core tokenization and highlighting logic
-- `src/components/FilterExpressionHighlight.tsx` - React components for display
+#### Filter Expression Highlighting (expr-lang)
+
+**File:** `src/lib/filterSyntaxHighlight.ts`
 
 **Supported Syntax:**
 - **Field names**: `DstPort`, `SrcIP`, `Timestamp`, etc. (light blue)
@@ -21,27 +21,9 @@ This document describes the comprehensive syntax highlighting implementation for
 - **Boolean literals**: `true`, `false` (blue)
 - **Parentheses/Brackets**: Grouping operators (gold)
 
-**Components Provided:**
-- `FilterExpressionHighlight` - Main component with customizable props
-- `FilterExpressionInline` - Inline variant with ellipsis for table cells
-- `FilterExpressionBlock` - Block variant for code displays
+#### BPF Filter Highlighting
 
-**Usage Example:**
-```tsx
-import { FilterExpressionBlock, FilterExpressionInline } from '@/components/FilterExpressionHighlight';
-
-// Inline in table
-<FilterExpressionInline expression="DstPort == 443 && IsPrivateIP(SrcIP)" maxWidth={300} />
-
-// Block display
-<FilterExpressionBlock expression="SrcPort == 80 || DstPort == 443" />
-```
-
-### 2. BPF Filter Highlighting
-
-**Files:**
-- `src/lib/bpfSyntaxHighlight.ts` - Core tokenization for BPF syntax
-- `src/components/BPFExpressionHighlight.tsx` - React components for BPF display
+**File:** `src/lib/bpfSyntaxHighlight.ts`
 
 **Supported Syntax:**
 - **Protocols**: `tcp`, `udp`, `icmp`, `ip`, `arp`, etc. (blue)
@@ -51,39 +33,133 @@ import { FilterExpressionBlock, FilterExpressionInline } from '@/components/Filt
 - **IP addresses**: IPv4/IPv6 addresses (teal)
 - **MAC addresses**: Ethernet addresses (orange)
 
-**Components Provided:**
-- `BPFExpressionHighlight` - Main component
-- `BPFExpressionBlock` - Block variant for BPF displays
+#### Regex Pattern Highlighting
+
+**File:** `src/lib/regexSyntaxHighlight.ts`
+
+**Supported Syntax:**
+- **Flags**: `(?i)`, `(?m)`, etc. (purple)
+- **Groups**: Capturing groups `(...)` (gold)
+- **Character classes**: `[a-z]`, `[^0-9]` (teal)
+- **Escape sequences**: `\w`, `\d`, `\s`, `\n`, `\t`, etc. (light green)
+- **Hex codes**: `\x00` (orange)
+- **Octal codes**: `\000` (orange)
+- **Quantifiers**: `*`, `+`, `?`, `{n,m}`, `|` (red)
+- **Backreferences**: `$1`, `$2` (yellow)
+- **Anchors**: `^`, `$` (blue)
+
+### 2. Inline Syntax Highlighting Components
+
+#### SyntaxHighlightedInput / SyntaxHighlightedTextArea
+
+**File:** `src/components/SyntaxHighlightedInput.tsx`
+
+A text input/textarea component with real-time inline syntax highlighting. The component uses an overlay technique where:
+1. The actual input text is rendered transparent
+2. A syntax-highlighted overlay is positioned exactly over the input
+3. The caret remains visible for editing
+
+**Props:**
+- `syntaxType`: `'filter' | 'bpf' | 'regex'` - Type of syntax to highlight
+- `value`: string - The input value
+- `onChange`: (value: string) => void - Change handler
+- `enableHighlighting`: boolean (default: true) - Toggle highlighting
+- `label`: string - Input label
+- `helperText`: string - Helper text below input
+- `multiline`: boolean - Whether to use textarea
+- `rows`: number - Number of rows (for multiline)
 
 **Usage Example:**
 ```tsx
-import { BPFExpressionBlock } from '@/components/BPFExpressionHighlight';
+import { SyntaxHighlightedTextArea } from '@/components/SyntaxHighlightedInput';
 
-<BPFExpressionBlock expression="tcp port 80 or udp port 53" />
+<SyntaxHighlightedTextArea
+  syntaxType="bpf"
+  value={bpfFilter}
+  onChange={setBpfFilter}
+  label="BPF Filter"
+  placeholder="tcp port 80 or udp port 53"
+  rows={4}
+  fullWidth
+/>
 ```
+
+#### SyntaxHighlightedAutocomplete
+
+**File:** `src/components/SyntaxHighlightedAutocomplete.tsx`
+
+An autocomplete component with inline syntax highlighting for filter expressions. Preserves all Material-UI Autocomplete functionality while adding syntax highlighting overlay.
+
+**Props:**
+- All standard Autocomplete props
+- Automatically highlights filter expressions in real-time
+
+**Usage Example:**
+```tsx
+import SyntaxHighlightedAutocomplete from '@/components/SyntaxHighlightedAutocomplete';
+
+<SyntaxHighlightedAutocomplete
+  value={filterExpression}
+  onChange={setFilterExpression}
+  options={suggestions}
+  label="Filter Expression"
+  placeholder="e.g., DstPort == 443"
+/>
+```
+
+### 3. Display-Only Components (for showing expressions, not editing)
+
+These components are used to display syntax-highlighted expressions in tables, alerts, and other read-only contexts.
+
+#### FilterExpressionHighlight / FilterExpressionBlock
+
+**File:** `src/components/FilterExpressionHighlight.tsx`
+
+- `FilterExpressionHighlight` - Inline display component
+- `FilterExpressionInline` - Inline with ellipsis for tables
+- `FilterExpressionBlock` - Block display with background
+
+#### BPFExpressionHighlight / BPFExpressionBlock
+
+**File:** `src/components/BPFExpressionHighlight.tsx`
+
+- `BPFExpressionHighlight` - Inline display component
+- `BPFExpressionBlock` - Block display with background
+
+#### RegexHighlight / RegexBlock
+
+**File:** `src/components/RegexHighlight.tsx`
+
+- `RegexHighlight` - Inline display component
+- `RegexBlock` - Block display with background
 
 ## Integration Points
 
-### Pages with Syntax Highlighting
+### Pages with Inline Syntax Highlighting
 
-1. **audit.tsx** - Audit Records Page
-   - Filter input preview (expr-lang)
-   - Active filter display
-   - Filter examples with highlighting
+1. **bpf.tsx** - BPF Filter Configuration Page
+   - ✅ Inline syntax highlighting in filter input (4 rows, multiline)
+   - No separate preview box
 
 2. **rules.tsx** - Detection Rules Page
-   - Rule expression in table (inline)
-   - Rule editor dialog with preview (block)
+   - ✅ Inline syntax highlighting in expression editor (4 rows, multiline)
+   - Display-only highlighting in rule table (inline)
+   - No separate preview box
 
-3. **bpf.tsx** - BPF Filter Configuration Page
-   - Filter input preview
-   - BPF examples with highlighting
+3. **probes.tsx** - Service Probes Page
+   - ✅ Inline syntax highlighting for regex patterns (3 rows, multiline)
+   - No separate preview box
 
-4. **analyze.tsx** - Analysis Page
-   - Active BPF filter display
+4. **audit.tsx** - Audit Records Page
+   - ✅ Inline syntax highlighting in filter input with autocomplete
+   - No separate preview boxes
+   - Full autocomplete functionality preserved (TAB, CTRL+SPACE)
 
 5. **alerts.tsx** - Alerts Page
-   - Rule expression in alert details
+   - Display-only: Rule expressions shown in alert details
+
+6. **analyze.tsx** - Analysis Page  
+   - Display-only: Active BPF filter display
 
 ## Color Scheme
 
@@ -106,14 +182,57 @@ The highlighting uses VS Code Dark+ inspired colors for consistency:
 - IPs: `#4ec9b0` (teal)
 - Strings: `#ce9178` (orange)
 
+### Regex Colors:
+- Flags: `#c586c0` (purple)
+- Groups: `#ffd700` (gold)
+- Character classes: `#4ec9b0` (teal)
+- Escape sequences: `#b5cea8` (light green)
+- Hex/Octal codes: `#ce9178` (orange)
+- Quantifiers: `#f44336` (red)
+- Backreferences: `#dcdcaa` (yellow)
+- Anchors: `#569cd6` (blue)
+- Plain text: `#d4d4d4` (light gray)
+
 ## Features
 
-1. **Real-time Preview**: As users type filter expressions, they see highlighted previews
-2. **Example Highlighting**: All filter examples throughout the UI are highlighted
+1. **Real-time Inline Highlighting**: As users type, syntax is highlighted directly in the input field
+2. **No Preview Boxes**: All highlighting happens inline - cleaner UI
 3. **Consistent Styling**: Unified color scheme across all pages
-4. **Responsive Design**: Works in tables, dialogs, and full-width displays
-5. **Tooltip Support**: Inline expressions show full text on hover
+4. **Full Functionality**: All input features preserved (autocomplete, copy/paste, selection, etc.)
+5. **Responsive Design**: Works in single-line and multi-line inputs
 6. **Dark Mode Compatible**: Colors work well in dark theme
+7. **Accessible**: Maintains proper focus, caret visibility, and text selection
+
+## Technical Implementation
+
+### Overlay Technique
+
+The inline highlighting uses a layered approach:
+
+1. **Highlight Overlay Layer**: Positioned absolutely over the input, contains colored syntax tokens, pointer-events disabled
+2. **Input Layer**: Standard input/textarea with transparent text color, fully interactive
+3. **Caret**: Remains visible using `caretColor` CSS property
+
+This approach ensures:
+- Real-time highlighting as you type
+- All native input behaviors work (selection, copy/paste, autocomplete)
+- No performance issues with large inputs
+- Clean separation of concerns
+
+### Example Structure:
+```tsx
+<Box sx={{ position: 'relative' }}>
+  {/* Syntax-highlighted overlay */}
+  <Box sx={{ position: 'absolute', pointerEvents: 'none', color: 'transparent' }}>
+    {tokens.map(token => <span style={{ color: token.color }}>{token.value}</span>)}
+  </Box>
+  
+  {/* Actual input (transparent text) */}
+  <OutlinedInput
+    sx={{ '& input': { color: 'transparent', caretColor: 'text.primary' } }}
+  />
+</Box>
+```
 
 ## Extending the Highlighting
 
@@ -149,25 +268,31 @@ const KEYWORDS = new Set([
 
 ## Testing
 
-To test the highlighting:
+To test the inline highlighting:
 
-1. Navigate to the Audit Records page (`/audit`)
-2. Type a filter expression in the input field
-3. Verify the preview shows colored syntax
-4. Check the help examples are highlighted
-5. Apply the filter and verify the active filter display
-6. Navigate to Rules page (`/rules`)
-7. Create/edit a rule and verify expression highlighting
-8. Navigate to BPF page (`/bpf`)
-9. Enter a BPF filter and verify BPF syntax highlighting
+1. Navigate to BPF page (`/bpf`)
+   - Type a BPF filter - verify inline syntax highlighting
+   - No preview box should appear
+   
+2. Navigate to Rules page (`/rules`)
+   - Create/edit a rule - verify expression highlighting inline
+   - No preview box should appear
+   
+3. Navigate to Audit Records page (`/audit`)
+   - Type a filter expression - verify inline highlighting
+   - Test autocomplete with TAB - highlighting should update
+   - No preview boxes should appear
+   
+4. Navigate to Service Probes page (`/probes`)
+   - Edit a probe pattern - verify regex highlighting inline
+   - No preview box should appear
 
 ## Future Enhancements
 
 Potential improvements:
 - Error highlighting for invalid syntax
-- Autocomplete with syntax-aware suggestions
-- Syntax validation with inline error messages
+- Syntax validation with inline error messages  
+- Autocomplete with syntax-aware suggestions for BPF
 - Custom themes for different user preferences
-- Export highlighted expressions as images
-- Search/replace with syntax preservation
+- Performance optimizations for very long expressions
 

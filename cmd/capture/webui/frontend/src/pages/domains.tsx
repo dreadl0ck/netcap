@@ -25,6 +25,8 @@ import {
   Typography,
   Alert,
   Collapse,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -33,6 +35,8 @@ import {
   TrendingUp as TrendingUpIcon,
   Public as PublicIcon,
   AccountTree as AccountTreeIcon,
+  TableChart as TableChartIcon,
+  BarChart as BarChartIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import FileSelectorHeader from '@/components/FileSelectorHeader';
@@ -62,7 +66,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function DomainsPage() {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'root' | 'subdomain'>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
@@ -70,6 +74,7 @@ export default function DomainsPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<DomainSortField>('queries');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -235,6 +240,34 @@ export default function DomainsPage() {
   return (
     <Layout title="Domains" headerAction={fileSelector}>
       <Box sx={{ minWidth: 0 }}>
+        {/* View Mode Toggle */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_e, newValue) => {
+              if (newValue !== null) {
+                setViewMode(newValue);
+              }
+            }}
+            size="small"
+            data-learn="View Mode Toggle: Switch between Table mode (showing data in a table) and Chart mode (showing only visualization charts)."
+          >
+            <ToggleButton value="table">
+              <TableChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Table
+              </Box>
+            </ToggleButton>
+            <ToggleButton value="chart">
+              <BarChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Chart
+              </Box>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
         {/* Summary Cards */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
@@ -310,7 +343,8 @@ export default function DomainsPage() {
           </Grid>
         </Grid>
 
-        {/* Visualization Charts */}
+        {/* Visualization Charts - Only show in chart mode */}
+        {viewMode === 'chart' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
             <Card sx={{ height: 500 }}>
@@ -384,8 +418,11 @@ export default function DomainsPage() {
             </Card>
           </Grid>
         </Grid>
+        )}
 
-        {/* Filters and Actions */}
+        {/* Filters and Actions - Only show in table mode */}
+        {viewMode === 'table' && (
+        <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField
             data-learn="Domain Search: Filter domains by name, parent domain, record type, or resolved IP address."
@@ -574,7 +611,7 @@ export default function DomainsPage() {
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {(domain.resolvedIPs || []).slice(0, 2).map((ip) => (
+                            {(domain.resolvedIPs || []).filter(ip => ip && ip !== '<nil>').slice(0, 2).map((ip) => (
                               <Chip
                                 key={ip}
                                 label={ip}
@@ -584,9 +621,9 @@ export default function DomainsPage() {
                                 data-learn="Resolved IP: IP address that this domain name resolved to in DNS responses."
                               />
                             ))}
-                            {(domain.resolvedIPs || []).length > 2 && (
+                            {(domain.resolvedIPs || []).filter(ip => ip && ip !== '<nil>').length > 2 && (
                               <Chip
-                                label={`+${(domain.resolvedIPs || []).length - 2}`}
+                                label={`+${(domain.resolvedIPs || []).filter(ip => ip && ip !== '<nil>').length - 2}`}
                                 size="small"
                                 color="info"
                                 sx={{ fontSize: '0.7rem', height: 20 }}
@@ -685,13 +722,13 @@ export default function DomainsPage() {
                                 )}
                                 
                                 {/* All Resolved IPs */}
-                                {(domain.resolvedIPs || []).length > 0 && (
+                                {(domain.resolvedIPs || []).filter(ip => ip && ip !== '<nil>').length > 0 && (
                                   <Grid item xs={12}>
                                     <Typography variant="subtitle2" gutterBottom>
-                                      All Resolved IP Addresses ({(domain.resolvedIPs || []).length})
+                                      All Resolved IP Addresses ({(domain.resolvedIPs || []).filter(ip => ip && ip !== '<nil>').length})
                                     </Typography>
                                     <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                                      {(domain.resolvedIPs || []).map((ip) => (
+                                      {(domain.resolvedIPs || []).filter(ip => ip && ip !== '<nil>').map((ip) => (
                                         <Chip
                                           key={ip}
                                           label={ip}
@@ -725,6 +762,8 @@ export default function DomainsPage() {
               rowsPerPageOptions={[10, 25, 50, 100]}
             />
           </>
+        )}
+        </>
         )}
       </Box>
     </Layout>

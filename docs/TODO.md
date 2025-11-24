@@ -7,11 +7,20 @@ AI page for generating reports or AI assisted analysis agent
 
 MCP
 
+records: rename Download All to Download Records + new Download CSV button to convert and download all records as CSV files
+caution with gzip compression middleware causing issues again
+
+Pattern (Regex) Box black FIX SYNTAX HIGHLIGHTING during editing
+Rule editor Expression input black FIX SYNTAX HIGHLIGHTING during editing
+
+support creating service probes on the services page service details: add create probe button, switch to probes page, open create modal and insert service banner 
+
 ----
 
 - Geolocation chart with ingress / egress based coloring switch
 - Table with PCAPs and number of audit records of each type, sortable ("eg: which capture file had the most Credentials")
 - DHCP fingerprinting results for DeviceProfile and IPProfile
+
 - overview: standard VS non standard ports in use for services
 - Visualize Applications (Clustering)
 - Sankey Diagram for Flows between IPs

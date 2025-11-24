@@ -48,6 +48,7 @@ import FileSelectorHeader from '@/components/FileSelectorHeader';
 import { api, Rule, CreateRuleRequest, UpdateRuleRequest, formatBytes } from '@/lib/api';
 import useSWR, { mutate, mutate as globalMutate } from 'swr';
 import { FilterExpressionInline, FilterExpressionBlock } from '@/components/FilterExpressionHighlight';
+import { SyntaxHighlightedTextArea } from '@/components/SyntaxHighlightedInput';
 
 export default function RulesPage() {
   const router = useRouter();
@@ -625,7 +626,12 @@ export default function RulesPage() {
                 </TableRow>
               ) : (
                 paginatedRules.map((rule) => (
-                  <TableRow key={rule.id} hover>
+                  <TableRow 
+                    key={rule.id} 
+                    hover
+                    onClick={() => handleOpenDialog(rule)}
+                    sx={{ cursor: 'pointer' }}
+                  >
                     <TableCell>
                       <Box>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -722,10 +728,26 @@ export default function RulesPage() {
                     </TableCell>
                     <TableCell align="right">
                       <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                        <IconButton data-learn="Edit Rule: Modify this rule's properties, expression, severity, and settings." size="small" onClick={() => handleOpenDialog(rule)} color="primary">
+                        <IconButton 
+                          data-learn="Edit Rule: Modify this rule's properties, expression, severity, and settings." 
+                          size="small" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenDialog(rule);
+                          }} 
+                          color="primary"
+                        >
                           <EditIcon />
                         </IconButton>
-                        <IconButton data-learn="Delete Rule: Permanently remove this rule from the system." size="small" onClick={() => handleDelete(rule.id)} color="error">
+                        <IconButton 
+                          data-learn="Delete Rule: Permanently remove this rule from the system." 
+                          size="small" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(rule.id);
+                          }} 
+                          color="error"
+                        >
                           <DeleteIcon />
                         </IconButton>
                       </Box>
@@ -736,7 +758,10 @@ export default function RulesPage() {
                           <IconButton 
                             data-learn="Execute Rule: Run this specific rule against the current PCAP data to generate matching alerts."
                             size="small" 
-                            onClick={() => handleExecuteRule(rule.id)} 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleExecuteRule(rule.id);
+                            }} 
                             color="success"
                             disabled={!rule.enabled || executingRule === rule.id || !status?.activeInputFile}
                           >
@@ -871,41 +896,15 @@ export default function RulesPage() {
                 </Select>
               </FormControl>
 
-              <Box>
-                <TextField
-                  label="Expression"
-                  fullWidth
-                  required
-                  multiline
-                  rows={4}
-                  value={formData.expression}
-                  onChange={(e) => setFormData({ ...formData, expression: e.target.value })}
-                  helperText="Expr-lang expression to evaluate (e.g., 'SYN && !ACK', 'DstPort == 22')"
-                  InputProps={{
-                    style: { 
-                      fontFamily: 'monospace',
-                      fontSize: '0.95rem',
-                    },
-                  }}
-                  sx={{
-                    '& .MuiInputBase-root': {
-                      fontFamily: 'monospace',
-                      backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                    },
-                    '& .MuiInputBase-input': {
-                      color: 'text.primary',
-                    },
-                  }}
-                />
-                {formData.expression && (
-                  <Box sx={{ mt: 1 }}>
-                    <Typography variant="caption" color="text.secondary" gutterBottom>
-                      Preview:
-                    </Typography>
-                    <FilterExpressionBlock expression={formData.expression} />
-                  </Box>
-                )}
-              </Box>
+              <SyntaxHighlightedTextArea
+                syntaxType="filter"
+                value={formData.expression}
+                onChange={(value) => setFormData({ ...formData, expression: value })}
+                label="Expression"
+                helperText="Expr-lang expression to evaluate (e.g., 'SYN && !ACK', 'DstPort == 22')"
+                rows={4}
+                fullWidth
+              />
 
               <FormControl fullWidth required>
                 <InputLabel>Severity</InputLabel>

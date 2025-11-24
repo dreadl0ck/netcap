@@ -24,6 +24,8 @@ import {
   Collapse,
   Tabs,
   Tab,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -33,12 +35,15 @@ import {
   Security as SecurityIcon,
   Computer as ComputerIcon,
   Code as CodeIcon,
+  TableChart as TableChartIcon,
+  BarChart as BarChartIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import FileSelectorHeader from '@/components/FileSelectorHeader';
 import { api, formatBytes, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/router';
 
 // Dynamically import SyntaxHighlighter to avoid SSR issues
 const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
@@ -89,8 +94,9 @@ interface VulnerabilitiesResponse {
 type SortOrder = 'asc' | 'desc';
 
 export default function VulnerabilitiesPage() {
+  const router = useRouter();
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
   const [tabValue, setTabValue] = useState(0);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
@@ -99,6 +105,7 @@ export default function VulnerabilitiesPage() {
   const [sortField, setSortField] = useState<string>('count');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [exploitCode, setExploitCode] = useState<{[key: string]: {content: string, language: string, loading: boolean, error?: string}}>({});
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
 
   // Fetch status and input files
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -212,6 +219,10 @@ export default function VulnerabilitiesPage() {
     setExpandedRow(prev => prev === key ? null : key);
   }, []);
 
+  const handleHostClick = useCallback((host: string) => {
+    router.push(`/hosts?search=${encodeURIComponent(host)}`);
+  }, [router]);
+
   const fetchExploitCode = async (exploitId: string, filePath: string) => {
     // If already loaded, don't fetch again
     if (exploitCode[exploitId]) {
@@ -267,6 +278,34 @@ export default function VulnerabilitiesPage() {
   return (
     <Layout title="Vulnerabilities" headerAction={fileSelector}>
       <Box sx={{ minWidth: 0 }}>
+        {/* View Mode Toggle */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_e, newValue) => {
+              if (newValue !== null) {
+                setViewMode(newValue);
+              }
+            }}
+            size="small"
+            data-learn="View Mode Toggle: Switch between Table mode (showing data in a table) and Chart mode (showing only visualization charts)."
+          >
+            <ToggleButton value="table">
+              <TableChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Table
+              </Box>
+            </ToggleButton>
+            <ToggleButton value="chart">
+              <BarChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Chart
+              </Box>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
         {/* Summary Cards */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={4}>
@@ -310,7 +349,8 @@ export default function VulnerabilitiesPage() {
           </Grid>
         </Grid>
 
-        {/* Charts */}
+        {/* Charts - Only show in chart mode */}
+        {viewMode === 'chart' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
             <Card sx={{ height: 400 }}>
@@ -373,8 +413,11 @@ export default function VulnerabilitiesPage() {
             </Card>
           </Grid>
         </Grid>
+        )}
 
-        {/* Tabs and Table */}
+        {/* Tabs and Table - Only show in table mode */}
+        {viewMode === 'table' && (
+        <>
         <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
           <Tabs value={tabValue} onChange={handleTabChange}>
             <Tab label="Vulnerabilities" />
@@ -475,7 +518,18 @@ export default function VulnerabilitiesPage() {
                       )}
                       {tabValue === 2 && (
                         <>
-                          <TableCell>{row.host}</TableCell>
+                          <TableCell 
+                            onClick={() => handleHostClick(row.host)}
+                            sx={{ 
+                              cursor: 'pointer',
+                              '&:hover': {
+                                textDecoration: 'underline',
+                                color: 'primary.main'
+                              }
+                            }}
+                          >
+                            {row.host}
+                          </TableCell>
                           <TableCell align="right">{row.vulnerabilities}</TableCell>
                           <TableCell align="right">{row.exploits}</TableCell>
                           <TableCell>
@@ -814,6 +868,8 @@ export default function VulnerabilitiesPage() {
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
+        </>
+        )}
       </Box>
     </Layout>
   );

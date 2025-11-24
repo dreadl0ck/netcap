@@ -130,7 +130,7 @@ function syntaxHighlight(json: string) {
 
 export default function AlertsPage() {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const [severityFilter, setSeverityFilter] = useState<string>('');
   const [ruleFilter, setRuleFilter] = useState<string>('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');

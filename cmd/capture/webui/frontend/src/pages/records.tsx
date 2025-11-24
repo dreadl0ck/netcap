@@ -41,6 +41,7 @@ import { api, formatBytes, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useRouter } from 'next/router';
 import FilterExpressionHighlight, { FilterExpressionBlock } from '@/components/FilterExpressionHighlight';
+import { highlightFilterExpression } from '@/lib/filterSyntaxHighlight';
 
 interface LayerGroup {
   layerName: string;
@@ -342,6 +343,7 @@ export default function AuditRecords() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [switchingSession, setSwitchingSession] = useState(false);
   const filterInputRef = React.useRef<HTMLInputElement>(null);
+  const [filterInputFocused, setFilterInputFocused] = useState(false);
   // Expand all sections by default
   const [expandedLayers, setExpandedLayers] = useState<Set<string>>(new Set([
     'Link Layer', 
@@ -854,7 +856,7 @@ export default function AuditRecords() {
 
   if (!files && !error) {
     return (
-      <Layout title="Audit Records" headerAction={fileSelector}>
+      <Layout title="Records" headerAction={fileSelector}>
         <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
           <CircularProgress />
         </Box>
@@ -864,7 +866,7 @@ export default function AuditRecords() {
 
   if (error) {
     return (
-      <Layout title="Audit Records" headerAction={fileSelector}>
+      <Layout title="Records" headerAction={fileSelector}>
         <Box>
           <Typography color="error">Error loading audit records</Typography>
         </Box>
@@ -920,7 +922,7 @@ export default function AuditRecords() {
             
             {/* Download All Button */}
             <Button
-              data-learn="Download All Audit Records: Download all audit record files as a compressed archive for offline analysis."
+              data-learn="Download All Records: Download all record files as a compressed archive for offline analysis."
               variant="contained"
               color="success"
               startIcon={<DownloadIcon />}
@@ -1160,178 +1162,232 @@ export default function AuditRecords() {
           {/* Filter Input */}
           <Box sx={{ mb: 2, pt: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-              <Autocomplete
-                data-learn="Filter Expression: Enter conditions to filter records (e.g., DstPort == 443). Press TAB or CTRL+SPACE for autocomplete suggestions, ENTER to apply."
-                freeSolo
-                fullWidth
-                open={autocompleteOpen}
-                onOpen={() => {
-                  // Don't auto-open - only open via Tab key
-                }}
-                onClose={(event, reason) => {
-                  // Close on all reasons including blur (clicking outside)
-                  setAutocompleteOpen(false);
-                  setHighlightedOption(null);
-                }}
-                onHighlightChange={(event, option, reason) => {
-                  // Track the currently highlighted option for Tab key selection
-                  setHighlightedOption(option);
-                }}
-                options={getContextualSuggestions(filterExpression)}
-                value={filterExpression}
-                onChange={(event, newValue, reason) => {
-                  if (reason === 'selectOption' && typeof newValue === 'string') {
-                    // User selected from dropdown (via click, Enter, or TAB)
-                    const updatedExpression = insertSuggestion(filterExpression, newValue);
-                    setFilterExpression(updatedExpression);
-                    
-                    // Close the dropdown after selection
-                    setAutocompleteOpen(false);
-                    setHighlightedOption(null);
-                    
-                    // Reopen dropdown with new suggestions after a short delay (only via Tab)
-                    // Remove auto-reopen behavior
-                  }
-                }}
-                onInputChange={(event, newValue, reason) => {
-                  if (reason === 'input') {
-                    // User is typing - update value but DON'T auto-open dropdown
-                    setFilterExpression(newValue);
-                  } else if (reason === 'clear') {
-                    setFilterExpression('');
-                    setAutocompleteOpen(false);
-                    setHighlightedOption(null);
-                  }
-                }}
-                loading={loadingFields}
-                disabled={loading}
-                // Auto-select first option when there's only one match
-                autoHighlight
-                selectOnFocus={false}
-                clearOnBlur={false}
-                handleHomeEndKeys
-                disableClearable={true}
-                filterOptions={(options) => options} // Don't filter, we handle it in getContextualSuggestions
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    inputRef={filterInputRef}
-                    size="small"
-                    label="Filter Expression"
-                    placeholder="e.g., DstPort == 443 or SrcIP == '192.168.1.1'"
-                    onKeyDown={(e) => {
-                      // Handle CMD+ENTER or CTRL+ENTER to execute query immediately
-                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // Close dropdown and execute filter immediately
-                        setAutocompleteOpen(false);
-                        handleApplyFilter();
-                        return;
-                      }
-                      
-                      // Handle Enter key - close dropdown if open, otherwise apply filter
-                      if (e.key === 'Enter') {
-                        if (autocompleteOpen) {
-                          // Dropdown is open - let Autocomplete handle selection, then close
-                          // The onChange handler will close it
-                          return;
-                        } else {
-                          // Dropdown is closed - apply filter
-                          e.preventDefault();
-                          handleApplyFilter();
-                        }
-                        return;
-                      }
-                      
-                      // Handle TAB or Ctrl+Space for autocomplete - ONLY ways to open dropdown
-                      if ((e.key === 'Tab' && !e.shiftKey) || (e.key === ' ' && e.ctrlKey)) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        
-                        const suggestions = getContextualSuggestions(filterExpression);
-                        
-                        if (autocompleteOpen && suggestions.length > 0) {
-                          // Dropdown is open - select the currently highlighted option (or first if none highlighted)
-                          const suggestionToUse = highlightedOption || suggestions[0];
-                          const updatedExpression = insertSuggestion(filterExpression, suggestionToUse);
-                          setFilterExpression(updatedExpression);
-                          setHighlightedOption(null);
-                          
-                          // Keep dropdown open with new suggestions
-                          setTimeout(() => {
-                            const newSuggestions = getContextualSuggestions(updatedExpression);
-                            if (newSuggestions.length > 0) {
-                              setAutocompleteOpen(true);
-                            } else {
-                              setAutocompleteOpen(false);
-                            }
-                          }, 100);
-                        } else if (suggestions.length > 0) {
-                          // Dropdown is closed but we have suggestions - open it
-                          setAutocompleteOpen(true);
-                        }
-                        
-                        // Keep focus and cursor position
-                        requestAnimationFrame(() => {
-                          const inputElement = e.currentTarget.querySelector('input');
-                          if (inputElement) {
-                            inputElement.focus();
-                          }
-                        });
-                      }
+              <Box sx={{ position: 'relative', width: '100%' }}>
+                {/* Syntax-highlighted overlay - only show when NOT focused */}
+                {!filterInputFocused && filterExpression && highlightFilterExpression(filterExpression).length > 0 && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: '8.5px',
+                      left: '52px', // Account for filter icon (14px padding + 24px icon + 14px spacing)
+                      right: activeFilter ? '90px' : '50px', // Account for clear button if present
+                      pointerEvents: 'none',
+                      overflow: 'hidden',
+                      zIndex: 1,
+                      fontFamily: 'monospace',
+                      fontSize: '0.9rem',
+                      lineHeight: '1.4375em',
+                      whiteSpace: 'nowrap',
+                      color: 'transparent',
+                      userSelect: 'none',
                     }}
-                    InputProps={{
-                      ...params.InputProps,
-                      startAdornment: (
-                        <>
-                          <InputAdornment position="start">
-                            <FilterAltIcon color="action" />
-                          </InputAdornment>
-                          {params.InputProps.startAdornment}
-                        </>
-                      ),
-                      endAdornment: (
-                        <>
-                          {params.InputProps.endAdornment}
-                          {activeFilter && (
-                            <InputAdornment position="end">
-                              <Tooltip title="Clear filter">
-                                <IconButton size="small" onClick={handleClearFilter} edge="end">
-                                  <ClearIcon />
-                                </IconButton>
-                              </Tooltip>
-                            </InputAdornment>
-                          )}
-                        </>
-                      ),
-                      style: { fontFamily: 'monospace', fontSize: '0.9rem' }
-                    }}
-                    helperText={
-                      activeFilter 
-                        ? `Active filter: ${activeFilter}` 
-                        : valuesSampleInfo
-                        ? `Press TAB or CTRL+SPACE to show suggestions, ENTER to apply filter. CMD+ENTER to execute immediately. Values sampled from ${valuesSampleInfo.recordsScanned} records (max ${valuesSampleInfo.maxPerField} per field).`
-                        : "Press TAB or CTRL+SPACE to show autocomplete suggestions, ENTER to apply filter, CMD+ENTER to execute immediately."
-                    }
-                  />
+                  >
+                    {highlightFilterExpression(filterExpression).map((token, i) => {
+                      if (token.type === 'text' && token.color === 'inherit') {
+                        return <span key={i}>{token.value}</span>;
+                      }
+                      return (
+                        <span key={i} style={{ color: token.color }}>
+                          {token.value}
+                        </span>
+                      );
+                    })}
+                  </Box>
                 )}
-                slotProps={{
-                  popper: {
-                    sx: {
-                      '& .MuiAutocomplete-listbox': {
-                        fontFamily: 'monospace',
-                        fontSize: '0.85rem',
-                      },
-                      '& .MuiAutocomplete-option': {
-                        '&[data-focus="true"]': {
-                          backgroundColor: 'action.hover',
+
+                {/* Original Autocomplete */}
+                <Autocomplete
+                  data-learn="Filter Expression: Enter conditions to filter records (e.g., DstPort == 443). Press TAB or CTRL+SPACE for autocomplete suggestions, ENTER to apply."
+                  freeSolo
+                  fullWidth
+                  open={autocompleteOpen}
+                  onOpen={() => {
+                    // Don't auto-open - only open via Tab key
+                  }}
+                  onClose={(event, reason) => {
+                    // Close on all reasons including blur (clicking outside)
+                    setAutocompleteOpen(false);
+                    setHighlightedOption(null);
+                  }}
+                  onHighlightChange={(event, option, reason) => {
+                    // Track the currently highlighted option for Tab key selection
+                    setHighlightedOption(option);
+                  }}
+                  options={getContextualSuggestions(filterExpression)}
+                  value={filterExpression}
+                  onChange={(event, newValue, reason) => {
+                    if (reason === 'selectOption' && typeof newValue === 'string') {
+                      // User selected from dropdown (via click, Enter, or TAB)
+                      const updatedExpression = insertSuggestion(filterExpression, newValue);
+                      setFilterExpression(updatedExpression);
+                      
+                      // Close the dropdown after selection
+                      setAutocompleteOpen(false);
+                      setHighlightedOption(null);
+                      
+                      // Reopen dropdown with new suggestions after a short delay (only via Tab)
+                      // Remove auto-reopen behavior
+                    }
+                  }}
+                  onInputChange={(event, newValue, reason) => {
+                    if (reason === 'input') {
+                      // User is typing - update value but DON'T auto-open dropdown
+                      setFilterExpression(newValue);
+                    } else if (reason === 'clear') {
+                      setFilterExpression('');
+                      setAutocompleteOpen(false);
+                      setHighlightedOption(null);
+                    }
+                  }}
+                  loading={loadingFields}
+                  disabled={loading}
+                  // Auto-select first option when there's only one match
+                  autoHighlight
+                  selectOnFocus={false}
+                  clearOnBlur={false}
+                  handleHomeEndKeys
+                  disableClearable={true}
+                  filterOptions={(options) => options} // Don't filter, we handle it in getContextualSuggestions
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      inputRef={filterInputRef}
+                      size="small"
+                      label="Filter Expression"
+                      placeholder="e.g., DstPort == 443 or SrcIP == '192.168.1.1'"
+                      onFocus={() => setFilterInputFocused(true)}
+                      onBlur={() => setFilterInputFocused(false)}
+                      onKeyDown={(e) => {
+                        // Handle CMD+ENTER or CTRL+ENTER to execute query immediately
+                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          // Close dropdown and execute filter immediately
+                          setAutocompleteOpen(false);
+                          handleApplyFilter();
+                          return;
+                        }
+                        
+                        // Handle Enter key - close dropdown if open, otherwise apply filter
+                        if (e.key === 'Enter') {
+                          if (autocompleteOpen) {
+                            // Dropdown is open - let Autocomplete handle selection, then close
+                            // The onChange handler will close it
+                            return;
+                          } else {
+                            // Dropdown is closed - apply filter
+                            e.preventDefault();
+                            handleApplyFilter();
+                          }
+                          return;
+                        }
+                        
+                        // Handle TAB or Ctrl+Space for autocomplete - ONLY ways to open dropdown
+                        if ((e.key === 'Tab' && !e.shiftKey) || (e.key === ' ' && e.ctrlKey)) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          
+                          const suggestions = getContextualSuggestions(filterExpression);
+                          
+                          if (autocompleteOpen && suggestions.length > 0) {
+                            // Dropdown is open - select the currently highlighted option (or first if none highlighted)
+                            const suggestionToUse = highlightedOption || suggestions[0];
+                            const updatedExpression = insertSuggestion(filterExpression, suggestionToUse);
+                            setFilterExpression(updatedExpression);
+                            setHighlightedOption(null);
+                            
+                            // Keep dropdown open with new suggestions
+                            setTimeout(() => {
+                              const newSuggestions = getContextualSuggestions(updatedExpression);
+                              if (newSuggestions.length > 0) {
+                                setAutocompleteOpen(true);
+                              } else {
+                                setAutocompleteOpen(false);
+                              }
+                            }, 100);
+                          } else if (suggestions.length > 0) {
+                            // Dropdown is closed but we have suggestions - open it
+                            setAutocompleteOpen(true);
+                          }
+                          
+                          // Keep focus and cursor position
+                          requestAnimationFrame(() => {
+                            const inputElement = e.currentTarget.querySelector('input');
+                            if (inputElement) {
+                              inputElement.focus();
+                            }
+                          });
+                        }
+                      }}
+                      InputProps={{
+                        ...params.InputProps,
+                        startAdornment: (
+                          <>
+                            <InputAdornment position="start">
+                              <FilterAltIcon color="action" />
+                            </InputAdornment>
+                            {params.InputProps.startAdornment}
+                          </>
+                        ),
+                        endAdornment: (
+                          <>
+                            {params.InputProps.endAdornment}
+                            {activeFilter && (
+                              <InputAdornment position="end">
+                                <Tooltip title="Clear filter">
+                                  <IconButton size="small" onClick={handleClearFilter} edge="end">
+                                    <ClearIcon />
+                                  </IconButton>
+                                </Tooltip>
+                              </InputAdornment>
+                            )}
+                          </>
+                        ),
+                        style: { 
+                          fontFamily: 'monospace', 
+                          fontSize: '0.9rem',
+                        },
+                        sx: {
+                          '& input': {
+                            // Only make text transparent when not focused and we have an expression
+                            color: (!filterInputFocused && filterExpression) ? 'transparent' : 'text.primary',
+                            caretColor: 'text.primary !important',
+                            '&::selection': {
+                              backgroundColor: 'rgba(100, 150, 255, 0.3)',
+                            },
+                            '&:focus': {
+                              caretColor: 'text.primary !important',
+                              color: 'text.primary', // Always show text when focused
+                            },
+                          },
+                        },
+                      }}
+                      helperText={
+                        activeFilter 
+                          ? `Active filter: ${activeFilter}` 
+                          : valuesSampleInfo
+                          ? `Press TAB or CTRL+SPACE to show suggestions, ENTER to apply filter. CMD+ENTER to execute immediately. Values sampled from ${valuesSampleInfo.recordsScanned} records (max ${valuesSampleInfo.maxPerField} per field).`
+                          : "Press TAB or CTRL+SPACE to show autocomplete suggestions, ENTER to apply filter, CMD+ENTER to execute immediately."
+                      }
+                    />
+                  )}
+                  slotProps={{
+                    popper: {
+                      sx: {
+                        '& .MuiAutocomplete-listbox': {
+                          fontFamily: 'monospace',
+                          fontSize: '0.85rem',
+                        },
+                        '& .MuiAutocomplete-option': {
+                          '&[data-focus="true"]': {
+                            backgroundColor: 'action.hover',
+                          },
                         },
                       },
                     },
-                  },
-                }}
-              />
+                  }}
+                />
+              </Box>
               <Tooltip title="Show filter examples">
                 <IconButton 
                   data-learn="Filter Help: Toggle display of example filter expressions and syntax documentation."
@@ -1372,26 +1428,6 @@ export default function AuditRecords() {
                 </Button>
               )}
             </Box>
-
-            {/* Filter Preview with Syntax Highlighting */}
-            {filterExpression && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="caption" color="text.secondary" gutterBottom>
-                  Filter Preview:
-                </Typography>
-                <FilterExpressionBlock expression={filterExpression} />
-              </Box>
-            )}
-
-            {/* Active Filter Display */}
-            {activeFilter && activeFilter !== filterExpression && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="caption" color="text.secondary" gutterBottom>
-                  Active Filter:
-                </Typography>
-                <FilterExpressionBlock expression={activeFilter} sx={{ bgcolor: 'success.dark', opacity: 0.7 }} />
-              </Box>
-            )}
 
             {/* Filter Help/Examples */}
             <Collapse in={showFilterHelp}>
@@ -1555,11 +1591,15 @@ export default function AuditRecords() {
             </Box>
           ) : records.length > 0 ? (
             <Box>
-              <Box sx={{ mb: 1 }}>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 1 }}>
                 <Typography variant="body2">
                   Showing {records.length} of {total > 0 ? total : records.length} records
-                  {scanned > 0 && ` (Scanned: ${scanned.toLocaleString()} total records)`}
                 </Typography>
+                {scanned > 0 && (
+                  <Typography variant="body2" color="text.secondary">
+                    (Scanned: {scanned.toLocaleString()} total records)
+                  </Typography>
+                )}
               </Box>
               <Box
                 sx={{

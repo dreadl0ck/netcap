@@ -194,6 +194,34 @@ export default function DatabasesPage() {
           </Grid>
         </Grid>
 
+        {/* Database Type Summary */}
+        <Box mt={4}>
+              <Grid container spacing={2}>
+                {Object.entries(filesByType).map(([type, files]) => {
+                  const typeInfo = DB_TYPE_INFO[type] || DB_TYPE_INFO.other;
+                  const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+                  
+                  return (
+                    <Grid item xs={12} sm={6} md={4} key={type}>
+                      <Card variant="outlined">
+                        <CardContent>
+                          <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
+                            <Chip label={typeInfo.label} color={typeInfo.color} size="small" />
+                            <Typography variant="body2" color="text.secondary">
+                              {files.length} file{files.length !== 1 ? 's' : ''}
+                            </Typography>
+                          </Box>
+                          <Typography variant="h6" color="primary">
+                            {formatBytes(totalSize)}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            </Box>
+
         {/* Database Files Table */}
         {dbInfo && dbInfo.files.length > 0 ? (
           <>
@@ -251,37 +279,6 @@ export default function DatabasesPage() {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            {/* Database Type Summary */}
-            <Box mt={4}>
-              <Typography variant="h6" gutterBottom>
-                Database Types Summary
-              </Typography>
-              <Grid container spacing={2}>
-                {Object.entries(filesByType).map(([type, files]) => {
-                  const typeInfo = DB_TYPE_INFO[type] || DB_TYPE_INFO.other;
-                  const totalSize = files.reduce((sum, f) => sum + f.size, 0);
-                  
-                  return (
-                    <Grid item xs={12} sm={6} md={4} key={type}>
-                      <Card variant="outlined">
-                        <CardContent>
-                          <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                            <Chip label={typeInfo.label} color={typeInfo.color} size="small" />
-                            <Typography variant="body2" color="text.secondary">
-                              {files.length} file{files.length !== 1 ? 's' : ''}
-                            </Typography>
-                          </Box>
-                          <Typography variant="h6" color="primary">
-                            {formatBytes(totalSize)}
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  );
-                })}
-              </Grid>
-            </Box>
           </>
         ) : (
           <Alert severity="warning" sx={{ mt: 4 }}>
@@ -298,29 +295,6 @@ export default function DatabasesPage() {
           </Alert>
         )}
 
-        {/* Additional Information */}
-        <Box mt={4}>
-          <Alert severity="info">
-            <AlertTitle>Database Management</AlertTitle>
-            <Typography variant="body2" paragraph>
-              NETCAP uses various databases for enriching network traffic analysis:
-            </Typography>
-            <ul style={{ marginTop: 0, marginBottom: 0 }}>
-              <li>
-                <strong>GeoIP Databases:</strong> Provide geolocation information for IP addresses
-              </li>
-              <li>
-                <strong>Vulnerability Databases:</strong> Contain CVE and exploit information for detected services
-              </li>
-              <li>
-                <strong>Service Databases:</strong> Help identify services and map MAC addresses to vendors
-              </li>
-            </ul>
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              <strong>Update databases:</strong> Run <code>net util -download-dbs</code> to fetch the latest version
-            </Typography>
-          </Alert>
-        </Box>
       </Box>
 
       {/* Snackbar for update notifications */}

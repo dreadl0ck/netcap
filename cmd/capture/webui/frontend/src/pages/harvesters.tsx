@@ -7,15 +7,6 @@ import {
   CircularProgress,
   TextField,
   Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Tooltip,
   Button,
   Switch,
   Collapse,
@@ -33,10 +24,17 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Paper,
+  Tooltip,
+  IconButton,
 } from '@mui/material';
 import {
-  OpenInNew as OpenInNewIcon,
-  Code as CodeIcon,
   Save as SaveIcon,
   FileUpload as FileUploadIcon,
   FileDownload as FileDownloadIcon,
@@ -44,55 +42,62 @@ import {
   Refresh as RefreshIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  Add as AddIcon,
-  Remove as RemoveIcon,
+  Code as CodeIcon,
 } from '@mui/icons-material';
 import useSWR from 'swr';
 import Layout from '@/components/Layout';
-import type { HarvesterInfo, HarvestersConfig, HarvesterConfigItem, HarvesterPresetInfo } from '@/lib/api';
+import type { HarvestersConfig, HarvesterConfigItem, HarvesterPresetInfo } from '@/lib/api';
 import { api } from '@/lib/api';
 
+// Helper function to convert harvester name to snake_case filename
+const toSnakeCase = (str: string): string => {
+  return str
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+    .replace(/([a-z])([A-Z])/g, '$1_$2')
+    .replace(/\s+/g, '_')
+    .toLowerCase();
+};
+
+// Helper function to get GitHub URL for harvester implementation
 const getHarvesterGitHubUrl = (harvesterName: string): string => {
   const baseUrl = 'https://github.com/dreadl0ck/netcap/blob/master/decoder/stream/credentials';
   
-  const nameToFile: Record<string, string> = {
-    'FTP': 'ftp.go',
-    'HTTP': 'http.go',
-    'HTTP NTLM': 'http_ntlm.go',
-    'SMTP': 'smtp.go',
-    'Telnet': 'telnet.go',
-    'IMAP': 'imap.go',
-    'POP3': 'pop3.go',
-    'NTLMSSP': 'ntlmssp.go',
-    'Kerberos AS-REQ': 'kerberos_asreq.go',
-    'Kerberos AS-REP': 'kerberos_asrep.go',
-    'Kerberos TGS-REP': 'kerberos_tgsrep.go',
-    'LDAP': 'ldap.go',
-    'PostgreSQL': 'postgres.go',
-    'PostgreSQL Hash': 'postgres.go',
-    'MySQL': 'mysql.go',
-    'MongoDB': 'mongodb.go',
-    'MongoDB Challenge Response': 'mongodb.go',
-    'Redis': 'redis.go',
-    'SNMP': 'snmp.go',
-    'VNC': 'vnc.go',
+  // Map harvester names to their actual filenames
+  const harvesterFilenames: Record<string, string> = {
+    'FTP': 'ftp',
+    'HTTP': 'http',
+    'SMTP': 'smtp',
+    'Telnet': 'telnet',
+    'IMAP': 'imap',
+    'NTLMSSP': 'ntlmssp',
+    'Kerberos AS-REQ': 'kerberos_asreq',
+    'Kerberos AS-REP': 'kerberos_asrep',
+    'Kerberos TGS-REP': 'kerberos_tgsrep',
+    'HTTP NTLM': 'http_ntlm',
+    'POP3': 'pop3',
+    'Redis': 'redis',
+    'SNMP': 'snmp',
+    'LDAP': 'ldap',
+    'PostgreSQL': 'postgres',
+    'PostgreSQL Hash': 'postgres',
+    'MySQL': 'mysql',
+    'VNC': 'vnc',
+    'MongoDB': 'mongodb',
+    'MongoDB Challenge Response': 'mongodb',
   };
-
-  const fileName = nameToFile[harvesterName];
-  if (fileName) {
-    return `${baseUrl}/${fileName}`;
-  }
-
-  return baseUrl;
+  
+  // Get the filename or fallback to snake_case conversion
+  const filename = harvesterFilenames[harvesterName] || toSnakeCase(harvesterName);
+  
+  return `${baseUrl}/${filename}.go`;
 };
 
+
 export default function Harvesters() {
-  const { data: harvestersData, error: harvestersError } = useSWR('harvesters', () => api.getHarvesters());
   const { data: configData, mutate: mutateConfig } = useSWR('harvesters-config', () => api.getHarvestersConfig());
   const { data: presetsData, mutate: mutatePresets } = useSWR('harvester-presets', () => api.getHarvesterPresets());
   
   const [tabValue, setTabValue] = useState(0);
-  const [searchTerm, setSearchTerm] = useState('');
   const [expandedHarvester, setExpandedHarvester] = useState<string | null>(null);
   const [config, setConfig] = useState<HarvestersConfig | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
@@ -258,26 +263,7 @@ export default function Harvesters() {
     }
   };
 
-  const filteredHarvesters = harvestersData?.harvesters.filter((harvester) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      harvester.name.toLowerCase().includes(searchLower) ||
-      harvester.description.toLowerCase().includes(searchLower) ||
-      harvester.ports.some(port => port.toString().includes(searchTerm))
-    );
-  });
-
-  if (harvestersError) {
-    return (
-      <Layout title="Credential Harvesters">
-        <Box sx={{ p: 3 }}>
-          <Typography color="error">Failed to load harvesters: {harvestersError.message}</Typography>
-        </Box>
-      </Layout>
-    );
-  }
-
-  if (!harvestersData || !config) {
+  if (!config) {
     return (
       <Layout title="Credential Harvesters">
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
@@ -287,23 +273,28 @@ export default function Harvesters() {
     );
   }
 
+  // Tab selector for header
+  const tabSelector = (
+    <Tabs 
+      value={tabValue} 
+      onChange={handleTabChange}
+      sx={{ 
+        minHeight: 40,
+        '& .MuiTab-root': { 
+          minHeight: 40,
+          py: 1,
+        }
+      }}
+      data-learn="Tab Selector: Switch between Configure (edit harvester settings) and Presets (manage saved configurations)."
+    >
+      <Tab label="Configure" data-learn="Configure Tab: Manage individual harvester settings including enabling/disabling, configuring ports, and setting parameters." />
+      <Tab label="Presets" data-learn="Presets Tab: Save, load, and manage harvester configuration presets for different security scenarios." />
+    </Tabs>
+  );
+
   return (
-    <Layout title="Credential Harvesters">
+    <Layout title="Credential Harvesters" headerAction={tabSelector}>
       <Box sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Credential Harvesters
-        </Typography>
-        <Typography variant="body2" color="text.secondary" paragraph>
-          Configure credential harvesters to extract authentication data from network traffic.
-          Changes require capture restart to take effect.
-        </Typography>
-
-        <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 3 }}>
-          <Tab label="Configure" />
-          <Tab label="Available Harvesters" />
-          <Tab label="Presets" />
-        </Tabs>
-
         {/* Configure Tab */}
         {tabValue === 0 && (
           <Box>
@@ -312,6 +303,7 @@ export default function Harvesters() {
                 variant="contained"
                 startIcon={<SaveIcon />}
                 onClick={handleSaveConfig}
+                data-learn="Save Configuration: Apply and save the current harvester settings to disk. Changes take effect after restarting capture."
               >
                 Save Configuration
               </Button>
@@ -319,44 +311,79 @@ export default function Harvesters() {
                 variant="outlined"
                 startIcon={<RefreshIcon />}
                 onClick={() => mutateConfig()}
+                data-learn="Reload Configuration: Discard unsaved changes and reload the harvester configuration from disk."
               >
                 Reload
               </Button>
             </Box>
 
-            <Alert severity="info" sx={{ mb: 3 }}>
-              Configuration changes will take effect when you restart the capture. 
-              Toggle harvesters on/off, configure ports, and set parameters below.
-            </Alert>
-
             <Grid container spacing={2}>
               {config.harvesters.map((harvester) => (
                 <Grid item xs={12} key={harvester.name}>
                   <Card>
-                    <CardContent>
+                    <CardContent 
+                      sx={{ 
+                        cursor: harvester.parameters && Object.keys(harvester.parameters).length > 0 ? 'pointer' : 'default',
+                        '&:hover': {
+                          bgcolor: harvester.parameters && Object.keys(harvester.parameters).length > 0 ? 'action.hover' : 'transparent',
+                        },
+                      }}
+                      onClick={() => {
+                        if (harvester.parameters && Object.keys(harvester.parameters).length > 0) {
+                          setExpandedHarvester(expandedHarvester === harvester.name ? null : harvester.name);
+                        }
+                      }}
+                    >
                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                           <FormControlLabel
                             control={
                               <Switch
                                 checked={harvester.enabled}
-                                onChange={() => handleToggleHarvester(harvester.name)}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleHarvester(harvester.name);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                data-learn="Toggle Harvester: Enable or disable this credential harvester. When enabled, it will extract authentication data from matching network traffic."
                               />
                             }
                             label={<Typography variant="h6">{harvester.name}</Typography>}
+                            onClick={(e) => e.stopPropagation()}
                           />
                           <Typography variant="body2" color="text.secondary">
                             {harvester.description}
                           </Typography>
                         </Box>
-                        <IconButton
-                          onClick={() => setExpandedHarvester(expandedHarvester === harvester.name ? null : harvester.name)}
-                        >
-                          {expandedHarvester === harvester.name ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                        </IconButton>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <IconButton
+                            data-learn="View Source Code: Open the harvester's implementation on GitHub to see how it extracts credentials from network traffic."
+                            size="small"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(getHarvesterGitHubUrl(harvester.name), '_blank', 'noopener,noreferrer');
+                            }}
+                            sx={{ color: 'text.secondary' }}
+                            title="View source code on GitHub"
+                          >
+                            <CodeIcon />
+                          </IconButton>
+                          {harvester.parameters && Object.keys(harvester.parameters).length > 0 && (
+                            <Chip 
+                              label={expandedHarvester === harvester.name ? 'Hide Parameters' : 'Show Parameters'}
+                              size="small"
+                              variant="outlined"
+                              icon={expandedHarvester === harvester.name ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                              data-learn="Show Parameters: Expand to view and configure advanced parameters for this harvester such as authentication schemes, encoding, and protocol-specific settings."
+                            />
+                          )}
+                        </Box>
                       </Box>
 
-                      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                      <Box 
+                        sx={{ display: 'flex', gap: 2, mb: 2 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <TextField
                           label="Ports (comma-separated)"
                           value={harvester.ports.join(', ')}
@@ -364,11 +391,15 @@ export default function Harvesters() {
                           fullWidth
                           size="small"
                           disabled={!harvester.enabled}
+                          data-learn="Harvester Ports: Comma-separated list of TCP/UDP ports where this harvester will monitor for credentials. Add custom ports if services run on non-standard ports."
                         />
                       </Box>
 
                       <Collapse in={expandedHarvester === harvester.name}>
-                        <Box sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
+                        <Box 
+                          sx={{ mt: 2, p: 2, bgcolor: 'background.default', borderRadius: 1 }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Typography variant="subtitle2" gutterBottom>
                             Parameters
                           </Typography>
@@ -402,102 +433,15 @@ export default function Harvesters() {
           </Box>
         )}
 
-        {/* Available Harvesters Tab */}
-        {tabValue === 1 && (
-          <Box>
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <TextField
-                  fullWidth
-                  label="Search Harvesters"
-                  variant="outlined"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by name, description, or port..."
-                  size="small"
-                />
-              </CardContent>
-            </Card>
-
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell><strong>Protocol</strong></TableCell>
-                    <TableCell><strong>Description</strong></TableCell>
-                    <TableCell><strong>Ports</strong></TableCell>
-                    <TableCell align="right"><strong>Actions</strong></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredHarvesters && filteredHarvesters.length > 0 ? (
-                    filteredHarvesters.map((harvester) => (
-                      <TableRow key={harvester.name} hover>
-                        <TableCell>
-                          <Typography variant="body2" fontWeight="medium">
-                            {harvester.name}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">
-                            {harvester.description}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            {harvester.ports && harvester.ports.length > 0 ? (
-                              harvester.ports.map((port) => (
-                                <Chip
-                                  key={port}
-                                  label={port}
-                                  size="small"
-                                  color="primary"
-                                  variant="outlined"
-                                />
-                              ))
-                            ) : (
-                              <Typography variant="body2" color="text.secondary">
-                                No specific ports
-                              </Typography>
-                            )}
-                          </Box>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Tooltip title="View source code on GitHub">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => window.open(getHarvesterGitHubUrl(harvester.name), '_blank')}
-                            >
-                              <CodeIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={4} align="center">
-                        <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                          {searchTerm ? 'No harvesters match your search criteria' : 'No harvesters available'}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
-        )}
-
         {/* Presets Tab */}
-        {tabValue === 2 && (
+        {tabValue === 1 && (
           <Box>
             <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
               <Button
                 variant="contained"
                 startIcon={<SaveIcon />}
                 onClick={() => setSavePresetDialogOpen(true)}
+                data-learn="Save as Preset: Save the current harvester configuration as a named preset for reuse in different scenarios (e.g., 'Web Only', 'Full Monitoring', 'Database Servers')."
               >
                 Save as Preset
               </Button>
@@ -505,6 +449,7 @@ export default function Harvesters() {
                 variant="outlined"
                 startIcon={<FileUploadIcon />}
                 onClick={() => setUploadDialogOpen(true)}
+                data-learn="Upload Preset: Import a harvester configuration preset file (YAML format) from disk to add it to available presets."
               >
                 Upload Preset
               </Button>
@@ -514,6 +459,7 @@ export default function Harvesters() {
                   value={selectedPreset}
                   onChange={(e) => setSelectedPreset(e.target.value)}
                   label="Load Preset"
+                  data-learn="Select Preset: Choose a saved harvester configuration preset to load its settings."
                 >
                   <MenuItem value="">
                     <em>Select a preset</em>
@@ -529,6 +475,7 @@ export default function Harvesters() {
                 variant="contained"
                 onClick={handleLoadPreset}
                 disabled={!selectedPreset}
+                data-learn="Load Preset: Apply the selected preset's harvester configuration, replacing the current settings."
               >
                 Load
               </Button>
@@ -558,6 +505,7 @@ export default function Harvesters() {
                             <IconButton
                               size="small"
                               onClick={() => handleDownloadPreset(preset.name)}
+                              data-learn="Download Preset: Export this harvester preset as a YAML file for backup, sharing, or version control."
                             >
                               <FileDownloadIcon />
                             </IconButton>
@@ -567,6 +515,7 @@ export default function Harvesters() {
                               size="small"
                               color="error"
                               onClick={() => handleDeletePreset(preset.name)}
+                              data-learn="Delete Preset: Permanently remove this harvester preset from the system."
                             >
                               <DeleteIcon />
                             </IconButton>

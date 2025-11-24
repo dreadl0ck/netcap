@@ -54,7 +54,7 @@ import OptimizedPieChart from '@/components/OptimizedPieChart';
 
 export default function ExtractedFilesPage() {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const [mimeTypeFilter, setMimeTypeFilter] = useState<string>('');
   const [switchingFile, setSwitchingFile] = useState(false);
   const [previewFile, setPreviewFile] = useState<ExtractedFileInfo | null>(null);

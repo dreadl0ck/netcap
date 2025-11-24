@@ -42,8 +42,8 @@ const ANSI_RED = '\x1b[0;31m';
 const ANSI_BLUE = '\x1b[0;34m';
 const ANSI_RESET = '\x1b[0m';
 
-// Chunk size for pagination (64KB for faster initial load)
-const CHUNK_SIZE = 64 * 1024;
+// Chunk size for pagination (16KB for faster initial load and reduced memory usage)
+const CHUNK_SIZE = 16 * 1024;
 
 // Parse ANSI-encoded conversation data into segments
 function parseConversationData(base64Data: string): ParsedSegment[] {

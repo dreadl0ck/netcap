@@ -127,11 +127,12 @@ interface LayoutProps {
 
 export default function Layout({ children, title, headerAction, topPadding }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const router = useRouter();
   
   // Initialize dataMenuOpen based on current route to prevent re-rendering
   const [dataMenuOpen, setDataMenuOpen] = useState(() => {
-    const dataRoutes = ['/audit', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/credentials',
+    const dataRoutes = ['/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/credentials',
                         '/services', '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files', '/logs'];
     return dataRoutes.some(route => router.pathname.startsWith(route));
   });
@@ -250,6 +251,24 @@ export default function Layout({ children, title, headerAction, topPadding }: La
     setMobileOpen(!mobileOpen);
   };
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      // Enter fullscreen mode
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullscreen(true);
+      }).catch((err) => {
+        console.error('Failed to enter fullscreen:', err);
+      });
+    } else {
+      // Exit fullscreen mode
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false);
+      }).catch((err) => {
+        console.error('Failed to exit fullscreen:', err);
+      });
+    }
+  };
+
   // Helper function to check if a path is currently active
   const isActive = (path: string) => {
     if (path === '/') {
@@ -264,7 +283,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
 
   // Auto-expand Data menu when navigating to data routes, but don't auto-collapse when leaving
   useEffect(() => {
-    const dataRoutes = ['/audit', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/credentials',
+    const dataRoutes = ['/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/credentials',
                         '/services', '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files', '/logs'];
     const isDataRoute = dataRoutes.some(route => router.pathname.startsWith(route));
     
@@ -301,6 +320,28 @@ export default function Layout({ children, title, headerAction, topPadding }: La
     };
   }, [mutateAlertStats, mutateExtractedFiles, mutateErrorLogs, mutateAuditRecordsCount, mutateHostsCount, mutateDevicesCount, mutateConnectionsCount, mutateCredentialsCount, mutateServicesCount, mutateDomainsCount, mutateFingerprintsCount, mutateSoftwareCount, mutateVulnerabilitiesCount, mutateLogsCount]);
 
+  // Handle ESC key to exit fullscreen and listen for fullscreen change events
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && document.fullscreenElement) {
+        document.exitFullscreen();
+      }
+    };
+
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+
   // Calculate default top padding based on whether headerAction exists
   const defaultTopPadding = topPadding || {
     xs: headerAction ? '140px' : '80px',  // Mobile: more space when header has actions
@@ -311,7 +352,14 @@ export default function Layout({ children, title, headerAction, topPadding }: La
   const drawer = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link href="/analyze" passHref style={{ textDecoration: 'none', flexGrow: 1 }}>
+        <Box 
+          onClick={toggleFullscreen}
+          sx={{ 
+            textDecoration: 'none', 
+            flexGrow: 1,
+            cursor: 'pointer',
+          }}
+        >
           <Box>
             <Typography 
               variant="h6" 
@@ -340,7 +388,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
               </Typography>
             )}
           </Box>
-        </Link>
+        </Box>
         <LearnModeToggle />
       </Toolbar>
       <List sx={{ flexGrow: 1 }}>
@@ -412,10 +460,10 @@ export default function Layout({ children, title, headerAction, topPadding }: La
         </ListItemButton>
         <Collapse in={dataMenuOpen} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
-            <Link href="/audit" passHref style={LINK_STYLE}>
+            <Link href="/records" passHref style={LINK_STYLE}>
               <ListItemButton
-                selected={isActive('/audit')}
-                data-learn="Audit Records: Explore detailed network traffic records organized by protocol type with advanced filtering."
+                selected={isActive('/records')}
+                data-learn="Records: Explore detailed network traffic records organized by protocol type with advanced filtering."
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
@@ -428,7 +476,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                     <StorageIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Audit Records" />
+                <ListItemText primary="Records" />
               </ListItemButton>
             </Link>
             <Link href="/explore" passHref style={LINK_STYLE}>

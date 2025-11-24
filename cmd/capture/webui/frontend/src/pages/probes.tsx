@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import type React from 'react';
+import { useState } from 'react';
 import {
   Box,
   Card,
@@ -29,7 +30,6 @@ import {
   TablePagination,
   Alert,
   Snackbar,
-  FormHelperText,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -41,107 +41,9 @@ import {
 import useSWR from 'swr';
 import Layout from '@/components/Layout';
 import type { ServiceProbeInfo, TestProbeRequest, TestProbeResponse } from '@/lib/api';
-import { api, getBackendUrl } from '@/lib/api';
-
-// Syntax highlighting component for regex patterns
-const RegexHighlighter = ({ pattern }: { pattern: string }) => {
-  const highlightRegex = (regex: string) => {
-    const parts: Array<{ text: string; type: string }> = [];
-    let currentPos = 0;
-    
-    // Define regex tokens with colors
-    const tokenPatterns = [
-      { pattern: /\(\?[imsxUXJ]+\)/g, type: 'flag', color: '#9C27B0' }, // Flags like (?i), (?m)
-      { pattern: /\((?!\?)/g, type: 'group', color: '#2196F3' }, // Capturing groups
-      { pattern: /\)/g, type: 'group', color: '#2196F3' },
-      { pattern: /\[(?:[^\]\\]|\\.)*\]/g, type: 'charclass', color: '#00BCD4' }, // Character classes
-      { pattern: /\\[wWdDsSnrt]/g, type: 'escape', color: '#4CAF50' }, // Escapes
-      { pattern: /\\x[0-9A-Fa-f]{2}/g, type: 'hex', color: '#FF9800' }, // Hex codes
-      { pattern: /\\[0-7]{3}/g, type: 'octal', color: '#FF9800' }, // Octal codes
-      { pattern: /[*+?{}\|]/g, type: 'quantifier', color: '#F44336' }, // Quantifiers
-      { pattern: /\$[0-9]+/g, type: 'backref', color: '#E91E63' }, // Backreferences
-      { pattern: /\^|\$/g, type: 'anchor', color: '#FF5722' }, // Anchors
-      { pattern: /\\\\/g, type: 'escape', color: '#4CAF50' }, // Escaped backslash
-      { pattern: /\\./g, type: 'escape', color: '#4CAF50' }, // Other escapes
-    ];
-
-    // Simple tokenizer
-    const tokens: Array<{ start: number; end: number; type: string; color: string }> = [];
-    
-    tokenPatterns.forEach(({ pattern, type, color }) => {
-      const matches = [...regex.matchAll(pattern)];
-      matches.forEach((match) => {
-        if (match.index !== undefined) {
-          tokens.push({
-            start: match.index,
-            end: match.index + match[0].length,
-            type,
-            color,
-          });
-        }
-      });
-    });
-
-    // Sort tokens by position
-    tokens.sort((a, b) => a.start - b.start);
-
-    // Build highlighted parts
-    let pos = 0;
-    const result: React.ReactElement[] = [];
-
-    tokens.forEach((token, idx) => {
-      // Add plain text before token
-      if (pos < token.start) {
-        const text = regex.slice(pos, token.start);
-        result.push(
-          <span key={`plain-${idx}`} style={{ color: '#333' }}>
-            {text}
-          </span>
-        );
-      }
-
-      // Add highlighted token
-      const text = regex.slice(token.start, token.end);
-      result.push(
-        <span key={`token-${idx}`} style={{ color: token.color, fontWeight: 500 }}>
-          {text}
-        </span>
-      );
-
-      pos = token.end;
-    });
-
-    // Add remaining plain text
-    if (pos < regex.length) {
-      result.push(
-        <span key="plain-end" style={{ color: '#333' }}>
-          {regex.slice(pos)}
-        </span>
-      );
-    }
-
-    return result;
-  };
-
-  return (
-    <Box
-      sx={{
-        fontFamily: "'Fira Code', 'Monaco', 'Courier New', monospace",
-        fontSize: '0.875rem',
-        backgroundColor: '#f5f5f5',
-        border: '1px solid #e0e0e0',
-        borderRadius: 1,
-        p: 1.5,
-        overflow: 'auto',
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-all',
-        lineHeight: 1.6,
-      }}
-    >
-      {highlightRegex(pattern)}
-    </Box>
-  );
-};
+import { api } from '@/lib/api';
+import { RegexBlock } from '@/components/RegexHighlight';
+import { SyntaxHighlightedTextArea } from '@/components/SyntaxHighlightedInput';
 
 export default function ServiceProbes() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -149,7 +51,7 @@ export default function ServiceProbes() {
   const [service, setService] = useState('all');
   const [matchType, setMatchType] = useState('all');
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [testModalOpen, setTestModalOpen] = useState(false);
   const [selectedProbe, setSelectedProbe] = useState<ServiceProbeInfo | null>(null);
@@ -274,7 +176,7 @@ export default function ServiceProbes() {
     }
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -308,10 +210,7 @@ export default function ServiceProbes() {
       <Box sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box>
-            <Typography variant="h4" gutterBottom>
-              Service Probes
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" data-learn="Service Probes Info: Service probes use regex patterns to identify network services, protocols, and applications by matching their banners and responses. Based on nmap's service detection.">
               Manage {probesData.totalCount} nmap service fingerprinting probes for network service identification.
             </Typography>
           </Box>
@@ -320,6 +219,7 @@ export default function ServiceProbes() {
               variant="outlined"
               startIcon={<ImportIcon />}
               onClick={() => setImportDialogOpen(true)}
+              data-learn="Import Probes: Upload a nmap-service-probes file to replace the current service probe database. A backup is created automatically."
             >
               Import
             </Button>
@@ -327,6 +227,7 @@ export default function ServiceProbes() {
               variant="outlined"
               startIcon={<ExportIcon />}
               onClick={handleExport}
+              data-learn="Export Probes: Download the current service probes database as a file for backup, sharing, or editing."
             >
               Export
             </Button>
@@ -349,6 +250,7 @@ export default function ServiceProbes() {
                   }}
                   placeholder="Search by service, product, pattern, or probe name..."
                   size="small"
+                  data-learn="Search Probes: Filter service probes by typing keywords from service names, products, regex patterns, or probe identifiers."
                 />
               </Grid>
               <Grid item xs={12} md={2}>
@@ -361,6 +263,7 @@ export default function ServiceProbes() {
                       setProtocol(e.target.value);
                       setPage(0);
                     }}
+                    data-learn="Protocol Filter: Filter service probes by transport protocol (TCP or UDP)."
                   >
                     <MenuItem value="all">All</MenuItem>
                     <MenuItem value="TCP">TCP</MenuItem>
@@ -378,6 +281,7 @@ export default function ServiceProbes() {
                       setService(e.target.value);
                       setPage(0);
                     }}
+                    data-learn="Service Filter: Filter service probes by the specific service or protocol they detect (e.g., http, ssh, ftp, smtp)."
                   >
                     <MenuItem value="all">All</MenuItem>
                     {uniqueServices.map((svc) => (
@@ -398,6 +302,7 @@ export default function ServiceProbes() {
                       setMatchType(e.target.value);
                       setPage(0);
                     }}
+                    data-learn="Match Type Filter: Filter by probe match type. 'Match' patterns are strict matches for specific services, 'Softmatch' patterns are less specific fallback matches."
                   >
                     <MenuItem value="all">All</MenuItem>
                     <MenuItem value="match">Match</MenuItem>
@@ -495,6 +400,7 @@ export default function ServiceProbes() {
                           size="small"
                           color="primary"
                           onClick={() => handleTestClick(probe)}
+                          data-learn="Test Probe: Open a dialog to test this probe's regex pattern against sample input to verify it matches correctly."
                         >
                           <TestIcon fontSize="small" />
                         </IconButton>
@@ -504,6 +410,7 @@ export default function ServiceProbes() {
                           size="small"
                           color="primary"
                           onClick={() => handleEditClick(probe)}
+                          data-learn="Edit Probe: Modify this probe's properties including service name, product, regex pattern, version extraction, and metadata."
                         >
                           <EditIcon fontSize="small" />
                         </IconButton>
@@ -535,16 +442,6 @@ export default function ServiceProbes() {
           />
         </TableContainer>
 
-        {/* Info Card */}
-        <Card sx={{ mt: 3, bgcolor: 'info.main', color: 'info.contrastText' }}>
-          <CardContent>
-            <Typography variant="body2">
-              <strong>Note:</strong> Service probes are used by Netcap's service decoder to identify network services 
-              based on their banners and response patterns. The probes are loaded from the nmap-service-probes database.
-            </Typography>
-          </CardContent>
-        </Card>
-
         {/* Edit Modal */}
         <Dialog
           open={editModalOpen}
@@ -569,6 +466,7 @@ export default function ServiceProbes() {
                   value={editForm.service || ''}
                   onChange={(e) => setEditForm({ ...editForm, service: e.target.value })}
                   size="small"
+                  data-learn="Service Name: The primary service or protocol name that this probe detects (e.g., http, ssh, smtp, mysql)."
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -578,38 +476,22 @@ export default function ServiceProbes() {
                   value={editForm.product || ''}
                   onChange={(e) => setEditForm({ ...editForm, product: e.target.value })}
                   size="small"
+                  data-learn="Product Name: The specific product or software implementation name (e.g., Apache httpd, OpenSSH, Microsoft Exchange). Can use capture groups like $1, $2."
                 />
               </Grid>
               <Grid item xs={12}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Pattern (Regex)
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    value={editForm.pattern || ''}
-                    onChange={(e) => setEditForm({ ...editForm, pattern: e.target.value })}
-                    size="small"
-                    multiline
-                    rows={3}
-                    placeholder="Enter regex pattern..."
-                    sx={{
-                      '& .MuiInputBase-input': {
-                        fontFamily: "'Fira Code', 'Monaco', 'Courier New', monospace",
-                        fontSize: '0.875rem',
-                      },
-                    }}
-                  />
-                  {editForm.pattern && (
-                    <Box sx={{ mt: 1 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Preview:
-                      </Typography>
-                      <RegexHighlighter pattern={editForm.pattern} />
-                    </Box>
-                  )}
-                  <FormHelperText>Regular expression pattern to match service banner</FormHelperText>
-                </Box>
+                <SyntaxHighlightedTextArea
+                  syntaxType="regex"
+                  value={editForm.pattern || ''}
+                  onChange={(value) => setEditForm({ ...editForm, pattern: value })}
+                  label="Pattern (Regex)"
+                  placeholder="Enter regex pattern..."
+                  helperText="Regular expression pattern to match service banner"
+                  rows={3}
+                  fullWidth
+                  size="small"
+                  data-learn="Pattern: Regular expression pattern to match against service banners and responses. Use capture groups () to extract version info, product names, etc."
+                />
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
@@ -618,6 +500,7 @@ export default function ServiceProbes() {
                   value={editForm.version || ''}
                   onChange={(e) => setEditForm({ ...editForm, version: e.target.value })}
                   size="small"
+                  data-learn="Version: Version string extraction pattern using capture groups from the regex (e.g., $1.$2 to combine groups into version number)."
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -665,13 +548,14 @@ export default function ServiceProbes() {
                   onChange={(e) => setEditForm({ ...editForm, rarity: parseInt(e.target.value) })}
                   size="small"
                   helperText="1-9, lower is more common"
+                  data-learn="Rarity: Probe rarity score (1-9) where 1 is most common and 9 is rare. Affects the order in which probes are tried during service detection."
                 />
               </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setEditModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveEdit} variant="contained" color="primary">
+            <Button onClick={handleSaveEdit} variant="contained" color="primary" data-learn="Save Changes: Update the service probe with the modified configuration. Changes take effect immediately for new captures.">
               Save Changes
             </Button>
           </DialogActions>
@@ -699,7 +583,7 @@ export default function ServiceProbes() {
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Pattern (Regex)
                   </Typography>
-                  <RegexHighlighter pattern={testPattern} />
+                  <RegexBlock pattern={testPattern} />
                 </Box>
               </Grid>
               <Grid item xs={12}>
@@ -713,6 +597,7 @@ export default function ServiceProbes() {
                   rows={5}
                   placeholder="Enter sample banner or service response to test against the pattern..."
                   helperText="Enter the text you want to test the regex pattern against"
+                  data-learn="Sample Input: Paste a sample service banner or response text to test if the regex pattern matches correctly and extracts the expected data."
                 />
               </Grid>
               <Grid item xs={12}>
@@ -723,6 +608,7 @@ export default function ServiceProbes() {
                   onClick={handleTest}
                   disabled={!testInput}
                   fullWidth
+                  data-learn="Test Pattern: Execute the regex pattern against the sample input to verify if it matches and see what data is captured by groups."
                 >
                   Test Pattern
                 </Button>
@@ -791,6 +677,7 @@ export default function ServiceProbes() {
                 variant="outlined"
                 component="label"
                 fullWidth
+                data-learn="Choose File: Select an nmap-service-probes file from your computer to import into the database."
               >
                 Choose File
                 <input
@@ -798,7 +685,7 @@ export default function ServiceProbes() {
                   hidden
                   accept="*/*"
                   onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
+                    if (e.target.files?.[0]) {
                       setSelectedFile(e.target.files[0]);
                     }
                   }}
@@ -820,6 +707,7 @@ export default function ServiceProbes() {
               variant="contained"
               color="primary"
               disabled={!selectedFile || importing}
+              data-learn="Import: Upload and process the selected nmap-service-probes file, replacing the current database. A backup is created first."
             >
               {importing ? <CircularProgress size={24} /> : 'Import'}
             </Button>

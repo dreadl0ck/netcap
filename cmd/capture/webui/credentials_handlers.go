@@ -77,40 +77,13 @@ func (s *Server) handleCredentials(w http.ResponseWriter, r *http.Request) {
 	// Try to find Credentials audit file - try both compressed and uncompressed
 	filePath := filepath.Join(outDir, "Credentials"+defaults.FileExtension+".gz")
 	filePathUncompressed := filepath.Join(outDir, "Credentials"+defaults.FileExtension)
-	
-	log.Printf("[Credentials] Looking for credentials file:")
-	log.Printf("[Credentials]   - Trying compressed: %s", filePath)
-	log.Printf("[Credentials]   - Trying uncompressed: %s", filePathUncompressed)
 
 	// Check if compressed file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[Credentials] Compressed file does not exist, trying uncompressed...")
-		
+
 		// Try uncompressed version
 		if _, err := os.Stat(filePathUncompressed); os.IsNotExist(err) {
-			log.Printf("[Credentials] Neither compressed nor uncompressed credentials file exists")
-			
-			// List all .ncap.gz and .ncap files in the directory for debugging
-			if entries, errRead := os.ReadDir(outDir); errRead == nil {
-				log.Printf("[Credentials] Available audit files in %s:", outDir)
-				ncapCount := 0
-				for _, entry := range entries {
-					if !entry.IsDir() && (strings.HasSuffix(entry.Name(), ".ncap.gz") || strings.HasSuffix(entry.Name(), ".ncap")) {
-						info, _ := entry.Info()
-						log.Printf("[Credentials]   - %s (size: %d bytes)", entry.Name(), info.Size())
-						ncapCount++
-						
-						// Specifically highlight Credentials files
-						if strings.Contains(strings.ToLower(entry.Name()), "credential") {
-							log.Printf("[Credentials]   ^^^ FOUND CREDENTIALS FILE: %s", entry.Name())
-						}
-					}
-				}
-				if ncapCount == 0 {
-					log.Printf("[Credentials]   (no .ncap or .ncap.gz files found)")
-				}
-			}
-			
+
 			RespondJSON(w, http.StatusOK, CredentialsResponse{
 				Credentials: []CredentialSummary{},
 				TotalCount:  0,
@@ -182,23 +155,23 @@ func (s *Server) handleCredentials(w http.ResponseWriter, r *http.Request) {
 			Password:  cred.Password,
 			Notes:     cred.Notes,
 		})
-		
+
 		// Log first few credentials for debugging
 		if recordCount <= 3 {
-			log.Printf("[Credentials] Record #%d: service=%s, user=%s, flow=%s", 
+			log.Printf("[Credentials] Record #%d: service=%s, user=%s, flow=%s",
 				recordCount, cred.Service, cred.User, cred.Flow)
 		}
 	}
 
 	log.Printf("[Credentials] Read %d credential records from file", len(credentials))
-	log.Printf("[Credentials] Returning response with %d credentials (totalCount: %d)", 
+	log.Printf("[Credentials] Returning response with %d credentials (totalCount: %d)",
 		len(credentials), len(credentials))
-	
+
 	// Log summary of first few credentials for verification
 	if len(credentials) > 0 {
 		log.Printf("[Credentials] Sample credentials being returned:")
 		for i := 0; i < len(credentials) && i < 3; i++ {
-			log.Printf("[Credentials]   #%d: service=%s, user=%s, timestamp=%d", 
+			log.Printf("[Credentials]   #%d: service=%s, user=%s, timestamp=%d",
 				i+1, credentials[i].Service, credentials[i].User, credentials[i].Timestamp)
 		}
 	}
@@ -364,4 +337,3 @@ func (s *Server) handleCredentialsFlows(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "text/html")
 	w.Write(html)
 }
-

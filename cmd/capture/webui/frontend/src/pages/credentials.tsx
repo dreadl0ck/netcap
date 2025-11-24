@@ -21,6 +21,8 @@ import {
   Typography,
   Alert,
   Collapse,
+  ToggleButtonGroup,
+  ToggleButton,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
@@ -30,6 +32,8 @@ import {
   Lock as LockIcon,
   Security as SecurityIcon,
   AccessTime as AccessTimeIcon,
+  TableChart as TableChartIcon,
+  BarChart as BarChartIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import FileSelectorHeader from '@/components/FileSelectorHeader';
@@ -55,13 +59,14 @@ type SortOrder = 'asc' | 'desc';
 
 export default function CredentialsPage() {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [switchingFile, setSwitchingFile] = useState(false);
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<CredentialSortField>('timestamp');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -215,13 +220,41 @@ export default function CredentialsPage() {
   return (
     <Layout title="Credentials" headerAction={fileSelector}>
       <Box sx={{ minWidth: 0 }}>
+        {/* View Mode Toggle */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_e, newValue) => {
+              if (newValue !== null) {
+                setViewMode(newValue);
+              }
+            }}
+            size="small"
+            data-learn="View Mode Toggle: Switch between Table mode (showing data in a table) and Chart mode (showing only visualization charts)."
+          >
+            <ToggleButton value="table">
+              <TableChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Table
+              </Box>
+            </ToggleButton>
+            <ToggleButton value="chart">
+              <BarChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Chart
+              </Box>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
         {/* Summary Cards */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
             <Card data-learn="Total Credentials: Number of credentials captured from network traffic in this PCAP file.">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <VpnKeyIcon color="primary" />
+                  <VpnKeyIcon color="primary" data-learn="Key Icon: Indicates credential count including usernames and passwords captured from network traffic." />
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Total Credentials
@@ -239,7 +272,7 @@ export default function CredentialsPage() {
             <Card data-learn="Unique Services: Number of different services/protocols that had credentials captured.">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SecurityIcon color="success" />
+                  <SecurityIcon color="success" data-learn="Services Icon: Count of different protocols where credentials were harvested (HTTP, FTP, SMTP, etc.)." />
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Unique Services
@@ -257,7 +290,7 @@ export default function CredentialsPage() {
             <Card data-learn="Unique Users: Number of different usernames found in captured credentials.">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PersonIcon color="warning" />
+                  <PersonIcon color="warning" data-learn="Users Icon: Number of distinct usernames discovered across all captured credentials." />
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Unique Users
@@ -275,7 +308,7 @@ export default function CredentialsPage() {
             <Card data-learn="Unique Passwords: Number of different passwords found in captured credentials.">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LockIcon color="info" />
+                  <LockIcon color="info" data-learn="Passwords Icon: Number of distinct passwords captured. High reuse indicates weak security practices." />
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Unique Passwords
@@ -290,7 +323,8 @@ export default function CredentialsPage() {
           </Grid>
         </Grid>
 
-        {/* Visualization Charts */}
+        {/* Visualization Charts - Only show in chart mode */}
+        {viewMode === 'chart' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
             <Card sx={{ height: 500 }}>
@@ -364,8 +398,11 @@ export default function CredentialsPage() {
             </Card>
           </Grid>
         </Grid>
+        )}
 
-        {/* Filters and Actions */}
+        {/* Filters and Actions - Only show in table mode */}
+        {viewMode === 'table' && (
+        <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField
             data-learn="Credential Search: Filter credentials by service, username, password, flow, or notes."
@@ -390,7 +427,7 @@ export default function CredentialsPage() {
           </Button>
           
           {searchQuery ? (
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" color="text.secondary" data-learn="Filter Count: Shows how many credentials match the current search filter out of the total.">
               Showing {filteredCredentials.length} of {totalCount} credentials
             </Typography>
           ) : null}
@@ -402,7 +439,7 @@ export default function CredentialsPage() {
             <CircularProgress />
           </Box>
         ) : totalCount === 0 ? (
-          <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <Paper sx={{ p: 4, textAlign: 'center' }} data-learn="No Credentials: No credentials were found in this capture. This could mean secure protocols were used or harvesters weren't configured for the traffic.">
             <VpnKeyIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
               No Credentials Found
@@ -486,7 +523,7 @@ export default function CredentialsPage() {
                             </IconButton>
                           </TableCell>
                           <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }} data-learn="Capture Time: Exact timestamp when this credential was captured from network traffic.">
                               <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                               <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
                                 {formatTimestamp(cred.timestamp)}
@@ -544,7 +581,7 @@ export default function CredentialsPage() {
                             </Box>
                           </TableCell>
                           <TableCell>
-                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }} data-learn="Flow ID: Network flow identifier showing source and destination IPs and ports where credential was seen.">
                               {cred.flow ? (cred.flow.length > 40 ? cred.flow.substring(0, 37) + '...' : cred.flow) : '-'}
                             </Typography>
                           </TableCell>
@@ -558,7 +595,7 @@ export default function CredentialsPage() {
                                 <Grid container spacing={2}>
                                   {/* Timestamp */}
                                   <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom>
+                                    <Typography variant="subtitle2" gutterBottom data-learn="Capture Time Field: Full timestamp showing when this credential was captured from the network.">
                                       Capture Time
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
@@ -568,7 +605,7 @@ export default function CredentialsPage() {
                                   
                                   {/* Service */}
                                   <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom>
+                                    <Typography variant="subtitle2" gutterBottom data-learn="Service/Protocol Field: The application-layer protocol where this credential was harvested (e.g., HTTP Basic Auth, FTP, POP3).">
                                       Service/Protocol
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
@@ -578,7 +615,7 @@ export default function CredentialsPage() {
                                   
                                   {/* Username */}
                                   <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom>
+                                    <Typography variant="subtitle2" gutterBottom data-learn="Username Field: The full username extracted from the authentication attempt, may include domain or email format.">
                                       Username
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
@@ -588,7 +625,7 @@ export default function CredentialsPage() {
                                   
                                   {/* Password */}
                                   <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom>
+                                    <Typography variant="subtitle2" gutterBottom data-learn="Password Field: The full password or hash captured. Plaintext passwords indicate cleartext protocols were used.">
                                       Password
                                     </Typography>
                                     <Typography 
@@ -606,7 +643,7 @@ export default function CredentialsPage() {
                                   
                                   {/* Flow */}
                                   <Grid item xs={12}>
-                                    <Typography variant="subtitle2" gutterBottom>
+                                    <Typography variant="subtitle2" gutterBottom data-learn="Network Flow Field: Complete 5-tuple flow identifier (protocol, src IP:port, dst IP:port) showing the network connection where credential was captured.">
                                       Network Flow
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>
@@ -617,7 +654,7 @@ export default function CredentialsPage() {
                                   {/* Notes */}
                                   {cred.notes && (
                                     <Grid item xs={12}>
-                                      <Typography variant="subtitle2" gutterBottom>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Notes Field: Additional context about the credential capture including authentication method, encoding, or protocol-specific details.">
                                         Notes
                                       </Typography>
                                       <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
@@ -648,6 +685,8 @@ export default function CredentialsPage() {
               rowsPerPageOptions={[10, 25, 50, 100]}
             />
           </>
+        )}
+        </>
         )}
       </Box>
     </Layout>
