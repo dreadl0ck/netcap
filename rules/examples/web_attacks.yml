@@ -404,3 +404,12 @@ rules:
     threshold: 5
     threshold_window: 300
 
+  # Modern Security Headers
+  - name: Missing Security Headers
+    description: Detect web servers without HSTS
+    type: HTTP
+    expression: StatusCode == 200 && !MatchesPattern(ResponseHeaders, "Strict-Transport-Security")
+    severity: low
+    tags: ["security-headers", "misconfiguration"]
+    enabled: true
+

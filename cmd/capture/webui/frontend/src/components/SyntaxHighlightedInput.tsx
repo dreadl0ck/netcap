@@ -183,8 +183,10 @@ export default function SyntaxHighlightedInput({
           const range = document.createRange();
           range.setStart(node, Math.min(offset - currentOffset, textLength));
           range.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(range);
+          if (selection) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
           return true;
         }
         currentOffset += textLength;

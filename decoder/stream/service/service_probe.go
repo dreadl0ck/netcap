@@ -14,6 +14,7 @@
 package service
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
@@ -21,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -213,6 +215,195 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 
 		serviceLog.Debug("all probes tried", zap.String("ident", ident), zap.Bool("found", found), zap.Int("matched", matched))
 	}
+
+	// If no match was found, try to extract information from HTTP headers as a fallback
+	if !found {
+		matchHTTPHeaders(serv, banner, ident)
+	}
+}
+
+// matchHTTPHeaders attempts to extract service information from HTTP response headers
+// when nmap service probes don't deliver results.
+func matchHTTPHeaders(serv *service, banner []byte, ident string) {
+	// Try to parse the banner as an HTTP response
+	resp, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(banner)), nil)
+	if err != nil {
+		// Not a valid HTTP response, skip
+		return
+	}
+
+	// Priority-ordered headers to check for service identification
+	priorityHeaders := []string{
+		"Server",              // Primary service identification
+		"X-Powered-By",        // Framework/language detection
+		"X-AspNet-Version",    // ASP.NET apps
+		"X-AspNetMvc-Version", // ASP.NET MVC apps
+		"X-Generator",         // CMS identification
+		"Via",                 // Proxy detection
+		"X-Cache",             // CDN detection
+	}
+
+	var detectedValue string
+	var detectedHeader string
+
+	// Check headers in priority order and use the first one found
+	for _, headerName := range priorityHeaders {
+		if value := resp.Header.Get(headerName); value != "" {
+			detectedValue = value
+			detectedHeader = headerName
+			break
+		}
+	}
+
+	if detectedValue == "" {
+		// No relevant headers found
+		return
+	}
+
+	// Parse the detected value to extract product, version, and vendor information
+	parseHeaderValue(serv, detectedHeader, detectedValue, ident)
+
+	serviceLog.Debug("HTTP header match",
+		zap.String("ident", ident),
+		zap.String("header", detectedHeader),
+		zap.String("value", detectedValue),
+		zap.String("product", serv.Product),
+		zap.String("version", serv.Version),
+	)
+}
+
+// parseHeaderValue parses the header value to extract product, version, and vendor information.
+func parseHeaderValue(serv *service, headerName, value, ident string) {
+	var product, version, vendor string
+
+	// Normalize the value
+	value = strings.TrimSpace(value)
+
+	switch headerName {
+	case "Server":
+		// Common formats: "Apache/2.4.41", "nginx/1.18.0", "Microsoft-IIS/10.0"
+		product, version = parseServerHeader(value)
+	case "X-Powered-By":
+		// Common formats: "PHP/7.4.3", "ASP.NET", "Express"
+		product, version = parseXPoweredByHeader(value)
+	case "X-AspNet-Version":
+		product = "ASP.NET"
+		version = value
+	case "X-AspNetMvc-Version":
+		product = "ASP.NET MVC"
+		version = value
+	case "X-Generator":
+		// Common formats: "WordPress 5.8", "Drupal 9", "Jekyll v4.2.0"
+		product, version = parseGeneratorHeader(value)
+	case "Via":
+		product, version = parseViaHeader(value)
+	case "X-Cache":
+		product = "CDN/Cache: " + value
+	}
+
+	if product != "" {
+		serv.Product = addInfo(serv.Product, product)
+		serv.MatchedProbeID = "http-header-" + strings.ToLower(headerName)
+
+		// Write software detection result
+		software.WriteSoftware([]*software.AtomicSoftware{
+			{
+				Software: &types.Software{
+					Timestamp:  serv.Timestamp,
+					Product:    product,
+					Vendor:     vendor,
+					Version:    version,
+					SourceName: "HTTP Header Match: " + headerName,
+					Service:    serv.Name,
+					Flows:      []string{ident},
+					Notes:      "Header: " + headerName + " = " + value,
+				},
+			},
+		}, nil)
+	}
+
+	if version != "" {
+		serv.Version = addInfo(serv.Version, version)
+	}
+
+	if vendor != "" {
+		serv.Vendor = addInfo(serv.Vendor, vendor)
+	}
+}
+
+// parseServerHeader parses the Server header value.
+// Examples: "Apache/2.4.41 (Ubuntu)", "nginx/1.18.0", "Microsoft-IIS/10.0"
+func parseServerHeader(value string) (product, version string) {
+	// Split by space to handle cases like "Apache/2.4.41 (Ubuntu)"
+	parts := strings.Fields(value)
+	if len(parts) == 0 {
+		return "", ""
+	}
+
+	// Parse the first part which usually contains product/version
+	firstPart := parts[0]
+	if idx := strings.Index(firstPart, "/"); idx != -1 {
+		product = firstPart[:idx]
+		version = firstPart[idx+1:]
+	} else {
+		product = firstPart
+	}
+
+	return product, version
+}
+
+// parseXPoweredByHeader parses the X-Powered-By header value.
+// Examples: "PHP/7.4.3", "ASP.NET", "Express"
+func parseXPoweredByHeader(value string) (product, version string) {
+	if idx := strings.Index(value, "/"); idx != -1 {
+		product = value[:idx]
+		version = value[idx+1:]
+	} else {
+		product = value
+	}
+
+	return product, version
+}
+
+// parseGeneratorHeader parses the X-Generator header value.
+// Examples: "WordPress 5.8", "Drupal 9 (https://www.drupal.org)", "Jekyll v4.2.0"
+func parseGeneratorHeader(value string) (product, version string) {
+	// Split by space to handle "WordPress 5.8" format
+	parts := strings.Fields(value)
+	if len(parts) == 0 {
+		return "", ""
+	}
+
+	product = parts[0]
+
+	if len(parts) >= 2 {
+		// Extract version, removing any leading 'v' if present
+		version = strings.TrimPrefix(parts[1], "v")
+	}
+
+	return product, version
+}
+
+// parseViaHeader parses the Via header value.
+// Examples: "1.1 varnish", "1.1 squid/4.10"
+func parseViaHeader(value string) (product, version string) {
+	// Via format: "protocol proxy-name"
+	// Example: "1.1 varnish" or "1.1 squid/4.10"
+	parts := strings.Fields(value)
+	if len(parts) < 2 {
+		product = "Proxy"
+		return product, ""
+	}
+
+	proxyInfo := parts[1]
+	if idx := strings.Index(proxyInfo, "/"); idx != -1 {
+		product = proxyInfo[:idx]
+		version = proxyInfo[idx+1:]
+	} else {
+		product = proxyInfo
+	}
+
+	return product, version
 }
 
 func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident string) (found bool, index int) {

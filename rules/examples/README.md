@@ -105,9 +105,10 @@ The detection rules are organized by security domain and detection objective. Ea
 - Ransomware indicators (high-volume SMB writes)
 - HTTP authentication brute force
 - Proxy detection (HTTP CONNECT, SOCKS)
+- Enhanced HTTP tunneling detection (CONNECT to non-standard ports, unknown protocol upgrades, unexpected protocol switches) 🆕
 - Database external connections
 
-**Best for**: Detecting lateral movement, credential theft, remote execution, and MITRE ATT&CK tactic coverage across the attack lifecycle.
+**Best for**: Detecting lateral movement, credential theft, remote execution, protocol-based tunneling, and MITRE ATT&CK tactic coverage across the attack lifecycle.
 
 ### `data_exfiltration.yml`
 **Focus**: Data theft and exfiltration indicators  
@@ -186,6 +187,66 @@ The detection rules are organized by security domain and detection objective. Ea
 - IP camera and surveillance system traffic
 
 **Best for**: Monitoring IP cameras, security systems, media streaming servers, and detecting unauthorized streaming or media-based data exfiltration.
+
+### `http2_websocket_detection.yml` 🆕
+**Focus**: Modern HTTP protocol detection  
+**Maturity**: Production-ready  
+**Contains**:
+- HTTP/2 detection via ALPN negotiation (h2, h2-16, h2-15, h2-14)
+- HTTP/2 cleartext (h2c) upgrade detection
+- HTTP/3 (QUIC) detection via ALPN
+- HTTP/3 Alt-Svc header detection
+- WebSocket upgrade request and success detection
+- Secure WebSocket (wss://) connections
+- Non-browser WebSocket connections (potential C2)
+- Automated WebSocket tools (python, curl, etc.)
+- Unknown protocol upgrades (tunneling detection)
+- Unexpected protocol switches
+- Protocol upgrades on unusual ports
+
+**Best for**: Protocol inventory, monitoring adoption of modern protocols, detecting non-browser WebSocket usage (potential C2 communication), and identifying protocol-based tunneling attempts.
+
+**Note**: Extracted from httpx analysis and ProjectDiscovery patterns.
+
+### `http_security_headers.yml` 🆕
+**Focus**: HTTP security header analysis  
+**Maturity**: Production-ready  
+**Contains**:
+- Missing HSTS on HTTPS connections
+- Missing X-Frame-Options (clickjacking protection)
+- Missing X-Content-Type-Options (MIME-sniffing protection)
+- Weak CSP configurations (unsafe-inline, unsafe-eval)
+- Overly permissive CSP (wildcard sources)
+- Cookie security flags (Secure, HttpOnly, SameSite)
+- Information disclosure via headers (X-Powered-By, Server version)
+- ASP.NET version disclosure
+- CMS/framework disclosure (X-Generator)
+- Overly permissive CORS configurations
+- Sensitive content caching issues
+- Weak or deprecated Referrer-Policy
+
+**Best for**: Security posture assessment, identifying misconfigured web applications, finding information disclosure issues, and detecting weak security controls.
+
+**Note**: Helps identify low-hanging security misconfigurations that are easy to fix and can significantly improve security posture.
+
+### `http_technology_fingerprinting.yml` 🆕
+**Focus**: Server technology and infrastructure detection  
+**Maturity**: Production-ready  
+**Contains**:
+- Web servers (Nginx, Apache, IIS, LiteSpeed, Caddy)
+- Frameworks (ASP.NET, PHP, Node.js, Express, Django, Flask, Rails, Java/Spring, Laravel)
+- CMS platforms (WordPress, Drupal, Joomla, Magento, Shopify)
+- CDN providers (Cloudflare, Akamai, AWS CloudFront, Fastly)
+- Caching layers (Varnish, Nginx cache)
+- Load balancers (HAProxy, F5 BIG-IP)
+- Proxies (Squid)
+- WAF detection (ModSecurity, AWS WAF, Cloudflare WAF)
+- Application servers (Tomcat, Jetty, Gunicorn, uWSGI, Passenger)
+- Hosting platforms (Heroku, Vercel, Netlify, GitHub Pages)
+
+**Best for**: Asset inventory, technology stack mapping, identifying CDN/WAF usage, and understanding infrastructure composition for security assessments.
+
+**Note**: Extracted from httpx fingerprinting patterns and web technology detection methods.
 
 ## Rule Maturity Levels
 

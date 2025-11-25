@@ -149,3 +149,55 @@ func MatchesPattern(str, pattern string) bool {
 	return matched
 }
 
+// Contains checks if a slice contains a specific value.
+// Supports []string, []int, and []int32 (common in protobuf).
+func Contains(slice interface{}, value interface{}) bool {
+	switch s := slice.(type) {
+	case []string:
+		target, ok := value.(string)
+		if !ok {
+			return false
+		}
+		for _, item := range s {
+			if item == target {
+				return true
+			}
+		}
+	case []int:
+		target, ok := value.(int)
+		if !ok {
+			return false
+		}
+		for _, item := range s {
+			if item == target {
+				return true
+			}
+		}
+	case []int32:
+		target, ok := value.(int32)
+		if !ok {
+			return false
+		}
+		for _, item := range s {
+			if item == target {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// HasKey checks if a map contains a specific key.
+// Supports map[string]string and map[string]interface{}.
+func HasKey(m interface{}, key string) bool {
+	switch mp := m.(type) {
+	case map[string]string:
+		_, exists := mp[key]
+		return exists
+	case map[string]interface{}:
+		_, exists := mp[key]
+		return exists
+	}
+	return false
+}
+

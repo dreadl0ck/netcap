@@ -87,6 +87,57 @@ rules:
     tags: ["proxy"]
     enabled: true
 
+  # HTTP CONNECT Tunneling to Non-Standard Ports (Enhanced Detection)
+  # Most legitimate CONNECT tunneling is to HTTPS (443) or secure-web (8443).
+  # CONNECT to other ports is highly suspicious and may indicate:
+  # - Tunneling non-HTTP protocols through HTTP proxies
+  # - Bypassing firewall restrictions
+  # - Covert channels for data exfiltration or C2
+  - name: HTTP CONNECT Tunnel to Unusual Port
+    description: Detect HTTP CONNECT to non-standard ports (potential tunneling or firewall bypass)
+    type: HTTP
+    expression: Method == "CONNECT" && !MatchesPattern(URL, ":443$|:8443$")
+    severity: high
+    mitre: ["T1090.002", "T1572"]
+    tags: ["tunneling", "proxy", "suspicious", "firewall-bypass"]
+    enabled: true
+
+  # HTTP Upgrade to Unknown Protocol (Enhanced Detection)
+  # The HTTP Upgrade header is used for legitimate protocol upgrades:
+  # - WebSocket (RFC 6455)
+  # - HTTP/2 cleartext (h2c)
+  # - TLS upgrade (rare)
+  # Any other protocol in the Upgrade header is suspicious and may indicate:
+  # - Custom tunneling protocols
+  # - Covert channels
+  # - Protocol-based data exfiltration
+  - name: HTTP Upgrade to Unknown Protocol
+    description: Detect HTTP Upgrade header with non-standard protocols (potential custom tunneling)
+    type: HTTP
+    expression: RequestHeader["Upgrade"] != "" && !MatchesPattern(RequestHeader["Upgrade"], "(?i)(websocket|h2c|TLS/1\\.)") && MatchesPattern(RequestHeader["Connection"], "(?i)Upgrade")
+    severity: medium
+    mitre: ["T1090", "T1572"]
+    tags: ["tunneling", "suspicious", "protocol-upgrade"]
+    enabled: true
+
+  # Unexpected Protocol Switch (101 Switching Protocols to Unknown Protocol)
+  # Status code 101 indicates successful protocol upgrade.
+  # Legitimate uses:
+  # - WebSocket connections
+  # - HTTP/2 cleartext (h2c)
+  # Any other protocol is highly suspicious and indicates:
+  # - Custom protocol tunneling
+  # - Covert communication channels
+  # - Advanced persistent threats (APT) techniques
+  - name: Unexpected Protocol Switch
+    description: Detect 101 Switching Protocols to unexpected protocols (not WebSocket/h2c)
+    type: HTTP
+    expression: StatusCode == 101 && ResponseHeader["Upgrade"] != "" && !MatchesPattern(ResponseHeader["Upgrade"], "(?i)(websocket|h2c)")
+    severity: medium
+    mitre: ["T1090", "T1572"]
+    tags: ["tunneling", "anomaly", "protocol-switch"]
+    enabled: true
+
   # SSH Suspiciously Long Version
   - name: SSH Suspiciously Long Version
     description: Detect SSH connections with abnormally long version strings (potential data exfil)

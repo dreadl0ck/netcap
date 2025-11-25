@@ -1,0 +1,430 @@
+# HTTP Technology Fingerprinting Rules
+# These rules identify server technologies, frameworks, and infrastructure
+# Extracted from httpx analysis and web fingerprinting patterns
+
+description: "Detection rules for identifying server technologies, web frameworks, CMS platforms, CDN/WAF providers, and infrastructure components based on HTTP headers, cookies, and URL patterns. Useful for asset inventory and technology stack mapping."
+
+rules:
+  # ========================================
+  # WEB SERVERS
+  # ========================================
+
+  # Nginx Detection
+  - name: Nginx Server Detected
+    description: Detect Nginx web server via Server header
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)nginx")
+    severity: info
+    tags: ["fingerprinting", "nginx", "webserver"]
+    enabled: true
+
+  # Apache Detection
+  - name: Apache Server Detected
+    description: Detect Apache web server via Server header
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)Apache")
+    severity: info
+    tags: ["fingerprinting", "apache", "webserver"]
+    enabled: true
+
+  # Microsoft IIS Detection
+  - name: Microsoft IIS Detected
+    description: Detect Microsoft IIS web server via Server header
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)Microsoft-IIS")
+    severity: info
+    tags: ["fingerprinting", "iis", "webserver", "microsoft"]
+    enabled: true
+
+  # LiteSpeed Detection
+  - name: LiteSpeed Server Detected
+    description: Detect LiteSpeed web server via Server header
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)LiteSpeed")
+    severity: info
+    tags: ["fingerprinting", "litespeed", "webserver"]
+    enabled: true
+
+  # Caddy Detection
+  - name: Caddy Server Detected
+    description: Detect Caddy web server via Server header
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)Caddy")
+    severity: info
+    tags: ["fingerprinting", "caddy", "webserver"]
+    enabled: true
+
+  # ========================================
+  # FRAMEWORKS & LANGUAGES
+  # ========================================
+
+  # ASP.NET Detection
+  - name: ASP.NET Application Detected
+    description: Detect ASP.NET applications via headers or cookies
+    type: HTTP
+    expression: ResponseHeader["X-AspNet-Version"] != "" || ResponseHeader["X-AspNetMvc-Version"] != "" || MatchesPattern(ResponseHeader["Server"], "(?i)Microsoft-IIS") || MatchesPattern(ResponseHeader["Set-Cookie"], "ASP\\.NET_SessionId")
+    severity: info
+    tags: ["fingerprinting", "aspnet", "framework", "microsoft"]
+    enabled: true
+
+  # PHP Detection
+  - name: PHP Application Detected
+    description: Detect PHP applications via X-Powered-By or PHPSESSID cookie
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["X-Powered-By"], "(?i)PHP") || MatchesPattern(ResponseHeader["Set-Cookie"], "PHPSESSID")
+    severity: info
+    tags: ["fingerprinting", "php", "framework"]
+    enabled: true
+
+  # Node.js Detection
+  - name: Node.js Application Detected
+    description: Detect Node.js applications via X-Powered-By header
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["X-Powered-By"], "(?i)(Express|Node\\.js)")
+    severity: info
+    tags: ["fingerprinting", "nodejs", "framework"]
+    enabled: true
+
+  # Express.js Detection
+  - name: Express.js Framework Detected
+    description: Detect Express.js framework via X-Powered-By header
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["X-Powered-By"], "(?i)Express")
+    severity: info
+    tags: ["fingerprinting", "expressjs", "nodejs", "framework"]
+    enabled: true
+
+  # Django Detection
+  - name: Django Framework Detected
+    description: Detect Django framework via cookies or Server header
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)(csrftoken|sessionid)") && MatchesPattern(ResponseHeader["Server"], "(?i)(WSGIServer|gunicorn|uwsgi)")
+    severity: info
+    tags: ["fingerprinting", "django", "python", "framework"]
+    enabled: true
+
+  # Flask Detection
+  - name: Flask Framework Detected
+    description: Detect Flask framework via Server header or cookies
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)(Werkzeug|Flask)") || (MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)session") && MatchesPattern(ResponseHeader["Server"], "(?i)(gunicorn|uwsgi)"))
+    severity: info
+    tags: ["fingerprinting", "flask", "python", "framework"]
+    enabled: true
+
+  # Ruby on Rails Detection
+  - name: Ruby on Rails Detected
+    description: Detect Ruby on Rails framework via cookies or headers
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)_.*_session") || MatchesPattern(ResponseHeader["X-Powered-By"], "(?i)(Phusion Passenger|Rack)")
+    severity: info
+    tags: ["fingerprinting", "rails", "ruby", "framework"]
+    enabled: true
+
+  # Java/JSP Detection
+  - name: Java Application Detected
+    description: Detect Java applications via JSESSIONID cookie or headers
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Set-Cookie"], "JSESSIONID") || MatchesPattern(ResponseHeader["Server"], "(?i)(Tomcat|Jetty|WildFly|JBoss|WebLogic|WebSphere)")
+    severity: info
+    tags: ["fingerprinting", "java", "jsp", "framework"]
+    enabled: true
+
+  # Spring Framework Detection
+  - name: Spring Framework Detected
+    description: Detect Spring Framework via headers or cookies
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["X-Application-Context"], "(?i)") || MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)SPRING") || ResponseHeader["X-Application-Context"] != ""
+    severity: info
+    tags: ["fingerprinting", "spring", "java", "framework"]
+    enabled: true
+
+  # Laravel Detection
+  - name: Laravel Framework Detected
+    description: Detect Laravel PHP framework via cookies or headers
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)(laravel_session|XSRF-TOKEN)")
+    severity: info
+    tags: ["fingerprinting", "laravel", "php", "framework"]
+    enabled: true
+
+  # ========================================
+  # CONTENT MANAGEMENT SYSTEMS (CMS)
+  # ========================================
+
+  # WordPress Detection
+  - name: WordPress CMS Detected
+    description: Detect WordPress installations via URL patterns or headers
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)(/wp-content/|/wp-includes/|/wp-admin/|/wp-json/)") || MatchesPattern(ResponseHeader["X-Powered-By"], "(?i)WordPress") || MatchesPattern(ResponseHeader["Link"], "(?i)wp-json")
+    severity: info
+    tags: ["fingerprinting", "wordpress", "cms", "php"]
+    enabled: true
+
+  # Drupal Detection
+  - name: Drupal CMS Detected
+    description: Detect Drupal CMS via headers or URL patterns
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["X-Generator"], "(?i)Drupal") || MatchesPattern(ResponseHeader["X-Drupal-Cache"], "(?i)") || MatchesPattern(URL, "(?i)(/sites/default/|/modules/|/themes/)") || ResponseHeader["X-Drupal-Cache"] != ""
+    severity: info
+    tags: ["fingerprinting", "drupal", "cms", "php"]
+    enabled: true
+
+  # Joomla Detection
+  - name: Joomla CMS Detected
+    description: Detect Joomla CMS via headers or URL patterns
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["X-Content-Encoded-By"], "(?i)Joomla") || MatchesPattern(URL, "(?i)(/components/|/modules/|/templates/com_)")
+    severity: info
+    tags: ["fingerprinting", "joomla", "cms", "php"]
+    enabled: true
+
+  # Magento Detection
+  - name: Magento E-commerce Detected
+    description: Detect Magento e-commerce platform
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["X-Magento-*"], "(?i)") || MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)frontend=") || MatchesPattern(URL, "(?i)/magento/")
+    severity: info
+    tags: ["fingerprinting", "magento", "ecommerce", "php"]
+    enabled: true
+
+  # Shopify Detection
+  - name: Shopify E-commerce Detected
+    description: Detect Shopify hosted e-commerce
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["X-Shopify-Stage"], "(?i)") || MatchesPattern(Host, "(?i)myshopify\\.com") || ResponseHeader["X-Shopify-Stage"] != ""
+    severity: info
+    tags: ["fingerprinting", "shopify", "ecommerce", "saas"]
+    enabled: true
+
+  # ========================================
+  # CDN & CACHING
+  # ========================================
+
+  # Cloudflare Detection
+  - name: Cloudflare CDN Detected
+    description: Detect Cloudflare CDN/WAF via headers
+    type: HTTP
+    expression: ResponseHeader["CF-Ray"] != "" || MatchesPattern(ResponseHeader["Server"], "(?i)cloudflare")
+    severity: info
+    tags: ["fingerprinting", "cdn", "cloudflare", "waf"]
+    enabled: true
+
+  # Akamai Detection
+  - name: Akamai CDN Detected
+    description: Detect Akamai CDN via headers
+    type: HTTP
+    expression: ResponseHeader["X-Akamai-Transformed"] != "" || ResponseHeader["Akamai-Cache-Status"] != "" || ResponseHeader["X-Akamai-Request-ID"] != ""
+    severity: info
+    tags: ["fingerprinting", "cdn", "akamai"]
+    enabled: true
+
+  # AWS CloudFront Detection
+  - name: AWS CloudFront Detected
+    description: Detect AWS CloudFront CDN via headers
+    type: HTTP
+    expression: ResponseHeader["X-Amz-Cf-Id"] != "" || ResponseHeader["X-Amz-Cf-Pop"] != "" || MatchesPattern(ResponseHeader["Via"], "(?i)CloudFront")
+    severity: info
+    tags: ["fingerprinting", "cdn", "aws", "cloudfront"]
+    enabled: true
+
+  # Fastly CDN Detection
+  - name: Fastly CDN Detected
+    description: Detect Fastly CDN via headers
+    type: HTTP
+    expression: ResponseHeader["Fastly-Restarts"] != "" || MatchesPattern(ResponseHeader["X-Served-By"], "(?i)cache.*fastly") || MatchesPattern(ResponseHeader["Via"], "(?i)fastly")
+    severity: info
+    tags: ["fingerprinting", "cdn", "fastly"]
+    enabled: true
+
+  # CloudFront Detection
+  - name: Cloudflare CDN Detected
+    description: Detect Cloudflare via X-Cache or Server headers
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["X-Cache"], "(?i)cloudflare") || ResponseHeader["CF-Cache-Status"] != ""
+    severity: info
+    tags: ["fingerprinting", "cdn", "cloudflare"]
+    enabled: true
+
+  # Varnish Cache Detection
+  - name: Varnish Cache Detected
+    description: Detect Varnish HTTP accelerator via headers
+    type: HTTP
+    expression: ResponseHeader["X-Varnish"] != "" || MatchesPattern(ResponseHeader["Via"], "(?i)varnish")
+    severity: info
+    tags: ["fingerprinting", "varnish", "cache"]
+    enabled: true
+
+  # Nginx Caching
+  - name: Nginx Caching Detected
+    description: Detect Nginx caching via X-Cache header
+    type: HTTP
+    expression: ResponseHeader["X-Nginx-Cache-Status"] != "" || MatchesPattern(ResponseHeader["X-Cache"], "(?i)nginx")
+    severity: info
+    tags: ["fingerprinting", "nginx", "cache"]
+    enabled: true
+
+  # ========================================
+  # LOAD BALANCERS & PROXIES
+  # ========================================
+
+  # HAProxy Detection
+  - name: HAProxy Load Balancer Detected
+    description: Detect HAProxy load balancer
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)HAProxy")
+    severity: info
+    tags: ["fingerprinting", "haproxy", "load-balancer"]
+    enabled: true
+
+  # F5 BIG-IP Detection
+  - name: F5 BIG-IP Detected
+    description: Detect F5 BIG-IP load balancer via cookies
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)BIGipServer") || MatchesPattern(ResponseHeader["Server"], "(?i)BigIP")
+    severity: info
+    tags: ["fingerprinting", "f5", "big-ip", "load-balancer"]
+    enabled: true
+
+  # Squid Proxy Detection
+  - name: Squid Proxy Detected
+    description: Detect Squid caching proxy
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)squid") || MatchesPattern(ResponseHeader["Via"], "(?i)squid")
+    severity: info
+    tags: ["fingerprinting", "squid", "proxy"]
+    enabled: true
+
+  # ========================================
+  # WAF (WEB APPLICATION FIREWALLS)
+  # ========================================
+
+  # ModSecurity Detection
+  - name: ModSecurity WAF Detected
+    description: Detect ModSecurity web application firewall
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)Mod_Security") || ResponseHeader["X-Mod-Security-Message"] != ""
+    severity: info
+    tags: ["fingerprinting", "modsecurity", "waf"]
+    enabled: true
+
+  # AWS WAF Detection
+  - name: AWS WAF Detected
+    description: Detect AWS WAF via headers
+    type: HTTP
+    expression: ResponseHeader["X-Amzn-RequestId"] != "" || ResponseHeader["X-Amzn-Trace-Id"] != ""
+    severity: info
+    tags: ["fingerprinting", "aws", "waf"]
+    enabled: true
+
+  # Cloudflare WAF Block
+  - name: Cloudflare WAF Block Detected
+    description: Detect Cloudflare WAF blocking requests
+    type: HTTP
+    expression: StatusCode == 403 && ResponseHeader["CF-Ray"] != ""
+    severity: info
+    tags: ["fingerprinting", "cloudflare", "waf", "blocked"]
+    enabled: false  # High volume
+
+  # ========================================
+  # ANALYTICS & TRACKING
+  # ========================================
+
+  # Google Analytics Detection
+  - name: Google Analytics Detected
+    description: Detect Google Analytics via URL patterns
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)(google-analytics\\.com|googletagmanager\\.com)")
+    severity: info
+    tags: ["fingerprinting", "analytics", "google", "tracking"]
+    enabled: false  # Informational, high volume
+
+  # ========================================
+  # APPLICATION SERVERS
+  # ========================================
+
+  # Apache Tomcat Detection
+  - name: Apache Tomcat Detected
+    description: Detect Apache Tomcat application server
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)Apache.*Tomcat")
+    severity: info
+    tags: ["fingerprinting", "tomcat", "java", "app-server"]
+    enabled: true
+
+  # Jetty Detection
+  - name: Jetty Server Detected
+    description: Detect Jetty application server
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)Jetty")
+    severity: info
+    tags: ["fingerprinting", "jetty", "java", "app-server"]
+    enabled: true
+
+  # Gunicorn Detection
+  - name: Gunicorn Server Detected
+    description: Detect Gunicorn WSGI HTTP server (Python)
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)gunicorn")
+    severity: info
+    tags: ["fingerprinting", "gunicorn", "python", "wsgi"]
+    enabled: true
+
+  # uWSGI Detection
+  - name: uWSGI Server Detected
+    description: Detect uWSGI application server (Python)
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)uwsgi")
+    severity: info
+    tags: ["fingerprinting", "uwsgi", "python"]
+    enabled: true
+
+  # Passenger Detection
+  - name: Phusion Passenger Detected
+    description: Detect Phusion Passenger application server
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)Phusion Passenger") || MatchesPattern(ResponseHeader["X-Powered-By"], "(?i)Phusion Passenger")
+    severity: info
+    tags: ["fingerprinting", "passenger", "ruby", "app-server"]
+    enabled: true
+
+  # ========================================
+  # HOSTING PLATFORMS
+  # ========================================
+
+  # Heroku Detection
+  - name: Heroku Platform Detected
+    description: Detect Heroku hosting platform
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Via"], "(?i)heroku") || MatchesPattern(Host, "(?i)\\.herokuapp\\.com")
+    severity: info
+    tags: ["fingerprinting", "heroku", "paas"]
+    enabled: true
+
+  # Vercel Detection
+  - name: Vercel Platform Detected
+    description: Detect Vercel (Zeit) hosting platform
+    type: HTTP
+    expression: ResponseHeader["X-Vercel-Id"] != "" || MatchesPattern(ResponseHeader["Server"], "(?i)Vercel") || MatchesPattern(Host, "(?i)\\.vercel\\.app")
+    severity: info
+    tags: ["fingerprinting", "vercel", "paas"]
+    enabled: true
+
+  # Netlify Detection
+  - name: Netlify Platform Detected
+    description: Detect Netlify hosting platform
+    type: HTTP
+    expression: ResponseHeader["X-Nf-Request-Id"] != "" || MatchesPattern(ResponseHeader["Server"], "(?i)Netlify") || MatchesPattern(Host, "(?i)\\.netlify\\.app")
+    severity: info
+    tags: ["fingerprinting", "netlify", "paas"]
+    enabled: true
+
+  # GitHub Pages Detection
+  - name: GitHub Pages Detected
+    description: Detect GitHub Pages hosting
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "(?i)GitHub\\.com") || MatchesPattern(Host, "(?i)\\.github\\.io")
+    severity: info
+    tags: ["fingerprinting", "github", "pages"]
+    enabled: true
+

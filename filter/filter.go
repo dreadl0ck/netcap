@@ -122,6 +122,18 @@ func CompileExpression(expression string, recordType types.Type) (*vm.Program, e
 			},
 			new(func(string, string) bool),
 		),
+		expr.Function("Contains",
+			func(params ...any) (any, error) {
+				return Contains(params[0], params[1]), nil
+			},
+			new(func(interface{}, interface{}) bool),
+		),
+		expr.Function("HasKey",
+			func(params ...any) (any, error) {
+				return HasKey(params[0], params[1].(string)), nil
+			},
+			new(func(interface{}, string) bool),
+		),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile expression: %w", err)
@@ -151,6 +163,8 @@ func EvaluateExpression(program *vm.Program, record types.AuditRecord) (bool, er
 	env["FormatTime"] = FormatTime
 	env["ContainsAny"] = ContainsAny
 	env["MatchesPattern"] = MatchesPattern
+	env["Contains"] = Contains
+	env["HasKey"] = HasKey
 
 	result, err := expr.Run(program, env)
 	if err != nil {
