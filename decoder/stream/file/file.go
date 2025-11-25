@@ -42,3 +42,9 @@ func WriteFile(f *types.File) {
 		log.Fatal("failed to write proto: ", err)
 	}
 }
+
+// WriteFileEnhanced writes an enhanced file record with additional fields
+// This is an alias to WriteFile for consistency
+func WriteFileEnhanced(f *types.File) {
+	WriteFile(f)
+}

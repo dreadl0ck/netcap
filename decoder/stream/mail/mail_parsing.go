@@ -30,8 +30,8 @@ import (
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
+	"github.com/dreadl0ck/netcap/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
-	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -150,7 +150,22 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 			mail.HasAttachments = true
 
 			if decoderconfig.Instance.FileStorage != "" {
-				err = streamutils.SaveFile(conv, origin, p.Filename, nil, []byte(p.Content), []string{p.Header["Content-Transfer-Encoding"]}, conv.ServerIP+":"+strconv.Itoa(int(conv.ServerPort)), "")
+				// Use new file extraction framework
+				extractor, ok := file.GetExtractor("MAIL")
+				if !ok {
+					mailLog.Error("MAIL file extractor not registered")
+					break
+				}
+				
+				metadata := file.FileMetadata{
+					ConnectionUID:  conv.Ident,
+					FlowDirection:  "server_to_client", // Typically receiving email
+					Filename:       p.Filename,
+					ContentType:    p.Header["Content-Type"],
+					Host:           conv.ServerIP + ":" + strconv.Itoa(int(conv.ServerPort)),
+					Encoding:       []string{p.Header["Content-Transfer-Encoding"]},
+				}
+				err = extractor.ExtractFile(conv, []byte(p.Content), metadata)
 				if err != nil {
 					mailLog.Error("failed to save attachment", zap.Error(err), zap.String("origin", origin))
 				}

@@ -22,12 +22,15 @@ import (
 )
 
 const (
-	fieldTimestamp      = "Timestamp"
-	fieldSrcMAC         = "SrcMAC"
-	fieldDstMAC         = "DstMAC"
-	fieldEthernetType   = "EthernetType"
-	fieldPayloadEntropy = "PayloadEntropy"
-	fieldPayloadSize    = "PayloadSize"
+	fieldTimestamp       = "Timestamp"
+	fieldSrcMAC          = "SrcMAC"
+	fieldDstMAC          = "DstMAC"
+	fieldEthernetType    = "EthernetType"
+	fieldPayloadEntropy  = "PayloadEntropy"
+	fieldPayloadSize     = "PayloadSize"
+	fieldIsRequest       = "IsRequest"
+	fieldSecurityContext = "SecurityContext"
+	fieldAuthSuccess     = "AuthSuccess"
 )
 
 var fieldsEthernet = []string{

@@ -99,7 +99,7 @@ See [DEBUGGING.md](../../docs/DEBUGGING.md) for more details.
       -memprofile="": write memory profile
       -nodefrag=false: if true, do not do IPv4 defrag
       -nooptcheck=false: do not check TCP options (useful to ignore MSS on captures with TSO)
-      -opts="datagrams": select decoding options
+      -opts="default": select decoding options
       -out="": specify output directory, will be created if it does not exist
       -overview=false: print a list of all available decoders and fields
       -payload=false: capture payload for supported layers

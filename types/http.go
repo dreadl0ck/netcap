@@ -35,6 +35,7 @@ const (
 	fieldStatusCode         = "StatusCode"
 	fieldReqContentEncoding = "ReqContentEncoding"
 	fieldResContentEncoding = "ResContentEncoding"
+	// fieldFlow, fieldSrcPort, fieldDstPort are defined in other type files
 )
 
 var fieldsHTTP = []string{
@@ -53,9 +54,12 @@ var fieldsHTTP = []string{
 	fieldStatusCode,
 	fieldSrcIP,
 	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 	fieldReqContentEncoding,
 	fieldResContentEncoding,
 	fieldServerName,
+	fieldFlow,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -89,9 +93,12 @@ func (h *HTTP) CSVRecord() []string {
 		formatInt32(h.StatusCode),
 		h.SrcIP,
 		h.DstIP,
+		formatInt32(h.SrcPort),
+		formatInt32(h.DstPort),
 		h.ReqContentEncoding,
 		h.ResContentEncoding,
 		h.ServerName,
+		h.Flow,
 	})
 }
 
@@ -183,9 +190,12 @@ func (h *HTTP) Encode() []string {
 		httpEncoder.Int32(fieldStatusCode, h.StatusCode),
 		httpEncoder.String(fieldSrcIP, h.SrcIP),
 		httpEncoder.String(fieldDstIP, h.DstIP),
+		httpEncoder.Int32(fieldSrcPort, h.SrcPort),
+		httpEncoder.Int32(fieldDstPort, h.DstPort),
 		httpEncoder.String(fieldReqContentEncoding, h.ReqContentEncoding),
 		httpEncoder.String(fieldResContentEncoding, h.ResContentEncoding),
 		httpEncoder.String(fieldServerName, h.ServerName),
+		httpEncoder.String(fieldFlow, h.Flow),
 	})
 }
 

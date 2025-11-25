@@ -396,13 +396,19 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 		if dir == reassembly.TCPDirClientToServer {
 			err = Decoder.Writer.Write(&types.SSH{
-				Timestamp:         h.conversation.FirstClientPacket.UnixNano(),
-				HASSH:             hash,
-				Flow:              h.conversation.Ident,
-				Ident:             h.clientIdent,
-				Algorithms:        raw,
-				IsClient:          true,
-				HASSHDescriptions: hasshDescriptions,
+				Timestamp:               h.conversation.FirstClientPacket.UnixNano(),
+				HASSH:                   hash,
+				Flow:                    h.conversation.Ident,
+				Ident:                   h.clientIdent,
+				Algorithms:              raw,
+				IsClient:                true,
+				HASSHDescriptions:       hasshDescriptions,
+				SoftwareVersion:         extractSoftwareVersion(h.clientIdent),
+				OSGuess:                 guessOS(h.clientIdent),
+				HasWeakKex:              hasWeakKex(init.KexAlgos),
+				HasWeakCipher:           hasWeakCipher(init.CiphersClientServer),
+				HasWeakMAC:              hasWeakMAC(init.MACsClientServer),
+				ServerHostKeyAlgorithms: strings.Join(init.ServerHostKeyAlgos, ","),
 			})
 			if err != nil {
 				sshLog.Error("failed to flush ssh audit record", zap.Error(err))
@@ -421,13 +427,19 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			sshLog.Info("found clientKexInit", zap.String("ident", h.conversation.Ident))
 		} else {
 			err = Decoder.Writer.Write(&types.SSH{
-				Timestamp:         h.conversation.FirstServerPacket.UnixNano(),
-				HASSH:             hash,
-				Flow:              utils.ReverseFlowIdent(h.conversation.Ident),
-				Ident:             h.serverIdent,
-				Algorithms:        raw,
-				IsClient:          false,
-				HASSHDescriptions: hasshDescriptions,
+				Timestamp:               h.conversation.FirstServerPacket.UnixNano(),
+				HASSH:                   hash,
+				Flow:                    utils.ReverseFlowIdent(h.conversation.Ident),
+				Ident:                   h.serverIdent,
+				Algorithms:              raw,
+				IsClient:                false,
+				HASSHDescriptions:       hasshDescriptions,
+				SoftwareVersion:         extractSoftwareVersion(h.serverIdent),
+				OSGuess:                 guessOS(h.serverIdent),
+				HasWeakKex:              hasWeakKex(init.KexAlgos),
+				HasWeakCipher:           hasWeakCipher(init.CiphersServerClient),
+				HasWeakMAC:              hasWeakMAC(init.MACsServerClient),
+				ServerHostKeyAlgorithms: strings.Join(init.ServerHostKeyAlgos, ","),
 			})
 			if err != nil {
 				sshLog.Error("failed to flush ssh audit record", zap.Error(err))
@@ -565,4 +577,99 @@ func computeHASSH(init KexInitMsg) (hash string, raw string) {
 	b.WriteString(strings.Join(init.CompressionClientServer, ","))
 
 	return fmt.Sprintf("%x", md5.Sum([]byte(b.String()))), b.String()
+}
+
+// weakKexAlgorithms contains key exchange algorithms considered weak
+var weakKexAlgorithms = map[string]bool{
+	"diffie-hellman-group1-sha1":         true,
+	"diffie-hellman-group14-sha1":        true,
+	"diffie-hellman-group-exchange-sha1": true,
+}
+
+// weakCiphers contains encryption ciphers considered weak
+var weakCiphers = map[string]bool{
+	"3des-cbc":          true,
+	"arcfour":           true,
+	"arcfour128":        true,
+	"arcfour256":        true,
+	"blowfish-cbc":      true,
+	"cast128-cbc":       true,
+	"aes128-cbc":        true, // CBC mode is weak
+	"aes192-cbc":        true,
+	"aes256-cbc":        true,
+}
+
+// weakMACs contains MAC algorithms considered weak
+var weakMACs = map[string]bool{
+	"hmac-md5":     true,
+	"hmac-md5-96":  true,
+	"hmac-sha1":    true,
+	"hmac-sha1-96": true,
+}
+
+// hasWeakKex checks if any offered key exchange algorithm is weak
+func hasWeakKex(kexAlgos []string) bool {
+	for _, kex := range kexAlgos {
+		if weakKexAlgorithms[kex] {
+			return true
+		}
+	}
+	return false
+}
+
+// hasWeakCipher checks if any offered cipher is weak
+func hasWeakCipher(ciphers []string) bool {
+	for _, cipher := range ciphers {
+		if weakCiphers[cipher] {
+			return true
+		}
+	}
+	return false
+}
+
+// hasWeakMAC checks if any offered MAC algorithm is weak
+func hasWeakMAC(macs []string) bool {
+	for _, mac := range macs {
+		if weakMACs[mac] {
+			return true
+		}
+	}
+	return false
+}
+
+// extractSoftwareVersion extracts the software version from SSH ident string
+func extractSoftwareVersion(ident string) string {
+	// SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5
+	// Extract the part after SSH-x.x-
+	parts := strings.SplitN(ident, "-", 3)
+	if len(parts) >= 3 {
+		// Return everything after SSH-2.0-
+		return parts[2]
+	}
+	return ""
+}
+
+// guessOS attempts to guess the OS from the SSH ident string
+func guessOS(ident string) string {
+	identLower := strings.ToLower(ident)
+	
+	if strings.Contains(identLower, "ubuntu") {
+		return "Ubuntu Linux"
+	} else if strings.Contains(identLower, "debian") {
+		return "Debian Linux"
+	} else if strings.Contains(identLower, "centos") || strings.Contains(identLower, "rhel") || strings.Contains(identLower, "red hat") {
+		return "Red Hat/CentOS Linux"
+	} else if strings.Contains(identLower, "freebsd") {
+		return "FreeBSD"
+	} else if strings.Contains(identLower, "windows") {
+		return "Windows"
+	} else if strings.Contains(identLower, "cisco") {
+		return "Cisco IOS"
+	} else if strings.Contains(identLower, "dropbear") {
+		return "Embedded Linux"
+	} else if strings.Contains(identLower, "openssh") {
+		// Generic OpenSSH - likely Unix/Linux
+		return "Unix/Linux"
+	}
+	return ""
 }

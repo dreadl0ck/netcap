@@ -14,11 +14,24 @@
 package packet
 
 import (
+	"bytes"
+
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
+
+// arpOperationNames maps ARP operation codes to human-readable names
+var arpOperationNames = map[uint16]string{
+	1: "Request",
+	2: "Reply",
+	3: "RARP Request",
+	4: "RARP Reply",
+}
+
+// zeroIPv4 represents 0.0.0.0
+var zeroIPv4 = []byte{0, 0, 0, 0}
 
 var arpDecoder = newGoPacketDecoder(
 	types.Type_NC_ARP,
@@ -26,6 +39,25 @@ var arpDecoder = newGoPacketDecoder(
 	"The Address Resolution Protocol resolves IP to hardware addresses",
 	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if arp, ok := layer.(*layers.ARP); ok {
+			srcProtoAddr := parseIPv4(arp.SourceProtAddress)
+			dstProtoAddr := parseIPv4(arp.DstProtAddress)
+
+			// Determine operation name
+			opName := arpOperationNames[arp.Operation]
+			if opName == "" {
+				opName = "Unknown"
+			}
+
+			// Gratuitous ARP: reply sent without being requested, or request for own IP
+			// Common pattern: sender IP == target IP in a reply
+			isGratuitous := arp.Operation == 2 && bytes.Equal(arp.SourceProtAddress, arp.DstProtAddress)
+
+			// ARP Probe: sender IP is 0.0.0.0 (used for duplicate address detection)
+			isProbe := bytes.Equal(arp.SourceProtAddress, zeroIPv4)
+
+			// ARP Announcement: sender IP == target IP in a request
+			isAnnouncement := arp.Operation == 1 && bytes.Equal(arp.SourceProtAddress, arp.DstProtAddress)
+
 			return &types.ARP{
 				Timestamp:           timestamp,
 				AddrType:            int32(arp.AddrType),
@@ -34,9 +66,13 @@ var arpDecoder = newGoPacketDecoder(
 				ProtocolAddressSize: int32(arp.ProtAddressSize),
 				Operation:           int32(arp.Operation),
 				SrcHwAddress:        formatMac(arp.SourceHwAddress),
-				SrcProtocolAddress:  parseIPv4(arp.SourceProtAddress),
+				SrcProtocolAddress:  srcProtoAddr,
 				DstHwAddress:        formatMac(arp.DstHwAddress),
-				DstProtocolAddress:  parseIPv4(arp.DstProtAddress),
+				DstProtocolAddress:  dstProtoAddr,
+				IsGratuitous:        isGratuitous,
+				IsProbe:             isProbe,
+				IsAnnouncement:      isAnnouncement,
+				OperationName:       opName,
 			}
 		}
 

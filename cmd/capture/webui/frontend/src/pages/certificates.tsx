@@ -240,7 +240,9 @@ export default function CertificatesPage() {
 
   const handleShowConnection = useCallback((cert: CertificateSummary) => {
     // Navigate to connections page with search filter for this connection
-    const searchTerm = `${cert.srcIP}:${cert.srcPort}->${cert.dstIP}:${cert.dstPort}`;
+    // Note: Certificate srcIP/srcPort is the server (sender of cert), dstIP/dstPort is the client
+    // Connections are stored in client->server format, so we flip the order
+    const searchTerm = `${cert.dstIP}:${cert.dstPort}->${cert.srcIP}:${cert.srcPort}`;
     router.push(`/connections?search=${encodeURIComponent(searchTerm)}`);
   }, [router]);
 

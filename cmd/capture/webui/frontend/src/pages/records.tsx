@@ -943,7 +943,31 @@ export default function AuditRecords() {
         </Box>
 
         {layerGroups.length > 0 ? (
-          <Paper sx={{ p: 2 }}>
+          <Paper sx={{ p: 2, position: 'relative' }}>
+            {/* Loading overlay when switching files */}
+            {switchingFile && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  bgcolor: 'rgba(0, 0, 0, 0.5)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 10,
+                  borderRadius: 1,
+                }}
+              >
+                <CircularProgress size={48} />
+                <Typography variant="body2" color="white" sx={{ mt: 2 }}>
+                  Loading records...
+                </Typography>
+              </Box>
+            )}
             {layerGroups.map((group, groupIdx) => (
               <Box key={group.layerName} sx={{ mb: groupIdx < layerGroups.length - 1 ? 2 : 0 }}>
                 {/* Layer Header */}
@@ -1105,8 +1129,15 @@ export default function AuditRecords() {
             ))}
           </Paper>
         ) : (
-          <Box mt={3}>
-            <Typography color="text.secondary">No audit record files found</Typography>
+          <Box mt={3} sx={{ position: 'relative', minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {switchingFile ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <CircularProgress />
+                <Typography color="text.secondary">Loading records...</Typography>
+              </Box>
+            ) : (
+              <Typography color="text.secondary">No audit record files found</Typography>
+            )}
           </Box>
         )}
       </Box>

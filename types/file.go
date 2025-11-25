@@ -25,7 +25,7 @@ const (
 	fieldName        = "Name"
 	fieldHash        = "Hash"
 	fieldIdent       = "Ident"
-	fieldSource      = "Source"
+	fieldFileSource      = "Source"
 	fieldContentType = "ContentType"
 )
 
@@ -36,7 +36,7 @@ var fieldsFile = []string{
 	fieldHash,
 	fieldLocation,
 	fieldIdent,
-	fieldSource,
+	fieldFileSource,
 	fieldContentType,
 	fieldSrcIP,
 	fieldDstIP,
@@ -86,7 +86,7 @@ var fieldsFileMetric = []string{
 	fieldHash,
 	fieldLocation,
 	fieldIdent,
-	fieldSource,
+	fieldFileSource,
 	fieldContentType,
 	fieldSrcIP,
 	fieldDstIP,
@@ -148,7 +148,7 @@ func (a *File) Encode() []string {
 		fileEncoder.String(fieldHash, a.Hash),
 		fileEncoder.String(fieldLocation, a.Location),
 		fileEncoder.String(fieldIdent, a.Ident),
-		fileEncoder.String(fieldSource, a.Source),
+		fileEncoder.String(fieldFileSource, a.Source),
 		fileEncoder.String(fieldContentType, a.ContentType),
 		fileEncoder.String(fieldSrcIP, a.SrcIP),
 		fileEncoder.String(fieldDstIP, a.DstIP),

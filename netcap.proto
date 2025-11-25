@@ -152,6 +152,17 @@ enum Type {
   NC_Mail = 102;
   NC_Alert = 103;
   NC_TLSCertificate = 104;
+  NC_FTP = 105;
+  NC_IRC = 106;
+  NC_SMB = 107;
+  NC_IMAP = 108;
+  NC_RADIUS = 109;
+  NC_Syslog = 110;
+  NC_RDP = 111;
+  NC_BGP = 112;
+  NC_DNP3 = 113;
+  NC_SOCKS = 114;
+  NC_GTP = 115;
 }
 
 //
@@ -243,6 +254,17 @@ message Connection {
 
   // Detected protocol name for the server port
   string DetectedProtocolName = 32;
+  
+  // Security behavioral analysis fields
+  int64 PacketsClientToServer = 33;     // Client->Server packet count
+  int64 PacketsServerToClient = 34;     // Server->Client packet count
+  double ByteRatio = 35;                // Ratio of client/server bytes (beaconing indicator)
+  double PacketRatio = 36;              // Ratio of client/server packets
+  int32 AvgPacketSizeClientToServer = 37; // Average packet size C->S
+  int32 AvgPacketSizeServerToClient = 38; // Average packet size S->C
+  bool IsExternal = 39;                 // True if either IP is non-RFC1918
+  bool IsBroadcast = 40;                // True if destination is broadcast address
+  bool IsMulticast = 41;                // True if destination is multicast address
 }
 
 //
@@ -265,6 +287,12 @@ message Ethernet {
   int32 EthernetType = 4;
   double PayloadEntropy = 5;
   int32 PayloadSize = 6;
+  
+  // Security monitoring fields
+  string EthernetTypeName = 7;          // Human-readable type (IPv4, IPv6, ARP, 802.1Q, etc.)
+  bool IsBroadcast = 8;                 // DstMAC is ff:ff:ff:ff:ff:ff
+  bool IsMulticast = 9;                 // DstMAC multicast bit set
+  bool IsLocallyAdministered = 10;      // SrcMAC locally administered bit set
 }
 
 // The Address Resolution Protocol (ARP) is a communication protocol used for discovering the link layer address,
@@ -281,6 +309,12 @@ message ARP {
   string SrcProtocolAddress = 8;
   string DstHwAddress = 9;
   string DstProtocolAddress = 10;
+  
+  // Security monitoring fields
+  bool IsGratuitous = 11;               // Unsolicited ARP announcement (potential spoofing)
+  bool IsProbe = 12;                    // ARP probe (sender IP = 0.0.0.0)
+  bool IsAnnouncement = 13;             // ARP announcement (target IP = sender IP)
+  string OperationName = 14;            // "Request", "Reply", "RARP Request", "RARP Reply"
 }
 
 // Dot1Q is the packet layer for 802.1Q VLAN headers.
@@ -309,6 +343,15 @@ message Dot11 {
   uint32 Checksum = 12;
   Dot11QOS QOS = 13;
   Dot11HTControl HTControl = 14;
+  
+  // Security monitoring fields
+  string TypeName = 15;                 // Management, Control, Data
+  string SubtypeName = 16;              // Beacon, ProbeReq, ProbeResp, Auth, Deauth, Disassoc, etc.
+  bool IsDeauthentication = 17;         // Subtype 0x0C (deauth attack indicator)
+  bool IsDisassociation = 18;           // Subtype 0x0A (disassoc attack indicator)
+  int32 ReasonCode = 19;                // Reason code for deauth/disassoc
+  string ReasonCodeName = 20;           // Human-readable reason
+  bool IsRetry = 21;                    // Retry flag set (jamming indicator)
 }
 
 message Dot11QOS {
@@ -484,6 +527,17 @@ message IPv4 {
   int32 PayloadSize = 17;
   int32 SrcPort = 18;
   int32 DstPort = 19;
+  
+  // Security monitoring fields
+  bool IsFragment = 20;                 // FragOffset > 0 or more fragments flag set
+  bool HasOptions = 21;                 // IP options present (IHL > 5)
+  bool HasLooseSourceRoute = 22;        // LSRR option present (routing attack indicator)
+  bool HasStrictSourceRoute = 23;       // SSRR option present (routing attack indicator)
+  bool HasRecordRoute = 24;             // Record route option present
+  string ProtocolName = 25;             // Human-readable protocol (TCP, UDP, ICMP, etc.)
+  int32 DSCP = 26;                      // Differentiated Services Code Point from TOS
+  int32 ECN = 27;                       // Explicit Congestion Notification from TOS
+  string FlagsStr = 28;                 // String flags (DF, MF)
 }
 
 message IPv4Option {
@@ -512,6 +566,13 @@ message IPv6 {
   IPv6HopByHop HopByHop = 12;
   int32 SrcPort = 13;
   int32 DstPort = 14;
+  
+  // Security monitoring fields
+  string NextHeaderName = 15;           // Human-readable next header name
+  bool HasExtensionHeaders = 16;        // Extension headers present (HopByHop not nil)
+  bool IsFragment = 17;                 // Fragment extension header present
+  int32 DSCP = 18;                      // DSCP from TrafficClass
+  int32 ECN = 19;                       // ECN from TrafficClass
 }
 
 message IPv6Fragment {
@@ -536,6 +597,20 @@ message ICMPv4 {
   int32 Seq = 5;
   string SrcIP = 6;
   string DstIP = 7;
+  
+  // Security monitoring fields
+  int32 PayloadSize = 8;                // Size of ICMP payload (tunneling indicator)
+  double PayloadEntropy = 9;            // Entropy of payload data (encoded data detection, config-gated)
+  string TypeName = 10;                 // Human-readable type (Echo Request, Destination Unreachable, etc.)
+  int32 Type = 11;                      // ICMP type extracted from TypeCode
+  int32 Code = 12;                      // ICMP code extracted from TypeCode
+  bool IsRedirect = 13;                 // Type 5 - ICMP redirect (MITM indicator)
+  bool IsTimestampRequest = 14;         // Type 13 - reconnaissance
+  bool IsAddressMaskRequest = 15;       // Type 17 - reconnaissance
+  bool IsEchoRequest = 16;              // Type 8 - ping request
+  bool IsEchoReply = 17;                // Type 0 - ping reply
+  bool IsDestUnreachable = 18;          // Type 3 - destination unreachable
+  bool IsTimeExceeded = 19;             // Type 11 - time exceeded (traceroute)
 }
 
 message ICMPv6 {
@@ -544,6 +619,20 @@ message ICMPv6 {
   int32 Checksum = 3;
   string SrcIP = 4;
   string DstIP = 5;
+  
+  // Security monitoring fields
+  int32 PayloadSize = 6;                // Size of ICMPv6 payload (tunneling indicator)
+  double PayloadEntropy = 7;            // Entropy of payload data (config-gated)
+  string TypeName = 8;                  // Human-readable type name
+  int32 Type = 9;                       // ICMPv6 type extracted from TypeCode
+  int32 Code = 10;                      // ICMPv6 code extracted from TypeCode
+  bool IsRedirect = 11;                 // Type 137 - MITM indicator
+  bool IsRouterSolicitation = 12;       // Type 133 - router discovery
+  bool IsRouterAdvertisement = 13;      // Type 134 - router announcement
+  bool IsNeighborSolicitation = 14;     // Type 135 - neighbor discovery
+  bool IsNeighborAdvertisement = 15;    // Type 136 - neighbor announcement
+  bool IsEchoRequest = 16;              // Type 128 - ping request
+  bool IsEchoReply = 17;                // Type 129 - ping reply
 }
 
 message ICMPv6NeighborAdvertisement {
@@ -628,6 +717,17 @@ message TCP {
   bytes Payload = 23;
   string SrcIP = 24;
   string DstIP = 25;
+  
+  // Security monitoring fields
+  string OptionsFingerprint = 26;       // Ordered list of TCP option types (fingerprinting)
+  int32 MSS = 27;                       // Maximum Segment Size from options
+  int32 WindowScale = 28;               // Window scale factor from options
+  bool HasSACK = 29;                    // Selective ACK permitted option present
+  uint32 TSval = 30;                    // TCP timestamp value (uptime fingerprinting)
+  uint32 TSecr = 31;                    // TCP timestamp echo reply
+  bool IsRSTWithData = 32;              // RST packet with payload (unusual)
+  bool IsSYNWithData = 33;              // SYN packet with payload (T/TCP or attack)
+  string FlagsStr = 34;                 // String representation of all flags (e.g., "SYN,ACK")
 }
 
 message TCPOption {
@@ -644,6 +744,14 @@ message SCTP {
   uint32 Checksum = 5;
   string SrcIP = 6;
   string DstIP = 7;
+  
+  // Security monitoring fields - chunk info
+  int32 ChunkCount = 8;                 // Number of chunks in this packet
+  repeated string ChunkTypes = 9;       // List of chunk type names (DATA, INIT, INIT_ACK, etc.)
+  bool HasINIT = 10;                    // INIT chunk present (new association)
+  bool HasINITACK = 11;                 // INIT_ACK present
+  bool HasABORT = 12;                   // ABORT chunk present (connection termination)
+  bool HasSHUTDOWN = 13;                // SHUTDOWN chunk present
 }
 
 //
@@ -683,6 +791,17 @@ message DNS {
   string DstIP = 20;
   int32 SrcPort = 21;
   int32 DstPort = 22;
+  
+  // Security monitoring fields
+  int32 QueryNameLength = 23;           // Length of first query name (DGA detection)
+  int32 SubdomainCount = 24;            // Number of subdomain levels in first query (tunneling indicator)
+  double QueryNameEntropy = 25;         // Shannon entropy of first query name (encoded data detection)
+  int32 PacketSize = 26;                // Total DNS packet size (amplification detection)
+  string QueryNameTLD = 27;             // Top-level domain extracted from first query
+  bool IsNXDOMAIN = 28;                 // Response code == NXDOMAIN
+  string ResponseCodeName = 29;         // Human-readable response code (NOERROR, NXDOMAIN, SERVFAIL, etc.)
+  bool HasEDNS = 30;                    // EDNS0 OPT record present in additionals
+  int32 EDNSPayloadSize = 31;           // EDNS0 UDP payload size (from OPT record)
 }
 
 message DNSResourceRecord {
@@ -760,6 +879,14 @@ message DHCPv4 {
   string DstIP = 19;
   int32 SrcPort = 20;
   int32 DstPort = 21;
+  
+  // Security monitoring fields
+  string MessageType = 22;              // DISCOVER, OFFER, REQUEST, ACK, NAK, DECLINE, RELEASE, INFORM
+  int32 MessageTypeCode = 23;           // Numeric message type (1-8)
+  uint32 LeaseTime = 24;                // Lease time in seconds (abnormally short = suspicious)
+  string ServerIdentifier = 25;         // DHCP server IP from option 54
+  string Hostname = 26;                 // Client hostname from option 12
+  string VendorClass = 27;              // Vendor class identifier from option 60
 }
 
 message DHCPOption {
@@ -781,6 +908,10 @@ message DHCPv6 {
   string DstIP = 10;
   int32 SrcPort = 11;
   int32 DstPort = 12;
+  
+  // Security monitoring fields
+  string MessageTypeName = 13;          // SOLICIT, ADVERTISE, REQUEST, CONFIRM, RENEW, etc.
+  bool IsRapidCommit = 14;              // Rapid commit option present
 }
 
 message DHCPv6Option {
@@ -824,6 +955,13 @@ message NTP {
   string DstIP = 17;
   int32 SrcPort = 18;
   int32 DstPort = 19;
+  
+  // Security monitoring fields
+  string ModeName = 20;                 // Client, Server, Broadcast, Control, Private, etc.
+  bool IsControlMessage = 21;           // Mode 6 control message
+  bool IsPrivateMode = 22;              // Mode 7 private/implementation-specific (monlist, etc.)
+  bool IsKissOfDeath = 23;              // Stratum 0 KoD packet
+  string ReferenceIDStr = 24;           // Reference ID as ASCII for stratum 0-1
 }
 
 // The Session Initiation Protocol (SIP) is a signalling protocol used for initiating, maintaining, and terminating real-time sessions that include voice, video and messaging applications
@@ -842,6 +980,16 @@ message SIP {
   string DstIP = 9;
   int32 SrcPort = 10;
   int32 DstPort = 11;
+  
+  // Security monitoring fields
+  string MethodName = 12;               // Method as string (INVITE, REGISTER, BYE, etc.)
+  string CallID = 13;                   // Call-ID header (call correlation)
+  string From = 14;                     // From header (caller identity)
+  string To = 15;                       // To header (callee identity)
+  string Contact = 16;                  // Contact header (endpoint disclosure)
+  string UserAgent = 17;                // User-Agent header (device fingerprinting)
+  string ContentType = 18;              // Content-Type (SDP, etc.)
+  int32 ContentLength = 19;             // Content-Length
 }
 
 // The Internet Group Management Protocol (IGMP) is a communications protocol
@@ -967,6 +1115,33 @@ message HTTP {
   map<string, string> Parameters = 28;
   bytes RequestBody = 29;
   bytes ResponseBody = 30;
+  // Flow identifier for exact connection matching (format: srcIP:srcPort->dstIP:dstPort)
+  string Flow = 31;
+  int32 SrcPort = 32;
+  int32 DstPort = 33;
+  
+  // Security header fields (extracted from response headers)
+  string StrictTransportSecurity = 34;  // HSTS header value
+  string ContentSecurityPolicy = 35;    // CSP header value  
+  string XContentTypeOptions = 36;      // X-Content-Type-Options value
+  string XFrameOptions = 37;            // X-Frame-Options value (clickjacking protection)
+  string XXSSProtection = 38;           // X-XSS-Protection value
+  string ReferrerPolicy = 39;           // Referrer-Policy value
+  
+  // Authentication/authorization fields
+  string AuthorizationType = 40;        // Bearer, Basic, Digest, NTLM, Negotiate, etc.
+  
+  // Proxy/origin tracking
+  string XForwardedFor = 41;            // X-Forwarded-For header (first value)
+  string XRealIP = 42;                  // X-Real-IP header
+  
+  // Additional security indicators
+  string AccessControlAllowOrigin = 43; // CORS origin policy
+  bool HasServerTiming = 44;            // Server-Timing header present (potential info leak)
+  
+  // Server information
+  string Server = 45;                   // Server header value
+  string XPoweredBy = 46;               // X-Powered-By header value
 }
 
 message HTTPCookie {
@@ -1550,6 +1725,11 @@ message EAP {
   int32 Length = 4;
   int32 Type = 5;
   bytes TypeData = 6;
+  
+  // Security monitoring fields
+  string CodeName = 7;                  // Request, Response, Success, Failure
+  string TypeName = 8;                  // Identity, MD5-Challenge, EAP-TLS, PEAP, EAP-TTLS, etc.
+  string Identity = 9;                  // Identity string (if present in response)
 }
 
 // EAPOL defines an EAP over LAN (802.1x) layer.
@@ -1558,6 +1738,10 @@ message EAPOL {
   int32 Version = 2;
   int32 Type = 3;
   int32 Length = 4;
+  
+  // Security monitoring fields
+  string TypeName = 5;                  // EAP-Packet, EAPOL-Start, EAPOL-Logoff, EAPOL-Key
+  bool IsLogoff = 6;                    // EAPOL-Logoff (session termination)
 }
 
 // EAPOLKey defines an EAPOL-Key frame for 802.1x authentication
@@ -1584,6 +1768,11 @@ message EAPOLKey {
   bytes MIC = 20;
   int32 KeyDataLength = 21;
   bytes EncryptedKeyData = 22;
+  
+  // Security monitoring fields (WPA/WPA2 4-way handshake phase detection)
+  int32 HandshakeMessage = 23;          // 1-4 for WPA 4-way handshake phases
+  string KeyTypeName = 24;              // Pairwise, Group
+  string KeyDescTypeName = 25;          // RC4, AES
 }
 
 // The Virtual Router Redundancy Protocol (VRRP) is a computer
@@ -1841,11 +2030,18 @@ message Protocol {
   string Category = 2;
 }
 
+// FileHashes contains multiple hash values for a file
+message FileHashes {
+  string MD5 = 1;
+  string SHA1 = 2;
+  string SHA256 = 3;
+}
+
 message File {
   int64 Timestamp = 1;
   string Name = 2;
   int64 Length = 3;
-  string Hash = 4;
+  string Hash = 4 [deprecated=true]; // Deprecated: Use Hashes instead
   string Location = 5;
   string Ident = 6;
   string Source = 7;
@@ -1856,6 +2052,16 @@ message File {
   string DstIP = 12;
   int32 SrcPort = 13;
   int32 DstPort = 14;
+  
+  // Enhanced fields for better file tracking
+  FileHashes Hashes = 15;           // Multiple hash algorithms
+  int32 Depth = 16;                 // Nesting depth (for MIME parts, HTTP pipelining, etc.)
+  int64 MissingBytes = 17;          // Bytes that couldn't be captured
+  bool IsComplete = 18;             // Whether file extraction completed successfully
+  string ParentFileID = 19;         // Parent file ID (for extracted archives, MIME parts)
+  repeated string MimeAnalyzers = 20; // Analyzers that processed this file
+  string FlowDirection = 21;        // "client_to_server" or "server_to_client"
+  string ConnectionUID = 22;        // Unique connection identifier
 }
 
 // SMTPResponse SMTP response type
@@ -1890,6 +2096,164 @@ message SMTP {
   int32 DstPort = 9;
   repeated string MailIDs = 10;
   repeated string Commands = 11;
+}
+
+// File Transfer Protocol
+message FTP {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  
+  // Command or response
+  bool IsResponse = 6;
+  string Command = 7;           // FTP command (USER, PASS, RETR, STOR, etc.)
+  string Argument = 8;          // Command argument
+  int32 ResponseCode = 9;       // FTP response code (e.g., 220, 331, 226)
+  string ResponseMessage = 10;  // Response message text
+  
+  // File transfer information
+  string Filename = 11;         // Filename from RETR/STOR
+  string TransferMode = 12;     // ASCII, BINARY, or EBCDIC
+  string DataConnectionMode = 13; // ACTIVE or PASSIVE
+  string DataIP = 14;           // IP for data connection (from PORT/PASV)
+  int32 DataPort = 15;          // Port for data connection
+  
+  // Session information
+  string Username = 16;
+  bool IsControl = 17;          // true for control channel, false for data channel
+  int64 FileSize = 18;          // Size from SIZE command or transfer
+}
+
+// Internet Relay Chat
+message IRC {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  
+  // Message components
+  string Prefix = 6;            // Message prefix (usually sender)
+  string Command = 7;           // IRC command (PRIVMSG, JOIN, NICK, etc.)
+  repeated string Parameters = 8; // Command parameters
+  string Message = 9;           // Message content (for PRIVMSG)
+  
+  // DCC file transfer information
+  bool IsDCC = 10;              // true if this is a DCC command/transfer
+  string DCCType = 11;          // SEND, CHAT, etc.
+  string DCCFilename = 12;      // Filename for DCC SEND
+  string DCCIP = 13;            // IP for DCC connection
+  int32 DCCPort = 14;           // Port for DCC connection
+  int64 DCCFilesize = 15;       // Filesize for DCC SEND
+  
+  // Channel/user information
+  string Channel = 16;          // Channel name (if applicable)
+  string Nick = 17;             // Nickname
+  bool IsDataChannel = 18;      // true for DCC data channel
+}
+
+// Server Message Block Protocol
+message SMB {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  
+  // SMB version and headers
+  int32 Version = 6;            // 1 for SMB1, 2 for SMB2, 3 for SMB3
+  int32 Command = 7;            // SMB command code
+  string CommandName = 8;       // Human-readable command name
+  uint32 Status = 9;            // NT status code (unsigned for proper display)
+  string StatusName = 10;       // Human-readable NT status
+  uint32 Flags = 11;            // SMB flags
+  uint32 Flags2 = 12;           // SMB flags2 (SMB1) or additional flags
+  bool IsResponse = 13;         // Request vs response
+  
+  // Authentication and session
+  string Username = 14;
+  string Domain = 15;
+  string Workstation = 16;      // Client workstation name
+  string NTLMVersion = 17;      // NTLM version if applicable
+  string AuthStatus = 18;       // SUCCESS, FAILED, IN_PROGRESS
+  
+  // Share and file operations
+  string ShareName = 19;        // Share name (from TreeConnect)
+  string ShareType = 20;        // DISK, PIPE, PRINT
+  string Filename = 21;         // File path
+  uint64 FileID = 22;           // File handle/ID
+  string Action = 23;           // READ, WRITE, CREATE, DELETE, OPEN, CLOSE
+  int64 BytesTransferred = 24;  // Bytes read/written
+  int64 FileSize = 25;          // Total file size
+  int64 Offset = 26;            // Read/write offset
+  uint32 AccessMask = 27;       // File access rights requested
+  string AccessMaskStr = 28;    // Human-readable access mask
+  uint32 CreateDisposition = 29; // File create disposition
+  string CreateDispositionStr = 30; // Human-readable create disposition
+  uint32 FileAttributes = 31;   // File attributes
+  bool IsDirectory = 32;        // Is directory operation
+  
+  // Session information
+  uint64 SessionID = 33;        // SMB2/3 session ID
+  uint32 TreeID = 34;           // Tree ID (share connection)
+  uint64 MessageID = 35;        // SMB2/3 message ID for correlation
+  bool IsEncrypted = 36;        // SMB3 encryption
+  bool IsSigned = 37;           // SMB signing
+  string DialectRevision = 38;  // Negotiated dialect (e.g., "SMB 3.1.1")
+  
+  // Additional metadata
+  string ClientGUID = 39;       // SMB2/3 client GUID
+  string ServerGUID = 40;       // SMB2/3 server GUID
+  repeated string Capabilities = 41; // Negotiated capabilities
+  
+  // Security monitoring fields
+  string OperationType = 42;    // High-level: AUTHENTICATION, FILE_ACCESS, SHARE_ACCESS, NEGOTIATE
+  string SecurityContext = 43;  // Additional security context
+  bool IsPotentialThreat = 44;  // Flag for suspicious activity
+  string ThreatIndicator = 45;  // Why it might be suspicious
+}
+
+// Internet Message Access Protocol
+message IMAP {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  
+  // Command/Response tracking
+  bool IsResponse = 6;
+  string Tag = 7;               // Command tag (e.g., "A001", "A002")
+  string Command = 8;           // IMAP command (LOGIN, SELECT, FETCH, etc.)
+  repeated string Arguments = 9; // Command arguments
+  string Response = 10;         // Response status (OK, NO, BAD)
+  string ResponseText = 11;     // Response message text
+  
+  // Authentication
+  string Username = 12;
+  string AuthMethod = 13;       // LOGIN, PLAIN, CRAM-MD5, NTLM, etc.
+  
+  // Mailbox operations
+  string Mailbox = 14;          // Current mailbox/folder
+  int32 MessageCount = 15;      // Number of messages
+  int32 RecentCount = 16;       // Number of recent messages
+  int32 UIDNext = 17;           // Next UID value
+  int32 UIDValidity = 18;       // UID validity value
+  
+  // Message operations
+  int32 MessageID = 19;         // Message sequence number
+  int32 UID = 20;               // Message UID
+  repeated string Flags = 21;   // Message flags (\\Seen, \\Draft, etc.)
+  
+  // STARTTLS information
+  bool STARTTLSRequested = 22;  // Client requested STARTTLS
+  bool STARTTLSSuccess = 23;    // STARTTLS completed successfully
+  bool IsEncrypted = 24;        // Connection encrypted after STARTTLS
+  
+  // Capabilities
+  repeated string Capabilities = 25; // Server capabilities (IMAP4rev1, IDLE, etc.)
 }
 
 // Diameter is an authentication, authorization, and accounting protocol for computer networks.
@@ -2063,6 +2427,14 @@ message SSH {
   string Algorithms = 6;
   bool IsClient = 7;
   repeated string HASSHDescriptions = 8; // HASSH fingerprint lookup results from database
+  
+  // Security monitoring fields
+  string SoftwareVersion = 9;           // Extracted software version from ident
+  string OSGuess = 10;                  // OS guess based on SSH ident string
+  bool HasWeakKex = 11;                 // Uses weak key exchange algorithm
+  bool HasWeakCipher = 12;              // Uses weak encryption cipher
+  bool HasWeakMAC = 13;                 // Uses weak MAC algorithm
+  string ServerHostKeyAlgorithms = 14;  // Offered host key algorithms
 }
 
 message Vulnerability {
@@ -2119,4 +2491,441 @@ message Alert {
   // Threshold-based rule configuration (0 means not a threshold-based rule)
   int32 Threshold = 19; // Number of matches required to trigger this alert
   int32 ThresholdWindow = 20; // Time window in seconds within which threshold must be reached
+}
+
+// RADIUS (Remote Authentication Dial-In User Service) is a networking protocol
+// that provides centralized Authentication, Authorization, and Accounting (AAA)
+// management for users who connect to and use a network service.
+// Used for security monitoring of authentication events and access control.
+message RADIUS {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  
+  // RADIUS Header
+  int32 Code = 6;                // Request/Response type (1=Access-Request, 2=Access-Accept, 3=Access-Reject, etc.)
+  string CodeName = 7;           // Human-readable code name
+  int32 Identifier = 8;          // Matching request/response pairs
+  int32 Length = 9;              // Message length
+  bytes Authenticator = 10;      // 16-byte authenticator field
+  
+  // Authentication information
+  string Username = 11;          // User-Name attribute (if present)
+  string NASIPAddress = 12;      // NAS-IP-Address (authenticator address)
+  string NASIdentifier = 13;     // NAS-Identifier (authenticator name)
+  int32 NASPort = 14;            // NAS-Port
+  string NASPortType = 15;       // NAS-Port-Type
+  string CalledStationID = 16;   // Called-Station-Id (destination info)
+  string CallingStationID = 17;  // Calling-Station-Id (source info)
+  
+  // Service information
+  int32 ServiceType = 18;        // Service-Type (login, framed, callback, etc.)
+  string ServiceTypeName = 19;   // Human-readable service type
+  int32 FramedProtocol = 20;     // Framed-Protocol type
+  string FramedIPAddress = 21;   // Framed-IP-Address (assigned IP)
+  
+  // Session information
+  string AcctSessionID = 22;     // Accounting session ID
+  int32 AcctStatusType = 23;     // Accounting status (start, stop, update)
+  string AcctStatusTypeName = 24;// Human-readable accounting status
+  int32 AcctInputOctets = 25;    // Input bytes
+  int32 AcctOutputOctets = 26;   // Output bytes
+  int32 AcctSessionTime = 27;    // Session duration
+  int32 AcctTerminateCause = 28; // Termination cause
+  string AcctTerminateCauseName = 29; // Human-readable termination cause
+  
+  // Reply message
+  string ReplyMessage = 30;      // Reply-Message attribute
+  
+  // Vendor-specific
+  repeated RADIUSAttribute Attributes = 31; // All parsed attributes
+  
+  // Security monitoring
+  bool IsRequest = 32;           // true for request, false for response
+  bool AuthSuccess = 33;         // true if Access-Accept, false if Access-Reject
+}
+
+// RADIUSAttribute represents a RADIUS AVP (Attribute-Value Pair)
+message RADIUSAttribute {
+  int32 Type = 1;
+  string TypeName = 2;
+  int32 Length = 3;
+  bytes Value = 4;
+  string DecodedValue = 5;       // Decoded string representation
+  int32 VendorID = 6;            // For Vendor-Specific attributes
+  string VendorName = 7;         // Vendor name
+}
+
+// Syslog message represents network-transmitted syslog messages.
+// Critical for security monitoring as it captures security logs in transit.
+// Supports both RFC 3164 (BSD) and RFC 5424 formats.
+message Syslog {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  
+  // Syslog header (PRI)
+  int32 Priority = 6;            // PRI value (Facility * 8 + Severity)
+  int32 Facility = 7;            // Syslog facility (0-23)
+  string FacilityName = 8;       // Human-readable facility
+  int32 Severity = 9;            // Syslog severity (0-7)
+  string SeverityName = 10;      // Human-readable severity (Emergency, Alert, etc.)
+  
+  // RFC 3164 BSD format
+  string BSDTimestamp = 11;      // Timestamp in BSD format
+  string Hostname = 12;          // Source hostname
+  string Tag = 13;               // Application name/tag
+  int32 ProcessID = 14;          // Process ID (if present)
+  string Message = 15;           // Log message content
+  
+  // RFC 5424 format additional fields
+  int32 Version = 16;            // Syslog version (1 for RFC 5424)
+  string AppName = 17;           // Application name
+  string MsgID = 18;             // Message ID
+  repeated SyslogStructuredData StructuredData = 19; // Structured data elements
+  
+  // Security monitoring
+  bool IsSecurityRelevant = 20;  // Flag for security-related logs (auth, access, etc.)
+  string Protocol = 21;          // TCP or UDP
+}
+
+// SyslogStructuredData represents RFC 5424 structured data
+message SyslogStructuredData {
+  string ID = 1;                 // SD-ID (e.g., "timeQuality", "origin")
+  map<string, string> Parameters = 2; // SD-PARAMs
+}
+
+// RDP (Remote Desktop Protocol) captures remote desktop connection events.
+// Critical for detecting unauthorized remote access and lateral movement.
+message RDP {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  
+  // Connection phase
+  string ConnectionPhase = 6;    // NEGOTIATION, SECURITY, CHANNEL_SETUP, ACTIVE
+  
+  // X.224 Connection Request/Response
+  int32 TPKT_Version = 7;        // TPKT version
+  int32 TPKT_Length = 8;         // TPKT length
+  bool IsRequest = 9;            // true for client->server
+  
+  // RDP Negotiation Request
+  string RequestedProtocols = 10; // RDP, TLS, CredSSP, RDSTLS
+  bool NegotiationRequest = 11;  // Has negotiation request
+  string Cookie = 12;            // mstshash cookie (may contain username)
+  
+  // RDP Negotiation Response
+  string SelectedProtocol = 13;  // Selected security protocol
+  int32 NegotiationType = 14;    // Negotiation type
+  int32 NegotiationFlags = 15;   // Negotiation flags
+  bool SupportsExtendedSecurity = 16; // Extended client security
+  
+  // Client Info (MCS Connect Initial)
+  string ClientName = 17;        // Client computer name
+  string Username = 18;          // Username (if visible)
+  string Domain = 19;            // Domain name
+  int32 ClientBuild = 20;        // Client build number
+  string ClientVersion = 21;     // Client version string
+  int32 DesktopWidth = 22;       // Requested desktop width
+  int32 DesktopHeight = 23;      // Requested desktop height
+  int32 ColorDepth = 24;         // Color depth
+  string KeyboardLayout = 25;    // Keyboard layout
+  
+  // Encryption
+  int32 EncryptionLevel = 26;    // Encryption level (0=None, 1=Low, 2=Client, 3=High, 4=FIPS)
+  string EncryptionLevelName = 27; // Human-readable encryption level
+  int32 EncryptionMethod = 28;   // Encryption method
+  string EncryptionMethodName = 29; // Human-readable encryption method
+  
+  // Channels
+  repeated string VirtualChannels = 30; // Virtual channel names (cliprdr, rdpdr, etc.)
+  
+  // Security monitoring
+  bool UsesNLA = 31;             // Network Level Authentication
+  bool UsesTLS = 32;             // TLS encryption
+  bool UsesCredSSP = 33;         // CredSSP (NLA)
+  int32 ErrorCode = 34;          // Disconnection/error code
+  string ErrorDescription = 35;  // Error description
+  
+  // Additional fields
+  int32 RequestedProtocolsFlags = 36; // Requested protocols as bitmask
+  string RequestedProtocolNames = 37; // Requested protocol names (comma-separated)
+  bool ConnectionSuccessful = 38;     // Connection was successful
+  bool ExtendedClientDataSupported = 39; // Extended client data supported
+  bool DynamicDST = 40;               // Dynamic DST supported
+  bool RestrictedAdminMode = 41;      // Restricted admin mode
+  bool RemoteCredGuard = 42;          // Remote Credential Guard
+}
+
+// BGP (Border Gateway Protocol) is the protocol used for routing between
+// autonomous systems on the Internet. Critical for detecting route hijacking
+// and BGP-based attacks.
+message BGP {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  
+  // BGP Header
+  int32 Length = 6;              // Message length
+  int32 Type = 7;                // Message type (1=OPEN, 2=UPDATE, 3=NOTIFICATION, 4=KEEPALIVE)
+  string TypeName = 8;           // Human-readable type
+  
+  // OPEN Message
+  int32 Version = 9;             // BGP version (should be 4)
+  uint32 MyAS = 10;              // Sender's AS number
+  int32 HoldTime = 11;           // Hold time in seconds
+  string BGPIdentifier = 12;     // BGP router ID
+  repeated BGPCapability Capabilities = 13; // Optional capabilities
+  
+  // UPDATE Message
+  repeated string WithdrawnRoutes = 14;     // Withdrawn route prefixes
+  repeated BGPPathAttribute PathAttributes = 15; // Path attributes
+  repeated string NLRI = 16;     // Network Layer Reachability Information (announced prefixes)
+  
+  // Path attributes parsed
+  int32 Origin = 17;             // ORIGIN (0=IGP, 1=EGP, 2=INCOMPLETE)
+  string OriginName = 18;        // Human-readable origin
+  repeated uint32 ASPath = 19;   // AS_PATH
+  string NextHop = 20;           // NEXT_HOP
+  int32 MED = 21;                // MULTI_EXIT_DISC
+  int32 LocalPref = 22;          // LOCAL_PREF
+  bool AtomicAggregate = 23;     // ATOMIC_AGGREGATE
+  string Aggregator = 24;        // AGGREGATOR (AS:IP format)
+  repeated string Communities = 25; // Community strings
+  
+  // NOTIFICATION Message
+  int32 ErrorCode = 26;          // Error code
+  string ErrorCodeName = 27;     // Human-readable error code
+  int32 ErrorSubcode = 28;       // Error subcode
+  string ErrorSubcodeName = 29;  // Human-readable subcode
+  bytes NotificationData = 30;   // Error data
+  
+  // Security monitoring
+  bool IsAnomalous = 31;         // Flag for potentially suspicious activity
+  string AnomalyReason = 32;     // Why this might be suspicious
+  bool IsRouteHijack = 33;       // Potential route hijack indicator
+  uint32 PeerAS = 34;            // Peer AS number
+  string PeerRouter = 35;        // Peer router ID
+}
+
+// BGPPathAttribute represents a BGP path attribute
+message BGPPathAttribute {
+  bool Optional = 1;
+  bool Transitive = 2;
+  bool Partial = 3;
+  bool Extended = 4;
+  int32 TypeCode = 5;
+  string TypeName = 6;
+  bytes Value = 7;
+}
+
+// BGPCapability represents a BGP capability in OPEN message
+message BGPCapability {
+  int32 Code = 1;
+  string Name = 2;
+  bytes Value = 3;
+}
+
+// DNP3 (Distributed Network Protocol) is a set of communications protocols
+// used between components in process automation systems. Critical for
+// ICS/SCADA security monitoring.
+message DNP3 {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  
+  // Data Link Layer
+  int32 Length = 6;              // Frame length
+  int32 Control = 7;             // Control field
+  bool IsMaster = 8;             // Direction: true=Master, false=Outstation
+  bool IsRequest = 9;            // true=Request, false=Response
+  int32 Destination = 10;        // Destination address
+  int32 Source = 11;             // Source address
+  
+  // Transport Layer
+  int32 TransportSeq = 12;       // Transport sequence number
+  bool TransportFIN = 13;        // Final fragment
+  bool TransportFIR = 14;        // First fragment
+  
+  // Application Layer
+  int32 ApplicationControl = 15; // Application control field
+  int32 ApplicationSeq = 16;     // Application sequence number
+  bool ConfirmRequired = 17;     // Confirmation required
+  bool Unsolicited = 18;         // Unsolicited response
+  
+  // Function Code
+  int32 FunctionCode = 19;       // DNP3 function code
+  string FunctionCodeName = 20;  // Human-readable function code
+  
+  // Internal Indications (for responses)
+  int32 InternalIndications = 21;
+  bool IINBroadcast = 22;        // Broadcast message received
+  bool IINClass1 = 23;           // Class 1 data available
+  bool IINClass2 = 24;           // Class 2 data available
+  bool IINClass3 = 25;           // Class 3 data available
+  bool IINNeedTime = 26;         // Time sync required
+  bool IINLocalControl = 27;     // Some outputs in local control
+  bool IINDeviceTrouble = 28;    // Device trouble
+  bool IINDeviceRestart = 29;    // Device restarted
+  bool IINNoFuncCodeSupport = 30;// Function code not supported
+  bool IINObjectUnknown = 31;    // Object unknown
+  bool IINParameterError = 32;   // Parameter error
+  bool IINEventBufferOverflow = 33; // Event buffer overflow
+  bool IINAlreadyExecuting = 34; // Already executing
+  bool IINConfigCorrupt = 35;    // Configuration corrupt
+  
+  // Objects
+  repeated DNP3Object Objects = 36;
+  
+  // Security monitoring
+  bool IsCriticalFunction = 37;  // Critical control function (operate, direct operate, etc.)
+  bool IsConfigChange = 38;      // Configuration change attempt
+  bool IsAuthentication = 39;    // Secure authentication message
+  string SecurityContext = 40;   // Additional security context
+}
+
+// DNP3Object represents a DNP3 object
+message DNP3Object {
+  int32 ObjectGroup = 1;         // Object group (e.g., 1=Binary Input, 12=CROB)
+  int32 Variation = 2;           // Object variation
+  string ObjectName = 3;         // Human-readable object name
+  int32 Qualifier = 4;           // Range qualifier
+  int32 StartIndex = 5;          // Start index
+  int32 StopIndex = 6;           // Stop index
+  int32 Count = 7;               // Object count
+  bytes Data = 8;                // Raw object data
+}
+
+// SOCKS is a protocol for routing packets between a client and server
+// through a proxy server. Critical for detecting proxy usage and
+// potential security policy violations.
+message SOCKS {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  
+  // SOCKS Version
+  int32 Version = 6;             // SOCKS version (4, 4a, or 5)
+  
+  // Connection Request
+  int32 Command = 7;             // 1=CONNECT, 2=BIND, 3=UDP_ASSOCIATE
+  string CommandName = 8;        // Human-readable command
+  int32 AddressType = 9;         // Address type (1=IPv4, 3=Domain, 4=IPv6)
+  string AddressTypeName = 10;   // Human-readable address type
+  string DestinationAddress = 11;// Target address
+  int32 DestinationPort = 12;    // Target port
+  
+  // SOCKS5 Authentication
+  repeated int32 AuthMethods = 13;     // Offered auth methods
+  int32 SelectedAuthMethod = 14; // Selected auth method
+  string AuthMethodName = 15;    // Human-readable auth method
+  string Username = 16;          // Username (if auth used)
+  bool AuthSuccess = 17;         // Authentication result
+  
+  // Connection Response
+  int32 ReplyCode = 18;          // Reply code
+  string ReplyCodeName = 19;     // Human-readable reply
+  string BoundAddress = 20;      // Bound address (for response)
+  int32 BoundPort = 21;          // Bound port (for response)
+  
+  // SOCKS4 specific
+  string UserID = 22;            // SOCKS4 user ID
+  
+  // Message type
+  bool IsRequest = 23;           // true for request, false for response
+  bool IsHandshake = 24;         // true for initial handshake
+  
+  // Security monitoring
+  bool ConnectionSuccessful = 25;// Connection established
+  string TargetCategory = 26;    // Category of target (if known)
+  bool IsAnonymous = 27;         // Anonymous proxy usage
+}
+
+// GTP (GPRS Tunneling Protocol) is used in mobile networks for tunneling
+// user data and signaling. Critical for mobile network security monitoring.
+message GTP {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  
+  // GTP Header
+  int32 Version = 6;             // GTP version (0, 1, or 2)
+  bool ProtocolType = 7;         // 0=GTP', 1=GTP
+  int32 MessageType = 8;         // Message type
+  string MessageTypeName = 9;    // Human-readable message type
+  int32 Length = 10;             // Message length
+  uint32 TEID = 11;              // Tunnel Endpoint Identifier
+  int32 SequenceNumber = 12;     // Sequence number (if present)
+  int32 NPDUNumber = 13;         // N-PDU number (if present)
+  int32 NextExtensionHeader = 14;// Next extension header type
+  
+  // GTPv1-C/GTPv2-C Signaling
+  bool IsSignaling = 15;         // true for GTP-C, false for GTP-U
+  
+  // Subscriber Identity
+  string IMSI = 16;              // International Mobile Subscriber Identity
+  string MSISDN = 17;            // Mobile Station International Subscriber Directory Number
+  string IMEI = 18;              // International Mobile Equipment Identity
+  string MEI = 19;               // Mobile Equipment Identity (GTPv2)
+  
+  // Session Management
+  string APNName = 20;           // Access Point Name
+  string PDNType = 21;           // PDN Type (IPv4, IPv6, IPv4v6)
+  string PDNAddress = 22;        // PDN Address allocated
+  string SGWAddress = 23;        // Serving Gateway address
+  string PGWAddress = 24;        // PDN Gateway address
+  string MMEIP = 25;             // MME IP address
+  
+  // Bearer Information
+  int32 EBI = 26;                // EPS Bearer ID
+  int32 QCI = 27;                // QoS Class Identifier
+  int32 ARPPriorityLevel = 28;   // ARP Priority Level
+  bool ARPPreemptionCapability = 29;  // Preemption capability
+  bool ARPPreemptionVulnerability = 30; // Preemption vulnerability
+  
+  // Location Information
+  string TAI = 31;               // Tracking Area Identity
+  string ECGI = 32;              // E-UTRAN Cell Global Identifier
+  string RAI = 33;               // Routing Area Identity
+  string CGI = 34;               // Cell Global Identity
+  string SAI = 35;               // Service Area Identity
+  
+  // Cause/Result
+  int32 Cause = 36;              // Cause value
+  string CauseName = 37;         // Human-readable cause
+  bool RequestAccepted = 38;     // Request was accepted
+  
+  // GTP Information Elements
+  repeated GTPInfoElement InfoElements = 39;
+  
+  // Security monitoring
+  bool IsCreateSession = 40;     // Session creation
+  bool IsDeleteSession = 41;     // Session deletion
+  bool IsModifyBearer = 42;      // Bearer modification
+  bool IsHandover = 43;          // Handover related
+  string SecurityContext = 44;   // Additional security context
+}
+
+// GTPInfoElement represents a GTP Information Element
+message GTPInfoElement {
+  int32 Type = 1;
+  string TypeName = 2;
+  int32 Length = 3;
+  bytes Value = 4;
+  string DecodedValue = 5;
 }

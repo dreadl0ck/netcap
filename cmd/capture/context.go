@@ -70,6 +70,7 @@ var (
 	flagQuiet                          bool
 	flagPrintProgress                  bool
 	flagFileStorage                    string
+	flagFileConfig                     string
 	flagReverseDNS                     bool
 	flagLocalDNS                       bool
 	flagMACDB                          bool
@@ -190,6 +191,7 @@ func setFlagsFromContext(c *cli.Command) {
 	flagQuiet = c.Bool("quiet")
 	flagPrintProgress = c.Bool("progress")
 	flagFileStorage = c.String("fileStorage")
+	flagFileConfig = c.String("file-config")
 	flagReverseDNS = c.Bool("reverse-dns")
 	flagLocalDNS = c.Bool("local-dns")
 	flagMACDB = c.Bool("macDB")

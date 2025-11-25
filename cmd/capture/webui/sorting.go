@@ -44,10 +44,12 @@ var (
 	}
 
 	applicationLayerProtocols = []string{
-		"CIP", "DHCPv4", "DHCPv6", "DHCPOption", "DHCPv6Option",
-		"Diameter", "DNS", "DNSQuestion", "DNSResourceRecord", "DNSSOA", "DNSSRV", "DNSMX",
-		"ENIP", "Geneve", 
-		"HTTP", "LCM", "Modbus", "NTP", "POP3", "SIP", "SMTP", "SSH", "VXLAN",
+		"BGP", "CIP", "DHCPv4", "DHCPv6", "DHCPOption", "DHCPv6Option",
+		"Diameter", "DNP3", "DNS", "DNSQuestion", "DNSResourceRecord", "DNSSOA", "DNSSRV", "DNSMX",
+		"ENIP", "FTP", "Geneve", "GTP",
+		"HTTP", "IMAP", "IRC", "LCM", "Modbus", "NTP", "POP3", "RADIUS", "RDP", 
+		"SIP", "SMB", "SMTP", "SOCKS", "SSH", "Syslog",
+		"TLSCertificate", "VXLAN",
 	}
 
 	streamDecoders = []string{

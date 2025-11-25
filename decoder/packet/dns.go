@@ -14,12 +14,71 @@
 package packet
 
 import (
+	"math"
+	"strings"
+
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/types"
 )
+
+// dnsResponseCodeNames maps DNS response codes to human-readable names
+var dnsResponseCodeNames = map[layers.DNSResponseCode]string{
+	layers.DNSResponseCodeNoErr:     "NOERROR",
+	layers.DNSResponseCodeFormErr:   "FORMERR",
+	layers.DNSResponseCodeServFail:  "SERVFAIL",
+	layers.DNSResponseCodeNXDomain:  "NXDOMAIN",
+	layers.DNSResponseCodeNotImp:    "NOTIMP",
+	layers.DNSResponseCodeRefused:   "REFUSED",
+	layers.DNSResponseCodeYXDomain:  "YXDOMAIN",
+	layers.DNSResponseCodeYXRRSet:   "YXRRSET",
+	layers.DNSResponseCodeNXRRSet:   "NXRRSET",
+	layers.DNSResponseCodeNotAuth:   "NOTAUTH",
+	layers.DNSResponseCodeNotZone:   "NOTZONE",
+}
+
+// dnsQueryNameEntropy calculates Shannon entropy of a DNS query name
+func dnsQueryNameEntropy(name string) float64 {
+	if len(name) == 0 {
+		return 0
+	}
+	freq := make(map[rune]float64)
+	for _, c := range name {
+		freq[c]++
+	}
+	var ent float64
+	length := float64(len(name))
+	for _, count := range freq {
+		p := count / length
+		if p > 0 {
+			ent -= p * math.Log2(p)
+		}
+	}
+	return ent
+}
+
+// extractTLD extracts the top-level domain from a DNS name
+func extractTLD(name string) string {
+	name = strings.TrimSuffix(name, ".")
+	parts := strings.Split(name, ".")
+	if len(parts) >= 1 {
+		return parts[len(parts)-1]
+	}
+	return ""
+}
+
+// countSubdomains counts the number of subdomain levels
+func countSubdomains(name string) int {
+	name = strings.TrimSuffix(name, ".")
+	parts := strings.Split(name, ".")
+	// Subtract 2 for domain + TLD
+	if len(parts) > 2 {
+		return len(parts) - 2
+	}
+	return 0
+}
 
 var dnsDecoder = newGoPacketDecoder(
 	types.Type_NC_DNS,
@@ -83,6 +142,39 @@ var dnsDecoder = newGoPacketDecoder(
 				adds = append(adds, newNetResourceRecord(a))
 			}
 
+			// Security monitoring fields
+			var (
+				queryNameLength  int32
+				subdomainCount   int32
+				queryNameEntropy float64
+				queryNameTLD     string
+			)
+			if len(dns.Questions) > 0 {
+				firstName := string(dns.Questions[0].Name)
+				queryNameLength = int32(len(firstName))
+				subdomainCount = int32(countSubdomains(firstName))
+				if conf.CalculateEntropy {
+					queryNameEntropy = dnsQueryNameEntropy(firstName)
+				}
+				queryNameTLD = extractTLD(firstName)
+			}
+
+			// Check for EDNS0 OPT record
+			var hasEDNS bool
+			var ednsPayloadSize int32
+			for _, add := range dns.Additionals {
+				if add.Type == layers.DNSTypeOPT {
+					hasEDNS = true
+					ednsPayloadSize = int32(add.Class) // Class field contains UDP payload size for OPT
+					break
+				}
+			}
+
+			responseCodeName := dnsResponseCodeNames[dns.ResponseCode]
+			if responseCodeName == "" {
+				responseCodeName = "UNKNOWN"
+			}
+
 			return &types.DNS{
 				Timestamp:    timestamp,
 				ID:           int32(dns.ID),
@@ -103,6 +195,15 @@ var dnsDecoder = newGoPacketDecoder(
 				Answers:     answers,
 				Authorities: auths,
 				Additionals: adds,
+				// Security monitoring fields
+				QueryNameLength:  queryNameLength,
+				SubdomainCount:   subdomainCount,
+				QueryNameEntropy: queryNameEntropy,
+				QueryNameTLD:     queryNameTLD,
+				IsNXDOMAIN:       dns.ResponseCode == layers.DNSResponseCodeNXDomain,
+				ResponseCodeName: responseCodeName,
+				HasEDNS:          hasEDNS,
+				EDNSPayloadSize:  ednsPayloadSize,
 			}
 		}
 

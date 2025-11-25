@@ -16,7 +16,9 @@ package packet
 import (
 	"fmt"
 	"log"
+	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -32,6 +34,34 @@ import (
 
 	"github.com/dreadl0ck/netcap/types"
 )
+
+// isPrivateIP checks if an IP address is RFC1918 private
+func isPrivateIP(ipStr string) bool {
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return false
+	}
+	// RFC1918 ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+	private10 := net.IPNet{IP: net.ParseIP("10.0.0.0"), Mask: net.CIDRMask(8, 32)}
+	private172 := net.IPNet{IP: net.ParseIP("172.16.0.0"), Mask: net.CIDRMask(12, 32)}
+	private192 := net.IPNet{IP: net.ParseIP("192.168.0.0"), Mask: net.CIDRMask(16, 32)}
+	
+	return private10.Contains(ip) || private172.Contains(ip) || private192.Contains(ip)
+}
+
+// isBroadcastIP checks if an IP address is a broadcast address
+func isBroadcastIP(ipStr string) bool {
+	return ipStr == "255.255.255.255" || strings.HasSuffix(ipStr, ".255")
+}
+
+// isMulticastIP checks if an IP address is multicast
+func isMulticastIP(ipStr string) bool {
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return false
+	}
+	return ip.IsMulticast()
+}
 
 // connectionID is a bidirectional connection
 // between two devices over the network
@@ -57,6 +87,10 @@ type connection struct {
 
 	// track unique applications detected via DPI
 	applications map[string]struct{}
+
+	// track packet counts per direction for behavioral analysis
+	packetsClientToServer int64
+	packetsServerToClient int64
 }
 
 // atomicConnMap contains all connections and provides synchronized access.
@@ -190,8 +224,10 @@ func handlePacket(p gopacket.Packet) proto.Message {
 		if nl != nil {
 			if conn.clientIP == nl.NetworkFlow().Src().String() {
 				conn.BytesClientToServer += int64(p.Metadata().Length)
+				conn.packetsClientToServer++
 			} else {
 				conn.BytesServerToClient += int64(p.Metadata().Length)
+				conn.packetsServerToClient++
 			}
 		}
 		conn.NumPackets++
@@ -275,9 +311,10 @@ func handlePacket(p gopacket.Packet) proto.Message {
 		}
 
 		conns.Items[connID.String()] = &connection{
-			Connection:   co,
-			clientIP:     co.SrcIP,
-			applications: apps,
+			Connection:            co,
+			clientIP:              co.SrcIP,
+			applications:          apps,
+			packetsClientToServer: 1, // First packet is from client
 		}
 
 		// TODO: add dedicated stats structure for decoder pkg
@@ -358,7 +395,7 @@ func movingAverage(current int32, newValue int32, n int32) int32 {
 }*/
 
 // writeConn writes the connection.
-func (d *Decoder) writeConn(conn *types.Connection, clientIP string, apps map[string]struct{}) {
+func (d *Decoder) writeConn(conn *types.Connection, clientIP string, apps map[string]struct{}, pktsC2S, pktsS2C int64) {
 
 	// calculate duration
 	conn.Duration = time.Unix(0, conn.TimestampLast).Sub(time.Unix(0, conn.TimestampFirst)).Nanoseconds()
@@ -371,7 +408,38 @@ func (d *Decoder) writeConn(conn *types.Connection, clientIP string, apps map[st
 
 		// swap num bytes tracked
 		conn.BytesClientToServer, conn.BytesServerToClient = conn.BytesServerToClient, conn.BytesClientToServer
+		// swap packet counts too
+		pktsC2S, pktsS2C = pktsS2C, pktsC2S
 	}
+
+	// Populate behavioral analysis fields
+	conn.PacketsClientToServer = pktsC2S
+	conn.PacketsServerToClient = pktsS2C
+
+	// Calculate byte ratio (client/server) - indicator for beaconing if very consistent
+	if conn.BytesServerToClient > 0 {
+		conn.ByteRatio = float64(conn.BytesClientToServer) / float64(conn.BytesServerToClient)
+	}
+
+	// Calculate packet ratio
+	if pktsS2C > 0 {
+		conn.PacketRatio = float64(pktsC2S) / float64(pktsS2C)
+	}
+
+	// Calculate average packet sizes
+	if pktsC2S > 0 {
+		conn.AvgPacketSizeClientToServer = int32(conn.BytesClientToServer / pktsC2S)
+	}
+	if pktsS2C > 0 {
+		conn.AvgPacketSizeServerToClient = int32(conn.BytesServerToClient / pktsS2C)
+	}
+
+	// Check if connection is external (either IP is not RFC1918 private)
+	conn.IsExternal = !isPrivateIP(conn.SrcIP) || !isPrivateIP(conn.DstIP)
+
+	// Check for broadcast/multicast
+	conn.IsBroadcast = isBroadcastIP(conn.DstIP)
+	conn.IsMulticast = isMulticastIP(conn.DstIP)
 
 	// populate Applications from DPI results
 	if len(apps) > 0 {
@@ -470,7 +538,7 @@ func (cp *connectionProcessor) connectionWorker(wg *sync.WaitGroup) chan *connec
 				return
 			}
 
-			conn.decoder.writeConn(conn.Connection, conn.clientIP, conn.applications)
+			conn.decoder.writeConn(conn.Connection, conn.clientIP, conn.applications, conn.packetsClientToServer, conn.packetsServerToClient)
 
 			cp.Lock()
 			cp.numDone++

@@ -209,6 +209,10 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 					zap.Int("total", len(probes)),
 					zap.String("expected", expectedCategory),
 				)
+				// Check if Product is still empty even after probe match - if so, try HTTP headers
+				if serv.Product == "" {
+					matchHTTPHeaders(serv, banner, ident)
+				}
 				return
 			}
 		}
@@ -216,8 +220,9 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 		serviceLog.Debug("all probes tried", zap.String("ident", ident), zap.Bool("found", found), zap.Int("matched", matched))
 	}
 
-	// If no match was found, try to extract information from HTTP headers as a fallback
-	if !found {
+	// If no match was found, or if a match was found but Product field is still empty,
+	// try to extract information from HTTP headers as a fallback
+	if !found || serv.Product == "" {
 		matchHTTPHeaders(serv, banner, ident)
 	}
 }
@@ -225,13 +230,6 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 // matchHTTPHeaders attempts to extract service information from HTTP response headers
 // when nmap service probes don't deliver results.
 func matchHTTPHeaders(serv *service, banner []byte, ident string) {
-	// Try to parse the banner as an HTTP response
-	resp, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(banner)), nil)
-	if err != nil {
-		// Not a valid HTTP response, skip
-		return
-	}
-
 	// Priority-ordered headers to check for service identification
 	priorityHeaders := []string{
 		"Server",              // Primary service identification
@@ -246,13 +244,31 @@ func matchHTTPHeaders(serv *service, banner []byte, ident string) {
 	var detectedValue string
 	var detectedHeader string
 
-	// Check headers in priority order and use the first one found
-	for _, headerName := range priorityHeaders {
-		if value := resp.Header.Get(headerName); value != "" {
-			detectedValue = value
-			detectedHeader = headerName
-			break
+	// First, check if this looks like an HTTP response
+	bannerStr := string(banner)
+	if !strings.HasPrefix(bannerStr, "HTTP/") {
+		return
+	}
+
+	// Try to parse as a complete HTTP response first
+	// Note: http.ReadResponse requires headers to end with \r\n\r\n
+	// For truncated banners, we'll fall back to manual extraction
+	resp, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(banner)), nil)
+	if err == nil {
+		// Successfully parsed as HTTP response
+		for _, headerName := range priorityHeaders {
+			if value := resp.Header.Get(headerName); value != "" {
+				detectedValue = value
+				detectedHeader = headerName
+				break
+			}
 		}
+	}
+
+	// If standard parsing failed or didn't find headers, try manual extraction
+	// This handles truncated banners that don't have the \r\n\r\n terminator
+	if detectedValue == "" {
+		detectedHeader, detectedValue = extractHeaderManually(bannerStr, priorityHeaders)
 	}
 
 	if detectedValue == "" {
@@ -270,6 +286,36 @@ func matchHTTPHeaders(serv *service, banner []byte, ident string) {
 		zap.String("product", serv.Product),
 		zap.String("version", serv.Version),
 	)
+}
+
+// extractHeaderManually extracts HTTP headers from a banner string manually.
+// This is used as a fallback when http.ReadResponse fails due to truncated banners.
+func extractHeaderManually(banner string, priorityHeaders []string) (headerName, headerValue string) {
+	// Split by common line endings (handle both \r\n and \n)
+	lines := strings.Split(banner, "\n")
+
+	for _, targetHeader := range priorityHeaders {
+		targetLower := strings.ToLower(targetHeader)
+		for _, line := range lines {
+			// Clean up the line (remove \r if present)
+			line = strings.TrimRight(line, "\r")
+			line = strings.TrimSpace(line)
+
+			// Check if this line starts with the header name (case-insensitive)
+			if len(line) > len(targetHeader)+1 && line[len(targetHeader)] == ':' {
+				lineLower := strings.ToLower(line[:len(targetHeader)])
+				if lineLower == targetLower {
+					// Extract the value after the colon
+					value := strings.TrimSpace(line[len(targetHeader)+1:])
+					if value != "" {
+						return targetHeader, value
+					}
+				}
+			}
+		}
+	}
+
+	return "", ""
 }
 
 // parseHeaderValue parses the header value to extract product, version, and vendor information.

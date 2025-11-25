@@ -162,7 +162,7 @@ gopacket.DecodeOptions{
 - **Memory**: Moderate (each packet owns its buffer)
 - **Safety**: High (fully concurrency-safe)
 
-**Note**: NETCAP's default configuration uses `datagrams` for maximum flexibility in packet analysis.
+**Note**: NETCAP's default configuration uses `default` for safe, eager decoding with full stream processing support.
 
 ---
 

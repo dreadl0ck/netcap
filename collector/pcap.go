@@ -25,6 +25,8 @@ import (
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/pkg/errors"
+
+	"github.com/dreadl0ck/netcap/decoder/packet"
 )
 
 const errReadingPacketData = "error reading packet data"
@@ -372,6 +374,10 @@ func (c *Collector) handleLinkType(lt layers.LinkType) error {
 		errMsg += "\n   For more information, see: https://www.tcpdump.org/linktypes.html"
 		return errors.New(errMsg)
 	}
+
+	// Set the base layer type for the decoder package
+	// This is used when decoding buffered packets during the flush phase
+	packet.SetBaseLayerType(c.config.BaseLayer)
 
 	return nil
 }

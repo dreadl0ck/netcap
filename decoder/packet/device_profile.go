@@ -20,12 +20,54 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+// streamKey uniquely identifies a network stream
+type streamKey struct {
+	srcIP    string
+	dstIP    string
+	srcPort  string
+	dstPort  string
+	protocol string
+}
+
+// bufferedPacket holds a copy of packet data for deferred DPI analysis
+// We store raw bytes to avoid gopacket buffer reuse issues
+type bufferedPacket struct {
+	data      []byte
+	timestamp int64
+}
+
+// streamBuffer holds buffered packets for a stream
+type streamBuffer struct {
+	packets []bufferedPacket
+}
+
+const (
+	maxPacketsPerStream  = 10
+	maxStreamsPerProfile = 1000 // Limit total streams to prevent unbounded growth
+)
+
+// baseLayerType stores the detected link layer type from the pcap file
+// This is set by the collector when opening the file and used for decoding buffered packets
+var baseLayerType = layers.LayerTypeEthernet // default to Ethernet
+
+// SetBaseLayerType sets the base layer type for packet decoding
+// This should be called by the collector when it determines the link type
+func SetBaseLayerType(lt gopacket.LayerType) {
+	baseLayerType = lt
+}
+
+// GetBaseLayerType returns the current base layer type
+func GetBaseLayerType() gopacket.LayerType {
+	return baseLayerType
+}
 
 // deviceProfile describes the behavior of a hardware device.
 // This is a wrapper structure to allow safe atomic access.
@@ -35,6 +77,9 @@ type deviceProfile struct {
 
 	// track unique applications detected via DPI
 	applications map[string]struct{}
+
+	// buffer packets per stream for deferred DPI analysis
+	streamBuffers map[streamKey]*streamBuffer
 }
 
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
@@ -95,36 +140,70 @@ func ResetDeviceProfiles() {
 //	return p
 //}
 
+// getStreamKey generates a unique key for a network stream
+func getStreamKey(i *decoderutils.PacketInfo) streamKey {
+	var srcPort, dstPort, protocol string
+
+	if tl := i.Packet.TransportLayer(); tl != nil {
+		srcPort = tl.TransportFlow().Src().String()
+		dstPort = tl.TransportFlow().Dst().String()
+		protocol = tl.LayerType().String()
+	}
+
+	return streamKey{
+		srcIP:    i.SrcIP,
+		dstIP:    i.DstIP,
+		srcPort:  srcPort,
+		dstPort:  dstPort,
+		protocol: protocol,
+	}
+}
+
 // updateDeviceProfile can be used to update the profile for the passed identifiers.
 func updateDeviceProfile(i *decoderutils.PacketInfo) {
 	// lookup profile
 	DeviceProfiles.Lock()
 	if p, ok := DeviceProfiles.Items[i.SrcMAC]; ok {
+		DeviceProfiles.Unlock()
 		applyDeviceProfileUpdate(p, i)
 	} else {
 		DeviceProfiles.Items[i.SrcMAC] = newDeviceProfile(i)
 		deviceProfiles++
+		DeviceProfiles.Unlock()
 	}
-	DeviceProfiles.Unlock()
+}
+
+// copyPacketData creates a copy of packet data to avoid gopacket buffer reuse issues
+func copyPacketData(p gopacket.Packet) []byte {
+	data := p.Data()
+	if len(data) == 0 {
+		return nil
+	}
+	copied := make([]byte, len(data))
+	copy(copied, data)
+	return copied
 }
 
 // newDeviceProfile creates a new device specific profile.
 func newDeviceProfile(i *decoderutils.PacketInfo) *deviceProfile {
 	var contacts []string
-	if ip := getIPProfile(i.DstIP, i, false); ip != nil {
-		contacts = append(contacts, ip.IPProfile.Addr)
+	if i.DstIP != "" {
+		contacts = append(contacts, i.DstIP)
 	}
 
 	var devices []string
-	if ip := getIPProfile(i.SrcIP, i, true); ip != nil {
-		devices = append(devices, ip.IPProfile.Addr)
+	if i.SrcIP != "" {
+		devices = append(devices, i.SrcIP)
 	}
 
-	// DPI: detect applications
-	apps := make(map[string]struct{})
-	dpiResults := dpi.GetProtocols(i.Packet)
-	for protocol := range dpiResults {
-		apps[protocol] = struct{}{}
+	// Initialize stream buffers and buffer the first packet (copy data to avoid buffer reuse)
+	streamBuffers := make(map[streamKey]*streamBuffer)
+	key := getStreamKey(i)
+	streamBuffers[key] = &streamBuffer{
+		packets: []bufferedPacket{{
+			data:      copyPacketData(i.Packet),
+			timestamp: i.Timestamp,
+		}},
 	}
 
 	return &deviceProfile{
@@ -137,69 +216,72 @@ func newDeviceProfile(i *decoderutils.PacketInfo) *deviceProfile {
 			NumPackets:         1,
 			Bytes:              uint64(len(i.Packet.Data())),
 		},
-		applications: apps,
+		applications:  make(map[string]struct{}),
+		streamBuffers: streamBuffers,
 	}
 }
 
 func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 	p.Lock()
+	defer p.Unlock()
 
-	// deviceIPs
-	var found bool
-
-	for _, addr := range p.DeviceIPs {
-		if addr == i.SrcIP {
-			// update existing ip profile
-			_ = getIPProfile(i.SrcIP, i, true).IPProfile
-			found = true
+	// Track deviceIPs
+	if i.SrcIP != "" {
+		found := false
+		for _, addr := range p.DeviceIPs {
+			if addr == i.SrcIP {
+				found = true
+				break
+			}
+		}
+		if !found {
+			p.DeviceIPs = append(p.DeviceIPs, i.SrcIP)
 		}
 	}
 
-	// if no existing one has been updated, its a new one
-	if !found {
-		ip := getIPProfile(i.SrcIP, i, true)
-		// if the packet has no network layer we wont get an IP here
-		// prevent adding a nil pointer to the array
-		if ip != nil {
-			p.DeviceIPs = append(p.DeviceIPs, ip.IPProfile.Addr)
+	// Track contacts
+	if i.DstIP != "" {
+		found := false
+		for _, addr := range p.Contacts {
+			if addr == i.DstIP {
+				found = true
+				break
+			}
 		}
-	}
-
-	// contacts
-	found = false
-
-	for _, addr := range p.Contacts {
-		if addr == i.DstIP {
-			// update existing ip profile
-			_ = getIPProfile(i.DstIP, i, false).IPProfile
-			found = true
-		}
-	}
-
-	// if no existing one has been updated, its a new one
-	if !found {
-		ip := getIPProfile(i.DstIP, i, false)
-
-		// if the packet has no network layer we wont get an IP here
-		// prevent adding a nil pointer to the array
-		if ip != nil {
-			p.Contacts = append(p.Contacts, ip.IPProfile.Addr)
+		if !found {
+			p.Contacts = append(p.Contacts, i.DstIP)
 		}
 	}
 
 	p.Bytes += uint64(len(i.Packet.Data()))
 	p.NumPackets++
 
-	// DPI: detect and track applications
-	dpiResults := dpi.GetProtocols(i.Packet)
-	for protocol := range dpiResults {
-		if p.applications == nil {
-			p.applications = make(map[string]struct{})
-		}
-		p.applications[protocol] = struct{}{}
+	// Ensure streamBuffers is initialized (defensive check)
+	if p.streamBuffers == nil {
+		p.streamBuffers = make(map[streamKey]*streamBuffer)
 	}
 
-	p.Unlock()
+	// Buffer packet for deferred DPI analysis (up to 10 packets per stream)
+	key := getStreamKey(i)
+	if buf, exists := p.streamBuffers[key]; exists {
+		// Stream already exists, add packet if under limit
+		if len(buf.packets) < maxPacketsPerStream {
+			buf.packets = append(buf.packets, bufferedPacket{
+				data:      copyPacketData(i.Packet),
+				timestamp: i.Timestamp,
+			})
+		}
+	} else {
+		// New stream, create buffer only if under stream limit
+		if len(p.streamBuffers) < maxStreamsPerProfile {
+			p.streamBuffers[key] = &streamBuffer{
+				packets: []bufferedPacket{{
+					data:      copyPacketData(i.Packet),
+					timestamp: i.Timestamp,
+				}},
+			}
+		}
+	}
 }
 
 var deviceProfileDecoder = newPacketDecoder(
@@ -216,9 +298,18 @@ var deviceProfileDecoder = newPacketDecoder(
 		return nil
 	},
 	func(d *Decoder) error {
-		// flush writer
+		// Take a snapshot of items under lock to avoid race conditions
+		DeviceProfiles.Lock()
+		items := make([]*deviceProfile, 0, len(DeviceProfiles.Items))
 		for _, item := range DeviceProfiles.Items {
+			items = append(items, item)
+		}
+		DeviceProfiles.Unlock()
+
+		// Process buffered packets and run DPI analysis before flushing
+		for _, item := range items {
 			item.Lock()
+			processDeferredDPI(item)
 			d.writeDeviceProfile(item.DeviceProfile, item.applications)
 			item.Unlock()
 		}
@@ -226,6 +317,33 @@ var deviceProfileDecoder = newPacketDecoder(
 		return nil
 	},
 )
+
+// processDeferredDPI runs DPI analysis on all buffered packets for a device profile
+func processDeferredDPI(p *deviceProfile) {
+	if p.streamBuffers == nil {
+		return
+	}
+
+	// Process each stream's buffered packets
+	for _, streamBuf := range p.streamBuffers {
+		// Run DPI on each buffered packet in the stream
+		for _, pkt := range streamBuf.packets {
+			if len(pkt.data) == 0 {
+				continue
+			}
+			// Decode the packet from raw bytes for DPI analysis
+			// Use the detected base layer type from the pcap file
+			packet := gopacket.NewPacket(pkt.data, baseLayerType, gopacket.Default)
+			dpiResults := dpi.GetProtocols(packet)
+			for protocol := range dpiResults {
+				p.applications[protocol] = struct{}{}
+			}
+		}
+	}
+
+	// Clear stream buffers after processing to free memory
+	p.streamBuffers = nil
+}
 
 // writeDeviceProfile writes the profile.
 func (d *Decoder) writeDeviceProfile(dp *types.DeviceProfile, apps map[string]struct{}) {

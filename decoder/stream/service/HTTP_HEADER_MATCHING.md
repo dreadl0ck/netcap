@@ -2,15 +2,23 @@
 
 ## Overview
 
-When nmap service probes don't deliver results, the service detection system now falls back to checking HTTP response headers for known technology indicators. This provides an additional layer of service identification for HTTP/HTTPS services.
+When nmap service probes don't deliver results or don't extract product information, the service detection system falls back to checking HTTP response headers for known technology indicators. This provides an additional layer of service identification for HTTP/HTTPS services.
 
 ## How It Works
 
 1. **Primary Detection**: The system first attempts to match the service banner against all nmap service probes
-2. **Fallback to HTTP Headers**: If no probe matches are found, the system checks if the banner is a valid HTTP response
+2. **Fallback to HTTP Headers**: If no probe matches are found **OR** if a probe matched but the Product field is still empty, the system checks if the banner is a valid HTTP response
 3. **Header Extraction**: If valid HTTP, the system checks specific headers in priority order
 4. **Information Parsing**: The first matching header is parsed to extract product, version, and vendor information
 5. **Result Storage**: The extracted information is stored in the Service record and also written as a Software detection
+
+## Trigger Conditions
+
+HTTP header matching is triggered when:
+- No nmap service probe matched the banner, **OR**
+- A service probe matched but did not populate the Product field
+
+This ensures that valuable information in HTTP headers (like `Server: gws`) is always extracted, even when generic HTTP probes match without extracting specific product details.
 
 ## Priority Headers
 
@@ -39,6 +47,10 @@ Server: nginx/1.18.0
 Server: Microsoft-IIS/10.0
 → Product: Microsoft-IIS
 → Version: 10.0
+
+Server: gws
+→ Product: gws
+→ Version: (empty)
 ```
 
 ### X-Powered-By Header
@@ -113,11 +125,12 @@ Located in `decoder/stream/service/service_probe.go`, this function:
 
 ## Benefits
 
-1. **Enhanced Detection**: Catches services that don't match nmap probes
+1. **Enhanced Detection**: Catches services that don't match nmap probes or where probes don't extract product information
 2. **Technology Stack Visibility**: Reveals web frameworks, CMS platforms, and proxy layers
 3. **Version Intelligence**: Extracts version information when available
-4. **Non-Intrusive**: Only activates when primary detection fails
+4. **Smart Fallback**: Activates when primary detection fails or is incomplete
 5. **Priority-Based**: Uses the most reliable headers first
+6. **Complementary Detection**: Works alongside nmap probes to maximize information extraction
 
 ## Testing
 
@@ -138,6 +151,28 @@ HTTP header matches are logged at DEBUG level:
 ```
 HTTP header match: ident=<flow-id> header=<header-name> value=<header-value> product=<product> version=<version>
 ```
+
+## Example Scenario
+
+Consider this HTTP response banner:
+```
+HTTP/1.1 200 OK
+Date: Wed, 15 Nov 2017 15:09:45 GMT
+Expires: -1
+Cache-Control: private, max-age=0
+Content-Type: text/html; charset=ISO-8859-1
+P3P: CP="This is not a P3P policy! See g.co/p3phelp for more info."
+Server: gws
+X-XSS-Protection: 1; mode=b
+```
+
+**Before the fix**: If a generic HTTP probe matched this banner but didn't extract the `Server` header value, the Product field would remain empty even though `Server: gws` is present.
+
+**After the fix**: The HTTP header matching logic checks if the Product field is empty after probe matching. Since it's empty, it extracts the `Server: gws` header and populates:
+- Product: `gws`
+- MatchedProbeID: `http-header-server`
+
+This ensures that HTTP header information is never lost, even when service probes provide incomplete matches.
 
 ## Future Enhancements
 

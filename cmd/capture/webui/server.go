@@ -1565,7 +1565,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		Promisc:               true,
 		SnapLen:               defaults.SnapLen,
 		BaseLayer:             utils.GetBaseLayer("ethernet"),
-		DecodeOptions:         utils.GetDecodeOptions("datagrams"),
+		DecodeOptions:         utils.GetDecodeOptions("default"),
 		DPI:                   job.EnableDPI,
 		DPIModules:            "",
 		ReassembleConnections: true,

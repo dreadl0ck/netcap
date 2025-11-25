@@ -9,10 +9,19 @@ import (
 
 	"github.com/dreadl0ck/netcap/decoder"
 
+	"github.com/dreadl0ck/netcap/decoder/stream/bgp"
+	"github.com/dreadl0ck/netcap/decoder/stream/dnp3"
+	"github.com/dreadl0ck/netcap/decoder/stream/ftp"
 	"github.com/dreadl0ck/netcap/decoder/stream/http"
+	"github.com/dreadl0ck/netcap/decoder/stream/imap"
+	"github.com/dreadl0ck/netcap/decoder/stream/irc"
 	"github.com/dreadl0ck/netcap/decoder/stream/pop3"
+	"github.com/dreadl0ck/netcap/decoder/stream/rdp"
+	"github.com/dreadl0ck/netcap/decoder/stream/smb"
 	"github.com/dreadl0ck/netcap/decoder/stream/smtp"
+	"github.com/dreadl0ck/netcap/decoder/stream/socks"
 	"github.com/dreadl0ck/netcap/decoder/stream/ssh"
+	"github.com/dreadl0ck/netcap/decoder/stream/syslog"
 	"github.com/dreadl0ck/netcap/decoder/stream/tls"
 
 	"github.com/mgutz/ansi"
@@ -35,12 +44,21 @@ var Debug bool
 // DefaultStreamDecoders contains stream decoders mapped to their protocols default port
 // int32 is used to avoid casting when looking up values
 var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
-	80:   http.Decoder,
-	110:  pop3.Decoder,
-	22:   ssh.Decoder,
-	25:   smtp.Decoder,
-	443:  tls.Decoder,
-	8443: tls.Decoder, // Common alternate HTTPS port
+	21:    ftp.Decoder,
+	22:    ssh.Decoder,
+	25:    smtp.Decoder,
+	80:    http.Decoder,
+	110:   pop3.Decoder,
+	143:   imap.Decoder,
+	179:   bgp.Decoder,      // BGP routing protocol
+	443:   tls.Decoder,
+	445:   smb.Decoder,
+	514:   syslog.Decoder,   // Syslog (UDP/TCP)
+	1080:  socks.Decoder,    // SOCKS proxy
+	3389:  rdp.Decoder,      // RDP remote desktop
+	6667:  irc.Decoder,      // Common IRC port
+	8443:  tls.Decoder,      // Common alternate HTTPS port
+	20000: dnp3.Decoder,     // DNP3 ICS/SCADA
 } // contains all available stream decoders
 
 // package level init.

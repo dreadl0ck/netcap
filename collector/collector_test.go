@@ -109,7 +109,7 @@ func TestCapturePCAP(t *testing.T) {
 			StreamBufferSize: 100,
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
-		DecodeOptions: utils.GetDecodeOptions("datagrams"),
+		DecodeOptions: utils.GetDecodeOptions("default"),
 		DPI:           false,
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    false,

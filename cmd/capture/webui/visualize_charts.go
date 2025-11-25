@@ -1237,6 +1237,16 @@ func getLayerMap() map[string]string {
 		"Diameter":       "Application Layer",
 		"VXLAN":          "Application Layer",
 		"Geneve":         "Application Layer",
+		"IRC":            "Application Layer",
+		"SMB":            "Application Layer",
+		"IMAP":           "Application Layer",
+		"RADIUS":         "Application Layer",
+		"Syslog":         "Application Layer",
+		"RDP":            "Application Layer",
+		"BGP":            "Application Layer",
+		"DNP3":           "Application Layer",
+		"SOCKS":          "Application Layer",
+		"GTP":            "Application Layer",
 	}
 }
 

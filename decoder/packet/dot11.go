@@ -21,6 +21,58 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+// dot11TypeNames maps Dot11 frame types to names
+var dot11TypeNames = map[layers.Dot11Type]string{
+	layers.Dot11TypeMgmt:    "Management",
+	layers.Dot11TypeCtrl:    "Control",
+	layers.Dot11TypeData:    "Data",
+	layers.Dot11TypeReserved: "Reserved",
+}
+
+// dot11SubtypeNames maps management frame subtypes to names
+var dot11SubtypeNames = map[layers.Dot11Type]string{
+	layers.Dot11TypeMgmtAssociationReq:    "Association Request",
+	layers.Dot11TypeMgmtAssociationResp:   "Association Response",
+	layers.Dot11TypeMgmtReassociationReq:  "Reassociation Request",
+	layers.Dot11TypeMgmtReassociationResp: "Reassociation Response",
+	layers.Dot11TypeMgmtProbeReq:          "Probe Request",
+	layers.Dot11TypeMgmtProbeResp:         "Probe Response",
+	layers.Dot11TypeMgmtBeacon:            "Beacon",
+	layers.Dot11TypeMgmtATIM:              "ATIM",
+	layers.Dot11TypeMgmtDisassociation:    "Disassociation",
+	layers.Dot11TypeMgmtAuthentication:    "Authentication",
+	layers.Dot11TypeMgmtDeauthentication:  "Deauthentication",
+	layers.Dot11TypeMgmtAction:            "Action",
+	layers.Dot11TypeMgmtActionNoAck:       "Action No Ack",
+}
+
+// dot11ReasonCodes maps Dot11 reason codes to names
+var dot11ReasonCodeNames = map[uint16]string{
+	1:  "Unspecified",
+	2:  "Previous auth not valid",
+	3:  "Deauth leaving",
+	4:  "Disassoc due to inactivity",
+	5:  "Disassoc AP busy",
+	6:  "Class 2 frame from nonauth STA",
+	7:  "Class 3 frame from nonassoc STA",
+	8:  "Disassoc STA leaving",
+	9:  "STA not authenticated with assoc STA",
+	10: "Disassoc power cap bad",
+	11: "Disassoc supp chan bad",
+	13: "Invalid IE",
+	14: "MIC failure",
+	15: "4-way handshake timeout",
+	16: "Group key handshake timeout",
+	17: "IE in 4-way differs",
+	18: "Invalid group cipher",
+	19: "Invalid pairwise cipher",
+	20: "Invalid AKMP",
+	21: "Unsupported RSN IE version",
+	22: "Invalid RSN IE cap",
+	23: "802.1X auth failed",
+	24: "Cipher suite rejected",
+}
+
 var dot11Decoder = newGoPacketDecoder(
 	types.Type_NC_Dot11,
 	layers.LayerTypeDot11,
@@ -120,21 +172,46 @@ var dot11Decoder = newGoPacketDecoder(
 				}
 			}
 
+			// Get frame type name (Management, Control, Data)
+			frameType := dot11.Type.MainType()
+			typeName := dot11TypeNames[frameType]
+			if typeName == "" {
+				typeName = "Unknown"
+			}
+
+			// Get subtype name (for management frames)
+			subtypeName := dot11SubtypeNames[dot11.Type]
+			if subtypeName == "" {
+				subtypeName = "Unknown"
+			}
+
+			// Check for deauthentication and disassociation (attack indicators)
+			isDeauth := dot11.Type == layers.Dot11TypeMgmtDeauthentication
+			isDisassoc := dot11.Type == layers.Dot11TypeMgmtDisassociation
+
+			// Check retry flag (could indicate jamming if excessive)
+			isRetry := (dot11.Flags & layers.Dot11FlagsRetry) != 0
+
 			return &types.Dot11{
-				Timestamp:      timestamp,
-				Type:           int32(dot11.Type),
-				Proto:          int32(dot11.Proto),
-				Flags:          int32(dot11.Flags),
-				DurationID:     int32(dot11.DurationID),
-				Address1:       dot11.Address1.String(),
-				Address2:       dot11.Address2.String(),
-				Address3:       dot11.Address3.String(),
-				Address4:       dot11.Address4.String(),
-				SequenceNumber: int32(dot11.SequenceNumber),
-				FragmentNumber: int32(dot11.FragmentNumber),
-				Checksum:       dot11.Checksum,
-				QOS:            qos,
-				HTControl:      htcontrol,
+				Timestamp:         timestamp,
+				Type:              int32(dot11.Type),
+				Proto:             int32(dot11.Proto),
+				Flags:             int32(dot11.Flags),
+				DurationID:        int32(dot11.DurationID),
+				Address1:          dot11.Address1.String(),
+				Address2:          dot11.Address2.String(),
+				Address3:          dot11.Address3.String(),
+				Address4:          dot11.Address4.String(),
+				SequenceNumber:    int32(dot11.SequenceNumber),
+				FragmentNumber:    int32(dot11.FragmentNumber),
+				Checksum:          dot11.Checksum,
+				QOS:               qos,
+				HTControl:         htcontrol,
+				TypeName:          typeName,
+				SubtypeName:       subtypeName,
+				IsDeauthentication: isDeauth,
+				IsDisassociation:  isDisassoc,
+				IsRetry:           isRetry,
 			}
 		}
 

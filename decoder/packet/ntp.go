@@ -14,6 +14,8 @@
 package packet
 
 import (
+	"encoding/binary"
+
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gogo/protobuf/proto"
@@ -21,12 +23,52 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+// ntpModeNames maps NTP mode values to names
+var ntpModeNames = map[layers.NTPMode]string{
+	0: "Reserved",
+	1: "Symmetric Active",
+	2: "Symmetric Passive",
+	3: "Client",
+	4: "Server",
+	5: "Broadcast",
+	6: "Control",
+	7: "Private",
+}
+
 var ntpDecoder = newGoPacketDecoder(
 	types.Type_NC_NTP,
 	layers.LayerTypeNTP,
 	"The Network Time Protocol is a networking protocol for clock synchronization between computer systems over packet-switched, variable-latency data networks",
 	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if ntp, ok := layer.(*layers.NTP); ok {
+			// Get mode name
+			modeName := ntpModeNames[ntp.Mode]
+			if modeName == "" {
+				modeName = "Unknown"
+			}
+
+			// Mode 6 is control message (ntpq, ntpdc)
+			isControlMessage := ntp.Mode == 6
+
+			// Mode 7 is private/implementation-specific (monlist amplification attack)
+			isPrivateMode := ntp.Mode == 7
+
+			// Stratum 0 is KoD (Kiss of Death) or unspecified
+			isKissOfDeath := ntp.Stratum == 0
+
+			// For stratum 0-1, ReferenceID is ASCII string
+			var refIDStr string
+			if ntp.Stratum <= 1 {
+				refBytes := make([]byte, 4)
+				binary.BigEndian.PutUint32(refBytes, uint32(ntp.ReferenceID))
+				// Filter out null bytes
+				for _, b := range refBytes {
+					if b >= 32 && b < 127 {
+						refIDStr += string(b)
+					}
+				}
+			}
+
 			return &types.NTP{
 				Timestamp:          timestamp,
 				LeapIndicator:      int32(ntp.LeapIndicator),
@@ -43,6 +85,11 @@ var ntpDecoder = newGoPacketDecoder(
 				ReceiveTimestamp:   uint64(ntp.ReceiveTimestamp),
 				TransmitTimestamp:  uint64(ntp.TransmitTimestamp),
 				ExtensionBytes:     ntp.ExtensionBytes,
+				ModeName:           modeName,
+				IsControlMessage:   isControlMessage,
+				IsPrivateMode:      isPrivateMode,
+				IsKissOfDeath:      isKissOfDeath,
+				ReferenceIDStr:     refIDStr,
 			}
 		}
 

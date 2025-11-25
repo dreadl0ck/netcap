@@ -37,6 +37,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
 	"github.com/dreadl0ck/netcap/decoder/stream/alert"
+	"github.com/dreadl0ck/netcap/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/env"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
@@ -389,6 +390,18 @@ func Run() {
 func RunWithContext(ctx context.Context, c *cli.Command) error {
 	// Populate global variables from CLI context
 	setFlagsFromContext(c)
+	
+	// Load file extraction configuration if provided
+	if flagFileConfig != "" {
+		cfg, err := file.LoadConfig(flagFileConfig)
+		if err != nil {
+			log.Printf("Warning: Failed to load file extraction config from %s: %v", flagFileConfig, err)
+			log.Printf("Using default file extraction configuration")
+		} else {
+			file.SetGlobalConfig(cfg)
+			log.Printf("Loaded file extraction configuration from: %s", flagFileConfig)
+		}
+	}
 
 	// Check if running in service mode
 	if flagService {

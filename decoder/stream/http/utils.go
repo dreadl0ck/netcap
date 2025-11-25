@@ -62,12 +62,20 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	h.Referer = removeCommas(req.request.Referer())
 	h.URL = removeCommas(req.request.URL.String())
 
-	// retrieve ip addresses set on the request while processing
+	// retrieve ip addresses and ports set on the request while processing
 	h.SrcIP = req.clientIP
 	h.DstIP = req.serverIP
+	h.SrcPort = req.clientPort
+	h.DstPort = req.serverPort
+	h.Flow = req.flow
 
 	h.ReqCookies = readCookies(req.request.Cookies())
 	h.Parameters = readParameters(req.request.Form)
+
+	// Security-relevant request headers
+	h.AuthorizationType = extractAuthType(req.request.Header.Get("Authorization"))
+	h.XForwardedFor = req.request.Header.Get("X-Forwarded-For")
+	h.XRealIP = req.request.Header.Get("X-Real-IP")
 }
 
 func removeCommas(s string) string {
@@ -135,7 +143,30 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 		ResContentTypeDetected: detected,
 		ResCookies:             readCookies(res.Cookies()),
 		ResponseHeader:         readHeader(res.Header),
+		// Security headers from response
+		StrictTransportSecurity:  res.Header.Get("Strict-Transport-Security"),
+		ContentSecurityPolicy:    res.Header.Get("Content-Security-Policy"),
+		XContentTypeOptions:      res.Header.Get("X-Content-Type-Options"),
+		XFrameOptions:            res.Header.Get("X-Frame-Options"),
+		XXSSProtection:           res.Header.Get("X-XSS-Protection"),
+		ReferrerPolicy:           res.Header.Get("Referrer-Policy"),
+		AccessControlAllowOrigin: res.Header.Get("Access-Control-Allow-Origin"),
+		HasServerTiming:          res.Header.Get("Server-Timing") != "",
+		Server:                   res.Header.Get("Server"),
+		XPoweredBy:               res.Header.Get("X-Powered-By"),
 	}
+}
+
+// extractAuthType extracts the authorization type from the Authorization header
+func extractAuthType(authHeader string) string {
+	if authHeader == "" {
+		return ""
+	}
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) >= 1 {
+		return parts[0]
+	}
+	return ""
 }
 
 func readHeader(h http.Header) map[string]string {

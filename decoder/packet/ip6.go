@@ -21,6 +21,20 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+// ipv6NextHeaderNames maps next header values to names
+var ipv6NextHeaderNames = map[layers.IPProtocol]string{
+	layers.IPProtocolTCP:            "TCP",
+	layers.IPProtocolUDP:            "UDP",
+	layers.IPProtocolICMPv6:         "ICMPv6",
+	layers.IPProtocolSCTP:           "SCTP",
+	layers.IPProtocolGRE:            "GRE",
+	layers.IPProtocolIPv6HopByHop:   "Hop-by-Hop",
+	layers.IPProtocolIPv6Routing:    "Routing",
+	layers.IPProtocolIPv6Fragment:   "Fragment",
+	layers.IPProtocolIPv6Destination: "Destination",
+	layers.IPProtocolNoNextHeader:   "No Next Header",
+}
+
 var ipv6Decoder = newGoPacketDecoder(
 	types.Type_NC_IPv6,
 	layers.LayerTypeIPv6,
@@ -32,18 +46,36 @@ var ipv6Decoder = newGoPacketDecoder(
 				e = entropy(ip6.Payload)
 			}
 
+			// Get next header name
+			nextHeaderName := ipv6NextHeaderNames[ip6.NextHeader]
+			if nextHeaderName == "" {
+				nextHeaderName = "Unknown"
+			}
+
+			// Extract DSCP and ECN from TrafficClass
+			dscp := int32(ip6.TrafficClass >> 2)
+			ecn := int32(ip6.TrafficClass & 0x03)
+
+			// Check if this is a fragment (NextHeader == 44)
+			isFragment := ip6.NextHeader == layers.IPProtocolIPv6Fragment
+
 			return &types.IPv6{
-				Timestamp:      timestamp,
-				Version:        int32(ip6.Version),
-				TrafficClass:   int32(ip6.TrafficClass),
-				FlowLabel:      ip6.FlowLabel,
-				Length:         int32(ip6.Length),
-				NextHeader:     int32(ip6.NextHeader),
-				HopLimit:       int32(ip6.HopLimit),
-				SrcIP:          ip6.SrcIP.String(),
-				DstIP:          ip6.DstIP.String(),
-				PayloadSize:    int32(len(ip6.Payload)),
-				PayloadEntropy: e,
+				Timestamp:           timestamp,
+				Version:             int32(ip6.Version),
+				TrafficClass:        int32(ip6.TrafficClass),
+				FlowLabel:           ip6.FlowLabel,
+				Length:              int32(ip6.Length),
+				NextHeader:          int32(ip6.NextHeader),
+				HopLimit:            int32(ip6.HopLimit),
+				SrcIP:               ip6.SrcIP.String(),
+				DstIP:               ip6.DstIP.String(),
+				PayloadSize:         int32(len(ip6.Payload)),
+				PayloadEntropy:      e,
+				NextHeaderName:      nextHeaderName,
+				HasExtensionHeaders: ip6.NextHeader == layers.IPProtocolIPv6HopByHop,
+				IsFragment:          isFragment,
+				DSCP:                dscp,
+				ECN:                 ecn,
 			}
 		}
 

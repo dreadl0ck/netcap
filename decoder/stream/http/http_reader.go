@@ -29,6 +29,7 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
@@ -55,17 +56,23 @@ const (
  */
 
 type httpRequest struct {
-	request   *http.Request
-	timestamp int64
-	clientIP  string
-	serverIP  string
+	request    *http.Request
+	timestamp  int64
+	clientIP   string
+	serverIP   string
+	clientPort int32
+	serverPort int32
+	flow       string
 }
 
 type httpResponse struct {
-	response  *http.Response
-	timestamp int64
-	clientIP  string
-	serverIP  string
+	response   *http.Response
+	timestamp  int64
+	clientIP   string
+	serverIP   string
+	clientPort int32
+	serverPort int32
+	flow       string
 }
 
 type httpReader struct {
@@ -117,10 +124,13 @@ func (h *httpReader) Decode() {
 
 			atomic.AddInt64(&streamutils.Stats.NumRequests, 1)
 			setRequest(ht, &httpRequest{
-				request:   res.response.Request,
-				timestamp: res.timestamp,
-				clientIP:  res.clientIP,
-				serverIP:  res.serverIP,
+				request:    res.response.Request,
+				timestamp:  res.timestamp,
+				clientIP:   res.clientIP,
+				serverIP:   res.serverIP,
+				clientPort: res.clientPort,
+				serverPort: res.serverPort,
+				flow:       res.flow,
 			})
 		} else {
 			// response without matching request
@@ -308,10 +318,13 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 	streamutils.Stats.Unlock()
 
 	h.responses = append(h.responses, &httpResponse{
-		response:  res,
-		timestamp: h.conversation.FirstServerPacket.UnixNano(),
-		clientIP:  h.conversation.ClientIP,
-		serverIP:  h.conversation.ServerIP,
+		response:   res,
+		timestamp:  h.conversation.FirstServerPacket.UnixNano(),
+		clientIP:   h.conversation.ClientIP,
+		serverIP:   h.conversation.ServerIP,
+		clientPort: h.conversation.ClientPort,
+		serverPort: h.conversation.ServerPort,
+		flow:       h.conversation.Ident,
 	})
 
 	// write responses to disk if configured
@@ -319,11 +332,13 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 
 		var (
 			name         = "unknown"
-			source       = "HTTP RESPONSE"
 			ctype        string
 			numResponses = len(h.responses)
 			numRequests  = len(h.requests)
 			host         string
+			method       = ""
+			statusCode   = res.StatusCode
+			urlPath      = ""
 		)
 
 		// check if there is a matching request for the current stream
@@ -333,13 +348,31 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 			if req != nil {
 				host = req.request.Host
 				name = path.Base(req.request.URL.Path)
-				source += " from " + req.request.Host + req.request.URL.Path
+				method = req.request.Method
+				urlPath = req.request.URL.Path
 				ctype = strings.Join(req.request.Header[headerContentType], " ")
 			}
 		}
 
-		// save file to disk
-		return streamutils.SaveFile(h.conversation, source, name, err, body, encoding, host, ctype)
+		// Use new file extraction framework
+		extractor, ok := file.GetExtractor("HTTP")
+		if !ok {
+			httpLog.Error("HTTP file extractor not registered")
+			return nil
+		}
+		
+		metadata := file.FileMetadata{
+			ConnectionUID:  h.conversation.Ident,
+			FlowDirection:  "server_to_client",
+			HTTPMethod:     method,
+			HTTPStatusCode: statusCode,
+			HTTPURL:        urlPath,
+			Filename:       name,
+			ContentType:    ctype,
+			Host:           host,
+			Encoding:       encoding,
+		}
+		return extractor.ExtractFile(h.conversation, body, metadata)
 	}
 
 	return nil
@@ -412,10 +445,13 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 	t := h.conversation.FirstClientPacket.UnixNano()
 
 	request := &httpRequest{
-		request:   req,
-		timestamp: t,
-		clientIP:  h.conversation.ClientIP,
-		serverIP:  h.conversation.ServerIP,
+		request:    req,
+		timestamp:  t,
+		clientIP:   h.conversation.ClientIP,
+		serverIP:   h.conversation.ServerIP,
+		clientPort: h.conversation.ClientPort,
+		serverPort: h.conversation.ServerPort,
+		flow:       h.conversation.Ident,
 	}
 
 	// parse form values
@@ -438,16 +474,25 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 	if req.Method == methodPOST {
 		// write request payload to disk if configured
 		if (err == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
-			return streamutils.SaveFile(
-				h.conversation,
-				"HTTP POST REQUEST to "+req.URL.Path,
-				path.Base(req.URL.Path),
-				err,
-				body,
-				req.Header[headerContentEncoding],
-				req.Host,
-				strings.Join(req.Header[headerContentType], " "),
-			)
+			// Use new file extraction framework
+			extractor, ok := file.GetExtractor("HTTP")
+			if !ok {
+				httpLog.Error("HTTP file extractor not registered")
+				return nil
+			}
+			
+			metadata := file.FileMetadata{
+				ConnectionUID:  h.conversation.Ident,
+				FlowDirection:  "client_to_server",
+				HTTPMethod:     methodPOST,
+				HTTPStatusCode: 0, // Request doesn't have status code
+				HTTPURL:        req.URL.Path,
+				Filename:       path.Base(req.URL.Path),
+				ContentType:    strings.Join(req.Header[headerContentType], " "),
+				Host:           req.Host,
+				Encoding:       req.Header[headerContentEncoding],
+			}
+			return extractor.ExtractFile(h.conversation, body, metadata)
 		}
 	}
 

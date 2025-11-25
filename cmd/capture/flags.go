@@ -191,7 +191,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:    "opts",
-			Value:   "datagrams",
+			Value:   "default",
 			Usage:   "select decoding options",
 			Sources: cli.EnvVars("NC_OPTS"),
 		},
@@ -300,6 +300,11 @@ func GetFlags() []cli.Flag {
 			Value:   "files",
 			Usage:   "path to extracted files (relative to output directory, empty string disables file extraction)",
 			Sources: cli.EnvVars("NC_FILESTORAGE"),
+		},
+		&cli.StringFlag{
+			Name:    "file-config",
+			Usage:   "path to file extraction configuration YAML file",
+			Sources: cli.EnvVars("NC_FILE_CONFIG"),
 		},
 		&cli.BoolFlag{
 			Name:    "reverse-dns",

@@ -1,5 +1,7 @@
 # TODOs
 
+Records page: when changing records via capture file select, show spinner on records table to indicate loading.
+
 - EthernetCTP has only Timestamp set?
 - support to enable / disable service probes
 - software audit records: remove Vendor Field and use only Product?

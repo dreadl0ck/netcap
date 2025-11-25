@@ -72,6 +72,10 @@ $ net capture -overview
 > | CIP | 12 | Timestamp, Response, ServiceID, ClassID, InstanceID, Status, AdditionalStatus, Data, SrcIP, DstIP, SrcPort, DstPort |
 > | Ethernet/IP | 12 | Timestamp, Command, Length, SessionHandle, Status, SenderContext, Options, CommandSpecific, SrcIP, DstIP, SrcPort, DstPort |
 > | SMTP | 9 | Timestamp, IsEncrypted, IsResponse, ResponseLines, Command, SrcIP, DstIP, SrcPort, DstPort |
+> | FTP | 18 | Timestamp, SrcIP, DstIP, SrcPort, DstPort, IsResponse, Command, Argument, ResponseCode, ResponseMessage, Filename, TransferMode, DataConnectionMode, DataIP, DataPort, Username, IsControl, FileSize |
+> | IRC | 18 | Timestamp, SrcIP, DstIP, SrcPort, DstPort, Prefix, Command, Parameters, Message, IsDCC, DCCType, DCCFilename, DCCIP, DCCPort, DCCFilesize, Channel, Nick, IsDataChannel |
+> | SMB | 26 | Timestamp, SrcIP, DstIP, SrcPort, DstPort, Version, Command, CommandName, Status, Flags, Flags2, Username, Domain, ShareName, Filename, FileID, Action, BytesTransferred, FileSize, Offset, SessionID, TreeID, IsEncrypted, DialectRevision, ClientGUID, Capabilities |
+> | IMAP | 23 | Timestamp, SrcIP, DstIP, SrcPort, DstPort, IsResponse, Tag, Command, Arguments, Response, ResponseText, Username, AuthMethod, Mailbox, MessageCount, RecentCount, UIDNext, UIDValidity, MessageID, UID, Flags, STARTTLSRequested, STARTTLSSuccess |
 > | Diameter | 13 | Timestamp, Version, Flags, MessageLen, CommandCode, ApplicationID, HopByHopID, EndToEndID, AVPs, SrcIP, DstIP, SrcPort, DstPort |
 >
 > ### CustomEncoders

@@ -71,126 +71,84 @@ func ResetIPProfiles() {
 type ipProfile struct {
 	sync.Mutex
 	*types.IPProfile
+
+	// buffer packets for deferred DPI analysis (keyed by stream)
+	// Uses bufferedPacket to store copied data, avoiding gopacket buffer reuse issues
+	streamPackets map[streamKey][]bufferedPacket
 }
 
-var ipProfileDecoder = newPacketDecoder(
-	types.Type_NC_IPProfile,
-	"IPProfile",
-	"An IPProfile contains information about a single IPv4 or IPv6 address seen on the network and it's behavior",
-	func(d *Decoder) error {
-		return nil
-	},
-	func(p gopacket.Packet) proto.Message {
-		return nil
-	},
-	func(d *Decoder) error {
-		// flush writer
-		for _, item := range ipProfiles.Items {
-			item.Lock()
-			d.writeIPProfile(item.IPProfile)
-			item.Unlock()
-		}
-
-		return nil
-	},
-)
-
-// GetIPProfile fetches a known profile and updates it or returns a new one.
-func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipProfile {
+// updateIPProfile updates or creates an IP profile, buffering packets for deferred DPI
+func updateIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) {
 	if ipAddr == "" {
-		return nil
+		return
 	}
 
 	ipProfiles.Lock()
-	if p, ok := ipProfiles.Items[ipAddr]; ok {
+	p, exists := ipProfiles.Items[ipAddr]
+	if !exists {
+		// Create new IP profile
+		p = createNewIPProfile(ipAddr, i, source)
+		ipProfiles.Items[ipAddr] = p
 		ipProfiles.Unlock()
-
-		p.Lock()
-
-		p.NumPackets++
-		p.TimestampLast = i.Timestamp
-
-		dataLen := uint64(len(i.Packet.Data()))
-		p.Bytes += dataLen
-
-		// Transport Layer
-		if tl := i.Packet.TransportLayer(); tl != nil {
-			if source {
-				doSrcPortUpdate(p, utils.DecodePort(tl.TransportFlow().Src().Raw()), tl.LayerType().String(), dataLen)
-				doContactedPortUpdate(p, utils.DecodePort(tl.TransportFlow().Dst().Raw()), tl.LayerType().String(), dataLen)
-			} else {
-				doDstPortUpdate(p, utils.DecodePort(tl.TransportFlow().Dst().Raw()), tl.LayerType().String(), dataLen)
-				doContactedPortUpdate(p, utils.DecodePort(tl.TransportFlow().Src().Raw()), tl.LayerType().String(), dataLen)
-			}
-		}
-
-		// Session Layer: TLS
-		ch := tlsx.GetClientHelloBasic(i.Packet)
-		if ch != nil {
-			if ch.SNI != "" {
-				p.SNIs[ch.SNI]++
-			}
-		}
-
-		// Handle JA3 (TLS Client Hello) fingerprinting
-		ja3Hash := ja3.DigestHexPacket(i.Packet)
-		if ja3Hash != "" {
-			// add hash to profile if not already present
-			if _, ok = p.Ja3Hashes[ja3Hash]; !ok {
-				lookup := resolvers.LookupJa3(ja3Hash)
-				p.Ja3Hashes[ja3Hash] = lookup
-
-				// Add lookup result to Ja3FingerprintMatches if not empty and not duplicate
-				if lookup != "" {
-					p.Ja3FingerprintMatches = addUniqueString(p.Ja3FingerprintMatches, lookup)
-				}
-			}
-		}
-
-		// Handle JA3S (TLS Server Hello) fingerprinting
-		ja3sHash := ja3.DigestHexPacketJa3s(i.Packet)
-		if ja3sHash != "" {
-			// add hash to profile if not already present
-			if _, ok = p.Ja3Hashes[ja3sHash]; !ok {
-				lookup := resolvers.LookupJa3(ja3sHash)
-				p.Ja3Hashes[ja3sHash] = lookup
-
-				// Add lookup result to Ja3SFingerprintMatches if not empty and not duplicate
-				if lookup != "" {
-					p.Ja3SFingerprintMatches = addUniqueString(p.Ja3SFingerprintMatches, lookup)
-				}
-			}
-		}
-
-		// Application Layer: DHCP fingerprinting
-		if dhcpFp := extractDHCPFingerprint(i.Packet); dhcpFp != "" {
-			deviceName := resolvers.LookupDHCPFingerprintLocal(dhcpFp)
-			if deviceName != "" {
-				p.Devices = addUniqueString(p.Devices, deviceName)
-			}
-		}
-
-		// Application Layer: DPI
-		uniqueResults := dpi.GetProtocols(i.Packet)
-		for protocol, res := range uniqueResults {
-			// check if proto exists already
-			var prot *types.Protocol
-			if prot, ok = p.Protocols[protocol]; ok {
-				prot.Packets++
-			} else {
-				// add new
-				p.Protocols[protocol] = dpi.NewProto(&res)
-			}
-		}
-
-		p.Unlock()
-
-		return p
+		return
 	}
 	ipProfiles.Unlock()
 
+	// Update existing profile
+	p.Lock()
+	defer p.Unlock()
+
+	p.NumPackets++
+	p.TimestampLast = i.Timestamp
+
+	dataLen := uint64(len(i.Packet.Data()))
+	p.Bytes += dataLen
+
+	// Transport Layer: track ports
+	if tl := i.Packet.TransportLayer(); tl != nil {
+		if source {
+			doSrcPortUpdate(p, utils.DecodePort(tl.TransportFlow().Src().Raw()), tl.LayerType().String(), dataLen)
+			doContactedPortUpdate(p, utils.DecodePort(tl.TransportFlow().Dst().Raw()), tl.LayerType().String(), dataLen)
+		} else {
+			doDstPortUpdate(p, utils.DecodePort(tl.TransportFlow().Dst().Raw()), tl.LayerType().String(), dataLen)
+			doContactedPortUpdate(p, utils.DecodePort(tl.TransportFlow().Src().Raw()), tl.LayerType().String(), dataLen)
+		}
+	}
+
+	// Session Layer: TLS fingerprinting (lightweight, keep immediate)
+	handleTLSFingerprinting(p, i)
+
+	// Application Layer: DHCP fingerprinting (lightweight, keep immediate)
+	handleDHCPFingerprinting(p, i)
+
+	// Ensure streamPackets is initialized (defensive check)
+	if p.streamPackets == nil {
+		p.streamPackets = make(map[streamKey][]bufferedPacket)
+	}
+
+	// Buffer packet for deferred DPI analysis (up to 10 per stream)
+	key := getStreamKey(i)
+	if packets, exists := p.streamPackets[key]; exists {
+		if len(packets) < maxPacketsPerStream {
+			p.streamPackets[key] = append(packets, bufferedPacket{
+				data:      copyPacketData(i.Packet),
+				timestamp: i.Timestamp,
+			})
+		}
+	} else {
+		// Only create new stream buffer if under stream limit
+		if len(p.streamPackets) < maxStreamsPerProfile {
+			p.streamPackets[key] = []bufferedPacket{{
+				data:      copyPacketData(i.Packet),
+				timestamp: i.Timestamp,
+			}}
+		}
+	}
+}
+
+// createNewIPProfile creates a new IP profile with initial packet data
+func createNewIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipProfile {
 	var (
-		protos  = make(map[string]*types.Protocol)
 		ja3Map  = make(map[string]string)
 		dataLen = uint64(len(i.Packet.Data()))
 		sniMap  = make(map[string]int64)
@@ -202,10 +160,9 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 	// Transport Layer: Port information
 	srcPorts, dstPorts, contactedPorts := initPorts(i, source)
 
-	// Session Layer: TLS
+	// Session Layer: TLS fingerprinting
 	var ja3FingerprintMatches, ja3SFingerprintMatches []string
 
-	// Handle JA3 (TLS Client Hello) fingerprinting
 	ja3Hash := ja3.DigestHexPacket(i.Packet)
 	if ja3Hash != "" {
 		lookup := resolvers.LookupJa3(ja3Hash)
@@ -215,7 +172,6 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 		}
 	}
 
-	// Handle JA3S (TLS Server Hello) fingerprinting
 	ja3sHash := ja3.DigestHexPacketJa3s(i.Packet)
 	if ja3sHash != "" {
 		lookup := resolvers.LookupJa3(ja3sHash)
@@ -239,12 +195,6 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 		}
 	}
 
-	// Application Layer: DPI
-	uniqueResults := dpi.GetProtocols(i.Packet)
-	for protocol, res := range uniqueResults {
-		protos[protocol] = dpi.NewProto(&res)
-	}
-
 	var names []string
 	if LocalDNS {
 		if name := resolvers.LookupDNSNameLocal(ipAddr); len(name) != 0 {
@@ -254,8 +204,15 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 		names = resolvers.LookupDNSNames(ipAddr)
 	}
 
-	// create new profile
-	p := &ipProfile{
+	// Initialize stream packet buffer with first packet (copy data to avoid buffer reuse)
+	streamPackets := make(map[streamKey][]bufferedPacket)
+	key := getStreamKey(i)
+	streamPackets[key] = []bufferedPacket{{
+		data:      copyPacketData(i.Packet),
+		timestamp: i.Timestamp,
+	}}
+
+	return &ipProfile{
 		IPProfile: &types.IPProfile{
 			Addr:                   ipAddr,
 			NumPackets:             1,
@@ -263,7 +220,7 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 			DNSNames:               names,
 			TimestampFirst:         i.Timestamp,
 			Ja3Hashes:              ja3Map,
-			Protocols:              protos,
+			Protocols:              make(map[string]*types.Protocol), // Will be populated during flush
 			Bytes:                  dataLen,
 			SrcPorts:               srcPorts,
 			DstPorts:               dstPorts,
@@ -273,13 +230,132 @@ func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipPro
 			Ja3SFingerprintMatches: ja3SFingerprintMatches,
 			Devices:                devices,
 		},
+		streamPackets: streamPackets,
+	}
+}
+
+// handleTLSFingerprinting handles TLS fingerprinting for an IP profile
+func handleTLSFingerprinting(p *ipProfile, i *decoderutils.PacketInfo) {
+	// Session Layer: TLS
+	ch := tlsx.GetClientHelloBasic(i.Packet)
+	if ch != nil {
+		if ch.SNI != "" {
+			p.SNIs[ch.SNI]++
+		}
 	}
 
-	ipProfiles.Lock()
-	ipProfiles.Items[ipAddr] = p
-	ipProfiles.Unlock()
+	// Handle JA3 (TLS Client Hello) fingerprinting
+	ja3Hash := ja3.DigestHexPacket(i.Packet)
+	if ja3Hash != "" {
+		if _, ok := p.Ja3Hashes[ja3Hash]; !ok {
+			lookup := resolvers.LookupJa3(ja3Hash)
+			p.Ja3Hashes[ja3Hash] = lookup
+			if lookup != "" {
+				p.Ja3FingerprintMatches = addUniqueString(p.Ja3FingerprintMatches, lookup)
+			}
+		}
+	}
 
-	return p
+	// Handle JA3S (TLS Server Hello) fingerprinting
+	ja3sHash := ja3.DigestHexPacketJa3s(i.Packet)
+	if ja3sHash != "" {
+		if _, ok := p.Ja3Hashes[ja3sHash]; !ok {
+			lookup := resolvers.LookupJa3(ja3sHash)
+			p.Ja3Hashes[ja3sHash] = lookup
+			if lookup != "" {
+				p.Ja3SFingerprintMatches = addUniqueString(p.Ja3SFingerprintMatches, lookup)
+			}
+		}
+	}
+}
+
+// handleDHCPFingerprinting handles DHCP fingerprinting for an IP profile
+func handleDHCPFingerprinting(p *ipProfile, i *decoderutils.PacketInfo) {
+	if dhcpFp := extractDHCPFingerprint(i.Packet); dhcpFp != "" {
+		deviceName := resolvers.LookupDHCPFingerprintLocal(dhcpFp)
+		if deviceName != "" {
+			p.Devices = addUniqueString(p.Devices, deviceName)
+		}
+	}
+}
+
+// processIPProfileDeferredDPI runs DPI analysis on buffered packets during flush
+func processIPProfileDeferredDPI(p *ipProfile) {
+	if p.streamPackets == nil {
+		return
+	}
+
+	// Process each stream's buffered packets
+	for _, packets := range p.streamPackets {
+		// Run DPI on each buffered packet in the stream
+		for _, pkt := range packets {
+			if len(pkt.data) == 0 {
+				continue
+			}
+			// Decode the packet from raw bytes for DPI analysis
+			// Use the detected base layer type from the pcap file
+			packet := gopacket.NewPacket(pkt.data, baseLayerType, gopacket.Default)
+			dpiResults := dpi.GetProtocols(packet)
+			for protocol, res := range dpiResults {
+				if prot, ok := p.Protocols[protocol]; ok {
+					prot.Packets++
+				} else {
+					p.Protocols[protocol] = dpi.NewProto(&res)
+				}
+			}
+		}
+	}
+
+	// Clear stream buffers after processing to free memory
+	p.streamPackets = nil
+}
+
+var ipProfileDecoder = newPacketDecoder(
+	types.Type_NC_IPProfile,
+	"IPProfile",
+	"An IPProfile contains information about a single IPv4 or IPv6 address seen on the network and it's behavior",
+	func(d *Decoder) error {
+		return nil
+	},
+	func(p gopacket.Packet) proto.Message {
+		// Buffer packets for both source and destination IPs
+		info := decoderutils.NewPacketInfo(p)
+		if info.SrcIP != "" {
+			updateIPProfile(info.SrcIP, info, true)
+		}
+		if info.DstIP != "" {
+			updateIPProfile(info.DstIP, info, false)
+		}
+		return nil
+	},
+	func(d *Decoder) error {
+		// Take a snapshot of items under lock to avoid race conditions
+		ipProfiles.Lock()
+		items := make([]*ipProfile, 0, len(ipProfiles.Items))
+		for _, item := range ipProfiles.Items {
+			items = append(items, item)
+		}
+		ipProfiles.Unlock()
+
+		// Process buffered packets and run deferred DPI analysis
+		for _, item := range items {
+			item.Lock()
+			processIPProfileDeferredDPI(item)
+			d.writeIPProfile(item.IPProfile)
+			item.Unlock()
+		}
+
+		return nil
+	},
+)
+
+// getIPProfile is DEPRECATED. Replaced by updateIPProfile with deferred DPI for performance.
+// This function performed immediate DPI analysis which was a major performance bottleneck.
+// The new implementation buffers packets per stream and runs DPI during the flush phase.
+func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipProfile {
+	// This function is no longer used. Calls should use updateIPProfile instead.
+	// Keeping this stub for backward compatibility during migration.
+	return nil
 }
 
 func doSrcPortUpdate(p *ipProfile, srcPort int32, layerType string, dataLen uint64) {

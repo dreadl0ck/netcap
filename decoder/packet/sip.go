@@ -14,6 +14,7 @@
 package packet
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/gopacket/gopacket"
@@ -22,6 +23,35 @@ import (
 
 	"github.com/dreadl0ck/netcap/types"
 )
+
+// sipMethodNames maps SIP method codes to names
+var sipMethodNames = map[layers.SIPMethod]string{
+	layers.SIPMethodInvite:   "INVITE",
+	layers.SIPMethodAck:      "ACK",
+	layers.SIPMethodBye:      "BYE",
+	layers.SIPMethodCancel:   "CANCEL",
+	layers.SIPMethodRegister: "REGISTER",
+	layers.SIPMethodOptions:  "OPTIONS",
+	layers.SIPMethodPrack:    "PRACK",
+	layers.SIPMethodSubscribe: "SUBSCRIBE",
+	layers.SIPMethodNotify:   "NOTIFY",
+	layers.SIPMethodPublish:  "PUBLISH",
+	layers.SIPMethodInfo:     "INFO",
+	layers.SIPMethodRefer:    "REFER",
+	layers.SIPMethodMessage:  "MESSAGE",
+	layers.SIPMethodUpdate:   "UPDATE",
+}
+
+// getFirstHeader returns the first value of a header (case-insensitive)
+func getFirstSIPHeader(headers map[string][]string, key string) string {
+	keyLower := strings.ToLower(key)
+	for k, v := range headers {
+		if strings.ToLower(k) == keyLower && len(v) > 0 {
+			return v[0]
+		}
+	}
+	return ""
+}
 
 var sipDecoder = newGoPacketDecoder(
 	types.Type_NC_SIP,
@@ -34,6 +64,25 @@ var sipDecoder = newGoPacketDecoder(
 				headers = append(headers, k+":"+strings.Join(v, ","))
 			}
 
+			// Get method name
+			methodName := sipMethodNames[sip.Method]
+			if methodName == "" {
+				methodName = "Unknown"
+			}
+
+			// Extract security-relevant headers
+			callID := getFirstSIPHeader(sip.Headers, "Call-ID")
+			from := getFirstSIPHeader(sip.Headers, "From")
+			to := getFirstSIPHeader(sip.Headers, "To")
+			contact := getFirstSIPHeader(sip.Headers, "Contact")
+			userAgent := getFirstSIPHeader(sip.Headers, "User-Agent")
+			contentType := getFirstSIPHeader(sip.Headers, "Content-Type")
+			contentLengthStr := getFirstSIPHeader(sip.Headers, "Content-Length")
+			var contentLength int32
+			if cl, err := strconv.Atoi(contentLengthStr); err == nil {
+				contentLength = int32(cl)
+			}
+
 			return &types.SIP{
 				Timestamp:      timestamp,
 				Version:        int32(sip.Version),
@@ -42,6 +91,14 @@ var sipDecoder = newGoPacketDecoder(
 				IsResponse:     sip.IsResponse,
 				ResponseCode:   int32(sip.ResponseCode),
 				ResponseStatus: sip.ResponseStatus,
+				MethodName:     methodName,
+				CallID:         callID,
+				From:           from,
+				To:             to,
+				Contact:        contact,
+				UserAgent:      userAgent,
+				ContentType:    contentType,
+				ContentLength:  contentLength,
 			}
 		}
 

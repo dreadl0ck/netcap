@@ -57,6 +57,9 @@ interface HTTPSummary {
   statusCode: number;
   srcIP: string;
   dstIP: string;
+  srcPort: number;
+  dstPort: number;
+  flow: string;
   reqContentEncoding: string;
   resContentEncoding: string;
   serverName: string;
@@ -895,12 +898,14 @@ export default function HTTPPage() {
                                   <Grid item xs={12}>
                                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                       <Button
-                                        data-learn="Show Connection: Navigate to the Connections page to view the underlying TCP/UDP connection for this HTTP request."
+                                        data-learn="Show Connection: Navigate to the Connections page to view the exact TCP/UDP connection for this HTTP request using the flow identifier."
                                         variant="outlined"
                                         startIcon={<CableIcon />}
                                         onClick={(e) => {
                                           e.stopPropagation();
-                                          router.push(`/connections?search=${encodeURIComponent(http.srcIP)}`);
+                                          // Use flow identifier for exact connection matching, fallback to IP:port combination
+                                          const searchTerm = http.flow || `${http.srcIP}:${http.srcPort}`;
+                                          router.push(`/connections?search=${encodeURIComponent(searchTerm)}`);
                                         }}
                                         size="small"
                                       >

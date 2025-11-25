@@ -23,11 +23,11 @@ import (
 )
 
 const (
-	fieldDSAP    = "DSAP"
-	fieldIG      = "IG"
-	fieldSSAP    = "SSAP"
-	fieldCR      = "CR"
-	fieldControl = "Control"
+	fieldDSAP       = "DSAP"
+	fieldIG         = "IG"
+	fieldSSAP       = "SSAP"
+	fieldCR         = "CR"
+	fieldLLCControl = "Control"
 )
 
 var fieldsLLC = []string{
@@ -36,7 +36,7 @@ var fieldsLLC = []string{
 	fieldIG,        // bool
 	fieldSSAP,      // int32
 	fieldCR,        // bool
-	fieldControl,   // int32
+	fieldLLCControl,   // int32
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -106,7 +106,7 @@ func (l *LLC) Encode() []string {
 		llcEncoder.Bool(l.IG),                     // bool
 		llcEncoder.Int32(fieldSSAP, l.SSAP),       // int32
 		llcEncoder.Bool(l.CR),                     // bool
-		llcEncoder.Int32(fieldControl, l.Control), // int32
+		llcEncoder.Int32(fieldLLCControl, l.Control), // int32
 	})
 }
 

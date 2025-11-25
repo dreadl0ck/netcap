@@ -46,6 +46,9 @@ type HTTPSummary struct {
 	StatusCode             int32             `json:"statusCode"`
 	SrcIP                  string            `json:"srcIP"`
 	DstIP                  string            `json:"dstIP"`
+	SrcPort                int32             `json:"srcPort"`
+	DstPort                int32             `json:"dstPort"`
+	Flow                   string            `json:"flow"`
 	ReqContentEncoding     string            `json:"reqContentEncoding"`
 	ResContentEncoding     string            `json:"resContentEncoding"`
 	ServerName             string            `json:"serverName"`
@@ -162,6 +165,9 @@ func readHTTP(outDir string) ([]HTTPSummary, error) {
 			StatusCode:             httpRec.StatusCode,
 			SrcIP:                  httpRec.SrcIP,
 			DstIP:                  httpRec.DstIP,
+			SrcPort:                httpRec.SrcPort,
+			DstPort:                httpRec.DstPort,
+			Flow:                   httpRec.Flow,
 			ReqContentEncoding:     httpRec.ReqContentEncoding,
 			ResContentEncoding:     httpRec.ResContentEncoding,
 			ServerName:             httpRec.ServerName,
