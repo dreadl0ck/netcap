@@ -20,7 +20,6 @@ import StorageIcon from '@mui/icons-material/Storage';
 import DescriptionIcon from '@mui/icons-material/Description';
 import DataObjectIcon from '@mui/icons-material/DataObject';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import SecurityIcon from '@mui/icons-material/Security';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
@@ -45,6 +44,10 @@ import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import SearchIcon from '@mui/icons-material/Search';
+import HttpIcon from '@mui/icons-material/Http';
+import BadgeIcon from '@mui/icons-material/Badge';
+import ManageSearchIcon from '@mui/icons-material/ManageSearch';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
@@ -132,7 +135,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
   
   // Initialize dataMenuOpen based on current route to prevent re-rendering
   const [dataMenuOpen, setDataMenuOpen] = useState(() => {
-    const dataRoutes = ['/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/credentials',
+    const dataRoutes = ['/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/http', '/certificates', '/credentials',
                         '/services', '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files', '/logs'];
     return dataRoutes.some(route => router.pathname.startsWith(route));
   });
@@ -188,6 +191,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
   });
 
   const { data: connectionsCount, mutate: mutateConnectionsCount } = useSWR('connectionsCount', () => api.getConnectionsCount(), {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
+  const { data: httpCount, mutate: mutateHTTPCount } = useSWR('httpCount', () => api.getHTTPCount(), {
+    refreshInterval: 0,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
+
+  const { data: certificatesCount, mutate: mutateCertificatesCount } = useSWR('certificatesCount', () => api.getCertificatesCount(), {
     refreshInterval: 0,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
@@ -283,7 +298,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
 
   // Auto-expand Data menu when navigating to data routes, but don't auto-collapse when leaving
   useEffect(() => {
-    const dataRoutes = ['/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/credentials',
+    const dataRoutes = ['/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/http', '/certificates', '/credentials',
                         '/services', '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files', '/logs'];
     const isDataRoute = dataRoutes.some(route => router.pathname.startsWith(route));
     
@@ -305,6 +320,8 @@ export default function Layout({ children, title, headerAction, topPadding }: La
       mutateHostsCount();
       mutateDevicesCount();
       mutateConnectionsCount();
+      mutateHTTPCount();
+      mutateCertificatesCount();
       mutateCredentialsCount();
       mutateDomainsCount();
       mutateFingerprintsCount();
@@ -318,7 +335,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
     return () => {
       window.removeEventListener('directory-changed', handleDirectoryChanged);
     };
-  }, [mutateAlertStats, mutateExtractedFiles, mutateErrorLogs, mutateAuditRecordsCount, mutateHostsCount, mutateDevicesCount, mutateConnectionsCount, mutateCredentialsCount, mutateServicesCount, mutateDomainsCount, mutateFingerprintsCount, mutateSoftwareCount, mutateVulnerabilitiesCount, mutateLogsCount]);
+  }, [mutateAlertStats, mutateExtractedFiles, mutateErrorLogs, mutateAuditRecordsCount, mutateHostsCount, mutateDevicesCount, mutateConnectionsCount, mutateHTTPCount, mutateCertificatesCount, mutateCredentialsCount, mutateServicesCount, mutateDomainsCount, mutateFingerprintsCount, mutateSoftwareCount, mutateVulnerabilitiesCount, mutateLogsCount]);
 
   // Handle ESC key to exit fullscreen and listen for fullscreen change events
   useEffect(() => {
@@ -560,6 +577,44 @@ export default function Layout({ children, title, headerAction, topPadding }: La
                 <ListItemText primary="Connections" />
               </ListItemButton>
             </Link>
+            <Link href="/http" passHref style={LINK_STYLE}>
+              <ListItemButton
+                selected={isActive('/http')}
+                data-learn="HTTP: View HTTP requests and responses with headers, status codes, URLs, and content information."
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
+              >
+                <ListItemIcon>
+                  <Badge 
+                    badgeContent={httpCount} 
+                    color="primary"
+                    max={999}
+                    sx={BADGE_SX}
+                  >
+                    <HttpIcon />
+                  </Badge>
+                </ListItemIcon>
+                <ListItemText primary="HTTP" />
+              </ListItemButton>
+            </Link>
+            <Link href="/certificates" passHref style={LINK_STYLE}>
+              <ListItemButton
+                selected={isActive('/certificates')}
+                data-learn="Certificates: View TLS/SSL certificates with subject, issuer, expiration status, and security information."
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
+              >
+                <ListItemIcon>
+                  <Badge 
+                    badgeContent={certificatesCount} 
+                    color="primary"
+                    max={999}
+                    sx={BADGE_SX}
+                  >
+                    <BadgeIcon />
+                  </Badge>
+                </ListItemIcon>
+                <ListItemText primary="Certificates" />
+              </ListItemButton>
+            </Link>
             <Link href="/credentials" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={isActive('/credentials')}
@@ -752,7 +807,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
-              <SecurityIcon />
+              <LibraryBooksIcon />
             </ListItemIcon>
             <ListItemText primary="Rule Sets" />
           </ListItemButton>
@@ -776,7 +831,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             sx={SELECTED_MENU_ITEM_SX}
           >
             <ListItemIcon>
-              <SecurityIcon />
+              <ManageSearchIcon />
             </ListItemIcon>
             <ListItemText primary="DPI" />
           </ListItemButton>

@@ -1553,6 +1553,20 @@ export const api = {
     return data.totalCount || 0;
   },
 
+  async getCertificatesCount(): Promise<number> {
+    const res = await fetch(`${API_BASE}/certificates`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.totalCount || 0;
+  },
+
+  async getHTTPCount(): Promise<number> {
+    const res = await fetch(`${API_BASE}/http`);
+    if (!res.ok) return 0;
+    const data = await res.json();
+    return data.totalCount || 0;
+  },
+
   async getCredentialsCount(): Promise<number> {
     const res = await fetch(`${API_BASE}/credentials`);
     if (!res.ok) return 0;

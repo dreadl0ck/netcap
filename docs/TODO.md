@@ -4,8 +4,6 @@
 - support to enable / disable service probes
 - software audit records: remove Vendor Field and use only Product?
 - fix capture and inspect local results
-- HTTP page
-- Certificates page
 
 extract info from robots.txt and csp
 

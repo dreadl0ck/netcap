@@ -151,6 +151,7 @@ enum Type {
   NC_IPProfile = 101;
   NC_Mail = 102;
   NC_Alert = 103;
+  NC_TLSCertificate = 104;
 }
 
 //
@@ -1045,6 +1046,72 @@ message TLSServerHello {
   int32 SrcPort = 27;
   int32 DstPort = 28;
   string Ja3s = 29;
+}
+
+// TLS Certificate
+// Represents a X.509 certificate extracted from TLS handshake
+
+message TLSCertificate {
+  int64 Timestamp = 1;
+  
+  // Connection info (to correlate with TLS handshake)
+  string SrcIP = 2;
+  string DstIP = 3;
+  string SrcMAC = 4;
+  string DstMAC = 5;
+  int32 SrcPort = 6;
+  int32 DstPort = 7;
+  
+  // Certificate chain info
+  int32 ChainIndex = 8; // Position in certificate chain (0 = leaf cert)
+  
+  // Subject info
+  string SubjectCommonName = 9;
+  repeated string SubjectAltNames = 10;
+  string SubjectOrganization = 11;
+  string SubjectCountry = 12;
+  string SubjectLocality = 13;
+  string SubjectProvince = 14;
+  
+  // Issuer info
+  string IssuerCommonName = 15;
+  string IssuerOrganization = 16;
+  string IssuerCountry = 17;
+  
+  // Validity
+  int64 NotBefore = 18; // Unix nano timestamp
+  int64 NotAfter = 19;  // Unix nano timestamp
+  bool IsExpired = 20;
+  bool IsSelfSigned = 21;
+  int64 DaysUntilExpiration = 22;
+  bool IsNotYetValid = 38; // Certificate not yet valid (before NotBefore)
+  bool HasWeakSignature = 39; // Uses weak signature algorithm (MD5, SHA1)
+  bool HasShortKeySize = 40; // Key size below recommended minimum
+  
+  // Crypto info
+  string SignatureAlgorithm = 23;
+  string PublicKeyAlgorithm = 24;
+  int32 PublicKeySize = 25;
+  string SerialNumber = 26;
+  int32 Version = 27;
+  
+  // Fingerprints
+  string SHA256Fingerprint = 28;
+  string SHA1Fingerprint = 29;
+  
+  // Extensions
+  repeated string KeyUsage = 30;
+  repeated string ExtKeyUsage = 31;
+  bool IsCA = 32;
+  int32 MaxPathLen = 33;
+  
+  // Optional: Raw certificate (can be large, consider making this opt-in)
+  bytes RawCertificate = 34;
+  
+  // Additional metadata
+  int64 FirstSeen = 35; // First time this cert was seen (by fingerprint)
+  int64 LastSeen = 36;  // Last time this cert was seen
+  int64 SeenCount = 37; // Number of times this cert was seen
 }
 
 message IPSecAH {

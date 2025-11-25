@@ -13,6 +13,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/pop3"
 	"github.com/dreadl0ck/netcap/decoder/stream/smtp"
 	"github.com/dreadl0ck/netcap/decoder/stream/ssh"
+	"github.com/dreadl0ck/netcap/decoder/stream/tls"
 
 	"github.com/mgutz/ansi"
 	"github.com/pkg/errors"
@@ -34,10 +35,12 @@ var Debug bool
 // DefaultStreamDecoders contains stream decoders mapped to their protocols default port
 // int32 is used to avoid casting when looking up values
 var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
-	80:  http.Decoder,
-	110: pop3.Decoder,
-	22:  ssh.Decoder,
-	25:  smtp.Decoder,
+	80:   http.Decoder,
+	110:  pop3.Decoder,
+	22:   ssh.Decoder,
+	25:   smtp.Decoder,
+	443:  tls.Decoder,
+	8443: tls.Decoder, // Common alternate HTTPS port
 } // contains all available stream decoders
 
 // package level init.

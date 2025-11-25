@@ -13,7 +13,7 @@ rules:
   - name: Missing HSTS Header
     description: Detect HTTPS responses without Strict-Transport-Security header (MITM risk)
     type: HTTP
-    expression: StatusCode == 200 && DstPort == 443 && ResponseHeader["Strict-Transport-Security"] == ""
+    expression: StatusCode == 200 && MatchesPattern(Proto, "(?i)https") && ResponseHeader["Strict-Transport-Security"] == ""
     severity: low
     tags: ["security-headers", "hsts", "misconfiguration", "mitm"]
     enabled: true
@@ -176,7 +176,7 @@ rules:
   - name: Cookie Without Secure Flag on HTTPS
     description: Detect Set-Cookie on HTTPS without Secure flag (MITM risk)
     type: HTTP
-    expression: DstPort == 443 && ResponseHeader["Set-Cookie"] != "" && !MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)Secure")
+    expression: MatchesPattern(Proto, "(?i)https") && ResponseHeader["Set-Cookie"] != "" && !MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)Secure")
     severity: medium
     tags: ["security-headers", "cookies", "misconfiguration", "mitm"]
     enabled: true

@@ -408,7 +408,7 @@ rules:
   - name: Missing Security Headers
     description: Detect web servers without HSTS
     type: HTTP
-    expression: StatusCode == 200 && !MatchesPattern(ResponseHeaders, "Strict-Transport-Security")
+    expression: StatusCode == 200 && ResponseHeader["Strict-Transport-Security"] == ""
     severity: low
     tags: ["security-headers", "misconfiguration"]
     enabled: true

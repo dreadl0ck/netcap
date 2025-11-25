@@ -82,9 +82,9 @@ rules:
 
   # Secure WebSocket (wss://)
   - name: Secure WebSocket Connection
-    description: Detect secure WebSocket (wss://) connections on port 443
+    description: Detect secure WebSocket (wss://) upgrade requests
     type: HTTP
-    expression: DstPort == 443 && MatchesPattern(RequestHeader["Upgrade"], "(?i)websocket")
+    expression: MatchesPattern(RequestHeader["Upgrade"], "(?i)websocket") && MatchesPattern(RequestHeader["Connection"], "(?i)Upgrade")
     severity: info
     tags: ["protocol-detection", "websocket", "encrypted", "wss"]
     enabled: true
@@ -150,12 +150,12 @@ rules:
   # CLEARTEXT HTTP PROTOCOL UPGRADES
   # ========================================
 
-  # Cleartext Protocol Upgrade on Non-Standard Port
-  - name: Protocol Upgrade on Unusual Port
-    description: Detect protocol upgrade attempts on non-standard HTTP ports
+  # Cleartext Protocol Upgrade Detection
+  - name: HTTP Protocol Upgrade Attempt
+    description: Detect HTTP protocol upgrade attempts (101 Switching Protocols or Upgrade header present)
     type: HTTP
-    expression: (StatusCode == 101 || RequestHeader["Upgrade"] != "") && DstPort != 80 && DstPort != 443 && DstPort != 8080 && DstPort != 8443
-    severity: medium
-    tags: ["protocol-upgrade", "unusual-port", "suspicious"]
+    expression: StatusCode == 101 || RequestHeader["Upgrade"] != ""
+    severity: info
+    tags: ["protocol-upgrade", "protocol-switching"]
     enabled: true
 

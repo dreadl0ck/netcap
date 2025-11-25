@@ -153,6 +153,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.POP3)
 	case types.Type_NC_TLSServerHello:
 		record = new(types.TLSServerHello)
+	case types.Type_NC_TLSCertificate:
+		record = new(types.TLSCertificate)
 	case types.Type_NC_Software:
 		record = new(types.Software)
 	case types.Type_NC_Service:

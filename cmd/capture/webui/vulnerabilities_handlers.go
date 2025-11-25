@@ -473,12 +473,6 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 			}
 
 			vulnMap[v.ID].Affected = len(hostsAffected)
-
-			// Log details for first few vulnerabilities for debugging
-			if recordCount <= 3 {
-				log.Printf("[WebUI][Vulnerabilities] Vuln #%d: ID=%s, Software=%s, Flows=%d, HostsFromFlows=%d, DeviceProfiles=%d, HostsFromSoftwareMap=%d, TotalAffected=%d",
-					recordCount, v.ID, v.Software.Product, len(v.Software.Flows), flowHostCount, deviceProfileCount, softwareMapHosts, len(hostsAffected))
-			}
 		}
 	}
 
@@ -636,12 +630,6 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 			}
 
 			exploitMap[e.ID].Affected = len(hostsAffected)
-
-			// Log details for first few exploits for debugging
-			if recordCount <= 3 {
-				log.Printf("[WebUI][Exploits] Exploit #%d: ID=%s, Software=%s, Flows=%d, HostsFromFlows=%d, DeviceProfiles=%d, HostsFromSoftwareMap=%d, TotalAffected=%d",
-					recordCount, e.ID, e.Software.Product, len(e.Software.Flows), flowHostCount, deviceProfileCount, softwareMapHosts, len(hostsAffected))
-			}
 		}
 	}
 
