@@ -42,3 +42,4 @@ deploy.sh
 cmd/capture/webui/frontend/out
 cmd/try/webui/frontend
 tmp/
+net
