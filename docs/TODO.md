@@ -1,5 +1,7 @@
 # TODOs
 
+data mining on plaintext connection data: extract URLs, what looks like secrets etc
+
 Inject page
 add support for users to create new rule sets and save them to disk
 
@@ -24,6 +26,8 @@ Pattern (Regex) Box black FIX SYNTAX HIGHLIGHTING during editing
 Rule editor Expression input black FIX SYNTAX HIGHLIGHTING during editing
 
 support creating service probes on the services page service details: add create probe button, switch to probes page, open create modal and insert service banner 
+
+- VSCode plugin to open pcaps with netcap
 
 ----
 

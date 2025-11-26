@@ -76,10 +76,17 @@ type ConnectionsResponse struct {
 }
 
 // handleConnections returns a list of all connections
+// Supports query parameter ?layer=all|transport|network to filter by layer type
 func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
+	}
+
+	// Get layer filter parameter (all, transport, network)
+	layerFilter := r.URL.Query().Get("layer")
+	if layerFilter == "" {
+		layerFilter = "all"
 	}
 
 	s.mu.RLock()
@@ -105,13 +112,43 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Apply layer filter
+	filteredConnections := filterConnectionsByLayer(connections, layerFilter)
+
 	response := ConnectionsResponse{
-		Connections: connections,
-		TotalCount:  len(connections),
+		Connections: filteredConnections,
+		TotalCount:  len(filteredConnections),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// filterConnectionsByLayer filters connections based on the layer type
+// - "all": returns all connections
+// - "transport": returns only connections with transport layer (TCP/UDP)
+// - "network": returns only connections without transport layer (ICMP, IGMP, etc.)
+func filterConnectionsByLayer(connections []ConnectionSummary, layerFilter string) []ConnectionSummary {
+	if layerFilter == "all" || layerFilter == "" {
+		return connections
+	}
+
+	filtered := make([]ConnectionSummary, 0)
+	for _, conn := range connections {
+		hasTransport := conn.TransportProto != ""
+		
+		switch layerFilter {
+		case "transport":
+			if hasTransport {
+				filtered = append(filtered, conn)
+			}
+		case "network":
+			if !hasTransport {
+				filtered = append(filtered, conn)
+			}
+		}
+	}
+	return filtered
 }
 
 // readConnections reads and aggregates Connection data from the output directory
@@ -599,4 +636,229 @@ func (s *Server) handleConnectionDownloadPCAP(w http.ResponseWriter, r *http.Req
 	}
 
 	log.Printf("[WebUI] Successfully sent PCAP file: %d bytes written", bytesWritten)
+}
+
+// NetworkConversationDataResponse contains the raw conversation data for a network-layer connection
+type NetworkConversationDataResponse struct {
+	SrcIP            string `json:"srcIP"`
+	DstIP            string `json:"dstIP"`
+	Protocol         string `json:"protocol"`
+	ConversationData string `json:"conversationData"` // base64-encoded chunk
+	Exists           bool   `json:"exists"`
+	FilePath         string `json:"filePath"`
+	TotalSize        int64  `json:"totalSize"` // Total file size in bytes
+	ChunkSize        int    `json:"chunkSize"` // Size of this chunk
+	Offset           int64  `json:"offset"`    // Current offset
+	HasMore          bool   `json:"hasMore"`   // Whether there's more data
+	ErrorMessage     string `json:"errorMessage,omitempty"`
+}
+
+// handleNetworkConversation returns paginated raw conversation data for a network-layer connection
+// These are connections without transport layer (ICMP, IGMP, GRE, etc.)
+func (s *Server) handleNetworkConversation(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get query parameters
+	srcIP := r.URL.Query().Get("srcIP")
+	dstIP := r.URL.Query().Get("dstIP")
+	protocol := r.URL.Query().Get("protocol") // e.g., "icmpv4", "icmpv6", "igmp", "gre"
+	offsetStr := r.URL.Query().Get("offset")
+	limitStr := r.URL.Query().Get("limit")
+
+	if srcIP == "" || dstIP == "" || protocol == "" {
+		http.Error(w, "Missing required parameters (srcIP, dstIP, protocol)", http.StatusBadRequest)
+		return
+	}
+
+	// Parse pagination parameters
+	offset := int64(0)
+	if offsetStr != "" {
+		if parsed, err := strconv.ParseInt(offsetStr, 10, 64); err == nil {
+			offset = parsed
+		}
+	}
+
+	// Default chunk size: 64KB
+	limit := 64 * 1024
+	if limitStr != "" {
+		if parsed, err := strconv.Atoi(limitStr); err == nil && parsed > 0 && parsed <= 10*1024*1024 {
+			limit = parsed
+		}
+	}
+
+	s.mu.RLock()
+	outDir := s.outDir
+
+	// In service mode, use the current session's output directory
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
+	s.mu.RUnlock()
+
+	if outDir == "" {
+		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
+		return
+	}
+
+	response := NetworkConversationDataResponse{
+		SrcIP:    srcIP,
+		DstIP:    dstIP,
+		Protocol: protocol,
+		Exists:   false,
+		Offset:   offset,
+	}
+
+	// Try to find and read the network conversation file chunk
+	conversationData, filePath, totalSize, hasMore, err := readNetworkConversationFileChunk(
+		outDir, srcIP, dstIP, protocol, offset, limit,
+	)
+	if err != nil {
+		response.ErrorMessage = err.Error()
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	if conversationData != "" {
+		response.Exists = true
+		response.FilePath = filePath
+		response.ConversationData = conversationData
+		response.TotalSize = totalSize
+		response.ChunkSize = len(conversationData)
+		response.HasMore = hasMore
+	} else {
+		response.ErrorMessage = "Network conversation file not found. Make sure stream reassembly was enabled during capture."
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+// readNetworkConversationFileChunk reads a chunk of the network conversation file
+func readNetworkConversationFileChunk(outDir, srcIP, dstIP, protocol string, offset int64, limit int) (string, string, int64, bool, error) {
+	// Find the conversation file path
+	foundPath, err := findNetworkConversationFilePath(outDir, srcIP, dstIP, protocol)
+	if err != nil {
+		return "", "", 0, false, err
+	}
+
+	if foundPath == "" {
+		return "", "", 0, false, nil // File not found
+	}
+
+	// Open the file
+	file, err := os.Open(foundPath)
+	if err != nil {
+		return "", "", 0, false, err
+	}
+	defer file.Close()
+
+	// Get file size
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return "", "", 0, false, err
+	}
+	totalSize := fileInfo.Size()
+
+	// Check if offset is valid
+	if offset >= totalSize {
+		return "", "", totalSize, false, nil // No more data
+	}
+
+	// Seek to offset
+	_, err = file.Seek(offset, 0)
+	if err != nil {
+		return "", "", 0, false, err
+	}
+
+	// Read chunk
+	remaining := totalSize - offset
+	readSize := int64(limit)
+	if readSize > remaining {
+		readSize = remaining
+	}
+
+	buffer := make([]byte, readSize)
+	n, err := stdio.ReadFull(file, buffer)
+	if err != nil && err != stdio.EOF && err != stdio.ErrUnexpectedEOF {
+		return "", "", 0, false, err
+	}
+
+	// Check if there's more data
+	hasMore := offset+int64(n) < totalSize
+
+	// Convert to base64
+	encoded := base64.StdEncoding.EncodeToString(buffer[:n])
+
+	// Get relative path
+	relPath, _ := filepath.Rel(outDir, foundPath)
+
+	return encoded, relPath, totalSize, hasMore, nil
+}
+
+// findNetworkConversationFilePath searches for the network conversation file and returns its path
+// Network conversations are stored in: network/{protocol}/{srcIP}--{dstIP}.bin
+func findNetworkConversationFilePath(outDir, srcIP, dstIP, protocol string) (string, error) {
+	// Construct connection identifier for network-layer (no ports)
+	flowIdent := utils.CreateFlowIdent(srcIP, "", dstIP, "")
+	connIdent := utils.CleanIdent(flowIdent)
+
+	// Network conversation directory: network/{protocol}/
+	protoDirPath := filepath.Join(outDir, "network", strings.ToLower(protocol))
+
+	// Check if protocol directory exists
+	if _, err := os.Stat(protoDirPath); os.IsNotExist(err) {
+		return "", nil // No conversation files saved
+	}
+
+	// Search for the file
+	var foundPath string
+	err := filepath.Walk(protoDirPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		// Check if filename matches the connection identifier
+		if strings.Contains(info.Name(), connIdent) {
+			foundPath = path
+			return filepath.SkipDir
+		}
+		return nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	if foundPath == "" {
+		// Try reverse direction
+		reverseFlowIdent := utils.CreateFlowIdent(dstIP, "", srcIP, "")
+		reverseIdent := utils.CleanIdent(reverseFlowIdent)
+
+		err = filepath.Walk(protoDirPath, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+			if strings.Contains(info.Name(), reverseIdent) {
+				foundPath = path
+				return filepath.SkipDir
+			}
+			return nil
+		})
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return foundPath, nil
 }

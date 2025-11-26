@@ -56,6 +56,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	httpstream "github.com/dreadl0ck/netcap/decoder/stream/http"
+	"github.com/dreadl0ck/netcap/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/decoder/stream/service"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
@@ -390,7 +391,7 @@ func Run() {
 func RunWithContext(ctx context.Context, c *cli.Command) error {
 	// Populate global variables from CLI context
 	setFlagsFromContext(c)
-	
+
 	// Load file extraction configuration if provided
 	if flagFileConfig != "" {
 		cfg, err := file.LoadConfig(flagFileConfig)
@@ -1115,6 +1116,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 				service.ResetStore()
 				service.ResetProbeEnums()
 				udp.ResetStreams()
+				network.ResetStreams()
 				httpstream.ResetHTTPStore()
 				streamutils.ResetStats()
 
@@ -1536,7 +1538,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 		fmt.Println("Server stopped. Goodbye!")
 	}
-	
+
 	return nil
 }
 

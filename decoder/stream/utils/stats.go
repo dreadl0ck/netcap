@@ -21,8 +21,9 @@ var Stats struct {
 	BiggestChunkPackets int64
 	OverlapBytes        int64
 	OverlapPackets      int64
-	SavedTCPConnections int64
-	SavedUDPConnections int64
+	SavedTCPConnections     int64
+	SavedUDPConnections     int64
+	SavedNetworkConnections int64
 	NumSoftware         int64
 	NumServices         int64
 
@@ -68,6 +69,7 @@ func ResetStats() {
 	Stats.OverlapPackets = 0
 	Stats.SavedTCPConnections = 0
 	Stats.SavedUDPConnections = 0
+	Stats.SavedNetworkConnections = 0
 	Stats.NumSoftware = 0
 	Stats.NumServices = 0
 	Stats.Requests = 0

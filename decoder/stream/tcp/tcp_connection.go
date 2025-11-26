@@ -34,6 +34,7 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/decoder/stream/udp"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/defaults"
@@ -481,7 +482,7 @@ func (t *tcpConnection) decode() {
 		t.decoder.Decode()
 
 		tcpStreamDecodeTime.WithLabelValues(reflect.TypeOf(t.decoder).String()).Set(float64(time.Since(ti).Nanoseconds()))
-		
+
 		reassemblyLog.Info("Decoder.Decode() completed",
 			zap.String("ident", t.ident),
 			zap.Duration("duration", time.Since(ti)),
@@ -508,6 +509,13 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		udpLayer := packet.Layer(layers.LayerTypeUDP)
 		if udpLayer != nil {
 			udp.Streams.HandleUDP(packet, udpLayer)
+			return
+		}
+
+		// handle network-layer-only protocols (ICMP, IGMP, GRE, etc.)
+		// These packets have a network layer but no transport layer
+		if nl := packet.NetworkLayer(); nl != nil {
+			handleNetworkLayerPacket(packet)
 		}
 
 		return
@@ -681,6 +689,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		reassemblyLog.Info("flushTCPStreams DONE", zap.String("delta", time.Since(startFlush).String()))
 
 		udp.FlushUDPStreams()
+		network.FlushNetworkStreams()
 	}
 
 	// create a memory snapshot for debugging
@@ -818,4 +827,55 @@ func printProgress(current, total int64) {
 func progress(current, total int64) string {
 	percent := (float64(current) / float64(total)) * 100
 	return strconv.Itoa(int(percent)) + "%"
+}
+
+// handleNetworkLayerPacket processes packets that have a network layer but no transport layer
+// These include ICMP, IGMP, GRE, and other network-layer protocols
+func handleNetworkLayerPacket(packet gopacket.Packet) {
+	nl := packet.NetworkLayer()
+	if nl == nil {
+		return
+	}
+
+	// Determine the protocol type and payload
+	var protocol string
+	var payload []byte
+
+	// Check for ICMPv4
+	if icmpv4Layer := packet.Layer(layers.LayerTypeICMPv4); icmpv4Layer != nil {
+		protocol = "ICMPv4"
+		icmp := icmpv4Layer.(*layers.ICMPv4)
+		payload = icmp.Payload
+	} else if icmpv6Layer := packet.Layer(layers.LayerTypeICMPv6); icmpv6Layer != nil {
+		// Check for ICMPv6
+		protocol = "ICMPv6"
+		icmp := icmpv6Layer.(*layers.ICMPv6)
+		payload = icmp.Payload
+	} else if igmpLayer := packet.Layer(layers.LayerTypeIGMP); igmpLayer != nil {
+		// Check for IGMP
+		protocol = "IGMP"
+		payload = igmpLayer.LayerPayload()
+	} else if greLayer := packet.Layer(layers.LayerTypeGRE); greLayer != nil {
+		// Check for GRE
+		protocol = "GRE"
+		payload = greLayer.LayerPayload()
+	} else if ipv4Layer := packet.Layer(layers.LayerTypeIPv4); ipv4Layer != nil {
+		// Fallback to IPv4 payload for unknown protocol
+		ipv4 := ipv4Layer.(*layers.IPv4)
+		protocol = ipv4.Protocol.String()
+		payload = ipv4.Payload
+	} else if ipv6Layer := packet.Layer(layers.LayerTypeIPv6); ipv6Layer != nil {
+		// Fallback to IPv6 payload
+		ipv6 := ipv6Layer.(*layers.IPv6)
+		protocol = ipv6.NextHeader.String()
+		payload = ipv6.Payload
+	} else {
+		// Unknown network layer packet
+		return
+	}
+
+	// Handle the packet in the network stream pool
+	if len(payload) > 0 || protocol != "" {
+		network.Streams.HandleNetworkPacket(packet, payload, protocol)
+	}
 }

@@ -195,6 +195,9 @@ export default function ConversationModal({
     return Math.floor(currentOffset / CHUNK_SIZE) + 1;
   }, [currentOffset]);
 
+  // Determine if this is a network-layer-only connection (no transport layer)
+  const isNetworkLayer = !srcPort && !dstPort;
+
   // Load chunk function
   const loadChunk = useCallback(
     async (offset: number) => {
@@ -202,15 +205,50 @@ export default function ConversationModal({
       setError(null);
 
       try {
-        const data = await api.getConnectionConversation(
-          srcIP,
-          srcPort,
-          dstIP,
-          dstPort,
-          protocol,
-          offset,
-          CHUNK_SIZE
-        );
+        let data;
+        
+        if (isNetworkLayer) {
+          // Network-layer connection (ICMP, IGMP, GRE, etc.)
+          // Try common network protocols to find the conversation file
+          const protocolsToTry = ['icmpv4', 'icmpv6', 'igmp', 'gre', protocol.toLowerCase()];
+          
+          for (const proto of protocolsToTry) {
+            try {
+              data = await api.getNetworkConversation(
+                srcIP,
+                dstIP,
+                proto,
+                offset,
+                CHUNK_SIZE
+              );
+              if (data.exists) break;
+            } catch {
+              // Continue trying other protocols
+            }
+          }
+          
+          if (!data) {
+            // Fallback: try with the provided protocol
+            data = await api.getNetworkConversation(
+              srcIP,
+              dstIP,
+              protocol.toLowerCase(),
+              offset,
+              CHUNK_SIZE
+            );
+          }
+        } else {
+          // Transport-layer connection (TCP/UDP)
+          data = await api.getConnectionConversation(
+            srcIP,
+            srcPort,
+            dstIP,
+            dstPort,
+            protocol,
+            offset,
+            CHUNK_SIZE
+          );
+        }
 
         if (!data.exists) {
           setError(data.errorMessage || 'Conversation data not found');
@@ -226,7 +264,7 @@ export default function ConversationModal({
         setLoading(false);
       }
     },
-    [srcIP, srcPort, dstIP, dstPort, protocol]
+    [srcIP, srcPort, dstIP, dstPort, protocol, isNetworkLayer]
   );
 
   // Load initial chunk when modal opens
@@ -310,20 +348,28 @@ export default function ConversationModal({
               <Box component="span" sx={{ color: '#f44336', fontWeight: 'bold' }}>
                 {srcIP}
               </Box>
-              <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
-              <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
-                {srcPort}
-              </Box>
+              {srcPort && (
+                <>
+                  <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
+                  <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
+                    {srcPort}
+                  </Box>
+                </>
+              )}
               {' → '}
               <Box component="span" sx={{ color: '#2196f3', fontWeight: 'bold' }}>
                 {dstIP}
               </Box>
-              <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
-              <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
-                {dstPort}
-              </Box>
+              {dstPort && (
+                <>
+                  <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
+                  <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>
+                    {dstPort}
+                  </Box>
+                </>
+              )}
               {' '}
-              ({protocol})
+              ({protocol || 'Network Layer'})
             </Typography>
             {totalSize > 0 && (
               <Typography variant="caption" color="text.secondary">

@@ -1733,6 +1733,30 @@ export const api = {
     return res.json();
   },
 
+  // Network-layer Conversation Data API (for ICMP, IGMP, GRE, etc.)
+  async getNetworkConversation(
+    srcIP: string,
+    dstIP: string,
+    protocol: string,
+    offset?: number,
+    limit?: number
+  ): Promise<ConversationData> {
+    const params = new URLSearchParams({
+      srcIP,
+      dstIP,
+      protocol,
+    });
+    if (offset !== undefined) {
+      params.set('offset', offset.toString());
+    }
+    if (limit !== undefined) {
+      params.set('limit', limit.toString());
+    }
+    const res = await fetch(`${API_BASE}/connections/network-conversation?${params}`);
+    if (!res.ok) throw new Error('Failed to fetch network conversation data');
+    return res.json();
+  },
+
   // Count APIs for menu badges
   async getHostsCount(): Promise<number> {
     const res = await fetch(`${API_BASE}/hosts`);

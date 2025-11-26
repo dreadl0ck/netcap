@@ -38,6 +38,9 @@ import {
   Dns as DnsIcon,
   TableChart as TableChartIcon,
   BarChart as BarChartIcon,
+  Layers as LayersIcon,
+  Hub as HubIcon,
+  DeviceHub as DeviceHubIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
 import ConversationModal from '@/components/ConversationModal';
@@ -101,6 +104,7 @@ export default function ConnectionsPage() {
   const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
   const [conversationModalOpen, setConversationModalOpen] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState<ConnectionSummary | null>(null);
+  const [layerFilter, setLayerFilter] = useState<'all' | 'transport' | 'network'>('all');
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -113,10 +117,10 @@ export default function ConnectionsPage() {
     }
   }, [router.isReady, router.query.search]);
 
-  // Fetch connections data
+  // Fetch connections data with layer filter
   const { data: connectionsData, error, mutate } = useSWR<ConnectionsResponse>(
-    'connections',
-    () => fetch(`${getBackendUrl()}/api/connections`).then(res => res.json()),
+    ['connections', layerFilter],
+    () => fetch(`${getBackendUrl()}/api/connections?layer=${layerFilter}`).then(res => res.json()),
     {
       refreshInterval: 10000,
     }
@@ -342,8 +346,42 @@ export default function ConnectionsPage() {
   return (
     <Layout title="Connections" headerAction={fileSelector}>
       <Box sx={{ minWidth: 0 }}>
-        {/* View Mode Toggle */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        {/* View Mode Toggle and Layer Filter */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+          {/* Layer Filter Toggle */}
+          <ToggleButtonGroup
+            value={layerFilter}
+            exclusive
+            onChange={(_e, newValue) => {
+              if (newValue !== null) {
+                setLayerFilter(newValue);
+                setPage(0);
+              }
+            }}
+            size="small"
+            data-learn="Layer Filter: Filter connections by layer type. 'All' shows all connections. 'Transport' shows TCP/UDP connections. 'Network Only' shows ICMP, IGMP, GRE and other network-layer-only protocols."
+          >
+            <ToggleButton value="all">
+              <LayersIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                All
+              </Box>
+            </ToggleButton>
+            <ToggleButton value="transport">
+              <HubIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Transport
+              </Box>
+            </ToggleButton>
+            <ToggleButton value="network">
+              <DeviceHubIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Network Only
+              </Box>
+            </ToggleButton>
+          </ToggleButtonGroup>
+
+          {/* View Mode Toggle */}
           <ToggleButtonGroup
             value={viewMode}
             exclusive
@@ -931,33 +969,33 @@ export default function ConnectionsPage() {
                                   {/* Action Buttons */}
                                   <Grid item xs={12}>
                                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                      {/* View Conversation - for TCP, UDP, and network-only (ICMP, IGMP, etc.) */}
+                                      <Button
+                                        data-learn="View Raw Conversation: Display the raw conversation data in Wireshark-style hex dump format, with client data in red and server data in blue."
+                                        variant="outlined"
+                                        startIcon={<ArticleIcon />}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleViewConversation(conn);
+                                        }}
+                                        size="small"
+                                      >
+                                        View Raw Conversation
+                                      </Button>
+                                      {/* Download PCAP - only for TCP/UDP with ports */}
                                       {(conn.transportProto === 'TCP' || conn.transportProto === 'UDP') && (
-                                        <>
-                                          <Button
-                                            data-learn="View Raw Conversation: Display the raw conversation data in Wireshark-style hex dump format, with client data in red and server data in blue."
-                                            variant="outlined"
-                                            startIcon={<ArticleIcon />}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleViewConversation(conn);
-                                            }}
-                                            size="small"
-                                          >
-                                            View Raw Conversation
-                                          </Button>
-                                          <Button
-                                            data-learn="Download as PCAP: Download a filtered PCAP file containing only the packets from this connection."
-                                            variant="outlined"
-                                            startIcon={<DownloadIcon />}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleDownloadPCAP(conn);
-                                            }}
-                                            size="small"
-                                          >
-                                            Download as PCAP
-                                          </Button>
-                                        </>
+                                        <Button
+                                          data-learn="Download as PCAP: Download a filtered PCAP file containing only the packets from this connection."
+                                          variant="outlined"
+                                          startIcon={<DownloadIcon />}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDownloadPCAP(conn);
+                                          }}
+                                          size="small"
+                                        >
+                                          Download as PCAP
+                                        </Button>
                                       )}
                                       
                                       {/* Navigation Buttons */}

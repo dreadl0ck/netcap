@@ -38,6 +38,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	httpstream "github.com/dreadl0ck/netcap/decoder/stream/http"
 	"github.com/dreadl0ck/netcap/decoder/stream/service"
+	"github.com/dreadl0ck/netcap/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
 	"github.com/dreadl0ck/netcap/decoder/stream/udp"
@@ -567,6 +568,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/devices/traffic-distribution", s.handleDevicesTrafficDistribution)
 	mux.HandleFunc("/api/connections", s.handleConnections)
 	mux.HandleFunc("/api/connections/conversation", s.handleConnectionConversation)
+	mux.HandleFunc("/api/connections/network-conversation", s.handleNetworkConversation)
 	mux.HandleFunc("/api/connections/download-pcap", s.handleConnectionDownloadPCAP)
 	mux.HandleFunc("/api/connections/top-by-traffic", s.handleConnectionsTopByTraffic)
 	mux.HandleFunc("/api/connections/protocols", s.handleConnectionsProtocols)
@@ -1872,6 +1874,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	service.ResetStore()
 	service.ResetProbeEnums()
 	udp.ResetStreams()
+	network.ResetStreams()
 	httpstream.ResetHTTPStore()
 	streamutils.ResetStats()
 
