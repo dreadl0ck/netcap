@@ -37,8 +37,8 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	httpstream "github.com/dreadl0ck/netcap/decoder/stream/http"
-	"github.com/dreadl0ck/netcap/decoder/stream/service"
 	"github.com/dreadl0ck/netcap/decoder/stream/network"
+	"github.com/dreadl0ck/netcap/decoder/stream/service"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
 	"github.com/dreadl0ck/netcap/decoder/stream/udp"
@@ -84,6 +84,9 @@ type FileError struct {
 // RuntimeConfig holds the actual runtime configuration values passed from the capture package
 // This allows the webUI to display the actual values the application was started with
 type RuntimeConfig struct {
+	// Branding
+	LogoSubText string // Custom label shown below NETCAP logo (overrides LOCAL/SERVICE)
+
 	// Input/Output
 	Compress bool
 	Buffer   bool
@@ -105,12 +108,12 @@ type RuntimeConfig struct {
 	Context       bool
 
 	// Database/Enrichment
-	MacDB         bool
-	Ja3DB         bool
-	ServiceDB     bool
-	GeoDB         bool
-	ReverseDNS    bool
-	LocalDNS      bool
+	MacDB      bool
+	Ja3DB      bool
+	ServiceDB  bool
+	GeoDB      bool
+	ReverseDNS bool
+	LocalDNS   bool
 
 	// TCP Reassembly
 	ReassembleConnections bool
@@ -141,12 +144,12 @@ type RuntimeConfig struct {
 	FlowTimeout       time.Duration
 
 	// Stream processing
-	Entropy     bool
-	TCPDebug    bool
-	SaveConns   bool
-	DefragIPv4  bool
-	HexDump     bool
-	BannerSize  int
+	Entropy    bool
+	TCPDebug   bool
+	SaveConns  bool
+	DefragIPv4 bool
+	HexDump    bool
+	BannerSize int
 }
 
 // Server represents the web UI HTTP server
@@ -779,12 +782,22 @@ func (s *Server) UpdateOutputDir(outDir string) {
 	log.Printf("[WebUI] Output directory updated: outDir=%s (baseOutDir=%s remains unchanged)", outDir, s.baseOutDir)
 }
 
+// GetOutputDir returns the current output directory
+func (s *Server) GetOutputDir() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.outDir
+}
+
 // SetFileOutputDir stores the actual output directory for a specific input file
+// and updates the active output directory to point to this location
 func (s *Server) SetFileOutputDir(inputFile, outputDir string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.fileOutputDirs[inputFile] = outputDir
-	log.Printf("[WebUI] Output directory set for %s: %s", inputFile, outputDir)
+	// Also update the active output directory so API calls use the correct path immediately
+	s.outDir = outputDir
+	log.Printf("[WebUI] Output directory set for %s: %s (active outDir updated)", inputFile, outputDir)
 }
 
 // GetFileOutputDir retrieves the output directory for a specific input file
@@ -1263,13 +1276,9 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		log.Printf("[Service] Excluding decoders for session %s: %s", job.SessionID, excludeDecoders)
 	}
 
-	// Get the path to the current executable
-	executable, err := os.Executable()
-	if err != nil {
-		log.Printf("[Service] Failed to get executable path: %v", err)
-		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, "Internal error", "")
-		return
-	}
+	// Use the "net" binary to run analysis
+	// This ensures we always invoke the netcap binary regardless of the current program name
+	executable := "net"
 
 	// Create error log file for capturing stdout/stderr
 	errorLogPath := filepath.Join(job.OutputDir, "analysis_error.log")

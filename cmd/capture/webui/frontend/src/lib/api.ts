@@ -65,6 +65,7 @@ export interface StatusResponse {
   isTryService?: boolean;  // Optional, indicates try service mode
   isServiceMode?: boolean;  // Optional, indicates service mode
   isLiveMode: boolean;  // Whether in live capture mode
+  logoSubText?: string;  // Optional, custom label shown below NETCAP logo
 }
 
 export interface UploadResponse {

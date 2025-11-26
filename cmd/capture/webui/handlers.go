@@ -55,6 +55,12 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		inputFiles = []string{}
 	}
 
+	// Get logo sub text from runtime config if available
+	var logoSubText string
+	if s.runtimeConfig != nil {
+		logoSubText = s.runtimeConfig.LogoSubText
+	}
+
 	response := StatusResponse{
 		IsProcessing:    s.isProcessing,
 		OutputDir:       s.outDir,
@@ -65,6 +71,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		IsServiceMode:   s.isServiceMode,
 		IsLiveMode:      s.isLiveMode,
 		SessionID:       s.currentSession, // Include current session ID in service mode
+		LogoSubText:     logoSubText,
 	}
 
 	// Add completed files info
@@ -948,25 +955,25 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 
 	// Get values from runtime config or use defaults
 	// Note: Some defaults are hardcoded here as they're not defined in the defaults package
-	compressValue := true               // default compression enabled
-	bufferValue := true                 // default buffering enabled
+	compressValue := true // default compression enabled
+	bufferValue := true   // default buffering enabled
 	workersValue := runtime.NumCPU() * 2
 	pbufValue := defaults.PacketBuffer
 	membufValue := defaults.BufferSize
 	ifaceValue := ""
-	promiscValue := true                // default promiscuous mode enabled
+	promiscValue := true // default promiscuous mode enabled
 	snaplenValue := defaults.SnapLen
-	baseLayerValue := "ethernet"        // default base layer
-	decodeOptsValue := "lazy"           // default decode options
+	baseLayerValue := "ethernet" // default base layer
+	decodeOptsValue := "lazy"    // default decode options
 	payloadValue := false
-	contextValue := true                // default context enabled
-	macDBValue := true                  // default mac database enabled
-	ja3DBValue := true                  // default ja3 database enabled
-	serviceDBValue := true              // default service database enabled
-	geoDBValue := false                 // default geolocation disabled
-	reverseDNSValue := false            // default reverse DNS disabled
-	localDNSValue := false              // default local DNS disabled
-	reassembleValue := true             // default reassembly enabled
+	contextValue := true     // default context enabled
+	macDBValue := true       // default mac database enabled
+	ja3DBValue := true       // default ja3 database enabled
+	serviceDBValue := true   // default service database enabled
+	geoDBValue := false      // default geolocation disabled
+	reverseDNSValue := false // default reverse DNS disabled
+	localDNSValue := false   // default local DNS disabled
+	reassembleValue := true  // default reassembly enabled
 	flushEveryValue := defaults.FlushEvery
 	checksumValue := defaults.Checksum
 	noOptCheckValue := defaults.NoOptCheck
@@ -974,13 +981,13 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 	allowMissingInitValue := defaults.AllowMissingInit
 	closePendingTimeoutValue := defaults.ClosePendingTimeout.String()
 	closeInactiveTimeoutValue := defaults.CloseInactiveTimeout.String()
-	protoValue := true                  // default protobuf output enabled
-	jsonValue := false                  // default JSON output disabled
-	csvValue := false                   // default CSV output disabled
+	protoValue := true // default protobuf output enabled
+	jsonValue := false // default JSON output disabled
+	csvValue := false  // default CSV output disabled
 	elasticValue := false
 	elasticAddrsValue := ""
 	elasticUserValue := ""
-	ignoreUnknownValue := true          // default ignore unknown packets
+	ignoreUnknownValue := true // default ignore unknown packets
 	freeOSMemValue := 0
 	connFlushIntervalValue := defaults.ConnFlushInterval
 	connTimeoutValue := defaults.ConnTimeOut.String()

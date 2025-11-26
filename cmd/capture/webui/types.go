@@ -50,7 +50,8 @@ type StatusResponse struct {
 	IsMultiFile     bool      `json:"isMultiFile"`
 	IsServiceMode   bool      `json:"isServiceMode,omitempty"`
 	IsLiveMode      bool      `json:"isLiveMode"`
-	SessionID       string    `json:"sessionId,omitempty"` // Current session ID (service mode only)
+	SessionID    string `json:"sessionId,omitempty"`    // Current session ID (service mode only)
+	LogoSubText  string `json:"logoSubText,omitempty"` // Custom label shown below NETCAP logo
 }
 
 // AuditStatsResponse represents the audit record statistics response

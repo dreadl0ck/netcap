@@ -378,7 +378,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             cursor: 'pointer',
           }}
         >
-          <Box>
+          <Box sx={status?.logoSubText ? { padding: '7px 0px 0px 50px' } : undefined}>
             <Typography 
               variant="h6" 
               noWrap 
@@ -387,7 +387,16 @@ export default function Layout({ children, title, headerAction, topPadding }: La
             >
               NETCAP
             </Typography>
-            {status?.isServiceMode && (
+            {/* Show custom logo sub text if set, otherwise show SERVICE/LOCAL based on mode */}
+            {status?.logoSubText ? (
+              <Typography 
+                variant="caption" 
+                component="div"
+                sx={SERVICE_MODE_CAPTION_SX}
+              >
+                {status.logoSubText}
+              </Typography>
+            ) : status?.isServiceMode ? (
               <Typography 
                 variant="caption" 
                 component="div"
@@ -395,8 +404,7 @@ export default function Layout({ children, title, headerAction, topPadding }: La
               >
                 SERVICE
               </Typography>
-            )}
-            {status && !status?.isTryService && !status?.isServiceMode && (
+            ) : status && !status?.isTryService && (
               <Typography 
                 variant="caption" 
                 component="div"
