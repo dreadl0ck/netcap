@@ -117,3 +117,13 @@ func (ad *AbstractDecoder) GetChan() <-chan []byte {
 func (ad *AbstractDecoder) NumRecords() int64 {
 	return atomic.LoadInt64(&ad.NumRecordsWritten)
 }
+
+// FlushCurrentState flushes the writer buffer for abstract decoders.
+// Abstract decoders write records immediately, so there's no accumulated state to flush.
+// This just ensures any buffered data is written to disk.
+func (ad *AbstractDecoder) FlushCurrentState() int64 {
+	if ad.Writer != nil {
+		_ = ad.Writer.Flush()
+	}
+	return 0
+}

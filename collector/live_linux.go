@@ -58,6 +58,7 @@ func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error
 	}
 
 	stopProgress := c.printProgressInterval()
+	stopPeriodicFlush := c.startPeriodicFlush()
 
 	c.mu.Lock()
 	c.isLive = true
@@ -123,6 +124,9 @@ done:
 
 	// Stop progress reporting
 	stopProgress <- struct{}{}
+
+	// Stop periodic flushing
+	close(stopPeriodicFlush)
 
 	// Check if cleanup is already in progress (e.g., triggered by signal handler)
 	c.statMutex.Lock()

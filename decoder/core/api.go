@@ -50,4 +50,10 @@ type DecoderAPI interface {
 
 	// NumRecords returns the number of processed audit records
 	NumRecords() int64
+
+	// FlushCurrentState writes the current state of accumulating records to disk
+	// without clearing the in-memory state. This is used during live capture
+	// to periodically make data visible while continuing to track state.
+	// Returns the number of records flushed.
+	FlushCurrentState() int64
 }

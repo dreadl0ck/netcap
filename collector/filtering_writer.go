@@ -80,6 +80,11 @@ func (fw *FilteringWriter) Close(numRecords int64) (name string, size int64) {
 	return fw.underlying.Close(numRecords)
 }
 
+// Flush flushes the underlying writer's buffer.
+func (fw *FilteringWriter) Flush() error {
+	return fw.underlying.Flush()
+}
+
 // GetFilteredCount returns the number of records filtered out.
 func (c *Collector) GetFilteredCount() int64 {
 	return atomic.LoadInt64(&c.filteredCount)

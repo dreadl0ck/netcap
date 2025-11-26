@@ -148,6 +148,42 @@ func (w *protoWriter) WriteHeader(t types.Type) error {
 	return w.pWriter.putProto(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
 }
 
+// Flush flushes any buffered data to disk without closing the writer.
+// This is used during live capture to make audit records visible periodically.
+func (w *protoWriter) Flush() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	// Check if writer has been closed
+	if w.closed {
+		return nil
+	}
+
+	// Flush the buffered writer
+	if w.wc.Buffer && w.bWriter != nil {
+		if err := w.bWriter.Flush(); err != nil {
+			return err
+		}
+	}
+
+	// For compressed streams, we need to flush the gzip writer too
+	// Note: This writes a sync point but doesn't close the stream
+	if w.wc.Compress && w.gWriter != nil {
+		if err := w.gWriter.Flush(); err != nil {
+			return err
+		}
+	}
+
+	// Sync file to disk
+	if w.file != nil {
+		if err := w.file.Sync(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Close flushes and closes the writer and the associated file handles.
 func (w *protoWriter) Close(numRecords int64) (name string, size int64) {
 	w.mu.Lock()

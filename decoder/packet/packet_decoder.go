@@ -78,6 +78,11 @@ type (
 		PostInit func(*Decoder) error
 		DeInit   func(*Decoder) error
 
+		// FlushState is called during live capture to write current state without clearing it.
+		// This allows accumulating decoders (DeviceProfile, IPProfile, Connection) to periodically
+		// make their data visible while continuing to track state.
+		FlushState func(*Decoder) int64
+
 		// Writer for audit records
 		Writer io.AuditRecordWriter
 
@@ -114,6 +119,22 @@ func newPacketDecoder(t types.Type, name, description string, postinit func(*Dec
 		Handler:     handler,
 		DeInit:      deinit,
 		PostInit:    postinit,
+		Type:        t,
+		Description: description,
+	}
+	defaultPacketDecoders = append(defaultPacketDecoders, d)
+	return d
+}
+
+// newAccumulatingPacketDecoder returns a new Decoder instance for decoders that accumulate state.
+// The flushState function is called during live capture to write current state without clearing it.
+func newAccumulatingPacketDecoder(t types.Type, name, description string, postinit func(*Decoder) error, handler packetDecoderHandler, deinit func(*Decoder) error, flushState func(*Decoder) int64) *Decoder {
+	d := &Decoder{
+		Name:        strings.Title(name),
+		Handler:     handler,
+		DeInit:      deinit,
+		PostInit:    postinit,
+		FlushState:  flushState,
 		Type:        t,
 		Description: description,
 	}
@@ -366,6 +387,29 @@ func (pd *Decoder) GetChan() <-chan []byte {
 // NumRecords returns the number of written records.
 func (pd *Decoder) NumRecords() int64 {
 	return atomic.LoadInt64(&pd.NumRecordsWritten)
+}
+
+// FlushCurrentState writes the current state of accumulating records to disk
+// without clearing the in-memory state. This is used during live capture
+// to periodically make data visible while continuing to track state.
+// Returns the number of records flushed.
+func (pd *Decoder) FlushCurrentState() int64 {
+	if pd.FlushState == nil {
+		// Not an accumulating decoder - just flush the writer buffer
+		if pd.Writer != nil {
+			_ = pd.Writer.Flush()
+		}
+		return 0
+	}
+
+	numFlushed := pd.FlushState(pd)
+
+	// Flush the writer buffer to make records visible on disk
+	if pd.Writer != nil {
+		_ = pd.Writer.Flush()
+	}
+
+	return numFlushed
 }
 
 // writeDeviceProfile writes the profile.

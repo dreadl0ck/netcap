@@ -24,6 +24,9 @@ type AuditRecordWriter interface {
 	Write(msg proto.Message) error
 	WriteHeader(t types.Type) error
 	Close(numRecords int64) (name string, size int64)
+	// Flush flushes any buffered data to disk without closing the writer.
+	// This is used during live capture to make audit records visible periodically.
+	Flush() error
 }
 
 // ChannelAuditRecordWriter extends the AuditRecordWriter

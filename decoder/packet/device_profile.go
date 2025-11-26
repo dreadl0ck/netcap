@@ -284,7 +284,7 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 	}
 }
 
-var deviceProfileDecoder = newPacketDecoder(
+var deviceProfileDecoder = newAccumulatingPacketDecoder(
 	types.Type_NC_DeviceProfile,
 	"DeviceProfile",
 	"A DeviceProfile contains information about a single hardware device seen on the network and it's behavior",
@@ -316,6 +316,30 @@ var deviceProfileDecoder = newPacketDecoder(
 
 		return nil
 	},
+	// FlushState: Write current state without clearing in-memory data
+	func(d *Decoder) int64 {
+		var numFlushed int64
+
+		// Take a snapshot of items under lock to avoid race conditions
+		DeviceProfiles.Lock()
+		items := make([]*deviceProfile, 0, len(DeviceProfiles.Items))
+		for _, item := range DeviceProfiles.Items {
+			items = append(items, item)
+		}
+		DeviceProfiles.Unlock()
+
+		// Write current state of each profile without clearing
+		for _, item := range items {
+			item.Lock()
+			// Process any buffered DPI data before writing
+			processDeferredDPIWithoutClear(item)
+			d.writeDeviceProfile(item.DeviceProfile, item.applications)
+			numFlushed++
+			item.Unlock()
+		}
+
+		return numFlushed
+	},
 )
 
 // processDeferredDPI runs DPI analysis on all buffered packets for a device profile
@@ -343,6 +367,32 @@ func processDeferredDPI(p *deviceProfile) {
 
 	// Clear stream buffers after processing to free memory
 	p.streamBuffers = nil
+}
+
+// processDeferredDPIWithoutClear runs DPI analysis but keeps the buffers for continued tracking
+// This is used during live capture periodic flushing
+func processDeferredDPIWithoutClear(p *deviceProfile) {
+	if p.streamBuffers == nil {
+		return
+	}
+
+	// Process each stream's buffered packets
+	for _, streamBuf := range p.streamBuffers {
+		// Run DPI on each buffered packet in the stream
+		for _, pkt := range streamBuf.packets {
+			if len(pkt.data) == 0 {
+				continue
+			}
+			// Decode the packet from raw bytes for DPI analysis
+			// Use the detected base layer type from the pcap file
+			packet := gopacket.NewPacket(pkt.data, baseLayerType, gopacket.Default)
+			dpiResults := dpi.GetProtocols(packet)
+			for protocol := range dpiResults {
+				p.applications[protocol] = struct{}{}
+			}
+		}
+	}
+	// Note: We do NOT clear stream buffers here to allow continued tracking
 }
 
 // writeDeviceProfile writes the profile.

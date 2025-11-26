@@ -119,7 +119,7 @@ func ResetConnections() {
 	conns.Unlock()
 }
 
-var connectionDecoder = newPacketDecoder(
+var connectionDecoder = newAccumulatingPacketDecoder(
 	types.Type_NC_Connection,
 	"Connection",
 	"A connection represents bi-directional network communication between two hosts based on the combined link-, network- and transport layer identifiers",
@@ -149,6 +149,29 @@ var connectionDecoder = newPacketDecoder(
 		}
 
 		return nil
+	},
+	// FlushState: Write current state without clearing in-memory data
+	func(decoder *Decoder) int64 {
+		var numFlushed int64
+
+		// Take a snapshot of items under lock to avoid race conditions
+		conns.Lock()
+		items := make([]*connection, 0, len(conns.Items))
+		for _, conn := range conns.Items {
+			items = append(items, conn)
+		}
+		conns.Unlock()
+
+		// Write current state of each connection without clearing
+		for _, conn := range items {
+			conn.Lock()
+			// Write the connection record directly without going through the worker pool
+			writeConnectionRecord(decoder, conn)
+			numFlushed++
+			conn.Unlock()
+		}
+
+		return numFlushed
 	},
 )
 
@@ -567,4 +590,11 @@ func (cp *connectionProcessor) initWorkers(bufferSize int, numStreamWorkers int)
 	}
 
 	cp.numWorkers = len(cp.workers)
+}
+
+// writeConnectionRecord writes a connection record during periodic flushing.
+// This is a simpler version that doesn't use workers since we're flushing
+// existing state, not processing new packets.
+func writeConnectionRecord(decoder *Decoder, conn *connection) {
+	decoder.writeConn(conn.Connection, conn.clientIP, conn.applications, conn.packetsClientToServer, conn.packetsServerToClient)
 }

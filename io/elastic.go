@@ -189,6 +189,23 @@ func (w *elasticWriter) WriteHeader(_ types.Type) error {
 	return nil
 }
 
+// Flush sends any queued records to Elasticsearch.
+func (w *elasticWriter) Flush() error {
+	w.Lock()
+	defer w.Unlock()
+
+	if w.queueIndex > 0 {
+		if err := w.sendBulk(0, w.queueIndex); err != nil {
+			return err
+		}
+		// Reset queue after successful flush
+		w.queueIndex = 0
+		w.queue = make([]proto.Message, w.wc.BulkSize)
+	}
+
+	return nil
+}
+
 // Close flushes and closes the writer and the associated file handles.
 func (w *elasticWriter) Close(_ int64) (name string, size int64) {
 

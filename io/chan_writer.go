@@ -129,6 +129,11 @@ func (w *chanWriter) WriteHeader(t types.Type) error {
 	return err
 }
 
+// Flush is a no-op for the channel writer since data is immediately sent to the channel.
+func (w *chanWriter) Flush() error {
+	return nil
+}
+
 // Close flushes and closes the writer and the associated file handles.
 func (w *chanWriter) Close(numRecords int64) (name string, size int64) {
 	w.mu.Lock()

@@ -310,7 +310,37 @@ func processIPProfileDeferredDPI(p *ipProfile) {
 	p.streamPackets = nil
 }
 
-var ipProfileDecoder = newPacketDecoder(
+// processIPProfileDeferredDPIWithoutClear runs DPI analysis but keeps the buffers for continued tracking
+// This is used during live capture periodic flushing
+func processIPProfileDeferredDPIWithoutClear(p *ipProfile) {
+	if p.streamPackets == nil {
+		return
+	}
+
+	// Process each stream's buffered packets
+	for _, packets := range p.streamPackets {
+		// Run DPI on each buffered packet in the stream
+		for _, pkt := range packets {
+			if len(pkt.data) == 0 {
+				continue
+			}
+			// Decode the packet from raw bytes for DPI analysis
+			// Use the detected base layer type from the pcap file
+			packet := gopacket.NewPacket(pkt.data, baseLayerType, gopacket.Default)
+			dpiResults := dpi.GetProtocols(packet)
+			for protocol, res := range dpiResults {
+				if prot, ok := p.Protocols[protocol]; ok {
+					prot.Packets++
+				} else {
+					p.Protocols[protocol] = dpi.NewProto(&res)
+				}
+			}
+		}
+	}
+	// Note: We do NOT clear stream buffers here to allow continued tracking
+}
+
+var ipProfileDecoder = newAccumulatingPacketDecoder(
 	types.Type_NC_IPProfile,
 	"IPProfile",
 	"An IPProfile contains information about a single IPv4 or IPv6 address seen on the network and it's behavior",
@@ -346,6 +376,30 @@ var ipProfileDecoder = newPacketDecoder(
 		}
 
 		return nil
+	},
+	// FlushState: Write current state without clearing in-memory data
+	func(d *Decoder) int64 {
+		var numFlushed int64
+
+		// Take a snapshot of items under lock to avoid race conditions
+		ipProfiles.Lock()
+		items := make([]*ipProfile, 0, len(ipProfiles.Items))
+		for _, item := range ipProfiles.Items {
+			items = append(items, item)
+		}
+		ipProfiles.Unlock()
+
+		// Write current state of each profile without clearing
+		for _, item := range items {
+			item.Lock()
+			// Process any buffered DPI data before writing (without clearing buffers)
+			processIPProfileDeferredDPIWithoutClear(item)
+			d.writeIPProfile(item.IPProfile)
+			numFlushed++
+			item.Unlock()
+		}
+
+		return numFlushed
 	},
 )
 

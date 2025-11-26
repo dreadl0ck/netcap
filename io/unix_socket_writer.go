@@ -108,6 +108,23 @@ func (w *unixSocketWriter) WriteHeader(t types.Type) error {
 	return err
 }
 
+// Flush flushes any buffered data to the socket.
+func (w *unixSocketWriter) Flush() error {
+	if w.wc.Buffer && w.bWriter != nil {
+		if err := w.bWriter.Flush(); err != nil {
+			return err
+		}
+	}
+
+	if w.wc.Compress && w.gWriter != nil {
+		if err := w.gWriter.Flush(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Close flushes and closes the writer and the associated file handles.
 func (w *unixSocketWriter) Close(numRecords int64) (name string, size int64) {
 

@@ -143,3 +143,14 @@ func (sd *StreamDecoder) CanDecodeStream(client []byte, server []byte) bool {
 func (sd *StreamDecoder) Transport() core.TransportProtocol {
 	return sd.Typ
 }
+
+// FlushCurrentState flushes the writer buffer for stream decoders.
+// Stream decoders write records immediately during stream processing,
+// so there's no accumulated state to flush.
+// This just ensures any buffered data is written to disk.
+func (sd *StreamDecoder) FlushCurrentState() int64 {
+	if sd.Writer != nil {
+		_ = sd.Writer.Flush()
+	}
+	return 0
+}

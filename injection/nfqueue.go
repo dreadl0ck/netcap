@@ -25,7 +25,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/florianl/go-nfqueue"
+	nfqueue "github.com/florianl/go-nfqueue/v2"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 )

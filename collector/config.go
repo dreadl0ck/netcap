@@ -143,4 +143,10 @@ type Config struct {
 
 	// ScatterDuration is the interval for data used in the scatter plot.
 	ScatterDuration time.Duration
+
+	// LiveFlushInterval is the interval at which audit records are flushed during live capture.
+	// This makes data visible while capture is ongoing.
+	// If zero, no periodic flushing is performed (records only flushed on shutdown).
+	// Recommended: 30s to 60s for most use cases.
+	LiveFlushInterval time.Duration
 }

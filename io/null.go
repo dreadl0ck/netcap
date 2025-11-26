@@ -38,6 +38,11 @@ func (w *nullWriter) WriteHeader(_ types.Type) error {
 	return nil
 }
 
+// Flush is a no-op for the null writer.
+func (w *nullWriter) Flush() error {
+	return nil
+}
+
 // Close flushes and closes the writer and the associated file handles.
 func (w *nullWriter) Close(_ int64) (name string, size int64) {
 	return "", 0

@@ -304,3 +304,13 @@ func (cd *GoPacketDecoder) GetChan() <-chan []byte {
 func (dec *GoPacketDecoder) Destroy() (name string, size int64) {
 	return dec.writer.Close(atomic.LoadInt64(&dec.numRecords))
 }
+
+// FlushCurrentState flushes the writer buffer for gopacket decoders.
+// GoPacket decoders write records immediately, so there's no accumulated state to flush.
+// This just ensures any buffered data is written to disk.
+func (dec *GoPacketDecoder) FlushCurrentState() int64 {
+	if dec.writer != nil {
+		_ = dec.writer.Flush()
+	}
+	return 0
+}
