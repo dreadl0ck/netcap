@@ -931,11 +931,11 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 // getConfigOptions returns the current configuration options from capture package
-// Note: This function accesses internal flags from the capture package
+// Note: This function uses the RuntimeConfig passed during server initialization to show actual values
 // If sessionConfig is provided, it will use session-specific configuration values
 func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
-	// Import flag values from the capture package
-	// We use the defaults package for default values
+	// Use runtime config values if available, otherwise fall back to defaults
+	rc := s.runtimeConfig
 
 	// Determine input and output based on session or global config
 	inputValue := s.getInputValue()
@@ -944,6 +944,115 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 	if sessionConfig != nil {
 		inputValue = sessionConfig.InputFile
 		outputValue = sessionConfig.OutputDir
+	}
+
+	// Get values from runtime config or use defaults
+	// Note: Some defaults are hardcoded here as they're not defined in the defaults package
+	compressValue := true               // default compression enabled
+	bufferValue := true                 // default buffering enabled
+	workersValue := runtime.NumCPU() * 2
+	pbufValue := defaults.PacketBuffer
+	membufValue := defaults.BufferSize
+	ifaceValue := ""
+	promiscValue := true                // default promiscuous mode enabled
+	snaplenValue := defaults.SnapLen
+	baseLayerValue := "ethernet"        // default base layer
+	decodeOptsValue := "lazy"           // default decode options
+	payloadValue := false
+	contextValue := true                // default context enabled
+	macDBValue := true                  // default mac database enabled
+	ja3DBValue := true                  // default ja3 database enabled
+	serviceDBValue := true              // default service database enabled
+	geoDBValue := false                 // default geolocation disabled
+	reverseDNSValue := false            // default reverse DNS disabled
+	localDNSValue := false              // default local DNS disabled
+	reassembleValue := true             // default reassembly enabled
+	flushEveryValue := defaults.FlushEvery
+	checksumValue := defaults.Checksum
+	noOptCheckValue := defaults.NoOptCheck
+	ignoreFSMErrValue := defaults.IgnoreFSMErr
+	allowMissingInitValue := defaults.AllowMissingInit
+	closePendingTimeoutValue := defaults.ClosePendingTimeout.String()
+	closeInactiveTimeoutValue := defaults.CloseInactiveTimeout.String()
+	protoValue := true                  // default protobuf output enabled
+	jsonValue := false                  // default JSON output disabled
+	csvValue := false                   // default CSV output disabled
+	elasticValue := false
+	elasticAddrsValue := ""
+	elasticUserValue := ""
+	ignoreUnknownValue := true          // default ignore unknown packets
+	freeOSMemValue := 0
+	connFlushIntervalValue := defaults.ConnFlushInterval
+	connTimeoutValue := defaults.ConnTimeOut.String()
+	flowFlushIntervalValue := defaults.FlowFlushInterval
+	flowTimeoutValue := defaults.FlowTimeOut.String()
+
+	// Override with actual runtime values if available
+	if rc != nil {
+		compressValue = rc.Compress
+		bufferValue = rc.Buffer
+		if rc.Workers > 0 {
+			workersValue = rc.Workers
+		}
+		if rc.PacketBuffer > 0 {
+			pbufValue = rc.PacketBuffer
+		}
+		if rc.MemBufSize > 0 {
+			membufValue = rc.MemBufSize
+		}
+		ifaceValue = rc.Interface
+		promiscValue = rc.PromiscMode
+		if rc.SnapLen > 0 {
+			snaplenValue = rc.SnapLen
+		}
+		if rc.BaseLayer != "" {
+			baseLayerValue = rc.BaseLayer
+		}
+		if rc.DecodeOptions != "" {
+			decodeOptsValue = rc.DecodeOptions
+		}
+		payloadValue = rc.Payload
+		contextValue = rc.Context
+		macDBValue = rc.MacDB
+		ja3DBValue = rc.Ja3DB
+		serviceDBValue = rc.ServiceDB
+		geoDBValue = rc.GeoDB
+		reverseDNSValue = rc.ReverseDNS
+		localDNSValue = rc.LocalDNS
+		reassembleValue = rc.ReassembleConnections
+		if rc.FlushEvery > 0 {
+			flushEveryValue = rc.FlushEvery
+		}
+		checksumValue = rc.Checksum
+		noOptCheckValue = rc.NoOptCheck
+		ignoreFSMErrValue = rc.IgnoreFSMErr
+		allowMissingInitValue = rc.AllowMissingInit
+		if rc.ClosePendingTimeout > 0 {
+			closePendingTimeoutValue = rc.ClosePendingTimeout.String()
+		}
+		if rc.CloseInactiveTimeout > 0 {
+			closeInactiveTimeoutValue = rc.CloseInactiveTimeout.String()
+		}
+		protoValue = rc.Proto
+		jsonValue = rc.JSON
+		csvValue = rc.CSV
+		elasticValue = rc.Elastic
+		elasticAddrsValue = rc.ElasticAddrs
+		elasticUserValue = rc.ElasticUser
+		ignoreUnknownValue = rc.IgnoreUnknown
+		freeOSMemValue = rc.FreeOSMemory
+		if rc.ConnFlushInterval > 0 {
+			connFlushIntervalValue = rc.ConnFlushInterval
+		}
+		if rc.ConnTimeout > 0 {
+			connTimeoutValue = rc.ConnTimeout.String()
+		}
+		if rc.FlowFlushInterval > 0 {
+			flowFlushIntervalValue = rc.FlowFlushInterval
+		}
+		if rc.FlowTimeout > 0 {
+			flowTimeoutValue = rc.FlowTimeout.String()
+		}
 	}
 
 	options := []ConfigOption{
@@ -968,7 +1077,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "compress",
-			Value:       true,
+			Value:       compressValue,
 			Default:     true,
 			Type:        "bool",
 			Description: "Compress output with gzip",
@@ -979,8 +1088,8 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		// Performance Configuration
 		{
 			Name:        "workers",
-			Value:       "runtime.NumCPU()*2",
-			Default:     "runtime.NumCPU()*2",
+			Value:       workersValue,
+			Default:     runtime.NumCPU() * 2,
 			Type:        "int",
 			Description: "Number of workers",
 			Category:    "Performance",
@@ -988,7 +1097,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "pbuf",
-			Value:       defaults.PacketBuffer,
+			Value:       pbufValue,
 			Default:     defaults.PacketBuffer,
 			Type:        "int",
 			Description: "Set packet buffer size, for channels that feed data to workers",
@@ -997,7 +1106,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "membuf-size",
-			Value:       defaults.BufferSize,
+			Value:       membufValue,
 			Default:     defaults.BufferSize,
 			Type:        "int",
 			Description: "Set size for membuf",
@@ -1017,7 +1126,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "iface",
-			Value:       "",
+			Value:       ifaceValue,
 			Default:     "",
 			Type:        "string",
 			Description: "Attach to network interface and capture in live mode",
@@ -1026,7 +1135,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "promisc",
-			Value:       true,
+			Value:       promiscValue,
 			Default:     true,
 			Type:        "bool",
 			Description: "Toggle promiscuous mode for live capture",
@@ -1035,7 +1144,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "snaplen",
-			Value:       defaults.SnapLen,
+			Value:       snaplenValue,
 			Default:     defaults.SnapLen,
 			Type:        "int",
 			Description: "Configure snaplen for live capture from interface",
@@ -1064,7 +1173,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "base",
-			Value:       "ethernet",
+			Value:       baseLayerValue,
 			Default:     "ethernet",
 			Type:        "string",
 			Description: "Select base layer",
@@ -1073,7 +1182,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "opts",
-			Value:       "lazy",
+			Value:       decodeOptsValue,
 			Default:     "lazy",
 			Type:        "string",
 			Description: "Select decoding options",
@@ -1082,7 +1191,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "payload",
-			Value:       false,
+			Value:       payloadValue,
 			Default:     false,
 			Type:        "bool",
 			Description: "Capture payload for supported layers",
@@ -1091,7 +1200,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "context",
-			Value:       true,
+			Value:       contextValue,
 			Default:     true,
 			Type:        "bool",
 			Description: "Add packet flow context to selected audit records",
@@ -1102,7 +1211,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		// Database and Enrichment
 		{
 			Name:        "macDB",
-			Value:       true,
+			Value:       macDBValue,
 			Default:     true,
 			Type:        "bool",
 			Description: "Use mac to vendor database for device profiling",
@@ -1111,7 +1220,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "ja3DB",
-			Value:       true,
+			Value:       ja3DBValue,
 			Default:     true,
 			Type:        "bool",
 			Description: "Use ja3 database for device profiling",
@@ -1120,7 +1229,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "serviceDB",
-			Value:       true,
+			Value:       serviceDBValue,
 			Default:     true,
 			Type:        "bool",
 			Description: "Use serviceDB for device profiling",
@@ -1129,7 +1238,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "geoDB",
-			Value:       false,
+			Value:       geoDBValue,
 			Default:     false,
 			Type:        "bool",
 			Description: "Use geolocation for device profiling",
@@ -1147,7 +1256,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "reverse-dns",
-			Value:       false,
+			Value:       reverseDNSValue,
 			Default:     false,
 			Type:        "bool",
 			Description: "Resolve IPs to domains via the operating systems default DNS resolver",
@@ -1156,7 +1265,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "local-dns",
-			Value:       false,
+			Value:       localDNSValue,
 			Default:     false,
 			Type:        "bool",
 			Description: "Resolve DNS locally via hosts file in the database dir",
@@ -1167,7 +1276,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		// TCP Reassembly Configuration
 		{
 			Name:        "reassemble-connections",
-			Value:       true,
+			Value:       reassembleValue,
 			Default:     true,
 			Type:        "bool",
 			Description: "Reassemble TCP connections",
@@ -1176,7 +1285,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "flushevery",
-			Value:       defaults.FlushEvery,
+			Value:       flushEveryValue,
 			Default:     defaults.FlushEvery,
 			Type:        "int",
 			Description: "Flush assembler every N packets",
@@ -1185,7 +1294,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "checksum",
-			Value:       defaults.Checksum,
+			Value:       checksumValue,
 			Default:     defaults.Checksum,
 			Type:        "bool",
 			Description: "Check TCP checksum",
@@ -1194,7 +1303,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "nooptcheck",
-			Value:       defaults.NoOptCheck,
+			Value:       noOptCheckValue,
 			Default:     defaults.NoOptCheck,
 			Type:        "bool",
 			Description: "Do not check TCP options (useful to ignore MSS on captures with TSO)",
@@ -1203,7 +1312,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "ignorefsmerr",
-			Value:       defaults.IgnoreFSMErr,
+			Value:       ignoreFSMErrValue,
 			Default:     defaults.IgnoreFSMErr,
 			Type:        "bool",
 			Description: "Ignore TCP FSM errors",
@@ -1212,7 +1321,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "allowmissinginit",
-			Value:       defaults.AllowMissingInit,
+			Value:       allowMissingInitValue,
 			Default:     defaults.AllowMissingInit,
 			Type:        "bool",
 			Description: "Support streams without SYN/SYN+ACK/ACK sequence",
@@ -1221,7 +1330,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "close-pending-timeout",
-			Value:       defaults.ClosePendingTimeout.String(),
+			Value:       closePendingTimeoutValue,
 			Default:     defaults.ClosePendingTimeout.String(),
 			Type:        "duration",
 			Description: "Reassembly: close connections that have pending bytes",
@@ -1230,7 +1339,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "close-inactive-timeout",
-			Value:       defaults.CloseInactiveTimeout.String(),
+			Value:       closeInactiveTimeoutValue,
 			Default:     defaults.CloseInactiveTimeout.String(),
 			Type:        "duration",
 			Description: "Reassembly: close connections that are inactive",
@@ -1241,7 +1350,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		// Output Format Configuration
 		{
 			Name:        "proto",
-			Value:       true,
+			Value:       protoValue,
 			Default:     true,
 			Type:        "bool",
 			Description: "Output data as protobuf",
@@ -1250,7 +1359,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "json",
-			Value:       false,
+			Value:       jsonValue,
 			Default:     false,
 			Type:        "bool",
 			Description: "Output data as JSON",
@@ -1259,7 +1368,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "csv",
-			Value:       false,
+			Value:       csvValue,
 			Default:     false,
 			Type:        "bool",
 			Description: "Output data as CSV",
@@ -1270,7 +1379,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		// Elastic Configuration
 		{
 			Name:        "elastic",
-			Value:       false,
+			Value:       elasticValue,
 			Default:     false,
 			Type:        "bool",
 			Description: "Write data to elastic db",
@@ -1279,7 +1388,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "elastic-addrs",
-			Value:       "",
+			Value:       elasticAddrsValue,
 			Default:     "",
 			Type:        "string",
 			Description: "Elastic db endpoints to write data to",
@@ -1288,7 +1397,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "elastic-user",
-			Value:       "",
+			Value:       elasticUserValue,
 			Default:     "",
 			Type:        "string",
 			Description: "Elastic db username",
@@ -1308,7 +1417,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "buf",
-			Value:       true,
+			Value:       bufferValue,
 			Default:     true,
 			Type:        "bool",
 			Description: "Buffer data in memory before writing to disk",
@@ -1317,7 +1426,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "ignore-unknown",
-			Value:       true,
+			Value:       ignoreUnknownValue,
 			Default:     true,
 			Type:        "bool",
 			Description: "Disable writing unknown packets into a pcap file",
@@ -1326,7 +1435,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "free-os-mem",
-			Value:       0,
+			Value:       freeOSMemValue,
 			Default:     0,
 			Type:        "int",
 			Description: "Free OS memory every X minutes, disabled if set to 0",
@@ -1335,7 +1444,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "conn-flush-interval",
-			Value:       defaults.ConnFlushInterval,
+			Value:       connFlushIntervalValue,
 			Default:     defaults.ConnFlushInterval,
 			Type:        "int",
 			Description: "Flush connections every X flows",
@@ -1344,7 +1453,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "conn-timeout",
-			Value:       defaults.ConnTimeOut.String(),
+			Value:       connTimeoutValue,
 			Default:     defaults.ConnTimeOut.String(),
 			Type:        "duration",
 			Description: "Close connections older than X seconds",
@@ -1353,7 +1462,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "flow-flush-interval",
-			Value:       defaults.FlowFlushInterval,
+			Value:       flowFlushIntervalValue,
 			Default:     defaults.FlowFlushInterval,
 			Type:        "int",
 			Description: "Flushes flows every X flows",
@@ -1362,7 +1471,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "flow-timeout",
-			Value:       defaults.FlowTimeOut.String(),
+			Value:       flowTimeoutValue,
 			Default:     defaults.FlowTimeOut.String(),
 			Type:        "duration",
 			Description: "Closes flows older than flowTimeout",

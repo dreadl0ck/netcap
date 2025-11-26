@@ -175,6 +175,9 @@ var dnsDecoder = newGoPacketDecoder(
 				responseCodeName = "UNKNOWN"
 			}
 
+			// Calculate total DNS packet size (for amplification detection)
+			packetSize := int32(len(dns.Contents))
+
 			return &types.DNS{
 				Timestamp:    timestamp,
 				ID:           int32(dns.ID),
@@ -199,6 +202,7 @@ var dnsDecoder = newGoPacketDecoder(
 				QueryNameLength:  queryNameLength,
 				SubdomainCount:   subdomainCount,
 				QueryNameEntropy: queryNameEntropy,
+				PacketSize:       packetSize,
 				QueryNameTLD:     queryNameTLD,
 				IsNXDOMAIN:       dns.ResponseCode == layers.DNSResponseCodeNXDomain,
 				ResponseCodeName: responseCodeName,

@@ -80,6 +80,74 @@ type FileError struct {
 	ErrorLogPath string `json:"errorLogPath,omitempty"` // Path to detailed error log file
 }
 
+// RuntimeConfig holds the actual runtime configuration values passed from the capture package
+// This allows the webUI to display the actual values the application was started with
+type RuntimeConfig struct {
+	// Input/Output
+	Compress bool
+	Buffer   bool
+
+	// Performance
+	Workers      int
+	PacketBuffer int
+	MemBufSize   int
+
+	// Network Capture
+	Interface   string
+	PromiscMode bool
+	SnapLen     int
+
+	// Decoders
+	BaseLayer     string
+	DecodeOptions string
+	Payload       bool
+	Context       bool
+
+	// Database/Enrichment
+	MacDB         bool
+	Ja3DB         bool
+	ServiceDB     bool
+	GeoDB         bool
+	ReverseDNS    bool
+	LocalDNS      bool
+
+	// TCP Reassembly
+	ReassembleConnections bool
+	FlushEvery            int
+	Checksum              bool
+	NoOptCheck            bool
+	IgnoreFSMErr          bool
+	AllowMissingInit      bool
+	ClosePendingTimeout   time.Duration
+	CloseInactiveTimeout  time.Duration
+
+	// Output Format
+	Proto bool
+	JSON  bool
+	CSV   bool
+
+	// Elastic
+	Elastic      bool
+	ElasticAddrs string
+	ElasticUser  string
+
+	// Advanced
+	IgnoreUnknown     bool
+	FreeOSMemory      int
+	ConnFlushInterval int
+	ConnTimeout       time.Duration
+	FlowFlushInterval int
+	FlowTimeout       time.Duration
+
+	// Stream processing
+	Entropy     bool
+	TCPDebug    bool
+	SaveConns   bool
+	DefragIPv4  bool
+	HexDump     bool
+	BannerSize  int
+}
+
 // Server represents the web UI HTTP server
 type Server struct {
 	addr               string
@@ -98,6 +166,7 @@ type Server struct {
 	fileErrors         map[string]FileError           // Tracks errors for each file
 	debugLogging       bool                           // Runtime debug logging state
 	dpiConfigured      bool                           // Whether DPI was configured at startup (via -dpi flag)
+	runtimeConfig      *RuntimeConfig                 // Actual runtime configuration values from flags
 	collector          CollectorInterface             // Reference to collector for runtime config changes
 	uploadCallback     UploadCallbackFunc             // Function to call when files are uploaded
 	fileBPFFilters     map[string]string              // Tracks BPF filter used for each file
@@ -144,7 +213,7 @@ type CollectorInterface interface {
 }
 
 // NewServer creates a new web UI server
-func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debugLogging bool, dpiConfigured bool, isServiceMode bool, serviceConfig *ServiceConfig) *Server {
+func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debugLogging bool, dpiConfigured bool, isServiceMode bool, serviceConfig *ServiceConfig, runtimeConfig *RuntimeConfig) *Server {
 	log.Printf("[WebUI] NewServer called with outDir=%s, numInputFiles=%d", outDir, len(inputFiles))
 
 	s := &Server{
@@ -155,6 +224,7 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		assetsPath:         assetsPath,
 		isProcessing:       true,
 		dpiConfigured:      dpiConfigured,
+		runtimeConfig:      runtimeConfig,
 		completedFiles:     make(map[string]bool),
 		fileErrors:         make(map[string]FileError),
 		fileBPFFilters:     make(map[string]string),

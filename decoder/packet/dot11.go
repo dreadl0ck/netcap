@@ -14,6 +14,8 @@
 package packet
 
 import (
+	"encoding/binary"
+
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gogo/protobuf/proto"
@@ -189,29 +191,43 @@ var dot11Decoder = newGoPacketDecoder(
 			isDeauth := dot11.Type == layers.Dot11TypeMgmtDeauthentication
 			isDisassoc := dot11.Type == layers.Dot11TypeMgmtDisassociation
 
+			// Extract reason code for deauth/disassoc frames
+			// The reason code is a 2-byte little-endian value at the start of the frame body
+			var reasonCode int32
+			var reasonCodeName string
+			if (isDeauth || isDisassoc) && len(dot11.Payload) >= 2 {
+				reasonCode = int32(binary.LittleEndian.Uint16(dot11.Payload[:2]))
+				reasonCodeName = dot11ReasonCodeNames[uint16(reasonCode)]
+				if reasonCodeName == "" {
+					reasonCodeName = "Unknown"
+				}
+			}
+
 			// Check retry flag (could indicate jamming if excessive)
 			isRetry := (dot11.Flags & layers.Dot11FlagsRetry) != 0
 
 			return &types.Dot11{
-				Timestamp:         timestamp,
-				Type:              int32(dot11.Type),
-				Proto:             int32(dot11.Proto),
-				Flags:             int32(dot11.Flags),
-				DurationID:        int32(dot11.DurationID),
-				Address1:          dot11.Address1.String(),
-				Address2:          dot11.Address2.String(),
-				Address3:          dot11.Address3.String(),
-				Address4:          dot11.Address4.String(),
-				SequenceNumber:    int32(dot11.SequenceNumber),
-				FragmentNumber:    int32(dot11.FragmentNumber),
-				Checksum:          dot11.Checksum,
-				QOS:               qos,
-				HTControl:         htcontrol,
-				TypeName:          typeName,
-				SubtypeName:       subtypeName,
+				Timestamp:          timestamp,
+				Type:               int32(dot11.Type),
+				Proto:              int32(dot11.Proto),
+				Flags:              int32(dot11.Flags),
+				DurationID:         int32(dot11.DurationID),
+				Address1:           dot11.Address1.String(),
+				Address2:           dot11.Address2.String(),
+				Address3:           dot11.Address3.String(),
+				Address4:           dot11.Address4.String(),
+				SequenceNumber:     int32(dot11.SequenceNumber),
+				FragmentNumber:     int32(dot11.FragmentNumber),
+				Checksum:           dot11.Checksum,
+				QOS:                qos,
+				HTControl:          htcontrol,
+				TypeName:           typeName,
+				SubtypeName:        subtypeName,
 				IsDeauthentication: isDeauth,
-				IsDisassociation:  isDisassoc,
-				IsRetry:           isRetry,
+				IsDisassociation:   isDisassoc,
+				ReasonCode:         reasonCode,
+				ReasonCodeName:     reasonCodeName,
+				IsRetry:            isRetry,
 			}
 		}
 

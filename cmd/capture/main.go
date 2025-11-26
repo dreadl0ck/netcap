@@ -653,8 +653,56 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			log.Printf("Failed to get absolute path for output directory: %v\n", err)
 		}
 
+		// Create runtime config with actual flag values
+		runtimeConfig := &webui.RuntimeConfig{
+			Compress:              flagCompress,
+			Buffer:                flagBuffer,
+			Workers:               flagWorkers,
+			PacketBuffer:          flagPacketBuffer,
+			MemBufSize:            flagMemBufferSize,
+			Interface:             flagInterface,
+			PromiscMode:           flagPromiscMode,
+			SnapLen:               flagSnapLen,
+			BaseLayer:             flagBaseLayer,
+			DecodeOptions:         flagDecodeOptions,
+			Payload:               flagPayload,
+			Context:               flagContext,
+			MacDB:                 flagMACDB,
+			Ja3DB:                 flagJa3DB,
+			ServiceDB:             flagServiceDB,
+			GeoDB:                 flagGeolocationDB,
+			ReverseDNS:            flagReverseDNS,
+			LocalDNS:              flagLocalDNS,
+			ReassembleConnections: flagReassembleConnections,
+			FlushEvery:            flagFlushevery,
+			Checksum:              flagChecksum,
+			NoOptCheck:            flagNooptcheck,
+			IgnoreFSMErr:          flagIgnorefsmerr,
+			AllowMissingInit:      flagAllowmissinginit,
+			ClosePendingTimeout:   flagClosePendingTimeout,
+			CloseInactiveTimeout:  flagCloseInactiveTimeout,
+			Proto:                 flagProto,
+			JSON:                  flagJSON,
+			CSV:                   flagCSV,
+			Elastic:               flagElastic,
+			ElasticAddrs:          flagElasticAddrs,
+			ElasticUser:           flagElasticUser,
+			IgnoreUnknown:         flagIgnoreUnknown,
+			FreeOSMemory:          flagFreeOSMemory,
+			ConnFlushInterval:     flagConnFlushInterval,
+			ConnTimeout:           flagConnTimeOut,
+			FlowFlushInterval:     flagFlowFlushInterval,
+			FlowTimeout:           flagFlowTimeOut,
+			Entropy:               flagCalcEntropy,
+			TCPDebug:              flagTCPDebug,
+			SaveConns:             flagSaveConns,
+			DefragIPv4:            flagDefragIPv4,
+			HexDump:               flagHexdump,
+			BannerSize:            flagBannerSize,
+		}
+
 		// Create server in local mode (unrestricted)
-		webUIServer = webui.NewServer(flagHTTP, initialOutDir, inputFiles, flagHTTPAssets, flagDebug, flagDPI, false, nil)
+		webUIServer = webui.NewServer(flagHTTP, initialOutDir, inputFiles, flagHTTPAssets, flagDebug, flagDPI, false, nil, runtimeConfig)
 		webUIServer.SetLiveMode(live) // Set live mode flag
 
 		if err := webUIServer.Start(); err != nil {

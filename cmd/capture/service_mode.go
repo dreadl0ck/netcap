@@ -64,6 +64,54 @@ func runServiceMode() {
 	}
 	fmt.Printf("Enforce max size for preloaded pcaps: %v\n", serviceConfig.EnforceMaxSizePreload)
 
+	// Create runtime config with actual flag values
+	runtimeConfig := &webui.RuntimeConfig{
+		Compress:              flagCompress,
+		Buffer:                flagBuffer,
+		Workers:               flagWorkers,
+		PacketBuffer:          flagPacketBuffer,
+		MemBufSize:            flagMemBufferSize,
+		Interface:             flagInterface,
+		PromiscMode:           flagPromiscMode,
+		SnapLen:               flagSnapLen,
+		BaseLayer:             flagBaseLayer,
+		DecodeOptions:         flagDecodeOptions,
+		Payload:               flagPayload,
+		Context:               flagContext,
+		MacDB:                 flagMACDB,
+		Ja3DB:                 flagJa3DB,
+		ServiceDB:             flagServiceDB,
+		GeoDB:                 flagGeolocationDB,
+		ReverseDNS:            flagReverseDNS,
+		LocalDNS:              flagLocalDNS,
+		ReassembleConnections: flagReassembleConnections,
+		FlushEvery:            flagFlushevery,
+		Checksum:              flagChecksum,
+		NoOptCheck:            flagNooptcheck,
+		IgnoreFSMErr:          flagIgnorefsmerr,
+		AllowMissingInit:      flagAllowmissinginit,
+		ClosePendingTimeout:   flagClosePendingTimeout,
+		CloseInactiveTimeout:  flagCloseInactiveTimeout,
+		Proto:                 flagProto,
+		JSON:                  flagJSON,
+		CSV:                   flagCSV,
+		Elastic:               flagElastic,
+		ElasticAddrs:          flagElasticAddrs,
+		ElasticUser:           flagElasticUser,
+		IgnoreUnknown:         flagIgnoreUnknown,
+		FreeOSMemory:          flagFreeOSMemory,
+		ConnFlushInterval:     flagConnFlushInterval,
+		ConnTimeout:           flagConnTimeOut,
+		FlowFlushInterval:     flagFlowFlushInterval,
+		FlowTimeout:           flagFlowTimeOut,
+		Entropy:               flagCalcEntropy,
+		TCPDebug:              flagTCPDebug,
+		SaveConns:             flagSaveConns,
+		DefragIPv4:            flagDefragIPv4,
+		HexDump:               flagHexdump,
+		BannerSize:            flagBannerSize,
+	}
+
 	// Create unified server in service mode
 	server := webui.NewServer(
 		flagHTTP,
@@ -71,9 +119,10 @@ func runServiceMode() {
 		nil,           // no input files in service mode
 		"",            // no custom assets path
 		false,         // debug logging
-		flagDPI,      // DPI configuration
+		flagDPI,       // DPI configuration
 		true,          // isServiceMode = true
 		serviceConfig, // service configuration
+		runtimeConfig, // actual runtime configuration values
 	)
 
 	// Setup signal handling for graceful shutdown
