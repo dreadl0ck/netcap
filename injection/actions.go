@@ -816,6 +816,14 @@ func GetActionHandler(action Action) (ActionHandler, error) {
 		return &HTTPSSLStripHandler{}, nil
 	case ActionHTTPRedirect:
 		return &HTTPRedirectHandler{}, nil
+	case ActionIPTablesBlock:
+		return &IPTablesBlockHandler{}, nil
+	case ActionIPTablesReject:
+		return &IPTablesRejectHandler{}, nil
+	case ActionIPTablesRateLimit:
+		return &IPTablesRateLimitHandler{}, nil
+	case ActionIPTablesLog:
+		return &IPTablesLogHandler{}, nil
 	case ActionAccept, ActionDrop:
 		// These don't need handlers - they're just verdicts
 		return nil, nil

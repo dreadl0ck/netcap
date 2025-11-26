@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dreadl0ck/netcap/firewall"
 	"github.com/dreadl0ck/netcap/performance"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -42,6 +43,21 @@ type Engine struct {
 
 	// Performance tracking
 	perfTracker *performance.Tracker
+
+	// Firewall manager for response actions
+	firewallManager *firewall.Manager
+
+	// Response action statistics
+	actionStats *ActionStats
+}
+
+// ActionStats tracks response action statistics.
+type ActionStats struct {
+	mu              sync.Mutex
+	ActionsExecuted uint64
+	ActionsSuccess  uint64
+	ActionsFailed   uint64
+	IPsBlocked      uint64
 }
 
 // rateCounter tracks alert counts for rate limiting.
@@ -104,9 +120,25 @@ func NewEngineFromConfig(config *Config, alertWriter AlertWriter) (*Engine, erro
 		ruleCounters:      make(map[string]*rateCounter),
 		rateLimit:         100, // Default 100 alerts per minute per rule
 		thresholdTrackers: make(map[string]*thresholdTracker),
+		actionStats:       &ActionStats{},
 	}
 
 	return engine, nil
+}
+
+// SetFirewallManager sets the firewall manager for response actions.
+// If not set, iptables-based response actions will be skipped.
+func (e *Engine) SetFirewallManager(manager *firewall.Manager) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.firewallManager = manager
+}
+
+// GetFirewallManager returns the current firewall manager.
+func (e *Engine) GetFirewallManager() *firewall.Manager {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
+	return e.firewallManager
 }
 
 // SetDeduplicationWindow configures the time window for alert deduplication.
@@ -210,6 +242,11 @@ func (e *Engine) Evaluate(record types.AuditRecord) (int, error) {
 
 			alertCount++
 			alertGenerated = true
+
+			// Execute response actions
+			if len(rule.Actions) > 0 {
+				e.executeResponseActions(rule, record, alert)
+			}
 		}
 
 		// Record per-rule metrics if performance tracker is set
@@ -394,4 +431,189 @@ func (e *Engine) Close() error {
 		return closer.Close()
 	}
 	return nil
+}
+
+// executeResponseActions executes all enabled response actions for a rule.
+func (e *Engine) executeResponseActions(rule *Rule, record types.AuditRecord, alert *types.Alert) {
+	for _, action := range rule.Actions {
+		if !action.IsEnabled() {
+			continue
+		}
+
+		e.actionStats.mu.Lock()
+		e.actionStats.ActionsExecuted++
+		e.actionStats.mu.Unlock()
+
+		err := e.executeResponseAction(action, record, alert)
+		if err != nil {
+			e.actionStats.mu.Lock()
+			e.actionStats.ActionsFailed++
+			e.actionStats.mu.Unlock()
+			// Log error but continue with other actions
+			fmt.Printf("[RULES] Response action %s failed for rule %s: %v\n",
+				action.Type, rule.Name, err)
+		} else {
+			e.actionStats.mu.Lock()
+			e.actionStats.ActionsSuccess++
+			e.actionStats.mu.Unlock()
+		}
+	}
+}
+
+// executeResponseAction executes a single response action.
+func (e *Engine) executeResponseAction(action *ResponseAction, record types.AuditRecord, alert *types.Alert) error {
+	switch action.Type {
+	case "iptables_block":
+		return e.executeIPTablesBlock(action, record, alert)
+	case "iptables_reject":
+		return e.executeIPTablesReject(action, record, alert)
+	case "iptables_rate_limit":
+		return e.executeIPTablesRateLimit(action, record, alert)
+	case "iptables_log":
+		return e.executeIPTablesLog(action, record, alert)
+	default:
+		return fmt.Errorf("unknown response action type: %s", action.Type)
+	}
+}
+
+// executeIPTablesBlock blocks an IP using iptables.
+func (e *Engine) executeIPTablesBlock(action *ResponseAction, record types.AuditRecord, alert *types.Alert) error {
+	// Get firewall manager with proper locking
+	manager := e.GetFirewallManager()
+	if manager == nil {
+		return fmt.Errorf("firewall manager not configured")
+	}
+
+	// Determine target IP
+	target := "source"
+	if t, ok := action.Config["target"].(string); ok {
+		target = t
+	}
+
+	var ip string
+	if target == "source" || target == "src" {
+		ip = record.Src()
+	} else {
+		ip = record.Dst()
+	}
+
+	if ip == "" {
+		return fmt.Errorf("could not determine IP to block from record")
+	}
+
+	// Get duration (handle string, int, and float64 from YAML parsing)
+	duration := 30 * time.Minute
+	if d, ok := action.Config["duration"].(string); ok {
+		if parsed, err := time.ParseDuration(d); err == nil {
+			duration = parsed
+		}
+	} else if d, ok := action.Config["duration"].(int); ok {
+		// Assume minutes if just an integer
+		duration = time.Duration(d) * time.Minute
+	} else if d, ok := action.Config["duration"].(float64); ok {
+		// YAML often parses numbers as float64
+		duration = time.Duration(d) * time.Minute
+	}
+
+	// Build block config
+	blockConfig := &firewall.BlockConfig{
+		Target:   target,
+		Duration: duration,
+		Action:   "DROP",
+		RuleName: alert.RuleName,
+		Reason:   fmt.Sprintf("%s - %s", alert.Description, alert.Severity),
+	}
+
+	err := manager.BlockIP(ip, blockConfig)
+	if err != nil {
+		return err
+	}
+
+	e.actionStats.mu.Lock()
+	e.actionStats.IPsBlocked++
+	e.actionStats.mu.Unlock()
+
+	return nil
+}
+
+// executeIPTablesReject rejects traffic with an ICMP response.
+func (e *Engine) executeIPTablesReject(action *ResponseAction, record types.AuditRecord, alert *types.Alert) error {
+	// Get firewall manager with proper locking
+	manager := e.GetFirewallManager()
+	if manager == nil {
+		return fmt.Errorf("firewall manager not configured")
+	}
+
+	// Same as block but with REJECT action
+	target := "source"
+	if t, ok := action.Config["target"].(string); ok {
+		target = t
+	}
+
+	var ip string
+	if target == "source" || target == "src" {
+		ip = record.Src()
+	} else {
+		ip = record.Dst()
+	}
+
+	if ip == "" {
+		return fmt.Errorf("could not determine IP to reject from record")
+	}
+
+	// Get duration (handle string, int, and float64 from YAML parsing)
+	duration := 30 * time.Minute
+	if d, ok := action.Config["duration"].(string); ok {
+		if parsed, err := time.ParseDuration(d); err == nil {
+			duration = parsed
+		}
+	} else if d, ok := action.Config["duration"].(int); ok {
+		duration = time.Duration(d) * time.Minute
+	} else if d, ok := action.Config["duration"].(float64); ok {
+		duration = time.Duration(d) * time.Minute
+	}
+
+	blockConfig := &firewall.BlockConfig{
+		Target:   target,
+		Duration: duration,
+		Action:   "REJECT",
+		RuleName: alert.RuleName,
+		Reason:   fmt.Sprintf("%s - %s", alert.Description, alert.Severity),
+	}
+
+	return manager.BlockIP(ip, blockConfig)
+}
+
+// executeIPTablesRateLimit rate-limits traffic from/to an IP.
+func (e *Engine) executeIPTablesRateLimit(action *ResponseAction, record types.AuditRecord, alert *types.Alert) error {
+	// Rate limiting requires hashlimit module - placeholder for now
+	fmt.Printf("[RULES] Rate limit action not yet fully implemented for rule %s\n", alert.RuleName)
+	return nil
+}
+
+// executeIPTablesLog logs matching traffic via iptables.
+func (e *Engine) executeIPTablesLog(action *ResponseAction, record types.AuditRecord, alert *types.Alert) error {
+	// Logging is already done via alerts - this is for iptables-level logging
+	prefix := "NETCAP: "
+	if p, ok := action.Config["prefix"].(string); ok {
+		prefix = p
+	}
+
+	fmt.Printf("[RULES] LOG: %s%s src=%s dst=%s\n",
+		prefix, alert.RuleName, record.Src(), record.Dst())
+
+	return nil
+}
+
+// GetActionStats returns response action statistics.
+func (e *Engine) GetActionStats() map[string]uint64 {
+	e.actionStats.mu.Lock()
+	defer e.actionStats.mu.Unlock()
+
+	return map[string]uint64{
+		"actions_executed": e.actionStats.ActionsExecuted,
+		"actions_success":  e.actionStats.ActionsSuccess,
+		"actions_failed":   e.actionStats.ActionsFailed,
+		"ips_blocked":      e.actionStats.IPsBlocked,
+	}
 }

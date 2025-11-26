@@ -64,6 +64,18 @@ const (
 
 	// ActionHTTPRedirect injects an HTTP redirect response.
 	ActionHTTPRedirect Action = "http_redirect"
+
+	// ActionIPTablesBlock blocks an IP/CIDR using iptables DROP.
+	ActionIPTablesBlock Action = "iptables_block"
+
+	// ActionIPTablesReject rejects traffic with ICMP response.
+	ActionIPTablesReject Action = "iptables_reject"
+
+	// ActionIPTablesRateLimit rate-limits traffic from/to an IP.
+	ActionIPTablesRateLimit Action = "iptables_rate_limit"
+
+	// ActionIPTablesLog logs matching traffic via iptables LOG target.
+	ActionIPTablesLog Action = "iptables_log"
 )
 
 // Rule represents an injection rule that matches packets and performs actions.
@@ -219,7 +231,8 @@ func ValidateAction(action Action) bool {
 	switch action {
 	case ActionAccept, ActionDrop, ActionModifyPayload, ActionInjectPacket,
 		ActionInjectTCPRST, ActionInjectDNS, ActionInjectARP, ActionDelay,
-		ActionHTTPInjectHeader, ActionHTTPSSLStrip, ActionHTTPRedirect:
+		ActionHTTPInjectHeader, ActionHTTPSSLStrip, ActionHTTPRedirect,
+		ActionIPTablesBlock, ActionIPTablesReject, ActionIPTablesRateLimit, ActionIPTablesLog:
 		return true
 	default:
 		return false

@@ -145,8 +145,14 @@ func getStreamKey(i *decoderutils.PacketInfo) streamKey {
 	var srcPort, dstPort, protocol string
 
 	if tl := i.Packet.TransportLayer(); tl != nil {
-		srcPort = tl.TransportFlow().Src().String()
-		dstPort = tl.TransportFlow().Dst().String()
+		// Check if the endpoint has valid data before converting to string
+		// Some protocols may have transport layers without valid port data
+		if len(tl.TransportFlow().Src().Raw()) > 0 {
+			srcPort = tl.TransportFlow().Src().String()
+		}
+		if len(tl.TransportFlow().Dst().Raw()) > 0 {
+			dstPort = tl.TransportFlow().Dst().String()
+		}
 		protocol = tl.LayerType().String()
 	}
 

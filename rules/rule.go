@@ -63,8 +63,42 @@ type Rule struct {
 	// Only applicable when Threshold > 1. Default is 60 seconds (1 minute)
 	ThresholdWindow int `yaml:"threshold_window,omitempty"`
 
+	// Actions are response actions to execute when this rule matches and generates an alert.
+	// These are automated responses like blocking IPs via iptables.
+	Actions []*ResponseAction `yaml:"actions,omitempty"`
+
 	// compiled is the compiled expression program (not serialized)
 	compiled *vm.Program
+}
+
+// ResponseAction defines an automated response to a rule match.
+type ResponseAction struct {
+	// Type is the action type (iptables_block, iptables_reject, iptables_rate_limit, iptables_log)
+	Type string `yaml:"type"`
+
+	// Config contains action-specific configuration
+	Config map[string]interface{} `yaml:"config,omitempty"`
+
+	// Enabled allows disabling specific actions (default: true if omitted)
+	Enabled *bool `yaml:"enabled,omitempty"`
+}
+
+// IsEnabled returns true if the action is enabled (default is true).
+func (a *ResponseAction) IsEnabled() bool {
+	if a.Enabled == nil {
+		return true // Default to enabled
+	}
+	return *a.Enabled
+}
+
+// Validate checks if the response action has a valid type.
+func (a *ResponseAction) Validate() error {
+	switch a.Type {
+	case "iptables_block", "iptables_reject", "iptables_rate_limit", "iptables_log":
+		return nil
+	default:
+		return fmt.Errorf("unknown response action type: %s", a.Type)
+	}
 }
 
 // Config holds a collection of rules loaded from a YAML file.

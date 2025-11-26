@@ -30,6 +30,8 @@
 * [File Extraction](file-extraction.md)
 * [Email Extraction](mail-extraction.md)
 * [Device Profiles](device-profiles.md)
+* [Rules Engine](RULES_ENGINE.md)
+* [Firewall Response Actions](FIREWALL_RESPONSE_ACTIONS.md)
 * [Python Integration](python-integration.md)
 * [Changelog](changelog.md)
 * [Troubleshooting](troubleshooting.md)

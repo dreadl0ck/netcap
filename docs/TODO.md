@@ -1,6 +1,7 @@
 # TODOs
 
-Records page: when changing records via capture file select, show spinner on records table to indicate loading.
+Inject page
+add support for users to create new rule sets and save them to disk
 
 - EthernetCTP has only Timestamp set?
 - support to enable / disable service probes

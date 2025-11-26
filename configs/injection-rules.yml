@@ -284,3 +284,77 @@ rules:
     enabled: false
     priority: 75
     tags: ["tcp", "blocking", "firewall"]
+
+  # ========================================
+  # IPTABLES FIREWALL ACTIONS
+  # ========================================
+  # These actions use iptables to block IPs at the firewall level.
+  # Requires Linux and root privileges.
+
+  - name: IPTables Block Port Scanner
+    description: Block source IP using iptables when port scanning detected
+    type: TCP
+    expression: |
+      SYN && !ACK && PayloadSize == 0
+    action: iptables_block
+    action_config:
+      target: source
+      duration: "30m"
+      rule_name: "port-scanner"
+    enabled: false
+    priority: 100
+    tags: ["iptables", "scanning", "block"]
+
+  - name: IPTables Block SSH Brute Force
+    description: Block source IP using iptables for SSH brute force attempts
+    type: TCP
+    expression: |
+      DstPort == 22 && SYN && !ACK
+    action: iptables_block
+    action_config:
+      target: source
+      duration: "2h"
+      rule_name: "ssh-brute-force"
+    enabled: false
+    priority: 95
+    tags: ["iptables", "ssh", "brute-force", "block"]
+
+  - name: IPTables Block DNS Tunneling
+    description: Block source IP using iptables for DNS tunneling attempts
+    type: DNS
+    expression: |
+      len(Questions) > 0 &&
+      len(Questions[0].Name) > 100
+    action: iptables_block
+    action_config:
+      target: source
+      duration: "4h"
+      rule_name: "dns-tunnel"
+    enabled: false
+    priority: 90
+    tags: ["iptables", "dns", "tunneling", "block"]
+
+  - name: IPTables Reject Telnet
+    description: Reject telnet connections with ICMP response
+    type: TCP
+    expression: DstPort == 23
+    action: iptables_reject
+    action_config:
+      target: source
+      duration: "1h"
+      rule_name: "telnet-reject"
+    enabled: false
+    priority: 85
+    tags: ["iptables", "telnet", "reject"]
+
+  - name: IPTables Log Suspicious Traffic
+    description: Log traffic matching suspicious patterns
+    type: TCP
+    expression: |
+      DstPort == 4444 || DstPort == 5555 || DstPort == 6666
+    action: iptables_log
+    action_config:
+      prefix: "SUSPICIOUS: "
+    enabled: false
+    priority: 80
+    tags: ["iptables", "logging", "suspicious"]

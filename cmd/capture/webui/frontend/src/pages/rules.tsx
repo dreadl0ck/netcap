@@ -42,10 +42,12 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import SecurityIcon from '@mui/icons-material/Security';
+import BlockIcon from '@mui/icons-material/Block';
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import FileSelectorHeader from '@/components/FileSelectorHeader';
-import { api, Rule, CreateRuleRequest, UpdateRuleRequest, formatBytes } from '@/lib/api';
+import { api, Rule, CreateRuleRequest, UpdateRuleRequest, ResponseAction, formatBytes } from '@/lib/api';
 import useSWR, { mutate, mutate as globalMutate } from 'swr';
 import { FilterExpressionInline, FilterExpressionBlock } from '@/components/FilterExpressionHighlight';
 import { SyntaxHighlightedTextArea } from '@/components/SyntaxHighlightedInput';
@@ -65,6 +67,7 @@ export default function RulesPage() {
     enabled: true,
     threshold: undefined,
     thresholdWindow: undefined,
+    actions: [],
   });
   const [mitreInput, setMitreInput] = useState('');
   const [tagInput, setTagInput] = useState('');
@@ -189,6 +192,7 @@ export default function RulesPage() {
         enabled: rule.enabled,
         threshold: rule.threshold,
         thresholdWindow: rule.thresholdWindow,
+        actions: rule.actions || [],
       });
     } else {
       setEditingRule(null);
@@ -203,6 +207,7 @@ export default function RulesPage() {
         enabled: true,
         threshold: undefined,
         thresholdWindow: undefined,
+        actions: [],
       });
     }
     setOpenDialog(true);
@@ -649,6 +654,18 @@ export default function RulesPage() {
                               />
                             </Tooltip>
                           )}
+                          {rule.actions && rule.actions.length > 0 && (
+                            <Tooltip title={`Response Actions: ${rule.actions.map(a => a.type.replace('iptables_', '')).join(', ')}`}>
+                              <Chip 
+                                icon={<SecurityIcon sx={{ fontSize: '0.9rem !important' }} />}
+                                label={rule.actions.length} 
+                                size="small" 
+                                color="error" 
+                                variant="outlined"
+                                sx={{ height: 20, fontSize: '0.7rem' }}
+                              />
+                            </Tooltip>
+                          )}
                         </Box>
                         {/* <Typography variant="caption" color="text.secondary">
                           {rule.description}
@@ -1023,6 +1040,216 @@ export default function RulesPage() {
                     <Chip key={tag} label={tag} onDelete={() => handleRemoveTag(tag)} size="small" />
                   ))}
                 </Box>
+              </Box>
+
+              {/* Response Actions Section */}
+              <Box sx={{ 
+                border: '1px solid', 
+                borderColor: 'divider', 
+                borderRadius: 1, 
+                p: 2,
+                bgcolor: 'background.default'
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <SecurityIcon color="primary" />
+                  <Typography variant="subtitle1" fontWeight="medium">
+                    Response Actions
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                    (Linux only - requires iptables)
+                  </Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Automatically execute firewall actions when this rule triggers an alert.
+                </Typography>
+
+                {/* Existing Actions */}
+                {(formData.actions || []).map((action, index) => (
+                  <Card key={index} variant="outlined" sx={{ mt: 2, bgcolor: 'background.paper' }}>
+                    <CardContent sx={{ pb: '16px !important' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <BlockIcon color={action.enabled !== false ? 'error' : 'disabled'} fontSize="small" />
+                          <Typography variant="subtitle2">
+                            {action.type.replace('iptables_', '').replace('_', ' ').toUpperCase()}
+                          </Typography>
+                          <Chip 
+                            label={action.enabled !== false ? 'Enabled' : 'Disabled'} 
+                            size="small" 
+                            color={action.enabled !== false ? 'success' : 'default'}
+                          />
+                        </Box>
+                        <IconButton 
+                          size="small" 
+                          color="error"
+                          onClick={() => {
+                            const newActions = [...(formData.actions || [])];
+                            newActions.splice(index, 1);
+                            setFormData({ ...formData, actions: newActions });
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+
+                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                        <FormControl size="small" sx={{ minWidth: 150 }}>
+                          <InputLabel>Action Type</InputLabel>
+                          <Select
+                            value={action.type}
+                            label="Action Type"
+                            onChange={(e) => {
+                              const newActions = [...(formData.actions || [])];
+                              newActions[index] = { ...action, type: e.target.value as ResponseAction['type'] };
+                              setFormData({ ...formData, actions: newActions });
+                            }}
+                          >
+                            <MenuItem value="iptables_block">Block (DROP)</MenuItem>
+                            <MenuItem value="iptables_reject">Reject</MenuItem>
+                            <MenuItem value="iptables_log">Log</MenuItem>
+                            <MenuItem value="iptables_rate_limit">Rate Limit</MenuItem>
+                          </Select>
+                        </FormControl>
+
+                        {(action.type === 'iptables_block' || action.type === 'iptables_reject') && (
+                          <>
+                            <FormControl size="small" sx={{ minWidth: 130 }}>
+                              <InputLabel>Target</InputLabel>
+                              <Select
+                                value={action.config?.target || 'source'}
+                                label="Target"
+                                onChange={(e) => {
+                                  const newActions = [...(formData.actions || [])];
+                                  newActions[index] = { 
+                                    ...action, 
+                                    config: { ...action.config, target: e.target.value as 'source' | 'destination' }
+                                  };
+                                  setFormData({ ...formData, actions: newActions });
+                                }}
+                              >
+                                <MenuItem value="source">Source IP</MenuItem>
+                                <MenuItem value="destination">Dest IP</MenuItem>
+                              </Select>
+                            </FormControl>
+
+                            <TextField
+                              size="small"
+                              label="Duration"
+                              placeholder="e.g., 30m, 1h, 24h"
+                              value={action.config?.duration || ''}
+                              onChange={(e) => {
+                                const newActions = [...(formData.actions || [])];
+                                newActions[index] = { 
+                                  ...action, 
+                                  config: { ...action.config, duration: e.target.value }
+                                };
+                                setFormData({ ...formData, actions: newActions });
+                              }}
+                              sx={{ width: 130 }}
+                              helperText="Block duration"
+                            />
+                          </>
+                        )}
+
+                        {action.type === 'iptables_log' && (
+                          <TextField
+                            size="small"
+                            label="Log Prefix"
+                            placeholder="e.g., ATTACK: "
+                            value={action.config?.prefix || ''}
+                            onChange={(e) => {
+                              const newActions = [...(formData.actions || [])];
+                              newActions[index] = { 
+                                ...action, 
+                                config: { ...action.config, prefix: e.target.value }
+                              };
+                              setFormData({ ...formData, actions: newActions });
+                            }}
+                            sx={{ width: 200 }}
+                          />
+                        )}
+
+                        {action.type === 'iptables_rate_limit' && (
+                          <>
+                            <TextField
+                              size="small"
+                              label="Rate"
+                              placeholder="e.g., 10/minute"
+                              value={action.config?.rate || ''}
+                              onChange={(e) => {
+                                const newActions = [...(formData.actions || [])];
+                                newActions[index] = { 
+                                  ...action, 
+                                  config: { ...action.config, rate: e.target.value }
+                                };
+                                setFormData({ ...formData, actions: newActions });
+                              }}
+                              sx={{ width: 130 }}
+                            />
+                            <TextField
+                              size="small"
+                              label="Burst"
+                              type="number"
+                              value={action.config?.burst || ''}
+                              onChange={(e) => {
+                                const newActions = [...(formData.actions || [])];
+                                newActions[index] = { 
+                                  ...action, 
+                                  config: { ...action.config, burst: parseInt(e.target.value) || undefined }
+                                };
+                                setFormData({ ...formData, actions: newActions });
+                              }}
+                              sx={{ width: 100 }}
+                              InputProps={{ inputProps: { min: 1 } }}
+                            />
+                          </>
+                        )}
+
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              size="small"
+                              checked={action.enabled !== false}
+                              onChange={(e) => {
+                                const newActions = [...(formData.actions || [])];
+                                newActions[index] = { ...action, enabled: e.target.checked };
+                                setFormData({ ...formData, actions: newActions });
+                              }}
+                            />
+                          }
+                          label="Active"
+                        />
+                      </Box>
+                    </CardContent>
+                  </Card>
+                ))}
+
+                {/* Add Action Button */}
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  sx={{ mt: 2 }}
+                  onClick={() => {
+                    const newAction: ResponseAction = {
+                      type: 'iptables_block',
+                      config: { target: 'source', duration: '30m' },
+                      enabled: true,
+                    };
+                    setFormData({ 
+                      ...formData, 
+                      actions: [...(formData.actions || []), newAction] 
+                    });
+                  }}
+                >
+                  Add Response Action
+                </Button>
+
+                {(formData.actions || []).length === 0 && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                    No response actions configured. Rules will only generate alerts.
+                  </Typography>
+                )}
               </Box>
 
               <FormControlLabel

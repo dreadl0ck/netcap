@@ -181,6 +181,20 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.SMB)
 	case types.Type_NC_IMAP:
 		record = new(types.IMAP)
+	case types.Type_NC_BGP:
+		record = new(types.BGP)
+	case types.Type_NC_RADIUS:
+		record = new(types.RADIUS)
+	case types.Type_NC_Syslog:
+		record = new(types.Syslog)
+	case types.Type_NC_RDP:
+		record = new(types.RDP)
+	case types.Type_NC_DNP3:
+		record = new(types.DNP3)
+	case types.Type_NC_SOCKS:
+		record = new(types.SOCKS)
+	case types.Type_NC_GTP:
+		record = new(types.GTP)
 	case types.Type_NC_Header:
 		// NC_Header is a file header type, not an audit record type
 		// Return nil to indicate this type should not be initialized as a record

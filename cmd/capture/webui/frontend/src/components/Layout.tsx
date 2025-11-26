@@ -48,6 +48,7 @@ import HttpIcon from '@mui/icons-material/Http';
 import BadgeIcon from '@mui/icons-material/Badge';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
+import BoltIcon from '@mui/icons-material/Bolt';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import useSWR from 'swr';
@@ -810,6 +811,18 @@ export default function Layout({ children, title, headerAction, topPadding }: La
               <LibraryBooksIcon />
             </ListItemIcon>
             <ListItemText primary="Rule Sets" />
+          </ListItemButton>
+        </Link>
+        <Link href="/inject" passHref style={LINK_STYLE}>
+          <ListItemButton
+            selected={isActive('/inject')}
+            data-learn="Configure packet injection and manipulation rules for network testing and security research."
+            sx={SELECTED_MENU_ITEM_SX}
+          >
+            <ListItemIcon>
+              <BoltIcon />
+            </ListItemIcon>
+            <ListItemText primary="Inject" />
           </ListItemButton>
         </Link>
         <Link href="/dbs" passHref style={LINK_STYLE}>

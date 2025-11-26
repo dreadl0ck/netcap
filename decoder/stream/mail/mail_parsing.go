@@ -402,6 +402,11 @@ func parseMailParts(conv *core.ConversationInfo, body string, logger *zap.Logger
 		}
 	}
 
+	// Handle any remaining currentPart that wasn't closed with an end marker
+	if currentPart != nil && (currentPart.Content != "" || len(currentPart.Header) > 0) {
+		parts = append(parts, copyMailPart(currentPart))
+	}
+
 	return parts
 }
 
@@ -409,7 +414,10 @@ func copyMailPart(part *types.MailPart) *types.MailPart {
 	return &types.MailPart{
 		ID:       part.ID,
 		Header:   part.Header,
-		Content:  part.Content,
+		// Sanitize content to ensure valid UTF-8 for proto encoding
+		// Proto3 string fields require valid UTF-8, but email content
+		// may contain binary data or non-UTF-8 encoded text
+		Content:  strings.ToValidUTF8(part.Content, "�"),
 		Filename: part.Filename,
 	}
 }

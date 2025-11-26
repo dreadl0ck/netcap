@@ -31,19 +31,27 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+// ResponseActionAPI represents a response action for the API
+type ResponseActionAPI struct {
+	Type    string                 `json:"type"`
+	Config  map[string]interface{} `json:"config,omitempty"`
+	Enabled *bool                  `json:"enabled,omitempty"`
+}
+
 // RuleResponse represents a rule for the API
 type RuleResponse struct {
-	ID              string   `json:"id"`
-	Name            string   `json:"name"`
-	Description     string   `json:"description"`
-	Type            string   `json:"type"`
-	Expression      string   `json:"expression"`
-	Severity        string   `json:"severity"`
-	MITRE           []string `json:"mitre"`
-	Tags            []string `json:"tags"`
-	Enabled         bool     `json:"enabled"`
-	Threshold       int      `json:"threshold,omitempty"`
-	ThresholdWindow int      `json:"thresholdWindow,omitempty"`
+	ID              string              `json:"id"`
+	Name            string              `json:"name"`
+	Description     string              `json:"description"`
+	Type            string              `json:"type"`
+	Expression      string              `json:"expression"`
+	Severity        string              `json:"severity"`
+	MITRE           []string            `json:"mitre"`
+	Tags            []string            `json:"tags"`
+	Enabled         bool                `json:"enabled"`
+	Threshold       int                 `json:"threshold,omitempty"`
+	ThresholdWindow int                 `json:"thresholdWindow,omitempty"`
+	Actions         []ResponseActionAPI `json:"actions,omitempty"`
 }
 
 // RulesConfigResponse represents the full rules configuration
@@ -53,30 +61,32 @@ type RulesConfigResponse struct {
 
 // CreateRuleRequest represents a request to create a new rule
 type CreateRuleRequest struct {
-	Name            string   `json:"name"`
-	Description     string   `json:"description"`
-	Type            string   `json:"type"`
-	Expression      string   `json:"expression"`
-	Severity        string   `json:"severity"`
-	MITRE           []string `json:"mitre"`
-	Tags            []string `json:"tags"`
-	Enabled         bool     `json:"enabled"`
-	Threshold       int      `json:"threshold,omitempty"`
-	ThresholdWindow int      `json:"thresholdWindow,omitempty"`
+	Name            string              `json:"name"`
+	Description     string              `json:"description"`
+	Type            string              `json:"type"`
+	Expression      string              `json:"expression"`
+	Severity        string              `json:"severity"`
+	MITRE           []string            `json:"mitre"`
+	Tags            []string            `json:"tags"`
+	Enabled         bool                `json:"enabled"`
+	Threshold       int                 `json:"threshold,omitempty"`
+	ThresholdWindow int                 `json:"thresholdWindow,omitempty"`
+	Actions         []ResponseActionAPI `json:"actions,omitempty"`
 }
 
 // UpdateRuleRequest represents a request to update a rule
 type UpdateRuleRequest struct {
-	Name            string   `json:"name"`
-	Description     string   `json:"description"`
-	Type            string   `json:"type"`
-	Expression      string   `json:"expression"`
-	Severity        string   `json:"severity"`
-	MITRE           []string `json:"mitre"`
-	Tags            []string `json:"tags"`
-	Enabled         bool     `json:"enabled"`
-	Threshold       int      `json:"threshold,omitempty"`
-	ThresholdWindow int      `json:"thresholdWindow,omitempty"`
+	Name            string              `json:"name"`
+	Description     string              `json:"description"`
+	Type            string              `json:"type"`
+	Expression      string              `json:"expression"`
+	Severity        string              `json:"severity"`
+	MITRE           []string            `json:"mitre"`
+	Tags            []string            `json:"tags"`
+	Enabled         bool                `json:"enabled"`
+	Threshold       int                 `json:"threshold,omitempty"`
+	ThresholdWindow int                 `json:"thresholdWindow,omitempty"`
+	Actions         []ResponseActionAPI `json:"actions,omitempty"`
 }
 
 // RuleSetInfo represents information about a rule set (YAML file)
@@ -96,6 +106,38 @@ type RuleSetsResponse struct {
 // UpdateRuleSetRequest represents a request to enable/disable a rule set
 type UpdateRuleSetRequest struct {
 	Enabled bool `json:"enabled"`
+}
+
+// convertActionsToAPI converts rules.ResponseAction slice to API format
+func convertActionsToAPI(actions []*rules.ResponseAction) []ResponseActionAPI {
+	if actions == nil {
+		return nil
+	}
+	result := make([]ResponseActionAPI, len(actions))
+	for i, action := range actions {
+		result[i] = ResponseActionAPI{
+			Type:    action.Type,
+			Config:  action.Config,
+			Enabled: action.Enabled,
+		}
+	}
+	return result
+}
+
+// convertActionsFromAPI converts API format to rules.ResponseAction slice
+func convertActionsFromAPI(actions []ResponseActionAPI) []*rules.ResponseAction {
+	if actions == nil {
+		return nil
+	}
+	result := make([]*rules.ResponseAction, len(actions))
+	for i, action := range actions {
+		result[i] = &rules.ResponseAction{
+			Type:    action.Type,
+			Config:  action.Config,
+			Enabled: action.Enabled,
+		}
+	}
+	return result
 }
 
 // getRulesFolderPath returns the path to the rules folder
@@ -274,6 +316,7 @@ func (s *Server) saveRulesConfig(config *rules.Config) error {
 				Enabled:         rule.Enabled,
 				Threshold:       rule.Threshold,
 				ThresholdWindow: rule.ThresholdWindow,
+				Actions:         rule.Actions,
 			}
 			// Filter out the ruleset tag
 			newTags := make([]string, 0, len(rule.Tags))
@@ -320,6 +363,7 @@ func (s *Server) saveRulesConfig(config *rules.Config) error {
 			Enabled:         rule.Enabled,
 			Threshold:       rule.Threshold,
 			ThresholdWindow: rule.ThresholdWindow,
+			Actions:         rule.Actions,
 		}
 
 		// Filter out the ruleset tag
@@ -431,6 +475,7 @@ func (s *Server) handleGetRules(w http.ResponseWriter, r *http.Request) {
 			Enabled:         rule.Enabled,
 			Threshold:       rule.Threshold,
 			ThresholdWindow: rule.ThresholdWindow,
+			Actions:         convertActionsToAPI(rule.Actions),
 		})
 	}
 
@@ -516,6 +561,7 @@ func (s *Server) handleCreateRule(w http.ResponseWriter, r *http.Request) {
 		Enabled:         req.Enabled,
 		Threshold:       req.Threshold,
 		ThresholdWindow: req.ThresholdWindow,
+		Actions:         convertActionsFromAPI(req.Actions),
 	}
 
 	// Add to config
@@ -547,6 +593,7 @@ func (s *Server) handleCreateRule(w http.ResponseWriter, r *http.Request) {
 			Enabled:         newRule.Enabled,
 			Threshold:       newRule.Threshold,
 			ThresholdWindow: newRule.ThresholdWindow,
+			Actions:         convertActionsToAPI(newRule.Actions),
 		},
 	})
 }
@@ -615,6 +662,7 @@ func (s *Server) handleGetRule(w http.ResponseWriter, r *http.Request, ruleID st
 				Enabled:         rule.Enabled,
 				Threshold:       rule.Threshold,
 				ThresholdWindow: rule.ThresholdWindow,
+				Actions:         convertActionsToAPI(rule.Actions),
 			})
 			return
 		}
@@ -708,6 +756,7 @@ func (s *Server) handleUpdateRule(w http.ResponseWriter, r *http.Request, ruleID
 			config.Rules[i].Enabled = req.Enabled
 			config.Rules[i].Threshold = req.Threshold
 			config.Rules[i].ThresholdWindow = req.ThresholdWindow
+			config.Rules[i].Actions = convertActionsFromAPI(req.Actions)
 			found = true
 			break
 		}

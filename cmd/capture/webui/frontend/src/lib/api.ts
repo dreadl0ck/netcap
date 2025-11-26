@@ -470,6 +470,19 @@ export interface ReportIssueResponse {
   remaining: number;
 }
 
+// Response action configuration for firewall rules
+export interface ResponseAction {
+  type: 'iptables_block' | 'iptables_reject' | 'iptables_rate_limit' | 'iptables_log';
+  config?: {
+    target?: 'source' | 'destination';
+    duration?: string | number;
+    prefix?: string;
+    rate?: string;
+    burst?: number;
+  };
+  enabled?: boolean;
+}
+
 export interface Rule {
   id: string;
   name: string;
@@ -484,6 +497,7 @@ export interface Rule {
   thresholdWindow?: number;
   executionTimeMs?: number;
   lastExecuted?: number;
+  actions?: ResponseAction[];
 }
 
 export interface RulesResponse {
@@ -501,6 +515,7 @@ export interface CreateRuleRequest {
   enabled: boolean;
   threshold?: number;
   thresholdWindow?: number;
+  actions?: ResponseAction[];
 }
 
 export interface UpdateRuleRequest {
@@ -514,6 +529,7 @@ export interface UpdateRuleRequest {
   enabled: boolean;
   threshold?: number;
   thresholdWindow?: number;
+  actions?: ResponseAction[];
 }
 
 export interface RuleSet {
@@ -614,6 +630,98 @@ export interface FieldValuesResponse {
   sampleSize: number;
   maxPerField: number;
   recordsScanned: number;
+}
+
+// Injection Rules Types
+export interface InjectionRule {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  expression: string;
+  action: string;
+  actionConfig?: Record<string, unknown>;
+  enabled: boolean;
+  priority: number;
+  stopOnMatch: boolean;
+  tags: string[];
+}
+
+export interface InjectionRulesResponse {
+  rules: InjectionRule[];
+  description: string;
+}
+
+export interface CreateInjectionRuleRequest {
+  name: string;
+  description: string;
+  type: string;
+  expression: string;
+  action: string;
+  actionConfig?: Record<string, unknown>;
+  enabled: boolean;
+  priority?: number;
+  stopOnMatch?: boolean;
+  tags?: string[];
+}
+
+export interface UpdateInjectionRuleRequest {
+  name: string;
+  description: string;
+  type: string;
+  expression: string;
+  action: string;
+  actionConfig?: Record<string, unknown>;
+  enabled: boolean;
+  priority?: number;
+  stopOnMatch?: boolean;
+  tags?: string[];
+}
+
+export interface InjectionEvent {
+  id: string;
+  timestamp: number;
+  ruleName: string;
+  ruleAction: string;
+  recordType: string;
+  srcIP?: string;
+  dstIP?: string;
+  srcPort?: number;
+  dstPort?: number;
+  result: string;
+  error?: string;
+  actionData?: Record<string, unknown>;
+}
+
+export interface InjectionEventsResponse {
+  events: InjectionEvent[];
+  totalCount: number;
+}
+
+export interface InjectionStatsResponse {
+  totalRules: number;
+  enabledRules: number;
+  totalEvents: number;
+  eventsByRule: Record<string, number>;
+  eventsByResult: Record<string, number>;
+  eventsByAction: Record<string, number>;
+  lastEventTime?: number;
+}
+
+export interface InjectionActionConfig {
+  name: string;
+  type: string;
+  label: string;
+  required?: string;
+  options?: string;
+}
+
+export interface InjectionAction {
+  value: string;
+  label: string;
+  description: string;
+  category: string;
+  configFields?: InjectionActionConfig[];
 }
 
 export interface ConversationData {
@@ -1371,6 +1479,100 @@ export const api = {
       const error = await res.json();
       throw new Error(error.error || 'Failed to update rule set');
     }
+    return res.json();
+  },
+
+  // Injection Rules API
+  async getInjectionRules(): Promise<InjectionRulesResponse> {
+    const res = await fetch(`${API_BASE}/injection-rules`);
+    if (!res.ok) throw new Error('Failed to fetch injection rules');
+    return res.json();
+  },
+
+  async getInjectionRule(id: string): Promise<InjectionRule> {
+    const res = await fetch(`${API_BASE}/injection-rules/${encodeURIComponent(id)}`);
+    if (!res.ok) throw new Error('Failed to fetch injection rule');
+    return res.json();
+  },
+
+  async createInjectionRule(rule: CreateInjectionRuleRequest): Promise<{success: boolean; message: string; rule: InjectionRule}> {
+    const res = await fetch(`${API_BASE}/injection-rules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rule),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to create injection rule');
+    }
+    return res.json();
+  },
+
+  async updateInjectionRule(id: string, rule: UpdateInjectionRuleRequest): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/injection-rules/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(rule),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to update injection rule');
+    }
+    return res.json();
+  },
+
+  async toggleInjectionRule(id: string, enabled: boolean): Promise<{success: boolean; message: string; enabled: boolean}> {
+    const res = await fetch(`${API_BASE}/injection-rules/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to toggle injection rule');
+    }
+    return res.json();
+  },
+
+  async deleteInjectionRule(id: string): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/injection-rules/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to delete injection rule');
+    }
+    return res.json();
+  },
+
+  async getInjectionEvents(filters?: { rule?: string; result?: string; action?: string }): Promise<InjectionEventsResponse> {
+    const params = new URLSearchParams();
+    if (filters?.rule) params.set('rule', filters.rule);
+    if (filters?.result) params.set('result', filters.result);
+    if (filters?.action) params.set('action', filters.action);
+    const queryString = params.toString();
+    const res = await fetch(`${API_BASE}/injection-events${queryString ? `?${queryString}` : ''}`);
+    if (!res.ok) throw new Error('Failed to fetch injection events');
+    return res.json();
+  },
+
+  async clearInjectionEvents(): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/injection-events/clear`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to clear injection events');
+    return res.json();
+  },
+
+  async getInjectionStats(): Promise<InjectionStatsResponse> {
+    const res = await fetch(`${API_BASE}/injection-stats`);
+    if (!res.ok) throw new Error('Failed to fetch injection stats');
+    return res.json();
+  },
+
+  async getInjectionActions(): Promise<{actions: InjectionAction[]}> {
+    const res = await fetch(`${API_BASE}/injection-actions`);
+    if (!res.ok) throw new Error('Failed to fetch injection actions');
     return res.json();
   },
 
