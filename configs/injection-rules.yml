@@ -1,0 +1,286 @@
+# NETCAP Injection Rules Configuration
+# =====================================
+#
+# This file contains example injection rules for packet manipulation.
+# These rules are designed for authorized security testing and research only.
+#
+# WARNING: Unauthorized use of packet manipulation may violate laws.
+# Use only on networks you own or have explicit permission to test.
+#
+# NOTE: Rules operate on packet-level data. Some fields may not be available
+# depending on the packet type and what layers are present.
+
+description: "Example injection rules for security testing"
+
+rules:
+  # ========================================
+  # DNS SPOOFING EXAMPLES
+  # ========================================
+  # Note: DNS spoofing works by matching on DNS packet characteristics
+  # and injecting a spoofed response. The action handler inspects the
+  # actual DNS layer from the packet context.
+
+  - name: DNS Spoof - All Queries
+    description: Spoof all DNS queries (use with caution)
+    type: DNS
+    expression: |
+      QR == false && QDCount > 0
+    action: inject_dns
+    action_config:
+      response_ip: "192.168.1.100"
+      ttl: 300
+    enabled: false
+    priority: 100
+    tags: ["dns", "spoofing", "mitm"]
+
+  - name: DNS Spoof - External Only
+    description: Spoof DNS queries from external sources
+    type: DNS
+    expression: |
+      QR == false && QDCount > 0
+    action: inject_dns
+    action_config:
+      response_ip: "192.168.1.100"
+      ttl: 60
+    enabled: false
+    priority: 90
+    tags: ["dns", "spoofing"]
+
+  # ========================================
+  # CONNECTION BLOCKING EXAMPLES
+  # ========================================
+  # These use TCP RST injection to terminate connections
+
+  - name: Block HTTPS to Private Network
+    description: Prevent HTTPS connections to internal IP ranges
+    type: TCP
+    expression: |
+      DstPort == 443 && (
+        InSubnet(DstIP, "10.0.0.0/8") ||
+        InSubnet(DstIP, "172.16.0.0/12") ||
+        InSubnet(DstIP, "192.168.0.0/16")
+      )
+    action: inject_tcp_rst
+    enabled: false
+    priority: 80
+    tags: ["tcp", "blocking", "internal"]
+
+  - name: Block SSH Connections
+    description: Block outbound SSH connections except to local network
+    type: TCP
+    expression: DstPort == 22 && !InSubnet(DstIP, "192.168.1.0/24")
+    action: inject_tcp_rst
+    enabled: false
+    priority: 75
+    tags: ["tcp", "blocking", "ssh"]
+
+  - name: Block Telnet
+    description: Block insecure telnet connections
+    type: TCP
+    expression: DstPort == 23
+    action: inject_tcp_rst
+    enabled: false
+    priority: 70
+    tags: ["tcp", "blocking", "telnet", "legacy"]
+
+  - name: Block FTP
+    description: Block unencrypted FTP connections
+    type: TCP
+    expression: DstPort == 21 || DstPort == 20
+    action: inject_tcp_rst
+    enabled: false
+    priority: 69
+    tags: ["tcp", "blocking", "ftp", "legacy"]
+
+  - name: Block Specific Host
+    description: Block all TCP connections to a specific host
+    type: TCP
+    expression: DstIP == "10.0.0.50"
+    action: inject_tcp_rst
+    enabled: false
+    priority: 65
+    tags: ["tcp", "blocking", "host"]
+
+  - name: Block High Ports from External
+    description: Block connections to high ports from non-private IPs
+    type: TCP
+    expression: |
+      DstPort > 1024 && 
+      !IsPrivateIP(SrcIP)
+    action: inject_tcp_rst
+    enabled: false
+    priority: 60
+    tags: ["tcp", "blocking", "firewall"]
+
+  # ========================================
+  # ARP SPOOFING EXAMPLES
+  # ========================================
+
+  - name: ARP Spoof - Gateway Impersonation
+    description: Respond to ARP requests for gateway with attacker MAC
+    type: ARP
+    expression: |
+      Operation == 1 && 
+      DstProtocolAddress == "192.168.1.1"
+    action: inject_arp
+    action_config:
+      spoof_mac: "aa:bb:cc:dd:ee:ff"
+    enabled: false
+    priority: 100
+    tags: ["arp", "spoofing", "gateway"]
+
+  - name: ARP Spoof - Target Host
+    description: Respond to ARP requests for specific host
+    type: ARP
+    expression: |
+      Operation == 1 && 
+      DstProtocolAddress == "192.168.1.50"
+    action: inject_arp
+    action_config:
+      spoof_mac: "aa:bb:cc:dd:ee:ff"
+    enabled: false
+    priority: 95
+    tags: ["arp", "spoofing", "host"]
+
+  # ========================================
+  # PACKET DELAY EXAMPLES
+  # ========================================
+
+  - name: Delay DNS Responses
+    description: Introduce latency to DNS responses for testing
+    type: DNS
+    expression: QR == true
+    action: delay
+    action_config:
+      delay_ms: 500
+    enabled: false
+    priority: 20
+    tags: ["dns", "delay", "testing"]
+
+  - name: Delay DNS Queries
+    description: Delay outbound DNS queries
+    type: DNS
+    expression: QR == false
+    action: delay
+    action_config:
+      delay_ms: 100
+    enabled: false
+    priority: 19
+    tags: ["dns", "delay", "testing"]
+
+  - name: Delay TCP to Specific Host
+    description: Introduce latency for TCP traffic to specific host
+    type: TCP
+    expression: DstIP == "10.0.0.50"
+    action: delay
+    action_config:
+      delay_ms: 200
+    enabled: false
+    priority: 15
+    tags: ["tcp", "delay", "testing"]
+
+  - name: Delay All TCP SYN
+    description: Delay all TCP SYN packets (slows connection setup)
+    type: TCP
+    expression: SYN == true && ACK == false
+    action: delay
+    action_config:
+      delay_ms: 100
+    enabled: false
+    priority: 14
+    tags: ["tcp", "delay", "syn"]
+
+  # ========================================
+  # DROP RULES
+  # ========================================
+
+  - name: Drop Large Packets
+    description: Drop TCP packets with large payload
+    type: TCP
+    expression: PayloadSize > 1400
+    action: drop
+    enabled: false
+    priority: 50
+    tags: ["tcp", "drop", "size"]
+
+  - name: Drop TCP to Blocked Ports
+    description: Silently drop traffic to specific ports
+    type: TCP
+    expression: |
+      DstPort == 445 || 
+      DstPort == 135 || 
+      DstPort == 139
+    action: drop
+    enabled: false
+    priority: 85
+    tags: ["tcp", "drop", "smb", "security"]
+
+  - name: Drop Non-Standard DNS
+    description: Drop DNS traffic not on standard port 53
+    type: UDP
+    expression: |
+      (SrcPort != 53 && DstPort != 53) && 
+      PayloadSize > 0
+    action: drop
+    enabled: false
+    priority: 40
+    tags: ["udp", "drop", "dns"]
+
+  # ========================================
+  # TRAFFIC LOGGING/ACCEPT EXAMPLES  
+  # ========================================
+
+  - name: Accept All DNS (Logging)
+    description: Accept all DNS traffic (for logging purposes)
+    type: DNS
+    expression: "true"
+    action: accept
+    enabled: false
+    priority: 1
+    stop_on_match: false
+    tags: ["dns", "logging", "analysis"]
+
+  - name: Accept All TCP (Logging)
+    description: Accept all TCP traffic (for logging purposes)
+    type: TCP
+    expression: "true"
+    action: accept
+    enabled: false
+    priority: 1
+    stop_on_match: false
+    tags: ["tcp", "logging", "analysis"]
+
+  - name: Accept All ARP (Logging)
+    description: Accept all ARP traffic (for logging purposes)
+    type: ARP
+    expression: "true"
+    action: accept
+    enabled: false
+    priority: 1
+    stop_on_match: false
+    tags: ["arp", "logging", "analysis"]
+
+  # ========================================
+  # NETWORK SEGMENTATION EXAMPLES
+  # ========================================
+
+  - name: Block Cross-Subnet Traffic
+    description: Block traffic between different subnets
+    type: TCP
+    expression: |
+      InSubnet(SrcIP, "192.168.1.0/24") && 
+      InSubnet(DstIP, "192.168.2.0/24")
+    action: inject_tcp_rst
+    enabled: false
+    priority: 70
+    tags: ["tcp", "segmentation", "firewall"]
+
+  - name: Block External to Internal
+    description: Block connections from public IPs to private network
+    type: TCP
+    expression: |
+      IsPublicIP(SrcIP) && IsPrivateIP(DstIP)
+    action: inject_tcp_rst
+    enabled: false
+    priority: 75
+    tags: ["tcp", "blocking", "firewall"]

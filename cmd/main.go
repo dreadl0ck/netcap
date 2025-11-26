@@ -29,6 +29,7 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/collect"
 	"github.com/dreadl0ck/netcap/cmd/dump"
 	"github.com/dreadl0ck/netcap/cmd/export"
+	"github.com/dreadl0ck/netcap/cmd/inject"
 	"github.com/dreadl0ck/netcap/cmd/label"
 	"github.com/dreadl0ck/netcap/cmd/proxy"
 	"github.com/dreadl0ck/netcap/cmd/transform"
@@ -48,6 +49,7 @@ const (
 	cmdCollect   = "collect"
 	cmdTransform = "transform"
 	cmdAgent     = "agent"
+	cmdInject    = "inject"
 	cmdVersion   = "version"
 
 	nameReadFlag   = "-read"
@@ -162,6 +164,14 @@ func main() {
 				return agent.RunWithContext(ctx, cmd)
 			},
 		},
+		{
+			Name:   cmdInject,
+			Usage:  "inline packet manipulation (MITM mode, Linux only)",
+			Flags:  inject.GetFlags(),
+			Action: func(ctx context.Context, cmd *cli.Command) error {
+				return inject.RunWithContext(ctx, cmd)
+			},
+		},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			io.PrintLogo()
@@ -176,6 +186,7 @@ available subcommands:
   > collect       collector for audit records from agents
   > transform     maltego plugin
   > agent         agent for distributed capture
+  > inject        inline packet manipulation (MITM mode, Linux only)
 
 usage: ./net <subcommand> [flags]
 or: ./net <subcommand> [-h] to get help for the subcommand`)
@@ -236,6 +247,7 @@ func printCompletions(previous, current, full string) {
 		cmdCollect,
 		cmdTransform,
 		cmdAgent,
+		cmdInject,
 	}
 
 	if os.Getenv(env.CompletionDebug) == "1" {
@@ -267,6 +279,8 @@ func printCompletions(previous, current, full string) {
 		printFlags(collect.Flags())
 	case cmdAgent:
 		printFlags(agent.Flags())
+	case cmdInject:
+		printFlags(inject.Flags())
 	case cmdTransform:
 		return
 	}
@@ -326,6 +340,12 @@ func printCompletions(previous, current, full string) {
 		case cmdAgent:
 			handleConfigFlag(previous, current)
 			printFlagsFiltered(agent.Flags(), full)
+		case cmdInject:
+			if previous == "-rules" {
+				printFileForExt(current, ".yml", ".yaml")
+			}
+			handleConfigFlag(previous, current)
+			printFlagsFiltered(inject.Flags(), full)
 		}
 	}
 
