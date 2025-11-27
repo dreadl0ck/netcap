@@ -192,9 +192,6 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
   const [uploadMessage, setUploadMessage] = useState('');
   const dragCounter = React.useRef(0);
 
-  // Skip global drop zone on the analyze page (it has its own drop zone)
-  const isAnalyzePage = router.pathname === '/analyze';
-
   const handleDragEnter = useCallback((e: DragEvent) => {
     e.preventDefault();
     dragCounter.current++;
@@ -220,21 +217,16 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
     if (e.dataTransfer) {
       e.dataTransfer.dropEffect = 'copy';
       // Ensure overlay stays visible during drag
-      if (hasFiles(e.dataTransfer) && !isAnalyzePage) {
+      if (hasFiles(e.dataTransfer)) {
         setIsDraggingOver(true);
       }
     }
-  }, [isAnalyzePage]);
+  }, []);
 
   const handleDrop = useCallback(async (e: DragEvent) => {
     e.preventDefault();
     dragCounter.current = 0;
     setIsDraggingOver(false);
-
-    // Skip if on analyze page (let local handler take over)
-    if (router.pathname === '/analyze') {
-      return;
-    }
 
     if (!e.dataTransfer?.files || e.dataTransfer.files.length === 0) {
       return;
@@ -274,11 +266,11 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
       // Invalidate SWR cache for input files so other pages will refresh
       globalMutate('inputFiles');
       
-      // Redirect to dashboard after a short delay
+      // Redirect to PCAPs page after a short delay
       setTimeout(() => {
         setIsUploading(false);
         setUploadMessage('');
-        router.push('/');
+        router.push('/pcaps');
       }, 1500);
       
     } catch (error) {
@@ -310,8 +302,8 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
     <>
       {children}
       
-      {/* Global drop overlay - hidden on analyze page which has its own drop zone */}
-      {!isAnalyzePage && (isDraggingOver || isUploading || uploadMessage) && (
+      {/* Global drop overlay - active on all pages */}
+      {(isDraggingOver || isUploading || uploadMessage) && (
         <Box
           sx={{
             position: 'fixed',

@@ -27,7 +27,7 @@ import {
   Typography,
   type SelectChangeEvent,
 } from '@mui/material';
-import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, Description as DescriptionIcon, Search as SearchIcon, BubbleChart as VisualizeIcon, Report as ReportIcon, BugReport as BugReportIcon, Download as DownloadIcon, Notifications as NotificationsIcon } from '@mui/icons-material';
+import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, Description as DescriptionIcon, Search as SearchIcon, BubbleChart as VisualizeIcon, Report as ReportIcon, BugReport as BugReportIcon, Download as DownloadIcon, Notifications as NotificationsIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import { api, formatBytes, formatTimestamp, formatDuration } from '@/lib/api';
@@ -75,6 +75,8 @@ export default function PCAPs() {
   const [selectedErrorLog, setSelectedErrorLog] = useState<{ sessionId: string; filename: string } | null>(null);
   const [errorLogContent, setErrorLogContent] = useState<string>('');
   const [loadingErrorLog, setLoadingErrorLog] = useState(false);
+  const [reanalyzeFile, setReanalyzeFile] = useState<{ path: string; name: string; sessionId?: string } | null>(null);
+  const [reanalyzing, setReanalyzing] = useState<string | null>(null);
   
   // Listen for directory changes and refresh input files
   useEffect(() => {
@@ -280,6 +282,37 @@ export default function PCAPs() {
   const handleCloseErrorLog = () => {
     setSelectedErrorLog(null);
     setErrorLogContent('');
+  };
+
+  const handleReanalyzeClick = (file: { path: string; name: string; sessionId?: string }) => {
+    setReanalyzeFile(file);
+  };
+
+  const handleCloseReanalyzeDialog = () => {
+    setReanalyzeFile(null);
+  };
+
+  const handleConfirmReanalyze = async () => {
+    if (!reanalyzeFile) return;
+    
+    setReanalyzing(reanalyzeFile.path);
+    handleCloseReanalyzeDialog();
+    
+    try {
+      const result = await api.reanalyzeFile(reanalyzeFile.path, reanalyzeFile.sessionId);
+      console.log('[PCAPs] Reanalysis queued:', result);
+      
+      // Refresh the file list to show the file as processing
+      await mutate();
+      
+      // Show success feedback (you could also use a snackbar here)
+      console.log('[PCAPs] File queued for reanalysis successfully');
+    } catch (err) {
+      console.error('[PCAPs] Failed to reanalyze file:', err);
+      alert(`Failed to reanalyze file: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setReanalyzing(null);
+    }
   };
 
   const isActive = (file: string) => {
@@ -638,7 +671,42 @@ export default function PCAPs() {
                                 <NotificationsIcon />
                               </IconButton>
                             </Tooltip>
+                            <Tooltip title="Reanalyze with current configuration">
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleReanalyzeClick({ path: file.path, name: file.name, sessionId: file.sessionId })}
+                                  disabled={activating === file.path || reanalyzing === file.path}
+                                  color="secondary"
+                                >
+                                  {reanalyzing === file.path ? (
+                                    <CircularProgress size={20} />
+                                  ) : (
+                                    <RefreshIcon />
+                                  )}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
                           </>
+                        )}
+                        {/* Retry button for local mode files with errors */}
+                        {!status?.isServiceMode && file.error && (
+                          <Tooltip title="Retry analysis with current configuration">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => handleReanalyzeClick({ path: file.path, name: file.name })}
+                                disabled={reanalyzing === file.path}
+                                color="secondary"
+                              >
+                                {reanalyzing === file.path ? (
+                                  <CircularProgress size={20} />
+                                ) : (
+                                  <RefreshIcon />
+                                )}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
                         )}
                         {status?.isServiceMode && file.sessionId && (
                             <>
@@ -688,6 +756,24 @@ export default function PCAPs() {
                                   >
                                     <BugReportIcon />
                                   </IconButton>
+                                </Tooltip>
+                              )}
+                              {file.error && (
+                                <Tooltip title="Retry analysis with current configuration">
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleReanalyzeClick({ path: file.path, name: file.name, sessionId: file.sessionId })}
+                                      disabled={reanalyzing === file.path}
+                                      color="secondary"
+                                    >
+                                      {reanalyzing === file.path ? (
+                                        <CircularProgress size={20} />
+                                      ) : (
+                                        <RefreshIcon />
+                                      )}
+                                    </IconButton>
+                                  </span>
                                 </Tooltip>
                               )}
                             </>
@@ -781,6 +867,50 @@ export default function PCAPs() {
           </DialogContent>
           <DialogActions>
             <Button data-learn="Close Dialog: Close the error log viewer dialog." onClick={handleCloseErrorLog}>Close</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Reanalyze Confirmation Dialog */}
+        <Dialog
+          open={reanalyzeFile !== null}
+          onClose={handleCloseReanalyzeDialog}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            <Box display="flex" alignItems="center" gap={1}>
+              <RefreshIcon color="secondary" />
+              <Typography variant="h6">Reanalyze PCAP File</Typography>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body1" paragraph>
+              Are you sure you want to reanalyze this file?
+            </Typography>
+            {reanalyzeFile && (
+              <Paper sx={{ p: 2, bgcolor: 'background.default', mb: 2 }}>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                  {reanalyzeFile.name}
+                </Typography>
+              </Paper>
+            )}
+            <Typography variant="body2" color="warning.main" paragraph>
+              ⚠️ This will delete all existing audit records and extracted files for this capture and rerun the analysis with the current netcap configuration.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Use this if you&apos;ve changed decoder settings, harvesters, or other configuration options and want to regenerate the analysis results.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseReanalyzeDialog}>Cancel</Button>
+            <Button 
+              onClick={handleConfirmReanalyze}
+              variant="contained"
+              color="secondary"
+              startIcon={<RefreshIcon />}
+            >
+              Reanalyze
+            </Button>
           </DialogActions>
         </Dialog>
       </Box>

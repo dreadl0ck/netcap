@@ -53,6 +53,25 @@ export default function Config() {
     }
   };
 
+  const handlePayloadToggle = async (currentValue: boolean) => {
+    setUpdating('payload');
+    setUpdateError(null);
+    setUpdateSuccess(null);
+    
+    try {
+      const result = await api.setPayloadState(!currentValue);
+      setUpdateSuccess(result.message);
+      // Refresh config data
+      mutate();
+      // Clear success message after 3 seconds
+      setTimeout(() => setUpdateSuccess(null), 3000);
+    } catch (err) {
+      setUpdateError(err instanceof Error ? err.message : 'Failed to update payload setting');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   if (configError) {
     return (
       <Layout title="Configuration">
@@ -195,7 +214,13 @@ export default function Config() {
                               control={
                                 <Switch
                                   checked={Boolean(option.value)}
-                                  onChange={() => handleDebugToggle(Boolean(option.value))}
+                                  onChange={() => {
+                                    if (option.name === 'debug') {
+                                      handleDebugToggle(Boolean(option.value));
+                                    } else if (option.name === 'payload') {
+                                      handlePayloadToggle(Boolean(option.value));
+                                    }
+                                  }}
                                   disabled={updating === option.name}
                                   color="primary"
                                 />

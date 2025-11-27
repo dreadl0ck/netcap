@@ -1,13 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
-  Button,
   Card,
   CardContent,
   Typography,
-  LinearProgress,
   Alert,
-  Paper,
   Chip,
   IconButton,
   Tooltip,
@@ -17,21 +14,19 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  CircularProgress,
+  Button,
+  LinearProgress,
 } from '@mui/material';
 import Layout from '@/components/Layout';
 import { api, type TrySession, type ConfigResponse, type BPFInfoResponse } from '@/lib/api';
 import { BPFExpressionBlock } from '@/components/BPFExpressionHighlight';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import ShareIcon from '@mui/icons-material/Share';
 import DescriptionIcon from '@mui/icons-material/Description';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import Link from 'next/link';
-import { mutate as globalMutate } from 'swr';
 
 interface QuotaInfo {
   limit: number;
@@ -46,27 +41,13 @@ interface QuotaInfo {
   };
 }
 
-interface UploadStatus {
-  type: 'idle' | 'uploading' | 'success' | 'error' | 'processing' | 'completed';
-  message: string;
-}
-
 export default function AnalyzePage() {
-  const [files, setFiles] = useState<File[]>([]);
-  const [uploadStatus, setUploadStatus] = useState<UploadStatus>({ type: 'idle', message: '' });
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
-  const [sessionIds, setSessionIds] = useState<string[]>([]);
-  const [shareUrls, setShareUrls] = useState<string[]>([]);
-  const [dragOver, setDragOver] = useState(false);
-  const [copySuccess, setCopySuccess] = useState(false);
   const [sessions, setSessions] = useState<TrySession[]>([]);
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
-  const [currentUploadIndex, setCurrentUploadIndex] = useState(0);
   const [isServiceMode, setIsServiceMode] = useState(false);
   const [config, setConfig] = useState<ConfigResponse | null>(null);
   const [inputFiles, setInputFiles] = useState<any[]>([]);
-  const [isMultiFile, setIsMultiFile] = useState(false);
   const [activeInputFile, setActiveInputFile] = useState<string>('');
   const [bpfData, setBpfData] = useState<BPFInfoResponse | null>(null);
   const [quotaError, setQuotaError] = useState<string | null>(null);
@@ -128,7 +109,6 @@ export default function AnalyzePage() {
       try {
         const status = await api.getStatus();
         setIsServiceMode(status.isServiceMode === true);
-        setIsMultiFile(status.isMultiFile === true);
         setActiveInputFile(status.activeInputFile || '');
       } catch (error) {
         console.error('Failed to get status:', error);
@@ -147,222 +127,6 @@ export default function AnalyzePage() {
       loadSessions();
     }
   }, [isServiceMode, loadQuota, loadConfig, loadSessions]);
-
-  // Poll session status and progress when uploading
-  useEffect(() => {
-    if (sessionIds.length === 0 || uploadStatus.type === 'completed' || uploadStatus.type === 'error') {
-      return;
-    }
-
-    const interval = setInterval(async () => {
-      try {
-        // Check status of all sessions
-        const allCompleted = [];
-        for (const sessionId of sessionIds) {
-          // Use progress endpoint for both service and local mode
-          // It returns both status and progress information
-          try {
-            const progress = await api.getProgress(sessionId);
-            
-            if (progress.status === 'completed') {
-              allCompleted.push(sessionId);
-            } else if (progress.status === 'failed') {
-              setUploadStatus({
-                type: 'error',
-                message: `Analysis failed: ${progress.errorMessage || 'Unknown error'}`,
-              });
-              if (isServiceMode) {
-                loadQuota();
-              }
-              return;
-            } else if (progress.status === 'processing') {
-              if (progress.progressPercent > 0) {
-                setUploadStatus({
-                  type: 'processing',
-                  message: `${progress.message} (${allCompleted.length}/${sessionIds.length} completed)`,
-                });
-              } else {
-                setUploadStatus({
-                  type: 'processing',
-                  message: `Processing... (${allCompleted.length}/${sessionIds.length} completed)`,
-                });
-              }
-            } else if (progress.status === 'queued') {
-              setUploadStatus({
-                type: 'processing',
-                message: `Queued for analysis... (${allCompleted.length}/${sessionIds.length} completed)`,
-              });
-            }
-          } catch (progressError) {
-            console.error(`Failed to get progress for ${sessionId}:`, progressError);
-            // Continue checking other sessions
-          }
-        }
-
-        // All completed
-        if (allCompleted.length === sessionIds.length) {
-          setUploadStatus({
-            type: 'completed',
-            message: `All ${sessionIds.length} file(s) analyzed successfully! Redirecting to results...`,
-          });
-          
-          // Reload file lists
-          if (isServiceMode) {
-            await loadQuota();
-            await loadSessions();
-          }
-          await loadInputFiles();
-          
-          // Redirect to dashboard after 1 second
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 1000);
-        }
-      } catch (error) {
-        console.error('Failed to check status:', error);
-      }
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [sessionIds, uploadStatus.type, isServiceMode, loadQuota, loadSessions, loadInputFiles]);
-
-  const handleFileSelect = (selectedFiles: File[]) => {
-    setFiles(selectedFiles);
-    setUploadStatus({ type: 'idle', message: '' });
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragOver(false);
-
-    const droppedFiles = e.dataTransfer.files;
-    if (droppedFiles.length > 0) {
-      handleFileSelect(Array.from(droppedFiles));
-    }
-  };
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = e.target.files;
-    if (selectedFiles && selectedFiles.length > 0) {
-      handleFileSelect(Array.from(selectedFiles));
-    }
-  };
-
-  const handleRemoveFile = (index: number) => {
-    setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
-  };
-
-  const handleUpload = async () => {
-    if (files.length === 0) {
-      setUploadStatus({ type: 'error', message: 'Please select at least one file' });
-      return;
-    }
-
-    // Validate file sizes (only in service mode; no limit in local mode)
-    if (isServiceMode) {
-      let maxSize = 100 * 1024 * 1024; // 100MB default for service mode
-      if (config) {
-        const maxFileSizeOption = config.options.find(opt => opt.name === 'max-file-size');
-        if (maxFileSizeOption && typeof maxFileSizeOption.value === 'number') {
-          maxSize = maxFileSizeOption.value;
-        }
-      }
-
-      for (const file of files) {
-        if (file.size > maxSize) {
-          const maxSizeMB = Math.round(maxSize / (1024 * 1024));
-          setUploadStatus({ type: 'error', message: `File ${file.name} exceeds ${maxSizeMB}MB limit` });
-          return;
-        }
-      }
-    }
-
-    // Validate file extensions
-    for (const file of files) {
-      const ext = file.name.toLowerCase();
-      if (!ext.endsWith('.pcap') && !ext.endsWith('.pcapng')) {
-        setUploadStatus({ type: 'error', message: `Invalid file format for ${file.name}. Only .pcap and .pcapng files are allowed.` });
-        return;
-      }
-    }
-
-    setUploadStatus({ type: 'uploading', message: `Uploading ${files.length} file(s)...` });
-    setCurrentUploadIndex(0);
-    
-    const allSessionIds: string[] = [];
-    const allShareUrls: string[] = [];
-
-    try {
-      // Upload files one by one
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        setCurrentUploadIndex(i);
-        setUploadProgress(Math.floor(((i + 0.5) / files.length) * 100));
-        setUploadStatus({ type: 'uploading', message: `Uploading ${i + 1}/${files.length}: ${file.name}...` });
-
-        const response = await api.uploadFile(file);
-        
-        // Service mode returns sessionId and shareUrl
-        if (isServiceMode && response.sessionId && response.shareUrl) {
-          allSessionIds.push(response.sessionId);
-          allShareUrls.push(response.shareUrl);
-        } else if (!isServiceMode && response.id) {
-          // Local mode returns id - use it for progress tracking
-          allSessionIds.push(response.id);
-        }
-        
-        setUploadProgress(Math.floor(((i + 1) / files.length) * 100));
-      }
-      
-      if (isServiceMode) {
-        setSessionIds(allSessionIds);
-        setShareUrls(allShareUrls);
-        setUploadStatus({ type: 'success', message: `All ${files.length} file(s) uploaded successfully! Starting analysis...` });
-        
-        // Reload quota and sessions to show updated values
-        await loadQuota();
-        await loadSessions();
-        await loadInputFiles();
-        
-        // Invalidate SWR cache for input files so other pages (like PCAPs) will refresh
-        globalMutate('inputFiles');
-      } else {
-        // Local mode - files are queued for analysis, track progress
-        setSessionIds(allSessionIds);
-        setUploadStatus({ 
-          type: 'success', 
-          message: `All ${files.length} file(s) uploaded successfully! Starting analysis...` 
-        });
-        setFiles([]);
-        
-        // Invalidate SWR cache for input files
-        globalMutate('inputFiles');
-      }
-    } catch (error) {
-      setUploadProgress(0);
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-      setUploadStatus({ 
-        type: 'error', 
-        message: errorMessage
-      });
-      if (isServiceMode) {
-        await loadQuota();
-      }
-    }
-  };
 
   const handleCopySessionLink = async (sessionUrl: string, sessionId: string) => {
     try {
@@ -440,11 +204,6 @@ export default function AnalyzePage() {
   const formatTimestamp = (timestamp: number): string => {
     return new Date(timestamp * 1000).toLocaleString();
   };
-
-  const isUploadDisabled = isServiceMode && (!quota?.allowed || 
-    (quota && !quota.storage.unlimited && quota.storage.percentUsed >= 95));
-
-  const totalFileSize = files.reduce((sum, file) => sum + file.size, 0);
 
   return (
     <Layout title="Analyze PCAP Files">
@@ -541,186 +300,35 @@ export default function AnalyzePage() {
           </Card>
         )}
 
-        {/* Analyze Area */}
+        {/* Drag and Drop Note */}
         <Card>
           <CardContent>
-            {isServiceMode && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                You can upload your own PCAP files or browse results from pre-analyzed files. 
-                Visit the <Link href="/pcaps" style={{ color: 'inherit', fontWeight: 'bold' }}>PCAPs page</Link> to explore available analyses.
-              </Alert>
-            )}
-
-            <Paper
-              data-learn="Upload Area: Drag and drop PCAP files here or click to browse. Supports .pcap and .pcapng formats for network traffic analysis."
+            <Box
               sx={{
-                p: 6,
+                p: 4,
                 textAlign: 'center',
-                cursor: isUploadDisabled ? 'not-allowed' : 'pointer',
-                border: '2px dashed',
-                borderColor: dragOver ? 'primary.main' : files.length > 0 ? 'success.main' : 'divider',
-                bgcolor: dragOver ? 'action.hover' : files.length > 0 ? 'success.dark' : 'background.default',
-                transition: 'all 0.2s',
-                opacity: isUploadDisabled ? 0.5 : 1,
-              }}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => {
-                if (!isUploadDisabled) {
-                  const input = document.querySelector('input[type="file"]') as HTMLInputElement;
-                  input?.click();
-                }
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 2,
               }}
             >
-              <input
-                type="file"
-                accept=".pcap,.pcapng"
-                multiple
-                style={{ display: 'none' }}
-                onChange={handleFileInputChange}
-                disabled={isUploadDisabled}
-              />
-              
-              <CloudUploadIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
-              
-              {files.length > 0 ? (
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    {files.length} file(s) selected
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Total size: {formatBytes(totalFileSize)}
-                  </Typography>
-                  <Box sx={{ mt: 2, maxHeight: 200, overflow: 'auto' }}>
-                    {files.map((file, index) => (
-                      <Chip
-                        key={`${file.name}-${file.size}-${index}`}
-                        label={`${file.name} (${formatBytes(file.size)})`}
-                        onDelete={() => handleRemoveFile(index)}
-                        sx={{ m: 0.5 }}
-                      />
-                    ))}
-                  </Box>
-                </Box>
-              ) : (
-                <Box>
-                  <Typography variant="body1" gutterBottom>
-                    Click to select PCAP files
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    or drag and drop here (multiple files supported)
-                  </Typography>
-                </Box>
+              <CloudUploadIcon sx={{ fontSize: 64, color: 'primary.main' }} />
+              <Typography variant="h5" color="primary">
+                Drag &amp; Drop PCAP Files Anywhere
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                You can drag and drop your .pcap or .pcapng files anywhere on the screen to upload and analyze them.
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Supported formats: .pcap, .pcapng, .cap
+              </Typography>
+              {isServiceMode && (
+                <Alert severity="info" sx={{ mt: 2, maxWidth: 600 }}>
+                  You can also browse results from pre-analyzed files on the <Link href="/pcaps" style={{ color: 'inherit', fontWeight: 'bold' }}>PCAPs page</Link>.
+                </Alert>
               )}
-            </Paper>
-
-            {/* Progress Bar */}
-            {uploadStatus.type === 'uploading' && (
-              <Box sx={{ mt: 2 }}>
-                <LinearProgress variant="determinate" value={uploadProgress} />
-              </Box>
-            )}
-
-            {/* Status Messages */}
-            {uploadStatus.message && (
-              <Alert 
-                severity={
-                  uploadStatus.type === 'error' ? 'error' : 
-                  uploadStatus.type === 'success' || uploadStatus.type === 'completed' ? 'success' : 
-                  'info'
-                }
-                icon={
-                  uploadStatus.type === 'error' ? <ErrorIcon /> :
-                  uploadStatus.type === 'success' || uploadStatus.type === 'completed' ? <CheckCircleIcon /> :
-                  undefined
-                }
-                sx={{ mt: 2 }}
-              >
-                {uploadStatus.message}
-              </Alert>
-            )}
-
-            {/* Share Links */}
-            {shareUrls.length > 0 && (
-              <Card sx={{ mt: 3, bgcolor: 'action.hover' }}>
-                <CardContent>
-                  <Box display="flex" alignItems="center" gap={1} mb={2}>
-                    <ShareIcon color="primary" />
-                    <Typography variant="h6">
-                      Shareable Links
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                    {shareUrls.length === 1 
-                      ? 'Share this link with others to view the analysis results:' 
-                      : `Share these ${shareUrls.length} links with others to view the analysis results:`}
-                  </Typography>
-                  {shareUrls.map((url, index) => (
-                    <Box key={url} display="flex" gap={1} alignItems="center" sx={{ mb: shareUrls.length > 1 ? 1 : 0 }}>
-                      {shareUrls.length > 1 && (
-                        <Chip label={`File ${index + 1}`} size="small" sx={{ minWidth: 60 }} />
-                      )}
-                      <Paper
-                        sx={{
-                          flex: 1,
-                          p: 1.5,
-                          bgcolor: 'background.default',
-                          fontFamily: 'monospace',
-                          fontSize: '0.875rem',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {url}
-                      </Paper>
-                      <Button
-                        data-learn="Copy Share Link: Copy the shareable URL to clipboard to share analysis results with others."
-                        variant="contained"
-                        size="small"
-                        startIcon={copySuccess ? <CheckCircleIcon /> : <ContentCopyIcon />}
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(url);
-                            setCopySuccess(true);
-                            setTimeout(() => setCopySuccess(false), 2000);
-                          } catch (error) {
-                            console.error('Failed to copy:', error);
-                          }
-                        }}
-                        color={copySuccess ? 'success' : 'primary'}
-                      >
-                        {copySuccess ? 'Copied!' : 'Copy'}
-                      </Button>
-                    </Box>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Analyze Button */}
-            <Button
-              data-learn="Analyze Button: Start processing selected PCAP files to extract network traffic data and generate audit records."
-              fullWidth
-              variant="contained"
-              size="large"
-              startIcon={<CloudUploadIcon />}
-              onClick={handleUpload}
-              disabled={
-                files.length === 0 || 
-                uploadStatus.type === 'uploading' || 
-                uploadStatus.type === 'processing' ||
-                uploadStatus.type === 'completed' ||
-                isUploadDisabled
-              }
-              sx={{ mt: 2 }}
-            >
-              {uploadStatus.type === 'uploading' ? `Uploading... (${currentUploadIndex + 1}/${files.length})` :
-               uploadStatus.type === 'processing' ? 'Processing...' :
-               uploadStatus.type === 'completed' ? 'Completed' :
-               files.length > 1 ? `Analyze ${files.length} Files` : 'Analyze'}
-            </Button>
+            </Box>
           </CardContent>
         </Card>
 
@@ -767,13 +375,7 @@ export default function AnalyzePage() {
               </Typography>
               <Box component="ul" sx={{ m: 0, pl: 2 }}>
                 <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                  Maximum file size: {isServiceMode ? (() => {
-                    const maxFileSizeOption = config?.options.find(opt => opt.name === 'max-file-size');
-                    if (maxFileSizeOption && typeof maxFileSizeOption.value === 'number') {
-                      return Math.round(maxFileSizeOption.value / (1024 * 1024)) + 'MB';
-                    }
-                    return '100MB';
-                  })() : 'No limit (local mode)'}
+                  Maximum file size: No limit (local mode)
                 </Typography>
                 <Typography component="li" variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
                   Supported formats: PCAP, PCAPNG
@@ -782,7 +384,7 @@ export default function AnalyzePage() {
                   Files are saved to the uploads directory
                 </Typography>
                 <Typography component="li" variant="body2" color="text.secondary">
-                  Use the command line to analyze uploaded files
+                  Analysis starts automatically after upload
                 </Typography>
               </Box>
             </CardContent>
@@ -938,4 +540,3 @@ export default function AnalyzePage() {
     </Layout>
   );
 }
-

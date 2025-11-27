@@ -169,6 +169,7 @@ type Server struct {
 	processingStats    ProcessingStats                // Live processing statistics
 	fileErrors         map[string]FileError           // Tracks errors for each file
 	debugLogging       bool                           // Runtime debug logging state
+	payloadCapture     bool                           // Runtime payload capture state (default false)
 	dpiConfigured      bool                           // Whether DPI was configured at startup (via -dpi flag)
 	runtimeConfig      *RuntimeConfig                 // Actual runtime configuration values from flags
 	collector          CollectorInterface             // Reference to collector for runtime config changes
@@ -483,6 +484,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/logs/", s.handleLogContent)
 	mux.HandleFunc("/api/error-log/", s.handleErrorLogContent)
 	mux.HandleFunc("/api/set-directory", s.handleSetDirectory)
+	mux.HandleFunc("/api/reanalyze", s.handleReanalyze)
 	mux.HandleFunc("/api/dbs", s.handleDatabaseInfo)
 	mux.HandleFunc("/api/dbs/update", s.handleUpdateDatabases)
 	mux.HandleFunc("/api/version", s.handleVersion)
@@ -490,6 +492,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/dpi/preferences", s.handleDPIPreferences)
 	mux.HandleFunc("/api/config", s.handleConfig)
 	mux.HandleFunc("/api/config/debug", s.handleDebugToggle)
+	mux.HandleFunc("/api/config/payload", s.handlePayloadToggle)
 	mux.HandleFunc("/api/config/bpf", s.handleBPFConfig)
 	mux.HandleFunc("/api/rules", s.handleRules)
 	mux.HandleFunc("/api/rules/execute", s.handleExecuteRule)
@@ -1138,6 +1141,20 @@ func (s *Server) GetDebugLogging() bool {
 	return s.debugLogging
 }
 
+// SetPayloadCapture sets the payload capture state for future analysis
+func (s *Server) SetPayloadCapture(enabled bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.payloadCapture = enabled
+}
+
+// GetPayloadCapture returns the current payload capture state
+func (s *Server) GetPayloadCapture() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.payloadCapture
+}
+
 // SetCollector sets the collector reference for runtime configuration changes
 func (s *Server) SetCollector(collector CollectorInterface) {
 	s.mu.Lock()
@@ -1338,6 +1355,12 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 
 	if job.EnableDPI {
 		args = append(args, "-dpi")
+	}
+
+	// Add payload capture flag if enabled
+	if s.GetPayloadCapture() {
+		args = append(args, "-payload")
+		log.Printf("[Service] Payload capture enabled for session %s", job.SessionID)
 	}
 
 	// Apply BPF filter if set
@@ -1783,7 +1806,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			JSON:             false,
 			Chan:             false,
 			Source:           job.InputFile,
-			IncludePayloads:  false,
+			IncludePayloads:  s.GetPayloadCapture(),
 			ExportMetrics:    false,
 			AddContext:       true,
 			FlushEvery:       defaults.FlushEvery,

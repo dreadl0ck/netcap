@@ -931,6 +931,22 @@ export const api = {
     return res.json();
   },
 
+  async getPayloadState(): Promise<{enabled: boolean}> {
+    const res = await fetch(`${API_BASE}/config/payload`);
+    if (!res.ok) throw new Error('Failed to fetch payload state');
+    return res.json();
+  },
+
+  async setPayloadState(enabled: boolean): Promise<{enabled: boolean; message: string}> {
+    const res = await fetch(`${API_BASE}/config/payload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    });
+    if (!res.ok) throw new Error('Failed to update payload state');
+    return res.json();
+  },
+
   async getDecoders(): Promise<DecodersResponse> {
     const res = await fetch(`${API_BASE}/decoders`);
     if (!res.ok) throw new Error('Failed to fetch decoders');
@@ -1850,6 +1866,20 @@ export const api = {
     if (!res.ok) return 0;
     const data = await res.json();
     return data.length || 0;
+  },
+
+  // Reanalyze a PCAP file - deletes existing data and reruns analysis with current config
+  async reanalyzeFile(inputFile: string, sessionId?: string): Promise<{success: boolean; message: string; filename?: string; path?: string; sessionId?: string}> {
+    const res = await fetch(`${API_BASE}/reanalyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ inputFile, sessionId }),
+    });
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || 'Failed to reanalyze file');
+    }
+    return res.json();
   },
 };
 

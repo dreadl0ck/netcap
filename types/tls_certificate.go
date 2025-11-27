@@ -186,6 +186,53 @@ func (t *TLSCertificate) Dst() string {
 	return t.DstIP
 }
 
+// Encode returns the encoded values for machine learning
+func (t *TLSCertificate) Encode() []string {
+	return filter([]string{
+		formatTimestamp(t.Timestamp),
+		t.SrcIP,
+		t.DstIP,
+		t.SrcMAC,
+		t.DstMAC,
+		formatInt32(t.SrcPort),
+		formatInt32(t.DstPort),
+		formatInt32(t.ChainIndex),
+		t.SubjectCommonName,
+		join(t.SubjectAltNames...),
+		t.SubjectOrganization,
+		t.SubjectCountry,
+		t.IssuerCommonName,
+		t.IssuerOrganization,
+		t.IssuerCountry,
+		formatTimestamp(t.NotBefore),
+		formatTimestamp(t.NotAfter),
+		strconv.FormatBool(t.IsExpired),
+		strconv.FormatBool(t.IsSelfSigned),
+		formatInt64(t.DaysUntilExpiration),
+		strconv.FormatBool(t.IsNotYetValid),
+		strconv.FormatBool(t.HasWeakSignature),
+		strconv.FormatBool(t.HasShortKeySize),
+		t.SignatureAlgorithm,
+		t.PublicKeyAlgorithm,
+		formatInt32(t.PublicKeySize),
+		t.SerialNumber,
+		formatInt32(t.Version),
+		strconv.FormatBool(t.IsCA),
+		formatInt32(t.MaxPathLen),
+		formatInt64(t.SeenCount),
+	})
+}
+
+// Analyze is a stub for the AuditRecord interface
+func (t *TLSCertificate) Analyze() {
+	// Not implemented for TLSCertificate
+}
+
+// NetcapType returns the netcap type for this audit record
+func (t *TLSCertificate) NetcapType() Type {
+	return Type_NC_TLSCertificate
+}
+
 func init() {
 	prometheus.MustRegister(tlsCertificateMetric)
 }

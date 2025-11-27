@@ -642,6 +642,247 @@ func (s *Server) handleSetDirectory(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleReanalyze handles requests to reanalyze a PCAP file
+// This deletes all existing audit records and queues a new analysis job
+func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req struct {
+		InputFile string `json:"inputFile"`
+		SessionID string `json:"sessionId,omitempty"` // For service mode
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if req.InputFile == "" && req.SessionID == "" {
+		http.Error(w, "Input file or session ID required", http.StatusBadRequest)
+		return
+	}
+
+	// Service mode: handle by session ID
+	if s.isServiceMode && s.sessionManager != nil && req.SessionID != "" {
+		clientIP := s.getUserIP(r)
+		session, ok := s.sessionManager.GetSession(req.SessionID)
+		if !ok {
+			http.Error(w, "Session not found", http.StatusNotFound)
+			return
+		}
+
+		// Check access rights
+		if !session.IsPreloaded && session.IP != clientIP {
+			http.Error(w, "Access denied", http.StatusForbidden)
+			return
+		}
+
+		// Check if already processing
+		if session.Status == StatusProcessing || session.Status == StatusQueued {
+			http.Error(w, "Analysis is already in progress", http.StatusConflict)
+			return
+		}
+
+		// Verify input file exists
+		if _, err := os.Stat(session.InputFile); os.IsNotExist(err) {
+			http.Error(w, "Input file no longer exists", http.StatusNotFound)
+			return
+		}
+
+		// Delete all existing audit records in the output directory
+		if err := s.deleteAuditRecords(session.OutputDir); err != nil {
+			log.Printf("[WebUI] Error deleting audit records for reanalysis: %v", err)
+			http.Error(w, fmt.Sprintf("Failed to delete existing data: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		// Reset session status
+		s.sessionManager.UpdateSessionStatus(req.SessionID, StatusQueued, "", "")
+		s.sessionManager.UpdateSessionProcessingTime(req.SessionID, 0)
+
+		// Get DPI configuration
+		s.mu.RLock()
+		enableDPI := s.dpiConfigured
+		s.mu.RUnlock()
+
+		// Load BPF filter from saved configuration
+		bpfConfig := s.loadBPFConfig()
+
+		// Create new analysis job
+		job := &AnalysisJob{
+			SessionID:       req.SessionID,
+			InputFile:       session.InputFile,
+			OutputDir:       session.OutputDir,
+			EnableDPI:       enableDPI,
+			BPFFilter:       bpfConfig.Filter,
+			IncludeDecoders: "",
+			ExcludeDecoders: "",
+		}
+
+		// Queue the job
+		select {
+		case s.jobQueue <- job:
+			atomic.AddInt64(&s.jobsScheduled, 1)
+			log.Printf("[WebUI] Reanalysis job queued for session %s: %s", req.SessionID, session.InputFilename)
+		default:
+			http.Error(w, "Job queue is full", http.StatusServiceUnavailable)
+			return
+		}
+
+		respondJSON(w, http.StatusOK, map[string]interface{}{
+			"success":   true,
+			"message":   "Reanalysis queued successfully",
+			"sessionId": req.SessionID,
+		})
+		return
+	}
+
+	// Local mode: handle by input file path
+	s.mu.Lock()
+
+	// Find the input file in our list
+	found := false
+	for _, f := range s.inputFiles {
+		if f == req.InputFile {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		s.mu.Unlock()
+		http.Error(w, "Input file not found in list", http.StatusNotFound)
+		return
+	}
+
+	// Check if already processing (not completed)
+	if !s.completedFiles[req.InputFile] {
+		// Could be still processing
+		if _, hasError := s.fileErrors[req.InputFile]; !hasError {
+			s.mu.Unlock()
+			http.Error(w, "File is currently being processed", http.StatusConflict)
+			return
+		}
+	}
+
+	// Get the output directory for this file
+	outputDir, exists := s.fileOutputDirs[req.InputFile]
+	if !exists {
+		// Calculate the subdirectory
+		dirName := filepath.Base(req.InputFile)
+		for ext := filepath.Ext(dirName); ext != ""; ext = filepath.Ext(dirName) {
+			dirName = strings.TrimSuffix(dirName, ext)
+		}
+		outputDir = filepath.Join(s.baseOutDir, dirName)
+	}
+
+	// Reset completion status and errors
+	delete(s.completedFiles, req.InputFile)
+	delete(s.fileErrors, req.InputFile)
+	delete(s.fileProcessingTime, req.InputFile)
+
+	// Get DPI configuration
+	enableDPI := s.dpiConfigured
+	s.mu.Unlock()
+
+	// Verify input file exists
+	if _, err := os.Stat(req.InputFile); os.IsNotExist(err) {
+		http.Error(w, "Input file no longer exists", http.StatusNotFound)
+		return
+	}
+
+	// Delete all existing audit records in the output directory
+	if err := s.deleteAuditRecords(outputDir); err != nil {
+		log.Printf("[WebUI] Error deleting audit records for reanalysis: %v", err)
+		http.Error(w, fmt.Sprintf("Failed to delete existing data: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Load BPF filter from saved configuration
+	bpfConfig := s.loadBPFConfig()
+
+	// Create analysis job using filename as session ID (like in handleUpload)
+	sessionID := filepath.Base(req.InputFile)
+	job := &AnalysisJob{
+		SessionID:       sessionID,
+		InputFile:       req.InputFile,
+		OutputDir:       outputDir,
+		EnableDPI:       enableDPI,
+		BPFFilter:       bpfConfig.Filter,
+		IncludeDecoders: "",
+		ExcludeDecoders: "",
+	}
+
+	// Queue the job
+	if s.jobQueue == nil {
+		http.Error(w, "Analysis queue not available", http.StatusServiceUnavailable)
+		return
+	}
+
+	select {
+	case s.jobQueue <- job:
+		atomic.AddInt64(&s.jobsScheduled, 1)
+		log.Printf("[WebUI] Reanalysis job queued for file: %s -> %s", req.InputFile, outputDir)
+	default:
+		http.Error(w, "Job queue is full", http.StatusServiceUnavailable)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"success":  true,
+		"message":  "Reanalysis queued successfully",
+		"filename": filepath.Base(req.InputFile),
+		"path":     req.InputFile,
+	})
+}
+
+// deleteAuditRecords removes all audit record files from the output directory
+func (s *Server) deleteAuditRecords(outputDir string) error {
+	if outputDir == "" {
+		return fmt.Errorf("output directory not specified")
+	}
+
+	// Check if directory exists
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		// Directory doesn't exist, nothing to delete
+		return nil
+	}
+
+	// Read directory contents
+	entries, err := os.ReadDir(outputDir)
+	if err != nil {
+		return fmt.Errorf("failed to read output directory: %w", err)
+	}
+
+	deletedCount := 0
+	for _, entry := range entries {
+		if entry.IsDir() {
+			// Delete subdirectories like "files", "tcp", "udp"
+			subDir := filepath.Join(outputDir, entry.Name())
+			if err := os.RemoveAll(subDir); err != nil {
+				log.Printf("[WebUI] Warning: failed to delete subdirectory %s: %v", subDir, err)
+			} else {
+				log.Printf("[WebUI] Deleted subdirectory: %s", subDir)
+				deletedCount++
+			}
+		} else {
+			// Delete files (ncap.gz files, logs, etc.)
+			filePath := filepath.Join(outputDir, entry.Name())
+			if err := os.Remove(filePath); err != nil {
+				log.Printf("[WebUI] Warning: failed to delete file %s: %v", filePath, err)
+			} else {
+				deletedCount++
+			}
+		}
+	}
+
+	log.Printf("[WebUI] Deleted %d items from output directory: %s", deletedCount, outputDir)
+	return nil
+}
+
 // handleVersion returns version information
 func (s *Server) handleVersion(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -965,8 +1206,7 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 	snaplenValue := defaults.SnapLen
 	baseLayerValue := "ethernet" // default base layer
 	decodeOptsValue := "lazy"    // default decode options
-	payloadValue := false
-	contextValue := true     // default context enabled
+	contextValue := true         // default context enabled
 	macDBValue := true       // default mac database enabled
 	ja3DBValue := true       // default ja3 database enabled
 	serviceDBValue := true   // default service database enabled
@@ -1018,7 +1258,6 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		if rc.DecodeOptions != "" {
 			decodeOptsValue = rc.DecodeOptions
 		}
-		payloadValue = rc.Payload
 		contextValue = rc.Context
 		macDBValue = rc.MacDB
 		ja3DBValue = rc.Ja3DB
@@ -1198,12 +1437,12 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		},
 		{
 			Name:        "payload",
-			Value:       payloadValue,
+			Value:       s.GetPayloadCapture(),
 			Default:     false,
 			Type:        "bool",
-			Description: "Capture payload for supported layers",
+			Description: "Capture payload for supported layers (can be toggled at runtime for future analysis)",
 			Category:    "Decoders",
-			IsEditable:  false,
+			IsEditable:  true,
 		},
 		{
 			Name:        "context",
@@ -1567,6 +1806,43 @@ func (s *Server) handleDebugToggle(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"enabled": req.Enabled,
 			"message": fmt.Sprintf("Debug logging %s", map[bool]string{true: "enabled", false: "disabled"}[req.Enabled]),
+		})
+		return
+	}
+
+	http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+}
+
+// handlePayloadToggle handles runtime payload capture toggle requests
+func (s *Server) handlePayloadToggle(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		// Return current payload capture state
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"enabled": s.GetPayloadCapture(),
+		})
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		// Update payload capture state
+		var req struct {
+			Enabled bool `json:"enabled"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
+			return
+		}
+
+		s.SetPayloadCapture(req.Enabled)
+
+		log.Printf("[WebUI] Payload capture %s (will apply to future analysis)", map[bool]string{true: "enabled", false: "disabled"}[req.Enabled])
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"enabled": req.Enabled,
+			"message": fmt.Sprintf("Payload capture %s (will apply to future analysis)", map[bool]string{true: "enabled", false: "disabled"}[req.Enabled]),
 		})
 		return
 	}
