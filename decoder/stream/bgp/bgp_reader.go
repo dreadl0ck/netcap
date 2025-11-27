@@ -18,6 +18,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+	"strings"
 	"sync/atomic"
 
 	"go.uber.org/zap"
@@ -138,6 +139,9 @@ func (b *bgpReader) parseBGPMessage(msgType uint8, data []byte) *types.BGP {
 		// Route refresh parsing (optional)
 	}
 
+	// Perform security analysis after parsing
+	analyzeBGPSecurity(msg)
+
 	return msg
 }
 
@@ -152,10 +156,16 @@ func (b *bgpReader) parseOpenMessage(msg *types.BGP, data []byte) {
 	msg.BGPIdentifier = net.IP(data[5:9]).String()
 
 	optParamLen := int(data[9])
-	if len(data) > 10+optParamLen {
+	msg.OptionalParamLen = int32(optParamLen)
+
+	if optParamLen > 0 && len(data) >= 10+optParamLen {
 		// Parse optional parameters (capabilities)
 		b.parseOptionalParameters(msg, data[10:10+optParamLen])
 	}
+
+	// Set PeerAS from OPEN message's MyAS (the remote peer's AS)
+	msg.PeerAS = msg.MyAS
+	msg.PeerRouter = msg.BGPIdentifier
 }
 
 func (b *bgpReader) parseOptionalParameters(msg *types.BGP, data []byte) {
@@ -176,19 +186,74 @@ func (b *bgpReader) parseOptionalParameters(msg *types.BGP, data []byte) {
 
 func (b *bgpReader) parseCapabilities(msg *types.BGP, data []byte) {
 	offset := 0
-	for offset < len(data)-2 {
+	for offset < len(data)-1 {
 		capCode := data[offset]
 		capLen := int(data[offset+1])
 
-		cap := &types.BGPCapability{
-			Code: int32(capCode),
-			Name: getBGPCapabilityName(capCode),
+		if offset+2+capLen > len(data) {
+			break
 		}
-		if offset+2+capLen <= len(data) {
-			cap.Value = data[offset+2 : offset+2+capLen]
-		}
-		msg.Capabilities = append(msg.Capabilities, cap)
 
+		cap := &types.BGPCapability{
+			Code:    int32(capCode),
+			Name:    getBGPCapabilityName(capCode),
+			IsKnown: isKnownCapability(capCode),
+		}
+		cap.Value = data[offset+2 : offset+2+capLen]
+
+		// Track unknown capabilities
+		if !cap.IsKnown {
+			msg.HasUnknownCapability = true
+		}
+
+		// Parse specific capabilities
+		switch capCode {
+		case 1: // Multiprotocol Extensions
+			if capLen >= 4 {
+				cap.AFI = int32(binary.BigEndian.Uint16(cap.Value[0:2]))
+				cap.SAFI = int32(cap.Value[3])
+				cap.ParsedValue = fmt.Sprintf("AFI=%d, SAFI=%d", cap.AFI, cap.SAFI)
+				// Check if IPv6 is supported
+				if cap.AFI == 2 { // IPv6
+					msg.IsIPv6 = true
+				}
+			}
+		case 65: // 4-octet AS Number
+			if capLen >= 4 {
+				cap.FourByteAS = binary.BigEndian.Uint32(cap.Value[0:4])
+				cap.ParsedValue = fmt.Sprintf("AS=%d", cap.FourByteAS)
+				// Update MyAS if 4-byte AS capability present
+				if cap.FourByteAS > 0 {
+					msg.MyAS = cap.FourByteAS
+				}
+			}
+		case 64: // Graceful Restart
+			if capLen >= 2 {
+				flags := cap.Value[0] >> 4
+				time := binary.BigEndian.Uint16(cap.Value[0:2]) & 0x0FFF
+				cap.GracefulRestartTime = int32(time)
+				cap.GracefulRestartForwarding = flags&0x8 != 0
+				cap.ParsedValue = fmt.Sprintf("Time=%d, Forwarding=%v", time, cap.GracefulRestartForwarding)
+			}
+		case 69: // ADD-PATH
+			if capLen >= 4 {
+				afi := binary.BigEndian.Uint16(cap.Value[0:2])
+				safi := cap.Value[2]
+				sendRecv := cap.Value[3]
+				cap.AFI = int32(afi)
+				cap.SAFI = int32(safi)
+				cap.AddPathSend = sendRecv&0x01 != 0
+				cap.AddPathReceive = sendRecv&0x02 != 0
+				cap.ParsedValue = fmt.Sprintf("AFI=%d, SAFI=%d, Send=%v, Receive=%v",
+					afi, safi, cap.AddPathSend, cap.AddPathReceive)
+			}
+		default:
+			if capLen > 0 {
+				cap.ParsedValue = fmt.Sprintf("%x", cap.Value)
+			}
+		}
+
+		msg.Capabilities = append(msg.Capabilities, cap)
 		offset += 2 + capLen
 	}
 }
@@ -259,8 +324,9 @@ func (b *bgpReader) parsePrefixes(data []byte) []string {
 
 func (b *bgpReader) parsePathAttributes(msg *types.BGP, data []byte) {
 	offset := 0
+	knownTypes := getKnownAttributeTypes()
 
-	for offset < len(data)-3 {
+	for offset < len(data)-2 {
 		flags := data[offset]
 		typeCode := data[offset+1]
 		offset += 2
@@ -287,15 +353,23 @@ func (b *bgpReader) parsePathAttributes(msg *types.BGP, data []byte) {
 		attrData := data[offset : offset+attrLen]
 
 		attr := &types.BGPPathAttribute{
-			Optional:   flags&0x80 != 0,
-			Transitive: flags&0x40 != 0,
-			Partial:    flags&0x20 != 0,
-			Extended:   flags&0x10 != 0,
-			TypeCode:   int32(typeCode),
-			TypeName:   getBGPPathAttributeName(typeCode),
-			Value:      attrData,
+			Optional:    flags&0x80 != 0,
+			Transitive:  flags&0x40 != 0,
+			Partial:     flags&0x20 != 0,
+			Extended:    flags&0x10 != 0,
+			TypeCode:    int32(typeCode),
+			TypeName:    getBGPPathAttributeNameExt(typeCode),
+			Value:       attrData,
+			Length:      int32(attrLen),
+			IsWellKnown: isWellKnownAttribute(typeCode),
+			IsMandatory: isMandatoryAttribute(typeCode),
 		}
-		msg.PathAttributes = append(msg.PathAttributes, attr)
+
+		// Track unknown attributes
+		if !knownTypes[typeCode] {
+			msg.HasUnknownAttribute = true
+			msg.UnknownAttrTypes = append(msg.UnknownAttrTypes, int32(typeCode))
+		}
 
 		// Parse specific attributes
 		switch typeCode {
@@ -303,67 +377,224 @@ func (b *bgpReader) parsePathAttributes(msg *types.BGP, data []byte) {
 			if len(attrData) > 0 {
 				msg.Origin = int32(attrData[0])
 				msg.OriginName = getBGPOriginName(attrData[0])
+				attr.ParsedValue = msg.OriginName
 			}
 		case BGPAttrASPath:
-			msg.ASPath = b.parseASPath(attrData)
+			msg.ASPath, msg.ASPathSet, msg.ASPathConfedSeq, msg.ASPathConfedSet = b.parseASPathExtended(attrData)
+			attr.ParsedValue = joinUint32s(msg.ASPath)
 		case BGPAttrNextHop:
 			if len(attrData) >= 4 {
 				msg.NextHop = net.IP(attrData[:4]).String()
+				attr.ParsedValue = msg.NextHop
 			}
 		case BGPAttrMultiExitDisc:
 			if len(attrData) >= 4 {
 				msg.MED = int32(binary.BigEndian.Uint32(attrData))
+				attr.ParsedValue = fmt.Sprintf("%d", msg.MED)
 			}
 		case BGPAttrLocalPref:
 			if len(attrData) >= 4 {
 				msg.LocalPref = int32(binary.BigEndian.Uint32(attrData))
+				attr.ParsedValue = fmt.Sprintf("%d", msg.LocalPref)
 			}
 		case BGPAttrAtomicAggregate:
 			msg.AtomicAggregate = true
+			msg.IsAggregated = true
+			attr.ParsedValue = "ATOMIC_AGGREGATE"
+		case BGPAttrAggregator:
+			// Assume 4-byte AS if AS path contains 4-byte values
+			is4ByteAS := len(attrData) >= 8
+			msg.AggregatorAS, msg.AggregatorIP = parseAggregator(attrData, is4ByteAS)
+			msg.IsAggregated = true
+			attr.ParsedValue = fmt.Sprintf("AS%s:%s", msg.AggregatorAS, msg.AggregatorIP)
 		case BGPAttrCommunities:
 			msg.Communities = b.parseCommunities(attrData)
+			attr.ParsedValue = strings.Join(msg.Communities, ", ")
+		case BGPAttrExtCommunities: // Extended Communities (type 16)
+			msg.ExtendedCommunities = parseExtendedCommunities(attrData)
+			attr.ParsedValue = strings.Join(msg.ExtendedCommunities, ", ")
+		case BGPAttrLargeCommunity: // Large Communities (type 32)
+			msg.LargeCommunities = parseLargeCommunities(attrData)
+			attr.ParsedValue = strings.Join(msg.LargeCommunities, ", ")
+		case BGPAttrMPReachNLRI: // MP_REACH_NLRI (type 14)
+			b.parseMPReachNLRI(msg, attrData)
+			attr.ParsedValue = "MP_REACH_NLRI"
+		case BGPAttrMPUnreachNLRI: // MP_UNREACH_NLRI (type 15)
+			b.parseMPUnreachNLRI(msg, attrData)
+			attr.ParsedValue = "MP_UNREACH_NLRI"
+		case BGPAttrAS4Path: // AS4_PATH (type 17)
+			// Parse 4-byte AS path for AS_TRANS stitching
+			as4Path, _, _, _ := b.parseASPathExtended(attrData)
+			if len(as4Path) > 0 {
+				// AS4_PATH takes precedence for 4-byte AS numbers
+				msg.ASPath = as4Path
+			}
+			attr.ParsedValue = joinUint32s(as4Path)
+		case BGPAttrAS4Aggregator: // AS4_AGGREGATOR (type 18)
+			msg.AggregatorAS, msg.AggregatorIP = parseAggregator(attrData, true)
+			attr.ParsedValue = fmt.Sprintf("AS%s:%s", msg.AggregatorAS, msg.AggregatorIP)
 		}
 
+		msg.PathAttributes = append(msg.PathAttributes, attr)
 		offset += attrLen
 	}
 }
 
 func (b *bgpReader) parseASPath(data []byte) []uint32 {
-	var asPath []uint32
+	asPath, _, _, _ := b.parseASPathExtended(data)
+	return asPath
+}
+
+// parseASPathExtended parses AS path with segment type awareness
+// Returns: AS_SEQUENCE, AS_SET, AS_CONFED_SEQUENCE, AS_CONFED_SET
+func (b *bgpReader) parseASPathExtended(data []byte) ([]uint32, []uint32, []uint32, []uint32) {
+	var asSequence, asSet, asConfedSeq, asConfedSet []uint32
 	offset := 0
 
-	for offset < len(data)-2 {
+	for offset < len(data)-1 {
+		if offset+2 > len(data) {
+			break
+		}
 		segType := data[offset]
 		segLen := int(data[offset+1])
 		offset += 2
 
-		// Determine AS size based on capability negotiation
-		// For now, try 4-byte first (RFC 6793), fall back to 2-byte
-		// AS_SET = 1, AS_SEQUENCE = 2, AS_CONFED_SEQUENCE = 3, AS_CONFED_SET = 4
-		if segType >= 1 && segType <= 4 {
-			// Try 4-byte ASN first (RFC 6793)
-			if offset+segLen*4 <= len(data) {
-				for i := 0; i < segLen && offset+4 <= len(data); i++ {
-					asn := binary.BigEndian.Uint32(data[offset : offset+4])
-					asPath = append(asPath, asn)
-					offset += 4
-				}
-			} else if offset+segLen*2 <= len(data) {
-				// Fall back to 2-byte ASN
-				for i := 0; i < segLen && offset+2 <= len(data); i++ {
-					asn := binary.BigEndian.Uint16(data[offset : offset+2])
-					asPath = append(asPath, uint32(asn))
-					offset += 2
-				}
-			} else {
-				break
-			}
+		if segLen == 0 {
+			continue
+		}
+
+		// Determine AS size based on remaining data
+		// Try 4-byte first (RFC 6793), fall back to 2-byte
+		var asSize int
+		if offset+segLen*4 <= len(data) {
+			asSize = 4
+		} else if offset+segLen*2 <= len(data) {
+			asSize = 2
 		} else {
 			break
 		}
+
+		var segmentASes []uint32
+		for i := 0; i < segLen; i++ {
+			if offset+asSize > len(data) {
+				break
+			}
+			var asn uint32
+			if asSize == 4 {
+				asn = binary.BigEndian.Uint32(data[offset : offset+4])
+			} else {
+				asn = uint32(binary.BigEndian.Uint16(data[offset : offset+2]))
+			}
+			segmentASes = append(segmentASes, asn)
+			offset += asSize
+		}
+
+		// Assign to appropriate segment type
+		switch segType {
+		case ASSegTypeSet: // AS_SET = 1
+			asSet = append(asSet, segmentASes...)
+		case ASSegTypeSequence: // AS_SEQUENCE = 2
+			asSequence = append(asSequence, segmentASes...)
+		case ASSegTypeConfedSeq: // AS_CONFED_SEQUENCE = 3
+			asConfedSeq = append(asConfedSeq, segmentASes...)
+		case ASSegTypeConfedSet: // AS_CONFED_SET = 4
+			asConfedSet = append(asConfedSet, segmentASes...)
+		}
 	}
 
-	return asPath
+	return asSequence, asSet, asConfedSeq, asConfedSet
+}
+
+// parseMPReachNLRI parses MP_REACH_NLRI attribute for IPv6 support
+func (b *bgpReader) parseMPReachNLRI(msg *types.BGP, data []byte) {
+	if len(data) < 5 {
+		return
+	}
+
+	afi := binary.BigEndian.Uint16(data[0:2])
+	safi := data[2]
+	nextHopLen := int(data[3])
+
+	offset := 4
+
+	// Parse next hop
+	if afi == 2 && nextHopLen > 0 && offset+nextHopLen <= len(data) { // IPv6
+		msg.IsIPv6 = true
+		if nextHopLen >= 16 {
+			msg.IPv6NextHop = net.IP(data[offset : offset+16]).String()
+		}
+		offset += nextHopLen
+	} else {
+		offset += nextHopLen
+	}
+
+	// Skip reserved byte
+	if offset < len(data) {
+		offset++
+	}
+
+	// Parse NLRI
+	if afi == 2 && safi == 1 && offset < len(data) { // IPv6 Unicast
+		msg.IPv6NLRI = b.parseIPv6Prefixes(data[offset:])
+	}
+}
+
+// parseMPUnreachNLRI parses MP_UNREACH_NLRI attribute for IPv6 withdrawals
+func (b *bgpReader) parseMPUnreachNLRI(msg *types.BGP, data []byte) {
+	if len(data) < 3 {
+		return
+	}
+
+	afi := binary.BigEndian.Uint16(data[0:2])
+	safi := data[2]
+
+	if afi == 2 && safi == 1 && len(data) > 3 { // IPv6 Unicast
+		msg.IsIPv6 = true
+		msg.IPv6Withdrawn = b.parseIPv6Prefixes(data[3:])
+	}
+}
+
+// parseIPv6Prefixes parses IPv6 prefixes from NLRI data
+func (b *bgpReader) parseIPv6Prefixes(data []byte) []string {
+	var prefixes []string
+	offset := 0
+
+	for offset < len(data) {
+		if offset >= len(data) {
+			break
+		}
+		prefixLen := int(data[offset])
+		offset++
+
+		// Calculate number of bytes needed for prefix
+		prefixBytes := (prefixLen + 7) / 8
+
+		if offset+prefixBytes > len(data) {
+			break
+		}
+
+		// Build IPv6 prefix
+		ip := make([]byte, 16)
+		copy(ip, data[offset:offset+prefixBytes])
+		prefix := fmt.Sprintf("%s/%d", net.IP(ip).String(), prefixLen)
+		prefixes = append(prefixes, prefix)
+
+		offset += prefixBytes
+	}
+
+	return prefixes
+}
+
+// joinUint32s joins a slice of uint32 into a comma-separated string
+func joinUint32s(values []uint32) string {
+	if len(values) == 0 {
+		return ""
+	}
+	strs := make([]string, len(values))
+	for i, v := range values {
+		strs[i] = fmt.Sprintf("%d", v)
+	}
+	return strings.Join(strs, ",")
 }
 
 func (b *bgpReader) parseCommunities(data []byte) []string {
@@ -411,6 +642,11 @@ func getBGPMessageTypeName(msgType uint8) string {
 }
 
 func getBGPPathAttributeName(typeCode uint8) string {
+	return getBGPPathAttributeNameExt(typeCode)
+}
+
+// getBGPPathAttributeNameExt returns extended attribute type names
+func getBGPPathAttributeNameExt(typeCode uint8) string {
 	switch typeCode {
 	case BGPAttrOrigin:
 		return "ORIGIN"
@@ -428,6 +664,50 @@ func getBGPPathAttributeName(typeCode uint8) string {
 		return "AGGREGATOR"
 	case BGPAttrCommunities:
 		return "COMMUNITIES"
+	case 9:
+		return "ORIGINATOR_ID"
+	case 10:
+		return "CLUSTER_LIST"
+	case BGPAttrMPReachNLRI:
+		return "MP_REACH_NLRI"
+	case BGPAttrMPUnreachNLRI:
+		return "MP_UNREACH_NLRI"
+	case BGPAttrExtCommunities:
+		return "EXTENDED_COMMUNITIES"
+	case BGPAttrAS4Path:
+		return "AS4_PATH"
+	case BGPAttrAS4Aggregator:
+		return "AS4_AGGREGATOR"
+	case 22:
+		return "PMSI_TUNNEL"
+	case 23:
+		return "TUNNEL_ENCAPSULATION"
+	case 24:
+		return "TRAFFIC_ENGINEERING"
+	case 25:
+		return "IPV6_EXTENDED_COMMUNITIES"
+	case 26:
+		return "AIGP"
+	case 27:
+		return "PE_DISTINGUISHER_LABELS"
+	case 28:
+		return "BGP_LS"
+	case BGPAttrLargeCommunity:
+		return "LARGE_COMMUNITY"
+	case 33:
+		return "BGPSEC_PATH"
+	case 34:
+		return "ONLY_TO_CUSTOMER"
+	case 35:
+		return "BGP_DOMAIN_PATH"
+	case 36:
+		return "SFP_ATTRIBUTE"
+	case 37:
+		return "BFD_DISCRIMINATOR"
+	case 40:
+		return "BGP_PREFIX_SID"
+	case 128:
+		return "ATTR_SET"
 	default:
 		return fmt.Sprintf("UNKNOWN(%d)", typeCode)
 	}

@@ -110,6 +110,12 @@ var sctpDecoder = newGoPacketDecoder(
 			// Parse SCTP chunks from payload for security monitoring
 			chunkCount, chunkTypes, hasINIT, hasINITACK, hasABORT, hasSHUTDOWN := parseSCTPChunks(sctp.Payload)
 
+			// Capture payload if configured (for signaling protocol analysis)
+			var payload []byte
+			if conf.IncludePayloads {
+				payload = sctp.Payload
+			}
+
 			return &types.SCTP{
 				Timestamp:       timestamp,
 				SrcPort:         int32(sctp.SrcPort),
@@ -123,6 +129,9 @@ var sctpDecoder = newGoPacketDecoder(
 				HasINITACK:  hasINITACK,
 				HasABORT:    hasABORT,
 				HasSHUTDOWN: hasSHUTDOWN,
+				// Payload data
+				Payload:     payload,
+				PayloadSize: int32(len(sctp.Payload)),
 			}
 		}
 

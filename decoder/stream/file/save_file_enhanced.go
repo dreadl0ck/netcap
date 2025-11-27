@@ -252,7 +252,10 @@ func SaveFileEnhanced(
 		flowDirection = "unknown"
 	}
 
-	// Write file record
+	// Perform security analysis on the file content
+	analysis := AnalyzeFile(body, fileName)
+
+	// Write file record with security analysis fields
 	WriteFileEnhanced(&types.File{
 		Timestamp:           conv.FirstClientPacket.UnixNano(),
 		Name:                fileName,
@@ -279,6 +282,19 @@ func SaveFileEnhanced(
 		ParentFileID:   parentFileID,
 		FlowDirection:  flowDirection,
 		ConnectionUID:  conv.Ident,
+		// Security analysis fields
+		Entropy:             analysis.Entropy,
+		MagicBytes:          analysis.MagicBytes,
+		TrueFileType:        analysis.TrueFileType,
+		TypeMismatch:        analysis.TypeMismatch,
+		IsPEExecutable:      analysis.IsPEExecutable,
+		IsELFExecutable:     analysis.IsELFExecutable,
+		IsMachO:             analysis.IsMachO,
+		HasEmbeddedScript:   analysis.HasEmbeddedScript,
+		IsPasswordProtected: analysis.IsPasswordProtected,
+		YaraMatches:         analysis.YaraMatches,
+		IsKnownMalware:      analysis.IsKnownMalware,
+		ThreatName:          analysis.ThreatName,
 	})
 
 	return nil

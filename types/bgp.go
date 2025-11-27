@@ -43,6 +43,54 @@ const (
 	fieldAnomalyReason   = "AnomalyReason"
 	fieldIsRouteHijack   = "IsRouteHijack"
 	fieldPeerAS          = "PeerAS"
+
+	// AS Path Security Analysis
+	fieldASPathLength    = "ASPathLength"
+	fieldOriginAS        = "OriginAS"
+	fieldHasPrivateAS    = "HasPrivateAS"
+	fieldHasASPathLoop   = "HasASPathLoop"
+	fieldHasBogonAS      = "HasBogonAS"
+	fieldASPathSet       = "ASPathSet"
+	fieldASPathConfedSeq = "ASPathConfedSeq"
+	fieldASPathConfedSet = "ASPathConfedSet"
+
+	// Prefix Security Analysis
+	fieldPrefixCount       = "PrefixCount"
+	fieldWithdrawnCount    = "WithdrawnCount"
+	fieldSmallestPrefixLen = "SmallestPrefixLen"
+	fieldLargestPrefixLen  = "LargestPrefixLen"
+	fieldHasBogonPrefix    = "HasBogonPrefix"
+	fieldHasDefaultRoute   = "HasDefaultRoute"
+	fieldBogonPrefixes     = "BogonPrefixes"
+
+	// Extended Communities
+	fieldExtendedCommunities = "ExtendedCommunities"
+	fieldLargeCommunities    = "LargeCommunities"
+	fieldHasBlackholeComm    = "HasBlackholeComm"
+	fieldHasNoExportComm     = "HasNoExportComm"
+	fieldHasNoAdvertiseComm  = "HasNoAdvertiseComm"
+	fieldHasNoPeerComm       = "HasNoPeerComm"
+
+	// Session Security
+	fieldOptionalParamLen     = "OptionalParamLen"
+	fieldHasUnknownCapability = "HasUnknownCapability"
+	fieldHasUnknownAttribute  = "HasUnknownAttribute"
+	fieldUnknownAttrTypes     = "UnknownAttrTypes"
+
+	// Aggregation Info
+	fieldAggregatorAS = "AggregatorAS"
+	fieldAggregatorIP = "AggregatorIP"
+	fieldIsAggregated = "IsAggregated"
+
+	// IPv6 Support
+	fieldBGPIsIPv6        = "IsIPv6"
+	fieldBGPIPv6NLRI      = "IPv6NLRI"
+	fieldBGPIPv6Withdrawn = "IPv6Withdrawn"
+	fieldBGPIPv6NextHop   = "IPv6NextHop"
+
+	// Security Scoring
+	fieldRiskScore   = "RiskScore"
+	fieldRiskFactors = "RiskFactors"
 )
 
 var fieldsBGP = []string{
@@ -70,8 +118,50 @@ var fieldsBGP = []string{
 	fieldErrorCode,
 	fieldErrorCodeName,
 	fieldIsAnomalous,
+	fieldAnomalyReason,
 	fieldIsRouteHijack,
 	fieldPeerAS,
+	// AS Path Security Analysis
+	fieldASPathLength,
+	fieldOriginAS,
+	fieldHasPrivateAS,
+	fieldHasASPathLoop,
+	fieldHasBogonAS,
+	fieldASPathSet,
+	fieldASPathConfedSeq,
+	fieldASPathConfedSet,
+	// Prefix Security Analysis
+	fieldPrefixCount,
+	fieldWithdrawnCount,
+	fieldSmallestPrefixLen,
+	fieldLargestPrefixLen,
+	fieldHasBogonPrefix,
+	fieldHasDefaultRoute,
+	fieldBogonPrefixes,
+	// Extended Communities
+	fieldExtendedCommunities,
+	fieldLargeCommunities,
+	fieldHasBlackholeComm,
+	fieldHasNoExportComm,
+	fieldHasNoAdvertiseComm,
+	fieldHasNoPeerComm,
+	// Session Security
+	fieldOptionalParamLen,
+	fieldHasUnknownCapability,
+	fieldHasUnknownAttribute,
+	fieldUnknownAttrTypes,
+	// Aggregation Info
+	fieldAggregatorAS,
+	fieldAggregatorIP,
+	fieldIsAggregated,
+	// IPv6 Support
+	fieldBGPIsIPv6,
+	fieldBGPIPv6NLRI,
+	fieldBGPIPv6Withdrawn,
+	fieldBGPIPv6NextHop,
+	// Security Scoring
+	fieldRiskScore,
+	fieldRiskFactors,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -106,8 +196,50 @@ func (b *BGP) CSVRecord() []string {
 		formatInt32(b.ErrorCode),
 		b.ErrorCodeName,
 		strconv.FormatBool(b.IsAnomalous),
+		b.AnomalyReason,
 		strconv.FormatBool(b.IsRouteHijack),
 		formatUint32(b.PeerAS),
+		// AS Path Security Analysis
+		formatInt32(b.ASPathLength),
+		formatUint32(b.OriginAS),
+		strconv.FormatBool(b.HasPrivateAS),
+		strconv.FormatBool(b.HasASPathLoop),
+		strconv.FormatBool(b.HasBogonAS),
+		joinUints(b.ASPathSet),
+		joinUints(b.ASPathConfedSeq),
+		joinUints(b.ASPathConfedSet),
+		// Prefix Security Analysis
+		formatInt32(b.PrefixCount),
+		formatInt32(b.WithdrawnCount),
+		formatInt32(b.SmallestPrefixLen),
+		formatInt32(b.LargestPrefixLen),
+		strconv.FormatBool(b.HasBogonPrefix),
+		strconv.FormatBool(b.HasDefaultRoute),
+		join(b.BogonPrefixes...),
+		// Extended Communities
+		join(b.ExtendedCommunities...),
+		join(b.LargeCommunities...),
+		strconv.FormatBool(b.HasBlackholeComm),
+		strconv.FormatBool(b.HasNoExportComm),
+		strconv.FormatBool(b.HasNoAdvertiseComm),
+		strconv.FormatBool(b.HasNoPeerComm),
+		// Session Security
+		formatInt32(b.OptionalParamLen),
+		strconv.FormatBool(b.HasUnknownCapability),
+		strconv.FormatBool(b.HasUnknownAttribute),
+		joinInts(b.UnknownAttrTypes),
+		// Aggregation Info
+		b.AggregatorAS,
+		b.AggregatorIP,
+		strconv.FormatBool(b.IsAggregated),
+		// IPv6 Support
+		strconv.FormatBool(b.IsIPv6),
+		join(b.IPv6NLRI...),
+		join(b.IPv6Withdrawn...),
+		b.IPv6NextHop,
+		// Security Scoring
+		formatInt32(b.RiskScore),
+		join(b.RiskFactors...),
 	})
 }
 
@@ -184,8 +316,50 @@ func (b *BGP) Encode() []string {
 		bgpEncoder.Int32(fieldErrorCode, b.ErrorCode),
 		bgpEncoder.String(fieldErrorCodeName, b.ErrorCodeName),
 		bgpEncoder.Bool(b.IsAnomalous),
+		bgpEncoder.String(fieldAnomalyReason, b.AnomalyReason),
 		bgpEncoder.Bool(b.IsRouteHijack),
 		bgpEncoder.Uint32(fieldPeerAS, b.PeerAS),
+		// AS Path Security Analysis
+		bgpEncoder.Int32(fieldASPathLength, b.ASPathLength),
+		bgpEncoder.Uint32(fieldOriginAS, b.OriginAS),
+		bgpEncoder.Bool(b.HasPrivateAS),
+		bgpEncoder.Bool(b.HasASPathLoop),
+		bgpEncoder.Bool(b.HasBogonAS),
+		bgpEncoder.String(fieldASPathSet, joinUints(b.ASPathSet)),
+		bgpEncoder.String(fieldASPathConfedSeq, joinUints(b.ASPathConfedSeq)),
+		bgpEncoder.String(fieldASPathConfedSet, joinUints(b.ASPathConfedSet)),
+		// Prefix Security Analysis
+		bgpEncoder.Int32(fieldPrefixCount, b.PrefixCount),
+		bgpEncoder.Int32(fieldWithdrawnCount, b.WithdrawnCount),
+		bgpEncoder.Int32(fieldSmallestPrefixLen, b.SmallestPrefixLen),
+		bgpEncoder.Int32(fieldLargestPrefixLen, b.LargestPrefixLen),
+		bgpEncoder.Bool(b.HasBogonPrefix),
+		bgpEncoder.Bool(b.HasDefaultRoute),
+		bgpEncoder.String(fieldBogonPrefixes, join(b.BogonPrefixes...)),
+		// Extended Communities
+		bgpEncoder.String(fieldExtendedCommunities, join(b.ExtendedCommunities...)),
+		bgpEncoder.String(fieldLargeCommunities, join(b.LargeCommunities...)),
+		bgpEncoder.Bool(b.HasBlackholeComm),
+		bgpEncoder.Bool(b.HasNoExportComm),
+		bgpEncoder.Bool(b.HasNoAdvertiseComm),
+		bgpEncoder.Bool(b.HasNoPeerComm),
+		// Session Security
+		bgpEncoder.Int32(fieldOptionalParamLen, b.OptionalParamLen),
+		bgpEncoder.Bool(b.HasUnknownCapability),
+		bgpEncoder.Bool(b.HasUnknownAttribute),
+		bgpEncoder.String(fieldUnknownAttrTypes, joinInts(b.UnknownAttrTypes)),
+		// Aggregation Info
+		bgpEncoder.String(fieldAggregatorAS, b.AggregatorAS),
+		bgpEncoder.String(fieldAggregatorIP, b.AggregatorIP),
+		bgpEncoder.Bool(b.IsAggregated),
+		// IPv6 Support
+		bgpEncoder.Bool(b.IsIPv6),
+		bgpEncoder.String(fieldBGPIPv6NLRI, join(b.IPv6NLRI...)),
+		bgpEncoder.String(fieldBGPIPv6Withdrawn, join(b.IPv6Withdrawn...)),
+		bgpEncoder.String(fieldBGPIPv6NextHop, b.IPv6NextHop),
+		// Security Scoring
+		bgpEncoder.Int32(fieldRiskScore, b.RiskScore),
+		bgpEncoder.String(fieldRiskFactors, join(b.RiskFactors...)),
 	})
 }
 
@@ -196,4 +370,3 @@ func (b *BGP) Analyze() {}
 func (b *BGP) NetcapType() Type {
 	return Type_NC_BGP
 }
-

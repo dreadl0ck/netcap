@@ -145,6 +145,30 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 		Origin:          origin,
 	}
 
+	// Perform security analysis
+	secAnalysis := AnalyzeMail(mail, hdr, body)
+	
+	// Populate security fields
+	mail.SPFResult = secAnalysis.SPFResult
+	mail.SPFDomain = secAnalysis.SPFDomain
+	mail.DKIMResult = secAnalysis.DKIMResult
+	mail.DKIMDomain = secAnalysis.DKIMDomain
+	mail.DMARCResult = secAnalysis.DMARCResult
+	mail.DMARCPolicy = secAnalysis.DMARCPolicy
+	mail.SenderDisplayNameMismatch = secAnalysis.SenderDisplayNameMismatch
+	mail.HasSuspiciousReplyTo = secAnalysis.HasSuspiciousReplyTo
+	mail.URLCount = secAnalysis.URLCount
+	mail.AttachmentCount = secAnalysis.AttachmentCount
+	mail.AttachmentTypes = secAnalysis.AttachmentTypes
+	mail.HasExecutableAttachment = secAnalysis.HasExecutableAttachment
+	mail.HasMacroEnabledAttachment = secAnalysis.HasMacroEnabledAttachment
+	mail.SubjectEntropy = secAnalysis.SubjectEntropy
+	mail.HasUrgencyKeywords = secAnalysis.HasUrgencyKeywords
+	mail.ReceivedHopCount = secAnalysis.ReceivedHopCount
+	mail.IsForwarded = secAnalysis.IsForwarded
+	mail.ReplyTo = secAnalysis.ReplyTo
+	mail.FromDomain = secAnalysis.FromDomain
+
 	for _, p := range mail.Body {
 		if strings.Contains(p.Header["Content-Disposition"], "attachment") {
 			mail.HasAttachments = true

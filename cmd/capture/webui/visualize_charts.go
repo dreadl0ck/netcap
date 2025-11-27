@@ -1193,6 +1193,8 @@ func getLayerMap() map[string]string {
 	"LinkLayerDiscoveryInfo": "Link Layer",
 	"STP":                    "Link Layer",
 	"LLDP":                   "Link Layer",
+	"PPPoE":                  "Link Layer",
+	"PPP":                    "Link Layer",
 	// Network Layer
 	"IPv4":                        "Network Layer",
 	"IPv6":                        "Network Layer",
@@ -1211,6 +1213,8 @@ func getLayerMap() map[string]string {
 	"MPLS":                        "Network Layer",
 	"OSPFv2":                      "Network Layer",
 	"OSPFv3":                      "Network Layer",
+	"MLDv2MulticastListenerQuery":  "Network Layer",
+	"MLDv2MulticastListenerReport": "Network Layer",
 		// Transport Layer
 		"TCP":  "Transport Layer",
 		"UDP":  "Transport Layer",
@@ -1247,6 +1251,7 @@ func getLayerMap() map[string]string {
 		"DNP3":           "Application Layer",
 		"SOCKS":          "Application Layer",
 		"GTP":            "Application Layer",
+		"RMCP":           "Application Layer",
 	}
 }
 

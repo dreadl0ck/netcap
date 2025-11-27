@@ -83,6 +83,12 @@ var sipDecoder = newGoPacketDecoder(
 				contentLength = int32(cl)
 			}
 
+			// Capture body if configured (for SDP analysis and VoIP security)
+			var body []byte
+			if conf.IncludePayloads {
+				body = layer.LayerPayload()
+			}
+
 			return &types.SIP{
 				Timestamp:      timestamp,
 				Version:        int32(sip.Version),
@@ -99,6 +105,7 @@ var sipDecoder = newGoPacketDecoder(
 				UserAgent:      userAgent,
 				ContentType:    contentType,
 				ContentLength:  contentLength,
+				Body:           body,
 			}
 		}
 

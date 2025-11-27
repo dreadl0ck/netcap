@@ -18,6 +18,7 @@ import (
 	"errors"
 	"io"
 	"net/textproto"
+	"strconv"
 	"strings"
 	"sync/atomic"
 
@@ -31,6 +32,20 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/types"
 )
+
+// parseMessageID parses a message ID from a string
+func parseMessageID(s string) (int32, error) {
+	id, err := strconv.ParseInt(s, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return int32(id), nil
+}
+
+// parseMailboxSize parses a mailbox size from a string
+func parseMailboxSize(s string) (int64, error) {
+	return strconv.ParseInt(s, 10, 64)
+}
 
 /*
  * POP3 protocol
@@ -81,6 +96,18 @@ type pop3Reader struct {
 	resIndex      int
 
 	user, pass, token string
+	
+	// Security monitoring fields
+	authMethod       string   // USER/PASS, APOP, AUTH PLAIN, etc.
+	authSuccess      bool
+	authAttempts     int32
+	starttlsRequested bool
+	starttlsSuccess  bool
+	capabilities     []string
+	messageCount     int32
+	mailboxSize      int64
+	retrievedMsgs    []int32
+	deletedMsgs      []int32
 }
 
 func validPop3ServerCommand(cmd string) bool {
@@ -125,6 +152,16 @@ func (h *pop3Reader) Decode() {
 	}
 
 	mails, user, pass, token := h.processPOP3Conversation()
+	
+	// Determine if plaintext auth was used (password sent in clear)
+	isPlaintextAuth := false
+	if h.authMethod == "USER/PASS" && !h.starttlsSuccess && h.conversation.ServerPort != 995 {
+		isPlaintextAuth = true
+	}
+	
+	// Determine if connection is encrypted (port 995 = POP3S or STARTTLS success)
+	isEncrypted := h.conversation.ServerPort == 995 || h.starttlsSuccess
+	
 	pop3Msg := &types.POP3{
 		Timestamp: h.conversation.FirstClientPacket.UnixNano(),
 		ClientIP:  h.conversation.ClientIP,
@@ -134,6 +171,25 @@ func (h *pop3Reader) Decode() {
 		Pass:      pass,
 		MailIDs:   mails,
 		Commands:  commands,
+		// New port fields
+		ClientPort: h.conversation.ClientPort,
+		ServerPort: h.conversation.ServerPort,
+		// Authentication tracking
+		AuthSuccess:        h.authSuccess,
+		AuthMethod:         h.authMethod,
+		AuthAttempts:       h.authAttempts,
+		// Mailbox statistics
+		MessageCount:       h.messageCount,
+		MailboxSize:        h.mailboxSize,
+		// Message operations
+		RetrievedMessages:  h.retrievedMsgs,
+		DeletedMessages:    h.deletedMsgs,
+		// Security monitoring
+		STARTTLSRequested:  h.starttlsRequested,
+		STARTTLSSuccess:    h.starttlsSuccess,
+		IsEncrypted:        isEncrypted,
+		IsPlaintextAuth:    isPlaintextAuth,
+		ServerCapabilities: h.capabilities,
 	}
 
 	if user != "" || pass != "" {
@@ -274,6 +330,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 		}
 		mailBuf string
 		r       *types.POP3Request
+		currentMsgID int32 // Track current message being retrieved/deleted
 	)
 
 	for {
@@ -289,6 +346,22 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 		case stateAuthenticated:
 			switch r.Command {
 			case pop3STAT:
+				// Parse STAT response to get message count and mailbox size
+				if len(h.pop3Responses) > h.resIndex {
+					reply := h.pop3Responses[h.resIndex]
+					if reply.Command == pop3OK {
+						// Response format: +OK nn mm (nn=message count, mm=mailbox size)
+						parts := strings.Fields(reply.Message)
+						if len(parts) >= 2 {
+							if count, err := parseMessageID(parts[0]); err == nil {
+								h.messageCount = count
+							}
+							if size, err := parseMailboxSize(parts[1]); err == nil {
+								h.mailboxSize = size
+							}
+						}
+					}
+				}
 				h.resIndex++
 
 				continue
@@ -313,6 +386,12 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 
 				continue
 			case pop3RETR:
+				// Track which message is being retrieved
+				if msgID, err := parseMessageID(r.Argument); err == nil && msgID > 0 {
+					h.retrievedMsgs = append(h.retrievedMsgs, msgID)
+					currentMsgID = msgID
+				}
+				
 				var n int
 				// ensure safe array access
 				if len(h.pop3Responses) < h.resIndex {
@@ -338,9 +417,18 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 				h.resIndex += n
 
 				continue
+			case "DELE":
+				// Track which message is being deleted
+				if msgID, err := parseMessageID(r.Argument); err == nil && msgID > 0 {
+					h.deletedMsgs = append(h.deletedMsgs, msgID)
+				}
+				h.resIndex++
+				continue
 			case pop3QUIT:
 				return
 			}
+			// Suppress unused variable warning
+			_ = currentMsgID
 		case stateNotAuthenticated:
 			switch r.Command {
 			case pop3User:
@@ -351,13 +439,16 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 				reply := h.pop3Responses[h.resIndex+1]
 				if reply.Command == pop3OK {
 					user = r.Argument
+					h.authMethod = "USER/PASS" // Will be confirmed with PASS
 				}
 
 				h.resIndex++
 
 				continue
 			case pop3CAPA:
+				// Parse CAPA response to extract server capabilities
 				var n int
+				var capas []string
 
 				for _, reply := range h.pop3Responses[h.resIndex:] {
 					if reply.Command == pop3Dot {
@@ -366,13 +457,21 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 
 						break
 					}
+					// Each line after +OK is a capability
+					if reply.Message != "" && reply.Command != pop3OK {
+						capas = append(capas, reply.Message)
+					} else if reply.Command == "" && reply.Message != "" {
+						capas = append(capas, reply.Message)
+					}
 					n++
 				}
+				h.capabilities = capas
 
 				h.resIndex += n
 
 				continue
 			case pop3AUTH:
+				h.authAttempts++
 				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
@@ -380,6 +479,14 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 				reply := h.pop3Responses[h.resIndex+1]
 				if reply.Command == pop3OK {
 					state = stateAuthenticated
+					h.authSuccess = true
+
+					// Determine auth method from argument (e.g., AUTH PLAIN, AUTH LOGIN)
+					if r.Argument != "" {
+						h.authMethod = "AUTH " + strings.ToUpper(r.Argument)
+					} else {
+						h.authMethod = "AUTH"
+					}
 
 					if len(h.pop3Requests) > h.reqIndex {
 						r = h.pop3Requests[h.reqIndex]
@@ -393,6 +500,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 
 				continue
 			case pop3PASS:
+				h.authAttempts++
 				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
@@ -400,6 +508,8 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 				reply := h.pop3Responses[h.resIndex+1]
 				if reply.Command == pop3OK {
 					state = stateAuthenticated
+					h.authSuccess = true
+					h.authMethod = "USER/PASS"
 					pass = r.Argument
 				}
 
@@ -407,6 +517,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 
 				continue
 			case pop3APOP: // example: APOP mrose c4c9334bac560ecc979e58001b3e22fb
+				h.authAttempts++
 				if len(h.pop3Responses) <= h.resIndex+1 {
 					continue
 				}
@@ -414,6 +525,8 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 				reply := h.pop3Responses[h.resIndex+1]
 				if reply.Command == pop3OK {
 					state = stateAuthenticated
+					h.authSuccess = true
+					h.authMethod = "APOP"
 					parts := strings.Split(r.Argument, " ")
 
 					if len(parts) > 1 {
@@ -422,6 +535,18 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 					}
 				}
 
+				h.resIndex++
+
+				continue
+			case pop3STLS:
+				// STARTTLS request
+				h.starttlsRequested = true
+				if len(h.pop3Responses) > h.resIndex {
+					reply := h.pop3Responses[h.resIndex]
+					if reply.Command == pop3OK {
+						h.starttlsSuccess = true
+					}
+				}
 				h.resIndex++
 
 				continue

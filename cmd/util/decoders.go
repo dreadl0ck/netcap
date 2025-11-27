@@ -100,6 +100,9 @@ func addGoPacketDecoders(decodersByLayer map[string][]DecoderInfo, seenDecoders 
 		layers.LayerTypeUSB:                {typeName: "USB", layer: "Link Layer"},
 		layers.LayerTypeCiscoDiscovery:     {typeName: "CiscoDiscovery", layer: "Link Layer"},
 		layers.LayerTypeNortelDiscovery:    {typeName: "NortelDiscovery", layer: "Link Layer"},
+		layers.LayerTypePPPoE:              {typeName: "PPPoE", layer: "Link Layer"},
+		layers.LayerTypePPP:                {typeName: "PPP", layer: "Link Layer"},
+		layers.LayerTypeSTP:                {typeName: "STP", layer: "Link Layer"},
 
 		// Network Layer
 		layers.LayerTypeIPv4:         {typeName: "IPv4", layer: "Network Layer"},
@@ -113,6 +116,8 @@ func addGoPacketDecoders(decodersByLayer map[string][]DecoderInfo, seenDecoders 
 		layers.LayerTypeIGMP:         {typeName: "IGMP", layer: "Network Layer"},
 		layers.LayerTypeMPLS:         {typeName: "MPLS", layer: "Network Layer"},
 		layers.LayerTypeGRE:          {typeName: "GRE", layer: "Network Layer"},
+		layers.LayerTypeMLDv2MulticastListenerQuery:  {typeName: "MLDv2MulticastListenerQuery", layer: "Network Layer"},
+		layers.LayerTypeMLDv2MulticastListenerReport: {typeName: "MLDv2MulticastListenerReport", layer: "Network Layer"},
 
 		// Transport Layer
 		layers.LayerTypeTCP:  {typeName: "TCP", layer: "Transport Layer"},
@@ -127,6 +132,7 @@ func addGoPacketDecoders(decodersByLayer map[string][]DecoderInfo, seenDecoders 
 		layers.LayerTypeSIP:    {typeName: "SIP", layer: "Application Layer"},
 		layers.LayerTypeGeneve: {typeName: "Geneve", layer: "Application Layer"},
 		layers.LayerTypeVXLAN:  {typeName: "VXLAN", layer: "Application Layer"},
+		layers.LayerTypeRMCP:   {typeName: "RMCP", layer: "Application Layer"},
 	}
 
 	for _, mapping := range layerMappings {
@@ -230,7 +236,8 @@ func determineLayer(name string) string {
 
 	// Link Layer protocols
 	linkLayerProtocols := []string{"ethernet", "arp", "dot1q", "dot11", "llc", "snap",
-		"linklayerdiscovery", "ethernetctp", "fddi", "usb", "cisco", "nortel"}
+		"linklayerdiscovery", "ethernetctp", "fddi", "usb", "cisco", "nortel",
+		"ppp", "pppoe", "stp"}
 	for _, proto := range linkLayerProtocols {
 		if strings.Contains(name, proto) {
 			return "Link Layer"
@@ -238,7 +245,7 @@ func determineLayer(name string) string {
 	}
 
 	// Network Layer protocols
-	networkLayerProtocols := []string{"ipv4", "ipv6", "icmp", "ipsec", "igmp", "mpls", "gre"}
+	networkLayerProtocols := []string{"ipv4", "ipv6", "icmp", "ipsec", "igmp", "mpls", "gre", "mld"}
 	for _, proto := range networkLayerProtocols {
 		if strings.Contains(name, proto) {
 			return "Network Layer"
@@ -256,7 +263,7 @@ func determineLayer(name string) string {
 	// Application Layer protocols
 	applicationLayerProtocols := []string{"dns", "dhcp", "http", "tls", "ntp", "sip",
 		"smtp", "pop3", "ssh", "lcm", "modbus", "ospf", "bfd", "eap", "cip", "enip",
-		"geneve", "vxlan", "vrrp", "diameter"}
+		"geneve", "vxlan", "vrrp", "diameter", "rmcp"}
 	for _, proto := range applicationLayerProtocols {
 		if strings.Contains(name, proto) {
 			return "Application Layer"
@@ -333,7 +340,13 @@ func getTypeForName(name string) types.Type {
 		"IPProfile":          types.Type_NC_IPProfile,
 		"Mail":               types.Type_NC_Mail,
 		"Alert":              types.Type_NC_Alert,
-		"Diameter":           types.Type_NC_Diameter,
+		"Diameter":                       types.Type_NC_Diameter,
+		"PPPoE":                          types.Type_NC_PPPoE,
+		"PPP":                            types.Type_NC_PPP,
+		"RMCP":                           types.Type_NC_RMCP,
+		"STP":                            types.Type_NC_STP,
+		"MLDv2MulticastListenerQuery":    types.Type_NC_MLDv2MulticastListenerQuery,
+		"MLDv2MulticastListenerReport":   types.Type_NC_MLDv2MulticastListenerReport,
 	}
 
 	if t, ok := typeMap[name]; ok {

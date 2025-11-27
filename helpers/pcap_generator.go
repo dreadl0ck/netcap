@@ -4,13 +4,25 @@ package helpers
 import (
 	"fmt"
 	"net"
-	"time"
-
 	"os"
+	"time"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
+)
+
+// TCPFlags represents TCP flag bits
+type TCPFlags uint8
+
+// TCP flag constants
+const (
+	TCPFlagFin TCPFlags = 1 << iota
+	TCPFlagSyn
+	TCPFlagRst
+	TCPFlagPsh
+	TCPFlagAck
+	TCPFlagUrg
 )
 
 // PcapConfig contains configuration for PCAP generation
@@ -77,7 +89,7 @@ func (pb *PacketBuilder) BuildEthernetIPv4TCPPacket(
 	srcIP, dstIP string,
 	srcPort, dstPort uint16,
 	seq, ack uint32,
-	flags layers.TCPFlag,
+	flags TCPFlags,
 	payload []byte,
 ) ([]byte, error) {
 
@@ -120,19 +132,19 @@ func (pb *PacketBuilder) BuildEthernetIPv4TCPPacket(
 	}
 
 	// Set TCP flags
-	if flags&layers.TCPFlagSyn != 0 {
+	if flags&TCPFlagSyn != 0 {
 		tcp.SYN = true
 	}
-	if flags&layers.TCPFlagAck != 0 {
+	if flags&TCPFlagAck != 0 {
 		tcp.ACK = true
 	}
-	if flags&layers.TCPFlagFin != 0 {
+	if flags&TCPFlagFin != 0 {
 		tcp.FIN = true
 	}
-	if flags&layers.TCPFlagRst != 0 {
+	if flags&TCPFlagRst != 0 {
 		tcp.RST = true
 	}
-	if flags&layers.TCPFlagPsh != 0 {
+	if flags&TCPFlagPsh != 0 {
 		tcp.PSH = true
 	}
 
@@ -176,7 +188,7 @@ func GenerateTCPHandshake(filename string, srcIP, dstIP string, srcPort, dstPort
 		srcIP, dstIP,
 		srcPort, dstPort,
 		1000, 0,
-		layers.TCPFlagSyn,
+		TCPFlagSyn,
 		nil,
 	)
 	if err != nil {
@@ -192,7 +204,7 @@ func GenerateTCPHandshake(filename string, srcIP, dstIP string, srcPort, dstPort
 		dstIP, srcIP,
 		dstPort, srcPort,
 		2000, 1001,
-		layers.TCPFlagSyn|layers.TCPFlagAck,
+		TCPFlagSyn|TCPFlagAck,
 		nil,
 	)
 	if err != nil {
@@ -208,7 +220,7 @@ func GenerateTCPHandshake(filename string, srcIP, dstIP string, srcPort, dstPort
 		srcIP, dstIP,
 		srcPort, dstPort,
 		1001, 2001,
-		layers.TCPFlagAck,
+		TCPFlagAck,
 		nil,
 	)
 	if err != nil {
@@ -243,13 +255,13 @@ func GenerateHTTPRequest(filename string, host string) error {
 	dstMAC := "aa:bb:cc:dd:ee:02"
 
 	// TCP handshake
-	syn, _ := pb.BuildEthernetIPv4TCPPacket(srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, 1000, 0, layers.TCPFlagSyn, nil)
+	syn, _ := pb.BuildEthernetIPv4TCPPacket(srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, 1000, 0, TCPFlagSyn, nil)
 	pb.WritePacket(syn)
 
-	synack, _ := pb.BuildEthernetIPv4TCPPacket(dstMAC, srcMAC, dstIP, srcIP, dstPort, srcPort, 2000, 1001, layers.TCPFlagSyn|layers.TCPFlagAck, nil)
+	synack, _ := pb.BuildEthernetIPv4TCPPacket(dstMAC, srcMAC, dstIP, srcIP, dstPort, srcPort, 2000, 1001, TCPFlagSyn|TCPFlagAck, nil)
 	pb.WritePacket(synack)
 
-	ack, _ := pb.BuildEthernetIPv4TCPPacket(srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, 1001, 2001, layers.TCPFlagAck, nil)
+	ack, _ := pb.BuildEthernetIPv4TCPPacket(srcMAC, dstMAC, srcIP, dstIP, srcPort, dstPort, 1001, 2001, TCPFlagAck, nil)
 	pb.WritePacket(ack)
 
 	// HTTP GET request
@@ -259,7 +271,7 @@ func GenerateHTTPRequest(filename string, host string) error {
 		srcIP, dstIP,
 		srcPort, dstPort,
 		1001, 2001,
-		layers.TCPFlagPsh|layers.TCPFlagAck,
+		TCPFlagPsh|TCPFlagAck,
 		httpPayload,
 	)
 	if err != nil {

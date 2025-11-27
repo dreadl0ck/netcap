@@ -64,6 +64,12 @@ var icmpv6Decoder = newGoPacketDecoder(
 				typeName = "Unknown"
 			}
 
+			// Capture payload if configured (for tunneling/covert channel detection)
+			var payload []byte
+			if conf.IncludePayloads {
+				payload = icmp6.Payload
+			}
+
 			return &types.ICMPv6{
 				Timestamp:               timestamp,
 				TypeCode:                int32(icmp6.TypeCode),
@@ -80,6 +86,7 @@ var icmpv6Decoder = newGoPacketDecoder(
 				IsNeighborAdvertisement: icmpType == 136,
 				IsEchoRequest:           icmpType == 128,
 				IsEchoReply:             icmpType == 129,
+				Payload:                 payload,
 			}
 		}
 

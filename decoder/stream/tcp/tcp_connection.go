@@ -407,7 +407,9 @@ func (t *tcpConnection) decode() {
 		ServerPort:        utils.DecodePort(t.client.Transport().Dst().Raw()),
 	}
 
-	serverPort := utils.DecodePort(t.server.Transport().Dst().Raw())
+	// Use the client's destination port (= server's listening port) for decoder matching
+	// NOT the server's destination port (which would be the client's ephemeral port)
+	serverPort := utils.DecodePort(t.client.Transport().Dst().Raw())
 	reassemblyLog.Debug("TCP decode() - attempting decoder selection",
 		zap.String("ident", t.ident),
 		zap.Int("serverPort", int(serverPort)),

@@ -97,6 +97,12 @@ type AdvancedConfig struct {
 	DecodeCompressed  bool `yaml:"decode_compressed"`
 	DecodeBase64      bool `yaml:"decode_base64"`
 	MaxFilenameLength int  `yaml:"max_filename_length"`
+	// Security analysis options
+	ComputeEntropy       bool `yaml:"compute_entropy"`        // Calculate Shannon entropy
+	DetectExecutables    bool `yaml:"detect_executables"`     // Detect PE/ELF/Mach-O executables
+	DetectEmbeddedScripts bool `yaml:"detect_embedded_scripts"` // Detect embedded VBA/JS/PowerShell
+	EnableYaraScanning   bool `yaml:"enable_yara_scanning"`   // Enable YARA rule matching (requires yara rules path)
+	YaraRulesPath        string `yaml:"yara_rules_path"`      // Path to YARA rules directory
 }
 
 var (
@@ -184,10 +190,15 @@ func GetDefaultConfig() *Config {
 				MaxBufferSize:    10485760, // 10MB
 			},
 			Advanced: AdvancedConfig{
-				UseMagicDetection: true,
-				DecodeCompressed:  true,
-				DecodeBase64:      true,
-				MaxFilenameLength: 255,
+				UseMagicDetection:     true,
+				DecodeCompressed:      true,
+				DecodeBase64:          true,
+				MaxFilenameLength:     255,
+				ComputeEntropy:        true,
+				DetectExecutables:     true,
+				DetectEmbeddedScripts: true,
+				EnableYaraScanning:    false, // Disabled by default - requires rules
+				YaraRulesPath:         "",
 			},
 		},
 	}

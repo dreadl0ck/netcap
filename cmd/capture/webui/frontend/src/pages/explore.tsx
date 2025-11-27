@@ -9,7 +9,6 @@ import {
   Select,
   Typography,
   Alert,
-  Chip,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -32,12 +31,12 @@ import {
   ExpandMore as ExpandMoreIcon,
   Code as CodeIcon,
   DataObject as DataObjectIcon,
-  SwapHoriz as SwapHorizIcon,
   Label as LabelIcon,
   LabelOff as LabelOffIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout';
-import { api, type ChartFieldsResponse, formatBytes, getBackendUrl } from '@/lib/api';
+import FileSelectorHeader from '@/components/FileSelectorHeader';
+import { api, type ChartFieldsResponse, getBackendUrl } from '@/lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useRouter } from 'next/router';
 
@@ -139,6 +138,20 @@ const DEFAULT_FIELD_MAP: Record<string, { field: string; chartType: string }> = 
   'EAPOL': { field: 'Type', chartType: 'pie' },                    // Message type distribution
   'FDDI': { field: 'FrameControl', chartType: 'pie' },             // Frame control distribution
   'LCM': { field: 'ChannelName', chartType: 'wordcloud' },         // Channel popularity
+  
+  // PPP/PPPoE - Link Layer
+  'PPPoE': { field: 'CodeName', chartType: 'pie' },                // PPPoE code distribution (PADI/PADO/PADR/PADS/PADT)
+  'PPP': { field: 'PPPTypeName', chartType: 'pie' },               // PPP protocol type distribution
+  
+  // STP - Link Layer
+  'STP': { field: 'VersionName', chartType: 'pie' },               // STP version distribution (STP/RSTP/MSTP)
+  
+  // RMCP - Application Layer (IPMI/BMC management)
+  'RMCP': { field: 'ClassName', chartType: 'pie' },                // RMCP class distribution (ASF/IPMI/OEM)
+  
+  // MLDv2 - Network Layer (IPv6 multicast)
+  'MLDv2MulticastListenerQuery': { field: 'IsGeneralQuery', chartType: 'pie' },   // Query type distribution
+  'MLDv2MulticastListenerReport': { field: 'HasJoinRecords', chartType: 'pie' },  // Join/leave distribution
   
   // Special Records - Security & Analysis
   'File': { field: 'Size', chartType: 'bar' },                     // File size distribution
@@ -349,13 +362,14 @@ export default function Explore() {
     }
   };
 
-  const handleFileChange = async (event: SelectChangeEvent<string>) => {
-    const newFile = event.target.value;
+  // Handler for FileSelectorHeader component (receives path string)
+  const handleFileSelectorChange = useCallback(async (filePath: string) => {
     setSwitchingFile(true);
     try {
-      const result = await api.setActiveDirectory(newFile);
+      const result = await api.setActiveDirectory(filePath);
       console.log('Directory changed to:', result.outputDir);
       await mutateAuditFiles(); // Refresh audit files
+      await mutateStatus();
       
       // Globally invalidate status cache for all pages
       await globalMutate('status');
@@ -379,11 +393,11 @@ export default function Explore() {
       }
     } catch (err) {
       console.error('Failed to switch file:', err);
-      alert('Failed to switch to this file');
+      alert('Failed to switch to this capture');
     } finally {
       setSwitchingFile(false);
     }
-  };
+  }, [mutateAuditFiles, mutateStatus, selectedAuditType, selectedField, selectedChartType, showLegend, maxDataPoints, loadExampleRecord]);
 
   // Auto-generate chart when configuration changes
   useEffect(() => {
@@ -449,16 +463,15 @@ export default function Explore() {
     }
   }, [urlType, auditTypes, selectedAuditType, getNextAuditTypeIndex]);
 
-  // Get only completed files for the selector, sorted alphabetically for consistency
-  // NOTE: Backend should keep initial pcaps marked as isCompleted forever
-  const completedFiles = (inputFiles?.filter((f: any) => f.isCompleted) || [])
-    .sort((a: any, b: any) => a.path.localeCompare(b.path));
-  
-  // Current selected value - use backend's activeInputFile or fallback to first file
-  const selectedValue = status?.activeInputFile || completedFiles[0]?.path || '';
-  // Match by comparing both full path and basename (activeInputFile might be just filename or full path)
-  const selectedFile = completedFiles.find((f: any) => 
-    f.path === selectedValue || f.name === selectedValue || f.path.endsWith('/' + selectedValue)
+  // Use shared FileSelectorHeader component
+  const fileSelector = (
+    <FileSelectorHeader
+      inputFiles={inputFiles || []}
+      status={status}
+      switchingFile={switchingFile}
+      onFileChange={handleFileSelectorChange}
+      learnHint="Capture Selector: Switch between different analyzed PCAP files to explore their data and generate custom visualizations."
+    />
   );
 
   // Header action with audit type, field selects, and file selector
@@ -548,94 +561,9 @@ export default function Explore() {
       </Box>
 
       {/* File selector for multi-file mode - show last on mobile */}
-      {completedFiles.length > 1 && selectedFile && (
-        <FormControl 
-          size="small" 
-          disabled={switchingFile} 
-          sx={{ 
-            minWidth: { xs: '100%', sm: '100%', md: 280 }, 
-            maxWidth: { xs: '100%', md: 400 },
-            order: { xs: 2, md: 2 }
-          }}
-        >
-          <Select
-            data-learn="File Selector: Switch between different analyzed PCAP files to explore their data."
-            value={selectedValue}
-            onChange={handleFileChange}
-            startAdornment={
-              switchingFile ? (
-                <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
-              ) : (
-                <SwapHorizIcon sx={{ mr: 1, color: 'inherit' }} />
-              )
-            }
-            renderValue={() => (
-              <Box display="flex" alignItems="center" gap={1} minWidth={0} flex={1}>
-                <Typography sx={{ 
-                  fontFamily: 'monospace', 
-                  fontSize: '0.85rem', 
-                  color: 'inherit',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  flex: 1,
-                  minWidth: 0,
-                }}>
-                  {selectedFile.name}
-                </Typography>
-              </Box>
-            )}
-            sx={{
-              color: 'inherit',
-              '.MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.23)',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.4)',
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'primary.light',
-              },
-              '.MuiSelect-icon': {
-                color: 'inherit',
-              },
-              '& .MuiSelect-select': {
-                display: 'flex',
-                alignItems: 'center',
-              },
-            }}
-          >
-            {completedFiles.map((file: any) => (
-              <MenuItem key={file.path} value={file.path}>
-                <Box display="flex" alignItems="center" gap={1} width="100%">
-                  {selectedValue === file.path && (
-                    <Chip
-                      label="Active"
-                      size="small"
-                      color="success"
-                      sx={{ height: 20, fontSize: '0.7rem' }}
-                    />
-                  )}
-                  <Typography
-                    sx={{
-                      fontFamily: 'monospace',
-                      fontSize: '0.85rem',
-                      flex: 1,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {file.name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatBytes(file.size)}
-                  </Typography>
-                </Box>
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      )}
+      <Box sx={{ order: { xs: 2, md: 2 } }}>
+        {fileSelector}
+      </Box>
     </Box>
   );
 

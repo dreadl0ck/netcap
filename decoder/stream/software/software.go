@@ -133,6 +133,13 @@ var Decoder = &decoder.AbstractDecoder{
 		var err error
 		for _, item := range Store.Items {
 			item.Lock()
+			
+			// Enhance software record with detection context and behavioral fields
+			EnhanceSoftwareRecord(item.Software)
+			
+			// Update instance count based on number of flows
+			item.Software.InstanceCount = int32(len(item.Software.Flows))
+			
 			err = e.Writer.Write(item.Software)
 			if err != nil {
 				softwareLog.Error("failed to flush software audit record", zap.Error(err))

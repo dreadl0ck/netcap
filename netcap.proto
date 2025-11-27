@@ -163,6 +163,14 @@ enum Type {
   NC_DNP3 = 113;
   NC_SOCKS = 114;
   NC_GTP = 115;
+  NC_PPPoE = 116;
+  NC_RMCP = 117;
+  NC_STP = 118;
+  NC_MLDv2MulticastListenerQuery = 119;
+  NC_PPP = 120;
+  NC_MLDv2MulticastListenerReport = 121;
+  NC_MLDv2MulticastAddressRecord = 122;
+  NC_STPSwitchID = 123;
 }
 
 //
@@ -611,6 +619,9 @@ message ICMPv4 {
   bool IsEchoReply = 17;                // Type 0 - ping reply
   bool IsDestUnreachable = 18;          // Type 3 - destination unreachable
   bool IsTimeExceeded = 19;             // Type 11 - time exceeded (traceroute)
+  
+  // Payload data for tunneling/covert channel detection
+  bytes Payload = 20;                   // Raw ICMP payload data (echo data, tunneled content)
 }
 
 message ICMPv6 {
@@ -633,6 +644,9 @@ message ICMPv6 {
   bool IsNeighborAdvertisement = 15;    // Type 136 - neighbor announcement
   bool IsEchoRequest = 16;              // Type 128 - ping request
   bool IsEchoReply = 17;                // Type 129 - ping reply
+  
+  // Payload data for tunneling/covert channel detection
+  bytes Payload = 18;                   // Raw ICMPv6 payload data (echo data, tunneled content)
 }
 
 message ICMPv6NeighborAdvertisement {
@@ -752,6 +766,10 @@ message SCTP {
   bool HasINITACK = 11;                 // INIT_ACK present
   bool HasABORT = 12;                   // ABORT chunk present (connection termination)
   bool HasSHUTDOWN = 13;                // SHUTDOWN chunk present
+  
+  // Payload data for signaling protocol analysis (SS7, Diameter, S1AP)
+  bytes Payload = 14;                   // Combined DATA chunk payloads
+  int32 PayloadSize = 15;               // Total payload size
 }
 
 //
@@ -990,6 +1008,9 @@ message SIP {
   string UserAgent = 17;                // User-Agent header (device fingerprinting)
   string ContentType = 18;              // Content-Type (SDP, etc.)
   int32 ContentLength = 19;             // Content-Length
+  
+  // Message body for SDP analysis and VoIP security
+  bytes Body = 20;                      // SIP message body (SDP content, media negotiation)
 }
 
 // The Internet Group Management Protocol (IGMP) is a communications protocol
@@ -1062,6 +1083,11 @@ message ICMPv6Echo {
   int32 SeqNumber = 3;
   string SrcIP = 4;
   string DstIP = 5;
+  
+  // Payload data for tunneling/covert channel detection
+  bytes Payload = 6;                    // Echo request/reply data (primary ICMP tunneling vector)
+  int32 PayloadSize = 7;                // Size of payload (tunneling indicator when large)
+  double PayloadEntropy = 8;            // Entropy of payload (encoded data detection)
 }
 
 message ICMPv6NeighborSolicitation {
@@ -1187,6 +1213,15 @@ message TLSClientHello {
   int32 SrcPort = 26;
   int32 DstPort = 27;
   repeated int32 Extensions = 28;
+  
+  // Threat intelligence fields
+  repeated string Ja3Descriptions = 29;   // Ja3 fingerprint lookup results from database
+  bool IsKnownMalware = 30;               // Matches known malware/RAT fingerprint
+  string ThreatCategory = 31;             // e.g., "CobaltStrike", "Emotet", "Metasploit"
+  bool HasGreaseExtensions = 32;          // GREASE present (legitimate browsers typically have this)
+  string Ja3Normalized = 33;              // Normalized Ja3 (GREASE values removed)
+  bool IsSuspiciousCipherOrder = 34;      // Unusual cipher ordering (implant indicator)
+  int32 ExtensionCount = 35;              // Number of TLS extensions (too few = suspicious)
 }
 
 // TLS Server Hello
@@ -1699,6 +1734,11 @@ message GRE {
   GRERouting Routing = 17;
   string SrcIP = 18;
   string DstIP = 19;
+  
+  // Encapsulated payload for tunnel inspection
+  bytes Payload = 20;                   // Encapsulated packet data (bypass detection)
+  int32 PayloadSize = 21;               // Size of encapsulated payload
+  string EncapsulatedProtocol = 22;     // Human-readable encapsulated protocol name
 }
 
 message GRERouting {
@@ -2062,6 +2102,20 @@ message File {
   repeated string MimeAnalyzers = 20; // Analyzers that processed this file
   string FlowDirection = 21;        // "client_to_server" or "server_to_client"
   string ConnectionUID = 22;        // Unique connection identifier
+  
+  // Malware/security analysis fields
+  double Entropy = 23;              // Shannon entropy (packed/encrypted detection: >7.0 suspicious)
+  bytes MagicBytes = 24;            // First 8 bytes for true type detection
+  string TrueFileType = 25;         // Detected type from magic bytes (may differ from extension)
+  bool TypeMismatch = 26;           // Extension doesn't match magic bytes (evasion indicator)
+  bool IsPEExecutable = 27;         // Is Windows PE executable
+  bool IsELFExecutable = 28;        // Is Linux ELF executable
+  bool IsMachO = 29;                // Is macOS Mach-O executable
+  bool HasEmbeddedScript = 30;      // Contains embedded VBA/JS/PowerShell
+  bool IsPasswordProtected = 31;    // ZIP/Office file is password protected
+  repeated string YaraMatches = 32; // Matched YARA rules
+  bool IsKnownMalware = 33;         // Hash matches known malware database
+  string ThreatName = 34;           // Malware family name if known
 }
 
 // SMTPResponse SMTP response type
@@ -2305,6 +2359,36 @@ message POP3 {
   string Pass = 6;
   repeated string MailIDs = 7;
   repeated string Commands = 8;
+  
+  // Port information
+  int32 ClientPort = 9;
+  int32 ServerPort = 10;
+  
+  // Authentication tracking
+  bool AuthSuccess = 11;                   // Authentication succeeded
+  string AuthMethod = 12;                  // USER/PASS, APOP, AUTH PLAIN, AUTH CRAM-MD5, etc.
+  int32 AuthAttempts = 13;                 // Number of auth attempts in session
+  
+  // Current command tracking
+  string Command = 14;                     // Current POP3 command
+  bool IsResponse = 15;                    // true for server response
+  string ResponseStatus = 16;              // +OK or -ERR
+  string ResponseText = 17;                // Response message text
+  
+  // Mailbox statistics (from STAT response)
+  int32 MessageCount = 18;                 // Number of messages in mailbox
+  int64 MailboxSize = 19;                  // Total mailbox size in bytes
+  
+  // Message operations
+  repeated int32 RetrievedMessages = 20;   // Message IDs retrieved (RETR)
+  repeated int32 DeletedMessages = 21;     // Message IDs marked for deletion (DELE)
+  
+  // Security monitoring
+  bool STARTTLSRequested = 22;             // Client requested STLS
+  bool STARTTLSSuccess = 23;               // STARTTLS completed successfully
+  bool IsEncrypted = 24;                   // Connection encrypted (after STARTTLS or port 995)
+  bool IsPlaintextAuth = 25;               // Password sent in plaintext (security risk)
+  repeated string ServerCapabilities = 26; // CAPA response capabilities
 }
 
 message Mail {
@@ -2329,6 +2413,29 @@ message Mail {
   string ID = 19;
   string DeliveryDate = 20;
   string Origin = 21;
+  
+  // Email authentication (SPF/DKIM/DMARC)
+  string SPFResult = 22;                   // pass, fail, softfail, neutral, none, temperror, permerror
+  string SPFDomain = 23;                   // Domain checked for SPF
+  string DKIMResult = 24;                  // pass, fail, none
+  string DKIMDomain = 25;                  // Domain that signed the message
+  string DMARCResult = 26;                 // pass, fail, none
+  string DMARCPolicy = 27;                 // none, quarantine, reject
+  
+  // Phishing/spoofing indicators
+  bool SenderDisplayNameMismatch = 28;     // Display name doesn't match From domain
+  bool HasSuspiciousReplyTo = 29;          // Reply-To differs significantly from From
+  int32 URLCount = 30;                     // Number of URLs in body
+  int32 AttachmentCount = 31;              // Number of attachments
+  repeated string AttachmentTypes = 32;    // MIME types of attachments
+  bool HasExecutableAttachment = 33;       // Contains .exe, .dll, .ps1, .bat, .cmd, etc.
+  bool HasMacroEnabledAttachment = 34;     // Contains .docm, .xlsm, .pptm, etc.
+  double SubjectEntropy = 35;              // Shannon entropy of subject line
+  bool HasUrgencyKeywords = 36;            // Contains "urgent", "immediate action", etc.
+  int32 ReceivedHopCount = 37;             // Number of Received headers (hop count)
+  bool IsForwarded = 38;                   // Appears to be forwarded message
+  string ReplyTo = 39;                     // Reply-To header value
+  string FromDomain = 40;                  // Domain extracted from From header
 }
 
 message MailPart {
@@ -2362,6 +2469,22 @@ message Software {
   string Notes = 11;
   string Website = 12;
   string OS = 13;
+  
+  // Detection context
+  string DetectionMethod = 14;             // "banner", "http_header", "tls_cert", "dpi", "user_agent", etc.
+  string ConfidenceLevel = 15;             // "high", "medium", "low"
+  int32 InstanceCount = 16;                // Number of hosts/flows where this software was seen
+  
+  // Behavioral fingerprint
+  string BehaviorProfile = 17;             // e.g., "server", "client", "proxy", "scanner", "bot"
+  bool IsHeadless = 18;                    // Detected as headless/automated (for browsers)
+  bool IsEmulated = 19;                    // Detected as emulated environment
+  bool IsAutomated = 20;                   // Detected as automation tool (Selenium, Puppeteer, etc.)
+  
+  // Risk indicators
+  bool HasKnownVulnerabilities = 21;       // Links exist in Vulnerability records
+  bool IsEndOfLife = 22;                   // Product/version is EOL (no more security patches)
+  string SupportStatus = 23;               // "active", "maintenance", "eol", "unknown"
 }
 
 message Service {
@@ -2709,12 +2832,60 @@ message BGP {
   string ErrorSubcodeName = 29;  // Human-readable subcode
   bytes NotificationData = 30;   // Error data
   
-  // Security monitoring
+  // Security monitoring - basic
   bool IsAnomalous = 31;         // Flag for potentially suspicious activity
   string AnomalyReason = 32;     // Why this might be suspicious
   bool IsRouteHijack = 33;       // Potential route hijack indicator
   uint32 PeerAS = 34;            // Peer AS number
   string PeerRouter = 35;        // Peer router ID
+  
+  // AS Path Security Analysis
+  int32 ASPathLength = 36;       // Number of ASes in path (unusually long paths may indicate manipulation)
+  uint32 OriginAS = 37;          // First AS in path (origin of route)
+  bool HasPrivateAS = 38;        // Contains private AS numbers (64512-65534, 4200000000-4294967294)
+  bool HasASPathLoop = 39;       // AS path contains a loop (same AS appears multiple times)
+  bool HasBogonAS = 40;          // Contains reserved/bogon AS numbers
+  repeated uint32 ASPathSet = 41;    // AS_SET members (unordered, for aggregated routes)
+  repeated uint32 ASPathConfedSeq = 42; // AS_CONFED_SEQUENCE members
+  repeated uint32 ASPathConfedSet = 43; // AS_CONFED_SET members
+  
+  // Prefix Security Analysis
+  int32 PrefixCount = 44;        // Total number of prefixes in update (NLRI count)
+  int32 WithdrawnCount = 45;     // Number of withdrawn routes
+  int32 SmallestPrefixLen = 46;  // Smallest prefix length (/8 = 8, more specific = higher risk)
+  int32 LargestPrefixLen = 47;   // Largest prefix length (very specific prefixes may indicate hijack)
+  bool HasBogonPrefix = 48;      // Contains bogon/martian prefixes
+  bool HasDefaultRoute = 49;     // Announces 0.0.0.0/0 or ::/0 (default route)
+  repeated string BogonPrefixes = 50;  // List of bogon prefixes found
+  
+  // Extended Communities (RFC 4360) - security relevant
+  repeated string ExtendedCommunities = 51; // Extended community strings
+  repeated string LargeCommunities = 52;    // Large communities (RFC 8092)
+  bool HasBlackholeComm = 53;    // Contains blackhole community (RFC 7999)
+  bool HasNoExportComm = 54;     // Contains NO_EXPORT community
+  bool HasNoAdvertiseComm = 55;  // Contains NO_ADVERTISE community
+  bool HasNoPeerComm = 56;       // Contains NO_PEER community
+  
+  // Session Security
+  int32 OptionalParamLen = 57;   // Length of optional parameters in OPEN
+  bool HasUnknownCapability = 58;// Contains unknown/non-standard capabilities
+  bool HasUnknownAttribute = 59; // Contains unknown path attributes
+  repeated int32 UnknownAttrTypes = 60;  // List of unknown attribute type codes
+  
+  // Aggregation Info
+  string AggregatorAS = 61;      // AS number of aggregator
+  string AggregatorIP = 62;      // IP address of aggregator
+  bool IsAggregated = 63;        // Route was aggregated
+  
+  // IPv6 Support (MP-BGP)
+  bool IsIPv6 = 64;              // IPv6 NLRI present
+  repeated string IPv6NLRI = 65; // IPv6 prefixes announced
+  repeated string IPv6Withdrawn = 66; // IPv6 prefixes withdrawn
+  string IPv6NextHop = 67;       // IPv6 next hop address
+  
+  // Security Scoring
+  int32 RiskScore = 68;          // Computed risk score (0-100)
+  repeated string RiskFactors = 69; // List of factors contributing to risk score
 }
 
 // BGPPathAttribute represents a BGP path attribute
@@ -2726,6 +2897,10 @@ message BGPPathAttribute {
   int32 TypeCode = 5;
   string TypeName = 6;
   bytes Value = 7;
+  int32 Length = 8;              // Attribute length
+  bool IsWellKnown = 9;          // Well-known vs optional attribute
+  bool IsMandatory = 10;         // Mandatory vs discretionary
+  string ParsedValue = 11;       // Human-readable parsed value
 }
 
 // BGPCapability represents a BGP capability in OPEN message
@@ -2733,6 +2908,17 @@ message BGPCapability {
   int32 Code = 1;
   string Name = 2;
   bytes Value = 3;
+  bool IsKnown = 4;              // Whether this is a known/standard capability
+  string ParsedValue = 5;        // Human-readable parsed value
+  
+  // Specific capability details
+  int32 AFI = 6;                 // Address Family Identifier (for MP-BGP)
+  int32 SAFI = 7;                // Subsequent AFI (for MP-BGP)
+  uint32 FourByteAS = 8;         // 4-byte AS number (capability 65)
+  bool AddPathSend = 9;          // ADD-PATH send capability
+  bool AddPathReceive = 10;      // ADD-PATH receive capability
+  int32 GracefulRestartTime = 11;// Graceful restart time in seconds
+  bool GracefulRestartForwarding = 12; // Forwarding state preserved
 }
 
 // DNP3 (Distributed Network Protocol) is a set of communications protocols
@@ -2928,4 +3114,143 @@ message GTPInfoElement {
   int32 Length = 3;
   bytes Value = 4;
   string DecodedValue = 5;
+}
+
+// PPPoE (Point-to-Point Protocol over Ethernet) is a network protocol
+// for encapsulating PPP frames inside Ethernet frames. Commonly used
+// for DSL connections and authentication.
+message PPPoE {
+  int64 Timestamp = 1;
+  int32 Version = 2;              // PPPoE version (typically 1)
+  int32 Type = 3;                 // PPPoE type (typically 1)
+  int32 Code = 4;                 // PPPoE code (PADI, PADO, PADR, PADS, PADT)
+  string CodeName = 5;            // Human-readable code name
+  int32 SessionId = 6;            // Session ID (0 for discovery, non-zero for session)
+  int32 Length = 7;               // Payload length
+  
+  // Security monitoring fields
+  bool IsDiscovery = 8;           // True if this is a discovery packet (PADI/PADO/PADR/PADS)
+  bool IsSessionTermination = 9;  // True if PADT (session teardown - potential DoS indicator)
+  bool IsSessionEstablished = 10; // True if PADS (successful session establishment)
+}
+
+// PPP (Point-to-Point Protocol) is a data link layer protocol
+// used to establish direct connections between two nodes.
+// Common in serial links, DSL, and VPN connections.
+message PPP {
+  int64 Timestamp = 1;
+  int32 PPPType = 2;              // Protocol type (IPv4, IPv6, LCP, etc.)
+  string PPPTypeName = 3;         // Human-readable type name
+  bool HasPPTPHeader = 4;         // PPTP GRE header present
+  
+  // Security monitoring fields
+  bool IsControlProtocol = 5;     // True if LCP, PAP, CHAP, IPCP (auth/config traffic)
+  bool IsAuthentication = 6;      // True if PAP or CHAP (credential exchange)
+  bool IsIPv4 = 7;                // True if carrying IPv4 payload
+  bool IsIPv6 = 8;                // True if carrying IPv6 payload
+}
+
+// RMCP (Remote Management Control Protocol) is used for remote
+// management of devices, commonly in IPMI/BMC systems.
+// Operates over UDP port 623.
+message RMCP {
+  int64 Timestamp = 1;
+  int32 Version = 2;              // RMCP version (0x06 for v1.0)
+  int32 Sequence = 3;             // Sequence number (255 = no ACK expected)
+  bool Ack = 4;                   // Acknowledgement flag
+  int32 Class = 5;                // Message class (ASF, IPMI, OEM)
+  string ClassName = 6;           // Human-readable class name
+  string SrcIP = 7;               // Source IP
+  string DstIP = 8;               // Destination IP
+  int32 SrcPort = 9;              // Source port
+  int32 DstPort = 10;             // Destination port
+  
+  // Security monitoring fields
+  bool IsIPMI = 11;               // True if IPMI message (class=0x07) - critical infrastructure management
+  bool IsASF = 12;                // True if ASF message (class=0x06) - presence ping/pong
+  bool NoAckRequired = 13;        // True if sequence=255 (no acknowledgement expected)
+}
+
+// STP (Spanning Tree Protocol) prevents network loops in Ethernet
+// networks by creating a loop-free logical topology.
+// Defined in IEEE 802.1D.
+message STP {
+  int64 Timestamp = 1;
+  int32 ProtocolID = 2;           // Protocol ID (0x0000 for STP)
+  int32 Version = 3;              // Protocol version (0=STP, 2=RSTP, 3=MSTP)
+  string VersionName = 4;         // Human-readable version name
+  int32 Type = 5;                 // BPDU type (0=Config, 128=TCN)
+  string TypeName = 6;            // Human-readable type name
+  bool TC = 7;                    // Topology change flag
+  bool TCA = 8;                   // Topology change acknowledgement flag
+  STPSwitchID RootID = 9;         // Root bridge ID
+  uint32 Cost = 10;               // Path cost to root
+  STPSwitchID BridgeID = 11;      // Bridge ID of sender
+  int32 PortID = 12;              // Port identifier
+  int32 MessageAge = 13;          // Message age (in 1/256 seconds)
+  int32 MaxAge = 14;              // Maximum age (in 1/256 seconds)
+  int32 HelloTime = 15;           // Hello time (in 1/256 seconds)
+  int32 ForwardDelay = 16;        // Forward delay (in 1/256 seconds)
+  
+  // Security monitoring fields
+  bool IsTopologyChange = 17;     // True if TC flag set (potential STP attack indicator)
+  bool IsConfigBPDU = 18;         // True if Configuration BPDU
+  bool IsTCN = 19;                // True if Topology Change Notification
+  bool IsRootBridge = 20;         // True if sender claims to be root (priority=0 check)
+  bool HasZeroPriority = 21;      // True if priority=0 (potential root bridge takeover attack)
+}
+
+// STPSwitchID represents a switch/bridge identifier in STP
+message STPSwitchID {
+  int32 Priority = 1;             // Bridge priority
+  int32 SysID = 2;                // System ID extension (VLAN ID in PVST+)
+  string HwAddr = 3;              // Hardware (MAC) address
+}
+
+// MLDv2MulticastListenerQuery is sent by multicast routers to query
+// the multicast listening state of neighboring interfaces.
+// Part of IPv6 multicast management (RFC 3810).
+message MLDv2MulticastListenerQuery {
+  int64 Timestamp = 1;
+  int32 MaximumResponseCode = 2;  // Maximum response delay code
+  string MulticastAddress = 3;    // Target multicast address (:: for general query)
+  bool SuppressRoutersideProcessing = 4;  // S flag
+  int32 QueriersRobustnessVariable = 5;   // QRV
+  int32 QueriersQueryIntervalCode = 6;    // QQIC
+  int32 NumberOfSources = 7;      // Number of source addresses
+  repeated string SourceAddresses = 8;    // Source address list
+  string SrcIP = 9;               // Source IP
+  string DstIP = 10;              // Destination IP
+  
+  // Security monitoring fields
+  bool IsGeneralQuery = 11;       // True if MulticastAddress is :: (queries all groups)
+  bool IsGroupSpecificQuery = 12; // True if MulticastAddress is set but no sources
+  bool IsGroupAndSourceQuery = 13; // True if both MulticastAddress and sources specified
+}
+
+// MLDv2MulticastListenerReport is sent by IP nodes to report
+// the current multicast listening state or changes to it.
+// Part of IPv6 multicast management (RFC 3810).
+message MLDv2MulticastListenerReport {
+  int64 Timestamp = 1;
+  int32 NumberOfMulticastAddressRecords = 2;  // Number of group records
+  repeated MLDv2MulticastAddressRecord MulticastAddressRecords = 3;
+  string SrcIP = 4;               // Source IP
+  string DstIP = 5;               // Destination IP
+  
+  // Security monitoring fields
+  bool HasJoinRecords = 6;        // True if contains join (IS_IN/IS_EX/TO_IN/TO_EX) records
+  bool HasLeaveRecords = 7;       // True if contains leave (BLOCK/ALLOW) records
+}
+
+// MLDv2MulticastAddressRecord contains information about the sender's
+// listening state for a single multicast address.
+message MLDv2MulticastAddressRecord {
+  int32 RecordType = 1;           // Record type
+  string RecordTypeName = 2;      // Human-readable record type
+  int32 AuxDataLen = 3;           // Auxiliary data length
+  int32 NumberOfSources = 4;      // Number of source addresses
+  string MulticastAddress = 5;    // Multicast address
+  repeated string SourceAddresses = 6;    // Source addresses
+  bytes AuxiliaryData = 7;        // Auxiliary data
 }

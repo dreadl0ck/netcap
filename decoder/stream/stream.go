@@ -10,6 +10,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder"
 
 	"github.com/dreadl0ck/netcap/decoder/stream/bgp"
+	"github.com/dreadl0ck/netcap/decoder/stream/cip"
 	"github.com/dreadl0ck/netcap/decoder/stream/dnp3"
 	"github.com/dreadl0ck/netcap/decoder/stream/ftp"
 	"github.com/dreadl0ck/netcap/decoder/stream/http"
@@ -50,15 +51,17 @@ var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
 	80:    http.Decoder,
 	110:   pop3.Decoder,
 	143:   imap.Decoder,
-	179:   bgp.Decoder,      // BGP routing protocol
+	179:   bgp.Decoder, // BGP routing protocol
 	443:   tls.Decoder,
 	445:   smb.Decoder,
-	514:   syslog.Decoder,   // Syslog (UDP/TCP)
-	1080:  socks.Decoder,    // SOCKS proxy
-	3389:  rdp.Decoder,      // RDP remote desktop
-	6667:  irc.Decoder,      // Common IRC port
-	8443:  tls.Decoder,      // Common alternate HTTPS port
-	20000: dnp3.Decoder,     // DNP3 ICS/SCADA
+	514:   syslog.Decoder, // Syslog (UDP/TCP)
+	1080:  socks.Decoder,  // SOCKS proxy
+	2222:  cip.Decoder,    // CIP ICS/SCADA (direct)
+	3389:  rdp.Decoder,    // RDP remote desktop
+	6667:  irc.Decoder,    // Common IRC port
+	8443:  tls.Decoder,    // Common alternate HTTPS port
+	20000: dnp3.Decoder,   // DNP3 ICS/SCADA
+	44818: cip.Decoder,    // CIP ICS/SCADA (via EtherNet/IP)
 } // contains all available stream decoders
 
 // package level init.
@@ -165,13 +168,16 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		d.(*decoder.StreamDecoder).NumRecordsWritten = 0
 
 		// Log which decoders are being initialized
-		log.Printf("[StreamDecoder] Initializing stream decoder: %s (type: %s)", 
+		log.Printf("[StreamDecoder] Initializing stream decoder: %s (type: %s)",
 			d.GetName(), d.GetType())
 
 		wg.Add(1)
 
 		go func(dec core.StreamDecoderAPI) {
-			w := netio.NewAuditRecordWriter(&netio.WriterConfig{
+			// Use shared writer to handle the case where the same decoder is registered
+			// on multiple ports (e.g., CIP on ports 2222 and 44818). This prevents race
+			// conditions and ensures correct cleanup when files are shared.
+			w := netio.GetSharedAuditRecordWriter(&netio.WriterConfig{
 				CSV:     c.CSV,
 				Encode:  c.Encode,
 				Label:   c.Label,
@@ -220,7 +226,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 				log.Fatal(errors.Wrap(errInit, "failed to write header for audit record "+dec.GetName()))
 			}
 
-			log.Printf("[StreamDecoder] Successfully initialized %s decoder (writer: %v, type: %s)", 
+			log.Printf("[StreamDecoder] Successfully initialized %s decoder (writer: %v, type: %s)",
 				dec.GetName(), w != nil, dec.GetType())
 
 			// append to packet decoders slice
@@ -237,7 +243,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 	// Log summary of initialized decoders
 	log.Printf("[StreamDecoder] Stream decoder initialization complete: %d decoders ready", len(decoders))
 	for _, dec := range decoders {
-		log.Printf("[StreamDecoder]   - %s (type: %s, transport: %s)", 
+		log.Printf("[StreamDecoder]   - %s (type: %s, transport: %v)",
 			dec.GetName(), dec.GetType(), dec.Transport())
 	}
 

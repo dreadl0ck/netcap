@@ -26,7 +26,7 @@ var (
 		"LinkLayerDiscovery", "LinkLayerDiscoveryInfo", "LinkLayerDiscoveryValue",
 		"LLDPChassisID", "LLDPPortID", "LLDPSysCapabilities", "LLDPCapabilities",
 		"LLDPMgmtAddress", "LLDPOrgSpecificTLV",
-		"NortelDiscovery", "SNAP", "USB", "USBRequestBlockSetup",
+		"NortelDiscovery", "PPP", "PPPoE", "SNAP", "STP", "USB", "USBRequestBlockSetup",
 	}
 
 	networkLayerProtocols = []string{
@@ -36,6 +36,7 @@ var (
 		"IGMP", "IGMPv3GroupRecord", "IPSecAH", "IPSecESP",
 		"IPv4", "IPv4Option", "IPv6", "IPv6Fragment", "IPv6HopByHop", 
 		"IPv6HopByHopOption", "IPv6HopByHopOptionAlignment",
+		"MLDv2MulticastListenerQuery", "MLDv2MulticastListenerReport",
 		"MPLS", "OSPFv2", "OSPFv3", "VRRPv2",
 	}
 
@@ -47,7 +48,7 @@ var (
 		"BGP", "CIP", "DHCPv4", "DHCPv6", "DHCPOption", "DHCPv6Option",
 		"Diameter", "DNP3", "DNS", "DNSQuestion", "DNSResourceRecord", "DNSSOA", "DNSSRV", "DNSMX",
 		"ENIP", "FTP", "Geneve", "GTP",
-		"HTTP", "IMAP", "IRC", "LCM", "Modbus", "NTP", "POP3", "RADIUS", "RDP", 
+		"HTTP", "IMAP", "IRC", "LCM", "Modbus", "NTP", "POP3", "RADIUS", "RDP", "RMCP",
 		"SIP", "SMB", "SMTP", "SOCKS", "SSH", "Syslog",
 		"TLSCertificate", "VXLAN",
 	}

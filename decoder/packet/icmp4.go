@@ -62,6 +62,12 @@ var icmpv4Decoder = newGoPacketDecoder(
 				typeName = "Unknown"
 			}
 
+			// Capture payload if configured (for tunneling/covert channel detection)
+			var payload []byte
+			if conf.IncludePayloads {
+				payload = icmp4.Payload
+			}
+
 			return &types.ICMPv4{
 				Timestamp:            timestamp,
 				TypeCode:             int32(icmp4.TypeCode),
@@ -80,6 +86,7 @@ var icmpv4Decoder = newGoPacketDecoder(
 				IsEchoReply:          icmpType == 0,
 				IsDestUnreachable:    icmpType == 3,
 				IsTimeExceeded:       icmpType == 11,
+				Payload:              payload,
 			}
 		}
 

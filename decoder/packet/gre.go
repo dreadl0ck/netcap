@@ -21,31 +21,63 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
+// greProtocolNames maps GRE protocol types to human-readable names
+var greProtocolNames = map[layers.EthernetType]string{
+	layers.EthernetTypeIPv4:            "IPv4",
+	layers.EthernetTypeIPv6:            "IPv6",
+	layers.EthernetTypeARP:             "ARP",
+	layers.EthernetTypeDot1Q:           "802.1Q VLAN",
+	layers.EthernetTypePPPoEDiscovery:  "PPPoE Discovery",
+	layers.EthernetTypePPPoESession:    "PPPoE Session",
+	layers.EthernetTypeMPLSUnicast:     "MPLS Unicast",
+	layers.EthernetTypeMPLSMulticast:   "MPLS Multicast",
+}
+
 var greDecoder = newGoPacketDecoder(
 	types.Type_NC_GRE,
 	layers.LayerTypeGRE,
 	"Generic Routing Encapsulation is a tunneling protocol developed by Cisco Systems that can encapsulate a wide variety of network layer protocols inside virtual point-to-point links or point-to-multipoint links over an Internet Protocol network",
 	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if gre, ok := layer.(*layers.GRE); ok {
+			// Get encapsulated payload
+			grePayload := layer.LayerPayload()
+			payloadSize := int32(len(grePayload))
+
+			// Capture payload if configured (for tunnel inspection)
+			var payload []byte
+			if conf.IncludePayloads {
+				payload = grePayload
+			}
+
+			// Get encapsulated protocol name
+			encapProto := greProtocolNames[gre.Protocol]
+			if encapProto == "" {
+				encapProto = "Unknown"
+			}
+
 			return &types.GRE{
-				Timestamp:         timestamp,
-				ChecksumPresent:   gre.ChecksumPresent,
-				RoutingPresent:    gre.RoutingPresent,
-				KeyPresent:        gre.KeyPresent,
-				SeqPresent:        gre.SeqPresent,
-				StrictSourceRoute: gre.StrictSourceRoute,
-				AckPresent:        gre.AckPresent,
-				RecursionControl:  int32(gre.RecursionControl),
-				Flags:             int32(gre.Flags),
-				Version:           int32(gre.Version),
-				Protocol:          int32(gre.Protocol),
-				Checksum:          int32(gre.Checksum),
-				Offset:            int32(gre.Offset),
-				Key:               gre.Key,
-				Seq:               gre.Seq,
-				Ack:               gre.Ack,
+				Timestamp:           timestamp,
+				ChecksumPresent:     gre.ChecksumPresent,
+				RoutingPresent:      gre.RoutingPresent,
+				KeyPresent:          gre.KeyPresent,
+				SeqPresent:          gre.SeqPresent,
+				StrictSourceRoute:   gre.StrictSourceRoute,
+				AckPresent:          gre.AckPresent,
+				RecursionControl:    int32(gre.RecursionControl),
+				Flags:               int32(gre.Flags),
+				Version:             int32(gre.Version),
+				Protocol:            int32(gre.Protocol),
+				Checksum:            int32(gre.Checksum),
+				Offset:              int32(gre.Offset),
+				Key:                 gre.Key,
+				Seq:                 gre.Seq,
+				Ack:                 gre.Ack,
 				// @TODO: DEBUG nil pointer exception when acessing gre.Next
 				// Routing: encodeGRERouting(gre.AddressFamily, gre.SREOffset, gre.SRELength, gre.RoutingInformation, nil),
+				// Encapsulated payload for tunnel inspection
+				Payload:             payload,
+				PayloadSize:         payloadSize,
+				EncapsulatedProtocol: encapProto,
 			}
 		}
 

@@ -213,7 +213,8 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 		wg.Add(1)
 
 		go func(dec DecoderAPI) {
-			w := io.NewAuditRecordWriter(&io.WriterConfig{
+			// Use shared writer to handle potential file sharing across decoders
+			w := io.GetSharedAuditRecordWriter(&io.WriterConfig{
 				UnixSocket: c.UnixSocket,
 				CSV:        c.CSV,
 				Label:      c.Label,

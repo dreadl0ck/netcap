@@ -174,8 +174,9 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 				filename = "ENIP"
 			}
 
-			// hookup writer
-			dec.writer = io.NewAuditRecordWriter(&io.WriterConfig{
+			// hookup writer - use shared writer to handle the case where
+			// the same decoder type is also registered as a stream decoder
+			dec.writer = io.GetSharedAuditRecordWriter(&io.WriterConfig{
 				UnixSocket: c.UnixSocket,
 				CSV:        c.CSV,
 				Encode:     c.Encode,

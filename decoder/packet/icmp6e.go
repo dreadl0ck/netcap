@@ -27,10 +27,29 @@ var icmpv6EchoDecoder = newGoPacketDecoder(
 	"The Internet Control Message Protocol (ICMP) is a supporting protocol in the Internet protocol suite",
 	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if icmp6e, ok := layer.(*layers.ICMPv6Echo); ok {
+			// Get echo payload data (for tunneling/covert channel detection)
+			echoPayload := layer.LayerPayload()
+			payloadSize := int32(len(echoPayload))
+
+			// Calculate payload entropy if configured
+			var payloadEntropy float64
+			if conf.CalculateEntropy && len(echoPayload) > 0 {
+				payloadEntropy = entropy(echoPayload)
+			}
+
+			// Capture payload if configured
+			var payload []byte
+			if conf.IncludePayloads {
+				payload = echoPayload
+			}
+
 			return &types.ICMPv6Echo{
-				Timestamp:  timestamp,
-				Identifier: int32(icmp6e.Identifier),
-				SeqNumber:  int32(icmp6e.SeqNumber),
+				Timestamp:      timestamp,
+				Identifier:     int32(icmp6e.Identifier),
+				SeqNumber:      int32(icmp6e.SeqNumber),
+				Payload:        payload,
+				PayloadSize:    payloadSize,
+				PayloadEntropy: payloadEntropy,
 			}
 		}
 
