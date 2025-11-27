@@ -782,6 +782,102 @@ func (s *Server) UpdateOutputDir(outDir string) {
 	log.Printf("[WebUI] Output directory updated: outDir=%s (baseOutDir=%s remains unchanged)", outDir, s.baseOutDir)
 }
 
+// AddInputFile adds a new input file to be processed (for "Open With" functionality on macOS)
+// This creates a session and queues a job for the file
+func (s *Server) AddInputFile(filePath string) {
+	s.mu.Lock()
+	// Check if file already exists in the list
+	for _, f := range s.inputFiles {
+		if f == filePath {
+			log.Printf("[WebUI] Input file already exists: %s", filePath)
+			s.mu.Unlock()
+			return
+		}
+	}
+	s.inputFiles = append(s.inputFiles, filePath)
+	s.mu.Unlock()
+
+	log.Printf("[WebUI] Added input file: %s", filePath)
+
+	// Get file info
+	fileInfo, err := os.Stat(filePath)
+	if err != nil {
+		log.Printf("[WebUI] Failed to stat input file %s: %v", filePath, err)
+		return
+	}
+
+	// Check if job queue is available
+	if s.jobQueue == nil {
+		log.Printf("[WebUI] Job queue not available, cannot process file: %s", filePath)
+		return
+	}
+
+	// Generate session ID for this file
+	sessionID := generateSessionID()
+
+	// Create results directory
+	var resultsDir string
+	if s.isServiceMode && s.serviceConfig != nil {
+		resultsDir = filepath.Join(s.serviceConfig.DataDir, "results", sessionID)
+	} else {
+		resultsDir = filepath.Join(s.baseOutDir, sessionID)
+	}
+
+	if err := os.MkdirAll(resultsDir, 0755); err != nil {
+		log.Printf("[WebUI] Failed to create results directory for %s: %v", filePath, err)
+		return
+	}
+
+	// Load BPF filter from saved configuration
+	bpfConfig := s.loadBPFConfig()
+
+	// Create session info (only needed if session manager is available)
+	if s.sessionManager != nil {
+		filename := filepath.Base(filePath)
+		shareURL := fmt.Sprintf("/view/%s", sessionID)
+		session := &SessionInfo{
+			SessionID:       sessionID,
+			IP:              "desktop", // Special IP for desktop app opened files
+			UploadTimestamp: time.Now(),
+			InputFile:       filePath,
+			InputFilename:   filename,
+			InputFileSize:   fileInfo.Size(),
+			OutputDir:       resultsDir,
+			Status:          StatusQueued,
+			ResultsReady:    false,
+			ShareUrl:        shareURL,
+			IsPreloaded:     false,
+			BPFFilter:       bpfConfig.Filter,
+			IncludeDecoders: "",
+			ExcludeDecoders: "",
+		}
+
+		// Add session to manager
+		s.sessionManager.AddSession(session)
+
+		// Save session metadata to disk
+		if err := s.sessionManager.SaveSessionMetadata(sessionID); err != nil {
+			log.Printf("[WebUI] Warning: Failed to save session metadata for %s: %v", sessionID, err)
+		}
+	}
+
+	// Queue analysis job
+	job := &AnalysisJob{
+		SessionID:       sessionID,
+		InputFile:       filePath,
+		OutputDir:       resultsDir,
+		EnableDPI:       s.dpiConfigured,
+		BPFFilter:       bpfConfig.Filter,
+		IncludeDecoders: "",
+		ExcludeDecoders: "",
+	}
+
+	atomic.AddInt64(&s.jobsScheduled, 1)
+	s.jobQueue <- job
+
+	log.Printf("[WebUI] Queued job for input file: %s (session: %s)", filePath, sessionID)
+}
+
 // GetOutputDir returns the current output directory
 func (s *Server) GetOutputDir() string {
 	s.mu.RLock()

@@ -91,11 +91,13 @@ type UpdateRuleRequest struct {
 
 // RuleSetInfo represents information about a rule set (YAML file)
 type RuleSetInfo struct {
-	Name        string `json:"name"`        // Filename without .yml extension
-	Filename    string `json:"filename"`    // Full filename with extension
-	RuleCount   int    `json:"ruleCount"`   // Number of rules in this set
-	Enabled     bool   `json:"enabled"`     // Whether the rule set is enabled
-	Description string `json:"description"` // Optional description from first rule or filename
+	Name         string `json:"name"`         // Filename without .yml extension
+	Filename     string `json:"filename"`     // Full filename with extension
+	RuleCount    int    `json:"ruleCount"`    // Number of rules in this set
+	Enabled      bool   `json:"enabled"`      // Whether the rule set is enabled
+	Description  string `json:"description"`  // Optional description from first rule or filename
+	IsEmbedded   bool   `json:"isEmbedded"`   // Whether this is an embedded default rule set
+	IsOverridden bool   `json:"isOverridden"` // Whether this embedded rule set has been overridden by a file
 }
 
 // RuleSetsResponse represents the response with all rule sets
@@ -160,8 +162,8 @@ func (s *Server) getRulesFolderPath() string {
 	return filepath.Join(parentDir, "rules")
 }
 
-// loadRulesConfig loads the rules configuration from disk or cache
-// It loads all .yml files from the rules folder
+// loadRulesConfig loads the rules configuration.
+// It first loads embedded default rules, then merges any file-based overrides.
 // Note: This tracks which file each rule came from for rule set management
 func (s *Server) loadRulesConfig() (*rules.Config, error) {
 	// Check cache first
@@ -173,10 +175,16 @@ func (s *Server) loadRulesConfig() (*rules.Config, error) {
 	}
 	s.rulesConfigMutex.RUnlock()
 
-	// Not in cache, load from disk
-	config := &rules.Config{Rules: []*rules.Rule{}}
+	// Start with embedded default rules
+	config, err := rules.LoadEmbeddedRules()
+	if err != nil {
+		log.Printf("[WebUI] Warning: failed to load embedded detection rules: %v", err)
+		config = &rules.Config{Rules: []*rules.Rule{}}
+	} else {
+		log.Printf("[WebUI] Loaded %d embedded default detection rules", len(config.Rules))
+	}
 
-	// Load all .yml files from the rules folder
+	// Load additional/override rules from the rules folder
 	rulesFolder := s.getRulesFolderPath()
 	if _, err := os.Stat(rulesFolder); err == nil {
 		entries, err := os.ReadDir(rulesFolder)
@@ -221,8 +229,9 @@ func (s *Server) loadRulesConfig() (*rules.Config, error) {
 					}
 				}
 
-				config.Rules = append(config.Rules, fileConfig.Rules...)
-				log.Printf("[WebUI] Loaded %d rules from %s", len(fileConfig.Rules), entry.Name())
+				// Merge file rules with existing config (file rules override embedded by name)
+				config = rules.MergeConfigs(config, &fileConfig)
+				log.Printf("[WebUI] Merged %d rules from %s (overrides embedded)", len(fileConfig.Rules), entry.Name())
 			}
 		}
 	} else {
@@ -255,7 +264,7 @@ func (s *Server) invalidateRulesCache() {
 // Rules are grouped by their ruleset tag and saved to the corresponding file
 func (s *Server) saveRulesConfig(config *rules.Config) error {
 	rulesFolder := s.getRulesFolderPath()
-	
+
 	log.Printf("[WebUI] saveRulesConfig: using rules folder path: %s", rulesFolder)
 
 	// Create rules folder if it doesn't exist
@@ -1081,12 +1090,12 @@ func (s *Server) executeRuleOnCapture(rule *rules.Rule, outDir string) (alertsCo
 	// Create a rules engine with just this rule
 	// Note: We can't use NewEngine as it expects a file path, so we create manually
 	engine := &rules.Engine{}
-	
+
 	// Ensure the output directory exists
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return 0, 0, fmt.Errorf("failed to create output directory: %w", err)
 	}
-	
+
 	// Initialize engine with our config
 	engine, err = rules.NewEngineFromConfig(tempConfig, alertWriter)
 	if err != nil {

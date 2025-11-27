@@ -143,7 +143,8 @@ func (s *Server) getInjectionRulesFolderPath() string {
 	return filepath.Join(parentDir, "injection-rules")
 }
 
-// loadInjectionRulesConfig loads injection rules from the configs directory
+// loadInjectionRulesConfig loads injection rules.
+// It first loads embedded default rules, then merges any file-based overrides.
 func (s *Server) loadInjectionRulesConfig() (*injection.Config, error) {
 	// Check cache first
 	injectionRulesConfigMutex.RLock()
@@ -154,16 +155,21 @@ func (s *Server) loadInjectionRulesConfig() (*injection.Config, error) {
 	}
 	injectionRulesConfigMutex.RUnlock()
 
-	// Initialize empty config
-	config := &injection.Config{Rules: []*injection.Rule{}}
+	// Start with embedded default rules
+	config, err := injection.LoadEmbeddedRules()
+	if err != nil {
+		log.Printf("[WebUI] Warning: failed to load embedded injection rules: %v", err)
+		config = &injection.Config{Rules: []*injection.Rule{}}
+	} else {
+		log.Printf("[WebUI] Loaded %d embedded default injection rules", len(config.Rules))
+	}
 
-	// Try to load from configs/injection-rules.yml in project root
-	// First check the configs directory relative to output dir
+	// Build list of override paths to check (in priority order, first match wins)
 	configPaths := []string{
 		filepath.Join(s.getInjectionRulesFolderPath(), "injection-rules.yml"),
 	}
 
-	// Also check for system-wide config
+	// Check for system-wide config
 	homeDir, err := os.UserHomeDir()
 	if err == nil {
 		configPaths = append(configPaths, filepath.Join(homeDir, ".config", "netcap", "injection-rules.yml"))
@@ -173,7 +179,7 @@ func (s *Server) loadInjectionRulesConfig() (*injection.Config, error) {
 	execPath, err := os.Executable()
 	if err == nil {
 		execDir := filepath.Dir(execPath)
-		configPaths = append(configPaths, 
+		configPaths = append(configPaths,
 			filepath.Join(execDir, "configs", "injection-rules.yml"),
 			filepath.Join(execDir, "..", "configs", "injection-rules.yml"),
 		)
@@ -185,7 +191,7 @@ func (s *Server) loadInjectionRulesConfig() (*injection.Config, error) {
 		configPaths = append(configPaths, filepath.Join(cwd, "configs", "injection-rules.yml"))
 	}
 
-	// Load from the first available path
+	// Load and merge from the first available override path
 	for _, configPath := range configPaths {
 		if _, err := os.Stat(configPath); err == nil {
 			fileConfig, err := injection.LoadRulesFromFile(configPath)
@@ -193,19 +199,24 @@ func (s *Server) loadInjectionRulesConfig() (*injection.Config, error) {
 				log.Printf("[WebUI] Warning: failed to load injection rules from %s: %v", configPath, err)
 				continue
 			}
-			config = fileConfig
-			log.Printf("[WebUI] Loaded %d injection rules from %s", len(config.Rules), configPath)
+			// Merge file rules with embedded (file rules override by name)
+			config = mergeInjectionConfigs(config, fileConfig)
+			log.Printf("[WebUI] Merged %d injection rules from %s (overrides embedded)", len(fileConfig.Rules), configPath)
 			break
 		}
 	}
 
-	// Also load from injection rules folder if it exists
+	// Also load from injection rules folder if it exists (custom rules)
 	rulesFolder := s.getInjectionRulesFolderPath()
 	if _, err := os.Stat(rulesFolder); err == nil {
 		entries, err := os.ReadDir(rulesFolder)
 		if err == nil {
 			for _, entry := range entries {
 				if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yml") {
+					continue
+				}
+				// Skip the main injection-rules.yml as it was already loaded above
+				if entry.Name() == "injection-rules.yml" {
 					continue
 				}
 
@@ -216,8 +227,9 @@ func (s *Server) loadInjectionRulesConfig() (*injection.Config, error) {
 					continue
 				}
 
-				config.Rules = append(config.Rules, fileConfig.Rules...)
-				log.Printf("[WebUI] Loaded %d injection rules from %s", len(fileConfig.Rules), entry.Name())
+				// Merge additional rules (custom rules override embedded/file rules)
+				config = mergeInjectionConfigs(config, fileConfig)
+				log.Printf("[WebUI] Merged %d injection rules from %s", len(fileConfig.Rules), entry.Name())
 			}
 		}
 	}
@@ -230,6 +242,55 @@ func (s *Server) loadInjectionRulesConfig() (*injection.Config, error) {
 	injectionRulesConfigMutex.Unlock()
 
 	return config, nil
+}
+
+// mergeInjectionConfigs merges two injection configs, with override rules taking precedence.
+// Rules with matching names in override replace rules in base.
+func mergeInjectionConfigs(base, override *injection.Config) *injection.Config {
+	if base == nil {
+		return override
+	}
+	if override == nil {
+		return base
+	}
+
+	// Create a map of base rules by name for efficient lookup
+	baseRuleMap := make(map[string]*injection.Rule)
+	for _, rule := range base.Rules {
+		baseRuleMap[rule.Name] = rule
+	}
+
+	// Override/add rules from override config
+	for _, rule := range override.Rules {
+		baseRuleMap[rule.Name] = rule
+	}
+
+	// Rebuild rules slice
+	merged := &injection.Config{
+		Description: base.Description,
+		Rules:       make([]*injection.Rule, 0, len(baseRuleMap)),
+	}
+
+	// Keep description from override if present
+	if override.Description != "" {
+		merged.Description = override.Description
+	}
+
+	// First add all rules from base that weren't overridden (maintains original order)
+	addedNames := make(map[string]bool)
+	for _, rule := range base.Rules {
+		merged.Rules = append(merged.Rules, baseRuleMap[rule.Name])
+		addedNames[rule.Name] = true
+	}
+
+	// Then add new rules from override that weren't in base
+	for _, rule := range override.Rules {
+		if !addedNames[rule.Name] {
+			merged.Rules = append(merged.Rules, rule)
+		}
+	}
+
+	return merged
 }
 
 // invalidateInjectionRulesCache clears the cached injection rules configuration

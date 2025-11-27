@@ -7,11 +7,14 @@ import {
   FormControlLabel,
   Grid,
   Switch,
+  Tooltip,
   Typography,
   Alert,
   Snackbar,
 } from '@mui/material';
 import SecurityIcon from '@mui/icons-material/Security';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import EditIcon from '@mui/icons-material/Edit';
 import { useRouter } from 'next/router';
 import Layout from '@/components/Layout';
 import { api, RuleSet } from '@/lib/api';
@@ -88,7 +91,8 @@ export default function RuleSetsPage() {
         <Box sx={{ mb: 3 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             Total: {ruleSets.length} rule set{ruleSets.length !== 1 ? 's' : ''} • 
-            Active: {ruleSets.filter(rs => rs.enabled).length}
+            Active: {ruleSets.filter(rs => rs.enabled).length} •
+            Built-in: {ruleSets.filter(rs => rs.isEmbedded).length}
           </Typography>
         </Box>
 
@@ -107,7 +111,7 @@ export default function RuleSetsPage() {
                   No Rule Sets Available
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Rule sets can be loaded from YAML files in your rules directory.
+                  Built-in rule sets should be available automatically. Custom rule sets can be added as YAML files in your rules directory.
                 </Typography>
               </Box>
             </CardContent>
@@ -181,7 +185,7 @@ export default function RuleSetsPage() {
                       {ruleSet.description}
                     </Typography>
                     
-                    <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid', borderColor: 'divider', display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
                       <Chip
                         label={`${ruleSet.ruleCount} rule${ruleSet.ruleCount !== 1 ? 's' : ''}`}
                         size="medium"
@@ -191,6 +195,20 @@ export default function RuleSetsPage() {
                           fontWeight: 500,
                         }}
                       />
+                      {ruleSet.isEmbedded && (
+                        <Tooltip title={ruleSet.isOverridden ? "Built-in rule set with local overrides" : "Built-in rule set bundled with the application"}>
+                          <Chip
+                            icon={ruleSet.isOverridden ? <EditIcon /> : <InventoryIcon />}
+                            label={ruleSet.isOverridden ? "Modified" : "Built-in"}
+                            size="small"
+                            variant="outlined"
+                            color={ruleSet.isOverridden ? "warning" : "info"}
+                            sx={{ 
+                              fontSize: '0.75rem',
+                            }}
+                          />
+                        </Tooltip>
+                      )}
                     </Box>
                   </CardContent>
                 </Card>

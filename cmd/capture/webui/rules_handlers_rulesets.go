@@ -36,18 +36,8 @@ func (s *Server) handleRuleSets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rulesFolder := s.getRulesFolderPath()
-	
-	// Read all .yml files from the rules folder
-	entries, err := os.ReadDir(rulesFolder)
-	if err != nil {
-		log.Printf("[WebUI] Failed to read rules folder: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
-			"error": fmt.Sprintf("Failed to read rules folder: %v", err),
-		})
-		return
-	}
 
-	// Load the full rules config to check enabled status
+	// Load the full rules config (includes embedded + file overrides)
 	config, err := s.loadRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load rules config: %v", err)
@@ -57,67 +47,111 @@ func (s *Server) handleRuleSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ruleSets := make([]RuleSetInfo, 0)
-	
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yml") {
-			continue
+	// Get embedded rule set info (names and descriptions)
+	embeddedInfo, err := rules.GetEmbeddedRuleSetInfo()
+	if err != nil {
+		log.Printf("[WebUI] Warning: failed to get embedded rule set info: %v", err)
+		embeddedInfo = make(map[string]rules.EmbeddedRuleSetInfo)
+	}
+	embeddedSet := make(map[string]bool)
+	for name := range embeddedInfo {
+		embeddedSet[name] = true
+	}
+
+	// Get list of file-based rule sets (for override detection)
+	fileBasedSet := make(map[string]bool)
+	if entries, err := os.ReadDir(rulesFolder); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".yml") {
+				name := strings.TrimSuffix(entry.Name(), ".yml")
+				fileBasedSet[name] = true
+			}
+		}
+	}
+
+	// Build a map of all unique rule sets from the loaded config
+	ruleSetMap := make(map[string]*RuleSetInfo)
+
+	for _, rule := range config.Rules {
+		// Find the ruleset tag
+		ruleSetName := ""
+		isEmbedded := false
+		for _, tag := range rule.Tags {
+			if strings.HasPrefix(tag, "ruleset:") {
+				ruleSetName = strings.TrimPrefix(tag, "ruleset:")
+			}
+			if tag == "embedded" {
+				isEmbedded = true
+			}
 		}
 
-		filename := entry.Name()
-		ruleSetName := strings.TrimSuffix(filename, ".yml")
-		ruleSetTag := "ruleset:" + ruleSetName
+		if ruleSetName == "" {
+			continue // Skip rules without a ruleset tag
+		}
 
-		// Load the YAML file to get the description from the config
-		filePath := filepath.Join(rulesFolder, filename)
-		fileData, err := os.ReadFile(filePath)
+		// Get or create rule set info
+		info, exists := ruleSetMap[ruleSetName]
+		if !exists {
+			info = &RuleSetInfo{
+				Name:       ruleSetName,
+				Filename:   ruleSetName + ".yml",
+				IsEmbedded: embeddedSet[ruleSetName],
+			}
+			ruleSetMap[ruleSetName] = info
+		}
+
+		// Count rules and track enabled status
+		info.RuleCount++
+		if rule.Enabled {
+			info.Enabled = true
+		}
+
+		// Track if this rule is embedded (any embedded rule means the set is embedded)
+		if isEmbedded {
+			info.IsEmbedded = true
+		}
+	}
+
+	// Now set IsOverridden for embedded rule sets that have file overrides
+	for name, info := range ruleSetMap {
+		if info.IsEmbedded && fileBasedSet[name] {
+			info.IsOverridden = true
+		}
+	}
+
+	// Load descriptions from files or embedded
+	for name, info := range ruleSetMap {
 		var description string
-		if err == nil {
+
+		// First try to load from file (override takes priority)
+		filePath := filepath.Join(rulesFolder, name+".yml")
+		if fileData, err := os.ReadFile(filePath); err == nil {
 			var fileConfig rules.Config
-			if err := yaml.Unmarshal(fileData, &fileConfig); err == nil {
+			if err := yaml.Unmarshal(fileData, &fileConfig); err == nil && fileConfig.Description != "" {
 				description = fileConfig.Description
 			}
 		}
 
-		// Count rules in this set and check if any are enabled
-		ruleCount := 0
-		hasEnabledRule := false
-		
-		for _, rule := range config.Rules {
-			// Check if this rule belongs to this rule set
-			hasRuleSetTag := false
-			for _, tag := range rule.Tags {
-				if tag == ruleSetTag {
-					hasRuleSetTag = true
-					break
-				}
-			}
-			
-			if hasRuleSetTag {
-				ruleCount++
-				if rule.Enabled {
-					hasEnabledRule = true
-				}
+		// If no file description and it's embedded, use embedded description
+		if description == "" {
+			if embeddedRuleSetInfo, ok := embeddedInfo[name]; ok && embeddedRuleSetInfo.Description != "" {
+				description = embeddedRuleSetInfo.Description
 			}
 		}
 
-		// If no description from config file, use a friendly name from filename
+		// Fallback: generate from filename
 		if description == "" {
-			// Convert filename to a more readable format
-			description = strings.ReplaceAll(ruleSetName, "_", " ")
+			description = strings.ReplaceAll(name, "_", " ")
 			description = strings.Title(description)
 		}
 
-		// A rule set is considered enabled if at least one rule is enabled
-		isEnabled := ruleCount > 0 && hasEnabledRule
+		info.Description = description
+	}
 
-		ruleSets = append(ruleSets, RuleSetInfo{
-			Name:        ruleSetName,
-			Filename:    filename,
-			RuleCount:   ruleCount,
-			Enabled:     isEnabled,
-			Description: description,
-		})
+	// Convert map to slice
+	ruleSets := make([]RuleSetInfo, 0, len(ruleSetMap))
+	for _, info := range ruleSetMap {
+		ruleSets = append(ruleSets, *info)
 	}
 
 	RespondJSON(w, http.StatusOK, RuleSetsResponse{
@@ -168,6 +202,7 @@ func (s *Server) handleRuleSet(w http.ResponseWriter, r *http.Request) {
 
 	ruleSetTag := "ruleset:" + ruleSetName
 	updatedCount := 0
+	var updatedRules []*rules.Rule
 
 	// Update all rules in this rule set
 	for i, rule := range config.Rules {
@@ -179,10 +214,11 @@ func (s *Server) handleRuleSet(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
-		
+
 		if hasRuleSetTag {
 			log.Printf("[WebUI] Updating rule %s: enabled=%v -> %v", rule.Name, rule.Enabled, req.Enabled)
 			config.Rules[i].Enabled = req.Enabled
+			updatedRules = append(updatedRules, config.Rules[i])
 			updatedCount++
 		}
 	}
@@ -194,22 +230,23 @@ func (s *Server) handleRuleSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[WebUI] Attempting to save rules config with %d total rules", len(config.Rules))
-
-	// Save the updated config
-	if err := s.saveRulesConfig(config); err != nil {
-		log.Printf("[WebUI] Failed to save rules config: %v", err)
+	// Save the rule set as a file override (this applies to both embedded and file-based rules)
+	if err := s.saveRuleSetOverride(ruleSetName, updatedRules); err != nil {
+		log.Printf("[WebUI] Failed to save rule set override: %v", err)
 		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
 			"error": fmt.Sprintf("Failed to save rules: %v", err),
 		})
 		return
 	}
 
+	// Invalidate cache to reload with new settings
+	s.invalidateRulesCache()
+
 	// Reload the rules engine in the collector if available
 	s.mu.RLock()
 	collector := s.collector
 	s.mu.RUnlock()
-	
+
 	if collector != nil {
 		if err := collector.ReloadRulesEngine(); err != nil {
 			log.Printf("[WebUI] Warning: failed to reload rules engine: %v", err)
@@ -227,9 +264,79 @@ func (s *Server) handleRuleSet(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[WebUI] Rule set %s %s (%d rules affected)", ruleSetName, status, updatedCount)
 
 	RespondJSON(w, http.StatusOK, map[string]interface{}{
-		"success": true,
-		"message": fmt.Sprintf("Rule set %s %s (%d rules affected)", ruleSetName, status, updatedCount),
+		"success":       true,
+		"message":       fmt.Sprintf("Rule set %s %s (%d rules affected)", ruleSetName, status, updatedCount),
 		"rulesAffected": updatedCount,
 	})
+}
+
+// saveRuleSetOverride saves a rule set to disk, creating an override file for embedded rules
+func (s *Server) saveRuleSetOverride(ruleSetName string, rulesToSave []*rules.Rule) error {
+	rulesFolder := s.getRulesFolderPath()
+
+	// Create rules folder if it doesn't exist
+	if err := os.MkdirAll(rulesFolder, 0755); err != nil {
+		return fmt.Errorf("failed to create rules folder: %w", err)
+	}
+
+	// Prepare rules for saving (remove internal tags)
+	rulesForSave := make([]*rules.Rule, len(rulesToSave))
+	for i, rule := range rulesToSave {
+		// Create a copy of the rule
+		ruleCopy := rules.Rule{
+			Name:            rule.Name,
+			Description:     rule.Description,
+			Type:            rule.Type,
+			Expression:      rule.Expression,
+			Severity:        rule.Severity,
+			MITRE:           rule.MITRE,
+			Enabled:         rule.Enabled,
+			Threshold:       rule.Threshold,
+			ThresholdWindow: rule.ThresholdWindow,
+			Actions:         rule.Actions,
+		}
+		// Filter out internal tags (ruleset: and embedded)
+		newTags := make([]string, 0, len(rule.Tags))
+		for _, tag := range rule.Tags {
+			if !strings.HasPrefix(tag, "ruleset:") && tag != "embedded" {
+				newTags = append(newTags, tag)
+			}
+		}
+		ruleCopy.Tags = newTags
+		rulesForSave[i] = &ruleCopy
+	}
+
+	// Try to preserve description from existing file or embedded
+	var description string
+	filePath := filepath.Join(rulesFolder, ruleSetName+".yml")
+	if existingData, err := os.ReadFile(filePath); err == nil {
+		var existingConfig rules.Config
+		if err := yaml.Unmarshal(existingData, &existingConfig); err == nil {
+			description = existingConfig.Description
+		}
+	}
+
+	// If no existing description, generate a friendly one
+	if description == "" {
+		description = strings.ReplaceAll(ruleSetName, "_", " ")
+		description = strings.Title(description)
+	}
+
+	ruleSetConfig := &rules.Config{
+		Description: description,
+		Rules:       rulesForSave,
+	}
+
+	data, err := yaml.Marshal(ruleSetConfig)
+	if err != nil {
+		return fmt.Errorf("failed to marshal rule set: %w", err)
+	}
+
+	log.Printf("[WebUI] Writing %d rules to override file %s", len(rulesForSave), filePath)
+	if err := os.WriteFile(filePath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write rule set file: %w", err)
+	}
+
+	return nil
 }
 

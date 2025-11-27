@@ -539,6 +539,8 @@ export interface RuleSet {
   ruleCount: number;
   enabled: boolean;
   description: string;
+  isEmbedded: boolean;
+  isOverridden: boolean;
 }
 
 export interface RuleSetsResponse {
