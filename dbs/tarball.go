@@ -35,8 +35,11 @@ func makeTarball(source string, revision string, buf io.Writer) error {
 
 	// tar -> gzip -> buffer
 	var (
-		zipWriter = gzip.NewWriter(buf)
-		tarWriter = tar.NewWriter(zipWriter)
+		zipWriter         = gzip.NewWriter(buf)
+		tarWriter         = tar.NewWriter(zipWriter)
+		fileCount         int
+		dirCount          int
+		exploitdbIncluded bool
 	)
 
 	// process every file in the source folder
@@ -52,6 +55,12 @@ func makeTarball(source string, revision string, buf io.Writer) error {
 		// (see https://golang.org/src/archive/tar/common.go?#L626)
 		hdr.Name = strings.ReplaceAll(filepath.ToSlash(file), source, revision)
 
+		// Track if exploitdb directory is being included
+		if fi.IsDir() && fi.Name() == "exploitdb" {
+			exploitdbIncluded = true
+			fmt.Println("✓ Including exploitdb folder with exploit code snippets")
+		}
+
 		// write header in archive
 		if err = tarWriter.WriteHeader(hdr); err != nil {
 			return err
@@ -59,6 +68,7 @@ func makeTarball(source string, revision string, buf io.Writer) error {
 
 		// if not a directory, write file content
 		if !fi.IsDir() {
+			fileCount++
 
 			f, errOpen := os.Open(file)
 			if errOpen != nil {
@@ -75,11 +85,18 @@ func makeTarball(source string, revision string, buf io.Writer) error {
 			if _, err = io.Copy(tarWriter, f); err != nil {
 				return err
 			}
+		} else {
+			dirCount++
 		}
 		return nil
 	})
 	if err != nil {
 		log.Fatalln("failed to collect files: ", err)
+	}
+
+	fmt.Printf("Tarball contains: %d files, %d directories\n", fileCount, dirCount)
+	if exploitdbIncluded {
+		fmt.Println("✓ exploitdb folder successfully bundled in archive")
 	}
 
 	// produce tarball

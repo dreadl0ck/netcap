@@ -125,57 +125,44 @@ func downloadAndIndexNVD(_ string, _ *datasource, base string) error {
 func downloadAndIndexExploitDB(_ string, _ *datasource, base string) error {
 	// Clone the exploitdb repository to get the actual exploit files
 	exploitdbPath := filepath.Join(base, "dbs", "exploitdb")
-	
-	// Check if exploitdb already exists (and if it does, check if it's fresh enough)
-	shouldClone := true
-	if stat, err := os.Stat(exploitdbPath); err == nil && stat.IsDir() {
-		// Check if it's less than 24 hours old
-		if time.Since(stat.ModTime()) < 24*time.Hour {
-			fmt.Printf("exploitdb repository already exists at %s (age: %v), skipping clone\n", 
-				exploitdbPath, time.Since(stat.ModTime()).Round(time.Minute))
-			shouldClone = false
-		} else {
-			fmt.Printf("exploitdb repository exists but is old (age: %v), will re-clone\n", 
-				time.Since(stat.ModTime()).Round(time.Hour))
-			// Remove old version
-			if err := os.RemoveAll(exploitdbPath); err != nil {
-				log.Printf("Warning: Failed to remove old exploitdb: %v", err)
-				shouldClone = false // If we can't remove, don't try to clone
-			}
+
+	// Always clone fresh to get the latest exploits
+	if _, err := os.Stat(exploitdbPath); err == nil {
+		fmt.Println("Removing existing exploitdb to clone fresh...")
+		if err := os.RemoveAll(exploitdbPath); err != nil {
+			log.Printf("Warning: Failed to remove existing exploitdb: %v", err)
 		}
 	}
-	
-	if shouldClone {
-		fmt.Println("Cloning exploitdb repository (this may take a few minutes)...")
-		
-		// Ensure parent directory exists
-		if err := os.MkdirAll(filepath.Dir(exploitdbPath), defaults.DirectoryPermission); err != nil {
-			log.Printf("Warning: Failed to create parent directory for exploitdb: %v", err)
+
+	fmt.Println("Cloning exploitdb repository (this may take a few minutes)...")
+
+	// Ensure parent directory exists
+	if err := os.MkdirAll(filepath.Dir(exploitdbPath), defaults.DirectoryPermission); err != nil {
+		log.Printf("Warning: Failed to create parent directory for exploitdb: %v", err)
+	} else {
+		// Use shallow clone with depth 1 to save space and time
+		cmd := exec.Command("git", "clone", "--depth", "1",
+			"https://gitlab.com/exploit-database/exploitdb.git",
+			exploitdbPath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			log.Printf("Warning: Failed to clone exploitdb repository: %v", err)
+			log.Println("Exploit POC files will not be available, but metadata indexing will continue")
 		} else {
-			// Use shallow clone with depth 1 to save space and time
-			cmd := exec.Command("git", "clone", "--depth", "1", 
-				"https://gitlab.com/exploit-database/exploitdb.git", 
-				exploitdbPath)
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
-			
-			if err := cmd.Run(); err != nil {
-				log.Printf("Warning: Failed to clone exploitdb repository: %v", err)
-				log.Println("Exploit POC files will not be available, but metadata indexing will continue")
+			fmt.Printf("Successfully cloned exploitdb to %s\n", exploitdbPath)
+
+			// Remove .git directory to save space in the tarball
+			gitDir := filepath.Join(exploitdbPath, ".git")
+			if err := os.RemoveAll(gitDir); err != nil {
+				log.Printf("Warning: Failed to remove .git directory: %v", err)
 			} else {
-				fmt.Printf("Successfully cloned exploitdb to %s\n", exploitdbPath)
-				
-				// Remove .git directory to save space in the tarball
-				gitDir := filepath.Join(exploitdbPath, ".git")
-				if err := os.RemoveAll(gitDir); err != nil {
-					log.Printf("Warning: Failed to remove .git directory: %v", err)
-				} else {
-					fmt.Println("Removed .git directory to save space")
-				}
+				fmt.Println("Removed .git directory to save space")
 			}
 		}
 	}
-	
+
 	// Index the exploit metadata
 	IndexData("exploit-db", filepath.Join(base, "dbs"), filepath.Join(base, "build"), 0, false)
 	return nil
@@ -304,6 +291,40 @@ func GenerateDBs(nvdIndexStartYear int) {
 	// will be used to ask the user for confirmation
 	// prior to cloning the repo via the netcap toolchain
 	saveTotalDatabaseSize(base)
+
+	// Verify exploitdb folder is present
+	exploitdbPath := filepath.Join(base, "dbs", "exploitdb")
+	if stat, err := os.Stat(exploitdbPath); err == nil && stat.IsDir() {
+		// Count files in exploitdb to give user feedback
+		var fileCount int
+		_ = filepath.Walk(exploitdbPath, func(_ string, info os.FileInfo, _ error) error {
+			if info != nil && !info.IsDir() {
+				fileCount++
+			}
+			return nil
+		})
+		fmt.Printf("✓ exploitdb folder present with %d files (exploit code snippets will be bundled)\n", fileCount)
+	} else {
+		fmt.Println("⚠ exploitdb folder not found - exploit code snippets will not be available")
+	}
+
+	// Create the tarball automatically
+	tarballPath := filepath.Join(base, "dbs.tar.gz")
+	fmt.Printf("Creating tarball: %s\n", tarballPath)
+
+	tarballFile, err := os.Create(tarballPath)
+	if err != nil {
+		log.Printf("Warning: failed to create tarball file: %v", err)
+	} else {
+		if err := makeTarball(filepath.Join(base, "dbs"), "dbs", tarballFile); err != nil {
+			log.Printf("Warning: failed to create tarball: %v", err)
+		} else {
+			tarballFile.Close()
+			if stat, err := os.Stat(tarballPath); err == nil {
+				fmt.Printf("✓ Tarball created: %s (%s)\n", tarballPath, humanize.Bytes(uint64(stat.Size())))
+			}
+		}
+	}
 
 	fmt.Println("fetched", total, "sources ("+humanize.Bytes(numBytesFetched)+")", "in", time.Since(start))
 }

@@ -145,7 +145,7 @@ func (s *DBServer) rebuildDatabases() error {
 		return fmt.Errorf("failed to create temp dbs directory: %w", err)
 	}
 
-	// Process each source
+	// Process each source (exploitdb will be cloned fresh to get latest exploits)
 	var wg sync.WaitGroup
 	for _, source := range sources {
 		wg.Add(1)
@@ -325,7 +325,10 @@ func (s *DBServer) createTarball(sourceDir, targetPath string) error {
 	tarWriter := tar.NewWriter(gzipWriter)
 	defer tarWriter.Close()
 
-	return filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+	var fileCount, dirCount int
+	var exploitdbIncluded bool
+
+	err = filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -341,28 +344,59 @@ func (s *DBServer) createTarball(sourceDir, targetPath string) error {
 		if err != nil {
 			return err
 		}
+
+		// Skip the root directory entry
+		if relPath == "." {
+			return nil
+		}
+
 		header.Name = relPath
+
+		// Track if exploitdb is included
+		if info.IsDir() && info.Name() == "exploitdb" {
+			exploitdbIncluded = true
+			log.Printf("Including exploitdb folder in tarball: %s", relPath)
+		}
 
 		// Write header
 		if err := tarWriter.WriteHeader(header); err != nil {
 			return err
 		}
 
-		// If not a regular file, return
+		// Track counts
+		if info.IsDir() {
+			dirCount++
+			return nil
+		}
+		fileCount++
+
+		// Open and copy file content for regular files
 		if !info.Mode().IsRegular() {
 			return nil
 		}
 
-		// Open and copy file content
-		file, err := os.Open(path)
+		f, err := os.Open(path)
 		if err != nil {
 			return err
 		}
-		defer file.Close()
+		defer f.Close()
 
-		_, err = io.Copy(tarWriter, file)
+		_, err = io.Copy(tarWriter, f)
 		return err
 	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Tarball created: %d files, %d directories", fileCount, dirCount)
+	if exploitdbIncluded {
+		log.Println("✓ exploitdb folder with exploit code snippets included in archive")
+	} else {
+		log.Println("⚠ exploitdb folder was not found in source directory")
+	}
+
+	return nil
 }
 
 // writeMetadata writes metadata as JSON

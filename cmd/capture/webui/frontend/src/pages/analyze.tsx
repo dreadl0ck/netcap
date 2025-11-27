@@ -27,6 +27,7 @@ import ShareIcon from '@mui/icons-material/Share';
 import DescriptionIcon from '@mui/icons-material/Description';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 
 interface QuotaInfo {
   limit: number;
@@ -42,6 +43,7 @@ interface QuotaInfo {
 }
 
 export default function AnalyzePage() {
+  const router = useRouter();
   const [quota, setQuota] = useState<QuotaInfo | null>(null);
   const [sessions, setSessions] = useState<TrySession[]>([]);
   const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null);
@@ -141,7 +143,7 @@ export default function AnalyzePage() {
   const handleViewSession = async (sessionId: string) => {
     try {
       await api.selectSession(sessionId);
-      window.location.href = '/records';
+      router.push('/records');
     } catch (error) {
       console.error('Failed to select session:', error);
       alert('Failed to load session');
@@ -151,7 +153,7 @@ export default function AnalyzePage() {
   const handleViewLogs = async (sessionId: string) => {
     try {
       await api.selectSession(sessionId);
-      window.location.href = '/logs';
+      router.push('/logs');
     } catch (error) {
       console.error('Failed to select session:', error);
       alert('Failed to load session logs');
@@ -160,8 +162,10 @@ export default function AnalyzePage() {
 
   const handleViewFile = async (filePath: string) => {
     try {
-      await api.setActiveDirectory(filePath);
-      window.location.href = '/records';
+      const result = await api.setActiveDirectory(filePath);
+      // Force refresh by triggering a global event
+      window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
+      router.push('/records');
     } catch (error) {
       console.error('Failed to select file:', error);
       alert('Failed to load file');
@@ -170,8 +174,10 @@ export default function AnalyzePage() {
 
   const handleViewFileLogs = async (filePath: string) => {
     try {
-      await api.setActiveDirectory(filePath);
-      window.location.href = '/logs';
+      const result = await api.setActiveDirectory(filePath);
+      // Force refresh by triggering a global event
+      window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
+      router.push('/logs');
     } catch (error) {
       console.error('Failed to select file:', error);
       alert('Failed to load file logs');
