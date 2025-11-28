@@ -30,3 +30,4 @@ export function NetcapLink({ href, children, ...props }: LinkProps) {
 
 export default NetcapLink;
 
+
