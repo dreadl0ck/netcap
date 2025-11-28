@@ -24,7 +24,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dreadl0ck/netcap/env"
+	"github.com/dreadl0ck/netcap/internal/env"
 	"github.com/dreadl0ck/netcap/resolvers"
 )
 

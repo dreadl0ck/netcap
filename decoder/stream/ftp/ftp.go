@@ -23,7 +23,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
-	logging "github.com/dreadl0ck/netcap/logger"
+	logging "github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/types"
 	"go.uber.org/zap"
 )

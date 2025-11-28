@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/decoder/db"
-	"github.com/dreadl0ck/netcap/logger"
+	"github.com/dreadl0ck/netcap/internal/logger"
 )
 
 // init functions in the unit tests do not seem to be called for the compiled program,

@@ -31,7 +31,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/db"
-	"github.com/dreadl0ck/netcap/logger"
+	"github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/resolvers"
 )
 

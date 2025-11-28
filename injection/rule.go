@@ -30,7 +30,7 @@ import (
 	"github.com/expr-lang/expr/vm"
 	"gopkg.in/yaml.v2"
 
-	"github.com/dreadl0ck/netcap/filter"
+	"github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/types"
 )
 

@@ -35,7 +35,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/env"
+	"github.com/dreadl0ck/netcap/internal/env"
 )
 
 var (

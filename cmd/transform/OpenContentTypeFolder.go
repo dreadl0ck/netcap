@@ -24,7 +24,7 @@ import (
 
 	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/env"
+	"github.com/dreadl0ck/netcap/internal/env"
 )
 
 func createOpenCommand(args []string) (string, []string) {

@@ -1,8 +1,0 @@
----
-alwaysApply: false
----
-after making changes to the frontend React / typescript code always compile with command: 'zeus build-frontend' 
-
-after making changes to the Go code always compile with command: 'zeus install‘ to check if project compiles
-
-if changes has been made to both backend and frontend, always build the frontend first, and then the backend, so the build is embedded correctly.

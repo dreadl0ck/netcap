@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/maltego"
-	"github.com/dreadl0ck/netcap/env"
+	"github.com/dreadl0ck/netcap/internal/env"
 )
 
 func openFileInDisassembler() {

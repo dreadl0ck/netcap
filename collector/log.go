@@ -30,7 +30,7 @@ import (
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/logger"
+	"github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/resolvers"
 )
 

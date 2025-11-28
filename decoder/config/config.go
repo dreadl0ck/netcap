@@ -26,7 +26,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/performance"
+	"github.com/dreadl0ck/netcap/internal/performance"
 )
 
 // Instance contains the config at runtime.

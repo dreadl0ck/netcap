@@ -29,7 +29,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
-	logging "github.com/dreadl0ck/netcap/logger"
+	logging "github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/types"
 )
 

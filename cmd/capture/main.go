@@ -44,7 +44,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream"
 	"github.com/dreadl0ck/netcap/decoder/stream/alert"
 	"github.com/dreadl0ck/netcap/decoder/stream/file"
-	"github.com/dreadl0ck/netcap/env"
+	"github.com/dreadl0ck/netcap/internal/env"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 
@@ -72,7 +72,7 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/metrics"
+	"github.com/dreadl0ck/netcap/internal/metrics"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/rules"
 	"github.com/dreadl0ck/netcap/utils"

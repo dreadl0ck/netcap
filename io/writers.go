@@ -22,7 +22,7 @@ package io
 import (
 	"time"
 
-	"github.com/dreadl0ck/netcap/performance"
+	"github.com/dreadl0ck/netcap/internal/performance"
 	"github.com/dreadl0ck/netcap/types"
 )
 

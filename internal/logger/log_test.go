@@ -22,7 +22,7 @@ package logger_test
 import (
 	"testing"
 
-	"github.com/dreadl0ck/netcap/logger"
+	"github.com/dreadl0ck/netcap/internal/logger"
 )
 
 func TestInitZapLogger(t *testing.T) {

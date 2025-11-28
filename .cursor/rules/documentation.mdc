@@ -1,4 +1,0 @@
----
-alwaysApply: true
----
-do not create a summary markdown for every fix made - only update documentation for new features or if existing features change

@@ -41,7 +41,7 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/transform"
 	"github.com/dreadl0ck/netcap/cmd/util"
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/env"
+	"github.com/dreadl0ck/netcap/internal/env"
 	"github.com/dreadl0ck/netcap/io"
 )
 

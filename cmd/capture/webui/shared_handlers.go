@@ -37,7 +37,7 @@ import (
 	"github.com/expr-lang/expr/vm"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	netfilter "github.com/dreadl0ck/netcap/filter"
+	netfilter "github.com/dreadl0ck/netcap/internal/filter"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )

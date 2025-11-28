@@ -23,7 +23,7 @@ import (
 	"log"
 	"testing"
 
-	logging "github.com/dreadl0ck/netcap/logger"
+	logging "github.com/dreadl0ck/netcap/internal/logger"
 )
 
 // init does not seem to be called for the compiled program,
