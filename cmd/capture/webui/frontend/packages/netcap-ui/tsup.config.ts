@@ -61,11 +61,12 @@ const sharedExternals = [
 
 export default defineConfig([
   // Client components build - with "use client" directive
+  // splitting: true ensures shared code (like contexts) use a single instance
   {
     entry: clientEntries,
     format: ['cjs', 'esm'],
     dts: true,
-    splitting: false,
+    splitting: true,  // Enable code splitting to share context instances
     sourcemap: true,
     clean: true,
     external: sharedExternals,
@@ -80,7 +81,7 @@ export default defineConfig([
     entry: utilityEntries,
     format: ['cjs', 'esm'],
     dts: true,
-    splitting: false,
+    splitting: true,  // Enable code splitting for consistency
     sourcemap: true,
     external: sharedExternals,
   },
