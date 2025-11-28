@@ -631,15 +631,16 @@ commands:
             echo "[INFO] Frontend configured to connect to: https://try.netcap.io"
 
     publish-npm-packages:
-        description: publish @netcap/ui npm package with version matching netcap core
+        description: publish @dreadl0ck/netcap-ui npm package to GitHub Packages
         help: |
-            Builds and publishes the @netcap/ui npm package to the npm registry.
+            Builds and publishes the @dreadl0ck/netcap-ui npm package to GitHub Packages registry.
             The package version is synchronized with the netcap core VERSION to indicate compatibility.
             
             Requirements:
               - Node.js 18+ and npm must be installed
-              - Must be logged in to npm (npm login)
-              - Must have publish permissions for @netcap scope
+              - Must be logged in to GitHub Packages registry:
+                  npm login --registry=https://npm.pkg.github.com
+                  (use GitHub username and a Personal Access Token with write:packages scope)
             
             Environment Variables:
               VERSION                 - Package version (default: from globals, e.g., "latest" -> "0.0.0-latest")
@@ -660,6 +661,7 @@ commands:
               DRY_RUN=true zeus publish-npm-packages
         exec: |
             PACKAGES_DIR="cmd/capture/webui/frontend/packages"
+            GITHUB_REGISTRY="https://npm.pkg.github.com"
             
             # Determine version - if VERSION looks like a semver, use it directly
             # Otherwise prefix with 0.0.0- (e.g., "latest" -> "0.0.0-latest")
@@ -675,13 +677,14 @@ commands:
             NPM_TAG="${NPM_TAG:-latest}"
             DRY_RUN="${DRY_RUN:-false}"
             
-            echo "[INFO] Publishing @netcap/ui package"
+            echo "[INFO] Publishing @dreadl0ck/netcap-ui package to GitHub Packages"
             echo "[INFO] Version: $PKG_VERSION (netcap core: v$VERSION)"
+            echo "[INFO] Registry: $GITHUB_REGISTRY"
             echo "[INFO] npm tag: $NPM_TAG"
             echo "[INFO] Dry run: $DRY_RUN"
             echo ""
             
-            # Build and publish @netcap/ui
+            # Build and publish @dreadl0ck/netcap-ui
             cd "$PACKAGES_DIR/netcap-ui"
             
             # Update version in package.json
@@ -704,14 +707,14 @@ commands:
             
             if [[ "$DRY_RUN" == "true" ]]; then
                 echo "[INFO] Dry run - skipping publish"
-                echo "[INFO] Would publish: @netcap/ui@$PKG_VERSION with tag '$NPM_TAG'"
+                echo "[INFO] Would publish: @dreadl0ck/netcap-ui@$PKG_VERSION with tag '$NPM_TAG'"
                 npm pack --dry-run
             else
-                echo "[INFO] Publishing to npm..."
-                npm publish --access public --tag "$NPM_TAG"
+                echo "[INFO] Publishing to GitHub Packages..."
+                npm publish --registry="$GITHUB_REGISTRY" --access public --tag "$NPM_TAG"
                 echo ""
-                echo "[SUCCESS] Published @netcap/ui@$PKG_VERSION"
-                echo "[INFO] Install with: npm install @netcap/ui@$PKG_VERSION"
+                echo "[SUCCESS] Published @dreadl0ck/netcap-ui@$PKG_VERSION to GitHub Packages"
+                echo "[INFO] Install with: npm install @dreadl0ck/netcap-ui@$PKG_VERSION --registry=$GITHUB_REGISTRY"
             fi
 
     ## Utils

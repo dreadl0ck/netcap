@@ -1,6 +1,6 @@
 {
-  "name": "@netcap/ui",
-  "version": "0.1.0",
+  "name": "@dreadl0ck/netcap-ui",
+  "version": "0.0.0-latest",
   "description": "Netcap UI components and pages as a reusable React library",
   "main": "src/index.ts",
   "module": "src/index.ts",
@@ -48,6 +48,7 @@
     }
   },
   "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
     "main": "dist/index.js",
     "module": "dist/index.mjs",
     "types": "dist/index.d.ts",
@@ -141,4 +142,3 @@
     "url": "https://github.com/dreadl0ck/netcap"
   }
 }
-

@@ -1,15 +1,26 @@
-# @netcap/ui
+# @dreadl0ck/netcap-ui
 
 Netcap UI component library - reusable React components for building network analysis interfaces.
 
+Published to [GitHub Packages](https://github.com/dreadl0ck/netcap/packages).
+
 ## Installation
 
+First, configure npm to use GitHub Packages for the `@dreadl0ck` scope. Create or edit `~/.npmrc`:
+
+```
+@dreadl0ck:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN
+```
+
+Then install:
+
 ```bash
-npm install @netcap/ui
+npm install @dreadl0ck/netcap-ui
 # or
-yarn add @netcap/ui
+yarn add @dreadl0ck/netcap-ui
 # or
-pnpm add @netcap/ui
+pnpm add @dreadl0ck/netcap-ui
 ```
 
 ### Peer Dependencies
@@ -36,7 +47,7 @@ The easiest way to use this library in Next.js is with the built-in adapter:
 
 ```tsx
 // _app.tsx
-import { NextjsNetcapProvider } from '@netcap/ui/adapters/nextjs';
+import { NextjsNetcapProvider } from '@dreadl0ck/netcap-ui/adapters/nextjs';
 import type { AppProps } from 'next/app';
 
 export default function App({ Component, pageProps }: AppProps) {
@@ -54,7 +65,7 @@ Then use components in your pages:
 
 ```tsx
 // pages/my-page.tsx
-import { Layout, useNetcapApi } from '@netcap/ui';
+import { Layout, useNetcapApi } from '@dreadl0ck/netcap-ui';
 import useSWR from 'swr';
 
 export default function MyPage() {
@@ -80,7 +91,7 @@ import {
   NetcapProvider, 
   LearnModeProvider,
   Layout 
-} from '@netcap/ui';
+} from '@dreadl0ck/netcap-ui';
 import { 
   useNavigate, 
   useLocation, 
@@ -214,7 +225,7 @@ Navigation link component that uses the configured Link:
 ### Utility Functions
 
 ```tsx
-import { formatBytes, formatTimestamp, formatDuration } from '@netcap/ui';
+import { formatBytes, formatTimestamp, formatDuration } from '@dreadl0ck/netcap-ui';
 
 formatBytes(1024)         // "1 KB"
 formatTimestamp(Date.now()) // "11/28/2024, 10:30:00 AM"
