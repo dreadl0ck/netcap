@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Harvesters page wrapper - imports from @netcap/ui package
-import { HarvestersPage } from '@netcap/ui/pages';
+// Harvesters page wrapper - imports from @dreadl0ck/netcap-ui package
+import { HarvestersPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Harvesters() {
   return <HarvestersPage />;

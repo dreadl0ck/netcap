@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Interfaces page wrapper - imports from @netcap/ui package
-import { InterfacesPage } from '@netcap/ui/pages';
+// Interfaces page wrapper - imports from @dreadl0ck/netcap-ui package
+import { InterfacesPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Interfaces() {
   return <InterfacesPage />;

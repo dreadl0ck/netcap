@@ -2,12 +2,10 @@
   "name": "netcap-webui",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
+  "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm --filter @dreadl0ck/netcap-ui build && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
@@ -15,7 +13,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
-    "@netcap/ui": "*",
+    "@dreadl0ck/netcap-ui": "workspace:*",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@fontsource/roboto": "^5.2.8",

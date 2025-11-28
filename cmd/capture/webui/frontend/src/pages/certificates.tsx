@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Certificates page wrapper - imports from @netcap/ui package
-import { CertificatesPage } from '@netcap/ui/pages';
+// Certificates page wrapper - imports from @dreadl0ck/netcap-ui package
+import { CertificatesPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Certificates() {
   return <CertificatesPage />;

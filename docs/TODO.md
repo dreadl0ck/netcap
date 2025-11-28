@@ -1,5 +1,9 @@
 # TODOs
 
+Downloading echarts@6.0.0: 70.03 kB/11.43 MB
+
+why is v6 downloaded? though go echarts uses older version
+
 test suite using tshark and a set of pcaps 
 data mining on plaintext connection data: extract URLs, what looks like secrets etc
 

@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Software page wrapper - imports from @netcap/ui package
-import { SoftwarePage } from '@netcap/ui/pages';
+// Software page wrapper - imports from @dreadl0ck/netcap-ui package
+import { SoftwarePage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Software() {
   return <SoftwarePage />;

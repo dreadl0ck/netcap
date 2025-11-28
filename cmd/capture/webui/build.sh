@@ -17,9 +17,10 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-# Check if npm is installed
-if ! command -v npm &> /dev/null; then
-    echo "Error: npm is not installed. Please install npm and try again."
+# Check if pnpm is installed
+if ! command -v pnpm &> /dev/null; then
+    echo "Error: pnpm is not installed. Please install pnpm and try again."
+    echo "       npm install -g pnpm  (or: corepack enable pnpm)"
     exit 1
 fi
 
@@ -29,12 +30,12 @@ cd "$FRONTEND_DIR"
 # Install dependencies if node_modules doesn't exist
 if [ ! -d "node_modules" ]; then
     echo "==> Installing dependencies..."
-    npm install
+    pnpm install
 fi
 
 # Build the frontend (Next.js 14+ automatically exports when output: 'export' is set)
 echo "==> Building Next.js application..."
-npm run build
+pnpm run build
 
 # Check if build was successful
 if [ -d "out" ] && [ -f "out/index.html" ]; then

@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Inject page wrapper - imports from @netcap/ui package
-import { InjectPage } from '@netcap/ui/pages';
+// Inject page wrapper - imports from @dreadl0ck/netcap-ui package
+import { InjectPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Inject() {
   return <InjectPage />;

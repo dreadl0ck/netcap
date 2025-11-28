@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Audit page wrapper - imports from @netcap/ui package
-import { AuditPage } from '@netcap/ui/pages';
+// Audit page wrapper - imports from @dreadl0ck/netcap-ui package
+import { AuditPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Audit() {
   return <AuditPage />;

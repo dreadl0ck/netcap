@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Hosts page wrapper - imports from @netcap/ui package
-import { HostsPage } from '@netcap/ui/pages';
+// Hosts page wrapper - imports from @dreadl0ck/netcap-ui package
+import { HostsPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Hosts() {
   return <HostsPage />;

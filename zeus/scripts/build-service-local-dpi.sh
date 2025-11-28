@@ -33,7 +33,7 @@ if [ ! -d "$NETCAP_ROOT/cmd/capture/webui/frontend/out" ]; then
     echo "[ERROR] Frontend assets not found at $NETCAP_ROOT/cmd/capture/webui/frontend/out"
     echo "[INFO] Please build the frontend first:"
     echo "       zeus build-frontend-service"
-    echo "       (or manually: cd cmd/capture/webui/frontend && NEXT_PUBLIC_BACKEND_URL=https://try.netcap.io npm run build)"
+    echo "       (or manually: cd cmd/capture/webui/frontend && NEXT_PUBLIC_BACKEND_URL=https://try.netcap.io pnpm run build)"
     exit 1
 fi
 

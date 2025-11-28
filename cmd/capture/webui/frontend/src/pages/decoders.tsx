@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Decoders page wrapper - imports from @netcap/ui package
-import { DecodersPage } from '@netcap/ui/pages';
+// Decoders page wrapper - imports from @dreadl0ck/netcap-ui package
+import { DecodersPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Decoders() {
   return <DecodersPage />;

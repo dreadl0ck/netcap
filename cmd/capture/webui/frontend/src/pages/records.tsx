@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Records page wrapper - imports from @netcap/ui package
-import { RecordsPage } from '@netcap/ui/pages';
+// Records page wrapper - imports from @dreadl0ck/netcap-ui package
+import { RecordsPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Records() {
   return <RecordsPage />;

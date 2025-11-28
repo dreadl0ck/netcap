@@ -143,7 +143,7 @@ export interface NetcapProviderProps {
  * @example
  * ```tsx
  * // In a Next.js app
- * import { NetcapProvider } from '@netcap/ui/providers';
+ * import { NetcapProvider } from '@dreadl0ck/netcap-ui/providers';
  * import { useRouter } from 'next/router';
  * import Link from 'next/link';
  * 
@@ -169,7 +169,7 @@ export interface NetcapProviderProps {
  * @example
  * ```tsx
  * // In a React Router app
- * import { NetcapProvider } from '@netcap/ui/providers';
+ * import { NetcapProvider } from '@dreadl0ck/netcap-ui/providers';
  * import { useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom';
  * 
  * function App({ children }) {

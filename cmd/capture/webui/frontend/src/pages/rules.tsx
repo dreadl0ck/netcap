@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Rules page wrapper - imports from @netcap/ui package
-import { RulesPage } from '@netcap/ui/pages';
+// Rules page wrapper - imports from @dreadl0ck/netcap-ui package
+import { RulesPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Rules() {
   return <RulesPage />;

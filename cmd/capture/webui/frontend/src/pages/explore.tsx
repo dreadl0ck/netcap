@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Explore page wrapper - imports from @netcap/ui package
-import { ExplorePage } from '@netcap/ui/pages';
+// Explore page wrapper - imports from @dreadl0ck/netcap-ui package
+import { ExplorePage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Explore() {
   return <ExplorePage />;

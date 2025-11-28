@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Connections page wrapper - imports from @netcap/ui package
-import { ConnectionsPage } from '@netcap/ui/pages';
+// Connections page wrapper - imports from @dreadl0ck/netcap-ui package
+import { ConnectionsPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Connections() {
   return <ConnectionsPage />;

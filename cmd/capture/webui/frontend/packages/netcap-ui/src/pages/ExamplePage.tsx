@@ -99,7 +99,7 @@ export function ExamplePage({ title = 'Example Page' }: ExamplePageProps) {
           </Typography>
           <Typography variant="body1" paragraph>
             This is an example page demonstrating how to create pages using the
-            @netcap/ui library. These pages can be used in any React framework,
+            @dreadl0ck/netcap-ui library. These pages can be used in any React framework,
             not just Next.js.
           </Typography>
           

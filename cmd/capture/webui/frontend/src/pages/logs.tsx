@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Logs page wrapper - imports from @netcap/ui package
-import { LogsPage } from '@netcap/ui/pages';
+// Logs page wrapper - imports from @dreadl0ck/netcap-ui package
+import { LogsPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Logs() {
   return <LogsPage />;

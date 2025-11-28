@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Dashboard page wrapper - imports from @netcap/ui package
-import { DashboardPage } from '@netcap/ui/pages';
+// Dashboard page wrapper - imports from @dreadl0ck/netcap-ui package
+import { DashboardPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Dashboard() {
   return <DashboardPage />;

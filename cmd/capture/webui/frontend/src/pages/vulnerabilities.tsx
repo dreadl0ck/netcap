@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Vulnerabilities page wrapper - imports from @netcap/ui package
-import { VulnerabilitiesPage } from '@netcap/ui/pages';
+// Vulnerabilities page wrapper - imports from @dreadl0ck/netcap-ui package
+import { VulnerabilitiesPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Vulnerabilities() {
   return <VulnerabilitiesPage />;

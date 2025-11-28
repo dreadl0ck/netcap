@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Config page wrapper - imports from @netcap/ui package
-import { ConfigPage } from '@netcap/ui/pages';
+// Config page wrapper - imports from @dreadl0ck/netcap-ui package
+import { ConfigPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Config() {
   return <ConfigPage />;

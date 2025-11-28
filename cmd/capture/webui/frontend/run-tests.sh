@@ -16,7 +16,7 @@ echo ""
 # Check if node_modules exists
 if [ ! -d "node_modules" ]; then
     echo "📦 Installing dependencies..."
-    npm install
+    pnpm install
     echo ""
 fi
 
@@ -26,27 +26,27 @@ TEST_TYPE="${1:-all}"
 case "$TEST_TYPE" in
     "logic")
         echo "🧪 Running autocomplete logic tests..."
-        npm test -- autocomplete-logic
+        pnpm test -- autocomplete-logic
         ;;
     "keyboard")
         echo "⌨️  Running keyboard behavior tests..."
-        npm test -- keyboard-behavior
+        pnpm test -- keyboard-behavior
         ;;
     "component")
         echo "🔧 Running component integration tests..."
-        npm test -- audit-autocomplete
+        pnpm test -- audit-autocomplete
         ;;
     "watch")
         echo "👀 Running tests in watch mode..."
-        npm run test:watch
+        pnpm run test:watch
         ;;
     "coverage")
         echo "📊 Running tests with coverage..."
-        npm run test:coverage
+        pnpm run test:coverage
         ;;
     "all")
         echo "🚀 Running all autocomplete tests..."
-        npm test -- __tests__/
+        pnpm test -- __tests__/
         ;;
     *)
         echo "❌ Unknown test type: $TEST_TYPE"

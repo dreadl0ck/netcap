@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// HTTP page wrapper - imports from @netcap/ui package
-import { HttpPage } from '@netcap/ui/pages';
+// HTTP page wrapper - imports from @dreadl0ck/netcap-ui package
+import { HttpPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Http() {
   return <HttpPage />;

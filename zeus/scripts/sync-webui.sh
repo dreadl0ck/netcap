@@ -22,7 +22,7 @@ if [ -d "$SOURCE_DIR" ]; then
     echo "[INFO] Frontend synced successfully"
 else
     echo "[WARN] Source frontend not found at $SOURCE_DIR"
-    echo "[WARN] Build the frontend first: cd cmd/capture/webui/frontend && npm run build"
+    echo "[WARN] Build the frontend first: cd cmd/capture/webui/frontend && pnpm run build"
     exit 1
 fi
 

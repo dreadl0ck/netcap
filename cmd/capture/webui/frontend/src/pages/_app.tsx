@@ -27,8 +27,8 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { NextjsNetcapProvider } from '@netcap/ui/adapters/nextjs';
-import { api, getBackendUrl } from '@netcap/ui/lib';
+import { NextjsNetcapProvider } from '@dreadl0ck/netcap-ui/adapters/nextjs';
+import { api, getBackendUrl } from '@dreadl0ck/netcap-ui/lib';
 import { mutate as globalMutate } from 'swr';
 
 // Import self-hosted Roboto fonts (only the weights needed by MUI)

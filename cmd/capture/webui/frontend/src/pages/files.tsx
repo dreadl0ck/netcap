@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Files page wrapper - imports from @netcap/ui package
-import { FilesPage } from '@netcap/ui/pages';
+// Files page wrapper - imports from @dreadl0ck/netcap-ui package
+import { FilesPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Files() {
   return <FilesPage />;

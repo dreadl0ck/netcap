@@ -236,8 +236,8 @@ formatDuration(3661)      // "1h 1m"
 
 ```bash
 cd packages/netcap-ui
-npm install
-npm run build
+pnpm install
+pnpm run build
 ```
 
 ## License

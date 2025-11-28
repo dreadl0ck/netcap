@@ -6,8 +6,8 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 const nextConfig = {
   output: 'export',
   reactStrictMode: true,
-  // Transpile the @netcap/ui workspace package to ensure React context is shared
-  transpilePackages: ['@netcap/ui'],
+  // Transpile the @dreadl0ck/netcap-ui workspace package to ensure React context is shared
+  transpilePackages: ['@dreadl0ck/netcap-ui'],
   trailingSlash: true,
   images: {
     unoptimized: true,

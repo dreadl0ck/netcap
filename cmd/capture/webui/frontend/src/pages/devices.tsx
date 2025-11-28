@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Devices page wrapper - imports from @netcap/ui package
-import { DevicesPage } from '@netcap/ui/pages';
+// Devices page wrapper - imports from @dreadl0ck/netcap-ui package
+import { DevicesPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Devices() {
   return <DevicesPage />;

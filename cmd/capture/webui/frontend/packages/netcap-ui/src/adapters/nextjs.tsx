@@ -26,7 +26,7 @@
  * @example
  * ```tsx
  * // In _app.tsx
- * import { NextjsNetcapProvider } from '@netcap/ui/adapters/nextjs';
+ * import { NextjsNetcapProvider } from '@dreadl0ck/netcap-ui/adapters/nextjs';
  * import type { AppProps } from 'next/app';
  * 
  * export default function App({ Component, pageProps }: AppProps) {

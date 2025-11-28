@@ -5,8 +5,8 @@ This is the Next.js-based frontend for the Netcap Web UI.
 ## Development
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the result.
@@ -14,7 +14,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the result.
 ## Building for Production
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 This creates a static export in the `out/` directory which is embedded into the Go binary.

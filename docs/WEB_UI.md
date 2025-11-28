@@ -132,14 +132,14 @@ Built with modern web technologies:
 ### Prerequisites
 
 - Go 1.21+ (for backend)
-- Node.js 18+ and npm (for frontend)
+- Node.js 18+ and pnpm (for frontend)
 
 ### Building the Frontend
 
 ```bash
 cd cmd/capture/webui/frontend
-npm install
-npm run build
+pnpm install
+pnpm run build
 ```
 
 This creates a static export in `frontend/out/` that gets embedded into the Go binary.
@@ -175,7 +175,7 @@ For live reload during development:
 
 ```bash
 cd cmd/capture/webui/frontend
-npm run dev
+pnpm run dev
 ```
 
 The dev server runs on `http://localhost:3000`.
@@ -307,7 +307,7 @@ When working with extracted files from network captures:
 
 If you see "Frontend assets not built" in the browser:
 
-1. Build the frontend: `cd cmd/capture/webui/frontend && npm run build`
+1. Build the frontend: `cd cmd/capture/webui/frontend && pnpm run build`
 2. Verify `out/` directory exists with `index.html`
 3. Rebuild Go binary: `go build ./cmd`
 

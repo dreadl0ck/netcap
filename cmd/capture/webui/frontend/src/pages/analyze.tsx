@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Analyze page wrapper - imports from @netcap/ui package
-import { AnalyzePage } from '@netcap/ui/pages';
+// Analyze page wrapper - imports from @dreadl0ck/netcap-ui package
+import { AnalyzePage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Analyze() {
   return <AnalyzePage />;

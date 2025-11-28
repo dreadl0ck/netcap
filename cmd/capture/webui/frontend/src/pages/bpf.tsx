@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// BPF page wrapper - imports from @netcap/ui package
-import { BPFPage } from '@netcap/ui/pages';
+// BPF page wrapper - imports from @dreadl0ck/netcap-ui package
+import { BPFPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function BPF() {
   return <BPFPage />;

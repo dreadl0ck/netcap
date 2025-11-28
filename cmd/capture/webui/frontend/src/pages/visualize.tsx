@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Visualize page wrapper - imports from @netcap/ui package
-import { VisualizePage } from '@netcap/ui/pages';
+// Visualize page wrapper - imports from @dreadl0ck/netcap-ui package
+import { VisualizePage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Visualize() {
   return <VisualizePage />;

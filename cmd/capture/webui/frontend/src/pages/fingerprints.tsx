@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Fingerprints page wrapper - imports from @netcap/ui package
-import { FingerprintsPage } from '@netcap/ui/pages';
+// Fingerprints page wrapper - imports from @dreadl0ck/netcap-ui package
+import { FingerprintsPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Fingerprints() {
   return <FingerprintsPage />;

@@ -18,7 +18,7 @@ Pure logic tests that verify the autocomplete suggestion and insertion algorithm
 
 **Run with:**
 ```bash
-npm test autocomplete-logic
+pnpm test autocomplete-logic
 ```
 
 ### 2. `audit-autocomplete.test.tsx`
@@ -37,7 +37,7 @@ Full component integration tests that simulate user interactions with the autoco
 
 **Run with:**
 ```bash
-npm test audit-autocomplete
+pnpm test audit-autocomplete
 ```
 
 ## Running Tests
@@ -45,28 +45,28 @@ npm test audit-autocomplete
 ### Install Dependencies
 ```bash
 cd cmd/capture/webui/frontend
-npm install
+pnpm install
 ```
 
 ### Run All Tests
 ```bash
-npm test
+pnpm test
 ```
 
 ### Run Tests in Watch Mode
 ```bash
-npm run test:watch
+pnpm run test:watch
 ```
 
 ### Run Tests with Coverage
 ```bash
-npm run test:coverage
+pnpm run test:coverage
 ```
 
 ### Run Specific Test File
 ```bash
-npm test -- autocomplete-logic
-npm test -- audit-autocomplete
+pnpm test -- autocomplete-logic
+pnpm test -- audit-autocomplete
 ```
 
 ## Key Behavior Requirements
@@ -104,7 +104,7 @@ npm test -- audit-autocomplete
 
 If tests fail, check:
 
-1. **Dependencies installed:** Run `npm install` in the frontend directory
+1. **Dependencies installed:** Run `pnpm install` in the frontend directory
 2. **Jest configuration:** Ensure `jest.config.js` and `jest.setup.js` are present
 3. **Mock implementations:** Check that API mocks in test files match actual API
 4. **Component changes:** If audit.tsx was modified, update test expectations

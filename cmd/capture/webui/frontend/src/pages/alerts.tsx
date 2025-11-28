@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Alerts page wrapper - imports from @netcap/ui package
-import { AlertsPage } from '@netcap/ui/pages';
+// Alerts page wrapper - imports from @dreadl0ck/netcap-ui package
+import { AlertsPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Alerts() {
   return <AlertsPage />;

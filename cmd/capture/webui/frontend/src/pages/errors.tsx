@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Errors page wrapper - imports from @netcap/ui package
-import { ErrorsPage } from '@netcap/ui/pages';
+// Errors page wrapper - imports from @dreadl0ck/netcap-ui package
+import { ErrorsPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Errors() {
   return <ErrorsPage />;

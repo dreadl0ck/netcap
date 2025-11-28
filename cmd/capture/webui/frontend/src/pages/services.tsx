@@ -17,8 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Services page wrapper - imports from @netcap/ui package
-import { ServicesPage } from '@netcap/ui/pages';
+// Services page wrapper - imports from @dreadl0ck/netcap-ui package
+import { ServicesPage } from '@dreadl0ck/netcap-ui/pages';
 
 export default function Services() {
   return <ServicesPage />;
