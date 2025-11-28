@@ -43,3 +43,16 @@ cmd/capture/webui/frontend/out
 cmd/try/webui/frontend
 tmp/
 net
+
+# Test outputs
+test-output/
+links.txt
+
+# IDE
+.cursor/
+
+# Log files at any level
+**/*.log
+
+# Collector artifacts
+collector/errors.pcap

@@ -59,6 +59,70 @@ harvesters:
         - "token"
         - "access_token"
       min_cookie_length: 8
+      # HTTP Form Login credential harvesting (POST form data)
+      form_username_fields:
+        - "log"
+        - "login"
+        - "wpname"
+        - "ahd_username"
+        - "unickname"
+        - "nickname"
+        - "user"
+        - "user_name"
+        - "alias"
+        - "pseudo"
+        - "email"
+        - "username"
+        - "_username"
+        - "userid"
+        - "form_loginname"
+        - "loginname"
+        - "login_id"
+        - "loginid"
+        - "session_key"
+        - "sessionkey"
+        - "pop_login"
+        - "user_id"
+        - "screename"
+        - "uname"
+        - "ulogin"
+        - "acctname"
+        - "account"
+        - "member"
+        - "mailaddress"
+        - "membername"
+        - "login_username"
+        - "login_email"
+        - "loginusername"
+        - "loginemail"
+        - "sign-in"
+        - "j_username"
+        - "identity"
+        - "usr"
+        - "mail"
+      form_password_fields:
+        - "ahd_password"
+        - "pass"
+        - "password"
+        - "_password"
+        - "passwd"
+        - "session_password"
+        - "sessionpassword"
+        - "login_password"
+        - "loginpassword"
+        - "form_pw"
+        - "userpassword"
+        - "upassword"
+        - "passwort"
+        - "passwrd"
+        - "wppassword"
+        - "upasswd"
+        - "j_password"
+        - "pwd"
+        - "secret"
+        - "credentials"
+        - "credential"
+        - "pw"
   
   - name: "FTP"
     enabled: true
@@ -159,6 +223,34 @@ harvesters:
   - name: "MongoDB Challenge Response"
     enabled: true
     ports: [27017]
+    parameters: {}
+
+  # Network Access Authentication
+  - name: "RADIUS"
+    enabled: true
+    ports: [1812, 1813]
+    description: "Remote Authentication Dial-In User Service - network access authentication"
+    parameters: {}
+
+  # Proxy Protocols
+  - name: "SOCKS"
+    enabled: true
+    ports: [1080]
+    description: "SOCKS Proxy Protocol - proxy authentication credentials"
+    parameters: {}
+
+  # VoIP Protocols
+  - name: "SIP"
+    enabled: true
+    ports: [5060, 5061]
+    description: "Session Initiation Protocol - VoIP authentication (Digest/Basic)"
+    parameters: {}
+
+  # IoT Protocols
+  - name: "MQTT"
+    enabled: true
+    ports: [1883, 8883]
+    description: "Message Queuing Telemetry Transport - IoT messaging authentication"
     parameters: {}
 
   # Remote Desktop Protocols

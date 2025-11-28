@@ -2539,6 +2539,27 @@ message Credentials {
   string Workstation = 21;
   string LmHash = 22;       // LM response
   string NtHash = 23;       // NT response
+  
+  // Authentication result tracking (like Zeek)
+  bool AuthSuccess = 24;       // Whether authentication succeeded (true) or failed (false)
+  bool AuthSuccessSet = 25;    // Whether AuthSuccess was explicitly set (to distinguish from default false)
+  int32 AuthAttempts = 26;     // Number of authentication attempts observed
+  
+  // RADIUS specific
+  string MacAddress = 27;      // MAC address from RADIUS Calling-Station-Id
+  string FramedAddress = 28;   // IP address assigned by RADIUS
+  string ConnectInfo = 29;     // RADIUS Connect-Info attribute
+  string ReplyMessage = 30;    // RADIUS Reply-Message
+  
+  // SOCKS specific
+  int32 SocksVersion = 31;     // SOCKS protocol version (4 or 5)
+  string SocksStatus = 32;     // SOCKS reply status
+  
+  // SIP specific
+  string SipMethod = 33;       // SIP request method (REGISTER, INVITE, etc.)
+  string SipCallId = 34;       // SIP Call-ID header
+  string SipFrom = 35;         // SIP From header
+  string SipTo = 36;           // SIP To header
 }
 
 message SSH {

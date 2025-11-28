@@ -765,6 +765,283 @@ User-Agent: Mozilla/5.0`)
 	}
 }
 
+// TestHTTPFormCredentials tests extraction of credentials from HTTP POST form data
+func TestHTTPFormCredentials(t *testing.T) {
+	// Test case 1: Standard login form with username and password
+	data := []byte(`POST /login HTTP/1.1
+Host: example.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 32
+
+username=admin&password=secret123`)
+
+	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
+	c := httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
+
+	if c == nil {
+		t.Fatal("expected credentials to be found")
+	}
+
+	if c.Service != "HTTP Form Login" {
+		t.Fatalf("expected service 'HTTP Form Login', got: %s", c.Service)
+	}
+
+	if c.User != "admin" {
+		t.Fatalf("expected user 'admin', got: %s", c.User)
+	}
+
+	if c.Password != "secret123" {
+		t.Fatalf("expected password 'secret123', got: %s", c.Password)
+	}
+
+	if !strings.Contains(c.Notes, "POST") {
+		t.Fatalf("expected notes to contain 'POST', got: %s", c.Notes)
+	}
+
+	if !strings.Contains(c.Notes, "UsernameField: username") {
+		t.Fatalf("expected notes to contain username field name, got: %s", c.Notes)
+	}
+
+	// Test case 2: WordPress login form (log and pwd fields)
+	data = []byte(`POST /wp-login.php HTTP/1.1
+Host: myblog.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 50
+
+log=wpuser&pwd=wppass123&wp-submit=Log+In`)
+
+	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-2", time.Now())
+
+	if c == nil {
+		t.Fatal("expected credentials to be found for WordPress form")
+	}
+
+	if c.User != "wpuser" {
+		t.Fatalf("expected user 'wpuser', got: %s", c.User)
+	}
+
+	if c.Password != "wppass123" {
+		t.Fatalf("expected password 'wppass123', got: %s", c.Password)
+	}
+
+	// Test case 3: Email-based login (email field)
+	data = []byte(`POST /auth/login HTTP/1.1
+Host: service.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 45
+
+email=user@example.com&password=myPassword`)
+
+	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-3", time.Now())
+
+	if c == nil {
+		t.Fatal("expected credentials to be found for email login")
+	}
+
+	if c.User != "user@example.com" {
+		t.Fatalf("expected user 'user@example.com', got: %s", c.User)
+	}
+
+	// Test case 4: J2EE j_username/j_password fields
+	data = []byte(`POST /j_security_check HTTP/1.1
+Host: enterprise.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 50
+
+j_username=enterpriseuser&j_password=enterprisepass`)
+
+	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-4", time.Now())
+
+	if c == nil {
+		t.Fatal("expected credentials to be found for J2EE form")
+	}
+
+	if c.User != "enterpriseuser" {
+		t.Fatalf("expected user 'enterpriseuser', got: %s", c.User)
+	}
+
+	if c.Password != "enterprisepass" {
+		t.Fatalf("expected password 'enterprisepass', got: %s", c.Password)
+	}
+
+	// Test case 5: Username only (no password field) - still captured
+	data = []byte(`POST /lookup HTTP/1.1
+Host: app.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 20
+
+username=lookupuser`)
+
+	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-5", time.Now())
+
+	if c == nil {
+		t.Fatal("expected credentials to be found for username-only form")
+	}
+
+	if c.User != "lookupuser" {
+		t.Fatalf("expected user 'lookupuser', got: %s", c.User)
+	}
+
+	// Test case 6: Should NOT match GET requests
+	data = []byte(`GET /login?username=admin&password=secret HTTP/1.1
+Host: example.com`)
+
+	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-6", time.Now())
+
+	if c != nil && c.Service == "HTTP Form Login" {
+		t.Fatal("expected no form credentials for GET request")
+	}
+
+	// Test case 7: Should NOT match non-form content types
+	data = []byte(`POST /api/login HTTP/1.1
+Host: api.example.com
+Content-Type: application/json
+Content-Length: 45
+
+{"username":"admin","password":"secret123"}`)
+
+	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-7", time.Now())
+
+	if c != nil && c.Service == "HTTP Form Login" {
+		t.Fatal("expected no form credentials for JSON content type")
+	}
+
+	// Test case 8: URL-encoded special characters in form data
+	data = []byte(`POST /login HTTP/1.1
+Host: example.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 50
+
+username=user%40example.com&password=p%40ss%26123`)
+
+	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-8", time.Now())
+
+	if c == nil {
+		t.Fatal("expected credentials to be found for URL-encoded form")
+	}
+
+	// URL decoding should work
+	if c.User != "user@example.com" {
+		t.Fatalf("expected user 'user@example.com' (decoded), got: %s", c.User)
+	}
+
+	if c.Password != "p@ss&123" {
+		t.Fatalf("expected password 'p@ss&123' (decoded), got: %s", c.Password)
+	}
+
+	// Test case 9: Check URI is captured in notes
+	data = []byte(`POST /custom/auth/endpoint HTTP/1.1
+Host: mysite.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 30
+
+login=testuser&passwd=testpass`)
+
+	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-9", time.Now())
+
+	if c == nil {
+		t.Fatal("expected credentials to be found")
+	}
+
+	if !strings.Contains(c.Notes, "/custom/auth/endpoint") {
+		t.Fatalf("expected notes to contain URI, got: %s", c.Notes)
+	}
+
+	if !strings.Contains(c.Notes, "mysite.com") {
+		t.Fatalf("expected notes to contain host, got: %s", c.Notes)
+	}
+}
+
+// TestHTTPFormCredentialsEdgeCases tests edge cases for HTTP form credential extraction
+func TestHTTPFormCredentialsEdgeCases(t *testing.T) {
+	// Test case 1: Empty username should not match
+	data := []byte(`POST /login HTTP/1.1
+Host: example.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 25
+
+username=&password=secret`)
+
+	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
+	c := httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
+
+	if c != nil && c.Service == "HTTP Form Login" && c.User == "" {
+		t.Fatal("expected no form credentials for empty username")
+	}
+
+	// Test case 2: No recognized fields
+	data = []byte(`POST /api HTTP/1.1
+Host: example.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 30
+
+foo=bar&baz=qux&unrelated=data`)
+
+	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
+
+	if c != nil && c.Service == "HTTP Form Login" {
+		t.Fatal("expected no form credentials for unrecognized fields")
+	}
+
+	// Test case 3: Mixed case field names (case-insensitive matching would be nice)
+	data = []byte(`POST /login HTTP/1.1
+Host: example.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 35
+
+USERNAME=admin&PASSWORD=secret123`)
+
+	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
+
+	// Our implementation is case-insensitive (lowercase version check)
+	if c != nil && c.Service == "HTTP Form Login" {
+		t.Logf("Mixed case handling: user=%s, pass=%s", c.User, c.Password)
+	}
+
+	// Test case 4: Large form body (should be truncated)
+	largeData := fmt.Sprintf(`POST /upload HTTP/1.1
+Host: example.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 5000
+
+data=%s&username=hiddenuser&password=hiddenpass`, strings.Repeat("x", 2500))
+
+	finalData = strings.ReplaceAll(largeData, "\n", "\r\n")
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
+
+	// Form body is truncated to maxHTTPFormBodyLength (2000), so credentials
+	// at the end may not be found if they're beyond the limit
+	// This is intentional to prevent false positives on large uploads
+
+	// Test case 5: Multiple form submissions in same stream
+	data = []byte(`POST /login HTTP/1.1
+Host: example.com
+Content-Type: application/x-www-form-urlencoded
+
+user=first&pass=firstpass`)
+
+	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
+
+	if c == nil {
+		t.Fatal("expected credentials to be found")
+	}
+
+	if c.User != "first" {
+		t.Fatalf("expected user 'first', got: %s", c.User)
+	}
+}
+
 // TestHTTPSessionCookiesEdgeCases tests edge cases for session cookie extraction
 func TestHTTPSessionCookiesEdgeCases(t *testing.T) {
 	// Test case 1: Case-insensitive cookie names

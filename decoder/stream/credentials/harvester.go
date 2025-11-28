@@ -90,7 +90,17 @@ var (
 		"MongoDB Challenge Response": mongodbChallengeResponseHarvester,
 
 		// Network management
-		"SNMP": snmpHarvester,
+		"SNMP":   snmpHarvester,
+		"RADIUS": radiusHarvester,
+
+		// Proxy protocols
+		"SOCKS": socksHarvester,
+
+		// VoIP protocols
+		"SIP": sipHarvester,
+
+		// IoT protocols
+		"MQTT": mqttHarvester,
 
 		// Remote desktop
 		"VNC":        vncHarvester,

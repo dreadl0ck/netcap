@@ -101,6 +101,11 @@ func httpHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentia
 		}
 	}
 
+	// Extract credentials from HTTP POST form data
+	if formCreds := extractHTTPFormCredentials(data, ident, ts); formCreds != nil {
+		return formCreds
+	}
+
 	// Extract sensitive URL parameters (keys, tokens, etc.)
 	if urlParams := extractSensitiveURLParams(data, ident, ts); urlParams != nil {
 		return urlParams
@@ -198,6 +203,29 @@ func extractValue(part, key string) string {
 	value = strings.Trim(value, "\" ")
 	return value
 }
+
+// httpFormUsernameFields contains common username field names in web forms
+// Based on CredSLayer's HTTP_AUTH_POTENTIAL_USERNAMES list
+var httpFormUsernameFields = []string{
+	"log", "login", "wpname", "ahd_username", "unickname", "nickname", "user", "user_name",
+	"alias", "pseudo", "email", "username", "_username", "userid", "form_loginname",
+	"loginname", "login_id", "loginid", "session_key", "sessionkey", "pop_login",
+	"user_id", "screename", "uname", "ulogin", "acctname", "account", "member",
+	"mailaddress", "membername", "login_username", "login_email", "loginusername",
+	"loginemail", "sign-in", "j_username", "identity", "usr", "mail",
+}
+
+// httpFormPasswordFields contains common password field names in web forms
+// Based on CredSLayer's HTTP_AUTH_POTENTIAL_PASSWORDS list
+var httpFormPasswordFields = []string{
+	"ahd_password", "pass", "password", "_password", "passwd", "session_password",
+	"sessionpassword", "login_password", "loginpassword", "form_pw", "userpassword",
+	"upassword", "login_password", "passwort", "passwrd", "wppassword", "upasswd",
+	"j_password", "pwd", "secret", "credentials", "credential", "pw",
+}
+
+// maxHTTPFormBodyLength limits the POST body size to prevent false positives on large uploads
+const maxHTTPFormBodyLength = 2000
 
 // sensitiveParamNames contains common parameter names that may contain sensitive tokens or keys
 // This can be overridden by configuration
@@ -352,6 +380,178 @@ func extractHostFromHTTPRequest(data []byte) string {
 				return strings.TrimSpace(parts[1])
 			}
 		}
+	}
+	return ""
+}
+
+// getHTTPFormUsernameFields returns configured username field names or defaults
+func getHTTPFormUsernameFields() []string {
+	if harvesterConfig != nil {
+		for _, hConfig := range harvesterConfig.Harvesters {
+			if hConfig.Name == "HTTP" && hConfig.Parameters != nil {
+				if params, ok := hConfig.Parameters["form_username_fields"]; ok {
+					if paramSlice, ok := params.([]interface{}); ok {
+						result := make([]string, 0, len(paramSlice))
+						for _, p := range paramSlice {
+							if strParam, ok := p.(string); ok {
+								result = append(result, strParam)
+							}
+						}
+						if len(result) > 0 {
+							return result
+						}
+					}
+				}
+			}
+		}
+	}
+	return httpFormUsernameFields
+}
+
+// getHTTPFormPasswordFields returns configured password field names or defaults
+func getHTTPFormPasswordFields() []string {
+	if harvesterConfig != nil {
+		for _, hConfig := range harvesterConfig.Harvesters {
+			if hConfig.Name == "HTTP" && hConfig.Parameters != nil {
+				if params, ok := hConfig.Parameters["form_password_fields"]; ok {
+					if paramSlice, ok := params.([]interface{}); ok {
+						result := make([]string, 0, len(paramSlice))
+						for _, p := range paramSlice {
+							if strParam, ok := p.(string); ok {
+								result = append(result, strParam)
+							}
+						}
+						if len(result) > 0 {
+							return result
+						}
+					}
+				}
+			}
+		}
+	}
+	return httpFormPasswordFields
+}
+
+// extractHTTPFormCredentials extracts username/password from HTTP POST form data
+// This detects login forms submitted via application/x-www-form-urlencoded
+func extractHTTPFormCredentials(data []byte, ident string, ts time.Time) *types.Credentials {
+	// Check if this is a POST request
+	if !bytes.HasPrefix(data, []byte("POST ")) {
+		return nil
+	}
+
+	// Check for form content type
+	lowerData := bytes.ToLower(data)
+	if !bytes.Contains(lowerData, []byte("content-type: application/x-www-form-urlencoded")) &&
+		!bytes.Contains(lowerData, []byte("content-type:application/x-www-form-urlencoded")) {
+		return nil
+	}
+
+	// Find the body (after double CRLF)
+	bodyStart := bytes.Index(data, []byte("\r\n\r\n"))
+	if bodyStart == -1 {
+		return nil
+	}
+	bodyStart += 4
+
+	if bodyStart >= len(data) {
+		return nil
+	}
+
+	body := data[bodyStart:]
+
+	// Limit body size to prevent false positives on large uploads
+	if len(body) > maxHTTPFormBodyLength {
+		body = body[:maxHTTPFormBodyLength]
+	}
+
+	// Parse form data (URL-encoded: key=value&key2=value2)
+	formData, err := url.ParseQuery(string(body))
+	if err != nil {
+		return nil
+	}
+
+	var username, password string
+	var usernameField, passwordField string
+
+	// Look for username fields
+	usernameFields := getHTTPFormUsernameFields()
+	for _, field := range usernameFields {
+		// Check both exact match and case-insensitive
+		if values, exists := formData[field]; exists && len(values) > 0 && values[0] != "" {
+			username = values[0]
+			usernameField = field
+			break
+		}
+		// Try lowercase version
+		if values, exists := formData[strings.ToLower(field)]; exists && len(values) > 0 && values[0] != "" {
+			username = values[0]
+			usernameField = strings.ToLower(field)
+			break
+		}
+	}
+
+	// Look for password fields
+	passwordFields := getHTTPFormPasswordFields()
+	for _, field := range passwordFields {
+		if values, exists := formData[field]; exists && len(values) > 0 && values[0] != "" {
+			password = values[0]
+			passwordField = field
+			break
+		}
+		// Try lowercase version
+		if values, exists := formData[strings.ToLower(field)]; exists && len(values) > 0 && values[0] != "" {
+			password = values[0]
+			passwordField = strings.ToLower(field)
+			break
+		}
+	}
+
+	// Need at least a username to report
+	if username == "" {
+		return nil
+	}
+
+	// Extract additional context
+	host := extractHostFromHTTPRequest(data)
+	uri := extractURIFromHTTPRequest(data)
+
+	// Build notes with context
+	var notes []string
+	notes = append(notes, "Method: POST")
+	if host != "" {
+		notes = append(notes, fmt.Sprintf("Host: %s", host))
+	}
+	if uri != "" {
+		notes = append(notes, fmt.Sprintf("URI: %s", uri))
+	}
+	notes = append(notes, fmt.Sprintf("UsernameField: %s", usernameField))
+	if passwordField != "" {
+		notes = append(notes, fmt.Sprintf("PasswordField: %s", passwordField))
+	}
+
+	return &types.Credentials{
+		Timestamp: ts.UnixNano(),
+		Service:   "HTTP Form Login",
+		Flow:      ident,
+		User:      username,
+		Password:  password,
+		Notes:     strings.Join(notes, ", "),
+	}
+}
+
+// extractURIFromHTTPRequest extracts the request URI from an HTTP request
+func extractURIFromHTTPRequest(data []byte) string {
+	// Find the end of the first line
+	lineEnd := bytes.Index(data, []byte("\r\n"))
+	if lineEnd == -1 {
+		return ""
+	}
+
+	requestLine := string(data[:lineEnd])
+	parts := strings.Fields(requestLine)
+	if len(parts) >= 2 {
+		return parts[1]
 	}
 	return ""
 }
@@ -541,7 +741,7 @@ func extractSessionCookies(data []byte, ident string, ts time.Time) *types.Crede
 // httpHarvester is the harvester definition for HTTP
 var httpHarvester = Harvester{
 	Name:          "HTTP",
-	Description:   "HTTP Basic/Digest authentication - captures credentials from Authorization headers",
+	Description:   "HTTP authentication and form credentials - captures Basic/Digest auth, POST form logins, URL parameters, and session cookies",
 	HarvesterFunc: httpHarvesterFunc,
 }
 

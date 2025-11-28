@@ -97,7 +97,7 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 				Enabled:     true,
 				Ports:       []int{80, 8080, 3000, 9090, 8888},
 				Parameters: map[string]interface{}{
-					"sensitive_params":  []interface{}{"key", "token", "api_key", "apikey", "secret", "password", "pwd", "pass", "auth", "access_token", "refresh_token"},
+					"sensitive_params":  []interface{}{"key", "api_key", "apikey", "api-key", "token", "access_token", "accesstoken", "access-token", "auth_token", "authtoken", "auth-token", "bearer", "password", "passwd", "pass", "secret", "api_secret", "apisecret", "session", "sessionid", "session_id", "session-id", "auth", "authorization", "jwt", "bearer_token", "refresh_token"},
 					"sensitive_headers": []interface{}{"Authorization", "X-API-Key", "X-Auth-Token", "X-Access-Token"},
 					"session_cookie_names": []interface{}{
 						"PHPSESSID", "phpsessid", "JSESSIONID", "jsessionid",
@@ -107,6 +107,23 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 						"auth_token", "authtoken", "auth", "token", "access_token",
 					},
 					"min_cookie_length": 8,
+					"form_username_fields": []interface{}{
+						"log", "login", "wpname", "ahd_username", "unickname", "nickname",
+						"user", "user_name", "alias", "pseudo", "email", "username",
+						"_username", "userid", "form_loginname", "loginname", "login_id",
+						"loginid", "session_key", "sessionkey", "pop_login", "user_id",
+						"screename", "uname", "ulogin", "acctname", "account", "member",
+						"mailaddress", "membername", "login_username", "login_email",
+						"loginusername", "loginemail", "sign-in", "j_username", "identity",
+						"usr", "mail",
+					},
+					"form_password_fields": []interface{}{
+						"ahd_password", "pass", "password", "_password", "passwd",
+						"session_password", "sessionpassword", "login_password",
+						"loginpassword", "form_pw", "userpassword", "upassword",
+						"passwort", "passwrd", "wppassword", "upasswd", "j_password",
+						"pwd", "secret", "credentials", "credential", "pw",
+					},
 				},
 			},
 			{
@@ -286,6 +303,35 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 				Description: "Web Services Discovery for Windows devices",
 				Enabled:     true,
 				Ports:       []int{3702},
+				Parameters:  map[string]interface{}{},
+			},
+			// New protocol harvesters
+			{
+				Name:        "RADIUS",
+				Description: "Remote Authentication Dial-In User Service - network access authentication",
+				Enabled:     true,
+				Ports:       []int{1812, 1813},
+				Parameters:  map[string]interface{}{},
+			},
+			{
+				Name:        "SOCKS",
+				Description: "SOCKS proxy protocol authentication (SOCKS4/SOCKS5)",
+				Enabled:     true,
+				Ports:       []int{1080, 1081},
+				Parameters:  map[string]interface{}{},
+			},
+			{
+				Name:        "SIP",
+				Description: "Session Initiation Protocol - VoIP authentication (Digest/Basic)",
+				Enabled:     true,
+				Ports:       []int{5060, 5061},
+				Parameters:  map[string]interface{}{},
+			},
+			{
+				Name:        "MQTT",
+				Description: "Message Queuing Telemetry Transport - IoT messaging authentication",
+				Enabled:     true,
+				Ports:       []int{1883, 8883},
 				Parameters:  map[string]interface{}{},
 			},
 		},
