@@ -1,50 +1,51 @@
 {
   "name": "@dreadl0ck/netcap-ui",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Netcap UI components and pages as a reusable React library",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./components": {
       "types": "./dist/components/index.d.ts",
-      "import": "./dist/components/index.mjs",
-      "require": "./dist/components/index.js"
+      "import": "./dist/components/index.js",
+      "require": "./dist/components/index.cjs"
     },
     "./pages": {
       "types": "./dist/pages/index.d.ts",
-      "import": "./dist/pages/index.mjs",
-      "require": "./dist/pages/index.js"
+      "import": "./dist/pages/index.js",
+      "require": "./dist/pages/index.cjs"
     },
     "./providers": {
       "types": "./dist/providers/index.d.ts",
-      "import": "./dist/providers/index.mjs",
-      "require": "./dist/providers/index.js"
+      "import": "./dist/providers/index.js",
+      "require": "./dist/providers/index.cjs"
     },
     "./hooks": {
       "types": "./dist/hooks/index.d.ts",
-      "import": "./dist/hooks/index.mjs",
-      "require": "./dist/hooks/index.js"
+      "import": "./dist/hooks/index.js",
+      "require": "./dist/hooks/index.cjs"
     },
     "./adapters/nextjs": {
       "types": "./dist/adapters/nextjs.d.ts",
-      "import": "./dist/adapters/nextjs.mjs",
-      "require": "./dist/adapters/nextjs.js"
+      "import": "./dist/adapters/nextjs.js",
+      "require": "./dist/adapters/nextjs.cjs"
     },
     "./lib": {
       "types": "./dist/lib/index.d.ts",
-      "import": "./dist/lib/index.mjs",
-      "require": "./dist/lib/index.js"
+      "import": "./dist/lib/index.js",
+      "require": "./dist/lib/index.cjs"
     },
     "./contexts": {
       "types": "./dist/contexts/index.d.ts",
-      "import": "./dist/contexts/index.mjs",
-      "require": "./dist/contexts/index.js"
+      "import": "./dist/contexts/index.js",
+      "require": "./dist/contexts/index.cjs"
     }
   },
   "publishConfig": {

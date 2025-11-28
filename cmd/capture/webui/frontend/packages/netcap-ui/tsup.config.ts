@@ -35,6 +35,30 @@ const utilityEntries = {
   'lib/index': 'src/lib/index.ts',
 };
 
+// Shared external dependencies - these should never be bundled
+// Using regex patterns to catch all subpaths (e.g., next/router, next/link, etc.)
+const sharedExternals = [
+  // React ecosystem - must be external to prevent context duplication
+  'react',
+  'react-dom',
+  /^react\//,
+  /^react-dom\//,
+  // MUI
+  '@mui/material',
+  '@mui/icons-material',
+  /^@mui\//,
+  // Emotion
+  '@emotion/react',
+  '@emotion/styled',
+  /^@emotion\//,
+  // SWR
+  'swr',
+  /^swr\//,
+  // Next.js - all subpaths
+  'next',
+  /^next\//,
+];
+
 export default defineConfig([
   // Client components build - with "use client" directive
   {
@@ -44,19 +68,7 @@ export default defineConfig([
     splitting: false,
     sourcemap: true,
     clean: true,
-    external: [
-      'react',
-      'react-dom',
-      '@mui/material',
-      '@mui/icons-material',
-      '@emotion/react',
-      '@emotion/styled',
-      'swr',
-      'next',
-      'next/router',
-      'next/link',
-      'next/head',
-    ],
+    external: sharedExternals,
     esbuildOptions(options) {
       options.banner = {
         js: '"use client";',
@@ -70,10 +82,7 @@ export default defineConfig([
     dts: true,
     splitting: false,
     sourcemap: true,
-    external: [
-      'react',
-      'react-dom',
-    ],
+    external: sharedExternals,
   },
 ]);
 

@@ -40,10 +40,11 @@
  */
 
 import React, { ReactNode, useMemo } from 'react';
-import { useRouter } from 'next/router';
-import NextLink from 'next/link';
-import { NetcapProvider, NetcapConfig, LinkProps } from '../providers/NetcapProvider';
-import { LearnModeProvider } from '../contexts/LearnModeContext';
+// Use .js extensions for ESM compatibility
+import { useRouter } from 'next/router.js';
+import NextLink from 'next/link.js';
+import { NetcapProvider, NetcapConfig, LinkProps } from '../providers/NetcapProvider.js';
+import { LearnModeProvider } from '../contexts/LearnModeContext.js';
 
 export interface NextjsNetcapProviderProps {
   children: ReactNode;
