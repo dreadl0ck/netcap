@@ -40,12 +40,151 @@ export function getBackendUrl(): string {
 const DEFAULT_API_BASE = `${getBackendUrl()}/api`;
 
 /**
+ * Check if we're running on the server (SSR)
+ */
+const isSSR = typeof window === 'undefined';
+
+/**
  * Create an API client with a specific backend URL.
  * This factory function allows creating API clients that respect the configured backendUrl.
+ * 
+ * During SSR (static site generation), returns a no-op API that returns empty/default values.
+ * This prevents errors during Next.js static export while the real API loads on the client.
  */
 export function createApi(backendUrl: string) {
+  // During SSR or with empty backendUrl, return no-op API to prevent errors
+  if (isSSR || !backendUrl) {
+    return createNoOpApi();
+  }
   const apiBase = `${backendUrl}/api`;
   return createApiWithBase(apiBase);
+}
+
+/**
+ * Creates a no-op API client for SSR.
+ * All methods return empty/default values to prevent errors during static generation.
+ */
+function createNoOpApi(): NetcapApiClient {
+  const noOp = () => Promise.reject(new Error('API not available during SSR'));
+  const noOpReturn = <T>(value: T) => () => Promise.resolve(value);
+  
+  return {
+    getStatus: noOpReturn({ isProcessing: false, outputDir: '', inputFiles: [], serverStarted: '', activeInputFile: '', isMultiFile: false, isLiveMode: false }),
+    getStats: noOpReturn({ processingStats: {} as ProcessingStats, fileErrors: {} }),
+    getAuditStats: noOpReturn({ totalRecords: 0, exploitCount: 0, vulnerabilityCount: 0, credentialsCount: 0, softwareCount: 0 }),
+    getInputFiles: noOpReturn([]),
+    getAuditFiles: noOpReturn([]),
+    getLogFiles: noOpReturn([]),
+    getAuditMetadata: noOpReturn({ type: '', version: '', inputSource: '', created: 0, recordCount: 0 }),
+    getLogContent: noOpReturn(''),
+    getErrorLogContent: noOpReturn(''),
+    setActiveDirectory: noOpReturn({ success: false, outputDir: '', activeInputFile: '' }),
+    uploadFile: noOp as any,
+    getQuota: noOpReturn({ limit: 0, remaining: 0, allowed: false, storage: { current: 0, max: 0, available: 0, percentUsed: 0, unlimited: false } }),
+    getSessionStatus: noOpReturn({ sessionId: '', status: '', inputFilename: '' }),
+    getProgress: noOpReturn({ sessionId: '', status: '', progressPercent: 0, message: '' }),
+    getAllSessions: noOpReturn([]),
+    selectSession: noOpReturn(undefined),
+    getDatabaseInfo: noOpReturn({ version: '', dbPath: '', configRootPath: '', files: [], totalSize: 0, fileCount: 0 }),
+    updateDatabases: noOpReturn({ success: false, message: '' }),
+    getVersion: noOpReturn({ version: '', commit: '', gopacketVersion: '' }),
+    getDPIInfo: noOpReturn({ enabled: false, hasSupport: false, ndpiVersion: '', libprotoidentVersion: '', goDpiVersion: '', activeModules: [], availableModules: [], moduleProtocols: {}, ndpiProtocolsUrl: '', libprotoidentProtocolsUrl: '' }),
+    getDPIPreferences: noOpReturn({ enabledModules: [], lastUpdated: '' }),
+    setDPIPreferences: noOpReturn({ success: false, message: '' }),
+    getConfig: noOpReturn({ readOnly: true, options: [] }),
+    getDebugState: noOpReturn({ enabled: false }),
+    setDebugState: noOpReturn({ enabled: false, message: '' }),
+    getPayloadState: noOpReturn({ enabled: false }),
+    setPayloadState: noOpReturn({ enabled: false, message: '' }),
+    getDecoders: noOpReturn({ packet: [], gopacket: [], stream: [], abstract: [] }),
+    getHarvesters: noOpReturn({ harvesters: [] }),
+    getHarvestersConfig: noOpReturn({ harvesters: [] }),
+    saveHarvestersConfig: noOpReturn({ success: false, message: '' }),
+    getHarvesterPresets: noOpReturn({ presets: [] }),
+    saveHarvesterPreset: noOpReturn({ success: false, message: '' }),
+    loadHarvesterPreset: noOpReturn({ success: false, message: '', config: { harvesters: [] } }),
+    deleteHarvesterPreset: noOpReturn({ success: false, message: '' }),
+    uploadHarvesterPreset: noOpReturn({ success: false, message: '', name: '' }),
+    downloadHarvesterPreset: noOp as any,
+    getServiceProbes: noOpReturn({ probes: [], totalCount: 0 }),
+    getServiceProbe: noOp as any,
+    updateServiceProbe: noOpReturn({ success: false, message: '' }),
+    testServiceProbe: noOpReturn({ matches: false, capturedGroups: {} }),
+    exportServiceProbes: () => '',
+    importServiceProbes: noOpReturn({ success: false, message: '', importedCount: 0 }),
+    getDecoderConfig: noOpReturn({ includeDecoders: '', excludeDecoders: '', enabledDecoders: [] }),
+    saveDecoderConfig: noOpReturn({ success: false, message: '' }),
+    listDecoderConfigs: noOpReturn([]),
+    loadDecoderConfig: noOpReturn({ success: false, message: '', config: { includeDecoders: '', excludeDecoders: '', enabledDecoders: [] } }),
+    uploadDecoderConfig: noOpReturn({ success: false, message: '', name: '', applied: false }),
+    deleteDecoderConfig: noOpReturn({ success: false, message: '' }),
+    saveDecoderConfigAs: noOpReturn({ success: false, message: '', name: '' }),
+    getDecoderFields: noOpReturn({ decoderName: '', fields: [] }),
+    getAllDecoderFields: noOpReturn({}),
+    getSystemInfo: noOpReturn({ numCPU: 0, numGoroutine: 0, totalMemory: 0, freeMemory: 0, usedMemory: 0, goos: '', goarch: '' }),
+    getBPFInfo: noOpReturn({ currentFilter: '', examples: [], docsUrl: '' }),
+    saveBPFConfig: noOpReturn({ success: false, message: '' }),
+    streamAuditRecords: () => new EventSource('about:blank'),
+    getNetworkInterfaces: noOpReturn([]),
+    stopCapture: noOpReturn({ success: false, message: '' }),
+    getChartData: noOpReturn({ type: '', field: '', interval: '', data: [], count: 0, minValue: 0, maxValue: 0, avgValue: 0 }),
+    getChartFields: noOpReturn({ type: '', fields: [], totalFields: 0, filteredCount: 0 }),
+    getProtocolHierarchy: noOpReturn({ links: [], nodes: [], stats: {} }),
+    reportIssue: noOpReturn({ success: false, issueId: '', message: '', remaining: 0 }),
+    getRules: noOpReturn({ rules: [] }),
+    getRule: noOp as any,
+    createRule: noOp as any,
+    updateRule: noOpReturn({ success: false, message: '' }),
+    deleteRule: noOpReturn({ success: false, message: '' }),
+    executeRule: noOpReturn({ success: false, message: '', alertsCount: 0, recordsRead: 0, executionTimeMs: 0 }),
+    executeAllRules: noOpReturn({ success: false, message: '', totalAlerts: 0, totalRecords: 0, executionTimeMs: 0, ruleResults: [] }),
+    getRuleSets: noOpReturn({ ruleSets: [] }),
+    updateRuleSet: noOpReturn({ success: false, message: '', rulesAffected: 0 }),
+    getInjectionRules: noOpReturn({ rules: [], description: '' }),
+    getInjectionRule: noOp as any,
+    createInjectionRule: noOp as any,
+    updateInjectionRule: noOpReturn({ success: false, message: '' }),
+    toggleInjectionRule: noOpReturn({ success: false, message: '', enabled: false }),
+    deleteInjectionRule: noOpReturn({ success: false, message: '' }),
+    getInjectionEvents: noOpReturn({ events: [], totalCount: 0 }),
+    clearInjectionEvents: noOpReturn({ success: false, message: '' }),
+    getInjectionStats: noOpReturn({ totalRules: 0, enabledRules: 0, totalEvents: 0, eventsByRule: {}, eventsByResult: {}, eventsByAction: {} }),
+    getInjectionActions: noOpReturn({ actions: [] }),
+    getAlerts: noOpReturn({ alerts: [], totalCount: 0 }),
+    getGroupedAlerts: noOpReturn({ groups: [], totalCount: 0, groupCount: 0 }),
+    getAlertStats: noOpReturn({ totalAlerts: 0, groupCount: 0, bySeverity: {}, byRule: {}, recentAlerts: [], criticalAlerts: 0, lastUpdate: 0 }),
+    clearAlerts: noOpReturn({ success: false, message: '' }),
+    resolveAlert: noOpReturn({ success: false, message: '', resolvedAt: 0 }),
+    unresolveAlert: noOpReturn({ success: false, message: '' }),
+    getExtractedFiles: noOpReturn({ files: [], totalCount: 0, filesDir: '' }),
+    downloadExtractedFile: () => '',
+    downloadAllExtractedFiles: () => '',
+    downloadInputFile: () => '',
+    getAuditRecordFields: noOpReturn({ recordType: '', fields: [], helpers: [] }),
+    getAuditRecordFieldValues: noOpReturn({ recordType: '', fieldValues: {}, sampleSize: 0, maxPerField: 0, recordsScanned: 0 }),
+    getErrorLogs: noOpReturn([]),
+    getAggregatedErrors: noOpReturn([]),
+    getConnectionConversation: noOpReturn({ srcIP: '', srcPort: '', dstIP: '', dstPort: '', protocol: '', conversationData: '', exists: false, filePath: '', totalSize: 0, chunkSize: 0, offset: 0, hasMore: false }),
+    getNetworkConversation: noOpReturn({ srcIP: '', srcPort: '', dstIP: '', dstPort: '', protocol: '', conversationData: '', exists: false, filePath: '', totalSize: 0, chunkSize: 0, offset: 0, hasMore: false }),
+    getHostsCount: noOpReturn(0),
+    getDevicesCount: noOpReturn(0),
+    getConnectionsCount: noOpReturn(0),
+    getCertificatesCount: noOpReturn(0),
+    getHTTPCount: noOpReturn(0),
+    getCredentialsCount: noOpReturn(0),
+    getDomainsCount: noOpReturn(0),
+    getFingerprintsCount: noOpReturn(0),
+    getSoftwareCount: noOpReturn(0),
+    getVulnerabilitiesCount: noOpReturn(0),
+    getAuditRecordsCount: noOpReturn(0),
+    getServicesCount: noOpReturn(0),
+    getLogsCount: noOpReturn(0),
+    reanalyzeFile: noOpReturn({ success: false, message: '' }),
+    formatBytes,
+    formatTimestamp,
+    formatDuration,
+    getBackendUrl,
+  } as NetcapApiClient;
 }
 
 export interface ProcessingStats {

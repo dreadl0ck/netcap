@@ -19,6 +19,11 @@
 
 import { createContext, useContext, useState, useMemo, ReactNode } from 'react';
 
+/**
+ * Check if we're running on the server (SSR)
+ */
+const isSSR = typeof window === 'undefined';
+
 interface LearnModeContextType {
   isLearnModeActive: boolean;
   toggleLearnMode: () => void;
@@ -29,6 +34,20 @@ interface LearnModeContextType {
   lastInteractedElement: HTMLElement | null;
   setLastInteractedElement: (element: HTMLElement | null) => void;
 }
+
+/**
+ * SSR fallback value for learn mode context
+ */
+const ssrFallbackValue: LearnModeContextType = {
+  isLearnModeActive: false,
+  toggleLearnMode: () => {},
+  currentHint: null,
+  setCurrentHint: () => {},
+  currentElementTitle: null,
+  setCurrentElementTitle: () => {},
+  lastInteractedElement: null,
+  setLastInteractedElement: () => {},
+};
 
 const LearnModeContext = createContext<LearnModeContextType | undefined>(undefined);
 
@@ -75,7 +94,12 @@ export function LearnModeProvider({ children }: { children: ReactNode }) {
 
 export function useLearnMode() {
   const context = useContext(LearnModeContext);
+  
+  // During SSR, return fallback to prevent errors during static generation
   if (context === undefined) {
+    if (isSSR) {
+      return ssrFallbackValue;
+    }
     throw new Error('useLearnMode must be used within a LearnModeProvider');
   }
   return context;

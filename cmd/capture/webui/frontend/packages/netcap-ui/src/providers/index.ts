@@ -24,6 +24,7 @@ export {
   useApiBaseUrl,
   useNetcapLink,
   useNetcapDebug,
+  useIsSSR,
 } from './NetcapProvider';
 
 export type {

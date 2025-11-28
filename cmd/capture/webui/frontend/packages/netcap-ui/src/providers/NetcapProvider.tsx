@@ -20,6 +20,11 @@
 import React, { createContext, useContext, ReactNode, useMemo } from 'react';
 
 /**
+ * Check if we're running on the server (SSR)
+ */
+const isSSR = typeof window === 'undefined';
+
+/**
  * Router adapter interface - abstracts routing functionality
  * Can be implemented by Next.js, React Router, or any other router
  */
@@ -90,7 +95,40 @@ export interface NetcapConfig {
 interface NetcapContextValue extends NetcapConfig {
   /** Full API base URL */
   apiBaseUrl: string;
+  /** Whether we're in SSR mode (no real provider available) */
+  isSSR: boolean;
 }
+
+/**
+ * Fallback router for SSR - does nothing but prevents errors during prerendering
+ */
+const ssrFallbackRouter: RouterAdapter = {
+  pathname: '/',
+  query: {},
+  isReady: false,
+  push: () => Promise.resolve(true),
+  replace: () => Promise.resolve(true),
+};
+
+/**
+ * Fallback Link component for SSR
+ */
+const SSRFallbackLink: LinkComponent = ({ href, children, ...props }) => (
+  <a href={href} {...props}>{children}</a>
+);
+
+/**
+ * SSR fallback context value - used during static site generation
+ * This prevents "useNetcapConfig must be used within a NetcapProvider" errors during SSG
+ */
+const ssrFallbackValue: NetcapContextValue = {
+  backendUrl: '',
+  apiBaseUrl: '/api',
+  router: ssrFallbackRouter,
+  Link: SSRFallbackLink,
+  debug: false,
+  isSSR: true,
+};
 
 const NetcapContext = createContext<NetcapContextValue | null>(null);
 
@@ -162,6 +200,7 @@ export function NetcapProvider({ children, config }: NetcapProviderProps) {
   const value = useMemo<NetcapContextValue>(() => ({
     ...config,
     apiBaseUrl: `${config.backendUrl}/api`,
+    isSSR: false,
   }), [config]);
 
   return (
@@ -174,11 +213,18 @@ export function NetcapProvider({ children, config }: NetcapProviderProps) {
 /**
  * Hook to access the full Netcap configuration
  * 
- * @throws Error if used outside of NetcapProvider
+ * During SSR (static site generation), returns a fallback value to prevent errors.
+ * The app will hydrate properly on the client with real values.
  */
 export function useNetcapConfig(): NetcapContextValue {
   const config = useContext(NetcapContext);
+  
+  // During SSR, return fallback to prevent errors during static generation
+  // The app is always embedded, so SSR output is just a placeholder
   if (!config) {
+    if (isSSR) {
+      return ssrFallbackValue;
+    }
     throw new Error(
       'useNetcapConfig must be used within a NetcapProvider. ' +
       'Wrap your app with <NetcapProvider config={...}>.'
@@ -217,6 +263,25 @@ export function useNetcapLink(): LinkComponent {
 export function useNetcapDebug(): boolean {
   const { debug } = useNetcapConfig();
   return debug ?? false;
+}
+
+/**
+ * Hook to check if we're running in SSR mode
+ * Components can use this to conditionally skip data fetching during SSR
+ * 
+ * @example
+ * ```tsx
+ * function MyComponent() {
+ *   const isSSR = useIsSSR();
+ *   const api = useNetcapApi();
+ *   // Skip fetching during SSR by passing null as key
+ *   const { data } = useSWR(isSSR ? null : 'status', () => api.getStatus());
+ * }
+ * ```
+ */
+export function useIsSSR(): boolean {
+  const config = useNetcapConfig();
+  return config.isSSR;
 }
 
 export default NetcapProvider;
