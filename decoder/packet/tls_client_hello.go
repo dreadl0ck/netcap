@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package packet
@@ -114,7 +120,7 @@ func isSuspiciousCipherOrder(cipherSuites []tlsx.CipherSuite) bool {
 	// Check if weak/old ciphers appear before strong modern ciphers
 	// TLS_AES_128_GCM_SHA256 (0x1301) and TLS_AES_256_GCM_SHA384 (0x1302) are TLS 1.3 ciphers
 	// TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 (0xc02f) is a strong TLS 1.2 cipher
-	
+
 	strongCiphers := map[uint16]bool{
 		0x1301: true, // TLS_AES_128_GCM_SHA256
 		0x1302: true, // TLS_AES_256_GCM_SHA384
@@ -291,13 +297,13 @@ var tlsClientHelloDecoder = newPacketDecoder(
 				DstPort:          int32(dstPort),
 				Extensions:       extensions,
 				// Threat intelligence fields
-				Ja3Descriptions:        ja3Descriptions,
-				IsKnownMalware:         isKnownMalware,
-				ThreatCategory:         threatCategory,
-				HasGreaseExtensions:    hasGrease,
-				Ja3Normalized:          ja3Normalized,
+				Ja3Descriptions:         ja3Descriptions,
+				IsKnownMalware:          isKnownMalware,
+				ThreatCategory:          threatCategory,
+				HasGreaseExtensions:     hasGrease,
+				Ja3Normalized:           ja3Normalized,
 				IsSuspiciousCipherOrder: suspiciousCipherOrder,
-				ExtensionCount:         int32(len(hello.AllExtensions)),
+				ExtensionCount:          int32(len(hello.AllExtensions)),
 			}
 		}
 

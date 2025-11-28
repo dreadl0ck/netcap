@@ -1,3 +1,22 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 import { useState, useEffect } from 'react';
 import {
   Box,
@@ -31,6 +50,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import SearchIcon from '@mui/icons-material/Search';
 import Layout from '../components/Layout';
 import { useNetcapApi } from '../hooks';
+import { parseSearchQuery, matchesSingleValue } from '../lib/tableSearch';
 import useSWR from 'swr';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -466,10 +486,10 @@ export default function DPIPage() {
                           <Box>
                             <Box sx={{ mb: 2 }}>
                               <TextField
-                                data-learn="Search Protocols: Filter the list of supported protocols by name to quickly find specific protocols."
+                                data-learn="Search Protocols: Filter the list of supported protocols by name. Use !term to exclude protocols."
                                 fullWidth
                                 size="small"
-                                placeholder={`Search protocols...`}
+                                placeholder={`Search protocols... (use !term to exclude)`}
                                 value={searchQueries[module] || ''}
                                 onChange={(e) => setSearchQueries({ ...searchQueries, [module]: e.target.value })}
                                 InputProps={{
@@ -482,9 +502,10 @@ export default function DPIPage() {
                               />
                             </Box>
                             {(() => {
-                              const searchQuery = (searchQueries[module] || '').toLowerCase();
+                              const searchQuery = searchQueries[module] || '';
+                              const searchTerms = parseSearchQuery(searchQuery);
                               const filteredProtocols = protocols.filter(protocol => 
-                                protocol.toLowerCase().includes(searchQuery)
+                                matchesSingleValue(protocol, searchTerms)
                               );
                               
                               return (

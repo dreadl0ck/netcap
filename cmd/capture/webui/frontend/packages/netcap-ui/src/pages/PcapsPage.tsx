@@ -1,3 +1,22 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 import { useState, useEffect } from 'react';
 import {
   Box,
@@ -31,6 +50,7 @@ import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, Hourglass
 import { useNetcapRouter, useNetcapApi } from '../hooks';
 import Layout from '../components/Layout';
 import { formatBytes, formatTimestamp, formatDuration } from '../lib/api';
+import { parseSearchQuery, matchesSingleValue } from '../lib/tableSearch';
 import useSWR from 'swr';
 import ReportIssueDialog from '../components/ReportIssueDialog';
 
@@ -335,10 +355,12 @@ export default function PCAPs() {
     setPage(0); // Reset to first page when sorting changes
   };
 
-  // Filter files by search query
-  const filteredFiles = files ? files.filter(file => 
-    file.name.toLowerCase().includes(searchQuery.toLowerCase())
-  ) : [];
+  // Filter files by search query with negation support (e.g., "!test" excludes test files)
+  const filteredFiles = files ? files.filter(file => {
+    if (!searchQuery) return true;
+    const searchTerms = parseSearchQuery(searchQuery);
+    return matchesSingleValue(file.name, searchTerms);
+  }) : [];
 
   // Sort files: completed files first, then by selected sort field
   const sortedFiles = filteredFiles ? [...filteredFiles].sort((a, b) => {

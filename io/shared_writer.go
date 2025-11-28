@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io
@@ -30,9 +36,9 @@ type writerRegistry struct {
 }
 
 type sharedWriterEntry struct {
-	writer      AuditRecordWriter
-	refCount    int
-	totalRecords int64
+	writer        AuditRecordWriter
+	refCount      int
+	totalRecords  int64
 	headerWritten bool
 }
 
@@ -43,7 +49,7 @@ var globalWriterRegistry = &writerRegistry{
 // sharedWriter wraps an AuditRecordWriter to support shared access from multiple callers.
 // Each caller gets their own sharedWriter instance, but they all share the same underlying writer.
 type sharedWriter struct {
-	key         string  // registry key (file path)
+	key          string // registry key (file path)
 	localRecords int64  // records written by this instance
 }
 
@@ -171,9 +177,8 @@ func ResetWriterRegistry() {
 func GetSharedAuditRecordWriter(wc *WriterConfig) AuditRecordWriter {
 	// Generate a unique key for this writer based on output path and name
 	key := wc.Out + "/" + wc.Name
-	
+
 	return globalWriterRegistry.getOrCreateWriter(key, func() AuditRecordWriter {
 		return NewAuditRecordWriter(wc)
 	})
 }
-

@@ -1,3 +1,22 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Alert,
@@ -55,6 +74,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import Layout from '../components/Layout';
 import { InjectionRule, InjectionEvent, InjectionAction, CreateInjectionRuleRequest, UpdateInjectionRuleRequest, formatTimestamp } from '../lib/api';
+import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import { useNetcapApi } from '../hooks';
 import useSWR, { mutate } from 'swr';
 import { SyntaxHighlightedTextArea } from '../components/SyntaxHighlightedInput';
@@ -177,17 +197,19 @@ export default function InjectPage() {
     return Array.from(new Set(rules.flatMap((rule) => rule.tags))).sort();
   }, [rules]);
 
-  // Filter rules by search query and selected tags
+  // Filter rules by search query and selected tags (supports negation with !term)
   const filteredRules = useMemo(() => {
     return rules.filter((rule) => {
-      // Filter by search query
+      // Filter by search query with negation support
       if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch =
-          rule.name.toLowerCase().includes(query) ||
-          rule.description.toLowerCase().includes(query) ||
-          rule.expression.toLowerCase().includes(query) ||
-          rule.action.toLowerCase().includes(query);
+        const searchTerms = parseSearchQuery(searchQuery);
+        const matchesSearch = matchesSearchTerms([
+          rule.name,
+          rule.description,
+          rule.expression,
+          rule.action,
+          ...(rule.tags || []),
+        ], searchTerms);
         if (!matchesSearch) return false;
       }
 

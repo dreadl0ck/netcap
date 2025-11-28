@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package webui
@@ -18,8 +24,8 @@ import "strings"
 // Protocol categories by layer
 var (
 	linkLayerProtocols = []string{
-		"ARP", "CiscoDiscovery", "CiscoDiscoveryInfo", "Dot11", "Dot11QOS", 
-		"Dot11HTControl", "Dot11HTControlVHT", "Dot11HTControlHT", 
+		"ARP", "CiscoDiscovery", "CiscoDiscoveryInfo", "Dot11", "Dot11QOS",
+		"Dot11HTControl", "Dot11HTControlVHT", "Dot11HTControlHT",
 		"Dot11HTControlMFB", "Dot11LinkAdapationControl", "Dot11ASEL",
 		"Dot1Q", "EAP", "EAPOL", "EAPOLKey", "Ethernet",
 		"EthernetCTP", "EthernetCTPReply", "FDDI", "LLC",
@@ -30,11 +36,11 @@ var (
 	}
 
 	networkLayerProtocols = []string{
-		"BFD", "GRE", "ICMPv4", "ICMPv6", "ICMPv6Echo", 
+		"BFD", "GRE", "ICMPv4", "ICMPv6", "ICMPv6Echo",
 		"ICMPv6NeighborAdvertisement", "ICMPv6NeighborSolicitation",
 		"ICMPv6RouterAdvertisement", "ICMPv6RouterSolicitation", "ICMPv6Option",
 		"IGMP", "IGMPv3GroupRecord", "IPSecAH", "IPSecESP",
-		"IPv4", "IPv4Option", "IPv6", "IPv6Fragment", "IPv6HopByHop", 
+		"IPv4", "IPv4Option", "IPv6", "IPv6Fragment", "IPv6HopByHop",
 		"IPv6HopByHopOption", "IPv6HopByHopOptionAlignment",
 		"MLDv2MulticastListenerQuery", "MLDv2MulticastListenerReport",
 		"MPLS", "OSPFv2", "OSPFv3", "VRRPv2",
@@ -58,8 +64,8 @@ var (
 	}
 
 	abstractDecoders = []string{
-		"Alert", "Connection", "Credentials", "DeviceProfile", 
-		"Exploit", "File", "IPProfile", "Mail", "Service", 
+		"Alert", "Connection", "Credentials", "DeviceProfile",
+		"Exploit", "File", "IPProfile", "Mail", "Service",
 		"Software", "Vulnerability",
 	}
 )

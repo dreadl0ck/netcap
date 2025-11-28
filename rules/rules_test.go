@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package rules
@@ -98,12 +104,12 @@ func TestCompileRules(t *testing.T) {
 
 func TestEvaluateRule(t *testing.T) {
 	rule := &Rule{
-		Name:       "HTTPS_Traffic",
+		Name:        "HTTPS_Traffic",
 		Description: "Detect HTTPS traffic",
-		Type:       "TCP",
-		Expression: "DstPort == 443",
-		Severity:   "low",
-		Enabled:    true,
+		Type:        "TCP",
+		Expression:  "DstPort == 443",
+		Severity:    "low",
+		Enabled:     true,
 	}
 
 	// Compile the rule first
@@ -285,7 +291,7 @@ func TestExampleRulesCompilation(t *testing.T) {
 		t.Run(ruleFile, func(t *testing.T) {
 			// Construct path to example rules
 			rulesPath := filepath.Join("examples", ruleFile)
-			
+
 			// Check if file exists
 			if _, err := os.Stat(rulesPath); os.IsNotExist(err) {
 				t.Skipf("Rule file does not exist: %s", rulesPath)
@@ -321,9 +327,9 @@ func TestExampleRulesCompilation(t *testing.T) {
 // TestMITREAttackRules tests specific MITRE ATT&CK rules functionality
 func TestMITREAttackRules(t *testing.T) {
 	tests := []struct {
-		name       string
-		ruleConfig string
-		record     types.AuditRecord
+		name        string
+		ruleConfig  string
+		record      types.AuditRecord
 		shouldMatch bool
 	}{
 		{
@@ -476,7 +482,7 @@ func TestMITREAttackRules(t *testing.T) {
 			record: &types.TCP{
 				Timestamp: 1234567890,
 				SrcPort:   50000,
-				DstPort:   80,  // Wrong port
+				DstPort:   80, // Wrong port
 				SrcIP:     "192.168.1.100",
 				DstIP:     "192.168.1.50",
 			},
@@ -489,7 +495,7 @@ func TestMITREAttackRules(t *testing.T) {
 			// Create temporary rules file
 			tmpDir := t.TempDir()
 			rulesFile := filepath.Join(tmpDir, "test_rules.yml")
-			
+
 			err := os.WriteFile(rulesFile, []byte(tt.ruleConfig), 0644)
 			if err != nil {
 				t.Fatal(err)
@@ -549,7 +555,7 @@ func TestRuleSeverityValidation(t *testing.T) {
 	for _, ruleFile := range exampleRules {
 		t.Run(ruleFile, func(t *testing.T) {
 			rulesPath := filepath.Join("examples", ruleFile)
-			
+
 			if _, err := os.Stat(rulesPath); os.IsNotExist(err) {
 				t.Skipf("Rule file does not exist: %s", rulesPath)
 				return
@@ -572,7 +578,7 @@ func TestRuleSeverityValidation(t *testing.T) {
 // TestRuleMITREFields tests that MITRE ATT&CK rules have proper MITRE technique IDs
 func TestRuleMITREFields(t *testing.T) {
 	rulesPath := filepath.Join("examples", "mitre_attack_tactics.yml")
-	
+
 	if _, err := os.Stat(rulesPath); os.IsNotExist(err) {
 		t.Skip("mitre_attack_tactics.yml does not exist")
 		return
@@ -600,9 +606,9 @@ func TestRuleMITREFields(t *testing.T) {
 // TestZeekInspiredRules tests specific Zeek-inspired detection rules
 func TestZeekInspiredRules(t *testing.T) {
 	tests := []struct {
-		name       string
-		ruleConfig string
-		record     types.AuditRecord
+		name        string
+		ruleConfig  string
+		record      types.AuditRecord
 		shouldMatch bool
 	}{
 		{
@@ -739,7 +745,7 @@ func TestZeekInspiredRules(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			rulesFile := filepath.Join(tmpDir, "test_rules.yml")
-			
+
 			err := os.WriteFile(rulesFile, []byte(tt.ruleConfig), 0644)
 			if err != nil {
 				t.Fatal(err)
@@ -790,7 +796,7 @@ func TestRuleNameUniqueness(t *testing.T) {
 	for _, ruleFile := range exampleRules {
 		t.Run(ruleFile, func(t *testing.T) {
 			rulesPath := filepath.Join("examples", ruleFile)
-			
+
 			if _, err := os.Stat(rulesPath); os.IsNotExist(err) {
 				t.Skipf("Rule file does not exist: %s", rulesPath)
 				return
@@ -891,10 +897,10 @@ func TestThresholdAlerts(t *testing.T) {
 	// After threshold is reached and alert is triggered, counter should reset
 	// Reset mock writer to test fresh threshold cycle
 	mockWriter.alerts = nil
-	
+
 	// Change source IP to avoid deduplication of the actual alert
 	tcp.SrcIP = "192.168.1.101"
-	
+
 	// Test that next 4 matches don't trigger (need 5 total again)
 	for i := 0; i < 4; i++ {
 		tcp.SrcPort = int32(12346 + i) // Vary source port for uniqueness
@@ -1083,7 +1089,7 @@ func TestSQLInjectionRule(t *testing.T) {
 			// Create temporary rules file
 			tmpDir := t.TempDir()
 			rulesFile := filepath.Join(tmpDir, "sql_injection_test.yml")
-			
+
 			err := os.WriteFile(rulesFile, []byte(ruleConfig), 0644)
 			if err != nil {
 				t.Fatal(err)
@@ -1160,7 +1166,7 @@ func TestSQLInjectionRuleCompilation(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	rulesFile := filepath.Join(tmpDir, "sql_injection_compile_test.yml")
-	
+
 	err := os.WriteFile(rulesFile, []byte(ruleConfig), 0644)
 	if err != nil {
 		t.Fatal(err)
@@ -1190,4 +1196,3 @@ func TestSQLInjectionRuleCompilation(t *testing.T) {
 
 	t.Log("SQL Injection rule compiled successfully")
 }
-

@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package webui
@@ -33,27 +39,27 @@ import (
 
 // IPProfileSummary represents aggregated information for a single IP address
 type IPProfileSummary struct {
-	Addr                    string            `json:"addr"`
-	NumPackets              int64             `json:"numPackets"`
-	Bytes                   uint64            `json:"bytes"`
-	Geolocation             string            `json:"geolocation"`
-	DNSNames                []string          `json:"dnsNames"`
-	TimestampFirst          int64             `json:"timestampFirst"`
-	TimestampLast           int64             `json:"timestampLast"`
-	Applications            []string          `json:"applications"`
-	Ja3Hashes               map[string]string `json:"ja3Hashes"`
-	ProtocolsCount          int               `json:"protocolsCount"`
-	SNIsCount               int               `json:"snisCount"`
-	SrcPortsCount           int               `json:"srcPortsCount"`
-	DstPortsCount           int               `json:"dstPortsCount"`
-	ContactedPortsCount     int               `json:"contactedPortsCount"`
-	Ja3FingerprintMatches   []string          `json:"ja3FingerprintMatches"`
-	Ja3sFingerprintMatches  []string          `json:"ja3sFingerprintMatches"`
-	TopProtocols            []ProtocolInfo    `json:"topProtocols"`
-	TopSrcPorts             []PortInfo        `json:"topSrcPorts"`
-	TopDstPorts             []PortInfo        `json:"topDstPorts"`
-	TopContactedPorts       []PortInfo        `json:"topContactedPorts"`
-	IsInternal              bool              `json:"isInternal"`
+	Addr                   string            `json:"addr"`
+	NumPackets             int64             `json:"numPackets"`
+	Bytes                  uint64            `json:"bytes"`
+	Geolocation            string            `json:"geolocation"`
+	DNSNames               []string          `json:"dnsNames"`
+	TimestampFirst         int64             `json:"timestampFirst"`
+	TimestampLast          int64             `json:"timestampLast"`
+	Applications           []string          `json:"applications"`
+	Ja3Hashes              map[string]string `json:"ja3Hashes"`
+	ProtocolsCount         int               `json:"protocolsCount"`
+	SNIsCount              int               `json:"snisCount"`
+	SrcPortsCount          int               `json:"srcPortsCount"`
+	DstPortsCount          int               `json:"dstPortsCount"`
+	ContactedPortsCount    int               `json:"contactedPortsCount"`
+	Ja3FingerprintMatches  []string          `json:"ja3FingerprintMatches"`
+	Ja3sFingerprintMatches []string          `json:"ja3sFingerprintMatches"`
+	TopProtocols           []ProtocolInfo    `json:"topProtocols"`
+	TopSrcPorts            []PortInfo        `json:"topSrcPorts"`
+	TopDstPorts            []PortInfo        `json:"topDstPorts"`
+	TopContactedPorts      []PortInfo        `json:"topContactedPorts"`
+	IsInternal             bool              `json:"isInternal"`
 }
 
 // ProtocolInfo represents protocol statistics
@@ -215,10 +221,10 @@ func readIPProfiles(outDir string) ([]IPProfileSummary, error) {
 			SNIsCount:              len(ipProfile.SNIs),
 			SrcPortsCount:          len(ipProfile.SrcPorts),
 			DstPortsCount:          len(ipProfile.DstPorts),
-		ContactedPortsCount:    len(ipProfile.ContactedPorts),
-		Ja3FingerprintMatches:  ipProfile.Ja3FingerprintMatches,
-		Ja3sFingerprintMatches: ipProfile.Ja3SFingerprintMatches,
-		TopProtocols:           topProtocols,
+			ContactedPortsCount:    len(ipProfile.ContactedPorts),
+			Ja3FingerprintMatches:  ipProfile.Ja3FingerprintMatches,
+			Ja3sFingerprintMatches: ipProfile.Ja3SFingerprintMatches,
+			TopProtocols:           topProtocols,
 			TopSrcPorts:            topSrcPorts,
 			TopDstPorts:            topDstPorts,
 			TopContactedPorts:      topContactedPorts,
@@ -440,4 +446,3 @@ func (s *Server) handleHostDownloadPCAP(w http.ResponseWriter, r *http.Request) 
 
 	log.Printf("[WebUI] Successfully sent host PCAP file: %d bytes written", bytesWritten)
 }
-

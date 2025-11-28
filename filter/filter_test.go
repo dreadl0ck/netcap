@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package filter
@@ -375,7 +381,7 @@ func TestHelperFunctions(t *testing.T) {
 			// ============================================
 			// RFC 1918 Private Networks - Comprehensive
 			// ============================================
-			
+
 			// 10.0.0.0/8 - Boundaries and examples
 			{"10.0.0.0", true, "10.0.0.0/8 - Start of range"},
 			{"10.0.0.1", true, "10.0.0.0/8 - First usable"},
@@ -386,7 +392,7 @@ func TestHelperFunctions(t *testing.T) {
 			{"10.255.255.255", true, "10.0.0.0/8 - End of range"},
 			{"9.255.255.255", false, "Just before 10.0.0.0/8"},
 			{"11.0.0.0", false, "Just after 10.0.0.0/8"},
-			
+
 			// 172.16.0.0/12 - Boundaries and examples
 			{"172.16.0.0", true, "172.16.0.0/12 - Start of range"},
 			{"172.16.0.1", true, "172.16.0.0/12 - First usable"},
@@ -397,7 +403,7 @@ func TestHelperFunctions(t *testing.T) {
 			{"172.32.0.0", false, "Just after 172.16.0.0/12"},
 			{"172.0.0.1", false, "172.x outside private range"},
 			{"172.100.0.1", false, "172.x outside private range"},
-			
+
 			// 192.168.0.0/16 - Boundaries and examples
 			{"192.168.0.0", true, "192.168.0.0/16 - Start of range"},
 			{"192.168.0.1", true, "192.168.0.0/16 - First usable"},
@@ -407,16 +413,16 @@ func TestHelperFunctions(t *testing.T) {
 			{"192.168.255.255", true, "192.168.0.0/16 - End of range"},
 			{"192.167.255.255", false, "Just before 192.168.0.0/16"},
 			{"192.169.0.0", false, "Just after 192.168.0.0/16"},
-			
+
 			// ============================================
 			// Special-Use IPv4 Addresses - Comprehensive
 			// ============================================
-			
+
 			// 0.0.0.0/8 - "This" Network
 			{"0.0.0.0", true, "0.0.0.0/8 - This Network"},
 			{"0.0.0.1", true, "0.0.0.0/8 - This Network"},
 			{"0.255.255.255", true, "0.0.0.0/8 - End of range"},
-			
+
 			// 100.64.0.0/10 - Shared Address Space (CGN/Carrier-Grade NAT)
 			{"100.64.0.0", true, "100.64.0.0/10 - CGN Start"},
 			{"100.64.0.1", true, "100.64.0.0/10 - CGN First usable"},
@@ -427,13 +433,13 @@ func TestHelperFunctions(t *testing.T) {
 			{"100.128.0.0", false, "Just after CGN range"},
 			{"100.0.0.1", false, "100.x outside CGN range"},
 			{"100.200.0.1", false, "100.x outside CGN range"},
-			
+
 			// 127.0.0.0/8 - Loopback
 			{"127.0.0.0", true, "127.0.0.0/8 - Loopback start"},
 			{"127.0.0.1", true, "127.0.0.0/8 - Localhost"},
 			{"127.1.1.1", true, "127.0.0.0/8 - Loopback middle"},
 			{"127.255.255.255", true, "127.0.0.0/8 - Loopback end"},
-			
+
 			// 169.254.0.0/16 - Link-Local (APIPA)
 			{"169.254.0.0", true, "169.254.0.0/16 - Link-Local start"},
 			{"169.254.0.1", true, "169.254.0.0/16 - Link-Local first"},
@@ -441,20 +447,20 @@ func TestHelperFunctions(t *testing.T) {
 			{"169.254.255.255", true, "169.254.0.0/16 - Link-Local end"},
 			{"169.253.255.255", false, "Just before Link-Local"},
 			{"169.255.0.0", false, "Just after Link-Local"},
-			
+
 			// 192.0.0.0/24 - IETF Protocol Assignments
 			{"192.0.0.0", true, "192.0.0.0/24 - IETF Protocol"},
 			{"192.0.0.1", true, "192.0.0.0/24 - IETF Protocol"},
 			{"192.0.0.255", true, "192.0.0.0/24 - IETF Protocol end"},
 			{"192.0.1.0", false, "Just after 192.0.0.0/24"},
-			
+
 			// 192.0.2.0/24 - TEST-NET-1 (Documentation)
 			{"192.0.2.0", true, "192.0.2.0/24 - TEST-NET-1"},
 			{"192.0.2.1", true, "192.0.2.0/24 - TEST-NET-1"},
 			{"192.0.2.255", true, "192.0.2.0/24 - TEST-NET-1 end"},
 			{"192.0.1.255", false, "Just before TEST-NET-1"},
 			{"192.0.3.0", false, "Just after TEST-NET-1"},
-			
+
 			// 198.18.0.0/15 - Benchmarking
 			{"198.18.0.0", true, "198.18.0.0/15 - Benchmarking start"},
 			{"198.18.0.1", true, "198.18.0.0/15 - Benchmarking"},
@@ -463,41 +469,41 @@ func TestHelperFunctions(t *testing.T) {
 			{"198.19.255.255", true, "198.18.0.0/15 - Benchmarking end"},
 			{"198.17.255.255", false, "Just before Benchmarking range"},
 			{"198.20.0.0", false, "Just after Benchmarking range"},
-			
+
 			// 198.51.100.0/24 - TEST-NET-2 (Documentation)
 			{"198.51.100.0", true, "198.51.100.0/24 - TEST-NET-2"},
 			{"198.51.100.1", true, "198.51.100.0/24 - TEST-NET-2"},
 			{"198.51.100.255", true, "198.51.100.0/24 - TEST-NET-2 end"},
 			{"198.51.99.255", false, "Just before TEST-NET-2"},
 			{"198.51.101.0", false, "Just after TEST-NET-2"},
-			
+
 			// 203.0.113.0/24 - TEST-NET-3 (Documentation)
 			{"203.0.113.0", true, "203.0.113.0/24 - TEST-NET-3"},
 			{"203.0.113.1", true, "203.0.113.0/24 - TEST-NET-3"},
 			{"203.0.113.255", true, "203.0.113.0/24 - TEST-NET-3 end"},
 			{"203.0.112.255", false, "Just before TEST-NET-3"},
 			{"203.0.114.0", false, "Just after TEST-NET-3"},
-			
+
 			// 224.0.0.0/4 - Multicast
 			{"224.0.0.0", true, "224.0.0.0/4 - Multicast start"},
 			{"224.0.0.1", true, "224.0.0.0/4 - All Hosts multicast"},
 			{"239.0.0.1", true, "224.0.0.0/4 - Multicast middle"},
 			{"239.255.255.255", true, "224.0.0.0/4 - Multicast end"},
 			{"223.255.255.255", false, "Just before Multicast range"},
-			
+
 			// 240.0.0.0/4 - Reserved (Class E)
 			{"240.0.0.0", true, "240.0.0.0/4 - Reserved start"},
 			{"240.0.0.1", true, "240.0.0.0/4 - Reserved"},
 			{"250.0.0.1", true, "240.0.0.0/4 - Reserved middle"},
 			{"254.255.255.255", true, "240.0.0.0/4 - Reserved"},
-			
+
 			// 255.255.255.255/32 - Limited Broadcast
 			{"255.255.255.255", true, "255.255.255.255/32 - Broadcast"},
-			
+
 			// ============================================
 			// Real-World Public IP Addresses
 			// ============================================
-			
+
 			// DNS Servers
 			{"8.8.8.8", false, "Google Public DNS"},
 			{"8.8.4.4", false, "Google Public DNS Secondary"},
@@ -505,7 +511,7 @@ func TestHelperFunctions(t *testing.T) {
 			{"1.0.0.1", false, "Cloudflare DNS Secondary"},
 			{"9.9.9.9", false, "Quad9 DNS"},
 			{"208.67.222.222", false, "OpenDNS"},
-			
+
 			// CDN & Cloud Providers
 			{"104.31.69.18", false, "Cloudflare CDN"},
 			{"191.252.101.74", false, "Cloudflare CDN"},
@@ -514,14 +520,14 @@ func TestHelperFunctions(t *testing.T) {
 			{"34.107.221.82", false, "Google Cloud"},
 			{"151.101.1.140", false, "Fastly CDN"},
 			{"185.199.108.153", false, "GitHub Pages"},
-			
+
 			// Major Websites & Services
 			{"142.250.185.46", false, "Google"},
 			{"157.240.241.35", false, "Facebook/Meta"},
 			{"31.13.65.1", false, "Facebook/Meta"},
 			{"13.225.78.0", false, "Amazon"},
 			{"23.195.19.1", false, "Akamai CDN"},
-			
+
 			// Various Public Ranges
 			{"2.0.0.1", false, "RIPE NCC"},
 			{"5.0.0.1", false, "RIPE NCC"},
@@ -535,26 +541,26 @@ func TestHelperFunctions(t *testing.T) {
 			{"191.0.0.1", false, "LACNIC region"},
 			{"200.0.0.1", false, "LACNIC region"},
 			{"210.0.0.1", false, "APNIC region"},
-			
+
 			// ============================================
 			// IPv6 Addresses - Comprehensive
 			// ============================================
-			
+
 			// IPv6 Loopback
 			{"::1", true, "IPv6 Loopback"},
 			{"0:0:0:0:0:0:0:1", true, "IPv6 Loopback (expanded)"},
-			
+
 			// IPv6 Unspecified
 			{"::", true, "IPv6 Unspecified"},
 			{"0:0:0:0:0:0:0:0", true, "IPv6 Unspecified (expanded)"},
-			
+
 			// IPv6 Link-Local (fe80::/10)
 			{"fe80::", true, "IPv6 Link-Local"},
 			{"fe80::1", true, "IPv6 Link-Local"},
 			{"fe80::dead:beef", true, "IPv6 Link-Local"},
 			{"febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff", true, "IPv6 Link-Local end"},
 			{"fec0::1", false, "Outside IPv6 Link-Local"},
-			
+
 			// IPv6 Unique Local (fc00::/7)
 			{"fc00::", true, "IPv6 Unique Local"},
 			{"fc00::1", true, "IPv6 Unique Local"},
@@ -563,14 +569,14 @@ func TestHelperFunctions(t *testing.T) {
 			{"fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", true, "IPv6 Unique Local end"},
 			{"fe00::1", false, "Outside IPv6 Unique Local"},
 			{"fb00::1", false, "Outside IPv6 Unique Local"},
-			
+
 			// IPv6 Multicast (ff00::/8)
 			{"ff00::", true, "IPv6 Multicast"},
 			{"ff01::1", true, "IPv6 Multicast Interface-Local"},
 			{"ff02::1", true, "IPv6 Multicast Link-Local"},
 			{"ff05::1", true, "IPv6 Multicast Site-Local"},
 			{"ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", true, "IPv6 Multicast end"},
-			
+
 			// IPv6 Documentation (2001:db8::/32)
 			{"2001:db8::", true, "IPv6 Documentation"},
 			{"2001:db8::1", true, "IPv6 Documentation"},
@@ -578,18 +584,18 @@ func TestHelperFunctions(t *testing.T) {
 			{"2001:db8:ffff:ffff:ffff:ffff:ffff:ffff", true, "IPv6 Documentation end"},
 			{"2001:db7:ffff:ffff:ffff:ffff:ffff:ffff", false, "Just before IPv6 Documentation"},
 			{"2001:db9::", false, "Just after IPv6 Documentation"},
-			
+
 			// IPv6 Public Addresses
 			{"2001:4860:4860::8888", false, "Google Public DNS IPv6"},
 			{"2606:4700:4700::1111", false, "Cloudflare DNS IPv6"},
 			{"2a00:1450:4001::1", false, "Google Europe"},
 			{"2607:f8b0:4004::", false, "Google USA"},
 			{"2001:500::", false, "Root DNS Server"},
-			
+
 			// ============================================
 			// Edge Cases & Invalid Inputs
 			// ============================================
-			
+
 			// Invalid formats
 			{"", false, "Empty string"},
 			{"invalid", false, "Invalid IP string"},
@@ -602,12 +608,12 @@ func TestHelperFunctions(t *testing.T) {
 			{"-1.0.0.0", false, "Negative octet"},
 			{"1.2.3.four", false, "Non-numeric octet"},
 			{"192.168.001.001", false, "Leading zeros (ambiguous)"},
-			
+
 			// IPv6 malformed
 			{"gggg::1", false, "Invalid IPv6 hex"},
 			{"::1::2", false, "Double :: in IPv6"},
 			{"2001:db8:::1", false, "Triple colon in IPv6"},
-			
+
 			// Localhost variations (should all be private)
 			{"127.1.2.3", true, "Loopback variant"},
 			{"127.254.254.254", true, "Loopback variant"},

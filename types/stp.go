@@ -1,70 +1,77 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package types
 
 import (
-	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
-	fieldSTPProtocolID     = "ProtocolID"
-	fieldSTPVersionName    = "VersionName"
-	fieldSTPTypeName       = "TypeName"
-	fieldSTPTC             = "TC"
-	fieldSTPTCA            = "TCA"
-	fieldSTPRootID         = "RootID"
-	fieldSTPCost           = "Cost"
-	fieldSTPBridgeID       = "BridgeID"
-	fieldSTPPortID         = "PortID"
-	fieldSTPMessageAge     = "MessageAge"
-	fieldSTPMaxAge         = "MaxAge"
-	fieldSTPHelloTime      = "HelloTime"
-	fieldSTPForwardDelay   = "ForwardDelay"
+	fieldSTPProtocolID       = "ProtocolID"
+	fieldSTPVersionName      = "VersionName"
+	fieldSTPTypeName         = "TypeName"
+	fieldSTPTC               = "TC"
+	fieldSTPTCA              = "TCA"
+	fieldSTPRootID           = "RootID"
+	fieldSTPCost             = "Cost"
+	fieldSTPBridgeID         = "BridgeID"
+	fieldSTPPortID           = "PortID"
+	fieldSTPMessageAge       = "MessageAge"
+	fieldSTPMaxAge           = "MaxAge"
+	fieldSTPHelloTime        = "HelloTime"
+	fieldSTPForwardDelay     = "ForwardDelay"
 	fieldSTPIsTopologyChange = "IsTopologyChange"
-	fieldSTPIsConfigBPDU   = "IsConfigBPDU"
-	fieldSTPIsTCN          = "IsTCN"
-	fieldSTPIsRootBridge   = "IsRootBridge"
-	fieldSTPHasZeroPriority = "HasZeroPriority"
+	fieldSTPIsConfigBPDU     = "IsConfigBPDU"
+	fieldSTPIsTCN            = "IsTCN"
+	fieldSTPIsRootBridge     = "IsRootBridge"
+	fieldSTPHasZeroPriority  = "HasZeroPriority"
 )
 
 var fieldsSTP = []string{
 	fieldTimestamp,
-	fieldSTPProtocolID,      // int32
-	fieldVersion,            // int32
-	fieldSTPVersionName,     // string
-	fieldType,               // int32
-	fieldSTPTypeName,        // string
-	fieldSTPTC,              // bool
-	fieldSTPTCA,             // bool
-	fieldSTPRootID,          // *STPSwitchID
-	fieldSTPCost,            // uint32
-	fieldSTPBridgeID,        // *STPSwitchID
-	fieldSTPPortID,          // int32
-	fieldSTPMessageAge,      // int32
-	fieldSTPMaxAge,          // int32
-	fieldSTPHelloTime,       // int32
-	fieldSTPForwardDelay,    // int32
+	fieldSTPProtocolID,       // int32
+	fieldVersion,             // int32
+	fieldSTPVersionName,      // string
+	fieldType,                // int32
+	fieldSTPTypeName,         // string
+	fieldSTPTC,               // bool
+	fieldSTPTCA,              // bool
+	fieldSTPRootID,           // *STPSwitchID
+	fieldSTPCost,             // uint32
+	fieldSTPBridgeID,         // *STPSwitchID
+	fieldSTPPortID,           // int32
+	fieldSTPMessageAge,       // int32
+	fieldSTPMaxAge,           // int32
+	fieldSTPHelloTime,        // int32
+	fieldSTPForwardDelay,     // int32
 	fieldSTPIsTopologyChange, // bool
-	fieldSTPIsConfigBPDU,    // bool
-	fieldSTPIsTCN,           // bool
-	fieldSTPIsRootBridge,    // bool
-	fieldSTPHasZeroPriority, // bool
+	fieldSTPIsConfigBPDU,     // bool
+	fieldSTPIsTCN,            // bool
+	fieldSTPIsRootBridge,     // bool
+	fieldSTPHasZeroPriority,  // bool
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -91,26 +98,26 @@ func (s *STPSwitchID) toString() string {
 func (s *STP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(s.Timestamp),
-		formatInt32(s.ProtocolID),               // int32
-		formatInt32(s.Version),                  // int32
-		s.VersionName,                           // string
-		formatInt32(s.Type),                     // int32
-		s.TypeName,                              // string
-		strconv.FormatBool(s.TC),                // bool
-		strconv.FormatBool(s.TCA),               // bool
-		s.RootID.toString(),                     // *STPSwitchID
-		formatUint32(s.Cost),                    // uint32
-		s.BridgeID.toString(),                   // *STPSwitchID
-		formatInt32(s.PortID),                   // int32
-		formatInt32(s.MessageAge),               // int32
-		formatInt32(s.MaxAge),                   // int32
-		formatInt32(s.HelloTime),                // int32
-		formatInt32(s.ForwardDelay),             // int32
-		strconv.FormatBool(s.IsTopologyChange),  // bool
-		strconv.FormatBool(s.IsConfigBPDU),      // bool
-		strconv.FormatBool(s.IsTCN),             // bool
-		strconv.FormatBool(s.IsRootBridge),      // bool
-		strconv.FormatBool(s.HasZeroPriority),   // bool
+		formatInt32(s.ProtocolID),              // int32
+		formatInt32(s.Version),                 // int32
+		s.VersionName,                          // string
+		formatInt32(s.Type),                    // int32
+		s.TypeName,                             // string
+		strconv.FormatBool(s.TC),               // bool
+		strconv.FormatBool(s.TCA),              // bool
+		s.RootID.toString(),                    // *STPSwitchID
+		formatUint32(s.Cost),                   // uint32
+		s.BridgeID.toString(),                  // *STPSwitchID
+		formatInt32(s.PortID),                  // int32
+		formatInt32(s.MessageAge),              // int32
+		formatInt32(s.MaxAge),                  // int32
+		formatInt32(s.HelloTime),               // int32
+		formatInt32(s.ForwardDelay),            // int32
+		strconv.FormatBool(s.IsTopologyChange), // bool
+		strconv.FormatBool(s.IsConfigBPDU),     // bool
+		strconv.FormatBool(s.IsTCN),            // bool
+		strconv.FormatBool(s.IsRootBridge),     // bool
+		strconv.FormatBool(s.HasZeroPriority),  // bool
 	})
 }
 
@@ -195,4 +202,3 @@ func (s *STP) Analyze() {}
 func (s *STP) NetcapType() Type {
 	return Type_NC_STP
 }
-

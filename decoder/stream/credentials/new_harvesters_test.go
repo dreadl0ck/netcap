@@ -16,7 +16,7 @@ func TestPOP3Harvester(t *testing.T) {
 	// Note: POP3 harvester uses complex regex patterns
 	// This test validates the regex works with standard POP3 session data
 	data := []byte("+OK POP3 ready\r\nUSER testuser\r\n+OK\r\nPASS testpass\r\n+OK\r\n")
-	creds := pop3Harvester(data, "test-flow", time.Now())
+	creds := pop3Harvester.HarvesterFunc(data, "test-flow", time.Now())
 	
 	// The harvester works best with real PCAP data (see TestPOP3HarvesterFromPCAP)
 	// Mock data tests are provided for documentation purposes
@@ -56,7 +56,7 @@ func TestPOP3HarvesterFromPCAP(t *testing.T) {
 			streamData = append(streamData, appLayer.Payload()...)
 			
 			// Try to harvest credentials from accumulated data
-			if creds := pop3Harvester(streamData, "test-flow", time.Now()); creds != nil {
+			if creds := pop3Harvester.HarvesterFunc(streamData, "test-flow", time.Now()); creds != nil {
 				t.Logf("✓ Found POP3 credentials: User=%s", creds.User)
 				foundCreds = true
 				break
@@ -73,7 +73,7 @@ func TestPOP3HarvesterFromPCAP(t *testing.T) {
 func TestRedisHarvester(t *testing.T) {
 	// Test simple AUTH command
 	data := []byte("AUTH mypassword\r\n+OK\r\n")
-	creds := redisHarvester(data, "test-flow", time.Now())
+	creds := redisHarvester.HarvesterFunc(data, "test-flow", time.Now())
 	if creds == nil {
 		t.Fatal("Expected to extract Redis credentials")
 	}
@@ -86,7 +86,7 @@ func TestRedisHarvester(t *testing.T) {
 
 	// Test case-insensitive matching
 	data = []byte("auth testpass\r\n")
-	creds = redisHarvester(data, "test-flow", time.Now())
+	creds = redisHarvester.HarvesterFunc(data, "test-flow", time.Now())
 	if creds == nil {
 		t.Fatal("Expected to extract Redis credentials (case-insensitive)")
 	}
@@ -110,7 +110,7 @@ func TestSNMPHarvester(t *testing.T) {
 		0x01, 0x02, 0x01, 0x01, 0x01, 0x00, 0x05, 0x00,
 	}
 
-	creds := snmpHarvester(snmpPacket, "test-flow", time.Now())
+	creds := snmpHarvester.HarvesterFunc(snmpPacket, "test-flow", time.Now())
 	if creds == nil {
 		t.Fatal("Expected to extract SNMP community string")
 	}
@@ -139,7 +139,7 @@ func TestSNMPHarvesterFromPCAP(t *testing.T) {
 
 	for packet := range packetSource.Packets() {
 		if appLayer := packet.ApplicationLayer(); appLayer != nil {
-			if creds := snmpHarvester(appLayer.Payload(), "test-flow", time.Now()); creds != nil {
+			if creds := snmpHarvester.HarvesterFunc(appLayer.Payload(), "test-flow", time.Now()); creds != nil {
 				t.Logf("✓ Found SNMP community string: %s", creds.Password)
 				foundCreds = true
 				break
@@ -167,7 +167,7 @@ func TestLDAPHarvester(t *testing.T) {
 		't', 'e', 's', 't', 'p', 'a', 's', 's',
 	}
 
-	creds := ldapHarvester(ldapBind, "test-flow", time.Now())
+	creds := ldapHarvester.HarvesterFunc(ldapBind, "test-flow", time.Now())
 	if creds == nil {
 		t.Fatal("Expected to extract LDAP credentials")
 	}
@@ -202,7 +202,7 @@ func TestLDAPHarvesterFromPCAP(t *testing.T) {
 
 	for packet := range packetSource.Packets() {
 		if appLayer := packet.ApplicationLayer(); appLayer != nil {
-			if creds := ldapHarvester(appLayer.Payload(), "test-flow", time.Now()); creds != nil {
+			if creds := ldapHarvester.HarvesterFunc(appLayer.Payload(), "test-flow", time.Now()); creds != nil {
 				t.Logf("✓ Found LDAP credentials: User=%s", creds.User)
 				foundCreds = true
 				break
@@ -241,13 +241,13 @@ func TestPostgresHarvesterFromPCAP(t *testing.T) {
 					streamData = append(streamData, appLayer.Payload()...)
 					
 					// Try plaintext harvester
-					if creds := postgresHarvester(streamData, "test-flow", time.Now()); creds != nil {
+					if creds := postgresHarvester.HarvesterFunc(streamData, "test-flow", time.Now()); creds != nil {
 						t.Logf("✓ Found PostgreSQL plaintext credentials: User=%s", creds.User)
 						foundCreds = true
 					}
 					
 					// Try hash harvester
-					if creds := postgresHashHarvester(streamData, "test-flow", time.Now()); creds != nil {
+					if creds := postgresHashHarvester.HarvesterFunc(streamData, "test-flow", time.Now()); creds != nil {
 						t.Logf("✓ Found PostgreSQL MD5 hash: User=%s", creds.User)
 						foundCreds = true
 					}
@@ -286,7 +286,7 @@ func TestMySQLHarvesterFromPCAP(t *testing.T) {
 				if appLayer := packet.ApplicationLayer(); appLayer != nil {
 					streamData = append(streamData, appLayer.Payload()...)
 					
-					if creds := mysqlHarvester(streamData, "test-flow", time.Now()); creds != nil {
+					if creds := mysqlHarvester.HarvesterFunc(streamData, "test-flow", time.Now()); creds != nil {
 						t.Logf("✓ Found MySQL credentials: User=%s", creds.User)
 						foundCreds = true
 						break
@@ -326,7 +326,7 @@ func TestHTTPNTLMHarvesterFromPCAP(t *testing.T) {
 				if appLayer := packet.ApplicationLayer(); appLayer != nil {
 					streamData = append(streamData, appLayer.Payload()...)
 					
-					if creds := httpNTLMHarvester(streamData, "test-flow", time.Now()); creds != nil {
+					if creds := httpNTLMHarvester.HarvesterFunc(streamData, "test-flow", time.Now()); creds != nil {
 						t.Logf("✓ Found HTTP NTLM credentials: User=%s", creds.User)
 						foundCreds = true
 						break
@@ -357,7 +357,7 @@ func TestVNCHarvester(t *testing.T) {
 		0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a}
 	vncData = append(vncData, response...)
 
-	creds := vncHarvester(vncData, "test-flow", time.Now())
+	creds := vncHarvester.HarvesterFunc(vncData, "test-flow", time.Now())
 	if creds == nil {
 		t.Log("Note: VNC harvester requires specific challenge/response pattern")
 	} else {
@@ -388,7 +388,7 @@ func TestMongoDBHarvester(t *testing.T) {
 	// Mock partial MongoDB SCRAM data
 	mongoData := []byte(`saslStart SCRAM-SHA-256 n,,n=admin,r=clientnonce`)
 	
-	creds := mongodbHarvester(mongoData, "test-flow", time.Now())
+	creds := mongodbHarvester.HarvesterFunc(mongoData, "test-flow", time.Now())
 	if creds == nil {
 		t.Log("✓ MongoDB harvester correctly returned nil for incomplete SCRAM handshake")
 	} else {
@@ -562,14 +562,14 @@ func TestIsPrintableASCII(t *testing.T) {
 func BenchmarkPOP3Harvester(b *testing.B) {
 	data := []byte("USER test\r\n+OK\r\nPASS password\r\n+OK\r\n")
 	for i := 0; i < b.N; i++ {
-		pop3Harvester(data, "test", time.Now())
+		pop3Harvester.HarvesterFunc(data, "test", time.Now())
 	}
 }
 
 func BenchmarkRedisHarvester(b *testing.B) {
 	data := []byte("AUTH mypassword\r\n+OK\r\n")
 	for i := 0; i < b.N; i++ {
-		redisHarvester(data, "test", time.Now())
+		redisHarvester.HarvesterFunc(data, "test", time.Now())
 	}
 }
 
@@ -580,7 +580,7 @@ func BenchmarkSNMPHarvester(b *testing.B) {
 		0xa0, 0x19, 0x02, 0x01, 0x00, 0x02, 0x01, 0x00,
 	}
 	for i := 0; i < b.N; i++ {
-		snmpHarvester(data, "test", time.Now())
+		snmpHarvester.HarvesterFunc(data, "test", time.Now())
 	}
 }
 

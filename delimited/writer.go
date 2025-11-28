@@ -1,6 +1,6 @@
 /*
  * NETCAP - Network Capture Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) 2017-2025 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -37,7 +37,7 @@ func NewWriter(w io.Writer) *Writer {
 
 // Put writes the specified record to the writer
 // Note:
-//  - equivalent to writeRecord, but discards the number of bytes written
+//   - equivalent to writeRecord, but discards the number of bytes written
 func (w Writer) Put(record []byte) error {
 	// ignore the amount of bytes written
 	_, err := w.writeRecord(record)
@@ -59,7 +59,7 @@ func (w Writer) PutProto(msg proto.Message) error {
 
 // writeRecord writes the specified record to the underlying writer
 // Note:
-//  - returns the total number of bytes written including the length tag
+//   - returns the total number of bytes written including the length tag
 func (w Writer) writeRecord(record []byte) (int, error) {
 	var (
 		buffer [binary.MaxVarintLen64]byte

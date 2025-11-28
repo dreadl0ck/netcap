@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package smb
@@ -33,79 +39,79 @@ import (
 
 // SMB1 command codes
 const (
-	SMB1_COM_CREATE_DIRECTORY     = 0x00
-	SMB1_COM_DELETE_DIRECTORY     = 0x01
-	SMB1_COM_OPEN                 = 0x02
-	SMB1_COM_CREATE               = 0x03
-	SMB1_COM_CLOSE                = 0x04
-	SMB1_COM_FLUSH                = 0x05
-	SMB1_COM_DELETE               = 0x06
-	SMB1_COM_RENAME               = 0x07
-	SMB1_COM_QUERY_INFORMATION    = 0x08
-	SMB1_COM_SET_INFORMATION      = 0x09
-	SMB1_COM_READ                 = 0x0A
-	SMB1_COM_WRITE                = 0x0B
-	SMB1_COM_LOCK_BYTE_RANGE      = 0x0C
-	SMB1_COM_UNLOCK_BYTE_RANGE    = 0x0D
-	SMB1_COM_CREATE_TEMPORARY     = 0x0E
-	SMB1_COM_CREATE_NEW           = 0x0F
-	SMB1_COM_CHECK_DIRECTORY      = 0x10
-	SMB1_COM_PROCESS_EXIT         = 0x11
-	SMB1_COM_SEEK                 = 0x12
-	SMB1_COM_LOCK_AND_READ        = 0x13
-	SMB1_COM_WRITE_AND_UNLOCK     = 0x14
-	SMB1_COM_READ_RAW             = 0x1A
-	SMB1_COM_READ_MPX             = 0x1B
-	SMB1_COM_READ_MPX_SECONDARY   = 0x1C
-	SMB1_COM_WRITE_RAW            = 0x1D
-	SMB1_COM_WRITE_MPX            = 0x1E
-	SMB1_COM_WRITE_MPX_SECONDARY  = 0x1F
-	SMB1_COM_WRITE_COMPLETE       = 0x20
-	SMB1_COM_QUERY_SERVER         = 0x21
-	SMB1_COM_SET_INFORMATION2     = 0x22
-	SMB1_COM_QUERY_INFORMATION2   = 0x23
-	SMB1_COM_LOCKING_ANDX         = 0x24
-	SMB1_COM_TRANSACTION          = 0x25
-	SMB1_COM_TRANSACTION_SECONDARY= 0x26
-	SMB1_COM_IOCTL                = 0x27
-	SMB1_COM_IOCTL_SECONDARY      = 0x28
-	SMB1_COM_COPY                 = 0x29
-	SMB1_COM_MOVE                 = 0x2A
-	SMB1_COM_ECHO                 = 0x2B
-	SMB1_COM_WRITE_AND_CLOSE      = 0x2C
-	SMB1_COM_OPEN_ANDX            = 0x2D
-	SMB1_COM_READ_ANDX            = 0x2E
-	SMB1_COM_WRITE_ANDX           = 0x2F
-	SMB1_COM_NEW_FILE_SIZE        = 0x30
-	SMB1_COM_CLOSE_AND_TREE_DISC  = 0x31
-	SMB1_COM_TRANSACTION2         = 0x32
+	SMB1_COM_CREATE_DIRECTORY       = 0x00
+	SMB1_COM_DELETE_DIRECTORY       = 0x01
+	SMB1_COM_OPEN                   = 0x02
+	SMB1_COM_CREATE                 = 0x03
+	SMB1_COM_CLOSE                  = 0x04
+	SMB1_COM_FLUSH                  = 0x05
+	SMB1_COM_DELETE                 = 0x06
+	SMB1_COM_RENAME                 = 0x07
+	SMB1_COM_QUERY_INFORMATION      = 0x08
+	SMB1_COM_SET_INFORMATION        = 0x09
+	SMB1_COM_READ                   = 0x0A
+	SMB1_COM_WRITE                  = 0x0B
+	SMB1_COM_LOCK_BYTE_RANGE        = 0x0C
+	SMB1_COM_UNLOCK_BYTE_RANGE      = 0x0D
+	SMB1_COM_CREATE_TEMPORARY       = 0x0E
+	SMB1_COM_CREATE_NEW             = 0x0F
+	SMB1_COM_CHECK_DIRECTORY        = 0x10
+	SMB1_COM_PROCESS_EXIT           = 0x11
+	SMB1_COM_SEEK                   = 0x12
+	SMB1_COM_LOCK_AND_READ          = 0x13
+	SMB1_COM_WRITE_AND_UNLOCK       = 0x14
+	SMB1_COM_READ_RAW               = 0x1A
+	SMB1_COM_READ_MPX               = 0x1B
+	SMB1_COM_READ_MPX_SECONDARY     = 0x1C
+	SMB1_COM_WRITE_RAW              = 0x1D
+	SMB1_COM_WRITE_MPX              = 0x1E
+	SMB1_COM_WRITE_MPX_SECONDARY    = 0x1F
+	SMB1_COM_WRITE_COMPLETE         = 0x20
+	SMB1_COM_QUERY_SERVER           = 0x21
+	SMB1_COM_SET_INFORMATION2       = 0x22
+	SMB1_COM_QUERY_INFORMATION2     = 0x23
+	SMB1_COM_LOCKING_ANDX           = 0x24
+	SMB1_COM_TRANSACTION            = 0x25
+	SMB1_COM_TRANSACTION_SECONDARY  = 0x26
+	SMB1_COM_IOCTL                  = 0x27
+	SMB1_COM_IOCTL_SECONDARY        = 0x28
+	SMB1_COM_COPY                   = 0x29
+	SMB1_COM_MOVE                   = 0x2A
+	SMB1_COM_ECHO                   = 0x2B
+	SMB1_COM_WRITE_AND_CLOSE        = 0x2C
+	SMB1_COM_OPEN_ANDX              = 0x2D
+	SMB1_COM_READ_ANDX              = 0x2E
+	SMB1_COM_WRITE_ANDX             = 0x2F
+	SMB1_COM_NEW_FILE_SIZE          = 0x30
+	SMB1_COM_CLOSE_AND_TREE_DISC    = 0x31
+	SMB1_COM_TRANSACTION2           = 0x32
 	SMB1_COM_TRANSACTION2_SECONDARY = 0x33
-	SMB1_COM_FIND_CLOSE2          = 0x34
-	SMB1_COM_FIND_NOTIFY_CLOSE    = 0x35
-	SMB1_COM_TREE_CONNECT         = 0x70
-	SMB1_COM_TREE_DISCONNECT      = 0x71
-	SMB1_COM_NEGOTIATE            = 0x72
-	SMB1_COM_SESSION_SETUP_ANDX   = 0x73
-	SMB1_COM_LOGOFF_ANDX          = 0x74
-	SMB1_COM_TREE_CONNECT_ANDX    = 0x75
-	SMB1_COM_SECURITY_PACKAGE_ANDX = 0x7E
+	SMB1_COM_FIND_CLOSE2            = 0x34
+	SMB1_COM_FIND_NOTIFY_CLOSE      = 0x35
+	SMB1_COM_TREE_CONNECT           = 0x70
+	SMB1_COM_TREE_DISCONNECT        = 0x71
+	SMB1_COM_NEGOTIATE              = 0x72
+	SMB1_COM_SESSION_SETUP_ANDX     = 0x73
+	SMB1_COM_LOGOFF_ANDX            = 0x74
+	SMB1_COM_TREE_CONNECT_ANDX      = 0x75
+	SMB1_COM_SECURITY_PACKAGE_ANDX  = 0x7E
 	SMB1_COM_QUERY_INFORMATION_DISK = 0x80
-	SMB1_COM_SEARCH               = 0x81
-	SMB1_COM_FIND                 = 0x82
-	SMB1_COM_FIND_UNIQUE          = 0x83
-	SMB1_COM_FIND_CLOSE           = 0x84
-	SMB1_COM_NT_TRANSACT          = 0xA0
-	SMB1_COM_NT_TRANSACT_SECONDARY = 0xA1
-	SMB1_COM_NT_CREATE_ANDX       = 0xA2
-	SMB1_COM_NT_CANCEL            = 0xA4
-	SMB1_COM_NT_RENAME            = 0xA5
-	SMB1_COM_OPEN_PRINT_FILE      = 0xC0
-	SMB1_COM_WRITE_PRINT_FILE     = 0xC1
-	SMB1_COM_CLOSE_PRINT_FILE     = 0xC2
-	SMB1_COM_GET_PRINT_QUEUE      = 0xC3
-	SMB1_COM_READ_BULK            = 0xD8
-	SMB1_COM_WRITE_BULK           = 0xD9
-	SMB1_COM_WRITE_BULK_DATA      = 0xDA
+	SMB1_COM_SEARCH                 = 0x81
+	SMB1_COM_FIND                   = 0x82
+	SMB1_COM_FIND_UNIQUE            = 0x83
+	SMB1_COM_FIND_CLOSE             = 0x84
+	SMB1_COM_NT_TRANSACT            = 0xA0
+	SMB1_COM_NT_TRANSACT_SECONDARY  = 0xA1
+	SMB1_COM_NT_CREATE_ANDX         = 0xA2
+	SMB1_COM_NT_CANCEL              = 0xA4
+	SMB1_COM_NT_RENAME              = 0xA5
+	SMB1_COM_OPEN_PRINT_FILE        = 0xC0
+	SMB1_COM_WRITE_PRINT_FILE       = 0xC1
+	SMB1_COM_CLOSE_PRINT_FILE       = 0xC2
+	SMB1_COM_GET_PRINT_QUEUE        = 0xC3
+	SMB1_COM_READ_BULK              = 0xD8
+	SMB1_COM_WRITE_BULK             = 0xD9
+	SMB1_COM_WRITE_BULK_DATA        = 0xDA
 )
 
 // SMB2 command codes
@@ -133,13 +139,13 @@ const (
 
 // SMB2 flags
 const (
-	SMB2_FLAGS_SERVER_TO_REDIR = 0x00000001 // Response flag
-	SMB2_FLAGS_ASYNC_COMMAND   = 0x00000002
+	SMB2_FLAGS_SERVER_TO_REDIR    = 0x00000001 // Response flag
+	SMB2_FLAGS_ASYNC_COMMAND      = 0x00000002
 	SMB2_FLAGS_RELATED_OPERATIONS = 0x00000004
-	SMB2_FLAGS_SIGNED          = 0x00000008
-	SMB2_FLAGS_PRIORITY_MASK   = 0x00000070
-	SMB2_FLAGS_DFS_OPERATIONS  = 0x10000000
-	SMB2_FLAGS_REPLAY_OPERATION = 0x20000000
+	SMB2_FLAGS_SIGNED             = 0x00000008
+	SMB2_FLAGS_PRIORITY_MASK      = 0x00000070
+	SMB2_FLAGS_DFS_OPERATIONS     = 0x10000000
+	SMB2_FLAGS_REPLAY_OPERATION   = 0x20000000
 )
 
 // Common NT Status codes for security monitoring
@@ -264,32 +270,32 @@ type smbReader struct {
 	conversation *core.ConversationInfo
 
 	// Session state tracking
-	version          int
-	dialect          string
-	sessionID        uint64
-	treeID           uint32
-	messageID        uint64
-	clientGUID       string
-	serverGUID       string
-	capabilities     []string
-	isSigning        bool
+	version      int
+	dialect      string
+	sessionID    uint64
+	treeID       uint32
+	messageID    uint64
+	clientGUID   string
+	serverGUID   string
+	capabilities []string
+	isSigning    bool
 
 	// Authentication tracking
-	username         string
-	domain           string
-	workstation      string
-	ntlmVersion      string
-	authStatus       string
+	username    string
+	domain      string
+	workstation string
+	ntlmVersion string
+	authStatus  string
 
 	// Share and file tracking
-	shareName        string
-	shareType        string
-	filename         string
-	fileID           uint64
-	accessMask       uint32
-	createDisp       uint32
-	fileAttributes   uint32
-	isDirectory      bool
+	shareName      string
+	shareType      string
+	filename       string
+	fileID         uint64
+	accessMask     uint32
+	createDisp     uint32
+	fileAttributes uint32
+	isDirectory    bool
 
 	// Data transfer tracking
 	bytesTransferred int64
@@ -302,12 +308,12 @@ type smbReader struct {
 
 // pendingRequest tracks SMB requests awaiting responses
 type pendingRequest struct {
-	command      uint16
-	messageID    uint64
-	filename     string
-	shareName    string
-	accessMask   uint32
-	createDisp   uint32
+	command    uint16
+	messageID  uint64
+	filename   string
+	shareName  string
+	accessMask uint32
+	createDisp uint32
 }
 
 // New creates a new SMB stream decoder
@@ -393,9 +399,9 @@ func (s *smbReader) readSMBMessage(b *bufio.Reader, isClient bool) error {
 	// Read the SMB message
 	msg := make([]byte, msgLen)
 	_, err = io.ReadFull(b, msg)
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
+	}
 
 	// Check SMB signature and determine version
 	if len(msg) < 4 {
@@ -905,15 +911,15 @@ const (
 
 // ntlmChallengeInfo holds parsed NTLM challenge data
 type ntlmChallengeInfo struct {
-	TargetName       string
-	ServerChallenge  string
-	NbComputerName   string
-	NbDomainName     string
-	DnsComputerName  string
-	DnsDomainName    string
-	DnsTreeName      string
-	Timestamp        string
-	NegotiateFlags   uint32
+	TargetName      string
+	ServerChallenge string
+	NbComputerName  string
+	NbDomainName    string
+	DnsComputerName string
+	DnsDomainName   string
+	DnsTreeName     string
+	Timestamp       string
+	NegotiateFlags  uint32
 }
 
 // parseNTLMSSP parses NTLMSSP security blob for authentication info
@@ -926,8 +932,8 @@ func (s *smbReader) parseNTLMSSP(data []byte) {
 
 	ntlmssp := data[idx:]
 	if len(ntlmssp) < 12 {
-			return
-		}
+		return
+	}
 
 	// Message type at offset 8
 	msgType := binary.LittleEndian.Uint32(ntlmssp[8:12])
@@ -971,8 +977,8 @@ func (s *smbReader) parseNTLMNegotiate(ntlmssp []byte) {
 // parseNTLMChallenge parses NTLM CHALLENGE message (Type 2)
 func (s *smbReader) parseNTLMChallenge(ntlmssp []byte) {
 	if len(ntlmssp) < 56 {
-			return
-		}
+		return
+	}
 
 	// NTLM CHALLENGE structure:
 	// Offset 0-7: Signature "NTLMSSP\0"
@@ -1132,10 +1138,9 @@ func (s *smbReader) parseNTLMAuthenticate(ntlmssp []byte) {
 		zap.String("domain", s.domain),
 		zap.String("workstation", s.workstation),
 		zap.String("ntlmVersion", s.ntlmVersion),
-			zap.String("ident", s.conversation.Ident),
-		)
-	}
-
+		zap.String("ident", s.conversation.Ident),
+	)
+}
 
 // Helper functions
 
@@ -1367,13 +1372,13 @@ func detectThreats(cmd uint8, status uint32, username, share, filename string, a
 	// Check for sensitive file access patterns
 	sensitivePatterns := []string{
 		"ntds.dit", "sam", "system", "security", // Windows security files
-		"lsass", "lsass.dmp", "procdump",        // Credential dumping
-		"passwd", "shadow", "group",             // Unix password files
+		"lsass", "lsass.dmp", "procdump", // Credential dumping
+		"passwd", "shadow", "group", // Unix password files
 		"id_rsa", "id_dsa", "id_ed25519", ".ssh", // SSH keys
-		"web.config", "wp-config", ".htpasswd",  // Web app configs
+		"web.config", "wp-config", ".htpasswd", // Web app configs
 		"passwords", "credentials", "secrets", "vault",
-		".kdbx", "keepass", ".pfx", ".p12",      // Password managers/certs
-		"mimikatz", "lazagne", "secretsdump",    // Known credential tools
+		".kdbx", "keepass", ".pfx", ".p12", // Password managers/certs
+		"mimikatz", "lazagne", "secretsdump", // Known credential tools
 	}
 
 	for _, pattern := range sensitivePatterns {
@@ -1442,7 +1447,6 @@ func detectThreats(cmd uint8, status uint32, username, share, filename string, a
 	return false, ""
 }
 
-
 // writeSMBRecord writes an SMB audit record with all parsed information
 func (s *smbReader) writeSMBRecord(
 	command int32,
@@ -1468,48 +1472,48 @@ func (s *smbReader) writeSMBRecord(
 	}
 
 	smb := &types.SMB{
-		Timestamp:           s.conversation.FirstClientPacket.UnixNano(),
-		SrcIP:               s.conversation.ClientIP,
-		DstIP:               s.conversation.ServerIP,
-		SrcPort:             s.conversation.ClientPort,
-		DstPort:             s.conversation.ServerPort,
-		Version:             int32(s.version),
-		Command:             command,
-		CommandName:         commandName,
-		Status:              status,
-		StatusName:          statusName,
-		Flags:               flags,
-		Flags2:              flags2,
-		IsResponse:          isResponse,
-		Username:            s.username,
-		Domain:              s.domain,
-		Workstation:         s.workstation,
-		NTLMVersion:         s.ntlmVersion,
-		AuthStatus:          s.authStatus,
-		ShareName:           s.shareName,
-		ShareType:           s.shareType,
-		Filename:            s.filename,
-		FileID:              s.fileID,
-		Action:              s.action,
-		BytesTransferred:    s.bytesTransferred,
-		Offset:              s.offset,
-		AccessMask:          s.accessMask,
-		AccessMaskStr:       formatAccessMask(s.accessMask),
-		CreateDisposition:   s.createDisp,
+		Timestamp:            s.conversation.FirstClientPacket.UnixNano(),
+		SrcIP:                s.conversation.ClientIP,
+		DstIP:                s.conversation.ServerIP,
+		SrcPort:              s.conversation.ClientPort,
+		DstPort:              s.conversation.ServerPort,
+		Version:              int32(s.version),
+		Command:              command,
+		CommandName:          commandName,
+		Status:               status,
+		StatusName:           statusName,
+		Flags:                flags,
+		Flags2:               flags2,
+		IsResponse:           isResponse,
+		Username:             s.username,
+		Domain:               s.domain,
+		Workstation:          s.workstation,
+		NTLMVersion:          s.ntlmVersion,
+		AuthStatus:           s.authStatus,
+		ShareName:            s.shareName,
+		ShareType:            s.shareType,
+		Filename:             s.filename,
+		FileID:               s.fileID,
+		Action:               s.action,
+		BytesTransferred:     s.bytesTransferred,
+		Offset:               s.offset,
+		AccessMask:           s.accessMask,
+		AccessMaskStr:        formatAccessMask(s.accessMask),
+		CreateDisposition:    s.createDisp,
 		CreateDispositionStr: formatCreateDisposition(s.createDisp),
-		FileAttributes:      s.fileAttributes,
-		IsDirectory:         s.isDirectory,
-		SessionID:           s.sessionID,
-		TreeID:              s.treeID,
-		MessageID:           s.messageID,
-		IsSigned:            s.isSigning,
-		DialectRevision:     s.dialect,
-		ClientGUID:          s.clientGUID,
-		ServerGUID:          s.serverGUID,
-		Capabilities:        s.capabilities,
-		OperationType:       operationType,
-		IsPotentialThreat:   isPotentialThreat,
-		ThreatIndicator:     threatIndicator,
+		FileAttributes:       s.fileAttributes,
+		IsDirectory:          s.isDirectory,
+		SessionID:            s.sessionID,
+		TreeID:               s.treeID,
+		MessageID:            s.messageID,
+		IsSigned:             s.isSigning,
+		DialectRevision:      s.dialect,
+		ClientGUID:           s.clientGUID,
+		ServerGUID:           s.serverGUID,
+		Capabilities:         s.capabilities,
+		OperationType:        operationType,
+		IsPotentialThreat:    isPotentialThreat,
+		ThreatIndicator:      threatIndicator,
 	}
 
 	// Swap src/dst for responses (server is responding)
@@ -1530,53 +1534,53 @@ func (s *smbReader) writeSMBRecord(
 // SMB1 command name mapping (comprehensive)
 func getSMB1CommandName(cmd uint8) string {
 	names := map[uint8]string{
-		SMB1_COM_CREATE_DIRECTORY:     "CREATE_DIRECTORY",
-		SMB1_COM_DELETE_DIRECTORY:     "DELETE_DIRECTORY",
-		SMB1_COM_OPEN:                 "OPEN",
-		SMB1_COM_CREATE:               "CREATE",
-		SMB1_COM_CLOSE:                "CLOSE",
-		SMB1_COM_FLUSH:                "FLUSH",
-		SMB1_COM_DELETE:               "DELETE",
-		SMB1_COM_RENAME:               "RENAME",
-		SMB1_COM_QUERY_INFORMATION:    "QUERY_INFORMATION",
-		SMB1_COM_SET_INFORMATION:      "SET_INFORMATION",
-		SMB1_COM_READ:                 "READ",
-		SMB1_COM_WRITE:                "WRITE",
-		SMB1_COM_LOCK_BYTE_RANGE:      "LOCK_BYTE_RANGE",
-		SMB1_COM_UNLOCK_BYTE_RANGE:    "UNLOCK_BYTE_RANGE",
-		SMB1_COM_CREATE_TEMPORARY:     "CREATE_TEMPORARY",
-		SMB1_COM_CREATE_NEW:           "CREATE_NEW",
-		SMB1_COM_CHECK_DIRECTORY:      "CHECK_DIRECTORY",
-		SMB1_COM_PROCESS_EXIT:         "PROCESS_EXIT",
-		SMB1_COM_SEEK:                 "SEEK",
-		SMB1_COM_LOCK_AND_READ:        "LOCK_AND_READ",
-		SMB1_COM_WRITE_AND_UNLOCK:     "WRITE_AND_UNLOCK",
-		SMB1_COM_READ_RAW:             "READ_RAW",
-		SMB1_COM_READ_MPX:             "READ_MPX",
-		SMB1_COM_WRITE_RAW:            "WRITE_RAW",
-		SMB1_COM_WRITE_MPX:            "WRITE_MPX",
-		SMB1_COM_WRITE_COMPLETE:       "WRITE_COMPLETE",
-		SMB1_COM_LOCKING_ANDX:         "LOCKING_ANDX",
-		SMB1_COM_TRANSACTION:          "TRANSACTION",
+		SMB1_COM_CREATE_DIRECTORY:      "CREATE_DIRECTORY",
+		SMB1_COM_DELETE_DIRECTORY:      "DELETE_DIRECTORY",
+		SMB1_COM_OPEN:                  "OPEN",
+		SMB1_COM_CREATE:                "CREATE",
+		SMB1_COM_CLOSE:                 "CLOSE",
+		SMB1_COM_FLUSH:                 "FLUSH",
+		SMB1_COM_DELETE:                "DELETE",
+		SMB1_COM_RENAME:                "RENAME",
+		SMB1_COM_QUERY_INFORMATION:     "QUERY_INFORMATION",
+		SMB1_COM_SET_INFORMATION:       "SET_INFORMATION",
+		SMB1_COM_READ:                  "READ",
+		SMB1_COM_WRITE:                 "WRITE",
+		SMB1_COM_LOCK_BYTE_RANGE:       "LOCK_BYTE_RANGE",
+		SMB1_COM_UNLOCK_BYTE_RANGE:     "UNLOCK_BYTE_RANGE",
+		SMB1_COM_CREATE_TEMPORARY:      "CREATE_TEMPORARY",
+		SMB1_COM_CREATE_NEW:            "CREATE_NEW",
+		SMB1_COM_CHECK_DIRECTORY:       "CHECK_DIRECTORY",
+		SMB1_COM_PROCESS_EXIT:          "PROCESS_EXIT",
+		SMB1_COM_SEEK:                  "SEEK",
+		SMB1_COM_LOCK_AND_READ:         "LOCK_AND_READ",
+		SMB1_COM_WRITE_AND_UNLOCK:      "WRITE_AND_UNLOCK",
+		SMB1_COM_READ_RAW:              "READ_RAW",
+		SMB1_COM_READ_MPX:              "READ_MPX",
+		SMB1_COM_WRITE_RAW:             "WRITE_RAW",
+		SMB1_COM_WRITE_MPX:             "WRITE_MPX",
+		SMB1_COM_WRITE_COMPLETE:        "WRITE_COMPLETE",
+		SMB1_COM_LOCKING_ANDX:          "LOCKING_ANDX",
+		SMB1_COM_TRANSACTION:           "TRANSACTION",
 		SMB1_COM_TRANSACTION_SECONDARY: "TRANSACTION_SECONDARY",
-		SMB1_COM_IOCTL:                "IOCTL",
-		SMB1_COM_ECHO:                 "ECHO",
-		SMB1_COM_WRITE_AND_CLOSE:      "WRITE_AND_CLOSE",
-		SMB1_COM_OPEN_ANDX:            "OPEN_ANDX",
-		SMB1_COM_READ_ANDX:            "READ_ANDX",
-		SMB1_COM_WRITE_ANDX:           "WRITE_ANDX",
-		SMB1_COM_TRANSACTION2:         "TRANSACTION2",
-		SMB1_COM_FIND_CLOSE2:          "FIND_CLOSE2",
-		SMB1_COM_TREE_CONNECT:         "TREE_CONNECT",
-		SMB1_COM_TREE_DISCONNECT:      "TREE_DISCONNECT",
-		SMB1_COM_NEGOTIATE:            "NEGOTIATE",
-		SMB1_COM_SESSION_SETUP_ANDX:   "SESSION_SETUP_ANDX",
-		SMB1_COM_LOGOFF_ANDX:          "LOGOFF_ANDX",
-		SMB1_COM_TREE_CONNECT_ANDX:    "TREE_CONNECT_ANDX",
-		SMB1_COM_NT_TRANSACT:          "NT_TRANSACT",
-		SMB1_COM_NT_CREATE_ANDX:       "NT_CREATE_ANDX",
-		SMB1_COM_NT_CANCEL:            "NT_CANCEL",
-		SMB1_COM_NT_RENAME:            "NT_RENAME",
+		SMB1_COM_IOCTL:                 "IOCTL",
+		SMB1_COM_ECHO:                  "ECHO",
+		SMB1_COM_WRITE_AND_CLOSE:       "WRITE_AND_CLOSE",
+		SMB1_COM_OPEN_ANDX:             "OPEN_ANDX",
+		SMB1_COM_READ_ANDX:             "READ_ANDX",
+		SMB1_COM_WRITE_ANDX:            "WRITE_ANDX",
+		SMB1_COM_TRANSACTION2:          "TRANSACTION2",
+		SMB1_COM_FIND_CLOSE2:           "FIND_CLOSE2",
+		SMB1_COM_TREE_CONNECT:          "TREE_CONNECT",
+		SMB1_COM_TREE_DISCONNECT:       "TREE_DISCONNECT",
+		SMB1_COM_NEGOTIATE:             "NEGOTIATE",
+		SMB1_COM_SESSION_SETUP_ANDX:    "SESSION_SETUP_ANDX",
+		SMB1_COM_LOGOFF_ANDX:           "LOGOFF_ANDX",
+		SMB1_COM_TREE_CONNECT_ANDX:     "TREE_CONNECT_ANDX",
+		SMB1_COM_NT_TRANSACT:           "NT_TRANSACT",
+		SMB1_COM_NT_CREATE_ANDX:        "NT_CREATE_ANDX",
+		SMB1_COM_NT_CANCEL:             "NT_CANCEL",
+		SMB1_COM_NT_RENAME:             "NT_RENAME",
 	}
 
 	if name, ok := names[cmd]; ok {

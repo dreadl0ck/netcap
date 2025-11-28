@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package credentials
@@ -236,6 +242,50 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 				Description: "MongoDB wire protocol authentication",
 				Enabled:     true,
 				Ports:       []int{27017},
+				Parameters:  map[string]interface{}{},
+			},
+			// Remote desktop protocols
+			{
+				Name:        "TeamViewer",
+				Description: "TeamViewer remote desktop sessions and authentication events",
+				Enabled:     true,
+				Ports:       []int{5938},
+				Parameters:  map[string]interface{}{},
+			},
+			// Network discovery protocols
+			{
+				Name:        "TLS SNI",
+				Description: "TLS Server Name Indication - encrypted destination hostnames",
+				Enabled:     true,
+				Ports:       []int{443, 8443, 993, 995, 465, 636},
+				Parameters:  map[string]interface{}{},
+			},
+			{
+				Name:        "mDNS",
+				Description: "Multicast DNS local network service discovery",
+				Enabled:     true,
+				Ports:       []int{5353},
+				Parameters:  map[string]interface{}{},
+			},
+			{
+				Name:        "NBNS",
+				Description: "NetBIOS Name Service Windows hostname discovery",
+				Enabled:     true,
+				Ports:       []int{137},
+				Parameters:  map[string]interface{}{},
+			},
+			{
+				Name:        "UPnP",
+				Description: "Universal Plug and Play device discovery",
+				Enabled:     true,
+				Ports:       []int{1900},
+				Parameters:  map[string]interface{}{},
+			},
+			{
+				Name:        "WSD",
+				Description: "Web Services Discovery for Windows devices",
+				Enabled:     true,
+				Ports:       []int{3702},
 				Parameters:  map[string]interface{}{},
 			},
 		},

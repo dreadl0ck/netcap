@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package packet
@@ -32,14 +38,14 @@ var radiusDecoder = newGoPacketDecoder(
 		if radius, ok := layer.(*layers.RADIUS); ok {
 			// Parse attributes
 			var (
-				attrs         []*types.RADIUSAttribute
-				username      string
-				nasIPAddress  string
-				nasIdentifier string
-				serviceType   int32
-				acctSessionID string
+				attrs          []*types.RADIUSAttribute
+				username       string
+				nasIPAddress   string
+				nasIdentifier  string
+				serviceType    int32
+				acctSessionID  string
 				acctStatusType int32
-				replyMessage  string
+				replyMessage   string
 			)
 
 			for _, attr := range radius.Attributes {
@@ -62,18 +68,18 @@ var radiusDecoder = newGoPacketDecoder(
 					}
 				case layers.RADIUSAttributeTypeNASIdentifier:
 					nasIdentifier = string(attr.Value)
-			case layers.RADIUSAttributeTypeServiceType:
-				if len(attr.Value) >= 4 {
-					// RFC 2865: Integer attributes are 4 bytes in network byte order
-					serviceType = int32(binary.BigEndian.Uint32(attr.Value))
-				}
-			case layers.RADIUSAttributeTypeAcctSessionId:
-				acctSessionID = string(attr.Value)
-			case layers.RADIUSAttributeTypeAcctStatusType:
-				if len(attr.Value) >= 4 {
-					// RFC 2866: Integer attributes are 4 bytes in network byte order
-					acctStatusType = int32(binary.BigEndian.Uint32(attr.Value))
-				}
+				case layers.RADIUSAttributeTypeServiceType:
+					if len(attr.Value) >= 4 {
+						// RFC 2865: Integer attributes are 4 bytes in network byte order
+						serviceType = int32(binary.BigEndian.Uint32(attr.Value))
+					}
+				case layers.RADIUSAttributeTypeAcctSessionId:
+					acctSessionID = string(attr.Value)
+				case layers.RADIUSAttributeTypeAcctStatusType:
+					if len(attr.Value) >= 4 {
+						// RFC 2866: Integer attributes are 4 bytes in network byte order
+						acctStatusType = int32(binary.BigEndian.Uint32(attr.Value))
+					}
 				case layers.RADIUSAttributeTypeReplyMessage:
 					replyMessage = string(attr.Value)
 				}
@@ -87,24 +93,24 @@ var radiusDecoder = newGoPacketDecoder(
 			authSuccess := radius.Code == layers.RADIUSCodeAccessAccept
 
 			return &types.RADIUS{
-				Timestamp:      timestamp,
-				Code:           int32(radius.Code),
-				CodeName:       radius.Code.String(),
-				Identifier:     int32(radius.Identifier),
-				Length:         int32(radius.Length),
-				Authenticator:  radius.Authenticator[:],
-				Username:       username,
-				NASIPAddress:   nasIPAddress,
-				NASIdentifier:  nasIdentifier,
-				ServiceType:    serviceType,
-				ServiceTypeName: getServiceTypeName(serviceType),
-				AcctSessionID:  acctSessionID,
-				AcctStatusType: acctStatusType,
+				Timestamp:          timestamp,
+				Code:               int32(radius.Code),
+				CodeName:           radius.Code.String(),
+				Identifier:         int32(radius.Identifier),
+				Length:             int32(radius.Length),
+				Authenticator:      radius.Authenticator[:],
+				Username:           username,
+				NASIPAddress:       nasIPAddress,
+				NASIdentifier:      nasIdentifier,
+				ServiceType:        serviceType,
+				ServiceTypeName:    getServiceTypeName(serviceType),
+				AcctSessionID:      acctSessionID,
+				AcctStatusType:     acctStatusType,
 				AcctStatusTypeName: getAcctStatusTypeName(acctStatusType),
-				ReplyMessage:   replyMessage,
-				Attributes:     attrs,
-				IsRequest:      isRequest,
-				AuthSuccess:    authSuccess,
+				ReplyMessage:       replyMessage,
+				Attributes:         attrs,
+				IsRequest:          isRequest,
+				AuthSuccess:        authSuccess,
 			}
 		}
 
@@ -192,4 +198,3 @@ func getAcctStatusTypeName(acctStatusType int32) string {
 		return ""
 	}
 }
-

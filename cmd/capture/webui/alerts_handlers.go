@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package webui
@@ -52,26 +58,26 @@ type AlertResponse struct {
 
 // GroupedAlert represents a deduplicated/grouped alert
 type GroupedAlert struct {
-	RuleName        string   `json:"ruleName"`
-	Description     string   `json:"description"`
-	Severity        string   `json:"severity"`
-	RecordType      string   `json:"recordType"`
-	Tags            []string `json:"tags"`
-	MITRE           string   `json:"mitre"`
-	RuleExpression  string   `json:"ruleExpression"`
-	Threshold       int32    `json:"threshold"`
-	ThresholdWindow int32    `json:"thresholdWindow"`
-	Count           int      `json:"count"`
-	FirstSeen       int64    `json:"firstSeen"`
-	LastSeen        int64    `json:"lastSeen"`
-	UniqueSrcIPs    []string `json:"uniqueSrcIPs"`
-	UniqueDstIPs    []string `json:"uniqueDstIPs"`
-	UniqueSrcPorts  []string `json:"uniqueSrcPorts"`
-	UniqueDstPorts  []string `json:"uniqueDstPorts"`
-	SampleAlerts    []AlertResponse `json:"sampleAlerts"` // Keep a few samples for detail view
-	Resolved        bool     `json:"resolved"`           // True if all alerts in this group are resolved
-	ResolvedCount   int      `json:"resolvedCount"`      // Number of resolved alerts in this group
-	GroupID         string   `json:"groupId"`            // Unique identifier for the group
+	RuleName        string          `json:"ruleName"`
+	Description     string          `json:"description"`
+	Severity        string          `json:"severity"`
+	RecordType      string          `json:"recordType"`
+	Tags            []string        `json:"tags"`
+	MITRE           string          `json:"mitre"`
+	RuleExpression  string          `json:"ruleExpression"`
+	Threshold       int32           `json:"threshold"`
+	ThresholdWindow int32           `json:"thresholdWindow"`
+	Count           int             `json:"count"`
+	FirstSeen       int64           `json:"firstSeen"`
+	LastSeen        int64           `json:"lastSeen"`
+	UniqueSrcIPs    []string        `json:"uniqueSrcIPs"`
+	UniqueDstIPs    []string        `json:"uniqueDstIPs"`
+	UniqueSrcPorts  []string        `json:"uniqueSrcPorts"`
+	UniqueDstPorts  []string        `json:"uniqueDstPorts"`
+	SampleAlerts    []AlertResponse `json:"sampleAlerts"`  // Keep a few samples for detail view
+	Resolved        bool            `json:"resolved"`      // True if all alerts in this group are resolved
+	ResolvedCount   int             `json:"resolvedCount"` // Number of resolved alerts in this group
+	GroupID         string          `json:"groupId"`       // Unique identifier for the group
 }
 
 // AlertsResponse represents the response containing multiple alerts
@@ -106,9 +112,9 @@ type ResolveAlertRequest struct {
 
 // ResolveAlertResponse represents the response to a resolve request
 type ResolveAlertResponse struct {
-	Success    bool     `json:"success"`
-	Message    string   `json:"message"`
-	ResolvedAt int64    `json:"resolvedAt"`
+	Success     bool     `json:"success"`
+	Message     string   `json:"message"`
+	ResolvedAt  int64    `json:"resolvedAt"`
 	ResolvedIDs []string `json:"resolvedIds,omitempty"` // IDs that were resolved
 }
 
@@ -448,7 +454,7 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 	severityFilter := query.Get("severity")
 	ruleNameFilter := query.Get("ruleName")
 	sortOrder := query.Get("sort") // "asc" or "desc", default is "desc" (newest first)
-	sortBy := query.Get("sortBy") // "count", "lastSeen", "firstSeen", "severity"
+	sortBy := query.Get("sortBy")  // "count", "lastSeen", "firstSeen", "severity"
 
 	limit := 100 // default limit
 	offset := 0  // default offset
@@ -632,10 +638,10 @@ func groupAlerts(alerts []AlertResponse, severityFilter, ruleNameFilter string) 
 		sort.Strings(group.UniqueDstIPs)
 		sort.Strings(group.UniqueSrcPorts)
 		sort.Strings(group.UniqueDstPorts)
-		
+
 		// Mark group as resolved if all alerts in the group are resolved
 		group.Resolved = group.ResolvedCount > 0 && group.ResolvedCount == group.Count
-		
+
 		result = append(result, *group)
 	}
 
@@ -650,7 +656,7 @@ func groupAlerts(alerts []AlertResponse, severityFilter, ruleNameFilter string) 
 func sortGroupedAlerts(groups []GroupedAlert, sortBy, sortOrder string) {
 	sort.Slice(groups, func(i, j int) bool {
 		var less bool
-		
+
 		// Primary sort by the selected field
 		switch sortBy {
 		case "count":
@@ -764,44 +770,44 @@ func (s *Server) getResolvedAlertsPath(outDir string) string {
 // loadResolvedAlerts loads the resolved alerts from disk
 func (s *Server) loadResolvedAlerts(outDir string) (*ResolvedAlertsStore, error) {
 	filePath := s.getResolvedAlertsPath(outDir)
-	
+
 	// If file doesn't exist, return empty store
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return &ResolvedAlertsStore{
 			Alerts: make(map[string]ResolvedAlert),
 		}, nil
 	}
-	
+
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read resolved alerts: %w", err)
 	}
-	
+
 	var store ResolvedAlertsStore
 	if err := json.Unmarshal(data, &store); err != nil {
 		return nil, fmt.Errorf("failed to parse resolved alerts: %w", err)
 	}
-	
+
 	if store.Alerts == nil {
 		store.Alerts = make(map[string]ResolvedAlert)
 	}
-	
+
 	return &store, nil
 }
 
 // saveResolvedAlerts saves the resolved alerts to disk
 func (s *Server) saveResolvedAlerts(outDir string, store *ResolvedAlertsStore) error {
 	filePath := s.getResolvedAlertsPath(outDir)
-	
+
 	data, err := json.MarshalIndent(store, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal resolved alerts: %w", err)
 	}
-	
+
 	if err := os.WriteFile(filePath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write resolved alerts: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -819,7 +825,7 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	// Parse request body
 	var req ResolveAlertRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -828,7 +834,7 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
+
 	// Determine the output directory
 	s.mu.RLock()
 	outDir := s.outDir
@@ -838,14 +844,14 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	s.mu.RUnlock()
-	
+
 	if outDir == "" {
 		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
 			"error": "No output directory selected",
 		})
 		return
 	}
-	
+
 	// Load resolved alerts store
 	store, err := s.loadResolvedAlerts(outDir)
 	if err != nil {
@@ -855,10 +861,10 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
+
 	resolvedAt := time.Now().UnixMilli()
 	resolvedIDs := []string{}
-	
+
 	// If GroupID is provided, resolve all alerts in the group
 	if req.GroupID != "" {
 		// Read all alerts to find those in this group
@@ -871,13 +877,13 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		
+
 		// Find all alerts matching this group
 		for i := range alerts {
 			alert := &alerts[i]
 			alertID := generateAlertID(*alert)
 			groupID := generateGroupID(alert.RuleName, alert.Severity)
-			
+
 			if groupID == req.GroupID {
 				store.Alerts[alertID] = ResolvedAlert{
 					AlertID:    alertID,
@@ -899,7 +905,7 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
+
 	// Save resolved alerts store
 	if err := s.saveResolvedAlerts(outDir, store); err != nil {
 		log.Printf("[WebUI] Failed to save resolved alerts: %v", err)
@@ -908,9 +914,9 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
+
 	log.Printf("[WebUI] Resolved %d alert(s)", len(resolvedIDs))
-	
+
 	RespondJSON(w, http.StatusOK, ResolveAlertResponse{
 		Success:     true,
 		Message:     fmt.Sprintf("Resolved %d alert(s)", len(resolvedIDs)),
@@ -925,7 +931,7 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	
+
 	// Parse request body
 	var req ResolveAlertRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -934,7 +940,7 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
+
 	// Determine the output directory
 	s.mu.RLock()
 	outDir := s.outDir
@@ -944,14 +950,14 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	s.mu.RUnlock()
-	
+
 	if outDir == "" {
 		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
 			"error": "No output directory selected",
 		})
 		return
 	}
-	
+
 	// Load resolved alerts store
 	store, err := s.loadResolvedAlerts(outDir)
 	if err != nil {
@@ -961,9 +967,9 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
+
 	unresolvedIDs := []string{}
-	
+
 	// If GroupID is provided, unresolve all alerts in the group
 	if req.GroupID != "" {
 		// Read all alerts to find those in this group
@@ -976,13 +982,13 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 			})
 			return
 		}
-		
+
 		// Find all alerts matching this group
 		for i := range alerts {
 			alert := &alerts[i]
 			alertID := generateAlertID(*alert)
 			groupID := generateGroupID(alert.RuleName, alert.Severity)
-			
+
 			if groupID == req.GroupID {
 				delete(store.Alerts, alertID)
 				unresolvedIDs = append(unresolvedIDs, alertID)
@@ -998,7 +1004,7 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
+
 	// Save resolved alerts store
 	if err := s.saveResolvedAlerts(outDir, store); err != nil {
 		log.Printf("[WebUI] Failed to save resolved alerts: %v", err)
@@ -1007,13 +1013,12 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	
+
 	log.Printf("[WebUI] Unresolved %d alert(s)", len(unresolvedIDs))
-	
+
 	RespondJSON(w, http.StatusOK, map[string]interface{}{
 		"success":       true,
 		"message":       fmt.Sprintf("Unresolved %d alert(s)", len(unresolvedIDs)),
 		"unresolvedIds": unresolvedIDs,
 	})
 }
-

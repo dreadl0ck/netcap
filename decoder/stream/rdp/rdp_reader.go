@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package rdp
@@ -35,11 +41,11 @@ const (
 	RDPNegFailure = 0x03
 
 	// RDP Protocols (bitmask)
-	ProtocolRDP       = 0x00000000
-	ProtocolSSL       = 0x00000001
-	ProtocolHybrid    = 0x00000002 // CredSSP with NLA
-	ProtocolRDSTLS    = 0x00000004
-	ProtocolHybridEx  = 0x00000008 // CredSSP with Early User Auth
+	ProtocolRDP      = 0x00000000
+	ProtocolSSL      = 0x00000001
+	ProtocolHybrid   = 0x00000002 // CredSSP with NLA
+	ProtocolRDSTLS   = 0x00000004
+	ProtocolHybridEx = 0x00000008 // CredSSP with Early User Auth
 
 	// MCS Connect Initial/Response
 	BER_TAG_MCS_CONNECT_INITIAL  = 0x7F65
@@ -133,10 +139,10 @@ func (r *rdpReader) parseConnectionRequest(data []byte) *types.RDP {
 	// X.224 header: Length(1) + Type(1) + DST-REF(2) + SRC-REF(2) + CLASS(1)
 	// Variable part starts after X.224 fixed header (7 bytes from TPKT end = offset 11)
 	offset := 11
-	
+
 	// Calculate end of X.224 CR TPDU (TPKT header + X.224 data)
 	x224End := min(len(data), int(tpktLength))
-	
+
 	if int(x224Length) > 6 && len(data) > offset && offset < x224End {
 		variableData := data[offset:x224End]
 
@@ -145,12 +151,12 @@ func (r *rdpReader) parseConnectionRequest(data []byte) *types.RDP {
 			cookieEnd := bytes.Index(variableData, []byte("\r\n"))
 			if cookieEnd > 0 && cookieEnd < len(variableData) {
 				msg.Cookie = string(variableData[:cookieEnd])
-				
+
 				// Extract username from cookie
 				if matches := cookieRegex.FindStringSubmatch(msg.Cookie); len(matches) > 1 {
 					msg.Username = matches[1]
 				}
-				
+
 				// Move past cookie + CRLF
 				if cookieEnd+2 < len(variableData) {
 					variableData = variableData[cookieEnd+2:]
@@ -180,7 +186,7 @@ func (r *rdpReader) parseNegotiationRequest(msg *types.RDP, data []byte) {
 	requestedProtocols := binary.LittleEndian.Uint32(data[4:8])
 
 	msg.RequestedProtocolsFlags = int32(requestedProtocols)
-	
+
 	var protocols []string
 	if requestedProtocols == ProtocolRDP {
 		protocols = append(protocols, "RDP")
@@ -201,7 +207,7 @@ func (r *rdpReader) parseNegotiationRequest(msg *types.RDP, data []byte) {
 		protocols = append(protocols, "CredSSP/EarlyUserAuth")
 		msg.UsesCredSSP = true
 	}
-	
+
 	msg.RequestedProtocolNames = strings.Join(protocols, ",")
 	msg.RequestedProtocols = msg.RequestedProtocolNames
 }
@@ -229,7 +235,7 @@ func (r *rdpReader) enrichWithServerResponse(msg *types.RDP, serverData []byte) 
 
 		if len(variableData) >= 8 {
 			negType := variableData[0]
-			
+
 			switch negType {
 			case RDPNegRsp:
 				r.parseNegotiationResponse(msg, variableData)
@@ -325,4 +331,3 @@ func min(a, b int) int {
 	}
 	return b
 }
-

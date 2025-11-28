@@ -79,6 +79,37 @@
   - Apple Remote Desktop (ARD) detection
   - VNC MS Logon II (NTLM integration)
   - Entropy checking for challenge/response
+- **TeamViewer** (port 5938)
+  - Remote desktop session detection
+  - Authentication event tracking (AUTH_CHALLENGE, AUTH_RESPONSE, AUTH_RESULT)
+  - Session ID and connection monitoring
+  - Supports protocol versions 1.x and 2.x
+
+### ✅ Network Discovery
+- **TLS SNI** (ports 443, 8443, etc.)
+  - Server Name Indication from TLS Client Hello
+  - Reveals encrypted HTTPS destinations
+  - Useful for threat hunting and network forensics
+- **mDNS** (port 5353)
+  - Multicast DNS hostname discovery
+  - IP address to hostname mappings
+  - Service discovery (SRV, TXT records)
+  - Works with Bonjour/Avahi
+- **NBNS** (port 137)
+  - NetBIOS Name Service
+  - Windows computer name discovery
+  - Workstation, Domain Controller, File Server identification
+  - Node status response parsing
+- **UPnP** (port 1900)
+  - Universal Plug and Play device discovery
+  - Router, media server, IoT device identification
+  - SSDP M-SEARCH and NOTIFY parsing
+  - Device location and service type extraction
+- **WSD** (port 3702)
+  - Web Services Discovery for Windows
+  - SOAP/XML-based device discovery
+  - Probe and ProbeMatch detection
+  - Device type and address extraction
 
 ### ⚠️ Optional (Disabled by Default)
 - **Credit Card Detection**
@@ -116,14 +147,21 @@ Harvesters run automatically during TCP session analysis. They are invoked by po
 - 23: Telnet
 - 25, 465, 587: SMTP
 - 80, 8080: HTTP
+- 88: Kerberos
 - 110, 995: POP3
+- 137: NBNS
 - 143: IMAP
 - 161, 162: SNMP
 - 389, 636: LDAP
+- 443, 8443: TLS SNI
 - 445: SMB/NTLMSSP
+- 1900: UPnP/SSDP
 - 3306: MySQL
+- 3702: WSD
+- 5353: mDNS
 - 5432: PostgreSQL
-- 5900-5902: VNC
+- 5900-5909: VNC
+- 5938: TeamViewer
 - 6379: Redis
 - 27017: MongoDB
 

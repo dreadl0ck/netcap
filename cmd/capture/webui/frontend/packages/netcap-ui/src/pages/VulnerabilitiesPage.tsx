@@ -1,3 +1,22 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 import { useState, useMemo, useCallback } from 'react';
 import {
   Box,
@@ -44,6 +63,7 @@ import {
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatBytes, getBackendUrl } from '../lib/api';
+import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import dynamic from 'next/dynamic';
 import { useNetcapRouter, useNetcapApi } from '../hooks';
@@ -154,13 +174,17 @@ export default function VulnerabilitiesPage() {
     else if (tabValue === 1) data = exploits;
     else data = affectedHosts;
 
+    // Apply search filter with negation support (e.g., "!HIGH" excludes high severity)
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+      const searchTerms = parseSearchQuery(searchQuery);
       data = data.filter((item: any) => 
-        item.id?.toLowerCase().includes(query) ||
-        item.description?.toLowerCase().includes(query) ||
-        item.software?.product?.toLowerCase().includes(query) ||
-        item.host?.toLowerCase().includes(query)
+        matchesSearchTerms([
+          item.id || '',
+          item.description || '',
+          item.software?.product || '',
+          item.host || '',
+          item.severity || '',
+        ], searchTerms)
       );
     }
 

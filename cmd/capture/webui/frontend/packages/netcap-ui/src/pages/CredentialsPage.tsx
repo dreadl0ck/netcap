@@ -1,3 +1,22 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 import { useState, useMemo, useCallback } from 'react';
 import {
   Box,
@@ -39,6 +58,7 @@ import {
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
+import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi } from '../hooks';
 
@@ -58,6 +78,54 @@ interface CredentialsResponse {
 
 type CredentialSortField = 'timestamp' | 'service' | 'user' | 'password';
 type SortOrder = 'asc' | 'desc';
+
+// Service category mapping for color-coding and UI labels
+const serviceCategories: Record<string, { category: 'auth' | 'discovery' | 'remote' | 'database' | 'network', color: 'primary' | 'secondary' | 'warning' | 'info' | 'success', userLabel: string, passLabel: string }> = {
+  // Authentication protocols (traditional credentials)
+  'FTP': { category: 'auth', color: 'primary', userLabel: 'Username', passLabel: 'Password' },
+  'HTTP': { category: 'auth', color: 'primary', userLabel: 'Username', passLabel: 'Password' },
+  'HTTP Basic': { category: 'auth', color: 'primary', userLabel: 'Username', passLabel: 'Password' },
+  'HTTP Digest': { category: 'auth', color: 'primary', userLabel: 'Username', passLabel: 'Hash' },
+  'HTTP NTLM': { category: 'auth', color: 'primary', userLabel: 'Username', passLabel: 'NTLM Hash' },
+  'SMTP': { category: 'auth', color: 'primary', userLabel: 'Username', passLabel: 'Password' },
+  'POP3': { category: 'auth', color: 'primary', userLabel: 'Username', passLabel: 'Password' },
+  'IMAP': { category: 'auth', color: 'primary', userLabel: 'Username', passLabel: 'Password' },
+  'Telnet': { category: 'auth', color: 'primary', userLabel: 'Username', passLabel: 'Password' },
+  'NTLMSSP': { category: 'auth', color: 'warning', userLabel: 'Domain\\User', passLabel: 'NTLM Hash' },
+  'Kerberos AS-REQ': { category: 'auth', color: 'warning', userLabel: 'Principal', passLabel: 'Ticket Hash' },
+  'Kerberos AS-REP': { category: 'auth', color: 'warning', userLabel: 'Principal', passLabel: 'Encrypted Data' },
+  'Kerberos TGS-REP': { category: 'auth', color: 'warning', userLabel: 'Service Principal', passLabel: 'Ticket Hash' },
+  'LDAP': { category: 'auth', color: 'primary', userLabel: 'DN/User', passLabel: 'Password' },
+  // Database protocols
+  'PostgreSQL': { category: 'database', color: 'info', userLabel: 'Username', passLabel: 'Password' },
+  'PostgreSQL Hash': { category: 'database', color: 'info', userLabel: 'Username', passLabel: 'MD5 Hash' },
+  'MySQL': { category: 'database', color: 'info', userLabel: 'Username', passLabel: 'Password/Hash' },
+  'MongoDB': { category: 'database', color: 'info', userLabel: 'Username', passLabel: 'SCRAM Data' },
+  'MongoDB Challenge Response': { category: 'database', color: 'info', userLabel: 'Username', passLabel: 'Challenge/Response' },
+  'Redis': { category: 'database', color: 'info', userLabel: 'Database', passLabel: 'Password' },
+  // Remote access
+  'VNC': { category: 'remote', color: 'warning', userLabel: 'Connection', passLabel: 'Challenge/Response' },
+  'TeamViewer': { category: 'remote', color: 'warning', userLabel: 'Command', passLabel: '' },
+  'TeamViewer Auth': { category: 'remote', color: 'warning', userLabel: 'Auth Event', passLabel: '' },
+  // Network discovery (metadata, not credentials)
+  'TLS SNI': { category: 'discovery', color: 'success', userLabel: 'Hostname', passLabel: '' },
+  'mDNS': { category: 'discovery', color: 'success', userLabel: 'Hostnames', passLabel: '' },
+  'NBNS': { category: 'discovery', color: 'success', userLabel: 'NetBIOS Name', passLabel: '' },
+  'UPnP': { category: 'discovery', color: 'success', userLabel: 'Device Info', passLabel: '' },
+  'WSD': { category: 'discovery', color: 'success', userLabel: 'Device Address', passLabel: '' },
+  // Network management
+  'SNMP': { category: 'network', color: 'secondary', userLabel: 'Community String', passLabel: '' },
+};
+
+// Helper function to get service info with defaults
+const getServiceInfo = (service: string) => {
+  return serviceCategories[service] || { 
+    category: 'auth' as const, 
+    color: 'primary' as const, 
+    userLabel: 'Username', 
+    passLabel: 'Password' 
+  };
+};
 
 export default function CredentialsPage() {
   const router = useNetcapRouter();
@@ -105,15 +173,17 @@ export default function CredentialsPage() {
   const filteredCredentials = useMemo(() => {
     let filtered = credentials;
 
-    // Apply search filter
+    // Apply search filter with negation support (e.g., "!FTP" excludes FTP)
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+      const searchTerms = parseSearchQuery(searchQuery);
       filtered = filtered.filter(c =>
-        c.service.toLowerCase().includes(query) ||
-        c.user.toLowerCase().includes(query) ||
-        c.password.toLowerCase().includes(query) ||
-        c.flow.toLowerCase().includes(query) ||
-        (c.notes || '').toLowerCase().includes(query)
+        matchesSearchTerms([
+          c.service,
+          c.user,
+          c.password,
+          c.flow,
+          c.notes || '',
+        ], searchTerms)
       );
     }
 
@@ -409,9 +479,9 @@ export default function CredentialsPage() {
         <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField
-            data-learn="Credential Search: Filter credentials by service, username, password, flow, or notes."
+            data-learn="Credential Search: Filter credentials by service, username, password, flow, or notes. Use !term to exclude matches (e.g., !FTP excludes FTP)."
             size="small"
-            placeholder="Search credentials..."
+            placeholder="Search credentials... (use !term to exclude)"
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -499,9 +569,6 @@ export default function CredentialsPage() {
                         Password
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell data-learn="Flow: Network flow identifier showing where the credential was captured.">
-                      Flow
-                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -533,10 +600,10 @@ export default function CredentialsPage() {
                           </TableCell>
                           <TableCell>
                             <Chip
-                              data-learn="Service Tag: Protocol or service where this credential was captured."
+                              data-learn="Service Tag: Protocol or service where this credential was captured. Colors indicate type: blue=auth, teal=database, orange=remote, green=discovery, purple=network."
                               label={cred.service || 'Unknown'}
                               size="small"
-                              color="primary"
+                              color={getServiceInfo(cred.service).color}
                               sx={{ fontSize: '0.7rem' }}
                             />
                           </TableCell>
@@ -559,16 +626,11 @@ export default function CredentialsPage() {
                               {cred.password || '(empty)'}
                             </Typography>
                           </TableCell>
-                          <TableCell>
-                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }} data-learn="Flow ID: Network flow identifier showing source and destination IPs and ports where credential was seen.">
-                              {cred.flow ? (cred.flow.length > 40 ? cred.flow.substring(0, 37) + '...' : cred.flow) : '-'}
-                            </Typography>
-                          </TableCell>
                         </TableRow>
                         
                         {/* Expandable Row Details */}
                         <TableRow>
-                          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
+                          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
                             <Collapse in={expandedRow === rowKey} timeout="auto" unmountOnExit>
                               <Box sx={{ py: 2 }} data-learn="Credential Details: Extended information about this captured credential including full flow information and notes.">
                                 <Grid container spacing={2}>
@@ -592,33 +654,35 @@ export default function CredentialsPage() {
                                     </Typography>
                                   </Grid>
                                   
-                                  {/* Username */}
+                                  {/* Username/Primary Data */}
                                   <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom data-learn="Username Field: The full username extracted from the authentication attempt, may include domain or email format.">
-                                      Username
+                                    <Typography variant="subtitle2" gutterBottom data-learn={`${getServiceInfo(cred.service).userLabel} Field: Primary data captured for this service type.`}>
+                                      {getServiceInfo(cred.service).userLabel}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
                                       {cred.user || '(empty)'}
                                     </Typography>
                                   </Grid>
                                   
-                                  {/* Password */}
+                                  {/* Password/Secondary Data - only show if service has password field */}
+                                  {getServiceInfo(cred.service).passLabel && (
                                   <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" gutterBottom data-learn="Password Field: The full password or hash captured. Plaintext passwords indicate cleartext protocols were used.">
-                                      Password
+                                    <Typography variant="subtitle2" gutterBottom data-learn={`${getServiceInfo(cred.service).passLabel} Field: Secondary data or credential captured for this service type.`}>
+                                      {getServiceInfo(cred.service).passLabel}
                                     </Typography>
                                     <Typography 
                                       variant="body2" 
                                       sx={{ 
                                         fontFamily: 'monospace',
-                                        color: 'error.main',
-                                        fontWeight: 'bold',
+                                        color: getServiceInfo(cred.service).category === 'discovery' ? 'text.secondary' : 'error.main',
+                                        fontWeight: getServiceInfo(cred.service).category === 'discovery' ? 'normal' : 'bold',
                                         wordBreak: 'break-all',
                                       }}
                                     >
                                       {cred.password || '(empty)'}
                                     </Typography>
                                   </Grid>
+                                  )}
                                   
                                   {/* Flow */}
                                   <Grid item xs={12}>

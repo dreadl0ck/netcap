@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package tls
@@ -210,89 +216,89 @@ func TestIsShortKeySize(t *testing.T) {
 // TestCertificateValidationScenarios tests various real-world certificate validation scenarios
 func TestCertificateValidationScenarios(t *testing.T) {
 	scenarios := []struct {
-		name             string
-		sigAlg           x509.SignatureAlgorithm
-		pubKeyAlg        x509.PublicKeyAlgorithm
-		keySize          int32
-		expectWeak       bool
-		expectShortKey   bool
-		description      string
+		name           string
+		sigAlg         x509.SignatureAlgorithm
+		pubKeyAlg      x509.PublicKeyAlgorithm
+		keySize        int32
+		expectWeak     bool
+		expectShortKey bool
+		description    string
 	}{
 		{
-			name:             "Modern secure certificate",
-			sigAlg:           x509.SHA256WithRSA,
-			pubKeyAlg:        x509.RSA,
-			keySize:          2048,
-			expectWeak:       false,
-			expectShortKey:   false,
-			description:      "RSA-2048 with SHA256 (common, secure)",
+			name:           "Modern secure certificate",
+			sigAlg:         x509.SHA256WithRSA,
+			pubKeyAlg:      x509.RSA,
+			keySize:        2048,
+			expectWeak:     false,
+			expectShortKey: false,
+			description:    "RSA-2048 with SHA256 (common, secure)",
 		},
 		{
-			name:             "Legacy weak certificate",
-			sigAlg:           x509.SHA1WithRSA,
-			pubKeyAlg:        x509.RSA,
-			keySize:          1024,
-			expectWeak:       true,
-			expectShortKey:   true,
-			description:      "RSA-1024 with SHA1 (old, insecure)",
+			name:           "Legacy weak certificate",
+			sigAlg:         x509.SHA1WithRSA,
+			pubKeyAlg:      x509.RSA,
+			keySize:        1024,
+			expectWeak:     true,
+			expectShortKey: true,
+			description:    "RSA-1024 with SHA1 (old, insecure)",
 		},
 		{
-			name:             "High security certificate",
-			sigAlg:           x509.SHA512WithRSA,
-			pubKeyAlg:        x509.RSA,
-			keySize:          4096,
-			expectWeak:       false,
-			expectShortKey:   false,
-			description:      "RSA-4096 with SHA512 (very secure)",
+			name:           "High security certificate",
+			sigAlg:         x509.SHA512WithRSA,
+			pubKeyAlg:      x509.RSA,
+			keySize:        4096,
+			expectWeak:     false,
+			expectShortKey: false,
+			description:    "RSA-4096 with SHA512 (very secure)",
 		},
 		{
-			name:             "ECC certificate",
-			sigAlg:           x509.ECDSAWithSHA256,
-			pubKeyAlg:        x509.ECDSA,
-			keySize:          256,
-			expectWeak:       false,
-			expectShortKey:   false,
-			description:      "ECDSA-256 with SHA256 (modern, efficient)",
+			name:           "ECC certificate",
+			sigAlg:         x509.ECDSAWithSHA256,
+			pubKeyAlg:      x509.ECDSA,
+			keySize:        256,
+			expectWeak:     false,
+			expectShortKey: false,
+			description:    "ECDSA-256 with SHA256 (modern, efficient)",
 		},
 		{
-			name:             "Weak ECC certificate",
-			sigAlg:           x509.ECDSAWithSHA1,
-			pubKeyAlg:        x509.ECDSA,
-			keySize:          192,
-			expectWeak:       true,
-			expectShortKey:   true,
-			description:      "ECDSA-192 with SHA1 (weak)",
+			name:           "Weak ECC certificate",
+			sigAlg:         x509.ECDSAWithSHA1,
+			pubKeyAlg:      x509.ECDSA,
+			keySize:        192,
+			expectWeak:     true,
+			expectShortKey: true,
+			description:    "ECDSA-192 with SHA1 (weak)",
 		},
 		{
-			name:             "Good key with weak signature",
-			sigAlg:           x509.MD5WithRSA,
-			pubKeyAlg:        x509.RSA,
-			keySize:          2048,
-			expectWeak:       true,
-			expectShortKey:   false,
-			description:      "RSA-2048 with MD5 (weak hash)",
+			name:           "Good key with weak signature",
+			sigAlg:         x509.MD5WithRSA,
+			pubKeyAlg:      x509.RSA,
+			keySize:        2048,
+			expectWeak:     true,
+			expectShortKey: false,
+			description:    "RSA-2048 with MD5 (weak hash)",
 		},
 		{
-			name:             "Strong signature with weak key",
-			sigAlg:           x509.SHA384WithRSA,
-			pubKeyAlg:        x509.RSA,
-			keySize:          1024,
-			expectWeak:       false,
-			expectShortKey:   true,
-			description:      "RSA-1024 with SHA384 (weak key)",
+			name:           "Strong signature with weak key",
+			sigAlg:         x509.SHA384WithRSA,
+			pubKeyAlg:      x509.RSA,
+			keySize:        1024,
+			expectWeak:     false,
+			expectShortKey: true,
+			description:    "RSA-1024 with SHA384 (weak key)",
 		},
 	}
 
 	for _, scenario := range scenarios {
 		t.Run(scenario.name, func(t *testing.T) {
 			t.Logf("Testing: %s", scenario.description)
-			
+
 			hasWeak := isWeakSignatureAlgorithm(scenario.sigAlg)
 			if hasWeak != scenario.expectWeak {
 				t.Errorf("Weak signature check failed: got %v, expected %v",
 					hasWeak, scenario.expectWeak)
 			}
-			
+
 			hasShort := isShortKeySize(scenario.pubKeyAlg, scenario.keySize)
 			if hasShort != scenario.expectShortKey {
 				t.Errorf("Short key check failed: got %v, expected %v",
@@ -301,4 +307,3 @@ func TestCertificateValidationScenarios(t *testing.T) {
 		})
 	}
 }
-

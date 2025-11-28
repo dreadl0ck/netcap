@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package collector
@@ -56,15 +62,19 @@ func TestSymmetricFlowSharding(t *testing.T) {
 	t.Run("IPv4 TCP Symmetry", func(t *testing.T) {
 		src := net.ParseIP("192.168.1.100")
 		dst := net.ParseIP("1.1.1.1")
-		
+
 		// Forward: Client -> Server
 		p1 := createPacket(src, dst, 12345, 80)
-		if p1.NetworkLayer() == nil { t.Fatal("p1 NetworkLayer is nil") }
+		if p1.NetworkLayer() == nil {
+			t.Fatal("p1 NetworkLayer is nil")
+		}
 		idx1 := c.getSymmetricWorkerIndex(p1)
 
 		// Reverse: Server -> Client
 		p2 := createPacket(dst, src, 80, 12345)
-		if p2.NetworkLayer() == nil { t.Fatal("p2 NetworkLayer is nil") }
+		if p2.NetworkLayer() == nil {
+			t.Fatal("p2 NetworkLayer is nil")
+		}
 		idx2 := c.getSymmetricWorkerIndex(p2)
 
 		if idx1 != idx2 {
@@ -75,7 +85,7 @@ func TestSymmetricFlowSharding(t *testing.T) {
 	t.Run("IPv6 Symmetry", func(t *testing.T) {
 		src := net.ParseIP("2001:db8::1")
 		dst := net.ParseIP("2001:db8::2")
-		
+
 		eth := &layers.Ethernet{
 			SrcMAC:       net.HardwareAddr{0x00, 0x11, 0x22, 0x33, 0x44, 0x55},
 			DstMAC:       net.HardwareAddr{0x00, 0x11, 0x22, 0x33, 0x44, 0x66},
@@ -101,8 +111,10 @@ func TestSymmetricFlowSharding(t *testing.T) {
 			t.Fatal(err)
 		}
 		p1 := gopacket.NewPacket(buffer.Bytes(), layers.LayerTypeEthernet, gopacket.Default)
-		if p1.NetworkLayer() == nil { t.Fatal("p1 ipv6 NetworkLayer is nil") }
-		
+		if p1.NetworkLayer() == nil {
+			t.Fatal("p1 ipv6 NetworkLayer is nil")
+		}
+
 		// Reverse
 		ipReverse := &layers.IPv6{
 			SrcIP:      dst,
@@ -122,7 +134,9 @@ func TestSymmetricFlowSharding(t *testing.T) {
 			t.Fatal(err)
 		}
 		p2 := gopacket.NewPacket(buffer2.Bytes(), layers.LayerTypeEthernet, gopacket.Default)
-		if p2.NetworkLayer() == nil { t.Fatal("p2 ipv6 NetworkLayer is nil") }
+		if p2.NetworkLayer() == nil {
+			t.Fatal("p2 ipv6 NetworkLayer is nil")
+		}
 
 		idx1 := c.getSymmetricWorkerIndex(p1)
 		idx2 := c.getSymmetricWorkerIndex(p2)
@@ -165,16 +179,16 @@ func TestPacketDispatch(t *testing.T) {
 
 	src := net.ParseIP("10.0.0.1")
 	dst := net.ParseIP("10.0.0.2")
-	
+
 	// Create flow packets
 	// Flow 1: A->B
 	p1 := createIPv4UDP(src, dst, 100, 200)
 	// Flow 1: B->A
 	p2 := createIPv4UDP(dst, src, 200, 100)
-	
+
 	// Determine expected worker
 	expectedIdx := c.getSymmetricWorkerIndex(p1)
-	
+
 	// Dispatch
 	c.handlePacket(p1)
 	c.handlePacket(p2)
@@ -224,7 +238,7 @@ func createIPv4UDP(src, dst net.IP, srcPort, dstPort int) gopacket.Packet {
 		DstPort: layers.UDPPort(dstPort),
 	}
 	udp.SetNetworkLayerForChecksum(ip)
-	
+
 	buffer := gopacket.NewSerializeBuffer()
 	opts := gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true}
 	err := gopacket.SerializeLayers(buffer, opts, eth, ip, udp)

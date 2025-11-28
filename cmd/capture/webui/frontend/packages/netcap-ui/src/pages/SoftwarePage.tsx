@@ -1,3 +1,22 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Box,
@@ -39,6 +58,7 @@ import {
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
+import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi } from '../hooks';
 
@@ -118,16 +138,18 @@ export default function SoftwarePage() {
   const filteredSoftware = useMemo(() => {
     let filtered = software;
 
-    // Apply search filter
+    // Apply search filter with negation support (e.g., "!Windows" excludes Windows software)
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+      const searchTerms = parseSearchQuery(searchQuery);
       filtered = filtered.filter(sw =>
-        sw.product.toLowerCase().includes(query) ||
-        (sw.vendor || '').toLowerCase().includes(query) ||
-        (sw.version || '').toLowerCase().includes(query) ||
-        (sw.os || '').toLowerCase().includes(query) ||
-        (sw.devices || []).some(d => d.toLowerCase().includes(query)) ||
-        (sw.services || []).some(s => s.toLowerCase().includes(query))
+        matchesSearchTerms([
+          sw.product,
+          sw.vendor || '',
+          sw.version || '',
+          sw.os || '',
+          ...(sw.devices || []),
+          ...(sw.services || []),
+        ], searchTerms)
       );
     }
 

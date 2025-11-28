@@ -1,6 +1,6 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonicmp [dot] ch>
+ * Copyright (c) 2017-2025 Philipp Mieden <dreadl0ck [at] protonicmp [dot] ch>
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -30,10 +30,12 @@ import (
 )
 
 // ICMPv6CountFunc is a function that counts something over multiple ICMPv6 audit records.
+//
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
 type ICMPv6CountFunc func()
 
 // ICMPv6TransformationFunc is a transformation over ICMPv6 audit records.
+//
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
 type ICMPv6TransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, icmp *types.ICMPv6, min, max uint64, path string, ip string)
 

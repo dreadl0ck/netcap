@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package main
@@ -92,86 +98,86 @@ func main() {
 			},
 		},
 		Commands: []*cli.Command{
-		{
-			Name:   cmdCapture,
-			Usage:  "capture audit records from network traffic",
-			Flags:  capture.GetFlags(),
-			Action: func(ctx context.Context, cmd *cli.Command) error {
-				return capture.RunWithContext(ctx, cmd)
-			},
-		},
-		{
-			Name:   cmdUtil,
-			Usage:  "general utility tool",
-			Flags:  util.GetFlags(),
-			Action: func(ctx context.Context, cmd *cli.Command) error {
-				return util.RunWithContext(ctx, cmd)
-			},
-		},
-		{
-			Name:   cmdProxy,
-			Usage:  "HTTP proxy for traffic inspection",
-			Flags:  proxy.GetFlags(),
-			Action: func(ctx context.Context, cmd *cli.Command) error {
-				return proxy.RunWithContext(ctx, cmd)
-			},
-		},
-		{
-			Name:   cmdLabel,
-			Usage:  "apply labels to audit records",
-			Flags:  label.GetFlags(),
-			Action: func(ctx context.Context, cmd *cli.Command) error {
-				return label.RunWithContext(ctx, cmd)
-			},
-		},
-		{
-			Name:   cmdExport,
-			Usage:  "export audit records",
-			Flags:  export.GetFlags(),
-			Action: func(ctx context.Context, cmd *cli.Command) error {
-				return export.RunWithContext(ctx, cmd)
-			},
-		},
-		{
-			Name:   cmdDump,
-			Usage:  "utility to read audit record files",
-			Flags:  dump.GetFlags(),
-			Action: func(ctx context.Context, cmd *cli.Command) error {
-				return dump.RunWithContext(ctx, cmd)
-			},
-		},
-		{
-			Name:   cmdCollect,
-			Usage:  "collector for audit records from agents",
-			Flags:  collect.GetFlags(),
-			Action: func(ctx context.Context, cmd *cli.Command) error {
-				return collect.RunWithContext(ctx, cmd)
-			},
-		},
 			{
-				Name:   cmdTransform,
-				Usage:  "maltego plugin",
+				Name:  cmdCapture,
+				Usage: "capture audit records from network traffic",
+				Flags: capture.GetFlags(),
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return capture.RunWithContext(ctx, cmd)
+				},
+			},
+			{
+				Name:  cmdUtil,
+				Usage: "general utility tool",
+				Flags: util.GetFlags(),
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return util.RunWithContext(ctx, cmd)
+				},
+			},
+			{
+				Name:  cmdProxy,
+				Usage: "HTTP proxy for traffic inspection",
+				Flags: proxy.GetFlags(),
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return proxy.RunWithContext(ctx, cmd)
+				},
+			},
+			{
+				Name:  cmdLabel,
+				Usage: "apply labels to audit records",
+				Flags: label.GetFlags(),
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return label.RunWithContext(ctx, cmd)
+				},
+			},
+			{
+				Name:  cmdExport,
+				Usage: "export audit records",
+				Flags: export.GetFlags(),
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return export.RunWithContext(ctx, cmd)
+				},
+			},
+			{
+				Name:  cmdDump,
+				Usage: "utility to read audit record files",
+				Flags: dump.GetFlags(),
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return dump.RunWithContext(ctx, cmd)
+				},
+			},
+			{
+				Name:  cmdCollect,
+				Usage: "collector for audit records from agents",
+				Flags: collect.GetFlags(),
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return collect.RunWithContext(ctx, cmd)
+				},
+			},
+			{
+				Name:  cmdTransform,
+				Usage: "maltego plugin",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					transform.Run()
 					return nil
 				},
 			},
-		{
-			Name:   cmdAgent,
-			Usage:  "agent for distributed capture",
-			Flags:  agent.GetFlags(),
-			Action: func(ctx context.Context, cmd *cli.Command) error {
-				return agent.RunWithContext(ctx, cmd)
+			{
+				Name:  cmdAgent,
+				Usage: "agent for distributed capture",
+				Flags: agent.GetFlags(),
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return agent.RunWithContext(ctx, cmd)
+				},
 			},
-		},
-		{
-			Name:   cmdInject,
-			Usage:  "inline packet manipulation (MITM mode, Linux only)",
-			Flags:  inject.GetFlags(),
-			Action: func(ctx context.Context, cmd *cli.Command) error {
-				return inject.RunWithContext(ctx, cmd)
+			{
+				Name:  cmdInject,
+				Usage: "inline packet manipulation (MITM mode, Linux only)",
+				Flags: inject.GetFlags(),
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return inject.RunWithContext(ctx, cmd)
+				},
 			},
-		},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			io.PrintLogo()

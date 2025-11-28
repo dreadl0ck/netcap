@@ -1,17 +1,23 @@
+//go:build linux
+
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-//go:build linux
 
 // Package firewall provides iptables integration for automated response actions.
 // It wraps the coreos/go-iptables library to provide a safe, managed interface
@@ -537,13 +543,13 @@ func (m *Manager) GetStats() map[string]uint64 {
 	defer m.stats.mu.Unlock()
 
 	return map[string]uint64{
-		"blocks_created":   m.stats.BlocksCreated,
-		"blocks_removed":   m.stats.BlocksRemoved,
-		"blocks_expired":   m.stats.BlocksExpired,
-		"duplicates_skip":  m.stats.DuplicatesSkip,
-		"whitelist_skip":   m.stats.WhitelistSkip,
-		"errors":           m.stats.Errors,
-		"active_blocks":    activeCount,
+		"blocks_created":  m.stats.BlocksCreated,
+		"blocks_removed":  m.stats.BlocksRemoved,
+		"blocks_expired":  m.stats.BlocksExpired,
+		"duplicates_skip": m.stats.DuplicatesSkip,
+		"whitelist_skip":  m.stats.WhitelistSkip,
+		"errors":          m.stats.Errors,
+		"active_blocks":   activeCount,
 	}
 }
 
@@ -742,4 +748,3 @@ func (m *Manager) removeChain(ipt *iptables.IPTables) error {
 
 	return nil
 }
-

@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package webui
@@ -1093,7 +1099,7 @@ func generateGraphChart(outDir string, showLegend bool, layout string) *charts.G
 		Roam:       opts.Bool(true),
 		Categories: graphCategories,
 	}
-	
+
 	// Add Force settings only for "force" layout
 	if layout == "force" {
 		graphOpts.Force = &opts.GraphForce{
@@ -1180,41 +1186,41 @@ func getAuditRecordStats(outDir string) map[string]ProtocolStats {
 // getLayerMap returns the layer mapping for protocols
 func getLayerMap() map[string]string {
 	return map[string]string{
-	// Link Layer
-	"Ethernet":               "Link Layer",
-	"Dot1Q":                  "Link Layer",
-	"Dot11":                  "Link Layer",
-	"LLC":                    "Link Layer",
-	"SNAP":                   "Link Layer",
-	"ARP":                    "Link Layer",
-	"CiscoDiscovery":         "Link Layer",
-	"NortelDiscovery":        "Link Layer",
-	"LinkLayerDiscovery":     "Link Layer",
-	"LinkLayerDiscoveryInfo": "Link Layer",
-	"STP":                    "Link Layer",
-	"LLDP":                   "Link Layer",
-	"PPPoE":                  "Link Layer",
-	"PPP":                    "Link Layer",
-	// Network Layer
-	"IPv4":                        "Network Layer",
-	"IPv6":                        "Network Layer",
-	"IPv6HopByHop":                "Network Layer",
-	"ICMPv4":                      "Network Layer",
-	"ICMPv6":                      "Network Layer",
-	"ICMPv6Echo":                  "Network Layer",
-	"ICMPv6RouterSolicitation":    "Network Layer",
-	"ICMPv6RouterAdvertisement":   "Network Layer",
-	"ICMPv6NeighborSolicitation":  "Network Layer",
-	"ICMPv6NeighborAdvertisement": "Network Layer",
-	"IGMP":                        "Network Layer",
-	"IPSecAH":                     "Network Layer",
-	"IPSecESP":                    "Network Layer",
-	"GRE":                         "Network Layer",
-	"MPLS":                        "Network Layer",
-	"OSPFv2":                      "Network Layer",
-	"OSPFv3":                      "Network Layer",
-	"MLDv2MulticastListenerQuery":  "Network Layer",
-	"MLDv2MulticastListenerReport": "Network Layer",
+		// Link Layer
+		"Ethernet":               "Link Layer",
+		"Dot1Q":                  "Link Layer",
+		"Dot11":                  "Link Layer",
+		"LLC":                    "Link Layer",
+		"SNAP":                   "Link Layer",
+		"ARP":                    "Link Layer",
+		"CiscoDiscovery":         "Link Layer",
+		"NortelDiscovery":        "Link Layer",
+		"LinkLayerDiscovery":     "Link Layer",
+		"LinkLayerDiscoveryInfo": "Link Layer",
+		"STP":                    "Link Layer",
+		"LLDP":                   "Link Layer",
+		"PPPoE":                  "Link Layer",
+		"PPP":                    "Link Layer",
+		// Network Layer
+		"IPv4":                         "Network Layer",
+		"IPv6":                         "Network Layer",
+		"IPv6HopByHop":                 "Network Layer",
+		"ICMPv4":                       "Network Layer",
+		"ICMPv6":                       "Network Layer",
+		"ICMPv6Echo":                   "Network Layer",
+		"ICMPv6RouterSolicitation":     "Network Layer",
+		"ICMPv6RouterAdvertisement":    "Network Layer",
+		"ICMPv6NeighborSolicitation":   "Network Layer",
+		"ICMPv6NeighborAdvertisement":  "Network Layer",
+		"IGMP":                         "Network Layer",
+		"IPSecAH":                      "Network Layer",
+		"IPSecESP":                     "Network Layer",
+		"GRE":                          "Network Layer",
+		"MPLS":                         "Network Layer",
+		"OSPFv2":                       "Network Layer",
+		"OSPFv3":                       "Network Layer",
+		"MLDv2MulticastListenerQuery":  "Network Layer",
+		"MLDv2MulticastListenerReport": "Network Layer",
 		// Transport Layer
 		"TCP":  "Transport Layer",
 		"UDP":  "Transport Layer",
@@ -2013,7 +2019,7 @@ func generateHostsGraph(outDir string, showLegend bool, maxNodes int, layout str
 		FocusNodeAdjacency: opts.Bool(true),
 		Categories:         categories,
 	}
-	
+
 	// Add Force settings only for "force" layout
 	if layout == "force" {
 		graphOpts.Force = &opts.GraphForce{

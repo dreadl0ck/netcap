@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package webui
@@ -258,7 +264,7 @@ func (s *Server) getAllDecoderNames() []string {
 	goPacketDecoders := packet.GetGoPacketDecoders()
 	streamDecoders := stream.DefaultStreamDecoders
 	abstractDecoders := stream.DefaultAbstractDecoders
-	
+
 	names := make([]string, 0, len(packetDecoders)+len(goPacketDecoders)+len(streamDecoders)+len(abstractDecoders))
 
 	// Packet decoders
@@ -306,28 +312,28 @@ func (s *Server) handleAllDecoderFields(w http.ResponseWriter, r *http.Request) 
 
 	// Get all decoder names
 	allNames := s.getAllDecoderNames()
-	
+
 	// Build response map: decoder name -> field info array
 	response := make(map[string][]FieldInfo)
-	
+
 	for _, decoderName := range allNames {
 		// Skip NC_Header as it's a file header type, not an audit record type
 		if decoderName == "NC_Header" {
 			continue
 		}
-		
+
 		// Add NC_ prefix if not present (needed for stream and abstract decoders)
 		typeName := decoderName
 		if !strings.HasPrefix(typeName, "NC_") {
 			typeName = "NC_" + decoderName
 		}
-		
+
 		// Check if the type value exists in the type map
 		typeValue, exists := types.Type_value[typeName]
 		if !exists {
 			continue
 		}
-		
+
 		// Try to get the audit record type for this decoder
 		record := netio.InitRecord(types.Type(typeValue))
 		if record == nil {
@@ -515,19 +521,19 @@ func InitRecordForDecoder(decoderName string) interface{} {
 // This includes nested fields using dot notation (e.g., "ReqCookies.Name")
 func GetRecordFields(record interface{}) []FieldInfo {
 	var fields []FieldInfo
-	
+
 	v := reflect.ValueOf(record)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
-	
+
 	if v.Kind() != reflect.Struct {
 		return fields
 	}
-	
+
 	// Extract fields recursively, including nested fields
 	extractRecordFieldsRecursive(v, "", &fields, 0, 3) // max depth of 3
-	
+
 	return fields
 }
 
@@ -575,7 +581,7 @@ func extractRecordFieldsRecursive(v reflect.Value, prefix string, fields *[]Fiel
 				for _, key := range field.MapKeys() {
 					mapKeyName := fieldName + "." + key.String()
 					mapValue := field.MapIndex(key)
-					
+
 					// Determine type of map values
 					var mapTypeName string
 					switch mapValue.Kind() {
@@ -598,7 +604,7 @@ func extractRecordFieldsRecursive(v reflect.Value, prefix string, fields *[]Fiel
 					case reflect.Bool:
 						mapTypeName = "bool"
 					}
-					
+
 					if mapTypeName != "" {
 						*fields = append(*fields, FieldInfo{
 							Name: mapKeyName,

@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package file
@@ -97,18 +103,18 @@ func SaveFileEnhanced(
 	// Enhanced content type detection (if enabled)
 	var cTypeDetected string
 	var accurate bool
-	
+
 	if cfg.FileExtraction.Advanced.UseMagicDetection {
 		cTypeDetected, accurate = DetectContentType(body)
 	} else {
 		cTypeDetected = trimEncoding(decoderconfig.Instance.FileStorage)
 	}
-	
+
 	// Use detected type if more accurate than provided
 	if accurate && contentType == "" {
 		contentType = cTypeDetected
 	}
-	
+
 	// Check MIME type filtering
 	if !ShouldExtractMimeType(cTypeDetected) {
 		saveFileLog.Debug("MIME type filtered, skipping extraction",
@@ -231,7 +237,7 @@ func SaveFileEnhanced(
 	// Get computed hashes (selective based on config)
 	allHashes := hashWriter.GetHashes()
 	hashes := FileHashes{}
-	
+
 	if ShouldComputeHash("MD5") {
 		hashes.MD5 = allHashes.MD5
 	}
@@ -276,12 +282,12 @@ func SaveFileEnhanced(
 			SHA1:   hashes.SHA1,
 			SHA256: hashes.SHA256,
 		},
-		Depth:          int32(depth),
-		MissingBytes:   0, // TODO: Track from reassembly
-		IsComplete:     err == nil,
-		ParentFileID:   parentFileID,
-		FlowDirection:  flowDirection,
-		ConnectionUID:  conv.Ident,
+		Depth:         int32(depth),
+		MissingBytes:  0, // TODO: Track from reassembly
+		IsComplete:    err == nil,
+		ParentFileID:  parentFileID,
+		FlowDirection: flowDirection,
+		ConnectionUID: conv.Ident,
 		// Security analysis fields
 		Entropy:             analysis.Entropy,
 		MagicBytes:          analysis.MagicBytes,
@@ -317,4 +323,3 @@ func createContentTypePathIfRequired(path string) {
 		)
 	}
 }
-

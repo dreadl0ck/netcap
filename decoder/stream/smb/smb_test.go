@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package smb
@@ -173,9 +179,9 @@ func TestFormatGUID(t *testing.T) {
 	// Sample GUID: {12345678-1234-5678-9ABC-DEFABCDEF012}
 	data := []byte{
 		0x78, 0x56, 0x34, 0x12, // Data1 (little-endian)
-		0x34, 0x12,             // Data2 (little-endian)
-		0x78, 0x56,             // Data3 (little-endian)
-		0x9A, 0xBC,             // Data4[0:2]
+		0x34, 0x12, // Data2 (little-endian)
+		0x78, 0x56, // Data3 (little-endian)
+		0x9A, 0xBC, // Data4[0:2]
 		0xDE, 0xFA, 0xBC, 0xDE, 0xF0, 0x12, // Data4[2:8]
 	}
 
@@ -346,11 +352,11 @@ func TestDetectThreats(t *testing.T) {
 			expectContains: "REMOTE_EXEC_TOOL",
 		},
 		{
-			name:           "normal operation",
-			filename:       "document.docx",
-			share:          "\\\\server\\documents",
-			accessMask:     0x00000001, // READ_DATA
-			expectThreat:   false,
+			name:         "normal operation",
+			filename:     "document.docx",
+			share:        "\\\\server\\documents",
+			accessMask:   0x00000001, // READ_DATA
+			expectThreat: false,
 		},
 		{
 			name:           "sensitive pipe access",
@@ -375,7 +381,6 @@ func TestDetectThreats(t *testing.T) {
 		})
 	}
 }
-
 
 // Test SMB2 capabilities parsing
 func TestParseSMB2Capabilities(t *testing.T) {
@@ -456,25 +461,25 @@ func TestNTLMTargetInfoParsing(t *testing.T) {
 	// MsvAvNbDomainName (0x0002) = "WORKGROUP"
 	// MsvAvNbComputerName (0x0001) = "SERVER"
 	// MsvAvEOL (0x0000)
-	
+
 	var data []byte
-	
+
 	// NbDomainName
 	domainBytes := encodeUTF16LE("WORKGROUP")
 	data = appendAVPair(data, MsvAvNbDomainName, domainBytes)
-	
+
 	// NbComputerName
 	computerBytes := encodeUTF16LE("SERVER")
 	data = appendAVPair(data, MsvAvNbComputerName, computerBytes)
-	
+
 	// EOL
 	data = appendAVPair(data, MsvAvEOL, nil)
-	
+
 	// Parse it - use testing-safe helper
 	reader := newTestSMBReader()
 	info := &ntlmChallengeInfo{}
 	reader.parseNTLMTargetInfo(data, info)
-	
+
 	if info.NbDomainName != "WORKGROUP" {
 		t.Errorf("Expected NbDomainName=WORKGROUP, got %q", info.NbDomainName)
 	}
@@ -505,37 +510,37 @@ func appendAVPair(data []byte, avID uint16, value []byte) []byte {
 func TestParseNTLMChallenge(t *testing.T) {
 	// Build a minimal NTLM CHALLENGE message
 	msg := make([]byte, 56)
-	
+
 	// Signature "NTLMSSP\0"
 	copy(msg[0:8], []byte("NTLMSSP\x00"))
-	
+
 	// MessageType = 2 (CHALLENGE)
 	binary.LittleEndian.PutUint32(msg[8:12], 2)
-	
+
 	// TargetName: empty for simplicity
-	binary.LittleEndian.PutUint16(msg[12:14], 0)  // TargetNameLen
-	binary.LittleEndian.PutUint16(msg[14:16], 0)  // TargetNameMaxLen
-	binary.LittleEndian.PutUint32(msg[16:20], 0)  // TargetNameOffset
-	
+	binary.LittleEndian.PutUint16(msg[12:14], 0) // TargetNameLen
+	binary.LittleEndian.PutUint16(msg[14:16], 0) // TargetNameMaxLen
+	binary.LittleEndian.PutUint32(msg[16:20], 0) // TargetNameOffset
+
 	// NegotiateFlags - set NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY
 	binary.LittleEndian.PutUint32(msg[20:24], 0x00080000)
-	
+
 	// ServerChallenge (8 bytes) - use a known value
 	challengeBytes, _ := hex.DecodeString("0102030405060708")
 	copy(msg[24:32], challengeBytes)
-	
+
 	// Reserved (8 bytes)
 	// Offset 32-39 already zero
-	
+
 	// TargetInfo: empty
-	binary.LittleEndian.PutUint16(msg[40:42], 0)  // TargetInfoLen
-	binary.LittleEndian.PutUint16(msg[42:44], 0)  // TargetInfoMaxLen
-	binary.LittleEndian.PutUint32(msg[44:48], 0)  // TargetInfoOffset
-	
+	binary.LittleEndian.PutUint16(msg[40:42], 0) // TargetInfoLen
+	binary.LittleEndian.PutUint16(msg[42:44], 0) // TargetInfoMaxLen
+	binary.LittleEndian.PutUint32(msg[44:48], 0) // TargetInfoOffset
+
 	// Parse it - use the testing-safe helper
 	reader := newTestSMBReader()
 	reader.parseNTLMChallenge(msg)
-	
+
 	if reader.ntlmVersion != "NTLMv2" {
 		t.Errorf("Expected NTLMv2, got %q", reader.ntlmVersion)
 	}
@@ -547,57 +552,57 @@ func TestParseNTLMAuthenticate(t *testing.T) {
 	domain := "WORKGROUP"
 	username := "testuser"
 	workstation := "CLIENT01"
-	
+
 	domainBytes := encodeUTF16LE(domain)
 	usernameBytes := encodeUTF16LE(username)
 	workstationBytes := encodeUTF16LE(workstation)
-	
+
 	// Calculate offsets (payload starts after fixed header at offset 72)
 	payloadStart := 72
 	domainOffset := payloadStart
 	usernameOffset := domainOffset + len(domainBytes)
 	workstationOffset := usernameOffset + len(usernameBytes)
-	
+
 	// Build message
 	msgLen := workstationOffset + len(workstationBytes)
 	msg := make([]byte, msgLen)
-	
+
 	// Signature "NTLMSSP\0"
 	copy(msg[0:8], []byte("NTLMSSP\x00"))
-	
+
 	// MessageType = 3 (AUTHENTICATE)
 	binary.LittleEndian.PutUint32(msg[8:12], 3)
-	
+
 	// LmChallengeResponse (skip for simplicity)
 	// NtChallengeResponse (skip for simplicity)
-	
+
 	// Domain: offset 28-35
 	binary.LittleEndian.PutUint16(msg[28:30], uint16(len(domainBytes)))
 	binary.LittleEndian.PutUint16(msg[30:32], uint16(len(domainBytes)))
 	binary.LittleEndian.PutUint32(msg[32:36], uint32(domainOffset))
-	
+
 	// Username: offset 36-43
 	binary.LittleEndian.PutUint16(msg[36:38], uint16(len(usernameBytes)))
 	binary.LittleEndian.PutUint16(msg[38:40], uint16(len(usernameBytes)))
 	binary.LittleEndian.PutUint32(msg[40:44], uint32(usernameOffset))
-	
+
 	// Workstation: offset 44-51
 	binary.LittleEndian.PutUint16(msg[44:46], uint16(len(workstationBytes)))
 	binary.LittleEndian.PutUint16(msg[46:48], uint16(len(workstationBytes)))
 	binary.LittleEndian.PutUint32(msg[48:52], uint32(workstationOffset))
-	
+
 	// NegotiateFlags: offset 60-63, set NTLMv2 flag
 	binary.LittleEndian.PutUint32(msg[60:64], 0x00080000)
-	
+
 	// Copy payload data
 	copy(msg[domainOffset:], domainBytes)
 	copy(msg[usernameOffset:], usernameBytes)
 	copy(msg[workstationOffset:], workstationBytes)
-	
+
 	// Parse it - use testing-safe helper
 	reader := newTestSMBReader()
 	reader.parseNTLMAuthenticate(msg)
-	
+
 	if reader.domain != domain {
 		t.Errorf("Expected domain=%q, got %q", domain, reader.domain)
 	}
@@ -681,4 +686,3 @@ func TestResetMessageState(t *testing.T) {
 		t.Error("sessionID should be preserved")
 	}
 }
-

@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package tls
@@ -59,7 +65,7 @@ func TestExtractKeyUsage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := extractKeyUsage(tt.usage)
-			
+
 			if len(result) != len(tt.expected) {
 				t.Errorf("Expected %d usages, got %d", len(tt.expected), len(result))
 				t.Logf("Expected: %v", tt.expected)
@@ -131,7 +137,7 @@ func TestExtractExtKeyUsage(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := extractExtKeyUsage(tt.usages)
-			
+
 			if len(result) != len(tt.expected) {
 				t.Errorf("Expected %d ext usages, got %d", len(tt.expected), len(result))
 				t.Logf("Expected: %v", tt.expected)
@@ -186,7 +192,7 @@ func TestFormatSerialNumber(t *testing.T) {
 			// Parse the input as a decimal number
 			var serial big.Int
 			serial.SetString(tt.input, 10)
-			
+
 			result := formatSerialNumber(&serial)
 			if result != tt.expected {
 				t.Errorf("Expected %q, got %q", tt.expected, result)
@@ -203,8 +209,8 @@ func TestParseTLSRecords(t *testing.T) {
 		description string
 	}{
 		{
-			name: "Empty data",
-			data: []byte{},
+			name:        "Empty data",
+			data:        []byte{},
 			description: "Should handle empty input gracefully",
 		},
 		{
@@ -315,4 +321,3 @@ func TestTLSReaderNew(t *testing.T) {
 		t.Error("New() did not set conversation correctly")
 	}
 }
-

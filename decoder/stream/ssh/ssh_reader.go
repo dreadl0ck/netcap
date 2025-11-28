@@ -1,6 +1,6 @@
 /*
 * NETCAP - Traffic Analysis Framework
-* Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+* Copyright (c) 2017-2025 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
 *
 * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -68,7 +68,7 @@ func (h *sshReader) Decode() {
 		zap.Int("clientPort", int(h.conversation.ClientPort)),
 		zap.Int("serverPort", int(h.conversation.ServerPort)),
 	)
-	
+
 	// prevent nil pointer access if decoder is not initialized
 	if Decoder.Writer == nil {
 		sshLog.Error("SSH Decoder.Writer is nil - cannot write SSH audit records!")
@@ -111,10 +111,10 @@ func (h *sshReader) Decode() {
 		// Create audit records for ident-only connections (incomplete handshakes)
 		if h.clientIdent != "" {
 			err := Decoder.Writer.Write(&types.SSH{
-				Timestamp: h.conversation.FirstClientPacket.UnixNano(),
-				HASSH:     "", // No HASSH without KexInit
-				Flow:      h.conversation.Ident,
-				Ident:     h.clientIdent,
+				Timestamp:  h.conversation.FirstClientPacket.UnixNano(),
+				HASSH:      "", // No HASSH without KexInit
+				Flow:       h.conversation.Ident,
+				Ident:      h.clientIdent,
 				Algorithms: "", // No algorithms without KexInit
 				IsClient:   true,
 				Notes:      "Incomplete handshake - no KexInit",
@@ -132,10 +132,10 @@ func (h *sshReader) Decode() {
 
 		if h.serverIdent != "" {
 			err := Decoder.Writer.Write(&types.SSH{
-				Timestamp: h.conversation.FirstServerPacket.UnixNano(),
-				HASSH:     "", // No HASSH without KexInit
-				Flow:      utils.ReverseFlowIdent(h.conversation.Ident),
-				Ident:     h.serverIdent,
+				Timestamp:  h.conversation.FirstServerPacket.UnixNano(),
+				HASSH:      "", // No HASSH without KexInit
+				Flow:       utils.ReverseFlowIdent(h.conversation.Ident),
+				Ident:      h.serverIdent,
 				Algorithms: "", // No algorithms without KexInit
 				IsClient:   false,
 				Notes:      "Incomplete handshake - no KexInit",
@@ -202,14 +202,14 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 	if dir != reassembly.TCPDirClientToServer {
 		dirStr = "server"
 	}
-	
+
 	sshLog.Debug("searchKexInit called",
 		zap.String("ident", h.conversation.Ident),
 		zap.String("direction", dirStr),
 		zap.Bool("serverKexInitAlreadySet", h.serverKexInit != nil),
 		zap.Bool("clientKexInitAlreadySet", h.clientKexInit != nil),
 	)
-	
+
 	if h.serverKexInit != nil && h.clientKexInit != nil {
 		sshLog.Debug("Both KexInit already set, skipping",
 			zap.String("ident", h.conversation.Ident),
@@ -237,7 +237,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 		)
 		return
 	}
-	
+
 	sshLog.Debug("Read data from buffer",
 		zap.String("ident", h.conversation.Ident),
 		zap.String("direction", dirStr),
@@ -252,7 +252,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			zap.String("ident", h.conversation.Ident),
 			zap.String("direction", dirStr),
 		)
-		
+
 		var (
 			br       = bytes.NewReader(data)
 			b        byte
@@ -344,7 +344,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 		length := int(binary.BigEndian.Uint32(data[offset : i-1]))
 		padding := int(data[i-1])
-		
+
 		sshLog.Debug("Parsing SSH packet",
 			zap.String("ident", h.conversation.Ident),
 			zap.String("direction", dirStr),
@@ -378,7 +378,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			fmt.Println(err)
 			break
 		}
-		
+
 		kexInitFound = true
 		sshLog.Info("Successfully parsed KexInit",
 			zap.String("ident", h.conversation.Ident),
@@ -479,7 +479,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 		break
 	}
-	
+
 	if !kexInitFound {
 		sshLog.Warn("No KexInit found in stream",
 			zap.String("ident", h.conversation.Ident),
@@ -513,7 +513,7 @@ func parseSSHInfoFromHasshDB(soft string) (sshVersion string, product string, ve
 
 	if len(firstSplit) > 1 {
 		os = firstSplit[len(firstSplit)-1]
-		
+
 		// Check bounds before accessing vendorVersion elements
 		if len(vendorVersion) > 0 {
 			product = vendorVersion[0]
@@ -521,7 +521,7 @@ func parseSSHInfoFromHasshDB(soft string) (sshVersion string, product string, ve
 		if len(vendorVersion) > 1 {
 			version = vendorVersion[1]
 		}
-		
+
 		return sshVersionArr[0], product, version, os
 	}
 
@@ -588,15 +588,15 @@ var weakKexAlgorithms = map[string]bool{
 
 // weakCiphers contains encryption ciphers considered weak
 var weakCiphers = map[string]bool{
-	"3des-cbc":          true,
-	"arcfour":           true,
-	"arcfour128":        true,
-	"arcfour256":        true,
-	"blowfish-cbc":      true,
-	"cast128-cbc":       true,
-	"aes128-cbc":        true, // CBC mode is weak
-	"aes192-cbc":        true,
-	"aes256-cbc":        true,
+	"3des-cbc":     true,
+	"arcfour":      true,
+	"arcfour128":   true,
+	"arcfour256":   true,
+	"blowfish-cbc": true,
+	"cast128-cbc":  true,
+	"aes128-cbc":   true, // CBC mode is weak
+	"aes192-cbc":   true,
+	"aes256-cbc":   true,
 }
 
 // weakMACs contains MAC algorithms considered weak
@@ -652,7 +652,7 @@ func extractSoftwareVersion(ident string) string {
 // guessOS attempts to guess the OS from the SSH ident string
 func guessOS(ident string) string {
 	identLower := strings.ToLower(ident)
-	
+
 	if strings.Contains(identLower, "ubuntu") {
 		return "Ubuntu Linux"
 	} else if strings.Contains(identLower, "debian") {

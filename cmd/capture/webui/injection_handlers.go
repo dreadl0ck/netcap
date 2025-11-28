@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package webui
@@ -81,18 +87,18 @@ type UpdateInjectionRuleRequest struct {
 
 // InjectionEvent represents an event when an injection rule is triggered
 type InjectionEvent struct {
-	ID          string                 `json:"id"`
-	Timestamp   int64                  `json:"timestamp"`
-	RuleName    string                 `json:"ruleName"`
-	RuleAction  string                 `json:"ruleAction"`
-	RecordType  string                 `json:"recordType"`
-	SrcIP       string                 `json:"srcIP,omitempty"`
-	DstIP       string                 `json:"dstIP,omitempty"`
-	SrcPort     int                    `json:"srcPort,omitempty"`
-	DstPort     int                    `json:"dstPort,omitempty"`
-	Result      string                 `json:"result"` // "success", "failed", "skipped"
-	Error       string                 `json:"error,omitempty"`
-	ActionData  map[string]interface{} `json:"actionData,omitempty"`
+	ID         string                 `json:"id"`
+	Timestamp  int64                  `json:"timestamp"`
+	RuleName   string                 `json:"ruleName"`
+	RuleAction string                 `json:"ruleAction"`
+	RecordType string                 `json:"recordType"`
+	SrcIP      string                 `json:"srcIP,omitempty"`
+	DstIP      string                 `json:"dstIP,omitempty"`
+	SrcPort    int                    `json:"srcPort,omitempty"`
+	DstPort    int                    `json:"dstPort,omitempty"`
+	Result     string                 `json:"result"` // "success", "failed", "skipped"
+	Error      string                 `json:"error,omitempty"`
+	ActionData map[string]interface{} `json:"actionData,omitempty"`
 }
 
 // InjectionEventsResponse represents the response containing injection events
@@ -1076,4 +1082,3 @@ func (s *Server) handleInjectionActions(w http.ResponseWriter, r *http.Request) 
 		"actions": actions,
 	})
 }
-

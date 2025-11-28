@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package webui
@@ -51,11 +57,11 @@ type SessionInfo struct {
 	ProcessingTime   float64       `json:"processingTime,omitempty"` // Processing duration in seconds
 	PacketsTotal     int64         `json:"packetsTotal,omitempty"`
 	ResultsReady     bool          `json:"resultsReady"`
-	ShareUrl         string        `json:"shareUrl"`        // Shareable URL for viewing this session
-	IsPreloaded      bool          `json:"isPreloaded"`     // True if this is a preloaded system pcap
-	BPFFilter        string        `json:"bpfFilter"`       // BPF filter applied during capture
-	IncludeDecoders  string        `json:"includeDecoders"` // Decoders included during capture
-	ExcludeDecoders  string        `json:"excludeDecoders"` // Decoders excluded during capture
+	ShareUrl         string        `json:"shareUrl"`         // Shareable URL for viewing this session
+	IsPreloaded      bool          `json:"isPreloaded"`      // True if this is a preloaded system pcap
+	BPFFilter        string        `json:"bpfFilter"`        // BPF filter applied during capture
+	IncludeDecoders  string        `json:"includeDecoders"`  // Decoders included during capture
+	ExcludeDecoders  string        `json:"excludeDecoders"`  // Decoders excluded during capture
 	HasReportedIssue bool          `json:"hasReportedIssue"` // True if an issue has been reported for this session
 }
 
@@ -63,7 +69,7 @@ type SessionInfo struct {
 type IPTracker struct {
 	IP               string
 	AnalysisTimes    []time.Time
-	Sessions         []string // Session IDs
+	Sessions         []string    // Session IDs
 	IssueReportTimes []time.Time // Timestamps of issue reports for rate limiting
 }
 
@@ -184,7 +190,7 @@ func (sm *SessionManager) UpdateSessionStatus(sessionID string, status SessionSt
 				session.ResultsReady = true
 				log.Printf("[SessionManager] Session %s marked as completed and ready", sessionID)
 			} else if status == StatusFailed {
-				log.Printf("[SessionManager] Session %s marked as failed (errorMsg: %s, errorLogPath: %s)", 
+				log.Printf("[SessionManager] Session %s marked as failed (errorMsg: %s, errorLogPath: %s)",
 					sessionID, errorMsg, session.ErrorLogPath)
 			}
 		}
@@ -236,7 +242,7 @@ func (sm *SessionManager) CleanupExpiredSessions() []string {
 		if session.IsPreloaded {
 			continue
 		}
-		
+
 		if session.UploadTimestamp.Before(expiryTime) {
 			expiredSessions = append(expiredSessions, sessionID)
 			delete(sm.sessions, sessionID)
@@ -382,7 +388,7 @@ func (sm *SessionManager) GetStorageUsageForIP(ip string) int64 {
 			} else {
 				totalSize += resultsDirSize
 			}
-			
+
 			// Add input file size (the uploaded PCAP file stored in uploads directory)
 			// This is stored separately from the results directory
 			totalSize += session.InputFileSize
@@ -426,7 +432,7 @@ func (sm *SessionManager) RestoreSessionsFromDisk(resultsDir, pcapsDir, uploadsD
 		// Try to load session metadata file
 		metadataPath := filepath.Join(sessionDir, "session.json")
 		session, err := loadSessionMetadata(metadataPath)
-		
+
 		if err != nil {
 			// If metadata file doesn't exist or is invalid, try to reconstruct session info
 			session, err = sm.reconstructSession(sessionID, sessionDir, pcapsDir, uploadsDir)
@@ -434,7 +440,7 @@ func (sm *SessionManager) RestoreSessionsFromDisk(resultsDir, pcapsDir, uploadsD
 				log.Printf("[SessionManager] Failed to restore session %s: %v", sessionID, err)
 				continue
 			}
-			
+
 			// Save reconstructed session metadata for next time
 			if saveErr := saveSessionMetadata(metadataPath, session); saveErr != nil {
 				log.Printf("[SessionManager] Warning: Failed to save reconstructed session metadata for %s: %v", sessionID, saveErr)
@@ -443,7 +449,7 @@ func (sm *SessionManager) RestoreSessionsFromDisk(resultsDir, pcapsDir, uploadsD
 
 		// Add session to manager
 		sm.sessions[sessionID] = session
-		
+
 		// Update IP tracker (don't count towards rate limits for restored sessions)
 		tracker, exists := sm.ipTrackers[session.IP]
 		if !exists {
@@ -456,9 +462,9 @@ func (sm *SessionManager) RestoreSessionsFromDisk(resultsDir, pcapsDir, uploadsD
 			sm.ipTrackers[session.IP] = tracker
 		}
 		tracker.Sessions = append(tracker.Sessions, session.SessionID)
-		
+
 		restoredCount++
-		log.Printf("[SessionManager] Restored session %s (IP: %s, file: %s, status: %s)", 
+		log.Printf("[SessionManager] Restored session %s (IP: %s, file: %s, status: %s)",
 			sessionID, session.IP, session.InputFilename, session.Status)
 	}
 
@@ -504,7 +510,7 @@ func (sm *SessionManager) reconstructSession(sessionID, sessionDir, pcapsDir, up
 				}
 			}
 		}
-		
+
 		// If still not found, use a placeholder path
 		if inputFile == filepath.Join(uploadsDir, sessionID+".pcap") {
 			inputFile = "unknown"
@@ -521,7 +527,7 @@ func (sm *SessionManager) reconstructSession(sessionID, sessionDir, pcapsDir, up
 	// Determine status by checking for completion markers
 	status := StatusCompleted
 	resultsReady := true
-	
+
 	// Check if there's an error log
 	errorLogPath := filepath.Join(sessionDir, "analysis_error.log")
 	errorMessage := ""
@@ -541,7 +547,7 @@ func (sm *SessionManager) reconstructSession(sessionID, sessionDir, pcapsDir, up
 			}
 		}
 	}
-	
+
 	if !hasResults && status != StatusFailed {
 		status = StatusQueued
 		resultsReady = false
@@ -605,4 +611,3 @@ func (sm *SessionManager) SaveSessionMetadata(sessionID string) error {
 	metadataPath := filepath.Join(session.OutputDir, "session.json")
 	return saveSessionMetadata(metadataPath, session)
 }
-

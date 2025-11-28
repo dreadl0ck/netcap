@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package credentials
@@ -36,11 +42,12 @@ const (
 // LDAP uses ASN.1 BER encoding, but Simple Bind is simple enough to parse manually
 // Structure: SEQUENCE { messageID, BindRequest { version, name, simple_auth } }
 // BindRequest: [APPLICATION 0] (0x60)
-//   version: INTEGER
-//   name: OCTET STRING (DN)
-//   authentication: CHOICE {
-//     simple: [0] OCTET STRING (0x80) <- plaintext password
-//   }
+//
+//	version: INTEGER
+//	name: OCTET STRING (DN)
+//	authentication: CHOICE {
+//	  simple: [0] OCTET STRING (0x80) <- plaintext password
+//	}
 func ldapHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(data) < 20 {
 		return nil
@@ -217,15 +224,15 @@ func extractLDAPUsername(dn string) string {
 		if attrIdx == -1 {
 			continue
 		}
-		
+
 		attrIdx += len(searchStr)
-		
+
 		// Find the end of the attribute value (comma or end of string)
 		commaIdx := bytes.IndexByte([]byte(dn[attrIdx:]), ',')
 		if commaIdx == -1 {
 			return dn[attrIdx:]
 		}
-		
+
 		return dn[attrIdx : attrIdx+commaIdx]
 	}
 
@@ -238,4 +245,3 @@ var ldapHarvester = Harvester{
 	Description:   "Lightweight Directory Access Protocol - captures Simple Bind credentials (plaintext)",
 	HarvesterFunc: ldapHarvesterFunc,
 }
-

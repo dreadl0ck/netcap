@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package collector_test
@@ -36,7 +42,7 @@ const (
 	httpPostPCAP = "../decoder/stream/credentials/testdata/http-post-auth.pcap"
 	ftpPCAP      = "../decoder/stream/credentials/testdata/ftp.pcap"
 	smtpPCAP     = "../decoder/stream/credentials/testdata/smtp.pcap"
-	
+
 	// Zeek test data
 	zeekFTPRetr = "/Users/pmieden/Development/zeek/testing/btest/Traces/ftp/retr.trace"
 	zeekHTTPGet = "/Users/pmieden/Development/zeek/testing/btest/Traces/http/get.trace"
@@ -189,7 +195,7 @@ func TestHTTPFileExtraction(t *testing.T) {
 		if fileRecord.Length == 0 || fileRecord.Name == "" {
 			continue
 		}
-		
+
 		validFileCount++
 
 		// Verify HTTP source (only if source is set)
@@ -208,10 +214,10 @@ func TestHTTPFileExtraction(t *testing.T) {
 			if fileRecord.Hashes.SHA256 != "" && len(fileRecord.Hashes.SHA256) != 64 {
 				t.Errorf("SHA256 hash invalid length: %d", len(fileRecord.Hashes.SHA256))
 			}
-			
+
 			if fileRecord.Hashes.SHA256 != "" {
-				t.Logf("File: %s, MD5: %s, SHA256: %s", 
-					fileRecord.Name, 
+				t.Logf("File: %s, MD5: %s, SHA256: %s",
+					fileRecord.Name,
 					fileRecord.Hashes.MD5,
 					fileRecord.Hashes.SHA256)
 			}
@@ -222,9 +228,9 @@ func TestHTTPFileExtraction(t *testing.T) {
 			t.Logf("Note: Extracted file not found at: %s (may have been cleaned up)", fileRecord.Location)
 		}
 
-		t.Logf("Extracted: %s (%d bytes) from %s", 
-			fileRecord.Name, 
-			fileRecord.Length, 
+		t.Logf("Extracted: %s (%d bytes) from %s",
+			fileRecord.Name,
+			fileRecord.Length,
 			fileRecord.Source)
 	}
 
@@ -286,8 +292,8 @@ func TestSMTPFileExtraction(t *testing.T) {
 		}
 		fileCount++
 
-		t.Logf("Extracted attachment: %s (%d bytes) from %s", 
-			fileRecord.Name, 
+		t.Logf("Extracted attachment: %s (%d bytes) from %s",
+			fileRecord.Name,
 			fileRecord.Length,
 			fileRecord.Source)
 	}
@@ -375,7 +381,7 @@ func TestFTPDecoder(t *testing.T) {
 		t.Error("No FTP commands/responses parsed")
 	} else {
 		t.Logf("Parsed %d FTP commands/responses", commandCount)
-		t.Logf("Found RETR: %v, STOR: %v, PORT: %v, PASV: %v", 
+		t.Logf("Found RETR: %v, STOR: %v, PORT: %v, PASV: %v",
 			foundRETR, foundSTOR, foundPORT, foundPASV)
 	}
 }
@@ -550,21 +556,21 @@ func TestMultipleHashAlgorithms(t *testing.T) {
 
 		// Verify all three hashes exist and are correct length
 		hasAllHashes := true
-		
+
 		if fileRecord.Hashes.MD5 == "" || len(fileRecord.Hashes.MD5) != 32 {
-			t.Errorf("MD5 hash invalid: %s (length %d)", 
+			t.Errorf("MD5 hash invalid: %s (length %d)",
 				fileRecord.Hashes.MD5, len(fileRecord.Hashes.MD5))
 			hasAllHashes = false
 		}
-		
+
 		if fileRecord.Hashes.SHA1 == "" || len(fileRecord.Hashes.SHA1) != 40 {
-			t.Errorf("SHA1 hash invalid: %s (length %d)", 
+			t.Errorf("SHA1 hash invalid: %s (length %d)",
 				fileRecord.Hashes.SHA1, len(fileRecord.Hashes.SHA1))
 			hasAllHashes = false
 		}
-		
+
 		if fileRecord.Hashes.SHA256 == "" || len(fileRecord.Hashes.SHA256) != 64 {
-			t.Errorf("SHA256 hash invalid: %s (length %d)", 
+			t.Errorf("SHA256 hash invalid: %s (length %d)",
 				fileRecord.Hashes.SHA256, len(fileRecord.Hashes.SHA256))
 			hasAllHashes = false
 		}
@@ -621,7 +627,7 @@ func TestMIMEDetection(t *testing.T) {
 
 	var fileRecord types.File
 	mimeDetected := 0
-	
+
 	for {
 		err := reader.Next(&fileRecord)
 		if err != nil {
@@ -635,18 +641,18 @@ func TestMIMEDetection(t *testing.T) {
 		if fileRecord.Length == 0 || fileRecord.Name == "" {
 			continue
 		}
-		
+
 		// Verify MIME type was detected
 		if fileRecord.ContentTypeDetected == "" {
 			t.Logf("Note: File %s has empty ContentTypeDetected", fileRecord.Name)
 		} else {
 			mimeDetected++
-			t.Logf("File: %s, Detected MIME: %s", 
-				fileRecord.Name, 
+			t.Logf("File: %s, Detected MIME: %s",
+				fileRecord.Name,
 				fileRecord.ContentTypeDetected)
 		}
 	}
-	
+
 	if mimeDetected == 0 {
 		t.Error("No files with detected MIME types found")
 	} else {
@@ -746,4 +752,3 @@ func TestProtocolFiltering(t *testing.T) {
 
 	t.Log("Verified HTTP protocol filtering works")
 }
-

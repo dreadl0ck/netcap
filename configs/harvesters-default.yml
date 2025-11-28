@@ -161,6 +161,44 @@ harvesters:
     ports: [27017]
     parameters: {}
 
+  # Remote Desktop Protocols
+  - name: "TeamViewer"
+    enabled: true
+    ports: [5938]
+    description: "TeamViewer remote desktop sessions and authentication events"
+    parameters: {}
+
+  # Network Discovery Protocols
+  - name: "TLS SNI"
+    enabled: true
+    ports: [443, 8443, 993, 995, 465, 636]
+    description: "TLS Server Name Indication - captures encrypted destination hostnames"
+    parameters: {}
+  
+  - name: "mDNS"
+    enabled: true
+    ports: [5353]
+    description: "Multicast DNS - local network service discovery and hostname mapping"
+    parameters: {}
+  
+  - name: "NBNS"
+    enabled: true
+    ports: [137]
+    description: "NetBIOS Name Service - Windows network hostname discovery"
+    parameters: {}
+  
+  - name: "UPnP"
+    enabled: true
+    ports: [1900]
+    description: "Universal Plug and Play - network device and service discovery"
+    parameters: {}
+  
+  - name: "WSD"
+    enabled: true
+    ports: [3702]
+    description: "Web Services Discovery - Windows device discovery protocol"
+    parameters: {}
+
 # Custom harvesters allow you to define regex-based credential extraction
 custom_harvesters: []
   # Example:

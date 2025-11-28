@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package bgp
@@ -35,19 +41,19 @@ const (
 
 // AS Path Segment Types
 const (
-	ASSegTypeSet         = 1 // AS_SET (unordered set of ASes)
-	ASSegTypeSequence    = 2 // AS_SEQUENCE (ordered list)
-	ASSegTypeConfedSeq   = 3 // AS_CONFED_SEQUENCE
-	ASSegTypeConfedSet   = 4 // AS_CONFED_SET
+	ASSegTypeSet       = 1 // AS_SET (unordered set of ASes)
+	ASSegTypeSequence  = 2 // AS_SEQUENCE (ordered list)
+	ASSegTypeConfedSeq = 3 // AS_CONFED_SEQUENCE
+	ASSegTypeConfedSet = 4 // AS_CONFED_SET
 )
 
 // Well-known community values
 const (
-	CommNoExport         = 0xFFFFFF01 // NO_EXPORT (RFC 1997)
-	CommNoAdvertise      = 0xFFFFFF02 // NO_ADVERTISE (RFC 1997)
+	CommNoExport          = 0xFFFFFF01 // NO_EXPORT (RFC 1997)
+	CommNoAdvertise       = 0xFFFFFF02 // NO_ADVERTISE (RFC 1997)
 	CommNoExportSubConfed = 0xFFFFFF03 // NO_EXPORT_SUBCONFED (RFC 1997)
-	CommNoPeer           = 0xFFFFFF04 // NOPEER (RFC 3765)
-	CommBlackhole        = 0xFFFF029A // BLACKHOLE (RFC 7999) - 65535:666
+	CommNoPeer            = 0xFFFFFF04 // NOPEER (RFC 3765)
+	CommBlackhole         = 0xFFFF029A // BLACKHOLE (RFC 7999) - 65535:666
 )
 
 // analyzeBGPSecurity performs comprehensive security analysis on a BGP message
@@ -285,20 +291,20 @@ func isBogonPrefix(ip net.IP) bool {
 		bogonRanges := []struct {
 			network *net.IPNet
 		}{
-			{mustParseCIDR("0.0.0.0/8")},         // "This" Network
-			{mustParseCIDR("10.0.0.0/8")},        // Private-Use (RFC 1918)
-			{mustParseCIDR("100.64.0.0/10")},     // Shared Address Space (RFC 6598)
-			{mustParseCIDR("127.0.0.0/8")},       // Loopback
-			{mustParseCIDR("169.254.0.0/16")},    // Link Local
-			{mustParseCIDR("172.16.0.0/12")},     // Private-Use (RFC 1918)
-			{mustParseCIDR("192.0.0.0/24")},      // IETF Protocol Assignments
-			{mustParseCIDR("192.0.2.0/24")},      // Documentation (TEST-NET-1)
-			{mustParseCIDR("192.168.0.0/16")},    // Private-Use (RFC 1918)
-			{mustParseCIDR("198.18.0.0/15")},     // Benchmarking
-			{mustParseCIDR("198.51.100.0/24")},   // Documentation (TEST-NET-2)
-			{mustParseCIDR("203.0.113.0/24")},    // Documentation (TEST-NET-3)
-			{mustParseCIDR("224.0.0.0/4")},       // Multicast
-			{mustParseCIDR("240.0.0.0/4")},       // Reserved for Future Use
+			{mustParseCIDR("0.0.0.0/8")},       // "This" Network
+			{mustParseCIDR("10.0.0.0/8")},      // Private-Use (RFC 1918)
+			{mustParseCIDR("100.64.0.0/10")},   // Shared Address Space (RFC 6598)
+			{mustParseCIDR("127.0.0.0/8")},     // Loopback
+			{mustParseCIDR("169.254.0.0/16")},  // Link Local
+			{mustParseCIDR("172.16.0.0/12")},   // Private-Use (RFC 1918)
+			{mustParseCIDR("192.0.0.0/24")},    // IETF Protocol Assignments
+			{mustParseCIDR("192.0.2.0/24")},    // Documentation (TEST-NET-1)
+			{mustParseCIDR("192.168.0.0/16")},  // Private-Use (RFC 1918)
+			{mustParseCIDR("198.18.0.0/15")},   // Benchmarking
+			{mustParseCIDR("198.51.100.0/24")}, // Documentation (TEST-NET-2)
+			{mustParseCIDR("203.0.113.0/24")},  // Documentation (TEST-NET-3)
+			{mustParseCIDR("224.0.0.0/4")},     // Multicast
+			{mustParseCIDR("240.0.0.0/4")},     // Reserved for Future Use
 		}
 
 		for _, bogon := range bogonRanges {
@@ -313,19 +319,19 @@ func isBogonPrefix(ip net.IP) bool {
 			bogonRangesV6 := []struct {
 				network *net.IPNet
 			}{
-				{mustParseCIDR("::/128")},          // Unspecified
-				{mustParseCIDR("::1/128")},         // Loopback
-				{mustParseCIDR("::ffff:0:0/96")},   // IPv4-mapped
-				{mustParseCIDR("64:ff9b::/96")},    // IPv4/IPv6 Translation
-				{mustParseCIDR("100::/64")},        // Discard-Only
-				{mustParseCIDR("2001::/32")},       // Teredo
-				{mustParseCIDR("2001:2::/48")},     // Benchmarking
-				{mustParseCIDR("2001:db8::/32")},   // Documentation
-				{mustParseCIDR("2001:10::/28")},    // ORCHID
-				{mustParseCIDR("2002::/16")},       // 6to4
-				{mustParseCIDR("fc00::/7")},        // Unique Local
-				{mustParseCIDR("fe80::/10")},       // Link-Local
-				{mustParseCIDR("ff00::/8")},        // Multicast
+				{mustParseCIDR("::/128")},        // Unspecified
+				{mustParseCIDR("::1/128")},       // Loopback
+				{mustParseCIDR("::ffff:0:0/96")}, // IPv4-mapped
+				{mustParseCIDR("64:ff9b::/96")},  // IPv4/IPv6 Translation
+				{mustParseCIDR("100::/64")},      // Discard-Only
+				{mustParseCIDR("2001::/32")},     // Teredo
+				{mustParseCIDR("2001:2::/48")},   // Benchmarking
+				{mustParseCIDR("2001:db8::/32")}, // Documentation
+				{mustParseCIDR("2001:10::/28")},  // ORCHID
+				{mustParseCIDR("2002::/16")},     // 6to4
+				{mustParseCIDR("fc00::/7")},      // Unique Local
+				{mustParseCIDR("fe80::/10")},     // Link-Local
+				{mustParseCIDR("ff00::/8")},      // Multicast
 			}
 
 			for _, bogon := range bogonRangesV6 {
@@ -512,4 +518,3 @@ func getKnownAttributeTypes() map[uint8]bool {
 		40: true, // BGP Prefix-SID
 	}
 }
-

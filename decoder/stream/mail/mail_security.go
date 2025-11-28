@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package mail
@@ -32,19 +38,19 @@ type MailSecurityAnalysis struct {
 	DMARCPolicy string
 
 	// Phishing indicators
-	SenderDisplayNameMismatch   bool
-	HasSuspiciousReplyTo        bool
-	URLCount                    int32
-	AttachmentCount             int32
-	AttachmentTypes             []string
-	HasExecutableAttachment     bool
-	HasMacroEnabledAttachment   bool
-	SubjectEntropy              float64
-	HasUrgencyKeywords          bool
-	ReceivedHopCount            int32
-	IsForwarded                 bool
-	ReplyTo                     string
-	FromDomain                  string
+	SenderDisplayNameMismatch bool
+	HasSuspiciousReplyTo      bool
+	URLCount                  int32
+	AttachmentCount           int32
+	AttachmentTypes           []string
+	HasExecutableAttachment   bool
+	HasMacroEnabledAttachment bool
+	SubjectEntropy            float64
+	HasUrgencyKeywords        bool
+	ReceivedHopCount          int32
+	IsForwarded               bool
+	ReplyTo                   string
+	FromDomain                string
 }
 
 // Regular expressions for parsing authentication results
@@ -65,7 +71,7 @@ var (
 	reURL = regexp.MustCompile(`https?://[^\s<>"]+`)
 
 	// Email address pattern
-	reEmailAddr = regexp.MustCompile(`<([^>]+)>`)
+	reEmailAddr   = regexp.MustCompile(`<([^>]+)>`)
 	reEmailDomain = regexp.MustCompile(`@([^\s>]+)`)
 
 	// Urgency keywords
@@ -81,7 +87,7 @@ var (
 	executableExtensions = map[string]bool{
 		".exe": true, ".dll": true, ".scr": true, ".pif": true,
 		".bat": true, ".cmd": true, ".com": true, ".vbs": true,
-		".vbe": true, ".js":  true, ".jse": true, ".ws":  true,
+		".vbe": true, ".js": true, ".jse": true, ".ws": true,
 		".wsh": true, ".ps1": true, ".psm1": true, ".msi": true,
 		".msp": true, ".hta": true, ".cpl": true, ".jar": true,
 	}
@@ -211,7 +217,7 @@ func checkDisplayNameMismatch(from string) bool {
 
 	// Extract email address and display name
 	// Format: "Display Name <email@domain.com>" or just "email@domain.com"
-	
+
 	emailMatch := reEmailAddr.FindStringSubmatch(from)
 	if len(emailMatch) < 2 {
 		return false // No angle brackets, can't have display name mismatch
@@ -315,7 +321,7 @@ func calculateStringEntropy(s string) float64 {
 // countReceivedHeaders counts the number of Received headers (hop count)
 func countReceivedHeaders(headers map[string]string) int32 {
 	count := int32(0)
-	
+
 	// Check for Received header
 	if received := headers["Received"]; received != "" {
 		// Count semicolons as an approximation - each hop adds a Received header
@@ -340,4 +346,3 @@ func countReceivedHeaders(headers map[string]string) int32 {
 
 	return 0
 }
-

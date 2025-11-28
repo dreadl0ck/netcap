@@ -1,6 +1,6 @@
 /*
 * NETCAP - Traffic Analysis Framework
-* Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+* Copyright (c) 2017-2025 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
 *
 * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -96,18 +96,18 @@ type pop3Reader struct {
 	resIndex      int
 
 	user, pass, token string
-	
+
 	// Security monitoring fields
-	authMethod       string   // USER/PASS, APOP, AUTH PLAIN, etc.
-	authSuccess      bool
-	authAttempts     int32
+	authMethod        string // USER/PASS, APOP, AUTH PLAIN, etc.
+	authSuccess       bool
+	authAttempts      int32
 	starttlsRequested bool
-	starttlsSuccess  bool
-	capabilities     []string
-	messageCount     int32
-	mailboxSize      int64
-	retrievedMsgs    []int32
-	deletedMsgs      []int32
+	starttlsSuccess   bool
+	capabilities      []string
+	messageCount      int32
+	mailboxSize       int64
+	retrievedMsgs     []int32
+	deletedMsgs       []int32
 }
 
 func validPop3ServerCommand(cmd string) bool {
@@ -152,16 +152,16 @@ func (h *pop3Reader) Decode() {
 	}
 
 	mails, user, pass, token := h.processPOP3Conversation()
-	
+
 	// Determine if plaintext auth was used (password sent in clear)
 	isPlaintextAuth := false
 	if h.authMethod == "USER/PASS" && !h.starttlsSuccess && h.conversation.ServerPort != 995 {
 		isPlaintextAuth = true
 	}
-	
+
 	// Determine if connection is encrypted (port 995 = POP3S or STARTTLS success)
 	isEncrypted := h.conversation.ServerPort == 995 || h.starttlsSuccess
-	
+
 	pop3Msg := &types.POP3{
 		Timestamp: h.conversation.FirstClientPacket.UnixNano(),
 		ClientIP:  h.conversation.ClientIP,
@@ -175,15 +175,15 @@ func (h *pop3Reader) Decode() {
 		ClientPort: h.conversation.ClientPort,
 		ServerPort: h.conversation.ServerPort,
 		// Authentication tracking
-		AuthSuccess:        h.authSuccess,
-		AuthMethod:         h.authMethod,
-		AuthAttempts:       h.authAttempts,
+		AuthSuccess:  h.authSuccess,
+		AuthMethod:   h.authMethod,
+		AuthAttempts: h.authAttempts,
 		// Mailbox statistics
-		MessageCount:       h.messageCount,
-		MailboxSize:        h.mailboxSize,
+		MessageCount: h.messageCount,
+		MailboxSize:  h.mailboxSize,
 		// Message operations
-		RetrievedMessages:  h.retrievedMsgs,
-		DeletedMessages:    h.deletedMsgs,
+		RetrievedMessages: h.retrievedMsgs,
+		DeletedMessages:   h.deletedMsgs,
 		// Security monitoring
 		STARTTLSRequested:  h.starttlsRequested,
 		STARTTLSSuccess:    h.starttlsSuccess,
@@ -328,8 +328,8 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 		next     = func() *types.POP3Request {
 			return h.pop3Requests[h.reqIndex]
 		}
-		mailBuf string
-		r       *types.POP3Request
+		mailBuf      string
+		r            *types.POP3Request
 		currentMsgID int32 // Track current message being retrieved/deleted
 	)
 
@@ -391,7 +391,7 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 					h.retrievedMsgs = append(h.retrievedMsgs, msgID)
 					currentMsgID = msgID
 				}
-				
+
 				var n int
 				// ensure safe array access
 				if len(h.pop3Responses) < h.resIndex {

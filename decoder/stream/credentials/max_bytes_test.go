@@ -48,7 +48,7 @@ PASS testpass
 	truncatedData := largeData[:testLimit]
 
 	// Test FTP harvester on truncated data
-	c := ftpHarvester(truncatedData, "test", time.Now())
+	c := ftpHarvester.HarvesterFunc(truncatedData, "test", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found in truncated data")
 	}
@@ -65,7 +65,7 @@ PASS testpass
 	decoderconfig.Instance.HarvesterBannerSize = 1024
 	truncatedData = largeData[:1024]
 
-	c = ftpHarvester(truncatedData, "test", time.Now())
+	c = ftpHarvester.HarvesterFunc(truncatedData, "test", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found with larger limit")
 	}
@@ -144,7 +144,7 @@ func TestPerformanceWithLargeStreams(t *testing.T) {
 	}
 	
 	// Now run a harvester on the truncated data
-	_ = ftpHarvester(processedData, "test-flow", time.Now())
+	_ = ftpHarvester.HarvesterFunc(processedData, "test-flow", time.Now())
 	
 	elapsed := time.Since(start)
 
@@ -198,7 +198,7 @@ func TestConfigurableLimit(t *testing.T) {
 			}
 
 			// Verify we can still process the data without issues
-			c := ftpHarvester(data, "test", time.Now())
+			c := ftpHarvester.HarvesterFunc(data, "test", time.Now())
 
 			// We may or may not find credentials depending on whether they fit in the limit
 			// The important thing is that we don't crash or hang

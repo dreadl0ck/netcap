@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package irc
@@ -50,7 +56,7 @@ func initIRCConnectionTracker() {
 	ircDCCConnectionsMu.Lock()
 	ircDCCConnections = make(map[string]*IRCDCCConnection)
 	ircDCCConnectionsMu.Unlock()
-	
+
 	// Start cleanup timer
 	go func() {
 		ticker := time.NewTicker(2 * time.Minute)
@@ -117,13 +123,13 @@ func (i *ircReader) readMessage(b *bufio.Reader, isClient bool) error {
 	}
 
 	line = strings.TrimSpace(line)
-	
+
 	// Parse IRC message format: [prefix] command [parameters]
 	prefix, command, params := i.parseIRCMessage(line)
-	
+
 	// Write IRC audit record
 	i.writeIRCRecord(prefix, command, params, line)
-	
+
 	// Handle specific commands
 	switch strings.ToUpper(command) {
 	case "NICK":
@@ -152,7 +158,7 @@ func (i *ircReader) readMessage(b *bufio.Reader, isClient bool) error {
 func (i *ircReader) parseIRCMessage(line string) (prefix, command string, params []string) {
 	// Remove CTCP markers
 	line = strings.Trim(line, "\x01")
-	
+
 	// Check for prefix
 	if strings.HasPrefix(line, ":") {
 		parts := strings.SplitN(line[1:], " ", 2)
@@ -161,12 +167,12 @@ func (i *ircReader) parseIRCMessage(line string) (prefix, command string, params
 			line = parts[1]
 		}
 	}
-	
+
 	// Parse command and parameters
 	parts := strings.Split(line, " ")
 	if len(parts) > 0 {
 		command = parts[0]
-		
+
 		// Parse parameters
 		for i := 1; i < len(parts); i++ {
 			if strings.HasPrefix(parts[i], ":") {
@@ -177,29 +183,29 @@ func (i *ircReader) parseIRCMessage(line string) (prefix, command string, params
 			params = append(params, parts[i])
 		}
 	}
-	
+
 	return prefix, command, params
 }
 
 // parseDCCCommand extracts DCC parameters from CTCP message
 func (i *ircReader) parseDCCCommand(message string) {
 	// Example: \x01DCC SEND file.zip 3232235777 6666 102400\x01
-	
+
 	// Remove CTCP markers
 	message = strings.Trim(message, "\x01")
-	
+
 	parts := strings.Fields(message)
 	if len(parts) < 3 || parts[0] != "DCC" {
 		return
 	}
 
 	i.dccType = parts[1]
-	
+
 	switch i.dccType {
 	case "SEND":
 		if len(parts) >= 6 {
 			i.dccFilename = parts[2]
-			
+
 			// Parse IP (usually as decimal number)
 			if ipNum, err := strconv.ParseInt(parts[3], 10, 64); err == nil {
 				i.dccIP = fmt.Sprintf("%d.%d.%d.%d",
@@ -208,12 +214,12 @@ func (i *ircReader) parseDCCCommand(message string) {
 					(ipNum>>8)&0xFF,
 					ipNum&0xFF)
 			}
-			
+
 			// Parse port
 			if port, err := strconv.Atoi(parts[4]); err == nil {
 				i.dccPort = port
 			}
-			
+
 			// Parse filesize
 			if size, err := strconv.ParseInt(parts[5], 10, 64); err == nil {
 				i.dccFilesize = size
@@ -240,7 +246,7 @@ func (i *ircReader) trackDCCConnection() {
 	}
 
 	key := fmt.Sprintf("%s:%d", i.dccIP, i.dccPort)
-	
+
 	ircDCCConnectionsMu.Lock()
 	ircDCCConnections[key] = &IRCDCCConnection{
 		IP:        i.dccIP,
@@ -252,7 +258,7 @@ func (i *ircReader) trackDCCConnection() {
 		CreatedAt: time.Now(),
 	}
 	ircDCCConnectionsMu.Unlock()
-	
+
 	ircLog.Info("Tracked IRC DCC connection",
 		zap.String("key", key),
 		zap.String("filename", i.dccFilename),
@@ -273,23 +279,23 @@ func (i *ircReader) writeIRCRecord(prefix, command string, params []string, rawL
 	}
 
 	irc := &types.IRC{
-		Timestamp:  i.conversation.FirstClientPacket.UnixNano(),
-		SrcIP:      i.conversation.ClientIP,
-		DstIP:      i.conversation.ServerIP,
-		SrcPort:    i.conversation.ClientPort,
-		DstPort:    i.conversation.ServerPort,
-		Prefix:     prefix,
-		Command:    command,
-		Parameters: params,
-		Message:    message,
-		IsDCC:      i.dccType != "",
-		DCCType:    i.dccType,
-		DCCFilename: i.dccFilename,
-		DCCIP:      i.dccIP,
-		DCCPort:    int32(i.dccPort),
-		DCCFilesize: i.dccFilesize,
-		Channel:    i.currentChan,
-		Nick:       i.currentNick,
+		Timestamp:     i.conversation.FirstClientPacket.UnixNano(),
+		SrcIP:         i.conversation.ClientIP,
+		DstIP:         i.conversation.ServerIP,
+		SrcPort:       i.conversation.ClientPort,
+		DstPort:       i.conversation.ServerPort,
+		Prefix:        prefix,
+		Command:       command,
+		Parameters:    params,
+		Message:       message,
+		IsDCC:         i.dccType != "",
+		DCCType:       i.dccType,
+		DCCFilename:   i.dccFilename,
+		DCCIP:         i.dccIP,
+		DCCPort:       int32(i.dccPort),
+		DCCFilesize:   i.dccFilesize,
+		Channel:       i.currentChan,
+		Nick:          i.currentNick,
 		IsDataChannel: false,
 	}
 
@@ -305,8 +311,6 @@ func CheckDCCConnection(key string) (*IRCDCCConnection, bool) {
 	ircDCCConnectionsMu.RLock()
 	conn, ok := ircDCCConnections[key]
 	ircDCCConnectionsMu.RUnlock()
-	
+
 	return conn, ok
 }
-
-

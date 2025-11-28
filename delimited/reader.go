@@ -1,6 +1,6 @@
 /*
  * NETCAP - Network Capture Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) 2017-2025 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
  *
  * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -36,9 +36,9 @@ func NewReader(r io.Reader) *Reader {
 
 // Next returns the next length-delimited record from the input
 // Note:
-//  - returns io.EOF if there are no more records available
-//  - returns io.ErrUnexpectedEOF if a short record is found, with a length of n but fewer than n bytes of data
-//  - since there is no resynchronization mechanism, it is generally not possible to recover from a short record in this format
+//   - returns io.EOF if there are no more records available
+//   - returns io.ErrUnexpectedEOF if a short record is found, with a length of n but fewer than n bytes of data
+//   - since there is no resynchronization mechanism, it is generally not possible to recover from a short record in this format
 //
 // The slice returned is valid only until a subsequent call to Next.
 func (r *Reader) Next() ([]byte, error) {

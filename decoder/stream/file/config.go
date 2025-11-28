@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package file
@@ -27,15 +33,15 @@ type Config struct {
 
 // FileExtractionConfig contains all settings for file extraction
 type FileExtractionConfig struct {
-	Enabled   bool              `yaml:"enabled"`
-	Protocols ProtocolsConfig   `yaml:"protocols"`
-	SizeLimits SizeLimitsConfig `yaml:"size_limits"`
-	HashAlgorithms HashAlgorithmsConfig `yaml:"hash_algorithms"`
-	MimeTypes MimeTypesConfig   `yaml:"mime_types"`
-	Storage   StorageConfig     `yaml:"storage"`
+	Enabled         bool                  `yaml:"enabled"`
+	Protocols       ProtocolsConfig       `yaml:"protocols"`
+	SizeLimits      SizeLimitsConfig      `yaml:"size_limits"`
+	HashAlgorithms  HashAlgorithmsConfig  `yaml:"hash_algorithms"`
+	MimeTypes       MimeTypesConfig       `yaml:"mime_types"`
+	Storage         StorageConfig         `yaml:"storage"`
 	IncompleteFiles IncompleteFilesConfig `yaml:"incomplete_files"`
-	Reassembly ReassemblyConfig  `yaml:"reassembly"`
-	Advanced  AdvancedConfig    `yaml:"advanced"`
+	Reassembly      ReassemblyConfig      `yaml:"reassembly"`
+	Advanced        AdvancedConfig        `yaml:"advanced"`
 }
 
 // ProtocolsConfig defines which protocols have file extraction enabled
@@ -51,9 +57,9 @@ type ProtocolsConfig struct {
 
 // SizeLimitsConfig defines size limits for file extraction
 type SizeLimitsConfig struct {
-	MaxFileSize           int64 `yaml:"max_file_size"`
-	IncludeMissingBytes   bool  `yaml:"include_missing_bytes"`
-	MaxFilesPerSession    int   `yaml:"max_files_per_session"`
+	MaxFileSize         int64 `yaml:"max_file_size"`
+	IncludeMissingBytes bool  `yaml:"include_missing_bytes"`
+	MaxFilesPerSession  int   `yaml:"max_files_per_session"`
 }
 
 // HashAlgorithmsConfig defines which hash algorithms to compute
@@ -71,24 +77,24 @@ type MimeTypesConfig struct {
 
 // StorageConfig defines how extracted files are organized
 type StorageConfig struct {
-	OrganizeByMime       bool `yaml:"organize_by_mime"`
-	OrganizeByProtocol   bool `yaml:"organize_by_protocol"`
-	OrganizeByDate       bool `yaml:"organize_by_date"`
-	CompressStoredFiles  bool `yaml:"compress_stored_files"`
-	IncludeConnectionID  bool `yaml:"include_connection_id"`
+	OrganizeByMime      bool `yaml:"organize_by_mime"`
+	OrganizeByProtocol  bool `yaml:"organize_by_protocol"`
+	OrganizeByDate      bool `yaml:"organize_by_date"`
+	CompressStoredFiles bool `yaml:"compress_stored_files"`
+	IncludeConnectionID bool `yaml:"include_connection_id"`
 }
 
 // IncompleteFilesConfig defines handling of incomplete files
 type IncompleteFilesConfig struct {
-	WriteIncomplete   bool   `yaml:"write_incomplete"`
-	IncompletePrefix  string `yaml:"incomplete_prefix"`
+	WriteIncomplete  bool   `yaml:"write_incomplete"`
+	IncompletePrefix string `yaml:"incomplete_prefix"`
 }
 
 // ReassemblyConfig defines file reassembly settings
 type ReassemblyConfig struct {
-	Enabled         bool  `yaml:"enabled"`
-	AllowSparseFiles bool `yaml:"allow_sparse_files"`
-	MaxBufferSize   int64 `yaml:"max_buffer_size"`
+	Enabled          bool  `yaml:"enabled"`
+	AllowSparseFiles bool  `yaml:"allow_sparse_files"`
+	MaxBufferSize    int64 `yaml:"max_buffer_size"`
 }
 
 // AdvancedConfig defines advanced file extraction options
@@ -98,11 +104,11 @@ type AdvancedConfig struct {
 	DecodeBase64      bool `yaml:"decode_base64"`
 	MaxFilenameLength int  `yaml:"max_filename_length"`
 	// Security analysis options
-	ComputeEntropy       bool `yaml:"compute_entropy"`        // Calculate Shannon entropy
-	DetectExecutables    bool `yaml:"detect_executables"`     // Detect PE/ELF/Mach-O executables
-	DetectEmbeddedScripts bool `yaml:"detect_embedded_scripts"` // Detect embedded VBA/JS/PowerShell
-	EnableYaraScanning   bool `yaml:"enable_yara_scanning"`   // Enable YARA rule matching (requires yara rules path)
-	YaraRulesPath        string `yaml:"yara_rules_path"`      // Path to YARA rules directory
+	ComputeEntropy        bool   `yaml:"compute_entropy"`         // Calculate Shannon entropy
+	DetectExecutables     bool   `yaml:"detect_executables"`      // Detect PE/ELF/Mach-O executables
+	DetectEmbeddedScripts bool   `yaml:"detect_embedded_scripts"` // Detect embedded VBA/JS/PowerShell
+	EnableYaraScanning    bool   `yaml:"enable_yara_scanning"`    // Enable YARA rule matching (requires yara rules path)
+	YaraRulesPath         string `yaml:"yara_rules_path"`         // Path to YARA rules directory
 }
 
 var (
@@ -136,12 +142,12 @@ func SetGlobalConfig(cfg *Config) {
 func GetGlobalConfig() *Config {
 	configMutex.RLock()
 	defer configMutex.RUnlock()
-	
+
 	if globalConfig == nil {
 		// Return default configuration
 		return GetDefaultConfig()
 	}
-	
+
 	return globalConfig
 }
 
@@ -234,7 +240,7 @@ func IsProtocolEnabled(protocol string) bool {
 // ShouldExtractMimeType checks if a MIME type should be extracted based on whitelist/blacklist
 func ShouldExtractMimeType(mimeType string) bool {
 	cfg := GetGlobalConfig()
-	
+
 	// Check whitelist first (if set, only extract whitelisted types)
 	if len(cfg.FileExtraction.MimeTypes.Whitelist) > 0 {
 		for _, allowed := range cfg.FileExtraction.MimeTypes.Whitelist {
@@ -264,7 +270,7 @@ func GetMaxFileSize() int64 {
 // ShouldComputeHash checks if a specific hash algorithm should be computed
 func ShouldComputeHash(algorithm string) bool {
 	cfg := GetGlobalConfig()
-	
+
 	switch algorithm {
 	case "MD5":
 		return cfg.FileExtraction.HashAlgorithms.MD5
@@ -288,4 +294,3 @@ func ShouldUseMagicDetection() bool {
 	cfg := GetGlobalConfig()
 	return cfg.FileExtraction.Advanced.UseMagicDetection
 }
-

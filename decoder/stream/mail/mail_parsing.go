@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package mail
@@ -147,7 +153,7 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 
 	// Perform security analysis
 	secAnalysis := AnalyzeMail(mail, hdr, body)
-	
+
 	// Populate security fields
 	mail.SPFResult = secAnalysis.SPFResult
 	mail.SPFDomain = secAnalysis.SPFDomain
@@ -180,14 +186,14 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 					mailLog.Error("MAIL file extractor not registered")
 					break
 				}
-				
+
 				metadata := file.FileMetadata{
-					ConnectionUID:  conv.Ident,
-					FlowDirection:  "server_to_client", // Typically receiving email
-					Filename:       p.Filename,
-					ContentType:    p.Header["Content-Type"],
-					Host:           conv.ServerIP + ":" + strconv.Itoa(int(conv.ServerPort)),
-					Encoding:       []string{p.Header["Content-Transfer-Encoding"]},
+					ConnectionUID: conv.Ident,
+					FlowDirection: "server_to_client", // Typically receiving email
+					Filename:      p.Filename,
+					ContentType:   p.Header["Content-Type"],
+					Host:          conv.ServerIP + ":" + strconv.Itoa(int(conv.ServerPort)),
+					Encoding:      []string{p.Header["Content-Transfer-Encoding"]},
 				}
 				err = extractor.ExtractFile(conv, []byte(p.Content), metadata)
 				if err != nil {
@@ -245,7 +251,7 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 					vendor = vendorParts[0]
 				}
 			}
-			
+
 			software.WriteSoftware([]*software.AtomicSoftware{
 				{
 					Software: &types.Software{
@@ -436,8 +442,8 @@ func parseMailParts(conv *core.ConversationInfo, body string, logger *zap.Logger
 
 func copyMailPart(part *types.MailPart) *types.MailPart {
 	return &types.MailPart{
-		ID:       part.ID,
-		Header:   part.Header,
+		ID:     part.ID,
+		Header: part.Header,
 		// Sanitize content to ensure valid UTF-8 for proto encoding
 		// Proto3 string fields require valid UTF-8, but email content
 		// may contain binary data or non-UTF-8 encoded text

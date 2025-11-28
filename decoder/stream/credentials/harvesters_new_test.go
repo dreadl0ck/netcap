@@ -42,7 +42,7 @@ func TestHTTPDigestEnhanced(t *testing.T) {
 				if len(payload) > 0 && bytes.Contains(payload, []byte("Authorization: Digest")) {
 					// Try to extract credentials using the harvester
 					ident := "test-flow"
-					creds := httpHarvester(payload, ident, packet.Metadata().Timestamp)
+					creds := httpHarvester.HarvesterFunc(payload, ident, packet.Metadata().Timestamp)
 
 					if creds != nil {
 						foundDigest = true
@@ -150,7 +150,7 @@ func TestHTTPDigestMD5(t *testing.T) {
 				if len(payload) > 0 && bytes.Contains(payload, []byte("Authorization: Digest")) {
 					// Try to extract credentials using the harvester
 					ident := "test-flow"
-					creds := httpHarvester(payload, ident, packet.Metadata().Timestamp)
+					creds := httpHarvester.HarvesterFunc(payload, ident, packet.Metadata().Timestamp)
 
 					if creds != nil {
 						extractedCreds = creds
@@ -232,7 +232,7 @@ func TestNTLMSSPv1(t *testing.T) {
 
 					// Try to extract credentials using the harvester with accumulated session data
 					ident := "test-flow"
-					creds := ntlmsspHarvester(sessionData, ident, packet.Metadata().Timestamp)
+					creds := ntlmsspHarvester.HarvesterFunc(sessionData, ident, packet.Metadata().Timestamp)
 
 					if creds != nil && extractedCreds == nil {
 						extractedCreds = creds
@@ -332,7 +332,7 @@ func TestNTLMSSPv2Windows10(t *testing.T) {
 
 					// Try to extract credentials using the harvester with accumulated session data
 					ident := "test-flow"
-					creds := ntlmsspHarvester(sessionData, ident, packet.Metadata().Timestamp)
+					creds := ntlmsspHarvester.HarvesterFunc(sessionData, ident, packet.Metadata().Timestamp)
 
 					if creds != nil && extractedCreds == nil {
 						extractedCreds = creds
@@ -449,7 +449,7 @@ func TestNTLMSSPSingleSession(t *testing.T) {
 
 					// Try to extract credentials using the harvester with accumulated session data
 					ident := "test-flow"
-					creds := ntlmsspHarvester(sessionData, ident, packet.Metadata().Timestamp)
+					creds := ntlmsspHarvester.HarvesterFunc(sessionData, ident, packet.Metadata().Timestamp)
 
 					if creds != nil && extractedCreds == nil {
 						extractedCreds = creds
@@ -514,7 +514,7 @@ func TestHTTPNTLM(t *testing.T) {
 
 					// Try to extract credentials using the HTTP NTLM harvester
 					ident := "test-flow"
-					creds := httpNTLMHarvester(sessionData, ident, packet.Metadata().Timestamp)
+					creds := httpNTLMHarvester.HarvesterFunc(sessionData, ident, packet.Metadata().Timestamp)
 
 					if creds != nil && extractedCreds == nil {
 						extractedCreds = creds
@@ -585,7 +585,7 @@ func TestHTTPNTLMGSSAPI(t *testing.T) {
 					// Try to extract credentials using the HTTP NTLM harvester
 					// GSSAPI wrapping is handled transparently by base64 decoding
 					ident := "test-flow"
-					creds := httpNTLMHarvester(sessionData, ident, packet.Metadata().Timestamp)
+					creds := httpNTLMHarvester.HarvesterFunc(sessionData, ident, packet.Metadata().Timestamp)
 
 					if creds != nil && extractedCreds == nil {
 						extractedCreds = creds
@@ -636,7 +636,7 @@ func TestKerberosASReqUDP(t *testing.T) {
 				if len(payload) > 0 {
 					// Try to extract AS-REQ credentials
 					ident := "test-flow"
-					creds := kerberosASReqHarvester(payload, ident, packet.Metadata().Timestamp)
+					creds := kerberosASReqHarvester.HarvesterFunc(payload, ident, packet.Metadata().Timestamp)
 
 					if creds != nil {
 						extractedCreds = creds
@@ -713,7 +713,7 @@ func TestKerberosASReqTCP(t *testing.T) {
 
 					// Try to extract AS-REQ credentials
 					ident := "test-flow"
-					creds := kerberosASReqHarvester(kerberosPayload, ident, packet.Metadata().Timestamp)
+					creds := kerberosASReqHarvester.HarvesterFunc(kerberosPayload, ident, packet.Metadata().Timestamp)
 
 					if creds != nil {
 						extractedCreds = creds
@@ -785,7 +785,7 @@ func TestKerberosASRepUDP(t *testing.T) {
 
 						// Try to extract AS-REP using the harvester
 						ident := "test-flow"
-						creds := kerberosASRepHarvester(payload, ident, packet.Metadata().Timestamp)
+						creds := kerberosASRepHarvester.HarvesterFunc(payload, ident, packet.Metadata().Timestamp)
 
 						if creds != nil {
 							extractedCount++
@@ -849,7 +849,7 @@ func TestKerberosTGSRep(t *testing.T) {
 		if len(payload) > 0 {
 			// Try to extract TGS-REP using the harvester
 			ident := "test-flow"
-			creds := kerberosTGSRepHarvester(payload, ident, packet.Metadata().Timestamp)
+			creds := kerberosTGSRepHarvester.HarvesterFunc(payload, ident, packet.Metadata().Timestamp)
 
 			if creds != nil {
 				extractedCount++

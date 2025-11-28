@@ -49,7 +49,7 @@ SYST
 
 	finalData := strings.ReplaceAll(data, "\n", "\r\n")
 
-	c := ftpHarvester([]byte(finalData), "test", time.Now())
+	c := ftpHarvester.HarvesterFunc([]byte(finalData), "test", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -80,7 +80,7 @@ QUIT
 
 	finalData = strings.ReplaceAll(data, "\n", "\r\n")
 
-	c = ftpHarvester([]byte(finalData), "test", time.Now())
+	c = ftpHarvester.HarvesterFunc([]byte(finalData), "test", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -113,7 +113,7 @@ Accept-Language: en-US,en;q=0.9
 If-None-Match: W/"5ea9593d-2aa6"
 If-Modified-Since: Wed, 29 Apr 2020 10:38:53 GMT`)
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
-	c := httpHarvester([]byte(finalData), "test", time.Now())
+	c := httpHarvester.HarvesterFunc([]byte(finalData), "test", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -131,7 +131,7 @@ Host: localhost
 Authorization: Digest username="Mufasa", realm="testrealm@host.com", nonce="dcd98b7102dd2f0e8b11d0f600bfb0c093", uri="/dir/index.html", qop=auth, nc=00000001, cnonce="0a4f113b", response="6629fae49393a05397450978507c4ef1", opaque="5ccc069c403ebaf9f0171e9517f40e41"
 `)
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -158,7 +158,7 @@ func TestIMAPCredentialsHarvester(t *testing.T) {
 A1 login someuser@example.atmailcloud.com My_P@ssword1
 A1 OK [CAPABILITY IMAP4rev1 LITERAL+ SASL-IR LOGIN-REFERRALS ID ENABLE IDLE SORT SORT=DISPLAY THREAD=REFERENCES THREAD=REFS THREAD=ORDEREDSUBJECT MULTIAPPEND URL-PARTIAL CATENATE UNSELECT CHILDREN NAMESPACE UIDPLUS LIST-EXTENDED I18NLEVEL=1 CONDSTORE QRESYNC ESEARCH ESORT SEARCHRES WITHIN CONTEXT=SEARCH LIST-STATUS BINARY MOVE NOTIFY SPECIAL-USE QUOTA] Logged in`)
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
-	c := imapHarvester([]byte(finalData), "test", time.Now())
+	c := imapHarvester.HarvesterFunc([]byte(finalData), "test", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -179,7 +179,7 @@ c29tZXVzZXJAZXhhbXBsZS5hdG1haWxjbG91ZC5jb20=
 TXlfUEBzc3dvcmQx
 a OK [CAPABILITY IMAP4rev1 LITERAL+ SASL-IR LOGIN-REFERRALS ID ENABLE IDLE SORT SORT=DISPLAY THREAD=REFERENCES THREAD=REFS THREAD=ORDEREDSUBJECT MULTIAPPEND URL-PARTIAL CATENATE UNSELECT CHILDREN NAMESPACE UIDPLUS LIST-EXTENDED I18NLEVEL=1 CONDSTORE QRESYNC ESEARCH ESORT SEARCHRES WITHIN CONTEXT=SEARCH LIST-STATUS BINARY MOVE NOTIFY SPECIAL-USE QUOTA] Logged in`)
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = imapHarvester([]byte(finalData), "test", time.Now())
+	c = imapHarvester.HarvesterFunc([]byte(finalData), "test", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -198,7 +198,7 @@ a AUTHENTICATE PLAIN
 dGlnZXJAemV1cy5wAGFkbWluAGFkbWluMTIzNA==
 a OK [CAPABILITY IMAP4rev1 LITERAL+ SASL-IR LOGIN-REFERRALS ID ENABLE IDLE SORT SORT=DISPLAY THREAD=REFERENCES THREAD=REFS THREAD=ORDEREDSUBJECT MULTIAPPEND URL-PARTIAL CATENATE UNSELECT CHILDREN NAMESPACE UIDPLUS LIST-EXTENDED I18NLEVEL=1 CONDSTORE QRESYNC ESEARCH ESORT SEARCHRES WITHIN CONTEXT=SEARCH LIST-STATUS BINARY MOVE NOTIFY SPECIAL-USE QUOTA] Logged in`)
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = imapHarvester([]byte(finalData), "test", time.Now())
+	c = imapHarvester.HarvesterFunc([]byte(finalData), "test", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -217,7 +217,7 @@ A0001 AUTHENTICATE CRAM-MD5
 dGltIGI5MTNhNjAyYzdlZGE3YTQ5NWI0ZTZlNzMzNGQzODkw
 A0001 OK CRAM authentication successful`)
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = imapHarvester([]byte(finalData), "test", time.Now())
+	c = imapHarvester.HarvesterFunc([]byte(finalData), "test", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -240,7 +240,7 @@ Password: password
 Last login: Sat Mar 21 16:34:17 CET 2020 on tty1
 Welcome to Ubuntu 18.04.4 LTS (GNU/Linux 5.3.0-51-generic x86_64)`)
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
-	c := telnetHarvester([]byte(finalData), "test", time.Now())
+	c := telnetHarvester.HarvesterFunc([]byte(finalData), "test", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -267,7 +267,7 @@ dGVzdAB0ZXN0ADEyMzQ=
 235 2.7.0 Authentication successful`)
 
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
-	c := smtpHarvester([]byte(finalData), "test1", time.Now())
+	c := smtpHarvester.HarvesterFunc([]byte(finalData), "test1", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -289,7 +289,7 @@ AUTH PLAIN dGVzdAB0ZXN0ADEyMzQ= *
 235 2.7.0 Authentication successful`)
 
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = smtpHarvester([]byte(finalData), "test2", time.Now())
+	c = smtpHarvester.HarvesterFunc([]byte(finalData), "test2", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -314,7 +314,7 @@ dGVzdA==
 dGVzdDEyMzQ=
 235 2.7.0 Authentication successful`)
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = smtpHarvester([]byte(finalData), "test3", time.Now())
+	c = smtpHarvester.HarvesterFunc([]byte(finalData), "test3", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -337,7 +337,7 @@ AUTH CRAM-MD5
 cmpzMyBlYzNhNTlmZWQzOTVhYmExZWM2MzY3YzRmNGI0MWFjMA==
 235 2.7.0 Authentication successful`)
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = smtpHarvester([]byte(finalData), "test4", time.Now())
+	c = smtpHarvester.HarvesterFunc([]byte(finalData), "test4", time.Now())
 	if c == nil {
 		t.Fatal("no credentials found")
 	}
@@ -365,7 +365,7 @@ Accept-Encoding: gzip, deflate, sdch
 Accept-Language: en-US,en;q=0.8`)
 	
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
-	c := httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c := httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found")
@@ -393,7 +393,7 @@ Host: api.example.com
 Accept: application/json`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-2", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-2", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found for api_key")
@@ -409,7 +409,7 @@ Host: oauth.example.com
 Content-Type: application/json`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-3", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-3", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found for access_token")
@@ -428,7 +428,7 @@ Content-Type: application/json`)
 Host: multi.example.com`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-4", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-4", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found for multiple parameters")
@@ -448,7 +448,7 @@ Host: multi.example.com`)
 Host: test.example.com`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-5", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-5", time.Now())
 	
 	// Should return nil because "short" is only 5 characters
 	if c != nil && strings.Contains(c.Password, "key=short") {
@@ -460,7 +460,7 @@ Host: test.example.com`)
 Host: protected.example.com`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-6", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-6", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found for bearer token")
@@ -475,7 +475,7 @@ Host: protected.example.com`)
 Host: app.example.com`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-7", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-7", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found for sessionid")
@@ -490,7 +490,7 @@ Host: app.example.com`)
 Host: normal.example.com`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-8", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-8", time.Now())
 	
 	// Should return nil as there are no sensitive parameters
 	if c != nil && c.Service == "HTTP URL Parameter" {
@@ -502,7 +502,7 @@ Host: normal.example.com`)
 Host: jwt.example.com`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-9", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-9", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found for jwt")
@@ -520,7 +520,7 @@ func TestHTTPSensitiveURLParametersEdgeCases(t *testing.T) {
 User-Agent: test`)
 	
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
-	c := httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c := httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials even without Host header")
@@ -535,7 +535,7 @@ User-Agent: test`)
 Host: encoded.example.com`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials for URL-encoded token")
@@ -546,7 +546,7 @@ Host: encoded.example.com`)
 Host: mixedcase.example.com`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	// Note: Our implementation is case-sensitive by default
 	// This test documents that behavior
@@ -560,7 +560,7 @@ Host: mixedcase.example.com`)
 Host: empty.example.com`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	// Should not match empty values
 	if c != nil && strings.Contains(c.Password, "key=") && !strings.Contains(c.Password, "key=.") {
@@ -573,7 +573,7 @@ Host: empty.example.com`)
 Host: longtoken.example.com`, longToken))
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials for long token")
@@ -606,7 +606,7 @@ Connection: Keep-Alive
 Content-Type: text/html`)
 	
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
-	c := httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c := httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found")
@@ -642,7 +642,7 @@ Content-Type: text/html;charset=UTF-8
 Content-Length: 1234`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-2", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-2", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found for JSESSIONID")
@@ -661,7 +661,7 @@ X-AspNet-Version: 4.0.30319
 Content-Type: text/html; charset=utf-8`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-3", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-3", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found for ASP.NET_SessionId")
@@ -679,7 +679,7 @@ Set-Cookie: sessionid=xyz789abc123def456ghi012; HttpOnly; Path=/
 Content-Type: text/html; charset=utf-8`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-4", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-4", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found for Django sessionid")
@@ -697,7 +697,7 @@ Set-Cookie: connect.sid=s%3Aj8eJc3kD9fL2mN5pQ7rT1uV4wX6yZ8aB.1A2B3C4D5E6F7G8H9I0
 Content-Type: text/html; charset=utf-8`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-5", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-5", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found for connect.sid")
@@ -717,7 +717,7 @@ Set-Cookie: tracking=xyz; expires=Fri, 19-May-2027 13:31:02 GMT
 Content-Type: text/html`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-6", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-6", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found for multiple cookies")
@@ -743,7 +743,7 @@ Set-Cookie: PHPSESSID=short; path=/
 Content-Type: text/html`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-7", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-7", time.Now())
 	
 	// Should return nil because "short" is too short
 	if c != nil && strings.Contains(c.Password, "PHPSESSID=short") {
@@ -757,7 +757,7 @@ Cookie: PHPSESSID=96ebc80a0771786591c82d702f8ac88e
 User-Agent: Mozilla/5.0`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow-8", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-8", time.Now())
 	
 	// Should not extract from request Cookie header, only response Set-Cookie
 	if c != nil && c.Service == "HTTP Session Cookie" {
@@ -773,7 +773,7 @@ Set-Cookie: phpsessid=lowercase123456789; path=/
 Content-Type: text/html`)
 	
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
-	c := httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c := httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found for lowercase phpsessid")
@@ -789,7 +789,7 @@ Set-Cookie: JSESSIONID=complex123456789; Path=/app; Domain=.example.com; Secure;
 Content-Type: text/html`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found")
@@ -806,7 +806,7 @@ Set-Cookie: sessionid=host123456789; path=/
 Content-Type: text/html`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found")
@@ -822,7 +822,7 @@ Set-Cookie: PHPSESSID=nohost1234567890; path=/
 Content-Type: text/html`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials even without host information")
@@ -838,7 +838,7 @@ Set-Cookie: session=abc%2Bdef%3D123456789; path=/
 Content-Type: text/html`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials for URL-encoded session cookie")
@@ -854,7 +854,7 @@ Set-Cookie: PHPSESSID=; path=/
 Content-Type: text/html`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	// Should not match empty values
 	if c != nil && strings.Contains(c.Password, "PHPSESSID=;") {
@@ -868,7 +868,7 @@ set-cookie: sessionid=http2session123456789; path=/
 content-type: text/html`)
 	
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
-	c = httpHarvester([]byte(finalData), "test-flow", time.Now())
+	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
 	
 	if c == nil {
 		t.Fatal("expected credentials to be found for HTTP/2 response")

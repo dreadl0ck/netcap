@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ftp
@@ -24,9 +30,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream/file"
-	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/types"
@@ -56,7 +62,7 @@ func initConnectionTracker() {
 	ftpDataConnectionsMu.Lock()
 	ftpDataConnections = make(map[string]*FTPDataConnection)
 	ftpDataConnectionsMu.Unlock()
-	
+
 	// Start cleanup timer
 	startCleanupTimer()
 }
@@ -90,16 +96,16 @@ func CleanupExpiredConnections() {
 
 // ftpReader implements the stream decoder interface for FTP
 type ftpReader struct {
-	conversation  *core.ConversationInfo
-	lastCommand   string
-	lastFilename  string
-	lastArg       string
-	username      string
-	transferMode  string
-	dataIP        string
-	dataPort      int
-	isPassive     bool
-	fileSize      int64
+	conversation *core.ConversationInfo
+	lastCommand  string
+	lastFilename string
+	lastArg      string
+	username     string
+	transferMode string
+	dataIP       string
+	dataPort     int
+	isPassive    bool
+	fileSize     int64
 }
 
 // New creates a new FTP stream decoder
@@ -132,7 +138,7 @@ func (f *ftpReader) readClient(b *bufio.Reader) error {
 
 	line = strings.TrimSpace(line)
 	parts := strings.SplitN(line, " ", 2)
-	
+
 	if len(parts) == 0 {
 		return nil
 	}
@@ -145,15 +151,15 @@ func (f *ftpReader) readClient(b *bufio.Reader) error {
 
 	f.lastCommand = command
 	f.lastArg = argument
-	
+
 	// Write FTP audit record for command
 	f.writeFTPRecord(false, command, argument, 0, "")
-	
+
 	// Handle specific commands
 	switch command {
 	case "USER":
 		f.username = argument
-		
+
 	case "RETR", "STOR":
 		f.lastFilename = argument
 		ftpLog.Debug("FTP file transfer command",
@@ -161,7 +167,7 @@ func (f *ftpReader) readClient(b *bufio.Reader) error {
 			zap.String("filename", f.lastFilename),
 			zap.String("ident", f.conversation.Ident),
 		)
-		
+
 	case "TYPE":
 		// Transfer mode: A (ASCII), I (IMAGE/Binary), E (EBCDIC)
 		if argument == "A" {
@@ -171,11 +177,11 @@ func (f *ftpReader) readClient(b *bufio.Reader) error {
 		} else if argument == "E" {
 			f.transferMode = "EBCDIC"
 		}
-		
+
 	case "PORT":
 		// Active mode: PORT h1,h2,h3,h4,p1,p2
 		f.parsePORTCommand(argument)
-		
+
 	case "SIZE":
 		// Client requesting file size (useful for tracking)
 		f.lastFilename = argument
@@ -194,17 +200,17 @@ func (f *ftpReader) parsePORTCommand(arg string) {
 
 	// Parse IP address
 	f.dataIP = fmt.Sprintf("%s.%s.%s.%s", parts[0], parts[1], parts[2], parts[3])
-	
+
 	// Parse port
 	p1, err1 := strconv.Atoi(parts[4])
 	p2, err2 := strconv.Atoi(parts[5])
 	if err1 == nil && err2 == nil {
 		f.dataPort = (p1 * 256) + p2
 		f.isPassive = false
-		
+
 		// Track this data connection
 		f.trackDataConnection()
-		
+
 		ftpLog.Debug("FTP PORT command",
 			zap.String("dataIP", f.dataIP),
 			zap.Int("dataPort", f.dataPort),
@@ -225,16 +231,16 @@ func (f *ftpReader) parsePASVResponse(message string) {
 
 	// Parse IP and port
 	f.dataIP = fmt.Sprintf("%s.%s.%s.%s", matches[1], matches[2], matches[3], matches[4])
-	
+
 	p1, err1 := strconv.Atoi(matches[5])
 	p2, err2 := strconv.Atoi(matches[6])
 	if err1 == nil && err2 == nil {
 		f.dataPort = (p1 * 256) + p2
 		f.isPassive = true
-		
+
 		// Track this data connection
 		f.trackDataConnection()
-		
+
 		ftpLog.Debug("FTP PASV response",
 			zap.String("dataIP", f.dataIP),
 			zap.Int("dataPort", f.dataPort),
@@ -250,7 +256,7 @@ func (f *ftpReader) trackDataConnection() {
 	}
 
 	key := fmt.Sprintf("%s:%d", f.dataIP, f.dataPort)
-	
+
 	ftpDataConnectionsMu.Lock()
 	ftpDataConnections[key] = &FTPDataConnection{
 		IP:           f.dataIP,
@@ -263,7 +269,7 @@ func (f *ftpReader) trackDataConnection() {
 		CreatedAt:    time.Now(),
 	}
 	ftpDataConnectionsMu.Unlock()
-	
+
 	ftpLog.Info("Tracked FTP data connection",
 		zap.String("key", key),
 		zap.String("filename", f.lastFilename),
@@ -279,7 +285,7 @@ func (f *ftpReader) readServer(b *bufio.Reader) error {
 	}
 
 	line = strings.TrimSpace(line)
-	
+
 	// FTP responses are typically "### message"
 	if len(line) < 3 {
 		return nil
@@ -299,7 +305,7 @@ func (f *ftpReader) readServer(b *bufio.Reader) error {
 
 	// Write FTP audit record for response
 	f.writeFTPRecord(true, "", "", int32(code), message)
-	
+
 	// Handle specific responses
 	switch code {
 	case 150:
@@ -309,13 +315,13 @@ func (f *ftpReader) readServer(b *bufio.Reader) error {
 			zap.String("filename", f.lastFilename),
 			zap.String("ident", f.conversation.Ident),
 		)
-		
+
 	case 213:
 		// SIZE response: 213 <size>
 		if size, err := strconv.ParseInt(message, 10, 64); err == nil {
 			f.fileSize = size
 		}
-		
+
 	case 227:
 		// PASV response
 		f.parsePASVResponse(message)
@@ -409,7 +415,7 @@ func CheckDataConnection(key string) (*FTPDataConnection, bool) {
 	ftpDataConnectionsMu.RLock()
 	conn, ok := ftpDataConnections[key]
 	ftpDataConnectionsMu.RUnlock()
-	
+
 	return conn, ok
 }
 
@@ -432,12 +438,12 @@ func ExtractDataChannel(conv *core.ConversationInfo, data []byte, conn *FTPDataC
 		ftpLog.Error("FTP file extractor not registered")
 		return nil
 	}
-	
+
 	flowDirection := "server_to_client"
 	if conn.Command == "STOR" {
 		flowDirection = "client_to_server"
 	}
-	
+
 	metadata := file.FileMetadata{
 		ConnectionUID: conv.Ident,
 		FlowDirection: flowDirection,
@@ -445,7 +451,6 @@ func ExtractDataChannel(conv *core.ConversationInfo, data []byte, conn *FTPDataC
 		Filename:      filepath.Base(conn.Filename),
 		Host:          conn.IP,
 	}
-	
+
 	return extractor.ExtractFile(conv, data, metadata)
 }
-

@@ -1,22 +1,30 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package credentials
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"net/url"
 	"regexp"
 	"strings"
@@ -535,4 +543,144 @@ var httpHarvester = Harvester{
 	Name:          "HTTP",
 	Description:   "HTTP Basic/Digest authentication - captures credentials from Authorization headers",
 	HarvesterFunc: httpHarvesterFunc,
+}
+
+// decompressHTTPBody attempts to decompress gzip-encoded HTTP response bodies.
+// This is useful for extracting credentials from compressed responses.
+// Returns the decompressed data or the original data if decompression fails.
+func decompressHTTPBody(data []byte) []byte {
+	// Check for Content-Encoding: gzip header
+	if !hasGzipEncoding(data) {
+		return data
+	}
+
+	// Find the body (after double CRLF)
+	bodyStart := bytes.Index(data, []byte("\r\n\r\n"))
+	if bodyStart == -1 {
+		return data
+	}
+	bodyStart += 4
+
+	if bodyStart >= len(data) {
+		return data
+	}
+
+	body := data[bodyStart:]
+	headers := data[:bodyStart]
+
+	// Attempt gzip decompression
+	decompressed, err := decompressGzip(body)
+	if err != nil {
+		// Decompression failed, return original data
+		return data
+	}
+
+	// Return headers + decompressed body
+	result := make([]byte, len(headers)+len(decompressed))
+	copy(result, headers)
+	copy(result[len(headers):], decompressed)
+	return result
+}
+
+// hasGzipEncoding checks if HTTP response has Content-Encoding: gzip header
+func hasGzipEncoding(data []byte) bool {
+	// Check for gzip content encoding (case-insensitive)
+	lowerData := bytes.ToLower(data)
+	return bytes.Contains(lowerData, []byte("content-encoding: gzip")) ||
+		bytes.Contains(lowerData, []byte("content-encoding:gzip"))
+}
+
+// decompressGzip decompresses gzip-encoded data
+func decompressGzip(data []byte) ([]byte, error) {
+	if len(data) < 10 {
+		return nil, fmt.Errorf("data too short for gzip")
+	}
+
+	// Check gzip magic bytes
+	if data[0] != 0x1f || data[1] != 0x8b {
+		return nil, fmt.Errorf("not gzip data")
+	}
+
+	reader, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+
+	// Limit decompressed size to prevent memory issues
+	const maxDecompressedSize = 10 * 1024 * 1024 // 10MB limit
+	limitedReader := io.LimitReader(reader, maxDecompressedSize)
+
+	decompressed, err := io.ReadAll(limitedReader)
+	if err != nil {
+		return nil, err
+	}
+
+	return decompressed, nil
+}
+
+// httpBodyCredentialPatterns contains patterns to search for in HTTP bodies
+var httpBodyCredentialPatterns = []*regexp.Regexp{
+	// Form-based authentication
+	regexp.MustCompile(`(?i)(?:username|user|login|email)["\s:=]+["\s]*([^"&\s<>]+)`),
+	regexp.MustCompile(`(?i)(?:password|pass|pwd)["\s:=]+["\s]*([^"&\s<>]+)`),
+	// JSON authentication responses
+	regexp.MustCompile(`(?i)"(?:token|access_token|auth_token|jwt)"[:\s]*"([^"]+)"`),
+	regexp.MustCompile(`(?i)"(?:api_key|apikey|api-key)"[:\s]*"([^"]+)"`),
+	// OAuth tokens
+	regexp.MustCompile(`(?i)Bearer\s+([A-Za-z0-9\-_=]+\.[A-Za-z0-9\-_=]+\.[A-Za-z0-9\-_.+/=]*)`),
+}
+
+// extractCredentialsFromHTTPBody searches for credentials in HTTP response bodies
+// This function handles both compressed and uncompressed bodies
+func extractCredentialsFromHTTPBody(data []byte, ident string, ts time.Time) *types.Credentials {
+	// Try to decompress if gzip-encoded
+	decompressedData := decompressHTTPBody(data)
+
+	// Find the body
+	bodyStart := bytes.Index(decompressedData, []byte("\r\n\r\n"))
+	if bodyStart == -1 {
+		return nil
+	}
+	body := decompressedData[bodyStart+4:]
+
+	if len(body) < 10 {
+		return nil
+	}
+
+	// Search for credential patterns
+	for _, pattern := range httpBodyCredentialPatterns {
+		if matches := pattern.FindSubmatch(body); len(matches) > 1 {
+			value := string(matches[1])
+
+			// Filter out short or obviously non-credential values
+			if len(value) < 8 {
+				continue
+			}
+
+			// Determine credential type from pattern
+			patternStr := pattern.String()
+			service := "HTTP Body"
+			if strings.Contains(patternStr, "token") || strings.Contains(patternStr, "jwt") {
+				service = "HTTP Token"
+			} else if strings.Contains(patternStr, "api_key") {
+				service = "HTTP API Key"
+			} else if strings.Contains(patternStr, "Bearer") {
+				service = "HTTP Bearer Token"
+			}
+
+			host := extractHostFromHTTPRequest(decompressedData)
+
+			return &types.Credentials{
+				Timestamp: ts.UnixNano(),
+				Service:   service,
+				Flow:      ident,
+				User:      host,
+				Password:  value,
+				Notes:     "Extracted from HTTP body (decompressed if gzip)",
+			}
+		}
+	}
+
+	return nil
 }
