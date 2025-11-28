@@ -6,6 +6,8 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 const nextConfig = {
   output: 'export',
   reactStrictMode: true,
+  // Transpile the @netcap/ui workspace package to ensure React context is shared
+  transpilePackages: ['@netcap/ui'],
   trailingSlash: true,
   images: {
     unoptimized: true,
@@ -14,11 +16,6 @@ const nextConfig = {
   compiler: {
     // Remove console.log in production
     removeConsole: process.env.NODE_ENV === 'production',
-  },
-  // Turbopack configuration (Next.js 16+ uses Turbopack by default)
-  turbopack: {
-    // Turbopack handles modern ES and tree-shaking natively
-    // Most webpack optimizations are built into Turbopack
   },
 }
 

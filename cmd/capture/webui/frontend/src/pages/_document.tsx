@@ -7,7 +7,6 @@ export default class MyDocument extends Document {
       <Html lang="en">
         <Head>
           <meta charSet="utf-8" />
-          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
           <meta name="description" content="Netcap Web UI - Network Traffic Analysis" />
           <link rel="icon" href="/favicon.ico" />
         </Head>

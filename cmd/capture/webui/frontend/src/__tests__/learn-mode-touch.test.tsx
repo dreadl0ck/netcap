@@ -6,8 +6,8 @@
 import React from 'react';
 import { render, fireEvent, waitFor, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import LearnModeOverlay from '../components/LearnModeOverlay';
-import { LearnModeProvider, useLearnMode } from '../contexts/LearnModeContext';
+import { LearnModeOverlay } from '@netcap/ui/components';
+import { LearnModeProvider, useLearnMode } from '@netcap/ui/contexts';
 
 // Toggle component for testing
 const LearnModeToggleButton = () => {

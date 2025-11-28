@@ -2,6 +2,9 @@
   "name": "netcap-webui",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,6 +15,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@netcap/ui": "*",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@fontsource/roboto": "^5.2.8",

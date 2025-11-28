@@ -1,5 +1,6 @@
 # TODOs
 
+test suite using tshark and a set of pcaps 
 data mining on plaintext connection data: extract URLs, what looks like secrets etc
 
 Inject page

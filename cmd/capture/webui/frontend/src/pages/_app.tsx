@@ -2,13 +2,14 @@ import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { LearnModeProvider } from '@/contexts/LearnModeContext';
-import { api } from '@/lib/api';
+import { NextjsNetcapProvider } from '@netcap/ui/adapters/nextjs';
+import { api, getBackendUrl } from '@netcap/ui/lib';
 import { mutate as globalMutate } from 'swr';
 
 // Import self-hosted Roboto fonts (only the weights needed by MUI)
@@ -368,14 +369,19 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <LearnModeProvider>
-        <GlobalDropZone>
-          <Component {...pageProps} />
-        </GlobalDropZone>
-      </LearnModeProvider>
-    </ThemeProvider>
+    <>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+      </Head>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <NextjsNetcapProvider backendUrl={getBackendUrl()}>
+          <GlobalDropZone>
+            <Component {...pageProps} />
+          </GlobalDropZone>
+        </NextjsNetcapProvider>
+      </ThemeProvider>
+    </>
   );
 }
 

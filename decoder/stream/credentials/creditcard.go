@@ -209,11 +209,3 @@ func validateCreditCardContext(context string) bool {
 
 	return false
 }
-
-
-
-
-
-
-
-
