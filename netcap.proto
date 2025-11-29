@@ -1039,6 +1039,27 @@ message SIP {
   
   // Message body for SDP analysis and VoIP security
   bytes Body = 20;                      // SIP message body (SDP content, media negotiation)
+  
+  // Additional security monitoring fields
+  string Via = 21;                      // Via header (spoofing detection)
+  string CSeq = 22;                     // CSeq header (replay detection)
+  int32 CSeqNumber = 23;                // Parsed CSeq sequence number
+  string CSeqMethod = 24;               // Parsed CSeq method
+  string RequestURI = 25;               // Request-URI (target destination)
+  int32 MaxForwards = 26;               // Max-Forwards (topology mapping)
+  string Authorization = 27;            // Authorization header (brute force)
+  
+  // Security analysis fields (following BGP pattern)
+  bool IsAnomalous = 28;                // Security anomaly detected
+  string AnomalyReason = 29;            // Description of anomaly
+  int32 RiskScore = 30;                 // Risk score (0-100)
+  repeated string RiskFactors = 31;     // List of identified risks
+  bool HasKnownAttackTool = 32;         // Known scanner/attack tool detected
+  bool HasViaSpoofing = 33;             // Via header spoofing indicator
+  bool HasOversizedHeaders = 34;        // Potential buffer overflow
+  bool HasSDPPrivateIPLeak = 35;        // SDP media hijacking indicator
+  string SDPConnectionIP = 36;          // Extracted SDP c= IP
+  string SDPMediaType = 37;             // Extracted SDP m= type
 }
 
 // The Internet Group Management Protocol (IGMP) is a communications protocol

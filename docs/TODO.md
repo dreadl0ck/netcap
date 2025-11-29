@@ -1,45 +1,25 @@
 # TODOs
 
-only invoke harvesters for the ports they are defined to by default avoid false positives. add an engine setting and make this configurable. 
+failed to download databases: failed to fetch database metadata: server returned status 500 Internal Server Error for https://dbs.netcap.io/dbs/latest: Metadata not found
 
-remove the checks in NBNS and SOCKS harvester for the ports. if a harvester is invoked, it should execute!
+- echarts v6 currently used only for pie chart on Files page. Add more charts using v6.
+- make it configurable per harvester if it runs only for the default port or for all streams. for some harvester it makes sense to runs them against all plaintext protos.
+- data mining on plaintext connection data: extract URLs, what looks like secrets, ctf flags etc
 
-I see the issue now. The harvester system runs ALL harvesters against ALL traffic (not just their configured ports). The port mapping is just for "first guess" optimization. I need to add port filtering inside the NBNS harvester itself AND improve the garbage detection.
-
-
-Downloading echarts@6.0.0: 70.03 kB/11.43 MB
-
-why is v6 downloaded? i thought go echarts uses older version
-
-test suite using tshark and a set of pcaps 
-data mining on plaintext connection data: extract URLs, what looks like secrets etc
-
-Inject page
-add support for users to create new rule sets and save them to disk
-
-- EthernetCTP has only Timestamp set?
-- support to enable / disable service probes
-- software audit records: remove Vendor Field and use only Product?
+- support to enable / disable individual service probes. regenerate the probe list with commented out if disabled.
+- software audit records: remove Vendor Field and use only Product? if Product info is empty, write the info we would have written into Vendor before as a fallback, or combine the two fields.
 - fix capture and inspect local results
+- auto extract information from robots.txt and content security policy and use it to enrich audit records
+- records: rename Download All to Download Records + new Download CSV button to convert and download all records as CSV files (caution with gzip compression middleware causing issues again)
+- support creating service probes on the services page service details: add create probe button, switch to probes page, open create modal and insert service banner 
 
-extract info from robots.txt and csp
+----
 
-update db server for exploitdb 
+Later
 
-Investigate: graph analysis page
-AI page for generating reports or AI assisted analysis agent
-
-MCP
-
-records: rename Download All to Download Records + new Download CSV button to convert and download all records as CSV files
-caution with gzip compression middleware causing issues again
-
-Pattern (Regex) Box black FIX SYNTAX HIGHLIGHTING during editing
-Rule editor Expression input black FIX SYNTAX HIGHLIGHTING during editing
-
-support creating service probes on the services page service details: add create probe button, switch to probes page, open create modal and insert service banner 
-
-- VSCode plugin to open pcaps with netcap
+- test suite using tshark and a set of pcaps 
+- EthernetCTP / LinkLayerDiscovery / others - Group audit record types into one per protocol?
+- VSCode plugin to open pcaps with netcap and render the webUI in tab for analysis of the loaded PCAP file
 
 ----
 
@@ -85,26 +65,24 @@ support creating service probes on the services page service details: add create
 
 - add some test for stream reassembly that are run with -count flag to ensure number and properties of reassembled streams are consistent
 - audit records filter help box: make suggestions context specific for the current audit record type and data with configurable inputs as template, load a couple audit records to obtain real values and populate the template for help text with real values
-- add guide how to add new protocol support and add show example commit
-- connection data exchange view similar to wireshark: red vs blue
+- add guide how to add new protocol support and show example commit
 
 - docs iteration
 - tests iteration
 
-- Dashboard feature to combine save and load multiple charts
 - update engine: rules / filters need to be executed in batches so that large amounts of data can be processed.
+
 - add rules to alert on the presence of certain audit record types, eg Credentials, Vulns, Exploits etc
 - implement bug reporting in local mode
+
 - add detailed field descriptions for each protocol and show in explore view when selecting a field
 - netcap core should produce info which fields contain data for the audit records, so that UI can use this only show fields that make sense for filtering, without having to parse the entire data again.
 - always allow to drag and drop files for upload on the Analyze menu item, even if user is on a different page. Switch to analyze page automatiaclly and start upload
 - add local dev mode for webUI
-- ✓ webUI: implement Learn Mode - interactive help tooltips that appear when hovering/clicking UI elements (see docs/webui-learn-mode.md)
+
 - try-service: crash reporting mechanism: when the service panics and crashes, we need the full service log, and all netcap logfiles copied and archived together with the input pcap file for reproduction. An alert should be fired via email. add support to connect an SMTP service to send alert emails to an administrator.
 - add custom data support for dbs and integrate it in UI
 - switch to gopacket/reassembly and tcpassembly? implement tests to verify the decoded streams are consistent in between executions
-- add internal package
-- dedicated DPI logfile and dpiLog instance
 
 -----
 

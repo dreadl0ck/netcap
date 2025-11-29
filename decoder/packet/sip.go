@@ -20,6 +20,7 @@
 package packet
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -29,6 +30,9 @@ import (
 
 	"github.com/dreadl0ck/netcap/types"
 )
+
+// reCSeq parses CSeq header: "123 INVITE" -> number=123, method=INVITE
+var reCSeq = regexp.MustCompile(`^(\d+)\s+(\w+)$`)
 
 // sipMethodNames maps SIP method codes to names
 var sipMethodNames = map[layers.SIPMethod]string{
@@ -89,13 +93,49 @@ var sipDecoder = newGoPacketDecoder(
 				contentLength = int32(cl)
 			}
 
+			// Extract additional security monitoring headers
+			via := getFirstSIPHeader(sip.Headers, "Via")
+			cseq := getFirstSIPHeader(sip.Headers, "CSeq")
+			authorization := getFirstSIPHeader(sip.Headers, "Authorization")
+			if authorization == "" {
+				authorization = getFirstSIPHeader(sip.Headers, "Proxy-Authorization")
+			}
+
+			// Parse Max-Forwards header
+			maxForwardsStr := getFirstSIPHeader(sip.Headers, "Max-Forwards")
+			var maxForwards int32
+			if mf, err := strconv.Atoi(maxForwardsStr); err == nil {
+				maxForwards = int32(mf)
+			}
+
+			// Parse CSeq into number and method
+			var cseqNumber int32
+			var cseqMethod string
+			if matches := reCSeq.FindStringSubmatch(strings.TrimSpace(cseq)); len(matches) == 3 {
+				if num, err := strconv.Atoi(matches[1]); err == nil {
+					cseqNumber = int32(num)
+				}
+				cseqMethod = matches[2]
+			}
+
+			// Extract Request-URI from the request line (stored in gopacket as RequestURI)
+			// For SIP requests, this is the target of the request
+			var requestURI string
+			if !sip.IsResponse {
+				// gopacket stores the Request-URI in the layer
+				// We need to reconstruct it or get it from the raw data
+				// The layers.SIP type doesn't expose RequestURI directly,
+				// so we extract it from headers if available or leave empty
+				requestURI = getFirstSIPHeader(sip.Headers, "Request-URI")
+			}
+
 			// Capture body if configured (for SDP analysis and VoIP security)
 			var body []byte
 			if conf.IncludePayloads {
 				body = layer.LayerPayload()
 			}
 
-			return &types.SIP{
+			sipMsg := &types.SIP{
 				Timestamp:      timestamp,
 				Version:        int32(sip.Version),
 				Method:         int32(sip.Method),
@@ -112,7 +152,20 @@ var sipDecoder = newGoPacketDecoder(
 				ContentType:    contentType,
 				ContentLength:  contentLength,
 				Body:           body,
+				// New security monitoring fields
+				Via:           via,
+				CSeq:          cseq,
+				CSeqNumber:    cseqNumber,
+				CSeqMethod:    cseqMethod,
+				RequestURI:    requestURI,
+				MaxForwards:   maxForwards,
+				Authorization: authorization,
 			}
+
+			// Perform security analysis
+			analyzeSIPSecurity(sipMsg)
+
+			return sipMsg
 		}
 
 		return nil
