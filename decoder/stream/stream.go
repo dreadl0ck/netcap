@@ -9,15 +9,22 @@ import (
 
 	"github.com/dreadl0ck/netcap/decoder"
 
+	"github.com/dreadl0ck/netcap/decoder/stream/bacnetip"
 	"github.com/dreadl0ck/netcap/decoder/stream/bgp"
 	"github.com/dreadl0ck/netcap/decoder/stream/cip"
 	"github.com/dreadl0ck/netcap/decoder/stream/dnp3"
 	"github.com/dreadl0ck/netcap/decoder/stream/ftp"
 	"github.com/dreadl0ck/netcap/decoder/stream/http"
+	"github.com/dreadl0ck/netcap/decoder/stream/iec62351"
 	"github.com/dreadl0ck/netcap/decoder/stream/imap"
 	"github.com/dreadl0ck/netcap/decoder/stream/irc"
+	"github.com/dreadl0ck/netcap/decoder/stream/modbus"
+	"github.com/dreadl0ck/netcap/decoder/stream/mqttsn"
+	"github.com/dreadl0ck/netcap/decoder/stream/opcua"
 	"github.com/dreadl0ck/netcap/decoder/stream/pop3"
+	"github.com/dreadl0ck/netcap/decoder/stream/profinet"
 	"github.com/dreadl0ck/netcap/decoder/stream/rdp"
+	"github.com/dreadl0ck/netcap/decoder/stream/s7comm"
 	"github.com/dreadl0ck/netcap/decoder/stream/smb"
 	"github.com/dreadl0ck/netcap/decoder/stream/smtp"
 	"github.com/dreadl0ck/netcap/decoder/stream/socks"
@@ -49,19 +56,27 @@ var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
 	22:    ssh.Decoder,
 	25:    smtp.Decoder,
 	80:    http.Decoder,
+	102:   s7comm.Decoder, // S7comm ICS/SCADA (Siemens S7 PLCs)
 	110:   pop3.Decoder,
 	143:   imap.Decoder,
-	179:   bgp.Decoder, // BGP routing protocol
+	179:   bgp.Decoder,    // BGP routing protocol
 	443:   tls.Decoder,
 	445:   smb.Decoder,
-	514:   syslog.Decoder, // Syslog (UDP/TCP)
-	1080:  socks.Decoder,  // SOCKS proxy
+	502:   modbus.Decoder,  // Modbus TCP ICS/SCADA
+	514:   syslog.Decoder,  // Syslog (UDP/TCP)
+	1080:  socks.Decoder,   // SOCKS proxy
+	1883:  mqttsn.Decoder,  // MQTT-SN IoT sensor networks (UDP)
+	1884:  mqttsn.Decoder,  // MQTT-SN alternate port (UDP)
 	2222:  cip.Decoder,    // CIP ICS/SCADA (direct)
 	3389:  rdp.Decoder,    // RDP remote desktop
+	4840:  opcua.Decoder,  // OPC UA ICS/SCADA
 	6667:  irc.Decoder,    // Common IRC port
 	8443:  tls.Decoder,    // Common alternate HTTPS port
-	20000: dnp3.Decoder,   // DNP3 ICS/SCADA
-	44818: cip.Decoder,    // CIP ICS/SCADA (via EtherNet/IP)
+	20000: dnp3.Decoder,         // DNP3 ICS/SCADA
+	2404:  iec62351.Decoder,     // IEC 62351 security for IEC 60870-5-104
+	34964: profinet.Decoder,     // PROFINET IO Context Manager (DCE/RPC)
+	44818: cip.Decoder,          // CIP ICS/SCADA (via EtherNet/IP)
+	47808: bacnetip.Decoder,     // BACnet/IP building automation (UDP port 0xBAC0)
 } // contains all available stream decoders
 
 // package level init.

@@ -171,6 +171,12 @@ enum Type {
   NC_MLDv2MulticastListenerReport = 121;
   NC_MLDv2MulticastAddressRecord = 122;
   NC_STPSwitchID = 123;
+  NC_OPCUA = 124;
+  NC_S7Comm = 125;
+  NC_MQTTSN = 126;
+  NC_BACnetIP = 127;
+  NC_IEC62351 = 128;
+  NC_PROFINET = 129;
 }
 
 //
@@ -3274,4 +3280,468 @@ message MLDv2MulticastAddressRecord {
   string MulticastAddress = 5;    // Multicast address
   repeated string SourceAddresses = 6;    // Source addresses
   bytes AuxiliaryData = 7;        // Auxiliary data
+}
+
+// OPCUA (OPC Unified Architecture) is a machine-to-machine communication
+// protocol for industrial automation developed by the OPC Foundation.
+// It provides a platform-independent service-oriented architecture for
+// process control and ICS/SCADA systems.
+message OPCUA {
+  int64 Timestamp = 1;            // Timestamp of the message
+  string SrcIP = 2;               // Source IP address
+  string DstIP = 3;               // Destination IP address
+  int32 SrcPort = 4;              // Source port
+  int32 DstPort = 5;              // Destination port
+
+  // Transport Layer fields
+  string MessageType = 6;         // HEL, ACK, ERR, OPN, CLO, MSG, RHE, etc.
+  string ChunkType = 7;           // C=Intermediate, F=Final, A=Abort
+  int32 MessageSize = 8;          // Total message size
+
+  // Hello/Acknowledge fields
+  int32 ProtocolVersion = 9;      // Protocol version
+  int32 ReceiveBufferSize = 10;   // Receive buffer size
+  int32 SendBufferSize = 11;      // Send buffer size
+  int32 MaxMessageSize = 12;      // Maximum message size (0 = no limit)
+  int32 MaxChunkCount = 13;       // Maximum chunk count (0 = no limit)
+  string EndpointUrl = 14;        // Endpoint URL (Hello message)
+
+  // Error fields
+  uint32 ErrorCode = 15;          // Error code (Error message)
+  string ErrorReason = 16;        // Error reason string
+
+  // Secure Channel fields
+  uint32 SecureChannelId = 17;    // Secure channel identifier
+  string SecurityPolicyUri = 18;  // Security policy URI
+  string SecurityMode = 19;       // None, Sign, SignAndEncrypt
+  uint32 RequestId = 20;          // Request identifier
+  uint32 SequenceNumber = 21;     // Sequence number for chunks
+
+  // Service Layer fields
+  string ServiceNodeId = 22;      // Service type identifier (NodeId)
+  string ServiceName = 23;        // Human-readable service name
+  bool IsRequest = 24;            // true=request, false=response
+
+  // Request/Response fields
+  uint32 RequestHandle = 25;      // Request handle for correlation
+  uint32 StatusCode = 26;         // Service result status code
+  string StatusCodeName = 27;     // Human-readable status code
+
+  // Session fields
+  string SessionId = 28;          // Session identifier (NodeId string)
+  string AuthenticationToken = 29; // Authentication token (NodeId string)
+
+  // Security-relevant flags
+  bool IsSecurityRelevant = 30;   // true if affects security config
+  bool IsCriticalOperation = 31;  // true if affects process control
+
+  // Payload information
+  bytes Payload = 32;             // Raw service payload (if enabled)
+}
+
+// S7Comm is the Siemens S7 Communication Protocol used for communication with
+// Siemens S7 PLCs (S7-300, S7-400, S7-1200, S7-1500). It runs over TPKT/ISO-COTP
+// on TCP port 102. This protocol is widely used in industrial automation and
+// SCADA systems.
+message S7Comm {
+  int64 Timestamp = 1;            // Timestamp of the message
+  string SrcIP = 2;               // Source IP address
+  string DstIP = 3;               // Destination IP address
+  int32 SrcPort = 4;              // Source port
+  int32 DstPort = 5;              // Destination port
+
+  // TPKT Header fields (RFC 1006)
+  int32 TPKTVersion = 6;          // TPKT version (usually 3)
+  int32 TPKTLength = 7;           // Total packet length including TPKT header
+
+  // COTP Header fields (ISO 8073)
+  int32 COTPLength = 8;           // COTP header length
+  int32 COTPPDUType = 9;          // COTP PDU type (0x0D=CR, 0x0C=CC, 0x0F=DT, etc.)
+  string COTPPDUTypeName = 10;    // Human-readable PDU type name
+  int32 COTPDestRef = 11;         // Destination reference
+  int32 COTPSrcRef = 12;          // Source reference
+  int32 COTPClass = 13;           // COTP class (for CR/CC)
+  int32 COTPTPDUNumber = 14;      // TPDU number (for DT)
+  bool COTPLastDataUnit = 15;     // Last data unit flag (for DT)
+
+  // S7Comm Header fields
+  int32 ProtocolId = 16;          // Protocol ID (0x32 for S7comm)
+  int32 MessageType = 17;         // Message type (1=Job, 2=Ack, 3=AckData, 7=UserData)
+  string MessageTypeName = 18;    // Human-readable message type
+  int32 Reserved = 19;            // Reserved field
+  int32 PDUReference = 20;        // PDU reference for request/response matching
+  int32 ParameterLength = 21;     // Parameter section length
+  int32 DataLength = 22;          // Data section length
+
+  // Error fields (for Ack-Data messages)
+  int32 ErrorClass = 23;          // Error class
+  int32 ErrorCode = 24;           // Error code
+  string ErrorName = 25;          // Human-readable error name
+
+  // Function fields
+  int32 FunctionCode = 26;        // Function code (0x04=Read, 0x05=Write, 0xF0=Setup, etc.)
+  string FunctionName = 27;       // Human-readable function name
+  int32 SubFunction = 28;         // Sub-function code (for some functions)
+  string SubFunctionName = 29;    // Human-readable sub-function name
+
+  // Request-specific fields
+  int32 ItemCount = 30;           // Number of items in request
+  repeated S7CommItem Items = 31; // Read/Write request items
+
+  // Response-specific fields
+  repeated S7CommDataItem DataItems = 32; // Response data items
+
+  // Setup Communication fields
+  int32 MaxAmqCalling = 33;       // Max AMQ (jobs) calling (client->PLC)
+  int32 MaxAmqCalled = 34;        // Max AMQ called (PLC->client)
+  int32 PDUSize = 35;             // Negotiated PDU size
+
+  // CPU Info fields (for Read SZL)
+  string CPUType = 36;            // CPU type (e.g., "CPU 315-2 DP")
+  string PLCSerialNumber = 37;    // PLC serial number
+  string ModuleTypeName = 38;     // Module type name
+  string PlantIdentification = 39; // Plant identification
+
+  // UserData function fields
+  int32 UserDataMethodType = 40;  // Method type (request/response)
+  int32 UserDataFunctionGroup = 41; // Function group
+  string UserDataFunctionGroupName = 42; // Human-readable function group name
+  int32 UserDataSubFunction = 43; // Sub-function
+  int32 UserDataSequenceNumber = 44; // Sequence number
+
+  // Security-relevant flags
+  bool IsSecurityRelevant = 45;   // true if affects PLC configuration
+  bool IsCriticalOperation = 46;  // true if write operation or PLC control
+
+  // Payload information
+  bytes Payload = 47;             // Raw S7comm payload (if enabled)
+}
+
+// S7CommItem represents a single item in an S7Comm Read/Write request.
+message S7CommItem {
+  int32 VariableType = 1;         // Variable specification type (0x12 for item)
+  int32 SyntaxId = 2;             // Syntax ID (0x10=S7ANY, 0x13=PBC ID, etc.)
+  int32 TransportSize = 3;        // Transport size (data type)
+  string TransportSizeName = 4;   // Human-readable transport size name
+  int32 Length = 5;               // Number of items to read/write
+  int32 DBNumber = 6;             // Data block number (0 for other areas)
+  int32 Area = 7;                 // Memory area (0x81=I, 0x82=Q, 0x83=M, 0x84=DB, etc.)
+  string AreaName = 8;            // Human-readable area name
+  int32 Address = 9;              // Start address (bit address = byte*8 + bit)
+}
+
+// S7CommDataItem represents a single data item in an S7Comm response.
+message S7CommDataItem {
+  int32 ReturnCode = 1;           // Return code (0xFF=Success, 0x03=Access denied, etc.)
+  string ReturnCodeName = 2;      // Human-readable return code
+  int32 TransportSize = 3;        // Transport size for response data
+  int32 Length = 4;               // Data length in bytes
+  bytes Data = 5;                 // Actual data bytes
+}
+
+// BACnetIP represents a BACnet/IP (Building Automation and Control Networks over IP) message.
+// BACnet is a communications protocol for building automation and control systems.
+// BACnet/IP runs over UDP port 47808 (0xBAC0).
+message BACnetIP {
+  int64 Timestamp = 1;            // Timestamp of the message
+  string SrcIP = 2;               // Source IP address
+  string DstIP = 3;               // Destination IP address
+  int32 SrcPort = 4;              // Source port
+  int32 DstPort = 5;              // Destination port
+
+  // BVLC (BACnet Virtual Link Control) Header
+  int32 BVLCType = 6;             // BVLC type (0x81 for BACnet/IP)
+  int32 BVLCFunction = 7;         // BVLC function code
+  string BVLCFunctionName = 8;    // Human-readable function name
+  int32 BVLCLength = 9;           // BVLC message length
+
+  // NPDU (Network Protocol Data Unit) Header
+  int32 NPDUVersion = 10;         // NPDU version (always 1)
+  int32 NPDUControl = 11;         // NPDU control octet
+  bool NPDUExpectsReply = 12;     // Message expects a reply
+  bool NPDUNetworkLayerMsg = 13;  // Network layer message (vs application)
+  int32 NPDUPriority = 14;        // Message priority (0-3)
+
+  // Network Layer addressing (optional)
+  int32 DNET = 15;                // Destination network number
+  string DADR = 16;               // Destination MAC address
+  int32 SNET = 17;                // Source network number
+  string SADR = 18;               // Source MAC address
+  int32 HopCount = 19;            // Hop count
+
+  // Network Layer Message Type (if NPDUNetworkLayerMsg is true)
+  int32 NetworkMessageType = 20;  // Network layer message type
+  string NetworkMessageTypeName = 21; // Human-readable message type
+
+  // APDU (Application Protocol Data Unit) fields
+  int32 APDUType = 22;            // APDU type (0-7)
+  string APDUTypeName = 23;       // Human-readable APDU type
+  int32 SegmentedMessage = 24;    // Segmentation flags
+  bool MoreFollows = 25;          // More segments follow
+  bool SegmentedResponseAccepted = 26; // Segmented response accepted
+
+  // Confirmed/Unconfirmed Request fields
+  int32 InvokeID = 27;            // Invoke ID for request/response matching
+  int32 SequenceNumber = 28;      // Sequence number (for segmented messages)
+  int32 ProposedWindowSize = 29;  // Proposed window size
+
+  // Service fields
+  int32 ServiceChoice = 30;       // Service choice (for confirmed/unconfirmed requests)
+  string ServiceName = 31;        // Human-readable service name
+  bool IsConfirmed = 32;          // Confirmed service request
+
+  // Error/Reject/Abort fields
+  int32 ErrorClass = 33;          // Error class
+  int32 ErrorCode = 34;           // Error code
+  string ErrorName = 35;          // Human-readable error description
+  int32 RejectReason = 36;        // Reject reason
+  int32 AbortReason = 37;         // Abort reason
+
+  // Object identification (common in many services)
+  int32 ObjectType = 38;          // Object type
+  string ObjectTypeName = 39;     // Human-readable object type
+  uint32 ObjectInstance = 40;     // Object instance number
+
+  // Property identification
+  int32 PropertyIdentifier = 41;  // Property identifier
+  string PropertyName = 42;       // Human-readable property name
+  int32 PropertyArrayIndex = 43;  // Property array index (-1 if not used)
+
+  // Security-relevant flags
+  bool IsSecurityRelevant = 44;   // Affects device security/access
+  bool IsCriticalOperation = 45;  // Affects building automation control
+
+  // Payload for detailed analysis
+  bytes Payload = 46;             // Raw APDU payload (if enabled)
+}
+
+// MQTTSN (MQTT for Sensor Networks) is a publish/subscribe messaging protocol
+// designed for wireless sensor networks and resource-constrained devices.
+// It uses UDP transport and supports features like topic ID registration,
+// sleeping clients, and gateway discovery.
+message MQTTSN {
+  int64 Timestamp = 1;            // Timestamp of the message
+  string SrcIP = 2;               // Source IP address
+  string DstIP = 3;               // Destination IP address
+  int32 SrcPort = 4;              // Source port
+  int32 DstPort = 5;              // Destination port
+
+  // Message Header fields
+  int32 Length = 6;               // Message length
+  int32 MessageType = 7;          // Message type code
+  string MessageTypeName = 8;     // Human-readable message type
+
+  // ADVERTISE message fields
+  int32 GatewayId = 9;            // Gateway identifier
+  int32 Duration = 10;            // Duration in seconds
+
+  // SEARCHGW/GWINFO fields
+  int32 Radius = 11;              // Broadcast radius for gateway search
+
+  // CONNECT fields
+  int32 Flags = 12;               // Protocol flags (Will, CleanSession, TopicIdType)
+  int32 ProtocolId = 13;          // Protocol ID (should be 0x01)
+  string ClientId = 14;           // Client identifier
+
+  // CONNACK/WILLTOPICRESP/WILLMSGRESP/REGACK/PUBACK/SUBACK/UNSUBACK fields
+  int32 ReturnCode = 15;          // Return code
+  string ReturnCodeName = 16;     // Human-readable return code
+
+  // WILLTOPIC/WILLTOPICUPD fields
+  string WillTopic = 17;          // Will topic string
+  int32 WillQoS = 18;             // Will QoS level
+  bool WillRetain = 19;           // Will retain flag
+
+  // WILLMSG/WILLMSGUPD fields
+  bytes WillMessage = 20;         // Will message payload
+
+  // REGISTER fields
+  int32 TopicId = 21;             // Topic ID (assigned by gateway)
+  int32 MessageId = 22;           // Message ID for acknowledgment
+  string TopicName = 23;          // Topic name string
+
+  // PUBLISH fields
+  int32 QoS = 24;                 // Quality of Service level (0, 1, 2, or -1)
+  bool Retain = 25;               // Retain flag
+  bool DUP = 26;                  // Duplicate flag
+  int32 TopicIdType = 27;         // Topic ID type (0=normal, 1=predefined, 2=short)
+  bytes Payload = 28;             // Publish payload data
+
+  // SUBSCRIBE/UNSUBSCRIBE fields
+  // Uses TopicId, TopicName, TopicIdType, and MessageId
+
+  // PINGREQ/PINGRESP fields
+  // ClientId may be present in PINGREQ for sleeping clients
+
+  // DISCONNECT fields
+  int32 SleepDuration = 29;       // Sleep duration (for sleeping clients)
+
+  // FORWARDER ENCAPSULATION fields
+  int32 Ctrl = 30;                // Control field
+  string WirelessNodeId = 31;     // Wireless node identifier
+
+  // Parsed flag information
+  bool CleanSession = 32;         // Clean session flag from CONNECT
+  bool Will = 33;                 // Will flag from CONNECT
+  string TopicIdTypeName = 34;    // Human-readable topic ID type
+}
+
+// IEC62351 represents IEC 62351 security protocol messages for power system communications.
+// IEC 62351 provides security extensions for IEC 61850, IEC 60870-5-104, and other power system protocols.
+// It uses TLS/SSL for transport security and defines authentication, authorization, and audit mechanisms.
+message IEC62351 {
+  int64 Timestamp = 1;            // Timestamp of the message
+  string SrcIP = 2;               // Source IP address
+  string DstIP = 3;               // Destination IP address
+  int32 SrcPort = 4;              // Source port
+  int32 DstPort = 5;              // Destination port
+
+  // Protocol identification
+  string UnderlyingProtocol = 6;  // Underlying protocol (IEC61850, IEC60870-5-104, DNP3SA, etc.)
+  int32 SecurityVersion = 7;      // IEC 62351 security version
+
+  // Message type fields
+  int32 MessageType = 8;          // Message type code
+  string MessageTypeName = 9;     // Human-readable message type
+  bool IsRequest = 10;            // true=request, false=response
+
+  // Authentication fields (IEC 62351-5)
+  string AuthenticationMechanism = 11; // Authentication method (X.509, Kerberos, etc.)
+  string UserIdentity = 12;       // User or role identity
+  string CertificateSubject = 13; // Certificate subject DN
+  string CertificateIssuer = 14;  // Certificate issuer DN
+  string CertificateSerial = 15;  // Certificate serial number
+  int64 CertificateNotBefore = 16; // Certificate validity start
+  int64 CertificateNotAfter = 17; // Certificate validity end
+  string KeyUsage = 18;           // Certificate key usage extensions
+  bool CertificateValid = 19;     // Certificate validation status
+
+  // Session/Association security (IEC 62351-3/4)
+  string SessionId = 20;          // Security association/session identifier
+  string SecurityPolicy = 21;     // Security policy URI
+  string CipherSuite = 22;        // Negotiated cipher suite
+  string TLSVersion = 23;         // TLS/SSL version
+  bool MutualAuthentication = 24; // Both parties authenticated
+
+  // Access control fields (IEC 62351-8 RBAC)
+  string Role = 25;               // User role (OPERATOR, ENGINEER, VIEWER, etc.)
+  string Permission = 26;         // Access permission (READ, WRITE, CONTROL, etc.)
+  string AccessPoint = 27;        // Logical access point
+  bool AccessGranted = 28;        // Access control decision
+  string AccessDenialReason = 29; // Reason for access denial
+
+  // Audit and logging fields (IEC 62351-7)
+  string AuditEventType = 30;     // Audit event type
+  string AuditEventOutcome = 31;  // Success, Failure, etc.
+  string AuditSource = 32;        // Source of audit event
+  int64 EventSequenceNumber = 33; // Sequence number for ordering
+
+  // Challenge-Response Authentication
+  int32 ChallengeSequence = 34;   // Challenge sequence number
+  bytes Challenge = 35;           // Challenge value
+  bytes Response = 36;            // Response value
+  string MACAlgorithm = 37;       // MAC algorithm (HMAC-SHA256, etc.)
+  bool MACValid = 38;             // MAC validation status
+
+  // Key Management (IEC 62351-9)
+  string KeyExchangeMethod = 39;  // Key exchange method
+  int32 KeyId = 40;               // Key identifier
+  int64 KeyExpiry = 41;           // Key expiration timestamp
+  bool KeyUpdateRequired = 42;    // Key update needed
+
+  // Error and status fields
+  int32 ErrorCode = 43;           // Error code
+  string ErrorMessage = 44;       // Error description
+  int32 StatusCode = 45;          // Status code
+  string StatusMessage = 46;      // Status message
+
+  // Security-relevant flags
+  bool IsSecurityRelevant = 47;   // Affects security configuration
+  bool IsCriticalOperation = 48;  // Critical security operation
+  bool IsAuthenticationEvent = 49; // Authentication-related event
+  bool IsAuthorizationEvent = 50; // Authorization-related event
+  bool IsKeyManagementEvent = 51; // Key management event
+  bool IsSecurityAlert = 52;      // Security alert/anomaly detected
+
+  // Integrity protection
+  bool HasDigitalSignature = 53;  // Message is digitally signed
+  bool SignatureValid = 54;       // Signature validation status
+  string SignatureAlgorithm = 55; // Signature algorithm
+
+  // Payload and context
+  bytes SecurityPayload = 56;     // Security-related payload data
+  string ProtocolContext = 57;    // Additional protocol context
+}
+
+// PROFINET is an industrial Ethernet standard used for automation and process control.
+// It supports real-time (RT) and isochronous real-time (IRT) communication.
+// PROFINET uses DCE/RPC for device configuration and parameter setting.
+message PROFINET {
+  int64 Timestamp = 1;            // Timestamp of the message
+  string SrcIP = 2;               // Source IP address
+  string DstIP = 3;               // Destination IP address
+  int32 SrcPort = 4;              // Source port
+  int32 DstPort = 5;              // Destination port
+
+  // Frame identification
+  int32 FrameID = 6;              // PROFINET frame identifier
+  string FrameType = 7;           // RT, IRT, NRT, DCP, etc.
+  string FrameTypeName = 8;       // Human-readable frame type name
+
+  // Block header fields
+  int32 BlockType = 9;            // Block type identifier
+  string BlockTypeName = 10;      // Human-readable block type name
+  int32 BlockLength = 11;         // Block data length
+  int32 BlockVersionHigh = 12;    // Block version major
+  int32 BlockVersionLow = 13;     // Block version minor
+
+  // DCE/RPC fields (for Context Manager communication)
+  int32 ServiceID = 14;           // RPC service identifier
+  string ServiceName = 15;        // Human-readable service name
+  int32 OperationType = 16;       // Operation type (Connect, Read, Write, Control)
+  string OperationTypeName = 17;  // Human-readable operation name
+  bool IsRequest = 18;            // True for request, false for response
+
+  // Object addressing (AR, API, Slot, Subslot)
+  uint32 ARUUID = 19;             // Application Relationship UUID (first 32 bits)
+  uint32 API = 20;                // Application Process Identifier
+  int32 SlotNumber = 21;          // Slot number
+  int32 SubslotNumber = 22;       // Subslot number
+
+  // IO data fields
+  int32 IODataLength = 23;        // Length of IO data
+  int32 IOCS = 24;                // IO Consumer Status
+  int32 IOPS = 25;                // IO Provider Status
+  string IOStatusName = 26;       // Human-readable IO status
+
+  // Alarm and diagnostic fields
+  int32 AlarmType = 27;           // Alarm type identifier
+  string AlarmTypeName = 28;      // Human-readable alarm type
+  int32 AlarmPriority = 29;       // Alarm priority (High/Low)
+  int32 DiagnosisType = 30;       // Diagnosis type
+  string DiagnosisTypeName = 31;  // Human-readable diagnosis type
+  int32 ChannelNumber = 32;       // Channel number for diagnostics
+  int32 ErrorType = 33;           // Error type code
+  string ErrorTypeName = 34;      // Human-readable error type
+
+  // Device identification
+  string StationName = 35;        // PROFINET device station name
+  string VendorID = 36;           // Vendor identifier
+  string DeviceID = 37;           // Device identifier
+  string DeviceRole = 38;         // Device role (Controller, Device, Supervisor)
+
+  // Sequence and state tracking
+  uint32 SequenceNumber = 39;     // Sequence number for ordering
+  int32 CycleCounter = 40;        // Cycle counter for real-time data
+  int32 DataStatus = 41;          // Data status flags
+  int32 TransferStatus = 42;      // Transfer status
+
+  // Security-relevant flags
+  bool IsSecurityRelevant = 43;   // Security-relevant operation
+  bool IsCriticalOperation = 44;  // Critical control operation (Write, Control)
+  bool IsAlarm = 45;              // Alarm message
+  bool IsDiagnostic = 46;         // Diagnostic message
+
+  // Payload
+  bytes Payload = 47;             // Raw payload data
 }

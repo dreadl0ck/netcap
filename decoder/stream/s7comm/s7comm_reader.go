@@ -1,0 +1,561 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package s7comm
+
+import (
+	"bytes"
+	"encoding/binary"
+	"sync/atomic"
+
+	"go.uber.org/zap"
+
+	"github.com/dreadl0ck/netcap/decoder/core"
+	"github.com/dreadl0ck/netcap/types"
+)
+
+type s7commReader struct {
+	conversation *core.ConversationInfo
+}
+
+// New returns a new S7comm reader.
+func (s *s7commReader) New(conversation *core.ConversationInfo) core.StreamDecoderInterface {
+	return &s7commReader{
+		conversation: conversation,
+	}
+}
+
+// Decode parses S7comm messages from the stream.
+func (s *s7commReader) Decode() {
+	if Decoder.Writer == nil {
+		s7commLog.Error("S7Comm Decoder.Writer is nil")
+		return
+	}
+
+	var buf bytes.Buffer
+
+	for _, data := range s.conversation.Data {
+		buf.Write(data.Raw())
+	}
+
+	frameData := buf.Bytes()
+	offset := 0
+
+	for offset < len(frameData)-minTPKTSize {
+		// Check for TPKT header
+		if !s.isTPKTHeader(frameData[offset:]) {
+			offset++
+			continue
+		}
+
+		msg, consumed := s.parseTPKTMessage(frameData[offset:])
+		if msg != nil {
+			msg.SrcIP = s.conversation.ClientIP
+			msg.DstIP = s.conversation.ServerIP
+			msg.SrcPort = int32(s.conversation.ClientPort)
+			msg.DstPort = int32(s.conversation.ServerPort)
+
+			err := Decoder.Writer.Write(msg)
+			if err != nil {
+				s7commLog.Error("failed to write S7Comm record", zap.Error(err))
+			} else {
+				atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+			}
+		}
+
+		if consumed > 0 {
+			offset += consumed
+		} else {
+			offset++
+		}
+	}
+}
+
+// isTPKTHeader checks if the data starts with a valid TPKT header.
+func (s *s7commReader) isTPKTHeader(data []byte) bool {
+	if len(data) < minTPKTSize {
+		return false
+	}
+
+	// TPKT version must be 3
+	if data[0] != tpktVersion {
+		return false
+	}
+
+	// Reserved byte should be 0
+	if data[1] != 0x00 {
+		return false
+	}
+
+	// Get TPKT length (big-endian)
+	tpktLength := int(data[2])<<8 | int(data[3])
+	if tpktLength < minTPKTSize {
+		return false
+	}
+
+	return true
+}
+
+// parseTPKTMessage parses a TPKT/COTP/S7comm message and returns the parsed record and bytes consumed.
+func (s *s7commReader) parseTPKTMessage(data []byte) (*types.S7Comm, int) {
+	if len(data) < minTPKTSize {
+		return nil, 0
+	}
+
+	// Parse TPKT header
+	tpktVersion := int32(data[0])
+	tpktLength := int(data[2])<<8 | int(data[3])
+
+	// Validate we have enough data
+	if len(data) < tpktLength {
+		return nil, 0
+	}
+
+	msg := &types.S7Comm{
+		Timestamp:   s.conversation.FirstClientPacket.UnixNano(),
+		TPKTVersion: tpktVersion,
+		TPKTLength:  int32(tpktLength),
+	}
+
+	// Parse COTP header
+	cotpOffset := minTPKTSize
+	if cotpOffset >= len(data) {
+		return msg, tpktLength
+	}
+
+	cotpLength := int(data[cotpOffset])
+	if cotpOffset+cotpLength+1 > len(data) {
+		return msg, tpktLength
+	}
+
+	msg.COTPLength = int32(cotpLength)
+
+	// Parse COTP PDU type
+	if cotpOffset+1 < len(data) {
+		pduType := int(data[cotpOffset+1])
+		msg.COTPPDUType = int32(pduType)
+		msg.COTPPDUTypeName = getCOTPPDUTypeName(pduType)
+
+		// Parse based on PDU type
+		pduTypeClass := pduType & 0xF0
+		switch pduTypeClass {
+		case COTPTypeCR, COTPTypeCC:
+			// Connection Request / Connection Confirm
+			s.parseCOTPConnection(msg, data[cotpOffset:], cotpLength)
+		case COTPTypeDT:
+			// Data Transfer - parse S7comm payload
+			s.parseCOTPData(msg, data[cotpOffset:], cotpLength)
+		case COTPTypeDR, COTPTypeDC:
+			// Disconnect Request / Disconnect Confirm
+			if cotpLength >= 6 && cotpOffset+6 <= len(data) {
+				msg.COTPDestRef = int32(binary.BigEndian.Uint16(data[cotpOffset+2 : cotpOffset+4]))
+				msg.COTPSrcRef = int32(binary.BigEndian.Uint16(data[cotpOffset+4 : cotpOffset+6]))
+			}
+		}
+	}
+
+	return msg, tpktLength
+}
+
+// parseCOTPConnection parses a COTP Connection Request/Confirm message.
+func (s *s7commReader) parseCOTPConnection(msg *types.S7Comm, data []byte, cotpLength int) {
+	if len(data) < 7 {
+		return
+	}
+
+	// CR/CC format:
+	// Byte 0: Length indicator
+	// Byte 1: PDU type (CR=0x0E, CC=0x0D)
+	// Bytes 2-3: Destination reference
+	// Bytes 4-5: Source reference
+	// Byte 6: Class + Options
+
+	msg.COTPDestRef = int32(binary.BigEndian.Uint16(data[2:4]))
+	msg.COTPSrcRef = int32(binary.BigEndian.Uint16(data[4:6]))
+
+	if len(data) > 6 {
+		msg.COTPClass = int32(data[6] >> 4)
+	}
+}
+
+// parseCOTPData parses a COTP Data Transfer message and its S7comm payload.
+func (s *s7commReader) parseCOTPData(msg *types.S7Comm, data []byte, cotpLength int) {
+	if len(data) < 3 {
+		return
+	}
+
+	// DT format:
+	// Byte 0: Length indicator (usually 2)
+	// Byte 1: PDU type (0x0F for DT, lower nibble = sequence)
+	// Byte 2: TPDU number and EOT flag (bit 7 = last data unit)
+
+	if cotpLength >= 2 && len(data) > 2 {
+		tpduNumber := data[2] & 0x7F
+		lastDataUnit := (data[2] & 0x80) != 0
+		msg.COTPTPDUNumber = int32(tpduNumber)
+		msg.COTPLastDataUnit = lastDataUnit
+	}
+
+	// Parse S7comm payload
+	s7commOffset := 1 + cotpLength
+	if s7commOffset >= len(data) {
+		return
+	}
+
+	s.parseS7Comm(msg, data[s7commOffset:])
+}
+
+// parseS7Comm parses the S7comm protocol header and payload.
+func (s *s7commReader) parseS7Comm(msg *types.S7Comm, data []byte) {
+	if len(data) < 10 {
+		return
+	}
+
+	// S7comm header format:
+	// Byte 0: Protocol ID (0x32)
+	// Byte 1: Message type
+	// Bytes 2-3: Reserved (always 0x0000)
+	// Bytes 4-5: PDU reference
+	// Bytes 6-7: Parameter length
+	// Bytes 8-9: Data length
+	// (For Ack-Data: Bytes 10-11: Error class/code)
+
+	protocolId := int(data[0])
+	if protocolId != s7commProtocolID {
+		return
+	}
+
+	msg.ProtocolId = int32(protocolId)
+	msg.MessageType = int32(data[1])
+	msg.MessageTypeName = getMessageTypeName(int(data[1]))
+	msg.Reserved = int32(binary.BigEndian.Uint16(data[2:4]))
+	msg.PDUReference = int32(binary.BigEndian.Uint16(data[4:6]))
+	msg.ParameterLength = int32(binary.BigEndian.Uint16(data[6:8]))
+	msg.DataLength = int32(binary.BigEndian.Uint16(data[8:10]))
+
+	paramOffset := 10
+
+	// For Ack-Data messages, there's an error class/code after the base header
+	if msg.MessageType == S7CommMsgTypeAckData {
+		if len(data) >= 12 {
+			msg.ErrorClass = int32(data[10])
+			msg.ErrorCode = int32(data[11])
+			msg.ErrorName = getErrorName(int(data[10]), int(data[11]))
+			paramOffset = 12
+		}
+	}
+
+	// Parse parameter section
+	if msg.ParameterLength > 0 && paramOffset < len(data) {
+		endOffset := paramOffset + int(msg.ParameterLength)
+		if endOffset > len(data) {
+			endOffset = len(data)
+		}
+		s.parseS7Parameters(msg, data[paramOffset:endOffset])
+	}
+
+	// Parse data section
+	dataOffset := paramOffset + int(msg.ParameterLength)
+	if msg.DataLength > 0 && dataOffset < len(data) {
+		endOffset := dataOffset + int(msg.DataLength)
+		if endOffset > len(data) {
+			endOffset = len(data)
+		}
+		s.parseS7Data(msg, data[dataOffset:endOffset])
+	}
+}
+
+// parseS7Parameters parses the S7comm parameter section.
+func (s *s7commReader) parseS7Parameters(msg *types.S7Comm, data []byte) {
+	if len(data) < 1 {
+		return
+	}
+
+	functionCode := int(data[0])
+	msg.FunctionCode = int32(functionCode)
+	msg.FunctionName = getFunctionName(functionCode)
+
+	// Determine if this is a critical operation
+	switch functionCode {
+	case S7FuncWriteVar, S7FuncPLCStop, S7FuncDownloadBlock, S7FuncPIService:
+		msg.IsCriticalOperation = true
+	case S7FuncSetupCommunication:
+		msg.IsSecurityRelevant = true
+	}
+
+	switch functionCode {
+	case S7FuncSetupCommunication:
+		s.parseSetupCommunication(msg, data)
+	case S7FuncReadVar:
+		s.parseReadWriteVar(msg, data)
+	case S7FuncWriteVar:
+		msg.IsCriticalOperation = true
+		s.parseReadWriteVar(msg, data)
+	case S7FuncRequestDownload, S7FuncDownloadBlock, S7FuncDownloadEnded:
+		msg.IsCriticalOperation = true
+		s.parseDownloadUpload(msg, data)
+	case S7FuncStartUpload, S7FuncUpload, S7FuncEndUpload:
+		s.parseDownloadUpload(msg, data)
+	case S7FuncPIService:
+		msg.IsCriticalOperation = true
+		s.parsePIService(msg, data)
+	case S7FuncPLCStop:
+		msg.IsCriticalOperation = true
+	}
+
+	// Check for UserData messages
+	if msg.MessageType == S7CommMsgTypeUserData && len(data) >= 4 {
+		s.parseUserData(msg, data)
+	}
+}
+
+// parseSetupCommunication parses Setup Communication parameters.
+func (s *s7commReader) parseSetupCommunication(msg *types.S7Comm, data []byte) {
+	// Setup Communication format (request):
+	// Byte 0: Function code (0xF0)
+	// Byte 1: Reserved
+	// Bytes 2-3: Max AmQ Calling (jobs client->PLC)
+	// Bytes 4-5: Max AmQ Called (jobs PLC->client)
+	// Bytes 6-7: PDU Size
+
+	if len(data) >= 8 {
+		msg.MaxAmqCalling = int32(binary.BigEndian.Uint16(data[2:4]))
+		msg.MaxAmqCalled = int32(binary.BigEndian.Uint16(data[4:6]))
+		msg.PDUSize = int32(binary.BigEndian.Uint16(data[6:8]))
+		msg.IsSecurityRelevant = true
+	}
+}
+
+// parseReadWriteVar parses Read/Write Variable parameters.
+func (s *s7commReader) parseReadWriteVar(msg *types.S7Comm, data []byte) {
+	// Read/Write Var format (request):
+	// Byte 0: Function code (0x04 or 0x05)
+	// Byte 1: Item count
+	// Following: Item specifications (12 bytes each for S7-Any)
+
+	if len(data) < 2 {
+		return
+	}
+
+	itemCount := int(data[1])
+	msg.ItemCount = int32(itemCount)
+
+	// Parse items
+	offset := 2
+	items := make([]*types.S7CommItem, 0, itemCount)
+
+	for i := 0; i < itemCount && offset < len(data); i++ {
+		item, consumed := s.parseS7AnyItem(data[offset:])
+		if item != nil {
+			items = append(items, item)
+		}
+		if consumed > 0 {
+			offset += consumed
+		} else {
+			break
+		}
+	}
+
+	msg.Items = items
+}
+
+// parseS7AnyItem parses an S7-Any addressing item.
+func (s *s7commReader) parseS7AnyItem(data []byte) (*types.S7CommItem, int) {
+	// S7-Any item format (12 bytes):
+	// Byte 0: Variable specification (0x12)
+	// Byte 1: Length of following address spec (0x0A)
+	// Byte 2: Syntax ID (0x10 for S7-Any)
+	// Byte 3: Transport size
+	// Bytes 4-5: Length (number of items)
+	// Bytes 6-7: DB number
+	// Byte 8: Memory area
+	// Bytes 9-11: Start address (bit address = byte*8 + bit)
+
+	if len(data) < 12 {
+		return nil, 0
+	}
+
+	varSpec := int(data[0])
+	if varSpec != S7VarSpecTypeItem {
+		return nil, 1
+	}
+
+	addrSpecLen := int(data[1])
+	if addrSpecLen != 0x0A {
+		// Non-standard item, skip it
+		return nil, 2 + addrSpecLen
+	}
+
+	item := &types.S7CommItem{
+		VariableType:      int32(varSpec),
+		SyntaxId:          int32(data[2]),
+		TransportSize:     int32(data[3]),
+		TransportSizeName: getTransportSizeName(int(data[3])),
+		Length:            int32(binary.BigEndian.Uint16(data[4:6])),
+		DBNumber:          int32(binary.BigEndian.Uint16(data[6:8])),
+		Area:              int32(data[8]),
+		AreaName:          getAreaName(int(data[8])),
+	}
+
+	// Parse 3-byte address (bit address)
+	address := int32(data[9])<<16 | int32(data[10])<<8 | int32(data[11])
+	item.Address = address
+
+	return item, 12
+}
+
+// parseDownloadUpload parses Download/Upload block parameters.
+func (s *s7commReader) parseDownloadUpload(msg *types.S7Comm, data []byte) {
+	// These functions have various formats depending on the specific operation
+	// Mark as critical since they modify PLC program
+	msg.IsCriticalOperation = true
+
+	if len(data) >= 2 {
+		msg.SubFunction = int32(data[1])
+	}
+}
+
+// parsePIService parses PI (Program Invocation) Service parameters.
+func (s *s7commReader) parsePIService(msg *types.S7Comm, data []byte) {
+	// PI Service is used for PLC control operations like start/stop/reset
+	msg.IsCriticalOperation = true
+	msg.IsSecurityRelevant = true
+
+	// PI service format varies, basic parsing
+	if len(data) >= 2 {
+		msg.SubFunction = int32(data[1])
+	}
+}
+
+// parseUserData parses UserData function parameters.
+func (s *s7commReader) parseUserData(msg *types.S7Comm, data []byte) {
+	// UserData header format:
+	// Bytes 0-2: Parameter head (3 bytes)
+	// Byte 3: Parameter length
+	// Byte 4: Method (request/response)
+	// Byte 5: Type + Function group
+	// Byte 6: Subfunction
+	// Byte 7: Sequence number
+
+	if len(data) < 8 {
+		return
+	}
+
+	// Skip parameter head
+	offset := 4
+
+	if offset < len(data) {
+		msg.UserDataMethodType = int32(data[offset])
+		offset++
+	}
+
+	if offset < len(data) {
+		typeFG := data[offset]
+		msg.UserDataFunctionGroup = int32(typeFG & 0x0F)
+		msg.UserDataFunctionGroupName = getUserDataFunctionGroupName(int(typeFG & 0x0F))
+		offset++
+	}
+
+	if offset < len(data) {
+		msg.UserDataSubFunction = int32(data[offset])
+		offset++
+	}
+
+	if offset < len(data) {
+		msg.UserDataSequenceNumber = int32(data[offset])
+	}
+
+	// Some UserData functions are security-relevant
+	switch msg.UserDataFunctionGroup {
+	case S7UserDataFGSecurity:
+		msg.IsSecurityRelevant = true
+	case S7UserDataFGBlock:
+		msg.IsCriticalOperation = true
+	}
+}
+
+// parseS7Data parses the S7comm data section.
+func (s *s7commReader) parseS7Data(msg *types.S7Comm, data []byte) {
+	if len(data) < 4 {
+		return
+	}
+
+	// For Read/Write responses, parse data items
+	if msg.FunctionCode == S7FuncReadVar || msg.FunctionCode == S7FuncWriteVar {
+		s.parseDataItems(msg, data)
+	}
+}
+
+// parseDataItems parses the data items in a Read/Write response.
+func (s *s7commReader) parseDataItems(msg *types.S7Comm, data []byte) {
+	// Data item format (for each item):
+	// Byte 0: Return code (0xFF = success)
+	// Byte 1: Transport size
+	// Bytes 2-3: Length (in bits or bytes depending on transport size)
+	// Following: Data (length depends on transport size)
+
+	offset := 0
+	items := make([]*types.S7CommDataItem, 0)
+
+	for offset < len(data)-4 {
+		if offset+4 > len(data) {
+			break
+		}
+
+		returnCode := int(data[offset])
+		transportSize := int(data[offset+1])
+		length := int(binary.BigEndian.Uint16(data[offset+2 : offset+4]))
+
+		item := &types.S7CommDataItem{
+			ReturnCode:     int32(returnCode),
+			ReturnCodeName: getReturnCodeName(returnCode),
+			TransportSize:  int32(transportSize),
+			Length:         int32(length),
+		}
+
+		offset += 4
+
+		// Calculate data length in bytes
+		dataLen := length
+		if transportSize == 0x03 || transportSize == 0x04 {
+			// Bit or bit-string: length is in bits
+			dataLen = (length + 7) / 8
+		}
+
+		// Cap data length to prevent buffer overrun
+		if offset+dataLen > len(data) {
+			dataLen = len(data) - offset
+		}
+
+		if dataLen > 0 {
+			item.Data = data[offset : offset+dataLen]
+			offset += dataLen
+		}
+
+		// Align to word boundary for next item
+		if offset%2 != 0 && returnCode == S7ReturnCodeSuccess {
+			offset++
+		}
+
+		items = append(items, item)
+	}
+
+	msg.DataItems = items
+}
+

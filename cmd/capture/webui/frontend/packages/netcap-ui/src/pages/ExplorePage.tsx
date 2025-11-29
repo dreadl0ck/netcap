@@ -131,6 +131,13 @@ const DEFAULT_FIELD_MAP: Record<string, { field: string; chartType: string }> = 
   'Modbus': { field: 'FunctionCode', chartType: 'pie' },           // Function code distribution
   'ENIP': { field: 'Command', chartType: 'pie' },                  // Command distribution
   'CIP': { field: 'Service', chartType: 'pie' },                   // Service distribution
+  'OPCUA': { field: 'ServiceName', chartType: 'pie' },             // OPC UA service distribution
+  'DNP3': { field: 'FunctionCodeName', chartType: 'pie' },         // DNP3 function code distribution
+  'S7Comm': { field: 'FunctionName', chartType: 'pie' },           // Siemens S7 function distribution
+  'PROFINET': { field: 'ServiceName', chartType: 'pie' },          // PROFINET service distribution
+  'IEC62351': { field: 'MessageTypeName', chartType: 'pie' },      // IEC 62351 security message types
+  'BACnetIP': { field: 'ServiceName', chartType: 'pie' },          // BACnet/IP service distribution
+  'MQTTSN': { field: 'MessageTypeName', chartType: 'pie' },        // MQTT-SN message type distribution
   
   // Tunneling & Encapsulation
   'GRE': { field: 'Protocol', chartType: 'pie' },                  // Encapsulated protocol distribution

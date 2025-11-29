@@ -148,7 +148,8 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 		return nil, err
 	}
 
-	certificates := make([]CertificateSummary, 0)
+	// Use a map to deduplicate certificates by SHA256 fingerprint
+	certMap := make(map[string]*CertificateSummary)
 
 	// Read all records
 	for {
@@ -167,47 +168,72 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 			continue
 		}
 
-		certificates = append(certificates, CertificateSummary{
-			Timestamp:           cert.Timestamp,
-			SrcIP:               cert.SrcIP,
-			SrcPort:             cert.SrcPort,
-			DstIP:               cert.DstIP,
-			DstPort:             cert.DstPort,
-			SrcMAC:              cert.SrcMAC,
-			DstMAC:              cert.DstMAC,
-			ChainIndex:          cert.ChainIndex,
-			SubjectCommonName:   cert.SubjectCommonName,
-			SubjectAltNames:     cert.SubjectAltNames,
-			SubjectOrganization: cert.SubjectOrganization,
-			SubjectCountry:      cert.SubjectCountry,
-			SubjectLocality:     cert.SubjectLocality,
-			SubjectProvince:     cert.SubjectProvince,
-			IssuerCommonName:    cert.IssuerCommonName,
-			IssuerOrganization:  cert.IssuerOrganization,
-			IssuerCountry:       cert.IssuerCountry,
-			NotBefore:           cert.NotBefore,
-			NotAfter:            cert.NotAfter,
-			IsExpired:           cert.IsExpired,
-			IsSelfSigned:        cert.IsSelfSigned,
-			DaysUntilExpiration: cert.DaysUntilExpiration,
-			IsNotYetValid:       cert.IsNotYetValid,
-			HasWeakSignature:    cert.HasWeakSignature,
-			HasShortKeySize:     cert.HasShortKeySize,
-			SignatureAlgorithm:  cert.SignatureAlgorithm,
-			PublicKeyAlgorithm:  cert.PublicKeyAlgorithm,
-			PublicKeySize:       cert.PublicKeySize,
-			SerialNumber:        cert.SerialNumber,
-			Version:             cert.Version,
-			SHA256Fingerprint:   cert.SHA256Fingerprint,
-			SHA1Fingerprint:     cert.SHA1Fingerprint,
-			KeyUsage:            cert.KeyUsage,
-			ExtKeyUsage:         cert.ExtKeyUsage,
-			IsCA:                cert.IsCA,
-			MaxPathLen:          cert.MaxPathLen,
-			FirstSeen:           cert.FirstSeen,
-			LastSeen:            cert.LastSeen,
-			SeenCount:           cert.SeenCount,
-		})
+		// Use SHA256 fingerprint as unique key for deduplication
+		key := cert.SHA256Fingerprint
+		if key == "" {
+			// Fallback to serial number + issuer if no fingerprint
+			key = cert.SerialNumber + "|" + cert.IssuerCommonName
+		}
+
+		if existing, found := certMap[key]; found {
+			// Update existing certificate with aggregated data
+			existing.SeenCount++
+			if cert.Timestamp < existing.FirstSeen || existing.FirstSeen == 0 {
+				existing.FirstSeen = cert.Timestamp
+			}
+			if cert.Timestamp > existing.LastSeen {
+				existing.LastSeen = cert.Timestamp
+			}
+		} else {
+			// Add new certificate
+			certMap[key] = &CertificateSummary{
+				Timestamp:           cert.Timestamp,
+				SrcIP:               cert.SrcIP,
+				SrcPort:             cert.SrcPort,
+				DstIP:               cert.DstIP,
+				DstPort:             cert.DstPort,
+				SrcMAC:              cert.SrcMAC,
+				DstMAC:              cert.DstMAC,
+				ChainIndex:          cert.ChainIndex,
+				SubjectCommonName:   cert.SubjectCommonName,
+				SubjectAltNames:     cert.SubjectAltNames,
+				SubjectOrganization: cert.SubjectOrganization,
+				SubjectCountry:      cert.SubjectCountry,
+				SubjectLocality:     cert.SubjectLocality,
+				SubjectProvince:     cert.SubjectProvince,
+				IssuerCommonName:    cert.IssuerCommonName,
+				IssuerOrganization:  cert.IssuerOrganization,
+				IssuerCountry:       cert.IssuerCountry,
+				NotBefore:           cert.NotBefore,
+				NotAfter:            cert.NotAfter,
+				IsExpired:           cert.IsExpired,
+				IsSelfSigned:        cert.IsSelfSigned,
+				DaysUntilExpiration: cert.DaysUntilExpiration,
+				IsNotYetValid:       cert.IsNotYetValid,
+				HasWeakSignature:    cert.HasWeakSignature,
+				HasShortKeySize:     cert.HasShortKeySize,
+				SignatureAlgorithm:  cert.SignatureAlgorithm,
+				PublicKeyAlgorithm:  cert.PublicKeyAlgorithm,
+				PublicKeySize:       cert.PublicKeySize,
+				SerialNumber:        cert.SerialNumber,
+				Version:             cert.Version,
+				SHA256Fingerprint:   cert.SHA256Fingerprint,
+				SHA1Fingerprint:     cert.SHA1Fingerprint,
+				KeyUsage:            cert.KeyUsage,
+				ExtKeyUsage:         cert.ExtKeyUsage,
+				IsCA:                cert.IsCA,
+				MaxPathLen:          cert.MaxPathLen,
+				FirstSeen:           cert.Timestamp,
+				LastSeen:            cert.Timestamp,
+				SeenCount:           1,
+			}
+		}
+	}
+
+	// Convert map to slice
+	certificates := make([]CertificateSummary, 0, len(certMap))
+	for _, cert := range certMap {
+		certificates = append(certificates, *cert)
 	}
 
 	// Sort by seen count descending

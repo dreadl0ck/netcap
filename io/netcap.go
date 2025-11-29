@@ -213,6 +213,18 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.MLDv2MulticastListenerQuery)
 	case types.Type_NC_MLDv2MulticastListenerReport:
 		record = new(types.MLDv2MulticastListenerReport)
+	case types.Type_NC_OPCUA:
+		record = new(types.OPCUA)
+	case types.Type_NC_S7Comm:
+		record = new(types.S7Comm)
+	case types.Type_NC_MQTTSN:
+		record = new(types.MQTTSN)
+	case types.Type_NC_BACnetIP:
+		record = new(types.BACnetIP)
+	case types.Type_NC_IEC62351:
+		record = new(types.IEC62351)
+	case types.Type_NC_PROFINET:
+		record = new(types.PROFINET)
 	case types.Type_NC_Header:
 		// NC_Header is a file header type, not an audit record type
 		// Return nil to indicate this type should not be initialized as a record

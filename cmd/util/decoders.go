@@ -186,6 +186,9 @@ func addStreamDecoders(decodersByLayer map[string][]DecoderInfo, seenDecoders ma
 		{"SSH", "SSH", "SSH protocol stream decoder"},
 		{"SMTP", "SMTP", "SMTP protocol stream decoder"},
 		{"POP3", "POP3", "POP3 protocol stream decoder"},
+		{"OPCUA", "OPCUA", "OPC UA ICS/SCADA stream decoder"},
+		{"S7Comm", "S7Comm", "S7Comm ICS/SCADA stream decoder"},
+		{"MQTTSN", "MQTTSN", "MQTT-SN IoT/sensor network stream decoder"},
 	}
 
 	for _, sd := range streamDecoders {
@@ -269,7 +272,7 @@ func determineLayer(name string) string {
 	// Application Layer protocols
 	applicationLayerProtocols := []string{"dns", "dhcp", "http", "tls", "ntp", "sip",
 		"smtp", "pop3", "ssh", "lcm", "modbus", "ospf", "bfd", "eap", "cip", "enip",
-		"geneve", "vxlan", "vrrp", "diameter", "rmcp"}
+		"geneve", "vxlan", "vrrp", "diameter", "rmcp", "opcua", "s7comm", "mqttsn"}
 	for _, proto := range applicationLayerProtocols {
 		if strings.Contains(name, proto) {
 			return "Application Layer"
@@ -353,6 +356,9 @@ func getTypeForName(name string) types.Type {
 		"STP":                          types.Type_NC_STP,
 		"MLDv2MulticastListenerQuery":  types.Type_NC_MLDv2MulticastListenerQuery,
 		"MLDv2MulticastListenerReport": types.Type_NC_MLDv2MulticastListenerReport,
+		"OPCUA":                        types.Type_NC_OPCUA,
+		"S7Comm":                       types.Type_NC_S7Comm,
+		"MQTTSN":                       types.Type_NC_MQTTSN,
 	}
 
 	if t, ok := typeMap[name]; ok {
