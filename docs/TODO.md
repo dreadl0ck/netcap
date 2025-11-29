@@ -1,17 +1,23 @@
 # TODOs
 
-failed to download databases: failed to fetch database metadata: server returned status 500 Internal Server Error for https://dbs.netcap.io/dbs/latest: Metadata not found
-
-- echarts v6 currently used only for pie chart on Files page. Add more charts using v6.
+- failed to download databases: failed to fetch database metadata: server returned status 500 Internal Server Error for https://dbs.netcap.io/dbs/latest: Metadata not found
+- configure fingerbank lookups and caching
+- Ja4
 - make it configurable per harvester if it runs only for the default port or for all streams. for some harvester it makes sense to runs them against all plaintext protos.
 - data mining on plaintext connection data: extract URLs, what looks like secrets, ctf flags etc
 
 - support to enable / disable individual service probes. regenerate the probe list with commented out if disabled.
+- support creating service probes on the services page service details: add create probe button, switch to probes page, open create modal and insert service banner 
+
 - software audit records: remove Vendor Field and use only Product? if Product info is empty, write the info we would have written into Vendor before as a fallback, or combine the two fields.
 - fix capture and inspect local results
 - auto extract information from robots.txt and content security policy and use it to enrich audit records
 - records: rename Download All to Download Records + new Download CSV button to convert and download all records as CSV files (caution with gzip compression middleware causing issues again)
-- support creating service probes on the services page service details: add create probe button, switch to probes page, open create modal and insert service banner 
+
+- dashboards feature: save and load dashboards, made of different charts. create a simple UI to rearrange charts and choose the audit record type, field and type of chart for each.
+- dev mode: enable debugging with https://nextjs.org/docs/app/guides/mcp
+
+- integrate gohs with vectorscan on mac
 
 ----
 
@@ -23,6 +29,9 @@ Later
 
 ----
 
+Charts
+
+- echarts v6 currently used only for pie chart on Files page. Add more charts using v6 (https://echarts.apache.org/en/index.html)
 - Geolocation chart with ingress / egress based coloring switch
 - Table with PCAPs and number of audit records of each type, sortable ("eg: which capture file had the most Credentials")
 - DHCP fingerprinting results for DeviceProfile and IPProfile
@@ -35,37 +44,42 @@ Later
 
 ----
 
-- configure fingerbank lookups and caching
-- Ja4
-- dashboards feature
-
-----    
-
-- mimicry rule: alert if traffic on standard port does not match the expected protocol (using DPI results)
-- dev mode: enable debugging with https://nextjs.org/docs/app/guides/mcp
-- Connections VS Conversations (= all Connections between two hosts) Abstraction
-
-- compression for /api/chart/data - Chart data endpoints - currently disabled 
-- compression for downloading ALL files and pcaps currently disabled
-- investigation notes feature: add text infos to any host, device or field
-
-- enable rules to trigger firewall rules
-- model security rules on top of SIP  protocol fields especially headers
-- model security rules on top of HTTP
-- model security rules on top of DNS
-
-- https://echarts.apache.org/en/index.html v6
-
-- Audit records data duplications: IPProfile Ja3Hashes, Alerts
+DBs
 
 - update dbs
   - dbs: TorDB (torlookup) databases
     - https://www.dan.me.uk/tornodes
     - https://github.com/alireza-rezaee/tor-nodes?tab=readme-ov-file
+- add custom data support for dbs and integrate it in UI
+- ip and domain reputation
+  - domain age: mark domains registered in the past 30 days
+  - categorize domains (sector etc)
+  - integrate feeds from https://threatview.io
+- add config to apply extra asset info to audit records: eg employee workstations in internal network etc
+- resolver API: add ip blacklist and integrate feeds
+- resolvers: integrate IP and domain reputation feeds
 
-- add some test for stream reassembly that are run with -count flag to ensure number and properties of reassembled streams are consistent
+----
+
+New features:
+
+- switch to corelight community id spec: (https://github.com/corelight/community-id-spec) for the Connection UIDs
+
+- mimicry rule: alert if traffic on standard port does not match the expected protocol (using DPI results)
+- Connections VS Conversations (= all Connections between two hosts) Abstraction
+
+- compression for /api/chart/data - Chart data endpoints - currently disabled 
+- compression for downloading ALL files and pcaps currently disabled
+
+- model more security rules on top of HTTP
+- model more security rules on top of DNS
+
+- Audit records data duplications: IPProfile Ja3Hashes, Alerts
+
 - audit records filter help box: make suggestions context specific for the current audit record type and data with configurable inputs as template, load a couple audit records to obtain real values and populate the template for help text with real values
 - add guide how to add new protocol support and show example commit
+
+- add some test for stream reassembly that are run with -count flag to ensure number and properties of reassembled streams are consistent
 
 - docs iteration
 - tests iteration
@@ -76,13 +90,17 @@ Later
 - implement bug reporting in local mode
 
 - add detailed field descriptions for each protocol and show in explore view when selecting a field
+
 - netcap core should produce info which fields contain data for the audit records, so that UI can use this only show fields that make sense for filtering, without having to parse the entire data again.
-- always allow to drag and drop files for upload on the Analyze menu item, even if user is on a different page. Switch to analyze page automatiaclly and start upload
-- add local dev mode for webUI
 
 - try-service: crash reporting mechanism: when the service panics and crashes, we need the full service log, and all netcap logfiles copied and archived together with the input pcap file for reproduction. An alert should be fired via email. add support to connect an SMTP service to send alert emails to an administrator.
-- add custom data support for dbs and integrate it in UI
+
+- enriching audit records should be two stage process? parse minimal info in first step and everything that can be derived later in a second step
+
 - switch to gopacket/reassembly and tcpassembly? implement tests to verify the decoded streams are consistent in between executions
+
+- decoders page: clean up list and mapping
+  - document: stateful VS stateless packet decoders (eg UDP vs Connection)
 
 -----
 
@@ -103,10 +121,9 @@ or
 
 ----
 
-test suite:
+PCAPs for test suite:
 - check out wireshark / suricata test pcap suite.
 - scrape all files from https://www.malware-traffic-analysis.net/training-exercises.html
-
 - https://github.com/pevma/mrp
 - https://github.com/brett-fitz/malware-pcap
 - https://github.com/ntop/nDPI/tree/dev/tests/cfgs/default/pcap
@@ -119,8 +136,6 @@ test suite:
 - https://www.netresec.com/?page=PcapFiles
 
 Integration Tests as github action:
-
-
 
 1) artifact
 
@@ -190,58 +205,22 @@ https://github.com/florianl/go-nflog
   - how much time did a user spent on a specific host?
     - eg measure as duration between first and last http request to a host
 
-Install ndpi on m1 mac:
 
-  brew install ndpi
-
-- ip and domain reputation
-  - domain age: mark domains registered in the past 30 days
-  - categorize domains (sector etc)
-  - integrate feeds from https://threatview.io
-- add config to apply extra asset info to audit records: eg employee workstations in internal network etc
 
 - add dpi / nodpi arm64 builds for linux
+
 - extend api with context to allow stopping collector
-
-- https://github.com/dreadl0ck/netcap/issues/19
-
-- check:
-
-panic: runtime error: index out of range [-1]
-
-goroutine 38175 [running]:
-github.com/dreadl0ck/netcap/reassembly.(*reassemblyObject).Info(0xc0003ea078, 0x177, 0x0)
-/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/reassemblyObject.go:82 +0xd9
-github.com/dreadl0ck/netcap/decoder/stream/tcp.(*tcpConnection).ReassembledSG(0xc02c9fb040, 0x58a36d0, 0xc0003ea078, 0x0, 0x0)
-/Users/alien/go/src/github.com/dreadl0ck/netcap/decoder/stream/tcp/tcpConnection.go:243 +0x77
-github.com/dreadl0ck/netcap/reassembly.(*Assembler).sendToConnection(0xc0003ea000, 0xc0187eab20, 0xc0187eac18, 0xf385bb1)
-/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:787 +0x171
-github.com/dreadl0ck/netcap/reassembly.(*Assembler).skipFlush(0xc0003ea000, 0xc0187eab20, 0xc0187eac18)
-/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:901 +0xb4
-github.com/dreadl0ck/netcap/reassembly.(*Assembler).closeConn(0xc0003ea000, 0xc0187eab20)
-/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:1114 +0x75
-github.com/dreadl0ck/netcap/reassembly.(*Assembler).FlushAllProgress.func1(0xc0003ea000, 0xc066ec29a0, 0xc0647127b0, 0xc0187eab20)
-/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:1098 +0x35
-created by github.com/dreadl0ck/netcap/reassembly.(*Assembler).FlushAllProgress
-/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:1097 +0x188
-
-
-- resolver API: add ip blacklist and integrate feeds
-- resolvers: integrate IP and domain reputation feeds
-
-- document: stateful VS stateless packet decoders (eg UDP vs Connection)
 
 ## NEXT
 
-- implement support for MLDv2MulticastListenerReport packets
 - create elastic indices: netcap-ospf does already exist?
 - censor passwords from dumped config in netcap.log
 - log hint to use pcapfix tool for errors during pcap processing like 'capture length exceeds snap length'
-- add force flag to disable prompts: -y flag exists (renamed from -noprompt)
+
 - overwrite check does not include other formats than ncap or ncap.gz
-- service detection seems racy, debug
-- add flag to disable writing files to disk (but: still generating the audit records
-- unify flag naming and update docs, eg fileStorage
+
+- add flag to disable writing files to disk (but: still generating the audit records)
+- unify flag naming and update docs, eg fileStorage is camel case
 
 ## BACKLOG
   
@@ -265,7 +244,6 @@ https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&lice
 https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
 
 - set all link types
-- add PPP audit records
 
 - https://github.com/fyne-io/fyne
 - https://github.com/blushft/go-diagrams
@@ -314,12 +292,8 @@ https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license
 - add intel hyperscan regex support, see https://github.com/intel-go/nff-go/blob/master/examples/dpi/main/dpi.go 
 
 - add default port and transport protocol during stream decoder creation
-- regenerate from latest nmap-services database and automate
-- port CIP, ENIP and ModbusTCP decoding to stream decoders, add to docs that decodeOpt datagrams must be set for the packet based decoders to be called
 
 - database source: set default for windows to home directory
-- dbs update script
-- script netcap installation, add setup check util command 
 
 - two entities: different value for property - will be combined and the last value for the property will be used?
 - to files for content type: remove encodings after ; in graph view
@@ -679,3 +653,12 @@ the following can be used to fix the imports after applying the global find and 
 
     directories=$(go list -f {{.Dir}} ./...)
     test -z "`for dir in $directories; do goimports -w $dir/*.go | tee /dev/stderr; done`"
+
+## Install notes
+
+Install ndpi on m1 mac:
+
+  brew install ndpi
+
+
+  brew install vectorscan
