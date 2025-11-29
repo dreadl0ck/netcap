@@ -455,16 +455,38 @@ message LinkLayerDiscoveryValue {
   bytes Value = 3;
 }
 
+// EthernetCTP represents an Ethernet Configuration Testing Protocol frame.
+// CTP is a diagnostic protocol included in the Xerox Ethernet II specification
+// used for loopback testing of network connectivity.
+// Protocol type: 0x9000
+// Reference: http://www.mit.edu/people/jhawk/ctp.html
 message EthernetCTP {
   int64 Timestamp = 1;
-  int32 SkipCount = 2;
+  int32 SkipCount = 2;                    // Offset to find the next message to process
+  string SrcMAC = 3;                      // Source MAC address from Ethernet layer
+  string DstMAC = 4;                      // Destination MAC address from Ethernet layer
+  bool IsBroadcast = 5;                   // Destination is broadcast (ff:ff:ff:ff:ff:ff)
+  bool IsMulticast = 6;                   // Destination is multicast (first bit of first byte is 1)
+  bool IsLoopbackAssistant = 7;           // Uses loopback assistance multicast (cf:00:00:00:00:00)
+  int32 NumHops = 8;                      // Number of ForwardData messages (hops in the path)
+  repeated string ForwardAddresses = 9;  // List of forwarding MAC addresses in the forward path
+  int32 FunctionCode = 10;                // Function code of first message (1=Reply, 2=ForwardData)
+  string FunctionName = 11;               // Human-readable function name
+  int32 PayloadSize = 12;                 // Size of the CTP frame payload
 }
 
+// EthernetCTPReply represents the Reply message inside an EthernetCTP frame.
+// Function code 1 indicates a Reply message.
 message EthernetCTPReply {
   int64 Timestamp = 1;
-  int32 Function = 2;
-  int32 ReceiptNumber = 3;
-  bytes Data = 4;
+  int32 Function = 2;                     // Function code (should be 1 for Reply)
+  int32 ReceiptNumber = 3;                // Receipt number for tracking
+  bytes Data = 4;                         // Arbitrary data payload
+  string SrcMAC = 5;                      // Source MAC address from Ethernet layer
+  string DstMAC = 6;                      // Destination MAC address from Ethernet layer
+  string FunctionName = 7;                // Human-readable function name
+  int32 DataSize = 8;                     // Size of data payload in bytes
+  double DataEntropy = 9;                 // Entropy of data payload (for anomaly detection)
 }
 
 message LinkLayerDiscoveryInfo {

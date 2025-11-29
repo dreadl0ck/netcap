@@ -110,6 +110,11 @@ var Decoder = &decoder.AbstractDecoder{
 // WriteCredentials is a util that should be used to write credential audit to disk
 // it will deduplicate the audit records to avoid repeating information on disk.
 func WriteCredentials(creds *types.Credentials) {
+	// Skip credentials with empty username AND password - they provide no useful information
+	if creds.User == "" && creds.Password == "" {
+		return
+	}
+
 	ident := creds.Service + creds.User + creds.Password
 
 	// prevent saving duplicate credentials

@@ -84,6 +84,12 @@ func readCredentials(outDir string) ([]CredentialSummary, error) {
 		}
 
 		recordCount++
+
+		// Skip credentials with empty username AND password - they provide no useful information
+		if cred.User == "" && cred.Password == "" {
+			continue
+		}
+
 		credentials = append(credentials, CredentialSummary{
 			Timestamp: cred.Timestamp,
 			Service:   cred.Service,
@@ -94,7 +100,7 @@ func readCredentials(outDir string) ([]CredentialSummary, error) {
 		})
 	}
 
-	log.Printf("[Credentials Chart] Read %d credential records", len(credentials))
+	log.Printf("[Credentials Chart] Read %d credential records (filtered from %d total)", len(credentials), recordCount)
 	return credentials, nil
 }
 

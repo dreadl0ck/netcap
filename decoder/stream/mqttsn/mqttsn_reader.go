@@ -104,15 +104,15 @@ func (m *mqttsnReader) parseMQTTSNMessage(data []byte) (*types.MQTTSN, int) {
 		headerLen = 1
 	}
 
-	// Validate length
-	if msgLen < minMessageSize || msgLen > len(data) {
+	// Validate message length bounds
+	// msgLen must be >= headerLen + 1 (header + message type byte)
+	// msgLen must be <= available data
+	payloadStart := headerLen + 1
+	if msgLen < payloadStart || msgLen > len(data) || payloadStart > msgLen {
 		return nil, 0
 	}
 
 	// Get message type
-	if headerLen >= len(data) {
-		return nil, 0
-	}
 	msgType := int32(data[headerLen])
 
 	// Verify it's a valid message type
@@ -127,8 +127,8 @@ func (m *mqttsnReader) parseMQTTSNMessage(data []byte) (*types.MQTTSN, int) {
 		MessageTypeName: getMessageTypeName(msgType),
 	}
 
-	// Parse message-specific fields
-	payload := data[headerLen+1 : msgLen]
+	// Parse message-specific fields - bounds already validated above
+	payload := data[payloadStart:msgLen]
 
 	switch msgType {
 	case MsgTypeAdvertise:

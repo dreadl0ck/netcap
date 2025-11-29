@@ -102,11 +102,13 @@ export {
   FileSelectorHeader,
   LearnModeToggle,
   LearnModeOverlay,
+  ConnectionOverlay,
 } from './components';
 
 export type {
   LayoutProps,
   FileSelectorHeaderProps,
+  ConnectionOverlayProps,
 } from './components';
 
 // Contexts

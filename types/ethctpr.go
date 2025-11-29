@@ -31,13 +31,19 @@ import (
 const (
 	fieldFunction      = "Function"
 	fieldReceiptNumber = "ReceiptNumber"
+	fieldDataSize      = "DataSize"
+	fieldDataEntropy   = "DataEntropy"
 )
 
 var fieldsEthernetCTPReply = []string{
 	fieldTimestamp,
 	fieldFunction,      // int32
 	fieldReceiptNumber, // int32
-	//fieldData,          // bytes
+	fieldSrcMAC,        // string
+	fieldDstMAC,        // string
+	fieldFunctionName,  // string
+	fieldDataSize,      // int32
+	fieldDataEntropy,   // float64
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -51,7 +57,11 @@ func (ectpr *EthernetCTPReply) CSVRecord() []string {
 		formatTimestamp(ectpr.Timestamp),
 		formatInt32(ectpr.Function),
 		formatInt32(ectpr.ReceiptNumber),
-		//hex.EncodeToString(ectpr.Data),
+		ectpr.SrcMAC,
+		ectpr.DstMAC,
+		ectpr.FunctionName,
+		formatInt32(ectpr.DataSize),
+		formatFloat64(ectpr.DataEntropy),
 	})
 }
 
@@ -84,15 +94,14 @@ func (ectpr *EthernetCTPReply) Inc() {
 // SetPacketContext sets the associated packet context for the audit record.
 func (ectpr *EthernetCTPReply) SetPacketContext(*PacketContext) {}
 
-// Src TODO.
 // Src returns the source address of the audit record.
 func (ectpr *EthernetCTPReply) Src() string {
-	return ""
+	return ectpr.SrcMAC
 }
 
 // Dst returns the destination address of the audit record.
 func (ectpr *EthernetCTPReply) Dst() string {
-	return ""
+	return ectpr.DstMAC
 }
 
 var ethCTPReplyEncoder = encoder.NewValueEncoder()
@@ -103,6 +112,11 @@ func (ectpr *EthernetCTPReply) Encode() []string {
 		ethCTPReplyEncoder.Int64(fieldTimestamp, ectpr.Timestamp),
 		ethCTPReplyEncoder.Int32(fieldFunction, ectpr.Function),
 		ethCTPReplyEncoder.Int32(fieldReceiptNumber, ectpr.ReceiptNumber),
+		ethCTPReplyEncoder.String(fieldSrcMAC, ectpr.SrcMAC),
+		ethCTPReplyEncoder.String(fieldDstMAC, ectpr.DstMAC),
+		ethCTPReplyEncoder.String(fieldFunctionName, ectpr.FunctionName),
+		ethCTPReplyEncoder.Int32(fieldDataSize, ectpr.DataSize),
+		ethCTPReplyEncoder.Float64(fieldDataEntropy, ectpr.DataEntropy),
 	})
 }
 

@@ -153,6 +153,12 @@ func (s *Server) handleCredentials(w http.ResponseWriter, r *http.Request) {
 		}
 
 		recordCount++
+
+		// Skip credentials with empty username AND password - they provide no useful information
+		if cred.User == "" && cred.Password == "" {
+			continue
+		}
+
 		credentials = append(credentials, CredentialSummary{
 			Timestamp: cred.Timestamp,
 			Service:   cred.Service,

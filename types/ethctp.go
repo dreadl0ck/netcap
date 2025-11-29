@@ -20,6 +20,7 @@
 package types
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -28,11 +29,30 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-const fieldSkipCount = "SkipCount"
+const (
+	fieldSkipCount           = "SkipCount"
+	fieldIsBroadcast         = "IsBroadcast"
+	fieldIsMulticast         = "IsMulticast"
+	fieldIsLoopbackAssistant = "IsLoopbackAssistant"
+	fieldNumHops             = "NumHops"
+	fieldForwardAddresses    = "ForwardAddresses"
+	fieldFunctionName        = "FunctionName"
+	// fieldFunctionCode and fieldPayloadSize are already defined in modbus.go and ethernet.go
+)
 
 var fieldsEthernetCTP = []string{
 	fieldTimestamp,
-	fieldSkipCount, // int32
+	fieldSkipCount,           // int32
+	fieldSrcMAC,              // string
+	fieldDstMAC,              // string
+	fieldIsBroadcast,         // bool
+	fieldIsMulticast,         // bool
+	fieldIsLoopbackAssistant, // bool
+	fieldNumHops,             // int32
+	fieldForwardAddresses,    // repeated string
+	fieldFunctionCode,        // int32
+	fieldFunctionName,        // string
+	fieldPayloadSize,         // int32
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -45,6 +65,16 @@ func (i *EthernetCTP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(i.Timestamp),
 		formatInt32(i.SkipCount),
+		i.SrcMAC,
+		i.DstMAC,
+		strconv.FormatBool(i.IsBroadcast),
+		strconv.FormatBool(i.IsMulticast),
+		strconv.FormatBool(i.IsLoopbackAssistant),
+		formatInt32(i.NumHops),
+		strings.Join(i.ForwardAddresses, "|"),
+		formatInt32(i.FunctionCode),
+		i.FunctionName,
+		formatInt32(i.PayloadSize),
 	})
 }
 
@@ -77,15 +107,14 @@ func (i *EthernetCTP) Inc() {
 // SetPacketContext sets the associated packet context for the audit record.
 func (a *EthernetCTP) SetPacketContext(*PacketContext) {}
 
-// Src TODO.
 // Src returns the source address of the audit record.
 func (i *EthernetCTP) Src() string {
-	return ""
+	return i.SrcMAC
 }
 
 // Dst returns the destination address of the audit record.
 func (i *EthernetCTP) Dst() string {
-	return ""
+	return i.DstMAC
 }
 
 var ethernetCTPEncoder = encoder.NewValueEncoder()
@@ -95,6 +124,16 @@ func (i *EthernetCTP) Encode() []string {
 	return filter([]string{
 		ethernetCTPEncoder.Int64(fieldTimestamp, i.Timestamp),
 		ethernetCTPEncoder.Int32(fieldSkipCount, i.SkipCount),
+		ethernetCTPEncoder.String(fieldSrcMAC, i.SrcMAC),
+		ethernetCTPEncoder.String(fieldDstMAC, i.DstMAC),
+		ethernetCTPEncoder.Bool(i.IsBroadcast),
+		ethernetCTPEncoder.Bool(i.IsMulticast),
+		ethernetCTPEncoder.Bool(i.IsLoopbackAssistant),
+		ethernetCTPEncoder.Int32(fieldNumHops, i.NumHops),
+		ethernetCTPEncoder.String(fieldForwardAddresses, strings.Join(i.ForwardAddresses, "|")),
+		ethernetCTPEncoder.Int32(fieldFunctionCode, i.FunctionCode),
+		ethernetCTPEncoder.String(fieldFunctionName, i.FunctionName),
+		ethernetCTPEncoder.Int32(fieldPayloadSize, i.PayloadSize),
 	})
 }
 

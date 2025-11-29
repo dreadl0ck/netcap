@@ -27,20 +27,60 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-var ethernetCTPReplyDecoder = newGoPacketDecoder(
+var ethernetCTPReplyDecoder = newPacketDecoder(
 	types.Type_NC_EthernetCTPReply,
-	layers.LayerTypeEthernetCTPReply,
-	"Ethernet Configuration Testing Protocol is a diagnostic protocol included in the Xerox Ethernet II specification",
-	func(layer gopacket.Layer, timestamp int64) proto.Message {
-		if ethctpr, ok := layer.(*layers.EthernetCTPReply); ok {
-			return &types.EthernetCTPReply{
-				Timestamp:     timestamp,
-				Function:      int32(ethctpr.Function),
-				ReceiptNumber: int32(ethctpr.ReceiptNumber),
-				Data:          ethctpr.Data,
+	"EthernetCTPReply",
+	"Ethernet Configuration Testing Protocol Reply message, indicates a loopback response",
+	nil,
+	func(p gopacket.Packet) proto.Message {
+		// Get the EthernetCTPReply layer
+		layer := p.Layer(layers.LayerTypeEthernetCTPReply)
+		if layer == nil {
+			return nil
+		}
+
+		ethctpr, ok := layer.(*layers.EthernetCTPReply)
+		if !ok {
+			return nil
+		}
+
+		var (
+			srcMAC, dstMAC string
+			dataEntropy    float64
+		)
+
+		// Extract MAC addresses from Ethernet layer
+		if ll := p.LinkLayer(); ll != nil {
+			if len(ll.LinkFlow().Src().Raw()) > 0 {
+				srcMAC = ll.LinkFlow().Src().String()
+			}
+			if len(ll.LinkFlow().Dst().Raw()) > 0 {
+				dstMAC = ll.LinkFlow().Dst().String()
 			}
 		}
 
-		return nil
+		// Calculate entropy of data payload if entropy calculation is enabled
+		if conf.CalculateEntropy && len(ethctpr.Data) > 0 {
+			dataEntropy = entropy(ethctpr.Data)
+		}
+
+		// Get function name
+		functionName := ctpFunctionNames[uint16(ethctpr.Function)]
+		if functionName == "" {
+			functionName = "Unknown"
+		}
+
+		return &types.EthernetCTPReply{
+			Timestamp:     p.Metadata().Timestamp.UnixNano(),
+			Function:      int32(ethctpr.Function),
+			ReceiptNumber: int32(ethctpr.ReceiptNumber),
+			Data:          ethctpr.Data,
+			SrcMAC:        srcMAC,
+			DstMAC:        dstMAC,
+			FunctionName:  functionName,
+			DataSize:      int32(len(ethctpr.Data)),
+			DataEntropy:   dataEntropy,
+		}
 	},
+	nil,
 )

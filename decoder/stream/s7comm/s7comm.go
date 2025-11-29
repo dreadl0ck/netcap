@@ -40,23 +40,28 @@ const (
 )
 
 // COTP PDU Types (ISO 8073)
+// These are the upper nibble values after masking with 0xF0
+// The PDU type is encoded in the upper nibble of the COTP header byte
 const (
-	COTPTypeCR = 0x0E // Connection Request
-	COTPTypeCC = 0x0D // Connection Confirm
-	COTPTypeDR = 0x08 // Disconnect Request
-	COTPTypeDC = 0x0C // Disconnect Confirm
-	COTPTypeDT = 0x0F // Data Transfer
-	COTPTypeED = 0x01 // Expedited Data
-	COTPTypeAK = 0x06 // Data Acknowledgement
-	COTPTypeEA = 0x02 // Expedited Data Acknowledgement
-	COTPTypeRJ = 0x05 // Reject
-	COTPTypeER = 0x07 // TPDU Error
+	COTPTypeCR = 0xE0 // Connection Request (type code 14 = 0xE in upper nibble)
+	COTPTypeCC = 0xD0 // Connection Confirm (type code 13 = 0xD in upper nibble)
+	COTPTypeDR = 0x80 // Disconnect Request (type code 8 = 0x8 in upper nibble)
+	COTPTypeDC = 0xC0 // Disconnect Confirm (type code 12 = 0xC in upper nibble)
+	COTPTypeDT = 0xF0 // Data Transfer (type code 15 = 0xF in upper nibble)
+	COTPTypeED = 0x10 // Expedited Data (type code 1 = 0x1 in upper nibble)
+	COTPTypeAK = 0x60 // Data Acknowledgement (type code 6 = 0x6 in upper nibble)
+	COTPTypeEA = 0x20 // Expedited Data Acknowledgement (type code 2 = 0x2 in upper nibble)
+	COTPTypeRJ = 0x50 // Reject (type code 5 = 0x5 in upper nibble)
+	COTPTypeER = 0x70 // TPDU Error (type code 7 = 0x7 in upper nibble)
 )
 
-// S7comm Protocol ID
-const s7commProtocolID = 0x32
+// S7comm Protocol IDs
+const (
+	s7commProtocolID     = 0x32 // Classic S7Comm (S7-300/400)
+	s7commPlusProtocolID = 0x72 // S7Comm Plus (S7-1200/1500, TIA Portal)
+)
 
-// S7comm Message Types
+// S7comm Message Types (ROSCTR - Remote Operating Service Control)
 const (
 	S7CommMsgTypeJobRequest = 0x01 // Job Request (client -> PLC)
 	S7CommMsgTypeAck        = 0x02 // Acknowledgement without data
@@ -96,7 +101,7 @@ const (
 	S7SyntaxIDDriveMCSync = 0xA2 // Drive motion control sync
 )
 
-// S7comm Memory Areas
+// S7comm Memory Areas (from Wireshark packet-s7comm.c)
 const (
 	S7AreaSysInfo       = 0x03 // System info of 200 family
 	S7AreaSysFlags      = 0x05 // System flags of 200 family
@@ -106,13 +111,14 @@ const (
 	S7AreaTimer         = 0x1D // Timer (200 family) / (S7-300/400)
 	S7AreaCounter200    = 0x1E // Counter (200 family IEC)
 	S7AreaTimer200      = 0x1F // Timer (200 family IEC)
+	S7AreaPeripheral    = 0x80 // Direct peripheral access (P) - critical for I/O
 	S7AreaInputs        = 0x81 // Process inputs (I)
 	S7AreaOutputs       = 0x82 // Process outputs (Q)
 	S7AreaFlags         = 0x83 // Bit memory/Merker (M)
 	S7AreaDB            = 0x84 // Data blocks (DB)
 	S7AreaDI            = 0x85 // Instance data blocks (DI)
 	S7AreaLocal         = 0x86 // Local data (L)
-	S7AreaUnknown       = 0x87 // Unknown area (V for 200 family)
+	S7AreaVMemory       = 0x87 // V-Memory (200 family)
 )
 
 // S7comm Transport Sizes (in request)
@@ -150,7 +156,7 @@ const (
 	S7ReturnCodeSuccess            = 0xFF // Success
 )
 
-// UserData function groups
+// UserData function groups (from Wireshark packet-s7comm.h)
 const (
 	S7UserDataFGProgram     = 0x01 // Programmer commands
 	S7UserDataFGCyclic      = 0x02 // Cyclic data
@@ -160,6 +166,80 @@ const (
 	S7UserDataFGPBCBSend    = 0x06 // PBC BSEND/BRECV
 	S7UserDataFGTime        = 0x07 // Time functions
 	S7UserDataFGNCProgram   = 0x0F // NC Programming (Sinumerik)
+)
+
+// UserData subfunctions for CPU Functions (0x04)
+const (
+	S7UserDataCPUReadSZL      = 0x01 // Read SZL (System Status List)
+	S7UserDataCPUMsgService   = 0x02 // Message service
+	S7UserDataCPUDiagMessage  = 0x03 // Diagnostic message
+	S7UserDataCPUAlarmQuery   = 0x13 // Alarm query
+)
+
+// UserData subfunctions for Time Functions (0x07)
+const (
+	S7UserDataTimeRead  = 0x01 // Read clock
+	S7UserDataTimeSet   = 0x02 // Set clock
+	S7UserDataTimeReadF = 0x03 // Read clock (F)
+	S7UserDataTimeSet2  = 0x04 // Set clock
+)
+
+// UserData subfunctions for Cyclic Data (0x02)
+const (
+	S7UserDataCyclicMem      = 0x01 // Memory
+	S7UserDataCyclicUnsubscr = 0x04 // Unsubscribe
+)
+
+// PI Service names (Program Invocation)
+const (
+	S7PIServicePProgram = "_INSE"  // Insert program
+	S7PIServiceModu     = "_MODU"  // Module
+	S7PIServiceGarb     = "_GARB"  // Garbage collection
+	S7PIServiceNStop    = "P_PROGRAM" // Stop program
+)
+
+// SZL ID classes (System Status List - from packet-s7comm_szl_ids.h)
+const (
+	SZLIDModuleID        = 0x0011 // Module identification
+	SZLIDCPUCharacter    = 0x0012 // CPU characteristics
+	SZLIDMemoryAreas     = 0x0013 // Memory areas
+	SZLIDSystemAreas     = 0x0014 // System areas
+	SZLIDBlockTypes      = 0x0015 // Block types
+	SZLIDCPUType         = 0x001C // CPU type
+	SZLIDComponentID     = 0x001D // Component identification
+	SZLIDInterruptStatus = 0x0022 // Interrupt status
+	SZLIDAssignmentList  = 0x0025 // Assignment list
+	SZLIDCPUStatus       = 0x0074 // CPU status
+	SZLIDModeTransition  = 0x0090 // Mode transition
+	SZLIDStartupInfo     = 0x0094 // Startup information
+	SZLIDCommunication   = 0x0111 // Communication status
+	SZLIDLEDStatus       = 0x0019 // LED status
+	SZLIDRackStation     = 0x0091 // Rack/station status
+	SZLIDDiagBuffer      = 0x00A0 // Diagnostic buffer
+)
+
+// Block types for block services
+const (
+	S7BlockTypeOB  = 0x08 // Organization Block
+	S7BlockTypeDB  = 0x0A // Data Block
+	S7BlockTypeSDB = 0x0B // System Data Block
+	S7BlockTypeFC  = 0x0C // Function
+	S7BlockTypeSFC = 0x0D // System Function
+	S7BlockTypeFB  = 0x0E // Function Block
+	S7BlockTypeSFB = 0x0F // System Function Block
+)
+
+// Alarm types
+const (
+	S7AlarmTypeScan      = 0x01 // Scan alarm
+	S7AlarmTypeAlarm8    = 0x02 // Alarm_8
+	S7AlarmTypeAlarm8P   = 0x04 // Alarm_8P
+	S7AlarmTypeNotify    = 0x05 // Notify
+	S7AlarmTypeAlarmS    = 0x06 // Alarm_S (SQ)
+	S7AlarmTypeAlarmSQ   = 0x07 // Alarm_SQ
+	S7AlarmTypeAlarm     = 0x08 // Alarm
+	S7AlarmTypeAlarmAck  = 0x09 // Alarm Ack
+	S7AlarmTypeAlarmLock = 0x0A // Alarm Lock
 )
 
 // Minimum header sizes
@@ -257,13 +337,14 @@ func canDecodeS7Comm(data []byte) bool {
 			return true
 		}
 
-		// Check S7comm protocol ID (0x32)
-		if data[s7commOffset] != s7commProtocolID {
+		// Check S7comm protocol ID (0x32 for classic, 0x72 for S7Comm Plus)
+		protocolID := data[s7commOffset]
+		if protocolID != s7commProtocolID && protocolID != s7commPlusProtocolID {
 			return false
 		}
 
-		// Validate S7comm message type
-		if s7commOffset+1 < len(data) {
+		// For classic S7Comm, validate message type
+		if protocolID == s7commProtocolID && s7commOffset+1 < len(data) {
 			msgType := data[s7commOffset+1]
 			switch msgType {
 			case S7CommMsgTypeJobRequest, S7CommMsgTypeAck, S7CommMsgTypeAckData, S7CommMsgTypeUserData:
@@ -272,9 +353,15 @@ func canDecodeS7Comm(data []byte) bool {
 				return false
 			}
 		}
+		// S7Comm Plus (0x72) has different structure, accept it if protocol ID matches
 	}
 
 	return true
+}
+
+// isS7CommPlus checks if this is an S7Comm Plus (TIA Portal) message
+func isS7CommPlus(protocolID byte) bool {
+	return protocolID == s7commPlusProtocolID
 }
 
 // getCOTPPDUTypeName returns the human-readable name for a COTP PDU type.
@@ -372,6 +459,8 @@ func getAreaName(area int) string {
 		return "Counter200"
 	case S7AreaTimer200:
 		return "Timer200"
+	case S7AreaPeripheral:
+		return "Peripheral (P)"
 	case S7AreaInputs:
 		return "Inputs (I)"
 	case S7AreaOutputs:
@@ -384,7 +473,7 @@ func getAreaName(area int) string {
 		return "InstanceDB (DI)"
 	case S7AreaLocal:
 		return "Local (L)"
-	case S7AreaUnknown:
+	case S7AreaVMemory:
 		return "V-Memory"
 	default:
 		return "Unknown"
@@ -523,6 +612,138 @@ func getErrorName(errorClass, errorCode int) string {
 		return "Request error"
 	default:
 		return "Unknown error"
+	}
+}
+
+// getSZLIDName returns the human-readable name for an SZL ID.
+func getSZLIDName(szlID int) string {
+	switch szlID {
+	case SZLIDModuleID:
+		return "Module Identification"
+	case SZLIDCPUCharacter:
+		return "CPU Characteristics"
+	case SZLIDMemoryAreas:
+		return "Memory Areas"
+	case SZLIDSystemAreas:
+		return "System Areas"
+	case SZLIDBlockTypes:
+		return "Block Types"
+	case SZLIDCPUType:
+		return "CPU Type"
+	case SZLIDComponentID:
+		return "Component Identification"
+	case SZLIDInterruptStatus:
+		return "Interrupt Status"
+	case SZLIDAssignmentList:
+		return "Assignment List"
+	case SZLIDCPUStatus:
+		return "CPU Status"
+	case SZLIDModeTransition:
+		return "Mode Transition"
+	case SZLIDStartupInfo:
+		return "Startup Information"
+	case SZLIDCommunication:
+		return "Communication Status"
+	case SZLIDLEDStatus:
+		return "LED Status"
+	case SZLIDRackStation:
+		return "Rack/Station Status"
+	case SZLIDDiagBuffer:
+		return "Diagnostic Buffer"
+	default:
+		return "Unknown SZL"
+	}
+}
+
+// getBlockTypeName returns the human-readable name for a block type.
+func getBlockTypeName(blockType int) string {
+	switch blockType {
+	case S7BlockTypeOB:
+		return "OB (Organization Block)"
+	case S7BlockTypeDB:
+		return "DB (Data Block)"
+	case S7BlockTypeSDB:
+		return "SDB (System Data Block)"
+	case S7BlockTypeFC:
+		return "FC (Function)"
+	case S7BlockTypeSFC:
+		return "SFC (System Function)"
+	case S7BlockTypeFB:
+		return "FB (Function Block)"
+	case S7BlockTypeSFB:
+		return "SFB (System Function Block)"
+	default:
+		return "Unknown Block Type"
+	}
+}
+
+// getAlarmTypeName returns the human-readable name for an alarm type.
+func getAlarmTypeName(alarmType int) string {
+	switch alarmType {
+	case S7AlarmTypeScan:
+		return "Scan Alarm"
+	case S7AlarmTypeAlarm8:
+		return "Alarm_8"
+	case S7AlarmTypeAlarm8P:
+		return "Alarm_8P"
+	case S7AlarmTypeNotify:
+		return "Notify"
+	case S7AlarmTypeAlarmS:
+		return "Alarm_S"
+	case S7AlarmTypeAlarmSQ:
+		return "Alarm_SQ"
+	case S7AlarmTypeAlarm:
+		return "Alarm"
+	case S7AlarmTypeAlarmAck:
+		return "Alarm Acknowledge"
+	case S7AlarmTypeAlarmLock:
+		return "Alarm Lock/Unlock"
+	default:
+		return "Unknown Alarm"
+	}
+}
+
+// getCPUSubfunctionName returns the name for a CPU function subfunction.
+func getCPUSubfunctionName(subFunc int) string {
+	switch subFunc {
+	case S7UserDataCPUReadSZL:
+		return "Read SZL"
+	case S7UserDataCPUMsgService:
+		return "Message Service"
+	case S7UserDataCPUDiagMessage:
+		return "Diagnostic Message"
+	case S7UserDataCPUAlarmQuery:
+		return "Alarm Query"
+	default:
+		return "Unknown"
+	}
+}
+
+// getTimeSubfunctionName returns the name for a Time function subfunction.
+func getTimeSubfunctionName(subFunc int) string {
+	switch subFunc {
+	case S7UserDataTimeRead:
+		return "Read Clock"
+	case S7UserDataTimeSet:
+		return "Set Clock"
+	case S7UserDataTimeReadF:
+		return "Read Clock (F)"
+	case S7UserDataTimeSet2:
+		return "Set Clock (2)"
+	default:
+		return "Unknown"
+	}
+}
+
+// getCyclicSubfunctionName returns the name for a Cyclic data subfunction.
+func getCyclicSubfunctionName(subFunc int) string {
+	switch subFunc {
+	case S7UserDataCyclicMem:
+		return "Memory"
+	case S7UserDataCyclicUnsubscr:
+		return "Unsubscribe"
+	default:
+		return "Unknown"
 	}
 }
 

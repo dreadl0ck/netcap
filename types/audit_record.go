@@ -37,7 +37,7 @@ var (
 	// UTC allows to print timestamp in the utc format.
 	UTC bool
 
-	jsonMarshaler = &jsonpb.Marshaler{}
+	jsonMarshaler = &jsonpb.Marshaler{EmitDefaults: true}
 )
 
 // AuditRecord is the interface for basic operations with NETCAP audit records

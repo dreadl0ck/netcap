@@ -228,7 +228,7 @@ func (s *s7commReader) parseS7Comm(msg *types.S7Comm, data []byte) {
 	}
 
 	// S7comm header format:
-	// Byte 0: Protocol ID (0x32)
+	// Byte 0: Protocol ID (0x32 for classic, 0x72 for S7Comm Plus)
 	// Byte 1: Message type
 	// Bytes 2-3: Reserved (always 0x0000)
 	// Bytes 4-5: PDU reference
@@ -237,6 +237,14 @@ func (s *s7commReader) parseS7Comm(msg *types.S7Comm, data []byte) {
 	// (For Ack-Data: Bytes 10-11: Error class/code)
 
 	protocolId := int(data[0])
+
+	// Handle S7Comm Plus (TIA Portal / S7-1200/1500)
+	if protocolId == s7commPlusProtocolID {
+		s.parseS7CommPlus(msg, data)
+		return
+	}
+
+	// Classic S7Comm
 	if protocolId != s7commProtocolID {
 		return
 	}
@@ -279,6 +287,32 @@ func (s *s7commReader) parseS7Comm(msg *types.S7Comm, data []byte) {
 		}
 		s.parseS7Data(msg, data[dataOffset:endOffset])
 	}
+}
+
+// parseS7CommPlus parses S7Comm Plus (TIA Portal) messages.
+// S7Comm Plus is used by S7-1200/1500 PLCs and has a different structure.
+func (s *s7commReader) parseS7CommPlus(msg *types.S7Comm, data []byte) {
+	if len(data) < 4 {
+		return
+	}
+
+	msg.ProtocolId = int32(data[0])
+	msg.MessageTypeName = "S7Comm Plus"
+
+	// S7Comm Plus has encrypted/different structure
+	// Mark as security-relevant since it uses newer TIA Portal features
+	msg.IsSecurityRelevant = true
+
+	// S7Comm Plus version byte
+	if len(data) > 1 {
+		msg.MessageType = int32(data[1]) // Version/type byte
+	}
+
+	// For S7Comm Plus, the protocol is more complex and partially encrypted
+	// We capture basic information but detailed parsing requires more research
+	s7commLog.Debug("S7Comm Plus message detected",
+		zap.Int("length", len(data)),
+	)
 }
 
 // parseS7Parameters parses the S7comm parameter section.
@@ -465,15 +499,19 @@ func (s *s7commReader) parseUserData(msg *types.S7Comm, data []byte) {
 		offset++
 	}
 
+	var funcGroup int
 	if offset < len(data) {
 		typeFG := data[offset]
-		msg.UserDataFunctionGroup = int32(typeFG & 0x0F)
-		msg.UserDataFunctionGroupName = getUserDataFunctionGroupName(int(typeFG & 0x0F))
+		funcGroup = int(typeFG & 0x0F)
+		msg.UserDataFunctionGroup = int32(funcGroup)
+		msg.UserDataFunctionGroupName = getUserDataFunctionGroupName(funcGroup)
 		offset++
 	}
 
+	var subFunc int
 	if offset < len(data) {
-		msg.UserDataSubFunction = int32(data[offset])
+		subFunc = int(data[offset])
+		msg.UserDataSubFunction = int32(subFunc)
 		offset++
 	}
 
@@ -481,12 +519,47 @@ func (s *s7commReader) parseUserData(msg *types.S7Comm, data []byte) {
 		msg.UserDataSequenceNumber = int32(data[offset])
 	}
 
-	// Some UserData functions are security-relevant
-	switch msg.UserDataFunctionGroup {
+	// Enhanced parsing based on function group
+	switch funcGroup {
 	case S7UserDataFGSecurity:
 		msg.IsSecurityRelevant = true
 	case S7UserDataFGBlock:
 		msg.IsCriticalOperation = true
+		msg.SubFunctionName = getBlockSubfunctionName(subFunc)
+	case S7UserDataFGCPUFunc:
+		// CPU Functions - includes SZL, diagnostics, alarms
+		msg.SubFunctionName = getCPUSubfunctionName(subFunc)
+		if subFunc == S7UserDataCPUReadSZL {
+			// Mark as security-relevant as it exposes PLC configuration
+			msg.IsSecurityRelevant = true
+		}
+	case S7UserDataFGTime:
+		// Time functions
+		msg.SubFunctionName = getTimeSubfunctionName(subFunc)
+		if subFunc == S7UserDataTimeSet || subFunc == S7UserDataTimeSet2 {
+			msg.IsCriticalOperation = true // Setting time can affect PLC operation
+		}
+	case S7UserDataFGCyclic:
+		// Cyclic data (subscriptions)
+		msg.SubFunctionName = getCyclicSubfunctionName(subFunc)
+	case S7UserDataFGNCProgram:
+		// NC Programming (Sinumerik)
+		msg.IsCriticalOperation = true
+		msg.IsSecurityRelevant = true
+	}
+}
+
+// getBlockSubfunctionName returns the name for a Block function subfunction.
+func getBlockSubfunctionName(subFunc int) string {
+	switch subFunc {
+	case 0x01:
+		return "List Blocks"
+	case 0x02:
+		return "List Blocks of Type"
+	case 0x03:
+		return "Get Block Info"
+	default:
+		return "Unknown"
 	}
 }
 
@@ -499,7 +572,140 @@ func (s *s7commReader) parseS7Data(msg *types.S7Comm, data []byte) {
 	// For Read/Write responses, parse data items
 	if msg.FunctionCode == S7FuncReadVar || msg.FunctionCode == S7FuncWriteVar {
 		s.parseDataItems(msg, data)
+		return
 	}
+
+	// For UserData messages, check for SZL response
+	if msg.MessageType == S7CommMsgTypeUserData {
+		s.parseUserDataData(msg, data)
+	}
+}
+
+// parseUserDataData parses the data section of UserData messages.
+func (s *s7commReader) parseUserDataData(msg *types.S7Comm, data []byte) {
+	if len(data) < 4 {
+		return
+	}
+
+	// UserData data section format:
+	// Byte 0: Return code
+	// Byte 1: Transport size
+	// Bytes 2-3: Data length
+
+	returnCode := int(data[0])
+	if returnCode != S7ReturnCodeSuccess {
+		return
+	}
+
+	// For CPU Functions with Read SZL, parse SZL response
+	if msg.UserDataFunctionGroup == S7UserDataFGCPUFunc &&
+		msg.UserDataSubFunction == S7UserDataCPUReadSZL {
+		s.parseSZLResponse(msg, data)
+	}
+}
+
+// parseSZLResponse parses an SZL (System Status List) response.
+func (s *s7commReader) parseSZLResponse(msg *types.S7Comm, data []byte) {
+	// SZL response format:
+	// Bytes 0-3: Standard data header
+	// Bytes 4-5: SZL-ID
+	// Bytes 6-7: SZL-Index
+	// Following: SZL data records
+
+	if len(data) < 8 {
+		return
+	}
+
+	szlID := int(binary.BigEndian.Uint16(data[4:6]))
+	// szlIndex := int(binary.BigEndian.Uint16(data[6:8]))
+
+	// Extract meaningful information based on SZL ID
+	switch szlID {
+	case SZLIDModuleID, SZLIDCPUType, SZLIDComponentID:
+		// These SZLs contain text information about the PLC
+		s.parseSZLModuleInfo(msg, data[8:], szlID)
+	case SZLIDCPUStatus:
+		// CPU operating status
+		s.parseSZLCPUStatus(msg, data[8:])
+	}
+
+	s7commLog.Debug("SZL response parsed",
+		zap.Int("szlID", szlID),
+		zap.String("szlName", getSZLIDName(szlID)),
+	)
+}
+
+// parseSZLModuleInfo extracts module/CPU identification from SZL data.
+func (s *s7commReader) parseSZLModuleInfo(msg *types.S7Comm, data []byte, szlID int) {
+	// SZL record format depends on the specific SZL ID
+	// Common format for module identification:
+	// Bytes 0-1: Record length
+	// Bytes 2-3: Record count
+	// Following: Records with text fields
+
+	if len(data) < 4 {
+		return
+	}
+
+	recordLen := int(binary.BigEndian.Uint16(data[0:2]))
+	if recordLen == 0 || len(data) < 4+recordLen {
+		return
+	}
+
+	// Try to extract text from the record
+	recordData := data[4:]
+	if len(recordData) >= recordLen {
+		// Look for null-terminated strings in the record
+		for i := 0; i < len(recordData) && i < recordLen; i++ {
+			if recordData[i] == 0 {
+				if i > 0 {
+					text := string(recordData[:i])
+					// Clean up the text (remove non-printable characters)
+					cleanText := cleanString(text)
+					if len(cleanText) > 0 {
+						switch szlID {
+						case SZLIDModuleID:
+							if msg.ModuleTypeName == "" {
+								msg.ModuleTypeName = cleanText
+							}
+						case SZLIDCPUType:
+							if msg.CPUType == "" {
+								msg.CPUType = cleanText
+							}
+						case SZLIDComponentID:
+							if msg.PlantIdentification == "" {
+								msg.PlantIdentification = cleanText
+							}
+						}
+					}
+				}
+				break
+			}
+		}
+	}
+}
+
+// parseSZLCPUStatus extracts CPU status information.
+func (s *s7commReader) parseSZLCPUStatus(msg *types.S7Comm, data []byte) {
+	// CPU status SZL contains information about operating mode
+	// This is security-relevant as it shows if PLC is running, stopped, etc.
+	if len(data) < 4 {
+		return
+	}
+
+	// Mark as security-relevant since it exposes operational state
+	msg.IsSecurityRelevant = true
+}
+
+// cleanString removes non-printable characters from a string.
+func cleanString(s string) string {
+	result := make([]byte, 0, len(s))
+	for i := 0; i < len(s); i++ {
+		if s[i] >= 32 && s[i] < 127 {
+			result = append(result, s[i])
+		}
+	}
+	return string(result)
 }
 
 // parseDataItems parses the data items in a Read/Write response.

@@ -42,5 +42,9 @@ export { default as SyntaxHighlightedInput, SyntaxHighlightedTextArea } from './
 export { default as ConversationModal } from './ConversationModal';
 export { default as ReportIssueDialog } from './ReportIssueDialog';
 
+// Overlay components
+export { default as ConnectionOverlay } from './ConnectionOverlay';
+export type { ConnectionOverlayProps } from './ConnectionOverlay';
+
 // Chart components
 export { default as OptimizedPieChart } from './OptimizedPieChart';

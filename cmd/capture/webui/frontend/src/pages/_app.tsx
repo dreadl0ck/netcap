@@ -18,7 +18,7 @@
  */
 
 import * as React from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -29,6 +29,7 @@ import Typography from '@mui/material/Typography';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { NextjsNetcapProvider } from '@dreadl0ck/netcap-ui/adapters/nextjs';
 import { api, getBackendUrl } from '@dreadl0ck/netcap-ui/lib';
+import { ConnectionOverlay } from '@dreadl0ck/netcap-ui/components';
 import { mutate as globalMutate } from 'swr';
 
 // Import self-hosted Roboto fonts (only the weights needed by MUI)
@@ -202,6 +203,86 @@ function hasFiles(dataTransfer: DataTransfer): boolean {
     return Array.from(dataTransfer.items).some(item => item.kind === 'file');
   }
   return false;
+}
+
+// Connection status hook - tracks backend connectivity
+function useConnectionStatus() {
+  const [isConnected, setIsConnected] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [connectionMessage, setConnectionMessage] = useState('Connecting to NETCAP...');
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
+  const retryDelay = 2000;
+
+  useEffect(() => {
+    let mounted = true;
+    let retryTimeout: ReturnType<typeof setTimeout>;
+
+    const checkConnection = async () => {
+      try {
+        // Try to fetch version info - this is a lightweight endpoint
+        await api.getVersion();
+        if (mounted) {
+          setIsConnected(true);
+          setIsInitializing(false);
+          retryCountRef.current = 0;
+        }
+      } catch {
+        if (mounted) {
+          retryCountRef.current++;
+          
+          if (retryCountRef.current <= maxRetries) {
+            setConnectionMessage(`Connecting to backend... (attempt ${retryCountRef.current}/${maxRetries})`);
+            retryTimeout = setTimeout(checkConnection, retryDelay);
+          } else {
+            setConnectionMessage('Unable to connect to backend');
+            setIsConnected(false);
+            setIsInitializing(false);
+            // Keep retrying in the background
+            retryTimeout = setTimeout(() => {
+              retryCountRef.current = 0;
+              setIsInitializing(true);
+              setConnectionMessage('Retrying connection...');
+              checkConnection();
+            }, 5000);
+          }
+        }
+      }
+    };
+
+    // Start initial connection check
+    checkConnection();
+
+    // Set up periodic health check when connected
+    const healthCheckInterval = setInterval(() => {
+      if (isConnected) {
+        api.getVersion().catch(() => {
+          if (mounted) {
+            setIsConnected(false);
+            setConnectionMessage('Connection lost. Reconnecting...');
+            retryCountRef.current = 0;
+            checkConnection();
+          }
+        });
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => {
+      mounted = false;
+      clearTimeout(retryTimeout);
+      clearInterval(healthCheckInterval);
+    };
+  }, [isConnected]);
+
+  return {
+    isConnected,
+    isInitializing,
+    showOverlay: !isConnected || isInitializing,
+    message: connectionMessage,
+    subMessage: !isConnected && !isInitializing 
+      ? `Make sure the NETCAP backend is running on ${getBackendUrl()}`
+      : undefined,
+  };
 }
 
 // Global drop zone component that wraps the entire app
@@ -386,7 +467,25 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App({ Component, pageProps }: AppProps) {
+// App content wrapper that uses the connection status
+function AppContent({ Component, pageProps }: AppProps) {
+  const connectionStatus = useConnectionStatus();
+
+  return (
+    <>
+      <GlobalDropZone>
+        <Component {...pageProps} />
+      </GlobalDropZone>
+      <ConnectionOverlay
+        visible={connectionStatus.showOverlay}
+        message={connectionStatus.message}
+        subMessage={connectionStatus.subMessage}
+      />
+    </>
+  );
+}
+
+export default function App(props: AppProps) {
   return (
     <>
       <Head>
@@ -395,9 +494,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <NextjsNetcapProvider backendUrl={getBackendUrl()}>
-          <GlobalDropZone>
-            <Component {...pageProps} />
-          </GlobalDropZone>
+          <AppContent {...props} />
         </NextjsNetcapProvider>
       </ThemeProvider>
     </>

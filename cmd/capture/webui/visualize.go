@@ -193,6 +193,13 @@ func buildProtocolHierarchy(outDir string) (*ProtocolHierarchyResponse, error) {
 		"Diameter":       "Application Layer",
 		"VXLAN":          "Application Layer",
 		"Geneve":         "Application Layer",
+		// Industrial protocols
+		"BACnetIP":       "Application Layer",
+		"OPCUA":          "Application Layer",
+		"PROFINET":       "Application Layer",
+		"S7Comm":         "Application Layer",
+		"IEC62351":       "Application Layer",
+		"MQTTSN":         "Application Layer",
 	}
 
 	// Typical protocol encapsulation hierarchy

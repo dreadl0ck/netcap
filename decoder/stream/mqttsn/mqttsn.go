@@ -138,15 +138,12 @@ func canDecodeMQTTSN(data []byte) bool {
 		offset = 1
 	}
 
-	// Validate length
-	if msgLen < minMessageSize || msgLen > len(data) {
+	// Validate length - must be at least offset + 1 (for message type byte)
+	if msgLen < offset+1 || msgLen > len(data) {
 		return false
 	}
 
 	// Check message type
-	if offset >= len(data) {
-		return false
-	}
 	msgType := data[offset]
 
 	// Check for valid message types
