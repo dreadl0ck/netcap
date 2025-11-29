@@ -11,7 +11,7 @@ if [ ! -d "$DBS_PATH" ] || [ -z "$(ls -A $DBS_PATH 2>/dev/null)" ]; then
     
     # Try to download databases, but don't fail if it errors
     # (some databases might not be critical)
-    if netcap util -download-dbs; then
+    if net util -download-dbs; then
         echo "[Netcap Service Mode] Databases downloaded successfully"
     else
         echo "[Netcap Service Mode] Warning: Database download failed or incomplete"
@@ -29,7 +29,7 @@ echo "[Netcap Service Mode] Data directory: ${NC_DATA_DIR:-/data/netcap-service}
 echo "[Netcap Service Mode] DPI enabled: ${NC_DPI:-true}"
 
 # Start service mode using capture command with --service flag
-exec netcap capture --service \
+exec net capture --service \
     -http "${NC_HTTP:-0.0.0.0:7070}" \
     -service-data-dir "${NC_DATA_DIR:-/data/netcap-service}" \
     -dpi="${NC_DPI:-true}" \

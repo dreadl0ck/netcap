@@ -1,8 +1,15 @@
 # TODOs
 
+only invoke harvesters for the ports they are defined to by default avoid false positives. add an engine setting and make this configurable. 
+
+remove the checks in NBNS and SOCKS harvester for the ports. if a harvester is invoked, it should execute!
+
+I see the issue now. The harvester system runs ALL harvesters against ALL traffic (not just their configured ports). The port mapping is just for "first guess" optimization. I need to add port filtering inside the NBNS harvester itself AND improve the garbage detection.
+
+
 Downloading echarts@6.0.0: 70.03 kB/11.43 MB
 
-why is v6 downloaded? though go echarts uses older version
+why is v6 downloaded? i thought go echarts uses older version
 
 test suite using tshark and a set of pcaps 
 data mining on plaintext connection data: extract URLs, what looks like secrets etc

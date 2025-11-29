@@ -148,6 +148,9 @@ func buildRADIUSAccessReject() []byte {
 
 // TestSOCKSHarvester tests the SOCKS credential harvester
 func TestSOCKSHarvester(t *testing.T) {
+	// Note: Port filtering is now handled centrally by the harvester engine
+	testIdent := "test-flow"
+
 	tests := []struct {
 		name           string
 		data           []byte
@@ -188,7 +191,7 @@ func TestSOCKSHarvester(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			creds := socksHarvesterFunc(tt.data, "test-flow", time.Now())
+			creds := socksHarvesterFunc(tt.data, testIdent, time.Now())
 
 			if tt.expectCreds {
 				if creds == nil {
@@ -242,6 +245,69 @@ func buildSOCKS4Request(userid string) []byte {
 	copy(packet[8:], []byte(userid))
 	packet[8+len(userid)] = 0x00 // NULL terminator
 	return packet
+}
+
+// Note: Port filtering is now handled centrally by the harvester engine (HarvesterPortFilter setting)
+// See TestHarvesterPortFiltering for port filtering tests
+
+// TestSOCKSFalsePositives tests that SOCKS harvester rejects garbage data
+func TestSOCKSFalsePositives(t *testing.T) {
+	testIdent := "test-flow"
+
+	// Test that garbage usernames are rejected
+	falsePositives := []struct {
+		name string
+		data []byte
+	}{
+		{
+			"Non-printable username",
+			buildSOCKS5UserPassAuth("user\x00\x01\x02name", "password"),
+		},
+		{
+			"Non-printable password",
+			buildSOCKS5UserPassAuth("validuser", "pass\x00\x01word"),
+		},
+		{
+			"High-byte characters in username",
+			buildSOCKS5UserPassAuth("user\xff\xfe\xfdname", "password"),
+		},
+	}
+
+	for _, fp := range falsePositives {
+		t.Run(fp.name, func(t *testing.T) {
+			creds := socksHarvesterFunc(fp.data, testIdent, time.Now())
+			if creds != nil {
+				t.Errorf("Expected nil for false positive %q, got credentials with user=%q", fp.name, creds.User)
+			}
+		})
+	}
+}
+
+// TestSOCKSValidCredentialString tests the credential string validation
+func TestSOCKSValidCredentialString(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"admin", true},
+		{"user123", true},
+		{"test_user", true},
+		{"user@domain.com", true},
+		{"user\x00name", false},        // Contains null
+		{"user\xffname", false},        // Non-ASCII
+		{"\x01\x02\x03", false},        // All control chars
+		{"", false},                     // Empty
+		{"!!!", false},                  // Too few alphanumeric
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			result := isValidCredentialString(tc.input)
+			if result != tc.expected {
+				t.Errorf("isValidCredentialString(%q) = %v, expected %v", tc.input, result, tc.expected)
+			}
+		})
+	}
 }
 
 // TestSIPHarvester tests the SIP credential harvester
@@ -530,6 +596,77 @@ func buildMQTTConnackBadCredentials() []byte {
 	}
 }
 
+// TestMQTTFalsePositives tests that the MQTT harvester doesn't match non-MQTT traffic
+func TestMQTTFalsePositives(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+	}{
+		{
+			name: "DNS response starting with 0x20 transaction ID",
+			// Simulated DNS response where transaction ID starts with 0x20
+			// This would have matched before the fix
+			data: []byte{
+				0x20, 0x42, // Transaction ID (starts with 0x20)
+				0x81, 0x80, // Flags: Standard query response, no error
+				0x00, 0x01, // Questions: 1
+				0x00, 0x01, // Answer RRs: 1
+				0x00, 0x00, // Authority RRs: 0
+				0x00, 0x00, // Additional RRs: 0
+			},
+		},
+		{
+			name: "DNS response with 0x21 transaction ID (flags in lower nibble)",
+			// MQTT CONNACK would be 0x20 exactly, 0x21 has lower nibble set
+			data: []byte{
+				0x21, 0x02, // Transaction ID with lower nibble set
+				0x00, 0x00, // Would look like session present=0, return code=0
+			},
+		},
+		{
+			name: "CONNACK-like with wrong remaining length",
+			// Remaining length not exactly 2
+			data: []byte{
+				0x20, 0x03, // Remaining length = 3, not 2
+				0x00, 0x00, 0x00,
+			},
+		},
+		{
+			name: "CONNACK-like with invalid session present",
+			// Session present byte > 1
+			data: []byte{
+				0x20, 0x02, // Correct type and remaining length
+				0x02, 0x00, // Session present = 2 (invalid)
+			},
+		},
+		{
+			name: "Random binary data starting with 0x20",
+			data: []byte{
+				0x20, 0x02, 0xFF, 0x10, // Invalid session present
+			},
+		},
+		{
+			name: "CONNECT-like with 0x11 (flags in lower nibble)",
+			// MQTT CONNECT would be 0x10 exactly
+			data: []byte{
+				0x11, 0x0A, // Wrong packet type (flags set)
+				0x00, 0x04, 'M', 'Q', 'T', 'T',
+				0x04, 0xC2, 0x00, 0x3C,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			creds := mqttHarvesterFunc(tt.data, "test-flow", time.Now())
+			if creds != nil {
+				t.Errorf("Expected no credentials from %s, but got: service=%s, user=%s",
+					tt.name, creds.Service, creds.User)
+			}
+		})
+	}
+}
+
 // TestBruteforceDetector tests the bruteforce detection module
 func TestBruteforceDetector(t *testing.T) {
 	t.Run("Threshold not reached", func(t *testing.T) {
@@ -657,6 +794,54 @@ func TestHarvesterRegistration(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if _, ok := allHarvesters[name]; !ok {
 				t.Errorf("Harvester %q not found in allHarvesters map", name)
+			}
+		})
+	}
+}
+
+// TestHarvesterPortFiltering tests the centralized port filtering mechanism
+func TestHarvesterPortFiltering(t *testing.T) {
+	// Initialize harvesters with default config to populate port mappings
+	if err := InitializeHarvesters(nil); err != nil {
+		t.Fatalf("Failed to initialize harvesters: %v", err)
+	}
+
+	tests := []struct {
+		name          string
+		harvesterName string
+		srcPort       int
+		dstPort       int
+		expected      bool
+	}{
+		// SOCKS tests (ports 1080, 1081)
+		{"SOCKS on 1080", "SOCKS", 12345, 1080, true},
+		{"SOCKS on 1081", "SOCKS", 1081, 12345, true},
+		{"SOCKS on wrong port", "SOCKS", 80, 443, false},
+
+		// NBNS tests (port 137)
+		{"NBNS on 137", "NBNS", 137, 12345, true},
+		{"NBNS on 137 dst", "NBNS", 12345, 137, true},
+		{"NBNS on wrong port", "NBNS", 43, 80, false},
+
+		// FTP tests (port 21)
+		{"FTP on 21", "FTP", 12345, 21, true},
+		{"FTP on wrong port", "FTP", 80, 443, false},
+
+		// HTTP tests (ports 80, 8080, etc)
+		{"HTTP on 80", "HTTP", 12345, 80, true},
+		{"HTTP on 8080", "HTTP", 8080, 12345, true},
+		{"HTTP on wrong port", "HTTP", 21, 22, false},
+
+		// Unknown harvester (should allow all ports)
+		{"Unknown harvester", "UnknownHarvester", 12345, 54321, true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := harvesterMatchesPort(tc.harvesterName, tc.srcPort, tc.dstPort)
+			if result != tc.expected {
+				t.Errorf("harvesterMatchesPort(%q, %d, %d) = %v, expected %v",
+					tc.harvesterName, tc.srcPort, tc.dstPort, result, tc.expected)
 			}
 		})
 	}

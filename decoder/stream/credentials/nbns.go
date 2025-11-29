@@ -34,9 +34,17 @@ const serviceNBNS = "NBNS"
 // NBNS constants
 const (
 	nbnsPort            = 137
-	nbnsMinResponseSize = 73
-	nbnsNameOffset      = 57
-	nbnsNameLength      = 15
+	nbnsMinResponseSize = 56 // Minimum size for a valid NBNS response with one name
+	nbnsHeaderSize      = 12
+)
+
+// NBNS opcode values
+const (
+	nbnsOpcodeQuery        = 0
+	nbnsOpcodeRegistration = 5
+	nbnsOpcodeRelease      = 6
+	nbnsOpcodeWACK         = 7
+	nbnsOpcodeRefresh      = 8
 )
 
 // NBNS suffix types (16th byte of NetBIOS name)
@@ -79,6 +87,7 @@ type nbnsRecord struct {
 
 // nbnsHarvesterFunc extracts hostname information from NBNS (NetBIOS Name Service) traffic.
 // NBNS is used for Windows network name resolution and can reveal computer names and domains.
+// Note: Port filtering is now handled centrally by the harvester engine (HarvesterPortFilter setting)
 func nbnsHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(data) < nbnsMinResponseSize {
 		return nil
@@ -95,24 +104,32 @@ func nbnsHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentia
 	flags := binary.BigEndian.Uint16(data[2:4])
 	isResponse := (flags >> 15) & 0x1
 	opcode := (flags >> 11) & 0xf
+	rcode := flags & 0xf // Response code
 
-	// We're primarily interested in responses (node status responses)
-	// But queries can also reveal information
-	_ = isResponse
-
-	// Skip header and parse names
-	pos := 12
-
-	// Try to extract NBNS name from response
-	records := extractNBNSRecords(data, pos)
-	if len(records) == 0 {
-		// Try legacy extraction for simple responses
-		record := extractLegacyNBNSName(data)
-		if record != nil {
-			records = append(records, record)
-		}
+	// Only process valid opcodes
+	if opcode > nbnsOpcodeRefresh {
+		return nil
 	}
 
+	// Check for error responses (rcode != 0 means error)
+	if isResponse == 1 && rcode != 0 {
+		return nil
+	}
+
+	// Get question and answer counts
+	qdCount := binary.BigEndian.Uint16(data[4:6])
+	anCount := binary.BigEndian.Uint16(data[6:8])
+
+	// Sanity check: reasonable counts
+	if qdCount > 10 || anCount > 50 {
+		return nil
+	}
+
+	// Skip header and parse names
+	pos := nbnsHeaderSize
+
+	// Try to extract NBNS name from response
+	records := extractNBNSRecords(data, pos, anCount)
 	if len(records) == 0 {
 		return nil
 	}
@@ -139,11 +156,20 @@ func nbnsHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentia
 		details = append(details, detail)
 	}
 
+	if len(hostnames) == 0 {
+		return nil
+	}
+
 	notes := "NetBIOS Name Service"
-	if opcode == 0 {
-		notes += " - Name Query"
-	} else if opcode == 5 {
-		notes += " - Registration"
+	switch opcode {
+	case nbnsOpcodeQuery:
+		notes += " | Query"
+	case nbnsOpcodeRegistration:
+		notes += " | Registration"
+	case nbnsOpcodeRelease:
+		notes += " | Release"
+	case nbnsOpcodeRefresh:
+		notes += " | Refresh"
 	}
 	if len(details) > 0 {
 		notes += " | " + strings.Join(details, ", ")
@@ -160,41 +186,57 @@ func nbnsHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentia
 }
 
 // extractNBNSRecords parses NBNS response to extract all name records
-func extractNBNSRecords(data []byte, startPos int) []*nbnsRecord {
+func extractNBNSRecords(data []byte, startPos int, anCount uint16) []*nbnsRecord {
 	var records []*nbnsRecord
 	pos := startPos
 
-	// Skip the question section if present
-	// Question format: Name(variable) + Type(2) + Class(2)
+	// Limit iterations to prevent infinite loops on malformed data
+	maxIterations := 20
+	iterations := 0
 
-	// Look for node status response which contains multiple names
-	// The node status response has a name list after the header
+	// Find and decode NetBIOS encoded names
+	for pos < len(data)-34 && iterations < maxIterations {
+		iterations++
 
-	// Find the resource record section
-	for pos < len(data)-20 {
 		// Check if this looks like a NetBIOS encoded name
-		if data[pos] == 0x20 { // Length byte for encoded name (32 bytes)
-			name, newPos := decodeNBNSName(data, pos)
+		// Length byte should be 0x20 (32 bytes for encoded name)
+		if data[pos] == 0x20 {
+			// Validate the encoded data before attempting decode
+			if !isValidEncodedNBNSData(data, pos+1, 32) {
+				pos++
+				continue
+			}
+
+			name, suffixType, suffixDesc, newPos := decodeNBNSName(data, pos)
 			if name != "" && newPos > pos {
 				record := &nbnsRecord{
-					Name: name,
+					Name:       name,
+					SuffixType: suffixType,
+					SuffixDesc: suffixDesc,
 				}
 
-				// Try to extract suffix type (16th character of original name)
+				// Try to extract IP address from resource data
+				// Resource record format after name: Type(2) + Class(2) + TTL(4) + RDLength(2) + RData
 				if newPos+10 < len(data) {
-					// Skip to resource data
 					rdLength := int(binary.BigEndian.Uint16(data[newPos+8 : newPos+10]))
 					rdataPos := newPos + 10
 
 					if rdataPos+rdLength <= len(data) && rdLength >= 4 {
-						// IP address in resource data
-						record.IPAddress = fmt.Sprintf("%d.%d.%d.%d",
+						ip := fmt.Sprintf("%d.%d.%d.%d",
 							data[rdataPos], data[rdataPos+1],
 							data[rdataPos+2], data[rdataPos+3])
+						// Validate IP address looks reasonable
+						if isValidIPAddress(data[rdataPos : rdataPos+4]) {
+							record.IPAddress = ip
+						}
 					}
 				}
 
-				records = append(records, record)
+				// Only add if we haven't already seen this name
+				if !containsNBNSRecord(records, record.Name) {
+					records = append(records, record)
+				}
+
 				pos = newPos
 				continue
 			}
@@ -205,28 +247,78 @@ func extractNBNSRecords(data []byte, startPos int) []*nbnsRecord {
 	return records
 }
 
+// isValidEncodedNBNSData checks if the bytes at the given offset are valid NetBIOS encoded data
+// NetBIOS encoding uses bytes in range 'A' (0x41) to 'P' (0x50)
+func isValidEncodedNBNSData(data []byte, offset, length int) bool {
+	if offset+length > len(data) {
+		return false
+	}
+
+	for i := 0; i < length; i++ {
+		b := data[offset+i]
+		if b < 'A' || b > 'P' {
+			return false
+		}
+	}
+	return true
+}
+
+// isValidIPAddress performs basic validation on an IP address
+func isValidIPAddress(ip []byte) bool {
+	if len(ip) != 4 {
+		return false
+	}
+
+	// Reject obviously invalid IPs
+	// All zeros
+	if ip[0] == 0 && ip[1] == 0 && ip[2] == 0 && ip[3] == 0 {
+		return false
+	}
+	// Broadcast
+	if ip[0] == 255 && ip[1] == 255 && ip[2] == 255 && ip[3] == 255 {
+		return false
+	}
+
+	return true
+}
+
+// containsNBNSRecord checks if a record slice contains a record with the given name
+func containsNBNSRecord(records []*nbnsRecord, name string) bool {
+	for _, r := range records {
+		if r.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
 // decodeNBNSName decodes a NetBIOS encoded name
 // NetBIOS names are encoded by splitting each byte into two half-bytes,
 // adding 'A' to each, resulting in a 32-character uppercase string
-func decodeNBNSName(data []byte, offset int) (string, int) {
+// Returns: name, suffixType, suffixDesc, newOffset
+func decodeNBNSName(data []byte, offset int) (string, byte, string, int) {
 	if offset >= len(data) {
-		return "", offset
+		return "", 0, "", offset
 	}
 
 	length := int(data[offset])
 	if length != 32 { // NetBIOS encoded names are always 32 bytes
-		return "", offset
+		return "", 0, "", offset
 	}
 	offset++
 
 	if offset+32 > len(data) {
-		return "", offset
+		return "", 0, "", offset
 	}
 
 	var decoded []byte
 	for i := 0; i < 32; i += 2 {
 		high := data[offset+i] - 'A'
 		low := data[offset+i+1] - 'A'
+		// Sanity check: nibbles should be 0-15
+		if high > 15 || low > 15 {
+			return "", 0, "", offset + 32
+		}
 		char := (high << 4) | low
 		decoded = append(decoded, char)
 	}
@@ -237,12 +329,15 @@ func decodeNBNSName(data []byte, offset int) (string, int) {
 		offset++
 	}
 
-	// Extract suffix type (last byte before padding)
-	var suffix byte
-	name := strings.TrimRight(string(decoded[:15]), " ")
-	if len(decoded) >= 16 {
-		suffix = decoded[15]
+	if len(decoded) < 16 {
+		return "", 0, "", offset
 	}
+
+	// Extract suffix type (16th byte, which is the type indicator)
+	suffix := decoded[15]
+
+	// Extract name (first 15 bytes, trimmed of padding spaces)
+	name := strings.TrimRight(string(decoded[:15]), " \x00")
 
 	// Look up suffix description
 	suffixDesc := ""
@@ -250,60 +345,288 @@ func decodeNBNSName(data []byte, offset int) (string, int) {
 		suffixDesc = desc
 	}
 
-	// Validate the decoded name contains printable characters
+	// Validate the decoded name
 	if !isValidNBNSName(name) {
-		return "", offset
+		return "", 0, "", offset
 	}
 
-	// Append suffix description to name for context
-	if suffixDesc != "" {
-		return name, offset
-	}
-
-	return name, offset
+	return name, suffix, suffixDesc, offset
 }
 
-// extractLegacyNBNSName extracts hostname from simple NBNS response format
-func extractLegacyNBNSName(data []byte) *nbnsRecord {
-	if len(data) < nbnsMinResponseSize {
-		return nil
-	}
-
-	// Simple extraction from fixed offset (works for many responses)
-	nameBytes := data[nbnsNameOffset : nbnsNameOffset+nbnsNameLength]
-	name := strings.TrimRight(string(nameBytes), " \x00")
-
-	// Validate the name
-	if !isValidNBNSName(name) {
-		return nil
-	}
-
-	return &nbnsRecord{
-		Name: name,
-	}
-}
-
-// isValidNBNSName checks if the extracted name looks valid
+// isValidNBNSName checks if the extracted name looks like a valid NetBIOS name
 func isValidNBNSName(name string) bool {
 	if len(name) == 0 || len(name) > 15 {
 		return false
 	}
 
-	// First character should be printable
-	if len(name) > 0 && !unicode.IsPrint(rune(name[0])) {
+	// Minimum length for a meaningful name
+	if len(name) < 2 {
 		return false
 	}
 
-	// Should contain mostly alphanumeric characters
-	validChars := 0
+	// First character must be alphanumeric (NetBIOS naming convention)
+	firstRune := rune(name[0])
+	if !unicode.IsLetter(firstRune) && !unicode.IsDigit(firstRune) {
+		return false
+	}
+
+	// Count valid and invalid characters
+	alphanumCount := 0
+	invalidCount := 0
+	nonASCIICount := 0
+
 	for _, c := range name {
-		if unicode.IsLetter(c) || unicode.IsDigit(c) || c == '-' || c == '_' {
-			validChars++
+		// Check for non-ASCII characters (control chars, extended chars)
+		if c > 127 || c < 32 {
+			nonASCIICount++
+			continue
+		}
+
+		switch {
+		case unicode.IsLetter(c):
+			alphanumCount++
+		case unicode.IsDigit(c):
+			alphanumCount++
+		case c == '-' || c == '_':
+			// These are allowed in NetBIOS names
+		case c == ' ':
+			// Trailing spaces are allowed (padding), but we've already trimmed them
+			// Interior spaces are unusual but can occur
+		case !unicode.IsPrint(c):
+			// Non-printable characters are invalid
+			return false
+		case c == '"' || c == '\'' || c == '`' || c == '|' || c == '<' || c == '>' ||
+			c == '[' || c == ']' || c == '{' || c == '}' || c == '(' || c == ')' ||
+			c == '=' || c == '+' || c == '*' || c == '&' || c == '%' || c == '$' ||
+			c == '#' || c == '@' || c == '!' || c == '~' || c == '^' || c == '\\' ||
+			c == '/' || c == ':' || c == ';' || c == '?' || c == ',':
+			// Special characters that shouldn't appear in NetBIOS names
+			invalidCount++
+		default:
+			// Other characters - count as potentially invalid
+			if !unicode.IsPrint(c) {
+				return false
+			}
 		}
 	}
 
-	// At least 50% should be valid characters
-	return float64(validChars)/float64(len(name)) > 0.5
+	// Reject names with non-ASCII characters (like □ symbols from binary data)
+	if nonASCIICount > 0 {
+		return false
+	}
+
+	// Reject names with invalid characters
+	if invalidCount > 0 {
+		return false
+	}
+
+	// At least 70% should be alphanumeric characters
+	if float64(alphanumCount)/float64(len(name)) < 0.7 {
+		return false
+	}
+
+	// Reject names that look like garbage/random bytes
+	// NetBIOS names are typically words or abbreviations, not random character sequences
+	if looksLikeGarbage(name) {
+		return false
+	}
+
+	return true
+}
+
+// looksLikeGarbage detects names that appear to be misinterpreted binary data
+func looksLikeGarbage(name string) bool {
+	if len(name) == 0 {
+		return true
+	}
+
+	// Check for repeating characters (e.g., "UUUUUUUUUUUUUUU")
+	if hasRepeatingChars(name, 4) {
+		return true
+	}
+
+	// Check for hex-like strings (e.g., "E04784589605A88")
+	if looksLikeHex(name) {
+		return true
+	}
+
+	// Check for excessive digit sequences (e.g., "030sM4003004004")
+	consecutiveDigits := 0
+	maxConsecutiveDigits := 0
+	digitCount := 0
+	upperCount := 0
+	lowerCount := 0
+
+	for _, c := range name {
+		if unicode.IsDigit(c) {
+			consecutiveDigits++
+			digitCount++
+			if consecutiveDigits > maxConsecutiveDigits {
+				maxConsecutiveDigits = consecutiveDigits
+			}
+		} else {
+			consecutiveDigits = 0
+		}
+		if unicode.IsUpper(c) {
+			upperCount++
+		}
+		if unicode.IsLower(c) {
+			lowerCount++
+		}
+	}
+
+	// If more than 50% are digits and there are long digit sequences, likely garbage
+	if len(name) > 4 && float64(digitCount)/float64(len(name)) > 0.5 && maxConsecutiveDigits >= 3 {
+		return true
+	}
+
+	// Check for unusual character patterns that indicate garbage
+	// e.g., lowercase followed by uppercase mixed randomly
+	transitions := 0
+	lastUpper := false
+	lastLower := false
+	for _, c := range name {
+		isUpper := unicode.IsUpper(c)
+		isLower := unicode.IsLower(c)
+
+		if isUpper && lastLower {
+			transitions++
+		} else if isLower && lastUpper {
+			transitions++
+		}
+
+		lastUpper = isUpper
+		lastLower = isLower
+	}
+
+	// Many case transitions in a short name is suspicious
+	// (Real names like "WORKSTATION1" don't have many transitions)
+	if len(name) > 3 && transitions > len(name)/2 {
+		return true
+	}
+
+	// All lowercase with digits mixed in and no clear word structure is suspicious
+	// e.g., "zcxczc1c1c2ewc3" - random lowercase with interspersed digits
+	if len(name) > 6 && upperCount == 0 && lowerCount > 0 && digitCount > 0 {
+		// Check if it looks like random chars rather than a word
+		if !looksLikeWord(name) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// hasRepeatingChars checks if the name has a character repeated consecutively
+func hasRepeatingChars(name string, minRepeat int) bool {
+	if len(name) < minRepeat {
+		return false
+	}
+
+	count := 1
+	var lastChar rune
+	for i, c := range name {
+		if i == 0 {
+			lastChar = c
+			continue
+		}
+		if c == lastChar {
+			count++
+			if count >= minRepeat {
+				return true
+			}
+		} else {
+			count = 1
+			lastChar = c
+		}
+	}
+	return false
+}
+
+// looksLikeHex checks if the name appears to be a hex string
+func looksLikeHex(name string) bool {
+	if len(name) < 8 {
+		return false
+	}
+
+	hexChars := 0
+	for _, c := range name {
+		// Hex characters: 0-9, A-F, a-f
+		if (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f') {
+			hexChars++
+		}
+	}
+
+	// If more than 90% are valid hex characters and length is typical for hex strings
+	if float64(hexChars)/float64(len(name)) > 0.9 {
+		// Additional check: real NetBIOS names don't typically have this pattern
+		// Check if it has the pattern of uppercase hex (like "E04784589605A88")
+		upperHex := 0
+		for _, c := range name {
+			if (c >= 'A' && c <= 'F') || (c >= '0' && c <= '9') {
+				upperHex++
+			}
+		}
+		if float64(upperHex)/float64(len(name)) > 0.9 {
+			return true
+		}
+	}
+	return false
+}
+
+// looksLikeWord checks if a lowercase string looks like it could be a real word/name
+func looksLikeWord(name string) bool {
+	// Count consonant and vowel clusters
+	vowels := "aeiou"
+	consecutiveConsonants := 0
+	maxConsecutiveConsonants := 0
+
+	for _, c := range strings.ToLower(name) {
+		if !unicode.IsLetter(c) {
+			consecutiveConsonants = 0
+			continue
+		}
+		if strings.ContainsRune(vowels, c) {
+			consecutiveConsonants = 0
+		} else {
+			consecutiveConsonants++
+			if consecutiveConsonants > maxConsecutiveConsonants {
+				maxConsecutiveConsonants = consecutiveConsonants
+			}
+		}
+	}
+
+	// More than 4 consecutive consonants is unusual in English/common words
+	// e.g., "zcxczc" has many consecutive consonants
+	if maxConsecutiveConsonants > 4 {
+		return false
+	}
+
+	// Check for repetitive patterns like "c1c1c2"
+	if hasRepetitivePattern(name) {
+		return false
+	}
+
+	return true
+}
+
+// hasRepetitivePattern checks for suspicious repetitive patterns
+func hasRepetitivePattern(name string) bool {
+	// Check for 2-char patterns repeated (like "c1c1" or "zc zc")
+	if len(name) < 4 {
+		return false
+	}
+
+	for i := 0; i < len(name)-3; i++ {
+		pattern := name[i : i+2]
+		rest := name[i+2:]
+		if strings.Contains(rest, pattern) {
+			// Found a repeated 2-char pattern
+			return true
+		}
+	}
+
+	return false
 }
 
 // containsNBNSString checks if a string slice contains a specific string

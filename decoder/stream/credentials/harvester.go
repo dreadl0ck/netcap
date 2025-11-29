@@ -123,6 +123,10 @@ var (
 	// This is dynamically populated based on configuration
 	harvesterPortMapping = map[int]Harvester{}
 
+	// harvesterPorts maps harvester names to their configured ports
+	// Used for port filtering to reduce false positives
+	harvesterPorts = map[string][]int{}
+
 	// harvesterConfig stores the current harvester configuration
 	harvesterConfig *HarvestersConfigFile
 
@@ -158,6 +162,7 @@ func InitializeHarvesters(config *HarvestersConfigFile) error {
 	// Clear existing harvesters
 	tcpConnectionHarvesters = []Harvester{}
 	harvesterPortMapping = map[int]Harvester{}
+	harvesterPorts = map[string][]int{}
 
 	// Build harvesters list and port mappings from config
 	for _, hConfig := range config.Harvesters {
@@ -175,6 +180,9 @@ func InitializeHarvesters(config *HarvestersConfigFile) error {
 		// Add to active harvesters list
 		tcpConnectionHarvesters = append(tcpConnectionHarvesters, harvester)
 
+		// Store ports for this harvester (for port filtering)
+		harvesterPorts[harvester.Name] = hConfig.Ports
+
 		// Add port mappings
 		for _, port := range hConfig.Ports {
 			harvesterPortMapping[port] = harvester
@@ -190,6 +198,9 @@ func InitializeHarvesters(config *HarvestersConfigFile) error {
 		// Create custom harvester from regex
 		customHarvester := createCustomRegexHarvester(customConfig)
 		tcpConnectionHarvesters = append(tcpConnectionHarvesters, customHarvester)
+
+		// Store ports for this harvester (for port filtering)
+		harvesterPorts[customHarvester.Name] = customConfig.Ports
 
 		// Add port mappings for custom harvester
 		for _, port := range customConfig.Ports {
@@ -241,7 +252,7 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 
 	var (
 		found bool
-		tried *Harvester
+		tried = make(map[string]bool) // Track which harvesters we've already tried
 	)
 
 	// convert service port to integer
@@ -266,40 +277,69 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 			}
 		}
 		// save the harvester reference so we dont need to run it again
-		tried = &h
+		tried[h.Name] = true
 	}
 
 	if h, ok := harvesterPortMapping[srcPort]; ok {
-		if creds := h.HarvesterFunc(banner, ident, firstPacket); creds != nil { // write audit record
-			WriteCredentials(creds)
+		if !tried[h.Name] { // Don't run the same harvester twice
+			if creds := h.HarvesterFunc(banner, ident, firstPacket); creds != nil { // write audit record
+				WriteCredentials(creds)
 
-			// we found a match and will stop processing
-			if decoderconfig.Instance.StopAfterHarvesterMatch {
-				found = true
+				// we found a match and will stop processing
+				if decoderconfig.Instance.StopAfterHarvesterMatch {
+					found = true
+				}
 			}
+			tried[h.Name] = true
 		}
-		// save the harvester reference so we dont need to run it again
-		tried = &h
 	}
 
 	// if we dont have a match yet, match against all available harvesters
 	if !found {
 		// iterate over all harvesters
 		for _, h := range tcpConnectionHarvesters {
-			// if the port based first guess has not been found, do not run this harvester again
-			if &h != tried {
-				// execute harvester
-				if creds := h.HarvesterFunc(banner, ident, firstPacket); creds != nil { // write audit record
-					WriteCredentials(creds)
+			// Skip if we've already tried this harvester
+			if tried[h.Name] {
+				continue
+			}
 
-					// stop after a match if configured
-					if decoderconfig.Instance.StopAfterHarvesterMatch {
-						break
-					}
+			// When port filtering is enabled (default), only run harvesters on their configured ports
+			if decoderconfig.Instance.HarvesterPortFilter {
+				if !harvesterMatchesPort(h.Name, srcPort, dstPort) {
+					continue
+				}
+			}
+
+			// execute harvester
+			if creds := h.HarvesterFunc(banner, ident, firstPacket); creds != nil { // write audit record
+				WriteCredentials(creds)
+
+				// stop after a match if configured
+				if decoderconfig.Instance.StopAfterHarvesterMatch {
+					break
 				}
 			}
 		}
 	}
+}
+
+// harvesterMatchesPort checks if a harvester is configured for the given ports
+// When port filtering is enabled (default), harvesters only run on their configured ports
+// to prevent false positives from protocol mismatches (e.g., MQTT matching on DNS traffic)
+func harvesterMatchesPort(harvesterName string, srcPort, dstPort int) bool {
+	ports, ok := harvesterPorts[harvesterName]
+	if !ok || len(ports) == 0 {
+		// If no ports configured, do NOT run on any port to prevent false positives
+		// Harvesters must have explicit port configuration to run
+		return false
+	}
+
+	for _, port := range ports {
+		if port == srcPort || port == dstPort {
+			return true
+		}
+	}
+	return false
 }
 
 // GetHarvesters returns information about all registered credential harvesters

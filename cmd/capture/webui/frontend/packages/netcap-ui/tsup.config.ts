@@ -19,8 +19,8 @@
 
 import { defineConfig } from 'tsup';
 
-// Entry points that contain React components and need "use client" directive
-const clientEntries = {
+// All entry points - lib is included to ensure types are generated correctly
+const entries = {
   'index': 'src/index.ts',
   'providers/index': 'src/providers/index.ts',
   'components/index': 'src/components/index.ts',
@@ -28,10 +28,6 @@ const clientEntries = {
   'pages/index': 'src/pages/index.ts',
   'contexts/index': 'src/contexts/index.ts',
   'adapters/nextjs': 'src/adapters/nextjs.tsx',
-};
-
-// Entry points that are pure utilities (no React hooks/components)
-const utilityEntries = {
   'lib/index': 'src/lib/index.ts',
 };
 
@@ -59,31 +55,20 @@ const sharedExternals = [
   /^next\//,
 ];
 
-export default defineConfig([
-  // Client components build - with "use client" directive
-  // splitting: true ensures shared code (like contexts) use a single instance
-  {
-    entry: clientEntries,
-    format: ['cjs', 'esm'],
-    dts: true,
-    splitting: true,  // Enable code splitting to share context instances
-    sourcemap: true,
-    clean: true,
-    external: sharedExternals,
-    esbuildOptions(options) {
-      options.banner = {
-        js: '"use client";',
-      };
-    },
+export default defineConfig({
+  // All entries including lib - with "use client" directive for React components
+  // The lib/index entry is pure utilities but including here ensures types are generated
+  entry: entries,
+  format: ['cjs', 'esm'],
+  dts: true,
+  splitting: true,  // Enable code splitting to share context instances
+  sourcemap: true,
+  clean: true,
+  external: sharedExternals,
+  esbuildOptions(options) {
+    options.banner = {
+      js: '"use client";',
+    };
   },
-  // Utility/library build - no "use client" directive
-  {
-    entry: utilityEntries,
-    format: ['cjs', 'esm'],
-    dts: true,
-    splitting: true,  // Enable code splitting for consistency
-    sourcemap: true,
-    external: sharedExternals,
-  },
-]);
+});
 

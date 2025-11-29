@@ -74,19 +74,23 @@ func mqttHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentia
 		return nil
 	}
 
-	// Check packet type (first 4 bits)
-	packetType := data[0] & 0xF0
+	// For MQTT control packets, the lower 4 bits of the first byte are flags
+	// For CONNECT and CONNACK, these flags must be 0
+	// This strict check prevents false positives from other protocols like DNS
+	firstByte := data[0]
 
-	// Handle CONNECT packet (requires at least 10 bytes for minimal valid packet)
-	if packetType == mqttConnect {
+	// Handle CONNECT packet (0x10 exactly - type bits in upper nibble, flags=0 in lower nibble)
+	// Requires at least 10 bytes for minimal valid packet
+	if firstByte == 0x10 {
 		if len(data) < 10 {
 			return nil
 		}
 		return parseMQTTConnect(data, ident, ts)
 	}
 
-	// Handle CONNACK packet (authentication result) - only 4 bytes needed
-	if packetType == mqttConnack {
+	// Handle CONNACK packet (0x20 exactly - type bits in upper nibble, flags=0 in lower nibble)
+	// Only 4 bytes needed for minimal CONNACK
+	if firstByte == 0x20 {
 		return parseMQTTConnack(data, ident, ts)
 	}
 
@@ -271,15 +275,33 @@ func parseMQTTConnack(data []byte, ident string, ts time.Time) *types.Credential
 		return nil
 	}
 
+	// CONNACK packet type byte must be exactly 0x20 (no flags in lower 4 bits)
+	// This prevents false positives from DNS traffic where transaction ID might start with 0x2x
+	if data[0] != 0x20 {
+		return nil
+	}
+
 	// Parse remaining length
 	remainingLen, lenBytes := decodeMQTTLength(data[1:])
-	if remainingLen < 2 || 1+lenBytes+remainingLen > len(data) {
+
+	// CONNACK remaining length must be exactly 2 for MQTT 3.1.1
+	// (session present flag + return code)
+	// This strict check prevents false positives from other protocols
+	if remainingLen != 2 {
+		return nil
+	}
+
+	if 1+lenBytes+remainingLen > len(data) {
 		return nil
 	}
 
 	offset := 1 + lenBytes
 
-	// Skip session present flag
+	// Session present byte must be 0 or 1 (single bit flag)
+	sessionPresent := data[offset]
+	if sessionPresent > 1 {
+		return nil
+	}
 	offset++
 
 	// Return code

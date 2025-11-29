@@ -72,6 +72,7 @@ var DefaultConfig = &Config{
 	HarvesterBannerSize:           512,
 	BannerSize:                    512,
 	StopAfterHarvesterMatch:       true,
+	HarvesterPortFilter:           true,
 	StopAfterServiceProbeMatch:    true,
 	IgnoreDecoderInitErrors:       true,
 	RemoveClosedStreams:           false,
@@ -157,6 +158,11 @@ type Config struct {
 
 	// stop processing the conversation when the first credential harvester returns a result
 	StopAfterHarvesterMatch bool
+
+	// HarvesterPortFilter when enabled (default: true), only invokes harvesters on their configured ports
+	// This prevents false positives from harvesters matching unrelated protocol traffic
+	// Set to false to run all harvesters against all traffic (legacy behavior)
+	HarvesterPortFilter bool
 
 	// stop processing the conversation when the first service probe returns a result
 	StopAfterServiceProbeMatch bool

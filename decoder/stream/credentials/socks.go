@@ -22,6 +22,7 @@ package credentials
 import (
 	"fmt"
 	"time"
+	"unicode"
 
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -39,36 +40,37 @@ const serviceSOCKS = "SOCKS"
 const (
 	socks4Version = 0x04
 	socks5Version = 0x05
-	
+
 	// SOCKS5 authentication methods
-	socksAuthNone          = 0x00
-	socksAuthGSSAPI        = 0x01
-	socksAuthUserPass      = 0x02
-	socksAuthNoAcceptable  = 0xFF
-	
+	socksAuthNone         = 0x00
+	socksAuthGSSAPI       = 0x01
+	socksAuthUserPass     = 0x02
+	socksAuthNoAcceptable = 0xFF
+
 	// SOCKS5 user/pass auth version
-	socksUserPassVersion   = 0x01
-	
+	socksUserPassVersion = 0x01
+
 	// SOCKS5 reply codes
-	socksReplySuccess      = 0x00
-	socksReplyGeneralFail  = 0x01
-	socksReplyNotAllowed   = 0x02
-	socksReplyNetUnreach   = 0x03
-	socksReplyHostUnreach  = 0x04
-	socksReplyConnRefused  = 0x05
-	socksReplyTTLExpired   = 0x06
-	socksReplyCmdNotSupp   = 0x07
-	socksReplyAddrNotSupp  = 0x08
-	
+	socksReplySuccess     = 0x00
+	socksReplyGeneralFail = 0x01
+	socksReplyNotAllowed  = 0x02
+	socksReplyNetUnreach  = 0x03
+	socksReplyHostUnreach = 0x04
+	socksReplyConnRefused = 0x05
+	socksReplyTTLExpired  = 0x06
+	socksReplyCmdNotSupp  = 0x07
+	socksReplyAddrNotSupp = 0x08
+
 	// SOCKS4 reply codes
-	socks4ReplyGranted     = 0x5A
-	socks4ReplyFailed      = 0x5B
-	socks4ReplyNoIdentd    = 0x5C
-	socks4ReplyIdentdFail  = 0x5D
+	socks4ReplyGranted    = 0x5A
+	socks4ReplyFailed     = 0x5B
+	socks4ReplyNoIdentd   = 0x5C
+	socks4ReplyIdentdFail = 0x5D
 )
 
 // socksHarvesterFunc extracts credentials from SOCKS proxy authentication
 // Supports SOCKS4 (username only) and SOCKS5 (username/password)
+// Note: Port filtering is now handled centrally by the harvester engine (HarvesterPortFilter setting)
 func socksHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	if len(data) < 3 {
 		return nil
@@ -92,6 +94,37 @@ func socksHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credenti
 	return nil
 }
 
+// isValidCredentialString checks if a string looks like a valid credential (username or password)
+// Returns false for strings that contain non-printable characters or look like garbage
+func isValidCredentialString(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+
+	// Check for non-printable or non-ASCII characters
+	for _, c := range s {
+		// Must be printable ASCII (32-126)
+		if c < 32 || c > 126 {
+			return false
+		}
+	}
+
+	// Count alphanumeric characters
+	alphanumCount := 0
+	for _, c := range s {
+		if unicode.IsLetter(c) || unicode.IsDigit(c) {
+			alphanumCount++
+		}
+	}
+
+	// At least 50% should be alphanumeric for a reasonable credential
+	if len(s) > 2 && float64(alphanumCount)/float64(len(s)) < 0.5 {
+		return false
+	}
+
+	return true
+}
+
 // parseSOCKS5UserPass extracts username/password from SOCKS5 auth request
 // Format: VER(1) + ULEN(1) + UNAME(ULEN) + PLEN(1) + PASSWD(PLEN)
 func parseSOCKS5UserPass(data []byte, ident string, ts time.Time) *types.Credentials {
@@ -101,23 +134,35 @@ func parseSOCKS5UserPass(data []byte, ident string, ts time.Time) *types.Credent
 	}
 
 	ulen := int(data[1])
-	if ulen == 0 || len(data) < 2+ulen+1 {
+	// Sanity check: username length should be reasonable (1-255 chars)
+	if ulen == 0 || ulen > 255 || len(data) < 2+ulen+1 {
 		return nil
 	}
 
 	username := string(data[2 : 2+ulen])
-	
+
+	// Validate username contains printable characters
+	if !isValidCredentialString(username) {
+		return nil
+	}
+
 	plenOffset := 2 + ulen
 	if plenOffset >= len(data) {
 		return nil
 	}
-	
+
 	plen := int(data[plenOffset])
-	if plen == 0 || plenOffset+1+plen > len(data) {
+	// Sanity check: password length should be reasonable (1-255 chars)
+	if plen == 0 || plen > 255 || plenOffset+1+plen > len(data) {
 		return nil
 	}
 
 	password := string(data[plenOffset+1 : plenOffset+1+plen])
+
+	// Validate password contains printable characters
+	if !isValidCredentialString(password) {
+		return nil
+	}
 
 	return &types.Credentials{
 		Timestamp:    ts.UnixNano(),
@@ -146,7 +191,7 @@ func parseSOCKS4Request(data []byte, ident string, ts time.Time) *types.Credenti
 
 	// Find the NULL terminator for USERID (starts at offset 8)
 	useridEnd := -1
-	for i := 8; i < len(data); i++ {
+	for i := 8; i < len(data) && i < 264; i++ { // Limit search to reasonable length
 		if data[i] == 0x00 {
 			useridEnd = i
 			break
@@ -158,7 +203,17 @@ func parseSOCKS4Request(data []byte, ident string, ts time.Time) *types.Credenti
 		return nil
 	}
 
+	// Sanity check: username length should be reasonable
+	if useridEnd-8 > 255 {
+		return nil
+	}
+
 	username := string(data[8:useridEnd])
+
+	// Validate username contains printable characters
+	if !isValidCredentialString(username) {
+		return nil
+	}
 
 	return &types.Credentials{
 		Timestamp:    ts.UnixNano(),
@@ -208,4 +263,3 @@ var socksHarvester = Harvester{
 	Description:   "SOCKS Proxy Protocol - captures proxy authentication credentials (SOCKS4/SOCKS5)",
 	HarvesterFunc: socksHarvesterFunc,
 }
-
