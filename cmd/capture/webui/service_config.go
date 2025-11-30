@@ -48,7 +48,7 @@ func DefaultServiceConfig() *ServiceConfig {
 		MaxStorageBytes:       10 * 1024 * 1024 * 1024, // 10GB
 		MaxIssueReportsPerDay: 5,                       // 5 issue reports per IP per day
 		PreloadLargestN:       0,                       // 0 = load all files
-		EnforceMaxSizePreload: false,                   // Don't enforce max size by default for preloaded pcaps
+		EnforceMaxSizePreload: true,                    // enforce max size by default for preloaded pcaps
 	}
 }
 

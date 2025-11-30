@@ -45,10 +45,12 @@ import {
   Select,
   MenuItem,
   FormControl,
+  FormControlLabel,
   InputLabel,
   TablePagination,
   Alert,
   Snackbar,
+  Switch,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -56,39 +58,59 @@ import {
   FileUpload as ImportIcon,
   FileDownload as ExportIcon,
   Close as CloseIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import useSWR from 'swr';
 import { useNetcapRouter, useNetcapApi } from '../hooks';
 import Layout from '../components/Layout';
 import type { ServiceProbeInfo, TestProbeRequest, TestProbeResponse } from '../lib/api';
 import type { api as apiType } from '../lib/api';
-import { RegexBlock } from '../components/RegexHighlight';
 import { SyntaxHighlightedTextArea } from '../components/SyntaxHighlightedInput';
 
 export default function ServiceProbes() {
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  
+  // Debounce search term to prevent re-fetching on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
   
   // Initialize search term from URL parameter
   useEffect(() => {
     if (router.isReady && router.query.search && typeof router.query.search === 'string') {
       setSearchTerm(router.query.search);
+      setDebouncedSearchTerm(router.query.search);
       setPage(0);
     }
   }, [router.isReady, router.query.search]);
+
+  // Handle create mode from URL parameter (e.g., /probes?create=true&banner=...)
+  useEffect(() => {
+    if (router.isReady && router.query.create === 'true') {
+      // Open create modal
+      setCreateModalOpen(true);
+      // Pre-fill banner as test input if provided
+      if (router.query.banner && typeof router.query.banner === 'string') {
+        setCreateTestInput(router.query.banner);
+      }
+      // Clear URL parameters after handling
+      router.replace('/probes', undefined, { shallow: true });
+    }
+  }, [router.isReady, router.query.create, router.query.banner]);
   const [protocol, setProtocol] = useState('all');
   const [service, setService] = useState('all');
   const [matchType, setMatchType] = useState('all');
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [testModalOpen, setTestModalOpen] = useState(false);
   const [selectedProbe, setSelectedProbe] = useState<ServiceProbeInfo | null>(null);
   const [editForm, setEditForm] = useState<Partial<ServiceProbeInfo>>({});
-  const [testPattern, setTestPattern] = useState('');
-  const [testInput, setTestInput] = useState('');
-  const [testResult, setTestResult] = useState<TestProbeResponse | null>(null);
   const [snackbar, setSnackbar] = useState<{open: boolean; message: string; severity: 'success' | 'error'}>({
     open: false,
     message: '',
@@ -97,12 +119,46 @@ export default function ServiceProbes() {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
+  // Test within edit modal
+  const [editTestInput, setEditTestInput] = useState('');
+  const [editTestResult, setEditTestResult] = useState<TestProbeResponse | null>(null);
+  const [editTestLoading, setEditTestLoading] = useState(false);
+  
+  // Create modal state
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<{
+    service: string;
+    pattern: string;
+    product: string;
+    version: string;
+    info: string;
+    hostname: string;
+    os: string;
+    deviceType: string;
+    protocol: string;
+    enabled: boolean;
+  }>({
+    service: '',
+    pattern: '',
+    product: '',
+    version: '',
+    info: '',
+    hostname: '',
+    os: '',
+    deviceType: '',
+    protocol: 'TCP',
+    enabled: true,
+  });
+  const [createTestInput, setCreateTestInput] = useState('');
+  const [createTestResult, setCreateTestResult] = useState<TestProbeResponse | null>(null);
+  const [createTestLoading, setCreateTestLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
 
   // Fetch service probes with filters
   const { data: probesData, error: probesError, mutate } = useSWR(
-    ['service-probes', searchTerm, protocol, service, matchType, page, rowsPerPage],
+    ['service-probes', debouncedSearchTerm, protocol, service, matchType, page, rowsPerPage],
     () => api.getServiceProbes({
-      search: searchTerm || undefined,
+      search: debouncedSearchTerm || undefined,
       protocol: protocol !== 'all' ? protocol : undefined,
       service: service !== 'all' ? service : undefined,
       matchType: matchType !== 'all' ? matchType : undefined,
@@ -127,16 +183,13 @@ export default function ServiceProbes() {
       sslPorts: probe.sslPorts || [],
       cpes: probe.cpes || [],
     });
+    // Reset test state for edit modal
+    setEditTestInput('');
+    setEditTestResult(null);
+    setEditTestLoading(false);
     setEditModalOpen(true);
   };
 
-  const handleTestClick = (probe: ServiceProbeInfo) => {
-    setSelectedProbe(probe);
-    setTestPattern(probe.pattern);
-    setTestInput('');
-    setTestResult(null);
-    setTestModalOpen(true);
-  };
 
   const handleSaveEdit = async () => {
     if (!selectedProbe) return;
@@ -159,26 +212,137 @@ export default function ServiceProbes() {
     }
   };
 
-  const handleTest = async () => {
+
+  // Test pattern within the edit modal using the current editForm.pattern
+  const handleEditTest = async () => {
+    if (!editForm.pattern || !editTestInput) return;
+    
+    setEditTestLoading(true);
     try {
       const request: TestProbeRequest = {
-        pattern: testPattern,
-        sampleInput: testInput,
+        pattern: editForm.pattern,
+        sampleInput: editTestInput,
       };
       const result = await api.testServiceProbe(request);
-      setTestResult(result);
+      setEditTestResult(result);
     } catch (error) {
-      setTestResult({
+      setEditTestResult({
         matches: false,
         capturedGroups: {},
         error: error instanceof Error ? error.message : 'Unknown error',
       });
+    } finally {
+      setEditTestLoading(false);
     }
   };
 
   const handleExport = () => {
     const url = api.exportServiceProbes();
     window.open(url, '_blank');
+  };
+
+  // Open create modal
+  const handleOpenCreate = () => {
+    setCreateForm({
+      service: '',
+      pattern: '',
+      product: '',
+      version: '',
+      info: '',
+      hostname: '',
+      os: '',
+      deviceType: '',
+      protocol: 'TCP',
+      enabled: true,
+    });
+    setCreateTestInput('');
+    setCreateTestResult(null);
+    setCreateTestLoading(false);
+    setCreateModalOpen(true);
+  };
+
+  // Test pattern in create modal
+  const handleCreateTest = async () => {
+    if (!createForm.pattern || !createTestInput) return;
+    
+    setCreateTestLoading(true);
+    try {
+      const request: TestProbeRequest = {
+        pattern: createForm.pattern,
+        sampleInput: createTestInput,
+      };
+      const result = await api.testServiceProbe(request);
+      setCreateTestResult(result);
+    } catch (error) {
+      setCreateTestResult({
+        matches: false,
+        capturedGroups: {},
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    } finally {
+      setCreateTestLoading(false);
+    }
+  };
+
+  // Save new probe
+  const handleCreateProbe = async () => {
+    if (!createForm.service || !createForm.pattern) {
+      setSnackbar({
+        open: true,
+        message: 'Service name and pattern are required',
+        severity: 'error',
+      });
+      return;
+    }
+
+    setCreateLoading(true);
+    try {
+      await api.createServiceProbe({
+        service: createForm.service,
+        pattern: createForm.pattern,
+        product: createForm.product || undefined,
+        version: createForm.version || undefined,
+        info: createForm.info || undefined,
+        hostname: createForm.hostname || undefined,
+        os: createForm.os || undefined,
+        deviceType: createForm.deviceType || undefined,
+        protocol: createForm.protocol,
+        enabled: createForm.enabled,
+      });
+      setSnackbar({
+        open: true,
+        message: 'Service probe created successfully',
+        severity: 'success',
+      });
+      setCreateModalOpen(false);
+      mutate(); // Refresh the list
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: `Failed to create probe: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: 'error',
+      });
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  const handleToggleEnabled = async (probe: ServiceProbeInfo, enabled: boolean) => {
+    try {
+      await api.toggleServiceProbe(probe.id, enabled);
+      setSnackbar({
+        open: true,
+        message: `Probe "${probe.service}" ${enabled ? 'enabled' : 'disabled'}`,
+        severity: 'success',
+      });
+      mutate(); // Refresh the data
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: `Failed to toggle probe: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        severity: 'error',
+      });
+    }
   };
 
   const handleImport = async () => {
@@ -245,6 +409,15 @@ export default function ServiceProbes() {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={handleOpenCreate}
+              data-learn="Create Probe: Add a new service probe with a custom regex pattern to identify network services."
+            >
+              Create Probe
+            </Button>
             <Button
               variant="outlined"
               startIcon={<ImportIcon />}
@@ -356,13 +529,21 @@ export default function ServiceProbes() {
                 <TableCell><strong>Ports</strong></TableCell>
                 <TableCell><strong>Rarity</strong></TableCell>
                 <TableCell><strong>Type</strong></TableCell>
+                <TableCell><strong>Enabled</strong></TableCell>
                 <TableCell align="right"><strong>Actions</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {probesData.probes.length > 0 ? (
                 probesData.probes.map((probe) => (
-                  <TableRow key={probe.id} hover>
+                  <TableRow 
+                    key={probe.id} 
+                    hover
+                    sx={{ 
+                      opacity: probe.enabled ? 1 : 0.5,
+                      bgcolor: probe.enabled ? 'inherit' : 'action.disabledBackground',
+                    }}
+                  >
                     <TableCell>
                       <Chip 
                         label={probe.protocol} 
@@ -424,17 +605,16 @@ export default function ServiceProbes() {
                         variant="outlined"
                       />
                     </TableCell>
+                    <TableCell>
+                      <Switch
+                        size="small"
+                        checked={probe.enabled}
+                        onChange={(e) => handleToggleEnabled(probe, e.target.checked)}
+                        color="success"
+                        data-learn="Enable/Disable: Toggle this probe on or off. Disabled probes are commented out in the file and won't be used for service detection."
+                      />
+                    </TableCell>
                     <TableCell align="right">
-                      <Tooltip title="Test probe">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleTestClick(probe)}
-                          data-learn="Test Probe: Open a dialog to test this probe's regex pattern against sample input to verify it matches correctly."
-                        >
-                          <TestIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
                       <Tooltip title="Edit probe">
                         <IconButton
                           size="small"
@@ -450,7 +630,7 @@ export default function ServiceProbes() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} align="center">
+                  <TableCell colSpan={9} align="center">
                     <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
                       {searchTerm || protocol !== 'all' || service !== 'all' || matchType !== 'all'
                         ? 'No service probes match your search criteria'
@@ -581,6 +761,103 @@ export default function ServiceProbes() {
                   data-learn="Rarity: Probe rarity score (1-9) where 1 is most common and 9 is rare. Affects the order in which probes are tried during service detection."
                 />
               </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={editForm.enabled ?? true}
+                      onChange={(e) => setEditForm({ ...editForm, enabled: e.target.checked })}
+                      color="success"
+                    />
+                  }
+                  label="Enabled"
+                  data-learn="Enabled: When disabled, this probe is commented out in the file and won't be used for service detection."
+                />
+              </Grid>
+
+              {/* Test Pattern Section */}
+              <Grid item xs={12}>
+                <Box sx={{ 
+                  mt: 2, 
+                  pt: 2, 
+                  borderTop: 1, 
+                  borderColor: 'divider'
+                }}>
+                  <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TestIcon fontSize="small" />
+                    Test Pattern
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    label="Sample Input"
+                    value={editTestInput}
+                    onChange={(e) => {
+                      setEditTestInput(e.target.value);
+                      // Clear previous result when input changes
+                      if (editTestResult) setEditTestResult(null);
+                    }}
+                    size="small"
+                    multiline
+                    rows={3}
+                    placeholder="Enter sample banner or service response to test against the pattern..."
+                    helperText="Enter the text you want to test the regex pattern against"
+                    sx={{ mb: 2 }}
+                    data-learn="Sample Input: Paste a sample service banner or response text to test if the regex pattern matches correctly and extracts the expected data."
+                  />
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={editTestLoading ? <CircularProgress size={16} /> : <TestIcon />}
+                    onClick={handleEditTest}
+                    disabled={!editTestInput || !editForm.pattern || editTestLoading}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                    data-learn="Test Pattern: Execute the regex pattern against the sample input to verify if it matches and see what data is captured by groups."
+                  >
+                    {editTestLoading ? 'Testing...' : 'Test Pattern'}
+                  </Button>
+                  {editTestResult && (
+                    <Box>
+                      {editTestResult.error ? (
+                        <Alert severity="error">
+                          <Typography variant="body2">
+                            <strong>Error:</strong> {editTestResult.error}
+                          </Typography>
+                        </Alert>
+                      ) : editTestResult.matches ? (
+                        <Alert severity="success">
+                          <Typography variant="body2" gutterBottom>
+                            <strong>Match Found!</strong>
+                          </Typography>
+                          {Object.keys(editTestResult.capturedGroups).length > 0 && (
+                            <>
+                              <Typography variant="body2" sx={{ mt: 1, mb: 0.5 }}>
+                                <strong>Captured Groups:</strong>
+                              </Typography>
+                              <Box component="pre" sx={{ 
+                                fontSize: '0.85rem', 
+                                bgcolor: 'rgba(0,0,0,0.1)', 
+                                p: 1, 
+                                borderRadius: 1,
+                                overflow: 'auto',
+                                maxHeight: 150,
+                              }}>
+                                {JSON.stringify(editTestResult.capturedGroups, null, 2)}
+                              </Box>
+                            </>
+                          )}
+                        </Alert>
+                      ) : (
+                        <Alert severity="warning">
+                          <Typography variant="body2">
+                            <strong>No Match:</strong> The pattern did not match the input.
+                          </Typography>
+                        </Alert>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
@@ -591,103 +868,6 @@ export default function ServiceProbes() {
           </DialogActions>
         </Dialog>
 
-        {/* Test Modal */}
-        <Dialog
-          open={testModalOpen}
-          onClose={() => setTestModalOpen(false)}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="h6">Test Service Probe</Typography>
-              <IconButton onClick={() => setTestModalOpen(false)} size="small">
-                <CloseIcon />
-              </IconButton>
-            </Box>
-          </DialogTitle>
-          <DialogContent dividers>
-            <Grid container spacing={2} sx={{ mt: 0.5 }}>
-              <Grid item xs={12}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary" gutterBottom>
-                    Pattern (Regex)
-                  </Typography>
-                  <RegexBlock pattern={testPattern} />
-                </Box>
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Sample Input"
-                  value={testInput}
-                  onChange={(e) => setTestInput(e.target.value)}
-                  size="small"
-                  multiline
-                  rows={5}
-                  placeholder="Enter sample banner or service response to test against the pattern..."
-                  helperText="Enter the text you want to test the regex pattern against"
-                  data-learn="Sample Input: Paste a sample service banner or response text to test if the regex pattern matches correctly and extracts the expected data."
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<TestIcon />}
-                  onClick={handleTest}
-                  disabled={!testInput}
-                  fullWidth
-                  data-learn="Test Pattern: Execute the regex pattern against the sample input to verify if it matches and see what data is captured by groups."
-                >
-                  Test Pattern
-                </Button>
-              </Grid>
-              {testResult && (
-                <Grid item xs={12}>
-                  {testResult.error ? (
-                    <Alert severity="error">
-                      <Typography variant="body2">
-                        <strong>Error:</strong> {testResult.error}
-                      </Typography>
-                    </Alert>
-                  ) : testResult.matches ? (
-                    <Alert severity="success">
-                      <Typography variant="body2" gutterBottom>
-                        <strong>Match Found!</strong>
-                      </Typography>
-                      {Object.keys(testResult.capturedGroups).length > 0 && (
-                        <>
-                          <Typography variant="body2" sx={{ mt: 1, mb: 0.5 }}>
-                            <strong>Captured Groups:</strong>
-                          </Typography>
-                          <Box component="pre" sx={{ 
-                            fontSize: '0.85rem', 
-                            bgcolor: 'rgba(0,0,0,0.1)', 
-                            p: 1, 
-                            borderRadius: 1,
-                            overflow: 'auto',
-                          }}>
-                            {JSON.stringify(testResult.capturedGroups, null, 2)}
-                          </Box>
-                        </>
-                      )}
-                    </Alert>
-                  ) : (
-                    <Alert severity="warning">
-                      <Typography variant="body2">
-                        <strong>No Match:</strong> The pattern did not match the input.
-                      </Typography>
-                    </Alert>
-                  )}
-                </Grid>
-              )}
-            </Grid>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setTestModalOpen(false)}>Close</Button>
-          </DialogActions>
-        </Dialog>
 
         {/* Import Dialog */}
         <Dialog
@@ -740,6 +920,214 @@ export default function ServiceProbes() {
               data-learn="Import: Upload and process the selected nmap-service-probes file, replacing the current database. A backup is created first."
             >
               {importing ? <CircularProgress size={24} /> : 'Import'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Create Probe Modal */}
+        <Dialog
+          open={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h6">Create New Service Probe</Typography>
+              <IconButton onClick={() => setCreateModalOpen(false)} size="small">
+                <CloseIcon />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent dividers>
+            <Grid container spacing={2} sx={{ mt: 0.5 }}>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Service Name"
+                  value={createForm.service}
+                  onChange={(e) => setCreateForm({ ...createForm, service: e.target.value })}
+                  size="small"
+                  required
+                  placeholder="e.g., http, ssh, mysql"
+                  helperText="The service/protocol name this probe identifies"
+                  data-learn="Service Name: The primary service or protocol name that this probe detects (e.g., http, ssh, smtp, mysql)."
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Protocol</InputLabel>
+                  <Select
+                    value={createForm.protocol}
+                    label="Protocol"
+                    onChange={(e) => setCreateForm({ ...createForm, protocol: e.target.value })}
+                  >
+                    <MenuItem value="TCP">TCP</MenuItem>
+                    <MenuItem value="UDP">UDP</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <SyntaxHighlightedTextArea
+                  syntaxType="regex"
+                  value={createForm.pattern}
+                  onChange={(value) => setCreateForm({ ...createForm, pattern: value })}
+                  label="Pattern (Regex)"
+                  placeholder="Enter regex pattern to match service banner..."
+                  helperText="Regular expression pattern to match service banner. Use capture groups () to extract version info."
+                  rows={3}
+                  fullWidth
+                  size="small"
+                  data-learn="Pattern: Regular expression pattern to match against service banners and responses. Use capture groups () to extract version info, product names, etc."
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Product"
+                  value={createForm.product}
+                  onChange={(e) => setCreateForm({ ...createForm, product: e.target.value })}
+                  size="small"
+                  placeholder="e.g., Apache httpd, OpenSSH"
+                  helperText="Can use $1, $2 to reference capture groups"
+                  data-learn="Product Name: The specific product or software implementation name (e.g., Apache httpd, OpenSSH). Can use capture groups like $1, $2."
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Version"
+                  value={createForm.version}
+                  onChange={(e) => setCreateForm({ ...createForm, version: e.target.value })}
+                  size="small"
+                  placeholder="e.g., $1.$2"
+                  helperText="Use capture groups like $1.$2"
+                  data-learn="Version: Version string extraction pattern using capture groups from the regex (e.g., $1.$2 to combine groups into version number)."
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="Info"
+                  value={createForm.info}
+                  onChange={(e) => setCreateForm({ ...createForm, info: e.target.value })}
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  label="OS"
+                  value={createForm.os}
+                  onChange={(e) => setCreateForm({ ...createForm, os: e.target.value })}
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={createForm.enabled}
+                      onChange={(e) => setCreateForm({ ...createForm, enabled: e.target.checked })}
+                      color="success"
+                    />
+                  }
+                  label="Enabled"
+                />
+              </Grid>
+
+              {/* Test Pattern Section */}
+              <Grid item xs={12}>
+                <Box sx={{ 
+                  mt: 2, 
+                  pt: 2, 
+                  borderTop: 1, 
+                  borderColor: 'divider'
+                }}>
+                  <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TestIcon fontSize="small" />
+                    Test Pattern
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    label="Sample Input (Banner)"
+                    value={createTestInput}
+                    onChange={(e) => {
+                      setCreateTestInput(e.target.value);
+                      if (createTestResult) setCreateTestResult(null);
+                    }}
+                    size="small"
+                    multiline
+                    rows={4}
+                    placeholder="Enter or paste a service banner to test..."
+                    helperText="Paste a service banner/response to test your regex pattern"
+                    sx={{ mb: 2 }}
+                    data-learn="Sample Input: Paste a sample service banner or response text to test if the regex pattern matches correctly and extracts the expected data."
+                  />
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={createTestLoading ? <CircularProgress size={16} /> : <TestIcon />}
+                    onClick={handleCreateTest}
+                    disabled={!createTestInput || !createForm.pattern || createTestLoading}
+                    fullWidth
+                    sx={{ mb: 2 }}
+                  >
+                    {createTestLoading ? 'Testing...' : 'Test Pattern'}
+                  </Button>
+                  {createTestResult && (
+                    <Box>
+                      {createTestResult.error ? (
+                        <Alert severity="error">
+                          <Typography variant="body2">
+                            <strong>Error:</strong> {createTestResult.error}
+                          </Typography>
+                        </Alert>
+                      ) : createTestResult.matches ? (
+                        <Alert severity="success">
+                          <Typography variant="body2" gutterBottom>
+                            <strong>Match Found!</strong>
+                          </Typography>
+                          {Object.keys(createTestResult.capturedGroups).length > 0 && (
+                            <>
+                              <Typography variant="body2" sx={{ mt: 1, mb: 0.5 }}>
+                                <strong>Captured Groups:</strong>
+                              </Typography>
+                              <Box component="pre" sx={{ 
+                                fontSize: '0.85rem', 
+                                bgcolor: 'rgba(0,0,0,0.1)', 
+                                p: 1, 
+                                borderRadius: 1,
+                                overflow: 'auto',
+                                maxHeight: 150,
+                              }}>
+                                {JSON.stringify(createTestResult.capturedGroups, null, 2)}
+                              </Box>
+                            </>
+                          )}
+                        </Alert>
+                      ) : (
+                        <Alert severity="warning">
+                          <Typography variant="body2">
+                            <strong>No Match:</strong> The pattern did not match the input.
+                          </Typography>
+                        </Alert>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setCreateModalOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleCreateProbe} 
+              variant="contained" 
+              color="primary"
+              disabled={!createForm.service || !createForm.pattern || createLoading}
+            >
+              {createLoading ? <CircularProgress size={24} /> : 'Create Probe'}
             </Button>
           </DialogActions>
         </Dialog>

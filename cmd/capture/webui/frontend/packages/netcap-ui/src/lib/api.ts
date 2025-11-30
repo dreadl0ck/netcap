@@ -110,6 +110,8 @@ function createNoOpApi(): NetcapApiClient {
     getServiceProbe: noOp as any,
     updateServiceProbe: noOpReturn({ success: false, message: '' }),
     testServiceProbe: noOpReturn({ matches: false, capturedGroups: {} }),
+    toggleServiceProbe: noOpReturn({ success: false, message: '', enabled: false }),
+    createServiceProbe: noOpReturn({ success: false, message: '' }),
     exportServiceProbes: () => '',
     importServiceProbes: noOpReturn({ success: false, message: '', importedCount: 0 }),
     getDecoderConfig: noOpReturn({ includeDecoders: '', excludeDecoders: '', enabledDecoders: [] }),
@@ -529,6 +531,7 @@ export interface ServiceProbeInfo {
   rawLine: string;
   lineNumber: number;
   probeProtocol: string;
+  enabled: boolean;
 }
 
 export interface ServiceProbesResponse {
@@ -1247,6 +1250,44 @@ function createApiWithBase(apiBase: string) {
       body: JSON.stringify(request),
     });
     if (!res.ok) throw new Error('Failed to test service probe');
+    return res.json();
+  },
+
+  async toggleServiceProbe(id: string, enabled: boolean): Promise<{success: boolean; message: string; enabled: boolean}> {
+    const res = await fetch(`${apiBase}/service-probes/${encodeURIComponent(id)}/toggle`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to toggle service probe');
+    }
+    return res.json();
+  },
+
+  async createServiceProbe(probe: {
+    service: string;
+    pattern: string;
+    product?: string;
+    version?: string;
+    info?: string;
+    hostname?: string;
+    os?: string;
+    deviceType?: string;
+    protocol?: string;
+    probeName?: string;
+    enabled?: boolean;
+  }): Promise<{success: boolean; message: string}> {
+    const res = await fetch(`${apiBase}/service-probes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(probe),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || 'Failed to create service probe');
+    }
     return res.json();
   },
 

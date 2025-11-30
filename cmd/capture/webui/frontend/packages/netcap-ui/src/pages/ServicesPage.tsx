@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -55,6 +55,7 @@ import {
   BarChart as BarChartIcon,
   Cable as CableIcon,
   Search as SearchIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
@@ -582,9 +583,8 @@ export default function ServicesPage() {
                     const rowKey = `${svc.ip}-${svc.port}-${idx}`;
                     const totalBytes = svc.bytesServer + svc.bytesClient;
                     return (
-                      <>
+                      <React.Fragment key={rowKey}>
                         <TableRow 
-                          key={rowKey}
                           data-row-key={rowKey}
                           hover
                           onClick={() => handleRowClick(rowKey)}
@@ -850,6 +850,21 @@ export default function ServicesPage() {
                                           View Probe
                                         </Button>
                                       )}
+                                      {svc.banner && (
+                                        <Button
+                                          data-learn="Create Probe: Create a new service probe using this service's banner as test input. Opens the Probes page with the banner pre-filled."
+                                          variant="outlined"
+                                          color="secondary"
+                                          startIcon={<AddIcon />}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            router.push(`/probes?create=true&banner=${encodeURIComponent(svc.banner)}`);
+                                          }}
+                                          size="small"
+                                        >
+                                          Create Probe
+                                        </Button>
+                                      )}
                                     </Box>
                                   </Grid>
                                 </Grid>
@@ -857,7 +872,7 @@ export default function ServicesPage() {
                             </Collapse>
                           </TableCell>
                         </TableRow>
-                      </>
+                      </React.Fragment>
                     );
                   })}
                 </TableBody>

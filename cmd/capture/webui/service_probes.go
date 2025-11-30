@@ -61,7 +61,11 @@ type ServiceProbeInfo struct {
 	RawLine       string   `json:"rawLine"`       // Original line from file
 	LineNumber    int      `json:"lineNumber"`    // Line number in file
 	ProbeProtocol string   `json:"probeProtocol"` // Protocol from Probe directive
+	Enabled       bool     `json:"enabled"`       // Whether the probe is enabled (not commented out)
 }
+
+// disabledProbePrefix is the prefix used to mark disabled probes in the file
+const disabledProbePrefix = "#DISABLED: "
 
 // ServiceProbesResponse represents the response with all service probe information
 type ServiceProbesResponse struct {
@@ -155,8 +159,18 @@ func parseServiceProbes(data string) ([]ServiceProbeInfo, error) {
 	for lineNum, line := range lines {
 		trimmed := strings.TrimSpace(line)
 
-		// Skip empty lines and comments
-		if len(trimmed) == 0 || strings.HasPrefix(trimmed, "#") {
+		// Skip empty lines
+		if len(trimmed) == 0 {
+			continue
+		}
+
+		// Check for disabled probe lines (lines starting with #DISABLED:)
+		isDisabled := false
+		if strings.HasPrefix(trimmed, disabledProbePrefix) {
+			isDisabled = true
+			trimmed = strings.TrimPrefix(trimmed, disabledProbePrefix)
+		} else if strings.HasPrefix(trimmed, "#") {
+			// Skip regular comments
 			continue
 		}
 
@@ -209,7 +223,7 @@ func parseServiceProbes(data string) ([]ServiceProbeInfo, error) {
 
 		// Parse match/softmatch directives
 		if (strings.HasPrefix(trimmed, "match ") || strings.HasPrefix(trimmed, "softmatch ")) && currentProbe != nil {
-			probe, err := parseMatchLine(trimmed, currentProbe, lineNum+1, line)
+			probe, err := parseMatchLine(trimmed, currentProbe, lineNum+1, line, !isDisabled)
 			if err == nil && probe != nil {
 				probes = append(probes, *probe)
 			}
@@ -249,7 +263,7 @@ func parseMatchLine(line string, currentProbe *struct {
 	ports      []int
 	sslPorts   []int
 	rarity     int
-}, lineNum int, rawLine string) (*ServiceProbeInfo, error) {
+}, lineNum int, rawLine string, enabled bool) (*ServiceProbeInfo, error) {
 	isSoftMatch := strings.HasPrefix(line, "softmatch ")
 	var prefix string
 	if isSoftMatch {
@@ -276,6 +290,7 @@ func parseMatchLine(line string, currentProbe *struct {
 		SendString:    currentProbe.sendString,
 		RawLine:       rawLine,
 		LineNumber:    lineNum,
+		Enabled:       enabled,
 	}
 
 	// Parse the pattern and metadata
@@ -367,8 +382,15 @@ func generateProbeID(probe *ServiceProbeInfo) string {
 }
 
 // handleServiceProbes returns all service probes with optional filtering and pagination
+// Also handles POST for creating new probes
 func (s *Server) handleServiceProbes(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		// Continue with listing
+	case http.MethodPost:
+		s.handleCreateServiceProbe(w, r)
+		return
+	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -455,14 +477,155 @@ func (s *Server) handleServiceProbes(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CreateServiceProbeRequest represents a request to create a new service probe
+type CreateServiceProbeRequest struct {
+	Service    string `json:"service"`
+	Pattern    string `json:"pattern"`
+	Product    string `json:"product"`
+	Version    string `json:"version"`
+	Info       string `json:"info"`
+	Hostname   string `json:"hostname"`
+	OS         string `json:"os"`
+	DeviceType string `json:"deviceType"`
+	Protocol   string `json:"protocol"`
+	ProbeName  string `json:"probeName"`
+	Enabled    bool   `json:"enabled"`
+}
+
+// handleCreateServiceProbe creates a new service probe
+func (s *Server) handleCreateServiceProbe(w http.ResponseWriter, r *http.Request) {
+	var req CreateServiceProbeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if req.Service == "" {
+		http.Error(w, "Service name is required", http.StatusBadRequest)
+		return
+	}
+	if req.Pattern == "" {
+		http.Error(w, "Pattern is required", http.StatusBadRequest)
+		return
+	}
+
+	// Set defaults
+	if req.Protocol == "" {
+		req.Protocol = "TCP"
+	}
+	if req.ProbeName == "" {
+		req.ProbeName = "NULL"
+	}
+
+	filePath := getServiceProbesFilePath()
+
+	// Read the file
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Find the right place to insert the new probe
+	// We'll look for the first Probe directive that matches the protocol
+	// or append to the end of the file
+	lines := strings.Split(string(data), "\n")
+
+	// Create the new match line
+	newProbe := &ServiceProbeInfo{
+		Service:    req.Service,
+		Pattern:    req.Pattern,
+		Product:    req.Product,
+		Version:    req.Version,
+		Info:       req.Info,
+		Hostname:   req.Hostname,
+		OS:         req.OS,
+		DeviceType: req.DeviceType,
+		Protocol:   req.Protocol,
+		ProbeName:  req.ProbeName,
+		Enabled:    req.Enabled,
+	}
+
+	newLine := reconstructMatchLine(newProbe)
+
+	// Find the best place to insert - after the last match/softmatch for the NULL probe of matching protocol
+	insertIdx := -1
+	inTargetProbe := false
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Look for Probe directive
+		if strings.HasPrefix(trimmed, "Probe ") {
+			parts := strings.Fields(trimmed)
+			if len(parts) >= 3 {
+				probeProtocol := parts[1]
+				probeName := parts[2]
+				// Check if this is a good probe to append to (same protocol, NULL probe preferred)
+				if strings.EqualFold(probeProtocol, req.Protocol) {
+					if probeName == req.ProbeName || probeName == "NULL" {
+						inTargetProbe = true
+					} else {
+						inTargetProbe = false
+					}
+				} else {
+					inTargetProbe = false
+				}
+			}
+		}
+
+		// Track the last match/softmatch line in our target probe section
+		if inTargetProbe && (strings.HasPrefix(trimmed, "match ") || strings.HasPrefix(trimmed, "softmatch ") ||
+			strings.HasPrefix(trimmed, disabledProbePrefix+"match ") || strings.HasPrefix(trimmed, disabledProbePrefix+"softmatch ")) {
+			insertIdx = i + 1
+		}
+	}
+
+	// If we didn't find a good place, append to the end
+	if insertIdx == -1 {
+		insertIdx = len(lines)
+	}
+
+	// Insert the new line
+	newLines := make([]string, 0, len(lines)+1)
+	newLines = append(newLines, lines[:insertIdx]...)
+	newLines = append(newLines, newLine)
+	newLines = append(newLines, lines[insertIdx:]...)
+
+	// Write back to file
+	newData := strings.Join(newLines, "\n")
+	if err := ioutil.WriteFile(filePath, []byte(newData), 0644); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to write file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Invalidate cache
+	serviceProbesCache.Lock()
+	serviceProbesCache.probes = nil
+	serviceProbesCache.Unlock()
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Service probe created successfully",
+	})
+}
+
 // handleServiceProbeRouter routes requests for individual probes
 func (s *Server) handleServiceProbeRouter(w http.ResponseWriter, r *http.Request) {
-	// Extract ID from path: /api/service-probes/{id}
+	// Extract path parts: /api/service-probes/{id} or /api/service-probes/{id}/toggle
 	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 	if len(pathParts) < 3 {
 		http.Error(w, "Invalid path", http.StatusBadRequest)
 		return
 	}
+
+	// Check if this is a toggle request: /api/service-probes/{id}/toggle
+	if len(pathParts) >= 4 && pathParts[len(pathParts)-1] == "toggle" {
+		s.handleToggleServiceProbe(w, r)
+		return
+	}
+
 	id := pathParts[len(pathParts)-1]
 
 	switch r.Method {
@@ -505,13 +668,6 @@ func (s *Server) handleUpdateServiceProbe(w http.ResponseWriter, r *http.Request
 	}
 
 	filePath := getServiceProbesFilePath()
-
-	// Backup the file first
-	backupPath := filePath + ".backup." + time.Now().Format("20060102-150405")
-	if err := copyFile(filePath, backupPath); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to create backup: %v", err), http.StatusInternalServerError)
-		return
-	}
 
 	// Read the file
 	data, err := ioutil.ReadFile(filePath)
@@ -572,6 +728,11 @@ func (s *Server) handleUpdateServiceProbe(w http.ResponseWriter, r *http.Request
 func reconstructMatchLine(probe *ServiceProbeInfo) string {
 	var buf bytes.Buffer
 
+	// Add disabled prefix if not enabled
+	if !probe.Enabled {
+		buf.WriteString(disabledProbePrefix)
+	}
+
 	// Write match/softmatch
 	if probe.IsSoftMatch {
 		buf.WriteString("softmatch ")
@@ -622,6 +783,115 @@ func reconstructMatchLine(probe *ServiceProbeInfo) string {
 	}
 
 	return buf.String()
+}
+
+// ToggleServiceProbeRequest represents a request to toggle a probe's enabled state
+type ToggleServiceProbeRequest struct {
+	Enabled bool `json:"enabled"`
+}
+
+// handleToggleServiceProbe toggles a service probe's enabled state
+func (s *Server) handleToggleServiceProbe(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract ID from path: /api/service-probes/{id}/toggle
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(pathParts) < 4 {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+	id := pathParts[len(pathParts)-2]
+
+	var req ToggleServiceProbeRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	filePath := getServiceProbesFilePath()
+
+	// Read the file
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	lines := strings.Split(string(data), "\n")
+	probes, err := loadServiceProbes()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to load probes: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Find the probe to toggle
+	var targetProbe *ServiceProbeInfo
+	for _, probe := range probes {
+		if probe.ID == id {
+			targetProbe = &probe
+			break
+		}
+	}
+
+	if targetProbe == nil {
+		http.Error(w, "Probe not found", http.StatusNotFound)
+		return
+	}
+
+	// Update the line in the file
+	lineIdx := targetProbe.LineNumber - 1
+	if lineIdx >= 0 && lineIdx < len(lines) {
+		currentLine := lines[lineIdx]
+		var newLine string
+
+		if req.Enabled {
+			// Enable: remove the #DISABLED: prefix if present
+			if strings.HasPrefix(strings.TrimSpace(currentLine), disabledProbePrefix) {
+				// Preserve leading whitespace
+				leadingSpaces := len(currentLine) - len(strings.TrimLeft(currentLine, " \t"))
+				newLine = currentLine[:leadingSpaces] + strings.TrimPrefix(strings.TrimSpace(currentLine), disabledProbePrefix)
+			} else {
+				newLine = currentLine // Already enabled
+			}
+		} else {
+			// Disable: add the #DISABLED: prefix if not present
+			if !strings.HasPrefix(strings.TrimSpace(currentLine), disabledProbePrefix) {
+				// Preserve leading whitespace
+				leadingSpaces := len(currentLine) - len(strings.TrimLeft(currentLine, " \t"))
+				newLine = currentLine[:leadingSpaces] + disabledProbePrefix + strings.TrimSpace(currentLine)
+			} else {
+				newLine = currentLine // Already disabled
+			}
+		}
+		lines[lineIdx] = newLine
+	}
+
+	// Write back to file
+	newData := strings.Join(lines, "\n")
+	if err := ioutil.WriteFile(filePath, []byte(newData), 0644); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to write file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Invalidate cache
+	serviceProbesCache.Lock()
+	serviceProbesCache.probes = nil
+	serviceProbesCache.Unlock()
+
+	status := "disabled"
+	if req.Enabled {
+		status = "enabled"
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": fmt.Sprintf("Service probe %s", status),
+		"enabled": req.Enabled,
+	})
 }
 
 // handleTestServiceProbe tests a probe regex against sample input
