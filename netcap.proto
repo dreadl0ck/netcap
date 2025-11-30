@@ -2200,6 +2200,7 @@ message File {
   repeated string YaraMatches = 32; // Matched YARA rules
   bool IsKnownMalware = 33;         // Hash matches known malware database
   string ThreatName = 34;           // Malware family name if known
+  string Protocol = 35;             // Protocol used for file transfer (HTTP, FTP, SMB, SMTP, IRC)
 }
 
 // SMTPResponse SMTP response type

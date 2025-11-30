@@ -321,7 +321,8 @@ export interface ExtractedFileInfo {
   size: number;
   modifiedTime: number;
   mimeType: string;
-  hash?: string;  // SHA256 hash from File audit record
+  hash?: string;     // SHA256 hash from File audit record
+  protocol?: string; // Protocol used for file transfer (HTTP, FTP, SMB, SMTP, IRC)
 }
 
 export interface ExtractedFilesResponse {

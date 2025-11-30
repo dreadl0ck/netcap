@@ -79,6 +79,7 @@ func (h *HTTPFileExtractor) ExtractFile(conv *core.ConversationInfo, data []byte
 		0,  // depth - could be enhanced to track pipelined requests
 		"", // parent file ID
 		metadata.FlowDirection,
+		"HTTP", // protocol
 	)
 }
 

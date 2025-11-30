@@ -73,6 +73,7 @@ func (f *FTPFileExtractor) ExtractFile(conv *core.ConversationInfo, data []byte,
 		0,  // depth
 		"", // parent file ID
 		metadata.FlowDirection,
+		"FTP", // protocol
 	)
 }
 

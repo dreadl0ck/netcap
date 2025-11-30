@@ -64,6 +64,7 @@ func (i *IRCFileExtractor) ExtractFile(conv *core.ConversationInfo, data []byte,
 		0,  // depth
 		"", // parent file ID
 		metadata.FlowDirection,
+		"IRC", // protocol
 	)
 }
 

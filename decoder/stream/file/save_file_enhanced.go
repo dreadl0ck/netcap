@@ -39,6 +39,15 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+// sanitizeStringFields sanitizes string fields to ensure valid UTF-8 for protobuf encoding.
+func sanitizeStringFields(source, host, contentType, cTypeDetected, flowDirection string) (string, string, string, string, string) {
+	return utils.SanitizeUTF8(source),
+		utils.SanitizeUTF8(host),
+		utils.SanitizeUTF8(contentType),
+		utils.SanitizeUTF8(cTypeDetected),
+		utils.SanitizeUTF8(flowDirection)
+}
+
 var saveFileLog = zap.NewNop()
 
 // SetSaveFileLogger sets the logger for file saving operations
@@ -52,6 +61,7 @@ func SetSaveFileLogger(logger *zap.Logger) {
 // - Depth tracking for nested files
 // - Parent file tracking
 // - Flow direction tracking
+// - Protocol tracking (HTTP, FTP, SMB, SMTP, IRC, etc.)
 // - Configuration-based filtering and settings
 func SaveFileEnhanced(
 	conv *core.ConversationInfo,
@@ -64,6 +74,7 @@ func SaveFileEnhanced(
 	depth int,
 	parentFileID string,
 	flowDirection string,
+	protocol string,
 ) error {
 	saveFileLog.Info("SaveFileEnhanced",
 		zap.String("source", source),
@@ -74,6 +85,7 @@ func SaveFileEnhanced(
 		zap.String("host", host),
 		zap.Int("depth", depth),
 		zap.String("flowDirection", flowDirection),
+		zap.String("protocol", protocol),
 	)
 
 	// Check if file extraction is enabled globally
@@ -261,22 +273,26 @@ func SaveFileEnhanced(
 	// Perform security analysis on the file content
 	analysis := AnalyzeFile(body, fileName)
 
+	// Sanitize string fields to ensure valid UTF-8 for protobuf encoding
+	sanitizedSource, sanitizedHost, sanitizedContentType, sanitizedCTypeDetected, sanitizedFlowDirection :=
+		sanitizeStringFields(source, host, contentType, cTypeDetected, flowDirection)
+
 	// Write file record with security analysis fields
 	WriteFileEnhanced(&types.File{
 		Timestamp:           conv.FirstClientPacket.UnixNano(),
-		Name:                fileName,
+		Name:                utils.SanitizeUTF8(fileName),
 		Length:              length,
 		Hash:                hashes.MD5, // Keep for backward compatibility
 		Location:            target,
 		Ident:               conv.Ident,
-		Source:              source,
-		ContentType:         contentType,
-		ContentTypeDetected: cTypeDetected,
+		Source:              sanitizedSource,
+		ContentType:         sanitizedContentType,
+		ContentTypeDetected: sanitizedCTypeDetected,
 		SrcIP:               conv.ClientIP,
 		DstIP:               conv.ServerIP,
 		SrcPort:             conv.ServerPort,
 		DstPort:             conv.ClientPort,
-		Host:                host,
+		Host:                sanitizedHost,
 		Hashes: &types.FileHashes{
 			MD5:    hashes.MD5,
 			SHA1:   hashes.SHA1,
@@ -285,13 +301,14 @@ func SaveFileEnhanced(
 		Depth:         int32(depth),
 		MissingBytes:  0, // TODO: Track from reassembly
 		IsComplete:    err == nil,
-		ParentFileID:  parentFileID,
-		FlowDirection: flowDirection,
+		ParentFileID:  utils.SanitizeUTF8(parentFileID),
+		FlowDirection: sanitizedFlowDirection,
 		ConnectionUID: conv.Ident,
+		Protocol:      utils.SanitizeUTF8(protocol),
 		// Security analysis fields
 		Entropy:             analysis.Entropy,
 		MagicBytes:          analysis.MagicBytes,
-		TrueFileType:        analysis.TrueFileType,
+		TrueFileType:        utils.SanitizeUTF8(analysis.TrueFileType),
 		TypeMismatch:        analysis.TypeMismatch,
 		IsPEExecutable:      analysis.IsPEExecutable,
 		IsELFExecutable:     analysis.IsELFExecutable,
@@ -300,7 +317,7 @@ func SaveFileEnhanced(
 		IsPasswordProtected: analysis.IsPasswordProtected,
 		YaraMatches:         analysis.YaraMatches,
 		IsKnownMalware:      analysis.IsKnownMalware,
-		ThreatName:          analysis.ThreatName,
+		ThreatName:          utils.SanitizeUTF8(analysis.ThreatName),
 	})
 
 	return nil

@@ -429,20 +429,6 @@ export default function InjectPage() {
   return (
     <Layout title="Injection Rules">
       <Box>
-        {/* Warning Banner */}
-        <Alert 
-          severity="warning" 
-          sx={{ mb: 3, borderLeft: 4, borderLeftColor: 'warning.main' }}
-          icon={<SecurityIcon />}
-        >
-          <AlertTitle>Authorized Testing Only</AlertTitle>
-          <Typography variant="body2">
-            Injection rules are for <strong>authorized security testing</strong> only. 
-            Ensure you have proper authorization before enabling any rules that modify or inject network traffic.
-            Unauthorized use may violate laws and regulations.
-          </Typography>
-        </Alert>
-
         {/* Stats Overview */}
         <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap' }}>
           <Card sx={{ minWidth: 140 }}>

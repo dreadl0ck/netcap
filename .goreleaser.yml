@@ -18,6 +18,8 @@ builds:
       - darwin
     ldflags:
       - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap.GopacketVersion=v1.4.0 -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14 -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-2
+    flags:
+      - -trimpath
     goarch:
       - arm64
   - main: ./cmd
@@ -32,6 +34,7 @@ builds:
     ldflags:
       - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap.GopacketVersion=v1.4.0
     flags:
+      - -trimpath
       - -tags=nodpi
   - main: ./cmd
     id: netcap_nodpi
@@ -43,6 +46,7 @@ builds:
     ldflags:
       - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap.GopacketVersion=v1.4.0
     flags:
+      - -trimpath
       - -tags=nodpi
     goarch:
       - amd64

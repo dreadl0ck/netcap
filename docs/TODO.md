@@ -1,48 +1,32 @@
 # TODOs
 
-- NONSTANDARD_HTTP is gold info from dpi fire alert
-- Remove import path prefixes for compiled binaries to reduce size and obscure build path
-- Connections page: arrow up and down should change current file up and down when viewing a conversation 
-- RADIUS and UPnP credential extraction review 
 - Files page: only show the file name in the table and truncate the connection ident string, only show full filename in detail view. Also truncate the file name if it exceeds 50 chars.
 - Fingerprints table: the fingerprint hash should not line wrap. Prevent wrap and slightly decrease font size on smaller screens.
 - Credentials page: truncate usernames and passwords after 25 chars in the table, and colorise the Flow ident in the table view the same way as on connections page.
 - Connection detail view: add show secrets button, if a credential for that connection exists. Open the credentials page and filter for the flow ident.
 - Rename credentials to secrets
-- GRE audit records contain too little info to be useful. Improve.
-- failed to write proto: error encoding proto: proto: field "types.File.Source" contains invalid UTF-8
-- Extend File audit records with a field for the protocol name it was extracted from and show the info on Files page table and allow to filter for it.
-
 - webUI View records: Showing very large record types eg DeviceProfile, even a single profile could be too big to display. Truncate max output in backend to 2000 characters. 
-
-- TLS connections show SNIs not as credentials
-- Command to show capinfos for PCAP also in webUI
-
 - Files audit records: hash file content and only save each content once, eg html files in arp-dns all 404 dupes
-- Connections dont load sometimes, debug
-
 - integrate magika and invoke on files folder after extraction (github.com/google/magika/tree/main/go)
-
-- Analysis session format, storing and loading
-
-- failed to download databases: failed to fetch database metadata: server returned status 500 Internal Server Error for https://dbs.netcap.io/dbs/latest: Metadata not found
 - configure fingerbank lookups and caching
-
 - make it configurable per harvester if it runs only for the default port or for all streams. for some harvester it makes sense to runs them against all plaintext protos.
 - data mining on plaintext connection data: extract URLs, what looks like secrets, ctf flags etc
-
-- support to enable / disable individual service probes. regenerate the probe list with commented out if disabled.
+- add support to enable / disable individual service probes. regenerate the probe list with commented out entries if disabled.
 - support creating service probes on the services page service details: add create probe button, switch to probes page, open create modal and insert service banner 
-
 - software audit records: remove Vendor Field and use only Product? if Product info is empty, write the info we would have written into Vendor before as a fallback, or combine the two fields.
 - fix capture and inspect local results
+- dashboards feature: save and load dashboards, made of different charts. create a simple UI to rearrange charts and choose the audit record type, field and type of chart for each.
 - auto extract information from robots.txt and content security policy and use it to enrich audit records
 - records: rename Download All to Download Records + new Download CSV button to convert and download all records as CSV files (caution with gzip compression middleware causing issues again)
-
-- dashboards feature: save and load dashboards, made of different charts. create a simple UI to rearrange charts and choose the audit record type, field and type of chart for each.
-- dev mode: enable debugging with https://nextjs.org/docs/app/guides/mcp
-
 - integrate gohs with vectorscan on mac
+- Command to show capinfos for PCAP also in webUI
+- Analysis session format, storing and loading
+
+- NONSTANDARD_HTTP is good info from dpi, fire alert for this. Add quick filters for Connection Table, nonstandard HTTP is a good filter. Also add support to filter HTTP table for NONSTANDARD_HTTP as well.
+
+
+- fix dev mode: since moving frontend into pkg the live rebuild does not work anymore on changes
+- dev mode: enable debugging with https://nextjs.org/docs/app/guides/mcp
 
 ----
 

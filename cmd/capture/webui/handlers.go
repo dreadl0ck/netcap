@@ -2494,11 +2494,15 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Read File audit records to get hash information
-	fileHashMap := make(map[string]string) // path -> hash
+	// Read File audit records to get hash and protocol information
+	type fileAuditInfo struct {
+		Hash     string
+		Protocol string
+	}
+	fileInfoMap := make(map[string]fileAuditInfo) // filename -> {hash, protocol}
 	fileAuditPath := filepath.Join(outDir, "File.ncap.gz")
 	if _, err := os.Stat(fileAuditPath); err == nil {
-		// File audit exists, read it to get hashes
+		// File audit exists, read it to get hashes and protocols
 		reader, err := netio.Open(fileAuditPath, defaults.BufferSize)
 		if err == nil {
 			var file types.File
@@ -2510,15 +2514,19 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 					}
 					break
 				}
-				// Map location (relative path) to hash
-				if file.Location != "" && file.Hash != "" {
-					fileHashMap[file.Location] = file.Hash
-					//log.Printf("[WebUI] File audit record: Location=%s, Hash=%s", file.Location, file.Hash)
+				// Map by filename (base name of Location) for reliable matching
+				// Location paths may differ from current filesystem paths due to directory changes
+				if file.Location != "" {
+					filename := filepath.Base(file.Location)
+					fileInfoMap[filename] = fileAuditInfo{
+						Hash:     file.Hash,
+						Protocol: file.Protocol,
+					}
 				}
 			}
 			reader.Close()
 		}
-		log.Printf("[WebUI] Loaded %d file hashes from File audit records", len(fileHashMap))
+		log.Printf("[WebUI] Loaded %d file records from File audit records", len(fileInfoMap))
 	}
 
 	// Walk the files directory and collect file information
@@ -2559,9 +2567,15 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 		//log.Printf("[WebUI] Extracted file: name=%s, relPath=%s, mimeType=%s", info.Name(), relPath, mimeType)
 
-		// Add hash if available
-		if hash, ok := fileHashMap[relPath]; ok {
-			fileInfo["hash"] = hash
+		// Add hash and protocol if available from File audit records
+		// Match by filename since full paths may differ
+		if auditInfo, ok := fileInfoMap[info.Name()]; ok {
+			if auditInfo.Hash != "" {
+				fileInfo["hash"] = auditInfo.Hash
+			}
+			if auditInfo.Protocol != "" {
+				fileInfo["protocol"] = auditInfo.Protocol
+			}
 		}
 
 		extractedFiles = append(extractedFiles, fileInfo)

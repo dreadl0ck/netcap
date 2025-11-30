@@ -38,6 +38,8 @@ import {
   NavigateNext as NavigateNextIcon,
   ViewHeadline as ViewHeadlineIcon,
   GridOn as GridOnIcon,
+  KeyboardArrowUp as KeyboardArrowUpIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
 } from '@mui/icons-material';
 import { api, ConversationData } from '../lib/api';
 
@@ -49,6 +51,11 @@ interface ConversationModalProps {
   dstIP: string;
   dstPort: string;
   protocol: string;
+  // Navigation callbacks for switching between connections
+  onNavigatePrevious?: () => void;
+  onNavigateNext?: () => void;
+  hasPrevious?: boolean;
+  hasNext?: boolean;
 }
 
 interface ParsedSegment {
@@ -196,6 +203,10 @@ export default function ConversationModal({
   dstIP,
   dstPort,
   protocol,
+  onNavigatePrevious,
+  onNavigateNext,
+  hasPrevious = false,
+  hasNext = false,
 }: ConversationModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -331,12 +342,22 @@ export default function ConversationModal({
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
         handleNext();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (onNavigatePrevious && hasPrevious) {
+          onNavigatePrevious();
+        }
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (onNavigateNext && hasNext) {
+          onNavigateNext();
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, currentOffset, currentChunk]);
+  }, [open, currentOffset, currentChunk, onNavigatePrevious, onNavigateNext, hasPrevious, hasNext]);
 
   const hexRows = useMemo(() => {
     if (!currentChunk || !currentChunk.exists || !currentChunk.conversationData) {
@@ -396,6 +417,30 @@ export default function ConversationModal({
               </Typography>
             )}
           </Box>
+          {/* Connection navigation buttons */}
+          {(onNavigatePrevious || onNavigateNext) && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', ml: 2 }}>
+              <IconButton
+                size="small"
+                onClick={onNavigatePrevious}
+                disabled={!hasPrevious}
+                title="Previous connection (↑)"
+              >
+                <KeyboardArrowUpIcon />
+              </IconButton>
+              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+                ↑↓
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={onNavigateNext}
+                disabled={!hasNext}
+                title="Next connection (↓)"
+              >
+                <KeyboardArrowDownIcon />
+              </IconButton>
+            </Box>
+          )}
         </Box>
       </DialogTitle>
 

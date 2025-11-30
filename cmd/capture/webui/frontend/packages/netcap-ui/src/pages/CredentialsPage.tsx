@@ -655,7 +655,7 @@ export default function CredentialsPage() {
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }} data-learn="Username: The captured username from the authentication attempt.">
-                              {cred.user || '(empty)'}
+                              {cred.user}
                             </Typography>
                           </TableCell>
                           <TableCell>
@@ -669,7 +669,7 @@ export default function CredentialsPage() {
                               }}
                               data-learn="Password: The captured password from the authentication attempt."
                             >
-                              {cred.password || '(empty)'}
+                              {cred.password}
                             </Typography>
                           </TableCell>
                         </TableRow>
@@ -706,7 +706,7 @@ export default function CredentialsPage() {
                                       {getServiceInfo(cred.service).userLabel}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                                      {cred.user || '(empty)'}
+                                      {cred.user}
                                     </Typography>
                                   </Grid>
                                   
@@ -725,7 +725,7 @@ export default function CredentialsPage() {
                                         wordBreak: 'break-all',
                                       }}
                                     >
-                                      {cred.password || '(empty)'}
+                                      {cred.password}
                                     </Typography>
                                   </Grid>
                                   )}

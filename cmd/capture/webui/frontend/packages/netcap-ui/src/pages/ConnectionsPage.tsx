@@ -324,6 +324,73 @@ export default function ConnectionsPage() {
     setSelectedConnection(null);
   }, []);
 
+  // Find the index of the currently selected connection in the filtered list
+  const selectedConnectionIndex = useMemo(() => {
+    if (!selectedConnection) return -1;
+    return filteredConnections.findIndex(conn =>
+      conn.srcIP === selectedConnection.srcIP &&
+      conn.srcPort === selectedConnection.srcPort &&
+      conn.dstIP === selectedConnection.dstIP &&
+      conn.dstPort === selectedConnection.dstPort
+    );
+  }, [selectedConnection, filteredConnections]);
+
+  // Navigate to previous connection in the modal
+  const handleNavigatePreviousConnection = useCallback(() => {
+    if (selectedConnectionIndex > 0) {
+      const prevIdx = selectedConnectionIndex - 1;
+      const prevConnection = filteredConnections[prevIdx];
+      setSelectedConnection(prevConnection);
+      
+      // Calculate which page this connection is on
+      const targetPage = Math.floor(prevIdx / rowsPerPage);
+      if (targetPage !== page) {
+        setPage(targetPage);
+      }
+      
+      // Update expanded row with the local index within the page
+      const localIdx = prevIdx - (targetPage * rowsPerPage);
+      const rowKey = `${prevConnection.srcIP}-${prevConnection.srcPort}-${prevConnection.dstIP}-${prevConnection.dstPort}-${localIdx}`;
+      setExpandedRow(rowKey);
+      
+      // Scroll the row into view after state updates
+      requestAnimationFrame(() => {
+        const rowElement = document.querySelector(`[data-row-key="${rowKey}"]`);
+        if (rowElement) {
+          rowElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+    }
+  }, [selectedConnectionIndex, filteredConnections, page, rowsPerPage]);
+
+  // Navigate to next connection in the modal
+  const handleNavigateNextConnection = useCallback(() => {
+    if (selectedConnectionIndex < filteredConnections.length - 1) {
+      const nextIdx = selectedConnectionIndex + 1;
+      const nextConnection = filteredConnections[nextIdx];
+      setSelectedConnection(nextConnection);
+      
+      // Calculate which page this connection is on
+      const targetPage = Math.floor(nextIdx / rowsPerPage);
+      if (targetPage !== page) {
+        setPage(targetPage);
+      }
+      
+      // Update expanded row with the local index within the page
+      const localIdx = nextIdx - (targetPage * rowsPerPage);
+      const rowKey = `${nextConnection.srcIP}-${nextConnection.srcPort}-${nextConnection.dstIP}-${nextConnection.dstPort}-${localIdx}`;
+      setExpandedRow(rowKey);
+      
+      // Scroll the row into view after state updates
+      requestAnimationFrame(() => {
+        const rowElement = document.querySelector(`[data-row-key="${rowKey}"]`);
+        if (rowElement) {
+          rowElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+    }
+  }, [selectedConnectionIndex, filteredConnections, page, rowsPerPage]);
+
   const handleDownloadPCAP = useCallback(async (conn: ConnectionSummary) => {
     try {
       // Generate download URL
@@ -1348,6 +1415,10 @@ export default function ConnectionsPage() {
           dstIP={selectedConnection.dstIP}
           dstPort={selectedConnection.dstPort}
           protocol={selectedConnection.transportProto}
+          onNavigatePrevious={handleNavigatePreviousConnection}
+          onNavigateNext={handleNavigateNextConnection}
+          hasPrevious={selectedConnectionIndex > 0}
+          hasNext={selectedConnectionIndex < filteredConnections.length - 1}
         />
       )}
     </Layout>

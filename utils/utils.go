@@ -32,6 +32,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/evilsocket/islazy/tui"
 	"github.com/gopacket/gopacket"
@@ -367,4 +368,30 @@ func StripQueryString(inputUrl string) string {
 	}
 	u.RawQuery = ""
 	return u.String()
+}
+
+// SanitizeUTF8 replaces invalid UTF-8 sequences with the Unicode replacement character.
+// This is necessary because protobuf string fields require valid UTF-8.
+func SanitizeUTF8(s string) string {
+	if utf8.ValidString(s) {
+		return s
+	}
+
+	// Build a new string with invalid sequences replaced
+	var b strings.Builder
+	b.Grow(len(s))
+
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if r == utf8.RuneError && size == 1 {
+			// Invalid UTF-8 sequence, replace with replacement character
+			b.WriteRune(utf8.RuneError)
+			i++
+		} else {
+			b.WriteRune(r)
+			i += size
+		}
+	}
+
+	return b.String()
 }

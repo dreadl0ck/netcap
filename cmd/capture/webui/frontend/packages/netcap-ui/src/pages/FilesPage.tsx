@@ -77,6 +77,7 @@ export default function ExtractedFilesPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [mimeTypeFilter, setMimeTypeFilter] = useState<string>('');
+  const [protocolFilter, setProtocolFilter] = useState<string>('');
   const [switchingFile, setSwitchingFile] = useState(false);
   const [previewFile, setPreviewFile] = useState<ExtractedFileInfo | null>(null);
   const [previewContent, setPreviewContent] = useState<string>('');
@@ -156,6 +157,9 @@ export default function ExtractedFilesPage() {
   // Get unique MIME types for filter
   const mimeTypes = Array.from(new Set(files.map(f => f.mimeType).filter(Boolean)));
 
+  // Get unique protocols for filter
+  const protocols = Array.from(new Set(files.map(f => f.protocol).filter(Boolean)));
+
   // Calculate MIME type distribution for pie chart
   const mimeTypeDistribution = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -213,16 +217,20 @@ export default function ExtractedFilesPage() {
     ]
   }), [mimeTypeDistribution]);
 
-  // Apply MIME type filter
-  const filteredFiles = mimeTypeFilter
-    ? files.filter(f => f.mimeType === mimeTypeFilter)
-    : files;
+  // Apply MIME type and protocol filters
+  const filteredFiles = files.filter(f => {
+    if (mimeTypeFilter && f.mimeType !== mimeTypeFilter) return false;
+    if (protocolFilter && f.protocol !== protocolFilter) return false;
+    return true;
+  });
 
   // Filter image files for gallery view
   const imageFiles = files.filter(f => isImageFile(f.mimeType));
-  const filteredImageFiles = mimeTypeFilter
-    ? imageFiles.filter(f => f.mimeType === mimeTypeFilter)
-    : imageFiles;
+  const filteredImageFiles = imageFiles.filter(f => {
+    if (mimeTypeFilter && f.mimeType !== mimeTypeFilter) return false;
+    if (protocolFilter && f.protocol !== protocolFilter) return false;
+    return true;
+  });
 
   // Sort images in gallery mode - prioritize common image formats (jpg, png, tiff, webp)
   const sortedGalleryImages = useMemo(() => {
@@ -572,7 +580,7 @@ export default function ExtractedFilesPage() {
         )}
 
         {/* Filters */}
-        <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center' }}>
+        <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <FormControl size="small" sx={{ minWidth: 200 }}>
             <Select
               data-learn="MIME Type Filter: Filter extracted files by their file type (e.g., images, documents, text files) to quickly find specific content."
@@ -593,9 +601,29 @@ export default function ExtractedFilesPage() {
               ))}
             </Select>
           </FormControl>
-          {mimeTypeFilter && (
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <Select
+              data-learn="Protocol Filter: Filter extracted files by the network protocol they were transferred over (HTTP, FTP, SMB, SMTP, IRC)."
+              value={protocolFilter}
+              onChange={(e) => {
+                setProtocolFilter(e.target.value);
+                setPage(0);
+              }}
+              displayEmpty
+            >
+              <MenuItem value="">
+                <em>All Protocols</em>
+              </MenuItem>
+              {protocols.sort().map((protocol) => (
+                <MenuItem key={protocol} value={protocol}>
+                  {protocol}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {(mimeTypeFilter || protocolFilter) && (
             <Typography variant="body2" color="text.secondary">
-              {filteredFiles.length} of {totalCount} files
+              {filteredFiles.length} of {files.length} files
             </Typography>
           )}
         </Box>
@@ -681,6 +709,15 @@ export default function ExtractedFilesPage() {
                               variant="outlined"
                               sx={{ fontSize: '0.65rem', height: 20 }}
                             />
+                            {file.protocol && (
+                              <Chip
+                                label={file.protocol}
+                                size="small"
+                                color="primary"
+                                variant="outlined"
+                                sx={{ fontSize: '0.65rem', height: 20 }}
+                              />
+                            )}
                             <Chip
                               label={formatBytes(file.size)}
                               size="small"
@@ -743,6 +780,7 @@ export default function ExtractedFilesPage() {
                   <TableRow>
                     <TableCell>File Name</TableCell>
                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>MIME Type</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Protocol</TableCell>
                     <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Path</TableCell>
                     <TableCell align="right">Size</TableCell>
                     <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Modified</TableCell>
@@ -781,6 +819,17 @@ export default function ExtractedFilesPage() {
                           variant="outlined"
                           sx={{ fontSize: '0.75rem' }}
                         />
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                        {file.protocol && (
+                          <Chip
+                            label={file.protocol}
+                            size="small"
+                            color="primary"
+                            variant="outlined"
+                            sx={{ fontSize: '0.75rem' }}
+                          />
+                        )}
                       </TableCell>
                       <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                         <Typography 
@@ -874,6 +923,9 @@ export default function ExtractedFilesPage() {
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 1.5, mt: 0.5, flexWrap: 'wrap' }}>
                     <Chip label={previewFile?.mimeType || 'unknown'} size="small" variant="outlined" />
+                    {previewFile?.protocol && (
+                      <Chip label={previewFile.protocol} size="small" color="primary" variant="outlined" />
+                    )}
                     <Chip label={formatBytes(previewFile?.size || 0)} size="small" variant="outlined" />
                     {(() => {
                       const currentList = getCurrentFileList();

@@ -68,6 +68,7 @@ func (m *MailFileExtractor) ExtractFile(conv *core.ConversationInfo, data []byte
 		0,  // depth
 		"", // parent file ID - could link to the email message
 		metadata.FlowDirection,
+		"SMTP", // protocol
 	)
 }
 

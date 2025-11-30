@@ -29,11 +29,12 @@ import (
 )
 
 const (
-	fieldName        = "Name"
-	fieldHash        = "Hash"
-	fieldIdent       = "Ident"
-	fieldFileSource  = "Source"
-	fieldContentType = "ContentType"
+	fieldName         = "Name"
+	fieldHash         = "Hash"
+	fieldIdent        = "Ident"
+	fieldFileSource   = "Source"
+	fieldContentType  = "ContentType"
+	fieldFileProtocol = "Protocol"
 )
 
 var fieldsFile = []string{
@@ -49,6 +50,7 @@ var fieldsFile = []string{
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	fieldFileProtocol,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -71,6 +73,7 @@ func (a *File) CSVRecord() []string {
 		a.DstIP,
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
+		a.Protocol,
 	})
 }
 
@@ -99,6 +102,7 @@ var fieldsFileMetric = []string{
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	fieldFileProtocol,
 }
 
 var fileMetric = prometheus.NewCounterVec(
@@ -123,6 +127,7 @@ func (a *File) metricValues() []string {
 		a.DstIP,
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
+		a.Protocol,
 	})
 }
 
@@ -161,6 +166,7 @@ func (a *File) Encode() []string {
 		fileEncoder.String(fieldDstIP, a.DstIP),
 		fileEncoder.Int32(fieldSrcPort, a.SrcPort),
 		fileEncoder.Int32(fieldDstPort, a.DstPort),
+		fileEncoder.String(fieldFileProtocol, a.Protocol),
 	})
 }
 

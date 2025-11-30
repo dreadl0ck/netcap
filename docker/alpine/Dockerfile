@@ -11,7 +11,7 @@ RUN echo "tags: $TAGS"
 # Extract library versions from go.mod
 RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
     GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
-    GOOS=linux GOARCH=amd64 go build ${TAGS} \
+    GOOS=linux GOARCH=amd64 go build ${TAGS} -trimpath \
     -ldflags "-r /usr/local/lib -s -w \
         -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
         -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
