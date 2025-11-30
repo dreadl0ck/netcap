@@ -104,7 +104,6 @@ const getHarvesterGitHubUrl = (harvesterName: string): string => {
     'MongoDB': 'mongodb',
     'MongoDB Challenge Response': 'mongodb',
     // Network discovery protocols
-    'TLS SNI': 'tls_sni',
     'TeamViewer': 'teamviewer',
     'mDNS': 'mdns',
     'NBNS': 'nbns',

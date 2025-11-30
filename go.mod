@@ -13,10 +13,9 @@ require (
 	github.com/dlclark/regexp2 v1.11.5
 	github.com/dreadl0ck/cryptoutils v0.0.0-20200425144202-4608665a89a4
 	github.com/dreadl0ck/go-dpi v1.4.1 // Pinned: v1.3.1+ has crash in commit 5376956f (protocol mapping changes)
-	github.com/dreadl0ck/ja3 v1.1.0
 	github.com/dreadl0ck/maltego v0.0.3
 	github.com/dreadl0ck/material-icon-gen v0.0.0-20210214144425-b93b94838986
-	github.com/dreadl0ck/tlsx v1.1.1
+	github.com/dreadl0ck/tlsx v1.2.0
 	github.com/dsoprea/go-exif/v2 v2.0.0-20230826092837-6579e82b732d
 	github.com/dustin/go-humanize v1.0.1
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
@@ -46,6 +45,8 @@ require (
 )
 
 require (
+	github.com/coreos/go-iptables v0.8.0
+	github.com/dreadl0ck/netcap/helpers v0.0.0-20251024121749-9bb050d95f59
 	github.com/expr-lang/expr v1.17.6
 	github.com/florianl/go-nfqueue/v2 v2.0.2
 	github.com/jcmturner/gokrb5/v8 v8.4.4
@@ -73,7 +74,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.2.0 // indirect
 	github.com/cloudflare/circl v1.6.1 // indirect
-	github.com/coreos/go-iptables v0.8.0 // indirect
 	github.com/couchbase/vellum v1.0.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.5 // indirect
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect

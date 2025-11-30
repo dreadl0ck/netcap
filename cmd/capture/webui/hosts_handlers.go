@@ -39,27 +39,26 @@ import (
 
 // IPProfileSummary represents aggregated information for a single IP address
 type IPProfileSummary struct {
-	Addr                   string            `json:"addr"`
-	NumPackets             int64             `json:"numPackets"`
-	Bytes                  uint64            `json:"bytes"`
-	Geolocation            string            `json:"geolocation"`
-	DNSNames               []string          `json:"dnsNames"`
-	TimestampFirst         int64             `json:"timestampFirst"`
-	TimestampLast          int64             `json:"timestampLast"`
-	Applications           []string          `json:"applications"`
-	Ja3Hashes              map[string]string `json:"ja3Hashes"`
-	ProtocolsCount         int               `json:"protocolsCount"`
-	SNIsCount              int               `json:"snisCount"`
-	SrcPortsCount          int               `json:"srcPortsCount"`
-	DstPortsCount          int               `json:"dstPortsCount"`
-	ContactedPortsCount    int               `json:"contactedPortsCount"`
-	Ja3FingerprintMatches  []string          `json:"ja3FingerprintMatches"`
-	Ja3sFingerprintMatches []string          `json:"ja3sFingerprintMatches"`
-	TopProtocols           []ProtocolInfo    `json:"topProtocols"`
-	TopSrcPorts            []PortInfo        `json:"topSrcPorts"`
-	TopDstPorts            []PortInfo        `json:"topDstPorts"`
-	TopContactedPorts      []PortInfo        `json:"topContactedPorts"`
-	IsInternal             bool              `json:"isInternal"`
+	Addr                string         `json:"addr"`
+	NumPackets          int64          `json:"numPackets"`
+	Bytes               uint64         `json:"bytes"`
+	Geolocation         string         `json:"geolocation"`
+	DNSNames            []string       `json:"dnsNames"`
+	TimestampFirst      int64          `json:"timestampFirst"`
+	TimestampLast       int64          `json:"timestampLast"`
+	Applications        []string       `json:"applications"`
+	Ja4Fingerprints     []string       `json:"ja4Fingerprints"`
+	Ja4SFingerprints    []string       `json:"ja4sFingerprints"`
+	ProtocolsCount      int            `json:"protocolsCount"`
+	SNIsCount           int            `json:"snisCount"`
+	SrcPortsCount       int            `json:"srcPortsCount"`
+	DstPortsCount       int            `json:"dstPortsCount"`
+	ContactedPortsCount int            `json:"contactedPortsCount"`
+	TopProtocols        []ProtocolInfo `json:"topProtocols"`
+	TopSrcPorts         []PortInfo     `json:"topSrcPorts"`
+	TopDstPorts         []PortInfo     `json:"topDstPorts"`
+	TopContactedPorts   []PortInfo     `json:"topContactedPorts"`
+	IsInternal          bool           `json:"isInternal"`
 }
 
 // ProtocolInfo represents protocol statistics
@@ -208,27 +207,26 @@ func readIPProfiles(outDir string) ([]IPProfileSummary, error) {
 		topContactedPorts := extractTopPorts(ipProfile.ContactedPorts, 5)
 
 		hosts = append(hosts, IPProfileSummary{
-			Addr:                   ipProfile.Addr,
-			NumPackets:             ipProfile.NumPackets,
-			Bytes:                  ipProfile.Bytes,
-			Geolocation:            ipProfile.Geolocation,
-			DNSNames:               ipProfile.DNSNames,
-			TimestampFirst:         ipProfile.TimestampFirst,
-			TimestampLast:          ipProfile.TimestampLast,
-			Applications:           ipProfile.Applications,
-			Ja3Hashes:              ipProfile.Ja3Hashes,
-			ProtocolsCount:         len(ipProfile.Protocols),
-			SNIsCount:              len(ipProfile.SNIs),
-			SrcPortsCount:          len(ipProfile.SrcPorts),
-			DstPortsCount:          len(ipProfile.DstPorts),
-			ContactedPortsCount:    len(ipProfile.ContactedPorts),
-			Ja3FingerprintMatches:  ipProfile.Ja3FingerprintMatches,
-			Ja3sFingerprintMatches: ipProfile.Ja3SFingerprintMatches,
-			TopProtocols:           topProtocols,
-			TopSrcPorts:            topSrcPorts,
-			TopDstPorts:            topDstPorts,
-			TopContactedPorts:      topContactedPorts,
-			IsInternal:             isPrivateIP(ipProfile.Addr),
+			Addr:                ipProfile.Addr,
+			NumPackets:          ipProfile.NumPackets,
+			Bytes:               ipProfile.Bytes,
+			Geolocation:         ipProfile.Geolocation,
+			DNSNames:            ipProfile.DNSNames,
+			TimestampFirst:      ipProfile.TimestampFirst,
+			TimestampLast:       ipProfile.TimestampLast,
+			Applications:        ipProfile.Applications,
+			Ja4Fingerprints:     ipProfile.Ja4Fingerprints,
+			Ja4SFingerprints:    ipProfile.Ja4SFingerprints,
+			ProtocolsCount:      len(ipProfile.Protocols),
+			SNIsCount:           len(ipProfile.SNIs),
+			SrcPortsCount:       len(ipProfile.SrcPorts),
+			DstPortsCount:       len(ipProfile.DstPorts),
+			ContactedPortsCount: len(ipProfile.ContactedPorts),
+			TopProtocols:        topProtocols,
+			TopSrcPorts:         topSrcPorts,
+			TopDstPorts:         topDstPorts,
+			TopContactedPorts:   topContactedPorts,
+			IsInternal:          isPrivateIP(ipProfile.Addr),
 		})
 	}
 

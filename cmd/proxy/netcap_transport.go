@@ -87,7 +87,7 @@ func (t *netcapTransport) RoundTrip(req *http.Request) (resp *http.Response, err
 				tlsHandShakeStart = time.Now()
 			},
 			TLSHandshakeDone: func(t tls.ConnectionState, e error) {
-				// TODO: add tls information to HTTP audit record + ja3
+				// TODO: add tls information to HTTP audit record + JA4 fingerprinting
 				// fmt.Println("TLSHandshakeDone", t, e)
 				tlsHandshakeDuration = time.Since(tlsHandShakeStart)
 			},

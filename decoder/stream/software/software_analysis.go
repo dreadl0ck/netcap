@@ -142,8 +142,8 @@ func mapSourceNameToMethod(sourceName string) string {
 		return "banner"
 	case strings.Contains(sourceNameLower, "hassh"):
 		return "hassh"
-	case strings.Contains(sourceNameLower, "ja3"):
-		return "ja3"
+	case strings.Contains(sourceNameLower, "ja4"):
+		return "ja4"
 	case strings.Contains(sourceNameLower, "server"):
 		return "http_header"
 	case strings.Contains(sourceNameLower, "x-powered"):
@@ -166,7 +166,7 @@ func determineConfidence(s *types.Software) string {
 	method := strings.ToLower(s.DetectionMethod)
 
 	// High confidence methods
-	if method == "banner" || method == "hassh" || method == "ja3" ||
+	if method == "banner" || method == "hassh" || method == "ja4" ||
 		method == "tls_cert" || method == "dpi" {
 		return ConfidenceHigh
 	}

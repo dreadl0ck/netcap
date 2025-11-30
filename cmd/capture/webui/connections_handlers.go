@@ -73,6 +73,24 @@ type ConnectionSummary struct {
 	Applications         []string `json:"applications"`
 	ServerPortName       string   `json:"serverPortName"`
 	DetectedProtocolName string   `json:"detectedProtocolName"`
+	// JA4L timing fields
+	TcpRttNanos       int64  `json:"tcpRttNanos"`
+	TlsHandshakeNanos int64  `json:"tlsHandshakeNanos"`
+	Ja4lClient        string `json:"ja4lClient"`
+	Ja4lServer        string `json:"ja4lServer"`
+	SynTtl            int32  `json:"synTtl"`
+	// Security behavioral analysis fields
+	PacketsClientToServer    int64   `json:"packetsClientToServer"`
+	PacketsServerToClient    int64   `json:"packetsServerToClient"`
+	ByteRatio                float64 `json:"byteRatio"`
+	PacketRatio              float64 `json:"packetRatio"`
+	AvgPacketSizeClientToServer int32 `json:"avgPacketSizeClientToServer"`
+	AvgPacketSizeServerToClient int32 `json:"avgPacketSizeServerToClient"`
+	IsExternal               bool    `json:"isExternal"`
+	IsBroadcast              bool    `json:"isBroadcast"`
+	IsMulticast              bool    `json:"isMulticast"`
+	// TLS SNI
+	Sni                      string  `json:"sni"`
 }
 
 // ConnectionsResponse contains the list of connections
@@ -231,6 +249,24 @@ func readConnections(outDir string) ([]ConnectionSummary, error) {
 			Applications:         conn.Applications,
 			ServerPortName:       conn.ServerPortName,
 			DetectedProtocolName: conn.DetectedProtocolName,
+			// JA4L timing fields
+			TcpRttNanos:       conn.TcpRttNanos,
+			TlsHandshakeNanos: conn.TlsHandshakeNanos,
+			Ja4lClient:        conn.Ja4LClient,
+			Ja4lServer:        conn.Ja4LServer,
+			SynTtl:            conn.SynTtl,
+			// Security behavioral analysis fields
+			PacketsClientToServer:       conn.PacketsClientToServer,
+			PacketsServerToClient:       conn.PacketsServerToClient,
+			ByteRatio:                   conn.ByteRatio,
+			PacketRatio:                 conn.PacketRatio,
+			AvgPacketSizeClientToServer: conn.AvgPacketSizeClientToServer,
+			AvgPacketSizeServerToClient: conn.AvgPacketSizeServerToClient,
+			IsExternal:                  conn.IsExternal,
+			IsBroadcast:                 conn.IsBroadcast,
+			IsMulticast:                 conn.IsMulticast,
+			// TLS SNI
+			Sni:                         conn.Sni,
 		})
 	}
 

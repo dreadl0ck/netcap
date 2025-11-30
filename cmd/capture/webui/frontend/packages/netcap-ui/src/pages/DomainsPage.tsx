@@ -61,7 +61,7 @@ import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
-import { useNetcapApi } from '../hooks';
+import { useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 interface DomainSummary {
@@ -75,6 +75,7 @@ interface DomainSummary {
   isSubdomain: boolean;
   parentDomain: string;
   resolvedIPs: string[];
+  source: string; // "DNS", "TLS SNI", or "DNS, TLS SNI"
 }
 
 interface DomainsResponse {
@@ -146,6 +147,7 @@ export default function DomainsPage() {
         matchesSearchTerms([
           d.domain,
           d.parentDomain || '',
+          d.source || '',
           ...(d.recordTypes || []),
           ...(d.resolvedIPs || []),
         ], searchTerms)
@@ -185,6 +187,15 @@ export default function DomainsPage() {
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
+
+  // Generate row keys for keyboard navigation
+  const rowKeys = useMemo(() => 
+    paginatedDomains.map(domain => domain.domain),
+    [paginatedDomains]
+  );
+
+  // Enable keyboard navigation for detail views (UP/DOWN arrows)
+  useTableKeyboardNavigation(expandedRow, rowKeys, setExpandedRow);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -534,6 +545,9 @@ export default function DomainsPage() {
                         Type
                       </TableSortLabel>
                     </TableCell>
+                    <TableCell data-learn="Source: Where the domain was discovered - DNS queries or TLS SNI.">
+                      Source
+                    </TableCell>
                     <TableCell align="right">
                       <TableSortLabel
                         data-learn="Sort by Queries: Click to sort domains by number of DNS queries."
@@ -563,10 +577,11 @@ export default function DomainsPage() {
                     <>
                       <TableRow 
                         key={domain.domain}
+                        data-row-key={domain.domain}
                         hover
                         onClick={() => handleRowClick(domain.domain)}
                         sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
-                        data-learn="Domain Row: Click to expand and view detailed information about this domain."
+                        data-learn="Domain Row: Click to expand and view detailed information about this domain. Use ↑↓ arrows to navigate between rows when expanded."
                       >
                         <TableCell>
                           <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed domain information.">
@@ -597,6 +612,16 @@ export default function DomainsPage() {
                             label={domain.isSubdomain ? 'Subdomain' : 'Root'}
                             size="small"
                             color={domain.isSubdomain ? 'secondary' : 'primary'}
+                            sx={{ fontSize: '0.7rem' }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            data-learn="Source Tag: Shows where this domain was discovered - DNS queries, TLS SNI, or both."
+                            label={domain.source || 'DNS'}
+                            size="small"
+                            color={domain.source?.includes('TLS') ? 'success' : 'default'}
+                            variant="outlined"
                             sx={{ fontSize: '0.7rem' }}
                           />
                         </TableCell>
@@ -660,7 +685,7 @@ export default function DomainsPage() {
                       
                       {/* Expandable Row Details */}
                       <TableRow>
-                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
+                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
                           <Collapse in={expandedRow === domain.domain} timeout="auto" unmountOnExit>
                             <Box sx={{ py: 2 }} data-learn="Domain Details: Extended information about DNS queries and responses for this domain.">
                               <Grid container spacing={2}>
@@ -687,6 +712,9 @@ export default function DomainsPage() {
                                   </Typography>
                                   <Typography variant="body2" color="text.secondary">
                                     Unique Clients: {domain.uniqueClients.toLocaleString()}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Source: {domain.source || 'DNS'}
                                   </Typography>
                                   {domain.isSubdomain && domain.parentDomain && (
                                     <Typography variant="body2" color="text.secondary">

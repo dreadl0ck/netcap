@@ -93,7 +93,7 @@ func TestSSHPcapDecoding(t *testing.T) {
 			ReverseDNS:    false,
 			LocalDNS:      false,
 			MACDB:         false,
-			Ja3DB:         false,
+			
 			ServiceDB:     false,
 			GeolocationDB: false,
 		},
@@ -223,7 +223,7 @@ func TestSSHUnidirectionalPcap(t *testing.T) {
 			ReverseDNS:    false,
 			LocalDNS:      false,
 			MACDB:         false,
-			Ja3DB:         false,
+			
 			ServiceDB:     false,
 			GeolocationDB: false,
 		},
@@ -243,7 +243,7 @@ func TestSSHUnidirectionalPcap(t *testing.T) {
 	t.Log("Expected result:")
 	t.Log("  - SSH audit records SHOULD be created (even without KexInit)")
 	t.Log("  - Server ident should be captured")
-	t.Log("  - HASSH field will be empty (no KexInit)")
+	t.Log("  - JA4SSH fingerprint will be computed from packet data")
 	t.Log("  - Notes field: 'Incomplete handshake - no KexInit'")
 
 	if err := c.CollectPcap(pcapPath); err != nil {
@@ -292,7 +292,7 @@ func TestSSHUnidirectionalPcap(t *testing.T) {
 		t.Log("Expected behavior:")
 		t.Log("  - SSH audit records should be created for ident-only connections")
 		t.Log("  - Even without KexInit, we capture SSH identification strings")
-		t.Log("  - HASSH field will be empty, Notes field indicates incomplete handshake")
+		t.Log("  - JA4SSH fingerprint computed from packet data, Notes field indicates incomplete handshake")
 		t.Log("")
 		t.Log("Debug the SSH decoder logs above to see why records weren't created")
 		return

@@ -85,7 +85,7 @@ func runServiceMode() {
 		Payload:               flagPayload,
 		Context:               flagContext,
 		MacDB:                 flagMACDB,
-		Ja3DB:                 flagJa3DB,
+		
 		ServiceDB:             flagServiceDB,
 		GeoDB:                 flagGeolocationDB,
 		ReverseDNS:            flagReverseDNS,
@@ -129,6 +129,7 @@ func runServiceMode() {
 		true,          // isServiceMode = true
 		serviceConfig, // service configuration
 		runtimeConfig, // actual runtime configuration values
+		flagDev,       // dev mode: use current binary for job execution
 	)
 
 	// Setup signal handling for graceful shutdown

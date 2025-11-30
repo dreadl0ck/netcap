@@ -86,10 +86,6 @@
   - Supports protocol versions 1.x and 2.x
 
 ### ✅ Network Discovery
-- **TLS SNI** (ports 443, 8443, etc.)
-  - Server Name Indication from TLS Client Hello
-  - Reveals encrypted HTTPS destinations
-  - Useful for threat hunting and network forensics
 - **mDNS** (port 5353)
   - Multicast DNS hostname discovery
   - IP address to hostname mappings
@@ -153,7 +149,6 @@ Harvesters run automatically during TCP session analysis. They are invoked by po
 - 143: IMAP
 - 161, 162: SNMP
 - 389, 636: LDAP
-- 443, 8443: TLS SNI
 - 445: SMB/NTLMSSP
 - 1900: UPnP/SSDP
 - 3306: MySQL

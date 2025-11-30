@@ -128,7 +128,7 @@ func createTestCollector(outDir string, enableDPI bool) *collector.Collector {
 			ReverseDNS:    false,
 			LocalDNS:      false,
 			MACDB:         false,
-			Ja3DB:         false,
+			
 			ServiceDB:     false,
 			GeolocationDB: false,
 		},

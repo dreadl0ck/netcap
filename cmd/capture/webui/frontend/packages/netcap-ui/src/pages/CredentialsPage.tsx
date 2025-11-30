@@ -60,7 +60,7 @@ import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 
 interface CredentialSummary {
   timestamp: number;
@@ -69,6 +69,43 @@ interface CredentialSummary {
   user: string;
   password: string;
   notes: string;
+  // Hash-based credentials
+  hash: string;
+  hashType: string;
+  domain: string;
+  realm: string;
+  challenge: string;
+  serviceName: string;
+  etype: number;
+  hashcatFormat: string;
+  // HTTP Digest specific
+  method: string;
+  nonce: string;
+  uri: string;
+  qop: string;
+  nc: string;
+  cnonce: string;
+  // NTLM specific
+  workstation: string;
+  lmHash: string;
+  ntHash: string;
+  // Authentication result tracking
+  authSuccess: boolean;
+  authSuccessSet: boolean;
+  authAttempts: number;
+  // RADIUS specific
+  macAddress: string;
+  framedAddress: string;
+  connectInfo: string;
+  replyMessage: string;
+  // SOCKS specific
+  socksVersion: number;
+  socksStatus: string;
+  // SIP specific
+  sipMethod: string;
+  sipCallId: string;
+  sipFrom: string;
+  sipTo: string;
 }
 
 interface CredentialsResponse {
@@ -108,7 +145,6 @@ const serviceCategories: Record<string, { category: 'auth' | 'discovery' | 'remo
   'TeamViewer': { category: 'remote', color: 'warning', userLabel: 'Command', passLabel: '' },
   'TeamViewer Auth': { category: 'remote', color: 'warning', userLabel: 'Auth Event', passLabel: '' },
   // Network discovery (metadata, not credentials)
-  'TLS SNI': { category: 'discovery', color: 'success', userLabel: 'Hostname', passLabel: '' },
   'mDNS': { category: 'discovery', color: 'success', userLabel: 'Hostnames', passLabel: '' },
   'NBNS': { category: 'discovery', color: 'success', userLabel: 'NetBIOS Name', passLabel: '' },
   'UPnP': { category: 'discovery', color: 'success', userLabel: 'Device Info', passLabel: '' },
@@ -215,6 +251,15 @@ export default function CredentialsPage() {
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
+
+  // Generate row keys for keyboard navigation
+  const rowKeys = useMemo(() => 
+    paginatedCredentials.map((cred, idx) => `${cred.timestamp}-${cred.service}-${cred.user}-${idx}`),
+    [paginatedCredentials]
+  );
+
+  // Enable keyboard navigation for detail views (UP/DOWN arrows)
+  useTableKeyboardNavigation(expandedRow, rowKeys, setExpandedRow);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -578,10 +623,11 @@ export default function CredentialsPage() {
                       <>
                         <TableRow 
                           key={rowKey}
+                          data-row-key={rowKey}
                           hover
                           onClick={() => handleRowClick(rowKey)}
                           sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
-                          data-learn="Credential Row: Click to expand and view detailed information about this captured credential."
+                          data-learn="Credential Row: Click to expand and view detailed information about this captured credential. Use ↑↓ arrows to navigate between rows when expanded."
                         >
                           <TableCell>
                             <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed credential information.">
@@ -715,6 +761,175 @@ export default function CredentialsPage() {
                                       <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                                         {cred.notes}
                                       </Typography>
+                                    </Grid>
+                                  )}
+
+                                  {/* Authentication Result */}
+                                  {cred.authSuccessSet && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Authentication Result: Shows whether the authentication attempt succeeded or failed.">
+                                        Authentication Result
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                                        <Chip 
+                                          label={cred.authSuccess ? '✓ Success' : '✗ Failed'} 
+                                          size="small" 
+                                          color={cred.authSuccess ? 'success' : 'error'}
+                                          sx={{ fontWeight: 'bold' }}
+                                        />
+                                        {cred.authAttempts > 0 && (
+                                          <Typography variant="body2" color="text.secondary">
+                                            ({cred.authAttempts} attempt{cred.authAttempts > 1 ? 's' : ''})
+                                          </Typography>
+                                        )}
+                                      </Box>
+                                    </Grid>
+                                  )}
+
+                                  {/* Hash Information */}
+                                  {(cred.hash || cred.hashType || cred.hashcatFormat) && (
+                                    <Grid item xs={12}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Hash Information: Details about captured password hash for offline cracking.">
+                                        Hash Information
+                                      </Typography>
+                                      {cred.hashType && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                          <Typography variant="body2" color="text.secondary">Type:</Typography>
+                                          <Chip label={cred.hashType} size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                                        </Box>
+                                      )}
+                                      {cred.hash && (
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all', mb: 0.5 }}>
+                                          Hash: {cred.hash}
+                                        </Typography>
+                                      )}
+                                      {cred.hashcatFormat && (
+                                        <Box sx={{ mt: 1 }}>
+                                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                            Hashcat Format (ready for cracking):
+                                          </Typography>
+                                          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', wordBreak: 'break-all', bgcolor: 'background.paper', p: 1, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
+                                            {cred.hashcatFormat}
+                                          </Typography>
+                                        </Box>
+                                      )}
+                                    </Grid>
+                                  )}
+
+                                  {/* Domain/NTLM Information */}
+                                  {(cred.domain || cred.realm || cred.workstation || cred.ntHash || cred.lmHash) && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Windows/Kerberos Info: Domain, realm, and workstation details for enterprise authentication.">
+                                        Domain/Enterprise Info
+                                      </Typography>
+                                      {cred.domain && (
+                                        <Typography variant="body2" color="text.secondary">Domain: {cred.domain}</Typography>
+                                      )}
+                                      {cred.realm && (
+                                        <Typography variant="body2" color="text.secondary">Realm: {cred.realm}</Typography>
+                                      )}
+                                      {cred.workstation && (
+                                        <Typography variant="body2" color="text.secondary">Workstation: {cred.workstation}</Typography>
+                                      )}
+                                      {cred.serviceName && (
+                                        <Typography variant="body2" color="text.secondary">SPN: {cred.serviceName}</Typography>
+                                      )}
+                                      {cred.ntHash && (
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}>
+                                          NT Hash: {cred.ntHash}
+                                        </Typography>
+                                      )}
+                                      {cred.lmHash && (
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}>
+                                          LM Hash: {cred.lmHash}
+                                        </Typography>
+                                      )}
+                                    </Grid>
+                                  )}
+
+                                  {/* HTTP Digest Info */}
+                                  {(cred.nonce || cred.uri || cred.qop) && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="HTTP Digest Info: Challenge-response details for HTTP Digest authentication.">
+                                        HTTP Digest Details
+                                      </Typography>
+                                      {cred.method && (
+                                        <Typography variant="body2" color="text.secondary">Method: {cred.method}</Typography>
+                                      )}
+                                      {cred.uri && (
+                                        <Typography variant="body2" color="text.secondary" sx={{ wordBreak: 'break-all' }}>URI: {cred.uri}</Typography>
+                                      )}
+                                      {cred.qop && (
+                                        <Typography variant="body2" color="text.secondary">QoP: {cred.qop}</Typography>
+                                      )}
+                                      {cred.nonce && (
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}>
+                                          Nonce: {cred.nonce}
+                                        </Typography>
+                                      )}
+                                    </Grid>
+                                  )}
+
+                                  {/* RADIUS Info */}
+                                  {(cred.macAddress || cred.framedAddress || cred.connectInfo || cred.replyMessage) && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="RADIUS Info: Network access details from RADIUS authentication.">
+                                        RADIUS Details
+                                      </Typography>
+                                      {cred.macAddress && (
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                                          MAC: {cred.macAddress}
+                                        </Typography>
+                                      )}
+                                      {cred.framedAddress && (
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                                          Assigned IP: {cred.framedAddress}
+                                        </Typography>
+                                      )}
+                                      {cred.connectInfo && (
+                                        <Typography variant="body2" color="text.secondary">Connection: {cred.connectInfo}</Typography>
+                                      )}
+                                      {cred.replyMessage && (
+                                        <Typography variant="body2" color="text.secondary">Reply: {cred.replyMessage}</Typography>
+                                      )}
+                                    </Grid>
+                                  )}
+
+                                  {/* SIP Info */}
+                                  {(cred.sipMethod || cred.sipCallId || cred.sipFrom || cred.sipTo) && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="SIP Info: VoIP session details from SIP authentication.">
+                                        SIP Details
+                                      </Typography>
+                                      {cred.sipMethod && (
+                                        <Chip label={cred.sipMethod} size="small" color="info" variant="outlined" sx={{ mb: 0.5, fontSize: '0.7rem' }} />
+                                      )}
+                                      {cred.sipFrom && (
+                                        <Typography variant="body2" color="text.secondary">From: {cred.sipFrom}</Typography>
+                                      )}
+                                      {cred.sipTo && (
+                                        <Typography variant="body2" color="text.secondary">To: {cred.sipTo}</Typography>
+                                      )}
+                                      {cred.sipCallId && (
+                                        <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}>
+                                          Call-ID: {cred.sipCallId}
+                                        </Typography>
+                                      )}
+                                    </Grid>
+                                  )}
+
+                                  {/* SOCKS Info */}
+                                  {(cred.socksVersion > 0 || cred.socksStatus) && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="SOCKS Info: SOCKS proxy authentication details.">
+                                        SOCKS Details
+                                      </Typography>
+                                      {cred.socksVersion > 0 && (
+                                        <Typography variant="body2" color="text.secondary">Version: SOCKS{cred.socksVersion}</Typography>
+                                      )}
+                                      {cred.socksStatus && (
+                                        <Typography variant="body2" color="text.secondary">Status: {cred.socksStatus}</Typography>
+                                      )}
                                     </Grid>
                                   )}
                                 </Grid>

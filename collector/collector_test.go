@@ -115,7 +115,7 @@ func TestCapturePCAP(t *testing.T) {
 			ReverseDNS:    false,
 			LocalDNS:      false,
 			MACDB:         true,
-			Ja3DB:         true,
+			
 			ServiceDB:     true,
 			GeolocationDB: true,
 		},

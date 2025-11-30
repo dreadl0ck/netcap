@@ -29,16 +29,16 @@ import (
 )
 
 const (
-	fieldHASSH             = "HASSH"
-	fieldHASSHDescriptions = "HASSHDescriptions"
+	fieldJa4ssh            = "Ja4ssh"
+	fieldJa4sshSessionType = "Ja4sshSessionType"
 )
 
 var fieldsSSH = []string{
 	fieldTimestamp,
-	fieldHASSH,
+	fieldJa4ssh,
 	fieldFlow,
 	fieldNotes,
-	fieldHASSHDescriptions,
+	fieldJa4sshSessionType,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -50,10 +50,10 @@ func (a *SSH) CSVHeader() []string {
 func (a *SSH) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(a.Timestamp),
-		a.HASSH,
+		a.Ja4Ssh,
 		a.Flow,
 		a.Notes,
-		join(a.HASSHDescriptions...),
+		a.Ja4SshSessionType,
 	})
 }
 
@@ -71,7 +71,7 @@ func (a *SSH) JSON() (string, error) {
 }
 
 var fieldsSSHMetric = []string{
-	fieldHASSH,
+	fieldJa4ssh,
 	fieldFlow,
 }
 
@@ -85,8 +85,8 @@ var sshMetric = prometheus.NewCounterVec(
 
 func (a *SSH) metricValues() []string {
 	return []string{
-		fieldHASSH,
-		fieldFlow,
+		a.Ja4Ssh,
+		a.Flow,
 	}
 }
 
@@ -116,10 +116,10 @@ var sshEncoder = encoder.NewValueEncoder()
 func (a *SSH) Encode() []string {
 	return filter([]string{
 		sshEncoder.Int64(fieldTimestamp, a.Timestamp),
-		sshEncoder.String(fieldHASSH, a.HASSH),
+		sshEncoder.String(fieldJa4ssh, a.Ja4Ssh),
 		sshEncoder.String(fieldFlow, a.Flow),
 		sshEncoder.String(fieldNotes, a.Notes),
-		sshEncoder.String(fieldHASSHDescriptions, join(a.HASSHDescriptions...)),
+		sshEncoder.String(fieldJa4sshSessionType, a.Ja4SshSessionType),
 	})
 }
 

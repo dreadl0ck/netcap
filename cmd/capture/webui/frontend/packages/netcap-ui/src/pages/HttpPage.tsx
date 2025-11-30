@@ -60,7 +60,7 @@ import ConversationModal from '../components/ConversationModal';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 
 interface HTTPSummary {
   timestamp: number;
@@ -92,6 +92,24 @@ interface HTTPSummary {
   requestHeader: { [key: string]: string };
   responseHeader: { [key: string]: string };
   parameters: { [key: string]: string };
+  // Security headers
+  strictTransportSecurity: string;
+  contentSecurityPolicy: string;
+  xContentTypeOptions: string;
+  xFrameOptions: string;
+  xXSSProtection: string;
+  referrerPolicy: string;
+  accessControlAllowOrigin: string;
+  hasServerTiming: boolean;
+  // Authentication and server info
+  authorizationType: string;
+  xForwardedFor: string;
+  xRealIP: string;
+  server: string;
+  xPoweredBy: string;
+  // JA4H fingerprinting
+  ja4h: string;
+  ja4hDescription: string;
 }
 
 interface HTTPResponse {
@@ -209,6 +227,15 @@ export default function HTTPPage() {
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
+
+  // Generate row keys for keyboard navigation
+  const rowKeys = useMemo(() => 
+    paginatedHTTP.map((http, idx) => `${http.srcIP}-${http.dstIP}-${http.timestamp}-${idx}`),
+    [paginatedHTTP]
+  );
+
+  // Enable keyboard navigation for detail views (UP/DOWN arrows)
+  useTableKeyboardNavigation(expandedRow, rowKeys, setExpandedRow);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -625,10 +652,11 @@ export default function HTTPPage() {
                       <>
                         <TableRow 
                           key={rowKey}
+                          data-row-key={rowKey}
                           hover
                           onClick={() => handleRowClick(rowKey)}
                           sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
-                          data-learn="HTTP Row: Click to expand and view detailed information about this HTTP request/response."
+                          data-learn="HTTP Row: Click to expand and view detailed information about this HTTP request/response. Use ↑↓ arrows to navigate between rows when expanded."
                         >
                           <TableCell>
                             <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed HTTP information.">
@@ -821,6 +849,148 @@ export default function HTTPPage() {
                                       {http.firstByteAfter > 0 && (
                                         <Typography variant="body2" color="text.secondary">
                                           First Byte: {(http.firstByteAfter / 1e6).toFixed(2)}ms
+                                        </Typography>
+                                      )}
+                                    </Grid>
+                                  )}
+
+                                  {/* Security Headers */}
+                                  {(http.strictTransportSecurity || http.contentSecurityPolicy || http.xContentTypeOptions || 
+                                    http.xFrameOptions || http.xXSSProtection || http.referrerPolicy || http.accessControlAllowOrigin) && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Security Headers: HTTP response security headers that protect against common web vulnerabilities.">
+                                        Security Headers
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                        {http.strictTransportSecurity && (
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Chip label="HSTS" size="small" color="success" sx={{ fontSize: '0.65rem', height: 20 }} />
+                                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                              {http.strictTransportSecurity.substring(0, 50)}{http.strictTransportSecurity.length > 50 ? '...' : ''}
+                                            </Typography>
+                                          </Box>
+                                        )}
+                                        {http.contentSecurityPolicy && (
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Chip label="CSP" size="small" color="success" sx={{ fontSize: '0.65rem', height: 20 }} />
+                                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                              {http.contentSecurityPolicy.substring(0, 50)}{http.contentSecurityPolicy.length > 50 ? '...' : ''}
+                                            </Typography>
+                                          </Box>
+                                        )}
+                                        {http.xContentTypeOptions && (
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Chip label="X-Content-Type-Options" size="small" color="success" sx={{ fontSize: '0.65rem', height: 20 }} />
+                                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                              {http.xContentTypeOptions}
+                                            </Typography>
+                                          </Box>
+                                        )}
+                                        {http.xFrameOptions && (
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Chip label="X-Frame-Options" size="small" color="success" sx={{ fontSize: '0.65rem', height: 20 }} />
+                                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                              {http.xFrameOptions}
+                                            </Typography>
+                                          </Box>
+                                        )}
+                                        {http.xXSSProtection && (
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Chip label="X-XSS-Protection" size="small" color="info" sx={{ fontSize: '0.65rem', height: 20 }} />
+                                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                              {http.xXSSProtection}
+                                            </Typography>
+                                          </Box>
+                                        )}
+                                        {http.referrerPolicy && (
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Chip label="Referrer-Policy" size="small" color="info" sx={{ fontSize: '0.65rem', height: 20 }} />
+                                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                              {http.referrerPolicy}
+                                            </Typography>
+                                          </Box>
+                                        )}
+                                        {http.accessControlAllowOrigin && (
+                                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Chip label="CORS" size="small" color="warning" sx={{ fontSize: '0.65rem', height: 20 }} />
+                                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                              {http.accessControlAllowOrigin}
+                                            </Typography>
+                                          </Box>
+                                        )}
+                                      </Box>
+                                    </Grid>
+                                  )}
+
+                                  {/* Server & Auth Info */}
+                                  {(http.server || http.xPoweredBy || http.authorizationType || http.xForwardedFor || http.xRealIP || http.hasServerTiming) && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Server & Authentication: Server identification and authentication information.">
+                                        Server & Authentication
+                                      </Typography>
+                                      {http.server && (
+                                        <Typography variant="body2" color="text.secondary">
+                                          Server: {http.server}
+                                        </Typography>
+                                      )}
+                                      {http.xPoweredBy && (
+                                        <Typography variant="body2" color="text.secondary">
+                                          X-Powered-By: {http.xPoweredBy}
+                                        </Typography>
+                                      )}
+                                      {http.authorizationType && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                          <Typography variant="body2" color="text.secondary">
+                                            Auth Type:
+                                          </Typography>
+                                          <Chip 
+                                            label={http.authorizationType} 
+                                            size="small" 
+                                            color="primary"
+                                            variant="outlined"
+                                            sx={{ fontSize: '0.7rem' }}
+                                          />
+                                        </Box>
+                                      )}
+                                      {http.xForwardedFor && (
+                                        <Typography variant="body2" color="text.secondary">
+                                          X-Forwarded-For: {http.xForwardedFor}
+                                        </Typography>
+                                      )}
+                                      {http.xRealIP && (
+                                        <Typography variant="body2" color="text.secondary">
+                                          X-Real-IP: {http.xRealIP}
+                                        </Typography>
+                                      )}
+                                      {http.hasServerTiming && (
+                                        <Chip 
+                                          label="⚠️ Server-Timing present" 
+                                          size="small" 
+                                          color="warning"
+                                          sx={{ fontSize: '0.7rem', mt: 0.5 }}
+                                          data-learn="Server-Timing header may expose internal performance metrics."
+                                        />
+                                      )}
+                                    </Grid>
+                                  )}
+
+                                  {/* JA4H Fingerprinting */}
+                                  {http.ja4h && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="JA4H: HTTP client fingerprint based on request header ordering and values.">
+                                        JA4H HTTP Fingerprint
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                        <Chip 
+                                          label={http.ja4h} 
+                                          size="small" 
+                                          color="secondary"
+                                          sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}
+                                        />
+                                      </Box>
+                                      {http.ja4hDescription && (
+                                        <Typography variant="body2" color="text.secondary">
+                                          {http.ja4hDescription}
                                         </Typography>
                                       )}
                                     </Grid>

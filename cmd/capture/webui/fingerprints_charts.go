@@ -64,8 +64,8 @@ func (s *Server) handleFingerprintsTypeDistribution(w http.ResponseWriter, r *ht
 	w.Write(html)
 }
 
-// handleFingerprintsTopJA3 returns HTML for bar chart showing top JA3 fingerprints
-func (s *Server) handleFingerprintsTopJA3(w http.ResponseWriter, r *http.Request) {
+// handleFingerprintsTopJA4 returns HTML for bar chart showing top JA4 fingerprints
+func (s *Server) handleFingerprintsTopJA4(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -91,7 +91,7 @@ func (s *Server) handleFingerprintsTopJA3(w http.ResponseWriter, r *http.Request
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
-	chart := generateFingerprintsTopJA3Chart(outDir, showLegend)
+	chart := generateFingerprintsTopJA4Chart(outDir, showLegend)
 	html, err := injectFullHeightCSS(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -102,8 +102,8 @@ func (s *Server) handleFingerprintsTopJA3(w http.ResponseWriter, r *http.Request
 	w.Write(html)
 }
 
-// handleFingerprintsTopHASSH returns HTML for bar chart showing top HASSH fingerprints
-func (s *Server) handleFingerprintsTopHASSH(w http.ResponseWriter, r *http.Request) {
+// handleFingerprintsTopJA4SSH returns HTML for bar chart showing top JA4SSH fingerprints
+func (s *Server) handleFingerprintsTopJA4SSH(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -129,7 +129,7 @@ func (s *Server) handleFingerprintsTopHASSH(w http.ResponseWriter, r *http.Reque
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
-	chart := generateFingerprintsTopHASSHChart(outDir, showLegend)
+	chart := generateFingerprintsTopJA4SSHChart(outDir, showLegend)
 	html, err := injectFullHeightCSS(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -205,7 +205,7 @@ func generateFingerprintsTypeDistributionChart(outDir string, showLegend bool) *
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Fingerprint Type Distribution",
-			Subtitle: "JA3, HASSH, and DHCP",
+			Subtitle: "JA4, JA4S, JA4H, JA4X, JA4T, JA4TS, JA4SSH, DHCP",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -241,27 +241,27 @@ func generateFingerprintsTypeDistributionChart(outDir string, showLegend bool) *
 	return pie
 }
 
-// generateFingerprintsTopJA3Chart creates a bar chart showing top JA3 fingerprints
-func generateFingerprintsTopJA3Chart(outDir string, showLegend bool) *charts.Bar {
+// generateFingerprintsTopJA4Chart creates a bar chart showing top JA4 fingerprints
+func generateFingerprintsTopJA4Chart(outDir string, showLegend bool) *charts.Bar {
 	fingerprints, err := readFingerprints(outDir)
 	if err != nil {
 		fingerprints = []FingerprintSummary{}
 	}
 
-	// Filter JA3 fingerprints
-	ja3Fingerprints := make([]FingerprintSummary, 0)
+	// Filter JA4 fingerprints
+	ja4Fingerprints := make([]FingerprintSummary, 0)
 	for _, fp := range fingerprints {
-		if fp.Type == "JA3" {
-			ja3Fingerprints = append(ja3Fingerprints, fp)
+		if fp.Type == "JA4" {
+			ja4Fingerprints = append(ja4Fingerprints, fp)
 		}
 	}
 
 	// Take top 15
 	limit := 15
-	if len(ja3Fingerprints) < limit {
-		limit = len(ja3Fingerprints)
+	if len(ja4Fingerprints) < limit {
+		limit = len(ja4Fingerprints)
 	}
-	topFingerprints := ja3Fingerprints[:limit]
+	topFingerprints := ja4Fingerprints[:limit]
 
 	// Prepare data
 	xAxis := make([]string, 0, len(topFingerprints))
@@ -288,7 +288,7 @@ func generateFingerprintsTopJA3Chart(outDir string, showLegend bool) *charts.Bar
 	bar.SetGlobalOptions(
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
-			Title:    "Top JA3 Fingerprints",
+			Title:    "Top JA4 Fingerprints",
 			Subtitle: "TLS Client Fingerprints",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
@@ -333,27 +333,27 @@ func generateFingerprintsTopJA3Chart(outDir string, showLegend bool) *charts.Bar
 	return bar
 }
 
-// generateFingerprintsTopHASSHChart creates a bar chart showing top HASSH fingerprints
-func generateFingerprintsTopHASSHChart(outDir string, showLegend bool) *charts.Bar {
+// generateFingerprintsTopJA4SSHChart creates a bar chart showing top JA4SSH fingerprints
+func generateFingerprintsTopJA4SSHChart(outDir string, showLegend bool) *charts.Bar {
 	fingerprints, err := readFingerprints(outDir)
 	if err != nil {
 		fingerprints = []FingerprintSummary{}
 	}
 
-	// Filter HASSH fingerprints
-	hasshFingerprints := make([]FingerprintSummary, 0)
+	// Filter JA4SSH fingerprints
+	ja4sshFingerprints := make([]FingerprintSummary, 0)
 	for _, fp := range fingerprints {
-		if fp.Type == "HASSH" {
-			hasshFingerprints = append(hasshFingerprints, fp)
+		if fp.Type == "JA4SSH" {
+			ja4sshFingerprints = append(ja4sshFingerprints, fp)
 		}
 	}
 
 	// Take top 15
 	limit := 15
-	if len(hasshFingerprints) < limit {
-		limit = len(hasshFingerprints)
+	if len(ja4sshFingerprints) < limit {
+		limit = len(ja4sshFingerprints)
 	}
-	topFingerprints := hasshFingerprints[:limit]
+	topFingerprints := ja4sshFingerprints[:limit]
 
 	// Prepare data
 	xAxis := make([]string, 0, len(topFingerprints))
@@ -380,7 +380,7 @@ func generateFingerprintsTopHASSHChart(outDir string, showLegend bool) *charts.B
 	bar.SetGlobalOptions(
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
-			Title:    "Top HASSH Fingerprints",
+			Title:    "Top JA4SSH Fingerprints",
 			Subtitle: "SSH Client/Server Fingerprints",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{

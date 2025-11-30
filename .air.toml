@@ -6,9 +6,9 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  args_bin = ["capture", "--service", "-http", "localhost:8080", "-service-data-dir", "./data/service-local"]
+  args_bin = ["capture", "--service", "-http", "localhost:8080", "-service-data-dir", "./data/service-local", "--dev", "-dpi"]
   bin = "./tmp/main"
-  cmd = "go build -tags nodpi -o ./tmp/main github.com/dreadl0ck/netcap/cmd"
+  cmd = "go build -o ./tmp/main github.com/dreadl0ck/netcap/cmd"
   delay = 1000
   exclude_dir = ["assets", "tmp", "vendor", "testdata", "cmd/capture/webui/frontend/node_modules", "cmd/capture/webui/frontend/.next", "cmd/capture/webui/frontend/out", "dist", "dist-linux", "data", "pcaps", "tests", "test-output", "test-params", "FlameGraph"]
   exclude_file = []

@@ -217,9 +217,9 @@ func GetFlags() []cli.Flag {
 			Sources: cli.EnvVars("NC_MACDB"),
 		},
 		&cli.BoolFlag{
-			Name:    "ja3DB",
-			Usage:   "use ja3 database for device profiling",
-			Sources: cli.EnvVars("NC_JA3DB"),
+			Name:    "ja4DB",
+			Usage:   "use JA4+ database for TLS fingerprint lookups",
+			Sources: cli.EnvVars("NC_JA4DB"),
 		},
 		&cli.BoolFlag{
 			Name:    "serviceDB",

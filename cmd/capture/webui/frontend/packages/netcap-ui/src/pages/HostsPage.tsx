@@ -66,7 +66,7 @@ import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 
 interface ProtocolInfo {
   name: string;
@@ -221,6 +221,15 @@ export default function HostsPage() {
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
+
+  // Generate row keys for keyboard navigation
+  const rowKeys = useMemo(() => 
+    paginatedHosts.map(host => host.addr),
+    [paginatedHosts]
+  );
+
+  // Enable keyboard navigation for detail views (UP/DOWN arrows)
+  useTableKeyboardNavigation(expandedRow, rowKeys, setExpandedRow);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -619,9 +628,11 @@ export default function HostsPage() {
                     <>
                       <TableRow 
                         key={host.addr}
+                        data-row-key={host.addr}
                         hover
                         onClick={() => handleRowClick(host.addr)}
                         sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
+                        data-learn="Host Row: Click to expand and view detailed information about this host. Use ↑↓ arrows to navigate between rows when expanded."
                       >
                         <TableCell>
                           <IconButton size="small">

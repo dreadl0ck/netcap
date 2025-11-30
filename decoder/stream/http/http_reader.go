@@ -62,13 +62,16 @@ const (
  */
 
 type httpRequest struct {
-	request    *http.Request
-	timestamp  int64
-	clientIP   string
-	serverIP   string
-	clientPort int32
-	serverPort int32
-	flow       string
+	request      *http.Request
+	timestamp    int64
+	clientIP     string
+	serverIP     string
+	clientPort   int32
+	serverPort   int32
+	flow         string
+	headerOrder  []string // Header names in wire order for JA4H
+	cookieFields []string // Cookie field names in order for JA4H
+	acceptLang   string   // Accept-Language value for JA4H
 }
 
 type httpResponse struct {
@@ -117,26 +120,30 @@ func (h *httpReader) Decode() {
 	for _, res := range h.responses { // populate types.HTTP with all infos from response
 		ht := newHTTPFromResponse(res.response)
 
-		_ = h.findRequest(res.response)
+		matchedReq := h.findRequest(res.response)
 
 		atomic.AddInt64(&streamutils.Stats.NumResponses, 1)
 
 		// now add request information
-		if res.response.Request != nil {
+		if matchedReq != nil && res.response.Request != nil {
 			if credentials.Decoder.Writer != nil {
 				h.searchForLoginParams(res.response.Request)
 				h.searchForBasicAuth(res.response.Request)
 			}
 
 			atomic.AddInt64(&streamutils.Stats.NumRequests, 1)
+			// Use the matched request which preserves JA4H header order info
 			setRequest(ht, &httpRequest{
-				request:    res.response.Request,
-				timestamp:  res.timestamp,
-				clientIP:   res.clientIP,
-				serverIP:   res.serverIP,
-				clientPort: res.clientPort,
-				serverPort: res.serverPort,
-				flow:       res.flow,
+				request:      res.response.Request,
+				timestamp:    res.timestamp,
+				clientIP:     res.clientIP,
+				serverIP:     res.serverIP,
+				clientPort:   res.clientPort,
+				serverPort:   res.serverPort,
+				flow:         res.flow,
+				headerOrder:  matchedReq.headerOrder,
+				cookieFields: matchedReq.cookieFields,
+				acceptLang:   matchedReq.acceptLang,
 			})
 		} else {
 			// response without matching request
@@ -384,31 +391,31 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 	return nil
 }
 
-func (h *httpReader) findRequest(res *http.Response) string {
+func (h *httpReader) findRequest(res *http.Response) *httpRequest {
 	// try to find the matching HTTP request for the response
-	var (
-		req    *http.Request
-		reqURL string
-	)
+	var httpReq *httpRequest
 
 	if len(h.requests) != 0 {
 		// take the request from the parent stream and delete it from there
-		req, h.requests = h.requests[0].request, h.requests[1:]
-		reqURL = req.URL.String()
+		httpReq, h.requests = h.requests[0], h.requests[1:]
 	}
 
 	// set request instance on response
-	if req != nil {
-		res.Request = req
+	if httpReq != nil {
+		res.Request = httpReq.request
 		atomic.AddInt64(&streamutils.Stats.NumFoundRequests, 1)
 	}
 
-	return reqURL
+	return httpReq
 }
 
 // HTTP Request
 
 func (h *httpReader) readRequest(b *bufio.Reader) error {
+	// Extract header order for JA4H fingerprinting before parsing
+	// We need to peek at the raw bytes to preserve header order
+	headerOrder, cookieFields, acceptLang := extractHeaderOrderFromReader(b)
+
 	req, err := http.ReadRequest(b)
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
@@ -451,13 +458,16 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 	t := h.conversation.FirstClientPacket.UnixNano()
 
 	request := &httpRequest{
-		request:    req,
-		timestamp:  t,
-		clientIP:   h.conversation.ClientIP,
-		serverIP:   h.conversation.ServerIP,
-		clientPort: h.conversation.ClientPort,
-		serverPort: h.conversation.ServerPort,
-		flow:       h.conversation.Ident,
+		request:      req,
+		timestamp:    t,
+		clientIP:     h.conversation.ClientIP,
+		serverIP:     h.conversation.ServerIP,
+		clientPort:   h.conversation.ClientPort,
+		serverPort:   h.conversation.ServerPort,
+		flow:         h.conversation.Ident,
+		headerOrder:  headerOrder,
+		cookieFields: cookieFields,
+		acceptLang:   acceptLang,
 	}
 
 	// parse form values
@@ -503,4 +513,104 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 	}
 
 	return nil
+}
+
+// extractHeaderOrderFromReader extracts HTTP header order from a bufio.Reader
+// by peeking at the raw bytes before http.ReadRequest consumes them.
+// This is needed for JA4H fingerprinting which requires header order preservation.
+func extractHeaderOrderFromReader(b *bufio.Reader) (headerOrder []string, cookieFields []string, acceptLang string) {
+	// Try to peek enough bytes to see the headers
+	// HTTP headers typically end with \r\n\r\n
+	// We'll peek progressively larger amounts until we find the header end
+	
+	peekSizes := []int{1024, 4096, 8192, 16384, 32768}
+	var peeked []byte
+	
+	for _, size := range peekSizes {
+		data, err := b.Peek(size)
+		if err != nil && len(data) == 0 {
+			// Can't peek, return empty
+			return nil, nil, ""
+		}
+		peeked = data
+		
+		// Check if we have the complete headers (ends with \r\n\r\n or \n\n)
+		if bytes.Contains(peeked, []byte("\r\n\r\n")) || bytes.Contains(peeked, []byte("\n\n")) {
+			break
+		}
+		
+		// If we got less than requested, we've read all available data
+		if len(data) < size {
+			break
+		}
+	}
+	
+	if len(peeked) == 0 {
+		return nil, nil, ""
+	}
+	
+	// Find the end of headers
+	headerEnd := bytes.Index(peeked, []byte("\r\n\r\n"))
+	if headerEnd == -1 {
+		headerEnd = bytes.Index(peeked, []byte("\n\n"))
+		if headerEnd == -1 {
+			headerEnd = len(peeked)
+		}
+	}
+	
+	headerBytes := peeked[:headerEnd]
+	lines := bytes.Split(headerBytes, []byte("\n"))
+	
+	// Skip the request line (first line)
+	for i := 1; i < len(lines); i++ {
+		line := bytes.TrimRight(lines[i], "\r")
+		if len(line) == 0 {
+			continue
+		}
+		
+		colonIdx := bytes.Index(line, []byte(":"))
+		if colonIdx <= 0 {
+			continue
+		}
+		
+		headerName := string(bytes.TrimSpace(line[:colonIdx]))
+		headerValue := string(bytes.TrimSpace(line[colonIdx+1:]))
+		
+		headerOrder = append(headerOrder, headerName)
+		
+		// Extract cookie field names
+		if strings.EqualFold(headerName, "Cookie") {
+			cookieFields = parseCookieFieldNamesFromValue(headerValue)
+		}
+		
+		// Extract Accept-Language
+		if strings.EqualFold(headerName, "Accept-Language") {
+			acceptLang = headerValue
+		}
+	}
+	
+	return headerOrder, cookieFields, acceptLang
+}
+
+// parseCookieFieldNamesFromValue extracts cookie field names from a Cookie header value
+func parseCookieFieldNamesFromValue(cookieValue string) []string {
+	var fields []string
+	
+	pairs := strings.Split(cookieValue, ";")
+	for _, pair := range pairs {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+		
+		eqIdx := strings.Index(pair, "=")
+		if eqIdx > 0 {
+			fields = append(fields, strings.TrimSpace(pair[:eqIdx]))
+		} else if eqIdx == -1 {
+			// Cookie without value
+			fields = append(fields, pair)
+		}
+	}
+	
+	return fields
 }

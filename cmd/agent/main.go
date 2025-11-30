@@ -157,7 +157,6 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			ReverseDNS:    c.Bool("reverse-dns"),
 			LocalDNS:      c.Bool("local-dns"),
 			MACDB:         c.Bool("macDB"),
-			Ja3DB:         c.Bool("ja3DB"),
 			ServiceDB:     c.Bool("serviceDB"),
 			GeolocationDB: c.Bool("geoDB"),
 		},

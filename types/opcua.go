@@ -224,3 +224,4 @@ func (o *OPCUA) NetcapType() Type {
 	return Type_NC_OPCUA
 }
 
+

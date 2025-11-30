@@ -22,11 +22,12 @@ package packet
 import (
 	"encoding/binary"
 
-	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/tlsx"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
 
+	"github.com/dreadl0ck/netcap/internal/ja4"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -77,6 +78,23 @@ var tlsServerHelloDecoder = newPacketDecoder(
 				}
 			}
 
+			// Compute JA4S fingerprint
+			ja4sExtensions := make([]uint16, len(hello.Extensions))
+			for i, ext := range hello.Extensions {
+				ja4sExtensions[i] = uint16(ext)
+			}
+			ja4sFingerprint := ja4.ComputeJA4S(&ja4.ServerHelloData{
+				Version:       uint16(hello.Vers),
+				CipherSuite:   uint16(hello.CipherSuite),
+				Extensions:    ja4sExtensions,
+				SupportedVers: hello.SupportedVersion,
+				IsQUIC:        false, // TCP/TLS connection
+				ALPN:          hello.AlpnProtocol,
+			})
+
+			// Lookup JA4S fingerprint in database for enrichment
+			ja4sDescription := resolvers.LookupJA4S(ja4sFingerprint)
+
 			return &types.TLSServerHello{
 				Timestamp:                    p.Metadata().Timestamp.UnixNano(),
 				Version:                      int32(hello.Vers),
@@ -98,7 +116,6 @@ var tlsServerHelloDecoder = newPacketDecoder(
 				SelectedIdentity:             int32(hello.SelectedIdentity),
 				Cookie:                       hello.Cookie,
 				SelectedGroup:                int32(hello.SelectedGroup),
-				Ja3S:                         ja3.DigestHexJa3s(&hello.ServerHelloBasic),
 				SrcIP:                        srcIP,
 				DstIP:                        dstIP,
 				SrcMAC:                       srcMac,
@@ -106,6 +123,9 @@ var tlsServerHelloDecoder = newPacketDecoder(
 				SrcPort:                      int32(srcPort),
 				DstPort:                      int32(dstPort),
 				Extensions:                   extensions,
+				// JA4S fingerprint
+				Ja4S:            ja4sFingerprint,
+				Ja4SDescription: ja4sDescription,
 			}
 		}
 

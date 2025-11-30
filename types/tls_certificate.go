@@ -57,6 +57,8 @@ const (
 	fieldIsCA                = "IsCA"
 	fieldMaxPathLen          = "MaxPathLen"
 	fieldSeenCount           = "SeenCount"
+	fieldJa4x                = "Ja4x"
+	fieldJa4xRaw             = "Ja4xRaw"
 )
 
 var fieldsTLSCertificate = []string{
@@ -97,6 +99,8 @@ var fieldsTLSCertificate = []string{
 	fieldIsCA,
 	fieldMaxPathLen,
 	fieldSeenCount,
+	fieldJa4x,
+	fieldJa4xRaw,
 }
 
 // CSVHeader returns the CSV header for the audit record
@@ -144,6 +148,8 @@ func (t *TLSCertificate) CSVRecord() []string {
 		strconv.FormatBool(t.IsCA),
 		formatInt32(t.MaxPathLen),
 		formatInt64(t.SeenCount),
+		t.Ja4X,
+		t.Ja4XRaw,
 	})
 }
 
@@ -226,6 +232,8 @@ func (t *TLSCertificate) Encode() []string {
 		strconv.FormatBool(t.IsCA),
 		formatInt32(t.MaxPathLen),
 		formatInt64(t.SeenCount),
+		t.Ja4X,
+		t.Ja4XRaw,
 	})
 }
 

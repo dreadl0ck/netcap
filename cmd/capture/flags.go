@@ -329,10 +329,10 @@ func GetFlags() []cli.Flag {
 			Sources: cli.EnvVars("NC_MACDB"),
 		},
 		&cli.BoolFlag{
-			Name:    "ja3DB",
+			Name:    "ja4DB",
 			Value:   true,
-			Usage:   "use ja3 database for device profiling",
-			Sources: cli.EnvVars("NC_JA3DB"),
+			Usage:   "use JA4+ database for TLS fingerprint lookups",
+			Sources: cli.EnvVars("NC_JA4DB"),
 		},
 		&cli.BoolFlag{
 			Name:    "serviceDB",
@@ -686,6 +686,11 @@ func GetFlags() []cli.Flag {
 			Name:    "rules",
 			Usage:   "path to rules file for alert generation (YAML format)",
 			Sources: cli.EnvVars("NC_RULES"),
+		},
+		&cli.BoolFlag{
+			Name:    "dev",
+			Usage:   "development mode: use current binary instead of 'net' for job execution",
+			Sources: cli.EnvVars("NC_DEV"),
 		},
 	}
 }

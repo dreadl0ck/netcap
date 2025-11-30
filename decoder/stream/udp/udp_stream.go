@@ -244,6 +244,19 @@ func (u *udpStream) decode() {
 			if sd.Transport() == core.UDP || sd.Transport() == core.All {
 				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
 					u.decoder = sd.GetReaderFactory().New(conv)
+					found = true
+					break
+				}
+			}
+		}
+	}
+
+	// Try UDP-specific decoders (e.g., QUIC which shares port 443 with TLS)
+	if !found {
+		for _, sd := range stream.UDPStreamDecoders {
+			if sd.Transport() == core.UDP || sd.Transport() == core.All {
+				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
+					u.decoder = sd.GetReaderFactory().New(conv)
 					break
 				}
 			}

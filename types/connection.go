@@ -88,6 +88,12 @@ var fieldsConnection = []string{
 	fieldApplications,
 	"ServerPortName",
 	"DetectedProtocolName",
+	// JA4L timing fields
+	"TcpRttNanos",
+	"TlsHandshakeNanos",
+	"Ja4lClient",
+	"Ja4lServer",
+	"SynTtl",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -130,6 +136,12 @@ func (c *Connection) CSVRecord() []string {
 		join(c.Applications...),
 		c.ServerPortName,
 		c.DetectedProtocolName,
+		// JA4L timing fields
+		formatInt64(c.TcpRttNanos),
+		formatInt64(c.TlsHandshakeNanos),
+		c.Ja4LClient,
+		c.Ja4LServer,
+		formatInt32(c.SynTtl),
 	})
 }
 

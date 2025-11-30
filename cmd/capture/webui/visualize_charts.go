@@ -1222,9 +1222,11 @@ func getLayerMap() map[string]string {
 		"MLDv2MulticastListenerQuery":  "Network Layer",
 		"MLDv2MulticastListenerReport": "Network Layer",
 		// Transport Layer
-		"TCP":  "Transport Layer",
-		"UDP":  "Transport Layer",
-		"SCTP": "Transport Layer",
+		"QUIC":            "Transport Layer",
+		"QUICClientHello": "Transport Layer",
+		"TCP":             "Transport Layer",
+		"UDP":             "Transport Layer",
+		"SCTP":            "Transport Layer",
 		// Application Layer
 		"HTTP":           "Application Layer",
 		"TLS":            "Application Layer",

@@ -112,8 +112,8 @@ var transforms = []*maltego.TransformCoreInfo{
 	{"ToDevices", "netcap.DeviceProfileAuditRecords", "Show all discovered device audit records"},
 	{"ToIPProfiles", "netcap.IPProfileAuditRecords", "Show all discovered ip hosts"},
 	{"ToIPProfilesForSoftware", "netcap.Software", "Show all ip hosts for the selected software"},
-	{"ToJA3Hashes", "netcap.TLSClientHelloAuditRecords", "Show all discovered ja3 client hashes"},
-	{"ToJA3SHashes", "netcap.TLSServerHelloAuditRecords", "Show all discovered ja3 server hashes"},
+	{"ToJA4Hashes", "netcap.TLSClientHelloAuditRecords", "Show all discovered JA4 client hashes"},
+	{"ToJA4SHashes", "netcap.TLSServerHelloAuditRecords", "Show all discovered JA4S server hashes"},
 	{"ToSMTPCommandTypes", "netcap.SMTPAuditRecords", "Show all SMTP command types"},
 	{"ToDNSOpCodes", "netcap.DNSAuditRecords", "Show all DNS op codes"},
 
@@ -152,7 +152,7 @@ var transforms = []*maltego.TransformCoreInfo{
 	{"ToServiceTypes", "netcap.ServiceAuditRecords", "Show detected network service types"},
 
 	{"ToSourceDevices", "netcap.IPProfile", "Show the source devices for the given ip profile"},
-	{"ToJA3HashesForProfile", "netcap.IPProfile", "Show the ja3 hashes seen for the given ip profile"},
+	{"ToJA4HashesForProfile", "netcap.IPProfile", "Show the JA4 hashes seen for the given ip profile"},
 
 	{"ToVisitorsForURL", "netcap.URL", "Show all visitors for the selected URL"},
 	{"ToVisitorsForHost", "netcap.Host", "Show all visitors for the selected website"},

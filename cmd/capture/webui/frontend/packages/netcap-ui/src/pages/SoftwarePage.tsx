@@ -60,7 +60,7 @@ import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 
 interface SoftwareSummary {
   product: string;
@@ -75,6 +75,18 @@ interface SoftwareSummary {
   lastSeen: number;
   sourceNames: string[];
   flows: string[];
+  // Detection context
+  detectionMethod: string;
+  confidenceLevel: string;
+  // Behavioral fingerprint
+  behaviorProfile: string;
+  isHeadless: boolean;
+  isEmulated: boolean;
+  isAutomated: boolean;
+  // Risk indicators
+  hasKnownVulnerabilities: boolean;
+  isEndOfLife: boolean;
+  supportStatus: string;
 }
 
 interface SoftwareResponse {
@@ -183,6 +195,15 @@ export default function SoftwarePage() {
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
+
+  // Generate row keys for keyboard navigation
+  const rowKeys = useMemo(() => 
+    paginatedSoftware.map((sw, idx) => `${sw.product}-${sw.vendor}-${sw.version}-${idx}`),
+    [paginatedSoftware]
+  );
+
+  // Enable keyboard navigation for detail views (UP/DOWN arrows)
+  useTableKeyboardNavigation(expandedRow, rowKeys, setExpandedRow);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -545,10 +566,11 @@ export default function SoftwarePage() {
                       <>
                         <TableRow 
                           key={rowKey}
+                          data-row-key={rowKey}
                           hover
                           onClick={() => handleRowClick(rowKey)}
                           sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
-                          data-learn="Software Row: Click to expand and view detailed information about this software."
+                          data-learn="Software Row: Click to expand and view detailed information about this software. Use ↑↓ arrows to navigate between rows when expanded."
                         >
                           <TableCell>
                             <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed software information.">
@@ -695,6 +717,139 @@ export default function SoftwarePage() {
                                             sx={{ fontSize: '0.75rem' }}
                                           />
                                         ))}
+                                      </Box>
+                                    </Grid>
+                                  )}
+
+                                  {/* Detection Context */}
+                                  {(sw.detectionMethod || sw.confidenceLevel) && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Detection Context: How this software was detected and confidence level of the identification.">
+                                        Detection Context
+                                      </Typography>
+                                      {sw.detectionMethod && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                          <Typography variant="body2" color="text.secondary">
+                                            Method:
+                                          </Typography>
+                                          <Chip 
+                                            label={sw.detectionMethod} 
+                                            size="small" 
+                                            color="info"
+                                            variant="outlined"
+                                            sx={{ fontSize: '0.7rem' }}
+                                          />
+                                        </Box>
+                                      )}
+                                      {sw.confidenceLevel && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                          <Typography variant="body2" color="text.secondary">
+                                            Confidence:
+                                          </Typography>
+                                          <Chip 
+                                            label={sw.confidenceLevel} 
+                                            size="small" 
+                                            color={sw.confidenceLevel === 'high' ? 'success' : sw.confidenceLevel === 'medium' ? 'warning' : 'default'}
+                                            sx={{ fontSize: '0.7rem' }}
+                                          />
+                                        </Box>
+                                      )}
+                                    </Grid>
+                                  )}
+
+                                  {/* Behavior Analysis */}
+                                  {(sw.behaviorProfile || sw.isHeadless || sw.isEmulated || sw.isAutomated) && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Behavior Analysis: Behavioral classification of the software based on observed patterns.">
+                                        Behavior Analysis
+                                      </Typography>
+                                      {sw.behaviorProfile && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                          <Typography variant="body2" color="text.secondary">
+                                            Profile:
+                                          </Typography>
+                                          <Chip 
+                                            label={sw.behaviorProfile} 
+                                            size="small" 
+                                            color="secondary"
+                                            sx={{ fontSize: '0.7rem' }}
+                                          />
+                                        </Box>
+                                      )}
+                                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.5 }}>
+                                        {sw.isHeadless && (
+                                          <Chip 
+                                            label="Headless" 
+                                            size="small" 
+                                            color="warning"
+                                            sx={{ fontSize: '0.7rem' }}
+                                            data-learn="Detected as running in headless mode (no UI)."
+                                          />
+                                        )}
+                                        {sw.isEmulated && (
+                                          <Chip 
+                                            label="Emulated" 
+                                            size="small" 
+                                            color="warning"
+                                            sx={{ fontSize: '0.7rem' }}
+                                            data-learn="Detected as running in an emulated environment."
+                                          />
+                                        )}
+                                        {sw.isAutomated && (
+                                          <Chip 
+                                            label="Automated" 
+                                            size="small" 
+                                            color="warning"
+                                            sx={{ fontSize: '0.7rem' }}
+                                            data-learn="Detected as automation tool (Selenium, Puppeteer, etc.)."
+                                          />
+                                        )}
+                                      </Box>
+                                    </Grid>
+                                  )}
+
+                                  {/* Security Status */}
+                                  {(sw.hasKnownVulnerabilities || sw.isEndOfLife || sw.supportStatus) && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Security Status: Risk indicators for this software version.">
+                                        Security Status
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                        {sw.hasKnownVulnerabilities && (
+                                          <Chip 
+                                            label="⚠️ Known Vulnerabilities" 
+                                            size="small" 
+                                            color="error"
+                                            sx={{ fontSize: '0.7rem' }}
+                                            data-learn="This software version has known security vulnerabilities."
+                                          />
+                                        )}
+                                        {sw.isEndOfLife && (
+                                          <Chip 
+                                            label="⚠️ End of Life" 
+                                            size="small" 
+                                            color="error"
+                                            sx={{ fontSize: '0.7rem' }}
+                                            data-learn="This software version is no longer receiving security updates."
+                                          />
+                                        )}
+                                        {sw.supportStatus && (
+                                          <Chip 
+                                            label={`Support: ${sw.supportStatus}`} 
+                                            size="small" 
+                                            color={sw.supportStatus === 'active' ? 'success' : sw.supportStatus === 'maintenance' ? 'warning' : 'error'}
+                                            variant="outlined"
+                                            sx={{ fontSize: '0.7rem' }}
+                                          />
+                                        )}
+                                        {!sw.hasKnownVulnerabilities && !sw.isEndOfLife && !sw.supportStatus && (
+                                          <Chip 
+                                            label="✓ No known issues" 
+                                            size="small" 
+                                            color="success"
+                                            sx={{ fontSize: '0.7rem' }}
+                                          />
+                                        )}
                                       </Box>
                                     </Grid>
                                   )}

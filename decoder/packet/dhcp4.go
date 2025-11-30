@@ -27,6 +27,7 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 
+	"github.com/dreadl0ck/netcap/internal/ja4"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -44,11 +45,12 @@ var dhcpv4MessageTypeNames = map[layers.DHCPMsgType]string{
 
 // DHCP option types
 const (
-	dhcpOptHostname    = 12
-	dhcpOptVendorClass = 60
-	dhcpOptServerID    = 54
-	dhcpOptMessageType = 53
-	dhcpOptLeaseTime   = 51
+	dhcpOptHostname         = 12
+	dhcpOptVendorClass      = 60
+	dhcpOptServerID         = 54
+	dhcpOptMessageType      = 53
+	dhcpOptLeaseTime        = 51
+	dhcpOptParamRequestList = 55
 )
 
 var dhcpv4Decoder = newGoPacketDecoder(
@@ -60,6 +62,7 @@ var dhcpv4Decoder = newGoPacketDecoder(
 
 			var (
 				opts             = make([]*types.DHCPOption, 0, len(dhcp4.Options))
+				optTypes         = make([]uint8, 0, len(dhcp4.Options))
 				fp               strings.Builder
 				length           = len(dhcp4.Options) - 1
 				messageType      string
@@ -68,6 +71,7 @@ var dhcpv4Decoder = newGoPacketDecoder(
 				serverIdentifier string
 				hostname         string
 				vendorClass      string
+				paramRequestList []uint8
 			)
 
 			for i, o := range dhcp4.Options {
@@ -76,6 +80,7 @@ var dhcpv4Decoder = newGoPacketDecoder(
 					Length: int32(o.Length),
 					Type:   int32(o.Type),
 				})
+				optTypes = append(optTypes, uint8(o.Type))
 				fp.WriteString(strconv.Itoa(int(o.Type)))
 				if i != length {
 					fp.WriteString(",")
@@ -104,8 +109,23 @@ var dhcpv4Decoder = newGoPacketDecoder(
 					hostname = string(o.Data)
 				case dhcpOptVendorClass:
 					vendorClass = string(o.Data)
+				case dhcpOptParamRequestList:
+					// Extract Parameter Request List for JA4D fingerprinting
+					paramRequestList = make([]uint8, len(o.Data))
+					copy(paramRequestList, o.Data)
 				}
 			}
+
+			// Compute JA4D fingerprint
+			ja4dData := ja4.BuildDHCPv4DataFromOptions(
+				uint8(messageTypeCode),
+				uint8(dhcp4.HardwareType),
+				optTypes,
+				paramRequestList,
+				vendorClass,
+				hostname,
+			)
+			ja4dFingerprint := ja4.ComputeJA4D(ja4dData)
 
 			return &types.DHCPv4{
 				Timestamp:        timestamp,
@@ -131,6 +151,7 @@ var dhcpv4Decoder = newGoPacketDecoder(
 				ServerIdentifier: serverIdentifier,
 				Hostname:         hostname,
 				VendorClass:      vendorClass,
+				JA4D:             ja4dFingerprint,
 			}
 		}
 

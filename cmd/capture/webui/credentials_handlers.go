@@ -41,6 +41,43 @@ type CredentialSummary struct {
 	User      string `json:"user"`
 	Password  string `json:"password"`
 	Notes     string `json:"notes"`
+	// Hash-based credentials
+	Hash          string `json:"hash"`
+	HashType      string `json:"hashType"`
+	Domain        string `json:"domain"`
+	Realm         string `json:"realm"`
+	Challenge     string `json:"challenge"`
+	ServiceName   string `json:"serviceName"`
+	Etype         int32  `json:"etype"`
+	HashcatFormat string `json:"hashcatFormat"`
+	// HTTP Digest specific
+	Method string `json:"method"`
+	Nonce  string `json:"nonce"`
+	Uri    string `json:"uri"`
+	Qop    string `json:"qop"`
+	Nc     string `json:"nc"`
+	Cnonce string `json:"cnonce"`
+	// NTLM specific
+	Workstation string `json:"workstation"`
+	LmHash      string `json:"lmHash"`
+	NtHash      string `json:"ntHash"`
+	// Authentication result tracking
+	AuthSuccess    bool  `json:"authSuccess"`
+	AuthSuccessSet bool  `json:"authSuccessSet"`
+	AuthAttempts   int32 `json:"authAttempts"`
+	// RADIUS specific
+	MacAddress    string `json:"macAddress"`
+	FramedAddress string `json:"framedAddress"`
+	ConnectInfo   string `json:"connectInfo"`
+	ReplyMessage  string `json:"replyMessage"`
+	// SOCKS specific
+	SocksVersion int32  `json:"socksVersion"`
+	SocksStatus  string `json:"socksStatus"`
+	// SIP specific
+	SipMethod string `json:"sipMethod"`
+	SipCallId string `json:"sipCallId"`
+	SipFrom   string `json:"sipFrom"`
+	SipTo     string `json:"sipTo"`
 }
 
 // CredentialsResponse contains the list of credentials
@@ -166,6 +203,43 @@ func (s *Server) handleCredentials(w http.ResponseWriter, r *http.Request) {
 			User:      cred.User,
 			Password:  cred.Password,
 			Notes:     cred.Notes,
+			// Hash-based credentials
+			Hash:          cred.Hash,
+			HashType:      cred.HashType,
+			Domain:        cred.Domain,
+			Realm:         cred.Realm,
+			Challenge:     cred.Challenge,
+			ServiceName:   cred.ServiceName,
+			Etype:         cred.Etype,
+			HashcatFormat: cred.HashcatFormat,
+			// HTTP Digest specific
+			Method: cred.Method,
+			Nonce:  cred.Nonce,
+			Uri:    cred.Uri,
+			Qop:    cred.Qop,
+			Nc:     cred.Nc,
+			Cnonce: cred.Cnonce,
+			// NTLM specific
+			Workstation: cred.Workstation,
+			LmHash:      cred.LmHash,
+			NtHash:      cred.NtHash,
+			// Authentication result tracking
+			AuthSuccess:    cred.AuthSuccess,
+			AuthSuccessSet: cred.AuthSuccessSet,
+			AuthAttempts:   cred.AuthAttempts,
+			// RADIUS specific
+			MacAddress:    cred.MacAddress,
+			FramedAddress: cred.FramedAddress,
+			ConnectInfo:   cred.ConnectInfo,
+			ReplyMessage:  cred.ReplyMessage,
+			// SOCKS specific
+			SocksVersion: cred.SocksVersion,
+			SocksStatus:  cred.SocksStatus,
+			// SIP specific
+			SipMethod: cred.SipMethod,
+			SipCallId: cred.SipCallId,
+			SipFrom:   cred.SipFrom,
+			SipTo:     cred.SipTo,
 		})
 
 		// Log first few credentials for debugging

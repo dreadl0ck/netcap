@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently -n ui,next -c blue,green \"pnpm --filter @dreadl0ck/netcap-ui dev\" \"next dev\"",
     "build": "pnpm --filter @dreadl0ck/netcap-ui build && next build",
     "start": "next start",
     "lint": "next lint",
@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.0.3",
+    "concurrently": "^9.0.0",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.1",

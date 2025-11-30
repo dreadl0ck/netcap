@@ -61,7 +61,7 @@ import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 
 interface ServiceSummary {
   timestamp: number;
@@ -200,6 +200,15 @@ export default function ServicesPage() {
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
+
+  // Generate row keys for keyboard navigation
+  const rowKeys = useMemo(() => 
+    paginatedServices.map((svc, idx) => `${svc.ip}-${svc.port}-${idx}`),
+    [paginatedServices]
+  );
+
+  // Enable keyboard navigation for detail views (UP/DOWN arrows)
+  useTableKeyboardNavigation(expandedRow, rowKeys, setExpandedRow);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -576,10 +585,11 @@ export default function ServicesPage() {
                       <>
                         <TableRow 
                           key={rowKey}
+                          data-row-key={rowKey}
                           hover
                           onClick={() => handleRowClick(rowKey)}
                           sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
-                          data-learn="Service Row: Click to expand and view detailed information about this service."
+                          data-learn="Service Row: Click to expand and view detailed information about this service. Use ↑↓ arrows to navigate between rows when expanded."
                         >
                           <TableCell>
                             <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed service information.">

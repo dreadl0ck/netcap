@@ -56,12 +56,15 @@ import {
   Router as RouterIcon,
   TableChart as TableChartIcon,
   BarChart as BarChartIcon,
+  Http as HttpIcon,
+  VerifiedUser as VerifiedUserIcon,
+  Memory as MemoryIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
-import { useNetcapApi } from '../hooks';
+import { useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 interface FingerprintSummary {
@@ -87,7 +90,7 @@ export default function FingerprintsPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'JA3' | 'HASSH' | 'DHCP'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'JA4' | 'JA4S' | 'JA4H' | 'JA4X' | 'JA4T' | 'JA4TS' | 'JA4SSH' | 'DHCP'>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [switchingFile, setSwitchingFile] = useState(false);
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
@@ -172,6 +175,15 @@ export default function FingerprintsPage() {
     page * rowsPerPage + rowsPerPage
   );
 
+  // Generate row keys for keyboard navigation
+  const rowKeys = useMemo(() => 
+    paginatedFingerprints.map((fp, idx) => `${fp.type}-${fp.fingerprint}-${idx}`),
+    [paginatedFingerprints]
+  );
+
+  // Enable keyboard navigation for detail views (UP/DOWN arrows)
+  useTableKeyboardNavigation(expandedRow, rowKeys, setExpandedRow);
+
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
@@ -222,8 +234,13 @@ export default function FingerprintsPage() {
   );
 
   // Calculate summary statistics
-  const ja3Count = fingerprints.filter(fp => fp.type === 'JA3').length;
-  const hasshCount = fingerprints.filter(fp => fp.type === 'HASSH').length;
+  const ja4Count = fingerprints.filter(fp => fp.type === 'JA4').length;
+  const ja4sCount = fingerprints.filter(fp => fp.type === 'JA4S').length;
+  const ja4hCount = fingerprints.filter(fp => fp.type === 'JA4H').length;
+  const ja4xCount = fingerprints.filter(fp => fp.type === 'JA4X').length;
+  const ja4tCount = fingerprints.filter(fp => fp.type === 'JA4T').length;
+  const ja4tsCount = fingerprints.filter(fp => fp.type === 'JA4TS').length;
+  const ja4sshCount = fingerprints.filter(fp => fp.type === 'JA4SSH').length;
   const dhcpCount = fingerprints.filter(fp => fp.type === 'DHCP').length;
   const totalOccurrences = fingerprints.reduce((sum, fp) => sum + fp.count, 0);
 
@@ -266,18 +283,18 @@ export default function FingerprintsPage() {
           </ToggleButtonGroup>
         </Box>
 
-        {/* Summary Cards */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
+        {/* Summary Cards - Row 1: Core TLS fingerprints */}
+        <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid item xs={12} sm={6} md={2.4}>
             <Card data-learn="Total Fingerprints: Number of unique fingerprint hashes discovered across all types.">
-              <CardContent>
+              <CardContent sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <FingerprintIcon color="primary" />
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary">
                       Total Fingerprints
                     </Typography>
-                    <Typography variant="h5">
+                    <Typography variant="h6">
                       {totalCount.toLocaleString()}
                     </Typography>
                   </Box>
@@ -286,17 +303,17 @@ export default function FingerprintsPage() {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="JA3 Fingerprints: TLS/SSL client fingerprints from encrypted connections.">
-              <CardContent>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Card data-learn="JA4 Fingerprints: TLS/SSL client fingerprints from encrypted connections.">
+              <CardContent sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <VpnLockIcon color="success" />
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      JA3 (TLS)
+                    <Typography variant="caption" color="text.secondary">
+                      JA4 (TLS Client)
                     </Typography>
-                    <Typography variant="h5">
-                      {ja3Count.toLocaleString()}
+                    <Typography variant="h6">
+                      {ja4Count.toLocaleString()}
                     </Typography>
                   </Box>
                 </Box>
@@ -304,17 +321,110 @@ export default function FingerprintsPage() {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="HASSH Fingerprints: SSH client and server fingerprints for secure shell connections.">
-              <CardContent>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Card data-learn="JA4S Fingerprints: TLS/SSL server fingerprints from encrypted connections.">
+              <CardContent sx={{ py: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <VpnLockIcon color="info" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      JA4S (TLS Server)
+                    </Typography>
+                    <Typography variant="h6">
+                      {ja4sCount.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Card data-learn="JA4H Fingerprints: HTTP client fingerprints for application identification.">
+              <CardContent sx={{ py: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <HttpIcon color="secondary" />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      JA4H (HTTP)
+                    </Typography>
+                    <Typography variant="h6">
+                      {ja4hCount.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Card data-learn="JA4X Fingerprints: X.509 certificate fingerprints for CA and certificate identification.">
+              <CardContent sx={{ py: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <VerifiedUserIcon sx={{ color: '#9c27b0' }} />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      JA4X (Certificate)
+                    </Typography>
+                    <Typography variant="h6">
+                      {ja4xCount.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+        
+        {/* Summary Cards - Row 2: TCP, SSH, and DHCP fingerprints */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Card data-learn="JA4T Fingerprints: TCP client fingerprints from SYN packets for OS/device identification.">
+              <CardContent sx={{ py: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <MemoryIcon sx={{ color: '#ff5722' }} />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      JA4T (TCP Client)
+                    </Typography>
+                    <Typography variant="h6">
+                      {ja4tCount.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Card data-learn="JA4TS Fingerprints: TCP server fingerprints from SYN-ACK packets for OS/device identification.">
+              <CardContent sx={{ py: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <MemoryIcon sx={{ color: '#795548' }} />
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      JA4TS (TCP Server)
+                    </Typography>
+                    <Typography variant="h6">
+                      {ja4tsCount.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={2.4}>
+            <Card data-learn="JA4SSH Fingerprints: SSH client and server fingerprints for secure shell connections.">
+              <CardContent sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <SecurityIcon color="warning" />
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      HASSH (SSH)
+                    <Typography variant="caption" color="text.secondary">
+                      JA4SSH (SSH)
                     </Typography>
-                    <Typography variant="h5">
-                      {hasshCount.toLocaleString()}
+                    <Typography variant="h6">
+                      {ja4sshCount.toLocaleString()}
                     </Typography>
                   </Box>
                 </Box>
@@ -322,16 +432,16 @@ export default function FingerprintsPage() {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={2.4}>
             <Card data-learn="DHCP Fingerprints: Device fingerprints from DHCP requests for device identification.">
-              <CardContent>
+              <CardContent sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <RouterIcon color="info" />
                   <Box>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary">
                       DHCP
                     </Typography>
-                    <Typography variant="h5">
+                    <Typography variant="h6">
                       {dhcpCount.toLocaleString()}
                     </Typography>
                   </Box>
@@ -348,7 +458,7 @@ export default function FingerprintsPage() {
             <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
-                  data-learn="Type Distribution: Pie chart showing distribution of JA3, HASSH, and DHCP fingerprints."
+                  data-learn="Type Distribution: Pie chart showing distribution of JA4, JA4S, JA4SSH, and DHCP fingerprints."
                   key={`type-distribution-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/fingerprints/type-distribution?showLegend=false`}
                   style={{
@@ -366,15 +476,15 @@ export default function FingerprintsPage() {
             <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
-                  data-learn="Top JA3: Bar chart showing the most common TLS client fingerprints."
-                  key={`top-ja3-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/fingerprints/top-ja3`}
+                  data-learn="Top JA4: Bar chart showing the most common TLS client fingerprints."
+                  key={`top-ja4-${chartRefreshKey}`}
+                  src={`${getBackendUrl()}/api/fingerprints/top-ja4`}
                   style={{
                     width: '100%',
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Top JA3 Fingerprints"
+                  title="Top JA4 Fingerprints"
                 />
               </CardContent>
             </Card>
@@ -384,15 +494,15 @@ export default function FingerprintsPage() {
             <Card sx={{ height: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
-                  data-learn="Top HASSH: Bar chart showing the most common SSH client/server fingerprints."
-                  key={`top-hassh-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/fingerprints/top-hassh`}
+                  data-learn="Top JA4SSH: Bar chart showing the most common SSH client/server fingerprints."
+                  key={`top-ja4ssh-${chartRefreshKey}`}
+                  src={`${getBackendUrl()}/api/fingerprints/top-ja4ssh`}
                   style={{
                     width: '100%',
                     height: '100%',
                     border: 'none',
                   }}
-                  title="Top HASSH Fingerprints"
+                  title="Top JA4SSH Fingerprints"
                 />
               </CardContent>
             </Card>
@@ -434,18 +544,23 @@ export default function FingerprintsPage() {
             sx={{ minWidth: 300 }}
           />
           
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+          <FormControl size="small" sx={{ minWidth: 180 }}>
             <Select
-              data-learn="Type Filter: Filter to show all fingerprints or only specific types (JA3, HASSH, DHCP)."
+              data-learn="Type Filter: Filter to show all fingerprints or only specific types (JA4, JA4S, JA4H, JA4X, JA4T, JA4TS, JA4SSH, DHCP)."
               value={filterType}
               onChange={(e) => {
-                setFilterType(e.target.value as 'all' | 'JA3' | 'HASSH' | 'DHCP');
+                setFilterType(e.target.value as 'all' | 'JA4' | 'JA4S' | 'JA4H' | 'JA4X' | 'JA4T' | 'JA4TS' | 'JA4SSH' | 'DHCP');
                 setPage(0);
               }}
             >
               <MenuItem value="all">All Types</MenuItem>
-              <MenuItem value="JA3">JA3 (TLS)</MenuItem>
-              <MenuItem value="HASSH">HASSH (SSH)</MenuItem>
+              <MenuItem value="JA4">JA4 (TLS Client)</MenuItem>
+              <MenuItem value="JA4S">JA4S (TLS Server)</MenuItem>
+              <MenuItem value="JA4H">JA4H (HTTP)</MenuItem>
+              <MenuItem value="JA4X">JA4X (Certificate)</MenuItem>
+              <MenuItem value="JA4T">JA4T (TCP Client)</MenuItem>
+              <MenuItem value="JA4TS">JA4TS (TCP Server)</MenuItem>
+              <MenuItem value="JA4SSH">JA4SSH (SSH)</MenuItem>
               <MenuItem value="DHCP">DHCP</MenuItem>
             </Select>
           </FormControl>
@@ -539,10 +654,11 @@ export default function FingerprintsPage() {
                       <>
                         <TableRow 
                           key={rowKey}
+                          data-row-key={rowKey}
                           hover
                           onClick={() => handleRowClick(rowKey)}
                           sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
-                          data-learn="Fingerprint Row: Click to expand and view detailed information about this fingerprint."
+                          data-learn="Fingerprint Row: Click to expand and view detailed information about this fingerprint. Use ↑↓ arrows to navigate between rows when expanded."
                         >
                           <TableCell>
                             <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed fingerprint information.">
@@ -569,11 +685,24 @@ export default function FingerprintsPage() {
                           </TableCell>
                           <TableCell>
                             <Chip
-                              data-learn="Fingerprint Type: Protocol or method used for this fingerprint (JA3 for TLS, HASSH for SSH, DHCP for device identification)."
+                              data-learn="Fingerprint Type: Protocol or method used for this fingerprint (JA4/JA4S for TLS, JA4H for HTTP, JA4X for certificates, JA4T/JA4TS for TCP, JA4SSH for SSH, DHCP for device identification)."
                               label={fp.type}
                               size="small"
-                              color={fp.type === 'JA3' ? 'success' : fp.type === 'HASSH' ? 'warning' : 'info'}
-                              sx={{ fontSize: '0.7rem' }}
+                              color={
+                                fp.type === 'JA4' ? 'success' : 
+                                fp.type === 'JA4S' ? 'primary' : 
+                                fp.type === 'JA4H' ? 'secondary' :
+                                fp.type === 'JA4X' ? 'default' :
+                                fp.type === 'JA4T' ? 'error' :
+                                fp.type === 'JA4TS' ? 'error' :
+                                fp.type === 'JA4SSH' ? 'warning' : 
+                                'info'
+                              }
+                              sx={{ 
+                                fontSize: '0.7rem',
+                                ...(fp.type === 'JA4X' && { backgroundColor: '#9c27b0', color: 'white' }),
+                                ...(fp.type === 'JA4TS' && { backgroundColor: '#795548', color: 'white' }),
+                              }}
                             />
                           </TableCell>
                           <TableCell align="right">

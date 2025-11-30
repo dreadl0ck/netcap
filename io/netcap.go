@@ -225,6 +225,10 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.IEC62351)
 	case types.Type_NC_PROFINET:
 		record = new(types.PROFINET)
+	case types.Type_NC_QUIC:
+		record = new(types.QUIC)
+	case types.Type_NC_QUICClientHello:
+		record = new(types.QUICClientHello)
 	case types.Type_NC_Header:
 		// NC_Header is a file header type, not an audit record type
 		// Return nil to indicate this type should not be initialized as a record

@@ -120,3 +120,4 @@ func canDecodeOPCUA(data []byte) bool {
 
 	return true
 }
+

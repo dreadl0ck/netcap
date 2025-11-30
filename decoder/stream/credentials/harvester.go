@@ -107,8 +107,7 @@ var (
 		"TeamViewer": teamviewerHarvester,
 
 		// Network discovery protocols
-		"TLS SNI": tlsSNIHarvester,
-		"mDNS":    mdnsHarvester,
+		"mDNS": mdnsHarvester,
 		"NBNS":    nbnsHarvester,
 		"UPnP":    upnpHarvester,
 		"WSD":     wsdHarvester,

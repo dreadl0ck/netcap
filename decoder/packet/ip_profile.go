@@ -26,7 +26,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/tlsx"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
@@ -35,6 +34,7 @@ import (
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/internal/ja4"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -155,7 +155,6 @@ func updateIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) {
 // createNewIPProfile creates a new IP profile with initial packet data
 func createNewIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipProfile {
 	var (
-		ja3Map  = make(map[string]string)
 		dataLen = uint64(len(i.Packet.Data()))
 		sniMap  = make(map[string]int64)
 	)
@@ -166,30 +165,59 @@ func createNewIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) 
 	// Transport Layer: Port information
 	srcPorts, dstPorts, contactedPorts := initPorts(i, source)
 
-	// Session Layer: TLS fingerprinting
-	var ja3FingerprintMatches, ja3SFingerprintMatches []string
+	// Session Layer: TLS fingerprinting with JA4
+	var ja4Fingerprints, ja4sFingerprints []string
 
-	ja3Hash := ja3.DigestHexPacket(i.Packet)
-	if ja3Hash != "" {
-		lookup := resolvers.LookupJa3(ja3Hash)
-		ja3Map[ja3Hash] = lookup
-		if lookup != "" {
-			ja3FingerprintMatches = append(ja3FingerprintMatches, lookup)
-		}
-	}
-
-	ja3sHash := ja3.DigestHexPacketJa3s(i.Packet)
-	if ja3sHash != "" {
-		lookup := resolvers.LookupJa3(ja3sHash)
-		ja3Map[ja3sHash] = lookup
-		if lookup != "" {
-			ja3SFingerprintMatches = append(ja3SFingerprintMatches, lookup)
-		}
-	}
-
-	ch := tlsx.GetClientHelloBasic(i.Packet)
+	// JA4 Client Hello fingerprint
+	ch := tlsx.GetClientHello(i.Packet)
 	if ch != nil {
-		sniMap[ch.SNI] = 1
+		if ch.SNI != "" {
+			sniMap[ch.SNI] = 1
+		}
+		ja4CipherSuites := make([]uint16, len(ch.CipherSuites))
+		for idx, cs := range ch.CipherSuites {
+			ja4CipherSuites[idx] = uint16(cs)
+		}
+		ja4SignatureAlgs := make([]uint16, len(ch.SignatureAlgs))
+		for idx, sa := range ch.SignatureAlgs {
+			ja4SignatureAlgs[idx] = uint16(sa)
+		}
+		var supportedVers uint16
+		for _, cs := range ch.CipherSuites {
+			if uint16(cs) >= 0x1301 && uint16(cs) <= 0x1305 {
+				supportedVers = 0x0304
+				break
+			}
+		}
+		ja4fp := ja4.ComputeJA4(&ja4.ClientHelloData{
+			Version:             uint16(ch.Version),
+			CipherSuites:        ja4CipherSuites,
+			Extensions:          ch.AllExtensions,
+			SNI:                 ch.SNI,
+			ALPNs:               ch.ALPNs,
+			SupportedVers:       supportedVers,
+			IsQUIC:              false,
+			SignatureAlgorithms: ja4SignatureAlgs,
+		})
+		ja4Fingerprints = append(ja4Fingerprints, ja4fp)
+	}
+
+	// JA4S Server Hello fingerprint
+	sh := tlsx.GetServerHello(i.Packet)
+	if sh != nil {
+		ja4sExtensions := make([]uint16, len(sh.Extensions))
+		for idx, ext := range sh.Extensions {
+			ja4sExtensions[idx] = uint16(ext)
+		}
+		ja4sfp := ja4.ComputeJA4S(&ja4.ServerHelloData{
+			Version:       uint16(sh.Vers),
+			CipherSuite:   uint16(sh.CipherSuite),
+			Extensions:    ja4sExtensions,
+			SupportedVers: sh.SupportedVersion,
+			IsQUIC:        false,
+			ALPN:          sh.AlpnProtocol,
+		})
+		ja4sFingerprints = append(ja4sFingerprints, ja4sfp)
 	}
 
 	// Application Layer: DHCP fingerprinting
@@ -220,21 +248,20 @@ func createNewIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) 
 
 	return &ipProfile{
 		IPProfile: &types.IPProfile{
-			Addr:                   ipAddr,
-			NumPackets:             1,
-			Geolocation:            loc,
-			DNSNames:               names,
-			TimestampFirst:         i.Timestamp,
-			Ja3Hashes:              ja3Map,
-			Protocols:              make(map[string]*types.Protocol), // Will be populated during flush
-			Bytes:                  dataLen,
-			SrcPorts:               srcPorts,
-			DstPorts:               dstPorts,
-			ContactedPorts:         contactedPorts,
-			SNIs:                   sniMap,
-			Ja3FingerprintMatches:  ja3FingerprintMatches,
-			Ja3SFingerprintMatches: ja3SFingerprintMatches,
-			Devices:                devices,
+			Addr:             ipAddr,
+			NumPackets:       1,
+			Geolocation:      loc,
+			DNSNames:         names,
+			TimestampFirst:   i.Timestamp,
+			Protocols:        make(map[string]*types.Protocol), // Will be populated during flush
+			Bytes:            dataLen,
+			SrcPorts:         srcPorts,
+			DstPorts:         dstPorts,
+			ContactedPorts:   contactedPorts,
+			SNIs:             sniMap,
+			Ja4Fingerprints:  ja4Fingerprints,
+			Ja4SFingerprints: ja4sFingerprints,
+			Devices:          devices,
 		},
 		streamPackets: streamPackets,
 	}
@@ -242,36 +269,56 @@ func createNewIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) 
 
 // handleTLSFingerprinting handles TLS fingerprinting for an IP profile
 func handleTLSFingerprinting(p *ipProfile, i *decoderutils.PacketInfo) {
-	// Session Layer: TLS
-	ch := tlsx.GetClientHelloBasic(i.Packet)
+	// Handle JA4 (TLS Client Hello) fingerprinting
+	ch := tlsx.GetClientHello(i.Packet)
 	if ch != nil {
 		if ch.SNI != "" {
 			p.SNIs[ch.SNI]++
 		}
-	}
-
-	// Handle JA3 (TLS Client Hello) fingerprinting
-	ja3Hash := ja3.DigestHexPacket(i.Packet)
-	if ja3Hash != "" {
-		if _, ok := p.Ja3Hashes[ja3Hash]; !ok {
-			lookup := resolvers.LookupJa3(ja3Hash)
-			p.Ja3Hashes[ja3Hash] = lookup
-			if lookup != "" {
-				p.Ja3FingerprintMatches = addUniqueString(p.Ja3FingerprintMatches, lookup)
+		ja4CipherSuites := make([]uint16, len(ch.CipherSuites))
+		for idx, cs := range ch.CipherSuites {
+			ja4CipherSuites[idx] = uint16(cs)
+		}
+		ja4SignatureAlgs := make([]uint16, len(ch.SignatureAlgs))
+		for idx, sa := range ch.SignatureAlgs {
+			ja4SignatureAlgs[idx] = uint16(sa)
+		}
+		var supportedVers uint16
+		for _, cs := range ch.CipherSuites {
+			if uint16(cs) >= 0x1301 && uint16(cs) <= 0x1305 {
+				supportedVers = 0x0304
+				break
 			}
 		}
+		ja4fp := ja4.ComputeJA4(&ja4.ClientHelloData{
+			Version:             uint16(ch.Version),
+			CipherSuites:        ja4CipherSuites,
+			Extensions:          ch.AllExtensions,
+			SNI:                 ch.SNI,
+			ALPNs:               ch.ALPNs,
+			SupportedVers:       supportedVers,
+			IsQUIC:              false,
+			SignatureAlgorithms: ja4SignatureAlgs,
+		})
+		p.Ja4Fingerprints = addUniqueString(p.Ja4Fingerprints, ja4fp)
 	}
 
-	// Handle JA3S (TLS Server Hello) fingerprinting
-	ja3sHash := ja3.DigestHexPacketJa3s(i.Packet)
-	if ja3sHash != "" {
-		if _, ok := p.Ja3Hashes[ja3sHash]; !ok {
-			lookup := resolvers.LookupJa3(ja3sHash)
-			p.Ja3Hashes[ja3sHash] = lookup
-			if lookup != "" {
-				p.Ja3SFingerprintMatches = addUniqueString(p.Ja3SFingerprintMatches, lookup)
-			}
+	// Handle JA4S (TLS Server Hello) fingerprinting
+	sh := tlsx.GetServerHello(i.Packet)
+	if sh != nil {
+		ja4sExtensions := make([]uint16, len(sh.Extensions))
+		for idx, ext := range sh.Extensions {
+			ja4sExtensions[idx] = uint16(ext)
 		}
+		ja4sfp := ja4.ComputeJA4S(&ja4.ServerHelloData{
+			Version:       uint16(sh.Vers),
+			CipherSuite:   uint16(sh.CipherSuite),
+			Extensions:    ja4sExtensions,
+			SupportedVers: sh.SupportedVersion,
+			IsQUIC:        false,
+			ALPN:          sh.AlpnProtocol,
+		})
+		p.Ja4SFingerprints = addUniqueString(p.Ja4SFingerprints, ja4sfp)
 	}
 }
 

@@ -83,13 +83,10 @@ var sources = []*datasource{
 	makeSource("https://svn.nmap.org/nmap/nmap-service-probes", "", moveToDbs),
 	makeSource("https://macaddress.io/database/macaddress.io-db.json", "", moveToDbs),
 
-	// ja3er.com has been discontinued ...
-	//makeSource("https://ja3er.com/getAllHashesJson", "ja3erDB.json", moveToDbs),
-	//makeSource("https://ja3er.com/getAllUasJson", "ja3UserAgents.json", moveToDbs),
+	// JA4+ fingerprint database from FoxIO
+	makeSource("https://ja4db.com/api/download/", "ja4db.json", moveToDbs),
 
-	makeSource("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/dbs/ja_3_3s.json", "", moveToDbs),
 	makeSource("https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv", "", moveToDbs),
-	makeSource("https://raw.githubusercontent.com/trisulnsm/trisul-scripts/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json", "", moveToDbs),
 	makeSource("https://web.archive.org/web/20191227182527if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
 	makeSource("https://web.archive.org/web/20191227182209if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
 

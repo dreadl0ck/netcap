@@ -46,6 +46,7 @@ const (
 	fieldSupportedGroups  = "SupportedGroups"
 	fieldSupportedPoints  = "SupportedPoints"
 	fieldALPNs            = "ALPNs"
+	fieldJa4              = "Ja4"
 )
 
 var fieldsTLSClientHello = []string{
@@ -67,7 +68,7 @@ var fieldsTLSClientHello = []string{
 	fieldSupportedGroups,
 	fieldSupportedPoints,
 	fieldALPNs,
-	fieldJa3,
+	fieldJa4,
 	fieldSrcIP,
 	fieldDstIP,
 	fieldSrcMAC,
@@ -104,7 +105,7 @@ func (t *TLSClientHello) CSVRecord() []string {
 		joinInts(t.SupportedGroups),
 		joinInts(t.SupportedPoints),
 		join(t.ALPNs...),
-		t.Ja3,
+		t.Ja4,
 		t.SrcIP,
 		t.DstIP,
 		t.SrcMAC,
@@ -177,7 +178,7 @@ func (t *TLSClientHello) Encode() []string {
 		tlsClientHelloEncoder.String(fieldSupportedGroups, joinInts(t.SupportedGroups)),
 		tlsClientHelloEncoder.String(fieldSupportedPoints, joinInts(t.SupportedPoints)),
 		tlsClientHelloEncoder.String(fieldALPNs, join(t.ALPNs...)),
-		tlsClientHelloEncoder.String(fieldJa3, t.Ja3),
+		tlsClientHelloEncoder.String(fieldJa4, t.Ja4),
 		tlsClientHelloEncoder.String(fieldSrcIP, t.SrcIP),
 		tlsClientHelloEncoder.String(fieldDstIP, t.DstIP),
 		tlsClientHelloEncoder.String(fieldSrcMAC, t.SrcMAC),

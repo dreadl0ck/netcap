@@ -22,4 +22,4 @@ export type { NetcapRouter } from './useNetcapRouter';
 
 export { useNetcapApi } from './useNetcapApi';
 
-
+export { useTableKeyboardNavigation } from './useTableKeyboardNavigation';

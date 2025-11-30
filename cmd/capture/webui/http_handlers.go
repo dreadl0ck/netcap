@@ -68,6 +68,24 @@ type HTTPSummary struct {
 	RequestHeader          map[string]string `json:"requestHeader"`
 	ResponseHeader         map[string]string `json:"responseHeader"`
 	Parameters             map[string]string `json:"parameters"`
+	// Security headers
+	StrictTransportSecurity  string   `json:"strictTransportSecurity"`
+	ContentSecurityPolicy    string   `json:"contentSecurityPolicy"`
+	XContentTypeOptions      string   `json:"xContentTypeOptions"`
+	XFrameOptions            string   `json:"xFrameOptions"`
+	XXSSProtection           string   `json:"xXSSProtection"`
+	ReferrerPolicy           string   `json:"referrerPolicy"`
+	AccessControlAllowOrigin string   `json:"accessControlAllowOrigin"`
+	HasServerTiming          bool     `json:"hasServerTiming"`
+	// Authentication and server info
+	AuthorizationType string `json:"authorizationType"`
+	XForwardedFor     string `json:"xForwardedFor"`
+	XRealIP           string `json:"xRealIP"`
+	Server            string `json:"server"`
+	XPoweredBy        string `json:"xPoweredBy"`
+	// JA4H fingerprinting
+	Ja4h            string `json:"ja4h"`
+	Ja4hDescription string `json:"ja4hDescription"`
 }
 
 // HTTPResponse contains the list of HTTP records
@@ -187,6 +205,24 @@ func readHTTP(outDir string) ([]HTTPSummary, error) {
 			RequestHeader:          httpRec.RequestHeader,
 			ResponseHeader:         httpRec.ResponseHeader,
 			Parameters:             httpRec.Parameters,
+			// Security headers
+			StrictTransportSecurity:  httpRec.StrictTransportSecurity,
+			ContentSecurityPolicy:    httpRec.ContentSecurityPolicy,
+			XContentTypeOptions:      httpRec.XContentTypeOptions,
+			XFrameOptions:            httpRec.XFrameOptions,
+			XXSSProtection:           httpRec.XXSSProtection,
+			ReferrerPolicy:           httpRec.ReferrerPolicy,
+			AccessControlAllowOrigin: httpRec.AccessControlAllowOrigin,
+			HasServerTiming:          httpRec.HasServerTiming,
+			// Authentication and server info
+			AuthorizationType: httpRec.AuthorizationType,
+			XForwardedFor:     httpRec.XForwardedFor,
+			XRealIP:           httpRec.XRealIP,
+			Server:            httpRec.Server,
+			XPoweredBy:        httpRec.XPoweredBy,
+			// JA4H fingerprinting
+			Ja4h:            httpRec.Ja4H,
+			Ja4hDescription: httpRec.Ja4HDescription,
 		})
 	}
 

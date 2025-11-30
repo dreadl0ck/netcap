@@ -44,6 +44,7 @@ type DomainSummary struct {
 	IsSubdomain   bool     `json:"isSubdomain"`
 	ParentDomain  string   `json:"parentDomain"`
 	ResolvedIPs   []string `json:"resolvedIPs"`
+	Source        string   `json:"source"` // "DNS" or "TLS SNI"
 }
 
 // DomainsResponse contains the list of domains
@@ -91,31 +92,45 @@ func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// readDomains reads and aggregates domain data from DNS records
+// readDomains reads and aggregates domain data from DNS records and TLS SNI
 func readDomains(outDir string) ([]DomainSummary, error) {
-	filePath := filepath.Join(outDir, "DNS.ncap.gz")
+	// Domain aggregation map
+	domainMap := make(map[string]*domainAggregator)
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] DNS file not found: %s", filePath)
-		return []DomainSummary{}, nil
+	// Read DNS records
+	dnsFilePath := filepath.Join(outDir, "DNS.ncap.gz")
+	if _, err := os.Stat(dnsFilePath); err == nil {
+		if err := readDNSDomains(dnsFilePath, domainMap); err != nil {
+			log.Printf("[WebUI] Error reading DNS domains: %v", err)
+		}
 	}
 
+	// Read SNI domains from Connection records
+	connFilePath := filepath.Join(outDir, "Connection.ncap.gz")
+	if _, err := os.Stat(connFilePath); err == nil {
+		if err := readSNIDomains(connFilePath, domainMap); err != nil {
+			log.Printf("[WebUI] Error reading SNI domains: %v", err)
+		}
+	}
+
+	// Convert map to slice
+	return aggregateDomains(domainMap), nil
+}
+
+// readDNSDomains reads domains from DNS records
+func readDNSDomains(filePath string, domainMap map[string]*domainAggregator) error {
 	// Read DNS records
 	reader, err := NewAuditRecordReader(filePath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer reader.Close()
 
 	// Read header
 	_, err = reader.ReadHeader()
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	// Domain aggregation map
-	domainMap := make(map[string]*domainAggregator)
 
 	// Read all records
 	for {
@@ -155,6 +170,7 @@ func readDomains(outDir string) ([]DomainSummary, error) {
 					ips:           make(map[string]bool),
 					firstSeen:     dns.Timestamp,
 					lastSeen:      dns.Timestamp,
+					source:        "DNS",
 				}
 				domainMap[domain] = agg
 			}
@@ -186,7 +202,87 @@ func readDomains(outDir string) ([]DomainSummary, error) {
 		}
 	}
 
-	// Convert map to slice
+	return nil
+}
+
+// readSNIDomains reads domains from TLS SNI in Connection records
+func readSNIDomains(filePath string, domainMap map[string]*domainAggregator) error {
+	// Read Connection records
+	reader, err := NewAuditRecordReader(filePath)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+
+	// Read header
+	_, err = reader.ReadHeader()
+	if err != nil {
+		return err
+	}
+
+	// Read all records
+	for {
+		record, err := reader.NextRecord()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Printf("[WebUI] Error reading Connection record: %v", err)
+			continue
+		}
+
+		// Type assert to Connection
+		conn, ok := record.(*types.Connection)
+		if !ok {
+			continue
+		}
+
+		// Skip connections without SNI
+		if conn.Sni == "" {
+			continue
+		}
+
+		domain := strings.ToLower(conn.Sni)
+		agg, exists := domainMap[domain]
+		if !exists {
+			agg = &domainAggregator{
+				domain:        domain,
+				clients:       make(map[string]bool),
+				recordTypes:   make(map[int32]bool),
+				responseCodes: make(map[int32]bool),
+				ips:           make(map[string]bool),
+				firstSeen:     conn.TimestampFirst,
+				lastSeen:      conn.TimestampFirst,
+				source:        "TLS SNI",
+			}
+			domainMap[domain] = agg
+		}
+
+		agg.queryCount++
+		agg.clients[conn.SrcIP] = true
+		// Add destination IP as resolved IP for SNI
+		if conn.DstIP != "" {
+			agg.ips[conn.DstIP] = true
+		}
+
+		// Update source to indicate both if we have DNS and SNI for same domain
+		if agg.source == "DNS" {
+			agg.source = "DNS, TLS SNI"
+		}
+
+		if conn.TimestampFirst < agg.firstSeen {
+			agg.firstSeen = conn.TimestampFirst
+		}
+		if conn.TimestampFirst > agg.lastSeen {
+			agg.lastSeen = conn.TimestampFirst
+		}
+	}
+
+	return nil
+}
+
+// aggregateDomains converts the domain map to a sorted slice
+func aggregateDomains(domainMap map[string]*domainAggregator) []DomainSummary {
 	domains := make([]DomainSummary, 0, len(domainMap))
 	for _, agg := range domainMap {
 		// Convert maps to slices
@@ -227,6 +323,7 @@ func readDomains(outDir string) ([]DomainSummary, error) {
 			IsSubdomain:   isSubdomain,
 			ParentDomain:  parentDomain,
 			ResolvedIPs:   resolvedIPs,
+			Source:        agg.source,
 		})
 	}
 
@@ -235,7 +332,7 @@ func readDomains(outDir string) ([]DomainSummary, error) {
 		return domains[i].QueryCount > domains[j].QueryCount
 	})
 
-	return domains, nil
+	return domains
 }
 
 // dnsTypeToString converts DNS type codes to human-readable strings
@@ -276,4 +373,5 @@ type domainAggregator struct {
 	ips           map[string]bool
 	firstSeen     int64
 	lastSeen      int64
+	source        string // "DNS", "TLS SNI", or "DNS, TLS SNI"
 }

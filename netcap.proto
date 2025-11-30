@@ -177,6 +177,8 @@ enum Type {
   NC_BACnetIP = 127;
   NC_IEC62351 = 128;
   NC_PROFINET = 129;
+  NC_QUIC = 130;
+  NC_QUICClientHello = 131;
 }
 
 //
@@ -279,6 +281,20 @@ message Connection {
   bool IsExternal = 39;                 // True if either IP is non-RFC1918
   bool IsBroadcast = 40;                // True if destination is broadcast address
   bool IsMulticast = 41;                // True if destination is multicast address
+  
+  // JA4L timing fields (FoxIO License 1.1)
+  int64 SynTimestamp = 42;              // Timestamp of SYN packet (nanoseconds)
+  int64 SynAckTimestamp = 43;           // Timestamp of SYN-ACK packet (nanoseconds)
+  int64 TcpRttNanos = 44;               // TCP RTT: SYN-ACK - SYN (nanoseconds)
+  int64 ClientHelloTimestamp = 45;      // Timestamp of TLS ClientHello (nanoseconds)
+  int64 ServerHelloTimestamp = 46;      // Timestamp of TLS ServerHello (nanoseconds)
+  int64 TlsHandshakeNanos = 47;         // TLS handshake latency: ServerHello - ClientHello (nanoseconds)
+  string Ja4lClient = 48;               // JA4L-C: TCP latency fingerprint ({latency_ms}_{ttl})
+  string Ja4lServer = 49;               // JA4L-S: TLS latency fingerprint ({latency_ms}_{ttl})
+  int32 SynTtl = 50;                    // TTL from SYN packet (hop count estimation)
+  
+  // TLS Server Name Indication
+  string Sni = 51;                      // TLS SNI hostname from ClientHello (if TLS detected)
 }
 
 //
@@ -770,6 +786,12 @@ message TCP {
   bool IsRSTWithData = 32;              // RST packet with payload (unusual)
   bool IsSYNWithData = 33;              // SYN packet with payload (T/TCP or attack)
   string FlagsStr = 34;                 // String representation of all flags (e.g., "SYN,ACK")
+  
+  // JA4+ TCP fingerprinting (FoxIO License 1.1)
+  string Ja4t = 35;                     // JA4T TCP client fingerprint (from SYN)
+  string Ja4ts = 36;                    // JA4TS TCP server fingerprint (from SYN-ACK)
+  string Ja4tDescription = 37;          // JA4T database lookup description (OS/device)
+  string Ja4tsDescription = 38;         // JA4TS database lookup description (OS/device)
 }
 
 message TCPOption {
@@ -933,6 +955,7 @@ message DHCPv4 {
   string ServerIdentifier = 25;         // DHCP server IP from option 54
   string Hostname = 26;                 // Client hostname from option 12
   string VendorClass = 27;              // Vendor class identifier from option 60
+  string JA4D = 28;                     // JA4D DHCP fingerprint for device identification
 }
 
 message DHCPOption {
@@ -1217,6 +1240,10 @@ message HTTP {
   // Server information
   string Server = 45;                   // Server header value
   string XPoweredBy = 46;               // X-Powered-By header value
+  
+  // JA4+ HTTP fingerprinting
+  string Ja4h = 47;                     // JA4H HTTP client fingerprint
+  string Ja4hDescription = 49;          // JA4H database lookup description (application/library)
 }
 
 message HTTPCookie {
@@ -1254,7 +1281,6 @@ message TLSClientHello {
   repeated int32 SupportedGroups = 18;
   repeated int32 SupportedPoints = 19;
   repeated string ALPNs = 20;
-  string Ja3 = 21;
   string SrcIP = 22;
   string DstIP = 23;
   string SrcMAC = 24;
@@ -1264,13 +1290,15 @@ message TLSClientHello {
   repeated int32 Extensions = 28;
   
   // Threat intelligence fields
-  repeated string Ja3Descriptions = 29;   // Ja3 fingerprint lookup results from database
   bool IsKnownMalware = 30;               // Matches known malware/RAT fingerprint
   string ThreatCategory = 31;             // e.g., "CobaltStrike", "Emotet", "Metasploit"
   bool HasGreaseExtensions = 32;          // GREASE present (legitimate browsers typically have this)
-  string Ja3Normalized = 33;              // Normalized Ja3 (GREASE values removed)
   bool IsSuspiciousCipherOrder = 34;      // Unusual cipher ordering (implant indicator)
   int32 ExtensionCount = 35;              // Number of TLS extensions (too few = suspicious)
+  
+  // JA4 fingerprint (resistant to TLS extension randomization)
+  string Ja4 = 36;                        // JA4 fingerprint (format: {ja4_a}_{ja4_b}_{ja4_c})
+  string Ja4Description = 37;             // JA4 database lookup description (application/library/device)
 }
 
 // TLS Server Hello
@@ -1304,7 +1332,10 @@ message TLSServerHello {
   string DstMAC = 26;
   int32 SrcPort = 27;
   int32 DstPort = 28;
-  string Ja3s = 29;
+  
+  // JA4S fingerprint (resistant to TLS extension randomization)
+  string Ja4s = 30;                       // JA4S fingerprint (format: {ja4s_a}_{ja4s_b})
+  string Ja4sDescription = 31;            // JA4S database lookup description (application/library/device)
 }
 
 // TLS Certificate
@@ -1371,6 +1402,11 @@ message TLSCertificate {
   int64 FirstSeen = 35; // First time this cert was seen (by fingerprint)
   int64 LastSeen = 36;  // Last time this cert was seen
   int64 SeenCount = 37; // Number of times this cert was seen
+  
+  // JA4+ certificate fingerprinting (FoxIO License 1.1)
+  string Ja4x = 41;                     // JA4X certificate fingerprint
+  string Ja4xRaw = 42;                  // JA4X raw (unhashed) fingerprint
+  string Ja4xDescription = 43;          // JA4X database lookup description (certificate authority)
 }
 
 message IPSecAH {
@@ -2102,7 +2138,6 @@ message IPProfile {
   int64 TimestampFirst = 5;
   int64 TimestampLast = 6;
   repeated string Applications = 7;
-  map<string, string> Ja3Hashes = 8; // ja3 to lookup result
   map<string, Protocol> Protocols = 9;
   uint64 Bytes = 10;
   map<string, int64> SNIs = 11;
@@ -2110,8 +2145,8 @@ message IPProfile {
   repeated Port DstPorts = 13;
   repeated Port ContactedPorts = 14;
   repeated string Devices = 15; // Devices associated with the MAC address, from DHCP db / fingerbank.org lookups
-  repeated string Ja3FingerprintMatches = 16; // JA3 fingerprint descriptions from TLSClientHello lookups
-  repeated string Ja3sFingerprintMatches = 17; // JA3S fingerprint descriptions from TLSServerHello lookups
+  repeated string Ja4Fingerprints = 18;  // JA4 fingerprints from TLSClientHello
+  repeated string Ja4sFingerprints = 19; // JA4S fingerprints from TLSServerHello
 }
 
 message Protocol {
@@ -2613,13 +2648,13 @@ message Credentials {
 
 message SSH {
   int64 Timestamp = 1;
-  string HASSH = 2;
+  string Ja4ssh = 2;                    // JA4SSH fingerprint (FoxIO License 1.1)
   string Flow = 3;
   string Notes = 4;
   string Ident = 5;
   string Algorithms = 6;
   bool IsClient = 7;
-  repeated string HASSHDescriptions = 8; // HASSH fingerprint lookup results from database
+  string Ja4sshSessionType = 8;         // Detected session type (interactive, reverse_shell, file_transfer, etc.)
   
   // Security monitoring fields
   string SoftwareVersion = 9;           // Extracted software version from ident
@@ -3787,4 +3822,80 @@ message PROFINET {
 
   // Payload
   bytes Payload = 47;             // Raw payload data
+}
+
+// QUIC is a UDP-based transport protocol that provides encrypted, 
+// multiplexed connections. This audit record captures QUIC packet
+// header information for both IETF QUIC (RFC 9000) and Google QUIC (gQUIC).
+message QUIC {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  
+  // QUIC Header fields
+  bool IsLongHeader = 6;           // Long vs Short header form
+  int32 HeaderType = 7;            // Initial(0), 0-RTT(1), Handshake(2), Retry(3)
+  string Version = 8;              // QUIC version (e.g., "1", "2", "Q043", "Q046")
+  bytes DCID = 9;                  // Destination Connection ID
+  bytes SCID = 10;                 // Source Connection ID
+  int32 PacketNumber = 11;
+  
+  // Version info
+  bool IsIETFQUIC = 12;            // IETF QUIC (RFC 9000)
+  bool IsGQUIC = 13;               // Google QUIC
+  repeated string SupportedVersions = 14;  // From Version Negotiation packets
+  
+  // Payload info
+  int32 PayloadLength = 15;
+  int32 TokenLength = 16;          // For Initial packets (address validation)
+}
+
+// QUICClientHello captures the TLS ClientHello information extracted from
+// QUIC Initial packets. For IETF QUIC, this is an embedded TLS 1.3 ClientHello.
+// For gQUIC, this is the CHLO (Client Hello) message with proprietary tags.
+// This enables JA4 fingerprinting with the 'q' protocol prefix.
+message QUICClientHello {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  
+  // QUIC-specific
+  string QUICVersion = 6;          // "1" for IETF v1, "2" for v2, "Q043" for gQUIC
+  bool IsIETFQUIC = 7;
+  bytes DCID = 8;                  // Destination Connection ID
+  bytes SCID = 9;                  // Source Connection ID
+  
+  // TLS ClientHello fields (IETF QUIC embeds TLS 1.3)
+  string SNI = 10;                 // Server Name Indication
+  repeated string ALPNs = 11;      // e.g., ["h3", "h3-29"]
+  repeated int32 CipherSuites = 12;
+  repeated int32 Extensions = 13;
+  repeated int32 SupportedGroups = 14;
+  repeated int32 SignatureAlgs = 15;
+  int32 SupportedVersion = 16;     // TLS version from supported_versions extension
+  
+  // gQUIC-specific CHLO tags (from Google QUIC CHLO message)
+  string UAID = 17;                // User Agent ID (Chrome version, OS, etc.)
+  repeated string CHLOTags = 18;   // Tag order for fingerprinting
+  map<string, string> TagValues = 19; // Tag values: AEAD, KEXS, PUBS, SCID, etc.
+  
+  // Fingerprints
+  string Ja4 = 20;                 // JA4 with 'q' prefix for QUIC
+  string Ja4Description = 30;      // JA4 database lookup description
+  
+  // QUIC Transport Parameters (IETF QUIC - from TLS extension 0x39)
+  int64 MaxIdleTimeout = 22;               // max_idle_timeout in ms
+  int64 InitialMaxData = 23;               // initial_max_data
+  int64 InitialMaxStreamDataBidiLocal = 24; // initial_max_stream_data_bidi_local
+  int64 MaxUdpPayloadSize = 25;            // max_udp_payload_size
+  
+  // Additional TLS fields for completeness
+  bytes Random = 26;               // TLS random (32 bytes)
+  bytes SessionID = 27;            // Session ID (may be empty in TLS 1.3)
+  repeated int32 SupportedPoints = 28;  // EC point formats
+  repeated int32 CompressMethods = 29;  // Compression methods
 }

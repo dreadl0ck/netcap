@@ -66,7 +66,7 @@ import { formatBytes, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import dynamic from 'next/dynamic';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 
 // Dynamically import SyntaxHighlighter to avoid SSR issues
 const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
@@ -215,6 +215,17 @@ export default function VulnerabilitiesPage() {
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
+
+  // Generate row keys for keyboard navigation (only for tabs 0 and 1 which have expandable rows)
+  const rowKeys = useMemo(() => {
+    if (tabValue === 2) return []; // Tab 2 doesn't have expandable rows
+    return paginatedData.map((row: any) => 
+      tabValue === 0 ? row.id : tabValue === 1 ? row.id : row.host
+    );
+  }, [paginatedData, tabValue]);
+
+  // Enable keyboard navigation for detail views (UP/DOWN arrows)
+  useTableKeyboardNavigation(expandedRow, rowKeys, setExpandedRow);
 
   const handleChangePage = (_event: unknown, newPage: number) => setPage(newPage);
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -552,7 +563,7 @@ export default function VulnerabilitiesPage() {
                 const key = tabValue === 0 ? row.id : tabValue === 1 ? row.id : row.host;
                 return (
                   <>
-                    <TableRow key={key + idx} hover onClick={() => tabValue !== 2 && handleRowClick(key)} sx={{ cursor: tabValue !== 2 ? 'pointer' : 'default' }}>
+                    <TableRow key={key + idx} data-row-key={key} hover onClick={() => tabValue !== 2 && handleRowClick(key)} sx={{ cursor: tabValue !== 2 ? 'pointer' : 'default' }}>
                       {tabValue === 0 && (
                         <>
                           <TableCell>

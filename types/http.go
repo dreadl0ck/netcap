@@ -42,6 +42,7 @@ const (
 	fieldStatusCode         = "StatusCode"
 	fieldReqContentEncoding = "ReqContentEncoding"
 	fieldResContentEncoding = "ResContentEncoding"
+	fieldJa4h               = "Ja4h"
 	// fieldFlow, fieldSrcPort, fieldDstPort are defined in other type files
 )
 
@@ -67,6 +68,7 @@ var fieldsHTTP = []string{
 	fieldResContentEncoding,
 	fieldServerName,
 	fieldFlow,
+	fieldJa4h,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -106,6 +108,7 @@ func (h *HTTP) CSVRecord() []string {
 		h.ResContentEncoding,
 		h.ServerName,
 		h.Flow,
+		h.Ja4H,
 	})
 }
 
@@ -203,6 +206,7 @@ func (h *HTTP) Encode() []string {
 		httpEncoder.String(fieldResContentEncoding, h.ResContentEncoding),
 		httpEncoder.String(fieldServerName, h.ServerName),
 		httpEncoder.String(fieldFlow, h.Flow),
+		httpEncoder.String(fieldJa4h, h.Ja4H),
 	})
 }
 

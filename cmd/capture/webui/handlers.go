@@ -1212,10 +1212,9 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 	snaplenValue := defaults.SnapLen
 	baseLayerValue := "ethernet" // default base layer
 	decodeOptsValue := "lazy"    // default decode options
-	contextValue := true         // default context enabled
-	macDBValue := true           // default mac database enabled
-	ja3DBValue := true           // default ja3 database enabled
-	serviceDBValue := true       // default service database enabled
+	contextValue := true   // default context enabled
+	macDBValue := true     // default mac database enabled
+	serviceDBValue := true // default service database enabled
 	geoDBValue := false          // default geolocation disabled
 	reverseDNSValue := false     // default reverse DNS disabled
 	localDNSValue := false       // default local DNS disabled
@@ -1266,7 +1265,6 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 		}
 		contextValue = rc.Context
 		macDBValue = rc.MacDB
-		ja3DBValue = rc.Ja3DB
 		serviceDBValue = rc.ServiceDB
 		geoDBValue = rc.GeoDB
 		reverseDNSValue = rc.ReverseDNS
@@ -1467,15 +1465,6 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 			Default:     true,
 			Type:        "bool",
 			Description: "Use mac to vendor database for device profiling",
-			Category:    "Database",
-			IsEditable:  false,
-		},
-		{
-			Name:        "ja3DB",
-			Value:       ja3DBValue,
-			Default:     true,
-			Type:        "bool",
-			Description: "Use ja3 database for device profiling",
 			Category:    "Database",
 			IsEditable:  false,
 		},

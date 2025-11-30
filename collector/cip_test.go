@@ -109,7 +109,7 @@ func TestCIPPcapDecoding(t *testing.T) {
 			ReverseDNS:    false,
 			LocalDNS:      false,
 			MACDB:         false,
-			Ja3DB:         false,
+			
 			ServiceDB:     false,
 			GeolocationDB: false,
 		},
@@ -296,7 +296,7 @@ func TestCIPDecoderOnly(t *testing.T) {
 			ReverseDNS:    false,
 			LocalDNS:      false,
 			MACDB:         false,
-			Ja3DB:         false,
+			
 			ServiceDB:     false,
 			GeolocationDB: false,
 		},
@@ -448,7 +448,7 @@ func TestCIPSuricataVerifyPcap(t *testing.T) {
 			ReverseDNS:    false,
 			LocalDNS:      false,
 			MACDB:         false,
-			Ja3DB:         false,
+			
 			ServiceDB:     false,
 			GeolocationDB: false,
 		},

@@ -18,7 +18,7 @@
  */
 
 import * as React from 'react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { AppProps } from 'next/app';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -193,7 +193,7 @@ function hasFiles(dataTransfer: DataTransfer): boolean {
   // Check if there are any files being dragged
   // Note: During drag events, browsers don't always expose file names for security
   // We show the overlay for any file drag and validate file types on drop
-  if (dataTransfer.types && dataTransfer.types.includes('Files')) {
+  if (dataTransfer.types?.includes('Files')) {
     return true;
   }
   if (dataTransfer.files && dataTransfer.files.length > 0) {
@@ -210,9 +210,6 @@ function useConnectionStatus() {
   const [isConnected, setIsConnected] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [connectionMessage, setConnectionMessage] = useState('Connecting to NETCAP...');
-  const retryCountRef = useRef(0);
-  const maxRetries = 3;
-  const retryDelay = 2000;
 
   useEffect(() => {
     let mounted = true;
@@ -220,32 +217,17 @@ function useConnectionStatus() {
 
     const checkConnection = async () => {
       try {
-        // Try to fetch version info - this is a lightweight endpoint
-        await api.getVersion();
+        // Try to fetch status - ensures backend is fully ready
+        await api.getStatus();
         if (mounted) {
           setIsConnected(true);
           setIsInitializing(false);
-          retryCountRef.current = 0;
         }
       } catch {
         if (mounted) {
-          retryCountRef.current++;
-          
-          if (retryCountRef.current <= maxRetries) {
-            setConnectionMessage(`Connecting to backend... (attempt ${retryCountRef.current}/${maxRetries})`);
-            retryTimeout = setTimeout(checkConnection, retryDelay);
-          } else {
-            setConnectionMessage('Unable to connect to backend');
-            setIsConnected(false);
-            setIsInitializing(false);
-            // Keep retrying in the background
-            retryTimeout = setTimeout(() => {
-              retryCountRef.current = 0;
-              setIsInitializing(true);
-              setConnectionMessage('Retrying connection...');
-              checkConnection();
-            }, 5000);
-          }
+          setConnectionMessage('Connecting to backend...');
+          // Retry every 1 second forever
+          retryTimeout = setTimeout(checkConnection, 1000);
         }
       }
     };
@@ -256,11 +238,10 @@ function useConnectionStatus() {
     // Set up periodic health check when connected
     const healthCheckInterval = setInterval(() => {
       if (isConnected) {
-        api.getVersion().catch(() => {
+        api.getStatus().catch(() => {
           if (mounted) {
             setIsConnected(false);
             setConnectionMessage('Connection lost. Reconnecting...');
-            retryCountRef.current = 0;
             checkConnection();
           }
         });
@@ -362,7 +343,7 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
         }
       }
 
-      setUploadMessage(`Successfully uploaded ${pcapFiles.length} file(s)! Redirecting...`);
+      setUploadMessage(`Successfully uploaded ${pcapFiles.length} file(s)`);
       
       // Invalidate SWR cache for input files so other pages will refresh
       globalMutate('inputFiles');

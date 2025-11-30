@@ -45,6 +45,18 @@ type SoftwareSummary struct {
 	LastSeen    int64    `json:"lastSeen"`
 	SourceNames []string `json:"sourceNames"`
 	Flows       []string `json:"flows"`
+	// Detection context
+	DetectionMethod  string `json:"detectionMethod"`
+	ConfidenceLevel  string `json:"confidenceLevel"`
+	// Behavioral fingerprint
+	BehaviorProfile string `json:"behaviorProfile"`
+	IsHeadless      bool   `json:"isHeadless"`
+	IsEmulated      bool   `json:"isEmulated"`
+	IsAutomated     bool   `json:"isAutomated"`
+	// Risk indicators
+	HasKnownVulnerabilities bool   `json:"hasKnownVulnerabilities"`
+	IsEndOfLife             bool   `json:"isEndOfLife"`
+	SupportStatus           string `json:"supportStatus"`
 }
 
 // SoftwareResponse contains the list of software
@@ -152,6 +164,18 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 				flows:       make(map[string]bool),
 				firstSeen:   sw.Timestamp,
 				lastSeen:    sw.Timestamp,
+				// Detection context
+				detectionMethod: sw.DetectionMethod,
+				confidenceLevel: sw.ConfidenceLevel,
+				// Behavioral fingerprint
+				behaviorProfile: sw.BehaviorProfile,
+				isHeadless:      sw.IsHeadless,
+				isEmulated:      sw.IsEmulated,
+				isAutomated:     sw.IsAutomated,
+				// Risk indicators
+				hasKnownVulnerabilities: sw.HasKnownVulnerabilities,
+				isEndOfLife:             sw.IsEndOfLife,
+				supportStatus:           sw.SupportStatus,
 			}
 			softwareMap[key] = agg
 		}
@@ -238,6 +262,18 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 			LastSeen:    agg.lastSeen,
 			SourceNames: sourceNames,
 			Flows:       flows,
+			// Detection context
+			DetectionMethod: agg.detectionMethod,
+			ConfidenceLevel: agg.confidenceLevel,
+			// Behavioral fingerprint
+			BehaviorProfile: agg.behaviorProfile,
+			IsHeadless:      agg.isHeadless,
+			IsEmulated:      agg.isEmulated,
+			IsAutomated:     agg.isAutomated,
+			// Risk indicators
+			HasKnownVulnerabilities: agg.hasKnownVulnerabilities,
+			IsEndOfLife:             agg.isEndOfLife,
+			SupportStatus:           agg.supportStatus,
 		})
 	}
 
@@ -263,4 +299,16 @@ type softwareAggregator struct {
 	flows       map[string]bool
 	firstSeen   int64
 	lastSeen    int64
+	// Detection context
+	detectionMethod  string
+	confidenceLevel  string
+	// Behavioral fingerprint
+	behaviorProfile string
+	isHeadless      bool
+	isEmulated      bool
+	isAutomated     bool
+	// Risk indicators
+	hasKnownVulnerabilities bool
+	isEndOfLife             bool
+	supportStatus           string
 }

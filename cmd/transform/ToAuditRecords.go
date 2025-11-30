@@ -97,7 +97,7 @@ var maltegoBaseConfig = collector.Config{
 		ReverseDNS:    false,
 		LocalDNS:      true,
 		MACDB:         true,
-		Ja3DB:         true,
+		
 		ServiceDB:     true,
 		GeolocationDB: true,
 	},

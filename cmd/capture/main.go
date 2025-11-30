@@ -675,7 +675,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			Payload:               flagPayload,
 			Context:               flagContext,
 			MacDB:                 flagMACDB,
-			Ja3DB:                 flagJa3DB,
+			
 			ServiceDB:             flagServiceDB,
 			GeoDB:                 flagGeolocationDB,
 			ReverseDNS:            flagReverseDNS,
@@ -709,7 +709,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		}
 
 		// Create server in local mode (unrestricted)
-		webUIServer = webui.NewServer(flagHTTP, initialOutDir, inputFiles, flagHTTPAssets, flagDebug, flagDPI, false, nil, runtimeConfig)
+		webUIServer = webui.NewServer(flagHTTP, initialOutDir, inputFiles, flagHTTPAssets, flagDebug, flagDPI, false, nil, runtimeConfig, flagDev)
 		webUIServer.SetLiveMode(live) // Set live mode flag
 
 		if err := webUIServer.Start(); err != nil {
@@ -952,7 +952,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			ReverseDNS:    flagReverseDNS,
 			LocalDNS:      flagLocalDNS,
 			MACDB:         flagMACDB,
-			Ja3DB:         flagJa3DB,
+			
 			ServiceDB:     flagServiceDB,
 			GeolocationDB: flagGeolocationDB,
 		},
@@ -1127,7 +1127,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 				streamutils.ResetStats()
 
 				// Step 2a: CRITICAL - Reset global caches that accumulate unbounded
-				// UserAgentCache, ja3Cache, and Software Store accumulate across all files
+				// UserAgentCache and Software Store accumulate across all files
 				software.ResetCaches()
 
 				// Step 2b: CRITICAL - Reset deduplication stores
@@ -1293,7 +1293,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 					ReverseDNS:    flagReverseDNS,
 					LocalDNS:      flagLocalDNS,
 					MACDB:         flagMACDB,
-					Ja3DB:         flagJa3DB,
+					
 					ServiceDB:     flagServiceDB,
 					GeolocationDB: flagGeolocationDB,
 				},

@@ -27,6 +27,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/internal/ja4"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -82,6 +84,22 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	h.AuthorizationType = extractAuthType(req.request.Header.Get("Authorization"))
 	h.XForwardedFor = req.request.Header.Get("X-Forwarded-For")
 	h.XRealIP = req.request.Header.Get("X-Real-IP")
+
+	// JA4H HTTP client fingerprinting
+	// Compute JA4H fingerprint if we have header order
+	if len(req.headerOrder) > 0 {
+		ja4hData := &ja4.HTTPData{
+			Method:         req.request.Method,
+			Version:        req.request.Proto,
+			HeaderOrder:    req.headerOrder,
+			HasCookie:      len(req.request.Cookies()) > 0,
+			CookieFields:   req.cookieFields,
+			AcceptLanguage: req.acceptLang,
+		}
+		h.Ja4H = ja4.ComputeJA4H(ja4hData)
+		// Lookup JA4H fingerprint in database for enrichment
+		h.Ja4HDescription = resolvers.LookupJA4H(h.Ja4H)
+	}
 }
 
 func removeCommas(s string) string {

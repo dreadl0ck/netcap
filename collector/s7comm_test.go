@@ -109,7 +109,7 @@ func TestS7CommPcapDecoding(t *testing.T) {
 			ReverseDNS:    false,
 			LocalDNS:      false,
 			MACDB:         false,
-			Ja3DB:         false,
+			
 			ServiceDB:     false,
 			GeolocationDB: false,
 		},

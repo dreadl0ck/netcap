@@ -271,13 +271,6 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 			},
 			// Network discovery protocols
 			{
-				Name:        "TLS SNI",
-				Description: "TLS Server Name Indication - encrypted destination hostnames",
-				Enabled:     true,
-				Ports:       []int{443, 8443, 993, 995, 465, 636},
-				Parameters:  map[string]interface{}{},
-			},
-			{
 				Name:        "mDNS",
 				Description: "Multicast DNS local network service discovery",
 				Enabled:     true,

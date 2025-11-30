@@ -32,9 +32,6 @@ type Config struct {
 	// Enables MAC address vendor lookups
 	MACDB bool
 
-	// Enables looking up Ja3 profiles
-	Ja3DB bool
-
 	// Enables resolving port numbers to service names
 	ServiceDB bool
 
@@ -43,6 +40,9 @@ type Config struct {
 
 	// Enables DHCP fingerprint lookups
 	DHCPDB bool
+
+	// Enables JA4+ fingerprint lookups
+	JA4DB bool
 }
 
 // DefaultConfig is an example configuration.
@@ -50,8 +50,8 @@ var DefaultConfig = Config{
 	ReverseDNS:    false,
 	LocalDNS:      false,
 	MACDB:         true,
-	Ja3DB:         true,
 	ServiceDB:     true,
 	GeolocationDB: true,
 	DHCPDB:        true,
+	JA4DB:         true,
 }

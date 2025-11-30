@@ -56,3 +56,5 @@ links.txt
 
 # Collector artifacts
 collector/errors.pcap
+
+cmd/capture/webui/frontend/packages/netcap-ui/tsup.config.bundled*

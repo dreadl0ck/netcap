@@ -28,6 +28,8 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 
+	"github.com/dreadl0ck/netcap/internal/ja4"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -65,6 +67,7 @@ var tcpDecoder = newGoPacketDecoder(
 				hasSACK        bool
 				tsVal          uint32
 				tsEcr          uint32
+				optionTypes    []uint8 // For JA4T/JA4TS
 			)
 
 			for i, o := range tcp.Options {
@@ -79,6 +82,7 @@ var tcpDecoder = newGoPacketDecoder(
 					optFingerprint.WriteString(",")
 				}
 				optFingerprint.WriteString(strconv.Itoa(int(o.OptionType)))
+				optionTypes = append(optionTypes, uint8(o.OptionType))
 
 				// Extract security-relevant option values
 				switch o.OptionType {
@@ -98,6 +102,28 @@ var tcpDecoder = newGoPacketDecoder(
 						tsEcr = binary.BigEndian.Uint32(o.OptionData[4:8])
 					}
 				}
+			}
+
+			// Compute JA4T/JA4TS fingerprints
+			var ja4t, ja4ts, ja4tDescription, ja4tsDescription string
+			tcpFPData := &ja4.TCPFingerprintData{
+				WindowSize:  tcp.Window,
+				Options:     optionTypes,
+				MSS:         uint16(mss),
+				WindowScale: uint8(windowScale),
+				IsSYN:       tcp.SYN,
+				IsSYNACK:    tcp.SYN && tcp.ACK,
+			}
+			if tcp.SYN && !tcp.ACK {
+				// SYN only = client (JA4T)
+				ja4t = ja4.ComputeJA4T(tcpFPData)
+				// Lookup JA4T fingerprint in database for enrichment
+				ja4tDescription = resolvers.LookupJA4T(ja4t)
+			} else if tcp.SYN && tcp.ACK {
+				// SYN-ACK = server (JA4TS)
+				ja4ts = ja4.ComputeJA4TS(tcpFPData)
+				// Lookup JA4TS fingerprint in database (uses same JA4T database)
+				ja4tsDescription = resolvers.LookupJA4T(ja4ts)
 			}
 
 			// Build flags string
@@ -163,6 +189,10 @@ var tcpDecoder = newGoPacketDecoder(
 				IsRSTWithData:      tcp.RST && len(tcp.Payload) > 0,
 				IsSYNWithData:      tcp.SYN && len(tcp.Payload) > 0,
 				FlagsStr:           strings.Join(flags, ","),
+				Ja4T:               ja4t,
+				Ja4Ts:              ja4ts,
+				Ja4TDescription:    ja4tDescription,
+				Ja4TsDescription:   ja4tsDescription,
 			}
 		}
 

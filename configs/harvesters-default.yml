@@ -261,12 +261,6 @@ harvesters:
     parameters: {}
 
   # Network Discovery Protocols
-  - name: "TLS SNI"
-    enabled: true
-    ports: [443, 8443, 993, 995, 465, 636]
-    description: "TLS Server Name Indication - captures encrypted destination hostnames"
-    parameters: {}
-  
   - name: "mDNS"
     enabled: true
     ports: [5353]

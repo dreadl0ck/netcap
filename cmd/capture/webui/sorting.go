@@ -47,15 +47,15 @@ var (
 	}
 
 	transportLayerProtocols = []string{
-		"SCTP", "TCP", "TCPOption", "TLSClientHello", "TLSServerHello", "UDP",
+		"QUIC", "QUICClientHello", "SCTP", "TCP", "TCPOption", "TLSClientHello", "TLSServerHello", "UDP",
 	}
 
 	applicationLayerProtocols = []string{
-		"BGP", "CIP", "DHCPv4", "DHCPv6", "DHCPOption", "DHCPv6Option",
+		"BACnetIP", "BGP", "CIP", "DHCPv4", "DHCPv6", "DHCPOption", "DHCPv6Option",
 		"Diameter", "DNP3", "DNS", "DNSQuestion", "DNSResourceRecord", "DNSSOA", "DNSSRV", "DNSMX",
 		"ENIP", "FTP", "Geneve", "GTP",
-		"HTTP", "IMAP", "IRC", "LCM", "Modbus", "NTP", "POP3", "RADIUS", "RDP", "RMCP",
-		"SIP", "SMB", "SMTP", "SOCKS", "SSH", "Syslog",
+		"HTTP", "IEC62351", "IMAP", "IRC", "LCM", "Modbus", "MQTTSN", "NTP", "OPCUA", "POP3", "PROFINET",
+		"RADIUS", "RDP", "RMCP", "S7Comm", "SIP", "SMB", "SMTP", "SOCKS", "SSH", "Syslog",
 		"TLSCertificate", "VXLAN",
 	}
 

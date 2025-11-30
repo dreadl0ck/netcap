@@ -461,6 +461,10 @@ func parseViaHeader(value string) (product, version string) {
 func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident string) (found bool, index int) {
 	for i, probe := range probes {
 		if decoderconfig.Instance.UseRE2 {
+			// Skip probes with nil RegEx (may happen if probe was compiled with UseRE2=false)
+			if probe.RegEx == nil {
+				continue
+			}
 			if m := probe.RegEx.FindStringSubmatch(string(banner)); m != nil {
 
 				// add initial values, may contain group identifiers ($1, $2 etc)
@@ -501,6 +505,10 @@ func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident str
 				found = true
 			}
 		} else { // use the .NET compatible regex implementation
+			// Skip probes with nil RegExDotNet (may happen if probe was compiled with UseRE2=true)
+			if probe.RegExDotNet == nil {
+				continue
+			}
 			if m, err := probe.RegExDotNet.FindStringMatch(string(banner)); err == nil && m != nil {
 
 				// add initial values, may contain group identifiers ($1, $2 etc)

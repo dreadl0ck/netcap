@@ -121,6 +121,17 @@ func canDecodeMQTTSN(data []byte) bool {
 		return false
 	}
 
+	// Reject packets that look like QUIC (which falsely match MQTT-SN patterns)
+	// QUIC long header: first byte has form bit set (bit 7) and fixed bit (bit 6)
+	// This covers IETF QUIC Initial, Handshake, 0-RTT, Retry packets (0xc0-0xff range)
+	if data[0]&0xc0 == 0xc0 {
+		return false
+	}
+
+	// QUIC short header has fixed bit set (bit 6) but form bit clear (bit 7)
+	// This covers QUIC 1-RTT packets (0x40-0x7f range, though often with RFC 9287 greasing)
+	// Skip this check as it's less reliable and MQTT-SN lengths could be in this range
+
 	// Parse message length
 	msgLen := 0
 	offset := 0
@@ -140,6 +151,15 @@ func canDecodeMQTTSN(data []byte) bool {
 
 	// Validate length - must be at least offset + 1 (for message type byte)
 	if msgLen < offset+1 || msgLen > len(data) {
+		return false
+	}
+
+	// Additional validation: for a clean detection, the message length should
+	// reasonably match the data length. Allow some tolerance for padding/fragmentation
+	// but reject if msgLen is much smaller than data length (likely a false positive)
+	// This helps reject QUIC and other UDP protocols that happen to have valid-looking bytes
+	if len(data) > 512 && msgLen < 256 {
+		// Large packet with small declared message length - suspicious
 		return false
 	}
 

@@ -66,7 +66,7 @@ import ConversationModal from '../components/ConversationModal';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 
 interface ConnectionSummary {
   timestampFirst: number;
@@ -100,6 +100,24 @@ interface ConnectionSummary {
   applications: string[];
   serverPortName: string;
   detectedProtocolName: string;
+  // JA4L timing fields
+  tcpRttNanos: number;
+  tlsHandshakeNanos: number;
+  ja4lClient: string;
+  ja4lServer: string;
+  synTtl: number;
+  // Security behavioral analysis fields
+  packetsClientToServer: number;
+  packetsServerToClient: number;
+  byteRatio: number;
+  packetRatio: number;
+  avgPacketSizeClientToServer: number;
+  avgPacketSizeServerToClient: number;
+  isExternal: boolean;
+  isBroadcast: boolean;
+  isMulticast: boolean;
+  // TLS SNI
+  sni: string;
 }
 
 interface ConnectionsResponse {
@@ -195,7 +213,9 @@ export default function ConnectionsPage() {
             c.dstPort.toLowerCase().includes(queryLower) ||
             (c.applicationProto || '').toLowerCase().includes(queryLower) ||
             (c.transportProto || '').toLowerCase().includes(queryLower) ||
-            (c.applications || []).some(a => a.toLowerCase().includes(queryLower))
+            (c.applications || []).some(a => a.toLowerCase().includes(queryLower)) ||
+            // Also search by SNI
+            (c.sni || '').toLowerCase().includes(queryLower)
           );
         });
       });
@@ -238,6 +258,15 @@ export default function ConnectionsPage() {
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
+
+  // Generate row keys for keyboard navigation
+  const rowKeys = useMemo(() => 
+    paginatedConnections.map((conn, idx) => `${conn.srcIP}-${conn.srcPort}-${conn.dstIP}-${conn.dstPort}-${idx}`),
+    [paginatedConnections]
+  );
+
+  // Enable keyboard navigation for detail views (UP/DOWN arrows)
+  useTableKeyboardNavigation(expandedRow, rowKeys, setExpandedRow);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -688,6 +717,9 @@ export default function ConnectionsPage() {
                     <TableCell data-learn="Server Port: Service name associated with the destination port from IANA database.">
                       Server Port
                     </TableCell>
+                    <TableCell data-learn="SNI: TLS Server Name Indication showing the hostname from TLS ClientHello.">
+                      SNI
+                    </TableCell>
                     <TableCell>Applications</TableCell>
                   </TableRow>
                 </TableHead>
@@ -698,10 +730,11 @@ export default function ConnectionsPage() {
                       <>
                         <TableRow 
                           key={rowKey}
+                          data-row-key={rowKey}
                           hover
                           onClick={() => handleRowClick(rowKey)}
                           sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
-                          data-learn="Connection Row: Click to expand and view detailed information about this connection."
+                          data-learn="Connection Row: Click to expand and view detailed information about this connection. Use ↑↓ arrows to navigate between rows when expanded."
                         >
                           <TableCell>
                             <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed connection information.">
@@ -803,6 +836,31 @@ export default function ConnectionsPage() {
                             )}
                           </TableCell>
                           <TableCell>
+                            {conn.sni ? (
+                              <Typography 
+                                variant="body2" 
+                                sx={{ 
+                                  fontFamily: 'monospace', 
+                                  fontSize: '0.8rem',
+                                  color: 'success.main',
+                                  fontWeight: 'medium',
+                                  maxWidth: 200,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                                title={conn.sni}
+                                data-learn="SNI Hostname: TLS Server Name Indication from ClientHello, showing the intended destination hostname."
+                              >
+                                {conn.sni}
+                              </Typography>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                                -
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell>
                             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                               {(conn.applications || []).slice(0, 2).map((app) => (
                                 <Chip
@@ -829,7 +887,7 @@ export default function ConnectionsPage() {
                         
                         {/* Expandable Row Details */}
                         <TableRow>
-                          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
+                          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={9}>
                             <Collapse in={expandedRow === rowKey} timeout="auto" unmountOnExit>
                               <Box sx={{ py: 2 }} data-learn="Connection Details: Extended information about this network connection including timestamps, MAC addresses, protocols, flags, and statistics.">
                                 <Grid container spacing={2}>
@@ -898,7 +956,12 @@ export default function ConnectionsPage() {
                                         Detected Protocol: {conn.detectedProtocolName}
                                       </Typography>
                                     )}
-                                    {!conn.serverPortName && !conn.detectedProtocolName && (
+                                    {conn.sni && (
+                                      <Typography variant="body2" color="text.secondary" data-learn="TLS SNI: Server Name Indication from TLS ClientHello showing the intended destination hostname.">
+                                        TLS SNI: <Box component="span" sx={{ fontFamily: 'monospace', color: 'success.main', fontWeight: 'medium' }}>{conn.sni}</Box>
+                                      </Typography>
+                                    )}
+                                    {!conn.serverPortName && !conn.detectedProtocolName && !conn.sni && (
                                       <Typography variant="body2" color="text.secondary">
                                         No protocol detection information available
                                       </Typography>
@@ -926,6 +989,99 @@ export default function ConnectionsPage() {
                                       Server→Client: {formatBytes(conn.bytesServerToClient)}
                                     </Typography>
                                   </Grid>
+
+                                  {/* Connection Indicators */}
+                                  {(conn.isExternal || conn.isBroadcast || conn.isMulticast) && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Connection Indicators: Flags indicating special connection characteristics.">
+                                        Connection Indicators
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                        {conn.isExternal && (
+                                          <Chip 
+                                            label="External" 
+                                            size="small" 
+                                            color="warning"
+                                            sx={{ fontSize: '0.75rem' }}
+                                            data-learn="External: One or both IPs are public (non-RFC1918 private addresses)."
+                                          />
+                                        )}
+                                        {conn.isBroadcast && (
+                                          <Chip 
+                                            label="Broadcast" 
+                                            size="small" 
+                                            color="info"
+                                            sx={{ fontSize: '0.75rem' }}
+                                            data-learn="Broadcast: Destination is a broadcast address."
+                                          />
+                                        )}
+                                        {conn.isMulticast && (
+                                          <Chip 
+                                            label="Multicast" 
+                                            size="small" 
+                                            color="secondary"
+                                            sx={{ fontSize: '0.75rem' }}
+                                            data-learn="Multicast: Destination is a multicast address."
+                                          />
+                                        )}
+                                      </Box>
+                                    </Grid>
+                                  )}
+
+                                  {/* Security Behavioral Analysis */}
+                                  {(conn.packetsClientToServer > 0 || conn.packetsServerToClient > 0) && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Security Behavioral Analysis: Traffic patterns useful for detecting beaconing, data exfiltration, and other suspicious activity.">
+                                        Security Behavioral Analysis
+                                      </Typography>
+                                      <Typography variant="body2" color="text.secondary">
+                                        Packets C→S: {conn.packetsClientToServer?.toLocaleString() || 0}
+                                      </Typography>
+                                      <Typography variant="body2" color="text.secondary">
+                                        Packets S→C: {conn.packetsServerToClient?.toLocaleString() || 0}
+                                      </Typography>
+                                      {conn.avgPacketSizeClientToServer > 0 && (
+                                        <Typography variant="body2" color="text.secondary">
+                                          Avg Pkt Size C→S: {conn.avgPacketSizeClientToServer} bytes
+                                        </Typography>
+                                      )}
+                                      {conn.avgPacketSizeServerToClient > 0 && (
+                                        <Typography variant="body2" color="text.secondary">
+                                          Avg Pkt Size S→C: {conn.avgPacketSizeServerToClient} bytes
+                                        </Typography>
+                                      )}
+                                      {conn.byteRatio > 0 && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                          <Typography variant="body2" color="text.secondary">
+                                            Byte Ratio (C/S):
+                                          </Typography>
+                                          <Chip 
+                                            label={conn.byteRatio.toFixed(2)} 
+                                            size="small" 
+                                            color={conn.byteRatio > 0.9 && conn.byteRatio < 1.1 ? 'warning' : 'default'}
+                                            variant="outlined"
+                                            sx={{ fontSize: '0.7rem' }}
+                                            data-learn="Byte Ratio: Client/Server byte ratio close to 1.0 may indicate beaconing behavior."
+                                          />
+                                        </Box>
+                                      )}
+                                      {conn.packetRatio > 0 && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                          <Typography variant="body2" color="text.secondary">
+                                            Packet Ratio (C/S):
+                                          </Typography>
+                                          <Chip 
+                                            label={conn.packetRatio.toFixed(2)} 
+                                            size="small" 
+                                            color={conn.packetRatio > 0.9 && conn.packetRatio < 1.1 ? 'warning' : 'default'}
+                                            variant="outlined"
+                                            sx={{ fontSize: '0.7rem' }}
+                                            data-learn="Packet Ratio: Client/Server packet ratio close to 1.0 may indicate beaconing behavior."
+                                          />
+                                        </Box>
+                                      )}
+                                    </Grid>
+                                  )}
                                   
                                   {/* TCP Flags */}
                                   {conn.transportProto === 'TCP' && (
@@ -963,6 +1119,56 @@ export default function ConnectionsPage() {
                                         )}
                                         <Chip label={`Mean Window: ${conn.meanWindowSize}`} size="small" variant="outlined" color="info" sx={{ fontSize: '0.75rem' }} />
                                       </Box>
+                                    </Grid>
+                                  )}
+                                  
+                                  {/* JA4L Latency Fingerprints */}
+                                  {conn.transportProto === 'TCP' && (conn.ja4lClient || conn.ja4lServer) && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="JA4L Latency: Network latency fingerprints based on TCP and TLS handshake timing. Format: latency_ms_ttl">
+                                        JA4L Latency Fingerprints
+                                      </Typography>
+                                      {conn.ja4lClient && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                          <Typography variant="body2" color="text.secondary" sx={{ minWidth: '80px' }}>
+                                            JA4L-C:
+                                          </Typography>
+                                          <Chip 
+                                            label={conn.ja4lClient} 
+                                            size="small" 
+                                            color="warning"
+                                            variant="outlined"
+                                            sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
+                                            data-learn="JA4L-C (Client): TCP handshake latency from SYN to SYN-ACK in milliseconds, with TTL value."
+                                          />
+                                          <Typography variant="caption" color="text.secondary">
+                                            (TCP RTT: {(conn.tcpRttNanos / 1e6).toFixed(2)}ms)
+                                          </Typography>
+                                        </Box>
+                                      )}
+                                      {conn.ja4lServer && (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                          <Typography variant="body2" color="text.secondary" sx={{ minWidth: '80px' }}>
+                                            JA4L-S:
+                                          </Typography>
+                                          <Chip 
+                                            label={conn.ja4lServer} 
+                                            size="small" 
+                                            color="success"
+                                            variant="outlined"
+                                            sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
+                                            data-learn="JA4L-S (Server): TLS handshake latency from ClientHello to ServerHello in milliseconds, with TTL value."
+                                          />
+                                          <Typography variant="caption" color="text.secondary">
+                                            (TLS: {(conn.tlsHandshakeNanos / 1e6).toFixed(2)}ms)
+                                          </Typography>
+                                        </Box>
+                                      )}
+                                      {conn.synTtl > 0 && (
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                          SYN TTL: {conn.synTtl} (estimated {256 - conn.synTtl} hops)
+                                        </Typography>
+                                      )}
                                     </Grid>
                                   )}
                                   

@@ -339,12 +339,6 @@ func (s *DBServer) createTarball(sourceDir, targetPath string) error {
 			return err
 		}
 
-		// Create tar header
-		header, err := tar.FileInfoHeader(info, info.Name())
-		if err != nil {
-			return err
-		}
-
 		// Update header name to be relative to source directory
 		relPath, err := filepath.Rel(sourceDir, path)
 		if err != nil {
@@ -356,27 +350,24 @@ func (s *DBServer) createTarball(sourceDir, targetPath string) error {
 			return nil
 		}
 
-		header.Name = relPath
-
 		// Track if exploitdb is included
 		if info.IsDir() && info.Name() == "exploitdb" {
 			exploitdbIncluded = true
 			log.Printf("Including exploitdb folder in tarball: %s", relPath)
 		}
 
-		// Write header
-		if err := tarWriter.WriteHeader(header); err != nil {
-			return err
-		}
-
-		// Track counts
+		// Handle directories
 		if info.IsDir() {
 			dirCount++
-			return nil
+			header, err := tar.FileInfoHeader(info, info.Name())
+			if err != nil {
+				return err
+			}
+			header.Name = relPath
+			return tarWriter.WriteHeader(header)
 		}
-		fileCount++
 
-		// Open and copy file content for regular files
+		// For regular files, open first and get fresh stat to avoid race conditions
 		if !info.Mode().IsRegular() {
 			return nil
 		}
@@ -387,8 +378,37 @@ func (s *DBServer) createTarball(sourceDir, targetPath string) error {
 		}
 		defer f.Close()
 
-		_, err = io.Copy(tarWriter, f)
-		return err
+		// Get fresh file info AFTER opening the file
+		// This prevents "archive/tar: write too long" errors when files change
+		// between the initial Walk stat and when we actually read the file
+		freshInfo, err := f.Stat()
+		if err != nil {
+			return err
+		}
+
+		// Create header with the fresh size
+		header, err := tar.FileInfoHeader(freshInfo, freshInfo.Name())
+		if err != nil {
+			return err
+		}
+		header.Name = relPath
+
+		// Write header
+		if err := tarWriter.WriteHeader(header); err != nil {
+			return err
+		}
+
+		fileCount++
+
+		// Copy exactly the number of bytes specified in the header
+		// Using CopyN ensures we don't write more than expected even if
+		// the file grows while we're reading it
+		_, err = io.CopyN(tarWriter, f, freshInfo.Size())
+		if err != nil && err != io.EOF {
+			return err
+		}
+
+		return nil
 	})
 
 	if err != nil {

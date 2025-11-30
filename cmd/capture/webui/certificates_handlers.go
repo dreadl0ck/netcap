@@ -78,6 +78,10 @@ type CertificateSummary struct {
 	FirstSeen           int64    `json:"firstSeen"`
 	LastSeen            int64    `json:"lastSeen"`
 	SeenCount           int64    `json:"seenCount"`
+	// JA4X certificate fingerprinting
+	Ja4x            string `json:"ja4x"`
+	Ja4xRaw         string `json:"ja4xRaw"`
+	Ja4xDescription string `json:"ja4xDescription"`
 }
 
 // CertificatesResponse contains the list of certificates
@@ -226,6 +230,10 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 				FirstSeen:           cert.Timestamp,
 				LastSeen:            cert.Timestamp,
 				SeenCount:           1,
+				// JA4X certificate fingerprinting
+				Ja4x:            cert.Ja4X,
+				Ja4xRaw:         cert.Ja4XRaw,
+				Ja4xDescription: cert.Ja4XDescription,
 			}
 		}
 	}

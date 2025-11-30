@@ -38,6 +38,8 @@ import (
 
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/reassembly"
+	"github.com/dreadl0ck/netcap/internal/ja4"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -367,6 +369,14 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32) {
 		maxPathLen = 0
 	}
 
+	// Compute JA4X fingerprint
+	certFPData := ja4.ExtractCertificateData(cert)
+	ja4xFingerprint := ja4.ComputeJA4X(certFPData)
+	ja4xRaw := ja4.ComputeJA4XRaw(certFPData)
+
+	// Lookup JA4X fingerprint in database for enrichment
+	ja4xDescription := resolvers.LookupJA4X(ja4xFingerprint)
+
 	tlsCert := &types.TLSCertificate{
 		Timestamp:           h.conversation.FirstClientPacket.UnixNano(),
 		SrcIP:               h.conversation.ServerIP, // Server sends the certificate
@@ -404,7 +414,10 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32) {
 		ExtKeyUsage:         extKeyUsage,
 		IsCA:                cert.IsCA,
 		MaxPathLen:          maxPathLen,
-		RawCertificate:      certData, // Store raw certificate
+		RawCertificate:   certData, // Store raw certificate
+		Ja4X:             ja4xFingerprint,
+		Ja4XRaw:          ja4xRaw,
+		Ja4XDescription:  ja4xDescription,
 	}
 
 	tlsLog.Info("Parsed certificate successfully",

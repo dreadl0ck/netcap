@@ -115,7 +115,6 @@ type RuntimeConfig struct {
 
 	// Database/Enrichment
 	MacDB      bool
-	Ja3DB      bool
 	ServiceDB  bool
 	GeoDB      bool
 	ReverseDNS bool
@@ -186,6 +185,7 @@ type Server struct {
 	dpiPreferences     map[string]*UserDPIPreferences // DPI preferences per user IP
 	reportedIssues     map[string]bool                // Tracks which file hashes have had issues reported
 	fileIDToPath       map[string]string              // Maps file IDs to file paths (local mode)
+	devMode            bool                           // Development mode: use current binary instead of "net"
 
 	// Rules cache
 	rulesConfig      interface{} // Cached rules config (uses rules.Config type to avoid circular import)
@@ -224,8 +224,8 @@ type CollectorInterface interface {
 }
 
 // NewServer creates a new web UI server
-func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debugLogging bool, dpiConfigured bool, isServiceMode bool, serviceConfig *ServiceConfig, runtimeConfig *RuntimeConfig) *Server {
-	log.Printf("[WebUI] NewServer called with outDir=%s, numInputFiles=%d", outDir, len(inputFiles))
+func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debugLogging bool, dpiConfigured bool, isServiceMode bool, serviceConfig *ServiceConfig, runtimeConfig *RuntimeConfig, devMode bool) *Server {
+	log.Printf("[WebUI] NewServer called with outDir=%s, numInputFiles=%d, devMode=%v", outDir, len(inputFiles), devMode)
 
 	s := &Server{
 		addr:               addr,
@@ -250,6 +250,7 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		debugLogging:  debugLogging,
 		isServiceMode: isServiceMode,
 		serviceConfig: serviceConfig,
+		devMode:       devMode,
 	}
 
 	log.Printf("[WebUI] Server initialized: outDir=%s, baseOutDir=%s", s.outDir, s.baseOutDir)
@@ -615,8 +616,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/domains/subdomain-distribution", s.handleDomainsSubdomainDistribution)
 	mux.HandleFunc("/api/fingerprints", s.handleFingerprints)
 	mux.HandleFunc("/api/fingerprints/type-distribution", s.handleFingerprintsTypeDistribution)
-	mux.HandleFunc("/api/fingerprints/top-ja3", s.handleFingerprintsTopJA3)
-	mux.HandleFunc("/api/fingerprints/top-hassh", s.handleFingerprintsTopHASSH)
+	mux.HandleFunc("/api/fingerprints/top-ja4", s.handleFingerprintsTopJA4)
+	mux.HandleFunc("/api/fingerprints/top-ja4ssh", s.handleFingerprintsTopJA4SSH)
 	mux.HandleFunc("/api/fingerprints/hosts-per-fingerprint", s.handleFingerprintsHostsPerFingerprint)
 	mux.HandleFunc("/api/software", s.handleSoftware)
 	mux.HandleFunc("/api/software/top-products", s.handleSoftwareTopProducts)
@@ -1401,9 +1402,23 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		log.Printf("[Service] Excluding decoders for session %s: %s", job.SessionID, excludeDecoders)
 	}
 
-	// Use the "net" binary to run analysis
-	// This ensures we always invoke the netcap binary regardless of the current program name
-	executable := "net"
+	// Determine executable for job execution
+	// In dev mode, use the current binary; otherwise use the system "net" binary
+	var executable string
+	if s.devMode {
+		// Dev mode: use the current executable (e.g., ./tmp/main when running with air)
+		execPath, err := os.Executable()
+		if err != nil {
+			log.Printf("[Service] Failed to get current executable path: %v, falling back to 'net'", err)
+			executable = "net"
+		} else {
+			executable = execPath
+			log.Printf("[Service] Dev mode: using current executable: %s", executable)
+		}
+	} else {
+		// Production mode: use the system "net" binary
+		executable = "net"
+	}
 
 	// Create error log file for capturing stdout/stderr
 	errorLogPath := filepath.Join(job.OutputDir, "analysis_error.log")
@@ -1852,10 +1867,10 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			CompressionLevel:               defaults.CompressionLevel,
 		},
 		ResolverConfig: resolvers.Config{
-			ReverseDNS:    false,
-			LocalDNS:      false,
-			MACDB:         true,
-			Ja3DB:         true,
+			ReverseDNS: false,
+			LocalDNS:   false,
+			MACDB:      true,
+
 			ServiceDB:     true,
 			GeolocationDB: true,
 		},
@@ -2013,7 +2028,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	streamutils.ResetStats()
 
 	// Step 2a: Reset global caches that accumulate unbounded
-	// UserAgentCache, ja3Cache, and Software Store accumulate across all files
+	// UserAgentCache and Software Store accumulate across all files
 	software.ResetCaches()
 
 	// Step 2b: Reset deduplication stores

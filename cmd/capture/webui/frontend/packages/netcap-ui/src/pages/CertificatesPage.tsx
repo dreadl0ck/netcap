@@ -60,7 +60,7 @@ import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 
 interface CertificateSummary {
   timestamp: number;
@@ -102,6 +102,10 @@ interface CertificateSummary {
   firstSeen: number;
   lastSeen: number;
   seenCount: number;
+  // JA4X certificate fingerprinting
+  ja4x: string;
+  ja4xRaw: string;
+  ja4xDescription: string;
 }
 
 interface CertificatesResponse {
@@ -219,6 +223,15 @@ export default function CertificatesPage() {
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
   );
+
+  // Generate row keys for keyboard navigation
+  const rowKeys = useMemo(() => 
+    paginatedCertificates.map((cert, idx) => `${cert.sha256Fingerprint}-${idx}`),
+    [paginatedCertificates]
+  );
+
+  // Enable keyboard navigation for detail views (UP/DOWN arrows)
+  useTableKeyboardNavigation(expandedRow, rowKeys, setExpandedRow);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -642,10 +655,11 @@ export default function CertificatesPage() {
                       <>
                         <TableRow 
                           key={rowKey}
+                          data-row-key={rowKey}
                           hover
                           onClick={() => handleRowClick(rowKey)}
                           sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
-                          data-learn="Certificate Row: Click to expand and view detailed information about this certificate."
+                          data-learn="Certificate Row: Click to expand and view detailed information about this certificate. Use ↑↓ arrows to navigate between rows when expanded."
                         >
                           <TableCell>
                             <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed certificate information.">
@@ -1039,6 +1053,38 @@ export default function CertificatesPage() {
                                             ))}
                                           </Box>
                                         </>
+                                      )}
+                                    </Grid>
+                                  )}
+
+                                  {/* JA4X Certificate Fingerprinting */}
+                                  {cert.ja4x && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="JA4X: Certificate fingerprint based on issuer/subject RDN ordering, extensions, and signature algorithm.">
+                                        JA4X Certificate Fingerprint
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                        <Chip 
+                                          label={cert.ja4x} 
+                                          size="small" 
+                                          color="secondary"
+                                          sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}
+                                        />
+                                      </Box>
+                                      {cert.ja4xDescription && (
+                                        <Typography variant="body2" color="text.secondary">
+                                          {cert.ja4xDescription}
+                                        </Typography>
+                                      )}
+                                      {cert.ja4xRaw && (
+                                        <Box sx={{ mt: 1 }}>
+                                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                            Raw (unhashed):
+                                          </Typography>
+                                          <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.65rem', wordBreak: 'break-all' }}>
+                                            {cert.ja4xRaw}
+                                          </Typography>
+                                        </Box>
                                       )}
                                     </Grid>
                                   )}

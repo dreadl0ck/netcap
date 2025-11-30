@@ -145,7 +145,7 @@ rules:
   - name: SIP Malformed Long Call-ID
     description: Call-ID header exceeds safe length - potential fuzzing or overflow attempt
     type: SIP
-    expression: Len(CallID) > 256
+    expression: len(CallID) > 256
     severity: critical
     mitre: ["T1499", "T1190"]
     tags: ["fuzzing", "voip", "overflow"]
@@ -154,7 +154,7 @@ rules:
   - name: SIP Malformed Long From Header
     description: From header exceeds safe length - potential fuzzing or overflow attempt
     type: SIP
-    expression: Len(From) > 256
+    expression: len(From) > 256
     severity: critical
     mitre: ["T1499", "T1190"]
     tags: ["fuzzing", "voip", "overflow"]

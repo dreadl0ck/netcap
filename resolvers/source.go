@@ -104,9 +104,6 @@ func Init(c Config, quietMode bool) {
 	if c.MACDB {
 		initMACResolver()
 	}
-	if c.Ja3DB {
-		initJa3Resolver()
-	}
 	if c.ServiceDB {
 		InitServiceDB()
 	}
@@ -115,6 +112,9 @@ func Init(c Config, quietMode bool) {
 	}
 	if c.DHCPDB {
 		InitDHCPFingerprintDB()
+	}
+	if c.JA4DB {
+		initJA4Resolver()
 	}
 
 	// Log completion

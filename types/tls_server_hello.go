@@ -47,7 +47,7 @@ const (
 	fieldCookie                       = "Cookie"
 	fieldSelectedGroup                = "SelectedGroup"
 	fieldExtensions                   = "Extensions"
-	fieldJa3S                         = "Ja3S"
+	fieldJa4S                         = "Ja4S"
 )
 
 var fieldsTLSServerHello = []string{
@@ -77,7 +77,7 @@ var fieldsTLSServerHello = []string{
 	fieldDstMAC,
 	fieldSrcPort,
 	fieldDstPort,
-	fieldJa3S,
+	fieldJa4S,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -114,7 +114,7 @@ func (t *TLSServerHello) CSVRecord() []string {
 		t.DstMAC,
 		formatInt32(t.SrcPort),
 		formatInt32(t.DstPort),
-		t.Ja3S,
+		t.Ja4S,
 	})
 }
 
@@ -187,7 +187,7 @@ func (t *TLSServerHello) Encode() []string {
 		tlsServerHelloEncoder.String(fieldDstMAC, t.DstMAC),
 		tlsServerHelloEncoder.Int32(fieldSrcPort, t.SrcPort),
 		tlsServerHelloEncoder.Int32(fieldDstPort, t.DstPort),
-		tlsServerHelloEncoder.String(fieldJa3S, t.Ja3S),
+		tlsServerHelloEncoder.String(fieldJa4S, t.Ja4S),
 	})
 }
 

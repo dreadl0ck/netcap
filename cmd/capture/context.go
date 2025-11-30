@@ -80,7 +80,7 @@ var (
 	flagReverseDNS                     bool
 	flagLocalDNS                       bool
 	flagMACDB                          bool
-	flagJa3DB                          bool
+	flagJA4DB                          bool
 	flagServiceDB                      bool
 	flagGeolocationDB                  bool
 	flagDPI                            bool
@@ -144,6 +144,7 @@ var (
 	flagServiceEnforceMaxSizePreload   bool
 	flagFilter                         string
 	flagRules                          string
+	flagDev                            bool
 )
 
 // setFlagsFromContext populates global flag variables from CLI context
@@ -201,7 +202,7 @@ func setFlagsFromContext(c *cli.Command) {
 	flagReverseDNS = c.Bool("reverse-dns")
 	flagLocalDNS = c.Bool("local-dns")
 	flagMACDB = c.Bool("macDB")
-	flagJa3DB = c.Bool("ja3DB")
+	flagJA4DB = c.Bool("ja4DB")
 	flagServiceDB = c.Bool("serviceDB")
 	flagGeolocationDB = c.Bool("geoDB")
 	flagDPI = c.Bool("dpi")
@@ -265,4 +266,5 @@ func setFlagsFromContext(c *cli.Command) {
 	flagServiceEnforceMaxSizePreload = c.Bool("service-enforce-max-size-preload")
 	flagFilter = c.String("filter")
 	flagRules = c.String("rules")
+	flagDev = c.Bool("dev")
 }
