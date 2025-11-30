@@ -108,9 +108,9 @@ var (
 
 		// Network discovery protocols
 		"mDNS": mdnsHarvester,
-		"NBNS":    nbnsHarvester,
-		"UPnP":    upnpHarvester,
-		"WSD":     wsdHarvester,
+		"NBNS": nbnsHarvester,
+		"UPnP": upnpHarvester,
+		"WSD":  wsdHarvester,
 	}
 
 	// harvesters to be ran against all seen bi-directional communication in a TCP session
@@ -235,7 +235,9 @@ func createCustomRegexHarvester(config CustomHarvesterConfig) Harvester {
 // The banner parameter contains at most HarvesterBannerSize bytes from the stream conversation,
 // which is pre-truncated to prevent performance issues when processing large data streams
 // (e.g., file transfers, database dumps, video streaming, etc.).
-func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPacket time.Time) {
+// The communityID parameter is the Corelight Community ID v1 for the connection, calculated once
+// at the stream level and available for all harvesters to use for cross-tool correlation.
+func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPacket time.Time, communityID string) {
 	// only use harvesters when credential audit record type is loaded
 	// useHarvesters is set after the custom decoder initialization
 	if !useHarvesters {
@@ -268,6 +270,7 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 	// check if its a well known port and use the harvester for that one
 	if h, ok := harvesterPortMapping[dstPort]; ok {
 		if creds := h.HarvesterFunc(banner, ident, firstPacket); creds != nil { // write audit record
+			creds.CommunityID = communityID // Set Community ID for cross-tool correlation
 			WriteCredentials(creds)
 
 			// we found a match and will stop processing
@@ -282,6 +285,7 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 	if h, ok := harvesterPortMapping[srcPort]; ok {
 		if !tried[h.Name] { // Don't run the same harvester twice
 			if creds := h.HarvesterFunc(banner, ident, firstPacket); creds != nil { // write audit record
+				creds.CommunityID = communityID // Set Community ID for cross-tool correlation
 				WriteCredentials(creds)
 
 				// we found a match and will stop processing
@@ -311,6 +315,7 @@ func RunHarvesters(banner []byte, transport gopacket.Flow, ident string, firstPa
 
 			// execute harvester
 			if creds := h.HarvesterFunc(banner, ident, firstPacket); creds != nil { // write audit record
+				creds.CommunityID = communityID // Set Community ID for cross-tool correlation
 				WriteCredentials(creds)
 
 				// stop after a match if configured

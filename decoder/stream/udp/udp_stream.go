@@ -225,6 +225,12 @@ func (u *udpStream) decode() {
 		ServerIP:          u.data[0].Network().Dst().String(),
 		ClientPort:        utils.DecodePort(u.data[0].Transport().Src().Raw()),
 		ServerPort:        utils.DecodePort(u.data[0].Transport().Dst().Raw()),
+		CommunityID: streamutils.CalcCommunityIDUDP(
+			u.data[0].Network().Src().String(),
+			u.data[0].Network().Dst().String(),
+			uint16(utils.DecodePort(u.data[0].Transport().Src().Raw())),
+			uint16(utils.DecodePort(u.data[0].Transport().Dst().Raw())),
+		),
 	}
 
 	// make a good first guess based on the destination port of the connection

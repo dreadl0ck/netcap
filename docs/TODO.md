@@ -11,8 +11,10 @@
 - configure fingerbank lookups and caching
 - make it configurable per harvester if it runs only for the default port or for all streams. for some harvester it makes sense to runs them against all plaintext protos.
 - data mining on plaintext connection data: extract URLs, what looks like secrets, ctf flags etc
+
 - add support to enable / disable individual service probes. regenerate the probe list with commented out entries if disabled.
 - support creating service probes on the services page service details: add create probe button, switch to probes page, open create modal and insert service banner 
+
 - software audit records: remove Vendor Field and use only Product? if Product info is empty, write the info we would have written into Vendor before as a fallback, or combine the two fields.
 - fix capture and inspect local results
 - dashboards feature: save and load dashboards, made of different charts. create a simple UI to rearrange charts and choose the audit record type, field and type of chart for each.
@@ -67,13 +69,18 @@ DBs
 - add config to apply extra asset info to audit records: eg employee workstations in internal network etc
 - resolver API: add ip blacklist and integrate feeds
 - resolvers: integrate IP and domain reputation feeds
+automate downloading latest geolite dbs:
+
+https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
+https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
+https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
 
 ----
 
 New features:
 
-- switch to corelight community id spec: (https://github.com/corelight/community-id-spec) for the Connection UIDs
-
+- view that groups audit records by communityID
+- rethink PacketContext use now that we have CommunityIDs
 - mimicry rule: alert if traffic on standard port does not match the expected protocol (using DPI results)
 - Connections VS Conversations (= all Connections between two hosts) Abstraction
 
@@ -246,11 +253,7 @@ https://github.com/florianl/go-nflog
 
 - restrict reassembly from growing unbounded when reading from pcap (+ how to handle it in live mode)
 
-Add tool to download latest geolite dbs:
 
-https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
-https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
-https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
 
 - set all link types
 

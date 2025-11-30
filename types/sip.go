@@ -175,6 +175,7 @@ func (s *SIP) SetPacketContext(ctx *PacketContext) {
 	s.DstIP = ctx.DstIP
 	s.SrcPort = ctx.SrcPort
 	s.DstPort = ctx.DstPort
+	s.CommunityID = ctx.CommunityID
 }
 
 // Src returns the source address of the audit record.

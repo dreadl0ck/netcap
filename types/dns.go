@@ -253,6 +253,7 @@ func (d *DNS) SetPacketContext(ctx *PacketContext) {
 	d.DstIP = ctx.DstIP
 	d.SrcPort = ctx.SrcPort
 	d.DstPort = ctx.DstPort
+	d.CommunityID = ctx.CommunityID
 }
 
 // Src returns the source address of the audit record.

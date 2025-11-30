@@ -61,7 +61,9 @@ type NetworkDataFragments []NetworkDataFragment
 
 // SaveConversation will save TCP / UDP conversations to disk
 // this also invokes the harvesters on the conversation banner
-func SaveConversation(proto string, conversation core.DataFragments, ident string, firstPacket time.Time, transport gopacket.Flow) error {
+// The communityID parameter is the Corelight Community ID v1 for the connection,
+// calculated once at the stream level and passed through to harvesters.
+func SaveConversation(proto string, conversation core.DataFragments, ident string, firstPacket time.Time, transport gopacket.Flow, communityID string) error {
 	// prevent processing zero bytes
 	if len(conversation) == 0 || conversation.Size() == 0 {
 		return nil
@@ -70,7 +72,7 @@ func SaveConversation(proto string, conversation core.DataFragments, ident strin
 	// fmt.Println("saving conv", conversation.size(), ident)
 
 	banner := createBannerFromConversation(conversation)
-	credentials.RunHarvesters(banner, transport, ident, firstPacket)
+	credentials.RunHarvesters(banner, transport, ident, firstPacket, communityID)
 
 	if !decoderconfig.Instance.SaveConns {
 		return nil

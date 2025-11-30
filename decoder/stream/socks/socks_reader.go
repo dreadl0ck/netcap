@@ -111,6 +111,7 @@ func (s *socksReader) Decode() {
 		msg.DstIP = s.conversation.ServerIP
 		msg.SrcPort = int32(s.conversation.ClientPort)
 		msg.DstPort = int32(s.conversation.ServerPort)
+		msg.CommunityID = s.conversation.CommunityID
 
 		err := Decoder.Writer.Write(msg)
 		if err != nil {

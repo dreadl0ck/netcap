@@ -153,6 +153,8 @@ func (h *httpReader) Decode() {
 			continue
 		}
 
+		// Set Community ID for cross-tool correlation
+		ht.CommunityID = h.conversation.CommunityID
 		writeHTTP(ht, h.conversation.Ident)
 	}
 
@@ -170,6 +172,8 @@ func (h *httpReader) Decode() {
 			atomic.AddInt64(&streamutils.Stats.NumRequests, 1)
 			atomic.AddInt64(&streamutils.Stats.NumUnansweredRequests, 1)
 
+			// Set Community ID for cross-tool correlation
+			ht.CommunityID = h.conversation.CommunityID
 			writeHTTP(ht, h.conversation.Ident)
 		} else {
 			atomic.AddInt64(&streamutils.Stats.NumNilRequests, 1)

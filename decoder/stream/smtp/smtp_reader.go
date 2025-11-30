@@ -170,13 +170,14 @@ func (h *smtpReader) Decode() {
 	mails := h.processSMTPConversation()
 
 	smtpMsg := &types.SMTP{
-		Timestamp: h.conversation.FirstClientPacket.UnixNano(),
-		SrcIP:     h.conversation.ClientIP,
-		DstIP:     h.conversation.ServerIP,
-		SrcPort:   h.conversation.ClientPort,
-		DstPort:   h.conversation.ServerPort,
-		MailIDs:   mails,
-		Commands:  commands,
+		Timestamp:   h.conversation.FirstClientPacket.UnixNano(),
+		SrcIP:       h.conversation.ClientIP,
+		DstIP:       h.conversation.ServerIP,
+		SrcPort:     h.conversation.ClientPort,
+		DstPort:     h.conversation.ServerPort,
+		MailIDs:     mails,
+		Commands:    commands,
+		CommunityID: h.conversation.CommunityID,
 	}
 
 	// export metrics if configured

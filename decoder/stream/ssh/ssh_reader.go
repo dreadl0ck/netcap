@@ -44,14 +44,14 @@ import (
 type sshReader struct {
 	conversation *core.ConversationInfo
 
-	clientIdent        string
-	serverIdent        string
-	clientKexInit      *KexInitMsg
-	serverKexInit      *KexInitMsg
-	software           []*types.Software
-	ja4sshData         *ja4.SSHStreamData
-	ja4sshFingerprint  string
-	ja4sshSessionType  string
+	clientIdent       string
+	serverIdent       string
+	clientKexInit     *KexInitMsg
+	serverKexInit     *KexInitMsg
+	software          []*types.Software
+	ja4sshData        *ja4.SSHStreamData
+	ja4sshFingerprint string
+	ja4sshSessionType string
 }
 
 // New returns a new SSH reader.
@@ -132,14 +132,15 @@ func (h *sshReader) Decode() {
 		// Create audit records for ident-only connections (incomplete handshakes)
 		if h.clientIdent != "" {
 			err := Decoder.Writer.Write(&types.SSH{
-				Timestamp:          h.conversation.FirstClientPacket.UnixNano(),
-				Ja4Ssh:             h.ja4sshFingerprint,
-				Flow:               h.conversation.Ident,
-				Ident:              h.clientIdent,
-				Algorithms:         "", // No algorithms without KexInit
-				IsClient:           true,
-				Notes:              "Incomplete handshake - no KexInit",
-				Ja4SshSessionType:  h.ja4sshSessionType,
+				Timestamp:         h.conversation.FirstClientPacket.UnixNano(),
+				Ja4Ssh:            h.ja4sshFingerprint,
+				Flow:              h.conversation.Ident,
+				Ident:             h.clientIdent,
+				Algorithms:        "", // No algorithms without KexInit
+				IsClient:          true,
+				Notes:             "Incomplete handshake - no KexInit",
+				Ja4SshSessionType: h.ja4sshSessionType,
+				CommunityID:       h.conversation.CommunityID,
 			})
 			if err != nil {
 				sshLog.Error("failed to write SSH audit record for client ident", zap.Error(err))
@@ -155,14 +156,15 @@ func (h *sshReader) Decode() {
 
 		if h.serverIdent != "" {
 			err := Decoder.Writer.Write(&types.SSH{
-				Timestamp:          h.conversation.FirstServerPacket.UnixNano(),
-				Ja4Ssh:             h.ja4sshFingerprint,
-				Flow:               utils.ReverseFlowIdent(h.conversation.Ident),
-				Ident:              h.serverIdent,
-				Algorithms:         "", // No algorithms without KexInit
-				IsClient:           false,
-				Notes:              "Incomplete handshake - no KexInit",
-				Ja4SshSessionType:  h.ja4sshSessionType,
+				Timestamp:         h.conversation.FirstServerPacket.UnixNano(),
+				Ja4Ssh:            h.ja4sshFingerprint,
+				Flow:              utils.ReverseFlowIdent(h.conversation.Ident),
+				Ident:             h.serverIdent,
+				Algorithms:        "", // No algorithms without KexInit
+				IsClient:          false,
+				Notes:             "Incomplete handshake - no KexInit",
+				Ja4SshSessionType: h.ja4sshSessionType,
+				CommunityID:       h.conversation.CommunityID,
 			})
 			if err != nil {
 				sshLog.Error("failed to write SSH audit record for server ident", zap.Error(err))
@@ -428,6 +430,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 				HasWeakCipher:           hasWeakCipher(init.CiphersClientServer),
 				HasWeakMAC:              hasWeakMAC(init.MACsClientServer),
 				ServerHostKeyAlgorithms: strings.Join(init.ServerHostKeyAlgos, ","),
+				CommunityID:             h.conversation.CommunityID,
 			})
 			if err != nil {
 				sshLog.Error("failed to flush ssh audit record", zap.Error(err))
@@ -459,6 +462,7 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 				HasWeakCipher:           hasWeakCipher(init.CiphersServerClient),
 				HasWeakMAC:              hasWeakMAC(init.MACsServerClient),
 				ServerHostKeyAlgorithms: strings.Join(init.ServerHostKeyAlgos, ","),
+				CommunityID:             h.conversation.CommunityID,
 			})
 			if err != nil {
 				sshLog.Error("failed to flush ssh audit record", zap.Error(err))

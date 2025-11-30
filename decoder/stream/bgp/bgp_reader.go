@@ -105,6 +105,7 @@ func (b *bgpReader) Decode() {
 			msg.DstIP = b.conversation.ServerIP
 			msg.SrcPort = int32(b.conversation.ClientPort)
 			msg.DstPort = int32(b.conversation.ServerPort)
+			msg.CommunityID = b.conversation.CommunityID
 
 			err := Decoder.Writer.Write(msg)
 			if err != nil {

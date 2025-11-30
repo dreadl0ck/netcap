@@ -22,9 +22,11 @@ package packet
 import (
 	"bytes"
 	"crypto/md5"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"math"
+	"net"
 	"os"
 	"reflect"
 	"sort"
@@ -33,7 +35,10 @@ import (
 	"sync"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 	"github.com/pkg/errors"
+	"github.com/satta/gommunityid"
 
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
@@ -100,6 +105,97 @@ func calcMd5(s string) string {
 	}
 
 	return hex.EncodeToString(out)
+}
+
+// communityIDGenerator is a reusable Community ID generator
+// using the Corelight Community ID v1 specification.
+// See: https://github.com/corelight/community-id-spec
+var communityIDGenerator = gommunityid.CommunityIDv1{
+	Seed: 0, // default seed
+}
+
+// CalcCommunityID generates a Community ID v1 for a packet.
+// This provides a standardized flow identifier that is compatible
+// with Zeek, Suricata, and other network monitoring tools.
+// Returns an empty string if the packet lacks the necessary layers.
+func CalcCommunityID(p gopacket.Packet) string {
+	// Extract network layer for IP addresses
+	nl := p.NetworkLayer()
+	if nl == nil {
+		return ""
+	}
+
+	var srcIP, dstIP net.IP
+	var proto uint8
+
+	// Extract IPs and protocol from network layer
+	switch v := nl.(type) {
+	case *layers.IPv4:
+		srcIP = v.SrcIP
+		dstIP = v.DstIP
+		proto = uint8(v.Protocol)
+	case *layers.IPv6:
+		srcIP = v.SrcIP
+		dstIP = v.DstIP
+		proto = uint8(v.NextHeader)
+	default:
+		return ""
+	}
+
+	// Extract ports from transport layer
+	var srcPort, dstPort uint16
+	tl := p.TransportLayer()
+
+	if tl != nil {
+		switch v := tl.(type) {
+		case *layers.TCP:
+			srcPort = uint16(v.SrcPort)
+			dstPort = uint16(v.DstPort)
+		case *layers.UDP:
+			srcPort = uint16(v.SrcPort)
+			dstPort = uint16(v.DstPort)
+		case *layers.SCTP:
+			srcPort = uint16(v.SrcPort)
+			dstPort = uint16(v.DstPort)
+		default:
+			// For transport layers we don't handle specifically,
+			// try to get ports from raw data
+			if len(tl.TransportFlow().Src().Raw()) >= 2 {
+				srcPort = binary.BigEndian.Uint16(tl.TransportFlow().Src().Raw())
+			}
+			if len(tl.TransportFlow().Dst().Raw()) >= 2 {
+				dstPort = binary.BigEndian.Uint16(tl.TransportFlow().Dst().Raw())
+			}
+		}
+	}
+
+	// Handle ICMP specially
+	if icmpLayer := p.Layer(layers.LayerTypeICMPv4); icmpLayer != nil {
+		icmp := icmpLayer.(*layers.ICMPv4)
+		ft := gommunityid.MakeFlowTupleICMP(srcIP, dstIP, uint16(icmp.TypeCode.Type()), uint16(icmp.TypeCode.Code()))
+		return communityIDGenerator.CalcBase64(ft)
+	}
+	if icmpLayer := p.Layer(layers.LayerTypeICMPv6); icmpLayer != nil {
+		icmp := icmpLayer.(*layers.ICMPv6)
+		ft := gommunityid.MakeFlowTupleICMP6(srcIP, dstIP, uint16(icmp.TypeCode.Type()), uint16(icmp.TypeCode.Code()))
+		return communityIDGenerator.CalcBase64(ft)
+	}
+
+	// Create flow tuple based on protocol
+	var ft gommunityid.FlowTuple
+	switch proto {
+	case 6: // TCP
+		ft = gommunityid.MakeFlowTupleTCP(srcIP, dstIP, srcPort, dstPort)
+	case 17: // UDP
+		ft = gommunityid.MakeFlowTupleUDP(srcIP, dstIP, srcPort, dstPort)
+	case 132: // SCTP
+		ft = gommunityid.MakeFlowTupleSCTP(srcIP, dstIP, srcPort, dstPort)
+	default:
+		// Generic flow tuple for other protocols
+		ft = gommunityid.MakeFlowTuple(srcIP, dstIP, srcPort, dstPort, proto)
+	}
+
+	return communityIDGenerator.CalcBase64(ft)
 }
 
 func countFields(t types.Type) int {

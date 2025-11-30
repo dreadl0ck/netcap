@@ -401,6 +401,7 @@ func (f *ftpReader) writeFTPRecord(isResponse bool, command, argument string, re
 		Username:           f.username,
 		IsControl:          true,
 		FileSize:           f.fileSize,
+		CommunityID:        f.conversation.CommunityID,
 	}
 
 	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)

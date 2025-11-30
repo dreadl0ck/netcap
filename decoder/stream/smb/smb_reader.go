@@ -1514,6 +1514,7 @@ func (s *smbReader) writeSMBRecord(
 		OperationType:        operationType,
 		IsPotentialThreat:    isPotentialThreat,
 		ThreatIndicator:      threatIndicator,
+		CommunityID:          s.conversation.CommunityID,
 	}
 
 	// Swap src/dst for responses (server is responding)

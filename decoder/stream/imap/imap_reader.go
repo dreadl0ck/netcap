@@ -229,6 +229,7 @@ func (i *imapReader) writeIMAPRecord(isResponse bool, tag, command string, argum
 		STARTTLSSuccess:   i.startTLSSuccess,
 		IsEncrypted:       i.isEncrypted,
 		Capabilities:      i.capabilities,
+		CommunityID:       i.conversation.CommunityID,
 	}
 
 	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)

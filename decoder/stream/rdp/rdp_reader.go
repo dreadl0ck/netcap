@@ -95,6 +95,7 @@ func (r *rdpReader) Decode() {
 			msg.DstIP = r.conversation.ServerIP
 			msg.SrcPort = int32(r.conversation.ClientPort)
 			msg.DstPort = int32(r.conversation.ServerPort)
+			msg.CommunityID = r.conversation.CommunityID
 
 			err := Decoder.Writer.Write(msg)
 			if err != nil {

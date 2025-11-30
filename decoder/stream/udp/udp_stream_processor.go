@@ -197,7 +197,14 @@ func (usp *udpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan *udpStream 
 			s.decode()
 
 			// save stream data
-			err := streamutils.SaveConversation("UDP", s.data, ident, firstPacket, clientTransport)
+			// Calculate Community ID once for use by harvesters
+			communityID := streamutils.CalcCommunityIDUDP(
+				clientNetwork.Src().String(),
+				clientNetwork.Dst().String(),
+				uint16(utils.DecodePort(clientTransport.Src().Raw())),
+				uint16(utils.DecodePort(clientTransport.Dst().Raw())),
+			)
+			err := streamutils.SaveConversation("UDP", s.data, ident, firstPacket, clientTransport, communityID)
 			if err != nil {
 				fmt.Println("failed to save UDP conversation:", err)
 			}

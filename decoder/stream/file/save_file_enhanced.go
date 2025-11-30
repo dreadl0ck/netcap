@@ -318,6 +318,7 @@ func SaveFileEnhanced(
 		YaraMatches:         analysis.YaraMatches,
 		IsKnownMalware:      analysis.IsKnownMalware,
 		ThreatName:          utils.SanitizeUTF8(analysis.ThreatName),
+		CommunityID:         conv.CommunityID,
 	})
 
 	return nil

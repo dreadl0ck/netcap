@@ -93,6 +93,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 					ctx.SrcPort = utils.DecodePort(transportLayer.TransportFlow().Src().Raw())
 					ctx.DstPort = utils.DecodePort(transportLayer.TransportFlow().Dst().Raw())
 				}
+
+				// Calculate Community ID v1 for cross-tool correlation
+				ctx.CommunityID = packet.CalcCommunityID(pkt)
 			}
 
 			// iterate over all layers

@@ -221,6 +221,7 @@ message PacketContext {
   string DstIP = 2;
   int32 SrcPort = 3;
   int32 DstPort = 4;
+  string CommunityID = 5;  // Corelight Community ID v1 for cross-tool correlation
 }
 
 // a connection has the following attributes:
@@ -242,7 +243,7 @@ message Connection {
   int32 TotalSize = 12; // total bytes transferred
   int32 AppPayloadSize = 13; // size of application layer payload
   int32 NumPackets = 14;
-  string UID = 15;
+  string CommunityID = 15;  // Corelight Community ID v1 for cross-tool correlation
   int64 TimestampLast = 16;
   int64 Duration = 17;
   int64 BytesServerToClient = 18;
@@ -870,6 +871,9 @@ message DNS {
   string ResponseCodeName = 29;         // Human-readable response code (NOERROR, NXDOMAIN, SERVFAIL, etc.)
   bool HasEDNS = 30;                    // EDNS0 OPT record present in additionals
   int32 EDNSPayloadSize = 31;           // EDNS0 UDP payload size (from OPT record)
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 32;
 }
 
 message DNSResourceRecord {
@@ -1083,6 +1087,7 @@ message SIP {
   bool HasSDPPrivateIPLeak = 35;        // SDP media hijacking indicator
   string SDPConnectionIP = 36;          // Extracted SDP c= IP
   string SDPMediaType = 37;             // Extracted SDP m= type
+  string CommunityID = 38;              // Corelight Community ID v1 for cross-tool correlation
 }
 
 // The Internet Group Management Protocol (IGMP) is a communications protocol
@@ -1244,6 +1249,9 @@ message HTTP {
   // JA4+ HTTP fingerprinting
   string Ja4h = 47;                     // JA4H HTTP client fingerprint
   string Ja4hDescription = 49;          // JA4H database lookup description (application/library)
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 50;
 }
 
 message HTTPCookie {
@@ -1299,6 +1307,9 @@ message TLSClientHello {
   // JA4 fingerprint (resistant to TLS extension randomization)
   string Ja4 = 36;                        // JA4 fingerprint (format: {ja4_a}_{ja4_b}_{ja4_c})
   string Ja4Description = 37;             // JA4 database lookup description (application/library/device)
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 38;
 }
 
 // TLS Server Hello
@@ -1336,6 +1347,9 @@ message TLSServerHello {
   // JA4S fingerprint (resistant to TLS extension randomization)
   string Ja4s = 30;                       // JA4S fingerprint (format: {ja4s_a}_{ja4s_b})
   string Ja4sDescription = 31;            // JA4S database lookup description (application/library/device)
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 32;
 }
 
 // TLS Certificate
@@ -1552,6 +1566,9 @@ message Modbus {
   string DstIP = 10;
   int32 SrcPort = 11;
   int32 DstPort = 12;
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 13;
 }
 
 // Open Shortest Path First (OSPF) is a routing protocol for Internet Protocol (IP) networks.
@@ -2073,6 +2090,9 @@ message CIP {
   string DstIP = 10;
   int32 SrcPort = 11;
   int32 DstPort = 12;
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 13;
 }
 
 // ENIP implements decoding of EtherNet/IP, a protocol used to transport the
@@ -2201,6 +2221,7 @@ message File {
   bool IsKnownMalware = 33;         // Hash matches known malware database
   string ThreatName = 34;           // Malware family name if known
   string Protocol = 35;             // Protocol used for file transfer (HTTP, FTP, SMB, SMTP, IRC)
+  string CommunityID = 36;          // Corelight Community ID v1 for cross-tool correlation
 }
 
 // SMTPResponse SMTP response type
@@ -2235,6 +2256,9 @@ message SMTP {
   int32 DstPort = 9;
   repeated string MailIDs = 10;
   repeated string Commands = 11;
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 12;
 }
 
 // File Transfer Protocol
@@ -2263,6 +2287,9 @@ message FTP {
   string Username = 16;
   bool IsControl = 17;          // true for control channel, false for data channel
   int64 FileSize = 18;          // Size from SIZE command or transfer
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 19;
 }
 
 // Internet Relay Chat
@@ -2291,6 +2318,9 @@ message IRC {
   string Channel = 16;          // Channel name (if applicable)
   string Nick = 17;             // Nickname
   bool IsDataChannel = 18;      // true for DCC data channel
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 19;
 }
 
 // Server Message Block Protocol
@@ -2352,6 +2382,9 @@ message SMB {
   string SecurityContext = 43;  // Additional security context
   bool IsPotentialThreat = 44;  // Flag for suspicious activity
   string ThreatIndicator = 45;  // Why it might be suspicious
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 46;
 }
 
 // Internet Message Access Protocol
@@ -2393,6 +2426,9 @@ message IMAP {
   
   // Capabilities
   repeated string Capabilities = 25; // Server capabilities (IMAP4rev1, IDLE, etc.)
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 26;
 }
 
 // Diameter is an authentication, authorization, and accounting protocol for computer networks.
@@ -2474,6 +2510,9 @@ message POP3 {
   bool IsEncrypted = 24;                   // Connection encrypted (after STARTTLS or port 995)
   bool IsPlaintextAuth = 25;               // Password sent in plaintext (security risk)
   repeated string ServerCapabilities = 26; // CAPA response capabilities
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 27;
 }
 
 message Mail {
@@ -2521,6 +2560,7 @@ message Mail {
   bool IsForwarded = 38;                   // Appears to be forwarded message
   string ReplyTo = 39;                     // Reply-To header value
   string FromDomain = 40;                  // Domain extracted from From header
+  string CommunityID = 41;                 // Corelight Community ID v1 for cross-tool correlation
 }
 
 message MailPart {
@@ -2645,6 +2685,7 @@ message Credentials {
   string SipCallId = 34;       // SIP Call-ID header
   string SipFrom = 35;         // SIP From header
   string SipTo = 36;           // SIP To header
+  string CommunityID = 37;     // Corelight Community ID v1 for cross-tool correlation
 }
 
 message SSH {
@@ -2664,6 +2705,9 @@ message SSH {
   bool HasWeakCipher = 12;              // Uses weak encryption cipher
   bool HasWeakMAC = 13;                 // Uses weak MAC algorithm
   string ServerHostKeyAlgorithms = 14;  // Offered host key algorithms
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 15;
 }
 
 message Vulnerability {
@@ -2820,6 +2864,9 @@ message Syslog {
   // Security monitoring
   bool IsSecurityRelevant = 20;  // Flag for security-related logs (auth, access, etc.)
   string Protocol = 21;          // TCP or UDP
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 22;
 }
 
 // SyslogStructuredData represents RFC 5424 structured data
@@ -2891,6 +2938,9 @@ message RDP {
   bool DynamicDST = 40;               // Dynamic DST supported
   bool RestrictedAdminMode = 41;      // Restricted admin mode
   bool RemoteCredGuard = 42;          // Remote Credential Guard
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 43;
 }
 
 // BGP (Border Gateway Protocol) is the protocol used for routing between
@@ -2992,6 +3042,9 @@ message BGP {
   // Security Scoring
   int32 RiskScore = 68;          // Computed risk score (0-100)
   repeated string RiskFactors = 69; // List of factors contributing to risk score
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 70;
 }
 
 // BGPPathAttribute represents a BGP path attribute
@@ -3085,6 +3138,9 @@ message DNP3 {
   bool IsConfigChange = 38;      // Configuration change attempt
   bool IsAuthentication = 39;    // Secure authentication message
   string SecurityContext = 40;   // Additional security context
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 41;
 }
 
 // DNP3Object represents a DNP3 object
@@ -3144,6 +3200,9 @@ message SOCKS {
   bool ConnectionSuccessful = 25;// Connection established
   string TargetCategory = 26;    // Category of target (if known)
   bool IsAnonymous = 27;         // Anonymous proxy usage
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 28;
 }
 
 // GTP (GPRS Tunneling Protocol) is used in mobile networks for tunneling
@@ -3592,6 +3651,9 @@ message BACnetIP {
 
   // Payload for detailed analysis
   bytes Payload = 46;             // Raw APDU payload (if enabled)
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 47;
 }
 
 // MQTTSN (MQTT for Sensor Networks) is a publish/subscribe messaging protocol
@@ -3663,6 +3725,9 @@ message MQTTSN {
   bool CleanSession = 32;         // Clean session flag from CONNECT
   bool Will = 33;                 // Will flag from CONNECT
   string TopicIdTypeName = 34;    // Human-readable topic ID type
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 35;
 }
 
 // IEC62351 represents IEC 62351 security protocol messages for power system communications.
@@ -3750,6 +3815,9 @@ message IEC62351 {
   // Payload and context
   bytes SecurityPayload = 56;     // Security-related payload data
   string ProtocolContext = 57;    // Additional protocol context
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 58;
 }
 
 // PROFINET is an industrial Ethernet standard used for automation and process control.
@@ -3851,6 +3919,9 @@ message QUIC {
   // Payload info
   int32 PayloadLength = 15;
   int32 TokenLength = 16;          // For Initial packets (address validation)
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 17;
 }
 
 // QUICClientHello captures the TLS ClientHello information extracted from
@@ -3899,4 +3970,7 @@ message QUICClientHello {
   bytes SessionID = 27;            // Session ID (may be empty in TLS 1.3)
   repeated int32 SupportedPoints = 28;  // EC point formats
   repeated int32 CompressMethods = 29;  // Compression methods
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 31;
 }

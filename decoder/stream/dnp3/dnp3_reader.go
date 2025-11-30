@@ -133,6 +133,7 @@ func (d *dnp3Reader) Decode() {
 			msg.DstIP = d.conversation.ServerIP
 			msg.SrcPort = int32(d.conversation.ClientPort)
 			msg.DstPort = int32(d.conversation.ServerPort)
+			msg.CommunityID = d.conversation.CommunityID
 
 			err := Decoder.Writer.Write(msg)
 			if err != nil {

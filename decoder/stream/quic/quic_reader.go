@@ -182,6 +182,7 @@ func (q *quicReader) parseIETFQUIC(payload []byte, timestamp int64) {
 		InitialMaxData:    int64(clientHello.InitialMaxData),
 		InitialMaxStreamDataBidiLocal: int64(clientHello.InitialMaxStreamDataBidiLocal),
 		MaxUdpPayloadSize: int64(clientHello.MaxUDPPayloadSize),
+		CommunityID:       q.conversation.CommunityID,
 	}
 
 	err = Decoder.Writer.Write(record)
@@ -237,6 +238,7 @@ func (q *quicReader) parseGQUIC(payload []byte, timestamp int64) {
 		CHLOTags:    clientHello.Tags,
 		TagValues:   clientHello.TagValues,
 		Ja4:         ja4Fingerprint,
+		CommunityID: q.conversation.CommunityID,
 	}
 
 	err = Decoder.Writer.Write(record)

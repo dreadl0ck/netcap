@@ -156,7 +156,14 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 			if s.IsClient() {
 				// save the entire conversation.
 				// we only need to do this once, when the client part of the connection is closed
-				err := streamutils.SaveConversation("TCP", s.Merged(), s.Ident(), s.FirstPacket(), s.Transport())
+				// Calculate Community ID once for use by harvesters
+				communityID := streamutils.CalcCommunityIDTCP(
+					s.Network().Src().String(),
+					s.Network().Dst().String(),
+					uint16(utils.DecodePort(s.Transport().Src().Raw())),
+					uint16(utils.DecodePort(s.Transport().Dst().Raw())),
+				)
+				err := streamutils.SaveConversation("TCP", s.Merged(), s.Ident(), s.FirstPacket(), s.Transport(), communityID)
 				if err != nil {
 					fmt.Println("failed to save connection", err)
 				}

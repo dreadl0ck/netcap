@@ -90,6 +90,7 @@ func (s *syslogReader) Decode() {
 			msg.SrcPort = int32(s.conversation.ClientPort)
 			msg.DstPort = int32(s.conversation.ServerPort)
 			msg.Protocol = "UDP"
+			msg.CommunityID = s.conversation.CommunityID
 
 			err := Decoder.Writer.Write(msg)
 			if err != nil {

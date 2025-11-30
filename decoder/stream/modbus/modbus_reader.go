@@ -160,6 +160,7 @@ func (m *modbusReader) Decode() {
 			msg.DstIP = m.conversation.ServerIP
 			msg.SrcPort = int32(m.conversation.ClientPort)
 			msg.DstPort = int32(m.conversation.ServerPort)
+			msg.CommunityID = m.conversation.CommunityID
 
 			err := Decoder.Writer.Write(msg)
 			if err != nil {

@@ -33,4 +33,10 @@ type ConversationInfo struct {
 	ServerIP   string
 	ClientPort int32
 	ServerPort int32
+
+	// CommunityID is the Corelight Community ID v1 for this stream.
+	// This provides a standardized flow identifier compatible with
+	// Zeek, Suricata, and other network monitoring tools.
+	// See: https://github.com/corelight/community-id-spec
+	CommunityID string
 }

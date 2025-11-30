@@ -131,6 +131,7 @@ func (c *cipReader) writeCIPRecord(msg *types.CIP) {
 	msg.DstIP = c.conversation.ServerIP
 	msg.SrcPort = int32(c.conversation.ClientPort)
 	msg.DstPort = int32(c.conversation.ServerPort)
+	msg.CommunityID = c.conversation.CommunityID
 
 	err := Decoder.Writer.Write(msg)
 	if err != nil {

@@ -301,7 +301,13 @@ func handlePacket(p gopacket.Packet) proto.Message {
 		conn.Unlock()
 	} else { // create a new Connection
 		co := &types.Connection{}
-		co.UID = calcMd5(connID.String())
+		// Use Community ID v1 specification for standardized flow identification
+		// Falls back to MD5 hash if Community ID cannot be computed (e.g., missing layers)
+		if cid := CalcCommunityID(p); cid != "" {
+			co.CommunityID = cid
+		} else {
+			co.CommunityID = calcMd5(connID.String())
+		}
 		co.TimestampFirst = p.Metadata().Timestamp.UnixNano()
 		co.TimestampLast = p.Metadata().Timestamp.UnixNano()
 		co.TotalSize = int32(p.Metadata().Length)

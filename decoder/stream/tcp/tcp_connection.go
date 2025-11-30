@@ -355,7 +355,14 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		)
 
 		// save the full conversation to disk if enabled
-		err := streamutils.SaveConversation("TCP", t.merged, t.client.Ident(), t.client.FirstPacket(), t.client.Transport())
+		// Calculate Community ID once for use by harvesters
+		communityID := streamutils.CalcCommunityIDTCP(
+			t.client.Network().Src().String(),
+			t.client.Network().Dst().String(),
+			uint16(utils.DecodePort(t.client.Transport().Src().Raw())),
+			uint16(utils.DecodePort(t.client.Transport().Dst().Raw())),
+		)
+		err := streamutils.SaveConversation("TCP", t.merged, t.client.Ident(), t.client.FirstPacket(), t.client.Transport(), communityID)
 		if err != nil {
 			reassemblyLog.Error("failed to save stream", zap.Error(err), zap.String("ident", t.client.Ident()))
 		}
@@ -411,6 +418,12 @@ func (t *tcpConnection) decode() {
 		ServerIP:          t.client.Network().Dst().String(),
 		ClientPort:        utils.DecodePort(t.client.Transport().Src().Raw()),
 		ServerPort:        utils.DecodePort(t.client.Transport().Dst().Raw()),
+		CommunityID: streamutils.CalcCommunityIDTCP(
+			t.client.Network().Src().String(),
+			t.client.Network().Dst().String(),
+			uint16(utils.DecodePort(t.client.Transport().Src().Raw())),
+			uint16(utils.DecodePort(t.client.Transport().Dst().Raw())),
+		),
 	}
 
 	// Use the client's destination port (= server's listening port) for decoder matching

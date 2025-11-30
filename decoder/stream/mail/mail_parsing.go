@@ -149,6 +149,7 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 		Body:            parseMailParts(conv, body, logger),
 		ID:              newMailID(),
 		Origin:          origin,
+		CommunityID:     conv.CommunityID,
 	}
 
 	// Perform security analysis

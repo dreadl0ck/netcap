@@ -51,6 +51,7 @@ require (
 	github.com/florianl/go-nfqueue/v2 v2.0.2
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/namsral/flag v1.7.4-pre
+	github.com/satta/gommunityid v1.0.2
 	github.com/urfave/cli/v3 v3.6.1
 )
 
@@ -89,6 +90,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
+	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20251007162407-5df77e3f7d1d // indirect
 	github.com/h2non/go-is-svg v0.0.0-20160927212452-35e8c4b0612c // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect

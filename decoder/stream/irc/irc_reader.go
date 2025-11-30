@@ -297,6 +297,7 @@ func (i *ircReader) writeIRCRecord(prefix, command string, params []string, rawL
 		Channel:       i.currentChan,
 		Nick:          i.currentNick,
 		IsDataChannel: false,
+		CommunityID:   i.conversation.CommunityID,
 	}
 
 	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)

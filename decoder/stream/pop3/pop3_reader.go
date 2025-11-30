@@ -190,6 +190,7 @@ func (h *pop3Reader) Decode() {
 		IsEncrypted:        isEncrypted,
 		IsPlaintextAuth:    isPlaintextAuth,
 		ServerCapabilities: h.capabilities,
+		CommunityID:        h.conversation.CommunityID,
 	}
 
 	if user != "" || pass != "" {

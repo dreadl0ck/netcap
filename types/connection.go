@@ -29,29 +29,36 @@ import (
 )
 
 const (
-	fieldTimestampFirst      = "TimestampFirst"
-	fieldLinkProto           = "LinkProto"
-	fieldNetworkProto        = "NetworkProto"
-	fieldTransportProto      = "TransportProto"
-	fieldApplicationProto    = "ApplicationProto"
-	fieldTotalSize           = "TotalSize"
-	fieldAppPayloadSize      = "AppPayloadSize"
-	fieldNumPackets          = "NumPackets"
-	fieldUID                 = "UID"
-	fieldDuration            = "Duration"
-	fieldTimestampLast       = "TimestampLast"
-	fieldBytesClientToServer = "BytesClientToServer"
-	fieldBytesServerToClient = "BytesServerToClient"
-	fieldNumFINFlags         = "NumFINFlags"
-	fieldNumRSTFlags         = "NumRSTFlags"
-	fieldNumACKFlags         = "NumACKFlags"
-	fieldNumSYNFlags         = "NumSYNFlags"
-	fieldNumURGFlags         = "NumURGFlags"
-	fieldNumECEFlags         = "NumECEFlags"
-	fieldNumPSHFlags         = "NumPSHFlags"
-	fieldNumCWRFlags         = "NumCWRFlags"
-	fieldNumNSFlags          = "NumNSFlags"
-	fieldMeanWindowSize      = "MeanWindowSize"
+	fieldTimestampFirst       = "TimestampFirst"
+	fieldLinkProto            = "LinkProto"
+	fieldNetworkProto         = "NetworkProto"
+	fieldTransportProto       = "TransportProto"
+	fieldApplicationProto     = "ApplicationProto"
+	fieldTotalSize            = "TotalSize"
+	fieldAppPayloadSize       = "AppPayloadSize"
+	fieldNumPackets           = "NumPackets"
+	fieldCommunityID          = "CommunityID"
+	fieldDuration             = "Duration"
+	fieldTimestampLast        = "TimestampLast"
+	fieldBytesClientToServer  = "BytesClientToServer"
+	fieldBytesServerToClient  = "BytesServerToClient"
+	fieldNumFINFlags          = "NumFINFlags"
+	fieldNumRSTFlags          = "NumRSTFlags"
+	fieldNumACKFlags          = "NumACKFlags"
+	fieldNumSYNFlags          = "NumSYNFlags"
+	fieldNumURGFlags          = "NumURGFlags"
+	fieldNumECEFlags          = "NumECEFlags"
+	fieldNumPSHFlags          = "NumPSHFlags"
+	fieldNumCWRFlags          = "NumCWRFlags"
+	fieldNumNSFlags           = "NumNSFlags"
+	fieldMeanWindowSize       = "MeanWindowSize"
+	fieldServerPortName       = "ServerPortName"
+	fieldDetectedProtocolName = "DetectedProtocolName"
+	fieldTcpRttNanos          = "TcpRttNanos"
+	fieldTlsHandshakeNanos    = "TlsHandshakeNanos"
+	fieldJa4lClient           = "Ja4lClient"
+	fieldJa4lServer           = "Ja4lServer"
+	fieldSynTtl               = "SynTtl"
 	// fieldApplications is defined in types/ip_profile.go
 )
 
@@ -70,7 +77,7 @@ var fieldsConnection = []string{
 	fieldTotalSize,
 	fieldAppPayloadSize,
 	fieldNumPackets,
-	//fieldUID,
+	//fieldCommunityID,
 	fieldDuration,
 	fieldTimestampLast,
 	fieldBytesClientToServer,
@@ -86,14 +93,14 @@ var fieldsConnection = []string{
 	fieldNumNSFlags,
 	fieldMeanWindowSize,
 	fieldApplications,
-	"ServerPortName",
-	"DetectedProtocolName",
+	fieldServerPortName,
+	fieldDetectedProtocolName,
 	// JA4L timing fields
-	"TcpRttNanos",
-	"TlsHandshakeNanos",
-	"Ja4lClient",
-	"Ja4lServer",
-	"SynTtl",
+	fieldTcpRttNanos,
+	fieldTlsHandshakeNanos,
+	fieldJa4lClient,
+	fieldJa4lServer,
+	fieldSynTtl,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -118,7 +125,7 @@ func (c *Connection) CSVRecord() []string {
 		formatInt32(c.TotalSize),
 		formatInt32(c.AppPayloadSize),
 		formatInt32(c.NumPackets),
-		//c.UID,
+		//c.CommunityID,
 		formatInt64(c.Duration),
 		formatTimestamp(c.TimestampLast),
 		formatInt64(c.BytesClientToServer),
@@ -270,7 +277,7 @@ func (c *Connection) Encode() []string {
 		connectionEncoder.Int32(fieldTotalSize, c.TotalSize),
 		connectionEncoder.Int32(fieldAppPayloadSize, c.AppPayloadSize),
 		connectionEncoder.Int32(fieldNumPackets, c.NumPackets),
-		//connectionEncoder.String(fieldUID, c.UID),
+		//connectionEncoder.String(fieldCommunityID, c.CommunityID),
 		connectionEncoder.Int64(fieldDuration, c.Duration),
 		connectionEncoder.Int64(fieldTimestampLast, c.TimestampLast),
 		connectionEncoder.Int64(fieldBytesClientToServer, c.BytesClientToServer),

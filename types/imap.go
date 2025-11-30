@@ -39,6 +39,7 @@ const (
 	fieldRecentCount       = "RecentCount"
 	fieldUIDNext           = "UIDNext"
 	fieldUIDValidity       = "UIDValidity"
+	fieldUID               = "UID" // IMAP message UID
 	fieldSTARTTLSRequested = "STARTTLSRequested"
 	fieldSTARTTLSSuccess   = "STARTTLSSuccess"
 	fieldIMAPUsername      = "Username"
