@@ -315,7 +315,7 @@ export default function ExtractedFilesPage() {
     } finally {
       setSwitchingFile(false);
     }
-  }, [mutateStatus, mutate]);
+  }, [api, mutateStatus, mutate]);
 
   const handleDownloadFile = (relativePath: string) => {
     const downloadUrl = api.downloadExtractedFile(relativePath);
@@ -679,7 +679,7 @@ export default function ExtractedFilesPage() {
                           component="img"
                           height="200"
                           image={api.downloadExtractedFile(file.path)}
-                          alt={file.name}
+                          alt={file.originalName || file.name}
                           sx={{ 
                             objectFit: 'contain', 
                             bgcolor: 'grey.100',
@@ -687,7 +687,7 @@ export default function ExtractedFilesPage() {
                           }}
                         />
                         <CardContent sx={{ flexGrow: 1, pb: 1 }}>
-                          <Tooltip title={file.name}>
+                          <Tooltip title={file.originalName || file.name}>
                             <Typography 
                               variant="body2" 
                               sx={{ 
@@ -699,7 +699,7 @@ export default function ExtractedFilesPage() {
                                 mb: 0.5,
                               }}
                             >
-                              {file.name}
+                              {file.originalName || file.name}
                             </Typography>
                           </Tooltip>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
@@ -808,7 +808,7 @@ export default function ExtractedFilesPage() {
                               whiteSpace: 'nowrap'
                             }}
                           >
-                            {file.name}
+                            {file.originalName || file.name}
                           </Typography>
                         </Box>
                       </TableCell>
@@ -919,7 +919,7 @@ export default function ExtractedFilesPage() {
                 {previewFile && getFileTypeIcon(previewFile.mimeType)}
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="h6" sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {previewFile?.name}
+                    {previewFile?.originalName || previewFile?.name}
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 1.5, mt: 0.5, flexWrap: 'wrap' }}>
                     <Chip label={previewFile?.mimeType || 'unknown'} size="small" variant="outlined" />
@@ -1024,7 +1024,7 @@ export default function ExtractedFilesPage() {
                               backgroundColor: 'white'
                             }}
                             sandbox=""
-                            title={previewFile.name}
+                            title={previewFile.originalName || previewFile.name}
                           />
                         </>) : // Code view for other text files
                         (<Paper
@@ -1080,7 +1080,7 @@ export default function ExtractedFilesPage() {
                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
                       <img
                         src={api.downloadExtractedFile(previewFile.path)}
-                        alt={previewFile.name}
+                        alt={previewFile.originalName || previewFile.name}
                         style={{
                           maxWidth: '100%',
                           maxHeight: 'calc(90vh - 250px)',
@@ -1099,7 +1099,7 @@ export default function ExtractedFilesPage() {
                         height: 'calc(90vh - 200px)',
                         border: 'none'
                       }}
-                      title={previewFile.name}
+                      title={previewFile.originalName || previewFile.name}
                     />
                   )}
 

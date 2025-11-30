@@ -318,6 +318,7 @@ export interface FileInfo {
 
 export interface ExtractedFileInfo {
   name: string;
+  originalName?: string; // Original filename from network traffic (File.Name)
   path: string;
   fullPath: string;
   size: number;

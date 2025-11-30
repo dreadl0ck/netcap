@@ -21,7 +21,6 @@ package file
 
 import (
 	"bytes"
-	"encoding/base64"
 	"io"
 	"os"
 	"path"
@@ -29,7 +28,6 @@ import (
 	"strconv"
 	"strings"
 
-	gzip "github.com/klauspost/pgzip"
 	"go.uber.org/zap"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
@@ -112,12 +110,42 @@ func SaveFileEnhanced(
 		name = "unknown"
 	}
 
-	// Enhanced content type detection (if enabled)
+	// Compute content hash BEFORE writing for deduplication
+	// This decodes gzip/deflate/base64 content to hash the actual content
+	// and tracks compression information for the audit record
+	contentInfo, hashErr := ComputeContentHash(body, encoding)
+	if hashErr != nil {
+		saveFileLog.Error("failed to compute content hash",
+			zap.String("ident", conv.Ident),
+			zap.Error(hashErr),
+		)
+		// Continue with original body if hash computation fails
+		contentInfo = &ContentInfo{
+			Hash:           "",
+			DecodedContent: body,
+			WasCompressed:  false,
+			CompressedSize: int64(len(body)),
+		}
+	}
+
+	// Log compression info if file was compressed
+	if contentInfo.WasCompressed {
+		saveFileLog.Info("Decompressed file content",
+			zap.String("ident", conv.Ident),
+			zap.String("name", name),
+			zap.String("compressionType", contentInfo.CompressionType),
+			zap.Int64("compressedSize", contentInfo.CompressedSize),
+			zap.Int("decompressedSize", len(contentInfo.DecodedContent)),
+		)
+	}
+
+	// Enhanced content type detection (if enabled) - run on DECOMPRESSED content
 	var cTypeDetected string
 	var accurate bool
 
 	if cfg.FileExtraction.Advanced.UseMagicDetection {
-		cTypeDetected, accurate = DetectContentType(body)
+		// Use decompressed content for accurate magic detection
+		cTypeDetected, accurate = DetectContentType(contentInfo.DecodedContent)
 	} else {
 		cTypeDetected = trimEncoding(decoderconfig.Instance.FileStorage)
 	}
@@ -174,90 +202,132 @@ func SaveFileEnhanced(
 		base = path.Join(decoderconfig.Instance.Out, decoderconfig.Instance.FileStorage, "noname")
 	}
 
-	// Handle duplicate filenames
-	target := base
-	n := 0
-	for {
-		if _, errStat := os.Stat(target); errStat != nil {
-			break
+	// Check for duplicate content using deduplication cache
+	var target string
+	var length int64
+	var hashes FileHashes
+	var isDuplicate bool
+
+	if cfg.FileExtraction.Advanced.DeduplicateFiles && contentInfo.Hash != "" {
+		// Check if we've already saved a file with this content hash (lookup only, don't register yet)
+		existingPath, duplicate := GetDedupCache().Lookup(contentInfo.Hash)
+		if duplicate {
+			// Verify the file still exists on disk before using it
+			if _, statErr := os.Stat(existingPath); statErr == nil {
+				// File with identical content already exists - reuse existing path
+				target = existingPath
+				length = int64(len(contentInfo.DecodedContent))
+				isDuplicate = true
+
+				// Update stats
+				GetDedupCache().mu.Lock()
+				GetDedupCache().stats.TotalFiles++
+				GetDedupCache().stats.DuplicateFiles++
+				GetDedupCache().stats.BytesSaved += length
+				GetDedupCache().mu.Unlock()
+
+				saveFileLog.Info("Skipping duplicate file (content already saved)",
+					zap.String("ident", conv.Ident),
+					zap.String("name", name),
+					zap.String("existingPath", existingPath),
+					zap.String("contentHash", contentInfo.Hash),
+					zap.Int64("size", length),
+				)
+			}
+			// If file doesn't exist anymore, fall through to save it again
+		}
+	}
+
+	// If not a duplicate, save the file to disk
+	if !isDuplicate {
+		// Handle duplicate filenames
+		target = base
+		n := 0
+		for {
+			if _, errStat := os.Stat(target); errStat != nil {
+				break
+			}
+
+			if err != nil {
+				target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+utils.CleanIdent(conv.Ident))+"-"+strconv.Itoa(n)+ExtensionForContentType(cTypeDetected))
+			} else {
+				target = path.Join(root, filepath.Clean(name+"-"+utils.CleanIdent(conv.Ident))+"-"+strconv.Itoa(n)+ExtensionForContentType(cTypeDetected))
+			}
+			n++
 		}
 
+		// Create file for writing
+		f, err := os.Create(target)
 		if err != nil {
-			target = path.Join(root, filepath.Clean("incomplete-"+name+"-"+utils.CleanIdent(conv.Ident))+"-"+strconv.Itoa(n)+ExtensionForContentType(cTypeDetected))
-		} else {
-			target = path.Join(root, filepath.Clean(name+"-"+utils.CleanIdent(conv.Ident))+"-"+strconv.Itoa(n)+ExtensionForContentType(cTypeDetected))
-		}
-		n++
-	}
-
-	// Create file for writing
-	f, err := os.Create(target)
-	if err != nil {
-		saveFileLog.Error("failed to create file",
-			zap.String("ident", conv.Ident),
-			zap.String("target", target),
-			zap.Error(err),
-		)
-		return err
-	}
-
-	// Use streaming hash writer for efficiency
-	hashWriter := NewStreamingHashWriter(f)
-	defer hashWriter.Close()
-
-	var r io.Reader
-	r = bytes.NewBuffer(body)
-
-	// Decode gzip/deflate
-	if len(encoding) > 0 && (encoding[0] == "gzip" || encoding[0] == "deflate") {
-		gzipReader, gzipErr := gzip.NewReader(r)
-		if gzipErr != nil {
-			saveFileLog.Error("failed to decode gzip",
+			saveFileLog.Error("failed to create file",
 				zap.String("ident", conv.Ident),
-				zap.Error(gzipErr),
+				zap.String("target", target),
+				zap.Error(err),
+			)
+			return err
+		}
+
+		// Use streaming hash writer for efficiency
+		hashWriter := NewStreamingHashWriter(f)
+		defer hashWriter.Close()
+
+		// Always use the fully decoded content (gzip/deflate/base64 already decoded by ComputeContentHash)
+		r := bytes.NewBuffer(contentInfo.DecodedContent)
+
+		// Copy data while computing hashes
+		w, errCopy := io.Copy(hashWriter, r)
+		if errCopy != nil {
+			saveFileLog.Error("failed to save file",
+				zap.String("ident", conv.Ident),
+				zap.String("target", target),
+				zap.Int64("bytesWritten", w),
+				zap.Error(errCopy),
 			)
 		} else {
-			defer gzipReader.Close()
-			r = gzipReader
+			length = w
+			saveFileLog.Debug("saved file",
+				zap.String("ident", conv.Ident),
+				zap.String("target", target),
+				zap.Int64("bytesWritten", w),
+			)
 		}
-	}
 
-	// Decode base64
-	if len(encoding) > 0 && encoding[0] == "base64" {
-		r = base64.NewDecoder(base64.StdEncoding, r)
-	}
+		// Register in dedup cache AFTER successful write with final path
+		if cfg.FileExtraction.Advanced.DeduplicateFiles && contentInfo.Hash != "" {
+			GetDedupCache().mu.Lock()
+			GetDedupCache().hashToPath[contentInfo.Hash] = target
+			GetDedupCache().stats.TotalFiles++
+			GetDedupCache().stats.UniqueFiles++
+			GetDedupCache().mu.Unlock()
+		}
 
-	// Copy data while computing hashes
-	var length int64
-	w, errCopy := io.Copy(hashWriter, r)
-	if errCopy != nil {
-		saveFileLog.Error("failed to save file",
-			zap.String("ident", conv.Ident),
-			zap.String("target", target),
-			zap.Int64("bytesWritten", w),
-			zap.Error(errCopy),
-		)
+		// Get computed hashes (selective based on config)
+		allHashes := hashWriter.GetHashes()
+		hashes = FileHashes{}
+
+		if ShouldComputeHash("MD5") {
+			hashes.MD5 = allHashes.MD5
+		}
+		if ShouldComputeHash("SHA1") {
+			hashes.SHA1 = allHashes.SHA1
+		}
+		if ShouldComputeHash("SHA256") {
+			hashes.SHA256 = allHashes.SHA256
+		}
 	} else {
-		length = w
-		saveFileLog.Debug("saved file",
-			zap.String("ident", conv.Ident),
-			zap.String("target", target),
-			zap.Int64("bytesWritten", w),
-		)
-	}
+		// For duplicates, compute hashes from the decoded content
+		allHashes := ComputeHashes(contentInfo.DecodedContent)
+		hashes = FileHashes{}
 
-	// Get computed hashes (selective based on config)
-	allHashes := hashWriter.GetHashes()
-	hashes := FileHashes{}
-
-	if ShouldComputeHash("MD5") {
-		hashes.MD5 = allHashes.MD5
-	}
-	if ShouldComputeHash("SHA1") {
-		hashes.SHA1 = allHashes.SHA1
-	}
-	if ShouldComputeHash("SHA256") {
-		hashes.SHA256 = allHashes.SHA256
+		if ShouldComputeHash("MD5") {
+			hashes.MD5 = allHashes.MD5
+		}
+		if ShouldComputeHash("SHA1") {
+			hashes.SHA1 = allHashes.SHA1
+		}
+		if ShouldComputeHash("SHA256") {
+			hashes.SHA256 = allHashes.SHA256
+		}
 	}
 
 	// Set the value for the provided content type if none was provided
@@ -270,14 +340,14 @@ func SaveFileEnhanced(
 		flowDirection = "unknown"
 	}
 
-	// Perform security analysis on the file content
-	analysis := AnalyzeFile(body, fileName)
+	// Perform security analysis on the decompressed file content
+	analysis := AnalyzeFile(contentInfo.DecodedContent, fileName)
 
 	// Sanitize string fields to ensure valid UTF-8 for protobuf encoding
 	sanitizedSource, sanitizedHost, sanitizedContentType, sanitizedCTypeDetected, sanitizedFlowDirection :=
 		sanitizeStringFields(source, host, contentType, cTypeDetected, flowDirection)
 
-	// Write file record with security analysis fields
+	// Write file record with security analysis fields and compression info
 	WriteFileEnhanced(&types.File{
 		Timestamp:           conv.FirstClientPacket.UnixNano(),
 		Name:                utils.SanitizeUTF8(fileName),
@@ -319,6 +389,10 @@ func SaveFileEnhanced(
 		IsKnownMalware:      analysis.IsKnownMalware,
 		ThreatName:          utils.SanitizeUTF8(analysis.ThreatName),
 		CommunityID:         conv.CommunityID,
+		// Compression tracking fields
+		WasCompressed:   contentInfo.WasCompressed,
+		CompressionType: contentInfo.CompressionType,
+		CompressedSize:  contentInfo.CompressedSize,
 	})
 
 	return nil

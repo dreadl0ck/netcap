@@ -20,6 +20,7 @@
 package types
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,12 +30,15 @@ import (
 )
 
 const (
-	fieldName         = "Name"
-	fieldHash         = "Hash"
-	fieldIdent        = "Ident"
-	fieldFileSource   = "Source"
-	fieldContentType  = "ContentType"
-	fieldFileProtocol = "Protocol"
+	fieldName            = "Name"
+	fieldHash            = "Hash"
+	fieldIdent           = "Ident"
+	fieldFileSource      = "Source"
+	fieldContentType     = "ContentType"
+	fieldFileProtocol    = "Protocol"
+	fieldWasCompressed   = "WasCompressed"
+	fieldCompressionType = "CompressionType"
+	fieldCompressedSize  = "CompressedSize"
 )
 
 var fieldsFile = []string{
@@ -51,6 +55,9 @@ var fieldsFile = []string{
 	fieldSrcPort,
 	fieldDstPort,
 	fieldFileProtocol,
+	fieldWasCompressed,
+	fieldCompressionType,
+	fieldCompressedSize,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -74,6 +81,9 @@ func (a *File) CSVRecord() []string {
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
 		a.Protocol,
+		strconv.FormatBool(a.WasCompressed),
+		a.CompressionType,
+		formatInt64(a.CompressedSize),
 	})
 }
 
@@ -103,6 +113,9 @@ var fieldsFileMetric = []string{
 	fieldSrcPort,
 	fieldDstPort,
 	fieldFileProtocol,
+	fieldWasCompressed,
+	fieldCompressionType,
+	fieldCompressedSize,
 }
 
 var fileMetric = prometheus.NewCounterVec(
@@ -113,7 +126,7 @@ var fileMetric = prometheus.NewCounterVec(
 	fieldsFileMetric,
 )
 
-// CSVRecord returns the CSV record for the audit record.
+// metricValues returns the metric values for the audit record.
 func (a *File) metricValues() []string {
 	return filter([]string{
 		a.Name,
@@ -128,6 +141,9 @@ func (a *File) metricValues() []string {
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
 		a.Protocol,
+		strconv.FormatBool(a.WasCompressed),
+		a.CompressionType,
+		formatInt64(a.CompressedSize),
 	})
 }
 
@@ -167,6 +183,9 @@ func (a *File) Encode() []string {
 		fileEncoder.Int32(fieldSrcPort, a.SrcPort),
 		fileEncoder.Int32(fieldDstPort, a.DstPort),
 		fileEncoder.String(fieldFileProtocol, a.Protocol),
+		fileEncoder.Bool(a.WasCompressed),
+		fileEncoder.String(fieldCompressionType, a.CompressionType),
+		fileEncoder.Int64(fieldCompressedSize, a.CompressedSize),
 	})
 }
 

@@ -2496,10 +2496,11 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 	// Read File audit records to get hash and protocol information
 	type fileAuditInfo struct {
+		Name     string // Original filename from network traffic
 		Hash     string
 		Protocol string
 	}
-	fileInfoMap := make(map[string]fileAuditInfo) // filename -> {hash, protocol}
+	fileInfoMap := make(map[string]fileAuditInfo) // filename -> {name, hash, protocol}
 	fileAuditPath := filepath.Join(outDir, "File.ncap.gz")
 	if _, err := os.Stat(fileAuditPath); err == nil {
 		// File audit exists, read it to get hashes and protocols
@@ -2519,6 +2520,7 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 				if file.Location != "" {
 					filename := filepath.Base(file.Location)
 					fileInfoMap[filename] = fileAuditInfo{
+						Name:     file.Name, // Original filename from network traffic
 						Hash:     file.Hash,
 						Protocol: file.Protocol,
 					}
@@ -2567,9 +2569,12 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 		//log.Printf("[WebUI] Extracted file: name=%s, relPath=%s, mimeType=%s", info.Name(), relPath, mimeType)
 
-		// Add hash and protocol if available from File audit records
+		// Add name, hash and protocol if available from File audit records
 		// Match by filename since full paths may differ
 		if auditInfo, ok := fileInfoMap[info.Name()]; ok {
+			if auditInfo.Name != "" {
+				fileInfo["originalName"] = auditInfo.Name // Original filename from network traffic
+			}
 			if auditInfo.Hash != "" {
 				fileInfo["hash"] = auditInfo.Hash
 			}

@@ -1,5 +1,9 @@
 # TODOs
 
+File extraction engine: only save each unique file ONCE! hash file contents and deduplicate based on content.
+
+deflate gz when extracing files automatically. Note on audit record that is was compressed but only save the decompressed file.
+
 - Files page: only show the file name in the table and truncate the connection ident string, only show full filename in detail view. Also truncate the file name if it exceeds 50 chars.
 - Fingerprints table: the fingerprint hash should not line wrap. Prevent wrap and slightly decrease font size on smaller screens.
 - Credentials page: truncate usernames and passwords after 25 chars in the table, and colorise the Flow ident in the table view the same way as on connections page.

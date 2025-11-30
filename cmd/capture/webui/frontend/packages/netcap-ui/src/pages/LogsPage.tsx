@@ -95,7 +95,7 @@ export default function Logs() {
     };
     
     autoSelectFirstFile();
-  }, [inputFiles, status, autoSelectAttempted, mutateStatus, mutate]);
+  }, [api, inputFiles, status, autoSelectAttempted, mutateStatus, mutate]);
 
   // Listen for directory changes and refresh log files
   useEffect(() => {
@@ -165,7 +165,7 @@ export default function Logs() {
     } finally {
       setSwitchingFile(false);
     }
-  }, [mutateStatus, mutate]);
+  }, [api, mutateStatus, mutate]);
 
   // Use shared FileSelectorHeader component
   const fileSelector = (

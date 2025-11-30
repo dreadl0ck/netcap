@@ -271,7 +271,7 @@ export default function HostsPage() {
     } finally {
       setSwitchingFile(false);
     }
-  }, [mutateStatus, mutate]);
+  }, [api, mutateStatus, mutate]);
 
   const handleRowClick = useCallback((addr: string) => {
     setExpandedRow(prev => prev === addr ? null : addr);

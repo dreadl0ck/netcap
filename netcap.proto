@@ -2222,6 +2222,11 @@ message File {
   string ThreatName = 34;           // Malware family name if known
   string Protocol = 35;             // Protocol used for file transfer (HTTP, FTP, SMB, SMTP, IRC)
   string CommunityID = 36;          // Corelight Community ID v1 for cross-tool correlation
+  
+  // Compression tracking fields
+  bool WasCompressed = 37;          // File was compressed in transit (gzip/deflate)
+  string CompressionType = 38;      // Compression algorithm used (gzip, deflate)
+  int64 CompressedSize = 39;        // Original compressed size in bytes
 }
 
 // SMTPResponse SMTP response type

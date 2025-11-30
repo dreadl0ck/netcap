@@ -236,7 +236,7 @@ export default function DevicesPage() {
     } finally {
       setSwitchingFile(false);
     }
-  }, [mutateStatus, mutate]);
+  }, [api, mutateStatus, mutate]);
 
   const handleRowClick = useCallback((macAddr: string) => {
     setExpandedRow(prev => prev === macAddr ? null : macAddr);

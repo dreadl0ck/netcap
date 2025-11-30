@@ -409,7 +409,7 @@ export default function AuditRecords() {
     };
     
     autoSelectFirstFile();
-  }, [inputFiles, status, autoSelectAttempted, mutateStatus, mutate]);
+  }, [api, inputFiles, status, autoSelectAttempted, mutateStatus, mutate]);
   
   // Listen for directory changes and refresh audit files
   useEffect(() => {
@@ -795,7 +795,7 @@ export default function AuditRecords() {
     } finally {
       setSwitchingFile(false);
     }
-  }, [mutateStatus, mutate]);
+  }, [api, mutateStatus, mutate]);
 
   const handleDownloadAll = () => {
     console.log('[Audit] Download All clicked');

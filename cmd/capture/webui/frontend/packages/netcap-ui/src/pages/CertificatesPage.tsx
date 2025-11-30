@@ -265,7 +265,7 @@ export default function CertificatesPage() {
     } finally {
       setSwitchingFile(false);
     }
-  }, [mutateStatus, mutate]);
+  }, [api, mutateStatus, mutate]);
 
   const handleRowClick = useCallback((key: string) => {
     setExpandedRow(prev => prev === key ? null : key);

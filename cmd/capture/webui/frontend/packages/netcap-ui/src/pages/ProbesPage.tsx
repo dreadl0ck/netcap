@@ -100,7 +100,7 @@ export default function ServiceProbes() {
         setCreateTestInput(router.query.banner);
       }
       // Clear URL parameters after handling
-      router.replace('/probes', undefined, { shallow: true });
+      router.replace?.('/probes');
     }
   }, [router.isReady, router.query.create, router.query.banner]);
   const [protocol, setProtocol] = useState('all');

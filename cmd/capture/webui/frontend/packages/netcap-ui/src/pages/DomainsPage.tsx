@@ -237,7 +237,7 @@ export default function DomainsPage() {
     } finally {
       setSwitchingFile(false);
     }
-  }, [mutateStatus, mutate]);
+  }, [api, mutateStatus, mutate]);
 
   const handleRowClick = useCallback((domain: string) => {
     setExpandedRow(prev => prev === domain ? null : domain);

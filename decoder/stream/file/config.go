@@ -103,6 +103,7 @@ type AdvancedConfig struct {
 	DecodeCompressed  bool `yaml:"decode_compressed"`
 	DecodeBase64      bool `yaml:"decode_base64"`
 	MaxFilenameLength int  `yaml:"max_filename_length"`
+	DeduplicateFiles  bool `yaml:"deduplicate_files"` // Only save each unique file once based on content hash
 	// Security analysis options
 	ComputeEntropy        bool   `yaml:"compute_entropy"`         // Calculate Shannon entropy
 	DetectExecutables     bool   `yaml:"detect_executables"`      // Detect PE/ELF/Mach-O executables
@@ -200,6 +201,7 @@ func GetDefaultConfig() *Config {
 				DecodeCompressed:      true,
 				DecodeBase64:          true,
 				MaxFilenameLength:     255,
+				DeduplicateFiles:      true, // Enabled by default - only save each unique file once
 				ComputeEntropy:        true,
 				DetectExecutables:     true,
 				DetectEmbeddedScripts: true,
