@@ -162,6 +162,7 @@ function createNoOpApi(): NetcapApiClient {
     getExtractedFiles: noOpReturn({ files: [], totalCount: 0, filesDir: '' }),
     downloadExtractedFile: () => '',
     downloadAllExtractedFiles: () => '',
+    getExtractedFileContent: noOpReturn({ data: '', offset: 0, size: 0, totalSize: 0, hasMore: false }),
     downloadInputFile: () => '',
     getAuditRecordFields: noOpReturn({ recordType: '', fields: [], helpers: [] }),
     getAuditRecordFieldValues: noOpReturn({ recordType: '', fieldValues: {}, sampleSize: 0, maxPerField: 0, recordsScanned: 0 }),
@@ -334,6 +335,14 @@ export interface ExtractedFilesResponse {
   files: ExtractedFileInfo[];
   totalCount: number;
   filesDir: string;
+}
+
+export interface ExtractedFileContentResponse {
+  data: string;      // Hex-encoded binary data
+  offset: number;    // Current offset in file
+  size: number;      // Size of data returned
+  totalSize: number; // Total size of file
+  hasMore: boolean;  // Whether there's more data after this chunk
 }
 
 export interface ErrorLogInfo {
@@ -1933,6 +1942,12 @@ function createApiWithBase(apiBase: string) {
   downloadAllExtractedFiles(): string {
     // Return the download URL for all extracted files as a zip
     return `${apiBase}/extracted-files/download-all`;
+  },
+
+  async getExtractedFileContent(relativePath: string, offset: number = 0, limit: number = 16384): Promise<ExtractedFileContentResponse> {
+    const res = await fetch(`${apiBase}/extracted-files/content/${encodeURIComponent(relativePath)}?offset=${offset}&limit=${limit}`);
+    if (!res.ok) throw new Error('Failed to fetch file content');
+    return res.json();
   },
 
   downloadInputFile(identifier: string): string {

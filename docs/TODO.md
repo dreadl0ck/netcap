@@ -1,8 +1,17 @@
 # TODOs
 
+- same for Files page.
+- fingerprint menu icon show no count but has items
+- fingerprint clicking info box with count for fingerprint type should filter table for the selected type
+
+
+- results folder in service mode grows unbounded. old initial pcap captures are not removed.
+- file page: for JSON, JS and html: format and syntax highlight in preview mode
+
 - Rename Credentials to Secret
 - Rename IPProfile to Host
 
+- HTTP page detail view: add button to show secrets if there are any for the request
 
 - Files page: when clicking a file open preview directly. arrow up and down should move to next file, remove using left and right for this
 - file Preview: add syntax highlighting for html, json and scripts

@@ -2719,6 +2719,160 @@ func (s *Server) handleDownloadExtractedFile(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// handleExtractedFileContent returns paginated binary content of an extracted file for hex dump preview
+func (s *Server) handleExtractedFileContent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract file path from URL: /api/extracted-files/content/{relativePath}
+	encodedPath := strings.TrimPrefix(r.URL.Path, "/api/extracted-files/content/")
+	if encodedPath == "" {
+		http.Error(w, "File path required", http.StatusBadRequest)
+		return
+	}
+
+	// URL-decode the path (frontend encodes it with encodeURIComponent)
+	relativePath, err := url.PathUnescape(encodedPath)
+	if err != nil {
+		log.Printf("[WebUI] Failed to decode file path: %v", err)
+		http.Error(w, "Invalid path encoding", http.StatusBadRequest)
+		return
+	}
+
+	// Parse offset and limit from query parameters
+	query := r.URL.Query()
+	offset := int64(0)
+	limit := int64(16 * 1024) // Default 16KB chunk
+
+	if offsetStr := query.Get("offset"); offsetStr != "" {
+		if parsedOffset, err := parseInt64(offsetStr); err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		}
+	}
+
+	if limitStr := query.Get("limit"); limitStr != "" {
+		if parsedLimit, err := parseInt64(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+
+	// Cap limit to reasonable size (64KB max per chunk)
+	if limit > 64*1024 {
+		limit = 64 * 1024
+	}
+
+	// Determine the output directory
+	s.mu.RLock()
+	outDir := s.outDir
+
+	// In service mode, use the current session's output directory
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
+	s.mu.RUnlock()
+
+	if outDir == "" {
+		http.Error(w, "No output directory selected", http.StatusServiceUnavailable)
+		return
+	}
+
+	// Build full path to the file
+	filesDir := filepath.Join(outDir, "files")
+	fullPath := filepath.Join(filesDir, filepath.Clean(relativePath))
+
+	// Security check: ensure the file is within the files directory
+	if !strings.HasPrefix(fullPath, filesDir) {
+		log.Printf("[WebUI] Security violation: attempt to access file outside files directory: %s", relativePath)
+		http.Error(w, "Invalid file path", http.StatusForbidden)
+		return
+	}
+
+	// Check if file exists
+	fileInfo, err := os.Stat(fullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			http.Error(w, "File not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Error accessing file", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Ensure it's not a directory
+	if fileInfo.IsDir() {
+		http.Error(w, "Cannot read directory", http.StatusBadRequest)
+		return
+	}
+
+	// Open the file
+	file, err := os.Open(fullPath)
+	if err != nil {
+		log.Printf("[WebUI] Failed to open file %s: %v", relativePath, err)
+		http.Error(w, "Failed to open file", http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	totalSize := fileInfo.Size()
+
+	// Seek to offset
+	if offset > 0 {
+		if offset >= totalSize {
+			// Offset is beyond file size, return empty data
+			RespondJSON(w, http.StatusOK, map[string]interface{}{
+				"data":      "",
+				"offset":    offset,
+				"size":      0,
+				"totalSize": totalSize,
+				"hasMore":   false,
+			})
+			return
+		}
+		if _, err := file.Seek(offset, 0); err != nil {
+			http.Error(w, "Failed to seek in file", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// Calculate how much data we can read
+	remaining := totalSize - offset
+	if limit > remaining {
+		limit = remaining
+	}
+
+	// Read the chunk
+	buffer := make([]byte, limit)
+	n, err := file.Read(buffer)
+	if err != nil && err != io.EOF {
+		log.Printf("[WebUI] Failed to read file %s: %v", relativePath, err)
+		http.Error(w, "Failed to read file", http.StatusInternalServerError)
+		return
+	}
+
+	// Encode to base64 for JSON transport
+	data := buffer[:n]
+	encodedData := hex.EncodeToString(data)
+
+	RespondJSON(w, http.StatusOK, map[string]interface{}{
+		"data":      encodedData,
+		"offset":    offset,
+		"size":      n,
+		"totalSize": totalSize,
+		"hasMore":   offset+int64(n) < totalSize,
+	})
+}
+
+// parseInt64 is a helper function to parse int64 from string
+func parseInt64(s string) (int64, error) {
+	var result int64
+	_, err := fmt.Sscanf(s, "%d", &result)
+	return result, err
+}
+
 // handleDownloadAllExtractedFiles creates a zip archive of all extracted files and streams it to the client
 func (s *Server) handleDownloadAllExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -3789,12 +3943,17 @@ func (s *Server) getUnfilteredMenuCounts(outDir string) MenuCountsResponse {
 	response.VulnerabilitiesCount = CountRecords(filepath.Join(outDir, "Vulnerability.ncap.gz"))
 	response.ServicesCount = CountRecords(filepath.Join(outDir, "Service.ncap.gz"))
 
-	// Count fingerprints from multiple sources
-	ja3Count := CountRecords(filepath.Join(outDir, "JA3.ncap.gz"))
-	ja4Count := CountRecords(filepath.Join(outDir, "JA4.ncap.gz"))
-	hasshCount := CountRecords(filepath.Join(outDir, "HASSH.ncap.gz"))
-	dhcpFpCount := CountRecords(filepath.Join(outDir, "DHCPFingerprint.ncap.gz"))
-	response.FingerprintsCount = ja3Count + ja4Count + hasshCount + dhcpFpCount
+	// Count fingerprints from all sources that the fingerprints page uses
+	// JA4 from TLSClientHello, JA4S from TLSServerHello, JA4H from HTTP,
+	// JA4X from TLSCertificate, JA4T/JA4TS from TCP, JA4SSH from SSH, DHCP from DHCPv4
+	ja4Count := CountRecords(filepath.Join(outDir, "TLSClientHello.ncap.gz"))
+	ja4sCount := CountRecords(filepath.Join(outDir, "TLSServerHello.ncap.gz"))
+	ja4hCount := CountRecords(filepath.Join(outDir, "HTTP.ncap.gz"))
+	ja4xCount := CountRecords(filepath.Join(outDir, "TLSCertificate.ncap.gz"))
+	tcpCount := CountRecords(filepath.Join(outDir, "TCP.ncap.gz"))
+	sshCount := CountRecords(filepath.Join(outDir, "SSH.ncap.gz"))
+	dhcpCount := CountRecords(filepath.Join(outDir, "DHCPv4.ncap.gz"))
+	response.FingerprintsCount = ja4Count + ja4sCount + ja4hCount + ja4xCount + tcpCount + sshCount + dhcpCount
 
 	// Count domains from DNS
 	response.DomainsCount = CountRecords(filepath.Join(outDir, "DNS.ncap.gz"))
@@ -3860,12 +4019,17 @@ func (s *Server) getFilteredMenuCounts(outDir string, communityIDs map[string]bo
 	response.VulnerabilitiesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Vulnerability.ncap.gz"), communityIDs)
 	response.ServicesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Service.ncap.gz"), communityIDs)
 
-	// Count fingerprints from multiple sources with filtering
-	ja3Count := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "JA3.ncap.gz"), communityIDs)
-	ja4Count := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "JA4.ncap.gz"), communityIDs)
-	hasshCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "HASSH.ncap.gz"), communityIDs)
-	dhcpFpCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "DHCPFingerprint.ncap.gz"), communityIDs)
-	response.FingerprintsCount = ja3Count + ja4Count + hasshCount + dhcpFpCount
+	// Count fingerprints from all sources with filtering
+	// JA4 from TLSClientHello, JA4S from TLSServerHello, JA4H from HTTP,
+	// JA4X from TLSCertificate, JA4T/JA4TS from TCP, JA4SSH from SSH, DHCP from DHCPv4
+	ja4Count := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "TLSClientHello.ncap.gz"), communityIDs)
+	ja4sCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "TLSServerHello.ncap.gz"), communityIDs)
+	ja4hCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "HTTP.ncap.gz"), communityIDs)
+	ja4xCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "TLSCertificate.ncap.gz"), communityIDs)
+	tcpCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "TCP.ncap.gz"), communityIDs)
+	sshCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "SSH.ncap.gz"), communityIDs)
+	dhcpCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "DHCPv4.ncap.gz"), communityIDs)
+	response.FingerprintsCount = ja4Count + ja4sCount + ja4hCount + ja4xCount + tcpCount + sshCount + dhcpCount
 
 	// Count domains from DNS with filtering
 	response.DomainsCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "DNS.ncap.gz"), communityIDs)

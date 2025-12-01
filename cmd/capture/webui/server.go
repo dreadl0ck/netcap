@@ -524,6 +524,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/extracted-files", s.handleExtractedFiles)
 	mux.HandleFunc("/api/extracted-files/download-all", s.handleDownloadAllExtractedFiles)
 	mux.HandleFunc("/api/extracted-files/download/", s.handleDownloadExtractedFile)
+	mux.HandleFunc("/api/extracted-files/content/", s.handleExtractedFileContent)
 	mux.HandleFunc("/api/error-logs", s.handleErrorLogFiles)
 	mux.HandleFunc("/api/error-logs/aggregated", s.handleAggregatedErrors)
 	mux.HandleFunc("/api/decoders/config", s.handleDecoderConfig)

@@ -50,6 +50,8 @@ import CardActions from '@mui/material/CardActions';
 import Grid from '@mui/material/Grid';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import ToggleButton from '@mui/material/ToggleButton';
+import LinearProgress from '@mui/material/LinearProgress';
+import Pagination from '@mui/material/Pagination';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import DownloadIcon from '@mui/icons-material/Download';
 import DownloadForOfflineIcon from '@mui/icons-material/DownloadForOffline';
@@ -57,8 +59,12 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import CloseIcon from '@mui/icons-material/Close';
 import CodeIcon from '@mui/icons-material/Code';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import GridOnIcon from '@mui/icons-material/GridOn';
+import ViewHeadlineIcon from '@mui/icons-material/ViewHeadline';
 import ImageIcon from '@mui/icons-material/Image';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import AudiotrackIcon from '@mui/icons-material/Audiotrack';
@@ -88,6 +94,14 @@ export default function ExtractedFilesPage() {
   const [galleryPage, setGalleryPage] = useState(0);
   const [galleryRowsPerPage, setGalleryRowsPerPage] = useState(50);
   const [selectedFileKey, setSelectedFileKey] = useState<string | null>(null);
+  
+  // Binary file hex dump state
+  const [binaryContent, setBinaryContent] = useState<string>('');
+  const [binaryOffset, setBinaryOffset] = useState(0);
+  const [binaryTotalSize, setBinaryTotalSize] = useState(0);
+  const [binaryHasMore, setBinaryHasMore] = useState(false);
+  const [binaryLoading, setBinaryLoading] = useState(false);
+  const [hexViewMode, setHexViewMode] = useState<'ascii' | 'hex'>('hex');
 
   // Helper functions - declared early to avoid temporal dead zone issues
   // Helper function to determine if file is an image
@@ -123,6 +137,124 @@ export default function ExtractedFilesPage() {
     if (!mimeType) return false;
     return mimeType === 'application/pdf';
   };
+
+  // Helper function to determine if file is a binary (non-text, non-media) file
+  const isBinaryFile = (mimeType: string): boolean => {
+    if (!mimeType) return true; // Default to binary for unknown types
+    return !isTextFile(mimeType) &&
+           !isImageFile(mimeType) &&
+           !isPDFFile(mimeType) &&
+           !isVideoFile(mimeType) &&
+           !isAudioFile(mimeType);
+  };
+
+  // Hex dump helper functions
+  const BINARY_CHUNK_SIZE = 16 * 1024; // 16KB chunks
+
+  // Convert byte to hex string
+  const byteToHex = (byte: number): string => {
+    return byte.toString(16).padStart(2, '0');
+  };
+
+  // Convert byte to ASCII character (or dot for non-printable)
+  const byteToAscii = (byte: number): string => {
+    if (byte === 10 || byte === 13) return '.'; // Show dots for \n and \r in hex view
+    return byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : '.';
+  };
+
+  // Generate hex dump rows from hex-encoded data
+  interface HexRow {
+    offset: number;
+    hexBytes: string[];
+    asciiChars: string[];
+  }
+
+  const generateHexRows = useCallback((hexData: string, baseOffset: number): HexRow[] => {
+    const rows: HexRow[] = [];
+    // Convert hex string to bytes
+    const bytes: number[] = [];
+    for (let i = 0; i < hexData.length; i += 2) {
+      bytes.push(parseInt(hexData.substring(i, i + 2), 16));
+    }
+
+    for (let i = 0; i < bytes.length; i += 16) {
+      const hexBytes: string[] = [];
+      const asciiChars: string[] = [];
+
+      for (let j = 0; j < 16; j++) {
+        if (i + j < bytes.length) {
+          hexBytes.push(byteToHex(bytes[i + j]));
+          asciiChars.push(byteToAscii(bytes[i + j]));
+        } else {
+          hexBytes.push('  ');
+          asciiChars.push(' ');
+        }
+      }
+
+      rows.push({
+        offset: baseOffset + i,
+        hexBytes,
+        asciiChars,
+      });
+    }
+
+    return rows;
+  }, []);
+
+  // Calculate pagination for binary view
+  const binaryTotalPages = useMemo(() => {
+    if (binaryTotalSize === 0) return 1;
+    return Math.ceil(binaryTotalSize / BINARY_CHUNK_SIZE);
+  }, [binaryTotalSize]);
+
+  const binaryCurrentPage = useMemo(() => {
+    return Math.floor(binaryOffset / BINARY_CHUNK_SIZE) + 1;
+  }, [binaryOffset]);
+
+  // Generate hex rows from current binary content
+  const hexRows = useMemo(() => {
+    if (!binaryContent) return [];
+    return generateHexRows(binaryContent, binaryOffset);
+  }, [binaryContent, binaryOffset, generateHexRows]);
+
+  // Load binary file content
+  const loadBinaryContent = useCallback(async (filePath: string, offset: number = 0) => {
+    setBinaryLoading(true);
+    try {
+      const data = await api.getExtractedFileContent(filePath, offset, BINARY_CHUNK_SIZE);
+      setBinaryContent(data.data);
+      setBinaryOffset(data.offset);
+      setBinaryTotalSize(data.totalSize);
+      setBinaryHasMore(data.hasMore);
+    } catch (err) {
+      console.error('Failed to load binary content:', err);
+      setPreviewError(err instanceof Error ? err.message : 'Failed to load binary content');
+    } finally {
+      setBinaryLoading(false);
+    }
+  }, [api]);
+
+  // Binary pagination handlers
+  const handleBinaryNext = useCallback(() => {
+    if (previewFile && binaryHasMore) {
+      const newOffset = binaryOffset + BINARY_CHUNK_SIZE;
+      loadBinaryContent(previewFile.path, newOffset);
+    }
+  }, [previewFile, binaryHasMore, binaryOffset, loadBinaryContent]);
+
+  const handleBinaryPrevious = useCallback(() => {
+    if (previewFile && binaryOffset > 0) {
+      const newOffset = Math.max(0, binaryOffset - BINARY_CHUNK_SIZE);
+      loadBinaryContent(previewFile.path, newOffset);
+    }
+  }, [previewFile, binaryOffset, loadBinaryContent]);
+
+  const handleBinaryPageChange = useCallback((_event: React.ChangeEvent<unknown>, page: number) => {
+    if (previewFile) {
+      const newOffset = (page - 1) * BINARY_CHUNK_SIZE;
+      loadBinaryContent(previewFile.path, newOffset);
+    }
+  }, [previewFile, loadBinaryContent]);
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -311,6 +443,11 @@ export default function ExtractedFilesPage() {
     setPreviewContent('');
     setPreviewError('');
     setPreviewLoading(true);
+    // Reset binary content state
+    setBinaryContent('');
+    setBinaryOffset(0);
+    setBinaryTotalSize(0);
+    setBinaryHasMore(false);
     // Default to 'raw' view for HTML files for security, 'rendered' for others
     setPreviewTab(file.mimeType === 'text/html' ? 'raw' : 'rendered');
 
@@ -324,16 +461,20 @@ export default function ExtractedFilesPage() {
         const text = await response.text();
         setPreviewContent(text);
       }
-      // For binary files, we'll just display them via iframe/embed
+      // For binary files (non-text, non-media), load hex dump content
+      else if (isBinaryFile(file.mimeType)) {
+        await loadBinaryContent(file.path, 0);
+      }
+      // For media files (image, video, audio, pdf), we'll display them via iframe/embed
     } catch (err) {
       console.error('Failed to load file preview:', err);
       setPreviewError(err instanceof Error ? err.message : 'Failed to load file preview');
     } finally {
       setPreviewLoading(false);
     }
-  }, [api, isTextFile]);
+  }, [api, isTextFile, isBinaryFile, loadBinaryContent]);
 
-  // Spacebar to open preview for selected file
+  // Spacebar to toggle preview for selected file
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger when typing in input fields
@@ -341,20 +482,24 @@ export default function ExtractedFilesPage() {
         return;
       }
       
-      // Don't trigger when preview is already open
-      if (previewFile) {
-        return;
-      }
-      
-      // Check for spacebar and that we have a selected file
-      if (e.code === 'Space' && selectedFileKey) {
+      // Check for spacebar
+      if (e.code === 'Space') {
         e.preventDefault();
         
-        // Find the file by path
-        const currentFiles = viewMode === 'gallery' ? paginatedImageFiles : paginatedFiles;
-        const file = currentFiles.find(f => f.path === selectedFileKey);
-        if (file) {
-          handlePreviewFile(file);
+        // If preview is open, close it
+        if (previewFile) {
+          setPreviewFile(null);
+          return;
+        }
+        
+        // If we have a selected file, open preview
+        if (selectedFileKey) {
+          // Find the file by path
+          const currentFiles = viewMode === 'gallery' ? paginatedImageFiles : paginatedFiles;
+          const file = currentFiles.find(f => f.path === selectedFileKey);
+          if (file) {
+            handlePreviewFile(file);
+          }
         }
       }
     };
@@ -435,6 +580,11 @@ export default function ExtractedFilesPage() {
     setPreviewError('');
     setPreviewLoading(false);
     setPreviewTab('rendered');
+    // Reset binary state
+    setBinaryContent('');
+    setBinaryOffset(0);
+    setBinaryTotalSize(0);
+    setBinaryHasMore(false);
   }, []);
 
   // Get the current file list based on view mode and filter
@@ -475,12 +625,23 @@ export default function ExtractedFilesPage() {
       // Only handle keyboard events when preview dialog is open
       if (!previewFile) return;
 
-      if (event.key === 'ArrowLeft') {
+      if (event.key === 'ArrowUp') {
         event.preventDefault();
         handlePreviousFile();
-      } else if (event.key === 'ArrowRight') {
+      } else if (event.key === 'ArrowDown') {
         event.preventDefault();
         handleNextFile();
+      } else if (event.key === 'ArrowLeft') {
+        // Left/Right arrows for hex dump pagination (like ConversationModal)
+        if (isBinaryFile(previewFile.mimeType) && binaryOffset > 0) {
+          event.preventDefault();
+          handleBinaryPrevious();
+        }
+      } else if (event.key === 'ArrowRight') {
+        if (isBinaryFile(previewFile.mimeType) && binaryHasMore) {
+          event.preventDefault();
+          handleBinaryNext();
+        }
       } else if (event.key === 'Escape') {
         event.preventDefault();
         handleClosePreview();
@@ -489,7 +650,7 @@ export default function ExtractedFilesPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [previewFile, handlePreviousFile, handleNextFile, handleClosePreview]);
+  }, [previewFile, handlePreviousFile, handleNextFile, handleClosePreview, isBinaryFile, binaryOffset, binaryHasMore, handleBinaryPrevious, handleBinaryNext]);
 
   // Get file type category for icon display
   const getFileTypeIcon = (mimeType: string) => {
@@ -1018,7 +1179,7 @@ export default function ExtractedFilesPage() {
                 </Box>
               </Box>
               <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                <Tooltip title="Previous file (Left Arrow)">
+                <Tooltip title="Previous file (↑)">
                   <span>
                     <IconButton 
                       onClick={handlePreviousFile} 
@@ -1029,11 +1190,11 @@ export default function ExtractedFilesPage() {
                         return currentIndex <= 0;
                       })()}
                     >
-                      <ArrowBackIcon />
+                      <KeyboardArrowUpIcon />
                     </IconButton>
                   </span>
                 </Tooltip>
-                <Tooltip title="Next file (Right Arrow)">
+                <Tooltip title="Next file (↓)">
                   <span>
                     <IconButton 
                       onClick={handleNextFile} 
@@ -1044,7 +1205,7 @@ export default function ExtractedFilesPage() {
                         return currentIndex < 0 || currentIndex >= currentList.length - 1;
                       })()}
                     >
-                      <ArrowForwardIcon />
+                      <KeyboardArrowDownIcon />
                     </IconButton>
                   </span>
                 </Tooltip>
@@ -1205,27 +1366,173 @@ export default function ExtractedFilesPage() {
                     </Box>
                   )}
 
-                  {/* Unsupported file types */}
-                  {!isTextFile(previewFile.mimeType) &&
-                   !isImageFile(previewFile.mimeType) &&
-                   !isPDFFile(previewFile.mimeType) &&
-                   !isVideoFile(previewFile.mimeType) &&
-                   !isAudioFile(previewFile.mimeType) && (
-                    <Box sx={{ textAlign: 'center', py: 4 }}>
-                      <InsertDriveFileIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                      <Typography variant="h6" color="text.secondary" gutterBottom>
-                        Preview Not Available
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                        This file type cannot be previewed in the browser.
-                      </Typography>
-                      <Button
-                        variant="contained"
-                        startIcon={<DownloadIcon />}
-                        onClick={() => handleDownloadFile(previewFile.path)}
+                  {/* Binary file hex dump view */}
+                  {isBinaryFile(previewFile.mimeType) && (
+                    <Box sx={{ height: '100%', overflow: 'auto' }}>
+                      {binaryLoading && <LinearProgress />}
+                      
+                      {/* Legend and controls */}
+                      <Box
+                        sx={{
+                          position: 'sticky',
+                          top: 0,
+                          bgcolor: 'background.paper',
+                          borderBottom: 1,
+                          borderColor: 'divider',
+                          p: 1,
+                          display: 'flex',
+                          gap: 3,
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          zIndex: 1,
+                        }}
                       >
-                        Download File
-                      </Button>
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Binary File • {formatBytes(binaryTotalSize)}
+                          </Typography>
+                          
+                          {/* View Mode Toggle */}
+                          <IconButton
+                            size="small"
+                            onClick={() => setHexViewMode(hexViewMode === 'ascii' ? 'hex' : 'ascii')}
+                            title={hexViewMode === 'ascii' ? 'Switch to Hex View' : 'Switch to ASCII View'}
+                          >
+                            {hexViewMode === 'ascii' ? <GridOnIcon fontSize="small" /> : <ViewHeadlineIcon fontSize="small" />}
+                          </IconButton>
+                        </Box>
+                        
+                        {/* Pagination Controls */}
+                        {binaryTotalPages > 1 && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <IconButton
+                              size="small"
+                              onClick={handleBinaryPrevious}
+                              disabled={binaryOffset === 0 || binaryLoading}
+                            >
+                              <NavigateBeforeIcon />
+                            </IconButton>
+                            <Typography variant="caption">
+                              {binaryCurrentPage} / {binaryTotalPages}
+                            </Typography>
+                            <IconButton
+                              size="small"
+                              onClick={handleBinaryNext}
+                              disabled={!binaryHasMore || binaryLoading}
+                            >
+                              <NavigateNextIcon />
+                            </IconButton>
+                          </Box>
+                        )}
+                      </Box>
+
+                      {/* ASCII view */}
+                      {hexViewMode === 'ascii' && (
+                        <Box
+                          sx={{
+                            fontFamily: 'Courier New, monospace',
+                            fontSize: '13px',
+                            lineHeight: 1.6,
+                            p: 2,
+                            bgcolor: '#1e1e1e',
+                            color: '#d4d4d4',
+                            whiteSpace: 'pre',
+                            overflowX: 'auto',
+                            minHeight: 400,
+                          }}
+                        >
+                          {hexRows.map((row) => (
+                            <Box key={row.offset} component="span">
+                              {row.asciiChars.join('')}
+                            </Box>
+                          ))}
+
+                          {hexRows.length === 0 && !binaryLoading && (
+                            <Typography variant="body2" color="text.secondary" align="center">
+                              No data available
+                            </Typography>
+                          )}
+                        </Box>
+                      )}
+
+                      {/* Hex dump view */}
+                      {hexViewMode === 'hex' && (
+                        <Box
+                          sx={{
+                            fontFamily: 'Courier New, monospace',
+                            fontSize: '13px',
+                            lineHeight: 1.4,
+                            p: 2,
+                            bgcolor: '#1e1e1e',
+                            color: '#d4d4d4',
+                            minHeight: 400,
+                          }}
+                        >
+                          {hexRows.map((row) => (
+                            <Box
+                              key={row.offset}
+                              sx={{
+                                display: 'flex',
+                                gap: 2,
+                                py: 0.25,
+                                px: 1,
+                                '&:hover': {
+                                  bgcolor: 'rgba(255, 255, 255, 0.05)',
+                                },
+                              }}
+                            >
+                              {/* Offset */}
+                              <Box sx={{ color: '#858585', minWidth: '60px' }}>
+                                {row.offset.toString(16).padStart(8, '0')}
+                              </Box>
+
+                              {/* Hex bytes (split into two groups of 8) */}
+                              <Box sx={{ display: 'flex', gap: 2, minWidth: '400px' }}>
+                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                  {row.hexBytes.slice(0, 8).map((hex, i) => (
+                                    <Box key={i} sx={{ minWidth: '20px' }}>
+                                      {hex}
+                                    </Box>
+                                  ))}
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                  {row.hexBytes.slice(8, 16).map((hex, i) => (
+                                    <Box key={i} sx={{ minWidth: '20px' }}>
+                                      {hex}
+                                    </Box>
+                                  ))}
+                                </Box>
+                              </Box>
+
+                              {/* ASCII representation */}
+                              <Box sx={{ color: '#82b1ff' }}>
+                                {row.asciiChars.join('')}
+                              </Box>
+                            </Box>
+                          ))}
+
+                          {hexRows.length === 0 && !binaryLoading && (
+                            <Typography variant="body2" color="text.secondary" align="center">
+                              No data available
+                            </Typography>
+                          )}
+                        </Box>
+                      )}
+
+                      {/* Page selector at bottom */}
+                      {binaryTotalPages > 1 && (
+                        <Box sx={{ display: 'flex', justifyContent: 'center', p: 2, borderTop: 1, borderColor: 'divider' }}>
+                          <Pagination
+                            count={binaryTotalPages}
+                            page={binaryCurrentPage}
+                            onChange={handleBinaryPageChange}
+                            disabled={binaryLoading}
+                            size="small"
+                            showFirstButton
+                            showLastButton
+                          />
+                        </Box>
+                      )}
                     </Box>
                   )}
                 </Box>

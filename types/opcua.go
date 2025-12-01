@@ -29,31 +29,31 @@ import (
 )
 
 const (
-	fieldOPCUAMessageType        = "MessageType"
-	fieldOPCUAChunkType          = "ChunkType"
-	fieldOPCUAMessageSize        = "MessageSize"
-	fieldOPCUAProtocolVersion    = "ProtocolVersion"
-	fieldOPCUAReceiveBufferSize  = "ReceiveBufferSize"
-	fieldOPCUASendBufferSize     = "SendBufferSize"
-	fieldOPCUAMaxMessageSize     = "MaxMessageSize"
-	fieldOPCUAMaxChunkCount      = "MaxChunkCount"
-	fieldOPCUAEndpointUrl        = "EndpointUrl"
-	fieldOPCUAErrorCode          = "ErrorCode"
-	fieldOPCUAErrorReason        = "ErrorReason"
-	fieldOPCUASecureChannelId    = "SecureChannelId"
-	fieldOPCUASecurityPolicyUri  = "SecurityPolicyUri"
-	fieldOPCUASecurityMode       = "SecurityMode"
-	fieldOPCUARequestId          = "RequestId"
-	fieldOPCUASequenceNumber     = "SequenceNumber"
-	fieldOPCUAServiceNodeId      = "ServiceNodeId"
-	fieldOPCUAServiceName        = "ServiceName"
-	fieldOPCUAIsRequest          = "IsRequest"
-	fieldOPCUARequestHandle      = "RequestHandle"
-	fieldOPCUAStatusCode         = "StatusCode"
-	fieldOPCUAStatusCodeName     = "StatusCodeName"
-	fieldOPCUASessionId          = "SessionId"
+	fieldOPCUAMessageType         = "MessageType"
+	fieldOPCUAChunkType           = "ChunkType"
+	fieldOPCUAMessageSize         = "MessageSize"
+	fieldOPCUAProtocolVersion     = "ProtocolVersion"
+	fieldOPCUAReceiveBufferSize   = "ReceiveBufferSize"
+	fieldOPCUASendBufferSize      = "SendBufferSize"
+	fieldOPCUAMaxMessageSize      = "MaxMessageSize"
+	fieldOPCUAMaxChunkCount       = "MaxChunkCount"
+	fieldOPCUAEndpointUrl         = "EndpointUrl"
+	fieldOPCUAErrorCode           = "ErrorCode"
+	fieldOPCUAErrorReason         = "ErrorReason"
+	fieldOPCUASecureChannelId     = "SecureChannelId"
+	fieldOPCUASecurityPolicyUri   = "SecurityPolicyUri"
+	fieldOPCUASecurityMode        = "SecurityMode"
+	fieldOPCUARequestId           = "RequestId"
+	fieldOPCUASequenceNumber      = "SequenceNumber"
+	fieldOPCUAServiceNodeId       = "ServiceNodeId"
+	fieldOPCUAServiceName         = "ServiceName"
+	fieldOPCUAIsRequest           = "IsRequest"
+	fieldOPCUARequestHandle       = "RequestHandle"
+	fieldOPCUAStatusCode          = "StatusCode"
+	fieldOPCUAStatusCodeName      = "StatusCodeName"
+	fieldOPCUASessionId           = "SessionId"
 	fieldOPCUAAuthenticationToken = "AuthenticationToken"
-	fieldOPCUAIsSecurityRelevant = "IsSecurityRelevant"
+	fieldOPCUAIsSecurityRelevant  = "IsSecurityRelevant"
 	fieldOPCUAIsCriticalOperation = "IsCriticalOperation"
 )
 
@@ -223,5 +223,3 @@ func (o *OPCUA) Analyze() {}
 func (o *OPCUA) NetcapType() Type {
 	return Type_NC_OPCUA
 }
-
-

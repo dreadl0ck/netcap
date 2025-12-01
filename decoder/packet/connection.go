@@ -256,9 +256,11 @@ func handlePacket(p gopacket.Packet) proto.Message {
 			}
 		}
 
-		// track amount of transferred bytes
-		if al := p.ApplicationLayer(); al != nil {
-			conn.AppPayloadSize += int32(len(al.LayerPayload()))
+		// track amount of transferred bytes (application layer payload)
+		// Use transport layer payload to capture all app data, not just decoded application layers
+		// ApplicationLayer() only returns decoded protocols (DNS, TLS, etc.), not raw HTTP/other data
+		if tl != nil {
+			conn.AppPayloadSize += int32(len(tl.LayerPayload()))
 		}
 
 		if nl != nil {
@@ -344,7 +346,11 @@ func handlePacket(p gopacket.Packet) proto.Message {
 		}
 		if al := p.ApplicationLayer(); al != nil {
 			co.ApplicationProto = al.LayerType().String()
-			co.AppPayloadSize = int32(len(al.LayerPayload()))
+		}
+		// Use transport layer payload for app data size - captures all payload data
+		// not just decoded application layers (like DNS, TLS)
+		if tl != nil {
+			co.AppPayloadSize = int32(len(tl.LayerPayload()))
 		}
 
 		// track amount of transferred bytes

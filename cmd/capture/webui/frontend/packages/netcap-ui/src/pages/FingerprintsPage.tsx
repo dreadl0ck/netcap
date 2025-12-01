@@ -290,7 +290,17 @@ export default function FingerprintsPage() {
         {/* Summary Cards - Row 1: Core TLS fingerprints */}
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={2.4}>
-            <Card data-learn="Total Fingerprints: Number of unique fingerprint hashes discovered across all types.">
+            <Card 
+              data-learn="Total Fingerprints: Click to show all fingerprints."
+              onClick={() => { setFilterType('all'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'all' ? 2 : 0,
+                borderColor: 'primary.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <FingerprintIcon color="primary" />
@@ -308,7 +318,17 @@ export default function FingerprintsPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={2.4}>
-            <Card data-learn="JA4 Fingerprints: TLS/SSL client fingerprints from encrypted connections.">
+            <Card 
+              data-learn="JA4 Fingerprints: Click to filter table to JA4 (TLS client) fingerprints."
+              onClick={() => { setFilterType('JA4'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'JA4' ? 2 : 0,
+                borderColor: 'success.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <VpnLockIcon color="success" />
@@ -326,7 +346,17 @@ export default function FingerprintsPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={2.4}>
-            <Card data-learn="JA4S Fingerprints: TLS/SSL server fingerprints from encrypted connections.">
+            <Card 
+              data-learn="JA4S Fingerprints: Click to filter table to JA4S (TLS server) fingerprints."
+              onClick={() => { setFilterType('JA4S'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'JA4S' ? 2 : 0,
+                borderColor: 'info.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <VpnLockIcon color="info" />
@@ -344,7 +374,17 @@ export default function FingerprintsPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={2.4}>
-            <Card data-learn="JA4H Fingerprints: HTTP client fingerprints for application identification.">
+            <Card 
+              data-learn="JA4H Fingerprints: Click to filter table to JA4H (HTTP) fingerprints."
+              onClick={() => { setFilterType('JA4H'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'JA4H' ? 2 : 0,
+                borderColor: 'secondary.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <HttpIcon color="secondary" />
@@ -362,7 +402,17 @@ export default function FingerprintsPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={2.4}>
-            <Card data-learn="JA4X Fingerprints: X.509 certificate fingerprints for CA and certificate identification.">
+            <Card 
+              data-learn="JA4X Fingerprints: Click to filter table to JA4X (certificate) fingerprints."
+              onClick={() => { setFilterType('JA4X'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'JA4X' ? 2 : 0,
+                borderColor: '#9c27b0',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <VerifiedUserIcon sx={{ color: '#9c27b0' }} />
@@ -383,7 +433,17 @@ export default function FingerprintsPage() {
         {/* Summary Cards - Row 2: TCP, SSH, and DHCP fingerprints */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={2.4}>
-            <Card data-learn="JA4T Fingerprints: TCP client fingerprints from SYN packets for OS/device identification.">
+            <Card 
+              data-learn="JA4T Fingerprints: Click to filter table to JA4T (TCP client) fingerprints."
+              onClick={() => { setFilterType('JA4T'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'JA4T' ? 2 : 0,
+                borderColor: '#ff5722',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <MemoryIcon sx={{ color: '#ff5722' }} />
@@ -401,7 +461,17 @@ export default function FingerprintsPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={2.4}>
-            <Card data-learn="JA4TS Fingerprints: TCP server fingerprints from SYN-ACK packets for OS/device identification.">
+            <Card 
+              data-learn="JA4TS Fingerprints: Click to filter table to JA4TS (TCP server) fingerprints."
+              onClick={() => { setFilterType('JA4TS'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'JA4TS' ? 2 : 0,
+                borderColor: '#795548',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <MemoryIcon sx={{ color: '#795548' }} />
@@ -419,7 +489,17 @@ export default function FingerprintsPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={2.4}>
-            <Card data-learn="JA4SSH Fingerprints: SSH client and server fingerprints for secure shell connections.">
+            <Card 
+              data-learn="JA4SSH Fingerprints: Click to filter table to JA4SSH (SSH) fingerprints."
+              onClick={() => { setFilterType('JA4SSH'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'JA4SSH' ? 2 : 0,
+                borderColor: 'warning.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <SecurityIcon color="warning" />
@@ -437,7 +517,17 @@ export default function FingerprintsPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={2.4}>
-            <Card data-learn="DHCP Fingerprints: Device fingerprints from DHCP requests for device identification.">
+            <Card 
+              data-learn="DHCP Fingerprints: Click to filter table to DHCP fingerprints."
+              onClick={() => { setFilterType('DHCP'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'DHCP' ? 2 : 0,
+                borderColor: 'info.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent sx={{ py: 1.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <RouterIcon color="info" />

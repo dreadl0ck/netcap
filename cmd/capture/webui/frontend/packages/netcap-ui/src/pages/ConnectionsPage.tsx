@@ -350,7 +350,7 @@ export default function ConnectionsPage() {
     setConversationModalOpen(true);
   }, []);
 
-  // Spacebar to view conversation for selected connection
+  // Spacebar to toggle conversation for selected connection
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger when typing in input fields
@@ -358,17 +358,27 @@ export default function ConnectionsPage() {
         return;
       }
       
-      // Check for spacebar and that we have an expanded row
-      if (e.code === 'Space' && expandedRow) {
+      // Check for spacebar
+      if (e.code === 'Space') {
         e.preventDefault();
         
-        // Find the connection index from the expanded row key
-        const idx = parseInt(expandedRow.split('-').pop() || '-1', 10);
-        if (idx >= 0 && idx < paginatedConnections.length) {
-          const conn = paginatedConnections[idx];
-          // Only open conversation if there's payload data
-          if (conn.appPayloadSize > 0) {
-            handleViewConversation(conn);
+        // If conversation modal is open, close it
+        if (conversationModalOpen) {
+          setConversationModalOpen(false);
+          setSelectedConnection(null);
+          return;
+        }
+        
+        // If we have an expanded row, open the conversation
+        if (expandedRow) {
+          // Find the connection index from the expanded row key
+          const idx = parseInt(expandedRow.split('-').pop() || '-1', 10);
+          if (idx >= 0 && idx < paginatedConnections.length) {
+            const conn = paginatedConnections[idx];
+            // Only open conversation if there's payload data
+            if (conn.appPayloadSize > 0) {
+              handleViewConversation(conn);
+            }
           }
         }
       }
@@ -376,7 +386,7 @@ export default function ConnectionsPage() {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [expandedRow, paginatedConnections, handleViewConversation]);
+  }, [expandedRow, paginatedConnections, handleViewConversation, conversationModalOpen]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
