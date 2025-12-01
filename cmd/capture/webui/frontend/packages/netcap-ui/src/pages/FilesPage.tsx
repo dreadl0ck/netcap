@@ -68,7 +68,7 @@ import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatBytes, formatTimestamp, type ExtractedFileInfo } from '../lib/api';
-import { useNetcapApi } from '../hooks';
+import { useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
 import OptimizedPieChart from '../components/OptimizedPieChart';
 
@@ -87,6 +87,7 @@ export default function ExtractedFilesPage() {
   const [viewMode, setViewMode] = useState<'table' | 'gallery'>('table');
   const [galleryPage, setGalleryPage] = useState(0);
   const [galleryRowsPerPage, setGalleryRowsPerPage] = useState(50);
+  const [selectedFileKey, setSelectedFileKey] = useState<string | null>(null);
 
   // Helper functions - declared early to avoid temporal dead zone issues
   // Helper function to determine if file is an image
@@ -105,6 +106,16 @@ export default function ExtractedFilesPage() {
   const isAudioFile = (mimeType: string): boolean => {
     if (!mimeType) return false;
     return mimeType.startsWith('audio/');
+  };
+
+  // Helper function to truncate file names exceeding 50 characters
+  const truncateFileName = (name: string, maxLength: number = 50): string => {
+    if (!name || name.length <= maxLength) return name;
+    const extension = name.lastIndexOf('.') > 0 ? name.slice(name.lastIndexOf('.')) : '';
+    const baseName = extension ? name.slice(0, name.lastIndexOf('.')) : name;
+    const truncateLength = maxLength - extension.length - 3; // 3 for '...'
+    if (truncateLength <= 0) return name.slice(0, maxLength - 3) + '...';
+    return baseName.slice(0, truncateLength) + '...' + extension;
   };
 
   // Helper function to determine if file is a PDF
@@ -128,7 +139,8 @@ export default function ExtractedFilesPage() {
     'extractedFiles',
     () => api.getExtractedFiles(),
     {
-      refreshInterval: 5000,
+      // Disable auto-refresh to prevent table from reordering while user is viewing
+      refreshInterval: 0,
     }
   );
 
@@ -261,6 +273,96 @@ export default function ExtractedFilesPage() {
     galleryPage * galleryRowsPerPage + galleryRowsPerPage
   );
 
+  // Generate row keys for keyboard navigation (table view)
+  const rowKeys = useMemo(() => 
+    paginatedFiles.map((file) => file.path),
+    [paginatedFiles]
+  );
+
+  // Generate row keys for gallery view
+  const galleryRowKeys = useMemo(() => 
+    paginatedImageFiles.map((file) => file.path),
+    [paginatedImageFiles]
+  );
+
+  // Use appropriate row keys based on view mode
+  const currentRowKeys = viewMode === 'gallery' ? galleryRowKeys : rowKeys;
+
+  // Enable keyboard navigation for file selection (UP/DOWN arrows)
+  useTableKeyboardNavigation(selectedFileKey, currentRowKeys, setSelectedFileKey);
+
+  // Helper function to determine if file is text-based - defined here before handlePreviewFile
+  const isTextFile = useCallback((mimeType: string): boolean => {
+    if (!mimeType) return false;
+    return (
+      mimeType.startsWith('text/') ||
+      mimeType.includes('json') ||
+      mimeType.includes('xml') ||
+      mimeType.includes('javascript') ||
+      mimeType.includes('css') ||
+      mimeType.includes('html') ||
+      mimeType.includes('svg+xml')
+    );
+  }, []);
+
+  // Handler to preview file - defined here to be available for keyboard navigation
+  const handlePreviewFile = useCallback(async (file: ExtractedFileInfo) => {
+    setPreviewFile(file);
+    setPreviewContent('');
+    setPreviewError('');
+    setPreviewLoading(true);
+    // Default to 'raw' view for HTML files for security, 'rendered' for others
+    setPreviewTab(file.mimeType === 'text/html' ? 'raw' : 'rendered');
+
+    try {
+      const downloadUrl = api.downloadExtractedFile(file.path);
+      
+      // For text-based files, fetch content as text
+      if (isTextFile(file.mimeType)) {
+        const response = await fetch(downloadUrl);
+        if (!response.ok) throw new Error('Failed to fetch file content');
+        const text = await response.text();
+        setPreviewContent(text);
+      }
+      // For binary files, we'll just display them via iframe/embed
+    } catch (err) {
+      console.error('Failed to load file preview:', err);
+      setPreviewError(err instanceof Error ? err.message : 'Failed to load file preview');
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [api, isTextFile]);
+
+  // Spacebar to open preview for selected file
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger when typing in input fields
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      // Don't trigger when preview is already open
+      if (previewFile) {
+        return;
+      }
+      
+      // Check for spacebar and that we have a selected file
+      if (e.code === 'Space' && selectedFileKey) {
+        e.preventDefault();
+        
+        // Find the file by path
+        const currentFiles = viewMode === 'gallery' ? paginatedImageFiles : paginatedFiles;
+        const file = currentFiles.find(f => f.path === selectedFileKey);
+        if (file) {
+          handlePreviewFile(file);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedFileKey, paginatedFiles, paginatedImageFiles, viewMode, previewFile, handlePreviewFile]);
+
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
@@ -326,47 +428,6 @@ export default function ExtractedFilesPage() {
     const downloadUrl = api.downloadAllExtractedFiles();
     window.open(downloadUrl, '_blank');
   };
-
-  // Helper function to determine if file is text-based
-  const isTextFile = useCallback((mimeType: string): boolean => {
-    if (!mimeType) return false;
-    return (
-      mimeType.startsWith('text/') ||
-      mimeType.includes('json') ||
-      mimeType.includes('xml') ||
-      mimeType.includes('javascript') ||
-      mimeType.includes('css') ||
-      mimeType.includes('html') ||
-      mimeType.includes('svg+xml')
-    );
-  }, []);
-
-  const handlePreviewFile = useCallback(async (file: ExtractedFileInfo) => {
-    setPreviewFile(file);
-    setPreviewContent('');
-    setPreviewError('');
-    setPreviewLoading(true);
-    // Default to 'raw' view for HTML files for security, 'rendered' for others
-    setPreviewTab(file.mimeType === 'text/html' ? 'raw' : 'rendered');
-
-    try {
-      const downloadUrl = api.downloadExtractedFile(file.path);
-      
-      // For text-based files, fetch content as text
-      if (isTextFile(file.mimeType)) {
-        const response = await fetch(downloadUrl);
-        if (!response.ok) throw new Error('Failed to fetch file content');
-        const text = await response.text();
-        setPreviewContent(text);
-      }
-      // For binary files, we'll just display them via iframe/embed
-    } catch (err) {
-      console.error('Failed to load file preview:', err);
-      setPreviewError(err instanceof Error ? err.message : 'Failed to load file preview');
-    } finally {
-      setPreviewLoading(false);
-    }
-  }, [isTextFile]);
 
   const handleClosePreview = useCallback(() => {
     setPreviewFile(null);
@@ -662,18 +723,22 @@ export default function ExtractedFilesPage() {
                   {paginatedImageFiles.map((file) => (
                     <Grid item xs={12} sm={6} md={4} lg={3} xl={2} key={file.path}>
                       <Card 
+                        data-row-key={file.path}
                         sx={{ 
                           height: '100%', 
                           display: 'flex', 
                           flexDirection: 'column',
                           cursor: 'pointer',
+                          border: selectedFileKey === file.path ? 2 : 0,
+                          borderColor: selectedFileKey === file.path ? 'primary.main' : 'transparent',
                           '&:hover': {
                             boxShadow: 6,
                             transform: 'translateY(-2px)',
                             transition: 'all 0.2s ease-in-out',
                           },
                         }}
-                        onClick={() => handlePreviewFile(file)}
+                        onClick={() => setSelectedFileKey(file.path)}
+                        onDoubleClick={() => handlePreviewFile(file)}
                       >
                         <CardMedia
                           component="img"
@@ -687,7 +752,7 @@ export default function ExtractedFilesPage() {
                           }}
                         />
                         <CardContent sx={{ flexGrow: 1, pb: 1 }}>
-                          <Tooltip title={file.originalName || file.name}>
+                          <Tooltip title={(file.originalName || file.name).length > 50 ? (file.originalName || file.name) : ''}>
                             <Typography 
                               variant="body2" 
                               sx={{ 
@@ -699,7 +764,7 @@ export default function ExtractedFilesPage() {
                                 mb: 0.5,
                               }}
                             >
-                              {file.originalName || file.name}
+                              {truncateFileName(file.originalName || file.name)}
                             </Typography>
                           </Tooltip>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
@@ -790,26 +855,31 @@ export default function ExtractedFilesPage() {
                 <TableBody>
                   {paginatedFiles.map((file) => (
                     <TableRow 
-                      key={file.path} 
+                      key={file.path}
+                      data-row-key={file.path}
                       hover 
-                      onClick={() => handlePreviewFile(file)}
+                      onClick={() => setSelectedFileKey(file.path)}
+                      onDoubleClick={() => handlePreviewFile(file)}
+                      selected={selectedFileKey === file.path}
                       sx={{ cursor: 'pointer' }}
                     >
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           {getFileTypeIcon(file.mimeType)}
-                          <Typography 
-                            sx={{ 
-                              fontFamily: 'monospace', 
-                              fontSize: '0.85rem',
-                              maxWidth: { xs: 150, sm: 250, md: 'none' },
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap'
-                            }}
-                          >
-                            {file.originalName || file.name}
-                          </Typography>
+                          <Tooltip title={(file.originalName || file.name).length > 50 ? (file.originalName || file.name) : ''}>
+                            <Typography 
+                              sx={{ 
+                                fontFamily: 'monospace', 
+                                fontSize: '0.85rem',
+                                maxWidth: { xs: 150, sm: 250, md: 'none' },
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              {truncateFileName(file.originalName || file.name)}
+                            </Typography>
+                          </Tooltip>
                         </Box>
                       </TableCell>
                       <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
@@ -918,9 +988,11 @@ export default function ExtractedFilesPage() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1 }}>
                 {previewFile && getFileTypeIcon(previewFile.mimeType)}
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="h6" sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {previewFile?.originalName || previewFile?.name}
-                  </Typography>
+                  <Tooltip title={(previewFile?.originalName || previewFile?.name || '').length > 50 ? (previewFile?.originalName || previewFile?.name) : ''}>
+                    <Typography variant="h6" sx={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {truncateFileName(previewFile?.originalName || previewFile?.name || '')}
+                    </Typography>
+                  </Tooltip>
                   <Box sx={{ display: 'flex', gap: 1.5, mt: 0.5, flexWrap: 'wrap' }}>
                     <Chip label={previewFile?.mimeType || 'unknown'} size="small" variant="outlined" />
                     {previewFile?.protocol && (

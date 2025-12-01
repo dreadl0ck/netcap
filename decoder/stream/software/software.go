@@ -347,6 +347,9 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 
 // WhatSoftwareHTTP TODO: pass in the device profile.
 func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
+	// Get community ID from the HTTP record for correlation
+	communityID := h.CommunityID
+
 	// HTTP User Agents
 	if h.UserAgent != "" && h.UserAgent != " " {
 
@@ -365,6 +368,10 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 
 		if userInfo != nil {
 			if userInfo.Product != "" || userInfo.Vendor != "" || userInfo.Version != "" {
+				var communityIDs []string
+				if communityID != "" {
+					communityIDs = []string{communityID}
+				}
 				s = append(s, &AtomicSoftware{
 					Software: &types.Software{
 						Timestamp: h.Timestamp,
@@ -372,12 +379,13 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 						Vendor:    userInfo.Vendor,
 						Version:   userInfo.Version,
 						// DeviceProfiles: []string{dpIdent},
-						SourceName: "UserAgent",
-						SourceData: h.UserAgent,
-						Service:    "HTTP",
-						Flows:      []string{flowIdent},
-						Notes:      userInfo.Full,
-						OS:         userInfo.OS,
+						SourceName:   "UserAgent",
+						SourceData:   h.UserAgent,
+						Service:      "HTTP",
+						Flows:        []string{flowIdent},
+						Notes:        userInfo.Full,
+						OS:           userInfo.OS,
+						CommunityIDs: communityIDs,
 					},
 				})
 			}
@@ -388,6 +396,10 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 	if h.ServerName != "" && h.ServerName != " " {
 		values := regExpServerName.FindStringSubmatch(h.ServerName)
 
+		var communityIDs []string
+		if communityID != "" {
+			communityIDs = []string{communityID}
+		}
 		s = append(s, &AtomicSoftware{
 			Software: &types.Software{
 				Timestamp: h.Timestamp,
@@ -395,10 +407,11 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 				Version:   values[2], // Version as found after the '/'
 				OS:        values[3], // potentially operating system
 				// DeviceProfiles: []string{dpIdent},
-				SourceName: "ServerName",
-				SourceData: h.ServerName,
-				Service:    "HTTP",
-				Flows:      []string{flowIdent},
+				SourceName:   "ServerName",
+				SourceData:   h.ServerName,
+				Service:      "HTTP",
+				Flows:        []string{flowIdent},
+				CommunityIDs: communityIDs,
 			},
 		})
 	}
@@ -408,16 +421,21 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 		if poweredBy != "" && poweredBy != " " {
 			values := regexpXPoweredBy.FindStringSubmatch(poweredBy)
 
+			var communityIDs []string
+			if communityID != "" {
+				communityIDs = []string{communityID}
+			}
 			s = append(s, &AtomicSoftware{
 				Software: &types.Software{
 					Timestamp: h.Timestamp,
 					Product:   values[1], // Name of the server (Apache, Nginx, ...)
 					Version:   values[2], // Version as found after the '/'
 					// DeviceProfiles: []string{dpIdent},
-					SourceName: "X-Powered-By",
-					SourceData: poweredBy,
-					Service:    "HTTP",
-					Flows:      []string{flowIdent},
+					SourceName:   "X-Powered-By",
+					SourceData:   poweredBy,
+					Service:      "HTTP",
+					Flows:        []string{flowIdent},
+					CommunityIDs: communityIDs,
 				},
 			})
 		}
@@ -490,7 +508,7 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 				if matchesHeader() {
 
 					// we found a match
-					s = append(s, makeSoftware(h.Timestamp, product, info.Website, sourceName, sourceData, flowIdent))
+					s = append(s, makeSoftware(h.Timestamp, product, info.Website, sourceName, sourceData, flowIdent, communityID))
 
 					if decoderconfig.Instance.StopAfterServiceProbeMatch {
 						return s
@@ -531,7 +549,7 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 				if matchesCookie() {
 
 					// we found a match
-					s = append(s, makeSoftware(h.Timestamp, product, info.Website, sourceName, sourceData, flowIdent))
+					s = append(s, makeSoftware(h.Timestamp, product, info.Website, sourceName, sourceData, flowIdent, communityID))
 
 					if decoderconfig.Instance.StopAfterServiceProbeMatch {
 						return s

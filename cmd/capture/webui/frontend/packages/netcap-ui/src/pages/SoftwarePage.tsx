@@ -48,7 +48,6 @@ import {
   Refresh as RefreshIcon,
   ExpandMore as ExpandMoreIcon,
   Memory as MemoryIcon,
-  Business as BusinessIcon,
   Computer as ComputerIcon,
   Apps as AppsIcon,
   TableChart as TableChartIcon,
@@ -57,14 +56,15 @@ import {
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import CommunityIDChip from '../components/CommunityIDChip';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 interface SoftwareSummary {
   product: string;
-  vendor: string;
   version: string;
   os: string;
   count: number;
@@ -87,6 +87,8 @@ interface SoftwareSummary {
   hasKnownVulnerabilities: boolean;
   isEndOfLife: boolean;
   supportStatus: string;
+  // Community ID for cross-tool correlation
+  communityIds: string[];
 }
 
 interface SoftwareResponse {
@@ -94,12 +96,13 @@ interface SoftwareResponse {
   totalCount: number;
 }
 
-type SoftwareSortField = 'product' | 'vendor' | 'version' | 'count' | 'devices';
+type SoftwareSortField = 'product' | 'version' | 'count' | 'devices';
 type SortOrder = 'asc' | 'desc';
 
 export default function SoftwarePage() {
   const router = useNetcapRouter();
   const api = useNetcapApi();
+  const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
@@ -150,13 +153,19 @@ export default function SoftwarePage() {
   const filteredSoftware = useMemo(() => {
     let filtered = software;
 
+    // Apply Community ID filter first (if active)
+    if (isCommunityIDFilterActive && selectedCommunityIDs.size > 0) {
+      filtered = filtered.filter(sw => 
+        sw.communityIds && sw.communityIds.some(cid => selectedCommunityIDs.has(cid))
+      );
+    }
+
     // Apply search filter with negation support (e.g., "!Windows" excludes Windows software)
     if (searchQuery) {
       const searchTerms = parseSearchQuery(searchQuery);
       filtered = filtered.filter(sw =>
         matchesSearchTerms([
           sw.product,
-          sw.vendor || '',
           sw.version || '',
           sw.os || '',
           ...(sw.devices || []),
@@ -165,15 +174,12 @@ export default function SoftwarePage() {
       );
     }
 
-    // Apply sorting
+    // Apply sorting with stable secondary sort by product and version
     filtered = [...filtered].sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
         case 'product':
           comparison = a.product.localeCompare(b.product);
-          break;
-        case 'vendor':
-          comparison = (a.vendor || '').localeCompare(b.vendor || '');
           break;
         case 'version':
           comparison = (a.version || '').localeCompare(b.version || '');
@@ -185,11 +191,18 @@ export default function SoftwarePage() {
           comparison = a.devices.length - b.devices.length;
           break;
       }
+      // Stable secondary sort by product then version for consistent ordering
+      if (comparison === 0) {
+        comparison = a.product.localeCompare(b.product);
+        if (comparison === 0) {
+          comparison = (a.version || '').localeCompare(b.version || '');
+        }
+      }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
     return filtered;
-  }, [software, searchQuery, sortField, sortOrder]);
+  }, [software, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs]);
 
   const paginatedSoftware = filteredSoftware.slice(
     page * rowsPerPage,
@@ -198,7 +211,7 @@ export default function SoftwarePage() {
 
   // Generate row keys for keyboard navigation
   const rowKeys = useMemo(() => 
-    paginatedSoftware.map((sw, idx) => `${sw.product}-${sw.vendor}-${sw.version}-${idx}`),
+    paginatedSoftware.map((sw, idx) => `${sw.product}-${sw.version}-${idx}`),
     [paginatedSoftware]
   );
 
@@ -256,7 +269,6 @@ export default function SoftwarePage() {
 
   // Calculate summary statistics
   const uniqueProducts = new Set(software.map(sw => sw.product)).size;
-  const uniqueVendors = new Set(software.filter(sw => sw.vendor).map(sw => sw.vendor)).size;
   const uniqueVersions = software.filter(sw => sw.version).length;
   const totalDetections = software.reduce((sum, sw) => sum + sw.count, 0);
 
@@ -301,7 +313,7 @@ export default function SoftwarePage() {
 
         {/* Summary Cards */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card data-learn="Unique Products: Number of different software products detected in the network traffic.">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -319,25 +331,7 @@ export default function SoftwarePage() {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Unique Vendors: Number of different software vendors identified.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <BusinessIcon color="success" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Unique Vendors
-                    </Typography>
-                    <Typography variant="h5">
-                      {uniqueVendors.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card data-learn="Versions Tracked: Number of specific software versions detected.">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -355,7 +349,7 @@ export default function SoftwarePage() {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card data-learn="Total Detections: Total number of software detection events across all captures.">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -456,7 +450,7 @@ export default function SoftwarePage() {
         <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField
-            data-learn="Software Search: Filter software by product name, vendor, version, OS, device, or service."
+            data-learn="Software Search: Filter software by product name, version, OS, device, or service."
             size="small"
             placeholder="Search software..."
             value={searchQuery}
@@ -502,7 +496,7 @@ export default function SoftwarePage() {
         ) : (
           <>
             <TableContainer component={Paper}>
-              <Table size="small" data-learn="Software Table: Detailed list of all detected software with versions, vendors, and associated devices.">
+              <Table size="small" data-learn="Software Table: Detailed list of all detected software with versions and associated devices.">
                 <TableHead>
                   <TableRow>
                     <TableCell width={40}></TableCell>
@@ -514,16 +508,6 @@ export default function SoftwarePage() {
                         onClick={() => handleSort('product')}
                       >
                         Product
-                      </TableSortLabel>
-                    </TableCell>
-                    <TableCell>
-                      <TableSortLabel
-                        data-learn="Sort by Vendor: Click to sort software by vendor/manufacturer name."
-                        active={sortField === 'vendor'}
-                        direction={sortField === 'vendor' ? sortOrder : 'asc'}
-                        onClick={() => handleSort('vendor')}
-                      >
-                        Vendor
                       </TableSortLabel>
                     </TableCell>
                     <TableCell>
@@ -561,7 +545,7 @@ export default function SoftwarePage() {
                 </TableHead>
                 <TableBody>
                   {paginatedSoftware.map((sw, idx) => {
-                    const rowKey = `${sw.product}-${sw.vendor}-${sw.version}-${idx}`;
+                    const rowKey = `${sw.product}-${sw.version}-${idx}`;
                     return (
                       <>
                         <TableRow 
@@ -595,27 +579,12 @@ export default function SoftwarePage() {
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            {sw.vendor ? (
-                              <Chip
-                                data-learn="Vendor Tag: Software manufacturer or vendor name."
-                                label={sw.vendor}
-                                size="small"
-                                color="primary"
-                                sx={{ fontSize: '0.7rem' }}
-                              />
-                            ) : (
-                              <Typography variant="body2" color="text.secondary">
-                                Unknown
-                              </Typography>
-                            )}
-                          </TableCell>
-                          <TableCell>
                             <Typography 
                               variant="body2"
                               sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
                               data-learn="Version: Specific version number or identifier of the software."
                             >
-                              {sw.version || 'N/A'}
+                              {sw.version}
                             </Typography>
                           </TableCell>
                           <TableCell align="right">
@@ -631,23 +600,19 @@ export default function SoftwarePage() {
                           <TableCell>
                             {sw.os ? (
                               <Chip
-                                data-learn="Operating System: The OS this software runs on or was detected from."
-                                label={sw.os}
-                                size="small"
-                                color="info"
-                                sx={{ fontSize: '0.7rem' }}
-                              />
-                            ) : (
-                              <Typography variant="body2" color="text.secondary">
-                                Unknown
-                              </Typography>
-                            )}
+                              data-learn="Operating System: The OS this software runs on or was detected from."
+                              label={sw.os}
+                              size="small"
+                              color="info"
+                              sx={{ fontSize: '0.7rem' }}
+                            />
+                            ) : ''}
                           </TableCell>
                         </TableRow>
                         
                         {/* Expandable Row Details */}
                         <TableRow>
-                          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
+                          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
                             <Collapse in={expandedRow === rowKey} timeout="auto" unmountOnExit>
                               <Box sx={{ py: 2 }} data-learn="Software Details: Extended information about this software including detection timeline, devices, services, and DPI results.">
                                 <Grid container spacing={2}>
@@ -890,6 +855,28 @@ export default function SoftwarePage() {
                                             sx={{ fontSize: '0.75rem' }}
                                           />
                                         ))}
+                                      </Box>
+                                    </Grid>
+                                  )}
+                                  
+                                  {/* Community IDs for Cross-Tool Correlation */}
+                                  {(sw.communityIds || []).length > 0 && (
+                                    <Grid item xs={12}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Community IDs: Corelight Community ID v1 identifiers for cross-tool correlation with Zeek, Suricata, and other network security tools. Click to filter all pages by these IDs.">
+                                        Community IDs ({(sw.communityIds || []).length})
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                        {(sw.communityIds || []).slice(0, 10).map((cid) => (
+                                          <CommunityIDChip key={cid} communityId={cid} mode="chip" />
+                                        ))}
+                                        {(sw.communityIds || []).length > 10 && (
+                                          <Chip
+                                            label={`+${(sw.communityIds || []).length - 10} more`}
+                                            size="small"
+                                            variant="outlined"
+                                            sx={{ fontSize: '0.75rem' }}
+                                          />
+                                        )}
                                       </Box>
                                     </Grid>
                                   )}

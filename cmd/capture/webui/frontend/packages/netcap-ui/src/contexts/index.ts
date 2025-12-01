@@ -18,5 +18,4 @@
  */
 
 export { LearnModeProvider, useLearnMode } from './LearnModeContext';
-
-
+export { CommunityIDFilterProvider, useCommunityIDFilter } from './CommunityIDFilterContext';

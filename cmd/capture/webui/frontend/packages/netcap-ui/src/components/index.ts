@@ -48,3 +48,7 @@ export type { ConnectionOverlayProps } from './ConnectionOverlay';
 
 // Chart components
 export { default as OptimizedPieChart } from './OptimizedPieChart';
+
+// Community ID filtering components
+export { default as CommunityIDChip } from './CommunityIDChip';
+export { default as CommunityIDFilterBar } from './CommunityIDFilterBar';

@@ -74,6 +74,7 @@ function createNoOpApi(): NetcapApiClient {
     getAuditStats: noOpReturn({ totalRecords: 0, exploitCount: 0, vulnerabilityCount: 0, credentialsCount: 0, softwareCount: 0 }),
     getInputFiles: noOpReturn([]),
     getAuditFiles: noOpReturn([]),
+    getAuditFilesFiltered: noOpReturn([]),
     getLogFiles: noOpReturn([]),
     getAuditMetadata: noOpReturn({ type: '', version: '', inputSource: '', created: 0, recordCount: 0 }),
     getLogContent: noOpReturn(''),
@@ -181,6 +182,7 @@ function createNoOpApi(): NetcapApiClient {
     getAuditRecordsCount: noOpReturn(0),
     getServicesCount: noOpReturn(0),
     getLogsCount: noOpReturn(0),
+    getMenuCounts: noOpReturn({ hostsCount: 0, devicesCount: 0, connectionsCount: 0, httpCount: 0, certificatesCount: 0, credentialsCount: 0, domainsCount: 0, fingerprintsCount: 0, softwareCount: 0, vulnerabilitiesCount: 0, auditRecordsCount: 0, servicesCount: 0, logsCount: 0, alertsGroupCount: 0, extractedFilesCount: 0 }),
     reanalyzeFile: noOpReturn({ success: false, message: '' }),
     formatBytes,
     formatTimestamp,
@@ -354,6 +356,10 @@ export interface AuditFileInfo extends FileInfo {
   type: string;
   recordCount?: number;
   layer: string;
+}
+
+export interface FilteredAuditFileInfo extends AuditFileInfo {
+  filteredCount: number;
 }
 
 export interface AuditMetadata {
@@ -912,6 +918,24 @@ export interface ConversationData {
   errorMessage?: string;
 }
 
+export interface MenuCountsResponse {
+  hostsCount: number;
+  devicesCount: number;
+  connectionsCount: number;
+  httpCount: number;
+  certificatesCount: number;
+  credentialsCount: number;
+  domainsCount: number;
+  fingerprintsCount: number;
+  softwareCount: number;
+  vulnerabilitiesCount: number;
+  auditRecordsCount: number;
+  servicesCount: number;
+  logsCount: number;
+  alertsGroupCount: number;
+  extractedFilesCount: number;
+}
+
 // Internal function to create API client with a specific base URL
 // Note: Return type is inferred to avoid circular reference
 function createApiWithBase(apiBase: string) {
@@ -943,6 +967,16 @@ function createApiWithBase(apiBase: string) {
   async getAuditFiles(): Promise<AuditFileInfo[]> {
     const res = await fetch(`${apiBase}/files/audit`);
     if (!res.ok) throw new Error('Failed to fetch audit files');
+    return res.json();
+  },
+
+  async getAuditFilesFiltered(communityIds: string[]): Promise<FilteredAuditFileInfo[]> {
+    const params = new URLSearchParams();
+    if (communityIds.length > 0) {
+      params.set('communityIds', communityIds.join(','));
+    }
+    const res = await fetch(`${apiBase}/files/audit/filtered?${params.toString()}`);
+    if (!res.ok) throw new Error('Failed to fetch filtered audit files');
     return res.json();
   },
 
@@ -2076,6 +2110,36 @@ function createApiWithBase(apiBase: string) {
     if (!res.ok) return 0;
     const data = await res.json();
     return data.length || 0;
+  },
+
+  // Get all menu counts efficiently in a single request
+  // Supports community ID filtering via optional communityIds parameter
+  async getMenuCounts(communityIds?: string[]): Promise<MenuCountsResponse> {
+    let url = `${apiBase}/menu-counts`;
+    if (communityIds && communityIds.length > 0) {
+      url += `?communityIds=${encodeURIComponent(communityIds.join(','))}`;
+    }
+    const res = await fetch(url);
+    if (!res.ok) {
+      return {
+        hostsCount: 0,
+        devicesCount: 0,
+        connectionsCount: 0,
+        httpCount: 0,
+        certificatesCount: 0,
+        credentialsCount: 0,
+        domainsCount: 0,
+        fingerprintsCount: 0,
+        softwareCount: 0,
+        vulnerabilitiesCount: 0,
+        auditRecordsCount: 0,
+        servicesCount: 0,
+        logsCount: 0,
+        alertsGroupCount: 0,
+        extractedFilesCount: 0,
+      };
+    }
+    return res.json();
   },
 
   // Reanalyze a PCAP file - deletes existing data and reruns analysis with current config

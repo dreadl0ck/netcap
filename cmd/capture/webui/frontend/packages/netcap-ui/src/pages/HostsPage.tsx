@@ -144,7 +144,8 @@ export default function HostsPage() {
     'hosts',
     () => fetch(`${getBackendUrl()}/api/hosts`).then(res => res.json()),
     {
-      refreshInterval: 10000,
+      // Disable auto-refresh to prevent table from reordering while user is viewing
+      refreshInterval: 0,
     }
   );
 
@@ -188,7 +189,7 @@ export default function HostsPage() {
       );
     }
 
-    // Apply sorting
+    // Apply sorting with stable secondary sort by address
     filtered = [...filtered].sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
@@ -209,6 +210,10 @@ export default function HostsPage() {
         case 'bytes':
           comparison = a.bytes - b.bytes;
           break;
+      }
+      // Stable secondary sort by address for consistent ordering
+      if (comparison === 0) {
+        comparison = a.addr.localeCompare(b.addr);
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });

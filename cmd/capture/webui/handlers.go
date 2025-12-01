@@ -266,6 +266,22 @@ func (s *Server) handleAuditFiles(w http.ResponseWriter, r *http.Request) {
 	HandleAuditFiles(outDir)(w, r)
 }
 
+// handleAuditFilesFiltered delegates to the shared handler with community ID filtering
+func (s *Server) handleAuditFilesFiltered(w http.ResponseWriter, r *http.Request) {
+	s.mu.RLock()
+	outDir := s.outDir
+
+	// In service mode, use the current session's output directory
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
+	s.mu.RUnlock()
+
+	HandleAuditFilesFiltered(outDir)(w, r)
+}
+
 // handleLogFiles delegates to the shared handler
 func (s *Server) handleLogFiles(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
@@ -3673,4 +3689,193 @@ func copyFile(src, dst string) error {
 
 	_, err = io.Copy(destFile, sourceFile)
 	return err
+}
+
+// MenuCountsResponse contains all menu badge counts for efficient loading
+type MenuCountsResponse struct {
+	HostsCount           int64 `json:"hostsCount"`
+	DevicesCount         int64 `json:"devicesCount"`
+	ConnectionsCount     int64 `json:"connectionsCount"`
+	HTTPCount            int64 `json:"httpCount"`
+	CertificatesCount    int64 `json:"certificatesCount"`
+	CredentialsCount     int64 `json:"credentialsCount"`
+	DomainsCount         int64 `json:"domainsCount"`
+	FingerprintsCount    int64 `json:"fingerprintsCount"`
+	SoftwareCount        int64 `json:"softwareCount"`
+	VulnerabilitiesCount int64 `json:"vulnerabilitiesCount"`
+	AuditRecordsCount    int64 `json:"auditRecordsCount"`
+	ServicesCount        int64 `json:"servicesCount"`
+	LogsCount            int64 `json:"logsCount"`
+	AlertsGroupCount     int64 `json:"alertsGroupCount"`
+	ExtractedFilesCount  int64 `json:"extractedFilesCount"`
+}
+
+// handleMenuCounts returns all menu badge counts efficiently in a single request
+// Supports community ID filtering via query parameter: ?communityIds=id1,id2,id3
+func (s *Server) handleMenuCounts(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	s.mu.RLock()
+	outDir := s.outDir
+
+	// In service mode, use the current session's output directory
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
+	s.mu.RUnlock()
+
+	response := MenuCountsResponse{}
+
+	if outDir == "" {
+		RespondJSON(w, http.StatusOK, response)
+		return
+	}
+
+	// Parse community IDs from query parameter
+	communityIDsParam := r.URL.Query().Get("communityIds")
+	var communityIDs map[string]bool
+	if communityIDsParam != "" {
+		communityIDs = make(map[string]bool)
+		for _, id := range strings.Split(communityIDsParam, ",") {
+			if trimmed := strings.TrimSpace(id); trimmed != "" {
+				communityIDs[trimmed] = true
+			}
+		}
+	}
+
+	// If community IDs filter is active, use filtered counts
+	if len(communityIDs) > 0 {
+		response = s.getFilteredMenuCounts(outDir, communityIDs)
+	} else {
+		response = s.getUnfilteredMenuCounts(outDir)
+	}
+
+	RespondJSON(w, http.StatusOK, response)
+}
+
+// getUnfilteredMenuCounts returns counts without any filtering (fast path)
+func (s *Server) getUnfilteredMenuCounts(outDir string) MenuCountsResponse {
+	response := MenuCountsResponse{}
+
+	// Count audit files (audit records types)
+	if files, err := ListAuditFiles(outDir); err == nil {
+		response.AuditRecordsCount = int64(len(files))
+	}
+
+	// Count log files
+	if entries, err := os.ReadDir(outDir); err == nil {
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".log") {
+				if info, err := entry.Info(); err == nil && info.Size() > 0 {
+					response.LogsCount++
+				}
+			}
+		}
+	}
+
+	// Count from specific audit record files
+	response.HostsCount = CountRecords(filepath.Join(outDir, "IPProfile.ncap.gz"))
+	response.DevicesCount = CountRecords(filepath.Join(outDir, "DeviceProfile.ncap.gz"))
+	response.ConnectionsCount = CountRecords(filepath.Join(outDir, "Connection.ncap.gz"))
+	response.HTTPCount = CountRecords(filepath.Join(outDir, "HTTP.ncap.gz"))
+	response.CertificatesCount = CountRecords(filepath.Join(outDir, "TLSServerHello.ncap.gz"))
+	response.CredentialsCount = CountRecords(filepath.Join(outDir, "Credentials.ncap.gz"))
+	response.SoftwareCount = CountRecords(filepath.Join(outDir, "Software.ncap.gz"))
+	response.VulnerabilitiesCount = CountRecords(filepath.Join(outDir, "Vulnerability.ncap.gz"))
+	response.ServicesCount = CountRecords(filepath.Join(outDir, "Service.ncap.gz"))
+
+	// Count fingerprints from multiple sources
+	ja3Count := CountRecords(filepath.Join(outDir, "JA3.ncap.gz"))
+	ja4Count := CountRecords(filepath.Join(outDir, "JA4.ncap.gz"))
+	hasshCount := CountRecords(filepath.Join(outDir, "HASSH.ncap.gz"))
+	dhcpFpCount := CountRecords(filepath.Join(outDir, "DHCPFingerprint.ncap.gz"))
+	response.FingerprintsCount = ja3Count + ja4Count + hasshCount + dhcpFpCount
+
+	// Count domains from DNS
+	response.DomainsCount = CountRecords(filepath.Join(outDir, "DNS.ncap.gz"))
+
+	// Count extracted files
+	filesDir := filepath.Join(outDir, "files")
+	if info, err := os.Stat(filesDir); err == nil && info.IsDir() {
+		filepath.Walk(filesDir, func(path string, info os.FileInfo, err error) error {
+			if err == nil && !info.IsDir() {
+				response.ExtractedFilesCount++
+			}
+			return nil
+		})
+	}
+
+	// Count alert groups
+	alertsFile := filepath.Join(outDir, "alerts.json")
+	if content, err := os.ReadFile(alertsFile); err == nil {
+		var alerts []interface{}
+		if json.Unmarshal(content, &alerts) == nil {
+			// Group by rule name
+			groups := make(map[string]bool)
+			for _, alert := range alerts {
+				if a, ok := alert.(map[string]interface{}); ok {
+					if ruleName, ok := a["ruleName"].(string); ok {
+						groups[ruleName] = true
+					}
+				}
+			}
+			response.AlertsGroupCount = int64(len(groups))
+		}
+	}
+
+	return response
+}
+
+// getFilteredMenuCounts returns counts filtered by community IDs
+func (s *Server) getFilteredMenuCounts(outDir string, communityIDs map[string]bool) MenuCountsResponse {
+	response := MenuCountsResponse{}
+
+	// For audit files, count types that have matching records
+	if files, err := ListAuditFilesWithCommunityIDFilter(outDir, communityIDs); err == nil {
+		count := int64(0)
+		for _, f := range files {
+			if f.FilteredCount > 0 {
+				count++
+			}
+		}
+		response.AuditRecordsCount = count
+	}
+
+	// Log files don't have community IDs, return 0 when filtering
+	response.LogsCount = 0
+
+	// Count from specific audit record files with filtering
+	response.HostsCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "IPProfile.ncap.gz"), communityIDs)
+	response.DevicesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "DeviceProfile.ncap.gz"), communityIDs)
+	response.ConnectionsCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Connection.ncap.gz"), communityIDs)
+	response.HTTPCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "HTTP.ncap.gz"), communityIDs)
+	response.CertificatesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "TLSServerHello.ncap.gz"), communityIDs)
+	response.CredentialsCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Credentials.ncap.gz"), communityIDs)
+	response.SoftwareCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Software.ncap.gz"), communityIDs)
+	response.VulnerabilitiesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Vulnerability.ncap.gz"), communityIDs)
+	response.ServicesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Service.ncap.gz"), communityIDs)
+
+	// Count fingerprints from multiple sources with filtering
+	ja3Count := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "JA3.ncap.gz"), communityIDs)
+	ja4Count := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "JA4.ncap.gz"), communityIDs)
+	hasshCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "HASSH.ncap.gz"), communityIDs)
+	dhcpFpCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "DHCPFingerprint.ncap.gz"), communityIDs)
+	response.FingerprintsCount = ja3Count + ja4Count + hasshCount + dhcpFpCount
+
+	// Count domains from DNS with filtering
+	response.DomainsCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "DNS.ncap.gz"), communityIDs)
+
+	// Extracted files don't have community IDs directly, return 0 when filtering
+	response.ExtractedFilesCount = 0
+
+	// Alerts can be filtered by checking if any matched record has matching community IDs
+	// For simplicity, return 0 when filtering (alerts are typically grouped by rule, not connection)
+	response.AlertsGroupCount = 0
+
+	return response
 }

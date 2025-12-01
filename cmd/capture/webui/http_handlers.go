@@ -86,6 +86,8 @@ type HTTPSummary struct {
 	// JA4H fingerprinting
 	Ja4h            string `json:"ja4h"`
 	Ja4hDescription string `json:"ja4hDescription"`
+	// Community ID for cross-tool correlation
+	CommunityID     string `json:"communityId"`
 }
 
 // HTTPResponse contains the list of HTTP records
@@ -223,6 +225,8 @@ func readHTTP(outDir string) ([]HTTPSummary, error) {
 			// JA4H fingerprinting
 			Ja4h:            httpRec.Ja4H,
 			Ja4hDescription: httpRec.Ja4HDescription,
+			// Community ID for cross-tool correlation
+			CommunityID:     httpRec.CommunityID,
 		})
 	}
 

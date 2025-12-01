@@ -1421,6 +1421,9 @@ message TLSCertificate {
   string Ja4x = 41;                     // JA4X certificate fingerprint
   string Ja4xRaw = 42;                  // JA4X raw (unhashed) fingerprint
   string Ja4xDescription = 43;          // JA4X database lookup description (certificate authority)
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  string CommunityID = 44;
 }
 
 message IPSecAH {
@@ -2615,6 +2618,10 @@ message Software {
   bool HasKnownVulnerabilities = 21;       // Links exist in Vulnerability records
   bool IsEndOfLife = 22;                   // Product/version is EOL (no more security patches)
   string SupportStatus = 23;               // "active", "maintenance", "eol", "unknown"
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  // Multiple IDs since software can be detected across multiple connections
+  repeated string CommunityIDs = 24;
 }
 
 message Service {
@@ -2725,6 +2732,10 @@ message Vulnerability {
   repeated string Versions = 7;
   string Notes = 8;
   Software Software = 9;
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  // Links to the connection where the vulnerable software was identified
+  repeated string CommunityIDs = 10;
 }
 
 message Exploit {
@@ -2739,6 +2750,10 @@ message Exploit {
   string Platform = 9;
   string Port = 10;
   Software Software = 11;
+  
+  // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+  // Links to the connection where the exploitable software was identified
+  repeated string CommunityIDs = 12;
 }
 
 // Alert models a user defined event with IP layer and meta information.

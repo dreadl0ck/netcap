@@ -73,6 +73,8 @@ import { useNetcapApi } from '../hooks/useNetcapApi';
 import { useNetcapLink } from '../providers/NetcapProvider';
 import LearnModeToggle from './LearnModeToggle';
 import LearnModeOverlay from './LearnModeOverlay';
+import CommunityIDFilterBar from './CommunityIDFilterBar';
+import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 const drawerWidth = 240;
 
@@ -153,6 +155,9 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
   const api = useNetcapApi();
   const Link = useNetcapLink();
   
+  // Get community ID filter state
+  const { selectedCommunityIDs, isFilterActive } = useCommunityIDFilter();
+  
   // Initialize dataMenuOpen based on current route
   const [dataMenuOpen, setDataMenuOpen] = useState(() => {
     const dataRoutes = ['/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/http', '/certificates', '/credentials',
@@ -175,85 +180,44 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
     refreshInterval: 10000,
   });
 
-  // Fetch alert statistics
+  // Convert selectedCommunityIDs Set to array for API call and cache key
+  const communityIDsArray = Array.from(selectedCommunityIDs);
+  const communityIDsKey = isFilterActive ? communityIDsArray.join(',') : '';
+
+  // Fetch all menu counts in a single efficient request
+  // When filter is active, pass community IDs to get filtered counts
+  const { data: menuCounts, mutate: mutateMenuCounts } = useSWR(
+    ['menuCounts', communityIDsKey],
+    () => api.getMenuCounts(isFilterActive ? communityIDsArray : undefined),
+    {
+      refreshInterval: 0,
+      revalidateOnFocus: false,
+    }
+  );
+
+  // Fetch alert statistics (not filtered by community ID in menu badge)
   const { data: alertStats, mutate: mutateAlertStats } = useSWR('alertStats', () => api.getAlertStats(), {
     refreshInterval: 10000,
   });
 
-  // Fetch extracted files
-  const { data: extractedFilesData, mutate: mutateExtractedFiles } = useSWR('extractedFiles', () => api.getExtractedFiles(), {
-    refreshInterval: 10000,
-  });
-
-  // Fetch counts for badges
-  const { data: auditRecordsCount, mutate: mutateAuditRecordsCount } = useSWR('auditRecordsCount', () => api.getAuditRecordsCount(), {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
-
-  const { data: hostsCount, mutate: mutateHostsCount } = useSWR('hostsCount', () => api.getHostsCount(), {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
-
-  const { data: devicesCount, mutate: mutateDevicesCount } = useSWR('devicesCount', () => api.getDevicesCount(), {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
-
-  const { data: connectionsCount, mutate: mutateConnectionsCount } = useSWR('connectionsCount', () => api.getConnectionsCount(), {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
-
-  const { data: httpCount, mutate: mutateHTTPCount } = useSWR('httpCount', () => api.getHTTPCount(), {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
-
-  const { data: certificatesCount, mutate: mutateCertificatesCount } = useSWR('certificatesCount', () => api.getCertificatesCount(), {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
-
-  const { data: credentialsCount, mutate: mutateCredentialsCount } = useSWR('credentialsCount', () => api.getCredentialsCount(), {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
-
-  const { data: domainsCount, mutate: mutateDomainsCount } = useSWR('domainsCount', () => api.getDomainsCount(), {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
-
-  const { data: fingerprintsCount, mutate: mutateFingerprintsCount } = useSWR('fingerprintsCount', () => api.getFingerprintsCount(), {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
-
-  const { data: softwareCount, mutate: mutateSoftwareCount } = useSWR('softwareCount', () => api.getSoftwareCount(), {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
-
-  const { data: vulnerabilitiesCount, mutate: mutateVulnerabilitiesCount } = useSWR('vulnerabilitiesCount', () => api.getVulnerabilitiesCount(), {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
-
-  const { data: servicesCount, mutate: mutateServicesCount } = useSWR('servicesCount', () => api.getServicesCount(), {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
-
-  const { data: logsCount, mutate: mutateLogsCount } = useSWR('logsCount', () => api.getLogsCount(), {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
+  // Extract counts from menuCounts response
+  const auditRecordsCount = menuCounts?.auditRecordsCount || 0;
+  const hostsCount = menuCounts?.hostsCount || 0;
+  const devicesCount = menuCounts?.devicesCount || 0;
+  const connectionsCount = menuCounts?.connectionsCount || 0;
+  const httpCount = menuCounts?.httpCount || 0;
+  const certificatesCount = menuCounts?.certificatesCount || 0;
+  const credentialsCount = menuCounts?.credentialsCount || 0;
+  const domainsCount = menuCounts?.domainsCount || 0;
+  const fingerprintsCount = menuCounts?.fingerprintsCount || 0;
+  const softwareCount = menuCounts?.softwareCount || 0;
+  const vulnerabilitiesCount = menuCounts?.vulnerabilitiesCount || 0;
+  const servicesCount = menuCounts?.servicesCount || 0;
+  const logsCount = menuCounts?.logsCount || 0;
+  const extractedFilesCount = menuCounts?.extractedFilesCount || 0;
 
   const pcapCount = inputFiles?.length || 0;
-  const alertCount = alertStats?.groupCount || 0;
-  const extractedFilesCount = extractedFilesData?.totalCount || 0;
+  const alertCount = isFilterActive ? (menuCounts?.alertsGroupCount || 0) : (alertStats?.groupCount || 0);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -286,27 +250,14 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
   useEffect(() => {
     const handleDirectoryChanged = () => {
       mutateAlertStats();
-      mutateExtractedFiles();
-      mutateAuditRecordsCount();
-      mutateHostsCount();
-      mutateDevicesCount();
-      mutateConnectionsCount();
-      mutateHTTPCount();
-      mutateCertificatesCount();
-      mutateCredentialsCount();
-      mutateDomainsCount();
-      mutateFingerprintsCount();
-      mutateSoftwareCount();
-      mutateVulnerabilitiesCount();
-      mutateServicesCount();
-      mutateLogsCount();
+      mutateMenuCounts();
     };
 
     window.addEventListener('directory-changed', handleDirectoryChanged);
     return () => {
       window.removeEventListener('directory-changed', handleDirectoryChanged);
     };
-  }, [mutateAlertStats, mutateExtractedFiles, mutateAuditRecordsCount, mutateHostsCount, mutateDevicesCount, mutateConnectionsCount, mutateHTTPCount, mutateCertificatesCount, mutateCredentialsCount, mutateServicesCount, mutateDomainsCount, mutateFingerprintsCount, mutateSoftwareCount, mutateVulnerabilitiesCount, mutateLogsCount]);
+  }, [mutateAlertStats, mutateMenuCounts]);
 
   // Handle fullscreen changes
   useEffect(() => {
@@ -950,6 +901,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
           pt: defaultTopPadding,
         }}
       >
+        <CommunityIDFilterBar />
         {children}
       </Box>
       <LearnModeOverlay />

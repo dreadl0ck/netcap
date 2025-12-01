@@ -37,17 +37,22 @@ func determineVendor(product string) (vendor string) {
 	return vendor
 }
 
-func makeSoftware(ts int64, product, website, sourceName, sourceData, flowIdent string) *AtomicSoftware {
+func makeSoftware(ts int64, product, website, sourceName, sourceData, flowIdent, communityID string) *AtomicSoftware {
+	var communityIDs []string
+	if communityID != "" {
+		communityIDs = []string{communityID}
+	}
 	return &AtomicSoftware{
 		Software: &types.Software{
-			Timestamp:  ts,
-			Product:    product,
-			Notes:      "", // TODO: add info from implies field
-			Website:    website,
-			SourceName: sourceName,
-			SourceData: sourceData,
-			Service:    "HTTP",
-			Flows:      []string{flowIdent},
+			Timestamp:    ts,
+			Product:      product,
+			Notes:        "", // TODO: add info from implies field
+			Website:      website,
+			SourceName:   sourceName,
+			SourceData:   sourceData,
+			Service:      "HTTP",
+			Flows:        []string{flowIdent},
+			CommunityIDs: communityIDs,
 		},
 	}
 }

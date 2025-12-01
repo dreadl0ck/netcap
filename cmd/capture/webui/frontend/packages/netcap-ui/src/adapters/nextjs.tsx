@@ -45,6 +45,7 @@ import { useRouter } from 'next/router.js';
 import NextLink from 'next/link.js';
 import { NetcapProvider, NetcapConfig, LinkProps } from '../providers/NetcapProvider.js';
 import { LearnModeProvider } from '../contexts/LearnModeContext.js';
+import { CommunityIDFilterProvider } from '../contexts/CommunityIDFilterContext.js';
 
 export interface NextjsNetcapProviderProps {
   children: ReactNode;
@@ -97,8 +98,12 @@ export function NextjsNetcapProvider({
   }), [backendUrl, debug, router.pathname, router.query, router.isReady, router.push, router.replace]);
 
   const content = includeLearnMode ? (
-    <LearnModeProvider>{children}</LearnModeProvider>
-  ) : children;
+    <LearnModeProvider>
+      <CommunityIDFilterProvider>{children}</CommunityIDFilterProvider>
+    </LearnModeProvider>
+  ) : (
+    <CommunityIDFilterProvider>{children}</CommunityIDFilterProvider>
+  );
 
   return (
     <NetcapProvider config={config}>

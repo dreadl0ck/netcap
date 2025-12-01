@@ -147,7 +147,7 @@ export default function FingerprintsPage() {
       );
     }
 
-    // Apply sorting
+    // Apply sorting with stable secondary sort by fingerprint
     filtered = [...filtered].sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
@@ -163,6 +163,10 @@ export default function FingerprintsPage() {
         case 'hosts':
           comparison = a.hosts.length - b.hosts.length;
           break;
+      }
+      // Stable secondary sort by fingerprint for consistent ordering
+      if (comparison === 0) {
+        comparison = a.fingerprint.localeCompare(b.fingerprint);
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
@@ -722,7 +726,7 @@ export default function FingerprintsPage() {
                               textOverflow: 'ellipsis',
                               whiteSpace: 'nowrap'
                             }}>
-                              {fp.description || 'No description available'}
+                              {fp.description}
                             </Typography>
                           </TableCell>
                         </TableRow>

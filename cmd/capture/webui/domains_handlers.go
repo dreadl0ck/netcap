@@ -44,7 +44,8 @@ type DomainSummary struct {
 	IsSubdomain   bool     `json:"isSubdomain"`
 	ParentDomain  string   `json:"parentDomain"`
 	ResolvedIPs   []string `json:"resolvedIPs"`
-	Source        string   `json:"source"` // "DNS" or "TLS SNI"
+	Source        string   `json:"source"`       // "DNS" or "TLS SNI"
+	CommunityIDs  []string `json:"communityIds"` // Community IDs for cross-tool correlation
 }
 
 // DomainsResponse contains the list of domains
@@ -168,6 +169,7 @@ func readDNSDomains(filePath string, domainMap map[string]*domainAggregator) err
 					recordTypes:   make(map[int32]bool), // Use int32
 					responseCodes: make(map[int32]bool),
 					ips:           make(map[string]bool),
+					communityIds:  make(map[string]bool),
 					firstSeen:     dns.Timestamp,
 					lastSeen:      dns.Timestamp,
 					source:        "DNS",
@@ -179,6 +181,11 @@ func readDNSDomains(filePath string, domainMap map[string]*domainAggregator) err
 			agg.clients[dns.SrcIP] = true
 			agg.recordTypes[question.Type] = true
 			agg.responseCodes[dns.ResponseCode] = true
+
+			// Track community ID for cross-tool correlation
+			if dns.CommunityID != "" {
+				agg.communityIds[dns.CommunityID] = true
+			}
 
 			if dns.Timestamp < agg.firstSeen {
 				agg.firstSeen = dns.Timestamp
@@ -251,6 +258,7 @@ func readSNIDomains(filePath string, domainMap map[string]*domainAggregator) err
 				recordTypes:   make(map[int32]bool),
 				responseCodes: make(map[int32]bool),
 				ips:           make(map[string]bool),
+				communityIds:  make(map[string]bool),
 				firstSeen:     conn.TimestampFirst,
 				lastSeen:      conn.TimestampFirst,
 				source:        "TLS SNI",
@@ -263,6 +271,11 @@ func readSNIDomains(filePath string, domainMap map[string]*domainAggregator) err
 		// Add destination IP as resolved IP for SNI
 		if conn.DstIP != "" {
 			agg.ips[conn.DstIP] = true
+		}
+
+		// Track community ID for cross-tool correlation
+		if conn.CommunityID != "" {
+			agg.communityIds[conn.CommunityID] = true
 		}
 
 		// Update source to indicate both if we have DNS and SNI for same domain
@@ -303,6 +316,11 @@ func aggregateDomains(domainMap map[string]*domainAggregator) []DomainSummary {
 			resolvedIPs = append(resolvedIPs, ip)
 		}
 
+		communityIDs := make([]string, 0, len(agg.communityIds))
+		for cid := range agg.communityIds {
+			communityIDs = append(communityIDs, cid)
+		}
+
 		// Determine if subdomain and parent domain
 		isSubdomain := false
 		parentDomain := ""
@@ -324,6 +342,7 @@ func aggregateDomains(domainMap map[string]*domainAggregator) []DomainSummary {
 			ParentDomain:  parentDomain,
 			ResolvedIPs:   resolvedIPs,
 			Source:        agg.source,
+			CommunityIDs:  communityIDs,
 		})
 	}
 
@@ -371,6 +390,7 @@ type domainAggregator struct {
 	recordTypes   map[int32]bool // Use int32 as DNS type is int32
 	responseCodes map[int32]bool
 	ips           map[string]bool
+	communityIds  map[string]bool // Community IDs for cross-tool correlation
 	firstSeen     int64
 	lastSeen      int64
 	source        string // "DNS", "TLS SNI", or "DNS, TLS SNI"

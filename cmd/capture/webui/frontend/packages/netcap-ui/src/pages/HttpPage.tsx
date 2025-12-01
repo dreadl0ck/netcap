@@ -58,9 +58,11 @@ import {
 import Layout from '../components/Layout';
 import ConversationModal from '../components/ConversationModal';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import CommunityIDChip from '../components/CommunityIDChip';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 interface HTTPSummary {
   timestamp: number;
@@ -110,6 +112,8 @@ interface HTTPSummary {
   // JA4H fingerprinting
   ja4h: string;
   ja4hDescription: string;
+  // Community ID for cross-tool correlation
+  communityId: string;
 }
 
 interface HTTPResponse {
@@ -123,6 +127,7 @@ type SortOrder = 'asc' | 'desc';
 export default function HTTPPage() {
   const router = useNetcapRouter();
   const api = useNetcapApi();
+  const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
@@ -151,7 +156,8 @@ export default function HTTPPage() {
     'http',
     () => fetch(`${getBackendUrl()}/api/http`).then(res => res.json()),
     {
-      refreshInterval: 10000,
+      // Disable auto-refresh to prevent table from reordering while user is viewing
+      refreshInterval: 0,
     }
   );
 
@@ -173,30 +179,55 @@ export default function HTTPPage() {
   const filteredHTTP = useMemo(() => {
     let filtered = httpRecords;
 
-    // Apply search filter
-    if (searchQuery) {
-      const searchTerms = searchQuery
-        .split(/[,\s]+/)
-        .map(term => term.trim())
-        .filter(term => term.length > 0);
-      
-      filtered = filtered.filter(h => {
-        return searchTerms.some(query => {
-          const queryLower = query.toLowerCase();
-          return (
-            h.srcIP.toLowerCase().includes(queryLower) ||
-            h.dstIP.toLowerCase().includes(queryLower) ||
-            (h.host || '').toLowerCase().includes(queryLower) ||
-            (h.url || '').toLowerCase().includes(queryLower) ||
-            (h.method || '').toLowerCase().includes(queryLower) ||
-            (h.userAgent || '').toLowerCase().includes(queryLower) ||
-            (h.statusCode.toString()).includes(query)
-          );
-        });
-      });
+    // Apply Community ID filter first (if active)
+    if (isCommunityIDFilterActive && selectedCommunityIDs.size > 0) {
+      filtered = filtered.filter(h => 
+        h.communityId && selectedCommunityIDs.has(h.communityId)
+      );
     }
 
-    // Apply sorting
+    // Apply search filter
+    if (searchQuery) {
+      // Handle special filters for threat hunting
+      const queryLower = searchQuery.toLowerCase();
+      
+      if (queryLower === 'errors') {
+        // Filter for error status codes (4xx/5xx)
+        filtered = filtered.filter(h => h.statusCode >= 400);
+      } else if (queryLower === 'ip-host') {
+        // Filter for requests to IP addresses instead of domains
+        filtered = filtered.filter(h => {
+          const host = h.host || '';
+          // Check if host is an IP address (simple regex)
+          return /^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/.test(host);
+        });
+      } else {
+        const searchTerms = searchQuery
+          .split(/[,\s]+/)
+          .map(term => term.trim())
+          .filter(term => term.length > 0);
+        
+        filtered = filtered.filter(h => {
+          return searchTerms.some(query => {
+            const termLower = query.toLowerCase();
+            return (
+              h.srcIP.toLowerCase().includes(termLower) ||
+              h.dstIP.toLowerCase().includes(termLower) ||
+              (h.host || '').toLowerCase().includes(termLower) ||
+              (h.url || '').toLowerCase().includes(termLower) ||
+              (h.method || '').toLowerCase().includes(termLower) ||
+              (h.userAgent || '').toLowerCase().includes(termLower) ||
+              (h.statusCode.toString()).includes(query) ||
+              // Also search in request/response headers for Authorization etc.
+              Object.keys(h.requestHeader || {}).some(k => k.toLowerCase().includes(termLower)) ||
+              Object.values(h.requestHeader || {}).some(v => v.toLowerCase().includes(termLower))
+            );
+          });
+        });
+      }
+    }
+
+    // Apply sorting with stable secondary sort by timestamp and communityId
     filtered = [...filtered].sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
@@ -216,11 +247,18 @@ export default function HTTPPage() {
           comparison = (a.reqContentLength + a.resContentLength) - (b.reqContentLength + b.resContentLength);
           break;
       }
+      // Stable secondary sort by timestamp then communityId for consistent ordering
+      if (comparison === 0) {
+        comparison = a.timestamp - b.timestamp;
+        if (comparison === 0) {
+          comparison = (a.communityId || '').localeCompare(b.communityId || '');
+        }
+      }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
     return filtered;
-  }, [httpRecords, searchQuery, sortField, sortOrder]);
+  }, [httpRecords, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs]);
 
   // Paginate HTTP records
   const paginatedHTTP = filteredHTTP.slice(
@@ -569,6 +607,117 @@ export default function HTTPPage() {
           ) : null}
         </Box>
 
+        {/* Quick Filters for HTTP Threat Hunting */}
+        <Box sx={{ mb: 2 }} data-learn="Quick Filters: Click any filter chip to quickly narrow down HTTP requests based on common threat hunting patterns.">
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            🔍 Quick Filters (Threat Hunting):
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Chip
+              label="Error Status (4xx/5xx)"
+              size="small"
+              color={searchQuery.includes('4') || searchQuery.includes('5') ? 'error' : 'default'}
+              variant={searchQuery.includes('400') || searchQuery.includes('500') ? 'filled' : 'outlined'}
+              onClick={() => {
+                setSearchQuery(prev => prev === 'errors' ? '' : 'errors');
+                setPage(0);
+              }}
+              title="Show HTTP requests with error status codes (4xx/5xx)"
+            />
+            <Chip
+              label="POST Requests"
+              size="small"
+              color={searchQuery.toLowerCase() === 'post' ? 'warning' : 'default'}
+              variant={searchQuery.toLowerCase() === 'post' ? 'filled' : 'outlined'}
+              onClick={() => {
+                setSearchQuery(prev => prev.toLowerCase() === 'post' ? '' : 'POST');
+                setPage(0);
+              }}
+              title="Show only POST requests (potential data uploads)"
+            />
+            <Chip
+              label="PUT/PATCH"
+              size="small"
+              color={searchQuery.toLowerCase().includes('put') || searchQuery.toLowerCase().includes('patch') ? 'warning' : 'default'}
+              variant={searchQuery.toLowerCase().includes('put') || searchQuery.toLowerCase().includes('patch') ? 'filled' : 'outlined'}
+              onClick={() => {
+                const hasPut = searchQuery.toLowerCase().includes('put') || searchQuery.toLowerCase().includes('patch');
+                setSearchQuery(hasPut ? '' : 'PUT PATCH');
+                setPage(0);
+              }}
+              title="Show PUT/PATCH requests (data modification)"
+            />
+            <Chip
+              label="DELETE"
+              size="small"
+              color={searchQuery.toLowerCase() === 'delete' ? 'error' : 'default'}
+              variant={searchQuery.toLowerCase() === 'delete' ? 'filled' : 'outlined'}
+              onClick={() => {
+                setSearchQuery(prev => prev.toLowerCase() === 'delete' ? '' : 'DELETE');
+                setPage(0);
+              }}
+              title="Show DELETE requests (data deletion)"
+            />
+            <Chip
+              label="Scripting User-Agents"
+              size="small"
+              color={searchQuery.includes('curl') || searchQuery.includes('wget') || searchQuery.includes('python') ? 'info' : 'default'}
+              variant={searchQuery.includes('curl') || searchQuery.includes('wget') || searchQuery.includes('python') ? 'filled' : 'outlined'}
+              onClick={() => {
+                const hasScript = searchQuery.includes('curl') || searchQuery.includes('wget') || searchQuery.includes('python');
+                setSearchQuery(hasScript ? '' : 'curl wget python powershell');
+                setPage(0);
+              }}
+              title="Requests from scripting tools (curl, wget, Python, PowerShell)"
+            />
+            <Chip
+              label="Suspicious Files"
+              size="small"
+              color={searchQuery.includes('.exe') || searchQuery.includes('.dll') ? 'error' : 'default'}
+              variant={searchQuery.includes('.exe') || searchQuery.includes('.dll') ? 'filled' : 'outlined'}
+              onClick={() => {
+                const hasSuspicious = searchQuery.includes('.exe') || searchQuery.includes('.dll');
+                setSearchQuery(hasSuspicious ? '' : '.exe .dll .scr .bat .ps1 .vbs');
+                setPage(0);
+              }}
+              title="Potentially malicious file downloads (executables, scripts)"
+            />
+            <Chip
+              label="IP Hosts"
+              size="small"
+              color={searchQuery === 'ip-host' ? 'warning' : 'default'}
+              variant={searchQuery === 'ip-host' ? 'filled' : 'outlined'}
+              onClick={() => {
+                setSearchQuery(prev => prev === 'ip-host' ? '' : 'ip-host');
+                setPage(0);
+              }}
+              title="Requests to IP addresses instead of domains (potential C2)"
+            />
+            <Chip
+              label="Base64 Auth"
+              size="small"
+              color={searchQuery.toLowerCase().includes('authorization') ? 'warning' : 'default'}
+              variant={searchQuery.toLowerCase().includes('authorization') ? 'filled' : 'outlined'}
+              onClick={() => {
+                setSearchQuery(prev => prev.toLowerCase().includes('authorization') ? '' : 'authorization');
+                setPage(0);
+              }}
+              title="Requests with Authorization header (Basic/Bearer auth)"
+            />
+            {searchQuery && (
+              <Chip
+                label="Clear All"
+                size="small"
+                color="secondary"
+                onClick={() => {
+                  setSearchQuery('');
+                  setPage(0);
+                }}
+              />
+            )}
+          </Box>
+        </Box>
+
         {/* HTTP Table */}
         {!httpData && !error ? (
           <Box display="flex" justifyContent="center" py={4}>
@@ -822,6 +971,14 @@ export default function HTTPPage() {
                                       <Typography variant="body2" color="text.secondary">
                                         Response Encoding: {http.resContentEncoding}
                                       </Typography>
+                                    )}
+                                    {http.communityId && (
+                                      <Box sx={{ mt: 1 }}>
+                                        <Typography variant="body2" color="text.secondary" data-learn="Community ID: Corelight Community ID v1 for cross-tool correlation with Zeek, Suricata, and other network security tools. Click to filter all pages by this ID.">
+                                          Community ID:
+                                        </Typography>
+                                        <CommunityIDChip communityId={http.communityId} mode="text" />
+                                      </Box>
                                     )}
                                   </Grid>
                                   

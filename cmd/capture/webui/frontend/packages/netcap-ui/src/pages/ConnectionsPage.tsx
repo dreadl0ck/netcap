@@ -60,13 +60,16 @@ import {
   Layers as LayersIcon,
   Hub as HubIcon,
   DeviceHub as DeviceHubIcon,
+  VpnKey as VpnKeyIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import ConversationModal from '../components/ConversationModal';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import CommunityIDChip from '../components/CommunityIDChip';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 interface ConnectionSummary {
   timestampFirst: number;
@@ -118,10 +121,22 @@ interface ConnectionSummary {
   isMulticast: boolean;
   // TLS SNI
   sni: string;
+  // Community ID for cross-tool correlation
+  communityId: string;
 }
 
 interface ConnectionsResponse {
   connections: ConnectionSummary[];
+  totalCount: number;
+}
+
+interface CredentialSummary {
+  communityId: string;
+  flow: string;
+}
+
+interface CredentialsResponse {
+  credentials: CredentialSummary[];
   totalCount: number;
 }
 
@@ -131,6 +146,7 @@ type SortOrder = 'asc' | 'desc';
 export default function ConnectionsPage() {
   const router = useNetcapRouter();
   const api = useNetcapApi();
+  const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
@@ -160,12 +176,54 @@ export default function ConnectionsPage() {
     ['connections', layerFilter],
     () => fetch(`${getBackendUrl()}/api/connections?layer=${layerFilter}`).then(res => res.json()),
     {
-      refreshInterval: 10000,
+      // Disable auto-refresh to prevent table from reordering while user is viewing
+      refreshInterval: 0,
+    }
+  );
+
+  // Fetch credentials to check which connections have secrets
+  const { data: credentialsData, mutate: mutateCredentials } = useSWR<CredentialsResponse>(
+    'credentials',
+    () => fetch(`${getBackendUrl()}/api/credentials`).then(res => res.json()),
+    {
+      // Disable auto-refresh to prevent table from reordering while user is viewing
+      refreshInterval: 0,
     }
   );
 
   const connections = connectionsData?.connections || [];
   const totalCount = connectionsData?.totalCount || 0;
+
+  // Build a set of community IDs that have credentials for quick lookup
+  const credentialCommunityIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (credentialsData?.credentials) {
+      for (const cred of credentialsData.credentials) {
+        if (cred.communityId) {
+          ids.add(cred.communityId);
+        }
+      }
+    }
+    return ids;
+  }, [credentialsData]);
+
+  // Helper function to check if a connection has credentials
+  const hasCredentials = useCallback((conn: ConnectionSummary): boolean => {
+    return conn.communityId ? credentialCommunityIds.has(conn.communityId) : false;
+  }, [credentialCommunityIds]);
+
+  // Helper function to get the flow identifier for credentials search
+  const getFlowIdentForCredentials = useCallback((conn: ConnectionSummary): string => {
+    // Try to find the exact credential for this connection and return its flow
+    if (credentialsData?.credentials && conn.communityId) {
+      const cred = credentialsData.credentials.find(c => c.communityId === conn.communityId);
+      if (cred?.flow) {
+        return cred.flow;
+      }
+    }
+    // Fallback: construct a search query from the connection details
+    return `${conn.srcIP}:${conn.srcPort}`;
+  }, [credentialsData]);
 
   // Handle sort column click
   const handleSort = (field: ConnectionSortField) => {
@@ -184,44 +242,56 @@ export default function ConnectionsPage() {
   const filteredConnections = useMemo(() => {
     let filtered = connections;
 
-    // Apply search filter
-    if (searchQuery) {
-      // Split search query by comma or space to support multiple search terms
-      const searchTerms = searchQuery
-        .split(/[,\s]+/)  // Split by comma or whitespace
-        .map(term => term.trim())
-        .filter(term => term.length > 0);  // Remove empty strings
-      
-      filtered = filtered.filter(c => {
-        // Build full connection string in multiple formats to support various search patterns
-        const fullConnectionArrow = `${c.srcIP}:${c.srcPort}->${c.dstIP}:${c.dstPort}`.toLowerCase();
-        const fullConnectionDash = `${c.srcIP}:${c.srcPort}-${c.dstIP}:${c.dstPort}`.toLowerCase();
-        const fullConnectionUnicode = `${c.srcIP}:${c.srcPort}→${c.dstIP}:${c.dstPort}`.toLowerCase();
-        
-        // Check if connection matches ANY of the search terms (OR logic)
-        return searchTerms.some(query => {
-          const queryLower = query.toLowerCase();
-          return (
-            // Check full connection strings
-            fullConnectionArrow.includes(queryLower) ||
-            fullConnectionDash.includes(queryLower) ||
-            fullConnectionUnicode.includes(queryLower) ||
-            // Check individual fields
-            c.srcIP.toLowerCase().includes(queryLower) ||
-            c.dstIP.toLowerCase().includes(queryLower) ||
-            c.srcPort.toLowerCase().includes(queryLower) ||
-            c.dstPort.toLowerCase().includes(queryLower) ||
-            (c.applicationProto || '').toLowerCase().includes(queryLower) ||
-            (c.transportProto || '').toLowerCase().includes(queryLower) ||
-            (c.applications || []).some(a => a.toLowerCase().includes(queryLower)) ||
-            // Also search by SNI
-            (c.sni || '').toLowerCase().includes(queryLower)
-          );
-        });
-      });
+    // Apply Community ID filter first (if active)
+    if (isCommunityIDFilterActive && selectedCommunityIDs.size > 0) {
+      filtered = filtered.filter(c => 
+        c.communityId && selectedCommunityIDs.has(c.communityId)
+      );
     }
 
-    // Apply sorting
+    // Apply search filter
+    if (searchQuery) {
+      // Handle special "external" filter for threat hunting
+      if (searchQuery.toLowerCase() === 'external') {
+        filtered = filtered.filter(c => c.isExternal);
+      } else {
+        // Split search query by comma or space to support multiple search terms
+        const searchTerms = searchQuery
+          .split(/[,\s]+/)  // Split by comma or whitespace
+          .map(term => term.trim())
+          .filter(term => term.length > 0);  // Remove empty strings
+        
+        filtered = filtered.filter(c => {
+          // Build full connection string in multiple formats to support various search patterns
+          const fullConnectionArrow = `${c.srcIP}:${c.srcPort}->${c.dstIP}:${c.dstPort}`.toLowerCase();
+          const fullConnectionDash = `${c.srcIP}:${c.srcPort}-${c.dstIP}:${c.dstPort}`.toLowerCase();
+          const fullConnectionUnicode = `${c.srcIP}:${c.srcPort}→${c.dstIP}:${c.dstPort}`.toLowerCase();
+          
+          // Check if connection matches ANY of the search terms (OR logic)
+          return searchTerms.some(query => {
+            const queryLower = query.toLowerCase();
+            return (
+              // Check full connection strings
+              fullConnectionArrow.includes(queryLower) ||
+              fullConnectionDash.includes(queryLower) ||
+              fullConnectionUnicode.includes(queryLower) ||
+              // Check individual fields
+              c.srcIP.toLowerCase().includes(queryLower) ||
+              c.dstIP.toLowerCase().includes(queryLower) ||
+              c.srcPort.toLowerCase().includes(queryLower) ||
+              c.dstPort.toLowerCase().includes(queryLower) ||
+              (c.applicationProto || '').toLowerCase().includes(queryLower) ||
+              (c.transportProto || '').toLowerCase().includes(queryLower) ||
+              (c.applications || []).some(a => a.toLowerCase().includes(queryLower)) ||
+              // Also search by SNI
+              (c.sni || '').toLowerCase().includes(queryLower)
+            );
+          });
+        });
+      }
+    }
+
+    // Apply sorting with stable secondary sort by endpoints
     filtered = [...filtered].sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
@@ -247,11 +317,17 @@ export default function ConnectionsPage() {
           comparison = a.duration - b.duration;
           break;
       }
+      // Stable secondary sort by community ID or endpoints for consistent ordering
+      if (comparison === 0) {
+        const idA = a.communityId || `${a.srcIP}:${a.srcPort}-${a.dstIP}:${a.dstPort}`;
+        const idB = b.communityId || `${b.srcIP}:${b.srcPort}-${b.dstIP}:${b.dstPort}`;
+        comparison = idA.localeCompare(idB);
+      }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
     return filtered;
-  }, [connections, searchQuery, sortField, sortOrder]);
+  }, [connections, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs]);
 
   // Paginate connections
   const paginatedConnections = filteredConnections.slice(
@@ -268,6 +344,40 @@ export default function ConnectionsPage() {
   // Enable keyboard navigation for detail views (UP/DOWN arrows)
   useTableKeyboardNavigation(expandedRow, rowKeys, setExpandedRow);
 
+  // Handler to view conversation - defined here to be available for keyboard navigation
+  const handleViewConversation = useCallback((conn: ConnectionSummary) => {
+    setSelectedConnection(conn);
+    setConversationModalOpen(true);
+  }, []);
+
+  // Spacebar to view conversation for selected connection
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger when typing in input fields
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+      
+      // Check for spacebar and that we have an expanded row
+      if (e.code === 'Space' && expandedRow) {
+        e.preventDefault();
+        
+        // Find the connection index from the expanded row key
+        const idx = parseInt(expandedRow.split('-').pop() || '-1', 10);
+        if (idx >= 0 && idx < paginatedConnections.length) {
+          const conn = paginatedConnections[idx];
+          // Only open conversation if there's payload data
+          if (conn.appPayloadSize > 0) {
+            handleViewConversation(conn);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [expandedRow, paginatedConnections, handleViewConversation]);
+
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
@@ -280,9 +390,10 @@ export default function ConnectionsPage() {
   // Memoize event handlers to prevent recreation on every render
   const handleRefresh = useCallback(() => {
     mutate();
+    mutateCredentials();
     // Also refresh charts
     setChartRefreshKey(prev => prev + 1);
-  }, [mutate]);
+  }, [mutate, mutateCredentials]);
 
   const handleFileChange = useCallback(async (filePath: string) => {
     setSwitchingFile(true);
@@ -293,6 +404,7 @@ export default function ConnectionsPage() {
       // Refresh local data
       await mutateStatus();
       await mutate();
+      await mutateCredentials();
       
       // Globally invalidate status cache for all pages
       await globalMutate('status');
@@ -308,15 +420,10 @@ export default function ConnectionsPage() {
     } finally {
       setSwitchingFile(false);
     }
-  }, [api, mutateStatus, mutate]);
+  }, [api, mutateStatus, mutate, mutateCredentials]);
 
   const handleRowClick = useCallback((key: string) => {
     setExpandedRow(prev => prev === key ? null : key);
-  }, []);
-
-  const handleViewConversation = useCallback((conn: ConnectionSummary) => {
-    setSelectedConnection(conn);
-    setConversationModalOpen(true);
   }, []);
 
   const handleCloseConversationModal = useCallback(() => {
@@ -335,10 +442,40 @@ export default function ConnectionsPage() {
     );
   }, [selectedConnection, filteredConnections]);
 
-  // Navigate to previous connection in the modal
+  // Find the previous connection index that has payload data
+  const findPreviousConnectionWithPayload = useCallback((startIdx: number): number => {
+    for (let i = startIdx - 1; i >= 0; i--) {
+      if (filteredConnections[i].appPayloadSize > 0) {
+        return i;
+      }
+    }
+    return -1;
+  }, [filteredConnections]);
+
+  // Find the next connection index that has payload data
+  const findNextConnectionWithPayload = useCallback((startIdx: number): number => {
+    for (let i = startIdx + 1; i < filteredConnections.length; i++) {
+      if (filteredConnections[i].appPayloadSize > 0) {
+        return i;
+      }
+    }
+    return -1;
+  }, [filteredConnections]);
+
+  // Check if there's a previous connection with payload
+  const hasPreviousWithPayload = useMemo(() => {
+    return findPreviousConnectionWithPayload(selectedConnectionIndex) !== -1;
+  }, [selectedConnectionIndex, findPreviousConnectionWithPayload]);
+
+  // Check if there's a next connection with payload
+  const hasNextWithPayload = useMemo(() => {
+    return findNextConnectionWithPayload(selectedConnectionIndex) !== -1;
+  }, [selectedConnectionIndex, findNextConnectionWithPayload]);
+
+  // Navigate to previous connection in the modal (skip connections without payload)
   const handleNavigatePreviousConnection = useCallback(() => {
-    if (selectedConnectionIndex > 0) {
-      const prevIdx = selectedConnectionIndex - 1;
+    const prevIdx = findPreviousConnectionWithPayload(selectedConnectionIndex);
+    if (prevIdx !== -1) {
       const prevConnection = filteredConnections[prevIdx];
       setSelectedConnection(prevConnection);
       
@@ -361,12 +498,12 @@ export default function ConnectionsPage() {
         }
       });
     }
-  }, [selectedConnectionIndex, filteredConnections, page, rowsPerPage]);
+  }, [selectedConnectionIndex, filteredConnections, page, rowsPerPage, findPreviousConnectionWithPayload]);
 
-  // Navigate to next connection in the modal
+  // Navigate to next connection in the modal (skip connections without payload)
   const handleNavigateNextConnection = useCallback(() => {
-    if (selectedConnectionIndex < filteredConnections.length - 1) {
-      const nextIdx = selectedConnectionIndex + 1;
+    const nextIdx = findNextConnectionWithPayload(selectedConnectionIndex);
+    if (nextIdx !== -1) {
       const nextConnection = filteredConnections[nextIdx];
       setSelectedConnection(nextConnection);
       
@@ -389,7 +526,7 @@ export default function ConnectionsPage() {
         }
       });
     }
-  }, [selectedConnectionIndex, filteredConnections, page, rowsPerPage]);
+  }, [selectedConnectionIndex, filteredConnections, page, rowsPerPage, findNextConnectionWithPayload]);
 
   const handleDownloadPCAP = useCallback(async (conn: ConnectionSummary) => {
     try {
@@ -709,6 +846,168 @@ export default function ConnectionsPage() {
           ) : null}
         </Box>
 
+        {/* Quick Filters for Threat Hunting */}
+        <Box sx={{ mb: 2 }} data-learn="Quick Filters: Click any filter chip to quickly narrow down connections based on common threat hunting patterns. These filters help identify suspicious traffic patterns.">
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+            🔍 Quick Filters (Threat Hunting):
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Chip
+              label="NONSTANDARD_HTTP"
+              size="small"
+              color={searchQuery.includes('NONSTANDARD_HTTP') ? 'error' : 'default'}
+              variant={searchQuery.includes('NONSTANDARD_HTTP') ? 'filled' : 'outlined'}
+              onClick={() => {
+                setSearchQuery(prev => prev.includes('NONSTANDARD_HTTP') ? prev.replace('NONSTANDARD_HTTP', '').trim() : (prev ? `${prev} NONSTANDARD_HTTP` : 'NONSTANDARD_HTTP'));
+                setPage(0);
+              }}
+              title="HTTP-like traffic on non-standard ports or with protocol anomalies (potential C2/tunneling)"
+            />
+            <Chip
+              label="TOR"
+              size="small"
+              color={searchQuery.includes('TOR') ? 'error' : 'default'}
+              variant={searchQuery.includes('TOR') ? 'filled' : 'outlined'}
+              onClick={() => {
+                setSearchQuery(prev => prev.includes('TOR') ? prev.replace('TOR', '').trim() : (prev ? `${prev} TOR` : 'TOR'));
+                setPage(0);
+              }}
+              title="Tor anonymization network traffic"
+            />
+            <Chip
+              label="SOCKS"
+              size="small"
+              color={searchQuery.includes('SOCKS') ? 'warning' : 'default'}
+              variant={searchQuery.includes('SOCKS') ? 'filled' : 'outlined'}
+              onClick={() => {
+                setSearchQuery(prev => prev.includes('SOCKS') ? prev.replace('SOCKS', '').trim() : (prev ? `${prev} SOCKS` : 'SOCKS'));
+                setPage(0);
+              }}
+              title="SOCKS proxy traffic (potential unauthorized tunneling)"
+            />
+            <Chip
+              label="IRC"
+              size="small"
+              color={searchQuery.includes('IRC') ? 'warning' : 'default'}
+              variant={searchQuery.includes('IRC') ? 'filled' : 'outlined'}
+              onClick={() => {
+                setSearchQuery(prev => prev.includes('IRC') ? prev.replace('IRC', '').trim() : (prev ? `${prev} IRC` : 'IRC'));
+                setPage(0);
+              }}
+              title="IRC traffic (commonly used for botnet C2)"
+            />
+            <Chip
+              label="TELNET"
+              size="small"
+              color={searchQuery.includes('TELNET') ? 'warning' : 'default'}
+              variant={searchQuery.includes('TELNET') ? 'filled' : 'outlined'}
+              onClick={() => {
+                setSearchQuery(prev => prev.includes('TELNET') ? prev.replace('TELNET', '').trim() : (prev ? `${prev} TELNET` : 'TELNET'));
+                setPage(0);
+              }}
+              title="Unencrypted Telnet traffic (insecure remote access)"
+            />
+            <Chip
+              label="VPN/Tunnel"
+              size="small"
+              color={searchQuery.includes('OPENVPN') || searchQuery.includes('WIREGUARD') ? 'info' : 'default'}
+              variant={searchQuery.includes('OPENVPN') || searchQuery.includes('WIREGUARD') ? 'filled' : 'outlined'}
+              onClick={() => {
+                const hasVpn = searchQuery.includes('OPENVPN') || searchQuery.includes('WIREGUARD');
+                if (hasVpn) {
+                  setSearchQuery(prev => prev.replace('OPENVPN', '').replace('WIREGUARD', '').trim());
+                } else {
+                  setSearchQuery(prev => prev ? `${prev} OPENVPN WIREGUARD` : 'OPENVPN WIREGUARD');
+                }
+                setPage(0);
+              }}
+              title="VPN tunnel traffic (OpenVPN, WireGuard)"
+            />
+            <Chip
+              label="Crypto Mining"
+              size="small"
+              color={searchQuery.includes('MINING') || searchQuery.includes('STRATUM') ? 'error' : 'default'}
+              variant={searchQuery.includes('MINING') || searchQuery.includes('STRATUM') ? 'filled' : 'outlined'}
+              onClick={() => {
+                const hasMining = searchQuery.includes('MINING') || searchQuery.includes('STRATUM');
+                if (hasMining) {
+                  setSearchQuery(prev => prev.replace('MINING', '').replace('STRATUM', '').trim());
+                } else {
+                  setSearchQuery(prev => prev ? `${prev} MINING STRATUM` : 'MINING STRATUM');
+                }
+                setPage(0);
+              }}
+              title="Cryptocurrency mining traffic (Stratum protocol)"
+            />
+            <Chip
+              label="P2P/BitTorrent"
+              size="small"
+              color={searchQuery.includes('BITTORRENT') ? 'info' : 'default'}
+              variant={searchQuery.includes('BITTORRENT') ? 'filled' : 'outlined'}
+              onClick={() => {
+                setSearchQuery(prev => prev.includes('BITTORRENT') ? prev.replace('BITTORRENT', '').trim() : (prev ? `${prev} BITTORRENT` : 'BITTORRENT'));
+                setPage(0);
+              }}
+              title="BitTorrent peer-to-peer file sharing"
+            />
+            <Chip
+              label="Remote Desktop"
+              size="small"
+              color={searchQuery.includes('RDP') || searchQuery.includes('VNC') || searchQuery.includes('TEAMVIEWER') ? 'warning' : 'default'}
+              variant={searchQuery.includes('RDP') || searchQuery.includes('VNC') || searchQuery.includes('TEAMVIEWER') ? 'filled' : 'outlined'}
+              onClick={() => {
+                const hasRemote = searchQuery.includes('RDP') || searchQuery.includes('VNC') || searchQuery.includes('TEAMVIEWER');
+                if (hasRemote) {
+                  setSearchQuery(prev => prev.replace('RDP', '').replace('VNC', '').replace('TEAMVIEWER', '').trim());
+                } else {
+                  setSearchQuery(prev => prev ? `${prev} RDP VNC TEAMVIEWER` : 'RDP VNC TEAMVIEWER');
+                }
+                setPage(0);
+              }}
+              title="Remote desktop traffic (RDP, VNC, TeamViewer)"
+            />
+            <Chip
+              label="External"
+              size="small"
+              color={searchQuery === 'external' ? 'primary' : 'default'}
+              variant={searchQuery === 'external' ? 'filled' : 'outlined'}
+              onClick={() => {
+                // Special filter - this will be handled differently in the filter logic
+                setSearchQuery(prev => prev === 'external' ? '' : 'external');
+                setPage(0);
+              }}
+              title="Connections to/from external (public) IP addresses"
+            />
+            <Chip
+              label="Database"
+              size="small"
+              color={searchQuery.includes('MYSQL') || searchQuery.includes('POSTGRES') || searchQuery.includes('MONGODB') ? 'info' : 'default'}
+              variant={searchQuery.includes('MYSQL') || searchQuery.includes('POSTGRES') || searchQuery.includes('MONGODB') ? 'filled' : 'outlined'}
+              onClick={() => {
+                const hasDb = searchQuery.includes('MYSQL') || searchQuery.includes('POSTGRES') || searchQuery.includes('MONGODB');
+                if (hasDb) {
+                  setSearchQuery(prev => prev.replace('MYSQL', '').replace('POSTGRES', '').replace('MONGODB', '').trim());
+                } else {
+                  setSearchQuery(prev => prev ? `${prev} MYSQL POSTGRES MONGODB` : 'MYSQL POSTGRES MONGODB');
+                }
+                setPage(0);
+              }}
+              title="Database traffic (MySQL, PostgreSQL, MongoDB)"
+            />
+            {searchQuery && (
+              <Chip
+                label="Clear All"
+                size="small"
+                color="secondary"
+                onClick={() => {
+                  setSearchQuery('');
+                  setPage(0);
+                }}
+              />
+            )}
+          </Box>
+        </Box>
+
         {/* Connections Table */}
         {!connectionsData && !error ? (
           <Box display="flex" justifyContent="center" py={4}>
@@ -743,12 +1042,12 @@ export default function ConnectionsPage() {
                     </TableCell>
                     <TableCell>
                       <TableSortLabel
-                        data-learn="Sort by Protocol: Click to sort connections by application or transport protocol."
+                        data-learn="Sort by Transport Protocol: Click to sort connections by transport protocol (TCP, UDP, etc.)."
                         active={sortField === 'protocol'}
                         direction={sortField === 'protocol' ? sortOrder : 'asc'}
                         onClick={() => handleSort('protocol')}
                       >
-                        Protocol
+                        Transport Protocol
                       </TableSortLabel>
                     </TableCell>
                     <TableCell align="right">
@@ -863,13 +1162,15 @@ export default function ConnectionsPage() {
                             </Box>
                           </TableCell>
                           <TableCell>
-                            <Chip
-                              data-learn="Protocol Tag: Shows the application layer protocol, or transport protocol if no application protocol detected."
-                              label={conn.applicationProto || conn.transportProto || 'Unknown'}
-                              size="small"
-                              color="primary"
-                              sx={{ fontSize: '0.7rem' }}
-                            />
+                            {conn.transportProto && conn.transportProto !== 'Unknown' && conn.transportProto !== 'Payload' ? (
+                              <Chip
+                                data-learn="Transport Protocol Tag: Shows the transport layer protocol (TCP, UDP, ICMP, etc.)."
+                                label={conn.transportProto}
+                                size="small"
+                                color="primary"
+                                sx={{ fontSize: '0.7rem' }}
+                              />
+                            ) : null}
                           </TableCell>
                           <TableCell align="right">
                             <Typography variant="body2">
@@ -1035,6 +1336,16 @@ export default function ConnectionsPage() {
                                     )}
                                   </Grid>
                                   
+                                  {/* Community ID for Cross-Tool Correlation */}
+                                  {conn.communityId && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Community ID: Corelight Community ID v1 for cross-tool correlation with Zeek, Suricata, and other network security tools. Click to filter all pages by this ID.">
+                                        Community ID
+                                      </Typography>
+                                      <CommunityIDChip communityId={conn.communityId} mode="text" />
+                                    </Grid>
+                                  )}
+
                                   {/* Traffic Statistics */}
                                   <Grid item xs={12} md={6}>
                                     <Typography variant="subtitle2" gutterBottom>
@@ -1262,19 +1573,38 @@ export default function ConnectionsPage() {
                                   {/* Action Buttons */}
                                   <Grid item xs={12}>
                                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                      {/* View Conversation - for TCP, UDP, and network-only (ICMP, IGMP, etc.) */}
-                                      <Button
-                                        data-learn="View Raw Conversation: Display the raw conversation data in Wireshark-style hex dump format, with client data in red and server data in blue."
-                                        variant="outlined"
-                                        startIcon={<ArticleIcon />}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleViewConversation(conn);
-                                        }}
-                                        size="small"
-                                      >
-                                        View Raw Conversation
-                                      </Button>
+                                      {/* Show Secrets - only show when credentials exist for this connection */}
+                                      {hasCredentials(conn) && (
+                                        <Button
+                                          data-learn="Show Secrets: View captured credentials (usernames, passwords, hashes) associated with this connection."
+                                          variant="contained"
+                                          color="warning"
+                                          startIcon={<VpnKeyIcon />}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            const flowIdent = getFlowIdentForCredentials(conn);
+                                            router.push(`/credentials?search=${encodeURIComponent(flowIdent)}`);
+                                          }}
+                                          size="small"
+                                        >
+                                          Show Secrets
+                                        </Button>
+                                      )}
+                                      {/* View Conversation - only show when there's actual payload data */}
+                                      {conn.appPayloadSize > 0 && (
+                                        <Button
+                                          data-learn="View Raw Conversation: Display the raw conversation data in Wireshark-style hex dump format, with client data in red and server data in blue."
+                                          variant="outlined"
+                                          startIcon={<ArticleIcon />}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleViewConversation(conn);
+                                          }}
+                                          size="small"
+                                        >
+                                          View Raw Conversation
+                                        </Button>
+                                      )}
                                       {/* Download PCAP - only for TCP/UDP with ports */}
                                       {(conn.transportProto === 'TCP' || conn.transportProto === 'UDP') && (
                                         <Button
@@ -1417,8 +1747,8 @@ export default function ConnectionsPage() {
           protocol={selectedConnection.transportProto}
           onNavigatePrevious={handleNavigatePreviousConnection}
           onNavigateNext={handleNavigateNextConnection}
-          hasPrevious={selectedConnectionIndex > 0}
-          hasNext={selectedConnectionIndex < filteredConnections.length - 1}
+          hasPrevious={hasPreviousWithPayload}
+          hasNext={hasNextWithPayload}
         />
       )}
     </Layout>

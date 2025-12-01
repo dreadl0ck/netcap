@@ -46,8 +46,8 @@ type SoftwareSummary struct {
 	SourceNames []string `json:"sourceNames"`
 	Flows       []string `json:"flows"`
 	// Detection context
-	DetectionMethod  string `json:"detectionMethod"`
-	ConfidenceLevel  string `json:"confidenceLevel"`
+	DetectionMethod string `json:"detectionMethod"`
+	ConfidenceLevel string `json:"confidenceLevel"`
 	// Behavioral fingerprint
 	BehaviorProfile string `json:"behaviorProfile"`
 	IsHeadless      bool   `json:"isHeadless"`
@@ -57,6 +57,8 @@ type SoftwareSummary struct {
 	HasKnownVulnerabilities bool   `json:"hasKnownVulnerabilities"`
 	IsEndOfLife             bool   `json:"isEndOfLife"`
 	SupportStatus           string `json:"supportStatus"`
+	// Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
+	CommunityIDs []string `json:"communityIds"`
 }
 
 // SoftwareResponse contains the list of software
@@ -147,23 +149,30 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 			continue
 		}
 
-		// Create unique key
-		key := sw.Product + "|" + sw.Vendor + "|" + sw.Version
+		// Merge Vendor into Product: if Product is empty, use Vendor instead
+		product := sw.Product
+		if product == "" && sw.Vendor != "" {
+			product = sw.Vendor
+		}
+
+		// Create unique key (use merged product, no vendor since it's merged)
+		key := product + "|" + sw.Version
 
 		agg, exists := softwareMap[key]
 		if !exists {
 			agg = &softwareAggregator{
-				product:     sw.Product,
-				vendor:      sw.Vendor,
-				version:     sw.Version,
-				os:          sw.OS,
-				devices:     make(map[string]bool),
-				services:    make(map[string]bool),
-				dpiResults:  make(map[string]bool),
-				sourceNames: make(map[string]bool),
-				flows:       make(map[string]bool),
-				firstSeen:   sw.Timestamp,
-				lastSeen:    sw.Timestamp,
+				product:      product,
+				vendor:       sw.Vendor,
+				version:      sw.Version,
+				os:           sw.OS,
+				devices:      make(map[string]bool),
+				services:     make(map[string]bool),
+				dpiResults:   make(map[string]bool),
+				sourceNames:  make(map[string]bool),
+				flows:        make(map[string]bool),
+				communityIDs: make(map[string]bool),
+				firstSeen:    sw.Timestamp,
+				lastSeen:     sw.Timestamp,
 				// Detection context
 				detectionMethod: sw.DetectionMethod,
 				confidenceLevel: sw.ConfidenceLevel,
@@ -213,6 +222,13 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 			}
 		}
 
+		// Aggregate community IDs
+		for _, cid := range sw.CommunityIDs {
+			if cid != "" {
+				agg.communityIDs[cid] = true
+			}
+		}
+
 		if sw.Timestamp < agg.firstSeen {
 			agg.firstSeen = sw.Timestamp
 		}
@@ -249,6 +265,11 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 			flows = append(flows, flow)
 		}
 
+		communityIDs := make([]string, 0, len(agg.communityIDs))
+		for cid := range agg.communityIDs {
+			communityIDs = append(communityIDs, cid)
+		}
+
 		software = append(software, SoftwareSummary{
 			Product:     agg.product,
 			Vendor:      agg.vendor,
@@ -274,6 +295,8 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 			HasKnownVulnerabilities: agg.hasKnownVulnerabilities,
 			IsEndOfLife:             agg.isEndOfLife,
 			SupportStatus:           agg.supportStatus,
+			// Community ID for cross-tool correlation
+			CommunityIDs: communityIDs,
 		})
 	}
 
@@ -287,21 +310,22 @@ func readSoftware(outDir string) ([]SoftwareSummary, error) {
 
 // softwareAggregator holds temporary aggregation data for software
 type softwareAggregator struct {
-	product     string
-	vendor      string
-	version     string
-	os          string
-	count       int
-	devices     map[string]bool
-	services    map[string]bool
-	dpiResults  map[string]bool
-	sourceNames map[string]bool
-	flows       map[string]bool
-	firstSeen   int64
-	lastSeen    int64
+	product      string
+	vendor       string
+	version      string
+	os           string
+	count        int
+	devices      map[string]bool
+	services     map[string]bool
+	dpiResults   map[string]bool
+	sourceNames  map[string]bool
+	flows        map[string]bool
+	communityIDs map[string]bool
+	firstSeen    int64
+	lastSeen     int64
 	// Detection context
-	detectionMethod  string
-	confidenceLevel  string
+	detectionMethod string
+	confidenceLevel string
 	// Behavioral fingerprint
 	behaviorProfile string
 	isHeadless      bool

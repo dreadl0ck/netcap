@@ -34,12 +34,13 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// SoftwareInfo contains software details including flows
+// SoftwareInfo contains software details including flows and community IDs
 type SoftwareInfo struct {
-	Product string   `json:"product"`
-	Vendor  string   `json:"vendor"`
-	Version string   `json:"version"`
-	Flows   []string `json:"flows"`
+	Product      string   `json:"product"`
+	Vendor       string   `json:"vendor"`
+	Version      string   `json:"version"`
+	Flows        []string `json:"flows"`
+	CommunityIDs []string `json:"communityIds"` // Community IDs for cross-tool correlation
 }
 
 // VulnerabilitySummary represents aggregated vulnerability information
@@ -51,23 +52,25 @@ type VulnerabilitySummary struct {
 	AccessVector string        `json:"accessVector"`
 	Versions     []string      `json:"versions"`
 	Count        int           `json:"count"`
-	Software     *SoftwareInfo `json:"software"` // Software details including flows
-	Affected     int           `json:"affected"` // Number of affected hosts
+	Software     *SoftwareInfo `json:"software"`     // Software details including flows
+	Affected     int           `json:"affected"`     // Number of affected hosts
+	CommunityIDs []string      `json:"communityIds"` // Community IDs for cross-tool correlation
 }
 
 // ExploitSummary represents aggregated exploit information
 type ExploitSummary struct {
-	ID          string        `json:"id"`
-	Description string        `json:"description"`
-	File        string        `json:"file"`
-	Date        string        `json:"date"`
-	Author      string        `json:"author"`
-	Type        string        `json:"type"`
-	Platform    string        `json:"platform"`
-	Port        string        `json:"port"`
-	Count       int           `json:"count"`
-	Software    *SoftwareInfo `json:"software"` // Software details including flows
-	Affected    int           `json:"affected"` // Number of affected hosts
+	ID           string        `json:"id"`
+	Description  string        `json:"description"`
+	File         string        `json:"file"`
+	Date         string        `json:"date"`
+	Author       string        `json:"author"`
+	Type         string        `json:"type"`
+	Platform     string        `json:"platform"`
+	Port         string        `json:"port"`
+	Count        int           `json:"count"`
+	Software     *SoftwareInfo `json:"software"`     // Software details including flows
+	Affected     int           `json:"affected"`     // Number of affected hosts
+	CommunityIDs []string      `json:"communityIds"` // Community IDs for cross-tool correlation
 }
 
 // HostVulnerabilitySummary represents a host and its vulnerabilities
@@ -369,10 +372,11 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 			var softwareInfo *SoftwareInfo
 			if v.Software != nil && (v.Software.Product != "" || v.Software.Vendor != "" || v.Software.Version != "") {
 				softwareInfo = &SoftwareInfo{
-					Product: v.Software.Product,
-					Vendor:  v.Software.Vendor,
-					Version: v.Software.Version,
-					Flows:   v.Software.Flows,
+					Product:      v.Software.Product,
+					Vendor:       v.Software.Vendor,
+					Version:      v.Software.Version,
+					Flows:        v.Software.Flows,
+					CommunityIDs: v.Software.CommunityIDs,
 				}
 			}
 			vulnMap[v.ID] = &VulnerabilitySummary{
@@ -385,15 +389,30 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 				Software:     softwareInfo,
 				Count:        0,
 				Affected:     0,
+				CommunityIDs: v.CommunityIDs, // Direct community IDs from the vulnerability record
 			}
 		} else {
 			// Update software info if we don't have it yet but this record does
 			if vulnMap[v.ID].Software == nil && v.Software != nil && (v.Software.Product != "" || v.Software.Vendor != "" || v.Software.Version != "") {
 				vulnMap[v.ID].Software = &SoftwareInfo{
-					Product: v.Software.Product,
-					Vendor:  v.Software.Vendor,
-					Version: v.Software.Version,
-					Flows:   v.Software.Flows,
+					Product:      v.Software.Product,
+					Vendor:       v.Software.Vendor,
+					Version:      v.Software.Version,
+					Flows:        v.Software.Flows,
+					CommunityIDs: v.Software.CommunityIDs,
+				}
+			}
+			// Merge community IDs from this record
+			for _, cid := range v.CommunityIDs {
+				found := false
+				for _, existingCID := range vulnMap[v.ID].CommunityIDs {
+					if existingCID == cid {
+						found = true
+						break
+					}
+				}
+				if !found && cid != "" {
+					vulnMap[v.ID].CommunityIDs = append(vulnMap[v.ID].CommunityIDs, cid)
 				}
 			}
 		}
@@ -530,33 +549,49 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 			var softwareInfo *SoftwareInfo
 			if e.Software != nil && (e.Software.Product != "" || e.Software.Vendor != "" || e.Software.Version != "") {
 				softwareInfo = &SoftwareInfo{
-					Product: e.Software.Product,
-					Vendor:  e.Software.Vendor,
-					Version: e.Software.Version,
-					Flows:   e.Software.Flows,
+					Product:      e.Software.Product,
+					Vendor:       e.Software.Vendor,
+					Version:      e.Software.Version,
+					Flows:        e.Software.Flows,
+					CommunityIDs: e.Software.CommunityIDs,
 				}
 			}
 			exploitMap[e.ID] = &ExploitSummary{
-				ID:          e.ID,
-				Description: e.Description,
-				File:        e.File,
-				Date:        e.Date,
-				Author:      e.Author,
-				Type:        e.Typ,
-				Platform:    e.Platform,
-				Port:        e.Port,
-				Software:    softwareInfo,
-				Count:       0,
-				Affected:    0,
+				ID:           e.ID,
+				Description:  e.Description,
+				File:         e.File,
+				Date:         e.Date,
+				Author:       e.Author,
+				Type:         e.Typ,
+				Platform:     e.Platform,
+				Port:         e.Port,
+				Software:     softwareInfo,
+				Count:        0,
+				Affected:     0,
+				CommunityIDs: e.CommunityIDs, // Direct community IDs from the exploit record
 			}
 		} else {
 			// Update software info if we don't have it yet but this record does
 			if exploitMap[e.ID].Software == nil && e.Software != nil && (e.Software.Product != "" || e.Software.Vendor != "" || e.Software.Version != "") {
 				exploitMap[e.ID].Software = &SoftwareInfo{
-					Product: e.Software.Product,
-					Vendor:  e.Software.Vendor,
-					Version: e.Software.Version,
-					Flows:   e.Software.Flows,
+					Product:      e.Software.Product,
+					Vendor:       e.Software.Vendor,
+					Version:      e.Software.Version,
+					Flows:        e.Software.Flows,
+					CommunityIDs: e.Software.CommunityIDs,
+				}
+			}
+			// Merge community IDs from this record
+			for _, cid := range e.CommunityIDs {
+				found := false
+				for _, existingCID := range exploitMap[e.ID].CommunityIDs {
+					if existingCID == cid {
+						found = true
+						break
+					}
+				}
+				if !found && cid != "" {
+					exploitMap[e.ID].CommunityIDs = append(exploitMap[e.ID].CommunityIDs, cid)
 				}
 			}
 		}

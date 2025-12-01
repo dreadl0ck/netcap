@@ -62,11 +62,13 @@ import {
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import CommunityIDChip from '../components/CommunityIDChip';
 import { formatBytes, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import dynamic from 'next/dynamic';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 // Dynamically import SyntaxHighlighter to avoid SSR issues
 const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
@@ -77,6 +79,7 @@ interface SoftwareInfo {
   vendor: string;
   version: string;
   flows: string[];
+  communityIds: string[]; // Community IDs for cross-tool correlation
 }
 
 interface VulnerabilitySummary {
@@ -89,6 +92,7 @@ interface VulnerabilitySummary {
   count: number;
   software: SoftwareInfo | null;
   affected: number;
+  communityIds: string[]; // Community IDs for cross-tool correlation
 }
 
 interface ExploitSummary {
@@ -103,6 +107,7 @@ interface ExploitSummary {
   count: number;
   software: SoftwareInfo | null;
   affected: number;
+  communityIds: string[]; // Community IDs for cross-tool correlation
 }
 
 interface HostVulnerabilitySummary {
@@ -126,6 +131,7 @@ type SortOrder = 'asc' | 'desc';
 export default function VulnerabilitiesPage() {
   const router = useNetcapRouter();
   const api = useNetcapApi();
+  const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
@@ -169,10 +175,21 @@ export default function VulnerabilitiesPage() {
   };
 
   const filteredData = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let data: any[] = [];
     if (tabValue === 0) data = vulnerabilities;
     else if (tabValue === 1) data = exploits;
     else data = affectedHosts;
+
+    // Apply Community ID filter first (if active) - only for vulnerabilities and exploits tabs
+    if (isCommunityIDFilterActive && selectedCommunityIDs.size > 0 && (tabValue === 0 || tabValue === 1)) {
+      data = data.filter((item: VulnerabilitySummary | ExploitSummary) => 
+        item.communityIds && item.communityIds.some(cid => selectedCommunityIDs.has(cid))
+      );
+    } else if (isCommunityIDFilterActive && selectedCommunityIDs.size > 0 && tabValue === 2) {
+      // For affected hosts tab, return empty as hosts don't have community IDs
+      return [];
+    }
 
     // Apply search filter with negation support (e.g., "!HIGH" excludes high severity)
     if (searchQuery) {
@@ -188,7 +205,7 @@ export default function VulnerabilitiesPage() {
       );
     }
 
-    // Sorting
+    // Sorting with stable secondary sort by id or host
     data = [...data].sort((a, b) => {
       let comparison = 0;
       // Simplified sorting logic based on common fields
@@ -205,11 +222,17 @@ export default function VulnerabilitiesPage() {
       } else if (sortField === 'vulnerabilities' && 'vulnerabilities' in a) {
         comparison = a.vulnerabilities - b.vulnerabilities;
       }
+      // Stable secondary sort by id or host for consistent ordering
+      if (comparison === 0) {
+        const idA = a.id || a.host || '';
+        const idB = b.id || b.host || '';
+        comparison = idA.localeCompare(idB);
+      }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
     return data;
-  }, [vulnerabilities, exploits, affectedHosts, tabValue, searchQuery, sortField, sortOrder]);
+  }, [vulnerabilities, exploits, affectedHosts, tabValue, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs]);
 
   const paginatedData = filteredData.slice(
     page * rowsPerPage,
@@ -657,7 +680,7 @@ export default function VulnerabilitiesPage() {
                                       Description
                                     </Typography>
                                     <Typography variant="body2" paragraph>
-                                      {row.description || 'No description available'}
+                                      {row.description}
                                     </Typography>
                                   </Box>
                                   <Grid container spacing={2}>
@@ -799,6 +822,27 @@ export default function VulnerabilitiesPage() {
                                         </Card>
                                       </Grid>
                                     )}
+                                    {row.communityIds && row.communityIds.length > 0 && (
+                                      <Grid item xs={12}>
+                                        <Card variant="outlined" sx={{ p: 2 }}>
+                                          <Typography variant="subtitle2" gutterBottom data-learn="Community IDs: Corelight Community ID v1 identifiers for cross-tool correlation with Zeek, Suricata, and other network security tools. Click to filter all pages by these IDs.">
+                                            Community IDs ({row.communityIds.length})
+                                          </Typography>
+                                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                            {row.communityIds.slice(0, 10).map((cid: string) => (
+                                              <CommunityIDChip key={cid} communityId={cid} mode="chip" />
+                                            ))}
+                                            {row.communityIds.length > 10 && (
+                                              <Chip
+                                                label={`+${row.communityIds.length - 10} more`}
+                                                size="small"
+                                                variant="outlined"
+                                              />
+                                            )}
+                                          </Box>
+                                        </Card>
+                                      </Grid>
+                                    )}
                                   </Grid>
                                 </>
                               )}
@@ -812,7 +856,7 @@ export default function VulnerabilitiesPage() {
                                       Description
                                     </Typography>
                                     <Typography variant="body2" paragraph>
-                                      {row.description || 'No description available'}
+                                      {row.description}
                                     </Typography>
                                   </Box>
                                   <Grid container spacing={2}>
@@ -965,6 +1009,27 @@ export default function VulnerabilitiesPage() {
                                         )}
                                       </Box>
                                     </Grid>
+                                    {row.communityIds && row.communityIds.length > 0 && (
+                                      <Grid item xs={12}>
+                                        <Card variant="outlined" sx={{ p: 2 }}>
+                                          <Typography variant="subtitle2" gutterBottom data-learn="Community IDs: Corelight Community ID v1 identifiers for cross-tool correlation with Zeek, Suricata, and other network security tools. Click to filter all pages by these IDs.">
+                                            Community IDs ({row.communityIds.length})
+                                          </Typography>
+                                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                            {row.communityIds.slice(0, 10).map((cid: string) => (
+                                              <CommunityIDChip key={cid} communityId={cid} mode="chip" />
+                                            ))}
+                                            {row.communityIds.length > 10 && (
+                                              <Chip
+                                                label={`+${row.communityIds.length - 10} more`}
+                                                size="small"
+                                                variant="outlined"
+                                              />
+                                            )}
+                                          </Box>
+                                        </Card>
+                                      </Grid>
+                                    )}
                                     {row.file && (
                                       <Grid item xs={12}>
                                         <Card variant="outlined" sx={{ p: 2, mt: 2 }}>

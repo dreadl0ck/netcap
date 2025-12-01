@@ -56,11 +56,12 @@ import {
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
-import { formatBytes, getBackendUrl } from '../lib/api';
+import { formatBytes, getBackendUrl, FilteredAuditFileInfo } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi } from '../hooks';
 import FilterExpressionHighlight, { FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 import { highlightFilterExpression } from '../lib/filterSyntaxHighlight';
+import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 interface LayerGroup {
   layerName: string;
@@ -353,7 +354,18 @@ function syntaxHighlight(json: string) {
 export default function AuditRecords() {
   const router = useNetcapRouter();
   const api = useNetcapApi();
-  const { data: files, error, mutate } = useSWR('auditFiles', () => api.getAuditFiles());
+  const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
+  
+  // Convert community IDs to array for API call
+  const communityIDsArray = useMemo<string[]>(() => Array.from(selectedCommunityIDs), [selectedCommunityIDs]);
+  
+  // Fetch filtered or unfiltered files based on community ID filter
+  const { data: files, error, mutate } = useSWR(
+    ['auditFiles', isCommunityIDFilterActive ? communityIDsArray.join(',') : ''],
+    () => isCommunityIDFilterActive 
+      ? api.getAuditFilesFiltered(communityIDsArray)
+      : api.getAuditFiles()
+  );
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
   const { data: sessions } = useSWR(
@@ -526,6 +538,17 @@ export default function AuditRecords() {
     }
   }, [selectedType]);
 
+  // Build community ID filter expression for streaming
+  const buildCommunityIDFilter = useCallback(() => {
+    if (!isCommunityIDFilterActive || communityIDsArray.length === 0) {
+      return '';
+    }
+    // Build filter: CommunityID == "id1" || CommunityID == "id2" || ...
+    return communityIDsArray
+      .map(id => `CommunityID == "${id}"`)
+      .join(' || ');
+  }, [isCommunityIDFilterActive, communityIDsArray]);
+
   const handleViewRecords = (type: string, filter?: string) => {
     setSelectedType(type);
     setRecords([]);
@@ -536,6 +559,19 @@ export default function AuditRecords() {
     setLoading(true);
     setStreamError(null);
     setActiveFilter(filter || '');
+
+    // Combine user filter with community ID filter
+    let combinedFilter = filter || '';
+    const communityIDFilter = buildCommunityIDFilter();
+    
+    if (communityIDFilter) {
+      if (combinedFilter) {
+        // Wrap community ID filter in parentheses and AND with user filter
+        combinedFilter = `(${communityIDFilter}) && (${combinedFilter})`;
+      } else {
+        combinedFilter = communityIDFilter;
+      }
+    }
 
     const eventSource = api.streamAuditRecords(
       type,
@@ -559,7 +595,7 @@ export default function AuditRecords() {
         setStreamError(error);
         setLoading(false);
       },
-      filter
+      combinedFilter || undefined
     );
 
     return () => eventSource.close();
@@ -835,13 +871,21 @@ export default function AuditRecords() {
   );
 
   // Group files by layer, filtering out empty files
+  // When community ID filter is active, filter by filteredCount instead of recordCount
   const layerGroups: LayerGroup[] = React.useMemo(() => {
     if (!files) return [];
     
     // Filter out files with no records or zero size
+    // When community ID filter is active, use filteredCount
     const nonEmptyFiles = files.filter((file: any) => {
-      const hasRecords = file.recordCount && file.recordCount > 0;
       const hasSize = file.size > 0;
+      if (isCommunityIDFilterActive) {
+        // Use filteredCount when community ID filter is active
+        const filteredFile = file as FilteredAuditFileInfo;
+        return filteredFile.filteredCount > 0 && hasSize;
+      }
+      // Otherwise use regular recordCount
+      const hasRecords = file.recordCount && file.recordCount > 0;
       return hasRecords && hasSize;
     });
     
@@ -872,7 +916,7 @@ export default function AuditRecords() {
         layerName,
         files: groups.get(layerName)!
       }));
-  }, [files]);
+  }, [files, isCommunityIDFilterActive]);
 
   if (!files && !error) {
     return (
@@ -937,7 +981,15 @@ export default function AuditRecords() {
             gap={2}
           >
             <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
-              {layerGroups.reduce((sum, group) => sum + group.files.length, 0)} protocol type(s) found • Hierarchical by encapsulation layer
+              {layerGroups.reduce((sum, group) => sum + group.files.length, 0)} protocol type(s) {isCommunityIDFilterActive ? 'with matching records' : 'found'} • Hierarchical by encapsulation layer
+              {isCommunityIDFilterActive && (
+                <Chip 
+                  label={`Community ID filter (${communityIDsArray.length})`} 
+                  size="small" 
+                  color="primary" 
+                  sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
+                />
+              )}
             </Typography>
             
             {/* Download All Button */}
@@ -1098,10 +1150,12 @@ export default function AuditRecords() {
                         }}>
                           <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
                             <Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.8rem', md: 'inherit' } }}>
-                              {file.recordCount ? file.recordCount.toLocaleString() : 'N/A'}
+                              {isCommunityIDFilterActive && (file as FilteredAuditFileInfo).filteredCount !== undefined
+                                ? `${(file as FilteredAuditFileInfo).filteredCount.toLocaleString()} / ${file.recordCount?.toLocaleString() || 'N/A'}`
+                                : (file.recordCount ? file.recordCount.toLocaleString() : 'N/A')}
                             </Typography>
                             <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', md: 'inherit' } }}>
-                              records
+                              {isCommunityIDFilterActive ? 'filtered / total' : 'records'}
                             </Typography>
                           </Box>
                           <Box sx={{ textAlign: { xs: 'left', md: 'right' }, minWidth: { xs: 50, md: 60 } }}>

@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -57,10 +57,12 @@ import {
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import CommunityIDChip from '../components/CommunityIDChip';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 interface CredentialSummary {
   timestamp: number;
@@ -106,6 +108,8 @@ interface CredentialSummary {
   sipCallId: string;
   sipFrom: string;
   sipTo: string;
+  // Community ID for cross-tool correlation
+  communityId: string;
 }
 
 interface CredentialsResponse {
@@ -163,9 +167,59 @@ const getServiceInfo = (service: string) => {
   };
 };
 
+// Helper function to truncate string with ellipsis
+const truncateString = (str: string, maxLength: number) => {
+  if (!str || str.length <= maxLength) return str;
+  return str.substring(0, maxLength) + '…';
+};
+
+// Helper function to parse and render colorized flow identifier
+// Expected format: "TCP:192.168.1.1:80->10.0.0.1:443" or similar
+const renderColorizedFlow = (flow: string) => {
+  if (!flow) return null;
+  
+  // Try to parse the flow string - typical format: "PROTO:srcIP:srcPort->dstIP:dstPort"
+  // or "srcIP:srcPort->dstIP:dstPort"
+  const arrowMatch = flow.match(/^(?:([A-Z]+):)?([^:]+):(\d+)->([^:]+):(\d+)$/);
+  if (arrowMatch) {
+    const [, proto, srcIP, srcPort, dstIP, dstPort] = arrowMatch;
+    return (
+      <Box 
+        sx={{ 
+          fontFamily: 'monospace', 
+          fontSize: '0.8rem',
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        {proto && (
+          <>
+            <Box component="span" sx={{ color: 'text.secondary' }}>{proto}:</Box>
+          </>
+        )}
+        <Box component="span" sx={{ color: '#f44336', fontWeight: 'bold' }}>{srcIP}</Box>
+        <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
+        <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>{srcPort}</Box>
+        <Box component="span" sx={{ color: 'text.secondary', mx: 0.5 }}>→</Box>
+        <Box component="span" sx={{ color: '#2196f3', fontWeight: 'bold' }}>{dstIP}</Box>
+        <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
+        <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>{dstPort}</Box>
+      </Box>
+    );
+  }
+  
+  // Fallback: just display the flow as-is if it doesn't match the expected pattern
+  return (
+    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+      {flow}
+    </Typography>
+  );
+};
+
 export default function CredentialsPage() {
   const router = useNetcapRouter();
   const api = useNetcapApi();
+  const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
@@ -180,12 +234,20 @@ export default function CredentialsPage() {
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
 
+  // Initialize search query from URL parameter
+  useEffect(() => {
+    if (router.isReady && router.query.search) {
+      setSearchQuery(router.query.search as string);
+    }
+  }, [router.isReady, router.query.search]);
+
   // Fetch credentials data
   const { data: credentialsData, error, mutate } = useSWR<CredentialsResponse>(
     'credentials',
     () => fetch(`${getBackendUrl()}/api/credentials`).then(res => res.json()),
     {
-      refreshInterval: 10000,
+      // Disable auto-refresh to prevent table from reordering while user is viewing
+      refreshInterval: 0,
     }
   );
 
@@ -209,6 +271,13 @@ export default function CredentialsPage() {
   const filteredCredentials = useMemo(() => {
     let filtered = credentials;
 
+    // Apply Community ID filter first (if active)
+    if (isCommunityIDFilterActive && selectedCommunityIDs.size > 0) {
+      filtered = filtered.filter(c => 
+        c.communityId && selectedCommunityIDs.has(c.communityId)
+      );
+    }
+
     // Apply search filter with negation support (e.g., "!FTP" excludes FTP)
     if (searchQuery) {
       const searchTerms = parseSearchQuery(searchQuery);
@@ -223,7 +292,7 @@ export default function CredentialsPage() {
       );
     }
 
-    // Apply sorting
+    // Apply sorting with stable secondary sort by flow identifier
     filtered = [...filtered].sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
@@ -240,11 +309,15 @@ export default function CredentialsPage() {
           comparison = a.password.localeCompare(b.password);
           break;
       }
+      // Stable secondary sort by flow identifier for consistent ordering
+      if (comparison === 0) {
+        comparison = (a.flow || '').localeCompare(b.flow || '');
+      }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
     return filtered;
-  }, [credentials, searchQuery, sortField, sortOrder]);
+  }, [credentials, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs]);
 
   // Paginate credentials
   const paginatedCredentials = filteredCredentials.slice(
@@ -614,6 +687,9 @@ export default function CredentialsPage() {
                         Password
                       </TableSortLabel>
                     </TableCell>
+                    <TableCell data-learn="Flow Identifier: Network flow where this credential was captured.">
+                      Flow
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -654,8 +730,13 @@ export default function CredentialsPage() {
                             />
                           </TableCell>
                           <TableCell>
-                            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }} data-learn="Username: The captured username from the authentication attempt.">
-                              {cred.user}
+                            <Typography 
+                              variant="body2" 
+                              sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }} 
+                              data-learn="Username: The captured username from the authentication attempt."
+                              title={cred.user.length > 25 ? cred.user : undefined}
+                            >
+                              {truncateString(cred.user, 25)}
                             </Typography>
                           </TableCell>
                           <TableCell>
@@ -668,15 +749,23 @@ export default function CredentialsPage() {
                                 fontWeight: 'bold',
                               }}
                               data-learn="Password: The captured password from the authentication attempt."
+                              title={cred.password.length > 25 ? cred.password : undefined}
                             >
-                              {cred.password}
+                              {truncateString(cred.password, 25)}
                             </Typography>
+                          </TableCell>
+                          <TableCell>
+                            {cred.flow ? renderColorizedFlow(cred.flow) : (
+                              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                                -
+                              </Typography>
+                            )}
                           </TableCell>
                         </TableRow>
                         
                         {/* Expandable Row Details */}
                         <TableRow>
-                          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={5}>
+                          <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
                             <Collapse in={expandedRow === rowKey} timeout="auto" unmountOnExit>
                               <Box sx={{ py: 2 }} data-learn="Credential Details: Extended information about this captured credential including full flow information and notes.">
                                 <Grid container spacing={2}>
@@ -731,7 +820,7 @@ export default function CredentialsPage() {
                                   )}
                                   
                                   {/* Flow */}
-                                  <Grid item xs={12}>
+                                  <Grid item xs={12} md={6}>
                                     <Typography variant="subtitle2" gutterBottom data-learn="Network Flow Field: Complete 5-tuple flow identifier (protocol, src IP:port, dst IP:port) showing the network connection where credential was captured.">
                                       Network Flow
                                     </Typography>
@@ -751,6 +840,16 @@ export default function CredentialsPage() {
                                       </Button>
                                     )}
                                   </Grid>
+                                  
+                                  {/* Community ID for Cross-Tool Correlation */}
+                                  {cred.communityId && (
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="subtitle2" gutterBottom data-learn="Community ID: Corelight Community ID v1 for cross-tool correlation with Zeek, Suricata, and other network security tools. Click to filter all pages by this ID.">
+                                        Community ID
+                                      </Typography>
+                                      <CommunityIDChip communityId={cred.communityId} mode="text" />
+                                    </Grid>
+                                  )}
                                   
                                   {/* Notes */}
                                   {cred.notes && (

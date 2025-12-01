@@ -68,6 +68,208 @@ func HandleAuditFiles(outputDir string) http.HandlerFunc {
 	}
 }
 
+// FilteredAuditFileInfo extends AuditFileInfo with filtered count
+type FilteredAuditFileInfo struct {
+	AuditFileInfo
+	FilteredCount int64 `json:"filteredCount"`
+}
+
+// HandleAuditFilesFiltered returns list of audit record files with counts filtered by community IDs
+func HandleAuditFilesFiltered(outputDir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		if outputDir == "" {
+			RespondJSON(w, http.StatusOK, []FilteredAuditFileInfo{})
+			return
+		}
+
+		// Get community IDs from query parameter (comma-separated)
+		communityIDsParam := r.URL.Query().Get("communityIds")
+		if communityIDsParam == "" {
+			// If no filter, return regular files
+			files, err := ListAuditFiles(outputDir)
+			if err != nil {
+				log.Printf("[WebUI] Error listing audit files: %v", err)
+				RespondJSON(w, http.StatusInternalServerError, map[string]string{
+					"error": fmt.Sprintf("Failed to list audit files: %v", err),
+				})
+				return
+			}
+			// Convert to FilteredAuditFileInfo with same counts
+			result := make([]FilteredAuditFileInfo, len(files))
+			for i, f := range files {
+				result[i] = FilteredAuditFileInfo{
+					AuditFileInfo: f,
+					FilteredCount: f.RecordCount,
+				}
+			}
+			RespondJSON(w, http.StatusOK, result)
+			return
+		}
+
+		// Parse community IDs into a set
+		communityIDs := make(map[string]bool)
+		for _, id := range strings.Split(communityIDsParam, ",") {
+			if trimmed := strings.TrimSpace(id); trimmed != "" {
+				communityIDs[trimmed] = true
+			}
+		}
+
+		if len(communityIDs) == 0 {
+			// Empty filter, return regular files
+			files, err := ListAuditFiles(outputDir)
+			if err != nil {
+				log.Printf("[WebUI] Error listing audit files: %v", err)
+				RespondJSON(w, http.StatusInternalServerError, map[string]string{
+					"error": fmt.Sprintf("Failed to list audit files: %v", err),
+				})
+				return
+			}
+			// Convert to FilteredAuditFileInfo with same counts
+			result := make([]FilteredAuditFileInfo, len(files))
+			for i, f := range files {
+				result[i] = FilteredAuditFileInfo{
+					AuditFileInfo: f,
+					FilteredCount: f.RecordCount,
+				}
+			}
+			RespondJSON(w, http.StatusOK, result)
+			return
+		}
+
+		// List all audit files and count filtered records
+		files, err := ListAuditFilesWithCommunityIDFilter(outputDir, communityIDs)
+		if err != nil {
+			log.Printf("[WebUI] Error listing filtered audit files: %v", err)
+			RespondJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": fmt.Sprintf("Failed to list audit files: %v", err),
+			})
+			return
+		}
+
+		RespondJSON(w, http.StatusOK, files)
+	}
+}
+
+// ListAuditFilesWithCommunityIDFilter returns audit files with filtered counts by community IDs
+func ListAuditFilesWithCommunityIDFilter(outputDir string, communityIDs map[string]bool) ([]FilteredAuditFileInfo, error) {
+	var files []FilteredAuditFileInfo
+
+	// Check if directory exists first
+	if _, err := os.Stat(outputDir); os.IsNotExist(err) {
+		return files, nil
+	}
+
+	entries, err := os.ReadDir(outputDir)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		name := entry.Name()
+		if !strings.HasSuffix(name, defaults.FileExtension+".gz") {
+			continue
+		}
+
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+
+		// Extract audit type
+		auditType := strings.TrimSuffix(strings.TrimSuffix(name, ".gz"), defaults.FileExtension)
+		filePath := filepath.Join(outputDir, name)
+
+		// Count total records
+		totalCount := CountRecords(filePath)
+
+		// Count filtered records by community ID
+		filteredCount := CountRecordsWithCommunityIDFilter(filePath, communityIDs)
+
+		files = append(files, FilteredAuditFileInfo{
+			AuditFileInfo: AuditFileInfo{
+				FileInfo: FileInfo{
+					Name:         name,
+					Path:         filePath,
+					Size:         info.Size(),
+					ModifiedTime: info.ModTime().Unix(),
+					IsCompleted:  true,
+				},
+				Type:        auditType,
+				RecordCount: totalCount,
+				Layer:       GetLayerName(GetLayerType(auditType)),
+			},
+			FilteredCount: filteredCount,
+		})
+	}
+
+	// Sort files by layer hierarchy
+	sort.Slice(files, func(i, j int) bool {
+		layerI := GetLayerType(files[i].Type)
+		layerJ := GetLayerType(files[j].Type)
+		if layerI != layerJ {
+			return layerI < layerJ
+		}
+		return files[i].Type < files[j].Type
+	})
+
+	return files, nil
+}
+
+// CountRecordsWithCommunityIDFilter counts records that match any of the given community IDs
+func CountRecordsWithCommunityIDFilter(filePath string, communityIDs map[string]bool) int64 {
+	reader, err := netio.Open(filePath, defaults.BufferSize)
+	if err != nil {
+		return 0
+	}
+	defer reader.Close()
+
+	header, err := reader.ReadHeader()
+	if err != nil || header == nil {
+		return 0
+	}
+
+	record := netio.InitRecord(header.Type)
+	if record == nil {
+		return 0
+	}
+
+	count := int64(0)
+
+	for {
+		err := reader.Next(record)
+		if err != nil {
+			break
+		}
+
+		// Use reflection to get CommunityID field
+		val := reflect.ValueOf(record)
+		if val.Kind() == reflect.Ptr {
+			val = val.Elem()
+		}
+
+		if val.Kind() == reflect.Struct {
+			communityIDField := val.FieldByName("CommunityID")
+			if communityIDField.IsValid() && communityIDField.Kind() == reflect.String {
+				communityID := communityIDField.String()
+				if communityID != "" && communityIDs[communityID] {
+					count++
+				}
+			}
+		}
+	}
+
+	return count
+}
+
 // HandleAuditRecords streams audit records from a file
 func HandleAuditRecords(outputDir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -539,7 +741,21 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 				continue
 			}
 
-			fmt.Fprintf(w, "event: record\ndata: %s\n\n", string(jsonData))
+			// Truncate large records to prevent UI issues with very large record types (e.g., DeviceProfile)
+			const maxRecordSize = 2000
+			jsonStr := string(jsonData)
+			if len(jsonStr) > maxRecordSize {
+				// Create a truncated response with valid JSON structure
+				truncatedData := map[string]interface{}{
+					"_truncated":     true,
+					"_originalSize":  len(jsonStr),
+					"_truncatedData": jsonStr[:maxRecordSize] + "...",
+				}
+				jsonData, _ = json.Marshal(truncatedData)
+				jsonStr = string(jsonData)
+			}
+
+			fmt.Fprintf(w, "event: record\ndata: %s\n\n", jsonStr)
 			flusher.Flush()
 
 			count++

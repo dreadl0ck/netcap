@@ -82,6 +82,8 @@ type CertificateSummary struct {
 	Ja4x            string `json:"ja4x"`
 	Ja4xRaw         string `json:"ja4xRaw"`
 	Ja4xDescription string `json:"ja4xDescription"`
+	// Community ID for cross-tool correlation
+	CommunityID string `json:"communityId"`
 }
 
 // CertificatesResponse contains the list of certificates
@@ -234,6 +236,8 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 				Ja4x:            cert.Ja4X,
 				Ja4xRaw:         cert.Ja4XRaw,
 				Ja4xDescription: cert.Ja4XDescription,
+				// Community ID for cross-tool correlation
+				CommunityID: cert.CommunityID,
 			}
 		}
 	}

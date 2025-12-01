@@ -59,10 +59,12 @@ import {
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import CommunityIDChip from '../components/CommunityIDChip';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import { useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
+import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 interface DomainSummary {
   domain: string;
@@ -76,6 +78,7 @@ interface DomainSummary {
   parentDomain: string;
   resolvedIPs: string[];
   source: string; // "DNS", "TLS SNI", or "DNS, TLS SNI"
+  communityIds: string[]; // Community IDs for cross-tool correlation
 }
 
 interface DomainsResponse {
@@ -88,6 +91,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function DomainsPage() {
   const api = useNetcapApi();
+  const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
@@ -133,6 +137,13 @@ export default function DomainsPage() {
   const filteredDomains = useMemo(() => {
     let filtered = domains;
 
+    // Apply Community ID filter first (if active)
+    if (isCommunityIDFilterActive && selectedCommunityIDs.size > 0) {
+      filtered = filtered.filter(d => 
+        d.communityIds && d.communityIds.some(cid => selectedCommunityIDs.has(cid))
+      );
+    }
+
     // Apply type filter
     if (filterType === 'root') {
       filtered = filtered.filter(d => !d.isSubdomain);
@@ -154,7 +165,7 @@ export default function DomainsPage() {
       );
     }
 
-    // Apply sorting
+    // Apply sorting with stable secondary sort by domain name
     filtered = [...filtered].sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
@@ -176,11 +187,15 @@ export default function DomainsPage() {
           }
           break;
       }
+      // Stable secondary sort by domain name for consistent ordering
+      if (comparison === 0) {
+        comparison = a.domain.localeCompare(b.domain);
+      }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
     return filtered;
-  }, [domains, filterType, searchQuery, sortField, sortOrder]);
+  }, [domains, filterType, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs]);
 
   // Paginate domains
   const paginatedDomains = filteredDomains.slice(
@@ -789,6 +804,28 @@ export default function DomainsPage() {
                                           sx={{ fontSize: '0.75rem', fontFamily: 'monospace' }}
                                         />
                                       ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+                                
+                                {/* Community IDs for Cross-Tool Correlation */}
+                                {(domain.communityIds || []).length > 0 && (
+                                  <Grid item xs={12}>
+                                    <Typography variant="subtitle2" gutterBottom data-learn="Community IDs: Corelight Community ID v1 for cross-tool correlation with Zeek, Suricata, and other network security tools. Click to filter all pages by this ID.">
+                                      Community IDs ({(domain.communityIds || []).length})
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(domain.communityIds || []).slice(0, 10).map((cid) => (
+                                        <CommunityIDChip key={cid} communityId={cid} mode="chip" />
+                                      ))}
+                                      {(domain.communityIds || []).length > 10 && (
+                                        <Chip
+                                          label={`+${(domain.communityIds || []).length - 10} more`}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{ fontSize: '0.75rem' }}
+                                        />
+                                      )}
                                     </Box>
                                   </Grid>
                                 )}

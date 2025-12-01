@@ -91,6 +91,8 @@ type ConnectionSummary struct {
 	IsMulticast              bool    `json:"isMulticast"`
 	// TLS SNI
 	Sni                      string  `json:"sni"`
+	// Community ID for cross-tool correlation
+	CommunityID              string  `json:"communityId"`
 }
 
 // ConnectionsResponse contains the list of connections
@@ -267,6 +269,8 @@ func readConnections(outDir string) ([]ConnectionSummary, error) {
 			IsMulticast:                 conn.IsMulticast,
 			// TLS SNI
 			Sni:                         conn.Sni,
+			// Community ID for cross-tool correlation
+			CommunityID:                 conn.CommunityID,
 		})
 	}
 

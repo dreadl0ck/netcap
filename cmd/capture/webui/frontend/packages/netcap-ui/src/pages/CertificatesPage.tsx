@@ -61,6 +61,7 @@ import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 interface CertificateSummary {
   timestamp: number;
@@ -106,6 +107,8 @@ interface CertificateSummary {
   ja4x: string;
   ja4xRaw: string;
   ja4xDescription: string;
+  // Community ID for cross-tool correlation
+  communityId: string;
 }
 
 interface CertificatesResponse {
@@ -119,6 +122,7 @@ type SortOrder = 'asc' | 'desc';
 export default function CertificatesPage() {
   const router = useNetcapRouter();
   const api = useNetcapApi();
+  const { isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,7 +149,8 @@ export default function CertificatesPage() {
     'certificates',
     () => fetch(`${getBackendUrl()}/api/certificates`).then(res => res.json()),
     {
-      refreshInterval: 10000,
+      // Disable auto-refresh to prevent table from reordering while user is viewing
+      refreshInterval: 0,
     }
   );
 
@@ -166,6 +171,12 @@ export default function CertificatesPage() {
   // Apply filters and sorting
   const filteredCertificates = useMemo(() => {
     let filtered = certificates;
+
+    // Note: Certificate records don't have Community ID yet in backend - return empty when filter is active
+    // This will be enabled after protobuf regeneration
+    if (isCommunityIDFilterActive) {
+      return [];
+    }
 
     // Apply search filter
     if (searchQuery) {
@@ -192,7 +203,7 @@ export default function CertificatesPage() {
       });
     }
 
-    // Apply sorting
+    // Apply sorting with stable secondary sort by sha256Fingerprint
     filtered = [...filtered].sort((a, b) => {
       let comparison = 0;
       switch (sortField) {
@@ -212,11 +223,15 @@ export default function CertificatesPage() {
           comparison = a.publicKeySize - b.publicKeySize;
           break;
       }
+      // Stable secondary sort by sha256Fingerprint for consistent ordering
+      if (comparison === 0) {
+        comparison = a.sha256Fingerprint.localeCompare(b.sha256Fingerprint);
+      }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
     return filtered;
-  }, [certificates, searchQuery, sortField, sortOrder]);
+  }, [certificates, searchQuery, sortField, sortOrder, isCommunityIDFilterActive]);
 
   // Paginate certificates
   const paginatedCertificates = filteredCertificates.slice(

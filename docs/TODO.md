@@ -1,21 +1,19 @@
 # TODOs
 
-File extraction engine: only save each unique file ONCE! hash file contents and deduplicate based on content.
+- Rename Credentials to Secret
+- Rename IPProfile to Host
 
-deflate gz when extracing files automatically. Note on audit record that is was compressed but only save the decompressed file.
 
-- Files page: only show the file name in the table and truncate the connection ident string, only show full filename in detail view. Also truncate the file name if it exceeds 50 chars.
+- Files page: when clicking a file open preview directly. arrow up and down should move to next file, remove using left and right for this
+- file Preview: add syntax highlighting for html, json and scripts
+
+- fingerprints page: community id filter
 - Fingerprints table: the fingerprint hash should not line wrap. Prevent wrap and slightly decrease font size on smaller screens.
-- Credentials page: truncate usernames and passwords after 25 chars in the table, and colorise the Flow ident in the table view the same way as on connections page.
-- Connection detail view: add show secrets button, if a credential for that connection exists. Open the credentials page and filter for the flow ident.
-- Rename credentials to secrets
-- webUI View records: Showing very large record types eg DeviceProfile, even a single profile could be too big to display. Truncate max output in backend to 2000 characters. 
-- Files audit records: hash file content and only save each content once, eg html files in arp-dns all 404 dupes
+
 - integrate magika and invoke on files folder after extraction (github.com/google/magika/tree/main/go)
 - configure fingerbank lookups and caching
 - make it configurable per harvester if it runs only for the default port or for all streams. for some harvester it makes sense to runs them against all plaintext protos.
 - data mining on plaintext connection data: extract URLs, what looks like secrets, ctf flags etc
-- software audit records: remove Vendor Field and use only Product? if Product info is empty, write the info we would have written into Vendor before as a fallback, or combine the two fields.
 - fix capture and inspect local results
 - dashboards feature: save and load dashboards, made of different charts. create a simple UI to rearrange charts and choose the audit record type, field and type of chart for each.
 - auto extract information from robots.txt and content security policy and use it to enrich audit records
@@ -24,12 +22,10 @@ deflate gz when extracing files automatically. Note on audit record that is was 
 - Command to show capinfos for PCAP also in webUI
 - Analysis session format, storing and loading
 
-- NONSTANDARD_HTTP is good info from dpi, fire alert for this. Add quick filters for Connection Table, nonstandard HTTP is a good filter. Also add support to filter HTTP table for NONSTANDARD_HTTP as well.
-
-
 - fix dev mode: since moving frontend into pkg the live rebuild does not work anymore on changes
 - dev mode: enable debugging with https://nextjs.org/docs/app/guides/mcp
 
+check sensitveParamnames defaultls in config used
 ----
 
 Later

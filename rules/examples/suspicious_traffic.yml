@@ -321,3 +321,126 @@ rules:
     mitre: ["T1071.001"]
     tags: ["suspicious", "backdoor", "unusual-port"]
     enabled: true
+
+  # ========================================
+  # DPI-BASED PROTOCOL ANOMALIES
+  # ========================================
+
+  # Nonstandard HTTP Traffic Detection (DPI)
+  # NONSTANDARD_HTTP is flagged by DPI when HTTP-like traffic is detected on non-standard ports
+  # or when the traffic doesn't fully conform to HTTP protocol specifications.
+  # This is a strong indicator of:
+  # - HTTP tunneling over non-standard ports
+  # - C2 (Command & Control) communication disguised as HTTP
+  # - Malware using HTTP-like protocols for data exfiltration
+  # - Protocol obfuscation techniques
+  - name: Nonstandard HTTP Traffic Detected
+    description: HTTP-like traffic detected on non-standard ports or with protocol anomalies (potential C2/tunneling)
+    type: Connection
+    expression: '"NONSTANDARD_HTTP" in Applications'
+    severity: medium
+    mitre: ["T1071.001", "T1090.002", "T1572"]
+    tags: ["suspicious", "tunneling", "protocol-anomaly", "c2", "http"]
+    enabled: true
+
+  # HTTP Traffic on Non-HTTP Ports
+  # Detects HTTP traffic on ports other than 80, 8080, 443
+  - name: HTTP on Unusual Port
+    description: HTTP traffic detected on non-standard port (potential C2 or evasion)
+    type: Connection
+    expression: |
+      ("HTTP" in Applications || "HTTP_DOWNLOAD" in Applications || "HTTP_PROXY" in Applications) && 
+      DstPort != "80" && DstPort != "8080" && DstPort != "443" && DstPort != "8443" && 
+      DstPort != "3128" && DstPort != "8888"
+    severity: low
+    mitre: ["T1071.001", "T1571"]
+    tags: ["suspicious", "protocol-anomaly", "http", "evasion"]
+    enabled: true
+
+  # TLS on Non-Standard Ports
+  # TLS/SSL traffic on unusual ports may indicate C2 or covert channels
+  - name: TLS on Unusual Port
+    description: TLS/SSL traffic on non-standard port (potential encrypted C2)
+    type: Connection
+    expression: |
+      ("TLS" in Applications || "SSL" in Applications || "DTLS" in Applications) && 
+      DstPort != "443" && DstPort != "8443" && DstPort != "993" && DstPort != "995" && 
+      DstPort != "465" && DstPort != "636" && DstPort != "989" && DstPort != "990" &&
+      DstPort != "5061" && DstPort != "853" && DstPort != "3389"
+    severity: low
+    mitre: ["T1573.002", "T1571"]
+    tags: ["suspicious", "protocol-anomaly", "tls", "encrypted"]
+    enabled: true
+
+  # DNS on Non-Standard Port
+  # DNS traffic on ports other than 53 is highly suspicious
+  - name: DNS on Unusual Port
+    description: DNS traffic on non-standard port (potential DNS tunneling)
+    type: Connection
+    expression: |
+      ("DNS" in Applications || "MDNS" in Applications || "LLMNR" in Applications) && 
+      DstPort != "53" && DstPort != "5353" && DstPort != "5355" && DstPort != "853"
+    severity: high
+    mitre: ["T1071.004", "T1572"]
+    tags: ["suspicious", "dns", "tunneling", "protocol-anomaly"]
+    enabled: true
+
+  # SOCKS Protocol Detection
+  - name: SOCKS Proxy Traffic Detected
+    description: SOCKS proxy traffic detected (potential unauthorized proxy or tunneling)
+    type: Connection
+    expression: '"SOCKS" in Applications || "SOCKS4" in Applications || "SOCKS5" in Applications'
+    severity: medium
+    mitre: ["T1090.002", "T1090.003"]
+    tags: ["proxy", "tunneling", "suspicious"]
+    enabled: true
+
+  # Tor Network Traffic
+  - name: Tor Network Traffic Detected
+    description: Tor onion routing traffic detected (anonymization network)
+    type: Connection
+    expression: '"TOR" in Applications'
+    severity: medium
+    mitre: ["T1090.003"]
+    tags: ["tor", "anonymization", "suspicious"]
+    enabled: true
+
+  # IRC Traffic Detection
+  - name: IRC Traffic Detected
+    description: IRC protocol detected (commonly used for botnet C2)
+    type: Connection
+    expression: '"IRC" in Applications'
+    severity: medium
+    mitre: ["T1071.001", "T1219"]
+    tags: ["irc", "botnet", "c2", "suspicious"]
+    enabled: true
+
+  # SSH on Non-Standard Port
+  - name: SSH on Unusual Port
+    description: SSH traffic on non-standard port (potential evasion or backdoor)
+    type: Connection
+    expression: '"SSH" in Applications && DstPort != "22"'
+    severity: low
+    mitre: ["T1021.004", "T1571"]
+    tags: ["ssh", "evasion", "protocol-anomaly"]
+    enabled: true
+
+  # Telnet Traffic Detection
+  - name: Telnet Traffic Detected
+    description: Unencrypted Telnet traffic detected (insecure remote access)
+    type: Connection
+    expression: '"TELNET" in Applications'
+    severity: medium
+    mitre: ["T1021.001"]
+    tags: ["telnet", "insecure", "cleartext"]
+    enabled: true
+
+  # FTP Traffic Detection
+  - name: FTP Traffic Detected
+    description: Unencrypted FTP traffic detected (potential data exfiltration)
+    type: Connection
+    expression: '"FTP_CONTROL" in Applications || "FTP_DATA" in Applications || "FTP" in Applications'
+    severity: low
+    mitre: ["T1048.002", "T1021.001"]
+    tags: ["ftp", "cleartext", "file-transfer"]
+    enabled: true

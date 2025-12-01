@@ -103,6 +103,8 @@ export {
   LearnModeToggle,
   LearnModeOverlay,
   ConnectionOverlay,
+  CommunityIDChip,
+  CommunityIDFilterBar,
 } from './components';
 
 export type {
@@ -115,6 +117,8 @@ export type {
 export {
   LearnModeProvider,
   useLearnMode,
+  CommunityIDFilterProvider,
+  useCommunityIDFilter,
 } from './contexts';
 
 // Library utilities - re-export everything from lib

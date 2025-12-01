@@ -414,10 +414,11 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32) {
 		ExtKeyUsage:         extKeyUsage,
 		IsCA:                cert.IsCA,
 		MaxPathLen:          maxPathLen,
-		RawCertificate:   certData, // Store raw certificate
-		Ja4X:             ja4xFingerprint,
-		Ja4XRaw:          ja4xRaw,
-		Ja4XDescription:  ja4xDescription,
+		RawCertificate:      certData, // Store raw certificate
+		Ja4X:                ja4xFingerprint,
+		Ja4XRaw:             ja4xRaw,
+		Ja4XDescription:     ja4xDescription,
+		CommunityID:         h.conversation.CommunityID, // Community ID for cross-tool correlation
 	}
 
 	tlsLog.Info("Parsed certificate successfully",

@@ -173,6 +173,7 @@ func convertX509ToTLSCertificate(cert *x509.Certificate, conv *core.Conversation
 		SHA256Fingerprint:   hex.EncodeToString(sha256Sum[:]),
 		SHA1Fingerprint:     hex.EncodeToString(sha1Sum[:]),
 		SubjectAltNames:     sans,
+		CommunityID:         conv.CommunityID, // Community ID for cross-tool correlation
 	}
 
 	return tlsCert

@@ -257,17 +257,34 @@ func writeHTTP(h *types.HTTP, ident string) {
 		return
 	}
 
+	communityID := h.CommunityID
 	software.WriteSoftware(soft, func(s *software.AtomicSoftware) {
 		s.Lock()
+		// Check if flow already exists
+		flowExists := false
 		for _, f := range s.Flows {
-			// prevent duplicates
 			if f == ident {
-				s.Unlock()
-				return
+				flowExists = true
+				break
 			}
 		}
-		// add flow
-		s.Flows = append(s.Flows, ident)
+		// Add flow if not exists
+		if !flowExists {
+			s.Flows = append(s.Flows, ident)
+		}
+		// Add community ID if not exists
+		if communityID != "" {
+			cidExists := false
+			for _, cid := range s.CommunityIDs {
+				if cid == communityID {
+					cidExists = true
+					break
+				}
+			}
+			if !cidExists {
+				s.CommunityIDs = append(s.CommunityIDs, communityID)
+			}
+		}
 		s.Unlock()
 	})
 }

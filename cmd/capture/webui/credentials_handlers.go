@@ -78,6 +78,8 @@ type CredentialSummary struct {
 	SipCallId string `json:"sipCallId"`
 	SipFrom   string `json:"sipFrom"`
 	SipTo     string `json:"sipTo"`
+	// Community ID for cross-tool correlation
+	CommunityID string `json:"communityId"`
 }
 
 // CredentialsResponse contains the list of credentials
@@ -240,6 +242,8 @@ func (s *Server) handleCredentials(w http.ResponseWriter, r *http.Request) {
 			SipCallId: cred.SipCallId,
 			SipFrom:   cred.SipFrom,
 			SipTo:     cred.SipTo,
+			// Community ID for cross-tool correlation
+			CommunityID: cred.CommunityID,
 		})
 
 		// Log first few credentials for debugging
