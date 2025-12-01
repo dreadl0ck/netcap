@@ -416,7 +416,8 @@ export default function VulnerabilitiesPage() {
           </ToggleButtonGroup>
         </Box>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - Only show in table mode */}
+        {viewMode === 'table' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={4}>
             <Card>
@@ -458,12 +459,13 @@ export default function VulnerabilitiesPage() {
             </Card>
           </Grid>
         </Grid>
+        )}
 
         {/* Charts - Only show in chart mode */}
         {viewMode === 'chart' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: { xs: 280, md: 'calc(50vh - 80px)' }, minHeight: 230, maxHeight: 400 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`severity-${chartRefreshKey}`}
@@ -475,7 +477,7 @@ export default function VulnerabilitiesPage() {
             </Card>
           </Grid>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: { xs: 280, md: 'calc(50vh - 80px)' }, minHeight: 230, maxHeight: 400 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`top-software-${chartRefreshKey}`}
@@ -487,7 +489,7 @@ export default function VulnerabilitiesPage() {
             </Card>
           </Grid>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: { xs: 280, md: 'calc(50vh - 80px)' }, minHeight: 230, maxHeight: 400 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`access-vectors-${chartRefreshKey}`}
@@ -499,7 +501,7 @@ export default function VulnerabilitiesPage() {
             </Card>
           </Grid>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: { xs: 280, md: 'calc(50vh - 80px)' }, minHeight: 230, maxHeight: 400 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`exploit-types-${chartRefreshKey}`}
@@ -511,7 +513,7 @@ export default function VulnerabilitiesPage() {
             </Card>
           </Grid>
           <Grid item xs={12}>
-            <Card sx={{ height: 400 }}>
+            <Card sx={{ height: { xs: 280, md: 'calc(50vh - 80px)' }, minHeight: 230, maxHeight: 400 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   key={`top-affected-hosts-${chartRefreshKey}`}

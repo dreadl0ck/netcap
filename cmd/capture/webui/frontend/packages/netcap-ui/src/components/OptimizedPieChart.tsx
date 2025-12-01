@@ -36,14 +36,27 @@ echarts.use([
   CanvasRenderer,
 ]);
 
+interface PieChartClickParams {
+  name: string;
+  value: number;
+  dataIndex: number;
+}
+
 interface OptimizedPieChartProps {
   option: echarts.EChartsCoreOption;
   style?: React.CSSProperties;
+  onItemClick?: (params: PieChartClickParams) => void;
 }
 
-export default function OptimizedPieChart({ option, style }: OptimizedPieChartProps) {
+export default function OptimizedPieChart({ option, style, onItemClick }: OptimizedPieChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<echarts.ECharts | null>(null);
+  const onItemClickRef = useRef(onItemClick);
+
+  // Keep callback ref updated without triggering effect
+  useEffect(() => {
+    onItemClickRef.current = onItemClick;
+  }, [onItemClick]);
 
   useEffect(() => {
     if (!chartRef.current) return;
@@ -56,8 +69,22 @@ export default function OptimizedPieChart({ option, style }: OptimizedPieChartPr
     // Set option
     chartInstanceRef.current.setOption(option);
 
+    // Add click handler
+    const handleClick = (params: echarts.ECElementEvent) => {
+      if (onItemClickRef.current && params.name !== undefined) {
+        onItemClickRef.current({
+          name: params.name as string,
+          value: typeof params.value === 'number' ? params.value : 0,
+          dataIndex: params.dataIndex ?? 0,
+        });
+      }
+    };
+
+    chartInstanceRef.current.on('click', handleClick);
+
     // Cleanup
     return () => {
+      chartInstanceRef.current?.off('click', handleClick);
       chartInstanceRef.current?.dispose();
       chartInstanceRef.current = null;
     };
@@ -73,6 +100,6 @@ export default function OptimizedPieChart({ option, style }: OptimizedPieChartPr
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  return <div ref={chartRef} style={style} />;
+  return <div ref={chartRef} style={{ cursor: onItemClick ? 'pointer' : 'default', ...style }} />;
 }
 

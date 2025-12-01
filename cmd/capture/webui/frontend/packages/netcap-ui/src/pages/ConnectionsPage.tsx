@@ -671,7 +671,8 @@ export default function ConnectionsPage() {
           </ToggleButtonGroup>
         </Box>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - Only show in table mode */}
+        {viewMode === 'table' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
             <Card data-learn="Total Connections: Number of network connections captured in this PCAP file.">
@@ -745,12 +746,13 @@ export default function ConnectionsPage() {
             </Card>
           </Grid>
         </Grid>
+        )}
 
         {/* Visualization Charts - Only show in chart mode */}
         {viewMode === 'chart' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Top Connections Chart: Bar chart showing the connections with the most traffic."
@@ -768,7 +770,7 @@ export default function ConnectionsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Protocol Distribution: Pie chart showing the distribution of protocols across connections."
@@ -786,7 +788,7 @@ export default function ConnectionsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Applications Chart: Bar chart showing the top detected applications in the connections."
@@ -804,7 +806,7 @@ export default function ConnectionsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Duration vs Size: Scatter plot showing the relationship between connection duration and data size."

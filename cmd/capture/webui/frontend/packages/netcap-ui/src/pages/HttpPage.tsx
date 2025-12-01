@@ -47,13 +47,14 @@ import {
   Refresh as RefreshIcon,
   ExpandMore as ExpandMoreIcon,
   Http as HttpIcon,
-  Speed as SpeedIcon,
-  TrendingUp as TrendingUpIcon,
-  Public as PublicIcon,
   Download as DownloadIcon,
   Cable as CableIcon,
   TableChart as TableChartIcon,
   BarChart as BarChartIcon,
+  Error as ErrorIcon,
+  Shield as ShieldIcon,
+  Lock as LockIcon,
+  VpnKey as VpnKeyIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import ConversationModal from '../components/ConversationModal';
@@ -121,8 +122,23 @@ interface HTTPResponse {
   totalCount: number;
 }
 
+interface CredentialSummary {
+  timestamp: number;
+  service: string;
+  flow: string;
+  user: string;
+  password: string;
+  communityId: string;
+}
+
+interface CredentialsResponse {
+  credentials: CredentialSummary[];
+  totalCount: number;
+}
+
 type HTTPSortField = 'timestamp' | 'method' | 'host' | 'statusCode' | 'size';
 type SortOrder = 'asc' | 'desc';
+type HTTPFilterType = 'all' | 'errors' | 'missingSecurityHeaders' | 'hasAuth';
 
 export default function HTTPPage() {
   const router = useNetcapRouter();
@@ -131,6 +147,7 @@ export default function HTTPPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<HTTPFilterType>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [switchingFile, setSwitchingFile] = useState(false);
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
@@ -161,8 +178,36 @@ export default function HTTPPage() {
     }
   );
 
+  // Fetch credentials to check which HTTP requests have secrets
+  const { data: credentialsData, mutate: mutateCredentials } = useSWR<CredentialsResponse>(
+    'credentials',
+    () => fetch(`${getBackendUrl()}/api/credentials`).then(res => res.json()),
+    {
+      // Disable auto-refresh to prevent table from reordering while user is viewing
+      refreshInterval: 0,
+    }
+  );
+
   const httpRecords = httpData?.http || [];
   const totalCount = httpData?.totalCount || 0;
+
+  // Build a set of community IDs that have credentials for quick lookup
+  const credentialCommunityIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (credentialsData?.credentials) {
+      for (const cred of credentialsData.credentials) {
+        if (cred.communityId) {
+          ids.add(cred.communityId);
+        }
+      }
+    }
+    return ids;
+  }, [credentialsData]);
+
+  // Helper function to check if an HTTP request has credentials
+  const hasCredentials = useCallback((http: HTTPSummary): boolean => {
+    return http.communityId ? credentialCommunityIds.has(http.communityId) : false;
+  }, [credentialCommunityIds]);
 
   // Handle sort column click
   const handleSort = (field: HTTPSortField) => {
@@ -184,6 +229,24 @@ export default function HTTPPage() {
       filtered = filtered.filter(h => 
         h.communityId && selectedCommunityIDs.has(h.communityId)
       );
+    }
+
+    // Apply HTTP filter type
+    if (filterType !== 'all') {
+      filtered = filtered.filter(http => {
+        switch (filterType) {
+          case 'errors':
+            return http.statusCode >= 400;
+          case 'missingSecurityHeaders':
+            // Check if ANY of the important security headers are missing
+            return !http.strictTransportSecurity && !http.contentSecurityPolicy && 
+                   !http.xFrameOptions && !http.xContentTypeOptions;
+          case 'hasAuth':
+            return Boolean(http.authorizationType);
+          default:
+            return true;
+        }
+      });
     }
 
     // Apply search filter
@@ -258,7 +321,7 @@ export default function HTTPPage() {
     });
 
     return filtered;
-  }, [httpRecords, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs]);
+  }, [httpRecords, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs, filterType]);
 
   // Paginate HTTP records
   const paginatedHTTP = filteredHTTP.slice(
@@ -286,8 +349,9 @@ export default function HTTPPage() {
 
   const handleRefresh = useCallback(() => {
     mutate();
+    mutateCredentials();
     setChartRefreshKey(prev => prev + 1);
-  }, [mutate]);
+  }, [mutate, mutateCredentials]);
 
   const handleFileChange = useCallback(async (filePath: string) => {
     setSwitchingFile(true);
@@ -368,10 +432,12 @@ export default function HTTPPage() {
 
   // Calculate statistics
   const stats = useMemo(() => ({
-    totalRequests: httpRecords.length,
-    totalBytes: httpRecords.reduce((sum, h) => sum + h.reqContentLength + h.resContentLength, 0),
-    uniqueHosts: new Set(httpRecords.map(h => h.host)).size,
     statusErrors: httpRecords.filter(h => h.statusCode >= 400).length,
+    missingSecurityHeaders: httpRecords.filter(h => 
+      !h.strictTransportSecurity && !h.contentSecurityPolicy && 
+      !h.xFrameOptions && !h.xContentTypeOptions
+    ).length,
+    hasAuthCount: httpRecords.filter(h => Boolean(h.authorizationType)).length,
   }), [httpRecords]);
 
   // Get status code color
@@ -422,10 +488,21 @@ export default function HTTPPage() {
           </ToggleButtonGroup>
         </Box>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - Clickable Security Filters - Only show in table mode */}
+        {viewMode === 'table' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Total Requests: Number of HTTP requests captured in this PCAP file.">
+            <Card 
+              data-learn="Total Requests: Click to show all HTTP requests."
+              onClick={() => { setFilterType('all'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'all' ? 2 : 0,
+                borderColor: 'primary.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <HttpIcon color="primary" />
@@ -443,46 +520,20 @@ export default function HTTPPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Total Data: Sum of all request and response bytes transferred.">
+            <Card 
+              data-learn="Error Responses: Click to filter table to only HTTP responses with status codes 400 or higher (client/server errors)."
+              onClick={() => { setFilterType('errors'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'errors' ? 2 : 0,
+                borderColor: 'error.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <TrendingUpIcon color="success" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Data
-                    </Typography>
-                    <Typography variant="h5">
-                      {formatBytes(stats.totalBytes)}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Unique Hosts: Number of different hosts accessed in HTTP requests.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PublicIcon color="info" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Unique Hosts
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.uniqueHosts.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Error Responses: Number of HTTP responses with status codes 400 or higher.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SpeedIcon color="error" />
+                  <ErrorIcon color="error" />
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Error Responses
@@ -495,13 +546,70 @@ export default function HTTPPage() {
               </CardContent>
             </Card>
           </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card 
+              data-learn="Missing Security Headers: Click to filter table to only responses missing critical security headers (HSTS, CSP, X-Frame-Options, X-Content-Type-Options)."
+              onClick={() => { setFilterType('missingSecurityHeaders'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'missingSecurityHeaders' ? 2 : 0,
+                borderColor: 'warning.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <ShieldIcon color="warning" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Missing Sec Headers
+                    </Typography>
+                    <Typography variant="h5">
+                      {stats.missingSecurityHeaders.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card 
+              data-learn="Authentication Present: Click to filter table to only requests with authentication headers (Basic, Bearer, etc.)."
+              onClick={() => { setFilterType('hasAuth'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'hasAuth' ? 2 : 0,
+                borderColor: 'info.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <LockIcon color="info" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      With Authentication
+                    </Typography>
+                    <Typography variant="h5">
+                      {stats.hasAuthCount.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
         </Grid>
+        )}
 
         {/* Visualization Charts - Only show in chart mode */}
         {viewMode === 'chart' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Top Hosts Chart: Bar chart showing the hosts with the most HTTP requests."
@@ -519,7 +627,7 @@ export default function HTTPPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Status Codes: Pie chart showing the distribution of HTTP status codes."
@@ -537,7 +645,7 @@ export default function HTTPPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Request Methods: Bar chart showing the distribution of HTTP request methods."
@@ -555,7 +663,7 @@ export default function HTTPPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Content Types: Pie chart showing the distribution of response content types."
@@ -600,7 +708,7 @@ export default function HTTPPage() {
             Refresh
           </Button>
           
-          {searchQuery ? (
+          {(searchQuery || filterType !== 'all') ? (
             <Typography variant="body2" color="text.secondary">
               Showing {filteredHTTP.length} of {totalCount} requests
             </Typography>
@@ -1258,6 +1366,27 @@ export default function HTTPPage() {
                                       >
                                         Show Connection
                                       </Button>
+                                      {hasCredentials(http) && (
+                                        <Button
+                                          data-learn="Show Secrets: Navigate to the Credentials page to view the captured credentials associated with this HTTP request."
+                                          variant="outlined"
+                                          color="warning"
+                                          startIcon={<VpnKeyIcon />}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Navigate to credentials page filtered by community ID
+                                            if (http.communityId) {
+                                              router.push(`/credentials?search=${encodeURIComponent(http.communityId)}`);
+                                            } else {
+                                              // Fallback to searching by IP/host
+                                              router.push(`/credentials?search=${encodeURIComponent(http.srcIP)}`);
+                                            }
+                                          }}
+                                          size="small"
+                                        >
+                                          Show Secrets
+                                        </Button>
+                                      )}
                                       <Button
                                         data-learn="Download as PCAP: Download a filtered PCAP file containing only the packets from this HTTP request/response."
                                         variant="outlined"

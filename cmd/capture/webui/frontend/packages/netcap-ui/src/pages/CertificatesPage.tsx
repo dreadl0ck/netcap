@@ -118,6 +118,7 @@ interface CertificatesResponse {
 
 type CertificateSortField = 'subject' | 'issuer' | 'expiration' | 'seenCount' | 'keySize';
 type SortOrder = 'asc' | 'desc';
+type CertificateFilterType = 'all' | 'expired' | 'selfSigned' | 'weakSecurity';
 
 export default function CertificatesPage() {
   const router = useNetcapRouter();
@@ -126,6 +127,7 @@ export default function CertificatesPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<CertificateFilterType>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [switchingFile, setSwitchingFile] = useState(false);
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
@@ -176,6 +178,22 @@ export default function CertificatesPage() {
     // This will be enabled after protobuf regeneration
     if (isCommunityIDFilterActive) {
       return [];
+    }
+
+    // Apply certificate status filter
+    if (filterType !== 'all') {
+      filtered = filtered.filter(cert => {
+        switch (filterType) {
+          case 'expired':
+            return cert.isExpired;
+          case 'selfSigned':
+            return cert.isSelfSigned;
+          case 'weakSecurity':
+            return cert.hasWeakSignature || cert.hasShortKeySize;
+          default:
+            return true;
+        }
+      });
     }
 
     // Apply search filter
@@ -231,7 +249,7 @@ export default function CertificatesPage() {
     });
 
     return filtered;
-  }, [certificates, searchQuery, sortField, sortOrder, isCommunityIDFilterActive]);
+  }, [certificates, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, filterType]);
 
   // Paginate certificates
   const paginatedCertificates = filteredCertificates.slice(
@@ -403,10 +421,21 @@ export default function CertificatesPage() {
           </ToggleButtonGroup>
         </Box>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - Only show in table mode */}
+        {viewMode === 'table' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Total Certificates: Number of TLS certificates captured in this PCAP file.">
+            <Card 
+              data-learn="Total Certificates: Click to show all certificates."
+              onClick={() => { setFilterType('all'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'all' ? 2 : 0,
+                borderColor: 'primary.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <SecurityIcon color="primary" />
@@ -424,7 +453,17 @@ export default function CertificatesPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Expired Certificates: Number of certificates that have expired.">
+            <Card 
+              data-learn="Expired Certificates: Click to filter table to only expired certificates."
+              onClick={() => { setFilterType('expired'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'expired' ? 2 : 0,
+                borderColor: 'error.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <ErrorIcon color="error" />
@@ -442,7 +481,17 @@ export default function CertificatesPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Self-Signed Certificates: Number of self-signed certificates detected.">
+            <Card 
+              data-learn="Self-Signed Certificates: Click to filter table to only self-signed certificates."
+              onClick={() => { setFilterType('selfSigned'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'selfSigned' ? 2 : 0,
+                borderColor: 'warning.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <WarningIcon color="warning" />
@@ -460,7 +509,17 @@ export default function CertificatesPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Weak Certificates: Number of certificates with weak signatures or short key sizes.">
+            <Card 
+              data-learn="Weak Certificates: Click to filter table to only certificates with weak signatures or short key sizes."
+              onClick={() => { setFilterType('weakSecurity'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'weakSecurity' ? 2 : 0,
+                borderColor: 'warning.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <WarningIcon color="warning" />
@@ -477,12 +536,13 @@ export default function CertificatesPage() {
             </Card>
           </Grid>
         </Grid>
+        )}
 
         {/* Visualization Charts - Only show in chart mode */}
         {viewMode === 'chart' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Top Issuers Chart: Bar chart showing the most common certificate issuers."
@@ -500,7 +560,7 @@ export default function CertificatesPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Certificate Status: Pie chart showing the distribution of certificate statuses (valid, expired, self-signed, weak)."
@@ -518,7 +578,7 @@ export default function CertificatesPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Key Algorithms: Bar chart showing the distribution of public key algorithms used."
@@ -536,7 +596,7 @@ export default function CertificatesPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Expiration Timeline: Timeline showing when certificates will expire."
@@ -581,7 +641,7 @@ export default function CertificatesPage() {
             Refresh
           </Button>
           
-          {searchQuery ? (
+          {(searchQuery || filterType !== 'all') ? (
             <Typography variant="body2" color="text.secondary">
               Showing {filteredCertificates.length} of {totalCount} certificates
             </Typography>

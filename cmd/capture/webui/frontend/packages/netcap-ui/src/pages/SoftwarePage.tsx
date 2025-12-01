@@ -311,7 +311,8 @@ export default function SoftwarePage() {
           </ToggleButtonGroup>
         </Box>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - Only show in table mode */}
+        {viewMode === 'table' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={4}>
             <Card data-learn="Unique Products: Number of different software products detected in the network traffic.">
@@ -367,12 +368,13 @@ export default function SoftwarePage() {
             </Card>
           </Grid>
         </Grid>
+        )}
 
         {/* Visualization Charts - Only show in chart mode */}
         {viewMode === 'chart' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Top Products: Bar chart showing the most frequently detected software products and versions."
@@ -390,7 +392,7 @@ export default function SoftwarePage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Vendor Distribution: Pie chart showing the distribution of software by vendor/manufacturer."
@@ -408,7 +410,7 @@ export default function SoftwarePage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Operating Systems: Bar chart showing detected operating systems from software analysis."
@@ -426,7 +428,7 @@ export default function SoftwarePage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Version Hierarchy: Sunburst chart showing the relationship between products and their versions."

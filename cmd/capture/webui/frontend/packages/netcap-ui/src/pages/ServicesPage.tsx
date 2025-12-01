@@ -313,7 +313,8 @@ export default function ServicesPage() {
           </ToggleButtonGroup>
         </Box>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - Only show in table mode */}
+        {viewMode === 'table' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
             <Card data-learn="Total Services: Number of network services discovered in this PCAP file.">
@@ -387,12 +388,13 @@ export default function ServicesPage() {
             </Card>
           </Grid>
         </Grid>
+        )}
 
         {/* Visualization Charts - Only show in chart mode */}
         {viewMode === 'chart' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Top Services Chart: Bar chart showing the services with the most traffic."
@@ -410,7 +412,7 @@ export default function ServicesPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Protocol Distribution: Pie chart showing the distribution of protocols across services."
@@ -428,7 +430,7 @@ export default function ServicesPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Top Ports Chart: Bar chart showing the most commonly used service ports."
@@ -446,7 +448,7 @@ export default function ServicesPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Top Products Chart: Bar chart showing the most common software products and vendors detected on services."

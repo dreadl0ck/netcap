@@ -54,6 +54,9 @@ import {
   TableChart as TableChartIcon,
   BarChart as BarChartIcon,
   SyncAlt as SyncAltIcon,
+  CheckCircle as CheckCircleIcon,
+  Error as ErrorIcon,
+  Tag as TagIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
@@ -119,6 +122,7 @@ interface CredentialsResponse {
 
 type CredentialSortField = 'timestamp' | 'service' | 'user' | 'password';
 type SortOrder = 'asc' | 'desc';
+type CredentialFilterType = 'all' | 'failed' | 'successful' | 'hashed';
 
 // Service category mapping for color-coding and UI labels
 const serviceCategories: Record<string, { category: 'auth' | 'discovery' | 'remote' | 'database' | 'network', color: 'primary' | 'secondary' | 'warning' | 'info' | 'success', userLabel: string, passLabel: string }> = {
@@ -223,6 +227,7 @@ export default function CredentialsPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<CredentialFilterType>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [switchingFile, setSwitchingFile] = useState(false);
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
@@ -278,6 +283,22 @@ export default function CredentialsPage() {
       );
     }
 
+    // Apply credential type filter
+    if (filterType !== 'all') {
+      filtered = filtered.filter(cred => {
+        switch (filterType) {
+          case 'failed':
+            return cred.authSuccessSet && !cred.authSuccess;
+          case 'successful':
+            return cred.authSuccessSet && cred.authSuccess;
+          case 'hashed':
+            return Boolean(cred.hash || cred.hashType || cred.hashcatFormat);
+          default:
+            return true;
+        }
+      });
+    }
+
     // Apply search filter with negation support (e.g., "!FTP" excludes FTP)
     if (searchQuery) {
       const searchTerms = parseSearchQuery(searchQuery);
@@ -317,7 +338,7 @@ export default function CredentialsPage() {
     });
 
     return filtered;
-  }, [credentials, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs]);
+  }, [credentials, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs, filterType]);
 
   // Paginate credentials
   const paginatedCredentials = filteredCredentials.slice(
@@ -399,6 +420,9 @@ export default function CredentialsPage() {
     avgPerService: credentials.length > 0 
       ? credentials.length / new Set(credentials.map(c => c.service)).size
       : 0,
+    failedCount: credentials.filter(c => c.authSuccessSet && !c.authSuccess).length,
+    successfulCount: credentials.filter(c => c.authSuccessSet && c.authSuccess).length,
+    hashedCount: credentials.filter(c => Boolean(c.hash || c.hashType || c.hashcatFormat)).length,
   }), [credentials]);
 
   if (error) {
@@ -440,13 +464,24 @@ export default function CredentialsPage() {
           </ToggleButtonGroup>
         </Box>
 
-        {/* Summary Cards */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
+        {/* Summary Cards - Row 1 - Only show in table mode */}
+        {viewMode === 'table' && (
+        <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Total Credentials: Number of credentials captured from network traffic in this PCAP file.">
+            <Card 
+              data-learn="Total Credentials: Click to show all credentials."
+              onClick={() => { setFilterType('all'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'all' ? 2 : 0,
+                borderColor: 'primary.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <VpnKeyIcon color="primary" data-learn="Key Icon: Indicates credential count including usernames and passwords captured from network traffic." />
+                  <VpnKeyIcon color="primary" />
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Total Credentials
@@ -461,10 +496,99 @@ export default function CredentialsPage() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
+            <Card 
+              data-learn="Failed Authentications: Click to filter table to only failed authentication attempts."
+              onClick={() => { setFilterType('failed'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'failed' ? 2 : 0,
+                borderColor: 'error.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <ErrorIcon color="error" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Failed Auth
+                    </Typography>
+                    <Typography variant="h5">
+                      {stats.failedCount.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card 
+              data-learn="Successful Authentications: Click to filter table to only successful authentication attempts."
+              onClick={() => { setFilterType('successful'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'successful' ? 2 : 0,
+                borderColor: 'success.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CheckCircleIcon color="success" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Successful Auth
+                    </Typography>
+                    <Typography variant="h5">
+                      {stats.successfulCount.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} sm={6} md={3}>
+            <Card 
+              data-learn="Hashed Credentials: Click to filter table to only credentials with password hashes (NTLM, Kerberos, etc.)."
+              onClick={() => { setFilterType('hashed'); setPage(0); }}
+              sx={{ 
+                cursor: 'pointer', 
+                transition: 'all 0.2s',
+                border: filterType === 'hashed' ? 2 : 0,
+                borderColor: 'warning.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
+              }}
+            >
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <TagIcon color="warning" />
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Hashed Credentials
+                    </Typography>
+                    <Typography variant="h5">
+                      {stats.hashedCount.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+        )}
+
+        {/* Summary Cards - Row 2: Statistics - Only show in table mode */}
+        {viewMode === 'table' && (
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
             <Card data-learn="Unique Services: Number of different services/protocols that had credentials captured.">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SecurityIcon color="success" data-learn="Services Icon: Count of different protocols where credentials were harvested (HTTP, FTP, SMTP, etc.)." />
+                  <SecurityIcon color="success" />
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Unique Services
@@ -482,7 +606,7 @@ export default function CredentialsPage() {
             <Card data-learn="Unique Users: Number of different usernames found in captured credentials.">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PersonIcon color="warning" data-learn="Users Icon: Number of distinct usernames discovered across all captured credentials." />
+                  <PersonIcon color="warning" />
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Unique Users
@@ -500,7 +624,7 @@ export default function CredentialsPage() {
             <Card data-learn="Unique Passwords: Number of different passwords found in captured credentials.">
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LockIcon color="info" data-learn="Passwords Icon: Number of distinct passwords captured. High reuse indicates weak security practices." />
+                  <LockIcon color="info" />
                   <Box>
                     <Typography variant="body2" color="text.secondary">
                       Unique Passwords
@@ -514,12 +638,13 @@ export default function CredentialsPage() {
             </Card>
           </Grid>
         </Grid>
+        )}
 
         {/* Visualization Charts - Only show in chart mode */}
         {viewMode === 'chart' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Credentials by Service: Bar chart showing which services/protocols had the most credentials captured."
@@ -537,7 +662,7 @@ export default function CredentialsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Credentials Timeline: Line chart showing when credentials were captured over time."
@@ -555,7 +680,7 @@ export default function CredentialsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Top Usernames: Bar chart showing the most common usernames in captured credentials."
@@ -573,7 +698,7 @@ export default function CredentialsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Credentials by Flow: Pie chart showing the distribution of credentials across network flows."
@@ -618,8 +743,8 @@ export default function CredentialsPage() {
             Refresh
           </Button>
           
-          {searchQuery ? (
-            <Typography variant="body2" color="text.secondary" data-learn="Filter Count: Shows how many credentials match the current search filter out of the total.">
+          {(searchQuery || filterType !== 'all') ? (
+            <Typography variant="body2" color="text.secondary" data-learn="Filter Count: Shows how many credentials match the current filter and search out of the total.">
               Showing {filteredCredentials.length} of {totalCount} credentials
             </Typography>
           ) : null}

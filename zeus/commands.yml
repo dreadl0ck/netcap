@@ -361,7 +361,7 @@ commands:
             FRONTEND_PID=$!
             cd ../../../..
             
-            sleep 2 && open http://localhost:3000 &
+            sleep 10 && open http://localhost:3000 &
 
             # Wait for both processes
             wait $AIR_PID $FRONTEND_PID

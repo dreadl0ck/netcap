@@ -77,6 +77,11 @@ import { formatBytes, formatTimestamp, type ExtractedFileInfo } from '../lib/api
 import { useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
 import OptimizedPieChart from '../components/OptimizedPieChart';
+import dynamic from 'next/dynamic';
+import { tomorrow } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+
+// Dynamically import SyntaxHighlighter to avoid SSR issues
+const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
 
 export default function ExtractedFilesPage() {
   const api = useNetcapApi();
@@ -316,8 +321,20 @@ export default function ExtractedFilesPage() {
       .sort((a, b) => b.value - a.value);
   }, [files]);
 
-  // ECharts pie chart option
-  const pieChartOption = useMemo(() => ({
+  // Calculate protocol distribution for pie chart
+  const protocolDistribution = useMemo(() => {
+    const counts: Record<string, number> = {};
+    files.forEach(file => {
+      const protocol = file.protocol || 'unknown';
+      counts[protocol] = (counts[protocol] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [files]);
+
+  // ECharts pie chart option for MIME types
+  const mimeTypePieChartOption = useMemo(() => ({
     tooltip: {
       trigger: 'item',
       formatter: '{b}: {c} ({d}%)'
@@ -360,6 +377,73 @@ export default function ExtractedFilesPage() {
       }
     ]
   }), [mimeTypeDistribution]);
+
+  // ECharts pie chart option for protocols
+  const protocolPieChartOption = useMemo(() => ({
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)'
+    },
+    legend: {
+      orient: 'vertical',
+      right: 10,
+      top: 'center',
+      type: 'scroll',
+      textStyle: {
+        fontSize: 11
+      }
+    },
+    series: [
+      {
+        name: 'Protocols',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: true,
+        itemStyle: {
+          borderRadius: 8,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: false,
+          position: 'center'
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 14,
+            fontWeight: 'bold'
+          }
+        },
+        labelLine: {
+          show: false
+        },
+        data: protocolDistribution
+      }
+    ]
+  }), [protocolDistribution]);
+
+  // Handler for MIME type chart click
+  const handleMimeTypeChartClick = useCallback((params: { name: string }) => {
+    // Toggle filter: if already filtered by this type, clear the filter
+    if (mimeTypeFilter === params.name) {
+      setMimeTypeFilter('');
+    } else {
+      setMimeTypeFilter(params.name === 'unknown' ? '' : params.name);
+    }
+    setPage(0);
+  }, [mimeTypeFilter]);
+
+  // Handler for protocol chart click
+  const handleProtocolChartClick = useCallback((params: { name: string }) => {
+    // Toggle filter: if already filtered by this protocol, clear the filter
+    if (protocolFilter === params.name) {
+      setProtocolFilter('');
+    } else {
+      setProtocolFilter(params.name === 'unknown' ? '' : params.name);
+    }
+    setPage(0);
+  }, [protocolFilter]);
 
   // Apply MIME type and protocol filters
   const filteredFiles = files.filter(f => {
@@ -437,9 +521,101 @@ export default function ExtractedFilesPage() {
     );
   }, []);
 
+  // Helper function to get file extension from filename
+  const getFileExtension = useCallback((filename: string): string => {
+    if (!filename) return '';
+    const lastDot = filename.lastIndexOf('.');
+    if (lastDot === -1 || lastDot === filename.length - 1) return '';
+    return filename.slice(lastDot + 1).toLowerCase();
+  }, []);
+
+  // Helper function to get syntax highlighting language from MIME type and/or filename
+  const getSyntaxLanguage = useCallback((mimeType: string, filename?: string): string | null => {
+    // First try to detect from MIME type
+    if (mimeType) {
+      if (mimeType.includes('json')) return 'json';
+      if (mimeType.includes('javascript') || mimeType.includes('ecmascript')) return 'javascript';
+      if (mimeType === 'text/html' || mimeType.includes('/html')) return 'html';
+      if (mimeType.includes('xml') || mimeType.includes('svg')) return 'xml';
+      if (mimeType.includes('css')) return 'css';
+      if (mimeType.includes('typescript')) return 'typescript';
+      if (mimeType.includes('python')) return 'python';
+      if (mimeType.includes('yaml') || mimeType.includes('yml')) return 'yaml';
+      if (mimeType.includes('markdown')) return 'markdown';
+      if (mimeType.includes('sql')) return 'sql';
+      if (mimeType.includes('shell') || mimeType.includes('bash')) return 'bash';
+    }
+    
+    // Fall back to file extension detection
+    if (filename) {
+      const ext = getFileExtension(filename);
+      switch (ext) {
+        case 'json': return 'json';
+        case 'js': case 'mjs': case 'cjs': return 'javascript';
+        case 'jsx': return 'jsx';
+        case 'ts': case 'mts': case 'cts': return 'typescript';
+        case 'tsx': return 'tsx';
+        case 'html': case 'htm': case 'xhtml': return 'html';
+        case 'xml': case 'xsl': case 'xslt': case 'svg': return 'xml';
+        case 'css': return 'css';
+        case 'scss': return 'scss';
+        case 'less': return 'less';
+        case 'py': case 'pyw': return 'python';
+        case 'yaml': case 'yml': return 'yaml';
+        case 'md': case 'markdown': return 'markdown';
+        case 'sql': return 'sql';
+        case 'sh': case 'bash': case 'zsh': return 'bash';
+        case 'go': return 'go';
+        case 'rs': return 'rust';
+        case 'java': return 'java';
+        case 'c': case 'h': return 'c';
+        case 'cpp': case 'cc': case 'cxx': case 'hpp': return 'cpp';
+        case 'php': return 'php';
+        case 'rb': return 'ruby';
+        case 'swift': return 'swift';
+        case 'kt': case 'kts': return 'kotlin';
+        case 'lua': return 'lua';
+        case 'pl': case 'pm': return 'perl';
+        case 'r': return 'r';
+        case 'toml': return 'toml';
+        case 'ini': case 'cfg': case 'conf': return 'ini';
+        case 'dockerfile': return 'dockerfile';
+        case 'makefile': return 'makefile';
+        default: return null;
+      }
+    }
+    
+    return null;
+  }, [getFileExtension]);
+
+  // Helper function to format content (e.g., prettify JSON)
+  const formatContent = useCallback((content: string, mimeType: string, filename?: string): string => {
+    if (!content) return content;
+    
+    // Format JSON - check both mime type and extension
+    const isJson = mimeType?.includes('json') || (filename && getFileExtension(filename) === 'json');
+    if (isJson) {
+      try {
+        const parsed = JSON.parse(content);
+        return JSON.stringify(parsed, null, 2);
+      } catch {
+        // If parsing fails, return original content
+        return content;
+      }
+    }
+    
+    return content;
+  }, [getFileExtension]);
+
+  // Helper function to check if content should use syntax highlighting
+  const shouldUseSyntaxHighlighting = useCallback((mimeType: string, filename?: string): boolean => {
+    return getSyntaxLanguage(mimeType, filename) !== null;
+  }, [getSyntaxLanguage]);
+
   // Handler to preview file - defined here to be available for keyboard navigation
   const handlePreviewFile = useCallback(async (file: ExtractedFileInfo) => {
     setPreviewFile(file);
+    setSelectedFileKey(file.path); // Keep selection in sync with preview
     setPreviewContent('');
     setPreviewError('');
     setPreviewLoading(true);
@@ -631,17 +807,6 @@ export default function ExtractedFilesPage() {
       } else if (event.key === 'ArrowDown') {
         event.preventDefault();
         handleNextFile();
-      } else if (event.key === 'ArrowLeft') {
-        // Left/Right arrows for hex dump pagination (like ConversationModal)
-        if (isBinaryFile(previewFile.mimeType) && binaryOffset > 0) {
-          event.preventDefault();
-          handleBinaryPrevious();
-        }
-      } else if (event.key === 'ArrowRight') {
-        if (isBinaryFile(previewFile.mimeType) && binaryHasMore) {
-          event.preventDefault();
-          handleBinaryNext();
-        }
       } else if (event.key === 'Escape') {
         event.preventDefault();
         handleClosePreview();
@@ -650,7 +815,7 @@ export default function ExtractedFilesPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [previewFile, handlePreviousFile, handleNextFile, handleClosePreview, isBinaryFile, binaryOffset, binaryHasMore, handleBinaryPrevious, handleBinaryNext]);
+  }, [previewFile, handlePreviousFile, handleNextFile, handleClosePreview]);
 
   // Get file type category for icon display
   const getFileTypeIcon = (mimeType: string) => {
@@ -785,20 +950,67 @@ export default function ExtractedFilesPage() {
           </Box>
         </Box>
 
-        {/* MIME Type Distribution Pie Chart */}
-        {totalCount > 0 && mimeTypeDistribution.length > 0 && (
-          <Paper 
-            data-learn="MIME Type Distribution: Visual breakdown of extracted file types showing the proportion of images, documents, text files, and other content extracted from the capture."
-            sx={{ mb: 3, p: 2 }}
-          >
-            <Typography variant="h6" gutterBottom>
-              MIME Type Distribution
-            </Typography>
-            <OptimizedPieChart 
-              option={pieChartOption} 
-              style={{ height: '250px', width: '100%' }}
-            />
-          </Paper>
+        {/* Distribution Pie Charts */}
+        {totalCount > 0 && (mimeTypeDistribution.length > 0 || protocolDistribution.length > 0) && (
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 2, mb: 3 }}>
+            {/* MIME Type Distribution */}
+            {mimeTypeDistribution.length > 0 && (
+              <Paper 
+                data-learn="MIME Type Distribution: Visual breakdown of extracted file types. Click on a slice to filter the table by that MIME type."
+                sx={{ flex: 1, p: 2 }}
+              >
+                <Typography variant="h6" gutterBottom>
+                  MIME Type Distribution
+                  {mimeTypeFilter && (
+                    <Chip 
+                      label={`Filtered: ${mimeTypeFilter}`} 
+                      size="small" 
+                      color="primary"
+                      onDelete={() => { setMimeTypeFilter(''); setPage(0); }}
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  Click a slice to filter
+                </Typography>
+                <OptimizedPieChart 
+                  option={mimeTypePieChartOption} 
+                  style={{ height: '250px', width: '100%' }}
+                  onItemClick={handleMimeTypeChartClick}
+                />
+              </Paper>
+            )}
+
+            {/* Protocol Distribution */}
+            {protocolDistribution.length > 0 && (
+              <Paper 
+                data-learn="Protocol Distribution: Visual breakdown of network protocols used to transfer extracted files. Click on a slice to filter the table by that protocol."
+                sx={{ flex: 1, p: 2 }}
+              >
+                <Typography variant="h6" gutterBottom>
+                  Protocol Distribution
+                  {protocolFilter && (
+                    <Chip 
+                      label={`Filtered: ${protocolFilter}`} 
+                      size="small" 
+                      color="primary"
+                      onDelete={() => { setProtocolFilter(''); setPage(0); }}
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  Click a slice to filter
+                </Typography>
+                <OptimizedPieChart 
+                  option={protocolPieChartOption} 
+                  style={{ height: '250px', width: '100%' }}
+                  onItemClick={handleProtocolChartClick}
+                />
+              </Paper>
+            )}
+          </Box>
         )}
 
         {/* Filters */}
@@ -898,8 +1110,7 @@ export default function ExtractedFilesPage() {
                             transition: 'all 0.2s ease-in-out',
                           },
                         }}
-                        onClick={() => setSelectedFileKey(file.path)}
-                        onDoubleClick={() => handlePreviewFile(file)}
+                        onClick={() => handlePreviewFile(file)}
                       >
                         <CardMedia
                           component="img"
@@ -1019,8 +1230,7 @@ export default function ExtractedFilesPage() {
                       key={file.path}
                       data-row-key={file.path}
                       hover 
-                      onClick={() => setSelectedFileKey(file.path)}
-                      onDoubleClick={() => handlePreviewFile(file)}
+                      onClick={() => handlePreviewFile(file)}
                       selected={selectedFileKey === file.path}
                       sx={{ cursor: 'pointer' }}
                     >
@@ -1241,7 +1451,7 @@ export default function ExtractedFilesPage() {
                   {isTextFile(previewFile.mimeType) && previewContent && (
                     <>
                       {previewTab === 'rendered' ? (
-                        // Rendered view for HTML
+                        // Rendered view - HTML gets iframe, code files get syntax highlighting
                         (previewFile.mimeType === 'text/html' ? (<>
                           <Alert severity="warning" sx={{ m: 2, mb: 1 }}>
                             <strong>Security Warning:</strong> Viewing untrusted HTML in rendered mode. 
@@ -1259,30 +1469,62 @@ export default function ExtractedFilesPage() {
                             sandbox=""
                             title={previewFile.originalName || previewFile.name}
                           />
-                        </>) : // Code view for other text files
-                        (<Paper
-                          sx={{
-                            bgcolor: 'grey.900',
-                            p: 2,
-                            overflow: 'auto',
-                            maxHeight: 'calc(90vh - 200px)'
-                          }}
-                        >
-                          <pre
-                            style={{
-                              margin: 0,
-                              fontFamily: 'monospace',
-                              fontSize: '0.875rem',
-                              whiteSpace: 'pre-wrap',
-                              wordBreak: 'break-word',
-                              color: '#e0e0e0',
+                        </>) : // Code view with syntax highlighting for supported languages
+                        shouldUseSyntaxHighlighting(previewFile.mimeType, previewFile.originalName || previewFile.name) ? (
+                          <Box
+                            sx={{
+                              overflow: 'auto',
+                              maxHeight: 'calc(90vh - 200px)',
+                              '& pre': {
+                                margin: '0 !important',
+                                borderRadius: '8px !important',
+                              },
+                              '& code': {
+                                fontSize: '0.875rem !important',
+                              }
                             }}
                           >
-                            {previewContent}
-                          </pre>
-                        </Paper>))
+                            <SyntaxHighlighter
+                              language={getSyntaxLanguage(previewFile.mimeType, previewFile.originalName || previewFile.name) || 'text'}
+                              style={tomorrow}
+                              showLineNumbers
+                              wrapLines
+                              wrapLongLines
+                              customStyle={{
+                                margin: 0,
+                                borderRadius: '8px',
+                                fontSize: '0.875rem',
+                              }}
+                            >
+                              {formatContent(previewContent, previewFile.mimeType, previewFile.originalName || previewFile.name)}
+                            </SyntaxHighlighter>
+                          </Box>
+                        ) : (
+                          // Plain text view for other text files
+                          <Paper
+                            sx={{
+                              bgcolor: 'grey.900',
+                              p: 2,
+                              overflow: 'auto',
+                              maxHeight: 'calc(90vh - 200px)'
+                            }}
+                          >
+                            <pre
+                              style={{
+                                margin: 0,
+                                fontFamily: 'monospace',
+                                fontSize: '0.875rem',
+                                whiteSpace: 'pre-wrap',
+                                wordBreak: 'break-word',
+                                color: '#e0e0e0',
+                              }}
+                            >
+                              {previewContent}
+                            </pre>
+                          </Paper>
+                        ))
                       ) : (
-                        // Raw source view
+                        // Raw source view - always shows original content without formatting
                         (<Paper
                           sx={{
                             bgcolor: 'grey.900',

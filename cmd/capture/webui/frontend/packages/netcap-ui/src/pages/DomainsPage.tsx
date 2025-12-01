@@ -318,7 +318,8 @@ export default function DomainsPage() {
           </ToggleButtonGroup>
         </Box>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - Only show in table mode */}
+        {viewMode === 'table' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
             <Card data-learn="Unique Domains: Total number of unique domain names found in DNS queries.">
@@ -392,12 +393,13 @@ export default function DomainsPage() {
             </Card>
           </Grid>
         </Grid>
+        )}
 
         {/* Visualization Charts - Only show in chart mode */}
         {viewMode === 'chart' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Top Domains Chart: Bar chart showing the most frequently queried domain names."
@@ -415,7 +417,7 @@ export default function DomainsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="TLD Distribution: Pie chart showing the distribution of top-level domains (.com, .org, etc.)."
@@ -433,7 +435,7 @@ export default function DomainsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Record Types: Bar chart showing DNS query types (A, AAAA, CNAME, MX, etc.)."
@@ -451,7 +453,7 @@ export default function DomainsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Subdomain Distribution: Pie chart comparing root domain queries vs subdomain queries."
@@ -609,17 +611,22 @@ export default function DomainsPage() {
                           </IconButton>
                         </TableCell>
                         <TableCell>
-                          <Typography 
-                            sx={{ 
-                              fontFamily: 'monospace', 
-                              fontSize: '0.875rem',
-                              fontWeight: 'medium',
-                              wordBreak: 'break-word'
-                            }}
-                            data-learn="Domain Name: The fully qualified domain name extracted from DNS queries."
-                          >
-                            {domain.domain}
-                          </Typography>
+                          <Tooltip title={domain.domain} placement="top">
+                            <Typography 
+                              sx={{ 
+                                fontFamily: 'monospace', 
+                                fontSize: '0.875rem',
+                                fontWeight: 'medium',
+                                maxWidth: '400px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}
+                              data-learn="Domain Name: The fully qualified domain name extracted from DNS queries."
+                            >
+                              {domain.domain}
+                            </Typography>
+                          </Tooltip>
                         </TableCell>
                         <TableCell>
                           <Chip

@@ -287,7 +287,8 @@ export default function FingerprintsPage() {
           </ToggleButtonGroup>
         </Box>
 
-        {/* Summary Cards - Row 1: Core TLS fingerprints */}
+        {/* Summary Cards - Row 1: Core TLS fingerprints - Only show in table mode */}
+        {viewMode === 'table' && (
         <Grid container spacing={2} sx={{ mb: 2 }}>
           <Grid item xs={12} sm={6} md={2.4}>
             <Card 
@@ -429,8 +430,10 @@ export default function FingerprintsPage() {
             </Card>
           </Grid>
         </Grid>
+        )}
         
-        {/* Summary Cards - Row 2: TCP, SSH, and DHCP fingerprints */}
+        {/* Summary Cards - Row 2: TCP, SSH, and DHCP fingerprints - Only show in table mode */}
+        {viewMode === 'table' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={2.4}>
             <Card 
@@ -544,12 +547,13 @@ export default function FingerprintsPage() {
             </Card>
           </Grid>
         </Grid>
+        )}
 
         {/* Visualization Charts - Only show in chart mode */}
         {viewMode === 'chart' && (
         <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Type Distribution: Pie chart showing distribution of JA4, JA4S, JA4SSH, and DHCP fingerprints."
@@ -567,7 +571,7 @@ export default function FingerprintsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Top JA4: Bar chart showing the most common TLS client fingerprints."
@@ -585,7 +589,7 @@ export default function FingerprintsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Top JA4SSH: Bar chart showing the most common SSH client/server fingerprints."
@@ -603,7 +607,7 @@ export default function FingerprintsPage() {
           </Grid>
           
           <Grid item xs={12} md={6}>
-            <Card sx={{ height: 500 }}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
                 <iframe
                   data-learn="Usage Patterns: Scatter plot showing relationship between fingerprint occurrences and unique hosts."

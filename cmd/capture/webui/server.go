@@ -2103,9 +2103,10 @@ func (s *Server) cleanupRoutine() {
 		select {
 		case <-ticker.C:
 			if s.sessionManager != nil {
+				// 1. Clean up expired sessions tracked in memory
 				expiredSessions := s.sessionManager.CleanupExpiredSessions()
 				if len(expiredSessions) > 0 {
-					log.Printf("[WebUI] Cleaned up %d expired sessions", len(expiredSessions))
+					log.Printf("[WebUI] Cleaned up %d expired sessions from memory", len(expiredSessions))
 
 					// Remove session files from disk
 					for _, sessionID := range expiredSessions {
@@ -2121,10 +2122,80 @@ func (s *Server) cleanupRoutine() {
 						}
 					}
 				}
+
+				// 2. Clean up orphaned directories on disk (not tracked in memory)
+				orphanedCount := s.cleanupOrphanedResultDirectories()
+				if orphanedCount > 0 {
+					log.Printf("[WebUI] Cleaned up %d orphaned result directories from disk", orphanedCount)
+				}
 			}
 		case <-s.shutdownChan:
 			log.Println("[WebUI] Cleanup routine shutting down")
 			return
 		}
 	}
+}
+
+// cleanupOrphanedResultDirectories scans the results directory and removes expired
+// session directories that are not tracked in memory (e.g., from previous server runs)
+func (s *Server) cleanupOrphanedResultDirectories() int {
+	resultsDir := filepath.Join(s.serviceConfig.DataDir, "results")
+
+	entries, err := os.ReadDir(resultsDir)
+	if err != nil {
+		log.Printf("[WebUI] Failed to read results directory for orphan cleanup: %v", err)
+		return 0
+	}
+
+	expiryTime := time.Now().Add(-time.Duration(s.serviceConfig.SessionExpiry) * time.Minute)
+	cleanedCount := 0
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		sessionID := entry.Name()
+
+		// Skip if this session is currently tracked in memory (already handled above)
+		if _, exists := s.sessionManager.GetSession(sessionID); exists {
+			continue
+		}
+
+		sessionDir := filepath.Join(resultsDir, sessionID)
+		metadataPath := filepath.Join(sessionDir, "session.json")
+
+		// Try to load session metadata from disk
+		session, err := loadSessionMetadata(metadataPath)
+		if err != nil {
+			// No valid metadata - check directory modification time instead
+			info, err := entry.Info()
+			if err != nil {
+				continue
+			}
+			// If directory is old enough, remove it
+			if info.ModTime().Before(expiryTime) {
+				if err := os.RemoveAll(sessionDir); err != nil {
+					log.Printf("[WebUI] Error removing orphaned directory %s: %v", sessionID, err)
+				} else {
+					cleanedCount++
+				}
+			}
+			continue
+		}
+
+		// Check if this session is expired based on its upload timestamp
+		if session.UploadTimestamp.Before(expiryTime) {
+			if err := os.RemoveAll(sessionDir); err != nil {
+				log.Printf("[WebUI] Error removing expired orphaned session %s: %v", sessionID, err)
+			} else {
+				cleanedCount++
+				// Also try to remove upload file if it exists
+				uploadFile := filepath.Join(s.serviceConfig.DataDir, "uploads", sessionID+".pcap")
+				_ = os.Remove(uploadFile) // Ignore error if doesn't exist
+			}
+		}
+	}
+
+	return cleanedCount
 }
