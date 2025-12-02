@@ -3943,17 +3943,11 @@ func (s *Server) getUnfilteredMenuCounts(outDir string) MenuCountsResponse {
 	response.VulnerabilitiesCount = CountRecords(filepath.Join(outDir, "Vulnerability.ncap.gz"))
 	response.ServicesCount = CountRecords(filepath.Join(outDir, "Service.ncap.gz"))
 
-	// Count fingerprints from all sources that the fingerprints page uses
-	// JA4 from TLSClientHello, JA4S from TLSServerHello, JA4H from HTTP,
-	// JA4X from TLSCertificate, JA4T/JA4TS from TCP, JA4SSH from SSH, DHCP from DHCPv4
-	ja4Count := CountRecords(filepath.Join(outDir, "TLSClientHello.ncap.gz"))
-	ja4sCount := CountRecords(filepath.Join(outDir, "TLSServerHello.ncap.gz"))
-	ja4hCount := CountRecords(filepath.Join(outDir, "HTTP.ncap.gz"))
-	ja4xCount := CountRecords(filepath.Join(outDir, "TLSCertificate.ncap.gz"))
-	tcpCount := CountRecords(filepath.Join(outDir, "TCP.ncap.gz"))
-	sshCount := CountRecords(filepath.Join(outDir, "SSH.ncap.gz"))
-	dhcpCount := CountRecords(filepath.Join(outDir, "DHCPv4.ncap.gz"))
-	response.FingerprintsCount = ja4Count + ja4sCount + ja4hCount + ja4xCount + tcpCount + sshCount + dhcpCount
+	// Count unique fingerprints using the same logic as the fingerprints page
+	// This reads and aggregates from all fingerprint sources to get the actual unique count
+	if fingerprints, err := readFingerprints(outDir); err == nil {
+		response.FingerprintsCount = int64(len(fingerprints))
+	}
 
 	// Count domains from DNS
 	response.DomainsCount = CountRecords(filepath.Join(outDir, "DNS.ncap.gz"))
@@ -4019,17 +4013,11 @@ func (s *Server) getFilteredMenuCounts(outDir string, communityIDs map[string]bo
 	response.VulnerabilitiesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Vulnerability.ncap.gz"), communityIDs)
 	response.ServicesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Service.ncap.gz"), communityIDs)
 
-	// Count fingerprints from all sources with filtering
-	// JA4 from TLSClientHello, JA4S from TLSServerHello, JA4H from HTTP,
-	// JA4X from TLSCertificate, JA4T/JA4TS from TCP, JA4SSH from SSH, DHCP from DHCPv4
-	ja4Count := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "TLSClientHello.ncap.gz"), communityIDs)
-	ja4sCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "TLSServerHello.ncap.gz"), communityIDs)
-	ja4hCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "HTTP.ncap.gz"), communityIDs)
-	ja4xCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "TLSCertificate.ncap.gz"), communityIDs)
-	tcpCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "TCP.ncap.gz"), communityIDs)
-	sshCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "SSH.ncap.gz"), communityIDs)
-	dhcpCount := CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "DHCPv4.ncap.gz"), communityIDs)
-	response.FingerprintsCount = ja4Count + ja4sCount + ja4hCount + ja4xCount + tcpCount + sshCount + dhcpCount
+	// Count unique fingerprints using the same logic as the fingerprints page
+	// Note: community ID filtering not implemented for fingerprints, use unfiltered count
+	if fingerprints, err := readFingerprints(outDir); err == nil {
+		response.FingerprintsCount = int64(len(fingerprints))
+	}
 
 	// Count domains from DNS with filtering
 	response.DomainsCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "DNS.ncap.gz"), communityIDs)

@@ -36,7 +36,6 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
-  TextField,
   Typography,
   Alert,
   Collapse,
@@ -61,10 +60,12 @@ import {
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
+import SearchInput from '../components/SearchInput';
+import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 interface CredentialSummary {
@@ -233,7 +234,7 @@ export default function CredentialsPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<CredentialSortField>('timestamp');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [viewMode, setViewMode] = useViewMode();
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -464,180 +465,70 @@ export default function CredentialsPage() {
           </ToggleButtonGroup>
         </Box>
 
-        {/* Summary Cards - Row 1 - Only show in table mode */}
+        {/* Summary Cards - Row 1: Filters - Only show in table mode */}
         {viewMode === 'table' && (
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              data-learn="Total Credentials: Click to show all credentials."
-              onClick={() => { setFilterType('all'); setPage(0); }}
-              sx={{ 
-                cursor: 'pointer', 
-                transition: 'all 0.2s',
-                border: filterType === 'all' ? 2 : 0,
-                borderColor: 'primary.main',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <VpnKeyIcon color="primary" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Credentials
-                    </Typography>
-                    <Typography variant="h5">
-                      {totalCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              data-learn="Failed Authentications: Click to filter table to only failed authentication attempts."
-              onClick={() => { setFilterType('failed'); setPage(0); }}
-              sx={{ 
-                cursor: 'pointer', 
-                transition: 'all 0.2s',
-                border: filterType === 'failed' ? 2 : 0,
-                borderColor: 'error.main',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <ErrorIcon color="error" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Failed Auth
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.failedCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              data-learn="Successful Authentications: Click to filter table to only successful authentication attempts."
-              onClick={() => { setFilterType('successful'); setPage(0); }}
-              sx={{ 
-                cursor: 'pointer', 
-                transition: 'all 0.2s',
-                border: filterType === 'successful' ? 2 : 0,
-                borderColor: 'success.main',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CheckCircleIcon color="success" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Successful Auth
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.successfulCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              data-learn="Hashed Credentials: Click to filter table to only credentials with password hashes (NTLM, Kerberos, etc.)."
-              onClick={() => { setFilterType('hashed'); setPage(0); }}
-              sx={{ 
-                cursor: 'pointer', 
-                transition: 'all 0.2s',
-                border: filterType === 'hashed' ? 2 : 0,
-                borderColor: 'warning.main',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <TagIcon color="warning" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Hashed Credentials
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.hashedCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <StatBoxGrid>
+          <StatBox
+            icon={<VpnKeyIcon color="primary" />}
+            label="Total Credentials"
+            value={totalCount}
+            onClick={() => { setFilterType('all'); setPage(0); }}
+            isActive={filterType === 'all'}
+            activeColor="primary"
+            learnHint="Total Credentials: Click to show all credentials."
+          />
+          <StatBox
+            icon={<ErrorIcon color="error" />}
+            label="Failed Auth"
+            value={stats.failedCount}
+            onClick={() => { setFilterType('failed'); setPage(0); }}
+            isActive={filterType === 'failed'}
+            activeColor="error"
+            learnHint="Failed Authentications: Click to filter table to only failed authentication attempts."
+          />
+          <StatBox
+            icon={<CheckCircleIcon color="success" />}
+            label="Successful Auth"
+            value={stats.successfulCount}
+            onClick={() => { setFilterType('successful'); setPage(0); }}
+            isActive={filterType === 'successful'}
+            activeColor="success"
+            learnHint="Successful Authentications: Click to filter table to only successful authentication attempts."
+          />
+          <StatBox
+            icon={<TagIcon color="warning" />}
+            label="Hashed Credentials"
+            value={stats.hashedCount}
+            onClick={() => { setFilterType('hashed'); setPage(0); }}
+            isActive={filterType === 'hashed'}
+            activeColor="warning"
+            learnHint="Hashed Credentials: Click to filter table to only credentials with password hashes (NTLM, Kerberos, etc.)."
+          />
+        </StatBoxGrid>
         )}
 
         {/* Summary Cards - Row 2: Statistics - Only show in table mode */}
         {viewMode === 'table' && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Unique Services: Number of different services/protocols that had credentials captured.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SecurityIcon color="success" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Unique Services
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.uniqueServices.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Unique Users: Number of different usernames found in captured credentials.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PersonIcon color="warning" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Unique Users
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.uniqueUsers.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Unique Passwords: Number of different passwords found in captured credentials.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LockIcon color="info" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Unique Passwords
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.uniquePasswords.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <StatBoxGrid>
+          <StatBox
+            icon={<SecurityIcon color="success" />}
+            label="Unique Services"
+            value={stats.uniqueServices}
+            learnHint="Unique Services: Number of different services/protocols that had credentials captured."
+          />
+          <StatBox
+            icon={<PersonIcon color="warning" />}
+            label="Unique Users"
+            value={stats.uniqueUsers}
+            learnHint="Unique Users: Number of different usernames found in captured credentials."
+          />
+          <StatBox
+            icon={<LockIcon color="info" />}
+            label="Unique Passwords"
+            value={stats.uniquePasswords}
+            learnHint="Unique Passwords: Number of different passwords found in captured credentials."
+          />
+        </StatBoxGrid>
         )}
 
         {/* Visualization Charts - Only show in chart mode */}
@@ -721,16 +612,14 @@ export default function CredentialsPage() {
         {viewMode === 'table' && (
         <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField
-            data-learn="Credential Search: Filter credentials by service, username, password, flow, or notes. Use !term to exclude matches (e.g., !FTP excludes FTP)."
-            size="small"
-            placeholder="Search credentials... (use !term to exclude)"
+          <SearchInput
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
+            onChange={(value) => {
+              setSearchQuery(value);
               setPage(0);
             }}
-            sx={{ minWidth: 300 }}
+            placeholder="Search credentials..."
+            learnHint="Credential Search: Filter credentials by service, username, password, flow, or notes. Use !term to exclude matches (e.g., !FTP excludes FTP)."
           />
           
           <Button

@@ -36,7 +36,6 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
-  TextField,
   Tooltip,
   Typography,
   Alert,
@@ -63,11 +62,13 @@ import {
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
+import SearchInput from '../components/SearchInput';
+import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatBytes, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import dynamic from 'next/dynamic';
-import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 // Dynamically import SyntaxHighlighter to avoid SSR issues
@@ -142,7 +143,7 @@ export default function VulnerabilitiesPage() {
   const [sortField, setSortField] = useState<string>('count');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [exploitCode, setExploitCode] = useState<{[key: string]: {content: string, language: string, loading: boolean, error?: string}}>({});
-  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [viewMode, setViewMode] = useViewMode();
 
   // Fetch status and input files
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -418,47 +419,23 @@ export default function VulnerabilitiesPage() {
 
         {/* Summary Cards - Only show in table mode */}
         {viewMode === 'table' && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={4}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <BugReportIcon color="error" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">Total Vulnerabilities</Typography>
-                    <Typography variant="h5">{totalVulns.toLocaleString()}</Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <WarningIcon color="warning" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">Total Exploits</Typography>
-                    <Typography variant="h5">{totalExploits.toLocaleString()}</Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <ComputerIcon color="info" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">Affected Hosts</Typography>
-                    <Typography variant="h5">{affectedHosts.length.toLocaleString()}</Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <StatBoxGrid>
+          <StatBox
+            icon={<BugReportIcon color="error" />}
+            label="Total Vulnerabilities"
+            value={totalVulns}
+          />
+          <StatBox
+            icon={<WarningIcon color="warning" />}
+            label="Total Exploits"
+            value={totalExploits}
+          />
+          <StatBox
+            icon={<ComputerIcon color="info" />}
+            label="Affected Hosts"
+            value={affectedHosts.length}
+          />
+        </StatBoxGrid>
         )}
 
         {/* Charts - Only show in chart mode */}
@@ -539,12 +516,11 @@ export default function VulnerabilitiesPage() {
         </Box>
 
         <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
-          <TextField
-            size="small"
-            placeholder="Search..."
+          <SearchInput
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            sx={{ minWidth: 300 }}
+            onChange={setSearchQuery}
+            placeholder="Search vulnerabilities..."
+            learnHint="Vulnerability Search: Filter vulnerabilities by CVE ID, description, severity, or affected software. Use !term to exclude matches."
           />
           <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefresh}>Refresh</Button>
         </Box>

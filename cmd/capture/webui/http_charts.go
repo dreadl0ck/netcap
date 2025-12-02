@@ -20,7 +20,6 @@
 package webui
 
 import (
-	"bytes"
 	"log"
 	"net/http"
 	"sort"
@@ -80,21 +79,52 @@ func (s *Server) handleHTTPTopHosts(w http.ResponseWriter, r *http.Request) {
 	}
 	hostList = hostList[:limit]
 
+	// Check if legend should be shown
+	showLegend := r.URL.Query().Get("showLegend") != "false"
+
 	// Prepare chart data
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
-			Title: "Top HTTP Hosts",
+			Title:    "Top HTTP Hosts",
+			Subtitle: "Requests by Host",
+			Left:     "center",
+			TitleStyle: &opts.TextStyle{
+				Color: "#ffffff",
+			},
+			SubtitleStyle: &opts.TextStyle{
+				Color: "#cccccc",
+			},
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
 			Show:    opts.Bool(true),
 			Trigger: "axis",
 		}),
+		charts.WithLegendOpts(opts.Legend{
+			Show: opts.Bool(showLegend),
+			Top:  "8%",
+			TextStyle: &opts.TextStyle{
+				Color: "#ffffff",
+			},
+		}),
 		charts.WithXAxisOpts(opts.XAxis{
 			AxisLabel: &opts.AxisLabel{
 				Rotate: 45,
-				Inside: opts.Bool(false),
+				Color:  "#ffffff",
 			},
+		}),
+		charts.WithYAxisOpts(opts.YAxis{
+			Name: "Requests",
+			AxisLabel: &opts.AxisLabel{
+				Color: "#ffffff",
+			},
+		}),
+		charts.WithGridOpts(opts.Grid{
+			Left:         "3%",
+			Right:        "4%",
+			Bottom:       "15%",
+			ContainLabel: opts.Bool(true),
 		}),
 	)
 
@@ -108,9 +138,11 @@ func (s *Server) handleHTTPTopHosts(w http.ResponseWriter, r *http.Request) {
 
 	bar.SetXAxis(xAxis).AddSeries("Requests", yAxis)
 
-	var buf bytes.Buffer
-	bar.Render(&buf)
-	html := buf.Bytes()
+	html, err := injectFullHeightCSS(bar.Render)
+	if err != nil {
+		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "text/html")
 	w.Write(html)
@@ -155,15 +187,36 @@ func (s *Server) handleHTTPStatusCodes(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Check if legend should be shown
+	showLegend := r.URL.Query().Get("showLegend") != "false"
+
 	// Prepare chart data
 	pie := charts.NewPie()
 	pie.SetGlobalOptions(
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
-			Title: "HTTP Status Code Distribution",
+			Title:    "HTTP Status Code Distribution",
+			Subtitle: "Response Status Groups",
+			Left:     "center",
+			TitleStyle: &opts.TextStyle{
+				Color: "#ffffff",
+			},
+			SubtitleStyle: &opts.TextStyle{
+				Color: "#cccccc",
+			},
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
 			Show:    opts.Bool(true),
 			Trigger: "item",
+		}),
+		charts.WithLegendOpts(opts.Legend{
+			Show:   opts.Bool(showLegend),
+			Orient: "vertical",
+			Left:   "left",
+			Top:    "center",
+			TextStyle: &opts.TextStyle{
+				Color: "#ffffff",
+			},
 		}),
 	)
 
@@ -179,13 +232,16 @@ func (s *Server) handleHTTPStatusCodes(w http.ResponseWriter, r *http.Request) {
 		SetSeriesOptions(
 			charts.WithLabelOpts(opts.Label{
 				Show:      opts.Bool(true),
-				Formatter: "{b}: {c}",
+				Formatter: "{b}: {c} ({d}%)",
+				Color:     "#ffffff",
 			}),
 		)
 
-	var buf bytes.Buffer
-	pie.Render(&buf)
-	html := buf.Bytes()
+	html, err := injectFullHeightCSS(pie.Render)
+	if err != nil {
+		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "text/html")
 	w.Write(html)
@@ -235,15 +291,51 @@ func (s *Server) handleHTTPMethods(w http.ResponseWriter, r *http.Request) {
 		return methodList[i].count > methodList[j].count
 	})
 
+	// Check if legend should be shown
+	showLegend := r.URL.Query().Get("showLegend") != "false"
+
 	// Prepare chart data
 	bar := charts.NewBar()
 	bar.SetGlobalOptions(
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
-			Title: "HTTP Request Methods",
+			Title:    "HTTP Request Methods",
+			Subtitle: "Distribution of HTTP Methods",
+			Left:     "center",
+			TitleStyle: &opts.TextStyle{
+				Color: "#ffffff",
+			},
+			SubtitleStyle: &opts.TextStyle{
+				Color: "#cccccc",
+			},
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
 			Show:    opts.Bool(true),
 			Trigger: "axis",
+		}),
+		charts.WithLegendOpts(opts.Legend{
+			Show: opts.Bool(showLegend),
+			Top:  "8%",
+			TextStyle: &opts.TextStyle{
+				Color: "#ffffff",
+			},
+		}),
+		charts.WithXAxisOpts(opts.XAxis{
+			AxisLabel: &opts.AxisLabel{
+				Color: "#ffffff",
+			},
+		}),
+		charts.WithYAxisOpts(opts.YAxis{
+			Name: "Requests",
+			AxisLabel: &opts.AxisLabel{
+				Color: "#ffffff",
+			},
+		}),
+		charts.WithGridOpts(opts.Grid{
+			Left:         "3%",
+			Right:        "4%",
+			Bottom:       "3%",
+			ContainLabel: opts.Bool(true),
 		}),
 	)
 
@@ -257,9 +349,11 @@ func (s *Server) handleHTTPMethods(w http.ResponseWriter, r *http.Request) {
 
 	bar.SetXAxis(xAxis).AddSeries("Requests", yAxis)
 
-	var buf bytes.Buffer
-	bar.Render(&buf)
-	html := buf.Bytes()
+	html, err := injectFullHeightCSS(bar.Render)
+	if err != nil {
+		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "text/html")
 	w.Write(html)
@@ -331,20 +425,36 @@ func (s *Server) handleHTTPContentTypes(w http.ResponseWriter, r *http.Request) 
 	}
 	ctList = ctList[:limit]
 
+	// Check if legend should be shown
+	showLegend := r.URL.Query().Get("showLegend") != "false"
+
 	// Prepare chart data
 	pie := charts.NewPie()
 	pie.SetGlobalOptions(
+		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
-			Title: "HTTP Content Types",
+			Title:    "HTTP Content Types",
+			Subtitle: "Response Content-Type Distribution",
+			Left:     "center",
+			TitleStyle: &opts.TextStyle{
+				Color: "#ffffff",
+			},
+			SubtitleStyle: &opts.TextStyle{
+				Color: "#cccccc",
+			},
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
 			Show:    opts.Bool(true),
 			Trigger: "item",
 		}),
 		charts.WithLegendOpts(opts.Legend{
-			Show:   opts.Bool(false),
+			Show:   opts.Bool(showLegend),
 			Orient: "vertical",
 			Left:   "left",
+			Top:    "center",
+			TextStyle: &opts.TextStyle{
+				Color: "#ffffff",
+			},
 		}),
 	)
 
@@ -360,13 +470,16 @@ func (s *Server) handleHTTPContentTypes(w http.ResponseWriter, r *http.Request) 
 		SetSeriesOptions(
 			charts.WithLabelOpts(opts.Label{
 				Show:      opts.Bool(true),
-				Formatter: "{b}: {c}",
+				Formatter: "{b}: {c} ({d}%)",
+				Color:     "#ffffff",
 			}),
 		)
 
-	var buf bytes.Buffer
-	pie.Render(&buf)
-	html := buf.Bytes()
+	html, err := injectFullHeightCSS(pie.Render)
+	if err != nil {
+		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "text/html")
 	w.Write(html)

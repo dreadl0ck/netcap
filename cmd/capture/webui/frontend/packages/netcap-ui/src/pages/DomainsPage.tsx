@@ -39,7 +39,6 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
-  TextField,
   Tooltip,
   Typography,
   Alert,
@@ -60,9 +59,11 @@ import {
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
+import SearchInput from '../components/SearchInput';
+import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
-import { useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
@@ -101,7 +102,7 @@ export default function DomainsPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<DomainSortField>('queries');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [viewMode, setViewMode] = useViewMode();
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -320,79 +321,32 @@ export default function DomainsPage() {
 
         {/* Summary Cards - Only show in table mode */}
         {viewMode === 'table' && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Unique Domains: Total number of unique domain names found in DNS queries.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LanguageIcon color="primary" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Unique Domains
-                    </Typography>
-                    <Typography variant="h5">
-                      {totalCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Total Queries: Sum of all DNS queries made to all domains.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <TrendingUpIcon color="success" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Queries
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.totalQueries.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Top-Level Domains: Number of different TLDs (.com, .org, .net, etc.) found.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <PublicIcon color="warning" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Unique TLDs
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.uniqueTLDs.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Subdomains: Number of subdomain entries (e.g., www.example.com, api.service.com).">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <AccountTreeIcon color="info" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Subdomains
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.subdomainCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <StatBoxGrid>
+          <StatBox
+            icon={<LanguageIcon color="primary" />}
+            label="Unique Domains"
+            value={totalCount}
+            learnHint="Unique Domains: Total number of unique domain names found in DNS queries."
+          />
+          <StatBox
+            icon={<TrendingUpIcon color="success" />}
+            label="Total Queries"
+            value={stats.totalQueries}
+            learnHint="Total Queries: Sum of all DNS queries made to all domains."
+          />
+          <StatBox
+            icon={<PublicIcon color="warning" />}
+            label="Unique TLDs"
+            value={stats.uniqueTLDs}
+            learnHint="Top-Level Domains: Number of different TLDs (.com, .org, .net, etc.) found."
+          />
+          <StatBox
+            icon={<AccountTreeIcon color="info" />}
+            label="Subdomains"
+            value={stats.subdomainCount}
+            learnHint="Subdomains: Number of subdomain entries (e.g., www.example.com, api.service.com)."
+          />
+        </StatBoxGrid>
         )}
 
         {/* Visualization Charts - Only show in chart mode */}
@@ -476,16 +430,14 @@ export default function DomainsPage() {
         {viewMode === 'table' && (
         <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField
-            data-learn="Domain Search: Filter domains by name, parent domain, record type, or resolved IP address."
-            size="small"
-            placeholder="Search domains..."
+          <SearchInput
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
+            onChange={(value) => {
+              setSearchQuery(value);
               setPage(0);
             }}
-            sx={{ minWidth: 300 }}
+            placeholder="Search domains..."
+            learnHint="Domain Search: Filter domains by name, parent domain, record type, or resolved IP address. Use !term to exclude matches."
           />
           
           <FormControl size="small" sx={{ minWidth: 150 }}>
@@ -552,7 +504,7 @@ export default function DomainsPage() {
                         Domain Name
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                       <TableSortLabel
                         data-learn="Sort by Type: Click to sort by domain type (root domain vs subdomain)."
                         active={sortField === 'type'}
@@ -562,7 +514,7 @@ export default function DomainsPage() {
                         Type
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell data-learn="Source: Where the domain was discovered - DNS queries or TLS SNI.">
+                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }} data-learn="Source: Where the domain was discovered - DNS queries or TLS SNI.">
                       Source
                     </TableCell>
                     <TableCell align="right">
@@ -628,7 +580,7 @@ export default function DomainsPage() {
                             </Typography>
                           </Tooltip>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                           <Chip
                             data-learn="Domain Type Tag: Indicates whether this is a root domain or a subdomain."
                             label={domain.isSubdomain ? 'Subdomain' : 'Root'}
@@ -637,7 +589,7 @@ export default function DomainsPage() {
                             sx={{ fontSize: '0.7rem' }}
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                           <Chip
                             data-learn="Source Tag: Shows where this domain was discovered - DNS queries, TLS SNI, or both."
                             label={domain.source || 'DNS'}

@@ -23,3 +23,6 @@ export type { NetcapRouter } from './useNetcapRouter';
 export { useNetcapApi } from './useNetcapApi';
 
 export { useTableKeyboardNavigation } from './useTableKeyboardNavigation';
+
+export { useViewMode } from './useViewMode';
+export type { ViewMode } from './useViewMode';

@@ -39,7 +39,6 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
-  TextField,
   Tooltip,
   Typography,
   Alert,
@@ -62,9 +61,10 @@ import {
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import SearchInput from '../components/SearchInput';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
-import { useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 interface FingerprintSummary {
@@ -96,7 +96,7 @@ export default function FingerprintsPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<FingerprintSortField>('count');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [viewMode, setViewMode] = useViewMode();
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -630,16 +630,14 @@ export default function FingerprintsPage() {
         {viewMode === 'table' && (
         <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField
-            data-learn="Fingerprint Search: Filter by fingerprint hash, type, description, or associated host."
-            size="small"
-            placeholder="Search fingerprints..."
+          <SearchInput
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
+            onChange={(value) => {
+              setSearchQuery(value);
               setPage(0);
             }}
-            sx={{ minWidth: 300 }}
+            placeholder="Search fingerprints..."
+            learnHint="Fingerprint Search: Filter by fingerprint hash, type, description, or associated host. Use !term to exclude matches."
           />
           
           <FormControl size="small" sx={{ minWidth: 180 }}>

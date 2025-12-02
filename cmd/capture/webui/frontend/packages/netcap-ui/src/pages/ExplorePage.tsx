@@ -643,13 +643,13 @@ export default function Explore() {
                   value={type.value}
                   sx={{ 
                     textTransform: 'none',
-                    minWidth: { xs: 48, lg: 'auto' },
-                    width: { xs: 48, lg: 'auto' },
+                    minWidth: { xs: 48, xl: 'auto' },
+                    width: { xs: 48, xl: 'auto' },
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     {type.icon}
-                    <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+                    <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
                       {type.label}
                     </Box>
                   </Box>
@@ -673,21 +673,21 @@ export default function Explore() {
                 size="small"
                 sx={{
                   '& .MuiToggleButton-root': {
-                    px: { xs: 1, lg: 1.5 },
-                    minWidth: { xs: 48, lg: 'auto' },
-                    width: { xs: 48, lg: 'auto' },
+                    px: { xs: 1, xl: 1.5 },
+                    minWidth: { xs: 48, xl: 'auto' },
+                    width: { xs: 48, xl: 'auto' },
                   }
                 }}
               >
                 <ToggleButton value="on">
-                  <LabelIcon sx={{ mr: { xs: 0, lg: 0.5 }, fontSize: 18 }} />
-                  <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+                  <LabelIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 18 }} />
+                  <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
                     Legend
                   </Box>
                 </ToggleButton>
                 <ToggleButton value="off">
-                  <LabelOffIcon sx={{ mr: { xs: 0, lg: 0.5 }, fontSize: 18 }} />
-                  <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+                  <LabelOffIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 18 }} />
+                  <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
                     No Legend
                   </Box>
                 </ToggleButton>
@@ -705,21 +705,21 @@ export default function Explore() {
               size="small"
               sx={{
                 '& .MuiToggleButton-root': {
-                  px: { xs: 1, lg: 1.5 },
-                  minWidth: { xs: 48, lg: 'auto' },
-                  width: { xs: 48, lg: 'auto' },
+                  px: { xs: 1, xl: 1.5 },
+                  minWidth: { xs: 48, xl: 'auto' },
+                  width: { xs: 48, xl: 'auto' },
                 }
               }}
             >
               <ToggleButton value="chart">
-                <BarChartIcon sx={{ mr: { xs: 0, lg: 0.5 }, fontSize: 20 }} />
-                <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+                <BarChartIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 20 }} />
+                <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
                   Chart
                 </Box>
               </ToggleButton>
               <ToggleButton value="example">
-                <DataObjectIcon sx={{ mr: { xs: 0, lg: 0.5 }, fontSize: 20 }} />
-                <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+                <DataObjectIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 20 }} />
+                <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
                   Example Data
                 </Box>
               </ToggleButton>

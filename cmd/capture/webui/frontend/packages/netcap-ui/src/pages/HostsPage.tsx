@@ -39,7 +39,6 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
-  TextField,
   Tooltip,
   Typography,
   Alert,
@@ -63,10 +62,12 @@ import {
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import SearchInput from '../components/SearchInput';
+import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 
 interface ProtocolInfo {
   name: string;
@@ -125,7 +126,7 @@ export default function HostsPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<HostSortField>('addr');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [viewMode, setViewMode] = useViewMode();
 
   // Initialize search query from URL parameter
   useEffect(() => {
@@ -371,79 +372,44 @@ export default function HostsPage() {
 
         {/* Summary Cards - Only show in table mode */}
         {viewMode === 'table' && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <DevicesIcon color="primary" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Hosts
-                    </Typography>
-                    <Typography variant="h5">
-                      {totalCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SecurityIcon color="success" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Internal Hosts
-                    </Typography>
-                    <Typography variant="h5">
-                      {hosts.filter(h => h.isInternal).length.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LanguageIcon color="warning" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      External Hosts
-                    </Typography>
-                    <Typography variant="h5">
-                      {hosts.filter(h => !h.isInternal).length.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <TrendingUpIcon color="info" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Traffic
-                    </Typography>
-                    <Typography variant="h5">
-                      {formatBytes(hosts.reduce((sum, h) => sum + h.bytes, 0))}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <StatBoxGrid>
+          <StatBox
+            icon={<DevicesIcon color="primary" />}
+            label="Total Hosts"
+            value={totalCount}
+          />
+          <StatBox
+            icon={<SecurityIcon color="success" />}
+            label="Internal Hosts"
+            value={hosts.filter(h => h.isInternal).length}
+            onClick={() => {
+              setFilterType(filterType === 'internal' ? 'all' : 'internal');
+              setPage(0);
+            }}
+            isActive={filterType === 'internal'}
+            activeColor="success"
+            activeText="✓ Filter active"
+            learnHint="Internal Hosts Filter: Click to filter the table to show only internal (private network) hosts. Click again to show all hosts."
+          />
+          <StatBox
+            icon={<LanguageIcon color="warning" />}
+            label="External Hosts"
+            value={hosts.filter(h => !h.isInternal).length}
+            onClick={() => {
+              setFilterType(filterType === 'external' ? 'all' : 'external');
+              setPage(0);
+            }}
+            isActive={filterType === 'external'}
+            activeColor="warning"
+            activeText="✓ Filter active"
+            learnHint="External Hosts Filter: Click to filter the table to show only external (public internet) hosts. Click again to show all hosts."
+          />
+          <StatBox
+            icon={<TrendingUpIcon color="info" />}
+            label="Total Traffic"
+            value={formatBytes(hosts.reduce((sum, h) => sum + h.bytes, 0))}
+          />
+        </StatBoxGrid>
         )}
 
         {/* Visualization Charts - Only show in chart mode */}
@@ -523,16 +489,14 @@ export default function HostsPage() {
         {viewMode === 'table' && (
         <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField
-            data-learn="Search Hosts: Filter the hosts table by IP address, DNS name, geolocation, or application name."
-            size="small"
-            placeholder="Search hosts..."
+          <SearchInput
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
+            onChange={(value) => {
+              setSearchQuery(value);
               setPage(0);
             }}
-            sx={{ minWidth: 300 }}
+            placeholder="Search hosts..."
+            learnHint="Search Hosts: Filter the hosts table by IP address, DNS name, geolocation, or application name. Use !term to exclude matches (e.g., !192.168 excludes internal IPs)."
           />
           
           <FormControl size="small" sx={{ minWidth: 150 }}>

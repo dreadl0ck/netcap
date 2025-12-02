@@ -36,7 +36,6 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
-  TextField,
   Typography,
   Alert,
   Collapse,
@@ -60,9 +59,11 @@ import Layout from '../components/Layout';
 import ConversationModal from '../components/ConversationModal';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
+import SearchInput from '../components/SearchInput';
+import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 interface HTTPSummary {
@@ -153,7 +154,7 @@ export default function HTTPPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<HTTPSortField>('timestamp');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [viewMode, setViewMode] = useViewMode();
   const [conversationModalOpen, setConversationModalOpen] = useState(false);
   const [selectedHTTP, setSelectedHTTP] = useState<HTTPSummary | null>(null);
 
@@ -490,119 +491,44 @@ export default function HTTPPage() {
 
         {/* Summary Cards - Clickable Security Filters - Only show in table mode */}
         {viewMode === 'table' && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              data-learn="Total Requests: Click to show all HTTP requests."
-              onClick={() => { setFilterType('all'); setPage(0); }}
-              sx={{ 
-                cursor: 'pointer', 
-                transition: 'all 0.2s',
-                border: filterType === 'all' ? 2 : 0,
-                borderColor: 'primary.main',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <HttpIcon color="primary" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Requests
-                    </Typography>
-                    <Typography variant="h5">
-                      {totalCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              data-learn="Error Responses: Click to filter table to only HTTP responses with status codes 400 or higher (client/server errors)."
-              onClick={() => { setFilterType('errors'); setPage(0); }}
-              sx={{ 
-                cursor: 'pointer', 
-                transition: 'all 0.2s',
-                border: filterType === 'errors' ? 2 : 0,
-                borderColor: 'error.main',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <ErrorIcon color="error" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Error Responses
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.statusErrors.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              data-learn="Missing Security Headers: Click to filter table to only responses missing critical security headers (HSTS, CSP, X-Frame-Options, X-Content-Type-Options)."
-              onClick={() => { setFilterType('missingSecurityHeaders'); setPage(0); }}
-              sx={{ 
-                cursor: 'pointer', 
-                transition: 'all 0.2s',
-                border: filterType === 'missingSecurityHeaders' ? 2 : 0,
-                borderColor: 'warning.main',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <ShieldIcon color="warning" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Missing Sec Headers
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.missingSecurityHeaders.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              data-learn="Authentication Present: Click to filter table to only requests with authentication headers (Basic, Bearer, etc.)."
-              onClick={() => { setFilterType('hasAuth'); setPage(0); }}
-              sx={{ 
-                cursor: 'pointer', 
-                transition: 'all 0.2s',
-                border: filterType === 'hasAuth' ? 2 : 0,
-                borderColor: 'info.main',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <LockIcon color="info" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      With Authentication
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.hasAuthCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <StatBoxGrid>
+          <StatBox
+            icon={<HttpIcon color="primary" />}
+            label="Total Requests"
+            value={totalCount}
+            onClick={() => { setFilterType('all'); setPage(0); }}
+            isActive={filterType === 'all'}
+            activeColor="primary"
+            learnHint="Total Requests: Click to show all HTTP requests."
+          />
+          <StatBox
+            icon={<ErrorIcon color="error" />}
+            label="Error Responses"
+            value={stats.statusErrors}
+            onClick={() => { setFilterType('errors'); setPage(0); }}
+            isActive={filterType === 'errors'}
+            activeColor="error"
+            learnHint="Error Responses: Click to filter table to only HTTP responses with status codes 400 or higher (client/server errors)."
+          />
+          <StatBox
+            icon={<ShieldIcon color="warning" />}
+            label="Missing Sec Headers"
+            value={stats.missingSecurityHeaders}
+            onClick={() => { setFilterType('missingSecurityHeaders'); setPage(0); }}
+            isActive={filterType === 'missingSecurityHeaders'}
+            activeColor="warning"
+            learnHint="Missing Security Headers: Click to filter table to only responses missing critical security headers (HSTS, CSP, X-Frame-Options, X-Content-Type-Options)."
+          />
+          <StatBox
+            icon={<LockIcon color="info" />}
+            label="With Authentication"
+            value={stats.hasAuthCount}
+            onClick={() => { setFilterType('hasAuth'); setPage(0); }}
+            isActive={filterType === 'hasAuth'}
+            activeColor="info"
+            learnHint="Authentication Present: Click to filter table to only requests with authentication headers (Basic, Bearer, etc.)."
+          />
+        </StatBoxGrid>
         )}
 
         {/* Visualization Charts - Only show in chart mode */}
@@ -614,7 +540,7 @@ export default function HTTPPage() {
                 <iframe
                   data-learn="Top Hosts Chart: Bar chart showing the hosts with the most HTTP requests."
                   key={`top-hosts-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/http/top-hosts`}
+                  src={`${getBackendUrl()}/api/http/top-hosts?showLegend=false`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -632,7 +558,7 @@ export default function HTTPPage() {
                 <iframe
                   data-learn="Status Codes: Pie chart showing the distribution of HTTP status codes."
                   key={`status-codes-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/http/status-codes`}
+                  src={`${getBackendUrl()}/api/http/status-codes?showLegend=false`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -650,7 +576,7 @@ export default function HTTPPage() {
                 <iframe
                   data-learn="Request Methods: Bar chart showing the distribution of HTTP request methods."
                   key={`methods-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/http/methods`}
+                  src={`${getBackendUrl()}/api/http/methods?showLegend=false`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -668,7 +594,7 @@ export default function HTTPPage() {
                 <iframe
                   data-learn="Content Types: Pie chart showing the distribution of response content types."
                   key={`content-types-${chartRefreshKey}`}
-                  src={`${getBackendUrl()}/api/http/content-types`}
+                  src={`${getBackendUrl()}/api/http/content-types?showLegend=false`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -686,16 +612,14 @@ export default function HTTPPage() {
         {viewMode === 'table' && (
         <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField
-            data-learn="HTTP Search: Filter HTTP requests by IP addresses, hosts, URLs, methods, user agents, or status codes. Multiple search terms can be separated by commas or spaces."
-            size="small"
-            placeholder="Search HTTP requests (comma or space separated)..."
+          <SearchInput
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
+            onChange={(value) => {
+              setSearchQuery(value);
               setPage(0);
             }}
-            sx={{ minWidth: 300 }}
+            placeholder="Search HTTP requests (comma or space separated)..."
+            learnHint="HTTP Search: Filter HTTP requests by IP addresses, hosts, URLs, methods, user agents, or status codes. Multiple search terms can be separated by commas or spaces. Use !term to exclude matches."
           />
           
           <Button

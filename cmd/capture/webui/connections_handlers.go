@@ -102,7 +102,9 @@ type ConnectionsResponse struct {
 }
 
 // handleConnections returns a list of all connections
-// Supports query parameter ?layer=all|transport|network to filter by layer type
+// Supports query parameters:
+// - ?layer=all|transport|network to filter by layer type
+// - ?ipVersion=all|ipv4|ipv6 to filter by IP version
 func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -113,6 +115,12 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 	layerFilter := r.URL.Query().Get("layer")
 	if layerFilter == "" {
 		layerFilter = "all"
+	}
+
+	// Get IP version filter parameter (all, ipv4, ipv6)
+	ipVersionFilter := r.URL.Query().Get("ipVersion")
+	if ipVersionFilter == "" {
+		ipVersionFilter = "all"
 	}
 
 	s.mu.RLock()
@@ -140,6 +148,9 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	// Apply layer filter
 	filteredConnections := filterConnectionsByLayer(connections, layerFilter)
+
+	// Apply IP version filter
+	filteredConnections = filterConnectionsByIPVersion(filteredConnections, ipVersionFilter)
 
 	response := ConnectionsResponse{
 		Connections: filteredConnections,
@@ -170,6 +181,31 @@ func filterConnectionsByLayer(connections []ConnectionSummary, layerFilter strin
 			}
 		case "network":
 			if !hasTransport {
+				filtered = append(filtered, conn)
+			}
+		}
+	}
+	return filtered
+}
+
+// filterConnectionsByIPVersion filters connections based on IP version
+// - "all": returns all connections
+// - "ipv4": returns only IPv4 connections
+// - "ipv6": returns only IPv6 connections
+func filterConnectionsByIPVersion(connections []ConnectionSummary, ipVersionFilter string) []ConnectionSummary {
+	if ipVersionFilter == "all" || ipVersionFilter == "" {
+		return connections
+	}
+
+	filtered := make([]ConnectionSummary, 0)
+	for _, conn := range connections {
+		switch ipVersionFilter {
+		case "ipv4":
+			if conn.NetworkProto == "IPv4" {
+				filtered = append(filtered, conn)
+			}
+		case "ipv6":
+			if conn.NetworkProto == "IPv6" {
 				filtered = append(filtered, conn)
 			}
 		}

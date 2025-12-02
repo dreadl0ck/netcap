@@ -362,15 +362,15 @@ export default function Visualize() {
                 key={type.value} 
                 value={type.value}
                 sx={{
-                  px: { xs: 1, lg: 2 },
-                  minWidth: { xs: 48, lg: 'auto' },
-                  width: { xs: 48, lg: 'auto' },
+                  px: { xs: 1, xl: 2 },
+                  minWidth: { xs: 48, xl: 'auto' },
+                  width: { xs: 48, xl: 'auto' },
                   flexShrink: { xs: 0, md: 1 },
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0, lg: 1 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0, xl: 1 } }}>
                   {type.icon}
-                  <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+                  <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
                     {type.label}
                   </Box>
                 </Box>
@@ -419,21 +419,21 @@ export default function Visualize() {
             size="small"
             sx={{
               '& .MuiToggleButton-root': {
-                px: { xs: 1, lg: 2 },
-                minWidth: { xs: 48, lg: 'auto' },
-                width: { xs: 48, lg: 'auto' },
+                px: { xs: 1, xl: 2 },
+                minWidth: { xs: 48, xl: 'auto' },
+                width: { xs: 48, xl: 'auto' },
               }
             }}
           >
             <ToggleButton value="on">
-              <LabelIcon sx={{ mr: { xs: 0, lg: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+              <LabelIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
                 On
               </Box>
             </ToggleButton>
             <ToggleButton value="off">
-              <LabelOffIcon sx={{ mr: { xs: 0, lg: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', lg: 'inline' } }}>
+              <LabelOffIcon sx={{ mr: { xs: 0, xl: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', xl: 'inline' } }}>
                 Off
               </Box>
             </ToggleButton>

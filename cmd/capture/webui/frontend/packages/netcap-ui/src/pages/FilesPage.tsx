@@ -94,7 +94,7 @@ export default function ExtractedFilesPage() {
   const [previewContent, setPreviewContent] = useState<string>('');
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string>('');
-  const [previewTab, setPreviewTab] = useState<'rendered' | 'raw'>('rendered');
+  const [previewTab, setPreviewTab] = useState<'rendered' | 'source' | 'raw'>('rendered');
   const [viewMode, setViewMode] = useState<'table' | 'gallery'>('table');
   const [galleryPage, setGalleryPage] = useState(0);
   const [galleryRowsPerPage, setGalleryRowsPerPage] = useState(50);
@@ -589,11 +589,148 @@ export default function ExtractedFilesPage() {
   }, [getFileExtension]);
 
   // Helper function to format content (e.g., prettify JSON)
+  // Simple HTML formatter
+  const formatHtml = useCallback((html: string): string => {
+    let formatted = '';
+    let indent = 0;
+    const indentStr = '  ';
+    
+    // Split by tags while preserving them
+    const tokens = html.split(/(<[^>]+>)/g).filter(t => t.trim());
+    
+    for (const token of tokens) {
+      if (token.startsWith('</')) {
+        // Closing tag - decrease indent first
+        indent = Math.max(0, indent - 1);
+        formatted += indentStr.repeat(indent) + token.trim() + '\n';
+      } else if (token.startsWith('<') && !token.startsWith('<!') && !token.endsWith('/>') && !token.match(/^<(img|br|hr|input|meta|link|area|base|col|embed|param|source|track|wbr)/i)) {
+        // Opening tag (not self-closing, not void element)
+        formatted += indentStr.repeat(indent) + token.trim() + '\n';
+        indent++;
+      } else if (token.startsWith('<')) {
+        // Self-closing, comment, doctype, or void elements
+        formatted += indentStr.repeat(indent) + token.trim() + '\n';
+      } else {
+        // Text content
+        const trimmed = token.trim();
+        if (trimmed) {
+          formatted += indentStr.repeat(indent) + trimmed + '\n';
+        }
+      }
+    }
+    
+    return formatted.trim();
+  }, []);
+  
+  // Simple JavaScript formatter
+  const formatJavaScript = useCallback((js: string): string => {
+    let formatted = '';
+    let indent = 0;
+    const indentStr = '  ';
+    let inString = false;
+    let stringChar = '';
+    let prevChar = '';
+    let currentLine = '';
+    
+    for (let i = 0; i < js.length; i++) {
+      const char = js[i];
+      
+      // Track string state
+      if ((char === '"' || char === "'" || char === '`') && prevChar !== '\\') {
+        if (!inString) {
+          inString = true;
+          stringChar = char;
+        } else if (char === stringChar) {
+          inString = false;
+        }
+      }
+      
+      if (inString) {
+        currentLine += char;
+        prevChar = char;
+        continue;
+      }
+      
+      if (char === '{' || char === '[') {
+        currentLine += char;
+        formatted += currentLine.trim() + '\n';
+        currentLine = '';
+        indent++;
+        formatted += indentStr.repeat(indent);
+      } else if (char === '}' || char === ']') {
+        if (currentLine.trim()) {
+          formatted += currentLine.trim() + '\n';
+          currentLine = '';
+        }
+        indent = Math.max(0, indent - 1);
+        formatted += indentStr.repeat(indent) + char;
+        currentLine = '';
+      } else if (char === ';') {
+        currentLine += char;
+        formatted += currentLine.trim() + '\n' + indentStr.repeat(indent);
+        currentLine = '';
+      } else if (char === '\n' || char === '\r') {
+        if (currentLine.trim()) {
+          formatted += currentLine.trim() + '\n' + indentStr.repeat(indent);
+          currentLine = '';
+        }
+      } else {
+        currentLine += char;
+      }
+      
+      prevChar = char;
+    }
+    
+    if (currentLine.trim()) {
+      formatted += currentLine.trim();
+    }
+    
+    return formatted.trim();
+  }, []);
+  
+  // Simple CSS formatter
+  const formatCss = useCallback((css: string): string => {
+    let formatted = '';
+    let indent = 0;
+    const indentStr = '  ';
+    
+    // Remove existing whitespace and normalize
+    const normalized = css.replace(/\s+/g, ' ').trim();
+    
+    let i = 0;
+    while (i < normalized.length) {
+      const char = normalized[i];
+      
+      if (char === '{') {
+        formatted += ' {\n';
+        indent++;
+        formatted += indentStr.repeat(indent);
+      } else if (char === '}') {
+        indent = Math.max(0, indent - 1);
+        formatted = formatted.trimEnd() + '\n' + indentStr.repeat(indent) + '}\n\n' + indentStr.repeat(indent);
+      } else if (char === ';') {
+        formatted += ';\n' + indentStr.repeat(indent);
+      } else if (char === ':' && indent > 0) {
+        formatted += ': ';
+        // Skip whitespace after colon
+        while (i + 1 < normalized.length && normalized[i + 1] === ' ') i++;
+      } else {
+        formatted += char;
+      }
+      
+      i++;
+    }
+    
+    return formatted.trim();
+  }, []);
+
   const formatContent = useCallback((content: string, mimeType: string, filename?: string): string => {
     if (!content) return content;
     
+    const ext = filename ? getFileExtension(filename) : '';
+    
     // Format JSON - check both mime type and extension
-    const isJson = mimeType?.includes('json') || (filename && getFileExtension(filename) === 'json');
+    const isJson = mimeType?.includes('json') || ext === 'json';
     if (isJson) {
       try {
         const parsed = JSON.parse(content);
@@ -604,8 +741,59 @@ export default function ExtractedFilesPage() {
       }
     }
     
+    // Format HTML
+    const isHtml = mimeType === 'text/html' || mimeType?.includes('/html') || ext === 'html' || ext === 'htm' || ext === 'xhtml';
+    if (isHtml) {
+      try {
+        return formatHtml(content);
+      } catch {
+        return content;
+      }
+    }
+    
+    // Format JavaScript
+    const isJavaScript = mimeType?.includes('javascript') || mimeType?.includes('ecmascript') || 
+                         ['js', 'mjs', 'cjs', 'jsx'].includes(ext);
+    if (isJavaScript) {
+      try {
+        return formatJavaScript(content);
+      } catch {
+        return content;
+      }
+    }
+    
+    // Format TypeScript (similar to JS)
+    const isTypeScript = mimeType?.includes('typescript') || ['ts', 'mts', 'cts', 'tsx'].includes(ext);
+    if (isTypeScript) {
+      try {
+        return formatJavaScript(content);
+      } catch {
+        return content;
+      }
+    }
+    
+    // Format CSS
+    const isCss = mimeType?.includes('css') || ['css', 'scss', 'less'].includes(ext);
+    if (isCss) {
+      try {
+        return formatCss(content);
+      } catch {
+        return content;
+      }
+    }
+    
+    // Format XML/SVG
+    const isXml = mimeType?.includes('xml') || mimeType?.includes('svg') || ['xml', 'svg', 'xsl', 'xslt'].includes(ext);
+    if (isXml) {
+      try {
+        return formatHtml(content); // HTML formatter works for XML too
+      } catch {
+        return content;
+      }
+    }
+    
     return content;
-  }, [getFileExtension]);
+  }, [getFileExtension, formatHtml, formatJavaScript, formatCss]);
 
   // Helper function to check if content should use syntax highlighting
   const shouldUseSyntaxHighlighting = useCallback((mimeType: string, filename?: string): boolean => {
@@ -950,11 +1138,11 @@ export default function ExtractedFilesPage() {
           </Box>
         </Box>
 
-        {/* Distribution Pie Charts */}
-        {totalCount > 0 && (mimeTypeDistribution.length > 0 || protocolDistribution.length > 0) && (
+        {/* Distribution Pie Charts - only show if there's more than one category */}
+        {totalCount > 0 && (mimeTypeDistribution.length > 1 || protocolDistribution.length > 1) && (
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, gap: 2, mb: 3 }}>
-            {/* MIME Type Distribution */}
-            {mimeTypeDistribution.length > 0 && (
+            {/* MIME Type Distribution - only show if more than one MIME type */}
+            {mimeTypeDistribution.length > 1 && (
               <Paper 
                 data-learn="MIME Type Distribution: Visual breakdown of extracted file types. Click on a slice to filter the table by that MIME type."
                 sx={{ flex: 1, p: 2 }}
@@ -982,8 +1170,8 @@ export default function ExtractedFilesPage() {
               </Paper>
             )}
 
-            {/* Protocol Distribution */}
-            {protocolDistribution.length > 0 && (
+            {/* Protocol Distribution - only show if more than one protocol */}
+            {protocolDistribution.length > 1 && (
               <Paper 
                 data-learn="Protocol Distribution: Visual breakdown of network protocols used to transfer extracted files. Click on a slice to filter the table by that protocol."
                 sx={{ flex: 1, p: 2 }}
@@ -1218,9 +1406,9 @@ export default function ExtractedFilesPage() {
                     <TableCell>File Name</TableCell>
                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>MIME Type</TableCell>
                     <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Protocol</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Path</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Path</TableCell>
                     <TableCell align="right">Size</TableCell>
-                    <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Modified</TableCell>
+                    <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Modified</TableCell>
                     <TableCell align="right">Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -1242,7 +1430,7 @@ export default function ExtractedFilesPage() {
                               sx={{ 
                                 fontFamily: 'monospace', 
                                 fontSize: '0.85rem',
-                                maxWidth: { xs: 150, sm: 250, md: 'none' },
+                                maxWidth: 300,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap'
@@ -1272,7 +1460,7 @@ export default function ExtractedFilesPage() {
                           />
                         )}
                       </TableCell>
-                      <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                      <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                         <Typography 
                           variant="body2" 
                           sx={{ 
@@ -1293,7 +1481,7 @@ export default function ExtractedFilesPage() {
                           {formatBytes(file.size)}
                         </Typography>
                       </TableCell>
-                      <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                      <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                         <Typography variant="body2">
                           {formatTimestamp(file.modifiedTime)}
                         </Typography>
@@ -1436,12 +1624,13 @@ export default function ExtractedFilesPage() {
               </Box>
             ) : previewFile ? (
               <>
-                {/* Tabs for text files to switch between rendered and raw view */}
+                {/* Tabs for text files to switch between rendered, source (formatted + highlighted), and raw view */}
                 {isTextFile(previewFile.mimeType) && previewContent && (
                   <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <Tabs value={previewTab} onChange={(_, v) => setPreviewTab(v)}>
                       <Tab label="Rendered" value="rendered" />
-                      <Tab label="Raw Source" value="raw" />
+                      <Tab label="Source" value="source" />
+                      <Tab label="Raw" value="raw" />
                     </Tabs>
                   </Box>
                 )}
@@ -1451,7 +1640,7 @@ export default function ExtractedFilesPage() {
                   {isTextFile(previewFile.mimeType) && previewContent && (
                     <>
                       {previewTab === 'rendered' ? (
-                        // Rendered view - HTML gets iframe, code files get syntax highlighting
+                        // Rendered view - HTML gets iframe, code files get syntax highlighting with formatted content
                         (previewFile.mimeType === 'text/html' ? (<>
                           <Alert severity="warning" sx={{ m: 2, mb: 1 }}>
                             <strong>Security Warning:</strong> Viewing untrusted HTML in rendered mode. 
@@ -1523,8 +1712,38 @@ export default function ExtractedFilesPage() {
                             </pre>
                           </Paper>
                         ))
+                      ) : previewTab === 'source' ? (
+                        // Source view - pretty printed and syntax highlighted
+                        <Box
+                          sx={{
+                            overflow: 'auto',
+                            maxHeight: 'calc(90vh - 200px)',
+                            '& pre': {
+                              margin: '0 !important',
+                              borderRadius: '8px !important',
+                            },
+                            '& code': {
+                              fontSize: '0.875rem !important',
+                            }
+                          }}
+                        >
+                          <SyntaxHighlighter
+                            language={getSyntaxLanguage(previewFile.mimeType, previewFile.originalName || previewFile.name) || 'text'}
+                            style={tomorrow}
+                            showLineNumbers
+                            wrapLines
+                            wrapLongLines
+                            customStyle={{
+                              margin: 0,
+                              borderRadius: '8px',
+                              fontSize: '0.875rem',
+                            }}
+                          >
+                            {formatContent(previewContent, previewFile.mimeType, previewFile.originalName || previewFile.name)}
+                          </SyntaxHighlighter>
+                        </Box>
                       ) : (
-                        // Raw source view - always shows original content without formatting
+                        // Raw view - shows original content without any formatting or highlighting
                         (<Paper
                           sx={{
                             bgcolor: 'grey.900',

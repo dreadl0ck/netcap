@@ -36,7 +36,6 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
-  TextField,
   Typography,
   Alert,
   Collapse,
@@ -58,9 +57,11 @@ import {
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import SearchInput from '../components/SearchInput';
+import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 interface CertificateSummary {
@@ -133,7 +134,7 @@ export default function CertificatesPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<CertificateSortField>('seenCount');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [viewMode, setViewMode] = useViewMode();
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -423,119 +424,44 @@ export default function CertificatesPage() {
 
         {/* Summary Cards - Only show in table mode */}
         {viewMode === 'table' && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              data-learn="Total Certificates: Click to show all certificates."
-              onClick={() => { setFilterType('all'); setPage(0); }}
-              sx={{ 
-                cursor: 'pointer', 
-                transition: 'all 0.2s',
-                border: filterType === 'all' ? 2 : 0,
-                borderColor: 'primary.main',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SecurityIcon color="primary" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Certificates
-                    </Typography>
-                    <Typography variant="h5">
-                      {totalCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              data-learn="Expired Certificates: Click to filter table to only expired certificates."
-              onClick={() => { setFilterType('expired'); setPage(0); }}
-              sx={{ 
-                cursor: 'pointer', 
-                transition: 'all 0.2s',
-                border: filterType === 'expired' ? 2 : 0,
-                borderColor: 'error.main',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <ErrorIcon color="error" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Expired
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.expiredCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              data-learn="Self-Signed Certificates: Click to filter table to only self-signed certificates."
-              onClick={() => { setFilterType('selfSigned'); setPage(0); }}
-              sx={{ 
-                cursor: 'pointer', 
-                transition: 'all 0.2s',
-                border: filterType === 'selfSigned' ? 2 : 0,
-                borderColor: 'warning.main',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <WarningIcon color="warning" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Self-Signed
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.selfSignedCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card 
-              data-learn="Weak Certificates: Click to filter table to only certificates with weak signatures or short key sizes."
-              onClick={() => { setFilterType('weakSecurity'); setPage(0); }}
-              sx={{ 
-                cursor: 'pointer', 
-                transition: 'all 0.2s',
-                border: filterType === 'weakSecurity' ? 2 : 0,
-                borderColor: 'warning.main',
-                '&:hover': { transform: 'translateY(-2px)', boxShadow: 3 }
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <WarningIcon color="warning" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Weak Security
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.weakCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <StatBoxGrid>
+          <StatBox
+            icon={<SecurityIcon color="primary" />}
+            label="Total Certificates"
+            value={totalCount}
+            onClick={() => { setFilterType('all'); setPage(0); }}
+            isActive={filterType === 'all'}
+            activeColor="primary"
+            learnHint="Total Certificates: Click to show all certificates."
+          />
+          <StatBox
+            icon={<ErrorIcon color="error" />}
+            label="Expired"
+            value={stats.expiredCount}
+            onClick={() => { setFilterType('expired'); setPage(0); }}
+            isActive={filterType === 'expired'}
+            activeColor="error"
+            learnHint="Expired Certificates: Click to filter table to only expired certificates."
+          />
+          <StatBox
+            icon={<WarningIcon color="warning" />}
+            label="Self-Signed"
+            value={stats.selfSignedCount}
+            onClick={() => { setFilterType('selfSigned'); setPage(0); }}
+            isActive={filterType === 'selfSigned'}
+            activeColor="warning"
+            learnHint="Self-Signed Certificates: Click to filter table to only self-signed certificates."
+          />
+          <StatBox
+            icon={<WarningIcon color="warning" />}
+            label="Weak Security"
+            value={stats.weakCount}
+            onClick={() => { setFilterType('weakSecurity'); setPage(0); }}
+            isActive={filterType === 'weakSecurity'}
+            activeColor="warning"
+            learnHint="Weak Certificates: Click to filter table to only certificates with weak signatures or short key sizes."
+          />
+        </StatBoxGrid>
         )}
 
         {/* Visualization Charts - Only show in chart mode */}
@@ -619,16 +545,14 @@ export default function CertificatesPage() {
         {viewMode === 'table' && (
         <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField
-            data-learn="Certificate Search: Filter certificates by subject, issuer, organization, IP addresses, fingerprint, or serial number. Multiple search terms can be separated by commas or spaces."
-            size="small"
-            placeholder="Search certificates (comma or space separated)..."
+          <SearchInput
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
+            onChange={(value) => {
+              setSearchQuery(value);
               setPage(0);
             }}
-            sx={{ minWidth: 300 }}
+            placeholder="Search certificates (comma or space separated)..."
+            learnHint="Certificate Search: Filter certificates by subject, issuer, organization, IP addresses, fingerprint, or serial number. Multiple search terms can be separated by commas or spaces. Use !term to exclude matches."
           />
           
           <Button

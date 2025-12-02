@@ -52,3 +52,10 @@ export { default as OptimizedPieChart } from './OptimizedPieChart';
 // Community ID filtering components
 export { default as CommunityIDChip } from './CommunityIDChip';
 export { default as CommunityIDFilterBar } from './CommunityIDFilterBar';
+
+// Search components
+export { default as SearchInput } from './SearchInput';
+
+// Stat display components
+export { default as StatBox, StatBoxGrid } from './StatBox';
+export type { StatBoxProps, StatBoxGridProps } from './StatBox';

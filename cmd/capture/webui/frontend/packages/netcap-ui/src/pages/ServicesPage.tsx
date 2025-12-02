@@ -36,7 +36,6 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
-  TextField,
   Tooltip,
   Typography,
   Alert,
@@ -59,10 +58,12 @@ import {
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import SearchInput from '../components/SearchInput';
+import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 
 interface ServiceSummary {
   timestamp: number;
@@ -105,7 +106,7 @@ export default function ServicesPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<ServiceSortField>('bytes');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [viewMode, setViewMode] = useViewMode();
 
   // Initialize search query from URL parameter
   useEffect(() => {
@@ -315,79 +316,32 @@ export default function ServicesPage() {
 
         {/* Summary Cards - Only show in table mode */}
         {viewMode === 'table' && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Total Services: Number of network services discovered in this PCAP file.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <BuildIcon color="primary" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Services
-                    </Typography>
-                    <Typography variant="h5">
-                      {totalCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Total Traffic: Sum of all bytes transferred to and from all services.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <TrendingUpIcon color="success" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Traffic
-                    </Typography>
-                    <Typography variant="h5">
-                      {formatBytes(totalBytes)}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Total Flows: Total number of network flows across all services.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <DeviceHubIcon color="warning" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Flows
-                    </Typography>
-                    <Typography variant="h5">
-                      {totalFlows.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Unique Ports: Number of different service ports discovered in the capture.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SpeedIcon color="info" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Unique Ports
-                    </Typography>
-                    <Typography variant="h5">
-                      {uniquePorts.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <StatBoxGrid>
+          <StatBox
+            icon={<BuildIcon color="primary" />}
+            label="Total Services"
+            value={totalCount}
+            learnHint="Total Services: Number of network services discovered in this PCAP file."
+          />
+          <StatBox
+            icon={<TrendingUpIcon color="success" />}
+            label="Total Traffic"
+            value={formatBytes(totalBytes)}
+            learnHint="Total Traffic: Sum of all bytes transferred to and from all services."
+          />
+          <StatBox
+            icon={<DeviceHubIcon color="warning" />}
+            label="Total Flows"
+            value={totalFlows}
+            learnHint="Total Flows: Total number of network flows across all services."
+          />
+          <StatBox
+            icon={<SpeedIcon color="info" />}
+            label="Unique Ports"
+            value={uniquePorts}
+            learnHint="Unique Ports: Number of different service ports discovered in the capture."
+          />
+        </StatBoxGrid>
         )}
 
         {/* Visualization Charts - Only show in chart mode */}
@@ -471,16 +425,14 @@ export default function ServicesPage() {
         {viewMode === 'table' && (
         <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField
-            data-learn="Service Search: Filter services by IP address, port, protocol, product, vendor, hostname, or applications."
-            size="small"
-            placeholder="Search services..."
+          <SearchInput
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
+            onChange={(value) => {
+              setSearchQuery(value);
               setPage(0);
             }}
-            sx={{ minWidth: 300 }}
+            placeholder="Search services..."
+            learnHint="Service Search: Filter services by IP address, port, protocol, product, vendor, hostname, or applications. Use !term to exclude matches (e.g., !SSH excludes SSH services)."
           />
           
           <Button

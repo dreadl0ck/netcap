@@ -623,7 +623,7 @@ export default function AlertsPage() {
                   </TableSortLabel>
                 </TableCell>
                 <TableCell>Rule Name</TableCell>
-                <TableCell>Type</TableCell>
+                <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Type</TableCell>
                 <TableCell>
                   <TableSortLabel
                     active={sortBy === 'count'}
@@ -642,7 +642,7 @@ export default function AlertsPage() {
                     First Seen
                   </TableSortLabel>
                 </TableCell>
-                <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                   <TableSortLabel
                     active={sortBy === 'lastSeen'}
                     direction={sortBy === 'lastSeen' ? sortOrder : 'desc'}
@@ -651,7 +651,7 @@ export default function AlertsPage() {
                     Last Seen
                   </TableSortLabel>
                 </TableCell>
-                <TableCell>Unique IPs</TableCell>
+                <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Unique IPs</TableCell>
                 <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Tags</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
@@ -705,7 +705,7 @@ export default function AlertsPage() {
                               variant="body2" 
                               fontWeight="medium"
                               sx={{
-                                maxWidth: { xs: 200, sm: 300 },
+                                maxWidth: 300,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap'
@@ -715,7 +715,7 @@ export default function AlertsPage() {
                             </Typography>
                           </Tooltip>
                         </TableCell>
-                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
+                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                           <Chip label={group.recordType} size="small" variant="outlined" />
                         </TableCell>
                         <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
@@ -731,12 +731,12 @@ export default function AlertsPage() {
                             {formatTimestamp(group.firstSeen)}
                           </Typography>
                         </TableCell>
-                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                           <Typography variant="body2">
                             {formatTimestamp(group.lastSeen)}
                           </Typography>
                         </TableCell>
-                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
+                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                             <Typography variant="caption" color="text.secondary">
                               Src: {group.uniqueSrcIPs.length} | Dst: {group.uniqueDstIPs.length}

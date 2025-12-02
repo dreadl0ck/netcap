@@ -36,7 +36,6 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
-  TextField,
   Tooltip,
   Typography,
   Alert,
@@ -57,10 +56,12 @@ import {
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
+import SearchInput from '../components/SearchInput';
+import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 interface SoftwareSummary {
@@ -111,7 +112,7 @@ export default function SoftwarePage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<SoftwareSortField>('count');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [viewMode, setViewMode] = useViewMode();
 
   // Initialize search query from URL parameter
   useEffect(() => {
@@ -313,61 +314,26 @@ export default function SoftwarePage() {
 
         {/* Summary Cards - Only show in table mode */}
         {viewMode === 'table' && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={4}>
-            <Card data-learn="Unique Products: Number of different software products detected in the network traffic.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <AppsIcon color="primary" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Unique Products
-                    </Typography>
-                    <Typography variant="h5">
-                      {uniqueProducts.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={4}>
-            <Card data-learn="Versions Tracked: Number of specific software versions detected.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <MemoryIcon color="warning" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Versions Tracked
-                    </Typography>
-                    <Typography variant="h5">
-                      {uniqueVersions.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={4}>
-            <Card data-learn="Total Detections: Total number of software detection events across all captures.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <ComputerIcon color="info" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Detections
-                    </Typography>
-                    <Typography variant="h5">
-                      {totalDetections.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <StatBoxGrid>
+          <StatBox
+            icon={<AppsIcon color="primary" />}
+            label="Unique Products"
+            value={uniqueProducts}
+            learnHint="Unique Products: Number of different software products detected in the network traffic."
+          />
+          <StatBox
+            icon={<MemoryIcon color="warning" />}
+            label="Versions Tracked"
+            value={uniqueVersions}
+            learnHint="Versions Tracked: Number of specific software versions detected."
+          />
+          <StatBox
+            icon={<ComputerIcon color="info" />}
+            label="Total Detections"
+            value={totalDetections}
+            learnHint="Total Detections: Total number of software detection events across all captures."
+          />
+        </StatBoxGrid>
         )}
 
         {/* Visualization Charts - Only show in chart mode */}
@@ -451,16 +417,14 @@ export default function SoftwarePage() {
         {viewMode === 'table' && (
         <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField
-            data-learn="Software Search: Filter software by product name, version, OS, device, or service."
-            size="small"
-            placeholder="Search software..."
+          <SearchInput
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
+            onChange={(value) => {
+              setSearchQuery(value);
               setPage(0);
             }}
-            sx={{ minWidth: 300 }}
+            placeholder="Search software..."
+            learnHint="Software Search: Filter software by product name, version, OS, device, or service. Use !term to exclude matches."
           />
           
           <Button

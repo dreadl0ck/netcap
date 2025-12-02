@@ -599,7 +599,7 @@ export default function RulesPage() {
             <TableHead>
               <TableRow>
                 <TableCell>Name</TableCell>
-                <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Type</TableCell>
+                <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Type</TableCell>
                 <TableCell>
                   <TableSortLabel
                     active={sortBy === 'severity'}
@@ -610,8 +610,8 @@ export default function RulesPage() {
                   </TableSortLabel>
                 </TableCell>
                 <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Expression</TableCell>
-                <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Tags</TableCell>
-                <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Tags</TableCell>
+                <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                   <TableSortLabel
                     active={sortBy === 'enabled'}
                     direction={sortBy === 'enabled' ? sortOrder : 'asc'}
@@ -696,7 +696,7 @@ export default function RulesPage() {
                         </Typography> */}
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                       <Chip label={rule.type} size="small" variant="outlined" />
                     </TableCell>
                     <TableCell>
@@ -713,14 +713,14 @@ export default function RulesPage() {
                         </Box>
                       </Tooltip>
                     </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {rule.tags.map((tag) => (
                           <Chip key={tag} label={tag} size="small" />
                         ))}
                       </Box>
                     </TableCell>
-                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                       <Chip
                         label={rule.enabled ? 'Enabled' : 'Disabled'}
                         size="small"

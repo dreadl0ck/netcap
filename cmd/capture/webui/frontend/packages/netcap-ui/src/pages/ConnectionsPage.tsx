@@ -36,7 +36,6 @@ import {
   TablePagination,
   TableRow,
   TableSortLabel,
-  TextField,
   Typography,
   Alert,
   Collapse,
@@ -66,9 +65,11 @@ import Layout from '../components/Layout';
 import ConversationModal from '../components/ConversationModal';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
+import SearchInput from '../components/SearchInput';
+import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 interface ConnectionSummary {
@@ -155,10 +156,11 @@ export default function ConnectionsPage() {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<ConnectionSortField>('bytes');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [viewMode, setViewMode] = useState<'table' | 'chart'>('table');
+  const [viewMode, setViewMode] = useViewMode();
   const [conversationModalOpen, setConversationModalOpen] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState<ConnectionSummary | null>(null);
   const [layerFilter, setLayerFilter] = useState<'all' | 'transport' | 'network'>('all');
+  const [ipVersionFilter, setIpVersionFilter] = useState<'all' | 'ipv4' | 'ipv6'>('all');
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -171,10 +173,10 @@ export default function ConnectionsPage() {
     }
   }, [router.isReady, router.query.search]);
 
-  // Fetch connections data with layer filter
+  // Fetch connections data with layer and IP version filters
   const { data: connectionsData, error, mutate } = useSWR<ConnectionsResponse>(
-    ['connections', layerFilter],
-    () => fetch(`${getBackendUrl()}/api/connections?layer=${layerFilter}`).then(res => res.json()),
+    ['connections', layerFilter, ipVersionFilter],
+    () => fetch(`${getBackendUrl()}/api/connections?layer=${layerFilter}&ipVersion=${ipVersionFilter}`).then(res => res.json()),
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,
@@ -611,38 +613,65 @@ export default function ConnectionsPage() {
       <Box sx={{ minWidth: 0 }}>
         {/* View Mode Toggle and Layer Filter */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
-          {/* Layer Filter Toggle */}
-          <ToggleButtonGroup
-            value={layerFilter}
-            exclusive
-            onChange={(_e, newValue) => {
-              if (newValue !== null) {
-                setLayerFilter(newValue);
-                setPage(0);
-              }
-            }}
-            size="small"
-            data-learn="Layer Filter: Filter connections by layer type. 'All' shows all connections. 'Transport' shows TCP/UDP connections. 'Network Only' shows ICMP, IGMP, GRE and other network-layer-only protocols."
-          >
-            <ToggleButton value="all">
-              <LayersIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                All
-              </Box>
-            </ToggleButton>
-            <ToggleButton value="transport">
-              <HubIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                Transport
-              </Box>
-            </ToggleButton>
-            <ToggleButton value="network">
-              <DeviceHubIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
-              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
-                Network Only
-              </Box>
-            </ToggleButton>
-          </ToggleButtonGroup>
+          {/* Filter Toggles */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            {/* Layer Filter Toggle */}
+            <ToggleButtonGroup
+              value={layerFilter}
+              exclusive
+              onChange={(_e, newValue) => {
+                if (newValue !== null) {
+                  setLayerFilter(newValue);
+                  setPage(0);
+                }
+              }}
+              size="small"
+              data-learn="Layer Filter: Filter connections by layer type. 'All' shows all connections. 'Transport' shows TCP/UDP connections. 'Network Only' shows ICMP, IGMP, GRE and other network-layer-only protocols."
+            >
+              <ToggleButton value="all">
+                <LayersIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                  All
+                </Box>
+              </ToggleButton>
+              <ToggleButton value="transport">
+                <HubIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                  Transport
+                </Box>
+              </ToggleButton>
+              <ToggleButton value="network">
+                <DeviceHubIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                  Network Only
+                </Box>
+              </ToggleButton>
+            </ToggleButtonGroup>
+
+            {/* IP Version Filter Toggle */}
+            <ToggleButtonGroup
+              value={ipVersionFilter}
+              exclusive
+              onChange={(_e, newValue) => {
+                if (newValue !== null) {
+                  setIpVersionFilter(newValue);
+                  setPage(0);
+                }
+              }}
+              size="small"
+              data-learn="IP Version Filter: Filter connections by IP version. 'All' shows all connections. 'IPv4' shows only IPv4 traffic. 'IPv6' shows only IPv6 traffic."
+            >
+              <ToggleButton value="all">
+                <Box component="span">All IP</Box>
+              </ToggleButton>
+              <ToggleButton value="ipv4">
+                <Box component="span">IPv4</Box>
+              </ToggleButton>
+              <ToggleButton value="ipv6">
+                <Box component="span">IPv6</Box>
+              </ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
 
           {/* View Mode Toggle */}
           <ToggleButtonGroup
@@ -673,79 +702,32 @@ export default function ConnectionsPage() {
 
         {/* Summary Cards - Only show in table mode */}
         {viewMode === 'table' && (
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Total Connections: Number of network connections captured in this PCAP file.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CableIcon color="primary" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Connections
-                    </Typography>
-                    <Typography variant="h5">
-                      {totalCount.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Total Traffic: Sum of all bytes transferred across all connections.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <TrendingUpIcon color="success" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Total Traffic
-                    </Typography>
-                    <Typography variant="h5">
-                      {formatBytes(stats.totalBytes)}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Avg Duration: Average duration of all network connections.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <TimerIcon color="warning" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Avg Duration
-                    </Typography>
-                    <Typography variant="h5">
-                      {(stats.avgDuration / 1e9).toFixed(2)}s
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Unique Protocols: Number of different protocols detected in the connections.">
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <SpeedIcon color="info" />
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Unique Protocols
-                    </Typography>
-                    <Typography variant="h5">
-                      {stats.uniqueProtocols.toLocaleString()}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+        <StatBoxGrid>
+          <StatBox
+            icon={<CableIcon color="primary" />}
+            label="Total Connections"
+            value={totalCount}
+            learnHint="Total Connections: Number of network connections captured in this PCAP file."
+          />
+          <StatBox
+            icon={<TrendingUpIcon color="success" />}
+            label="Total Traffic"
+            value={formatBytes(stats.totalBytes)}
+            learnHint="Total Traffic: Sum of all bytes transferred across all connections."
+          />
+          <StatBox
+            icon={<TimerIcon color="warning" />}
+            label="Avg Duration"
+            value={`${(stats.avgDuration / 1e9).toFixed(2)}s`}
+            learnHint="Avg Duration: Average duration of all network connections."
+          />
+          <StatBox
+            icon={<SpeedIcon color="info" />}
+            label="Unique Protocols"
+            value={stats.uniqueProtocols}
+            learnHint="Unique Protocols: Number of different protocols detected in the connections."
+          />
+        </StatBoxGrid>
         )}
 
         {/* Visualization Charts - Only show in chart mode */}
@@ -829,16 +811,14 @@ export default function ConnectionsPage() {
         {viewMode === 'table' && (
         <>
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
-          <TextField
-            data-learn="Connection Search: Filter connections by IP addresses, ports, protocols, applications, or full connection strings. Multiple search terms can be separated by commas or spaces (e.g., 192.168.1.1:80->10.0.0.1:443, 172.16.1.1)."
-            size="small"
-            placeholder="Search connections (comma or space separated)..."
+          <SearchInput
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
+            onChange={(value) => {
+              setSearchQuery(value);
               setPage(0);
             }}
-            sx={{ minWidth: 300 }}
+            placeholder="Search connections (comma or space separated)..."
+            learnHint="Connection Search: Filter connections by IP addresses, ports, protocols, applications, or full connection strings. Multiple search terms can be separated by commas or spaces (e.g., 192.168.1.1:80->10.0.0.1:443, 172.16.1.1). Use !term to exclude matches."
           />
           
           <Button
@@ -1052,17 +1032,17 @@ export default function ConnectionsPage() {
                         Connection
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ width: 80, minWidth: 60 }}>
                       <TableSortLabel
-                        data-learn="Sort by Transport Protocol: Click to sort connections by transport protocol (TCP, UDP, etc.)."
+                        data-learn="Sort by Protocol: Click to sort connections by transport protocol (TCP, UDP, etc.)."
                         active={sortField === 'protocol'}
                         direction={sortField === 'protocol' ? sortOrder : 'asc'}
                         onClick={() => handleSort('protocol')}
                       >
-                        Transport Protocol
+                        Protocol
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                       <TableSortLabel
                         data-learn="Sort by Packets: Click to sort connections by packet count."
                         active={sortField === 'packets'}
@@ -1082,7 +1062,7 @@ export default function ConnectionsPage() {
                         Bytes
                       </TableSortLabel>
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                       <TableSortLabel
                         data-learn="Sort by Duration: Click to sort connections by how long they lasted."
                         active={sortField === 'duration'}
@@ -1184,7 +1164,7 @@ export default function ConnectionsPage() {
                               />
                             ) : null}
                           </TableCell>
-                          <TableCell align="right">
+                          <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                             <Typography variant="body2">
                               {conn.numPackets.toLocaleString()}
                             </Typography>
@@ -1194,7 +1174,7 @@ export default function ConnectionsPage() {
                               {formatBytes(conn.totalSize)}
                             </Typography>
                           </TableCell>
-                          <TableCell align="right">
+                          <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                             <Typography variant="body2">
                               {(conn.duration / 1e9).toFixed(3)}s
                             </Typography>
@@ -1207,7 +1187,16 @@ export default function ConnectionsPage() {
                                 size="small"
                                 color="secondary"
                                 variant="outlined"
-                                sx={{ fontSize: '0.7rem' }}
+                                title={conn.serverPortName}
+                                sx={{ 
+                                  fontSize: '0.7rem',
+                                  maxWidth: 100,
+                                  '& .MuiChip-label': {
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }
+                                }}
                               />
                             ) : (
                               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
