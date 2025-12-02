@@ -214,7 +214,7 @@ func generateDomainsTopByQueriesChart(outDir string, showLegend bool) *charts.Ba
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Domains by Query Count",
-			Subtitle: "Most queried domains and unique clients",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -320,7 +320,7 @@ func generateDomainsTLDsChart(outDir string, showLegend bool) *charts.Pie {
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Level Domains (TLDs)",
-			Subtitle: "Distribution by query count",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -413,7 +413,7 @@ func generateDomainsRecordTypesChart(outDir string, showLegend bool) *charts.Bar
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "DNS Record Types",
-			Subtitle: "Distribution of query types",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -483,7 +483,7 @@ func generateDomainsSubdomainDistributionChart(outDir string, showLegend bool) *
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Subdomain Distribution",
-			Subtitle: "Root domains vs subdomains",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",

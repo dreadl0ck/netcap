@@ -208,7 +208,7 @@ func generateHostsTopTalkersChart(outDir string, showLegend bool) *charts.Bar {
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Hosts by Traffic",
-			Subtitle: "Packets and Bytes Transferred",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -297,7 +297,7 @@ func generateHostsTrafficDistributionChart(outDir string, showLegend bool) *char
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Traffic Distribution",
-			Subtitle: "Internal vs External",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -390,7 +390,7 @@ func generateHostsApplicationsChart(outDir string, showLegend bool) *charts.Bar 
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Applications",
-			Subtitle: "Detected by DPI",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -486,7 +486,7 @@ func generateHostsProtocolsChart(outDir string, showLegend bool) *charts.Sunburs
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Protocol Distribution",
-			Subtitle: "By Category",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",

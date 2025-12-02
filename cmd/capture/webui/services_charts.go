@@ -218,7 +218,7 @@ func generateServicesTopByTrafficChart(outDir string, showLegend bool) *charts.B
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Services by Traffic",
-			Subtitle: "Flows and Bytes Transferred",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -324,7 +324,7 @@ func generateServicesProtocolsChart(outDir string, showLegend bool) *charts.Pie 
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Protocol Distribution",
-			Subtitle: "Services by Protocol",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -425,7 +425,7 @@ func generateServicesTopPortsChart(outDir string, showLegend bool) *charts.Bar {
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Service Ports",
-			Subtitle: "Most Common Ports",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -531,7 +531,7 @@ func generateServicesTopProductsChart(outDir string, showLegend bool) *charts.Ba
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Service Products",
-			Subtitle: "Most Common Software/Vendors",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",

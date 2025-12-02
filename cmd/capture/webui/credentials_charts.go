@@ -145,7 +145,7 @@ func generateCredentialsByServiceChart(outDir string, showLegend bool) *charts.B
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Credentials by Service",
-			Subtitle: "Top Services with Captured Credentials",
+			Subtitle: "",
 		}),
 		charts.WithYAxisOpts(opts.YAxis{
 			Name: "Count",
@@ -243,7 +243,7 @@ func generateCredentialsTimelineChart(outDir string, showLegend bool) *charts.Li
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Credentials Timeline",
-			Subtitle: "Credentials Captured Over Time",
+			Subtitle: "",
 		}),
 		charts.WithYAxisOpts(opts.YAxis{
 			Name: "Count",
@@ -309,7 +309,7 @@ func generateCredentialsUsernamesChart(outDir string, showLegend bool) *charts.B
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Usernames",
-			Subtitle: "Most Common Usernames in Captured Credentials",
+			Subtitle: "",
 		}),
 		charts.WithYAxisOpts(opts.YAxis{
 			Name: "Count",
@@ -391,7 +391,7 @@ func generateCredentialsFlowsChart(outDir string, showLegend bool) *charts.Pie {
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Credentials by Flow",
-			Subtitle: "Top Network Flows with Credentials",
+			Subtitle: "",
 		}),
 		charts.WithTooltipOpts(opts.Tooltip{
 			Show:    opts.Bool(true),

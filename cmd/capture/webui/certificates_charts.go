@@ -240,7 +240,7 @@ func generateCertificatesTopIssuersChart(outDir string, showLegend bool) *charts
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Certificate Issuers",
-			Subtitle: "Most Common Certificate Authorities",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -321,7 +321,7 @@ func generateCertificatesStatusDistributionChart(outDir string, showLegend bool)
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Certificate Status Distribution",
-			Subtitle: "Security and Validity Status",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -419,7 +419,7 @@ func generateCertificatesKeyAlgorithmsChart(outDir string, showLegend bool) *cha
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Public Key Algorithms",
-			Subtitle: "Algorithm and Key Size Distribution",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -495,7 +495,7 @@ func generateCertificatesExpirationTimelineChart(outDir string, showLegend bool)
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Certificate Expiration Timeline",
-			Subtitle: "Valid certificates expiring within next year",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",

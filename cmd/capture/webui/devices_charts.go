@@ -274,7 +274,7 @@ func generateDevicesMACVendorsChart(outDir string, showLegend bool) *charts.Bar 
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top MAC Vendors",
-			Subtitle: "By Device Count",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -378,7 +378,7 @@ func generateDevicesHardwareChart(outDir string, showLegend bool) *charts.Bar {
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Device Types",
-			Subtitle: "Hardware and Devices",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -477,7 +477,7 @@ func generateDevicesOperatingSystemsChart(outDir string, showLegend bool) *chart
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Operating Systems",
-			Subtitle: "Detected from Device Profiles",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -575,7 +575,7 @@ func generateDevicesApplicationsChart(outDir string, showLegend bool) *charts.Ba
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Applications",
-			Subtitle: "Detected by DPI",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -657,7 +657,7 @@ func generateDevicesTrafficDistributionChart(outDir string, showLegend bool) *ch
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Traffic Distribution",
-			Subtitle: "Top Devices by Bytes",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",

@@ -41,13 +41,11 @@ import {
   TableHead,
   TableRow,
   TextField,
-  InputAdornment,
   Switch,
   FormControlLabel,
   Tooltip,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import SearchIcon from '@mui/icons-material/Search';
 import Layout from '../components/Layout';
 import { useNetcapApi } from '../hooks';
 import { parseSearchQuery, matchesSingleValue } from '../lib/tableSearch';
@@ -57,6 +55,7 @@ import CancelIcon from '@mui/icons-material/Cancel';
 import InfoIcon from '@mui/icons-material/Info';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import SecurityIcon from '@mui/icons-material/Security';
+import SearchInput from '../components/SearchInput';
 
 const LOCAL_STORAGE_KEY = 'netcap_dpi_enabled_modules';
 
@@ -485,20 +484,12 @@ export default function DPIPage() {
                         {protocols.length > 0 ? (
                           <Box>
                             <Box sx={{ mb: 2 }}>
-                              <TextField
-                                data-learn="Search Protocols: Filter the list of supported protocols by name. Use !term to exclude protocols."
-                                fullWidth
-                                size="small"
-                                placeholder={`Search protocols... (use !term to exclude)`}
+                              <SearchInput
                                 value={searchQueries[module] || ''}
-                                onChange={(e) => setSearchQueries({ ...searchQueries, [module]: e.target.value })}
-                                InputProps={{
-                                  startAdornment: (
-                                    <InputAdornment position="start">
-                                      <SearchIcon />
-                                    </InputAdornment>
-                                  ),
-                                }}
+                                onChange={(value) => setSearchQueries({ ...searchQueries, [module]: value })}
+                                placeholder="Search protocols..."
+                                learnHint="Search Protocols: Filter the list of supported protocols by name. Use !term to exclude protocols."
+                                sx={{ width: '100%' }}
                               />
                             </Box>
                             {(() => {

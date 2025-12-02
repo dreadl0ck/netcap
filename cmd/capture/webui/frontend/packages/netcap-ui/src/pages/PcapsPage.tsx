@@ -46,13 +46,14 @@ import {
   Typography,
   type SelectChangeEvent,
 } from '@mui/material';
-import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, Description as DescriptionIcon, Search as SearchIcon, BubbleChart as VisualizeIcon, Report as ReportIcon, BugReport as BugReportIcon, Download as DownloadIcon, Notifications as NotificationsIcon, Refresh as RefreshIcon } from '@mui/icons-material';
+import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, Description as DescriptionIcon, BubbleChart as VisualizeIcon, Report as ReportIcon, BugReport as BugReportIcon, Download as DownloadIcon, Notifications as NotificationsIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 import { useNetcapRouter, useNetcapApi } from '../hooks';
 import Layout from '../components/Layout';
 import { formatBytes, formatTimestamp, formatDuration } from '../lib/api';
 import { parseSearchQuery, matchesSingleValue } from '../lib/tableSearch';
 import useSWR from 'swr';
 import ReportIssueDialog from '../components/ReportIssueDialog';
+import SearchInput from '../components/SearchInput';
 
 type SortField = 'name' | 'size' | 'modifiedTime';
 type SortOrder = 'asc' | 'desc';
@@ -430,21 +431,15 @@ export default function PCAPs() {
       <Box sx={{ minWidth: 0 }}>
         {/* Search Bar */}
         <Box mb={3}>
-          <TextField
-            data-learn="Search Files: Filter the list of PCAP files by filename to quickly find specific captures."
-            fullWidth
-            variant="outlined"
-            placeholder="Search files by name..."
+          <SearchInput
             value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
+            onChange={(value) => {
+              setSearchQuery(value);
               setPage(0); // Reset to first page when search changes
             }}
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />,
-            }}
-            size="small"
-            sx={{ maxWidth: { xs: '100%', sm: 600 } }}
+            placeholder="Search files by name..."
+            learnHint="Search Files: Filter the list of PCAP files by filename to quickly find specific captures. Use !term to exclude matches."
+            sx={{ maxWidth: { xs: '100%', sm: 600 }, width: '100%' }}
           />
         </Box>
 

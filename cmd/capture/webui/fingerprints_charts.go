@@ -205,7 +205,7 @@ func generateFingerprintsTypeDistributionChart(outDir string, showLegend bool) *
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Fingerprint Type Distribution",
-			Subtitle: "JA4, JA4S, JA4H, JA4X, JA4T, JA4TS, JA4SSH, DHCP",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -289,7 +289,7 @@ func generateFingerprintsTopJA4Chart(outDir string, showLegend bool) *charts.Bar
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top JA4 Fingerprints",
-			Subtitle: "TLS Client Fingerprints",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -381,7 +381,7 @@ func generateFingerprintsTopJA4SSHChart(outDir string, showLegend bool) *charts.
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top JA4SSH Fingerprints",
-			Subtitle: "SSH Client/Server Fingerprints",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -445,7 +445,7 @@ func generateFingerprintsHostsPerFingerprintChart(outDir string, showLegend bool
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Fingerprint Usage Patterns",
-			Subtitle: "Occurrences vs Unique Hosts",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",

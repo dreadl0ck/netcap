@@ -661,7 +661,7 @@ export default function CredentialsPage() {
                 <TableHead>
                   <TableRow>
                     <TableCell width={40}></TableCell>
-                    <TableCell>
+                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                       <TableSortLabel
                         data-learn="Sort by Timestamp: Click to sort credentials by capture time."
                         active={sortField === 'timestamp'}
@@ -729,7 +729,7 @@ export default function CredentialsPage() {
                               />
                             </IconButton>
                           </TableCell>
-                          <TableCell>
+                          <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                             <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }} data-learn="Capture Time: Exact timestamp when this credential was captured from network traffic.">
                               {formatTimestamp(cred.timestamp)}
                             </Typography>
@@ -759,8 +759,6 @@ export default function CredentialsPage() {
                               sx={{ 
                                 fontFamily: 'monospace',
                                 fontSize: '0.875rem',
-                                color: 'error.main',
-                                fontWeight: 'bold',
                               }}
                               data-learn="Password: The captured password from the authentication attempt."
                               title={cred.password.length > 25 ? cred.password : undefined}

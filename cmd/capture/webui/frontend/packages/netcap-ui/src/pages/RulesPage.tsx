@@ -57,8 +57,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CodeIcon from '@mui/icons-material/Code';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import ErrorIcon from '@mui/icons-material/Error';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import SecurityIcon from '@mui/icons-material/Security';
@@ -71,6 +69,7 @@ import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate, mutate as globalMutate } from 'swr';
 import { FilterExpressionInline, FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 import { SyntaxHighlightedTextArea } from '../components/SyntaxHighlightedInput';
+import SearchInput from '../components/SearchInput';
 
 export default function RulesPage() {
   const router = useNetcapRouter();
@@ -510,30 +509,16 @@ export default function RulesPage() {
         </Box>
 
         {/* Search Input */}
-        <Box sx={{ mb: 3 }}>
-          <TextField
-            data-learn="Search Rules: Filter the rules list by typing keywords from rule names, descriptions, or expressions."
-            fullWidth
-            placeholder="Search rules by name, description, or expression..."
+        <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <SearchInput
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
-              endAdornment: searchQuery && (
-                <IconButton
-                  size="small"
-                  onClick={() => setSearchQuery('')}
-                  edge="end"
-                >
-                  <ClearIcon />
-                </IconButton>
-              ),
-            }}
-            variant="outlined"
-            size="small"
+            onChange={setSearchQuery}
+            placeholder="Search rules by name, description, or expression..."
+            learnHint="Search Rules: Filter the rules list by typing keywords from rule names, descriptions, or expressions. Use !term to exclude matches."
+            sx={{ width: '100%' }}
           />
           {searchQuery && (
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+            <Typography variant="caption" color="text.secondary">
               Found {filteredRules.length} rule{filteredRules.length !== 1 ? 's' : ''} matching "{searchQuery}"
             </Typography>
           )}

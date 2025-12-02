@@ -213,7 +213,7 @@ func generateConnectionsTopByTrafficChart(outDir string, showLegend bool) *chart
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Connections by Traffic",
-			Subtitle: "Packets and Bytes Transferred",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -322,7 +322,7 @@ func generateConnectionsProtocolsChart(outDir string, showLegend bool) *charts.P
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Protocol Distribution",
-			Subtitle: "Application and Transport",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -415,7 +415,7 @@ func generateConnectionsApplicationsChart(outDir string, showLegend bool) *chart
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Applications",
-			Subtitle: "Detected by DPI",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -486,7 +486,7 @@ func generateConnectionsDurationChart(outDir string, showLegend bool) *charts.Sc
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Connection Duration vs Size",
-			Subtitle: "Relationship between duration and data transferred",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",

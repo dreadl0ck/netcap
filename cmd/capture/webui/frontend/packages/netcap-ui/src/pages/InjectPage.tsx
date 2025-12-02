@@ -61,8 +61,6 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
-import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -79,6 +77,7 @@ import { useNetcapApi } from '../hooks';
 import useSWR, { mutate } from 'swr';
 import { SyntaxHighlightedTextArea } from '../components/SyntaxHighlightedInput';
 import { FilterExpressionInline } from '../components/FilterExpressionHighlight';
+import SearchInput from '../components/SearchInput';
 
 // Format relative time (e.g., "2 minutes ago")
 function formatRelativeTime(timestamp: number): string {
@@ -538,22 +537,12 @@ export default function InjectPage() {
 
           {/* Search Input */}
           <Box sx={{ mb: 3 }}>
-            <TextField
-              data-learn="Search Rules: Filter injection rules by name, description, expression, or action."
-              fullWidth
-              placeholder="Search rules by name, description, expression, or action..."
+            <SearchInput
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ color: 'action.active', mr: 1 }} />,
-                endAdornment: searchQuery && (
-                  <IconButton size="small" onClick={() => setSearchQuery('')} edge="end">
-                    <ClearIcon />
-                  </IconButton>
-                ),
-              }}
-              variant="outlined"
-              size="small"
+              onChange={setSearchQuery}
+              placeholder="Search rules by name, description, expression, or action..."
+              learnHint="Search Rules: Filter injection rules by name, description, expression, or action. Use !term to exclude matches."
+              sx={{ width: '100%' }}
             />
           </Box>
 

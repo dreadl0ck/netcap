@@ -24,6 +24,7 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"math"
 	"net"
 	"net/http"
 	"os"
@@ -771,7 +772,7 @@ func generateTreemapChart(outDir string, showLegend bool) *charts.TreeMap {
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Audit Record Types Distribution",
-			Subtitle: "Grouped by protocol layer",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -911,7 +912,7 @@ func generateBar3DChart(outDir string, showLegend bool) *charts.Bar3D {
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Audit Record Types by Layer (3D)",
-			Subtitle: "Each bar represents an audit record type, colored by layer",
+			Subtitle: "",
 			Left:     "center",
 			Top:      "5px",
 			TitleStyle: &opts.TextStyle{
@@ -1279,7 +1280,7 @@ func generateGeoChart(outDir string, showLegend bool) *charts.Geo {
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "IP Geolocation Distribution",
-			Subtitle: "Based on IPProfile data",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -1483,7 +1484,7 @@ func (s *Server) generateGeoChartAll(showLegend bool) *charts.Geo {
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Global IP Geolocation Distribution",
-			Subtitle: "Aggregated data across all captures",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -1736,7 +1737,7 @@ func generateScatter3DChart(outDir string, showLegend bool, maxConnections int) 
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Connection Pattern Analysis (3D)",
-			Subtitle: "Packets vs Bytes vs Duration",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -1767,11 +1768,11 @@ func generateScatter3DChart(outDir string, showLegend bool, maxConnections int) 
 			},
 		}),
 		charts.WithXAxis3DOpts(opts.XAxis3D{
-			Name: "Packets",
+			Name: "Packets (log scale)",
 			Type: "value",
 		}),
 		charts.WithYAxis3DOpts(opts.YAxis3D{
-			Name: "Bytes (KB)",
+			Name: "Bytes KB (log scale)",
 			Type: "value",
 		}),
 		charts.WithZAxis3DOpts(opts.ZAxis3D{
@@ -1847,17 +1848,19 @@ func getConnectionScatter3DData(outDir string, maxConnections int) []opts.Chart3
 		// Convert bytes to KB for better visualization
 		bytesKB := float64(conn.TotalSize) / 1024
 
-		// Normalize values for better visualization
-		packets := normalizeValue(float64(conn.NumPackets), 0, 10000, 0, 100)
-		bytes := normalizeValue(bytesKB, 0, 10000, 0, 100)
-		dur := normalizeValue(duration, 0, 300, 0, 100) // Cap at 5 minutes
+		// Use logarithmic scaling for better visualization of varying magnitudes
+		// This handles the wide range of connection sizes better than linear normalization
+		// +1 to avoid log(0), multiply by 20 to scale into visible range
+		packets := math.Log10(float64(conn.NumPackets)+1) * 20
+		bytes := math.Log10(bytesKB+1) * 20
+		dur := math.Min(duration, 300) // Cap at 5 minutes
 
 		data = append(data, opts.Chart3DData{
 			Name: conn.SrcIP + " -> " + conn.DstIP,
 			Value: []interface{}{
-				int(packets),
-				int(bytes),
-				int(dur),
+				packets, // Keep as float for better precision
+				bytes,
+				dur,
 			},
 		})
 
@@ -1992,7 +1995,7 @@ func generateHostsGraph(outDir string, showLegend bool, maxNodes int, layout str
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Host Communication Graph",
-			Subtitle: "Network connections between IP addresses (Internal vs External)",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -2417,7 +2420,7 @@ func generateSankeyChart(outDir string) *charts.Sankey {
 		}),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Protocol Hierarchy",
-			Subtitle: "Network protocol encapsulation flow",
+			Subtitle: "",
 			TitleStyle: &opts.TextStyle{
 				Color:           "white",
 				FontSize:        18,

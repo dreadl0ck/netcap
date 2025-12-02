@@ -96,6 +96,13 @@ export default function SearchInput({
                 onClick={handleClear}
                 edge="end"
                 aria-label="clear search"
+                sx={{
+                  color: 'text.secondary',
+                  '&:hover': {
+                    color: 'text.primary',
+                    backgroundColor: 'action.hover',
+                  },
+                }}
               >
                 <ClearIcon fontSize="small" />
               </IconButton>

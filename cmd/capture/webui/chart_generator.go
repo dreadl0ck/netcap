@@ -351,18 +351,11 @@ func (cg *ChartGenerator) generateCategoricalChart(reader *AuditRecordReader, ou
 func (cg *ChartGenerator) generateLineChart(dataPoints []dataPoint) io.Reader {
 	line := charts.NewLine()
 
-	subtitle := ""
-	if cg.interval == "" {
-		subtitle = fmt.Sprintf("Time Series | All Records | Data Points: %d", len(dataPoints))
-	} else {
-		subtitle = fmt.Sprintf("Time Series | Interval: %s | Data Points: %d", cg.interval, len(dataPoints))
-	}
-
 	line.SetGlobalOptions(
 		charts.WithInitializationOpts(getDefaultChartInitWithTheme(types.ThemeWesteros)),
 		charts.WithTitleOpts(opts.Title{
 			Title:    fmt.Sprintf("%s - %s", cg.auditType, cg.field),
-			Subtitle: subtitle,
+			Subtitle: "",
 			TitleStyle: &opts.TextStyle{
 				Color:           "white",
 				FontSize:        18,
@@ -448,18 +441,11 @@ func (cg *ChartGenerator) generateLineChart(dataPoints []dataPoint) io.Reader {
 func (cg *ChartGenerator) generateBarChart(dataPoints []dataPoint) io.Reader {
 	bar := charts.NewBar()
 
-	subtitle := ""
-	if cg.interval == "" {
-		subtitle = fmt.Sprintf("Bar Chart | All Records | Data Points: %d", len(dataPoints))
-	} else {
-		subtitle = fmt.Sprintf("Bar Chart | Interval: %s | Data Points: %d", cg.interval, len(dataPoints))
-	}
-
 	bar.SetGlobalOptions(
 		charts.WithInitializationOpts(getDefaultChartInitWithTheme(types.ThemeWesteros)),
 		charts.WithTitleOpts(opts.Title{
 			Title:    fmt.Sprintf("%s - %s", cg.auditType, cg.field),
-			Subtitle: subtitle,
+			Subtitle: "",
 			TitleStyle: &opts.TextStyle{
 				Color:           "white",
 				FontSize:        18,
@@ -533,18 +519,11 @@ func (cg *ChartGenerator) generateBarChart(dataPoints []dataPoint) io.Reader {
 func (cg *ChartGenerator) generateAreaChart(dataPoints []dataPoint) io.Reader {
 	line := charts.NewLine()
 
-	subtitle := ""
-	if cg.interval == "" {
-		subtitle = fmt.Sprintf("Area Chart | All Records | Data Points: %d", len(dataPoints))
-	} else {
-		subtitle = fmt.Sprintf("Area Chart | Interval: %s | Data Points: %d", cg.interval, len(dataPoints))
-	}
-
 	line.SetGlobalOptions(
 		charts.WithInitializationOpts(getDefaultChartInitWithTheme(types.ThemeWesteros)),
 		charts.WithTitleOpts(opts.Title{
 			Title:    fmt.Sprintf("%s - %s", cg.auditType, cg.field),
-			Subtitle: subtitle,
+			Subtitle: "",
 			TitleStyle: &opts.TextStyle{
 				Color:           "white",
 				FontSize:        18,
@@ -616,18 +595,11 @@ func (cg *ChartGenerator) generateAreaChart(dataPoints []dataPoint) io.Reader {
 func (cg *ChartGenerator) generateScatterChart(dataPoints []dataPoint) io.Reader {
 	scatter := charts.NewScatter()
 
-	subtitle := ""
-	if cg.interval == "" {
-		subtitle = fmt.Sprintf("Scatter Plot | All Records | Data Points: %d", len(dataPoints))
-	} else {
-		subtitle = fmt.Sprintf("Scatter Plot | Interval: %s | Data Points: %d", cg.interval, len(dataPoints))
-	}
-
 	scatter.SetGlobalOptions(
 		charts.WithInitializationOpts(getDefaultChartInitWithTheme(types.ThemeWesteros)),
 		charts.WithTitleOpts(opts.Title{
 			Title:    fmt.Sprintf("%s - %s", cg.auditType, cg.field),
-			Subtitle: subtitle,
+			Subtitle: "",
 			TitleStyle: &opts.TextStyle{
 				Color:           "white",
 				FontSize:        18,
@@ -700,7 +672,7 @@ func (cg *ChartGenerator) generatePieChart(data []kvPair) io.Reader {
 		charts.WithInitializationOpts(getDefaultChartInitWithTheme(types.ThemeWesteros)),
 		charts.WithTitleOpts(opts.Title{
 			Title:    fmt.Sprintf("%s - %s Distribution", cg.auditType, cg.field),
-			Subtitle: fmt.Sprintf("Top %d values | Total categories: %d", len(data), len(data)),
+			Subtitle: "",
 			TitleStyle: &opts.TextStyle{
 				Color:           "white",
 				FontSize:        18,
@@ -756,7 +728,7 @@ func (cg *ChartGenerator) generateCategoryBarChart(data []kvPair) io.Reader {
 		charts.WithInitializationOpts(getDefaultChartInitWithTheme(types.ThemeWesteros)),
 		charts.WithTitleOpts(opts.Title{
 			Title:    fmt.Sprintf("%s - %s Distribution", cg.auditType, cg.field),
-			Subtitle: fmt.Sprintf("Top %d values", len(data)),
+			Subtitle: "",
 			TitleStyle: &opts.TextStyle{
 				Color:           "white",
 				FontSize:        18,
@@ -828,7 +800,7 @@ func (cg *ChartGenerator) generateFunnelChart(dataPoints []dataPoint) io.Reader 
 		charts.WithInitializationOpts(getDefaultChartInitWithTheme(types.ThemeWesteros)),
 		charts.WithTitleOpts(opts.Title{
 			Title:    fmt.Sprintf("%s - %s Funnel", cg.auditType, cg.field),
-			Subtitle: fmt.Sprintf("Showing value progression | Data Points: %d", len(dataPoints)),
+			Subtitle: "",
 			TitleStyle: &opts.TextStyle{
 				Color:           "white",
 				FontSize:        18,
@@ -895,7 +867,7 @@ func (cg *ChartGenerator) generateRadarChart(dataPoints []dataPoint) io.Reader {
 		charts.WithInitializationOpts(getDefaultChartInitWithTheme(types.ThemeWesteros)),
 		charts.WithTitleOpts(opts.Title{
 			Title:    fmt.Sprintf("%s - %s Radar", cg.auditType, cg.field),
-			Subtitle: fmt.Sprintf("Multi-dimensional view | Data Points: %d", len(dataPoints)),
+			Subtitle: "",
 			TitleStyle: &opts.TextStyle{
 				Color:           "white",
 				FontSize:        18,
@@ -970,7 +942,7 @@ func (cg *ChartGenerator) generateWordCloudChart(data []kvPair) io.Reader {
 		charts.WithInitializationOpts(getDefaultChartInitWithTheme(types.ThemeWesteros)),
 		charts.WithTitleOpts(opts.Title{
 			Title:    fmt.Sprintf("%s - %s Word Cloud", cg.auditType, cg.field),
-			Subtitle: fmt.Sprintf("Top %d values by frequency", len(data)),
+			Subtitle: "",
 			TitleStyle: &opts.TextStyle{
 				Color:           "white",
 				FontSize:        18,
@@ -1018,7 +990,7 @@ func (cg *ChartGenerator) generateCategoryFunnelChart(data []kvPair) io.Reader {
 		charts.WithInitializationOpts(getDefaultChartInitWithTheme(types.ThemeWesteros)),
 		charts.WithTitleOpts(opts.Title{
 			Title:    fmt.Sprintf("%s - %s Distribution Funnel", cg.auditType, cg.field),
-			Subtitle: fmt.Sprintf("Top %d values by count", len(data)),
+			Subtitle: "",
 			TitleStyle: &opts.TextStyle{
 				Color:           "white",
 				FontSize:        18,
@@ -1079,7 +1051,7 @@ func (cg *ChartGenerator) generateSankeyChart(reader *AuditRecordReader) (io.Rea
 		charts.WithInitializationOpts(getDefaultChartInitWithTheme(types.ThemeWesteros)),
 		charts.WithTitleOpts(opts.Title{
 			Title:    fmt.Sprintf("%s - Flow Diagram", cg.auditType),
-			Subtitle: "Connection flows and relationships",
+			Subtitle: "",
 			TitleStyle: &opts.TextStyle{
 				Color:           "white",
 				FontSize:        18,
@@ -1196,7 +1168,7 @@ func (cg *ChartGenerator) generateGraphChart(data []kvPair) io.Reader {
 		charts.WithInitializationOpts(getDefaultChartInitWithTheme(types.ThemeWesteros)),
 		charts.WithTitleOpts(opts.Title{
 			Title:    fmt.Sprintf("%s - %s Network Graph", cg.auditType, cg.field),
-			Subtitle: fmt.Sprintf("Top %d nodes", len(data)),
+			Subtitle: "",
 			TitleStyle: &opts.TextStyle{
 				Color:           "white",
 				FontSize:        18,

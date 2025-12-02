@@ -216,7 +216,7 @@ func generateSoftwareTopProductsChart(outDir string, showLegend bool) *charts.Ba
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top Software Products",
-			Subtitle: "Most detected software and versions",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -322,7 +322,7 @@ func generateSoftwareVendorsChart(outDir string, showLegend bool) *charts.Pie {
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Software Vendors",
-			Subtitle: "Distribution by detection count",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -415,7 +415,7 @@ func generateSoftwareOperatingSystemsChart(outDir string, showLegend bool) *char
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Operating Systems",
-			Subtitle: "Detected from Software",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -536,7 +536,7 @@ func generateSoftwareVersionsChart(outDir string, showLegend bool) *charts.Sunbu
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Software Versions",
-			Subtitle: "Product and Version Hierarchy",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",

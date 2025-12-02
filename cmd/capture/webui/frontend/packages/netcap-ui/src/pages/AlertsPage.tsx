@@ -623,7 +623,7 @@ export default function AlertsPage() {
                   </TableSortLabel>
                 </TableCell>
                 <TableCell>Rule Name</TableCell>
-                <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Type</TableCell>
+                <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Type</TableCell>
                 <TableCell>
                   <TableSortLabel
                     active={sortBy === 'count'}
@@ -715,7 +715,7 @@ export default function AlertsPage() {
                             </Typography>
                           </Tooltip>
                         </TableCell>
-                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
                           <Chip label={group.recordType} size="small" variant="outlined" />
                         </TableCell>
                         <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>

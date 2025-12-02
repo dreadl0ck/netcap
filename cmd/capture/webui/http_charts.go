@@ -88,7 +88,7 @@ func (s *Server) handleHTTPTopHosts(w http.ResponseWriter, r *http.Request) {
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Top HTTP Hosts",
-			Subtitle: "Requests by Host",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -196,7 +196,7 @@ func (s *Server) handleHTTPStatusCodes(w http.ResponseWriter, r *http.Request) {
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "HTTP Status Code Distribution",
-			Subtitle: "Response Status Groups",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -300,7 +300,7 @@ func (s *Server) handleHTTPMethods(w http.ResponseWriter, r *http.Request) {
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "HTTP Request Methods",
-			Subtitle: "Distribution of HTTP Methods",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
@@ -434,7 +434,7 @@ func (s *Server) handleHTTPContentTypes(w http.ResponseWriter, r *http.Request) 
 		charts.WithInitializationOpts(getDefaultChartInit()),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "HTTP Content Types",
-			Subtitle: "Response Content-Type Distribution",
+			Subtitle: "",
 			Left:     "center",
 			TitleStyle: &opts.TextStyle{
 				Color: "#ffffff",
