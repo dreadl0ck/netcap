@@ -1228,9 +1228,9 @@ func (s *Server) getConfigOptions(sessionConfig *SessionInfo) []ConfigOption {
 	snaplenValue := defaults.SnapLen
 	baseLayerValue := "ethernet" // default base layer
 	decodeOptsValue := "lazy"    // default decode options
-	contextValue := true   // default context enabled
-	macDBValue := true     // default mac database enabled
-	serviceDBValue := true // default service database enabled
+	contextValue := true         // default context enabled
+	macDBValue := true           // default mac database enabled
+	serviceDBValue := true       // default service database enabled
 	geoDBValue := false          // default geolocation disabled
 	reverseDNSValue := false     // default reverse DNS disabled
 	localDNSValue := false       // default local DNS disabled

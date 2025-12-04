@@ -55,9 +55,9 @@ import (
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/filter"
+	"github.com/dreadl0ck/netcap/internal/performance"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/label/manager"
-	"github.com/dreadl0ck/netcap/internal/performance"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/rules"
 	"github.com/dreadl0ck/netcap/types"
@@ -1047,10 +1047,10 @@ func printDecoderList(target io.Writer, decoders []string, indent string, isLast
 func (c *Collector) printProgressInterval() chan struct{} {
 	stop := make(chan struct{})
 
-	// Create separate ticker for quiet mode netcap.log progress updates (every minute)
+	// Create separate ticker for quiet mode netcap.log progress updates
 	var quietProgressTicker *time.Ticker
 	if c.config.DecoderConfig.Quiet && !c.config.DecoderConfig.PrintProgress {
-		quietProgressTicker = time.NewTicker(1 * time.Minute)
+		quietProgressTicker = time.NewTicker(5 * time.Second)
 	}
 
 	go func() {

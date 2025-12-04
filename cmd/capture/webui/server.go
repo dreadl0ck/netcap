@@ -1569,8 +1569,8 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		s.SetFileBPFFilter(job.InputFile, job.BPFFilter)
 	}
 
-	// Execute rules automatically after successful analysis
-	s.executeRulesForJob(job)
+	// Execute rules automatically after successful analysis (async to not block next job)
+	go s.executeRulesForJob(job)
 }
 
 // countExtractedFiles counts the number of files in the files directory

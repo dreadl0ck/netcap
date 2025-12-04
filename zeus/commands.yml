@@ -740,13 +740,27 @@ commands:
         description: count lines of code for the project
         exec: |
             cloc . \
+                --include-lang=Go,TypeScript,YAML,Python,Dockerfile \
                 --exclude-ext=pb.go \
-                --exclude-dir=types/python,types/java,types/swift,types/rust,types/cpp,types/csharp,types/js \
-                --exclude-dir=cmd/capture/webui/frontend/out,cmd/capture/webui/frontend/.next,cmd/capture/webui/frontend/node_modules \
-                --exclude-dir=dist,dist-linux \
-                --exclude-dir=pcaps,tests,test-output,test-params,data \
+                --exclude-dir=types,vendor \
+                --exclude-dir=cmd/capture/webui/frontend/out,cmd/capture/webui/frontend/.next,cmd/capture/webui/frontend/node_modules,cmd/capture/webui/frontend/coverage \
+                --exclude-dir=dist,dist-linux,.docker-build-context \
+                --exclude-dir=pcaps,tests,test-output,test-params,data,testdata \
                 --exclude-dir=bin,FlameGraph \
                 --exclude-dir=node_modules,.git
+
+    # count lines of code using scc (faster alternative to cloc)
+    scc:
+        description: count lines of code for the project using scc
+        exec: |
+            scc . \
+                --include-ext c,go,ts,tsx,yml,yaml,py,dockerfile \
+                --not-match '\.pb\.go$' \
+                --exclude-dir types,vendor \
+                --exclude-dir out,.next,node_modules,coverage \
+                --exclude-dir dist,dist-linux,.docker-build-context \
+                --exclude-dir pcaps,tests,test-output,test-params,data,testdata \
+                --exclude-dir bin,FlameGraph,.git,-claude,.cursor,.idea,.vscode
 
     # generate protocol buffers for development
     gen-proto-dev:
