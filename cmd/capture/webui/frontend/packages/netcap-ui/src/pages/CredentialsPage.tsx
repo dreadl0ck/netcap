@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -68,7 +68,7 @@ import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
-interface CredentialSummary {
+export interface CredentialSummary {
   timestamp: number;
   service: string;
   flow: string;
@@ -221,7 +221,12 @@ const renderColorizedFlow = (flow: string) => {
   );
 };
 
-export default function CredentialsPage() {
+export interface CredentialsPageProps {
+  /** Custom row actions to render in the expanded row details */
+  rowActions?: (row: CredentialSummary) => React.ReactNode;
+}
+
+export default function CredentialsPage({ rowActions }: CredentialsPageProps = {}) {
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
@@ -1041,6 +1046,15 @@ export default function CredentialsPage() {
                                       {cred.socksStatus && (
                                         <Typography variant="body2" color="text.secondary">Status: {cred.socksStatus}</Typography>
                                       )}
+                                    </Grid>
+                                  )}
+                                  
+                                  {/* Custom row actions from parent */}
+                                  {rowActions && (
+                                    <Grid item xs={12}>
+                                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                        {rowActions(cred)}
+                                      </Box>
                                     </Grid>
                                   )}
                                 </Grid>

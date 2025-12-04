@@ -65,7 +65,7 @@ import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 
-interface ServiceSummary {
+export interface ServiceSummary {
   timestamp: number;
   ip: string;
   port: number;
@@ -95,7 +95,12 @@ interface ServicesResponse {
 type ServiceSortField = 'ip' | 'port' | 'protocol' | 'flows' | 'bytes';
 type SortOrder = 'asc' | 'desc';
 
-export default function ServicesPage() {
+export interface ServicesPageProps {
+  /** Custom row actions to render in the expanded row details */
+  rowActions?: (row: ServiceSummary) => React.ReactNode;
+}
+
+export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const [page, setPage] = useState(0);
@@ -819,6 +824,9 @@ export default function ServicesPage() {
                                           Create Probe
                                         </Button>
                                       )}
+                                      
+                                      {/* Custom row actions from parent */}
+                                      {rowActions && rowActions(svc)}
                                     </Box>
                                   </Grid>
                                 </Grid>

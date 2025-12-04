@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -67,7 +67,7 @@ import { useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks'
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
-interface DomainSummary {
+export interface DomainSummary {
   domain: string;
   queryCount: number;
   uniqueClients: number;
@@ -90,7 +90,12 @@ interface DomainsResponse {
 type DomainSortField = 'domain' | 'queries' | 'clients' | 'type';
 type SortOrder = 'asc' | 'desc';
 
-export default function DomainsPage() {
+export interface DomainsPageProps {
+  /** Custom row actions to render in the expanded row details */
+  rowActions?: (row: DomainSummary) => React.ReactNode;
+}
+
+export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
   const api = useNetcapApi();
   const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   const [page, setPage] = useState(0);
@@ -785,6 +790,15 @@ export default function DomainsPage() {
                                           sx={{ fontSize: '0.75rem' }}
                                         />
                                       )}
+                                    </Box>
+                                  </Grid>
+                                )}
+                                
+                                {/* Custom row actions from parent */}
+                                {rowActions && (
+                                  <Grid item xs={12}>
+                                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                      {rowActions(domain)}
                                     </Box>
                                   </Grid>
                                 )}

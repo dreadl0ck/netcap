@@ -82,7 +82,7 @@ interface PortInfo {
   bytes: number;
 }
 
-interface IPProfileSummary {
+export interface IPProfileSummary {
   addr: string;
   numPackets: number;
   bytes: number;
@@ -114,7 +114,12 @@ interface HostsResponse {
 type HostSortField = 'addr' | 'type' | 'packets' | 'bytes';
 type SortOrder = 'asc' | 'desc';
 
-export default function HostsPage() {
+export interface HostsPageProps {
+  /** Custom row actions to render in the expanded row details */
+  rowActions?: (row: IPProfileSummary) => React.ReactNode;
+}
+
+export default function HostsPage({ rowActions }: HostsPageProps = {}) {
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const [page, setPage] = useState(0);
@@ -704,7 +709,7 @@ export default function HostsPage() {
                           <Collapse in={expandedRow === host.addr} timeout="auto" unmountOnExit>
                             <Box sx={{ py: 2 }}>
                               {/* Action Buttons */}
-                              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', gap: 1, flexWrap: 'wrap' }}>
                                 <Button
                                   data-learn="Show Connections: Navigate to the Connections page filtered for this host IP to view all network connections involving this host."
                                   variant="outlined"
@@ -729,6 +734,9 @@ export default function HostsPage() {
                                 >
                                   Download as PCAP
                                 </Button>
+                                
+                                {/* Custom row actions from parent */}
+                                {rowActions && rowActions(host)}
                               </Box>
                               
                               <Grid container spacing={2}>

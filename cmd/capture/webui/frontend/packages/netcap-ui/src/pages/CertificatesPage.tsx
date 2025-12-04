@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -64,7 +64,7 @@ import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
-interface CertificateSummary {
+export interface CertificateSummary {
   timestamp: number;
   srcIP: string;
   srcPort: number;
@@ -121,7 +121,12 @@ type CertificateSortField = 'subject' | 'issuer' | 'expiration' | 'seenCount' | 
 type SortOrder = 'asc' | 'desc';
 type CertificateFilterType = 'all' | 'expired' | 'selfSigned' | 'weakSecurity';
 
-export default function CertificatesPage() {
+export interface CertificatesPageProps {
+  /** Custom row actions to render in the expanded row details */
+  rowActions?: (row: CertificateSummary) => React.ReactNode;
+}
+
+export default function CertificatesPage({ rowActions }: CertificatesPageProps = {}) {
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const { isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
@@ -1115,6 +1120,9 @@ export default function CertificatesPage() {
                                       >
                                         Download PCAP
                                       </Button>
+                                      
+                                      {/* Custom row actions from parent */}
+                                      {rowActions && rowActions(cert)}
                                     </Box>
                                   </Grid>
                                 </Grid>

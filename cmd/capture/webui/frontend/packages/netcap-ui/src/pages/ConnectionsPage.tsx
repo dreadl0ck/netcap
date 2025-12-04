@@ -72,7 +72,7 @@ import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
-interface ConnectionSummary {
+export interface ConnectionSummary {
   timestampFirst: number;
   timestampLast: number;
   linkProto: string;
@@ -144,7 +144,12 @@ interface CredentialsResponse {
 type ConnectionSortField = 'endpoints' | 'protocol' | 'packets' | 'bytes' | 'duration';
 type SortOrder = 'asc' | 'desc';
 
-export default function ConnectionsPage() {
+export interface ConnectionsPageProps {
+  /** Custom row actions to render in the expanded row details */
+  rowActions?: (row: ConnectionSummary) => React.ReactNode;
+}
+
+export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {}) {
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
@@ -1706,6 +1711,9 @@ export default function ConnectionsPage() {
                                           Service
                                         </Button>
                                       )}
+                                      
+                                      {/* Custom row actions from parent */}
+                                      {rowActions && rowActions(conn)}
                                     </Box>
                                   </Grid>
                                 </Grid>
