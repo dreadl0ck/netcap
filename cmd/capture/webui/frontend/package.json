@@ -21,7 +21,7 @@
     "@mui/icons-material": "^5.14.19",
     "@mui/material": "^5.14.20",
     "echarts": "^6.0.0",
-    "next": "16.0.7",
+    "next": "16.0.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-syntax-highlighter": "^15.5.0",
