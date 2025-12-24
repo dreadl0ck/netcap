@@ -28,8 +28,7 @@ import (
 )
 
 var (
-	tins  = time.Now()
-	ti    = time.Unix(tins.Unix(), int64(tins.Nanosecond()/1000*1000))
+	ti    = time.Now()
 	tiStr = timeToString(ti)
 )
 
