@@ -28,7 +28,8 @@ import (
 )
 
 var (
-	ti    = time.Now()
+	// truncate to microsecond precision to match timeToString format
+	ti    = time.Now().Truncate(time.Microsecond)
 	tiStr = timeToString(ti)
 )
 
