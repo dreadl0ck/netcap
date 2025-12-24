@@ -93,19 +93,27 @@ func share(current, total int64) string {
 	return pad + strconv.FormatFloat(percent, 'f', 3, 64) + "%"
 }
 
-func rawBPF(filter string) ([]bpf.RawInstruction, error) {
-	// use pcap bpf compiler to get raw bpf instruction
-	pcapBPF, err := pcap.CompileBPFFilter(layers.LinkTypeEthernet, 65535, filter)
+// compileBPFToRaw compiles a BPF filter expression into raw instructions
+// suitable for use with raw socket handles that require bpf.RawInstruction slices.
+// This is necessary because pcapgo.EthernetHandle uses SetBPF() with raw instructions
+// rather than SetBPFFilter() with a filter string like pcap.Handle does.
+func compileBPFToRaw(filterExpr string) ([]bpf.RawInstruction, error) {
+	compiled, err := pcap.CompileBPFFilter(layers.LinkTypeEthernet, 65535, filterExpr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to compile BPF filter: %w", err)
 	}
 
-	raw := make([]bpf.RawInstruction, len(pcapBPF))
-	for i, ri := range pcapBPF {
-		raw[i] = bpf.RawInstruction{Op: ri.Code, Jt: ri.Jt, Jf: ri.Jf, K: ri.K}
+	instructions := make([]bpf.RawInstruction, 0, len(compiled))
+	for _, instr := range compiled {
+		instructions = append(instructions, bpf.RawInstruction{
+			Op: instr.Code,
+			Jt: instr.Jt,
+			Jf: instr.Jf,
+			K:  instr.K,
+		})
 	}
 
-	return raw, nil
+	return instructions, nil
 }
 
 func (c *Collector) printlnStdOut(args ...interface{}) {

@@ -47,14 +47,14 @@ func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error
 	}
 	defer handle.Close()
 
-	// set BPF if requested
+	// apply BPF filter if specified
 	if bpf != "" {
-		rb, err := rawBPF(bpf)
+		rawInstructions, err := compileBPFToRaw(bpf)
 		if err != nil {
 			return err
 		}
-		if err := handle.SetBPF(rb); err != nil {
-			return err
+		if err := handle.SetBPF(rawInstructions); err != nil {
+			return fmt.Errorf("failed to set BPF filter: %w", err)
 		}
 	}
 
