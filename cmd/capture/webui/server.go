@@ -1346,6 +1346,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		"-read", job.InputFile,
 		"-out", job.OutputDir,
 		"-quiet",
+		"-y",        // Force overwrite without prompting (required for non-interactive mode)
 		"-http", "", // Disable web UI server
 	}
 
