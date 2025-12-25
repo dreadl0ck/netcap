@@ -21,6 +21,7 @@ package resolvers
 
 import (
 	"log"
+	"os"
 	"testing"
 
 	logging "github.com/dreadl0ck/netcap/internal/logger"
@@ -30,8 +31,13 @@ import (
 // even this file is in the resolvers package scope.
 // so we abuse it here to guarantee the logfile handles are initialized for all tests
 func init() {
-	var err error
-	resolverLog, _, err = logging.InitZapLogger("../tests", "resolvers", true)
+	// Create a temp directory for test logs
+	tempDir, err := os.MkdirTemp("", "netcap-resolvers-test-*")
+	if err != nil {
+		log.Fatal("failed to create temp directory for test logs:", err)
+	}
+
+	resolverLog, _, err = logging.InitZapLogger(tempDir, "resolvers", true)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -72,11 +78,22 @@ func TestDHCPRemote(t *testing.T) {
 }
 
 func TestInitLocalDHCPFingerprintDB(t *testing.T) {
+	// Skip this test if the build CSV file doesn't exist
+	// The CSV file is generated during the database build process
+	csvPath := DataBaseBuildPath + "/dhcp-fingerprints.csv"
+	if _, err := os.Stat(csvPath); os.IsNotExist(err) {
+		t.Skipf("Skipping test: DHCP fingerprints CSV not found at %s (run 'zeus dbs-generate' to create)", csvPath)
+	}
 	initDHCPFingerprintDBCSV()
 	SaveFingerprintDB()
 }
 
 func TestDHCPFingerprintLocal(t *testing.T) {
+	// Skip this test if the database file doesn't exist
+	dbPath := DataBaseFolderPath + "/" + dhcpDBFile
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		t.Skipf("Skipping test: DHCP fingerprint database not found at %s", dbPath)
+	}
 	InitDHCPFingerprintDB()
 
 	tests := []dhcpFingerprintResult{

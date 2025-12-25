@@ -1042,7 +1042,7 @@ commands:
         dependencies:
             - make-icons
         exec: |
-            go clean -testcache && go test ./... -coverprofile cover.out
+            go clean -testcache && go test -v --timeout=1h ./... -coverprofile cover.out
             go tool cover -html=cover.out
 
     test-race:

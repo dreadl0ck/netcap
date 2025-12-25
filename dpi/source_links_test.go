@@ -221,6 +221,8 @@ func getNDPIProtocolURLs(protocol, protocolLower string) []string {
 	if strings.ToUpper(protocol) == "SALESFORCE" {
 		return []string{
 			"https://github.com/ntop/nDPI/blob/dev/lists/protocols/266_salesforce.list",
+			// Fallback to protocol IDs header for reference
+			"https://github.com/ntop/nDPI/blob/dev/src/include/ndpi_protocol_ids.h",
 		}
 	}
 

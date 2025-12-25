@@ -761,8 +761,7 @@ func (a *Assembler) cleanSG(half *halfconnection, ac AssemblerContext) {
 
 	saved := new(page)
 
-	// TODO: prevent invalid index access
-	ndx = len(a.cacheSG.all)
+	// Iterate over pages that should be kept (from ndx to end)
 	for _, r := range a.cacheSG.all[ndx:] {
 		first, last, nb := r.convertToPages(a.pc, skip, ac)
 

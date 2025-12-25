@@ -177,6 +177,12 @@ func TestHTTPFileExtraction(t *testing.T) {
 	}
 	defer reader.Close()
 
+	// Read file header first
+	_, err = reader.ReadHeader()
+	if err != nil {
+		t.Fatalf("Failed to read File audit header: %v", err)
+	}
+
 	var fileRecord types.File
 	fileCount := 0
 	validFileCount := 0
@@ -279,6 +285,12 @@ func TestSMTPFileExtraction(t *testing.T) {
 	}
 	defer reader.Close()
 
+	// Read file header first
+	_, err = reader.ReadHeader()
+	if err != nil {
+		t.Fatalf("Failed to read File audit header: %v", err)
+	}
+
 	var fileRecord types.File
 	fileCount := 0
 
@@ -338,6 +350,15 @@ func TestFTPDecoder(t *testing.T) {
 		t.Fatalf("Failed to open FTP audit records: %v", err)
 	}
 	defer reader.Close()
+
+	// Read file header first
+	header, err := reader.ReadHeader()
+	if err != nil {
+		t.Fatalf("Failed to read FTP audit header: %v", err)
+	}
+	if header.Type != types.Type_NC_FTP {
+		t.Fatalf("Expected FTP type, got: %v", header.Type)
+	}
 
 	var ftpRecord types.FTP
 	commandCount := 0
@@ -422,6 +443,12 @@ func TestZeekFTPTrace(t *testing.T) {
 	}
 	defer reader.Close()
 
+	// Read file header first
+	_, err = reader.ReadHeader()
+	if err != nil {
+		t.Fatalf("Failed to read FTP audit header: %v", err)
+	}
+
 	var ftpRecord types.FTP
 	commandCount := 0
 
@@ -469,6 +496,12 @@ func TestZeekHTTPTrace(t *testing.T) {
 		}
 		defer reader.Close()
 
+		// Read file header first
+		_, err = reader.ReadHeader()
+		if err != nil {
+			t.Fatalf("Failed to read File audit header: %v", err)
+		}
+
 		var fileRecord types.File
 		for {
 			err := reader.Next(&fileRecord)
@@ -487,6 +520,12 @@ func TestZeekHTTPTrace(t *testing.T) {
 			t.Fatalf("Failed to open HTTP audit records: %v", err)
 		}
 		defer reader.Close()
+
+		// Read file header first
+		_, err = reader.ReadHeader()
+		if err != nil {
+			t.Fatalf("Failed to read HTTP audit header: %v", err)
+		}
 
 		var httpRecord types.HTTP
 		httpCount := 0
@@ -539,6 +578,12 @@ func TestMultipleHashAlgorithms(t *testing.T) {
 		t.Fatalf("Failed to open File audit records: %v", err)
 	}
 	defer reader.Close()
+
+	// Read file header first
+	_, err = reader.ReadHeader()
+	if err != nil {
+		t.Fatalf("Failed to read File audit header: %v", err)
+	}
 
 	var fileRecord types.File
 	hashesVerified := 0
@@ -625,6 +670,12 @@ func TestMIMEDetection(t *testing.T) {
 	}
 	defer reader.Close()
 
+	// Read file header first
+	_, err = reader.ReadHeader()
+	if err != nil {
+		t.Fatalf("Failed to read File audit header: %v", err)
+	}
+
 	var fileRecord types.File
 	mimeDetected := 0
 
@@ -693,6 +744,12 @@ func TestFileExtractionDisabled(t *testing.T) {
 		}
 		defer reader.Close()
 
+		// Read file header first
+		_, err = reader.ReadHeader()
+		if err != nil {
+			t.Fatalf("Failed to read File audit header: %v", err)
+		}
+
 		var fileRecord types.File
 		err = reader.Next(&fileRecord)
 		if err == nil {
@@ -736,6 +793,12 @@ func TestProtocolFiltering(t *testing.T) {
 			t.Fatalf("Failed to open File audit records: %v", err)
 		}
 		defer reader.Close()
+
+		// Read file header first
+		_, err = reader.ReadHeader()
+		if err != nil {
+			t.Fatalf("Failed to read File audit header: %v", err)
+		}
 
 		var fileRecord types.File
 		for {

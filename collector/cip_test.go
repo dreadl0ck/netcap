@@ -29,6 +29,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/config"
+	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
@@ -36,6 +37,9 @@ import (
 
 // TestCIPPcapDecoding tests that CIP audit records are properly created from cip.pcap
 func TestCIPPcapDecoding(t *testing.T) {
+	// Reset stream factory to ensure clean state between tests
+	tcp.ResetStreamFactory()
+
 	// Get the path to the CIP pcap file
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
@@ -224,6 +228,9 @@ func TestCIPPcapDecoding(t *testing.T) {
 
 // TestCIPDecoderOnly tests CIP decoding with only the CIP decoder enabled
 func TestCIPDecoderOnly(t *testing.T) {
+	// Reset stream factory to ensure clean state between tests
+	tcp.ResetStreamFactory()
+
 	// Get the path to the CIP pcap file
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
@@ -376,6 +383,9 @@ func TestCIPDecoderOnly(t *testing.T) {
 // TestCIPSuricataVerifyPcap tests CIP decoding with the suricata-verify-enip_cip_example.pcap file
 // This file contains Multiple Service Packet requests which need special handling
 func TestCIPSuricataVerifyPcap(t *testing.T) {
+	// Reset stream factory to ensure clean state between tests
+	tcp.ResetStreamFactory()
+
 	// Get the path to the pcap file
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {

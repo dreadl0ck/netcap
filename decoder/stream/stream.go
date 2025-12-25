@@ -139,9 +139,15 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		// include map
 		inMap = make(map[string]bool)
 
-		// new selection
-		selection = make(map[int32]core.StreamDecoderAPI)
+		// Work with a copy of the decoders map to avoid modifying global state
+		// This is important for test isolation and concurrent usage
+		activeDecoders = make(map[int32]core.StreamDecoderAPI)
 	)
+
+	// Copy all default decoders to the active map
+	for port, dec := range DefaultStreamDecoders {
+		activeDecoders[port] = dec
+	}
 
 	// if there are includes and the first item is not an empty string
 	if len(in) > 0 && in[0] != "" { // iterate over includes
@@ -156,15 +162,14 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 			}
 		}
 
-		// iterate over packet decoders and collect those that are named in the includeMap
-		for port, dec := range DefaultStreamDecoders {
+		// Filter activeDecoders to only those named in the includeMap
+		selection := make(map[int32]core.StreamDecoderAPI)
+		for port, dec := range activeDecoders {
 			if _, ok := inMap[dec.GetName()]; ok {
 				selection[port] = dec
 			}
 		}
-
-		// update packet decoders to new selection
-		DefaultStreamDecoders = selection
+		activeDecoders = selection
 	}
 
 	// iterate over excluded decoders
@@ -174,11 +179,11 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 				return nil, errors.Wrap(errInvalidStreamDecoder, name)
 			}
 
-			// remove named decoder from defaultPacketDecoders
-			for port, dec := range DefaultStreamDecoders {
+			// remove named decoder from activeDecoders
+			for port, dec := range activeDecoders {
 				if name == dec.GetName() {
 					// remove decoder
-					delete(DefaultStreamDecoders, port)
+					delete(activeDecoders, port)
 
 					break
 				}
@@ -192,7 +197,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 	)
 
 	// initialize decoders
-	for _, d := range DefaultStreamDecoders {
+	for _, d := range activeDecoders {
 
 		// reset decoder stat in case it is reinitialized at runtime.
 		d.(*decoder.StreamDecoder).NumRecordsWritten = 0

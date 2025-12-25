@@ -424,8 +424,7 @@ func (s *Server) saveRulesConfig(config *rules.Config) error {
 func sanitizeFilename(name string) string {
 	// Replace any characters that are not alphanumeric, dash, or underscore
 	safe := strings.Map(func(r rune) rune {
-		// Allow forward slashes now that we are not using file paths for temp rules
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' || r == '/' {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
 			return r
 		}
 		return '_'

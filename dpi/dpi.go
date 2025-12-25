@@ -50,8 +50,9 @@ var (
 )
 
 func init() {
-	// Initialize disableDPI to false (DPI is enabled by default)
-	disableDPI.Store(false)
+	// Initialize disableDPI to true (DPI is disabled by default until Init() is called)
+	// This prevents crashes when GetProtocols is called before DPI is initialized
+	disableDPI.Store(true)
 }
 
 const categoryUnknown = "UNKNOWN"
@@ -124,6 +125,10 @@ func Init(modules string) {
 	if err := godpi.Initialize(); err != nil {
 		log.Fatal("goDPI initialization returned an error: ", err)
 	}
+
+	// Enable DPI after successful initialization
+	disableDPI.Store(false)
+
 	log.Println(ansi.Yellow + "[DPI] Init() done" + ansi.Reset)
 }
 

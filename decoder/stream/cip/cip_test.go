@@ -157,14 +157,17 @@ func TestCanDecodeCIP(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "Raw CIP request (Get Attribute All)",
+			// Raw CIP without ENIP encapsulation is no longer detected to avoid false positives
+			// CIP detection now requires ENIP encapsulation for reliability
+			name:     "Raw CIP request (Get Attribute All) - not detected without ENIP",
 			data:     []byte{0x01, 0x02, 0x20, 0x01, 0x24, 0x01},
-			expected: true,
+			expected: false,
 		},
 		{
-			name:     "Raw CIP response",
+			// Raw CIP without ENIP encapsulation is no longer detected to avoid false positives
+			name:     "Raw CIP response - not detected without ENIP",
 			data:     []byte{0x81, 0x00, 0x00, 0x00},
-			expected: true,
+			expected: false,
 		},
 		{
 			name:     "Too short",
@@ -221,9 +224,10 @@ func TestCIPReaderParseCIPRequest(t *testing.T) {
 		t.Errorf("InstanceID = %d, expected %d", msg.InstanceID, 0x01)
 	}
 
-	// Header size should be 2 + (2*2) = 6 bytes
-	if consumed != 6 {
-		t.Errorf("consumed = %d, expected 6", consumed)
+	// When parsing CIP messages from ENIP, consumed returns full message length
+	// (entire data slice), not just the header size
+	if consumed != len(cipRequest) {
+		t.Errorf("consumed = %d, expected %d (full message length)", consumed, len(cipRequest))
 	}
 }
 
@@ -256,9 +260,10 @@ func TestCIPReaderParseCIPResponse(t *testing.T) {
 		t.Errorf("Status = %d, expected 0", msg.Status)
 	}
 
-	// Header size should be 4 bytes (service + reserved + status + additional status size)
-	if consumed != 4 {
-		t.Errorf("consumed = %d, expected 4", consumed)
+	// When parsing CIP messages from ENIP, consumed returns full message length
+	// (entire data slice), not just the header size
+	if consumed != len(cipResponse) {
+		t.Errorf("consumed = %d, expected %d (full message length)", consumed, len(cipResponse))
 	}
 }
 

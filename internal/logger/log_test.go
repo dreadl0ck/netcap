@@ -20,6 +20,7 @@
 package logger_test
 
 import (
+	"os"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/logger"
@@ -37,9 +38,16 @@ func TestInitZapLogger(t *testing.T) {
 		t.Fatal("expected nil log file handle")
 	}
 
-	l, f, err = logger.InitZapLogger("../tests", "testlog", false)
+	// Create a temp directory for testing
+	tempDir, err := os.MkdirTemp("", "netcap-logger-test-*")
 	if err != nil {
-		t.Fatal("expected no error because the outpath exists")
+		t.Fatalf("failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	l, f, err = logger.InitZapLogger(tempDir, "testlog", false)
+	if err != nil {
+		t.Fatalf("expected no error because the outpath exists, got: %v", err)
 	}
 	if l == nil {
 		t.Fatal("expected a logger")
@@ -81,9 +89,16 @@ func TestInitDebugLogger(t *testing.T) {
 		t.Fatal("expected nil log file handle")
 	}
 
-	l, f, err = logger.InitDebugLogger("../tests", "testlog", true)
+	// Create a temp directory for testing
+	tempDir, err := os.MkdirTemp("", "netcap-logger-test-*")
 	if err != nil {
-		t.Fatal("expected no error because the outpath exists")
+		t.Fatalf("failed to create temp directory: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	l, f, err = logger.InitDebugLogger(tempDir, "testlog", true)
+	if err != nil {
+		t.Fatalf("expected no error because the outpath exists, got: %v", err)
 	}
 	if l == nil {
 		t.Fatal("expected a logger")

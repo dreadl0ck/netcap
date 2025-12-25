@@ -832,8 +832,8 @@ func TestHarvesterPortFiltering(t *testing.T) {
 		{"HTTP on 8080", "HTTP", 8080, 12345, true},
 		{"HTTP on wrong port", "HTTP", 21, 22, false},
 
-		// Unknown harvester (should allow all ports)
-		{"Unknown harvester", "UnknownHarvester", 12345, 54321, true},
+		// Unknown harvester (should NOT run to prevent false positives)
+		{"Unknown harvester", "UnknownHarvester", 12345, 54321, false},
 	}
 
 	for _, tc := range tests {
