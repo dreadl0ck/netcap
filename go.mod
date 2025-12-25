@@ -19,7 +19,6 @@ require (
 	github.com/dsoprea/go-exif/v2 v2.0.0-20230826092837-6579e82b732d
 	github.com/dustin/go-humanize v1.0.1
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
-	github.com/evilsocket/islazy v1.11.0
 	github.com/felixge/fgprof v0.9.5
 	github.com/go-echarts/go-echarts/v2 v2.6.5
 	github.com/go-errors/errors v1.5.1
