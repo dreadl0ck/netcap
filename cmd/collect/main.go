@@ -34,8 +34,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dreadl0ck/cryptoutils"
 	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap/internal/cryptoutils"
 	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/defaults"

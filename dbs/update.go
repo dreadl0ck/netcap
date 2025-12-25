@@ -28,7 +28,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/dreadl0ck/cryptoutils"
+	"github.com/dreadl0ck/netcap/internal/cryptoutils"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/utils"
 )

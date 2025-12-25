@@ -31,8 +31,9 @@ import (
 	"unicode"
 
 	"github.com/araddon/dateparse"
-	"github.com/dreadl0ck/cryptoutils"
 	"go.uber.org/zap"
+
+	"github.com/dreadl0ck/netcap/internal/cryptoutils"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
