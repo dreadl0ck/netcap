@@ -24,7 +24,7 @@
 package cryptoutils
 
 import (
-	"crypto/md5"  //nolint:gosec // MD5 used only for checksums, not security
+	"crypto/md5" //nolint:gosec // MD5 used only for checksums, not security
 	"crypto/rand"
 	"encoding/base64"
 	"io"
