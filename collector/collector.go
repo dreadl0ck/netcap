@@ -42,8 +42,9 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/evilsocket/islazy/tui"
 	"github.com/gopacket/gopacket"
+
+	"github.com/dreadl0ck/netcap/internal/table"
 	"github.com/mgutz/ansi"
 	"go.uber.org/zap"
 
@@ -761,7 +762,7 @@ func (c *Collector) stats() {
 	numUnknown := len(c.unknownProtosAtomic.Items)
 
 	c.unknownProtosAtomic.Unlock()
-	tui.Table(target, []string{"GoPacketDecoder", "NumRecords", "Share"}, rows)
+	table.Render(target, []string{"GoPacketDecoder", "NumRecords", "Share"}, rows)
 
 	// print legend if there are unknown protos
 	// -1 for "Payload" layer
@@ -781,7 +782,7 @@ func (c *Collector) stats() {
 		}
 
 		if len(rows) > 0 {
-			tui.Table(target, []string{"PacketDecoder", "NumRecords", "Share"}, rows)
+			table.Render(target, []string{"PacketDecoder", "NumRecords", "Share"}, rows)
 		}
 	}
 
@@ -795,7 +796,7 @@ func (c *Collector) stats() {
 		}
 
 		if len(rows) > 0 {
-			tui.Table(target, []string{"StreamDecoder", "NumRecords", "Share"}, rows)
+			table.Render(target, []string{"StreamDecoder", "NumRecords", "Share"}, rows)
 		}
 	}
 
@@ -809,7 +810,7 @@ func (c *Collector) stats() {
 		}
 
 		if len(rows) > 0 {
-			tui.Table(target, []string{"AbstractDecoder", "NumRecords", "Share"}, rows)
+			table.Render(target, []string{"AbstractDecoder", "NumRecords", "Share"}, rows)
 		}
 	}
 
@@ -1235,7 +1236,7 @@ func (c *Collector) PrintConfiguration() {
 	_, _ = fmt.Fprintln(target, "> PID:", os.Getpid())
 
 	// print configuration as table
-	tui.Table(target, []string{"Setting", "Value"}, [][]string{
+	table.Render(target, []string{"Setting", "Value"}, [][]string{
 		{"Workers", strconv.Itoa(c.config.Workers)},
 		{"MemBuffer", strconv.FormatBool(c.config.DecoderConfig.Buffer)},
 		{"MemBufferSize", strconv.Itoa(c.config.DecoderConfig.MemBufferSize) + " bytes"},

@@ -28,7 +28,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/evilsocket/islazy/tui"
+	"github.com/dreadl0ck/netcap/internal/table"
 	"github.com/expr-lang/expr/vm"
 	"github.com/mgutz/ansi"
 	"github.com/urfave/cli/v3"
@@ -100,7 +100,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		}
 
 		// print result as table
-		tui.Table(os.Stdout, []string{"Field", "Value"}, [][]string{
+		table.Render(os.Stdout, []string{"Field", "Value"}, [][]string{
 			{"Created", utils.UnixTimeToUTC(h.Created)},
 			{"Source", h.InputSource},
 			{"Version", h.Version},

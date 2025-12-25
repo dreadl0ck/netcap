@@ -32,8 +32,9 @@ import (
 	"time"
 
 	"github.com/cheggaaa/pb"
-	"github.com/evilsocket/islazy/tui"
 	"github.com/pkg/errors"
+
+	"github.com/dreadl0ck/netcap/internal/table"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/utils"
@@ -157,7 +158,7 @@ func Suricata(inputPcap, outputPath string, useDescription bool, separator, sele
 	}
 
 	// print alert summary
-	tui.Table(os.Stdout, []string{"Classification", "Count"}, rows)
+	table.Render(os.Stdout, []string{"Classification", "Count"}, rows)
 	fmt.Println()
 
 	// apply labels to data
@@ -400,7 +401,7 @@ func parseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[in
 		fmt.Println(len(duplicates), "duplicate labels. stopping")
 
 		for _, a := range duplicates {
-			tui.Table(os.Stdout, []string{"Field", "Value"}, [][]string{
+			table.Render(os.Stdout, []string{"Field", "Value"}, [][]string{
 				{"Timestamp", time.Unix(0, a.Timestamp).UTC().String()},
 				{"Proto", a.Proto},
 				{"SrcIP", a.SrcIP},

@@ -27,7 +27,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/evilsocket/islazy/tui"
+	"github.com/dreadl0ck/netcap/internal/table"
 )
 
 // Location is the location to use for timestamp parsing and comparison.
@@ -92,7 +92,7 @@ func (m *LabelManager) Init(pathMappingInfo string) {
 	}
 
 	// print alert summary
-	tui.Table(os.Stdout, []string{"Num", "AttackName", "Date", "Victims", "NumAttackers", "MITRE", "category"}, rows)
+	table.Render(os.Stdout, []string{"Num", "AttackName", "Date", "Victims", "NumAttackers", "MITRE", "category"}, rows)
 	fmt.Println()
 }
 
@@ -110,7 +110,7 @@ func Stats(target io.Writer) {
 		}
 
 		// print summary and newline
-		tui.Table(target, []string{"Category", "Count", "Share"}, rows)
+		table.Render(target, []string{"Category", "Count", "Share"}, rows)
 		fmt.Fprintln(target)
 	}
 }

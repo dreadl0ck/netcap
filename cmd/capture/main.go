@@ -49,8 +49,9 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 
 	"github.com/dustin/go-humanize"
-	"github.com/evilsocket/islazy/tui"
 	"github.com/felixge/fgprof"
+
+	"github.com/dreadl0ck/netcap/internal/table"
 	"github.com/mgutz/ansi"
 
 	_ "net/http/pprof"
@@ -215,7 +216,7 @@ func uniqueFiles(files []string) []string {
 }
 
 // writeSummaryTable writes a detailed summary table for multi-file processing
-// to both stdout and a log file on disk using the tui.Table package
+// to both stdout and a log file on disk using the table.Render package
 func writeSummaryTable(inputFiles []string, summaries []fileSummary, fileErrors []fileError, outDir string) {
 	// Print header
 	fmt.Println("\n================================================================================")
@@ -272,7 +273,7 @@ func writeSummaryTable(inputFiles []string, summaries []fileSummary, fileErrors 
 
 	// Print table to stdout (with colors)
 	headers := []string{"Input File", "Audit Records", "Input Size", "Output Size", "Processing Time", "Status"}
-	tui.Table(os.Stdout, headers, rows)
+	table.Render(os.Stdout, headers, rows)
 	fmt.Println()
 
 	// Print error details if any
@@ -345,7 +346,7 @@ func writeSummaryTable(inputFiles []string, summaries []fileSummary, fileErrors 
 
 	// Write table to log file using a buffer to capture output
 	var buf bytes.Buffer
-	tui.Table(&buf, headers, plainRows)
+	table.Render(&buf, headers, plainRows)
 	_, err = summaryFile.WriteString(buf.String())
 	if err != nil {
 		fmt.Printf("Warning: failed to write summary table: %v\n", err)

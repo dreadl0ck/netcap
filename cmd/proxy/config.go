@@ -25,7 +25,7 @@ import (
 	"io/ioutil"
 	"strconv"
 
-	"github.com/evilsocket/islazy/tui"
+	"github.com/dreadl0ck/netcap/internal/table"
 	"gopkg.in/yaml.v2"
 )
 
@@ -65,7 +65,7 @@ func (c config) dump(w io.Writer) {
 	}
 
 	// print table
-	tui.Table(w, []string{"Proxy Name", "Local", "Remote", "TLS"}, rows)
+	table.Render(w, []string{"Proxy Name", "Local", "Remote", "TLS"}, rows)
 	fmt.Println()
 }
 

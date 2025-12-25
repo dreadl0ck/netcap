@@ -34,8 +34,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/evilsocket/islazy/tui"
 	"github.com/gopacket/gopacket"
+
+	"github.com/dreadl0ck/netcap/internal/table"
 	"github.com/gopacket/gopacket/layers"
 
 	"github.com/dreadl0ck/netcap/defaults"
@@ -169,7 +170,7 @@ func ListAllNetworkInterfaces() {
 		index++
 	}
 
-	tui.Table(os.Stdout, []string{"Index", "Name", "Flags", "HardwareAddr", "MTU"}, rows)
+	table.Render(os.Stdout, []string{"Index", "Name", "Flags", "HardwareAddr", "MTU"}, rows)
 }
 
 // GetBaseLayer resolves a baselayer string to the gopacket.LayerType.

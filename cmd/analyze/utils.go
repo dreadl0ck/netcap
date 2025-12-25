@@ -31,7 +31,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/evilsocket/islazy/tui"
+	"github.com/dreadl0ck/netcap/internal/table"
 )
 
 /*
@@ -157,7 +157,7 @@ func printLabelInfo() {
 		rows = append(rows, []string{strconv.Itoa(a.hits), a.name})
 	}
 
-	tui.Table(os.Stdout, []string{"Hits", "AttackName"}, rows)
+	table.Render(os.Stdout, []string{"Hits", "AttackName"}, rows)
 
 	// print names of attacks that could not be mapped
 	var notMatched []string

@@ -32,9 +32,10 @@ import (
 
 	"github.com/dreadl0ck/netcap/utils"
 
-	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dustin/go-humanize"
-	"github.com/evilsocket/islazy/zip"
+
+	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/archive"
 )
 
 // A simple hook function that provides the option to modify the fetched data
@@ -99,7 +100,7 @@ var sources = []*datasource{
  */
 
 func unzipAndMoveToDbs(in string, d *datasource, base string) error {
-	filenames, err := zip.Unzip(in, filepath.Join(base, "build"))
+	filenames, err := archive.ExtractZip(in, filepath.Join(base, "build"))
 	if err != nil {
 		return err
 	}

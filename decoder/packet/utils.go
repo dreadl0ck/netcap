@@ -45,9 +45,9 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/internal/table"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/evilsocket/islazy/tui"
 )
 
 // GetPacketDecoders returns all available packet decoders
@@ -388,7 +388,7 @@ func ShowDecoders(verbose bool) {
 		}
 
 		fmt.Println("\nTypes with highest number of fields (Top Ten):")
-		tui.Table(os.Stdout, []string{"Type", "NumFields"}, rows)
+		table.Render(os.Stdout, []string{"Type", "NumFields"}, rows)
 
 		rows = [][]string{}
 		for _, p := range rankByWordCount(fieldNameMap)[:10] {
@@ -396,7 +396,7 @@ func ShowDecoders(verbose bool) {
 		}
 
 		fmt.Println("\nFields with highest number of occurrences (Top Ten):")
-		tui.Table(os.Stdout, []string{"Name", "Count"}, rows)
+		table.Render(os.Stdout, []string{"Name", "Count"}, rows)
 
 		fmt.Println("> total fields: ", totalFields)
 		fmt.Println("> total audit records:", totalAuditRecords)

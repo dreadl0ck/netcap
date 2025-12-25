@@ -28,7 +28,7 @@ import (
 	"runtime/pprof"
 	"strconv"
 
-	"github.com/evilsocket/islazy/tui"
+	"github.com/dreadl0ck/netcap/internal/table"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/urfave/cli/v3"
 
@@ -197,7 +197,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		io.PrintLogo()
 
 		// print configuration as table
-		tui.Table(os.Stdout, []string{"Setting", "Value"}, [][]string{
+		table.Render(os.Stdout, []string{"Setting", "Value"}, [][]string{
 			{"Workers", strconv.Itoa(c.Int("workers"))},
 			{"MemBuffer", strconv.FormatBool(c.Bool("buf"))},
 			{"Compression", strconv.FormatBool(c.Bool("compress"))},

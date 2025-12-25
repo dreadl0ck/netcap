@@ -34,8 +34,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/evilsocket/islazy/tui"
 	"github.com/expr-lang/expr"
+
+	"github.com/dreadl0ck/netcap/internal/table"
 	"github.com/expr-lang/expr/vm"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mgutz/ansi"
@@ -233,7 +234,7 @@ func Dump(w *os.File, c DumpConfig) error {
 				rows = append(rows, p.CSVRecord())
 
 				if count%100 == 0 {
-					tui.Table(w, p.CSVHeader(), rows)
+					table.Render(w, p.CSVHeader(), rows)
 					rows = [][]string{}
 				}
 
@@ -269,7 +270,7 @@ func Dump(w *os.File, c DumpConfig) error {
 	// in table mode: dump remaining
 	if c.Table {
 		if p, ok := record.(types.AuditRecord); ok {
-			tui.Table(w, p.CSVHeader(), rows)
+			table.Render(w, p.CSVHeader(), rows)
 			fmt.Println()
 		} else {
 			return fmt.Errorf("type does not implement the types.AuditRecord interface: %#v", record)

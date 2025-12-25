@@ -32,8 +32,9 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/evilsocket/islazy/tui"
 	"github.com/gopacket/gopacket"
+
+	"github.com/dreadl0ck/netcap/internal/table"
 	"github.com/gopacket/gopacket/layers"
 	"go.uber.org/zap"
 
@@ -747,7 +748,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 
 		// print configuration
 		// print configuration as table
-		tui.Table(reassemblyLogFileHandle, []string{"Reassembly Setting", "Value"}, [][]string{
+		table.Render(reassemblyLogFileHandle, []string{"Reassembly Setting", "Value"}, [][]string{
 			{"FlushEvery", strconv.Itoa(decoderconfig.Instance.FlushEvery)},
 			{"CloseInactiveTimeout", decoderconfig.Instance.CloseInactiveTimeOut.String()},
 			{"ClosePendingTimeout", decoderconfig.Instance.ClosePendingTimeOut.String()},
@@ -790,7 +791,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		)
 		streamutils.Stats.Unlock()
 
-		tui.Table(reassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
+		table.Render(reassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
 
 		errorsMapMutex.Lock()
 		streamutils.Stats.Lock()
@@ -800,7 +801,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 				rows = append(rows, []string{e, strconv.FormatUint(uint64(errorsMap[e]), 10)})
 			}
 
-			tui.Table(reassemblyLogFileHandle, []string{"Error Subject", "Count"}, rows)
+			table.Render(reassemblyLogFileHandle, []string{"Error Subject", "Count"}, rows)
 		}
 
 		streamutils.Stats.Unlock()
