@@ -2,6 +2,7 @@
   "name": "netcap-webui",
   "version": "0.1.0",
   "private": true,
+  "license": "GPL-3.0",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dev": "concurrently -n ui,next -c blue,green \"pnpm --filter @dreadl0ck/netcap-ui dev\" \"next dev\"",

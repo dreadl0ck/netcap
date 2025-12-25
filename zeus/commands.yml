@@ -1016,6 +1016,28 @@ commands:
     gosec:
         exec: gosec ./...
 
+    licenses:
+        description: analyze frontend and backend dependencies for licenses
+        help: |
+            Runs license analysis tools on both frontend (npm) and backend (Go) dependencies.
+            
+            Frontend analysis uses license-checker (npm package).
+            Backend analysis uses go-licenses (Google's license checker for Go).
+            
+            The command will:
+              - Install missing tools automatically (go-licenses, license-checker)
+              - Show a summary of all licenses in use
+              - Highlight potentially problematic licenses (GPL, LGPL, AGPL, MPL, etc.)
+            
+            Requirements:
+              - Node.js and pnpm (for frontend analysis)
+              - Go (for backend analysis)
+            
+            Examples:
+              # Run full license analysis
+              zeus licenses
+        exec: zeus/scripts/licenses.sh
+
     test:
         dependencies:
             - make-icons
