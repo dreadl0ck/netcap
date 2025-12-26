@@ -20,6 +20,7 @@
 package types
 
 import (
+	"hash/fnv"
 	"math/big"
 	"net"
 	"reflect"
@@ -164,18 +165,26 @@ func formatFloat64(v float64) string {
 }
 
 func ipToInt64(addr string) int64 {
-
 	ip := net.ParseIP(addr)
-
-	n := big.NewInt(0)
-	if ip.To4() != nil {
-		n.SetBytes(ip.To4())
-	} else {
-		n.SetBytes(ip.To16())
+	if ip == nil {
+		return 0
 	}
 
-	// TODO: IPv6, first half of the address will be ignored...
-	return n.Int64()
+	// For IPv4: convert 4 bytes directly to int64 (no information loss)
+	if ip4 := ip.To4(); ip4 != nil {
+		n := big.NewInt(0)
+		n.SetBytes(ip4)
+		return n.Int64()
+	}
+
+	// For IPv6: use FNV-1a hash to get a collision-resistant 64-bit value
+	// This is necessary because IPv6 addresses are 128 bits and cannot fit in int64.
+	// Using a hash ensures different IPv6 addresses produce different values with
+	// high probability, avoiding the collision problem of using only lower 64 bits.
+	ip6 := ip.To16()
+	h := fnv.New64a()
+	h.Write(ip6)
+	return int64(h.Sum64())
 }
 
 func macToUint64(addr string) uint64 {
