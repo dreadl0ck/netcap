@@ -1,5 +1,5 @@
 # **NETCAP Individual Contributor License Agreement (CLA)**  
-*Version 1.0 - Effective Date: TODO*
+*Version 1.0 - Effective Date: 27.12.25*
 
 Thank you for your interest in contributing to NETCAP ("**Project**").  
 This Individual Contributor License Agreement ("**Agreement**") ensures that the Project maintainers can continue to offer the Project under both open-source and commercial terms.
