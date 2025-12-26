@@ -38,6 +38,7 @@ FlameGraph
 Dockerfile
 bin/
 cover.out
+coverage.html
 deploy.sh
 cmd/capture/webui/frontend/out
 cmd/try/webui/frontend

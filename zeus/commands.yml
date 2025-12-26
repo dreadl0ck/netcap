@@ -1043,7 +1043,9 @@ commands:
             - make-icons
         exec: |
             go clean -testcache && go test -v --timeout=0 ./... -coverprofile cover.out
-            go tool cover -html=cover.out
+            go tool cover -html=cover.out -o coverage.html
+            echo "[INFO] Coverage report written to coverage.html"
+            open coverage.html
 
     test-race:
         dependencies:
