@@ -18,7 +18,13 @@
  */
 
 // Connections page wrapper - imports from @dreadl0ck/netcap-ui package
-import { ConnectionsPage } from '@dreadl0ck/netcap-ui/pages';
+// Dynamic import with ssr: false to prevent prerendering issues with React context
+import dynamic from 'next/dynamic';
+
+const ConnectionsPage = dynamic(
+  () => import('@dreadl0ck/netcap-ui/pages').then(mod => mod.ConnectionsPage),
+  { ssr: false }
+);
 
 export default function Connections() {
   return <ConnectionsPage />;

@@ -18,7 +18,13 @@
  */
 
 // Files page wrapper - imports from @dreadl0ck/netcap-ui package
-import { FilesPage } from '@dreadl0ck/netcap-ui/pages';
+// Dynamic import with ssr: false to prevent prerendering issues with React context
+import dynamic from 'next/dynamic';
+
+const FilesPage = dynamic(
+  () => import('@dreadl0ck/netcap-ui/pages').then(mod => mod.FilesPage),
+  { ssr: false }
+);
 
 export default function Files() {
   return <FilesPage />;

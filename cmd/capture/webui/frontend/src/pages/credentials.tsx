@@ -18,7 +18,13 @@
  */
 
 // Credentials page wrapper - imports from @dreadl0ck/netcap-ui package
-import { CredentialsPage } from '@dreadl0ck/netcap-ui/pages';
+// Dynamic import with ssr: false to prevent prerendering issues with React context
+import dynamic from 'next/dynamic';
+
+const CredentialsPage = dynamic(
+  () => import('@dreadl0ck/netcap-ui/pages').then(mod => mod.CredentialsPage),
+  { ssr: false }
+);
 
 export default function Credentials() {
   return <CredentialsPage />;

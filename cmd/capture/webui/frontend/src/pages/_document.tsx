@@ -28,6 +28,19 @@ export default class MyDocument extends Document {
           <meta charSet="utf-8" />
           <meta name="description" content="Netcap Web UI - Network Traffic Analysis" />
           <link rel="icon" href="/favicon.ico" />
+          {/* Inline critical CSS for dark mode - prevents flash of white on load */}
+          <style dangerouslySetInnerHTML={{ __html: `
+            html, body {
+              background-color: #121212 !important;
+              color: #fff !important;
+              margin: 0;
+              padding: 0;
+            }
+            #__next {
+              background-color: #121212 !important;
+              min-height: 100vh;
+            }
+          `}} />
         </Head>
         <body>
           <Main />

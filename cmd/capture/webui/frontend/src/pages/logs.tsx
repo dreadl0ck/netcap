@@ -18,7 +18,13 @@
  */
 
 // Logs page wrapper - imports from @dreadl0ck/netcap-ui package
-import { LogsPage } from '@dreadl0ck/netcap-ui/pages';
+// Dynamic import with ssr: false to prevent prerendering issues with React context
+import dynamic from 'next/dynamic';
+
+const LogsPage = dynamic(
+  () => import('@dreadl0ck/netcap-ui/pages').then(mod => mod.LogsPage),
+  { ssr: false }
+);
 
 export default function Logs() {
   return <LogsPage />;

@@ -18,7 +18,13 @@
  */
 
 // Visualize page wrapper - imports from @dreadl0ck/netcap-ui package
-import { VisualizePage } from '@dreadl0ck/netcap-ui/pages';
+// Dynamic import with ssr: false to prevent prerendering issues with React context
+import dynamic from 'next/dynamic';
+
+const VisualizePage = dynamic(
+  () => import('@dreadl0ck/netcap-ui/pages').then(mod => mod.VisualizePage),
+  { ssr: false }
+);
 
 export default function Visualize() {
   return <VisualizePage />;

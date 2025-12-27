@@ -18,7 +18,13 @@
  */
 
 // DPI page wrapper - imports from @dreadl0ck/netcap-ui package
-import { DpiPage } from '@dreadl0ck/netcap-ui/pages';
+// Dynamic import with ssr: false to prevent prerendering issues with React context
+import dynamic from 'next/dynamic';
+
+const DpiPage = dynamic(
+  () => import('@dreadl0ck/netcap-ui/pages').then(mod => mod.DpiPage),
+  { ssr: false }
+);
 
 export default function Dpi() {
   return <DpiPage />;

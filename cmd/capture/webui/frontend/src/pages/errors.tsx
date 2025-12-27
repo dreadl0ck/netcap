@@ -18,7 +18,13 @@
  */
 
 // Errors page wrapper - imports from @dreadl0ck/netcap-ui package
-import { ErrorsPage } from '@dreadl0ck/netcap-ui/pages';
+// Dynamic import with ssr: false to prevent prerendering issues with React context
+import dynamic from 'next/dynamic';
+
+const ErrorsPage = dynamic(
+  () => import('@dreadl0ck/netcap-ui/pages').then(mod => mod.ErrorsPage),
+  { ssr: false }
+);
 
 export default function Errors() {
   return <ErrorsPage />;

@@ -18,7 +18,13 @@
  */
 
 // Rulesets page wrapper - imports from @dreadl0ck/netcap-ui package
-import { RulesetsPage } from '@dreadl0ck/netcap-ui/pages';
+// Dynamic import with ssr: false to prevent prerendering issues with React context
+import dynamic from 'next/dynamic';
+
+const RulesetsPage = dynamic(
+  () => import('@dreadl0ck/netcap-ui/pages').then(mod => mod.RulesetsPage),
+  { ssr: false }
+);
 
 export default function Rulesets() {
   return <RulesetsPage />;

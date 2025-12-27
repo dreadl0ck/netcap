@@ -18,7 +18,13 @@
  */
 
 // Software page wrapper - imports from @dreadl0ck/netcap-ui package
-import { SoftwarePage } from '@dreadl0ck/netcap-ui/pages';
+// Dynamic import with ssr: false to prevent prerendering issues with React context
+import dynamic from 'next/dynamic';
+
+const SoftwarePage = dynamic(
+  () => import('@dreadl0ck/netcap-ui/pages').then(mod => mod.SoftwarePage),
+  { ssr: false }
+);
 
 export default function Software() {
   return <SoftwarePage />;

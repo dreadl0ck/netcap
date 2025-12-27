@@ -18,7 +18,13 @@
  */
 
 // Certificates page wrapper - imports from @dreadl0ck/netcap-ui package
-import { CertificatesPage } from '@dreadl0ck/netcap-ui/pages';
+// Dynamic import with ssr: false to prevent prerendering issues with React context
+import dynamic from 'next/dynamic';
+
+const CertificatesPage = dynamic(
+  () => import('@dreadl0ck/netcap-ui/pages').then(mod => mod.CertificatesPage),
+  { ssr: false }
+);
 
 export default function Certificates() {
   return <CertificatesPage />;

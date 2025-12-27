@@ -18,7 +18,13 @@
  */
 
 // Analyze page wrapper - imports from @dreadl0ck/netcap-ui package
-import { AnalyzePage } from '@dreadl0ck/netcap-ui/pages';
+// Dynamic import with ssr: false to prevent prerendering issues with React context
+import dynamic from 'next/dynamic';
+
+const AnalyzePage = dynamic(
+  () => import('@dreadl0ck/netcap-ui/pages').then(mod => mod.AnalyzePage),
+  { ssr: false }
+);
 
 export default function Analyze() {
   return <AnalyzePage />;

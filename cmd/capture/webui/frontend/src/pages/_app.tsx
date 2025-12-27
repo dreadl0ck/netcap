@@ -150,6 +150,9 @@ const theme = createTheme({
           MozOsxFontSmoothing: 'grayscale',
           textRendering: 'optimizeLegibility',
           WebkitTextSizeAdjust: '100%',
+          // Explicit dark mode background
+          backgroundColor: '#121212',
+          color: '#fff',
           // Prevent iOS Safari overscroll/rubber-banding
           height: '100%',
           width: '100%',
@@ -261,7 +264,7 @@ function useConnectionStatus() {
     showOverlay: !isConnected || isInitializing,
     message: connectionMessage,
     subMessage: !isConnected && !isInitializing 
-      ? `Make sure the NETCAP backend is running on ${getBackendUrl()}`
+      ? ``
       : undefined,
   };
 }

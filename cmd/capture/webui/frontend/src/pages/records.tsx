@@ -18,7 +18,13 @@
  */
 
 // Records page wrapper - imports from @dreadl0ck/netcap-ui package
-import { RecordsPage } from '@dreadl0ck/netcap-ui/pages';
+// Dynamic import with ssr: false to prevent prerendering issues with React context
+import dynamic from 'next/dynamic';
+
+const RecordsPage = dynamic(
+  () => import('@dreadl0ck/netcap-ui/pages').then(mod => mod.RecordsPage),
+  { ssr: false }
+);
 
 export default function Records() {
   return <RecordsPage />;

@@ -18,7 +18,13 @@
  */
 
 // PCAPs page wrapper - imports from @dreadl0ck/netcap-ui package
-import { PcapsPage } from '@dreadl0ck/netcap-ui/pages';
+// Dynamic import with ssr: false to prevent prerendering issues with React context
+import dynamic from 'next/dynamic';
+
+const PcapsPage = dynamic(
+  () => import('@dreadl0ck/netcap-ui/pages').then(mod => mod.PcapsPage),
+  { ssr: false }
+);
 
 export default function Pcaps() {
   return <PcapsPage />;
