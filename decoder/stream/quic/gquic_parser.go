@@ -34,46 +34,46 @@ const (
 	gquicTagCHLO = "CHLO"
 
 	// Known CHLO tags
-	gquicTagSNI  = "SNI\x00"  // Server Name Indication
-	gquicTagUAID = "UAID"     // User Agent ID
-	gquicTagVER  = "VER\x00"  // Version
-	gquicTagPAD  = "PAD\x00"  // Padding
-	gquicTagSTK  = "STK\x00"  // Source Token
-	gquicTagCCS  = "CCS\x00"  // Common Certificate Sets
-	gquicTagNONC = "NONC"     // Client Nonce
-	gquicTagAEAD = "AEAD"     // AEAD algorithm
-	gquicTagSCID = "SCID"     // Server Config ID
-	gquicTagTCID = "TCID"     // Truncated Connection ID
-	gquicTagPDMD = "PDMD"     // Proof Demand
-	gquicTagSMHL = "SMHL"     // Server Max Header List Size
-	gquicTagICSL = "ICSL"     // Idle Connection State Lifetime
-	gquicTagNONP = "NONP"     // Client Nonce Proof
-	gquicTagPUBS = "PUBS"     // Public Value
-	gquicTagMIDS = "MIDS"     // Max Incoming Dynamic Streams
-	gquicTagSCLS = "SCLS"     // Session Cache Life Span
-	gquicTagKEXS = "KEXS"     // Key Exchange Algorithms
-	gquicTagXLCT = "XLCT"     // Expected Leaf Certificate
-	gquicTagCSCT = "CSCT"     // Certificate Timestamp
-	gquicTagCOPT = "COPT"     // Connection Options
-	gquicTagCCRT = "CCRT"     // Client Cert
-	gquicTagIRTT = "IRTT"     // Initial Round Trip Time
-	gquicTagCFCW = "CFCW"     // Connection Flow Control Window
-	gquicTagSFCW = "SFCW"     // Stream Flow Control Window
+	gquicTagSNI  = "SNI\x00" // Server Name Indication
+	gquicTagUAID = "UAID"    // User Agent ID
+	gquicTagVER  = "VER\x00" // Version
+	gquicTagPAD  = "PAD\x00" // Padding
+	gquicTagSTK  = "STK\x00" // Source Token
+	gquicTagCCS  = "CCS\x00" // Common Certificate Sets
+	gquicTagNONC = "NONC"    // Client Nonce
+	gquicTagAEAD = "AEAD"    // AEAD algorithm
+	gquicTagSCID = "SCID"    // Server Config ID
+	gquicTagTCID = "TCID"    // Truncated Connection ID
+	gquicTagPDMD = "PDMD"    // Proof Demand
+	gquicTagSMHL = "SMHL"    // Server Max Header List Size
+	gquicTagICSL = "ICSL"    // Idle Connection State Lifetime
+	gquicTagNONP = "NONP"    // Client Nonce Proof
+	gquicTagPUBS = "PUBS"    // Public Value
+	gquicTagMIDS = "MIDS"    // Max Incoming Dynamic Streams
+	gquicTagSCLS = "SCLS"    // Session Cache Life Span
+	gquicTagKEXS = "KEXS"    // Key Exchange Algorithms
+	gquicTagXLCT = "XLCT"    // Expected Leaf Certificate
+	gquicTagCSCT = "CSCT"    // Certificate Timestamp
+	gquicTagCOPT = "COPT"    // Connection Options
+	gquicTagCCRT = "CCRT"    // Client Cert
+	gquicTagIRTT = "IRTT"    // Initial Round Trip Time
+	gquicTagCFCW = "CFCW"    // Connection Flow Control Window
+	gquicTagSFCW = "SFCW"    // Stream Flow Control Window
 )
 
 // GQUICClientHello represents parsed gQUIC CHLO data.
 type GQUICClientHello struct {
-	Version     string            // QUIC version (e.g., "Q043", "Q046")
-	CID         []byte            // Connection ID (8 bytes for gQUIC)
-	SNI         string            // Server Name Indication
-	UAID        string            // User Agent ID (e.g., "Chrome/74.0.3729.131 Intel Mac OS X 10_14_4")
-	Tags        []string          // Tags in order for fingerprinting
-	TagValues   map[string]string // Tag values
-	PacketNum   int               // Packet number
-	FrameType   byte              // Frame type
-	StreamID    int               // Stream ID
-	DataLength  int               // Data length
-	RawMAC      []byte            // Message Authentication Hash
+	Version    string            // QUIC version (e.g., "Q043", "Q046")
+	CID        []byte            // Connection ID (8 bytes for gQUIC)
+	SNI        string            // Server Name Indication
+	UAID       string            // User Agent ID (e.g., "Chrome/74.0.3729.131 Intel Mac OS X 10_14_4")
+	Tags       []string          // Tags in order for fingerprinting
+	TagValues  map[string]string // Tag values
+	PacketNum  int               // Packet number
+	FrameType  byte              // Frame type
+	StreamID   int               // Stream ID
+	DataLength int               // Data length
+	RawMAC     []byte            // Message Authentication Hash
 }
 
 // ParseGQUICClientHello parses a gQUIC packet and extracts CHLO information.
@@ -83,7 +83,7 @@ type GQUICClientHello struct {
 // The format consists of:
 // - Public Flags (1 byte)
 // - Connection ID (8 bytes, optional based on flags)
-// - Version (4 bytes, optional based on flags) 
+// - Version (4 bytes, optional based on flags)
 // - Packet Number (1-6 bytes based on flags)
 // - Payload containing CHLO message
 func ParseGQUICClientHello(payload []byte) (*GQUICClientHello, error) {
@@ -238,7 +238,7 @@ func parseCHLO(payload []byte, offset int, chlo *GQUICClientHello) (*GQUICClient
 	tags := make([]tagInfo, numTags)
 	prevOffset := 0
 
-	for i := 0; i < numTags; i++ {
+	for i := range numTags {
 		if offset+8 > len(payload) {
 			break
 		}
@@ -380,7 +380,7 @@ func IsGQUICPacket(payload []byte) bool {
 	// - Bit 0x02: Nonce present
 	// For data packets after handshake: typically 0x08, 0x0c, 0x18, 0x1c, etc.
 	publicFlags := payload[0]
-	
+
 	// gQUIC short header with CID (most common case)
 	if (publicFlags&0x08 != 0) && (publicFlags&0x01 == 0) {
 		// Has connection ID, no version - likely gQUIC data packet
@@ -392,7 +392,7 @@ func IsGQUICPacket(payload []byte) bool {
 			}
 		}
 	}
-	
+
 	// Note: We intentionally don't detect gQUIC without CID (truncated CID mode)
 	// because it would cause too many false positives on random UDP traffic.
 	// Most gQUIC traffic uses 8-byte connection IDs.
@@ -410,4 +410,3 @@ func logGQUICParsing(log *zap.Logger, msg string, fields ...zap.Field) {
 		log.Debug(msg, fields...)
 	}
 }
-

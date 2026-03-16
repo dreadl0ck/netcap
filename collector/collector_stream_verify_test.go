@@ -45,17 +45,18 @@ func TestStreamDirectionHTTP(t *testing.T) {
 		DPI:                   false,
 		ReassembleConnections: true,
 		DecoderConfig: &config.Config{
-			Out:                  outDir,
-			Quiet:                true,
-			SaveConns:            true,
-			IncludePayloads:      false,
-			Proto:                true, // Required
-			AllowMissingInit:     true,
-			WriteIncomplete:      true,
-			IgnoreFSMerr:         true,
-			StreamDecoderBufSize: 100,
-			StreamBufferSize:     100,
-			NumStreamWorkers:     4,
+			Out:                     outDir,
+			Quiet:                   true,
+			SaveConns:               true,
+			IncludePayloads:         false,
+			Proto:                   true, // Required
+			AllowMissingInit:        true,
+			WriteIncomplete:         true,
+			IgnoreFSMerr:            true,
+			StreamDecoderBufSize:    100,
+			StreamBufferSize:        100,
+			NumStreamWorkers:        4,
+			IgnoreDecoderInitErrors: true,
 			// Exclude DPI-dependent decoders to prevent crash
 			ExcludeDecoders: "DeviceProfile,IPProfile,Connection",
 			// Use defaults for others

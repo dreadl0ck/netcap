@@ -21,13 +21,14 @@ package packet
 
 import (
 	"encoding/binary"
+	"slices"
 
 	"github.com/dreadl0ck/tlsx"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
 
-	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/internal/ja4"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -48,12 +49,7 @@ func isGreaseValue(v uint16) bool {
 
 // hasGreaseExtensions checks if any extensions are GREASE values
 func hasGreaseExtensions(extensions []uint16) bool {
-	for _, ext := range extensions {
-		if isGreaseValue(ext) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(extensions, isGreaseValue)
 }
 
 // hasGreaseCipherSuites checks if any cipher suites are GREASE values

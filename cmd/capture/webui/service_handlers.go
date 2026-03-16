@@ -54,7 +54,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		sessions = len(s.sessionManager.GetAllSessions())
 	}
 
-	respondJSON(w, http.StatusOK, map[string]interface{}{
+	respondJSON(w, http.StatusOK, map[string]any{
 		"status":    "healthy",
 		"timestamp": time.Now().Unix(),
 		"sessions":  sessions,
@@ -82,21 +82,18 @@ func (s *Server) handleQuota(w http.ResponseWriter, r *http.Request) {
 	// Calculate storage usage for this IP
 	currentStorage := s.sessionManager.GetStorageUsageForIP(clientIP)
 	maxStorage := s.serviceConfig.MaxStorageBytes
-	availableStorage := maxStorage - currentStorage
-	if availableStorage < 0 {
-		availableStorage = 0
-	}
+	availableStorage := max(maxStorage-currentStorage, 0)
 	percentUsed := float64(0)
 	unlimited := maxStorage == 0
 	if maxStorage > 0 {
 		percentUsed = (float64(currentStorage) / float64(maxStorage)) * 100
 	}
 
-	respondJSON(w, http.StatusOK, map[string]interface{}{
+	respondJSON(w, http.StatusOK, map[string]any{
 		"allowed":   allowed,
 		"remaining": remaining,
 		"limit":     s.serviceConfig.MaxAnalysisHour,
-		"storage": map[string]interface{}{
+		"storage": map[string]any{
 			"current":     currentStorage,
 			"max":         maxStorage,
 			"available":   availableStorage,
@@ -121,7 +118,7 @@ func (s *Server) handleListSessions(w http.ResponseWriter, r *http.Request) {
 	clientIP := s.getUserIP(r)
 	sessions := s.sessionManager.GetSessionsForIP(clientIP)
 
-	respondJSON(w, http.StatusOK, map[string]interface{}{
+	respondJSON(w, http.StatusOK, map[string]any{
 		"sessions": sessions,
 	})
 }
@@ -173,7 +170,7 @@ func (s *Server) handleSessionSelect(w http.ResponseWriter, r *http.Request) {
 	s.outDir = session.OutputDir
 	s.mu.Unlock()
 
-	respondJSON(w, http.StatusOK, map[string]interface{}{
+	respondJSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"session": session,
 	})
@@ -225,7 +222,7 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 	// Check rate limit
 	allowed, remaining := s.sessionManager.CheckRateLimit(clientIP)
 	if !allowed {
-		respondJSON(w, http.StatusTooManyRequests, map[string]interface{}{
+		respondJSON(w, http.StatusTooManyRequests, map[string]any{
 			"error":     "Rate limit exceeded",
 			"message":   "You have reached the maximum number of analyses per hour",
 			"remaining": 0,
@@ -386,7 +383,7 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 	log.Printf("[WebUI] Uploaded file %s for session %s, queued for analysis", filename, sessionID)
 
 	// Return response
-	respondJSON(w, http.StatusOK, map[string]interface{}{
+	respondJSON(w, http.StatusOK, map[string]any{
 		"success":   true,
 		"sessionId": sessionID,
 		"shareUrl":  shareURL,
@@ -398,7 +395,7 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 // Helper functions
 
 // respondJSON sends a JSON response
-func respondJSON(w http.ResponseWriter, status int, data interface{}) {
+func respondJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)

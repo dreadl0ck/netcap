@@ -102,7 +102,7 @@ type Rule struct {
 	Action Action `yaml:"action"`
 
 	// ActionConfig contains action-specific configuration parameters.
-	ActionConfig map[string]interface{} `yaml:"action_config"`
+	ActionConfig map[string]any `yaml:"action_config"`
 
 	// Enabled determines whether this rule is active.
 	Enabled bool `yaml:"enabled"`

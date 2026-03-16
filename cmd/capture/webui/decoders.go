@@ -152,7 +152,7 @@ func (s *Server) handleDecoderConfig(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"success": true,
 			"message": "Decoder configuration saved successfully",
 		})
@@ -221,8 +221,8 @@ func (s *Server) getEnabledDecodersMap(config DecoderConfig) map[string]bool {
 
 	// If there's an include list, only those decoders are enabled
 	if config.IncludeDecoders != "" {
-		included := strings.Split(config.IncludeDecoders, ",")
-		for _, name := range included {
+		included := strings.SplitSeq(config.IncludeDecoders, ",")
+		for name := range included {
 			name = strings.TrimSpace(name)
 			if name != "" {
 				enabledMap[name] = true
@@ -234,8 +234,8 @@ func (s *Server) getEnabledDecodersMap(config DecoderConfig) map[string]bool {
 	// If there's an exclude list, all decoders except excluded ones are enabled
 	excluded := make(map[string]bool)
 	if config.ExcludeDecoders != "" {
-		excludedList := strings.Split(config.ExcludeDecoders, ",")
-		for _, name := range excludedList {
+		excludedList := strings.SplitSeq(config.ExcludeDecoders, ",")
+		for name := range excludedList {
 			name = strings.TrimSpace(name)
 			if name != "" {
 				excluded[name] = true
@@ -508,7 +508,7 @@ func GetTypeValue(name string) (int32, bool) {
 }
 
 // InitRecordForDecoder initializes an audit record for the given decoder name
-func InitRecordForDecoder(decoderName string) interface{} {
+func InitRecordForDecoder(decoderName string) any {
 	// Add NC_ prefix if not present
 	typeName := decoderName
 	if !strings.HasPrefix(typeName, "NC_") {
@@ -519,11 +519,11 @@ func InitRecordForDecoder(decoderName string) interface{} {
 
 // GetRecordFields extracts field information from an audit record
 // This includes nested fields using dot notation (e.g., "ReqCookies.Name")
-func GetRecordFields(record interface{}) []FieldInfo {
+func GetRecordFields(record any) []FieldInfo {
 	var fields []FieldInfo
 
 	v := reflect.ValueOf(record)
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 
@@ -543,7 +543,7 @@ func extractRecordFieldsRecursive(v reflect.Value, prefix string, fields *[]Fiel
 		return
 	}
 
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			v = reflect.New(v.Type().Elem()).Elem()
 		} else {
@@ -616,13 +616,13 @@ func extractRecordFieldsRecursive(v reflect.Value, prefix string, fields *[]Fiel
 			}
 		case reflect.Slice:
 			elemType := field.Type().Elem()
-			if elemType.Kind() == reflect.Struct || (elemType.Kind() == reflect.Ptr && elemType.Elem().Kind() == reflect.Struct) {
+			if elemType.Kind() == reflect.Struct || (elemType.Kind() == reflect.Pointer && elemType.Elem().Kind() == reflect.Struct) {
 				// Slice of structs - recurse into the first element if available
 				shouldRecurse = true
 				var elemValue reflect.Value
 				if field.Len() > 0 {
 					elemValue = field.Index(0)
-					if elemValue.Kind() == reflect.Ptr {
+					if elemValue.Kind() == reflect.Pointer {
 						if !elemValue.IsNil() {
 							elemValue = elemValue.Elem()
 						} else {
@@ -632,7 +632,7 @@ func extractRecordFieldsRecursive(v reflect.Value, prefix string, fields *[]Fiel
 					}
 				} else if v.IsZero() {
 					// Creating zero value for structure inspection
-					if elemType.Kind() == reflect.Ptr {
+					if elemType.Kind() == reflect.Pointer {
 						elemValue = reflect.New(elemType.Elem()).Elem()
 					} else {
 						elemValue = reflect.New(elemType).Elem()
@@ -651,7 +651,7 @@ func extractRecordFieldsRecursive(v reflect.Value, prefix string, fields *[]Fiel
 			// Nested struct - recurse into it
 			shouldRecurse = true
 			extractRecordFieldsRecursive(field, fieldName, fields, depth+1, maxDepth)
-		case reflect.Ptr:
+		case reflect.Pointer:
 			// Pointer to struct - recurse into it
 			if field.Type().Elem().Kind() == reflect.Struct {
 				shouldRecurse = true
@@ -717,7 +717,7 @@ func getSimplifiedTypeName(t reflect.Type) string {
 		return "[]" + getSimplifiedTypeName(t.Elem())
 	case reflect.Array:
 		return fmt.Sprintf("[%d]%s", t.Len(), getSimplifiedTypeName(t.Elem()))
-	case reflect.Ptr:
+	case reflect.Pointer:
 		return "*" + getSimplifiedTypeName(t.Elem())
 	case reflect.Struct:
 		// For structs, return the type name without package
@@ -833,7 +833,7 @@ func (s *Server) handleLoadDecoderConfig(w http.ResponseWriter, r *http.Request)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Configuration '%s' loaded successfully", request.Name),
 		"config":  config,
@@ -915,7 +915,7 @@ func (s *Server) handleUploadDecoderConfig(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Configuration '%s' uploaded successfully", configName),
 		"name":    configName,
@@ -959,7 +959,7 @@ func (s *Server) handleDeleteDecoderConfig(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Configuration '%s' deleted successfully", request.Name),
 	})
@@ -1013,7 +1013,7 @@ func (s *Server) handleSaveDecoderConfigAs(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Configuration saved as '%s'", configName),
 		"name":    configName,

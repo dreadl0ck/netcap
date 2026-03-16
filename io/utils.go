@@ -297,7 +297,7 @@ func evaluateFilter(program *vm.Program, record types.AuditRecord) (bool, error)
 	}
 
 	// Create environment from record fields using reflection
-	env := make(map[string]interface{})
+	env := make(map[string]any)
 
 	protoMsg, ok := record.(proto.Message)
 	if !ok {
@@ -305,7 +305,7 @@ func evaluateFilter(program *vm.Program, record types.AuditRecord) (bool, error)
 	}
 
 	v := reflect.ValueOf(protoMsg)
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 
@@ -396,7 +396,7 @@ func colorizeProto(in string, colorMap map[string]string, c *DumpConfig) string 
 		}
 	}
 
-	for _, line := range strings.Split(in, newline) {
+	for line := range strings.SplitSeq(in, newline) {
 		if line == "" {
 			continue
 		}

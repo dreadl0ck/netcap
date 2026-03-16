@@ -27,6 +27,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -47,7 +48,7 @@ func (s *Server) handleRuleSets(w http.ResponseWriter, r *http.Request) {
 	config, err := s.loadRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load rules: %v", err),
 		})
 		return
@@ -83,8 +84,8 @@ func (s *Server) handleRuleSets(w http.ResponseWriter, r *http.Request) {
 		ruleSetName := ""
 		isEmbedded := false
 		for _, tag := range rule.Tags {
-			if strings.HasPrefix(tag, "ruleset:") {
-				ruleSetName = strings.TrimPrefix(tag, "ruleset:")
+			if after, ok := strings.CutPrefix(tag, "ruleset:"); ok {
+				ruleSetName = after
 			}
 			if tag == "embedded" {
 				isEmbedded = true
@@ -182,7 +183,7 @@ func (s *Server) handleRuleSet(w http.ResponseWriter, r *http.Request) {
 	// URL-decode the rule set name
 	ruleSetName, err := url.PathUnescape(encodedRuleSetName)
 	if err != nil {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Invalid rule set name encoding",
 		})
 		return
@@ -190,7 +191,7 @@ func (s *Server) handleRuleSet(w http.ResponseWriter, r *http.Request) {
 
 	var req UpdateRuleSetRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Invalid request body",
 		})
 		return
@@ -200,7 +201,7 @@ func (s *Server) handleRuleSet(w http.ResponseWriter, r *http.Request) {
 	config, err := s.loadRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load rules: %v", err),
 		})
 		return
@@ -213,13 +214,7 @@ func (s *Server) handleRuleSet(w http.ResponseWriter, r *http.Request) {
 	// Update all rules in this rule set
 	for i, rule := range config.Rules {
 		// Check if this rule belongs to this rule set
-		hasRuleSetTag := false
-		for _, tag := range rule.Tags {
-			if tag == ruleSetTag {
-				hasRuleSetTag = true
-				break
-			}
-		}
+		hasRuleSetTag := slices.Contains(rule.Tags, ruleSetTag)
 
 		if hasRuleSetTag {
 			log.Printf("[WebUI] Updating rule %s: enabled=%v -> %v", rule.Name, rule.Enabled, req.Enabled)
@@ -230,7 +225,7 @@ func (s *Server) handleRuleSet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if updatedCount == 0 {
-		RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+		RespondJSON(w, http.StatusNotFound, map[string]any{
 			"error": "Rule set not found",
 		})
 		return
@@ -239,7 +234,7 @@ func (s *Server) handleRuleSet(w http.ResponseWriter, r *http.Request) {
 	// Save the rule set as a file override (this applies to both embedded and file-based rules)
 	if err := s.saveRuleSetOverride(ruleSetName, updatedRules); err != nil {
 		log.Printf("[WebUI] Failed to save rule set override: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to save rules: %v", err),
 		})
 		return
@@ -269,7 +264,7 @@ func (s *Server) handleRuleSet(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[WebUI] Rule set %s %s (%d rules affected)", ruleSetName, status, updatedCount)
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"success":       true,
 		"message":       fmt.Sprintf("Rule set %s %s (%d rules affected)", ruleSetName, status, updatedCount),
 		"rulesAffected": updatedCount,

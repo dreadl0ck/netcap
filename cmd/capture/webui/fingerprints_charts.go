@@ -257,10 +257,7 @@ func generateFingerprintsTopJA4Chart(outDir string, showLegend bool) *charts.Bar
 	}
 
 	// Take top 15
-	limit := 15
-	if len(ja4Fingerprints) < limit {
-		limit = len(ja4Fingerprints)
-	}
+	limit := min(len(ja4Fingerprints), 15)
 	topFingerprints := ja4Fingerprints[:limit]
 
 	// Prepare data
@@ -349,10 +346,7 @@ func generateFingerprintsTopJA4SSHChart(outDir string, showLegend bool) *charts.
 	}
 
 	// Take top 15
-	limit := 15
-	if len(ja4sshFingerprints) < limit {
-		limit = len(ja4sshFingerprints)
-	}
+	limit := min(len(ja4sshFingerprints), 15)
 	topFingerprints := ja4sshFingerprints[:limit]
 
 	// Prepare data
@@ -436,7 +430,7 @@ func generateFingerprintsHostsPerFingerprintChart(outDir string, showLegend bool
 	scatterData := make([]opts.ScatterData, 0, len(fingerprints))
 	for _, fp := range fingerprints {
 		scatterData = append(scatterData, opts.ScatterData{
-			Value: []interface{}{fp.Count, len(fp.Hosts)},
+			Value: []any{fp.Count, len(fp.Hosts)},
 		})
 	}
 

@@ -27,6 +27,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
+	"slices"
 	"strings"
 	"sync/atomic"
 
@@ -261,26 +262,14 @@ func writeHTTP(h *types.HTTP, ident string) {
 	software.WriteSoftware(soft, func(s *software.AtomicSoftware) {
 		s.Lock()
 		// Check if flow already exists
-		flowExists := false
-		for _, f := range s.Flows {
-			if f == ident {
-				flowExists = true
-				break
-			}
-		}
+		flowExists := slices.Contains(s.Flows, ident)
 		// Add flow if not exists
 		if !flowExists {
 			s.Flows = append(s.Flows, ident)
 		}
 		// Add community ID if not exists
 		if communityID != "" {
-			cidExists := false
-			for _, cid := range s.CommunityIDs {
-				if cid == communityID {
-					cidExists = true
-					break
-				}
-			}
+			cidExists := slices.Contains(s.CommunityIDs, communityID)
 			if !cidExists {
 				s.CommunityIDs = append(s.CommunityIDs, communityID)
 			}
@@ -543,10 +532,10 @@ func extractHeaderOrderFromReader(b *bufio.Reader) (headerOrder []string, cookie
 	// Try to peek enough bytes to see the headers
 	// HTTP headers typically end with \r\n\r\n
 	// We'll peek progressively larger amounts until we find the header end
-	
+
 	peekSizes := []int{1024, 4096, 8192, 16384, 32768}
 	var peeked []byte
-	
+
 	for _, size := range peekSizes {
 		data, err := b.Peek(size)
 		if err != nil && len(data) == 0 {
@@ -554,22 +543,22 @@ func extractHeaderOrderFromReader(b *bufio.Reader) (headerOrder []string, cookie
 			return nil, nil, ""
 		}
 		peeked = data
-		
+
 		// Check if we have the complete headers (ends with \r\n\r\n or \n\n)
 		if bytes.Contains(peeked, []byte("\r\n\r\n")) || bytes.Contains(peeked, []byte("\n\n")) {
 			break
 		}
-		
+
 		// If we got less than requested, we've read all available data
 		if len(data) < size {
 			break
 		}
 	}
-	
+
 	if len(peeked) == 0 {
 		return nil, nil, ""
 	}
-	
+
 	// Find the end of headers
 	headerEnd := bytes.Index(peeked, []byte("\r\n\r\n"))
 	if headerEnd == -1 {
@@ -578,52 +567,52 @@ func extractHeaderOrderFromReader(b *bufio.Reader) (headerOrder []string, cookie
 			headerEnd = len(peeked)
 		}
 	}
-	
+
 	headerBytes := peeked[:headerEnd]
 	lines := bytes.Split(headerBytes, []byte("\n"))
-	
+
 	// Skip the request line (first line)
 	for i := 1; i < len(lines); i++ {
 		line := bytes.TrimRight(lines[i], "\r")
 		if len(line) == 0 {
 			continue
 		}
-		
+
 		colonIdx := bytes.Index(line, []byte(":"))
 		if colonIdx <= 0 {
 			continue
 		}
-		
+
 		headerName := string(bytes.TrimSpace(line[:colonIdx]))
 		headerValue := string(bytes.TrimSpace(line[colonIdx+1:]))
-		
+
 		headerOrder = append(headerOrder, headerName)
-		
+
 		// Extract cookie field names
 		if strings.EqualFold(headerName, "Cookie") {
 			cookieFields = parseCookieFieldNamesFromValue(headerValue)
 		}
-		
+
 		// Extract Accept-Language
 		if strings.EqualFold(headerName, "Accept-Language") {
 			acceptLang = headerValue
 		}
 	}
-	
+
 	return headerOrder, cookieFields, acceptLang
 }
 
 // parseCookieFieldNamesFromValue extracts cookie field names from a Cookie header value
 func parseCookieFieldNamesFromValue(cookieValue string) []string {
 	var fields []string
-	
-	pairs := strings.Split(cookieValue, ";")
-	for _, pair := range pairs {
+
+	pairs := strings.SplitSeq(cookieValue, ";")
+	for pair := range pairs {
 		pair = strings.TrimSpace(pair)
 		if pair == "" {
 			continue
 		}
-		
+
 		eqIdx := strings.Index(pair, "=")
 		if eqIdx > 0 {
 			fields = append(fields, strings.TrimSpace(pair[:eqIdx]))
@@ -632,6 +621,6 @@ func parseCookieFieldNamesFromValue(cookieValue string) []string {
 			fields = append(fields, pair)
 		}
 	}
-	
+
 	return fields
 }

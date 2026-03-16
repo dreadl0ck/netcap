@@ -219,10 +219,7 @@ func (d *dnp3Reader) extractUserData(data []byte, expectedLen int) []byte {
 
 	for offset < len(data) && remaining > 0 {
 		// Each block is max 16 bytes of data + 2 bytes CRC
-		blockDataLen := 16
-		if remaining < 16 {
-			blockDataLen = remaining
-		}
+		blockDataLen := min(remaining, 16)
 
 		if offset+blockDataLen+2 > len(data) {
 			// Not enough data for block + CRC, take what we can

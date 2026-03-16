@@ -187,10 +187,7 @@ func generateServicesTopByTrafficChart(outDir string, showLegend bool) *charts.B
 	}
 
 	// Take top 20 services
-	limit := 20
-	if len(services) < limit {
-		limit = len(services)
-	}
+	limit := min(len(services), 20)
 	topServices := services[:limit]
 
 	// Prepare data
@@ -401,10 +398,7 @@ func generateServicesTopPortsChart(outDir string, showLegend bool) *charts.Bar {
 	}
 
 	// Take top 20
-	limit := 20
-	if len(ports) < limit {
-		limit = len(ports)
-	}
+	limit := min(len(ports), 20)
 	topPorts := ports[:limit]
 
 	// Prepare data
@@ -507,10 +501,7 @@ func generateServicesTopProductsChart(outDir string, showLegend bool) *charts.Ba
 	}
 
 	// Take top 20
-	limit := 20
-	if len(products) < limit {
-		limit = len(products)
-	}
+	limit := min(len(products), 20)
 	topProducts := products[:limit]
 
 	// Prepare data

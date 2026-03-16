@@ -389,7 +389,7 @@ func (e *Engine) isRateLimited(ruleName string) bool {
 }
 
 // GetStats returns statistics about the engine.
-func (e *Engine) GetStats() map[string]interface{} {
+func (e *Engine) GetStats() map[string]any {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
@@ -404,7 +404,7 @@ func (e *Engine) GetStats() map[string]interface{} {
 		}
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"total_rules":        len(e.config.Rules),
 		"enabled_rules":      enabledRules,
 		"threshold_rules":    thresholdRules,

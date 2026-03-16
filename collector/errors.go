@@ -22,6 +22,7 @@ package collector
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
 type decodingError struct {
@@ -62,10 +63,10 @@ func (c *Collector) getErrorSummary() string {
 
 	sort.Sort(errs)
 
-	var summary string
+	var summary strings.Builder
 	for _, e := range errs {
-		summary += fmt.Sprintf("[%d] %s\n", e.count, e.msg)
+		summary.WriteString(fmt.Sprintf("[%d] %s\n", e.count, e.msg))
 	}
 
-	return summary
+	return summary.String()
 }

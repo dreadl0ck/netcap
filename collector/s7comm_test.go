@@ -73,43 +73,44 @@ func TestS7CommPcapDecoding(t *testing.T) {
 		SnapLen:             defaults.SnapLen,
 		Promisc:             false,
 		DecoderConfig: &config.Config{
-			Buffer:               true,
-			Compression:          false, // Disable compression for easier debugging
-			CSV:                  false,
-			Proto:                true,
-			IncludeDecoders:      "",
-			ExcludeDecoders:      "DeviceProfile,IPProfile,Connection", // Exclude decoders that use DPI
-			Out:                  outputDir,
-			Source:               "s7comm_reading_plc_status.pcap unit test",
-			IncludePayloads:      false,
-			ExportMetrics:        false,
-			AddContext:           true,
-			MemBufferSize:        defaults.BufferSize,
-			FlushEvery:           defaults.FlushEvery,
-			DefragIPv4:           false,
-			Checksum:             false,
-			NoOptCheck:           true,
-			IgnoreFSMerr:         true,
-			AllowMissingInit:     true,
-			Debug:                true, // Enable debug to see what's happening
-			HexDump:              false,
-			WriteIncomplete:      true,
-			MemProfile:           "",
-			FileStorage:          "",
-			Quiet:                false, // Verbose output for debugging
-			CompressionBlockSize: defaults.CompressionBlockSize,
-			CompressionLevel:     defaults.CompressionLevel,
-			NumStreamWorkers:     10,
-			StreamBufferSize:     100,
+			Buffer:                  true,
+			Compression:             false, // Disable compression for easier debugging
+			CSV:                     false,
+			Proto:                   true,
+			IncludeDecoders:         "",
+			ExcludeDecoders:         "DeviceProfile,IPProfile,Connection", // Exclude decoders that use DPI
+			Out:                     outputDir,
+			Source:                  "s7comm_reading_plc_status.pcap unit test",
+			IncludePayloads:         false,
+			ExportMetrics:           false,
+			AddContext:              true,
+			MemBufferSize:           defaults.BufferSize,
+			FlushEvery:              defaults.FlushEvery,
+			DefragIPv4:              false,
+			Checksum:                false,
+			NoOptCheck:              true,
+			IgnoreFSMerr:            true,
+			AllowMissingInit:        true,
+			Debug:                   true, // Enable debug to see what's happening
+			HexDump:                 false,
+			WriteIncomplete:         true,
+			MemProfile:              "",
+			FileStorage:             "",
+			Quiet:                   false, // Verbose output for debugging
+			CompressionBlockSize:    defaults.CompressionBlockSize,
+			CompressionLevel:        defaults.CompressionLevel,
+			NumStreamWorkers:        10,
+			StreamBufferSize:        100,
+			IgnoreDecoderInitErrors: true,
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("default"),
 		DPI:           false,
 		ResolverConfig: resolvers.Config{
-			ReverseDNS:    false,
-			LocalDNS:      false,
-			MACDB:         false,
-			
+			ReverseDNS: false,
+			LocalDNS:   false,
+			MACDB:      false,
+
 			ServiceDB:     false,
 			GeolocationDB: false,
 		},
@@ -250,4 +251,3 @@ func TestS7CommMessageParsing(t *testing.T) {
 	t.Log("Bug fix: COTP PDU type constants were incorrectly defined as 0x0E, 0x0D, 0x0F")
 	t.Log("         but they need to be 0xE0, 0xD0, 0xF0 because the code masks with & 0xF0")
 }
-

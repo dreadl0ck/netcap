@@ -394,9 +394,9 @@ func parseServerHeader(value string) (product, version string) {
 
 	// Parse the first part which usually contains product/version
 	firstPart := parts[0]
-	if idx := strings.Index(firstPart, "/"); idx != -1 {
-		product = firstPart[:idx]
-		version = firstPart[idx+1:]
+	if before, after, ok := strings.Cut(firstPart, "/"); ok {
+		product = before
+		version = after
 	} else {
 		product = firstPart
 	}
@@ -407,9 +407,9 @@ func parseServerHeader(value string) (product, version string) {
 // parseXPoweredByHeader parses the X-Powered-By header value.
 // Examples: "PHP/7.4.3", "ASP.NET", "Express"
 func parseXPoweredByHeader(value string) (product, version string) {
-	if idx := strings.Index(value, "/"); idx != -1 {
-		product = value[:idx]
-		version = value[idx+1:]
+	if before, after, ok := strings.Cut(value, "/"); ok {
+		product = before
+		version = after
 	} else {
 		product = value
 	}
@@ -448,9 +448,9 @@ func parseViaHeader(value string) (product, version string) {
 	}
 
 	proxyInfo := parts[1]
-	if idx := strings.Index(proxyInfo, "/"); idx != -1 {
-		product = proxyInfo[:idx]
-		version = proxyInfo[idx+1:]
+	if before, after, ok := strings.Cut(proxyInfo, "/"); ok {
+		product = before
+		version = after
 	} else {
 		product = proxyInfo
 	}
@@ -971,7 +971,7 @@ func clean(in string) string {
 		}
 		count++
 
-		debug := func(args ...interface{}) {
+		debug := func(args ...any) {
 			if !debugRegexClean {
 				return
 			}
@@ -1012,7 +1012,7 @@ func clean(in string) string {
 							debug("missing )", missing)
 
 							if missing > 0 {
-								for i := 0; i < missing; i++ {
+								for range missing {
 									debug("add missing )", missing, numIgnored)
 
 									out = append(out, byte(')'))

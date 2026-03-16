@@ -245,8 +245,8 @@ func parseServiceProbes(data string) ([]ServiceProbeInfo, error) {
 // parsePortList parses a comma-separated list of ports
 func parsePortList(portsStr string) []int {
 	var ports []int
-	parts := strings.Split(portsStr, ",")
-	for _, part := range parts {
+	parts := strings.SplitSeq(portsStr, ",")
+	for part := range parts {
 		part = strings.TrimSpace(part)
 		if port, err := strconv.Atoi(part); err == nil {
 			ports = append(ports, port)
@@ -364,20 +364,20 @@ func extractField(str, prefix string) (value string, remaining string) {
 	}
 
 	// Find closing delimiter
-	endIdx := strings.Index(str, "/")
-	if endIdx == -1 {
+	before, after, ok := strings.Cut(str, "/")
+	if !ok {
 		// Take rest of string
 		return str, ""
 	}
 
-	return str[:endIdx], str[endIdx+1:]
+	return before, after
 }
 
 // generateProbeID generates a unique ID for a probe
 func generateProbeID(probe *ServiceProbeInfo) string {
 	// Use hash of service, pattern, and line number for uniqueness
 	h := sha256.New()
-	h.Write([]byte(fmt.Sprintf("%s:%s:%d", probe.Service, probe.Pattern, probe.LineNumber)))
+	h.Write(fmt.Appendf(nil, "%s:%s:%d", probe.Service, probe.Pattern, probe.LineNumber))
 	return fmt.Sprintf("%x", h.Sum(nil))[:16]
 }
 
@@ -459,10 +459,7 @@ func (s *Server) handleServiceProbes(w http.ResponseWriter, r *http.Request) {
 	if offset >= len(filtered) {
 		filtered = []ServiceProbeInfo{}
 	} else {
-		end := offset + limit
-		if end > len(filtered) {
-			end = len(filtered)
-		}
+		end := min(offset+limit, len(filtered))
 		filtered = filtered[offset:end]
 	}
 
@@ -605,7 +602,7 @@ func (s *Server) handleCreateServiceProbe(w http.ResponseWriter, r *http.Request
 	serviceProbesCache.Unlock()
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "Service probe created successfully",
 	})
@@ -718,7 +715,7 @@ func (s *Server) handleUpdateServiceProbe(w http.ResponseWriter, r *http.Request
 	serviceProbesCache.Unlock()
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "Service probe updated successfully",
 	})
@@ -887,7 +884,7 @@ func (s *Server) handleToggleServiceProbe(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Service probe %s", status),
 		"enabled": req.Enabled,
@@ -1018,7 +1015,7 @@ func (s *Server) handleImportServiceProbes(w http.ResponseWriter, r *http.Reques
 	serviceProbesCache.Unlock()
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success":       true,
 		"message":       "Service probes imported successfully",
 		"importedCount": len(probes),

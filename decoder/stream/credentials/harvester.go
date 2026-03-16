@@ -145,7 +145,7 @@ func ResetCredStore() {
 }
 
 //goland:noinspection GoUnusedFunction
-func harvesterDebug(ident string, data []byte, args ...interface{}) {
+func harvesterDebug(ident string, data []byte, args ...any) {
 	fmt.Println(ident, "\n", hex.Dump(data), args)
 }
 

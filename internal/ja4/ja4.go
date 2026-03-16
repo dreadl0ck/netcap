@@ -38,7 +38,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -126,16 +126,10 @@ func computeJA4a(data *ClientHelloData) string {
 	}
 
 	// Cipher count (without GREASE), capped at 99
-	cipherCount := countNonGrease(data.CipherSuites)
-	if cipherCount > 99 {
-		cipherCount = 99
-	}
+	cipherCount := min(countNonGrease(data.CipherSuites), 99)
 
 	// Extension count (without GREASE), capped at 99
-	extCount := countNonGreaseExtensions(data.Extensions)
-	if extCount > 99 {
-		extCount = 99
-	}
+	extCount := min(countNonGreaseExtensions(data.Extensions), 99)
 
 	// ALPN first value's first character, or "00" if none
 	alpn := "00"
@@ -164,9 +158,7 @@ func computeJA4b(cipherSuites []uint16) string {
 	}
 
 	// Sort numerically
-	sort.Slice(filtered, func(i, j int) bool {
-		return filtered[i] < filtered[j]
-	})
+	slices.Sort(filtered)
 
 	// Convert to hex strings and join
 	var hexStrs []string
@@ -191,9 +183,7 @@ func computeJA4c(extensions []uint16, signatureAlgorithms []uint16) string {
 	}
 
 	// Sort numerically
-	sort.Slice(filtered, func(i, j int) bool {
-		return filtered[i] < filtered[j]
-	})
+	slices.Sort(filtered)
 
 	// Convert to hex strings and join
 	var hexStrs []string
@@ -229,10 +219,7 @@ func computeJA4Sa(data *ServerHelloData) string {
 	version := getTLSVersionString(data.Version, data.SupportedVers)
 
 	// Extension count (without GREASE), capped at 99
-	extCount := countNonGreaseExtensions(data.Extensions)
-	if extCount > 99 {
-		extCount = 99
-	}
+	extCount := min(countNonGreaseExtensions(data.Extensions), 99)
 
 	// ALPN first and last characters, or "00" if none/non-alphanumeric
 	alpnFirst := "0"
@@ -407,9 +394,7 @@ func JA4Raw(data *ClientHelloData) string {
 			filteredCiphers = append(filteredCiphers, cs)
 		}
 	}
-	sort.Slice(filteredCiphers, func(i, j int) bool {
-		return filteredCiphers[i] < filteredCiphers[j]
-	})
+	slices.Sort(filteredCiphers)
 	var ciphers []string
 	for _, cs := range filteredCiphers {
 		ciphers = append(ciphers, fmt.Sprintf("%04x", cs))
@@ -422,9 +407,7 @@ func JA4Raw(data *ClientHelloData) string {
 			filteredExts = append(filteredExts, ext)
 		}
 	}
-	sort.Slice(filteredExts, func(i, j int) bool {
-		return filteredExts[i] < filteredExts[j]
-	})
+	slices.Sort(filteredExts)
 	var exts []string
 	for _, ext := range filteredExts {
 		exts = append(exts, fmt.Sprintf("%04x", ext))

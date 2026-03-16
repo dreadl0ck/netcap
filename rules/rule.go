@@ -83,7 +83,7 @@ type ResponseAction struct {
 	Type string `yaml:"type"`
 
 	// Config contains action-specific configuration
-	Config map[string]interface{} `yaml:"config,omitempty"`
+	Config map[string]any `yaml:"config,omitempty"`
 
 	// Enabled allows disabling specific actions (default: true if omitted)
 	Enabled *bool `yaml:"enabled,omitempty"`

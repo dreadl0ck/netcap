@@ -28,12 +28,14 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"maps"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -82,9 +84,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 
 	// Add completed files info
 	completedFiles := make(map[string]bool)
-	for k, v := range s.completedFiles {
-		completedFiles[k] = v
-	}
+	maps.Copy(completedFiles, s.completedFiles)
 	s.mu.RUnlock()
 
 	w.Header().Set("Content-Type", "application/json")
@@ -178,26 +178,16 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 	// Local mode: return actual input files
 	s.mu.RLock()
 	completedFiles := make(map[string]bool)
-	for k, v := range s.completedFiles {
-		completedFiles[k] = v
-	}
+	maps.Copy(completedFiles, s.completedFiles)
 	inputFiles := s.inputFiles
 	fileErrors := make(map[string]FileError)
-	for k, v := range s.fileErrors {
-		fileErrors[k] = v
-	}
+	maps.Copy(fileErrors, s.fileErrors)
 	fileBPFFilters := make(map[string]string)
-	for k, v := range s.fileBPFFilters {
-		fileBPFFilters[k] = v
-	}
+	maps.Copy(fileBPFFilters, s.fileBPFFilters)
 	fileProcessingTime := make(map[string]float64)
-	for k, v := range s.fileProcessingTime {
-		fileProcessingTime[k] = v
-	}
+	maps.Copy(fileProcessingTime, s.fileProcessingTime)
 	reportedIssues := make(map[string]bool)
-	for k, v := range s.reportedIssues {
-		reportedIssues[k] = v
-	}
+	maps.Copy(reportedIssues, s.reportedIssues)
 	s.mu.RUnlock()
 
 	files := make([]FileInfo, 0)
@@ -453,7 +443,7 @@ func (s *Server) handleDatabaseInfo(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[WebUI] handleDatabaseInfo: returning %d database files, total size: %d bytes", len(dbFiles), totalSize)
 	}
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"version":        version,
 		"dbPath":         dbPath,
 		"configRootPath": configRoot,
@@ -492,7 +482,7 @@ func (s *Server) handleUpdateDatabases(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"success": true,
 		"message": "Database update started in background. Check logs for progress.",
 	}
@@ -592,7 +582,7 @@ func (s *Server) handleSetDirectory(w http.ResponseWriter, r *http.Request) {
 			matchedSession.SessionID, matchedSession.InputFilename, matchedSession.OutputDir)
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"success":         true,
 			"outputDir":       matchedSession.OutputDir,
 			"activeInputFile": matchedSession.InputFile,
@@ -602,13 +592,7 @@ func (s *Server) handleSetDirectory(w http.ResponseWriter, r *http.Request) {
 
 	// Local mode: original logic
 	// Find the input file in our list
-	found := false
-	for _, f := range s.inputFiles {
-		if f == req.InputFile {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(s.inputFiles, req.InputFile)
 
 	if !found {
 		http.Error(w, "Input file not found in list", http.StatusNotFound)
@@ -637,8 +621,8 @@ func (s *Server) handleSetDirectory(w http.ResponseWriter, r *http.Request) {
 			// Remove all known pcap extensions
 			dirName := baseName
 			for _, ext := range []string{".pcap", ".pcapng", ".cap", ".dmp"} {
-				if strings.HasSuffix(dirName, ext) {
-					dirName = strings.TrimSuffix(dirName, ext)
+				if before, ok := strings.CutSuffix(dirName, ext); ok {
+					dirName = before
 					break
 				}
 			}
@@ -657,7 +641,7 @@ func (s *Server) handleSetDirectory(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[WebUI] Active directory changed to: %s (for file: %s)", newOutDir, req.InputFile)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success":         true,
 		"outputDir":       newOutDir,
 		"activeInputFile": req.InputFile,
@@ -754,7 +738,7 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		respondJSON(w, http.StatusOK, map[string]interface{}{
+		respondJSON(w, http.StatusOK, map[string]any{
 			"success":   true,
 			"message":   "Reanalysis queued successfully",
 			"sessionId": req.SessionID,
@@ -766,13 +750,7 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 
 	// Find the input file in our list
-	found := false
-	for _, f := range s.inputFiles {
-		if f == req.InputFile {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(s.inputFiles, req.InputFile)
 
 	if !found {
 		s.mu.Unlock()
@@ -853,7 +831,7 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusOK, map[string]interface{}{
+	respondJSON(w, http.StatusOK, map[string]any{
 		"success":  true,
 		"message":  "Reanalysis queued successfully",
 		"filename": filepath.Base(req.InputFile),
@@ -1137,7 +1115,7 @@ func (s *Server) handleDPIPreferences(w http.ResponseWriter, r *http.Request) {
 		s.SetDPIPreferences(userIP, &prefs)
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"success": true,
 			"message": "DPI preferences updated successfully",
 		})
@@ -1149,13 +1127,13 @@ func (s *Server) handleDPIPreferences(w http.ResponseWriter, r *http.Request) {
 
 // ConfigOption represents a configuration option
 type ConfigOption struct {
-	Name        string      `json:"name"`
-	Value       interface{} `json:"value"`
-	Default     interface{} `json:"default"`
-	Type        string      `json:"type"`
-	Description string      `json:"description"`
-	Category    string      `json:"category"`
-	IsEditable  bool        `json:"isEditable"`
+	Name        string `json:"name"`
+	Value       any    `json:"value"`
+	Default     any    `json:"default"`
+	Type        string `json:"type"`
+	Description string `json:"description"`
+	Category    string `json:"category"`
+	IsEditable  bool   `json:"isEditable"`
 }
 
 // handleConfig returns the current configuration
@@ -1182,7 +1160,7 @@ func (s *Server) handleConfig(w http.ResponseWriter, r *http.Request) {
 	// Pass session config if available for session-specific configuration
 	config := s.getConfigOptions(sessionConfig)
 
-	response := map[string]interface{}{
+	response := map[string]any{
 		"readOnly":      true,
 		"isServiceMode": s.isServiceMode,
 		"options":       config,
@@ -1783,7 +1761,7 @@ func (s *Server) handleDebugToggle(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		// Return current debug state
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"enabled": s.GetDebugLogging(),
 		})
 		return
@@ -1814,7 +1792,7 @@ func (s *Server) handleDebugToggle(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[WebUI] Debug logging %s", map[bool]string{true: "enabled", false: "disabled"}[req.Enabled])
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"enabled": req.Enabled,
 			"message": fmt.Sprintf("Debug logging %s", map[bool]string{true: "enabled", false: "disabled"}[req.Enabled]),
 		})
@@ -1829,7 +1807,7 @@ func (s *Server) handlePayloadToggle(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		// Return current payload capture state
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"enabled": s.GetPayloadCapture(),
 		})
 		return
@@ -1851,7 +1829,7 @@ func (s *Server) handlePayloadToggle(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[WebUI] Payload capture %s (will apply to future analysis)", map[bool]string{true: "enabled", false: "disabled"}[req.Enabled])
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"enabled": req.Enabled,
 			"message": fmt.Sprintf("Payload capture %s (will apply to future analysis)", map[bool]string{true: "enabled", false: "disabled"}[req.Enabled]),
 		})
@@ -1886,7 +1864,7 @@ func (s *Server) handleStopCapture(w http.ResponseWriter, r *http.Request) {
 		s.mu.Unlock()
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"success": true,
 			"message": "Live capture stop requested",
 		})
@@ -1913,7 +1891,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(maxMemory); err != nil {
 		log.Printf("[WebUI] Failed to parse multipart form: %v", err)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"error":   "Failed to parse upload form",
 			"success": false,
 		})
@@ -1924,7 +1902,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"error":   "No file provided",
 			"success": false,
 		})
@@ -1938,7 +1916,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		maxSize := int64(200 * 1024 * 1024)
 		if header.Size > maxSize {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			json.NewEncoder(w).Encode(map[string]any{
 				"error":   fmt.Sprintf("File size (%d bytes) exceeds maximum allowed size (%d bytes)", header.Size, maxSize),
 				"success": false,
 			})
@@ -1951,7 +1929,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	ext := strings.ToLower(filepath.Ext(filename))
 	if ext != ".pcap" && ext != ".pcapng" {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"error":   "Invalid file format. Only .pcap and .pcapng files are allowed",
 			"success": false,
 		})
@@ -1968,7 +1946,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		outDir, err = os.Getwd()
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			json.NewEncoder(w).Encode(map[string]any{
 				"error":   "Failed to determine output directory",
 				"success": false,
 			})
@@ -1980,7 +1958,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	if err := os.MkdirAll(uploadsDir, 0755); err != nil {
 		log.Printf("[WebUI] Failed to create uploads directory: %v", err)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"error":   "Failed to create uploads directory",
 			"success": false,
 		})
@@ -2003,7 +1981,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("[WebUI] Failed to create input file: %v", err)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"error":   "Failed to save uploaded file",
 			"success": false,
 		})
@@ -2015,7 +1993,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("[WebUI] Failed to write input file: %v", err)
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"error":   "Failed to save uploaded file",
 			"success": false,
 		})
@@ -2060,7 +2038,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		if err := os.MkdirAll(outputDir, 0755); err != nil {
 			log.Printf("[WebUI] Failed to create output directory %s: %v", outputDir, err)
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			json.NewEncoder(w).Encode(map[string]any{
 				"error":   "Failed to create output directory for analysis",
 				"success": false,
 			})
@@ -2098,13 +2076,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 			// Add the uploaded file to inputFiles so it appears in the UI
 			s.mu.Lock()
 			// Check if file is already in the list to avoid duplicates
-			fileExists := false
-			for _, existingFile := range s.inputFiles {
-				if existingFile == inputPath {
-					fileExists = true
-					break
-				}
-			}
+			fileExists := slices.Contains(s.inputFiles, inputPath)
 			if !fileExists {
 				s.inputFiles = append(s.inputFiles, inputPath)
 				log.Printf("[WebUI] Added uploaded file to inputFiles list: %s", inputPath)
@@ -2113,7 +2085,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		default:
 			log.Printf("[WebUI] Job queue is full, cannot queue analysis")
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			json.NewEncoder(w).Encode(map[string]any{
 				"error":   "Analysis queue is full, please try again later",
 				"success": false,
 			})
@@ -2137,7 +2109,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Return success response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success":  true,
 		"message":  "File uploaded successfully and queued for analysis",
 		"filename": savedFilename,
@@ -2191,7 +2163,7 @@ func (s *Server) handleReportIssue(w http.ResponseWriter, r *http.Request) {
 	if s.isServiceMode && s.sessionManager != nil {
 		allowed, remaining := s.sessionManager.CheckIssueReportLimit(clientIP)
 		if !allowed {
-			RespondJSON(w, http.StatusTooManyRequests, map[string]interface{}{
+			RespondJSON(w, http.StatusTooManyRequests, map[string]any{
 				"error":     "Issue report rate limit exceeded",
 				"message":   "You have reached the maximum number of issue reports per hour (3 per hour)",
 				"remaining": remaining,
@@ -2205,7 +2177,7 @@ func (s *Server) handleReportIssue(w http.ResponseWriter, r *http.Request) {
 	var req ReportIssueRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.Printf("[WebUI] Failed to parse report issue request: %v", err)
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error":   "Invalid request body",
 			"success": false,
 		})
@@ -2214,7 +2186,7 @@ func (s *Server) handleReportIssue(w http.ResponseWriter, r *http.Request) {
 
 	// Validate input
 	if req.SessionID == "" || req.Description == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error":   "SessionID and description are required",
 			"success": false,
 		})
@@ -2234,7 +2206,7 @@ func (s *Server) handleServiceModeIssueReport(w http.ResponseWriter, req ReportI
 	// Get session info
 	session, exists := s.sessionManager.GetSession(req.SessionID)
 	if !exists {
-		RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+		RespondJSON(w, http.StatusNotFound, map[string]any{
 			"error":   "Session not found",
 			"success": false,
 		})
@@ -2243,7 +2215,7 @@ func (s *Server) handleServiceModeIssueReport(w http.ResponseWriter, req ReportI
 
 	// Check if issue was already reported for this session
 	if session.HasReportedIssue {
-		RespondJSON(w, http.StatusConflict, map[string]interface{}{
+		RespondJSON(w, http.StatusConflict, map[string]any{
 			"error":   "An issue has already been reported for this session",
 			"success": false,
 		})
@@ -2252,7 +2224,7 @@ func (s *Server) handleServiceModeIssueReport(w http.ResponseWriter, req ReportI
 
 	// Check if analysis is complete
 	if session.Status != StatusCompleted {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error":   "Analysis must be completed before reporting issues",
 			"status":  string(session.Status),
 			"success": false,
@@ -2269,7 +2241,7 @@ func (s *Server) handleServiceModeIssueReport(w http.ResponseWriter, req ReportI
 
 	if err := os.MkdirAll(issueDir, 0755); err != nil {
 		log.Printf("[Service] Failed to create issue directory: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error":   "Failed to create issue directory",
 			"success": false,
 		})
@@ -2280,7 +2252,7 @@ func (s *Server) handleServiceModeIssueReport(w http.ResponseWriter, req ReportI
 	descriptionPath := filepath.Join(issueDir, "description.md")
 	if err := os.WriteFile(descriptionPath, []byte(req.Description), 0644); err != nil {
 		log.Printf("[Service] Failed to write issue description: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error":   "Failed to save issue description",
 			"success": false,
 		})
@@ -2288,7 +2260,7 @@ func (s *Server) handleServiceModeIssueReport(w http.ResponseWriter, req ReportI
 	}
 
 	// Save metadata about the issue
-	metadata := map[string]interface{}{
+	metadata := map[string]any{
 		"issueId":        issueID,
 		"sessionId":      session.SessionID,
 		"reportedBy":     clientIP,
@@ -2302,7 +2274,7 @@ func (s *Server) handleServiceModeIssueReport(w http.ResponseWriter, req ReportI
 	metadataJSON, err := json.MarshalIndent(metadata, "", "  ")
 	if err != nil {
 		log.Printf("[Service] Failed to marshal issue metadata: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error":   "Failed to create issue metadata",
 			"success": false,
 		})
@@ -2312,7 +2284,7 @@ func (s *Server) handleServiceModeIssueReport(w http.ResponseWriter, req ReportI
 	metadataPath := filepath.Join(issueDir, "metadata.json")
 	if err := os.WriteFile(metadataPath, metadataJSON, 0644); err != nil {
 		log.Printf("[Service] Failed to write issue metadata: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error":   "Failed to save issue metadata",
 			"success": false,
 		})
@@ -2395,7 +2367,7 @@ func (s *Server) handleLocalModeIssueReport(w http.ResponseWriter, req ReportIss
 	}
 
 	if fileHash == "" {
-		RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+		RespondJSON(w, http.StatusNotFound, map[string]any{
 			"error":   "File not found for the given session",
 			"success": false,
 		})
@@ -2408,7 +2380,7 @@ func (s *Server) handleLocalModeIssueReport(w http.ResponseWriter, req ReportIss
 	s.mu.RUnlock()
 
 	if alreadyReported {
-		RespondJSON(w, http.StatusConflict, map[string]interface{}{
+		RespondJSON(w, http.StatusConflict, map[string]any{
 			"error":   "An issue has already been reported for this file",
 			"success": false,
 		})
@@ -2442,7 +2414,7 @@ func (s *Server) handleLocalModeIssueReport(w http.ResponseWriter, req ReportIss
 		}
 
 		// Save metadata
-		metadata := map[string]interface{}{
+		metadata := map[string]any{
 			"issueId":    issueID,
 			"fileName":   fileName,
 			"filePath":   filePath,
@@ -2490,7 +2462,7 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	s.mu.RUnlock()
 
 	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
 			"error": "No output directory selected",
 		})
 		return
@@ -2502,8 +2474,8 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	// Check if files directory exists
 	if _, err := os.Stat(filesDir); os.IsNotExist(err) {
 		// Return empty list if directory doesn't exist
-		RespondJSON(w, http.StatusOK, map[string]interface{}{
-			"files":      []map[string]interface{}{},
+		RespondJSON(w, http.StatusOK, map[string]any{
+			"files":      []map[string]any{},
 			"totalCount": 0,
 			"filesDir":   filesDir,
 		})
@@ -2548,7 +2520,7 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Walk the files directory and collect file information
-	var extractedFiles []map[string]interface{}
+	var extractedFiles []map[string]any
 	err := filepath.Walk(filesDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.Printf("[WebUI] Error walking files directory: %v", err)
@@ -2574,7 +2546,7 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 			mimeType = pathParts[0] + "/" + pathParts[1]
 		}
 
-		fileInfo := map[string]interface{}{
+		fileInfo := map[string]any{
 			"name":         info.Name(),
 			"path":         relPath, // Relative path from files directory (used for downloads)
 			"fullPath":     path,    // Absolute path (not used by frontend)
@@ -2605,7 +2577,7 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Printf("[WebUI] Failed to read extracted files: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to read extracted files: %v", err),
 		})
 		return
@@ -2614,7 +2586,7 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	// Sort by modified time (newest first)
 	// Note: This is a simple sort, could be optimized if needed
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"files":      extractedFiles,
 		"totalCount": len(extractedFiles),
 		"filesDir":   filesDir,
@@ -2823,7 +2795,7 @@ func (s *Server) handleExtractedFileContent(w http.ResponseWriter, r *http.Reque
 	if offset > 0 {
 		if offset >= totalSize {
 			// Offset is beyond file size, return empty data
-			RespondJSON(w, http.StatusOK, map[string]interface{}{
+			RespondJSON(w, http.StatusOK, map[string]any{
 				"data":      "",
 				"offset":    offset,
 				"size":      0,
@@ -2857,7 +2829,7 @@ func (s *Server) handleExtractedFileContent(w http.ResponseWriter, r *http.Reque
 	data := buffer[:n]
 	encodedData := hex.EncodeToString(data)
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"data":      encodedData,
 		"offset":    offset,
 		"size":      n,
@@ -3052,13 +3024,10 @@ func (s *Server) handleDownloadInputFile(w http.ResponseWriter, r *http.Request)
 		// Security: ensure the file is one of the registered input files
 		s.mu.RLock()
 		found := false
-		for _, inputFile := range s.inputFiles {
-			if inputFile == identifier {
-				found = true
-				filePath = identifier
-				fileName = filepath.Base(identifier)
-				break
-			}
+		if slices.Contains(s.inputFiles, identifier) {
+			found = true
+			filePath = identifier
+			fileName = filepath.Base(identifier)
 		}
 		s.mu.RUnlock()
 
@@ -3501,9 +3470,7 @@ func (s *Server) handleErrorLogFiles(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	inputFiles := s.inputFiles
 	fileOutputDirs := make(map[string]string)
-	for k, v := range s.fileOutputDirs {
-		fileOutputDirs[k] = v
-	}
+	maps.Copy(fileOutputDirs, s.fileOutputDirs)
 	baseOutDir := s.baseOutDir
 	s.mu.RUnlock()
 
@@ -3531,8 +3498,8 @@ func (s *Server) handleErrorLogFiles(w http.ResponseWriter, r *http.Request) {
 				baseName := filepath.Base(inputFile)
 				dirName := baseName
 				for _, ext := range []string{".pcap", ".pcapng", ".cap", ".dmp"} {
-					if strings.HasSuffix(dirName, ext) {
-						dirName = strings.TrimSuffix(dirName, ext)
+					if before, ok := strings.CutSuffix(dirName, ext); ok {
+						dirName = before
 						break
 					}
 				}
@@ -3669,9 +3636,7 @@ func (s *Server) handleAggregatedErrors(w http.ResponseWriter, r *http.Request) 
 		s.mu.RLock()
 		inputFiles := s.inputFiles
 		fileOutputDirs := make(map[string]string)
-		for k, v := range s.fileOutputDirs {
-			fileOutputDirs[k] = v
-		}
+		maps.Copy(fileOutputDirs, s.fileOutputDirs)
 		baseOutDir := s.baseOutDir
 		s.mu.RUnlock()
 
@@ -3689,8 +3654,8 @@ func (s *Server) handleAggregatedErrors(w http.ResponseWriter, r *http.Request) 
 					baseName := filepath.Base(inputFile)
 					dirName := baseName
 					for _, ext := range []string{".pcap", ".pcapng", ".cap", ".dmp"} {
-						if strings.HasSuffix(dirName, ext) {
-							dirName = strings.TrimSuffix(dirName, ext)
+						if before, ok := strings.CutSuffix(dirName, ext); ok {
+							dirName = before
 							break
 						}
 					}
@@ -3805,8 +3770,8 @@ func aggregateErrorsFromFile(logPath string, errorCounts map[string]int, errorFi
 		}
 
 		// Also support old format: Error: message
-		if strings.HasPrefix(line, "Error:") {
-			errorMsg := strings.TrimSpace(strings.TrimPrefix(line, "Error:"))
+		if after, ok := strings.CutPrefix(line, "Error:"); ok {
+			errorMsg := strings.TrimSpace(after)
 			if errorMsg != "" {
 				errorCounts[errorMsg]++
 				errorsFound++
@@ -3895,7 +3860,7 @@ func (s *Server) handleMenuCounts(w http.ResponseWriter, r *http.Request) {
 	var communityIDs map[string]bool
 	if communityIDsParam != "" {
 		communityIDs = make(map[string]bool)
-		for _, id := range strings.Split(communityIDsParam, ",") {
+		for id := range strings.SplitSeq(communityIDsParam, ",") {
 			if trimmed := strings.TrimSpace(id); trimmed != "" {
 				communityIDs[trimmed] = true
 			}
@@ -3966,12 +3931,12 @@ func (s *Server) getUnfilteredMenuCounts(outDir string) MenuCountsResponse {
 	// Count alert groups
 	alertsFile := filepath.Join(outDir, "alerts.json")
 	if content, err := os.ReadFile(alertsFile); err == nil {
-		var alerts []interface{}
+		var alerts []any
 		if json.Unmarshal(content, &alerts) == nil {
 			// Group by rule name
 			groups := make(map[string]bool)
 			for _, alert := range alerts {
-				if a, ok := alert.(map[string]interface{}); ok {
+				if a, ok := alert.(map[string]any); ok {
 					if ruleName, ok := a["ruleName"].(string); ok {
 						groups[ruleName] = true
 					}

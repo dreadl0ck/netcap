@@ -230,10 +230,7 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 		if len(dataSlice) > 0 {
 			// Extract only from the first packet
 			firstPacket := dataSlice[0].Raw()
-			limit := len(firstPacket)
-			if limit > decoderconfig.Instance.BannerSize {
-				limit = decoderconfig.Instance.BannerSize
-			}
+			limit := min(len(firstPacket), decoderconfig.Instance.BannerSize)
 			t.serviceBanner.Write(firstPacket[:limit])
 			t.serviceBannerBytes = limit
 		}

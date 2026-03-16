@@ -1184,7 +1184,7 @@ func decodeUTF16LE(data []byte) string {
 
 	// Convert bytes to UTF-16 code units
 	u16s := make([]uint16, len(data)/2)
-	for i := 0; i < len(u16s); i++ {
+	for i := range u16s {
 		u16s[i] = binary.LittleEndian.Uint16(data[i*2:])
 	}
 

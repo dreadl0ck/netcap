@@ -893,7 +893,7 @@ func generateBar3DChart(outDir string, showLegend bool) *charts.Bar3D {
 
 				data = append(data, opts.Chart3DData{
 					Name: protocol,
-					Value: []interface{}{
+					Value: []any{
 						protocolIdx,  // X: Protocol index
 						layerIdx,     // Y: Layer
 						pstats.Count, // Z: Count
@@ -1262,12 +1262,12 @@ func getLayerMap() map[string]string {
 		"GTP":            "Application Layer",
 		"RMCP":           "Application Layer",
 		// Industrial protocols
-		"BACnetIP":       "Application Layer",
-		"OPCUA":          "Application Layer",
-		"PROFINET":       "Application Layer",
-		"S7Comm":         "Application Layer",
-		"IEC62351":       "Application Layer",
-		"MQTTSN":         "Application Layer",
+		"BACnetIP": "Application Layer",
+		"OPCUA":    "Application Layer",
+		"PROFINET": "Application Layer",
+		"S7Comm":   "Application Layer",
+		"IEC62351": "Application Layer",
+		"MQTTSN":   "Application Layer",
 	}
 }
 
@@ -1857,7 +1857,7 @@ func getConnectionScatter3DData(outDir string, maxConnections int) []opts.Chart3
 
 		data = append(data, opts.Chart3DData{
 			Name: conn.SrcIP + " -> " + conn.DstIP,
-			Value: []interface{}{
+			Value: []any{
 				packets, // Keep as float for better precision
 				bytes,
 				dur,
@@ -1910,7 +1910,7 @@ func getIPProfileScatter3DData(outDir string) []opts.Chart3DData {
 	maxRecords := 500 // Limit to 500 points for performance
 
 	// Read records
-	for i := 0; i < maxRecords; i++ {
+	for range maxRecords {
 		record, err := reader.NextRecord()
 		if err != nil {
 			if err == io.EOF {
@@ -1939,7 +1939,7 @@ func getIPProfileScatter3DData(outDir string) []opts.Chart3DData {
 
 		data = append(data, opts.Chart3DData{
 			Name: ipProfile.Addr,
-			Value: []interface{}{
+			Value: []any{
 				int(packets),
 				int(bytes),
 				int(ports),
@@ -2090,7 +2090,7 @@ func getHostsCommunicationData(outDir string, maxNodes int) ([]opts.GraphNode, [
 	maxRecords := 5000 // Limit for performance
 
 	// Read records
-	for i := 0; i < maxRecords; i++ {
+	for range maxRecords {
 		record, err := reader.NextRecord()
 		if err != nil {
 			if err == io.EOF {

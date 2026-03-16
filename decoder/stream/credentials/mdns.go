@@ -23,6 +23,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -332,12 +333,7 @@ func formatIPv6(data []byte) string {
 
 // containsString checks if a string slice contains a specific string
 func containsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, s)
 }
 
 // mdnsHarvester is the harvester definition for mDNS

@@ -21,6 +21,7 @@ package injection
 
 import (
 	"fmt"
+	"maps"
 	"sync"
 	"time"
 
@@ -52,11 +53,11 @@ func GetFirewallManager() *firewall.Manager {
 type IPTablesBlockHandler struct{}
 
 // Execute blocks the source or destination IP via iptables.
-func (h *IPTablesBlockHandler) Execute(ctx *InjectionContext, config map[string]interface{}) (*ActionResult, error) {
+func (h *IPTablesBlockHandler) Execute(ctx *InjectionContext, config map[string]any) (*ActionResult, error) {
 	result := &ActionResult{
 		Action:    ActionIPTablesBlock,
 		Timestamp: time.Now(),
-		Details:   make(map[string]interface{}),
+		Details:   make(map[string]any),
 	}
 
 	manager := GetFirewallManager()
@@ -141,12 +142,10 @@ func (h *IPTablesBlockHandler) Execute(ctx *InjectionContext, config map[string]
 type IPTablesRejectHandler struct{}
 
 // Execute rejects traffic from/to an IP with an ICMP response.
-func (h *IPTablesRejectHandler) Execute(ctx *InjectionContext, config map[string]interface{}) (*ActionResult, error) {
+func (h *IPTablesRejectHandler) Execute(ctx *InjectionContext, config map[string]any) (*ActionResult, error) {
 	// Create a copy of config to avoid modifying the original
-	rejectConfig := make(map[string]interface{}, len(config)+1)
-	for k, v := range config {
-		rejectConfig[k] = v
-	}
+	rejectConfig := make(map[string]any, len(config)+1)
+	maps.Copy(rejectConfig, config)
 	rejectConfig["action"] = "REJECT"
 
 	blockHandler := &IPTablesBlockHandler{}
@@ -161,11 +160,11 @@ func (h *IPTablesRejectHandler) Execute(ctx *InjectionContext, config map[string
 type IPTablesLogHandler struct{}
 
 // Execute logs traffic matching the rule via iptables LOG target.
-func (h *IPTablesLogHandler) Execute(ctx *InjectionContext, config map[string]interface{}) (*ActionResult, error) {
+func (h *IPTablesLogHandler) Execute(ctx *InjectionContext, config map[string]any) (*ActionResult, error) {
 	result := &ActionResult{
 		Action:    ActionIPTablesLog,
 		Timestamp: time.Now(),
-		Details:   make(map[string]interface{}),
+		Details:   make(map[string]any),
 	}
 
 	// For now, log action just records details but doesn't modify iptables
@@ -190,11 +189,11 @@ func (h *IPTablesLogHandler) Execute(ctx *InjectionContext, config map[string]in
 type IPTablesRateLimitHandler struct{}
 
 // Execute rate-limits traffic from/to an IP.
-func (h *IPTablesRateLimitHandler) Execute(ctx *InjectionContext, config map[string]interface{}) (*ActionResult, error) {
+func (h *IPTablesRateLimitHandler) Execute(ctx *InjectionContext, config map[string]any) (*ActionResult, error) {
 	result := &ActionResult{
 		Action:    ActionIPTablesRateLimit,
 		Timestamp: time.Now(),
-		Details:   make(map[string]interface{}),
+		Details:   make(map[string]any),
 	}
 
 	// Rate limiting requires more complex iptables rules with hashlimit module

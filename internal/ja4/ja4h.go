@@ -42,13 +42,13 @@ func ComputeJA4H(data *HTTPData) string {
 // ComputeJA4HRaw returns the unhashed JA4H fingerprint for debugging
 func ComputeJA4HRaw(data *HTTPData) string {
 	ja4ha := computeJA4Ha(data)
-	
+
 	// Header names joined by comma
 	headerStr := strings.Join(data.HeaderOrder, ",")
-	
+
 	// Cookie fields joined by comma
 	cookieStr := strings.Join(data.CookieFields, ",")
-	
+
 	return fmt.Sprintf("%s_%s_%s_%s", ja4ha, headerStr, cookieStr, data.AcceptLanguage)
 }
 
@@ -75,10 +75,7 @@ func computeJA4Ha(data *HTTPData) string {
 	}
 
 	// Header count (without Cookie and Referer), capped at 99
-	headerCount := countHeaders(data.HeaderOrder)
-	if headerCount > 99 {
-		headerCount = 99
-	}
+	headerCount := min(countHeaders(data.HeaderOrder), 99)
 
 	return fmt.Sprintf("%s%s%s%02d", method, version, cookie, headerCount)
 }
@@ -215,15 +212,15 @@ func ExtractHeaderOrder(rawRequest []byte) ([]string, []string, string) {
 // Cookie format: "name1=value1; name2=value2; name3=value3"
 func parseCookieFieldNames(cookieValue string) []string {
 	var fields []string
-	
+
 	// Split by semicolon
-	pairs := strings.Split(cookieValue, ";")
-	for _, pair := range pairs {
+	pairs := strings.SplitSeq(cookieValue, ";")
+	for pair := range pairs {
 		pair = strings.TrimSpace(pair)
 		if pair == "" {
 			continue
 		}
-		
+
 		// Extract the field name (before =)
 		eqIdx := strings.Index(pair, "=")
 		if eqIdx > 0 {
@@ -233,7 +230,7 @@ func parseCookieFieldNames(cookieValue string) []string {
 			fields = append(fields, pair)
 		}
 	}
-	
+
 	return fields
 }
 
@@ -312,7 +309,7 @@ func ExtractHeaderOrderFromReader(r *bufio.Reader) (*HTTPData, []byte, error) {
 	}
 	buf.WriteString(requestLine)
 	requestLine = strings.TrimRight(requestLine, "\r\n")
-	
+
 	parts := strings.SplitN(requestLine, " ", 3)
 	if len(parts) >= 1 {
 		data.Method = parts[0]
@@ -415,7 +412,7 @@ func ParseJA4H(fingerprint string) (method, version, cookie string, headerCount 
 func BuildHTTPDataFromRequest(req *http.Request, rawBytes []byte) *HTTPData {
 	// Extract header order from raw bytes
 	headerOrder, cookieFields, acceptLang := ExtractHeaderOrder(rawBytes)
-	
+
 	data := &HTTPData{
 		Method:         req.Method,
 		Version:        req.Proto,
@@ -423,17 +420,16 @@ func BuildHTTPDataFromRequest(req *http.Request, rawBytes []byte) *HTTPData {
 		CookieFields:   cookieFields,
 		AcceptLanguage: acceptLang,
 	}
-	
+
 	// Check for cookie
 	if _, ok := req.Header["Cookie"]; ok {
 		data.HasCookie = true
 	}
-	
+
 	// If accept-language wasn't extracted from raw, try from parsed request
 	if data.AcceptLanguage == "" {
 		data.AcceptLanguage = req.Header.Get("Accept-Language")
 	}
-	
+
 	return data
 }
-

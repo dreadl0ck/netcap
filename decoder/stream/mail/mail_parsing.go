@@ -376,9 +376,9 @@ func parseMailParts(conv *core.ConversationInfo, body string, logger *zap.Logger
 			continue
 		}
 		// start marker type 1
-		if strings.HasPrefix(line, partIdent) {
+		if after, ok := strings.CutPrefix(line, partIdent); ok {
 			currentPart = &types.MailPart{
-				ID:     strings.TrimPrefix(line, partIdent),
+				ID:     after,
 				Header: make(map[string]string),
 			}
 			logger.Info("mail part start",

@@ -1,6 +1,7 @@
 package tcp
 
 import (
+	"slices"
 	"strconv"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
@@ -47,10 +48,8 @@ func saveTCPServiceBanner(s streamReader) {
 		service.MatchServiceProbes(sv, banner, s.Ident())
 
 		// ensure we don't duplicate any flows
-		for _, f := range sv.Flows {
-			if f == ident {
-				return
-			}
+		if slices.Contains(sv.Flows, ident) {
+			return
 		}
 
 		// collect the flow on the audit record

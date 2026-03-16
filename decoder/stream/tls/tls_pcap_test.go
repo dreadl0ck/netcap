@@ -83,7 +83,7 @@ func TestCertificateCacheReset(t *testing.T) {
 	tls.ResetCertificates()
 
 	// Add some certificates
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		mockCert := createMockCertificate(
 			string(rune('A'+i))+"-fingerprint",
 			string(rune('a'+i))+"-example.com",

@@ -128,15 +128,15 @@ type dhcpResult struct {
 		Name      string    `json:"name"`
 		ParentID  int       `json:"parent_id"`
 		Parents   []struct {
-			CreatedAt       time.Time   `json:"created_at"`
-			ID              int         `json:"id"`
-			Name            string      `json:"name"`
-			ParentID        int         `json:"parent_id"`
-			UpdatedAt       time.Time   `json:"updated_at"`
-			VirtualParentID interface{} `json:"virtual_parent_id"`
+			CreatedAt       time.Time `json:"created_at"`
+			ID              int       `json:"id"`
+			Name            string    `json:"name"`
+			ParentID        int       `json:"parent_id"`
+			UpdatedAt       time.Time `json:"updated_at"`
+			VirtualParentID any       `json:"virtual_parent_id"`
 		} `json:"parents"`
-		UpdatedAt       time.Time   `json:"updated_at"`
-		VirtualParentID interface{} `json:"virtual_parent_id"`
+		UpdatedAt       time.Time `json:"updated_at"`
+		VirtualParentID any       `json:"virtual_parent_id"`
 	} `json:"device"`
 	DeviceName string `json:"device_name"`
 	Score      int    `json:"score"`
@@ -294,7 +294,7 @@ func initDHCPFingerprintDBCSV() {
 	}
 
 	dhcpFingerprintMu.Lock()
-	for _, line := range bytes.Split(data, []byte{'\n'}) {
+	for line := range bytes.SplitSeq(data, []byte{'\n'}) {
 		if len(line) == 0 {
 			continue
 		}

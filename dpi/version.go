@@ -1,5 +1,4 @@
 //go:build (!windows && ignore) || !nodpi
-// +build !windows,ignore !nodpi
 
 /*
  * NETCAP - Traffic Analysis Framework

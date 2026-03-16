@@ -25,6 +25,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -52,8 +53,8 @@ type SessionInfo struct {
 	Status           SessionStatus `json:"status"`
 	ErrorMessage     string        `json:"errorMessage,omitempty"`
 	ErrorLogPath     string        `json:"errorLogPath,omitempty"` // Path to detailed error log file
-	StartTime        time.Time     `json:"startTime,omitempty"`
-	CompletionTime   time.Time     `json:"completionTime,omitempty"`
+	StartTime        time.Time     `json:"startTime"`
+	CompletionTime   time.Time     `json:"completionTime"`
 	ProcessingTime   float64       `json:"processingTime,omitempty"` // Processing duration in seconds
 	PacketsTotal     int64         `json:"packetsTotal,omitempty"`
 	ResultsReady     bool          `json:"resultsReady"`
@@ -113,10 +114,7 @@ func (sm *SessionManager) CheckRateLimit(ip string) (allowed bool, remaining int
 		}
 	}
 
-	remaining = sm.maxAnalysisHour - recentCount
-	if remaining < 0 {
-		remaining = 0
-	}
+	remaining = max(sm.maxAnalysisHour-recentCount, 0)
 
 	return recentCount < sm.maxAnalysisHour, remaining
 }
@@ -263,13 +261,7 @@ func (sm *SessionManager) CleanupExpiredSessions() []string {
 		// Remove expired session references
 		validSessions := []string{}
 		for _, sid := range tracker.Sessions {
-			found := false
-			for _, expired := range expiredSessions {
-				if sid == expired {
-					found = true
-					break
-				}
-			}
+			found := slices.Contains(expiredSessions, sid)
 			if !found {
 				validSessions = append(validSessions, sid)
 			}
@@ -330,10 +322,9 @@ func (sm *SessionManager) CheckIssueReportLimit(ip string) (allowed bool, remain
 		}
 	}
 
-	remaining = 3 - recentCount // 3 reports per hour
-	if remaining < 0 {
-		remaining = 0
-	}
+	remaining = max(
+		// 3 reports per hour
+		3-recentCount, 0)
 
 	return recentCount < 3, remaining
 }

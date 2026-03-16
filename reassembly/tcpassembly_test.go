@@ -73,7 +73,7 @@ func (t *testFactory) New(gopacket.Flow, gopacket.Flow, AssemblerContext) Stream
 
 func (t *testFactory) Reassembled(r []Reassembly) {
 	t.reassembly = r
-	for i := 0; i < len(r); i++ {
+	for range r {
 		// t.reassembly[i].Seen = time.Time{}
 	}
 }

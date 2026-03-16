@@ -72,7 +72,7 @@ func initMACResolver() {
 		resolverLog.Info("macaddress.io-db.json not found, using gopacket's built-in MAC prefix database")
 	} else {
 		// Load additional entries from JSON database if available
-		for _, line := range bytes.Split(data, []byte{'\n'}) {
+		for line := range bytes.SplitSeq(data, []byte{'\n'}) {
 			if len(line) == 0 {
 				continue
 			}
@@ -135,7 +135,7 @@ func LookupManufacturer(mac string) string {
 		parts := strings.Split(oui, ":")
 		if len(parts) >= 3 {
 			var prefix [3]byte
-			for i := 0; i < 3; i++ {
+			for i := range 3 {
 				// Parse hex string to byte
 				var b byte
 				if _, err := fmt.Sscanf(parts[i], "%02X", &b); err == nil {

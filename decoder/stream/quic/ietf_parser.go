@@ -24,8 +24,8 @@ import (
 	"crypto/cipher"
 	"encoding/binary"
 
-	"golang.org/x/crypto/hkdf"
 	"crypto/sha256"
+	"golang.org/x/crypto/hkdf"
 	"io"
 )
 
@@ -193,40 +193,40 @@ func getSaltForVersion(version uint32) []byte {
 
 // IETFQUICClientHello represents parsed IETF QUIC Initial packet data.
 type IETFQUICClientHello struct {
-	Version           uint32 // QUIC version
-	DCID              []byte // Destination Connection ID
-	SCID              []byte // Source Connection ID
-	Token             []byte // Token (for address validation)
-	PacketNumber      int64
-	
+	Version      uint32 // QUIC version
+	DCID         []byte // Destination Connection ID
+	SCID         []byte // Source Connection ID
+	Token        []byte // Token (for address validation)
+	PacketNumber int64
+
 	// Embedded TLS ClientHello data
-	TLSVersion        uint16   // TLS version from ClientHello
-	Random            []byte   // TLS random (32 bytes)
-	SessionID         []byte   // Session ID
-	CipherSuites      []uint16 // Cipher suites offered
-	CompressionMethods []byte  // Compression methods
-	Extensions        []uint16 // Extension types
-	SNI               string   // Server Name Indication
-	ALPNs             []string // ALPN protocols
-	SupportedGroups   []uint16 // Supported elliptic curves
-	SignatureAlgs     []uint16 // Signature algorithms
-	SupportedVersions []uint16 // TLS supported versions extension
-	
+	TLSVersion         uint16   // TLS version from ClientHello
+	Random             []byte   // TLS random (32 bytes)
+	SessionID          []byte   // Session ID
+	CipherSuites       []uint16 // Cipher suites offered
+	CompressionMethods []byte   // Compression methods
+	Extensions         []uint16 // Extension types
+	SNI                string   // Server Name Indication
+	ALPNs              []string // ALPN protocols
+	SupportedGroups    []uint16 // Supported elliptic curves
+	SignatureAlgs      []uint16 // Signature algorithms
+	SupportedVersions  []uint16 // TLS supported versions extension
+
 	// QUIC Transport Parameters (RFC 9000 Section 18.2)
 	// Extension type: 0x39 for QUIC v1 (RFC 9001), 0x57 for QUIC v2 (RFC 9369)
-	MaxIdleTimeout               uint64  // 0x01
-	MaxUDPPayloadSize            uint64  // 0x03
-	InitialMaxData               uint64  // 0x04
-	InitialMaxStreamDataBidiLocal uint64 // 0x05
+	MaxIdleTimeout                 uint64 // 0x01
+	MaxUDPPayloadSize              uint64 // 0x03
+	InitialMaxData                 uint64 // 0x04
+	InitialMaxStreamDataBidiLocal  uint64 // 0x05
 	InitialMaxStreamDataBidiRemote uint64 // 0x06
-	InitialMaxStreamDataUni      uint64  // 0x07
-	InitialMaxStreamsBidi        uint64  // 0x08
-	InitialMaxStreamsUni         uint64  // 0x09
-	AckDelayExponent             uint64  // 0x0a (default: 3)
-	MaxAckDelay                  uint64  // 0x0b (default: 25ms)
-	DisableActiveMigration       bool    // 0x0c
-	ActiveConnectionIDLimit      uint64  // 0x0e (default: 2)
-	InitialSourceConnectionID    []byte  // 0x0f
+	InitialMaxStreamDataUni        uint64 // 0x07
+	InitialMaxStreamsBidi          uint64 // 0x08
+	InitialMaxStreamsUni           uint64 // 0x09
+	AckDelayExponent               uint64 // 0x0a (default: 3)
+	MaxAckDelay                    uint64 // 0x0b (default: 25ms)
+	DisableActiveMigration         bool   // 0x0c
+	ActiveConnectionIDLimit        uint64 // 0x0e (default: 2)
+	InitialSourceConnectionID      []byte // 0x0f
 }
 
 // ParseIETFQUICInitial parses an IETF QUIC Initial packet and extracts the ClientHello.
@@ -245,13 +245,13 @@ func ParseIETFQUICInitial(payload []byte) (*IETFQUICClientHello, error) {
 	// RFC 9000 (QUIC v1): Initial=0, 0-RTT=1, Handshake=2, Retry=3
 	// RFC 9369 (QUIC v2): Initial=1, 0-RTT=2, Handshake=3, Retry=0 (swapped!)
 	headerType := (payload[0] & 0x30) >> 4
-	
+
 	// We need to peek at the version first to determine header type mapping
 	if len(payload) < 5 {
 		return nil, nil
 	}
 	peekVersion := binary.BigEndian.Uint32(payload[1:5])
-	
+
 	// For QUIC v1 (0x00000001): Initial = 0
 	// For QUIC v2 (0x6b3343cf): Initial = 1
 	isInitial := false
@@ -263,7 +263,7 @@ func ParseIETFQUICInitial(payload []byte) (*IETFQUICClientHello, error) {
 		// Draft versions use v1 encoding
 		isInitial = (headerType == 0)
 	}
-	
+
 	if !isInitial {
 		return nil, nil // Not an Initial packet
 	}
@@ -364,10 +364,10 @@ func decryptInitialPacket(result *IETFQUICClientHello, fullPacket []byte, payloa
 
 	// Derive initial secret from DCID (RFC 9001 Section 5.2)
 	initialSecret := hkdfExtract(salt, result.DCID)
-	
+
 	// Derive client initial secret
 	clientSecret := hkdfExpandLabel(initialSecret, clientInLabel, nil, 32)
-	
+
 	// Derive key and IV
 	key := hkdfExpandLabel(clientSecret, quicKeyLabel, nil, 16)
 	iv := hkdfExpandLabel(clientSecret, quicIVLabel, nil, 12)
@@ -399,7 +399,7 @@ func decryptInitialPacket(result *IETFQUICClientHello, fullPacket []byte, payloa
 	// Remove header protection from first byte and packet number
 	header := make([]byte, len(fullPacket))
 	copy(header, fullPacket)
-	
+
 	// Unprotect the first byte
 	header[0] ^= mask[0] & 0x0f // Low 4 bits for long header
 
@@ -407,13 +407,13 @@ func decryptInitialPacket(result *IETFQUICClientHello, fullPacket []byte, payloa
 	pnLen := int(header[0]&0x03) + 1
 
 	// Unprotect packet number bytes
-	for i := 0; i < pnLen; i++ {
+	for i := range pnLen {
 		header[pnOffset+i] ^= mask[1+i]
 	}
 
 	// Extract packet number
 	var packetNumber int64
-	for i := 0; i < pnLen; i++ {
+	for i := range pnLen {
 		packetNumber = (packetNumber << 8) | int64(header[pnOffset+i])
 	}
 	result.PacketNumber = packetNumber
@@ -429,7 +429,7 @@ func decryptInitialPacket(result *IETFQUICClientHello, fullPacket []byte, payloa
 	nonce := make([]byte, 12)
 	copy(nonce, iv)
 	// XOR packet number into last bytes of nonce
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		nonce[11-i] ^= byte(packetNumber >> (8 * i))
 	}
 
@@ -626,7 +626,7 @@ func parseTLSClientHello(data []byte, result *IETFQUICClientHello) {
 	}
 	numCipherSuites := cipherSuitesLen / 2
 	result.CipherSuites = make([]uint16, numCipherSuites)
-	for i := 0; i < numCipherSuites; i++ {
+	for i := range numCipherSuites {
 		result.CipherSuites[i] = binary.BigEndian.Uint16(data[offset : offset+2])
 		offset += 2
 	}
@@ -745,7 +745,7 @@ func parseSupportedGroups(data []byte) []uint16 {
 	}
 	numGroups := listLen / 2
 	groups := make([]uint16, numGroups)
-	for i := 0; i < numGroups; i++ {
+	for i := range numGroups {
 		groups[i] = binary.BigEndian.Uint16(data[2+i*2 : 4+i*2])
 	}
 	return groups
@@ -762,7 +762,7 @@ func parseSignatureAlgs(data []byte) []uint16 {
 	}
 	numAlgs := listLen / 2
 	algs := make([]uint16, numAlgs)
-	for i := 0; i < numAlgs; i++ {
+	for i := range numAlgs {
 		algs[i] = binary.BigEndian.Uint16(data[2+i*2 : 4+i*2])
 	}
 	return algs
@@ -779,7 +779,7 @@ func parseSupportedVersions(data []byte) []uint16 {
 	}
 	numVersions := listLen / 2
 	versions := make([]uint16, numVersions)
-	for i := 0; i < numVersions; i++ {
+	for i := range numVersions {
 		versions[i] = binary.BigEndian.Uint16(data[1+i*2 : 3+i*2])
 	}
 	return versions
@@ -920,7 +920,7 @@ func IsIETFQUICPacket(payload []byte) bool {
 
 	// Long header - check version
 	version := binary.BigEndian.Uint32(payload[1:5])
-	
+
 	switch version {
 	case quicVersionIETF1, quicVersionIETF2:
 		return true
@@ -931,4 +931,3 @@ func IsIETFQUICPacket(payload []byte) bool {
 	// Check for draft versions
 	return version >= 0xff000000 && version <= 0xff00001d
 }
-

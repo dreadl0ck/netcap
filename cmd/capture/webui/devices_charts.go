@@ -254,10 +254,7 @@ func generateDevicesMACVendorsChart(outDir string, showLegend bool) *charts.Bar 
 	}
 
 	// Take top 20
-	limit := 20
-	if len(vendors) < limit {
-		limit = len(vendors)
-	}
+	limit := min(len(vendors), 20)
 	topVendors := vendors[:limit]
 
 	// Prepare data
@@ -358,10 +355,7 @@ func generateDevicesHardwareChart(outDir string, showLegend bool) *charts.Bar {
 	}
 
 	// Take top 20
-	limit := 20
-	if len(deviceTypes) < limit {
-		limit = len(deviceTypes)
-	}
+	limit := min(len(deviceTypes), 20)
 	topDeviceTypes := deviceTypes[:limit]
 
 	// Prepare data
@@ -555,10 +549,7 @@ func generateDevicesApplicationsChart(outDir string, showLegend bool) *charts.Ba
 	}
 
 	// Take top 20
-	limit := 20
-	if len(apps) < limit {
-		limit = len(apps)
-	}
+	limit := min(len(apps), 20)
 	topApps := apps[:limit]
 
 	// Prepare data
@@ -625,10 +616,7 @@ func generateDevicesTrafficDistributionChart(outDir string, showLegend bool) *ch
 	}
 
 	// Take top 10 devices by traffic
-	limit := 10
-	if len(devices) < limit {
-		limit = len(devices)
-	}
+	limit := min(len(devices), 10)
 	topDevices := devices[:limit]
 
 	// Prepare data

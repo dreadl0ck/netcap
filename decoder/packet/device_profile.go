@@ -21,6 +21,7 @@ package packet
 
 import (
 	"log"
+	"slices"
 	"sync"
 	"sync/atomic"
 
@@ -239,13 +240,7 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 
 	// Track deviceIPs
 	if i.SrcIP != "" {
-		found := false
-		for _, addr := range p.DeviceIPs {
-			if addr == i.SrcIP {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(p.DeviceIPs, i.SrcIP)
 		if !found {
 			p.DeviceIPs = append(p.DeviceIPs, i.SrcIP)
 		}
@@ -253,13 +248,7 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 
 	// Track contacts
 	if i.DstIP != "" {
-		found := false
-		for _, addr := range p.Contacts {
-			if addr == i.DstIP {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(p.Contacts, i.DstIP)
 		if !found {
 			p.Contacts = append(p.Contacts, i.DstIP)
 		}

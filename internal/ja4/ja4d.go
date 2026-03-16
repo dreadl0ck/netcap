@@ -20,7 +20,7 @@ package ja4
 
 import (
 	"fmt"
-	"sort"
+	"slices"
 	"strings"
 )
 
@@ -63,13 +63,13 @@ const (
 
 // DHCPv4Data contains the data needed to compute a JA4D fingerprint
 type DHCPv4Data struct {
-	MessageType      uint8    // DHCP message type (DISCOVER, REQUEST, etc.)
-	HardwareType     uint8    // Hardware type (1=Ethernet, 6=IEEE802, etc.)
-	Options          []uint8  // All DHCP option types present (in wire order)
-	ParamRequestList []uint8  // Parameter Request List (Option 55) values
-	VendorClass      string   // Vendor Class Identifier (Option 60)
-	Hostname         string   // Hostname (Option 12)
-	ClientMAC        string   // Client MAC address (for tracking)
+	MessageType      uint8   // DHCP message type (DISCOVER, REQUEST, etc.)
+	HardwareType     uint8   // Hardware type (1=Ethernet, 6=IEEE802, etc.)
+	Options          []uint8 // All DHCP option types present (in wire order)
+	ParamRequestList []uint8 // Parameter Request List (Option 55) values
+	VendorClass      string  // Vendor Class Identifier (Option 60)
+	Hostname         string  // Hostname (Option 12)
+	ClientMAC        string  // Client MAC address (for tracking)
 }
 
 // ComputeJA4D computes the JA4D fingerprint for a DHCPv4 packet
@@ -100,9 +100,7 @@ func ComputeJA4DRaw(data *DHCPv4Data) string {
 
 	// Sorted options (excluding PRL, MessageType, Pad, End)
 	filtered := filterDHCPOptions(data.Options)
-	sort.Slice(filtered, func(i, j int) bool {
-		return filtered[i] < filtered[j]
-	})
+	slices.Sort(filtered)
 	var optStrs []string
 	for _, opt := range filtered {
 		optStrs = append(optStrs, fmt.Sprintf("%d", opt))
@@ -119,22 +117,13 @@ func computeJA4Da(data *DHCPv4Data) string {
 	msgType := dhcpMsgTypeChar(data.MessageType)
 
 	// Hardware type (2 digits, capped at 99)
-	hwType := int(data.HardwareType)
-	if hwType > 99 {
-		hwType = 99
-	}
+	hwType := min(int(data.HardwareType), 99)
 
 	// Parameter Request List count, capped at 99
-	prlCount := len(data.ParamRequestList)
-	if prlCount > 99 {
-		prlCount = 99
-	}
+	prlCount := min(len(data.ParamRequestList), 99)
 
 	// Total option count (excluding Pad and End), capped at 99
-	optCount := countSignificantOptions(data.Options)
-	if optCount > 99 {
-		optCount = 99
-	}
+	optCount := min(countSignificantOptions(data.Options), 99)
 
 	// Vendor Class: first 2 alphanumeric chars (lowercase) or "00" if not present
 	vendor := extractVendorCode(data.VendorClass)
@@ -172,9 +161,7 @@ func computeJA4Dc(options []uint8) string {
 	}
 
 	// Sort numerically
-	sort.Slice(filtered, func(i, j int) bool {
-		return filtered[i] < filtered[j]
-	})
+	slices.Sort(filtered)
 
 	var strs []string
 	for _, opt := range filtered {
@@ -481,4 +468,3 @@ func BuildDHCPv4DataFromOptions(
 		Hostname:         hostname,
 	}
 }
-

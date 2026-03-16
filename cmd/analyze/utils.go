@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -40,7 +41,7 @@ import (
 
 func makeIntSlice(max int) []float64 {
 	var arr = make([]float64, max)
-	for i := 0; i < max; i++ {
+	for i := range max {
 		arr[i] = float64(i)
 	}
 	return arr
@@ -60,12 +61,7 @@ func makeIntSlice(max int) []float64 {
 var excludedCols = []string{"num", "date", "time", "Referrer_self_uid"}
 
 func excluded(col string) bool {
-	for _, ex := range excludedCols {
-		if ex == col {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(excludedCols, col)
 }
 
 func contains(arr []string, val string) bool {

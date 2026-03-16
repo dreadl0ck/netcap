@@ -22,6 +22,7 @@ package injection
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net"
 	"os"
 	"sort"
@@ -419,7 +420,7 @@ func (e *Engine) logAction(result *ActionResult) {
 		return
 	}
 
-	entry := map[string]interface{}{
+	entry := map[string]any{
 		"timestamp": result.Timestamp.Format(time.RFC3339Nano),
 		"rule":      result.RuleName,
 		"action":    result.Action,
@@ -484,12 +485,8 @@ func (e *Engine) GetStats() EngineStatsSnapshot {
 
 	// Lock only for map copies
 	e.stats.mu.Lock()
-	for k, v := range e.stats.RuleMatches {
-		stats.RuleMatches[k] = v
-	}
-	for k, v := range e.stats.ActionCounts {
-		stats.ActionCounts[k] = v
-	}
+	maps.Copy(stats.RuleMatches, e.stats.RuleMatches)
+	maps.Copy(stats.ActionCounts, e.stats.ActionCounts)
 	e.stats.mu.Unlock()
 
 	return stats

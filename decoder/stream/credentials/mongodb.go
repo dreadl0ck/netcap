@@ -88,10 +88,7 @@ func mongodbHarvesterFunc(data []byte, ident string, ts time.Time) *types.Creden
 			usernameStart := clientFirstIdx + 5 // len("n,,n=")
 
 			// Bounds check for username extraction
-			usernameEnd := usernameStart + 200
-			if usernameEnd > len(data) {
-				usernameEnd = len(data)
-			}
+			usernameEnd := min(usernameStart+200, len(data))
 			commaIdx := bytes.IndexByte(data[usernameStart:usernameEnd], ',')
 			if commaIdx != -1 {
 				username = string(data[usernameStart : usernameStart+commaIdx])
@@ -99,10 +96,7 @@ func mongodbHarvesterFunc(data []byte, ident string, ts time.Time) *types.Creden
 
 			// Extract client nonce (not stored, just validated)
 			// Bounds check for nonce extraction
-			nonceSearchEnd := usernameStart + 300
-			if nonceSearchEnd > len(data) {
-				nonceSearchEnd = len(data)
-			}
+			nonceSearchEnd := min(usernameStart+300, len(data))
 			nonceIdx := bytes.Index(data[usernameStart:nonceSearchEnd], []byte(",r="))
 			if nonceIdx != -1 {
 				// Client nonce is present, validation successful
@@ -116,20 +110,14 @@ func mongodbHarvesterFunc(data []byte, ident string, ts time.Time) *types.Creden
 	serverChallengeIdx := bytes.Index(data, []byte("r="))
 	if serverChallengeIdx != -1 {
 		// Bounds check for server challenge search
-		challengeSearchEnd := serverChallengeIdx + 200
-		if challengeSearchEnd > len(data) {
-			challengeSearchEnd = len(data)
-		}
+		challengeSearchEnd := min(serverChallengeIdx+200, len(data))
 
 		if bytes.Contains(data[serverChallengeIdx:challengeSearchEnd], []byte(",s=")) {
 			// Extract server nonce (includes client nonce + server nonce)
 			nonceStart := serverChallengeIdx + 2
 
 			// Bounds check for nonce extraction
-			nonceSearchEnd := nonceStart + 100
-			if nonceSearchEnd > len(data) {
-				nonceSearchEnd = len(data)
-			}
+			nonceSearchEnd := min(nonceStart+100, len(data))
 			nonceEnd := bytes.IndexByte(data[nonceStart:nonceSearchEnd], ',')
 			if nonceEnd != -1 {
 				serverNonce = string(data[nonceStart : nonceStart+nonceEnd])
@@ -137,19 +125,13 @@ func mongodbHarvesterFunc(data []byte, ident string, ts time.Time) *types.Creden
 
 			// Extract salt
 			// Bounds check for salt search
-			saltSearchEnd := serverChallengeIdx + 300
-			if saltSearchEnd > len(data) {
-				saltSearchEnd = len(data)
-			}
+			saltSearchEnd := min(serverChallengeIdx+300, len(data))
 			saltIdx := bytes.Index(data[serverChallengeIdx:saltSearchEnd], []byte(",s="))
 			if saltIdx != -1 {
 				saltStart := serverChallengeIdx + saltIdx + 3
 
 				// Bounds check for salt extraction
-				saltEnd := saltStart + 100
-				if saltEnd > len(data) {
-					saltEnd = len(data)
-				}
+				saltEnd := min(saltStart+100, len(data))
 				saltEndIdx := bytes.IndexByte(data[saltStart:saltEnd], ',')
 				if saltEndIdx != -1 {
 					salt = string(data[saltStart : saltStart+saltEndIdx])
@@ -158,19 +140,13 @@ func mongodbHarvesterFunc(data []byte, ident string, ts time.Time) *types.Creden
 
 			// Extract iterations
 			// Bounds check for iterations search
-			iterSearchEnd := serverChallengeIdx + 400
-			if iterSearchEnd > len(data) {
-				iterSearchEnd = len(data)
-			}
+			iterSearchEnd := min(serverChallengeIdx+400, len(data))
 			iterIdx := bytes.Index(data[serverChallengeIdx:iterSearchEnd], []byte(",i="))
 			if iterIdx != -1 {
 				iterStart := serverChallengeIdx + iterIdx + 3
 
 				// Bounds check for iteration extraction
-				iterEnd := iterStart + 20
-				if iterEnd > len(data) {
-					iterEnd = len(data)
-				}
+				iterEnd := min(iterStart+20, len(data))
 				iterEndIdx := bytes.IndexAny(data[iterStart:iterEnd], ",\x00\r\n")
 				if iterEndIdx != -1 {
 					iterations = string(data[iterStart : iterStart+iterEndIdx])
@@ -186,10 +162,7 @@ func mongodbHarvesterFunc(data []byte, ident string, ts time.Time) *types.Creden
 		proofStart := proofIdx + 3
 
 		// Bounds check for proof extraction
-		proofSearchEnd := proofStart + 100
-		if proofSearchEnd > len(data) {
-			proofSearchEnd = len(data)
-		}
+		proofSearchEnd := min(proofStart+100, len(data))
 		proofEnd := bytes.IndexAny(data[proofStart:proofSearchEnd], ",\x00\r\n")
 		if proofEnd != -1 {
 			clientProof = string(data[proofStart : proofStart+proofEnd])
@@ -265,8 +238,8 @@ func parseMongoDBSCRAM(message string) map[string]string {
 	result := make(map[string]string)
 
 	// SCRAM message format: key=value,key=value,...
-	parts := strings.Split(message, ",")
-	for _, part := range parts {
+	parts := strings.SplitSeq(message, ",")
+	for part := range parts {
 		kv := strings.SplitN(part, "=", 2)
 		if len(kv) == 2 {
 			result[kv[0]] = kv[1]
@@ -296,8 +269,8 @@ func mongodbPlaintextHarvesterFunc(data []byte, ident string, ts time.Time) *typ
 	}
 
 	// Look for user field
-	userIdx := bytes.Index(data, []byte("user"))
-	if userIdx == -1 {
+	found := bytes.Contains(data, []byte("user"))
+	if !found {
 		return nil
 	}
 

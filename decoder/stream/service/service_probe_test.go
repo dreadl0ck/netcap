@@ -152,7 +152,7 @@ func TestClassifyBanners(t *testing.T) {
 	var err error
 	db.VulnerabilitiesIndex, err = db.OpenBleve(indexName)
 	if err != nil {
-		t.Fatal(err)
+		t.Skip("skipping service probe test, bleve database not available:", err)
 	}
 
 	defer db.CloseBleve(db.VulnerabilitiesIndex)
@@ -160,7 +160,7 @@ func TestClassifyBanners(t *testing.T) {
 	indexName = filepath.Join(resolvers.DataBaseFolderPath, "exploit-db.bleve")
 	db.ExploitsIndex, err = db.OpenBleve(indexName)
 	if err != nil {
-		t.Fatal(err)
+		t.Skip("skipping service probe test, bleve database not available:", err)
 	}
 
 	defer db.CloseBleve(db.ExploitsIndex)

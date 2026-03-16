@@ -22,6 +22,7 @@ package tls
 import (
 	"crypto/x509"
 	"math/big"
+	"slices"
 	"testing"
 	"time"
 
@@ -75,13 +76,7 @@ func TestExtractKeyUsage(t *testing.T) {
 
 			// Check each expected usage is present
 			for _, exp := range tt.expected {
-				found := false
-				for _, res := range result {
-					if res == exp {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(result, exp)
 				if !found {
 					t.Errorf("Expected usage %q not found in result: %v", exp, result)
 				}

@@ -73,10 +73,7 @@ func (s *Server) handleHTTPTopHosts(w http.ResponseWriter, r *http.Request) {
 	})
 
 	// Take top 20
-	limit := 20
-	if len(hostList) < limit {
-		limit = len(hostList)
-	}
+	limit := min(len(hostList), 20)
 	hostList = hostList[:limit]
 
 	// Check if legend should be shown
@@ -419,10 +416,7 @@ func (s *Server) handleHTTPContentTypes(w http.ResponseWriter, r *http.Request) 
 	})
 
 	// Limit to top 15
-	limit := 15
-	if len(ctList) < limit {
-		limit = len(ctList)
-	}
+	limit := min(len(ctList), 15)
 	ctList = ctList[:limit]
 
 	// Check if legend should be shown

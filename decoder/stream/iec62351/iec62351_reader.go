@@ -24,6 +24,7 @@ import (
 	"crypto/x509"
 	"encoding/binary"
 	"strconv"
+	"strings"
 	"sync/atomic"
 
 	"go.uber.org/zap"
@@ -80,10 +81,10 @@ const (
 
 // Underlying protocol identifiers
 const (
-	ProtocolIEC61850    = "IEC61850"
-	ProtocolIEC104      = "IEC60870-5-104"
-	ProtocolDNP3SA      = "DNP3-SA"
-	ProtocolTLSSecured  = "TLS-Secured"
+	ProtocolIEC61850   = "IEC61850"
+	ProtocolIEC104     = "IEC60870-5-104"
+	ProtocolDNP3SA     = "DNP3-SA"
+	ProtocolTLSSecured = "TLS-Secured"
 )
 
 type iec62351Reader struct {
@@ -300,7 +301,7 @@ func (r *iec62351Reader) parseIEC104SecurityMessage(data []byte) (*types.IEC6235
 	// Parse qualifier and cause of transmission for context
 	if len(data) >= 9 {
 		cot := data[8] & 0x3F // Cause of transmission (lower 6 bits)
-		if cot == 0 { // Unused/reserved - might indicate authentication
+		if cot == 0 {         // Unused/reserved - might indicate authentication
 			msg.IsAuthenticationEvent = true
 		}
 	}
@@ -404,7 +405,7 @@ func (r *iec62351Reader) parseMMSSecurityExtensions(msg *types.IEC62351, data []
 	// MMS uses ASN.1 BER encoding
 	// Tag and length are at the start
 	tag := data[0]
-	
+
 	// Determine message type based on MMS tag and context
 	switch tag {
 	case 0xA0: // Initiate-RequestPDU (with security)
@@ -601,11 +602,11 @@ func (r *iec62351Reader) parseClientHello(msg *types.IEC62351, data []byte) {
 	// Parse cipher suites to determine security policy
 	// Skip: version (2), random (32), session_id (variable), cipher_suites_length (2)
 	offset += 2 + 32 // version + random
-	
+
 	if offset >= len(data) {
 		return
 	}
-	
+
 	sessionIdLen := int(data[offset])
 	offset += 1 + sessionIdLen
 
@@ -901,14 +902,14 @@ func formatSessionId(sessionId []byte) string {
 	if len(sessionId) == 0 {
 		return ""
 	}
-	result := ""
+	var result strings.Builder
 	for i, b := range sessionId {
 		if i > 0 && i%4 == 0 {
-			result += "-"
+			result.WriteString("-")
 		}
-		result += string("0123456789ABCDEF"[b>>4]) + string("0123456789ABCDEF"[b&0x0F])
+		result.WriteString(string("0123456789ABCDEF"[b>>4]) + string("0123456789ABCDEF"[b&0x0F]))
 	}
-	return result
+	return result.String()
 }
 
 func formatKeyUsage(usage x509.KeyUsage) string {
@@ -934,11 +935,12 @@ func formatKeyUsage(usage x509.KeyUsage) string {
 	if len(usages) == 0 {
 		return "None"
 	}
-	result := usages[0]
+	var result strings.Builder
+	result.WriteString(usages[0])
 	for i := 1; i < len(usages); i++ {
-		result += "," + usages[i]
+		result.WriteString("," + usages[i])
 	}
-	return result
+	return result.String()
 }
 
 func isSecurityOID(oid []byte) bool {
@@ -955,12 +957,12 @@ func formatOID(oid []byte) string {
 	if len(oid) == 0 {
 		return ""
 	}
-	result := ""
+	var result strings.Builder
 	for i, b := range oid {
 		if i > 0 {
-			result += "."
+			result.WriteString(".")
 		}
-		result += strconv.Itoa(int(b))
+		result.WriteString(strconv.Itoa(int(b)))
 	}
-	return result
+	return result.String()
 }

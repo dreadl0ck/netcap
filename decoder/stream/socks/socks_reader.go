@@ -142,7 +142,7 @@ func (s *socksReader) parseSOCKS5(clientData, serverData []byte) *types.SOCKS {
 		return nil
 	}
 
-	for i := 0; i < numMethods; i++ {
+	for i := range numMethods {
 		msg.AuthMethods = append(msg.AuthMethods, int32(clientData[offset+i]))
 	}
 	offset += numMethods

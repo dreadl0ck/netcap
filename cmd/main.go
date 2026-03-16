@@ -236,7 +236,7 @@ func handleLegacyCompletion() {
 
 var debugHandle = ioutil.Discard
 
-func debug(args ...interface{}) {
+func debug(args ...any) {
 	_, _ = fmt.Fprintln(debugHandle, args...)
 }
 
@@ -421,9 +421,9 @@ func printFlags(arr []string) {
 func printFlagsFiltered(arr []string, full string) {
 	hide := make(map[string]struct{})
 
-	for _, f := range strings.Fields(full) {
-		if strings.HasPrefix(f, "-") {
-			hide[strings.TrimPrefix(f, "-")] = struct{}{}
+	for f := range strings.FieldsSeq(full) {
+		if after, ok := strings.CutPrefix(f, "-"); ok {
+			hide[after] = struct{}{}
 		}
 	}
 

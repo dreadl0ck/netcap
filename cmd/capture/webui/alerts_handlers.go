@@ -27,6 +27,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -165,7 +166,7 @@ func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
 	s.mu.RUnlock()
 
 	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
 			"error": "No output directory selected",
 		})
 		return
@@ -330,7 +331,7 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 	s.mu.RUnlock()
 
 	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
 			"error": "No output directory selected",
 		})
 		return
@@ -341,7 +342,7 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 	alerts, err := s.readAlertsFromFile(alertsFile)
 	if err != nil {
 		log.Printf("[WebUI] Failed to read alerts: %v", err)
-		RespondJSON(w, http.StatusOK, map[string]interface{}{
+		RespondJSON(w, http.StatusOK, map[string]any{
 			"totalAlerts":    0,
 			"groupCount":     0,
 			"bySeverity":     map[string]int{},
@@ -378,14 +379,11 @@ func (s *Server) handleAlertStats(w http.ResponseWriter, r *http.Request) {
 			return alerts[i].Timestamp > alerts[j].Timestamp
 		})
 
-		count := 10
-		if len(alerts) < count {
-			count = len(alerts)
-		}
+		count := min(len(alerts), 10)
 		recentAlerts = alerts[:count]
 	}
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"totalAlerts":    len(alerts),
 		"groupCount":     len(alertGroups),
 		"bySeverity":     bySeverity,
@@ -416,7 +414,7 @@ func (s *Server) handleClearAlerts(w http.ResponseWriter, r *http.Request) {
 	s.mu.RUnlock()
 
 	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
 			"error": "No output directory selected",
 		})
 		return
@@ -426,7 +424,7 @@ func (s *Server) handleClearAlerts(w http.ResponseWriter, r *http.Request) {
 	alertsFile := filepath.Join(outDir, "Alert.ncap.gz")
 	if err := os.Remove(alertsFile); err != nil && !os.IsNotExist(err) {
 		log.Printf("[WebUI] Failed to delete alerts file: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": "Failed to clear alerts",
 		})
 		return
@@ -434,7 +432,7 @@ func (s *Server) handleClearAlerts(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[WebUI] Cleared all alerts")
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": "All alerts cleared successfully",
 	})
@@ -492,7 +490,7 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 	s.mu.RUnlock()
 
 	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
 			"error": "No output directory selected",
 		})
 		return
@@ -729,7 +727,7 @@ func extractPort(alert AlertResponse, portField string) string {
 
 	// Simple string search for port values in the JSON
 	// This is a basic implementation - could be enhanced with proper JSON parsing if needed
-	var data map[string]interface{}
+	var data map[string]any
 	if err := json.Unmarshal([]byte(alert.MatchedRecord), &data); err != nil {
 		return ""
 	}
@@ -743,12 +741,7 @@ func extractPort(alert AlertResponse, portField string) string {
 
 // contains checks if a string slice contains a specific string
 func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, item)
 }
 
 // generateAlertID generates a unique identifier for an alert
@@ -829,7 +822,7 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 	// Parse request body
 	var req ResolveAlertRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Invalid request body",
 		})
 		return
@@ -846,7 +839,7 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 	s.mu.RUnlock()
 
 	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
 			"error": "No output directory selected",
 		})
 		return
@@ -856,7 +849,7 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 	store, err := s.loadResolvedAlerts(outDir)
 	if err != nil {
 		log.Printf("[WebUI] Failed to load resolved alerts: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": "Failed to load resolved alerts",
 		})
 		return
@@ -872,7 +865,7 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 		alerts, err := s.readAlertsFromFile(alertsFile)
 		if err != nil {
 			log.Printf("[WebUI] Failed to read alerts: %v", err)
-			RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			RespondJSON(w, http.StatusInternalServerError, map[string]any{
 				"error": "Failed to read alerts",
 			})
 			return
@@ -900,7 +893,7 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 		}
 		resolvedIDs = append(resolvedIDs, req.AlertID)
 	} else {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Either alertId or groupId must be provided",
 		})
 		return
@@ -909,7 +902,7 @@ func (s *Server) handleResolveAlert(w http.ResponseWriter, r *http.Request) {
 	// Save resolved alerts store
 	if err := s.saveResolvedAlerts(outDir, store); err != nil {
 		log.Printf("[WebUI] Failed to save resolved alerts: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": "Failed to save resolved alerts",
 		})
 		return
@@ -935,7 +928,7 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 	// Parse request body
 	var req ResolveAlertRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Invalid request body",
 		})
 		return
@@ -952,7 +945,7 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 	s.mu.RUnlock()
 
 	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
 			"error": "No output directory selected",
 		})
 		return
@@ -962,7 +955,7 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 	store, err := s.loadResolvedAlerts(outDir)
 	if err != nil {
 		log.Printf("[WebUI] Failed to load resolved alerts: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": "Failed to load resolved alerts",
 		})
 		return
@@ -977,7 +970,7 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 		alerts, err := s.readAlertsFromFile(alertsFile)
 		if err != nil {
 			log.Printf("[WebUI] Failed to read alerts: %v", err)
-			RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+			RespondJSON(w, http.StatusInternalServerError, map[string]any{
 				"error": "Failed to read alerts",
 			})
 			return
@@ -999,7 +992,7 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 		delete(store.Alerts, req.AlertID)
 		unresolvedIDs = append(unresolvedIDs, req.AlertID)
 	} else {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Either alertId or groupId must be provided",
 		})
 		return
@@ -1008,7 +1001,7 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 	// Save resolved alerts store
 	if err := s.saveResolvedAlerts(outDir, store); err != nil {
 		log.Printf("[WebUI] Failed to save resolved alerts: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": "Failed to save resolved alerts",
 		})
 		return
@@ -1016,7 +1009,7 @@ func (s *Server) handleUnresolveAlert(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[WebUI] Unresolved %d alert(s)", len(unresolvedIDs))
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"success":       true,
 		"message":       fmt.Sprintf("Unresolved %d alert(s)", len(unresolvedIDs)),
 		"unresolvedIds": unresolvedIDs,

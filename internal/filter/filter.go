@@ -132,13 +132,13 @@ func CompileExpression(expression string, recordType types.Type) (*vm.Program, e
 			func(params ...any) (any, error) {
 				return Contains(params[0], params[1]), nil
 			},
-			new(func(interface{}, interface{}) bool),
+			new(func(any, any) bool),
 		),
 		expr.Function("HasKey",
 			func(params ...any) (any, error) {
 				return HasKey(params[0], params[1].(string)), nil
 			},
-			new(func(interface{}, string) bool),
+			new(func(any, string) bool),
 		),
 	)
 	if err != nil {
@@ -188,8 +188,8 @@ func EvaluateExpression(program *vm.Program, record types.AuditRecord) (bool, er
 // CreateEnvironment creates an expression environment from an audit record.
 // This makes all fields of the record accessible in expressions.
 // Note: Helper functions are declared via expr.Function() in CompileExpression() with explicit type signatures.
-func CreateEnvironment(record types.AuditRecord) map[string]interface{} {
-	env := make(map[string]interface{})
+func CreateEnvironment(record types.AuditRecord) map[string]any {
+	env := make(map[string]any)
 
 	// Helper functions are now declared in CompileExpression() using expr.Function()
 	// with explicit type signatures to ensure proper type inference for array literals.
@@ -203,7 +203,7 @@ func CreateEnvironment(record types.AuditRecord) map[string]interface{} {
 
 	// Use reflection to extract all fields from the protobuf message
 	v := reflect.ValueOf(protoMsg)
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 
@@ -227,14 +227,14 @@ func CreateEnvironment(record types.AuditRecord) map[string]interface{} {
 
 // convertFieldValue converts a reflect.Value to a suitable interface{} for expr-lang.
 // This handles nested structs, pointers, and ensures proper field access.
-func convertFieldValue(v reflect.Value) interface{} {
+func convertFieldValue(v reflect.Value) any {
 	// Handle nil pointers
 	if !v.IsValid() {
 		return nil
 	}
 
 	// Dereference pointers
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return nil
 		}
@@ -249,8 +249,8 @@ func convertFieldValue(v reflect.Value) interface{} {
 	// For slices of structs, convert each element
 	if v.Kind() == reflect.Slice {
 		length := v.Len()
-		result := make([]interface{}, length)
-		for i := 0; i < length; i++ {
+		result := make([]any, length)
+		for i := range length {
 			elem := v.Index(i)
 			result[i] = convertFieldValue(elem)
 		}
@@ -266,8 +266,8 @@ func convertFieldValue(v reflect.Value) interface{} {
 }
 
 // structToMap converts a struct to a map for nested field access in expressions.
-func structToMap(v reflect.Value) map[string]interface{} {
-	if v.Kind() == reflect.Ptr {
+func structToMap(v reflect.Value) map[string]any {
+	if v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return nil
 		}
@@ -278,7 +278,7 @@ func structToMap(v reflect.Value) map[string]interface{} {
 		return nil
 	}
 
-	result := make(map[string]interface{})
+	result := make(map[string]any)
 	t := v.Type()
 
 	for i := 0; i < v.NumField(); i++ {

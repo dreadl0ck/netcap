@@ -549,12 +549,8 @@ func (m *mqttsnReader) parseForwarder(msg *types.MQTTSN, data []byte) {
 		if len(remaining) > 0 {
 			// First few bytes could be the wireless node ID
 			// This is typically 1-8 bytes depending on the network
-			nodeIdLen := len(remaining)
-			if nodeIdLen > 8 {
-				nodeIdLen = 8
-			}
+			nodeIdLen := min(len(remaining), 8)
 			msg.WirelessNodeId = string(remaining[:nodeIdLen])
 		}
 	}
 }
-

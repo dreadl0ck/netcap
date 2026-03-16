@@ -188,8 +188,8 @@ func extractViaIP(via string) string {
 	}
 	// Fallback: try to find any IP-like pattern
 	// Via: SIP/2.0/UDP 192.168.1.100:5060
-	parts := strings.Fields(via)
-	for _, part := range parts {
+	parts := strings.FieldsSeq(via)
+	for part := range parts {
 		// Remove port if present
 		host := strings.Split(part, ":")[0]
 		if ip := net.ParseIP(host); ip != nil {
@@ -214,9 +214,9 @@ func isSIPPrivateIP(ipStr string) bool {
 		{mustParseCIDR("10.0.0.0/8")},
 		{mustParseCIDR("172.16.0.0/12")},
 		{mustParseCIDR("192.168.0.0/16")},
-		{mustParseCIDR("127.0.0.0/8")},      // Loopback
-		{mustParseCIDR("169.254.0.0/16")},   // Link-local
-		{mustParseCIDR("100.64.0.0/10")},    // Carrier-grade NAT
+		{mustParseCIDR("127.0.0.0/8")},    // Loopback
+		{mustParseCIDR("169.254.0.0/16")}, // Link-local
+		{mustParseCIDR("100.64.0.0/10")},  // Carrier-grade NAT
 	}
 
 	for _, r := range privateRanges {
@@ -230,9 +230,9 @@ func isSIPPrivateIP(ipStr string) bool {
 		privateRangesV6 := []struct {
 			network *net.IPNet
 		}{
-			{mustParseCIDR("::1/128")},     // Loopback
-			{mustParseCIDR("fc00::/7")},    // Unique local
-			{mustParseCIDR("fe80::/10")},   // Link-local
+			{mustParseCIDR("::1/128")},   // Loopback
+			{mustParseCIDR("fc00::/7")},  // Unique local
+			{mustParseCIDR("fe80::/10")}, // Link-local
 		}
 		for _, r := range privateRangesV6 {
 			if r.network.Contains(ip) {
@@ -257,13 +257,13 @@ func mustParseCIDR(s string) *net.IPNet {
 // e.g., "Display Name" <sip:user@domain.com>;tag=xxx -> domain.com
 func extractSIPDomain(sipAddr string) string {
 	// Find the @ symbol
-	atIdx := strings.Index(sipAddr, "@")
-	if atIdx == -1 {
+	_, after, ok := strings.Cut(sipAddr, "@")
+	if !ok {
 		return ""
 	}
 
 	// Extract domain part (after @, before > or ; or end)
-	rest := sipAddr[atIdx+1:]
+	rest := after
 
 	// Remove trailing > if present
 	if gtIdx := strings.Index(rest, ">"); gtIdx != -1 {
@@ -328,4 +328,3 @@ func sanitizeForLog(s string) string {
 
 	return s
 }
-

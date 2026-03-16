@@ -99,7 +99,7 @@ func checkFields() {
 				// bail out and print error if field count does not match
 				if len(p.CSVRecord()) != numStructFields { // print all struct fields
 					fmt.Println(h.Type.String() + " struct fields:")
-					for i := 0; i < numStructFields; i++ {
+					for i := range numStructFields {
 						fmt.Println("- " + reflectedValue.Type().Field(i).Name)
 					}
 
@@ -113,7 +113,7 @@ func checkFields() {
 			}
 
 			// check if all fields are in the right order and have the correct name
-			for i := 0; i < numStructFields; i++ {
+			for i := range numStructFields {
 				if allFieldNames[i] != reflectedValue.Type().Field(i).Name {
 					log.Fatal("[ERROR] different field names: ", allFieldNames[i], " and ", reflectedValue.Type().Field(i).Name)
 				}
@@ -141,7 +141,7 @@ func checkFields() {
 	flagSeparator := currentCtx.String("sep")
 
 	// iterate over lines
-	for _, line := range strings.Split(string(out), "\n") {
+	for line := range strings.SplitSeq(string(out), "\n") {
 		count := strings.Count(line, flagSeparator)
 		if count != numExpectedFields-1 {
 			fmt.Println(strings.Replace(line, flagSeparator, ansi.Red+flagSeparator+ansi.Reset, -1), ansi.Red, count, ansi.Reset)

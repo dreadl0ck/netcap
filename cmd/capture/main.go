@@ -72,8 +72,8 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
-	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/internal/metrics"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/rules"
 	"github.com/dreadl0ck/netcap/utils"
@@ -663,20 +663,20 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 		// Create runtime config with actual flag values
 		runtimeConfig := &webui.RuntimeConfig{
-			Compress:              flagCompress,
-			Buffer:                flagBuffer,
-			Workers:               flagWorkers,
-			PacketBuffer:          flagPacketBuffer,
-			MemBufSize:            flagMemBufferSize,
-			Interface:             flagInterface,
-			PromiscMode:           flagPromiscMode,
-			SnapLen:               flagSnapLen,
-			BaseLayer:             flagBaseLayer,
-			DecodeOptions:         flagDecodeOptions,
-			Payload:               flagPayload,
-			Context:               flagContext,
-			MacDB:                 flagMACDB,
-			
+			Compress:      flagCompress,
+			Buffer:        flagBuffer,
+			Workers:       flagWorkers,
+			PacketBuffer:  flagPacketBuffer,
+			MemBufSize:    flagMemBufferSize,
+			Interface:     flagInterface,
+			PromiscMode:   flagPromiscMode,
+			SnapLen:       flagSnapLen,
+			BaseLayer:     flagBaseLayer,
+			DecodeOptions: flagDecodeOptions,
+			Payload:       flagPayload,
+			Context:       flagContext,
+			MacDB:         flagMACDB,
+
 			ServiceDB:             flagServiceDB,
 			GeoDB:                 flagGeolocationDB,
 			ReverseDNS:            flagReverseDNS,
@@ -754,8 +754,8 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		// get config path
 		dir := os.Getenv(env.AnalyzerDirectory)
 
-		analyzers := strings.Split(flagAnalyzer, ",")
-		for _, a := range analyzers {
+		analyzers := strings.SplitSeq(flagAnalyzer, ",")
+		for a := range analyzers {
 
 			conf := analyze.ParseConfig(filepath.Join(dir, a+".yml"))
 			if conf.WorkDir != "" {
@@ -950,10 +950,10 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			CompressionLevel:               getCompressionLevel(flagCompressionLevel),
 		},
 		ResolverConfig: resolvers.Config{
-			ReverseDNS:    flagReverseDNS,
-			LocalDNS:      flagLocalDNS,
-			MACDB:         flagMACDB,
-			
+			ReverseDNS: flagReverseDNS,
+			LocalDNS:   flagLocalDNS,
+			MACDB:      flagMACDB,
+
 			ServiceDB:     flagServiceDB,
 			GeolocationDB: flagGeolocationDB,
 		},
@@ -1291,10 +1291,10 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 					CompressionLevel:               getCompressionLevel(flagCompressionLevel),
 				},
 				ResolverConfig: resolvers.Config{
-					ReverseDNS:    flagReverseDNS,
-					LocalDNS:      flagLocalDNS,
-					MACDB:         flagMACDB,
-					
+					ReverseDNS: flagReverseDNS,
+					LocalDNS:   flagLocalDNS,
+					MACDB:      flagMACDB,
+
 					ServiceDB:     flagServiceDB,
 					GeolocationDB: flagGeolocationDB,
 				},

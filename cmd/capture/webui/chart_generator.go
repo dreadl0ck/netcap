@@ -122,7 +122,7 @@ func (cg *ChartGenerator) isFieldNumeric(reader *AuditRecordReader) (bool, error
 	}
 
 	v := reflect.ValueOf(msg)
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 
@@ -1218,7 +1218,7 @@ func (cg *ChartGenerator) generateGraphChart(data []kvPair) io.Reader {
 
 	// Create categories
 	categories := make([]*opts.GraphCategory, 5)
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		categories[i] = &opts.GraphCategory{Name: fmt.Sprintf("Group %d", i+1)}
 	}
 
@@ -1260,9 +1260,9 @@ func renderChartWithFullHeight(render func(io.Writer) error) io.Reader {
 }
 
 // extractStringField extracts a string field value from a message
-func extractStringField(msg interface{}, fieldPath string) (string, error) {
+func extractStringField(msg any, fieldPath string) (string, error) {
 	v := reflect.ValueOf(msg)
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 

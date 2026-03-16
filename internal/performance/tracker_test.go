@@ -80,12 +80,12 @@ func TestTrackerReportWithFilterAndRules(t *testing.T) {
 	tracker.SetTotalPacketsAndBytes(1000, 500000)
 
 	// Add some filter metrics
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		tracker.RecordFilterEvaluation(10*time.Microsecond, i%3 == 0) // 33% filtered
 	}
 
 	// Add some rules metrics
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		alerts := 0
 		if i%10 == 0 {
 			alerts = 1

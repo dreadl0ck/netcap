@@ -60,7 +60,7 @@ func (d scatterDataSlice) Swap(i, j int) {
 
 func generateScatterItems(values []scatterData) []opts.ScatterData {
 	items := make([]opts.ScatterData, len(values))
-	for i := 0; i < len(values); i++ {
+	for i := range values {
 		items[i] = opts.ScatterData{
 			Value:        values[i].value,
 			Symbol:       "circle",

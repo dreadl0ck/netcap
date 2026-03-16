@@ -21,6 +21,7 @@ package file
 
 import (
 	"os"
+	"slices"
 	"sync"
 
 	"gopkg.in/yaml.v2"
@@ -245,22 +246,11 @@ func ShouldExtractMimeType(mimeType string) bool {
 
 	// Check whitelist first (if set, only extract whitelisted types)
 	if len(cfg.FileExtraction.MimeTypes.Whitelist) > 0 {
-		for _, allowed := range cfg.FileExtraction.MimeTypes.Whitelist {
-			if mimeType == allowed {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(cfg.FileExtraction.MimeTypes.Whitelist, mimeType)
 	}
 
 	// Check blacklist
-	for _, blocked := range cfg.FileExtraction.MimeTypes.Blacklist {
-		if mimeType == blocked {
-			return false
-		}
-	}
-
-	return true
+	return !slices.Contains(cfg.FileExtraction.MimeTypes.Blacklist, mimeType)
 }
 
 // GetMaxFileSize returns the configured maximum file size

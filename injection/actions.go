@@ -32,7 +32,7 @@ import (
 
 // ActionHandler is an interface for implementing injection actions.
 type ActionHandler interface {
-	Execute(ctx *InjectionContext, config map[string]interface{}) (*ActionResult, error)
+	Execute(ctx *InjectionContext, config map[string]any) (*ActionResult, error)
 }
 
 // ModifyPayloadHandler handles payload modification actions.
@@ -43,11 +43,11 @@ type ModifyPayloadHandler struct{}
 //   - search: string to search for (literal or regex pattern)
 //   - replace: replacement string (supports regex capture groups like $1, $2 when regex=true)
 //   - regex: bool (optional, default false) - if true, search is treated as a regex pattern
-func (h *ModifyPayloadHandler) Execute(ctx *InjectionContext, config map[string]interface{}) (*ActionResult, error) {
+func (h *ModifyPayloadHandler) Execute(ctx *InjectionContext, config map[string]any) (*ActionResult, error) {
 	result := &ActionResult{
 		Action:    ActionModifyPayload,
 		Timestamp: time.Now(),
-		Details:   make(map[string]interface{}),
+		Details:   make(map[string]any),
 	}
 
 	// Get search and replace patterns from config
@@ -179,11 +179,11 @@ func (h *ModifyPayloadHandler) rebuildPacketWithPayload(ctx *InjectionContext, n
 type TCPRSTHandler struct{}
 
 // Execute generates and returns a TCP RST packet.
-func (h *TCPRSTHandler) Execute(ctx *InjectionContext, config map[string]interface{}) (*ActionResult, error) {
+func (h *TCPRSTHandler) Execute(ctx *InjectionContext, config map[string]any) (*ActionResult, error) {
 	result := &ActionResult{
 		Action:    ActionInjectTCPRST,
 		Timestamp: time.Now(),
-		Details:   make(map[string]interface{}),
+		Details:   make(map[string]any),
 	}
 
 	if ctx.TCP == nil {
@@ -299,11 +299,11 @@ func (h *TCPRSTHandler) serializeLayerSlice(buf gopacket.SerializeBuffer, opts g
 type DNSSpoofHandler struct{}
 
 // Execute generates a spoofed DNS response.
-func (h *DNSSpoofHandler) Execute(ctx *InjectionContext, config map[string]interface{}) (*ActionResult, error) {
+func (h *DNSSpoofHandler) Execute(ctx *InjectionContext, config map[string]any) (*ActionResult, error) {
 	result := &ActionResult{
 		Action:    ActionInjectDNS,
 		Timestamp: time.Now(),
-		Details:   make(map[string]interface{}),
+		Details:   make(map[string]any),
 	}
 
 	if ctx.DNS == nil {
@@ -465,11 +465,11 @@ func (h *DNSSpoofHandler) createDNSResponse(query *layers.DNS, ip net.IP, ttl ui
 type ARPSpoofHandler struct{}
 
 // Execute generates a spoofed ARP reply.
-func (h *ARPSpoofHandler) Execute(ctx *InjectionContext, config map[string]interface{}) (*ActionResult, error) {
+func (h *ARPSpoofHandler) Execute(ctx *InjectionContext, config map[string]any) (*ActionResult, error) {
 	result := &ActionResult{
 		Action:    ActionInjectARP,
 		Timestamp: time.Now(),
-		Details:   make(map[string]interface{}),
+		Details:   make(map[string]any),
 	}
 
 	// Get spoof MAC from config
@@ -561,11 +561,11 @@ func (h *ARPSpoofHandler) buildARPReply(ctx *InjectionContext, spoofMAC net.Hard
 type DelayHandler struct{}
 
 // Execute returns a result indicating the packet should be delayed.
-func (h *DelayHandler) Execute(ctx *InjectionContext, config map[string]interface{}) (*ActionResult, error) {
+func (h *DelayHandler) Execute(ctx *InjectionContext, config map[string]any) (*ActionResult, error) {
 	result := &ActionResult{
 		Action:    ActionDelay,
 		Timestamp: time.Now(),
-		Details:   make(map[string]interface{}),
+		Details:   make(map[string]any),
 	}
 
 	// Get delay duration from config
@@ -589,11 +589,11 @@ type HTTPInjectHeaderHandler struct{}
 //   - headers: map[string]string of headers to inject/modify
 //   - remove_headers: []string of header names to remove
 //   - position: "request" or "response" (which headers to modify)
-func (h *HTTPInjectHeaderHandler) Execute(ctx *InjectionContext, config map[string]interface{}) (*ActionResult, error) {
+func (h *HTTPInjectHeaderHandler) Execute(ctx *InjectionContext, config map[string]any) (*ActionResult, error) {
 	result := &ActionResult{
 		Action:    ActionHTTPInjectHeader,
 		Timestamp: time.Now(),
-		Details:   make(map[string]interface{}),
+		Details:   make(map[string]any),
 	}
 
 	if len(ctx.Payload) == 0 {
@@ -606,7 +606,7 @@ func (h *HTTPInjectHeaderHandler) Execute(ctx *InjectionContext, config map[stri
 	modified := false
 
 	// Get headers to inject
-	if headersRaw, ok := config["headers"].(map[string]interface{}); ok {
+	if headersRaw, ok := config["headers"].(map[string]any); ok {
 		for name, value := range headersRaw {
 			if valueStr, ok := value.(string); ok {
 				payload, modified = h.injectHeader(payload, name, valueStr)
@@ -616,7 +616,7 @@ func (h *HTTPInjectHeaderHandler) Execute(ctx *InjectionContext, config map[stri
 	}
 
 	// Get headers to remove
-	if removeHeaders, ok := config["remove_headers"].([]interface{}); ok {
+	if removeHeaders, ok := config["remove_headers"].([]any); ok {
 		for _, headerRaw := range removeHeaders {
 			if headerName, ok := headerRaw.(string); ok {
 				var wasModified bool
@@ -691,11 +691,11 @@ type HTTPSSLStripHandler struct{}
 
 // Execute replaces HTTPS URLs with HTTP in the payload.
 // This is commonly used in SSL stripping attacks.
-func (h *HTTPSSLStripHandler) Execute(ctx *InjectionContext, config map[string]interface{}) (*ActionResult, error) {
+func (h *HTTPSSLStripHandler) Execute(ctx *InjectionContext, config map[string]any) (*ActionResult, error) {
 	result := &ActionResult{
 		Action:    ActionHTTPSSLStrip,
 		Timestamp: time.Now(),
-		Details:   make(map[string]interface{}),
+		Details:   make(map[string]any),
 	}
 
 	if len(ctx.Payload) == 0 {
@@ -744,11 +744,11 @@ type HTTPRedirectHandler struct{}
 // Supports the following action_config options:
 //   - location: URL to redirect to (required)
 //   - status_code: HTTP status code (default: 302)
-func (h *HTTPRedirectHandler) Execute(ctx *InjectionContext, config map[string]interface{}) (*ActionResult, error) {
+func (h *HTTPRedirectHandler) Execute(ctx *InjectionContext, config map[string]any) (*ActionResult, error) {
 	result := &ActionResult{
 		Action:    ActionHTTPRedirect,
 		Timestamp: time.Now(),
-		Details:   make(map[string]interface{}),
+		Details:   make(map[string]any),
 	}
 
 	// Get redirect location

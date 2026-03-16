@@ -141,7 +141,7 @@ func TestMaxStreamBytesUnlimited(t *testing.T) {
 	}
 
 	// Send multiple large packets (1000 bytes total)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		tcp.SYN = (i == 0)
 		tcp.ACK = (i > 0)
 		tcp.Seq = uint32(1000 + i*100)
@@ -198,7 +198,7 @@ func TestMaxStreamBytesInOrder(t *testing.T) {
 
 	// Send in-order packets (this is the critical test!)
 	// Each packet is 50 bytes, send 6 packets = 300 bytes total
-	for i := 0; i < 6; i++ {
+	for i := range 6 {
 		tcp.SYN = false
 		tcp.ACK = true
 		tcp.Seq = uint32(1001 + i*50)
@@ -265,7 +265,7 @@ func TestMaxStreamBytesNoRecreation(t *testing.T) {
 	// Send data until limit is hit
 	tcp.SYN = false
 	tcp.ACK = true
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		tcp.Seq = uint32(1001 + i*50)
 		tcp.BaseLayer = layers.BaseLayer{Payload: make([]byte, 50)}
 		assembler.AssembleWithContext(netFlow, tcp, ctx)
@@ -302,7 +302,7 @@ func TestMaxStreamBytesNoRecreation(t *testing.T) {
 	}
 
 	// Send MORE packets - these should be rejected, not create a new stream
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		tcp.Seq = uint32(1001 + (i+5)*50)
 		tcp.BaseLayer = layers.BaseLayer{Payload: make([]byte, 50)}
 		assembler.AssembleWithContext(netFlow, tcp, ctx)

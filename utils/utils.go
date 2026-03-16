@@ -144,7 +144,7 @@ func IsASCII(d []byte) bool {
 		return false
 	}
 
-	for i := 0; i < len(d); i++ {
+	for i := range d {
 		if d[i] > unicode.MaxASCII {
 			return false
 		}
@@ -219,7 +219,7 @@ func GetDecodeOptions(value string) (o gopacket.DecodeOptions) {
 }
 
 // Pad the input up to the given number of space characters..
-func Pad(in interface{}, length int) string {
+func Pad(in any, length int) string {
 	return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", in)
 }
 

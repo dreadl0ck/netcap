@@ -269,7 +269,7 @@ func parseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[in
 	labelMap = make(map[int64]*suricataAlert)
 
 	// range fast.log contents line by line
-	for _, l := range strings.Split(string(contents), "\n") {
+	for l := range strings.SplitSeq(string(contents), "\n") {
 		// minimum 27 chars for a valid log line starting with a timestamp
 		if len(l) > 27 {
 

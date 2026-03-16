@@ -184,10 +184,7 @@ func readIPProfiles(outDir string) ([]IPProfileSummary, error) {
 				return protos[i].packets > protos[j].packets
 			})
 			// Take top 5
-			limit := 5
-			if len(protos) < limit {
-				limit = len(protos)
-			}
+			limit := min(len(protos), 5)
 			for i := 0; i < limit; i++ {
 				topProtocols = append(topProtocols, ProtocolInfo{
 					Name:     protos[i].name,

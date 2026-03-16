@@ -21,6 +21,7 @@ package udp
 
 import (
 	"reflect"
+	"slices"
 	"strconv"
 	"sync"
 	"time"
@@ -123,10 +124,8 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 		service.MatchServiceProbes(serv, banner, flowIdent)
 
 		// ensure we don't duplicate any flows
-		for _, f := range serv.Flows {
-			if f == flowIdent {
-				return
-			}
+		if slices.Contains(serv.Flows, flowIdent) {
+			return
 		}
 
 		serv.Flows = append(serv.Flows, flowIdent)

@@ -28,6 +28,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -39,9 +40,9 @@ import (
 
 // ResponseActionAPI represents a response action for the API
 type ResponseActionAPI struct {
-	Type    string                 `json:"type"`
-	Config  map[string]interface{} `json:"config,omitempty"`
-	Enabled *bool                  `json:"enabled,omitempty"`
+	Type    string         `json:"type"`
+	Config  map[string]any `json:"config,omitempty"`
+	Enabled *bool          `json:"enabled,omitempty"`
 }
 
 // RuleResponse represents a rule for the API
@@ -223,13 +224,7 @@ func (s *Server) loadRulesConfig() (*rules.Config, error) {
 					// Add a special tag to track the rule set
 					ruleSetTag := "ruleset:" + strings.TrimSuffix(entry.Name(), ".yml")
 					// Check if tag already exists
-					hasTag := false
-					for _, tag := range rule.Tags {
-						if tag == ruleSetTag {
-							hasTag = true
-							break
-						}
-					}
+					hasTag := slices.Contains(rule.Tags, ruleSetTag)
 					if !hasTag {
 						rule.Tags = append(rule.Tags, ruleSetTag)
 					}
@@ -286,8 +281,8 @@ func (s *Server) saveRulesConfig(config *rules.Config) error {
 		// Find the ruleset tag
 		ruleSetName := ""
 		for _, tag := range rule.Tags {
-			if strings.HasPrefix(tag, "ruleset:") {
-				ruleSetName = strings.TrimPrefix(tag, "ruleset:")
+			if after, ok := strings.CutPrefix(tag, "ruleset:"); ok {
+				ruleSetName = after
 				break
 			}
 		}
@@ -455,7 +450,7 @@ func (s *Server) handleGetRules(w http.ResponseWriter, r *http.Request) {
 	config, err := s.loadRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load rules: %v", err),
 		})
 		return
@@ -500,7 +495,7 @@ func (s *Server) handleGetRules(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleCreateRule(w http.ResponseWriter, r *http.Request) {
 	var req CreateRuleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Invalid request body",
 		})
 		return
@@ -508,28 +503,28 @@ func (s *Server) handleCreateRule(w http.ResponseWriter, r *http.Request) {
 
 	// Validate required fields
 	if req.Name == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule name is required",
 		})
 		return
 	}
 
 	if req.Type == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule type is required",
 		})
 		return
 	}
 
 	if req.Expression == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule expression is required",
 		})
 		return
 	}
 
 	if req.Severity == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule severity is required",
 		})
 		return
@@ -537,7 +532,7 @@ func (s *Server) handleCreateRule(w http.ResponseWriter, r *http.Request) {
 
 	// Validate severity
 	if !rules.ValidateSeverity(req.Severity) {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Invalid severity. Must be one of: low, medium, high, critical",
 		})
 		return
@@ -547,7 +542,7 @@ func (s *Server) handleCreateRule(w http.ResponseWriter, r *http.Request) {
 	config, err := s.loadRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load rules: %v", err),
 		})
 		return
@@ -556,7 +551,7 @@ func (s *Server) handleCreateRule(w http.ResponseWriter, r *http.Request) {
 	// Check if rule with same name already exists
 	for _, rule := range config.Rules {
 		if rule.Name == req.Name {
-			RespondJSON(w, http.StatusConflict, map[string]interface{}{
+			RespondJSON(w, http.StatusConflict, map[string]any{
 				"error": "A rule with this name already exists",
 			})
 			return
@@ -584,7 +579,7 @@ func (s *Server) handleCreateRule(w http.ResponseWriter, r *http.Request) {
 	// Save config
 	if err := s.saveRulesConfig(config); err != nil {
 		log.Printf("[WebUI] Failed to save rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to save rules: %v", err),
 		})
 		return
@@ -592,7 +587,7 @@ func (s *Server) handleCreateRule(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("[WebUI] Created new rule: %s", req.Name)
 
-	RespondJSON(w, http.StatusCreated, map[string]interface{}{
+	RespondJSON(w, http.StatusCreated, map[string]any{
 		"success": true,
 		"message": "Rule created successfully",
 		"rule": RuleResponse{
@@ -645,7 +640,7 @@ func (s *Server) handleGetRule(w http.ResponseWriter, r *http.Request, ruleID st
 	config, err := s.loadRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load rules: %v", err),
 		})
 		return
@@ -682,7 +677,7 @@ func (s *Server) handleGetRule(w http.ResponseWriter, r *http.Request, ruleID st
 		}
 	}
 
-	RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+	RespondJSON(w, http.StatusNotFound, map[string]any{
 		"error": "Rule not found",
 	})
 }
@@ -691,7 +686,7 @@ func (s *Server) handleGetRule(w http.ResponseWriter, r *http.Request, ruleID st
 func (s *Server) handleUpdateRule(w http.ResponseWriter, r *http.Request, ruleID string) {
 	var req UpdateRuleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Invalid request body",
 		})
 		return
@@ -699,28 +694,28 @@ func (s *Server) handleUpdateRule(w http.ResponseWriter, r *http.Request, ruleID
 
 	// Validate required fields
 	if req.Name == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule name is required",
 		})
 		return
 	}
 
 	if req.Type == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule type is required",
 		})
 		return
 	}
 
 	if req.Expression == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule expression is required",
 		})
 		return
 	}
 
 	if req.Severity == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule severity is required",
 		})
 		return
@@ -728,7 +723,7 @@ func (s *Server) handleUpdateRule(w http.ResponseWriter, r *http.Request, ruleID
 
 	// Validate severity
 	if !rules.ValidateSeverity(req.Severity) {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Invalid severity. Must be one of: low, medium, high, critical",
 		})
 		return
@@ -738,7 +733,7 @@ func (s *Server) handleUpdateRule(w http.ResponseWriter, r *http.Request, ruleID
 	config, err := s.loadRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load rules: %v", err),
 		})
 		return
@@ -752,7 +747,7 @@ func (s *Server) handleUpdateRule(w http.ResponseWriter, r *http.Request, ruleID
 			if req.Name != ruleID {
 				for _, r := range config.Rules {
 					if r.Name == req.Name {
-						RespondJSON(w, http.StatusConflict, map[string]interface{}{
+						RespondJSON(w, http.StatusConflict, map[string]any{
 							"error": "A rule with this name already exists",
 						})
 						return
@@ -777,7 +772,7 @@ func (s *Server) handleUpdateRule(w http.ResponseWriter, r *http.Request, ruleID
 	}
 
 	if !found {
-		RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+		RespondJSON(w, http.StatusNotFound, map[string]any{
 			"error": "Rule not found",
 		})
 		return
@@ -786,7 +781,7 @@ func (s *Server) handleUpdateRule(w http.ResponseWriter, r *http.Request, ruleID
 	// Save config
 	if err := s.saveRulesConfig(config); err != nil {
 		log.Printf("[WebUI] Failed to save rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to save rules: %v", err),
 		})
 		return
@@ -794,7 +789,7 @@ func (s *Server) handleUpdateRule(w http.ResponseWriter, r *http.Request, ruleID
 
 	log.Printf("[WebUI] Updated rule: %s -> %s", ruleID, req.Name)
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": "Rule updated successfully",
 	})
@@ -806,7 +801,7 @@ func (s *Server) handleDeleteRule(w http.ResponseWriter, r *http.Request, ruleID
 	config, err := s.loadRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load rules: %v", err),
 		})
 		return
@@ -824,7 +819,7 @@ func (s *Server) handleDeleteRule(w http.ResponseWriter, r *http.Request, ruleID
 	}
 
 	if !found {
-		RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+		RespondJSON(w, http.StatusNotFound, map[string]any{
 			"error": "Rule not found",
 		})
 		return
@@ -835,7 +830,7 @@ func (s *Server) handleDeleteRule(w http.ResponseWriter, r *http.Request, ruleID
 	// Save config
 	if err := s.saveRulesConfig(config); err != nil {
 		log.Printf("[WebUI] Failed to save rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to save rules: %v", err),
 		})
 		return
@@ -843,7 +838,7 @@ func (s *Server) handleDeleteRule(w http.ResponseWriter, r *http.Request, ruleID
 
 	log.Printf("[WebUI] Deleted rule: %s", ruleID)
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": "Rule deleted successfully",
 	})
@@ -872,14 +867,14 @@ func (s *Server) handleExecuteRule(w http.ResponseWriter, r *http.Request) {
 
 	var req ExecuteRuleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Invalid request body",
 		})
 		return
 	}
 
 	if req.RuleID == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule ID is required",
 		})
 		return
@@ -898,7 +893,7 @@ func (s *Server) handleExecuteRule(w http.ResponseWriter, r *http.Request) {
 	s.mu.RUnlock()
 
 	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
 			"error": "No output directory selected",
 		})
 		return
@@ -908,7 +903,7 @@ func (s *Server) handleExecuteRule(w http.ResponseWriter, r *http.Request) {
 	config, err := s.loadRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load rules: %v", err),
 		})
 		return
@@ -924,7 +919,7 @@ func (s *Server) handleExecuteRule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if targetRule == nil {
-		RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+		RespondJSON(w, http.StatusNotFound, map[string]any{
 			"error": "Rule not found",
 		})
 		return
@@ -937,7 +932,7 @@ func (s *Server) handleExecuteRule(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Printf("[WebUI] Failed to execute rule: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to execute rule: %v", err),
 		})
 		return
@@ -995,7 +990,7 @@ func (s *Server) handleExecuteAllRules(w http.ResponseWriter, r *http.Request) {
 	s.mu.RUnlock()
 
 	if outDir == "" {
-		RespondJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
 			"error": "No output directory selected",
 		})
 		return
@@ -1005,7 +1000,7 @@ func (s *Server) handleExecuteAllRules(w http.ResponseWriter, r *http.Request) {
 	config, err := s.loadRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load rules: %v", err),
 		})
 		return
@@ -1020,7 +1015,7 @@ func (s *Server) handleExecuteAllRules(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(enabledRules) == 0 {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "No enabled rules found",
 		})
 		return

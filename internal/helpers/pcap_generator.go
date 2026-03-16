@@ -265,7 +265,7 @@ func GenerateHTTPRequest(filename string, host string) error {
 	pb.WritePacket(ack)
 
 	// HTTP GET request
-	httpPayload := []byte(fmt.Sprintf("GET / HTTP/1.1\r\nHost: %s\r\nUser-Agent: NetcapTest/1.0\r\n\r\n", host))
+	httpPayload := fmt.Appendf(nil, "GET / HTTP/1.1\r\nHost: %s\r\nUser-Agent: NetcapTest/1.0\r\n\r\n", host)
 	httpPkt, err := pb.BuildEthernetIPv4TCPPacket(
 		srcMAC, dstMAC,
 		srcIP, dstIP,

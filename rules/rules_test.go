@@ -861,7 +861,7 @@ func TestThresholdAlerts(t *testing.T) {
 	}
 
 	// Test that first 4 matches don't trigger an alert (threshold is 5)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		count, err := engine.Evaluate(tcp)
 		if err != nil {
 			t.Fatalf("Evaluate() error = %v (iteration %d)", err, i+1)
@@ -902,7 +902,7 @@ func TestThresholdAlerts(t *testing.T) {
 	tcp.SrcIP = "192.168.1.101"
 
 	// Test that next 4 matches don't trigger (need 5 total again)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		tcp.SrcPort = int32(12346 + i) // Vary source port for uniqueness
 		count, err := engine.Evaluate(tcp)
 		if err != nil {

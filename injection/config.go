@@ -172,7 +172,7 @@ type ActionResult struct {
 	Timestamp time.Time
 
 	// Details contains action-specific details for logging.
-	Details map[string]interface{}
+	Details map[string]any
 }
 
 // NewInjectionContext creates a new InjectionContext from a gopacket.Packet.

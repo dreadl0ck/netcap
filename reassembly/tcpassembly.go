@@ -33,6 +33,7 @@ import (
 var Debug = false
 
 // TCPAssemblyStats provides some figures for a ScatterGather.
+//
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
 type TCPAssemblyStats struct {
 	// For this ScatterGather
@@ -79,12 +80,4 @@ type byteContainer interface {
 	isEnd() bool
 	getSeq() Sequence
 	isPacket() bool
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-
-	return b
 }

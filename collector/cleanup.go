@@ -29,6 +29,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/decoder/stream/alert"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/label/manager"
 
 	"github.com/dustin/go-humanize"
@@ -104,8 +105,8 @@ func (c *Collector) doCleanup(force bool) {
 	c.log.Info("waiting for main collector wait group...")
 	select {
 	case <-waitForCollector():
-		//case <-time.After(defaults.ReassemblyTimeout):
-		//	c.log.Info(" timeout after ", zap.Duration("reassemblyTimeout", defaults.ReassemblyTimeout))
+	case <-time.After(defaults.ReassemblyTimeout):
+		c.log.Info(" timeout after ", zap.Duration("reassemblyTimeout", defaults.ReassemblyTimeout))
 	}
 
 	if c.config.ReassembleConnections {

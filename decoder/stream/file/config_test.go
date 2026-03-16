@@ -184,7 +184,7 @@ func TestConfigThreadSafety(t *testing.T) {
 	// Test concurrent access to config
 	done := make(chan bool)
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
 			cfg := GetGlobalConfig()
 			_ = cfg.FileExtraction.Enabled
@@ -192,7 +192,7 @@ func TestConfigThreadSafety(t *testing.T) {
 		}()
 	}
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		<-done
 	}
 }

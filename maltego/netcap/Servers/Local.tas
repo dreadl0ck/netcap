@@ -1,5 +1,5 @@
 <MaltegoServer name="Local" enabled="true" description="Local transforms hosted on this machine" url="http://localhost">
- <LastSync>2021-05-21 19:17:30.594 CEST</LastSync>
+ <LastSync>2026-03-15 21:52:44.555 CET</LastSync>
  <Protocol version="0.0"></Protocol>
  <Authentication type="none"></Authentication>
  <Transforms>
@@ -65,8 +65,8 @@
   <Transform name="netcap.ToDevices"></Transform>
   <Transform name="netcap.ToIPProfiles"></Transform>
   <Transform name="netcap.ToIPProfilesForSoftware"></Transform>
-  <Transform name="netcap.ToJA3Hashes"></Transform>
-  <Transform name="netcap.ToJA3SHashes"></Transform>
+  <Transform name="netcap.ToJA4Hashes"></Transform>
+  <Transform name="netcap.ToJA4SHashes"></Transform>
   <Transform name="netcap.ToSMTPCommandTypes"></Transform>
   <Transform name="netcap.ToDNSOpCodes"></Transform>
   <Transform name="netcap.ToConnectionsForService"></Transform>
@@ -98,7 +98,7 @@
   <Transform name="netcap.ToServices"></Transform>
   <Transform name="netcap.ToServiceTypes"></Transform>
   <Transform name="netcap.ToSourceDevices"></Transform>
-  <Transform name="netcap.ToJA3HashesForProfile"></Transform>
+  <Transform name="netcap.ToJA4HashesForProfile"></Transform>
   <Transform name="netcap.ToVisitorsForURL"></Transform>
   <Transform name="netcap.ToVisitorsForHost"></Transform>
   <Transform name="netcap.ToProviderIPProfilesForURL"></Transform>

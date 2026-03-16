@@ -538,7 +538,7 @@ func TestActionHandlers(t *testing.T) {
 
 	t.Run("DelayHandler", func(t *testing.T) {
 		handler := &DelayHandler{}
-		config := map[string]interface{}{
+		config := map[string]any{
 			"delay_ms": 100,
 		}
 
@@ -565,7 +565,7 @@ func TestActionHandlers(t *testing.T) {
 		}
 
 		// Test regex replacement
-		config := map[string]interface{}{
+		config := map[string]any{
 			"search":  `\d+`,
 			"replace": "NUM",
 			"regex":   true,
@@ -595,7 +595,7 @@ func TestActionHandlers(t *testing.T) {
 		}
 
 		// Test regex with capture groups
-		config := map[string]interface{}{
+		config := map[string]any{
 			"search":  `<script>(.*?)</script>`,
 			"replace": "<safe>$1</safe>",
 			"regex":   true,
@@ -618,8 +618,8 @@ func TestActionHandlers(t *testing.T) {
 			Payload: []byte("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<html></html>"),
 		}
 
-		config := map[string]interface{}{
-			"headers": map[string]interface{}{
+		config := map[string]any{
+			"headers": map[string]any{
 				"X-Injected": "test-value",
 			},
 		}
@@ -645,7 +645,7 @@ func TestActionHandlers(t *testing.T) {
 			Payload: []byte("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n<a href=\"https://example.com\">Link</a>"),
 		}
 
-		config := map[string]interface{}{}
+		config := map[string]any{}
 
 		result, err := handler.Execute(ctx, config)
 		if err != nil {
@@ -668,7 +668,7 @@ func TestActionHandlers(t *testing.T) {
 			Payload: []byte("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"),
 		}
 
-		config := map[string]interface{}{
+		config := map[string]any{
 			"location":    "http://evil.com/phish",
 			"status_code": 302,
 		}

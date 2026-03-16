@@ -2,6 +2,7 @@ package reassembly
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gopacket/gopacket"
@@ -47,15 +48,16 @@ func (half *halfconnection) String() string {
 
 // Dump returns a string (crypticly) describing the halfconnction.
 func (half *halfconnection) Dump() string {
-	s := fmt.Sprintf("pages: %d\n"+
+	var s strings.Builder
+	s.WriteString(fmt.Sprintf("pages: %d\n"+
 		"nextSeq: %d\n"+
 		"ackSeq: %d\n"+
 		"Seen :  %s\n"+
-		"dir:    %s\n", half.pages, half.nextSeq, half.ackSeq, half.lastSeen, half.dir)
+		"dir:    %s\n", half.pages, half.nextSeq, half.ackSeq, half.lastSeen, half.dir))
 	nb := 0
 	for p := half.first; p != nil; p = p.next {
-		s += fmt.Sprintf("	Page[%d] %s len: %d\n", nb, p, len(p.bytes))
+		s.WriteString(fmt.Sprintf("	Page[%d] %s len: %d\n", nb, p, len(p.bytes)))
 		nb++
 	}
-	return s
+	return s.String()
 }

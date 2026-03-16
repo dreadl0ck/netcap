@@ -173,7 +173,7 @@ func merge(results map[string]*fileSummary) map[string]*encoder.ColumnSummary {
 					continue
 				}
 
-				for i := 0; i < num; i++ {
+				for range num {
 					values = append(values, v)
 				}
 			}

@@ -358,11 +358,11 @@ func (s *Server) extractChartData(filePath, auditType, fieldName, intervalStr st
 
 // extractNumericField uses reflection to extract a numeric field from a message
 // Supports nested field access using dot notation (e.g., "ReqCookies.Name")
-func extractNumericField(msg interface{}, fieldPath string) (float64, error) {
+func extractNumericField(msg any, fieldPath string) (float64, error) {
 	v := reflect.ValueOf(msg)
 
 	// Handle pointer
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 
@@ -404,7 +404,7 @@ func navigateToField(v reflect.Value, fieldPath string) (reflect.Value, error) {
 		part := parts[i]
 
 		// Handle pointer
-		if v.Kind() == reflect.Ptr {
+		if v.Kind() == reflect.Pointer {
 			if v.IsNil() {
 				return reflect.Value{}, fmt.Errorf("nil pointer at %s", strings.Join(parts[:i+1], "."))
 			}
@@ -419,7 +419,7 @@ func navigateToField(v reflect.Value, fieldPath string) (reflect.Value, error) {
 			v = v.Index(0)
 
 			// Handle pointer in slice element
-			if v.Kind() == reflect.Ptr {
+			if v.Kind() == reflect.Pointer {
 				if v.IsNil() {
 					return reflect.Value{}, fmt.Errorf("nil pointer in slice at %s", strings.Join(parts[:i], "."))
 				}
@@ -535,7 +535,7 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 // extractAllFields returns a list of all chartable fields (numeric and string) from a struct
 // This includes nested fields using dot notation (e.g., "ReqCookies.Name")
 // and map keys (e.g., "RequestHeader.Accept", "RequestHeader.Content-Type")
-func extractAllFields(msg interface{}) []ChartFieldInfo {
+func extractAllFields(msg any) []ChartFieldInfo {
 	fields, _ := extractAllFieldsWithCount(msg)
 	return fields
 }
@@ -592,12 +592,12 @@ func extractAllFieldsAcrossRecords(reader *AuditRecordReader, maxRecords int) ([
 	return result, totalCount
 }
 
-func extractAllFieldsWithCount(msg interface{}) ([]ChartFieldInfo, int) {
+func extractAllFieldsWithCount(msg any) ([]ChartFieldInfo, int) {
 	var fields []ChartFieldInfo
 	var totalCount int
 
 	v := reflect.ValueOf(msg)
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 
@@ -618,7 +618,7 @@ func extractFieldsRecursive(v reflect.Value, prefix string, fields *[]ChartField
 		return
 	}
 
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			// Try to create a zero value to inspect its structure
 			v = reflect.New(v.Type().Elem()).Elem()
@@ -733,13 +733,13 @@ func extractFieldsRecursive(v reflect.Value, prefix string, fields *[]ChartField
 					typeName = "categorical (string array)"
 					isChartable = true
 				}
-			} else if elemType.Kind() == reflect.Struct || (elemType.Kind() == reflect.Ptr && elemType.Elem().Kind() == reflect.Struct) {
+			} else if elemType.Kind() == reflect.Struct || (elemType.Kind() == reflect.Pointer && elemType.Elem().Kind() == reflect.Struct) {
 				// Slice of structs - recurse into the first element if available, or a zero value
 				shouldRecurse = true
 				var elemValue reflect.Value
 				if field.Len() > 0 {
 					elemValue = field.Index(0)
-					if elemValue.Kind() == reflect.Ptr {
+					if elemValue.Kind() == reflect.Pointer {
 						if !elemValue.IsNil() {
 							elemValue = elemValue.Elem()
 						} else {
@@ -749,7 +749,7 @@ func extractFieldsRecursive(v reflect.Value, prefix string, fields *[]ChartField
 					}
 				} else if v.IsZero() {
 					// Creating zero value for structure inspection
-					if elemType.Kind() == reflect.Ptr {
+					if elemType.Kind() == reflect.Pointer {
 						elemValue = reflect.New(elemType.Elem()).Elem()
 					} else {
 						elemValue = reflect.New(elemType).Elem()
@@ -763,7 +763,7 @@ func extractFieldsRecursive(v reflect.Value, prefix string, fields *[]ChartField
 			// Nested struct - recurse into it
 			shouldRecurse = true
 			extractFieldsRecursive(field, fieldName, fields, totalCount, depth+1, maxDepth)
-		case reflect.Ptr:
+		case reflect.Pointer:
 			// Pointer to struct - recurse into it
 			if field.Type().Elem().Kind() == reflect.Struct {
 				shouldRecurse = true

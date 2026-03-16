@@ -9,12 +9,12 @@ type NVD2 struct {
 	Timestamp       string `json:"timestamp"`
 	Vulnerabilities []struct {
 		Cve struct {
-			ID               string        `json:"id"`
-			SourceIdentifier string        `json:"sourceIdentifier"`
-			Published        string        `json:"published"`
-			LastModified     string        `json:"lastModified"`
-			VulnStatus       string        `json:"vulnStatus"`
-			CveTags          []interface{} `json:"cveTags"`
+			ID               string `json:"id"`
+			SourceIdentifier string `json:"sourceIdentifier"`
+			Published        string `json:"published"`
+			LastModified     string `json:"lastModified"`
+			VulnStatus       string `json:"vulnStatus"`
+			CveTags          []any  `json:"cveTags"`
 			Descriptions     []struct {
 				Lang  string `json:"lang"`
 				Value string `json:"value"`

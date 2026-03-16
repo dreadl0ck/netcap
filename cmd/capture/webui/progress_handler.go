@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
@@ -96,9 +97,7 @@ func (s *Server) handleProgress(w http.ResponseWriter, r *http.Request) {
 		}
 
 		fileOutputDirs := make(map[string]string)
-		for k, v := range s.fileOutputDirs {
-			fileOutputDirs[k] = v
-		}
+		maps.Copy(fileOutputDirs, s.fileOutputDirs)
 		inputFiles := s.inputFiles
 		baseOutDir := s.baseOutDir
 		fileErrors := s.fileErrors
@@ -129,8 +128,8 @@ func (s *Server) handleProgress(w http.ResponseWriter, r *http.Request) {
 				baseName := filepath.Base(filePath)
 				dirName := baseName
 				for _, ext := range []string{".pcap", ".pcapng", ".cap", ".dmp"} {
-					if strings.HasSuffix(dirName, ext) {
-						dirName = strings.TrimSuffix(dirName, ext)
+					if before, ok := strings.CutSuffix(dirName, ext); ok {
+						dirName = before
 						break
 					}
 				}

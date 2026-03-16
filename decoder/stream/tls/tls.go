@@ -31,13 +31,6 @@ import (
 
 var tlsLog = zap.NewNop()
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // TLS handshake constants
 const (
 	// TLS Record Layer Content Types

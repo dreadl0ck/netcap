@@ -219,7 +219,7 @@ func countFields(t types.Type) int {
 					recordFields += field.Type.Elem().NumField()
 					typeMap[strings.TrimPrefix(field.Type.String(), "*")] = field.Type.Elem().NumField()
 				} else {
-					if field.Type.Elem().Kind() == reflect.Ptr {
+					if field.Type.Elem().Kind() == reflect.Pointer {
 						recordFields += field.Type.Elem().Elem().NumField()
 						// fmt.Println("  ", field.Name, field.Type, field.Type.Elem().Elem().NumField())
 						typeMap[strings.TrimPrefix(strings.TrimPrefix(field.Type.String(), "[]"), "*")] = field.Type.Elem().Elem().NumField()
@@ -331,17 +331,17 @@ func ShowDecoders(verbose bool) {
 	printDecoderStats := func(name string, d []core.DecoderAPI) {
 
 		var newFields, newAuditRecords int
-		var sum string
+		var sum strings.Builder
 
 		for _, de := range d {
 			newAuditRecords++
 			f := countFields(de.GetType())
 			newFields += f
-			sum += pad("+ "+strings.TrimPrefix(de.GetType().String(), defaults.NetcapTypePrefix)+" ( "+strconv.Itoa(f)+" )", 35) + " " + de.GetDescription() + "\n"
+			sum.WriteString(pad("+ "+strings.TrimPrefix(de.GetType().String(), defaults.NetcapTypePrefix)+" ( "+strconv.Itoa(f)+" )", 35) + " " + de.GetDescription() + "\n")
 		}
 
 		fmt.Println(name+" Audit Records (", len(d), "/", newFields, ")")
-		fmt.Println(sum)
+		fmt.Println(sum.String())
 		fmt.Println() // newline
 
 		totalFields += newFields
@@ -410,7 +410,7 @@ func entropy(data []byte) (entropy float64) {
 	if len(data) == 0 {
 		return 0
 	}
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		px := float64(bytes.Count(data, []byte{byte(i)})) / float64(len(data))
 		if px > 0 {
 			entropy += -px * math.Log2(px)
@@ -486,7 +486,7 @@ func formatMac(mac []byte) string {
 }
 
 // pad the input up to the given number of space characters.
-func pad(in interface{}, length int) string {
+func pad(in any, length int) string {
 	return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", in)
 }
 

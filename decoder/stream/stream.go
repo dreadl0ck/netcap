@@ -3,6 +3,7 @@ package stream
 import (
 	"fmt"
 	"log"
+	"maps"
 	"strings"
 	"sync"
 	"time"
@@ -145,9 +146,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 	)
 
 	// Copy all default decoders to the active map
-	for port, dec := range DefaultStreamDecoders {
-		activeDecoders[port] = dec
-	}
+	maps.Copy(activeDecoders, DefaultStreamDecoders)
 
 	// if there are includes and the first item is not an empty string
 	if len(in) > 0 && in[0] != "" { // iterate over includes

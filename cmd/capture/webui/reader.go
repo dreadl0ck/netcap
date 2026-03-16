@@ -117,7 +117,7 @@ func (r *AuditRecordReader) NextAsJSON() (string, error) {
 
 // Skip skips n records from the current position
 func (r *AuditRecordReader) Skip(n int) error {
-	for i := 0; i < n; i++ {
+	for range n {
 		_, err := r.delimitedReader.Next()
 		if err != nil {
 			return err

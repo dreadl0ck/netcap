@@ -152,7 +152,7 @@ func TestSymmetricFlowSharding(t *testing.T) {
 		src := net.ParseIP("192.168.1.100")
 		dst := net.ParseIP("1.1.1.1")
 
-		for i := 0; i < 100; i++ {
+		for i := range 100 {
 			// Vary source port
 			p := createPacket(src, dst, 10000+i, 80)
 			idx := c.getSymmetricWorkerIndex(p)
@@ -168,7 +168,7 @@ func TestSymmetricFlowSharding(t *testing.T) {
 func TestPacketDispatch(t *testing.T) {
 	// Setup collector with buffered channels
 	workers := make([]chan gopacket.Packet, 4)
-	for i := 0; i < 4; i++ {
+	for i := range 4 {
 		workers[i] = make(chan gopacket.Packet, 10)
 	}
 

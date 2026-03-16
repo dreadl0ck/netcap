@@ -74,14 +74,8 @@ func creditCardHarvester(data []byte, ident string, ts time.Time) *types.Credent
 
 		// Extract surrounding context for notes
 		matchIdx := strings.Index(dataStr, match)
-		contextStart := matchIdx - 50
-		if contextStart < 0 {
-			contextStart = 0
-		}
-		contextEnd := matchIdx + len(match) + 50
-		if contextEnd > len(dataStr) {
-			contextEnd = len(dataStr)
-		}
+		contextStart := max(matchIdx-50, 0)
+		contextEnd := min(matchIdx+len(match)+50, len(dataStr))
 		context := dataStr[contextStart:contextEnd]
 
 		// Sanitize context (remove control characters)

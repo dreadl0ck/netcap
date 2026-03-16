@@ -186,10 +186,7 @@ func generateConnectionsTopByTrafficChart(outDir string, showLegend bool) *chart
 	}
 
 	// Take top 20 connections
-	limit := 20
-	if len(connections) < limit {
-		limit = len(connections)
-	}
+	limit := min(len(connections), 20)
 	topConnections := connections[:limit]
 
 	// Prepare data
@@ -395,10 +392,7 @@ func generateConnectionsApplicationsChart(outDir string, showLegend bool) *chart
 	}
 
 	// Take top 20
-	limit := 20
-	if len(apps) < limit {
-		limit = len(apps)
-	}
+	limit := min(len(apps), 20)
 	topApps := apps[:limit]
 
 	// Prepare data
@@ -466,10 +460,7 @@ func generateConnectionsDurationChart(outDir string, showLegend bool) *charts.Sc
 
 	// Prepare scatter data: [duration (seconds), size (KB)]
 	// Limit to reasonable sample size for performance
-	limit := 1000
-	if len(connections) < limit {
-		limit = len(connections)
-	}
+	limit := min(len(connections), 1000)
 	sampleConns := connections[:limit]
 
 	scatterData := make([]opts.ScatterData, 0, len(sampleConns))
@@ -477,7 +468,7 @@ func generateConnectionsDurationChart(outDir string, showLegend bool) *charts.Sc
 		durationSeconds := float64(conn.Duration) / 1e9 // Convert nanoseconds to seconds
 		sizeKB := float64(conn.TotalSize) / 1024
 		scatterData = append(scatterData, opts.ScatterData{
-			Value: []interface{}{durationSeconds, sizeKB},
+			Value: []any{durationSeconds, sizeKB},
 		})
 	}
 

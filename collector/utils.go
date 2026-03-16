@@ -116,7 +116,7 @@ func compileBPFToRaw(filterExpr string) ([]bpf.RawInstruction, error) {
 	return instructions, nil
 }
 
-func (c *Collector) printlnStdOut(args ...interface{}) {
+func (c *Collector) printlnStdOut(args ...any) {
 	if c.config.DecoderConfig.Quiet {
 		_, _ = fmt.Fprintln(c.netcapLogFile, args...)
 	} else {
@@ -125,7 +125,7 @@ func (c *Collector) printlnStdOut(args ...interface{}) {
 	}
 }
 
-func (c *Collector) printStdOut(args ...interface{}) {
+func (c *Collector) printStdOut(args ...any) {
 	if c.config.DecoderConfig.Quiet {
 		_, _ = fmt.Fprint(c.netcapLogFile, args...)
 	} else {

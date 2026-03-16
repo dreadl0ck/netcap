@@ -216,10 +216,7 @@ func generateCertificatesTopIssuersChart(outDir string, showLegend bool) *charts
 	}
 
 	// Take top 20
-	limit := 20
-	if len(issuers) < limit {
-		limit = len(issuers)
-	}
+	limit := min(len(issuers), 20)
 	topIssuers := issuers[:limit]
 
 	// Prepare data
@@ -399,10 +396,7 @@ func generateCertificatesKeyAlgorithmsChart(outDir string, showLegend bool) *cha
 	}
 
 	// Take top 15
-	limit := 15
-	if len(algos) < limit {
-		limit = len(algos)
-	}
+	limit := min(len(algos), 15)
 	topAlgos := algos[:limit]
 
 	// Prepare data
@@ -484,7 +478,7 @@ func generateCertificatesExpirationTimelineChart(outDir string, showLegend bool)
 		}
 
 		scatterData = append(scatterData, opts.ScatterData{
-			Value: []interface{}{cert.DaysUntilExpiration, cert.SeenCount},
+			Value: []any{cert.DaysUntilExpiration, cert.SeenCount},
 			// Add tooltip with subject name
 			Name: cert.SubjectCommonName,
 		})

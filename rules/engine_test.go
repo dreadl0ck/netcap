@@ -214,7 +214,7 @@ func TestCheckThreshold_ConcurrentAccess(t *testing.T) {
 
 	// Run concurrent threshold checks
 	done := make(chan bool, 50)
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		go func() {
 			engine.checkThreshold(rule)
 			done <- true
@@ -222,7 +222,7 @@ func TestCheckThreshold_ConcurrentAccess(t *testing.T) {
 	}
 
 	// Wait for all goroutines
-	for i := 0; i < 50; i++ {
+	for range 50 {
 		<-done
 	}
 

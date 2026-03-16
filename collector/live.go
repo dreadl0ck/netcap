@@ -1,5 +1,4 @@
 //go:build !linux
-// +build !linux
 
 /*
  * NETCAP - Traffic Analysis Framework

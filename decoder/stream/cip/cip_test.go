@@ -427,13 +427,6 @@ func TestDecoderMatchingWithRealPcapData(t *testing.T) {
 	}
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // TestParseMultipleENIPMessages tests parsing multiple ENIP messages in sequence
 func TestParseMultipleENIPMessages(t *testing.T) {
 	// Combine request and response

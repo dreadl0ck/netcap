@@ -482,7 +482,7 @@ func (b *bgpReader) parseASPathExtended(data []byte) ([]uint32, []uint32, []uint
 		}
 
 		var segmentASes []uint32
-		for i := 0; i < segLen; i++ {
+		for range segLen {
 			if offset+asSize > len(data) {
 				break
 			}

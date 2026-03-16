@@ -113,7 +113,7 @@ func HandleAuditFilesFiltered(outputDir string) http.HandlerFunc {
 
 		// Parse community IDs into a set
 		communityIDs := make(map[string]bool)
-		for _, id := range strings.Split(communityIDsParam, ",") {
+		for id := range strings.SplitSeq(communityIDsParam, ",") {
 			if trimmed := strings.TrimSpace(id); trimmed != "" {
 				communityIDs[trimmed] = true
 			}
@@ -252,7 +252,7 @@ func CountRecordsWithCommunityIDFilter(filePath string, communityIDs map[string]
 
 		// Use reflection to get CommunityID field
 		val := reflect.ValueOf(record)
-		if val.Kind() == reflect.Ptr {
+		if val.Kind() == reflect.Pointer {
 			val = val.Elem()
 		}
 
@@ -592,7 +592,7 @@ func CountRecords(filePath string) int64 {
 func HandleAuditMeta(w http.ResponseWriter, r *http.Request, filePath, auditType string) {
 	recordCount := CountRecords(filePath)
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"type":        auditType,
 		"recordCount": recordCount,
 		"filePath":    filePath,
@@ -746,7 +746,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			jsonStr := string(jsonData)
 			if len(jsonStr) > maxRecordSize {
 				// Create a truncated response with valid JSON structure
-				truncatedData := map[string]interface{}{
+				truncatedData := map[string]any{
 					"_truncated":     true,
 					"_originalSize":  len(jsonStr),
 					"_truncatedData": jsonStr[:maxRecordSize] + "...",
@@ -796,7 +796,7 @@ func HandleAuditFields(w http.ResponseWriter, r *http.Request, recordTypeName st
 	// Convert type name to Type enum
 	recordType := types.Type(types.Type_value["NC_"+recordTypeName])
 	if recordType == 0 { // 0 is the default/unknown type
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": fmt.Sprintf("Unknown record type: %s", recordTypeName),
 		})
 		return
@@ -805,7 +805,7 @@ func HandleAuditFields(w http.ResponseWriter, r *http.Request, recordTypeName st
 	// Create a sample record to extract field information
 	record := netio.InitRecord(recordType)
 	if record == nil {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": fmt.Sprintf("Failed to initialize record type: %s", recordTypeName),
 		})
 		return
@@ -836,7 +836,7 @@ func HandleAuditFields(w http.ResponseWriter, r *http.Request, recordTypeName st
 }
 
 // extractFields recursively extracts field information from a struct
-func extractFields(v interface{}, prefix string, depth int) []FieldInfo {
+func extractFields(v any, prefix string, depth int) []FieldInfo {
 	fields := make([]FieldInfo, 0)
 
 	// Limit recursion depth to avoid explosion
@@ -845,7 +845,7 @@ func extractFields(v interface{}, prefix string, depth int) []FieldInfo {
 	}
 
 	val := reflect.ValueOf(v)
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		if val.IsNil() {
 			return fields
 		}
@@ -892,7 +892,7 @@ func extractFields(v interface{}, prefix string, depth int) []FieldInfo {
 		}
 
 		// For pointer to struct
-		if field.Type.Kind() == reflect.Ptr && field.Type.Elem().Kind() == reflect.Struct && depth < 2 {
+		if field.Type.Kind() == reflect.Pointer && field.Type.Elem().Kind() == reflect.Struct && depth < 2 {
 			// Create a new instance for reflection
 			if !fieldValue.IsNil() {
 				nestedFields := extractFields(fieldValue.Interface(), fieldName, depth+1)
@@ -908,7 +908,7 @@ func extractFields(v interface{}, prefix string, depth int) []FieldInfo {
 		// For slices of structs, show array notation
 		if field.Type.Kind() == reflect.Slice && depth < 2 {
 			elemType := field.Type.Elem()
-			if elemType.Kind() == reflect.Ptr {
+			if elemType.Kind() == reflect.Pointer {
 				elemType = elemType.Elem()
 			}
 			if elemType.Kind() == reflect.Struct {
@@ -941,7 +941,7 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+		RespondJSON(w, http.StatusNotFound, map[string]any{
 			"error": fmt.Sprintf("Audit file not found: %s", recordTypeName),
 		})
 		return
@@ -950,7 +950,7 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 	// Open the audit record file
 	reader, err := NewAuditRecordReader(filePath)
 	if err != nil {
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to open audit record file: %v", err),
 		})
 		return
@@ -960,7 +960,7 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 	// Read header
 	_, err = reader.ReadHeader()
 	if err != nil {
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to read header: %v", err),
 		})
 		return
@@ -1011,14 +1011,14 @@ func HandleAuditFieldValues(w http.ResponseWriter, r *http.Request, filePath, re
 }
 
 // extractFieldValues recursively extracts unique field values from a struct
-func extractFieldValues(v interface{}, prefix string, fieldValues map[string]map[string]bool, maxPerField int, depth int) {
+func extractFieldValues(v any, prefix string, fieldValues map[string]map[string]bool, maxPerField int, depth int) {
 	// Limit recursion depth
 	if depth > 2 {
 		return
 	}
 
 	val := reflect.ValueOf(v)
-	if val.Kind() == reflect.Ptr {
+	if val.Kind() == reflect.Pointer {
 		if val.IsNil() {
 			return
 		}
@@ -1102,7 +1102,7 @@ func extractFieldValues(v interface{}, prefix string, fieldValues map[string]map
 				extractFieldValues(fieldValue.Interface(), fieldName, fieldValues, maxPerField, depth+1)
 			}
 
-		case reflect.Ptr:
+		case reflect.Pointer:
 			if !fieldValue.IsNil() && field.Type.Elem().Kind() == reflect.Struct && depth < 2 {
 				extractFieldValues(fieldValue.Interface(), fieldName, fieldValues, maxPerField, depth+1)
 			}
@@ -1111,7 +1111,7 @@ func extractFieldValues(v interface{}, prefix string, fieldValues map[string]map
 			// For slices, sample first few elements
 			if fieldValue.Len() > 0 {
 				elemType := field.Type.Elem()
-				if elemType.Kind() == reflect.Ptr {
+				if elemType.Kind() == reflect.Pointer {
 					elemType = elemType.Elem()
 				}
 

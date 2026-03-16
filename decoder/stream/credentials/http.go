@@ -27,6 +27,7 @@ import (
 	"io"
 	"net/url"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -160,8 +161,8 @@ func parseHTTPDigest(data []byte) *httpDigestParams {
 	params := &httpDigestParams{Method: method}
 
 	// Split by comma and parse each part
-	parts := strings.Split(headerLine, ",")
-	for _, part := range parts {
+	parts := strings.SplitSeq(headerLine, ",")
+	for part := range parts {
 		part = strings.TrimSpace(part)
 
 		if strings.Contains(part, "username=") {
@@ -265,7 +266,7 @@ func getSensitiveParamNames() []string {
 			if hConfig.Name == "HTTP" && hConfig.Parameters != nil {
 				if params, ok := hConfig.Parameters["sensitive_params"]; ok {
 					// Convert interface{} to []string
-					if paramSlice, ok := params.([]interface{}); ok {
+					if paramSlice, ok := params.([]any); ok {
 						result := make([]string, 0, len(paramSlice))
 						for _, p := range paramSlice {
 							if strParam, ok := p.(string); ok {
@@ -319,11 +320,11 @@ func extractSensitiveURLParams(data []byte, ident string, ts time.Time) *types.C
 		parsedURL, err = url.Parse(uri)
 	} else {
 		// For relative URLs, parse the query string directly
-		queryStart := strings.Index(uri, "?")
-		if queryStart == -1 {
+		_, after, ok := strings.Cut(uri, "?")
+		if !ok {
 			return nil
 		}
-		parsedURL = &url.URL{RawQuery: uri[queryStart+1:]}
+		parsedURL = &url.URL{RawQuery: after}
 	}
 
 	if err != nil {
@@ -371,8 +372,8 @@ func extractSensitiveURLParams(data []byte, ident string, ts time.Time) *types.C
 
 // extractHostFromHTTPRequest extracts the Host header from an HTTP request
 func extractHostFromHTTPRequest(data []byte) string {
-	lines := bytes.Split(data, []byte("\r\n"))
-	for _, line := range lines {
+	lines := bytes.SplitSeq(data, []byte("\r\n"))
+	for line := range lines {
 		if bytes.HasPrefix(bytes.ToLower(line), []byte("host:")) {
 			hostLine := string(line)
 			parts := strings.SplitN(hostLine, ":", 2)
@@ -390,7 +391,7 @@ func getHTTPFormUsernameFields() []string {
 		for _, hConfig := range harvesterConfig.Harvesters {
 			if hConfig.Name == "HTTP" && hConfig.Parameters != nil {
 				if params, ok := hConfig.Parameters["form_username_fields"]; ok {
-					if paramSlice, ok := params.([]interface{}); ok {
+					if paramSlice, ok := params.([]any); ok {
 						result := make([]string, 0, len(paramSlice))
 						for _, p := range paramSlice {
 							if strParam, ok := p.(string); ok {
@@ -414,7 +415,7 @@ func getHTTPFormPasswordFields() []string {
 		for _, hConfig := range harvesterConfig.Harvesters {
 			if hConfig.Name == "HTTP" && hConfig.Parameters != nil {
 				if params, ok := hConfig.Parameters["form_password_fields"]; ok {
-					if paramSlice, ok := params.([]interface{}); ok {
+					if paramSlice, ok := params.([]any); ok {
 						result := make([]string, 0, len(paramSlice))
 						for _, p := range paramSlice {
 							if strParam, ok := p.(string); ok {
@@ -543,12 +544,12 @@ func extractHTTPFormCredentials(data []byte, ident string, ts time.Time) *types.
 // extractURIFromHTTPRequest extracts the request URI from an HTTP request
 func extractURIFromHTTPRequest(data []byte) string {
 	// Find the end of the first line
-	lineEnd := bytes.Index(data, []byte("\r\n"))
-	if lineEnd == -1 {
+	before, _, ok := bytes.Cut(data, []byte("\r\n"))
+	if !ok {
 		return ""
 	}
 
-	requestLine := string(data[:lineEnd])
+	requestLine := string(before)
 	parts := strings.Fields(requestLine)
 	if len(parts) >= 2 {
 		return parts[1]
@@ -600,7 +601,7 @@ func getSessionCookieNames() []string {
 		for _, hConfig := range harvesterConfig.Harvesters {
 			if hConfig.Name == "HTTP" && hConfig.Parameters != nil {
 				if params, ok := hConfig.Parameters["session_cookie_names"]; ok {
-					if paramSlice, ok := params.([]interface{}); ok {
+					if paramSlice, ok := params.([]any); ok {
 						result := make([]string, 0, len(paramSlice))
 						for _, p := range paramSlice {
 							if strParam, ok := p.(string); ok {
@@ -676,8 +677,8 @@ func extractSessionCookies(data []byte, ident string, ts time.Time) *types.Crede
 
 			// Extract cookie name and value (before first semicolon)
 			cookieNameValue := cookiePart
-			if idx := strings.Index(cookiePart, ";"); idx != -1 {
-				cookieNameValue = cookiePart[:idx]
+			if before, _, ok := strings.Cut(cookiePart, ";"); ok {
+				cookieNameValue = before
 			}
 
 			// Split into name=value
@@ -692,14 +693,11 @@ func extractSessionCookies(data []byte, ident string, ts time.Time) *types.Crede
 			// Check if this is a session cookie
 			sessionNames := getSessionCookieNames()
 			minLen := getMinCookieLength()
-			for _, sessionName := range sessionNames {
-				if cookieName == sessionName {
-					// Only include if value is not empty and long enough to be a real session ID
-					// Filter out "deleted" or very short values
-					if len(cookieValue) >= minLen && !strings.Contains(strings.ToLower(cookieValue), "deleted") {
-						foundCookies = append(foundCookies, fmt.Sprintf("%s=%s", cookieName, cookieValue))
-					}
-					break
+			if slices.Contains(sessionNames, cookieName) {
+				// Only include if value is not empty and long enough to be a real session ID
+				// Filter out "deleted" or very short values
+				if len(cookieValue) >= minLen && !strings.Contains(strings.ToLower(cookieValue), "deleted") {
+					foundCookies = append(foundCookies, fmt.Sprintf("%s=%s", cookieName, cookieValue))
 				}
 			}
 		} else if bytes.HasPrefix(lineLower, []byte("host:")) {
@@ -838,11 +836,11 @@ func extractCredentialsFromHTTPBody(data []byte, ident string, ts time.Time) *ty
 	decompressedData := decompressHTTPBody(data)
 
 	// Find the body
-	bodyStart := bytes.Index(decompressedData, []byte("\r\n\r\n"))
-	if bodyStart == -1 {
+	_, after, ok := bytes.Cut(decompressedData, []byte("\r\n\r\n"))
+	if !ok {
 		return nil
 	}
-	body := decompressedData[bodyStart+4:]
+	body := after
 
 	if len(body) < 10 {
 		return nil

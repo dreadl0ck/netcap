@@ -17,7 +17,7 @@ type TestFixture struct {
 	ExpectedType string
 	PacketCount  int
 	Golden       GoldenFiles
-	Config       map[string]interface{}
+	Config       map[string]any
 }
 
 // GoldenFiles contains paths to expected output files

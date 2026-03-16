@@ -195,8 +195,8 @@ func vncARDHarvester(data []byte, ident string, ts time.Time) *types.Credentials
 	}
 
 	// Look for ARD auth type (30 = 0x1e)
-	ardIdx := bytes.IndexByte(data, vncAuthARD)
-	if ardIdx == -1 {
+	found := bytes.Contains(data, []byte{vncAuthARD})
+	if !found {
 		return nil
 	}
 

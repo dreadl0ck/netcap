@@ -75,7 +75,7 @@ func TestJA4FromPCAP(t *testing.T) {
 
 			// Process packets
 			packetSource := gopacket.NewPacketSource(handle, handle.LinkType())
-			
+
 			var ja4Count, ja4sCount int
 			var ja4Fingerprints, ja4sFingerprints []string
 
@@ -246,7 +246,7 @@ func TestJA4FormatConsistency(t *testing.T) {
 			}
 
 			ja4a := parts[0]
-			
+
 			// Check protocol
 			if string(ja4a[0]) != tc.expectProto {
 				t.Errorf("Expected protocol %s, got %s", tc.expectProto, string(ja4a[0]))
@@ -294,7 +294,7 @@ func TestJA4SDeterminism(t *testing.T) {
 
 	// Compute multiple times
 	results := make(map[string]int)
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		fp := ja4.ComputeJA4S(data)
 		results[fp]++
 	}
@@ -343,4 +343,3 @@ func BenchmarkJA4S(b *testing.B) {
 		ja4.ComputeJA4S(data)
 	}
 }
-

@@ -59,7 +59,7 @@ type stringer interface {
 func toString(c stringer) string {
 	// make sure its not a nil pointer
 	// a simple nil check is apparently not enough here
-	if c == nil || (reflect.ValueOf(c).Kind() == reflect.Ptr && reflect.ValueOf(c).IsNil()) {
+	if c == nil || (reflect.ValueOf(c).Kind() == reflect.Pointer && reflect.ValueOf(c).IsNil()) {
 		return ""
 	}
 

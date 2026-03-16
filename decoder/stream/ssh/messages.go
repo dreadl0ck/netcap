@@ -376,7 +376,7 @@ type UserAuthGSSAPIError struct {
 func typeTags(structType reflect.Type) (tags []byte) {
 	tagStr := structType.Field(0).Tag.Get("sshtype")
 
-	for _, tag := range strings.Split(tagStr, "|") {
+	for tag := range strings.SplitSeq(tagStr, "|") {
 		i, err := strconv.Atoi(tag)
 		if err == nil {
 			tags = append(tags, byte(i))
@@ -401,7 +401,7 @@ var errShortRead = errors.New("ssh: short read")
 // in decimal, the packet must start with one of those numbers. In
 // case of error, Unmarshal returns a ParseError or
 // UnexpectedMessageError.
-func Unmarshal(data []byte, out interface{}) error {
+func Unmarshal(data []byte, out any) error {
 	v := reflect.ValueOf(out).Elem()
 	structType := v.Type()
 	expectedTypes := typeTags(structType)
@@ -497,7 +497,7 @@ func Unmarshal(data []byte, out interface{}) error {
 			default:
 				return fieldError(structType, i, "slice of unsupported type")
 			}
-		case reflect.Ptr:
+		case reflect.Pointer:
 			if t == bigIntType {
 				var n *big.Int
 				if n, data, ok = parseInt(data); !ok {
@@ -524,12 +524,12 @@ func Unmarshal(data []byte, out interface{}) error {
 // member has the "sshtype" tag set to a number in decimal, that
 // number is prepended to the result. If the last of member has the
 // "ssh" tag set to "rest", its contents are appended to the output.
-func Marshal(msg interface{}) []byte {
+func Marshal(msg any) []byte {
 	out := make([]byte, 0, 64)
 	return marshalStruct(out, msg)
 }
 
-func marshalStruct(out []byte, msg interface{}) []byte {
+func marshalStruct(out []byte, msg any) []byte {
 	v := reflect.Indirect(reflect.ValueOf(msg))
 	msgTypes := typeTags(v.Type())
 	if len(msgTypes) > 0 {
@@ -573,7 +573,7 @@ func marshalStruct(out []byte, msg interface{}) []byte {
 				offset := len(out)
 				out = appendU32(out, 0)
 				if n := field.Len(); n > 0 {
-					for j := 0; j < n; j++ {
+					for j := range n {
 						f := field.Index(j)
 						if j != 0 {
 							out = append(out, ',')
@@ -586,7 +586,7 @@ func marshalStruct(out []byte, msg interface{}) []byte {
 			default:
 				panic(fmt.Sprintf("slice of unknown type in field %d: %T", i, field.Interface()))
 			}
-		case reflect.Ptr:
+		case reflect.Pointer:
 			if t == bigIntType {
 				var n *big.Int
 				nValue := reflect.ValueOf(&n)
@@ -800,11 +800,11 @@ func marshalString(to []byte, s []byte) []byte {
 	return to[len(s):]
 }
 
-var bigIntType = reflect.TypeOf((*big.Int)(nil))
+var bigIntType = reflect.TypeFor[*big.Int]()
 
 // Decode a packet into its corresponding message.
-func decode(packet []byte) (interface{}, error) {
-	var msg interface{}
+func decode(packet []byte) (any, error) {
+	var msg any
 	switch packet[0] {
 	case msgDisconnect:
 		msg = new(DisconnectMsg)

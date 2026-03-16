@@ -363,26 +363,26 @@ Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0
 Referer: http://engine.spotscenered.info/Redirect.eng?MediaSegmentId=28350&dcid=1_ctx_170942ac-ce9a-458f-88fd-d57a2f5da4cf&vmId=00000000-0000-0000-0000-000000000000&abr=false&timeZoneOffset=&v=hXPZuKMawgsqqaXmgsiEEscqvxeFp0YWn8oV21lbHO8iCvpmH9sk2fSprt3x5A_b-2hEatyK0i4Deb-rUYJDFrdTFYwunJKu09ZEHLHzJxZf1LprBVtCSV2f70MYber7nGoIrMgllcInD2Ysbgo5-9yvR-REHLKIQ9jYTfQLTTJCLIX2PMNL2j574BAFOFkImTNsoFnhQK25iqeZQcTK08InTH2uLJqChKF2As4Dy0xyfaGe-chhfSnx8NhEVpoBwgVhj8YKWVGk9STqUp4uPvoZ2xsyWkiZcXf2fWS2_OR4O8Yntpldfvpcf2SkMQDEVmgdIpH4Xg0NO05x2bjoI7tvwDSFlpGOWdSLOYdlnbMSDwE_qPErwUxywYBSTT0guM7frmfPAIJrD1ZeebV6SxeEGoqfU9_FEMFXKP5wCD_OzDghWhHJ4xv5BlhzjfOEwbi6sKbGyxG_CPmJ07b5HnyiF2XoFpwpEqkwqbluJWkNIztTMRu3MepUrXDjcm3D5sJEuWO1GLBXp7MX6FR9HrXhYYNvuzwW6D1mnBZMDSOkpha8617P8OM6XUEguI_AjScaiBweQQ1CyKTwGSzy-cVzs4Dpdrk1iQc_0bwbFuaxPp6MR-ZXfEVB-EMvHgYxLlDq4hcUuRPBRai0TDCvkMUHocDyP0sYbTx2GOiVPyU_p38nur2McVZBQjj1TAeMYCan9rZ        4kAw4ou5bJU_fsAxdNP6BCpDXKiI1zNyN-N_X4vZI1odF6LKz6SE0cWTz-rdnu8V0IeUqZqxCproo__LgBP_OY_XWL1kNN_4q3j2uXjiwJ7tK8fv4KDDv7w_YeUzWRmhmgJUzcXOtQaNM5Taj72ahBrOthXgwAbuOBcCsesPU4Le0Cf8Qd5Mv_ODSig-mqiiDif6xG3tsV25LONqRbY6UtMvmMljc9KVWdjhw5DIEY3FOIr3r50c1i890scKy_zN5sEaJYV8mQfjdsGALIRGVJpCH4Yao3kgB8zSNoZHrbLLwUcXJcaukWlomMIHUSvJmGsyOmlDmHxsu4xwXVRZU1AcOTZJA7DEEiTPw35IVAWtiQseGLIaeqPybRl7L1TZgCsr2kzYZI6ENmNrUVqraQodL13FJlOdNuwIygeZh7j0X8T2Y0XIA_PmXwW0JzJvy6PqMp82MDedXd_vvpt9xqjOXuiom68VzNIwMm81jwKGgCI5Dahx36EMw0
 Accept-Encoding: gzip, deflate, sdch
 Accept-Language: en-US,en;q=0.8`)
-	
+
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
 	c := httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found")
 	}
-	
+
 	if c.Service != "HTTP URL Parameter" {
 		t.Fatalf("expected service 'HTTP URL Parameter', got: %s", c.Service)
 	}
-	
+
 	if c.User != "officialsurvey.info" {
 		t.Fatalf("expected host 'officialsurvey.info', got: %s", c.User)
 	}
-	
+
 	if !strings.Contains(c.Password, "key=19a59f6e0085f717c5d5b1f9fb79f923") {
 		t.Fatalf("expected password to contain key parameter, got: %s", c.Password)
 	}
-	
+
 	if !strings.Contains(c.Notes, "GET") {
 		t.Fatalf("expected notes to contain method GET, got: %s", c.Notes)
 	}
@@ -391,14 +391,14 @@ Accept-Language: en-US,en;q=0.8`)
 	data = []byte(`GET /api/v1/data?api_key=sk_live_51H3k4fE2eZvKYlo2C&user_id=123 HTTP/1.1
 Host: api.example.com
 Accept: application/json`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-2", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found for api_key")
 	}
-	
+
 	if !strings.Contains(c.Password, "api_key=sk_live_51H3k4fE2eZvKYlo2C") {
 		t.Fatalf("expected password to contain api_key parameter, got: %s", c.Password)
 	}
@@ -407,18 +407,18 @@ Accept: application/json`)
 	data = []byte(`POST /oauth/callback?access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9&state=12345678 HTTP/1.1
 Host: oauth.example.com
 Content-Type: application/json`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-3", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found for access_token")
 	}
-	
+
 	if !strings.Contains(c.Password, "access_token=") {
 		t.Fatalf("expected password to contain access_token parameter, got: %s", c.Password)
 	}
-	
+
 	if !strings.Contains(c.Notes, "POST") {
 		t.Fatalf("expected notes to contain method POST, got: %s", c.Notes)
 	}
@@ -426,19 +426,19 @@ Content-Type: application/json`)
 	// Test case 4: Multiple sensitive parameters
 	data = []byte(`GET /api/resource?token=abc123456789&api_secret=secret987654321&foo=bar HTTP/1.1
 Host: multi.example.com`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-4", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found for multiple parameters")
 	}
-	
+
 	// Should contain both token and api_secret
 	if !strings.Contains(c.Password, "token=abc123456789") {
 		t.Fatalf("expected password to contain token parameter, got: %s", c.Password)
 	}
-	
+
 	if !strings.Contains(c.Password, "api_secret=secret987654321") {
 		t.Fatalf("expected password to contain api_secret parameter, got: %s", c.Password)
 	}
@@ -446,10 +446,10 @@ Host: multi.example.com`)
 	// Test case 5: Short values should be filtered out (less than 8 characters)
 	data = []byte(`GET /api/test?key=short&other=param HTTP/1.1
 Host: test.example.com`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-5", time.Now())
-	
+
 	// Should return nil because "short" is only 5 characters
 	if c != nil && strings.Contains(c.Password, "key=short") {
 		t.Fatal("expected short key values to be filtered out")
@@ -458,14 +458,14 @@ Host: test.example.com`)
 	// Test case 6: Bearer token
 	data = []byte(`GET /protected?bearer=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0 HTTP/1.1
 Host: protected.example.com`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-6", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found for bearer token")
 	}
-	
+
 	if !strings.Contains(c.Password, "bearer=") {
 		t.Fatalf("expected password to contain bearer parameter, got: %s", c.Password)
 	}
@@ -473,14 +473,14 @@ Host: protected.example.com`)
 	// Test case 7: Session ID
 	data = []byte(`GET /dashboard?sessionid=a1b2c3d4e5f6g7h8i9j0 HTTP/1.1
 Host: app.example.com`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-7", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found for sessionid")
 	}
-	
+
 	if !strings.Contains(c.Password, "sessionid=") {
 		t.Fatalf("expected password to contain sessionid parameter, got: %s", c.Password)
 	}
@@ -488,10 +488,10 @@ Host: app.example.com`)
 	// Test case 8: No sensitive parameters
 	data = []byte(`GET /page?foo=bar&baz=qux HTTP/1.1
 Host: normal.example.com`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-8", time.Now())
-	
+
 	// Should return nil as there are no sensitive parameters
 	if c != nil && c.Service == "HTTP URL Parameter" {
 		t.Fatal("expected no credentials for non-sensitive parameters")
@@ -500,14 +500,14 @@ Host: normal.example.com`)
 	// Test case 9: JWT token
 	data = []byte(`GET /verify?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ HTTP/1.1
 Host: jwt.example.com`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-9", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found for jwt")
 	}
-	
+
 	if !strings.Contains(c.Password, "jwt=") {
 		t.Fatalf("expected password to contain jwt parameter, got: %s", c.Password)
 	}
@@ -518,14 +518,14 @@ func TestHTTPSensitiveURLParametersEdgeCases(t *testing.T) {
 	// Test case 1: No Host header
 	data := []byte(`GET /api?key=12345678abcdefgh HTTP/1.1
 User-Agent: test`)
-	
+
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
 	c := httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials even without Host header")
 	}
-	
+
 	if !strings.Contains(c.Password, "key=12345678abcdefgh") {
 		t.Fatalf("expected password to contain key parameter, got: %s", c.Password)
 	}
@@ -533,10 +533,10 @@ User-Agent: test`)
 	// Test case 2: URL-encoded parameter value
 	data = []byte(`GET /api?token=abc%2B123%2Fdef%3D HTTP/1.1
 Host: encoded.example.com`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials for URL-encoded token")
 	}
@@ -544,10 +544,10 @@ Host: encoded.example.com`)
 	// Test case 3: Mixed case parameter names (should still match)
 	data = []byte(`GET /api?Api_Key=12345678ABCDEFGH HTTP/1.1
 Host: mixedcase.example.com`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	// Note: Our implementation is case-sensitive by default
 	// This test documents that behavior
 	if c != nil && strings.Contains(c.Password, "Api_Key") {
@@ -558,10 +558,10 @@ Host: mixedcase.example.com`)
 	// Test case 4: Empty parameter value
 	data = []byte(`GET /api?key=&other=value HTTP/1.1
 Host: empty.example.com`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	// Should not match empty values
 	if c != nil && strings.Contains(c.Password, "key=") && !strings.Contains(c.Password, "key=.") {
 		t.Fatal("expected empty key values to be filtered out")
@@ -569,16 +569,16 @@ Host: empty.example.com`)
 
 	// Test case 5: Very long token value
 	longToken := strings.Repeat("a", 500)
-	data = []byte(fmt.Sprintf(`GET /api?token=%s HTTP/1.1
-Host: longtoken.example.com`, longToken))
-	
+	data = fmt.Appendf(nil, `GET /api?token=%s HTTP/1.1
+Host: longtoken.example.com`, longToken)
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials for long token")
 	}
-	
+
 	if !strings.Contains(c.Password, "token=") {
 		t.Fatalf("expected password to contain token parameter, got: %s", c.Password)
 	}
@@ -604,30 +604,30 @@ Content-Length: 0
 Keep-Alive: timeout=5, max=100
 Connection: Keep-Alive
 Content-Type: text/html`)
-	
+
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
 	c := httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found")
 	}
-	
+
 	if c.Service != "HTTP Session Cookie" {
 		t.Fatalf("expected service 'HTTP Session Cookie', got: %s", c.Service)
 	}
-	
+
 	if !strings.Contains(c.Password, "PHPSESSID=96ebc80a0771786591c82d702f8ac88e") {
 		t.Fatalf("expected password to contain PHPSESSID cookie, got: %s", c.Password)
 	}
-	
+
 	if c.User != "brandresearch.me" {
 		t.Fatalf("expected host 'brandresearch.me' extracted from Location header, got: %s", c.User)
 	}
-	
+
 	if !strings.Contains(c.Notes, "302") {
 		t.Fatalf("expected notes to contain status code 302, got: %s", c.Notes)
 	}
-	
+
 	// Verify deleted cookie is NOT included
 	if strings.Contains(c.Password, "cpvlabclicks=deleted") {
 		t.Fatal("expected deleted cookies to be filtered out")
@@ -640,14 +640,14 @@ Server: Apache-Coyote/1.1
 Set-Cookie: JSESSIONID=1A2B3C4D5E6F7G8H9I0J; Path=/myapp; HttpOnly
 Content-Type: text/html;charset=UTF-8
 Content-Length: 1234`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-2", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found for JSESSIONID")
 	}
-	
+
 	if !strings.Contains(c.Password, "JSESSIONID=1A2B3C4D5E6F7G8H9I0J") {
 		t.Fatalf("expected password to contain JSESSIONID cookie, got: %s", c.Password)
 	}
@@ -659,14 +659,14 @@ Server: Microsoft-IIS/10.0
 Set-Cookie: ASP.NET_SessionId=abcdef123456789012345678; path=/; HttpOnly
 X-AspNet-Version: 4.0.30319
 Content-Type: text/html; charset=utf-8`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-3", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found for ASP.NET_SessionId")
 	}
-	
+
 	if !strings.Contains(c.Password, "ASP.NET_SessionId=abcdef123456789012345678") {
 		t.Fatalf("expected password to contain ASP.NET_SessionId cookie, got: %s", c.Password)
 	}
@@ -677,14 +677,14 @@ Date: Mon, 23 Nov 2025 10:00:00 GMT
 Server: nginx/1.18.0
 Set-Cookie: sessionid=xyz789abc123def456ghi012; HttpOnly; Path=/
 Content-Type: text/html; charset=utf-8`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-4", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found for Django sessionid")
 	}
-	
+
 	if !strings.Contains(c.Password, "sessionid=xyz789abc123def456ghi012") {
 		t.Fatalf("expected password to contain sessionid cookie, got: %s", c.Password)
 	}
@@ -695,14 +695,14 @@ Date: Mon, 23 Nov 2025 10:00:00 GMT
 Server: nginx/1.18.0
 Set-Cookie: connect.sid=s%3Aj8eJc3kD9fL2mN5pQ7rT1uV4wX6yZ8aB.1A2B3C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T1U2V3; Path=/; HttpOnly
 Content-Type: text/html; charset=utf-8`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-5", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found for connect.sid")
 	}
-	
+
 	if !strings.Contains(c.Password, "connect.sid=") {
 		t.Fatalf("expected password to contain connect.sid cookie, got: %s", c.Password)
 	}
@@ -715,23 +715,23 @@ Set-Cookie: PHPSESSID=session123456789; path=/
 Set-Cookie: auth_token=token987654321abc; HttpOnly
 Set-Cookie: tracking=xyz; expires=Fri, 19-May-2027 13:31:02 GMT
 Content-Type: text/html`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-6", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found for multiple cookies")
 	}
-	
+
 	// Should contain both PHPSESSID and auth_token
 	if !strings.Contains(c.Password, "PHPSESSID=session123456789") {
 		t.Fatalf("expected password to contain PHPSESSID cookie, got: %s", c.Password)
 	}
-	
+
 	if !strings.Contains(c.Password, "auth_token=token987654321abc") {
 		t.Fatalf("expected password to contain auth_token cookie, got: %s", c.Password)
 	}
-	
+
 	// tracking cookie should NOT be included (not a session cookie)
 	if strings.Contains(c.Password, "tracking=") {
 		t.Fatal("expected non-session cookies to be filtered out")
@@ -741,10 +741,10 @@ Content-Type: text/html`)
 	data = []byte(`HTTP/1.1 200 OK
 Set-Cookie: PHPSESSID=short; path=/
 Content-Type: text/html`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-7", time.Now())
-	
+
 	// Should return nil because "short" is too short
 	if c != nil && strings.Contains(c.Password, "PHPSESSID=short") {
 		t.Fatal("expected short session IDs to be filtered out")
@@ -755,10 +755,10 @@ Content-Type: text/html`)
 Host: example.com
 Cookie: PHPSESSID=96ebc80a0771786591c82d702f8ac88e
 User-Agent: Mozilla/5.0`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow-8", time.Now())
-	
+
 	// Should not extract from request Cookie header, only response Set-Cookie
 	if c != nil && c.Service == "HTTP Session Cookie" {
 		t.Fatal("expected session cookie extraction only from responses, not requests")
@@ -1048,14 +1048,14 @@ func TestHTTPSessionCookiesEdgeCases(t *testing.T) {
 	data := []byte(`HTTP/1.1 200 OK
 Set-Cookie: phpsessid=lowercase123456789; path=/
 Content-Type: text/html`)
-	
+
 	finalData := strings.ReplaceAll(string(data), "\n", "\r\n")
 	c := httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found for lowercase phpsessid")
 	}
-	
+
 	if !strings.Contains(c.Password, "phpsessid=lowercase123456789") {
 		t.Fatalf("expected password to contain lowercase phpsessid, got: %s", c.Password)
 	}
@@ -1064,14 +1064,14 @@ Content-Type: text/html`)
 	data = []byte(`HTTP/1.1 200 OK
 Set-Cookie: JSESSIONID=complex123456789; Path=/app; Domain=.example.com; Secure; HttpOnly; SameSite=Strict
 Content-Type: text/html`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found")
 	}
-	
+
 	if !strings.Contains(c.Password, "JSESSIONID=complex123456789") {
 		t.Fatalf("expected password to contain JSESSIONID, got: %s", c.Password)
 	}
@@ -1081,14 +1081,14 @@ Content-Type: text/html`)
 Host: response.example.com
 Set-Cookie: sessionid=host123456789; path=/
 Content-Type: text/html`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found")
 	}
-	
+
 	if c.User != "response.example.com" {
 		t.Fatalf("expected host 'response.example.com', got: %s", c.User)
 	}
@@ -1097,14 +1097,14 @@ Content-Type: text/html`)
 	data = []byte(`HTTP/1.1 200 OK
 Set-Cookie: PHPSESSID=nohost1234567890; path=/
 Content-Type: text/html`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials even without host information")
 	}
-	
+
 	if !strings.Contains(c.Password, "PHPSESSID=nohost1234567890") {
 		t.Fatalf("expected password to contain PHPSESSID, got: %s", c.Password)
 	}
@@ -1113,14 +1113,14 @@ Content-Type: text/html`)
 	data = []byte(`HTTP/1.1 200 OK
 Set-Cookie: session=abc%2Bdef%3D123456789; path=/
 Content-Type: text/html`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials for URL-encoded session cookie")
 	}
-	
+
 	if !strings.Contains(c.Password, "session=") {
 		t.Fatalf("expected password to contain session cookie, got: %s", c.Password)
 	}
@@ -1129,10 +1129,10 @@ Content-Type: text/html`)
 	data = []byte(`HTTP/1.1 200 OK
 Set-Cookie: PHPSESSID=; path=/
 Content-Type: text/html`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	// Should not match empty values
 	if c != nil && strings.Contains(c.Password, "PHPSESSID=;") {
 		t.Fatal("expected empty session cookie values to be filtered out")
@@ -1143,14 +1143,14 @@ Content-Type: text/html`)
 date: Mon, 23 Nov 2025 10:00:00 GMT
 set-cookie: sessionid=http2session123456789; path=/
 content-type: text/html`)
-	
+
 	finalData = strings.ReplaceAll(string(data), "\n", "\r\n")
 	c = httpHarvester.HarvesterFunc([]byte(finalData), "test-flow", time.Now())
-	
+
 	if c == nil {
 		t.Fatal("expected credentials to be found for HTTP/2 response")
 	}
-	
+
 	if !strings.Contains(c.Password, "sessionid=http2session123456789") {
 		t.Fatalf("expected password to contain sessionid, got: %s", c.Password)
 	}

@@ -79,21 +79,22 @@ func TestSSHPcapDecoding(t *testing.T) {
 			MemProfile:       "",
 			// NOTE: Use default timeout values (24 hours)
 			// Aggressive timeouts cause streams to close prematurely in offline pcap analysis!
-			FileStorage:          "",
-			Quiet:                true, // Be quiet
-			CompressionBlockSize: defaults.CompressionBlockSize,
-			CompressionLevel:     defaults.CompressionLevel,
-			NumStreamWorkers:     10,
-			StreamBufferSize:     100,
+			FileStorage:             "",
+			Quiet:                   true, // Be quiet
+			CompressionBlockSize:    defaults.CompressionBlockSize,
+			CompressionLevel:        defaults.CompressionLevel,
+			NumStreamWorkers:        10,
+			StreamBufferSize:        100,
+			IgnoreDecoderInitErrors: true,
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("default"),
 		DPI:           false,
 		ResolverConfig: resolvers.Config{
-			ReverseDNS:    false,
-			LocalDNS:      false,
-			MACDB:         false,
-			
+			ReverseDNS: false,
+			LocalDNS:   false,
+			MACDB:      false,
+
 			ServiceDB:     false,
 			GeolocationDB: false,
 		},
@@ -187,43 +188,44 @@ func TestSSHUnidirectionalPcap(t *testing.T) {
 		SnapLen:             defaults.SnapLen,
 		Promisc:             false,
 		DecoderConfig: &config.Config{
-			Buffer:               true,
-			Compression:          false, // Disable compression for easier debugging
-			CSV:                  false,
-			Proto:                true,
-			IncludeDecoders:      "SSH", // Only enable SSH decoder for this test
-			ExcludeDecoders:      "",
-			Out:                  outputDir,
-			Source:               "ssh_unidirectional.pcap unit test",
-			IncludePayloads:      false,
-			ExportMetrics:        false,
-			AddContext:           true, // Enable context - required for proper initialization
-			MemBufferSize:        defaults.BufferSize,
-			FlushEvery:           defaults.FlushEvery,
-			DefragIPv4:           false, // Disable defrag
-			Checksum:             false, // Disable checksum validation for testing
-			NoOptCheck:           true,  // Ignore option check errors
-			IgnoreFSMerr:         true,  // Ignore FSM errors for testing
-			AllowMissingInit:     true,  // Allow missing init
-			Debug:                true,  // Enable debug logging to see what's happening
-			HexDump:              false, // Don't hex dump
-			WriteIncomplete:      true,  // Write incomplete streams
-			MemProfile:           "",
-			FileStorage:          "",
-			Quiet:                false, // Enable verbose output for debugging
-			CompressionBlockSize: defaults.CompressionBlockSize,
-			CompressionLevel:     defaults.CompressionLevel,
-			NumStreamWorkers:     10,
-			StreamBufferSize:     100,
+			Buffer:                  true,
+			Compression:             false, // Disable compression for easier debugging
+			CSV:                     false,
+			Proto:                   true,
+			IncludeDecoders:         "SSH", // Only enable SSH decoder for this test
+			ExcludeDecoders:         "",
+			Out:                     outputDir,
+			Source:                  "ssh_unidirectional.pcap unit test",
+			IncludePayloads:         false,
+			ExportMetrics:           false,
+			AddContext:              true, // Enable context - required for proper initialization
+			MemBufferSize:           defaults.BufferSize,
+			FlushEvery:              defaults.FlushEvery,
+			DefragIPv4:              false, // Disable defrag
+			Checksum:                false, // Disable checksum validation for testing
+			NoOptCheck:              true,  // Ignore option check errors
+			IgnoreFSMerr:            true,  // Ignore FSM errors for testing
+			AllowMissingInit:        true,  // Allow missing init
+			Debug:                   true,  // Enable debug logging to see what's happening
+			HexDump:                 false, // Don't hex dump
+			WriteIncomplete:         true,  // Write incomplete streams
+			MemProfile:              "",
+			FileStorage:             "",
+			Quiet:                   false, // Enable verbose output for debugging
+			CompressionBlockSize:    defaults.CompressionBlockSize,
+			CompressionLevel:        defaults.CompressionLevel,
+			NumStreamWorkers:        10,
+			StreamBufferSize:        100,
+			IgnoreDecoderInitErrors: true,
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
 		DecodeOptions: utils.GetDecodeOptions("default"),
 		DPI:           false,
 		ResolverConfig: resolvers.Config{
-			ReverseDNS:    false,
-			LocalDNS:      false,
-			MACDB:         false,
-			
+			ReverseDNS: false,
+			LocalDNS:   false,
+			MACDB:      false,
+
 			ServiceDB:     false,
 			GeolocationDB: false,
 		},

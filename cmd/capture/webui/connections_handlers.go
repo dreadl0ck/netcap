@@ -80,19 +80,19 @@ type ConnectionSummary struct {
 	Ja4lServer        string `json:"ja4lServer"`
 	SynTtl            int32  `json:"synTtl"`
 	// Security behavioral analysis fields
-	PacketsClientToServer    int64   `json:"packetsClientToServer"`
-	PacketsServerToClient    int64   `json:"packetsServerToClient"`
-	ByteRatio                float64 `json:"byteRatio"`
-	PacketRatio              float64 `json:"packetRatio"`
-	AvgPacketSizeClientToServer int32 `json:"avgPacketSizeClientToServer"`
-	AvgPacketSizeServerToClient int32 `json:"avgPacketSizeServerToClient"`
-	IsExternal               bool    `json:"isExternal"`
-	IsBroadcast              bool    `json:"isBroadcast"`
-	IsMulticast              bool    `json:"isMulticast"`
+	PacketsClientToServer       int64   `json:"packetsClientToServer"`
+	PacketsServerToClient       int64   `json:"packetsServerToClient"`
+	ByteRatio                   float64 `json:"byteRatio"`
+	PacketRatio                 float64 `json:"packetRatio"`
+	AvgPacketSizeClientToServer int32   `json:"avgPacketSizeClientToServer"`
+	AvgPacketSizeServerToClient int32   `json:"avgPacketSizeServerToClient"`
+	IsExternal                  bool    `json:"isExternal"`
+	IsBroadcast                 bool    `json:"isBroadcast"`
+	IsMulticast                 bool    `json:"isMulticast"`
 	// TLS SNI
-	Sni                      string  `json:"sni"`
+	Sni string `json:"sni"`
 	// Community ID for cross-tool correlation
-	CommunityID              string  `json:"communityId"`
+	CommunityID string `json:"communityId"`
 }
 
 // ConnectionsResponse contains the list of connections
@@ -304,9 +304,9 @@ func readConnections(outDir string) ([]ConnectionSummary, error) {
 			IsBroadcast:                 conn.IsBroadcast,
 			IsMulticast:                 conn.IsMulticast,
 			// TLS SNI
-			Sni:                         conn.Sni,
+			Sni: conn.Sni,
 			// Community ID for cross-tool correlation
-			CommunityID:                 conn.CommunityID,
+			CommunityID: conn.CommunityID,
 		})
 	}
 
@@ -464,10 +464,7 @@ func readConversationFileChunk(outDir, srcIP, srcPort, dstIP, dstPort, protocol 
 
 	// Read chunk
 	remaining := totalSize - offset
-	readSize := int64(limit)
-	if readSize > remaining {
-		readSize = remaining
-	}
+	readSize := min(int64(limit), remaining)
 
 	buffer := make([]byte, readSize)
 	n, err := stdio.ReadFull(file, buffer)
@@ -860,10 +857,7 @@ func readNetworkConversationFileChunk(outDir, srcIP, dstIP, protocol string, off
 
 	// Read chunk
 	remaining := totalSize - offset
-	readSize := int64(limit)
-	if readSize > remaining {
-		readSize = remaining
-	}
+	readSize := min(int64(limit), remaining)
 
 	buffer := make([]byte, readSize)
 	n, err := stdio.ReadFull(file, buffer)

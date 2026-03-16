@@ -24,6 +24,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -223,9 +224,7 @@ func generateCredentialsTimelineChart(outDir string, showLegend bool) *charts.Li
 		for bucket := range bucketCount {
 			buckets = append(buckets, bucket)
 		}
-		sort.Slice(buckets, func(i, j int) bool {
-			return buckets[i] < buckets[j]
-		})
+		slices.Sort(buckets)
 
 		// Prepare data
 		xLabels = make([]string, len(buckets))

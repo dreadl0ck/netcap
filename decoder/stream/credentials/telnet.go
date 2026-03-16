@@ -36,7 +36,7 @@ func getTelnetLoginPatterns() []string {
 		for _, hConfig := range harvesterConfig.Harvesters {
 			if hConfig.Name == "Telnet" && hConfig.Parameters != nil {
 				if params, ok := hConfig.Parameters["login_patterns"]; ok {
-					if paramSlice, ok := params.([]interface{}); ok {
+					if paramSlice, ok := params.([]any); ok {
 						result := make([]string, 0, len(paramSlice))
 						for _, p := range paramSlice {
 							if strParam, ok := p.(string); ok {
@@ -60,7 +60,7 @@ func getTelnetPasswordPatterns() []string {
 		for _, hConfig := range harvesterConfig.Harvesters {
 			if hConfig.Name == "Telnet" && hConfig.Parameters != nil {
 				if params, ok := hConfig.Parameters["password_patterns"]; ok {
-					if paramSlice, ok := params.([]interface{}); ok {
+					if paramSlice, ok := params.([]any); ok {
 						result := make([]string, 0, len(paramSlice))
 						for _, p := range paramSlice {
 							if strParam, ok := p.(string); ok {

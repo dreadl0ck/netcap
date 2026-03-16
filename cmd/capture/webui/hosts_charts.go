@@ -186,10 +186,7 @@ func generateHostsTopTalkersChart(outDir string, showLegend bool) *charts.Bar {
 	}
 
 	// Take top 20 hosts
-	limit := 20
-	if len(hosts) < limit {
-		limit = len(hosts)
-	}
+	limit := min(len(hosts), 20)
 	topHosts := hosts[:limit]
 
 	// Prepare data
@@ -370,10 +367,7 @@ func generateHostsApplicationsChart(outDir string, showLegend bool) *charts.Bar 
 	}
 
 	// Take top 20
-	limit := 20
-	if len(apps) < limit {
-		limit = len(apps)
-	}
+	limit := min(len(apps), 20)
 	topApps := apps[:limit]
 
 	// Prepare data

@@ -271,20 +271,14 @@ func (s *s7commReader) parseS7Comm(msg *types.S7Comm, data []byte) {
 
 	// Parse parameter section
 	if msg.ParameterLength > 0 && paramOffset < len(data) {
-		endOffset := paramOffset + int(msg.ParameterLength)
-		if endOffset > len(data) {
-			endOffset = len(data)
-		}
+		endOffset := min(paramOffset+int(msg.ParameterLength), len(data))
 		s.parseS7Parameters(msg, data[paramOffset:endOffset])
 	}
 
 	// Parse data section
 	dataOffset := paramOffset + int(msg.ParameterLength)
 	if msg.DataLength > 0 && dataOffset < len(data) {
-		endOffset := dataOffset + int(msg.DataLength)
-		if endOffset > len(data) {
-			endOffset = len(data)
-		}
+		endOffset := min(dataOffset+int(msg.DataLength), len(data))
 		s.parseS7Data(msg, data[dataOffset:endOffset])
 	}
 }
@@ -764,4 +758,3 @@ func (s *s7commReader) parseDataItems(msg *types.S7Comm, data []byte) {
 
 	msg.DataItems = items
 }
-

@@ -95,7 +95,7 @@ func computeColumnWidths(headers []string, data [][]string) []int {
 func writeDivider(b *strings.Builder, widths []int) {
 	b.WriteByte('+')
 	for _, w := range widths {
-		for i := 0; i < w; i++ {
+		for range w {
 			b.WriteByte('-')
 		}
 		b.WriteByte('+')
@@ -114,10 +114,7 @@ func writeRow(b *strings.Builder, cells []string, widths []int) {
 
 		// Calculate spacing needed
 		contentWidth := w - (columnPadding * 2)
-		padRight := contentWidth - len(content)
-		if padRight < 0 {
-			padRight = 0
-		}
+		padRight := max(contentWidth-len(content), 0)
 
 		// Write padding + content + remaining padding
 		b.WriteByte(' ')
@@ -129,4 +126,3 @@ func writeRow(b *strings.Builder, cells []string, widths []int) {
 	}
 	b.WriteByte('\n')
 }
-

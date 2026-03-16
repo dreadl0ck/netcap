@@ -21,7 +21,7 @@ package file
 
 import (
 	"errors"
-	"sort"
+	"slices"
 )
 
 // FileReassembler handles reassembly of files that may arrive out-of-order
@@ -71,9 +71,7 @@ func (fr *FileReassembler) hasContiguousData() bool {
 	for offset := range fr.chunks {
 		offsets = append(offsets, offset)
 	}
-	sort.Slice(offsets, func(i, j int) bool {
-		return offsets[i] < offsets[j]
-	})
+	slices.Sort(offsets)
 
 	// Check if data starts at 0
 	if offsets[0] != 0 {
@@ -106,9 +104,7 @@ func (fr *FileReassembler) Reassemble(includeMissing bool) ([]byte, error) {
 	for offset := range fr.chunks {
 		offsets = append(offsets, offset)
 	}
-	sort.Slice(offsets, func(i, j int) bool {
-		return offsets[i] < offsets[j]
-	})
+	slices.Sort(offsets)
 
 	// Determine total size from chunks if not specified
 	size := fr.totalSize

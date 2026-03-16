@@ -65,7 +65,7 @@ func startCaptureProcess() {
 		if err != nil {
 			maltego.Die(err.Error(), "failed to execute getmac to the transport name identifier")
 		}
-		for _, line := range strings.Split(string(out), "\n") {
+		for line := range strings.SplitSeq(string(out), "\n") {
 			if strings.Contains(line, iface) {
 				elements := strings.Split(line, ",")
 				if len(elements) != 4 {

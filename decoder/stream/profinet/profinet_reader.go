@@ -34,12 +34,12 @@ import (
 
 // PROFINET IO operation types
 const (
-	OpConnect      = 0  // AR establishment
-	OpRelease      = 1  // AR release
-	OpRead         = 2  // Read operation
-	OpWrite        = 3  // Write operation
-	OpControl      = 4  // Control operation
-	OpReadImplicit = 5  // Implicit read (for PDEV)
+	OpConnect      = 0 // AR establishment
+	OpRelease      = 1 // AR release
+	OpRead         = 2 // Read operation
+	OpWrite        = 3 // Write operation
+	OpControl      = 4 // Control operation
+	OpReadImplicit = 5 // Implicit read (for PDEV)
 )
 
 // PROFINET service IDs (operation numbers for DCE/RPC)
@@ -54,27 +54,27 @@ const (
 
 // Alarm types
 const (
-	AlarmTypeDiagnosis            = 0x0001
-	AlarmTypeProcess              = 0x0002
-	AlarmTypePull                 = 0x0003
-	AlarmTypePlug                 = 0x0004
-	AlarmTypeStatus               = 0x0005
-	AlarmTypeUpdate               = 0x0006
-	AlarmTypeRedundancy           = 0x0007
-	AlarmTypeControlledBySupv     = 0x0008
-	AlarmTypeReleasedBySupv       = 0x0009
-	AlarmTypePlugWrongSubmodule   = 0x000A
-	AlarmTypeReturnOfSubmodule    = 0x000B
-	AlarmTypeDiagnosisDisappears  = 0x000C
+	AlarmTypeDiagnosis               = 0x0001
+	AlarmTypeProcess                 = 0x0002
+	AlarmTypePull                    = 0x0003
+	AlarmTypePlug                    = 0x0004
+	AlarmTypeStatus                  = 0x0005
+	AlarmTypeUpdate                  = 0x0006
+	AlarmTypeRedundancy              = 0x0007
+	AlarmTypeControlledBySupv        = 0x0008
+	AlarmTypeReleasedBySupv          = 0x0009
+	AlarmTypePlugWrongSubmodule      = 0x000A
+	AlarmTypeReturnOfSubmodule       = 0x000B
+	AlarmTypeDiagnosisDisappears     = 0x000C
 	AlarmTypeMultipleMediaRedundancy = 0x000D
-	AlarmTypePortDataChange       = 0x000E
-	AlarmTypeSyncDataChange       = 0x000F
-	AlarmTypeIsochronousModeProbl = 0x0010
-	AlarmTypeNetworkComponent     = 0x0011
-	AlarmTypeTimeDataChange       = 0x0012
-	AlarmTypeDynamic              = 0x0013
-	AlarmTypeUploadRetrievalNot   = 0x001E
-	AlarmTypePullModule           = 0x001F
+	AlarmTypePortDataChange          = 0x000E
+	AlarmTypeSyncDataChange          = 0x000F
+	AlarmTypeIsochronousModeProbl    = 0x0010
+	AlarmTypeNetworkComponent        = 0x0011
+	AlarmTypeTimeDataChange          = 0x0012
+	AlarmTypeDynamic                 = 0x0013
+	AlarmTypeUploadRetrievalNot      = 0x001E
+	AlarmTypePullModule              = 0x001F
 )
 
 // Critical operation types (write/control operations that modify device state)
@@ -184,11 +184,9 @@ func (p *profinetReader) parsePROFINETMessage(data []byte) (*types.PROFINET, int
 	}
 
 	// Validate fragment length
-	totalLen := int(fragLen) + dceRPCHeaderSize
-	if totalLen > len(data) {
+	totalLen := min(int(fragLen)+dceRPCHeaderSize,
 		// Fragment may span multiple TCP segments
-		totalLen = len(data)
-	}
+		len(data))
 
 	msg := &types.PROFINET{
 		Timestamp:     p.conversation.FirstClientPacket.UnixNano(),
@@ -342,7 +340,7 @@ func (p *profinetReader) parseRequest(msg *types.PROFINET, data []byte, littleEn
 		}
 
 		// Skip to sequence number and operation number
-		// Object UUID (16) + Interface UUID (16) + Activity UUID (16) + 
+		// Object UUID (16) + Interface UUID (16) + Activity UUID (16) +
 		// Server boot time (4) + Interface version (4) + Sequence number (4) + Operation (2)
 		seqNumOffset := offset + 52
 		if len(data) >= seqNumOffset+6 {

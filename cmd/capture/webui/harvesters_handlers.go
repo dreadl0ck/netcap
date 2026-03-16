@@ -27,7 +27,7 @@ func (s *Server) handleHarvestersConfig(w http.ResponseWriter, r *http.Request) 
 // getHarvestersConfig returns the current harvester configuration
 func (s *Server) getHarvestersConfig(w http.ResponseWriter, r *http.Request) {
 	config := credentials.GetHarvesterConfig()
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(config); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
@@ -44,7 +44,7 @@ func (s *Server) saveHarvestersConfig(w http.ResponseWriter, r *http.Request) {
 
 	// Save to the active config path
 	configPath := s.getHarvestersConfigPath()
-	
+
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(configPath), 0755); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create config directory: %v", err), http.StatusInternalServerError)
@@ -57,7 +57,7 @@ func (s *Server) saveHarvestersConfig(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": "Harvester configuration saved successfully. Restart capture to apply changes.",
 	})
@@ -71,7 +71,7 @@ func (s *Server) handleHarvestersPresets(w http.ResponseWriter, r *http.Request)
 	}
 
 	presetsDir := s.getHarvestersPresetsDir()
-	
+
 	// Ensure directory exists
 	if err := os.MkdirAll(presetsDir, 0755); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create presets directory: %v", err), http.StatusInternalServerError)
@@ -102,7 +102,7 @@ func (s *Server) handleHarvestersPresets(w http.ResponseWriter, r *http.Request)
 		}
 
 		name := strings.TrimSuffix(entry.Name(), filepath.Ext(entry.Name()))
-		
+
 		presets = append(presets, HarvesterPresetInfo{
 			Name:           name,
 			Description:    fmt.Sprintf("%d harvesters configured", len(config.Harvesters)),
@@ -130,7 +130,7 @@ func (s *Server) handleSaveHarvesterPreset(w http.ResponseWriter, r *http.Reques
 	}
 
 	var request struct {
-		Name   string                                `json:"name"`
+		Name   string                           `json:"name"`
 		Config credentials.HarvestersConfigFile `json:"config"`
 	}
 
@@ -145,7 +145,7 @@ func (s *Server) handleSaveHarvesterPreset(w http.ResponseWriter, r *http.Reques
 	}
 
 	presetsDir := s.getHarvestersPresetsDir()
-	
+
 	// Ensure directory exists
 	if err := os.MkdirAll(presetsDir, 0755); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create presets directory: %v", err), http.StatusInternalServerError)
@@ -162,7 +162,7 @@ func (s *Server) handleSaveHarvesterPreset(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Preset '%s' saved successfully", request.Name),
 	})
@@ -208,7 +208,7 @@ func (s *Server) handleLoadHarvesterPreset(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Preset '%s' loaded successfully. Restart capture to apply changes.", request.Name),
 		"config":  config,
@@ -246,7 +246,7 @@ func (s *Server) handleDeleteHarvesterPreset(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Preset '%s' deleted successfully", request.Name),
 	})
@@ -310,7 +310,7 @@ func (s *Server) handleUploadHarvesterPreset(w http.ResponseWriter, r *http.Requ
 	configName = sanitizeFilename(configName)
 
 	presetsDir := s.getHarvestersPresetsDir()
-	
+
 	// Ensure directory exists
 	if err := os.MkdirAll(presetsDir, 0755); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create presets directory: %v", err), http.StatusInternalServerError)
@@ -325,7 +325,7 @@ func (s *Server) handleUploadHarvesterPreset(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	json.NewEncoder(w).Encode(map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Preset '%s' uploaded successfully", configName),
 		"name":    configName,
@@ -380,4 +380,3 @@ func (s *Server) getHarvestersPresetsDir() string {
 	configRoot := getConfigRootPath()
 	return filepath.Join(configRoot, "harvester-configs")
 }
-

@@ -28,13 +28,13 @@ import (
 // TestRADIUSHarvester tests the RADIUS credential harvester
 func TestRADIUSHarvester(t *testing.T) {
 	tests := []struct {
-		name           string
-		data           []byte
-		expectCreds    bool
-		expectUser     string
-		expectService  string
-		expectAuthSet  bool
-		expectSuccess  bool
+		name          string
+		data          []byte
+		expectCreds   bool
+		expectUser    string
+		expectService string
+		expectAuthSet bool
+		expectSuccess bool
 	}{
 		{
 			name:        "Empty packet",
@@ -119,10 +119,10 @@ func buildRADIUSAccessRequest(username string) []byte {
 	packet[1] = 0x01                // Identifier
 	binary.BigEndian.PutUint16(packet[2:4], uint16(packetLen))
 	// Authenticator (bytes 4-19) - leave as zeros for test
-	
+
 	// User-Name attribute
 	packet[20] = radiusAttrUserName // Type
-	packet[21] = byte(attrLen)       // Length
+	packet[21] = byte(attrLen)      // Length
 	copy(packet[22:], []byte(username))
 
 	return packet
@@ -152,13 +152,13 @@ func TestSOCKSHarvester(t *testing.T) {
 	testIdent := "test-flow"
 
 	tests := []struct {
-		name           string
-		data           []byte
-		expectCreds    bool
-		expectUser     string
-		expectPass     string
-		expectService  string
-		expectVersion  int32
+		name          string
+		data          []byte
+		expectCreds   bool
+		expectUser    string
+		expectPass    string
+		expectService string
+		expectVersion int32
 	}{
 		{
 			name:        "Empty packet",
@@ -235,8 +235,8 @@ func buildSOCKS5UserPassAuth(username, password string) []byte {
 func buildSOCKS4Request(userid string) []byte {
 	// VER(1) + CMD(1) + DSTPORT(2) + DSTIP(4) + USERID(variable) + NULL(1)
 	packet := make([]byte, 9+len(userid))
-	packet[0] = socks4Version // VER
-	packet[1] = 0x01          // CMD: CONNECT
+	packet[0] = socks4Version                   // VER
+	packet[1] = 0x01                            // CMD: CONNECT
 	binary.BigEndian.PutUint16(packet[2:4], 80) // DSTPORT
 	packet[4] = 192
 	packet[5] = 168
@@ -293,11 +293,11 @@ func TestSOCKSValidCredentialString(t *testing.T) {
 		{"user123", true},
 		{"test_user", true},
 		{"user@domain.com", true},
-		{"user\x00name", false},        // Contains null
-		{"user\xffname", false},        // Non-ASCII
-		{"\x01\x02\x03", false},        // All control chars
-		{"", false},                     // Empty
-		{"!!!", false},                  // Too few alphanumeric
+		{"user\x00name", false}, // Contains null
+		{"user\xffname", false}, // Non-ASCII
+		{"\x01\x02\x03", false}, // All control chars
+		{"", false},             // Empty
+		{"!!!", false},          // Too few alphanumeric
 	}
 
 	for _, tc := range tests {
@@ -313,12 +313,12 @@ func TestSOCKSValidCredentialString(t *testing.T) {
 // TestSIPHarvester tests the SIP credential harvester
 func TestSIPHarvester(t *testing.T) {
 	tests := []struct {
-		name           string
-		data           []byte
-		expectCreds    bool
-		expectUser     string
-		expectService  string
-		expectMethod   string
+		name          string
+		data          []byte
+		expectCreds   bool
+		expectUser    string
+		expectService string
+		expectMethod  string
 	}{
 		{
 			name:        "Empty packet",
@@ -411,14 +411,14 @@ func buildSIP200OKResponse() string {
 // TestMQTTHarvester tests the MQTT credential harvester
 func TestMQTTHarvester(t *testing.T) {
 	tests := []struct {
-		name           string
-		data           []byte
-		expectCreds    bool
-		expectUser     string
-		expectPass     string
-		expectService  string
-		expectAuthSet  bool
-		expectSuccess  bool
+		name          string
+		data          []byte
+		expectCreds   bool
+		expectUser    string
+		expectPass    string
+		expectService string
+		expectAuthSet bool
+		expectSuccess bool
 	}{
 		{
 			name:        "Empty packet",
@@ -503,7 +503,7 @@ func buildMQTTConnect(clientID, username, password string) []byte {
 	// Variable header
 	protoName := "MQTT"
 	protoLevel := byte(4) // MQTT 3.1.1
-	
+
 	// Connect flags: username + password
 	connectFlags := byte(mqttFlagUsername | mqttFlagPassword | mqttFlagCleanSess)
 	keepAlive := uint16(60)
@@ -512,25 +512,25 @@ func buildMQTTConnect(clientID, username, password string) []byte {
 	clientIDLen := 2 + len(clientID)
 	usernameLen := 2 + len(username)
 	passwordLen := 2 + len(password)
-	
+
 	// Variable header: proto name (2+4) + proto level (1) + flags (1) + keepalive (2)
 	varHeaderLen := 2 + len(protoName) + 1 + 1 + 2
 	payloadLen := clientIDLen + usernameLen + passwordLen
 	remainingLen := varHeaderLen + payloadLen
 
 	packet := make([]byte, 0, 2+remainingLen)
-	
+
 	// Fixed header
-	packet = append(packet, mqttConnect) // Packet type
+	packet = append(packet, mqttConnect)        // Packet type
 	packet = append(packet, byte(remainingLen)) // Remaining length (simplified for small packets)
-	
+
 	// Variable header
 	packet = append(packet, 0, byte(len(protoName))) // Proto name length
 	packet = append(packet, []byte(protoName)...)
 	packet = append(packet, protoLevel)
 	packet = append(packet, connectFlags)
 	packet = append(packet, byte(keepAlive>>8), byte(keepAlive)) // Keep alive
-	
+
 	// Payload
 	// Client ID
 	packet = append(packet, 0, byte(len(clientID)))
@@ -559,7 +559,7 @@ func buildMQTTConnectUserOnly(clientID, username string) []byte {
 	remainingLen := varHeaderLen + payloadLen
 
 	packet := make([]byte, 0, 2+remainingLen)
-	
+
 	packet = append(packet, mqttConnect)
 	packet = append(packet, byte(remainingLen))
 	packet = append(packet, 0, byte(len(protoName)))
@@ -579,10 +579,10 @@ func buildMQTTConnectUserOnly(clientID, username string) []byte {
 func buildMQTTConnackAccepted() []byte {
 	// CONNACK: packet type (0x20) + remaining length (2) + session present (0) + return code
 	return []byte{
-		0x20,                  // Packet type (CONNACK = 2 << 4)
-		2,                     // Remaining length
-		0,                     // Session Present
-		mqttConnackAccepted,   // Return code (0 = accepted)
+		0x20,                // Packet type (CONNACK = 2 << 4)
+		2,                   // Remaining length
+		0,                   // Session Present
+		mqttConnackAccepted, // Return code (0 = accepted)
 	}
 }
 
@@ -681,7 +681,7 @@ func TestBruteforceDetector(t *testing.T) {
 		defer detector.Stop()
 
 		// Record fewer failures than threshold
-		for i := 0; i < 4; i++ {
+		for range 4 {
 			detector.RecordFailure("192.168.1.100", "10.0.0.1", "SSH", "user", time.Now())
 		}
 
@@ -703,7 +703,7 @@ func TestBruteforceDetector(t *testing.T) {
 		defer detector.Stop()
 
 		// Record enough failures to trigger alert
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			detector.RecordFailure("192.168.1.100", "10.0.0.1", "SSH", "user", time.Now())
 		}
 
@@ -734,7 +734,7 @@ func TestBruteforceDetector(t *testing.T) {
 		defer detector.Stop()
 
 		// Record failures for different services
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			detector.RecordFailure("192.168.1.100", "10.0.0.1", "FTP", "user", time.Now())
 		}
 
@@ -759,7 +759,7 @@ func TestBruteforceDetector(t *testing.T) {
 		defer detector.Stop()
 
 		// Record many failures
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			detector.RecordFailure("192.168.1.100", "10.0.0.1", "SSH", "user", time.Now())
 		}
 
@@ -846,4 +846,3 @@ func TestHarvesterPortFiltering(t *testing.T) {
 		})
 	}
 }
-

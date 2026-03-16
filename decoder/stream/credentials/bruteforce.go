@@ -43,7 +43,7 @@ type BruteforceConfig struct {
 // Similar to Zeek's FTP/SSH bruteforce detection defaults
 func DefaultBruteforceConfig() *BruteforceConfig {
 	return &BruteforceConfig{
-		FailureThreshold:    20,            // Like Zeek's FTP bruteforce_threshold
+		FailureThreshold:    20,               // Like Zeek's FTP bruteforce_threshold
 		MeasurementInterval: 15 * time.Minute, // Like Zeek's bruteforce_measurement_interval
 		PerSourceTracking:   true,
 		PerServiceTracking:  true,
@@ -53,14 +53,14 @@ func DefaultBruteforceConfig() *BruteforceConfig {
 
 // BruteforceAlert represents a detected bruteforce attack
 type BruteforceAlert struct {
-	Timestamp        time.Time
-	SourceIP         string
-	Service          string
-	FailedAttempts   int
-	TargetServers    []string // Unique servers targeted
-	Duration         time.Duration
-	FirstAttempt     time.Time
-	LastAttempt      time.Time
+	Timestamp      time.Time
+	SourceIP       string
+	Service        string
+	FailedAttempts int
+	TargetServers  []string // Unique servers targeted
+	Duration       time.Duration
+	FirstAttempt   time.Time
+	LastAttempt    time.Time
 }
 
 // String returns a human-readable description of the alert
@@ -89,24 +89,24 @@ type failedAttempt struct {
 // BruteforceDetector tracks failed authentication attempts and detects bruteforce attacks
 // Similar to Zeek's SumStats-based approach
 type BruteforceDetector struct {
-	mu              sync.RWMutex
-	config          *BruteforceConfig
-	
+	mu     sync.RWMutex
+	config *BruteforceConfig
+
 	// Track failures per source IP
-	sourceFailures  map[string][]failedAttempt
-	
+	sourceFailures map[string][]failedAttempt
+
 	// Track failures per (source, service) pair
 	serviceFailures map[string][]failedAttempt
-	
+
 	// Alerts generated
-	alerts          []BruteforceAlert
-	
+	alerts []BruteforceAlert
+
 	// Alert callback
-	alertCallback   func(BruteforceAlert)
-	
+	alertCallback func(BruteforceAlert)
+
 	// Cleanup ticker
-	cleanupTicker   *time.Ticker
-	stopChan        chan struct{}
+	cleanupTicker *time.Ticker
+	stopChan      chan struct{}
 }
 
 // NewBruteforceDetector creates a new bruteforce detection instance
@@ -338,7 +338,7 @@ func (d *BruteforceDetector) GetAlerts() []BruteforceAlert {
 }
 
 // GetStats returns statistics about the detector
-func (d *BruteforceDetector) GetStats() map[string]interface{} {
+func (d *BruteforceDetector) GetStats() map[string]any {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
@@ -352,7 +352,7 @@ func (d *BruteforceDetector) GetStats() map[string]interface{} {
 		totalServiceFailures += len(attempts)
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"tracked_sources":        len(d.sourceFailures),
 		"tracked_service_pairs":  len(d.serviceFailures),
 		"total_source_failures":  totalSourceFailures,
@@ -383,7 +383,7 @@ func GetBruteforceDetector() *BruteforceDetector {
 	// Upgrade to write lock for initialization
 	bruteforceDetectorMu.Lock()
 	defer bruteforceDetectorMu.Unlock()
-	
+
 	// Double-check after acquiring write lock
 	if !bruteforceDetectorInit {
 		bruteforceDetector = NewBruteforceDetector(nil)
@@ -397,11 +397,10 @@ func GetBruteforceDetector() *BruteforceDetector {
 func InitBruteforceDetector(config *BruteforceConfig) {
 	bruteforceDetectorMu.Lock()
 	defer bruteforceDetectorMu.Unlock()
-	
+
 	if bruteforceDetector != nil {
 		bruteforceDetector.Stop()
 	}
 	bruteforceDetector = NewBruteforceDetector(config)
 	bruteforceDetectorInit = true
 }
-

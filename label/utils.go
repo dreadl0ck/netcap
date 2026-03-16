@@ -47,7 +47,7 @@ var (
 	removeFilesWithoutMatches = false
 )
 
-func debug(args ...interface{}) {
+func debug(args ...any) {
 	if Debug {
 		fmt.Println(args...)
 	}

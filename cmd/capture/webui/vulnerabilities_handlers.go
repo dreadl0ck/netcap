@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -404,13 +405,7 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 			}
 			// Merge community IDs from this record
 			for _, cid := range v.CommunityIDs {
-				found := false
-				for _, existingCID := range vulnMap[v.ID].CommunityIDs {
-					if existingCID == cid {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(vulnMap[v.ID].CommunityIDs, cid)
 				if !found && cid != "" {
 					vulnMap[v.ID].CommunityIDs = append(vulnMap[v.ID].CommunityIDs, cid)
 				}
@@ -583,13 +578,7 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 			}
 			// Merge community IDs from this record
 			for _, cid := range e.CommunityIDs {
-				found := false
-				for _, existingCID := range exploitMap[e.ID].CommunityIDs {
-					if existingCID == cid {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(exploitMap[e.ID].CommunityIDs, cid)
 				if !found && cid != "" {
 					exploitMap[e.ID].CommunityIDs = append(exploitMap[e.ID].CommunityIDs, cid)
 				}
@@ -733,7 +722,7 @@ func (s *Server) handleExploitFileContent(w http.ResponseWriter, r *http.Request
 		log.Printf("[WebUI][Exploit] Error: %v", err)
 
 		// Return a helpful error message
-		response := map[string]interface{}{
+		response := map[string]any{
 			"error": "Exploit file not found. The exploitdb files may not be installed on this server.",
 			"hint":  "Run 'net util -download-dbs' to download the latest database bundle including exploit files.",
 		}
@@ -749,7 +738,7 @@ func (s *Server) handleExploitFileContent(w http.ResponseWriter, r *http.Request
 	language := detectLanguageFromPath(cleanPath)
 
 	// Return the content with metadata
-	response := map[string]interface{}{
+	response := map[string]any{
 		"content":  string(fileContent),
 		"language": language,
 		"path":     cleanPath,

@@ -198,7 +198,7 @@ func TestValidateJA4D(t *testing.T) {
 		{"r010808anh_abc123def456_123456789abc", true},
 		{"d010303000_000000000000_000000000000", true},
 		{"invalid", false},
-		{"d010505msh_abc123def456", false}, // Missing part
+		{"d010505msh_abc123def456", false},                    // Missing part
 		{"d010505msh_abc123def456_123456789abc_extra", false}, // Extra part
 		{"", false},
 		{"d10505msh_abc123def456_123456789abc", false}, // ja4d_a too short (9 chars)
@@ -379,8 +379,8 @@ func TestGetDHCPDeviceHint(t *testing.T) {
 			contains: "Minimal",
 		},
 		{
-			name: "Unknown device",
-			data: &DHCPv4Data{},
+			name:     "Unknown device",
+			data:     &DHCPv4Data{},
 			contains: "Unknown",
 		},
 	}
@@ -488,7 +488,7 @@ func TestJA4DConsistency(t *testing.T) {
 	}
 
 	first := ComputeJA4D(data)
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		result := ComputeJA4D(data)
 		if result != first {
 			t.Errorf("Inconsistent fingerprint: got %s, want %s", result, first)
@@ -587,4 +587,3 @@ func TestParseJA4D(t *testing.T) {
 		t.Errorf("optHash length = %d, want 12", len(optHash))
 	}
 }
-

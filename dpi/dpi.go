@@ -1,5 +1,4 @@
 //go:build (!windows && ignore) || !nodpi
-// +build !windows,ignore !nodpi
 
 /*
  * NETCAP - Traffic Analysis Framework
@@ -147,8 +146,8 @@ func parseModules(modules string) map[string]bool {
 	}
 
 	// Parse comma-separated values
-	parts := strings.Split(modules, ",")
-	for _, part := range parts {
+	parts := strings.SplitSeq(modules, ",")
+	for part := range parts {
 		module := strings.TrimSpace(strings.ToLower(part))
 		switch module {
 		case "lpi":

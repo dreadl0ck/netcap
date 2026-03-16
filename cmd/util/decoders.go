@@ -436,7 +436,7 @@ func printDecoderList(decoders []DecoderInfo, indent string, isLast bool, hasChi
 func printLayerWithIndent(layerName string, decoders []DecoderInfo, indentLevel int, isLastRoot bool) {
 	// Build indent prefix based on level
 	indent := ""
-	for i := 0; i < indentLevel; i++ {
+	for range indentLevel {
 		indent += "│   "
 	}
 

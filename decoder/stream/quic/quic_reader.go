@@ -157,32 +157,32 @@ func (q *quicReader) parseIETFQUIC(payload []byte, timestamp int64) {
 	}
 
 	record := &types.QUICClientHello{
-		Timestamp:         timestamp,
-		SrcIP:             q.conversation.ClientIP,
-		DstIP:             q.conversation.ServerIP,
-		SrcPort:           int32(q.conversation.ClientPort),
-		DstPort:           int32(q.conversation.ServerPort),
-		QUICVersion:       versionStr,
-		IsIETFQUIC:        true,
-		DCID:              clientHello.DCID,
-		SCID:              clientHello.SCID,
-		SNI:               clientHello.SNI,
-		ALPNs:             clientHello.ALPNs,
-		CipherSuites:      cipherSuites,
-		Extensions:        extensions,
-		SupportedGroups:   supportedGroups,
-		SignatureAlgs:     signatureAlgs,
-		SupportedVersion:  int32(supportedVersion),
-		Random:            clientHello.Random,
-		SessionID:         clientHello.SessionID,
-		CompressMethods:   convertBytesToInt32(clientHello.CompressionMethods),
-		Ja4:               ja4Fingerprint,
-		Ja4Description:    ja4Description,
-		MaxIdleTimeout:    int64(clientHello.MaxIdleTimeout),
-		InitialMaxData:    int64(clientHello.InitialMaxData),
+		Timestamp:                     timestamp,
+		SrcIP:                         q.conversation.ClientIP,
+		DstIP:                         q.conversation.ServerIP,
+		SrcPort:                       int32(q.conversation.ClientPort),
+		DstPort:                       int32(q.conversation.ServerPort),
+		QUICVersion:                   versionStr,
+		IsIETFQUIC:                    true,
+		DCID:                          clientHello.DCID,
+		SCID:                          clientHello.SCID,
+		SNI:                           clientHello.SNI,
+		ALPNs:                         clientHello.ALPNs,
+		CipherSuites:                  cipherSuites,
+		Extensions:                    extensions,
+		SupportedGroups:               supportedGroups,
+		SignatureAlgs:                 signatureAlgs,
+		SupportedVersion:              int32(supportedVersion),
+		Random:                        clientHello.Random,
+		SessionID:                     clientHello.SessionID,
+		CompressMethods:               convertBytesToInt32(clientHello.CompressionMethods),
+		Ja4:                           ja4Fingerprint,
+		Ja4Description:                ja4Description,
+		MaxIdleTimeout:                int64(clientHello.MaxIdleTimeout),
+		InitialMaxData:                int64(clientHello.InitialMaxData),
 		InitialMaxStreamDataBidiLocal: int64(clientHello.InitialMaxStreamDataBidiLocal),
-		MaxUdpPayloadSize: int64(clientHello.MaxUDPPayloadSize),
-		CommunityID:       q.conversation.CommunityID,
+		MaxUdpPayloadSize:             int64(clientHello.MaxUDPPayloadSize),
+		CommunityID:                   q.conversation.CommunityID,
 	}
 
 	err = Decoder.Writer.Write(record)
@@ -260,11 +260,8 @@ func (q *quicReader) parseGQUIC(payload []byte, timestamp int64) {
 func computeGQUICFingerprint(chlo *GQUICClientHello) string {
 	// Format: q{version}{tag_count:2d}{aead}{kexs}
 	// This is a custom fingerprint format for gQUIC
-	
-	tagCount := len(chlo.Tags)
-	if tagCount > 99 {
-		tagCount = 99
-	}
+
+	tagCount := min(len(chlo.Tags), 99)
 
 	// Get AEAD and KEXS values if available
 	aead := "00"
@@ -284,8 +281,8 @@ func computeGQUICFingerprint(chlo *GQUICClientHello) string {
 		version = version[:4]
 	}
 
-	return "q_gquic_" + version + "_" + 
-		padInt(tagCount, 2) + "_" + 
+	return "q_gquic_" + version + "_" +
+		padInt(tagCount, 2) + "_" +
 		aead + "_" + kexs
 }
 
@@ -333,4 +330,3 @@ func GetQUICVersionString(version uint32) string {
 		return "Unknown"
 	}
 }
-

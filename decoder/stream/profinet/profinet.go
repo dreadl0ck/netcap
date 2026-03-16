@@ -51,24 +51,24 @@ const (
 	dceRPCVersion = 4
 
 	// DCE/RPC packet types
-	dceRPCRequest      = 0x00
-	dceRPCPing         = 0x01
-	dceRPCResponse     = 0x02
-	dceRPCFault        = 0x03
-	dceRPCWorking      = 0x04
-	dceRPCNoCall       = 0x05
-	dceRPCReject       = 0x06
-	dceRPCACK          = 0x07
-	dceRPCCL_Cancel    = 0x08
-	dceRPCFACK         = 0x09
-	dceRPCCancelACK    = 0x0A
-	dceRPCBind         = 0x0B
-	dceRPCBindACK      = 0x0C
-	dceRPCBindNAK      = 0x0D
-	dceRPCAlterContext = 0x0E
+	dceRPCRequest          = 0x00
+	dceRPCPing             = 0x01
+	dceRPCResponse         = 0x02
+	dceRPCFault            = 0x03
+	dceRPCWorking          = 0x04
+	dceRPCNoCall           = 0x05
+	dceRPCReject           = 0x06
+	dceRPCACK              = 0x07
+	dceRPCCL_Cancel        = 0x08
+	dceRPCFACK             = 0x09
+	dceRPCCancelACK        = 0x0A
+	dceRPCBind             = 0x0B
+	dceRPCBindACK          = 0x0C
+	dceRPCBindNAK          = 0x0D
+	dceRPCAlterContext     = 0x0E
 	dceRPCAlterContextResp = 0x0F
-	dceRPCShutdown     = 0x11
-	dceRPCAuth3        = 0x10
+	dceRPCShutdown         = 0x11
+	dceRPCAuth3            = 0x10
 )
 
 // PROFINET IO interface UUID prefix (first 4 bytes for quick matching)
@@ -77,35 +77,35 @@ var profinetIOUUID = []byte{0xde, 0xa0, 0x00, 0x01}
 
 // PROFINET block types
 const (
-	BlockTypeAlarmNotificationHigh      = 0x0001
-	BlockTypeAlarmNotificationLow       = 0x0002
-	BlockTypeIODWriteReqHeader          = 0x0008
-	BlockTypeIODReadReqHeader           = 0x0009
-	BlockTypeIODWriteResHeader          = 0x8008
-	BlockTypeIODReadResHeader           = 0x8009
-	BlockTypeARBlockReq                 = 0x0101
-	BlockTypeIOCRBlockReq               = 0x0102
-	BlockTypeAlarmCRBlockReq            = 0x0103
-	BlockTypeExpectedSubmoduleBlockReq  = 0x0104
-	BlockTypeARBlockRes                 = 0x8101
-	BlockTypeIOCRBlockRes               = 0x8102
-	BlockTypeAlarmCRBlockRes            = 0x8103
-	BlockTypeModuleDiffBlock            = 0x8104
-	BlockTypeARRPCBlockReq              = 0x0105
-	BlockTypeARRPCBlockRes              = 0x8105
-	BlockTypeIODControlReq              = 0x0110
-	BlockTypeIODControlRes              = 0x8110
-	BlockTypeReleaseBlock               = 0x0114
-	BlockTypeIOXBlockReq                = 0x0116
-	BlockTypeIOXBlockRes                = 0x8116
-	BlockTypeReadRecordInputReq         = 0x8028
-	BlockTypeReadRecordOutputReq        = 0x8029
-	BlockTypeI_M0                       = 0x0020
-	BlockTypeI_M1                       = 0x0021
-	BlockTypeI_M2                       = 0x0022
-	BlockTypeI_M3                       = 0x0023
-	BlockTypeI_M4                       = 0x0024
-	BlockTypeDiagnosisData              = 0x0010
+	BlockTypeAlarmNotificationHigh     = 0x0001
+	BlockTypeAlarmNotificationLow      = 0x0002
+	BlockTypeIODWriteReqHeader         = 0x0008
+	BlockTypeIODReadReqHeader          = 0x0009
+	BlockTypeIODWriteResHeader         = 0x8008
+	BlockTypeIODReadResHeader          = 0x8009
+	BlockTypeARBlockReq                = 0x0101
+	BlockTypeIOCRBlockReq              = 0x0102
+	BlockTypeAlarmCRBlockReq           = 0x0103
+	BlockTypeExpectedSubmoduleBlockReq = 0x0104
+	BlockTypeARBlockRes                = 0x8101
+	BlockTypeIOCRBlockRes              = 0x8102
+	BlockTypeAlarmCRBlockRes           = 0x8103
+	BlockTypeModuleDiffBlock           = 0x8104
+	BlockTypeARRPCBlockReq             = 0x0105
+	BlockTypeARRPCBlockRes             = 0x8105
+	BlockTypeIODControlReq             = 0x0110
+	BlockTypeIODControlRes             = 0x8110
+	BlockTypeReleaseBlock              = 0x0114
+	BlockTypeIOXBlockReq               = 0x0116
+	BlockTypeIOXBlockRes               = 0x8116
+	BlockTypeReadRecordInputReq        = 0x8028
+	BlockTypeReadRecordOutputReq       = 0x8029
+	BlockTypeI_M0                      = 0x0020
+	BlockTypeI_M1                      = 0x0021
+	BlockTypeI_M2                      = 0x0022
+	BlockTypeI_M3                      = 0x0023
+	BlockTypeI_M4                      = 0x0024
+	BlockTypeDiagnosisData             = 0x0010
 )
 
 // Decoder for protocol analysis and writing audit records to disk.
@@ -201,10 +201,7 @@ func containsPROFINETUUID(data []byte) bool {
 	}
 
 	// Search for PROFINET UUID prefix in the first 64 bytes
-	limit := 64
-	if len(data) < limit {
-		limit = len(data)
-	}
+	limit := min(len(data), 64)
 
 	for i := 0; i <= limit-4; i++ {
 		if data[i] == profinetIOUUID[0] &&
@@ -337,4 +334,3 @@ func getBlockTypeName(t uint16) string {
 		return "Unknown"
 	}
 }
-

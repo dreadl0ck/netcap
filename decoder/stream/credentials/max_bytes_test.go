@@ -15,7 +15,7 @@ func TestHarvesterMaxBytesLimit(t *testing.T) {
 	if decoderconfig.Instance == nil {
 		decoderconfig.Instance = decoderconfig.DefaultConfig
 	}
-	
+
 	// Save original config and restore after test
 	originalSize := decoderconfig.Instance.HarvesterBannerSize
 	defer func() {
@@ -81,7 +81,7 @@ func TestRunHarvestersSafetyCheck(t *testing.T) {
 	if decoderconfig.Instance == nil {
 		decoderconfig.Instance = decoderconfig.DefaultConfig
 	}
-	
+
 	// Save original config and restore after test
 	originalSize := decoderconfig.Instance.HarvesterBannerSize
 	defer func() {
@@ -94,7 +94,7 @@ func TestRunHarvestersSafetyCheck(t *testing.T) {
 
 	// Create data that exceeds the limit
 	largeData := make([]byte, testLimit*2)
-	for i := 0; i < len(largeData); i++ {
+	for i := range largeData {
 		largeData[i] = byte(i % 256)
 	}
 
@@ -102,11 +102,11 @@ func TestRunHarvestersSafetyCheck(t *testing.T) {
 	// Simulate what RunHarvesters does internally
 	if len(largeData) > decoderconfig.Instance.HarvesterBannerSize {
 		truncatedData := largeData[:decoderconfig.Instance.HarvesterBannerSize]
-		
+
 		if len(truncatedData) != testLimit {
 			t.Fatalf("Expected truncated data to be %d bytes, got %d", testLimit, len(truncatedData))
 		}
-		
+
 		t.Logf("Successfully truncated %d bytes to %d bytes", len(largeData), len(truncatedData))
 	}
 }
@@ -117,7 +117,7 @@ func TestPerformanceWithLargeStreams(t *testing.T) {
 	if decoderconfig.Instance == nil {
 		decoderconfig.Instance = decoderconfig.DefaultConfig
 	}
-	
+
 	// Save original config and restore after test
 	originalSize := decoderconfig.Instance.HarvesterBannerSize
 	defer func() {
@@ -129,23 +129,23 @@ func TestPerformanceWithLargeStreams(t *testing.T) {
 
 	// Create a very large data stream (1MB)
 	largeData := make([]byte, 1024*1024)
-	for i := 0; i < len(largeData); i++ {
+	for i := range largeData {
 		largeData[i] = byte(i % 256)
 	}
 
 	// Measure time taken to process truncation
 	// This simulates what happens in production
 	start := time.Now()
-	
+
 	// Simulate the truncation logic
 	processedData := largeData
 	if len(processedData) > decoderconfig.Instance.HarvesterBannerSize {
 		processedData = processedData[:decoderconfig.Instance.HarvesterBannerSize]
 	}
-	
+
 	// Now run a harvester on the truncated data
 	_ = ftpHarvester.HarvesterFunc(processedData, "test-flow", time.Now())
-	
+
 	elapsed := time.Since(start)
 
 	// Processing should be fast because we only process HarvesterBannerSize bytes
@@ -157,7 +157,7 @@ func TestPerformanceWithLargeStreams(t *testing.T) {
 			elapsed, maxAllowedTime)
 	}
 
-	t.Logf("Successfully processed 1MB stream (truncated to %d bytes) in %v", 
+	t.Logf("Successfully processed 1MB stream (truncated to %d bytes) in %v",
 		decoderconfig.Instance.HarvesterBannerSize, elapsed)
 }
 
@@ -167,7 +167,7 @@ func TestConfigurableLimit(t *testing.T) {
 	if decoderconfig.Instance == nil {
 		decoderconfig.Instance = decoderconfig.DefaultConfig
 	}
-	
+
 	// Save original config and restore after test
 	originalSize := decoderconfig.Instance.HarvesterBannerSize
 	defer func() {
@@ -210,4 +210,3 @@ func TestConfigurableLimit(t *testing.T) {
 		})
 	}
 }
-

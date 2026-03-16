@@ -84,7 +84,7 @@ func (s *Server) handleBPFConfig(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"success": true,
 			"message": "BPF filter configuration saved successfully. Changes will be applied to future capture sessions.",
 		})

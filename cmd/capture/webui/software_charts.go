@@ -187,10 +187,7 @@ func generateSoftwareTopProductsChart(outDir string, showLegend bool) *charts.Ba
 	}
 
 	// Take top 20 software products
-	limit := 20
-	if len(software) < limit {
-		limit = len(software)
-	}
+	limit := min(len(software), 20)
 	topSoftware := software[:limit]
 
 	// Prepare data
@@ -395,10 +392,7 @@ func generateSoftwareOperatingSystemsChart(outDir string, showLegend bool) *char
 	}
 
 	// Take top 15
-	limit := 15
-	if len(operatingSystems) < limit {
-		limit = len(operatingSystems)
-	}
+	limit := min(len(operatingSystems), 15)
 	topOS := operatingSystems[:limit]
 
 	// Prepare data
@@ -506,10 +500,7 @@ func generateSoftwareVersionsChart(outDir string, showLegend bool) *charts.Sunbu
 	}
 
 	// Take top 15 products
-	limit := 15
-	if len(productTotals) < limit {
-		limit = len(productTotals)
-	}
+	limit := min(len(productTotals), 15)
 
 	sunburstData := make([]opts.SunBurstData, 0)
 	for i := 0; i < limit; i++ {

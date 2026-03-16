@@ -166,7 +166,7 @@ func (s *DBServer) rebuildDatabases() error {
 	}
 
 	// Create metadata file
-	metadata := map[string]interface{}{
+	metadata := map[string]any{
 		"version":        newDate,
 		"created_at":     time.Now().UTC().Format(time.RFC3339),
 		"tarball":        newDate + ".tar.gz",
@@ -426,7 +426,7 @@ func (s *DBServer) createTarball(sourceDir, targetPath string) error {
 }
 
 // writeMetadata writes metadata as JSON
-func (s *DBServer) writeMetadata(metadata map[string]interface{}, path string) error {
+func (s *DBServer) writeMetadata(metadata map[string]any, path string) error {
 	file, err := os.Create(path)
 	if err != nil {
 		return err
@@ -525,7 +525,7 @@ func (s *DBServer) createInitialTarballFromExisting() (bool, string) {
 	}
 
 	// Create metadata
-	metadata := map[string]interface{}{
+	metadata := map[string]any{
 		"version":        currentDate,
 		"created_at":     time.Now().Format(time.RFC3339),
 		"tarball":        currentDate + ".tar.gz",
@@ -649,7 +649,7 @@ func (s *DBServer) handleList(w http.ResponseWriter, r *http.Request) {
 	s.mu.RUnlock()
 
 	// Since we only keep the latest version, return just that
-	response := map[string]interface{}{
+	response := map[string]any{
 		"versions": []string{currentDate},
 		"latest":   currentDate,
 		"note":     "Server is configured to keep only the latest version to optimize storage",
@@ -692,7 +692,7 @@ func (s *DBServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 	currentVersion := s.currentDate
 	s.mu.RUnlock()
 
-	health := map[string]interface{}{
+	health := map[string]any{
 		"status":          "healthy",
 		"current_version": currentVersion,
 		"timestamp":       time.Now().UTC().Format(time.RFC3339),

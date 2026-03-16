@@ -58,7 +58,7 @@ func loadCmsDB() error {
 			i.Cpe = s
 		}
 
-		if s, ok := jsonParsed.Path(framework + ".headers").Data().(map[string]interface{}); ok {
+		if s, ok := jsonParsed.Path(framework + ".headers").Data().(map[string]any); ok {
 
 			i.Headers = make(map[string]*regexp.Regexp)
 
@@ -81,7 +81,7 @@ func loadCmsDB() error {
 			}
 		}
 
-		if s, ok := jsonParsed.Path(framework + ".cookies").Data().(map[string]interface{}); ok {
+		if s, ok := jsonParsed.Path(framework + ".cookies").Data().(map[string]any); ok {
 
 			i.Cookies = make(map[string]*regexp.Regexp)
 
@@ -104,7 +104,7 @@ func loadCmsDB() error {
 			}
 		}
 
-		if s, ok := jsonParsed.Path(framework + ".js").Data().(map[string]interface{}); ok {
+		if s, ok := jsonParsed.Path(framework + ".js").Data().(map[string]any); ok {
 			m := make(map[string]string)
 			for k, v := range s {
 				m[k] = fmt.Sprint(v)
@@ -112,7 +112,7 @@ func loadCmsDB() error {
 			i.Js = m
 		}
 
-		if s, ok := jsonParsed.Path(framework + ".meta").Data().(map[string]interface{}); ok {
+		if s, ok := jsonParsed.Path(framework + ".meta").Data().(map[string]any); ok {
 			m := make(map[string]string)
 			for k, v := range s {
 				m[k] = fmt.Sprint(v)

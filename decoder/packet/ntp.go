@@ -21,6 +21,7 @@ package packet
 
 import (
 	"encoding/binary"
+	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
@@ -63,14 +64,14 @@ var ntpDecoder = newGoPacketDecoder(
 			isKissOfDeath := ntp.Stratum == 0
 
 			// For stratum 0-1, ReferenceID is ASCII string
-			var refIDStr string
+			var refIDStr strings.Builder
 			if ntp.Stratum <= 1 {
 				refBytes := make([]byte, 4)
 				binary.BigEndian.PutUint32(refBytes, uint32(ntp.ReferenceID))
 				// Filter out null bytes
 				for _, b := range refBytes {
 					if b >= 32 && b < 127 {
-						refIDStr += string(b)
+						refIDStr.WriteString(string(b))
 					}
 				}
 			}
@@ -95,7 +96,7 @@ var ntpDecoder = newGoPacketDecoder(
 				IsControlMessage:   isControlMessage,
 				IsPrivateMode:      isPrivateMode,
 				IsKissOfDeath:      isKissOfDeath,
-				ReferenceIDStr:     refIDStr,
+				ReferenceIDStr:     refIDStr.String(),
 			}
 		}
 

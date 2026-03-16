@@ -25,12 +25,14 @@ import (
 	"fmt"
 	stdio "io"
 	"log"
+	"maps"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -188,7 +190,7 @@ type Server struct {
 	devMode            bool                           // Development mode: use current binary instead of "net"
 
 	// Rules cache
-	rulesConfig      interface{} // Cached rules config (uses rules.Config type to avoid circular import)
+	rulesConfig      any // Cached rules config (uses rules.Config type to avoid circular import)
 	rulesConfigMutex sync.RWMutex
 
 	// Service mode fields (nil in local mode)
@@ -800,12 +802,10 @@ func (s *Server) UpdateOutputDir(outDir string) {
 func (s *Server) AddInputFile(filePath string) {
 	s.mu.Lock()
 	// Check if file already exists in the list
-	for _, f := range s.inputFiles {
-		if f == filePath {
-			log.Printf("[WebUI] Input file already exists: %s", filePath)
-			s.mu.Unlock()
-			return
-		}
+	if slices.Contains(s.inputFiles, filePath) {
+		log.Printf("[WebUI] Input file already exists: %s", filePath)
+		s.mu.Unlock()
+		return
 	}
 	s.inputFiles = append(s.inputFiles, filePath)
 	s.mu.Unlock()
@@ -963,9 +963,7 @@ func (s *Server) GetCompletedFiles() map[string]bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	completed := make(map[string]bool)
-	for k, v := range s.completedFiles {
-		completed[k] = v
-	}
+	maps.Copy(completed, s.completedFiles)
 	return completed
 }
 

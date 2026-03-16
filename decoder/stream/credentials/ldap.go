@@ -175,7 +175,7 @@ func getLDAPUsernameAttributes() []string {
 		for _, hConfig := range harvesterConfig.Harvesters {
 			if hConfig.Name == "LDAP" && hConfig.Parameters != nil {
 				if params, ok := hConfig.Parameters["username_attributes"]; ok {
-					if paramSlice, ok := params.([]interface{}); ok {
+					if paramSlice, ok := params.([]any); ok {
 						result := make([]string, 0, len(paramSlice))
 						for _, p := range paramSlice {
 							if strParam, ok := p.(string); ok {

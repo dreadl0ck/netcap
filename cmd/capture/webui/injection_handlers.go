@@ -38,17 +38,17 @@ import (
 
 // InjectionRuleResponse represents an injection rule for the API
 type InjectionRuleResponse struct {
-	ID           string                 `json:"id"`
-	Name         string                 `json:"name"`
-	Description  string                 `json:"description"`
-	Type         string                 `json:"type"`
-	Expression   string                 `json:"expression"`
-	Action       string                 `json:"action"`
-	ActionConfig map[string]interface{} `json:"actionConfig,omitempty"`
-	Enabled      bool                   `json:"enabled"`
-	Priority     int                    `json:"priority"`
-	StopOnMatch  bool                   `json:"stopOnMatch"`
-	Tags         []string               `json:"tags"`
+	ID           string         `json:"id"`
+	Name         string         `json:"name"`
+	Description  string         `json:"description"`
+	Type         string         `json:"type"`
+	Expression   string         `json:"expression"`
+	Action       string         `json:"action"`
+	ActionConfig map[string]any `json:"actionConfig,omitempty"`
+	Enabled      bool           `json:"enabled"`
+	Priority     int            `json:"priority"`
+	StopOnMatch  bool           `json:"stopOnMatch"`
+	Tags         []string       `json:"tags"`
 }
 
 // InjectionRulesResponse represents the response containing all injection rules
@@ -59,46 +59,46 @@ type InjectionRulesResponse struct {
 
 // CreateInjectionRuleRequest represents a request to create a new injection rule
 type CreateInjectionRuleRequest struct {
-	Name         string                 `json:"name"`
-	Description  string                 `json:"description"`
-	Type         string                 `json:"type"`
-	Expression   string                 `json:"expression"`
-	Action       string                 `json:"action"`
-	ActionConfig map[string]interface{} `json:"actionConfig,omitempty"`
-	Enabled      bool                   `json:"enabled"`
-	Priority     int                    `json:"priority,omitempty"`
-	StopOnMatch  bool                   `json:"stopOnMatch,omitempty"`
-	Tags         []string               `json:"tags,omitempty"`
+	Name         string         `json:"name"`
+	Description  string         `json:"description"`
+	Type         string         `json:"type"`
+	Expression   string         `json:"expression"`
+	Action       string         `json:"action"`
+	ActionConfig map[string]any `json:"actionConfig,omitempty"`
+	Enabled      bool           `json:"enabled"`
+	Priority     int            `json:"priority,omitempty"`
+	StopOnMatch  bool           `json:"stopOnMatch,omitempty"`
+	Tags         []string       `json:"tags,omitempty"`
 }
 
 // UpdateInjectionRuleRequest represents a request to update an injection rule
 type UpdateInjectionRuleRequest struct {
-	Name         string                 `json:"name"`
-	Description  string                 `json:"description"`
-	Type         string                 `json:"type"`
-	Expression   string                 `json:"expression"`
-	Action       string                 `json:"action"`
-	ActionConfig map[string]interface{} `json:"actionConfig,omitempty"`
-	Enabled      bool                   `json:"enabled"`
-	Priority     int                    `json:"priority,omitempty"`
-	StopOnMatch  bool                   `json:"stopOnMatch,omitempty"`
-	Tags         []string               `json:"tags,omitempty"`
+	Name         string         `json:"name"`
+	Description  string         `json:"description"`
+	Type         string         `json:"type"`
+	Expression   string         `json:"expression"`
+	Action       string         `json:"action"`
+	ActionConfig map[string]any `json:"actionConfig,omitempty"`
+	Enabled      bool           `json:"enabled"`
+	Priority     int            `json:"priority,omitempty"`
+	StopOnMatch  bool           `json:"stopOnMatch,omitempty"`
+	Tags         []string       `json:"tags,omitempty"`
 }
 
 // InjectionEvent represents an event when an injection rule is triggered
 type InjectionEvent struct {
-	ID         string                 `json:"id"`
-	Timestamp  int64                  `json:"timestamp"`
-	RuleName   string                 `json:"ruleName"`
-	RuleAction string                 `json:"ruleAction"`
-	RecordType string                 `json:"recordType"`
-	SrcIP      string                 `json:"srcIP,omitempty"`
-	DstIP      string                 `json:"dstIP,omitempty"`
-	SrcPort    int                    `json:"srcPort,omitempty"`
-	DstPort    int                    `json:"dstPort,omitempty"`
-	Result     string                 `json:"result"` // "success", "failed", "skipped"
-	Error      string                 `json:"error,omitempty"`
-	ActionData map[string]interface{} `json:"actionData,omitempty"`
+	ID         string         `json:"id"`
+	Timestamp  int64          `json:"timestamp"`
+	RuleName   string         `json:"ruleName"`
+	RuleAction string         `json:"ruleAction"`
+	RecordType string         `json:"recordType"`
+	SrcIP      string         `json:"srcIP,omitempty"`
+	DstIP      string         `json:"dstIP,omitempty"`
+	SrcPort    int            `json:"srcPort,omitempty"`
+	DstPort    int            `json:"dstPort,omitempty"`
+	Result     string         `json:"result"` // "success", "failed", "skipped"
+	Error      string         `json:"error,omitempty"`
+	ActionData map[string]any `json:"actionData,omitempty"`
 }
 
 // InjectionEventsResponse represents the response containing injection events
@@ -354,7 +354,7 @@ func (s *Server) handleGetInjectionRules(w http.ResponseWriter, r *http.Request)
 	config, err := s.loadInjectionRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load injection rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load injection rules: %v", err),
 		})
 		return
@@ -394,7 +394,7 @@ func (s *Server) handleGetInjectionRules(w http.ResponseWriter, r *http.Request)
 func (s *Server) handleCreateInjectionRule(w http.ResponseWriter, r *http.Request) {
 	var req CreateInjectionRuleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Invalid request body",
 		})
 		return
@@ -402,28 +402,28 @@ func (s *Server) handleCreateInjectionRule(w http.ResponseWriter, r *http.Reques
 
 	// Validate required fields
 	if req.Name == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule name is required",
 		})
 		return
 	}
 
 	if req.Type == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule type is required",
 		})
 		return
 	}
 
 	if req.Expression == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule expression is required",
 		})
 		return
 	}
 
 	if req.Action == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule action is required",
 		})
 		return
@@ -431,7 +431,7 @@ func (s *Server) handleCreateInjectionRule(w http.ResponseWriter, r *http.Reques
 
 	// Validate action
 	if !injection.ValidateAction(injection.Action(req.Action)) {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": fmt.Sprintf("Invalid action: %s", req.Action),
 		})
 		return
@@ -441,7 +441,7 @@ func (s *Server) handleCreateInjectionRule(w http.ResponseWriter, r *http.Reques
 	config, err := s.loadInjectionRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load injection rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load injection rules: %v", err),
 		})
 		return
@@ -450,7 +450,7 @@ func (s *Server) handleCreateInjectionRule(w http.ResponseWriter, r *http.Reques
 	// Check if rule with same name already exists
 	for _, rule := range config.Rules {
 		if rule.Name == req.Name {
-			RespondJSON(w, http.StatusConflict, map[string]interface{}{
+			RespondJSON(w, http.StatusConflict, map[string]any{
 				"error": "An injection rule with this name already exists",
 			})
 			return
@@ -477,7 +477,7 @@ func (s *Server) handleCreateInjectionRule(w http.ResponseWriter, r *http.Reques
 	// Save config
 	if err := s.saveInjectionRulesConfig(config); err != nil {
 		log.Printf("[WebUI] Failed to save injection rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to save injection rules: %v", err),
 		})
 		return
@@ -485,7 +485,7 @@ func (s *Server) handleCreateInjectionRule(w http.ResponseWriter, r *http.Reques
 
 	log.Printf("[WebUI] Created new injection rule: %s", req.Name)
 
-	RespondJSON(w, http.StatusCreated, map[string]interface{}{
+	RespondJSON(w, http.StatusCreated, map[string]any{
 		"success": true,
 		"message": "Injection rule created successfully",
 		"rule": InjectionRuleResponse{
@@ -544,7 +544,7 @@ func (s *Server) handleGetInjectionRule(w http.ResponseWriter, r *http.Request, 
 	config, err := s.loadInjectionRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load injection rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load injection rules: %v", err),
 		})
 		return
@@ -575,7 +575,7 @@ func (s *Server) handleGetInjectionRule(w http.ResponseWriter, r *http.Request, 
 		}
 	}
 
-	RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+	RespondJSON(w, http.StatusNotFound, map[string]any{
 		"error": "Injection rule not found",
 	})
 }
@@ -584,7 +584,7 @@ func (s *Server) handleGetInjectionRule(w http.ResponseWriter, r *http.Request, 
 func (s *Server) handleUpdateInjectionRule(w http.ResponseWriter, r *http.Request, ruleID string) {
 	var req UpdateInjectionRuleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Invalid request body",
 		})
 		return
@@ -592,28 +592,28 @@ func (s *Server) handleUpdateInjectionRule(w http.ResponseWriter, r *http.Reques
 
 	// Validate required fields
 	if req.Name == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule name is required",
 		})
 		return
 	}
 
 	if req.Type == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule type is required",
 		})
 		return
 	}
 
 	if req.Expression == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule expression is required",
 		})
 		return
 	}
 
 	if req.Action == "" {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Rule action is required",
 		})
 		return
@@ -621,7 +621,7 @@ func (s *Server) handleUpdateInjectionRule(w http.ResponseWriter, r *http.Reques
 
 	// Validate action
 	if !injection.ValidateAction(injection.Action(req.Action)) {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": fmt.Sprintf("Invalid action: %s", req.Action),
 		})
 		return
@@ -631,7 +631,7 @@ func (s *Server) handleUpdateInjectionRule(w http.ResponseWriter, r *http.Reques
 	config, err := s.loadInjectionRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load injection rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load injection rules: %v", err),
 		})
 		return
@@ -645,7 +645,7 @@ func (s *Server) handleUpdateInjectionRule(w http.ResponseWriter, r *http.Reques
 			if req.Name != ruleID {
 				for _, r := range config.Rules {
 					if r.Name == req.Name {
-						RespondJSON(w, http.StatusConflict, map[string]interface{}{
+						RespondJSON(w, http.StatusConflict, map[string]any{
 							"error": "An injection rule with this name already exists",
 						})
 						return
@@ -669,7 +669,7 @@ func (s *Server) handleUpdateInjectionRule(w http.ResponseWriter, r *http.Reques
 	}
 
 	if !found {
-		RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+		RespondJSON(w, http.StatusNotFound, map[string]any{
 			"error": "Injection rule not found",
 		})
 		return
@@ -678,7 +678,7 @@ func (s *Server) handleUpdateInjectionRule(w http.ResponseWriter, r *http.Reques
 	// Save config
 	if err := s.saveInjectionRulesConfig(config); err != nil {
 		log.Printf("[WebUI] Failed to save injection rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to save injection rules: %v", err),
 		})
 		return
@@ -686,7 +686,7 @@ func (s *Server) handleUpdateInjectionRule(w http.ResponseWriter, r *http.Reques
 
 	log.Printf("[WebUI] Updated injection rule: %s -> %s", ruleID, req.Name)
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": "Injection rule updated successfully",
 	})
@@ -698,7 +698,7 @@ func (s *Server) handleDeleteInjectionRule(w http.ResponseWriter, r *http.Reques
 	config, err := s.loadInjectionRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load injection rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load injection rules: %v", err),
 		})
 		return
@@ -716,7 +716,7 @@ func (s *Server) handleDeleteInjectionRule(w http.ResponseWriter, r *http.Reques
 	}
 
 	if !found {
-		RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+		RespondJSON(w, http.StatusNotFound, map[string]any{
 			"error": "Injection rule not found",
 		})
 		return
@@ -727,7 +727,7 @@ func (s *Server) handleDeleteInjectionRule(w http.ResponseWriter, r *http.Reques
 	// Save config
 	if err := s.saveInjectionRulesConfig(config); err != nil {
 		log.Printf("[WebUI] Failed to save injection rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to save injection rules: %v", err),
 		})
 		return
@@ -735,7 +735,7 @@ func (s *Server) handleDeleteInjectionRule(w http.ResponseWriter, r *http.Reques
 
 	log.Printf("[WebUI] Deleted injection rule: %s", ruleID)
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": "Injection rule deleted successfully",
 	})
@@ -745,7 +745,7 @@ func (s *Server) handleDeleteInjectionRule(w http.ResponseWriter, r *http.Reques
 func (s *Server) handleToggleInjectionRule(w http.ResponseWriter, r *http.Request, ruleID string) {
 	var req ToggleInjectionRuleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		RespondJSON(w, http.StatusBadRequest, map[string]interface{}{
+		RespondJSON(w, http.StatusBadRequest, map[string]any{
 			"error": "Invalid request body",
 		})
 		return
@@ -755,7 +755,7 @@ func (s *Server) handleToggleInjectionRule(w http.ResponseWriter, r *http.Reques
 	config, err := s.loadInjectionRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load injection rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load injection rules: %v", err),
 		})
 		return
@@ -772,7 +772,7 @@ func (s *Server) handleToggleInjectionRule(w http.ResponseWriter, r *http.Reques
 	}
 
 	if !found {
-		RespondJSON(w, http.StatusNotFound, map[string]interface{}{
+		RespondJSON(w, http.StatusNotFound, map[string]any{
 			"error": "Injection rule not found",
 		})
 		return
@@ -781,7 +781,7 @@ func (s *Server) handleToggleInjectionRule(w http.ResponseWriter, r *http.Reques
 	// Save config
 	if err := s.saveInjectionRulesConfig(config); err != nil {
 		log.Printf("[WebUI] Failed to save injection rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to save injection rules: %v", err),
 		})
 		return
@@ -793,7 +793,7 @@ func (s *Server) handleToggleInjectionRule(w http.ResponseWriter, r *http.Reques
 	}
 	log.Printf("[WebUI] Toggled injection rule %s: %s", ruleID, status)
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Injection rule %s", status),
 		"enabled": req.Enabled,
@@ -855,7 +855,7 @@ func (s *Server) handleInjectionEventsManage(w http.ResponseWriter, r *http.Requ
 
 	log.Printf("[WebUI] Cleared %d injection events", clearedCount)
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"success": true,
 		"message": fmt.Sprintf("Cleared %d injection events", clearedCount),
 	})
@@ -872,7 +872,7 @@ func (s *Server) handleInjectionStats(w http.ResponseWriter, r *http.Request) {
 	config, err := s.loadInjectionRulesConfig()
 	if err != nil {
 		log.Printf("[WebUI] Failed to load injection rules config: %v", err)
-		RespondJSON(w, http.StatusInternalServerError, map[string]interface{}{
+		RespondJSON(w, http.StatusInternalServerError, map[string]any{
 			"error": fmt.Sprintf("Failed to load injection rules: %v", err),
 		})
 		return
@@ -915,7 +915,7 @@ func (s *Server) handleInjectionStats(w http.ResponseWriter, r *http.Request) {
 }
 
 // RecordInjectionEvent records an injection event (called from the injection engine)
-func RecordInjectionEvent(ruleName, ruleAction, recordType, srcIP, dstIP string, srcPort, dstPort int, result string, err error, actionData map[string]interface{}) {
+func RecordInjectionEvent(ruleName, ruleAction, recordType, srcIP, dstIP string, srcPort, dstPort int, result string, err error, actionData map[string]any) {
 	injectionEventsMutex.Lock()
 	defer injectionEventsMutex.Unlock()
 
@@ -952,7 +952,7 @@ func (s *Server) handleInjectionActions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	actions := []map[string]interface{}{
+	actions := []map[string]any{
 		{
 			"value":       "accept",
 			"label":       "Accept",
@@ -1078,7 +1078,7 @@ func (s *Server) handleInjectionActions(w http.ResponseWriter, r *http.Request) 
 		},
 	}
 
-	RespondJSON(w, http.StatusOK, map[string]interface{}{
+	RespondJSON(w, http.StatusOK, map[string]any{
 		"actions": actions,
 	})
 }

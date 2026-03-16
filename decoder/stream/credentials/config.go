@@ -28,21 +28,21 @@ import (
 
 // HarvesterConfig represents the configuration for a single credential harvester
 type HarvesterConfig struct {
-	Name        string                 `yaml:"name" json:"name"`
-	Description string                 `yaml:"description,omitempty" json:"description,omitempty"`
-	Enabled     bool                   `yaml:"enabled" json:"enabled"`
-	Ports       []int                  `yaml:"ports" json:"ports"`
-	Parameters  map[string]interface{} `yaml:"parameters,omitempty" json:"parameters,omitempty"`
+	Name        string         `yaml:"name" json:"name"`
+	Description string         `yaml:"description,omitempty" json:"description,omitempty"`
+	Enabled     bool           `yaml:"enabled" json:"enabled"`
+	Ports       []int          `yaml:"ports" json:"ports"`
+	Parameters  map[string]any `yaml:"parameters,omitempty" json:"parameters,omitempty"`
 }
 
 // CustomHarvesterConfig represents configuration for a custom regex-based harvester
 type CustomHarvesterConfig struct {
-	Name        string                 `yaml:"name" json:"name"`
-	Description string                 `yaml:"description,omitempty" json:"description,omitempty"`
-	Enabled     bool                   `yaml:"enabled" json:"enabled"`
-	Ports       []int                  `yaml:"ports" json:"ports"`
-	Regex       string                 `yaml:"regex" json:"regex"`
-	Parameters  map[string]interface{} `yaml:"parameters,omitempty" json:"parameters,omitempty"`
+	Name        string         `yaml:"name" json:"name"`
+	Description string         `yaml:"description,omitempty" json:"description,omitempty"`
+	Enabled     bool           `yaml:"enabled" json:"enabled"`
+	Ports       []int          `yaml:"ports" json:"ports"`
+	Regex       string         `yaml:"regex" json:"regex"`
+	Parameters  map[string]any `yaml:"parameters,omitempty" json:"parameters,omitempty"`
 }
 
 // HarvestersConfigFile represents the entire harvesters configuration file structure
@@ -89,17 +89,17 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 				Description: "FTP plaintext authentication",
 				Enabled:     true,
 				Ports:       []int{21},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "HTTP",
 				Description: "HTTP Basic Auth and Digest, plus sensitive URL parameters",
 				Enabled:     true,
 				Ports:       []int{80, 8080, 3000, 9090, 8888},
-				Parameters: map[string]interface{}{
-					"sensitive_params":  []interface{}{"key", "api_key", "apikey", "api-key", "token", "access_token", "accesstoken", "access-token", "auth_token", "authtoken", "auth-token", "bearer", "password", "passwd", "pass", "secret", "api_secret", "apisecret", "session", "sessionid", "session_id", "session-id", "auth", "authorization", "jwt", "bearer_token", "refresh_token"},
-					"sensitive_headers": []interface{}{"Authorization", "X-API-Key", "X-Auth-Token", "X-Access-Token"},
-					"session_cookie_names": []interface{}{
+				Parameters: map[string]any{
+					"sensitive_params":  []any{"key", "api_key", "apikey", "api-key", "token", "access_token", "accesstoken", "access-token", "auth_token", "authtoken", "auth-token", "bearer", "password", "passwd", "pass", "secret", "api_secret", "apisecret", "session", "sessionid", "session_id", "session-id", "auth", "authorization", "jwt", "bearer_token", "refresh_token"},
+					"sensitive_headers": []any{"Authorization", "X-API-Key", "X-Auth-Token", "X-Access-Token"},
+					"session_cookie_names": []any{
 						"PHPSESSID", "phpsessid", "JSESSIONID", "jsessionid",
 						"ASP.NET_SessionId", "ASPSESSIONId", "sessionid", "session",
 						"_session_id", "connect.sid", "express.sid", "sid",
@@ -107,7 +107,7 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 						"auth_token", "authtoken", "auth", "token", "access_token",
 					},
 					"min_cookie_length": 8,
-					"form_username_fields": []interface{}{
+					"form_username_fields": []any{
 						"log", "login", "wpname", "ahd_username", "unickname", "nickname",
 						"user", "user_name", "alias", "pseudo", "email", "username",
 						"_username", "userid", "form_loginname", "loginname", "login_id",
@@ -117,7 +117,7 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 						"loginusername", "loginemail", "sign-in", "j_username", "identity",
 						"usr", "mail",
 					},
-					"form_password_fields": []interface{}{
+					"form_password_fields": []any{
 						"ahd_password", "pass", "password", "_password", "passwd",
 						"session_password", "sessionpassword", "login_password",
 						"loginpassword", "form_pw", "userpassword", "upassword",
@@ -131,16 +131,16 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 				Description: "SMTP AUTH plaintext and authentication",
 				Enabled:     true,
 				Ports:       []int{25, 465, 587},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "Telnet",
 				Description: "Telnet plaintext login credentials",
 				Enabled:     true,
 				Ports:       []int{23},
-				Parameters: map[string]interface{}{
-					"login_patterns":    []interface{}{"login:", "username:", "Username:", "login as:", "Login:"},
-					"password_patterns": []interface{}{"Password:", "password:", "Pass:", "passwd:"},
+				Parameters: map[string]any{
+					"login_patterns":    []any{"login:", "username:", "Username:", "login as:", "Login:"},
+					"password_patterns": []any{"Password:", "password:", "Pass:", "passwd:"},
 				},
 			},
 			{
@@ -148,63 +148,63 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 				Description: "IMAP email authentication",
 				Enabled:     true,
 				Ports:       []int{143},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "NTLMSSP",
 				Description: "NTLM Security Support Provider authentication",
 				Enabled:     true,
 				Ports:       []int{445},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "Kerberos AS-REQ",
 				Description: "Kerberos AS-REQ tickets for authentication",
 				Enabled:     true,
 				Ports:       []int{88},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "Kerberos AS-REP",
 				Description: "Kerberos AS-REP tickets with encrypted data",
 				Enabled:     true,
 				Ports:       []int{88},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "Kerberos TGS-REP",
 				Description: "Kerberos TGS-REP tickets for Kerberoasting",
 				Enabled:     true,
 				Ports:       []int{88},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "HTTP NTLM",
 				Description: "HTTP NTLM authentication with base64 encoding",
 				Enabled:     true,
 				Ports:       []int{80, 8080, 3000, 9090, 8888},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "POP3",
 				Description: "POP3 email authentication",
 				Enabled:     true,
 				Ports:       []int{110, 995},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "Redis",
 				Description: "Redis AUTH command authentication",
 				Enabled:     true,
 				Ports:       []int{6379},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "SNMP",
 				Description: "SNMP community strings",
 				Enabled:     true,
 				Ports:       []int{161, 162},
-				Parameters: map[string]interface{}{
+				Parameters: map[string]any{
 					"min_community_length": 1,
 					"max_community_length": 255,
 				},
@@ -214,8 +214,8 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 				Description: "LDAP Simple Bind authentication",
 				Enabled:     true,
 				Ports:       []int{389, 636},
-				Parameters: map[string]interface{}{
-					"username_attributes":     []interface{}{"cn", "uid", "mail", "sAMAccountName"},
+				Parameters: map[string]any{
+					"username_attributes":     []any{"cn", "uid", "mail", "sAMAccountName"},
 					"extract_simple_username": true,
 				},
 			},
@@ -224,42 +224,42 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 				Description: "PostgreSQL plaintext and MD5 hash authentication",
 				Enabled:     true,
 				Ports:       []int{5432},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "PostgreSQL Hash",
 				Description: "PostgreSQL MD5 password hashes",
 				Enabled:     true,
 				Ports:       []int{5432},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "MySQL",
 				Description: "MySQL challenge-response authentication",
 				Enabled:     true,
 				Ports:       []int{3306},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "VNC",
 				Description: "VNC DES challenge-response authentication",
 				Enabled:     true,
 				Ports:       []int{5900, 5901, 5902, 5903, 5904, 5905, 5906, 5907, 5908, 5909},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "MongoDB",
 				Description: "MongoDB SCRAM-SHA authentication",
 				Enabled:     true,
 				Ports:       []int{27017},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "MongoDB Challenge Response",
 				Description: "MongoDB wire protocol authentication",
 				Enabled:     true,
 				Ports:       []int{27017},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			// Remote desktop protocols
 			{
@@ -267,7 +267,7 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 				Description: "TeamViewer remote desktop sessions and authentication events",
 				Enabled:     true,
 				Ports:       []int{5938},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			// Network discovery protocols
 			{
@@ -275,28 +275,28 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 				Description: "Multicast DNS local network service discovery",
 				Enabled:     true,
 				Ports:       []int{5353},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "NBNS",
 				Description: "NetBIOS Name Service Windows hostname discovery",
 				Enabled:     true,
 				Ports:       []int{137},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "UPnP",
 				Description: "Universal Plug and Play device discovery",
 				Enabled:     true,
 				Ports:       []int{1900},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "WSD",
 				Description: "Web Services Discovery for Windows devices",
 				Enabled:     true,
 				Ports:       []int{3702},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			// New protocol harvesters
 			{
@@ -304,28 +304,28 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 				Description: "Remote Authentication Dial-In User Service - network access authentication",
 				Enabled:     true,
 				Ports:       []int{1812, 1813},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "SOCKS",
 				Description: "SOCKS proxy protocol authentication (SOCKS4/SOCKS5)",
 				Enabled:     true,
 				Ports:       []int{1080, 1081},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "SIP",
 				Description: "Session Initiation Protocol - VoIP authentication (Digest/Basic)",
 				Enabled:     true,
 				Ports:       []int{5060, 5061},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 			{
 				Name:        "MQTT",
 				Description: "Message Queuing Telemetry Transport - IoT messaging authentication",
 				Enabled:     true,
 				Ports:       []int{1883, 8883},
-				Parameters:  map[string]interface{}{},
+				Parameters:  map[string]any{},
 			},
 		},
 		CustomHarvesters: []CustomHarvesterConfig{},

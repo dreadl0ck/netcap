@@ -129,7 +129,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			log.Fatal(errEnv)
 		}
 
-		for _, line := range strings.Split(string(out), "\n") {
+		for line := range strings.SplitSeq(string(out), "\n") {
 			if strings.HasPrefix(line, defaults.NetcapTypePrefix) {
 				fmt.Println(line)
 			}

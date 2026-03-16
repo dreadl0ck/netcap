@@ -115,7 +115,7 @@ func GetLayerType(auditType string) LayerType {
 // Link → Network → Transport → Application → Stream → Abstract → Unknown
 func SortAuditFiles(files []AuditFileInfo) {
 	// Sort using stable sort to maintain alphabetical order within layers
-	for i := 0; i < len(files); i++ {
+	for i := range files {
 		for j := i + 1; j < len(files); j++ {
 			layerI := GetLayerType(files[i].Type)
 			layerJ := GetLayerType(files[j].Type)

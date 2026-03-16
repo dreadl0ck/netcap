@@ -22,6 +22,7 @@ package credentials
 import (
 	"encoding/binary"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
@@ -254,7 +255,7 @@ func isValidEncodedNBNSData(data []byte, offset, length int) bool {
 		return false
 	}
 
-	for i := 0; i < length; i++ {
+	for i := range length {
 		b := data[offset+i]
 		if b < 'A' || b > 'P' {
 			return false
@@ -631,12 +632,7 @@ func hasRepetitivePattern(name string) bool {
 
 // containsNBNSString checks if a string slice contains a specific string
 func containsNBNSString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(slice, s)
 }
 
 // nbnsHarvester is the harvester definition for NBNS

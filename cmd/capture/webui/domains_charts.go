@@ -187,10 +187,7 @@ func generateDomainsTopByQueriesChart(outDir string, showLegend bool) *charts.Ba
 	}
 
 	// Take top 20 domains
-	limit := 20
-	if len(domains) < limit {
-		limit = len(domains)
-	}
+	limit := min(len(domains), 20)
 	topDomains := domains[:limit]
 
 	// Prepare data
@@ -393,10 +390,7 @@ func generateDomainsRecordTypesChart(outDir string, showLegend bool) *charts.Bar
 	}
 
 	// Take top 15
-	limit := 15
-	if len(recordTypes) < limit {
-		limit = len(recordTypes)
-	}
+	limit := min(len(recordTypes), 15)
 	topRecordTypes := recordTypes[:limit]
 
 	// Prepare data

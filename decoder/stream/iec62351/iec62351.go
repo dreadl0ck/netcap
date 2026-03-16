@@ -47,28 +47,28 @@ const (
 	MsgTypeErrorMessage           = 0x08
 
 	// IEC 62351-6: Security for IEC 61850 profiles
-	MsgTypeAssociationRequest    = 0x10
-	MsgTypeAssociationResponse   = 0x11
-	MsgTypeAbortRequest          = 0x12
-	MsgTypeReleaseRequest        = 0x13
-	MsgTypeReleaseResponse       = 0x14
+	MsgTypeAssociationRequest  = 0x10
+	MsgTypeAssociationResponse = 0x11
+	MsgTypeAbortRequest        = 0x12
+	MsgTypeReleaseRequest      = 0x13
+	MsgTypeReleaseResponse     = 0x14
 
 	// IEC 62351-7: Audit/Logging messages
-	MsgTypeAuditEvent            = 0x20
-	MsgTypeSecurityAlert         = 0x21
-	MsgTypeAccessControlEvent    = 0x22
+	MsgTypeAuditEvent         = 0x20
+	MsgTypeSecurityAlert      = 0x21
+	MsgTypeAccessControlEvent = 0x22
 
 	// IEC 62351-8: Role-Based Access Control
-	MsgTypeAccessRequest         = 0x30
-	MsgTypeAccessResponse        = 0x31
-	MsgTypeRoleDefinition        = 0x32
-	MsgTypePermissionChange      = 0x33
+	MsgTypeAccessRequest    = 0x30
+	MsgTypeAccessResponse   = 0x31
+	MsgTypeRoleDefinition   = 0x32
+	MsgTypePermissionChange = 0x33
 
 	// IEC 62351-9: Key Management
-	MsgTypeSymmetricKeyRequest   = 0x40
-	MsgTypeSymmetricKeyResponse  = 0x41
-	MsgTypeKeyDistribution       = 0x42
-	MsgTypeKeyRevocation         = 0x43
+	MsgTypeSymmetricKeyRequest  = 0x40
+	MsgTypeSymmetricKeyResponse = 0x41
+	MsgTypeKeyDistribution      = 0x42
+	MsgTypeKeyRevocation        = 0x43
 )
 
 // Signature patterns for detecting IEC 62351 security messages
@@ -168,7 +168,7 @@ func hasIEC61850SecurityExtensions(data []byte) bool {
 	// Look for security-related OID patterns in the MMS PDU
 	for i := 0; i < len(data)-len(iec61850MMSSecurityOID); i++ {
 		match := true
-		for j := 0; j < len(iec61850MMSSecurityOID); j++ {
+		for j := range iec61850MMSSecurityOID {
 			if data[i+j] != iec61850MMSSecurityOID[j] {
 				match = false
 				break
@@ -277,7 +277,7 @@ func hasSecurityAuthenticationHeader(data []byte) bool {
 
 	for i := 0; i < len(data)-len(securityAuthHeader); i++ {
 		match := true
-		for j := 0; j < len(securityAuthHeader); j++ {
+		for j := range securityAuthHeader {
 			if data[i+j] != securityAuthHeader[j] {
 				match = false
 				break
@@ -290,4 +290,3 @@ func hasSecurityAuthenticationHeader(data []byte) bool {
 
 	return false
 }
-

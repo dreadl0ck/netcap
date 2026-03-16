@@ -11,17 +11,18 @@ package ja4
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
 // TCPFingerprintData contains the data needed to compute a JA4T/JA4TS fingerprint
 type TCPFingerprintData struct {
-	WindowSize  uint16   // TCP Window Size
-	Options     []uint8  // TCP Option types in order
-	MSS         uint16   // Maximum Segment Size (Option 2)
-	WindowScale uint8    // Window Scale factor (Option 3)
-	IsSYN       bool     // Is this a SYN packet (client)
-	IsSYNACK    bool     // Is this a SYN-ACK packet (server)
+	WindowSize  uint16  // TCP Window Size
+	Options     []uint8 // TCP Option types in order
+	MSS         uint16  // Maximum Segment Size (Option 2)
+	WindowScale uint8   // Window Scale factor (Option 3)
+	IsSYN       bool    // Is this a SYN packet (client)
+	IsSYNACK    bool    // Is this a SYN-ACK packet (server)
 }
 
 // ComputeJA4T computes the JA4T fingerprint for a TCP SYN packet (client)
@@ -88,8 +89,8 @@ func ParseJA4T(fingerprint string) (windowSize, mss, windowScale int, options []
 
 	// Parse options
 	if parts[1] != "0" && parts[1] != "" {
-		optParts := strings.Split(parts[1], "-")
-		for _, opt := range optParts {
+		optParts := strings.SplitSeq(parts[1], "-")
+		for opt := range optParts {
 			var o int
 			_, err := fmt.Sscanf(opt, "%d", &o)
 			if err != nil {
@@ -152,13 +153,7 @@ func ExtractTCPOptionsFromPacket(optionData []byte) []uint8 {
 // GetOSHint returns a hint about the OS based on JA4T fingerprint characteristics
 func GetOSHint(data *TCPFingerprintData) string {
 	// Check for Windows (no timestamp option)
-	hasTimestamp := false
-	for _, opt := range data.Options {
-		if opt == 8 { // Timestamp
-			hasTimestamp = true
-			break
-		}
-	}
+	hasTimestamp := slices.Contains(data.Options, 8)
 
 	if !hasTimestamp {
 		return "Windows (no timestamp option)"
@@ -176,4 +171,3 @@ func GetOSHint(data *TCPFingerprintData) string {
 
 	return "Unix/Linux"
 }
-

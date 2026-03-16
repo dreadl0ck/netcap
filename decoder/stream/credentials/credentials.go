@@ -22,6 +22,7 @@ package credentials
 import (
 	"log"
 	"regexp"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -84,13 +85,13 @@ var Decoder = &decoder.AbstractDecoder{
 				HarvesterFunc: func(data []byte, ident string, ts time.Time) *types.Credentials {
 					matches := r.FindSubmatch(data)
 					if len(matches) > 1 {
-						notes := ""
+						var notes strings.Builder
 						for _, m := range matches {
-							notes += " " + string(m) + " "
+							notes.WriteString(" " + string(m) + " ")
 						}
 
 						return &types.Credentials{
-							Notes: notes,
+							Notes: notes.String(),
 						}
 					}
 

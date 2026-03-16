@@ -1,5 +1,4 @@
 //go:build (!windows && ignore) || !nodpi
-// +build !windows,ignore !nodpi
 
 /*
  * NETCAP - Traffic Analysis Framework
@@ -33,7 +32,16 @@ import (
 // TestDecoderSourceLinks verifies that all links to DPI decoder source code are accessible
 // and return 200 OK. This test iterates over all protocols from all modules (go, ndpi, lpi)
 // and checks their source code links on GitHub.
+// This test is skipped in short mode because it makes hundreds of HTTP requests to GitHub.
+// It also has a 5-minute deadline to prevent blocking the full test suite.
 func TestDecoderSourceLinks(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping source link validation in short mode (makes hundreds of HTTP requests)")
+	}
+
+	// Set a deadline so this test doesn't block the whole suite
+	deadline := time.Now().Add(5 * time.Minute)
+
 	// Get all module protocols
 	moduleProtocols := GetModuleProtocols()
 
@@ -67,6 +75,12 @@ func TestDecoderSourceLinks(t *testing.T) {
 		t.Logf("\n=== Testing module: %s (%d protocols) ===", module, len(protocols))
 
 		for _, protocol := range protocols {
+			// Check if we've exceeded the deadline
+			if time.Now().After(deadline) {
+				t.Logf("Reached 5-minute deadline, stopping URL checks (checked %d links so far)", totalLinks)
+				goto summary
+			}
+
 			// Get all possible URLs for this protocol
 			urls := getProtocolSourceURLs(module, protocol)
 
@@ -138,6 +152,7 @@ func TestDecoderSourceLinks(t *testing.T) {
 		}
 	}
 
+summary:
 	// Print summary
 	separator := strings.Repeat("=", 80)
 	t.Logf("\n%s", separator)

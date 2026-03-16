@@ -182,10 +182,7 @@ func (usp *udpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan *udpStream 
 					// Extract banner ONLY from the first server packet
 					// Nmap service probes are designed to match against the initial server greeting
 					if !firstServerPacketCaptured {
-						limit := len(d.Raw())
-						if limit > decoderconfig.Instance.BannerSize {
-							limit = decoderconfig.Instance.BannerSize
-						}
+						limit := min(len(d.Raw()), decoderconfig.Instance.BannerSize)
 						serverBanner.Write(d.Raw()[:limit])
 						firstServerPacketCaptured = true
 					}

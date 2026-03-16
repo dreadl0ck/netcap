@@ -33,13 +33,6 @@ import (
 
 var sshLog = zap.NewNop()
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // Decoder for protocol analysis and writing audit records to disk.
 var Decoder = &decoder.StreamDecoder{
 	Type:        types.Type_NC_SSH,

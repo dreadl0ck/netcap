@@ -26,6 +26,7 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -207,11 +208,12 @@ func joinStrings(strs []string) string {
 	if len(strs) == 1 {
 		return strs[0]
 	}
-	result := strs[0]
+	var result strings.Builder
+	result.WriteString(strs[0])
 	for i := 1; i < len(strs); i++ {
-		result += ", " + strs[i]
+		result.WriteString(", " + strs[i])
 	}
-	return result
+	return result.String()
 }
 
 // Note: For production use with actual IMAP STARTTLS traffic:

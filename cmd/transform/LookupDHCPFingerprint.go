@@ -16,6 +16,7 @@ package transform
 import (
 	"fmt"
 	"log"
+	"slices"
 	"strings"
 
 	"go.uber.org/zap"
@@ -51,11 +52,9 @@ func lookupDHCPFingerprint() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if uas, ok := userAgentStore[http.SrcIP]; ok {
-				for _, u := range uas {
-					if u == http.UserAgent {
-						// already collected
-						return
-					}
+				if slices.Contains(uas, http.UserAgent) {
+					// already collected
+					return
 				}
 				// collect
 				userAgentStore[http.SrcIP] = append(uas, http.UserAgent)

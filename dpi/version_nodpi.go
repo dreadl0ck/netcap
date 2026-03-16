@@ -1,5 +1,4 @@
 //go:build nodpi
-// +build nodpi
 
 /*
  * NETCAP - Traffic Analysis Framework

@@ -142,10 +142,3 @@ func isTextContent(data []byte) bool {
 	// If more than 10% non-printable, it's likely binary
 	return float64(nonPrintable)/float64(len(sample)) < 0.1
 }
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}

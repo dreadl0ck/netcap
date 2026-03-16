@@ -21,6 +21,7 @@ package packet
 
 import (
 	"log"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -33,8 +34,8 @@ import (
 
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/dpi"
-	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/internal/ja4"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -625,10 +626,8 @@ func (d *Decoder) writeIPProfile(i *types.IPProfile) {
 
 // addUniqueString adds a string to a slice if it's not already present.
 func addUniqueString(slice []string, item string) []string {
-	for _, existing := range slice {
-		if existing == item {
-			return slice
-		}
+	if slices.Contains(slice, item) {
+		return slice
 	}
 	return append(slice, item)
 }

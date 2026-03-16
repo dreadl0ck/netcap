@@ -35,19 +35,19 @@ const serviceSIP = "SIP"
 var (
 	// SIP request line pattern: METHOD sip:uri SIP/2.0
 	reSIPRequestLine = regexp.MustCompile(`^(REGISTER|INVITE|ACK|BYE|CANCEL|OPTIONS|PRACK|SUBSCRIBE|NOTIFY|PUBLISH|INFO|REFER|MESSAGE|UPDATE)\s+sip:([^\s]+)\s+SIP/2\.0`)
-	
+
 	// SIP response line pattern: SIP/2.0 status-code reason
 	reSIPResponseLine = regexp.MustCompile(`^SIP/2\.0\s+(\d{3})\s+(.*)`)
-	
+
 	// SIP Authorization header patterns
-	reSIPAuthDigest    = regexp.MustCompile(`(?i)(?:Authorization|Proxy-Authorization):\s*Digest\s+(.*)`)
-	reSIPAuthBasic     = regexp.MustCompile(`(?i)(?:Authorization|Proxy-Authorization):\s*Basic\s+([A-Za-z0-9+/=]+)`)
-	
+	reSIPAuthDigest = regexp.MustCompile(`(?i)(?:Authorization|Proxy-Authorization):\s*Digest\s+(.*)`)
+	reSIPAuthBasic  = regexp.MustCompile(`(?i)(?:Authorization|Proxy-Authorization):\s*Basic\s+([A-Za-z0-9+/=]+)`)
+
 	// SIP header patterns
-	reSIPFrom    = regexp.MustCompile(`(?i)^From:\s*(.*)`)
-	reSIPTo      = regexp.MustCompile(`(?i)^To:\s*(.*)`)
-	reSIPCallID  = regexp.MustCompile(`(?i)^Call-ID:\s*(.*)`)
-	reSIPCSeq    = regexp.MustCompile(`(?i)^CSeq:\s*(\d+)\s+(\w+)`)
+	reSIPFrom   = regexp.MustCompile(`(?i)^From:\s*(.*)`)
+	reSIPTo     = regexp.MustCompile(`(?i)^To:\s*(.*)`)
+	reSIPCallID = regexp.MustCompile(`(?i)^Call-ID:\s*(.*)`)
+	reSIPCSeq   = regexp.MustCompile(`(?i)^CSeq:\s*(\d+)\s+(\w+)`)
 )
 
 // sipHarvesterFunc extracts credentials from SIP authentication
@@ -70,7 +70,7 @@ func sipHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credential
 	}
 
 	firstLine := string(lines[0])
-	
+
 	// Try to extract credentials from Authorization header
 	if creds := extractSIPDigestAuth(data, ident, ts, lines, firstLine); creds != nil {
 		return creds
@@ -98,10 +98,10 @@ func extractSIPDigestAuth(data []byte, ident string, ts time.Time, lines [][]byt
 	}
 
 	digestParams := string(matches[1])
-	
+
 	// Parse digest parameters
 	params := parseSIPDigestParams(digestParams)
-	
+
 	username := params["username"]
 	if username == "" {
 		return nil
@@ -111,7 +111,7 @@ func extractSIPDigestAuth(data []byte, ident string, ts time.Time, lines [][]byt
 	var method, callID, from, to string
 	for _, line := range lines {
 		lineStr := string(line)
-		
+
 		if m := reSIPFrom.FindStringSubmatch(lineStr); len(m) > 1 {
 			from = strings.TrimSpace(m[1])
 		} else if m := reSIPTo.FindStringSubmatch(lineStr); len(m) > 1 {
@@ -153,48 +153,48 @@ func extractSIPDigestAuth(data []byte, ident string, ts time.Time, lines [][]byt
 	}
 
 	return &types.Credentials{
-		Timestamp:     ts.UnixNano(),
-		Service:       serviceSIP,
-		Flow:          ident,
-		User:          username,
-		Password:      hashcatFormat, // Hashcat format if available
-		Notes:         notes,
-		HashType:      "SIP Digest MD5",
-		Realm:         realm,
-		Nonce:         nonce,
-		Uri:           uri,
-		Method:        method,
-		Qop:           qop,
-		Nc:            nc,
-		Cnonce:        cnonce,
-		SipMethod:     method,
-		SipCallId:     callID,
-		SipFrom:       from,
-		SipTo:         to,
+		Timestamp: ts.UnixNano(),
+		Service:   serviceSIP,
+		Flow:      ident,
+		User:      username,
+		Password:  hashcatFormat, // Hashcat format if available
+		Notes:     notes,
+		HashType:  "SIP Digest MD5",
+		Realm:     realm,
+		Nonce:     nonce,
+		Uri:       uri,
+		Method:    method,
+		Qop:       qop,
+		Nc:        nc,
+		Cnonce:    cnonce,
+		SipMethod: method,
+		SipCallId: callID,
+		SipFrom:   from,
+		SipTo:     to,
 	}
 }
 
 // parseSIPDigestParams parses SIP Digest authentication parameters
 func parseSIPDigestParams(digestLine string) map[string]string {
 	params := make(map[string]string)
-	
+
 	// Split by comma and parse each part
-	parts := strings.Split(digestLine, ",")
-	for _, part := range parts {
+	parts := strings.SplitSeq(digestLine, ",")
+	for part := range parts {
 		part = strings.TrimSpace(part)
-		
+
 		// Find equals sign
-		eqIdx := strings.Index(part, "=")
-		if eqIdx == -1 {
+		before, after, ok := strings.Cut(part, "=")
+		if !ok {
 			continue
 		}
 
-		key := strings.ToLower(strings.TrimSpace(part[:eqIdx]))
-		value := strings.TrimSpace(part[eqIdx+1:])
-		
+		key := strings.ToLower(strings.TrimSpace(before))
+		value := strings.TrimSpace(after)
+
 		// Remove quotes
 		value = strings.Trim(value, "\"")
-		
+
 		params[key] = value
 	}
 
@@ -233,7 +233,7 @@ func extractSIPBasicAuth(data []byte, ident string, ts time.Time, lines [][]byte
 	var callID, from, to string
 	for _, line := range lines {
 		lineStr := string(line)
-		
+
 		if m := reSIPFrom.FindStringSubmatch(lineStr); len(m) > 1 {
 			from = strings.TrimSpace(m[1])
 		} else if m := reSIPTo.FindStringSubmatch(lineStr); len(m) > 1 {
@@ -280,7 +280,7 @@ func extractSIPAuthResponse(data []byte, ident string, ts time.Time, lines [][]b
 	var callID, from, to, cseqMethod string
 	for _, line := range lines {
 		lineStr := string(line)
-		
+
 		if m := reSIPFrom.FindStringSubmatch(lineStr); len(m) > 1 {
 			from = strings.TrimSpace(m[1])
 		} else if m := reSIPTo.FindStringSubmatch(lineStr); len(m) > 1 {
@@ -353,15 +353,15 @@ func extractSIPUsername(sipAddr string) string {
 
 	// Remove angle brackets
 	sipAddr = strings.Trim(sipAddr, "<>")
-	
+
 	// Get just user@domain, removing parameters
 	if semicolon := strings.Index(sipAddr, ";"); semicolon != -1 {
 		sipAddr = sipAddr[:semicolon]
 	}
-	
+
 	// Get just the user part
-	if atIdx := strings.Index(sipAddr, "@"); atIdx != -1 {
-		return sipAddr[:atIdx]
+	if before, _, ok := strings.Cut(sipAddr, "@"); ok {
+		return before
 	}
 
 	return sipAddr
@@ -382,4 +382,3 @@ var sipHarvester = Harvester{
 	Description:   "Session Initiation Protocol - captures VoIP authentication credentials (Digest/Basic)",
 	HarvesterFunc: sipHarvesterFunc,
 }
-

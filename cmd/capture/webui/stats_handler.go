@@ -21,6 +21,7 @@ package webui
 
 import (
 	"encoding/json"
+	"maps"
 	"net/http"
 	"path/filepath"
 	"sync/atomic"
@@ -42,9 +43,7 @@ func (s *Server) handleStats(w http.ResponseWriter, r *http.Request) {
 	s.mu.RLock()
 	stats := s.processingStats
 	errors := make(map[string]FileError)
-	for k, v := range s.fileErrors {
-		errors[k] = v
-	}
+	maps.Copy(errors, s.fileErrors)
 	isServiceMode := s.isServiceMode
 	collector := s.collector
 	s.mu.RUnlock()

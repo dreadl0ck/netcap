@@ -20,8 +20,6 @@
 package io
 
 import (
-	"fmt"
-	"log"
 	"net"
 	"os"
 	"testing"
@@ -33,22 +31,23 @@ func TestUNIXSocket(t *testing.T) {
 	// Create unix socket
 	path := "/tmp/test.sock"
 	if err := os.RemoveAll(path); err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	raddr, err := net.ResolveUnixAddr(networkTypeUnixgram, path)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	l, err := net.ListenUnixgram(networkTypeUnixgram, raddr)
 	if err != nil {
-		log.Fatal("listen error:", err)
+		t.Fatal("listen error:", err)
 	}
+	defer l.Close()
 
-	fmt.Println("listening for incoming alerts on UNIX socket at", path)
+	t.Log("listening for incoming alerts on UNIX socket at", path)
 
-	done := make(chan bool)
+	done := make(chan bool, 1)
 	count := 0
 	expected := 1000
 
@@ -57,31 +56,43 @@ func TestUNIXSocket(t *testing.T) {
 			var buf = make([]byte, 1024)
 			_, err := l.Read(buf)
 			if err != nil {
-				log.Println("failed to read from UNIX socket", err)
+				// listener was closed, exit gracefully
 				return
 			}
-			//fmt.Println("read from UNIX socket", string(buf[:n]))
 
 			count++
 			if count == expected {
 				done <- true
+				return
 			}
-
 		}
 	}()
 
-	time.Sleep(1 + time.Second)
+	time.Sleep(1 * time.Second)
 
 	// connect as client to socket
 	s := createUnixSocket("test")
+	defer s.Close()
 
-	for i := 0; i < 1000; i++ {
-	again:
-		_, err := s.Write([]byte("test"))
-		if err != nil {
-			goto again
+	const maxRetries = 10
+	for i := range 1000 {
+		var writeErr error
+		for retry := 0; retry < maxRetries; retry++ {
+			_, writeErr = s.Write([]byte("test"))
+			if writeErr == nil {
+				break
+			}
+			time.Sleep(time.Millisecond)
+		}
+		if writeErr != nil {
+			t.Fatalf("failed to write message %d after %d retries: %v", i, maxRetries, writeErr)
 		}
 	}
 
-	<-done
+	select {
+	case <-done:
+		t.Log("received all", expected, "messages")
+	case <-time.After(30 * time.Second):
+		t.Fatalf("timed out waiting for %d messages, only received %d", expected, count)
+	}
 }

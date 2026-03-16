@@ -332,7 +332,7 @@ func (c *cipReader) parseMultipleServicePacket(data []byte) {
 	}
 
 	offsets := make([]uint16, serviceCount)
-	for i := uint16(0); i < serviceCount; i++ {
+	for i := range serviceCount {
 		offsets[i] = binary.LittleEndian.Uint16(data[dataOffset+int(i)*2 : dataOffset+int(i)*2+2])
 	}
 	dataOffset += offsetListSize
@@ -345,7 +345,7 @@ func (c *cipReader) parseMultipleServicePacket(data []byte) {
 	}
 
 	// Parse each embedded service
-	for i := uint16(0); i < serviceCount; i++ {
+	for i := range serviceCount {
 		serviceOffset := baseOffset + int(offsets[i])
 		if serviceOffset >= len(data) {
 			continue
@@ -507,7 +507,7 @@ func (c *cipReader) parseCIPResponse(data []byte) (*types.CIP, int) {
 	// Parse additional status words
 	if additionalStatusSize > 0 {
 		additionalStatus := make([]uint32, 0, additionalStatusSize)
-		for i := 0; i < additionalStatusSize; i++ {
+		for i := range additionalStatusSize {
 			offset := 4 + i*2
 			if offset+2 <= len(data) {
 				statusWord := binary.LittleEndian.Uint16(data[offset : offset+2])

@@ -112,7 +112,7 @@ func newElasticWriter(wc *WriterConfig) *elasticWriter {
 		wc:        wc,
 		queue:     make([]proto.Message, wc.BulkSize),
 		indexName: makeElasticIndexIdent(wc),
-		meta:      []byte(fmt.Sprintf(`{ "index" : { } }%s`, "\n")),
+		meta:      fmt.Appendf(nil, `{ "index" : { } }%s`, "\n"),
 	}
 }
 
@@ -466,14 +466,14 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 
 		// if the whole request failed, print error and mark all documents as failed
 		if res.IsError() {
-			var raw map[string]interface{}
+			var raw map[string]any
 			if err = json.NewDecoder(res.Body).Decode(&raw); err != nil {
 				log.Printf("failure to parse response body: %s", err)
 			} else {
 				ioLog.Error("elastic bulk request failed",
 					zap.Int("status", res.StatusCode),
-					zap.String("type", raw["error"].(map[string]interface{})["type"].(string)),
-					zap.String("reason", raw["error"].(map[string]interface{})["reason"].(string)),
+					zap.String("type", raw["error"].(map[string]any)["type"].(string)),
+					zap.String("reason", raw["error"].(map[string]any)["reason"].(string)),
 					zap.String("index", w.indexName),
 				)
 			}
@@ -725,7 +725,7 @@ func generateMapping(t types.Type) []byte {
 				if field.Type.Elem().Kind() == reflect.Struct {
 					mapping.Properties[field.Name] = map[string]string{"type": "object"}
 				} else {
-					if field.Type.Elem().Kind() == reflect.Ptr {
+					if field.Type.Elem().Kind() == reflect.Pointer {
 						mapping.Properties[field.Name] = map[string]string{"type": "object"}
 					} else {
 						// scalar array types
