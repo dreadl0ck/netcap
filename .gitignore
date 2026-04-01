@@ -45,6 +45,8 @@ cmd/try/webui/frontend
 tmp/
 net
 
+evals/
+
 # Test outputs
 test-output/
 links.txt
