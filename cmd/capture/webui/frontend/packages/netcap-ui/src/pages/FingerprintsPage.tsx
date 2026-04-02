@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -101,6 +101,13 @@ export default function FingerprintsPage() {
   const [sortField, setSortField] = useState<FingerprintSortField>('count');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [viewMode, setViewMode] = useViewMode();
+
+  // Reset page to 0 when the Community ID filter changes via global context
+  // (e.g., clicking a CommunityIDChip on another page), so the user never
+  // lands on an out-of-range page that shows an empty table.
+  useEffect(() => {
+    setPage(0);
+  }, [selectedCommunityIDs, isCommunityIDFilterActive]);
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
