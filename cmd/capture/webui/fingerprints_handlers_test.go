@@ -180,3 +180,74 @@ func TestFingerprintsResponseJSON(t *testing.T) {
 		t.Errorf("Expected 0 community IDs for fp2, got %d", len(decoded.Fingerprints[1].CommunityIDs))
 	}
 }
+
+// TestFilterFingerprintsByCommunityID verifies that fingerprints can be filtered
+// by community IDs using the same logic as the menu count handler.
+func TestFilterFingerprintsByCommunityID(t *testing.T) {
+	fingerprints := []FingerprintSummary{
+		{
+			Fingerprint:  "fp1",
+			Type:         "JA4",
+			CommunityIDs: []string{"1:abc123", "1:def456"},
+		},
+		{
+			Fingerprint:  "fp2",
+			Type:         "JA4S",
+			CommunityIDs: []string{"1:def456", "1:ghi789"},
+		},
+		{
+			Fingerprint:  "fp3",
+			Type:         "JA4T",
+			CommunityIDs: []string{},
+		},
+		{
+			Fingerprint:  "fp4",
+			Type:         "DHCP",
+			CommunityIDs: nil,
+		},
+	}
+
+	tests := []struct {
+		name         string
+		communityIDs map[string]bool
+		expected     int
+	}{
+		{
+			name:         "filter matches one fingerprint",
+			communityIDs: map[string]bool{"1:abc123": true},
+			expected:     1,
+		},
+		{
+			name:         "filter matches two fingerprints",
+			communityIDs: map[string]bool{"1:def456": true},
+			expected:     2,
+		},
+		{
+			name:         "filter matches all with community IDs",
+			communityIDs: map[string]bool{"1:abc123": true, "1:ghi789": true},
+			expected:     2,
+		},
+		{
+			name:         "filter matches none",
+			communityIDs: map[string]bool{"1:nonexistent": true},
+			expected:     0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			count := int64(0)
+			for _, fp := range fingerprints {
+				for _, cid := range fp.CommunityIDs {
+					if tt.communityIDs[cid] {
+						count++
+						break
+					}
+				}
+			}
+			if count != int64(tt.expected) {
+				t.Errorf("Expected %d filtered fingerprints, got %d", tt.expected, count)
+			}
+		})
+	}
+}
