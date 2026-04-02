@@ -815,6 +815,9 @@ func readJA4TFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 			if tcp.SrcIP != "" {
 				agg.hosts[tcp.SrcIP] = true
 			}
+			if tcp.CommunityID != "" {
+				agg.communityIDs[tcp.CommunityID] = true
+			}
 
 			if tcp.Timestamp < agg.firstSeen {
 				agg.firstSeen = tcp.Timestamp
@@ -847,6 +850,9 @@ func readJA4TFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 			agg.count++
 			if tcp.SrcIP != "" {
 				agg.hosts[tcp.SrcIP] = true
+			}
+			if tcp.CommunityID != "" {
+				agg.communityIDs[tcp.CommunityID] = true
 			}
 
 			if tcp.Timestamp < agg.firstSeen {

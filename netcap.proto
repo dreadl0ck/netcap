@@ -793,6 +793,7 @@ message TCP {
   string Ja4ts = 36;                    // JA4TS TCP server fingerprint (from SYN-ACK)
   string Ja4tDescription = 37;          // JA4T database lookup description (OS/device)
   string Ja4tsDescription = 38;         // JA4TS database lookup description (OS/device)
+  string CommunityID = 39;              // Corelight Community ID v1 for cross-tool correlation
 }
 
 message TCPOption {

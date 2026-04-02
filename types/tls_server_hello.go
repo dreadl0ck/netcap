@@ -145,7 +145,8 @@ func (t *TLSServerHello) Inc() {
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
-func (t *TLSServerHello) SetPacketContext(*PacketContext) {
+func (t *TLSServerHello) SetPacketContext(ctx *PacketContext) {
+	t.CommunityID = ctx.CommunityID
 }
 
 // Src returns the source address of the audit record.

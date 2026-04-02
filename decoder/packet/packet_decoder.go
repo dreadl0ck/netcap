@@ -102,7 +102,7 @@ type (
 		core.DecoderAPI
 
 		// Decode parses a gopacket and returns an error
-		Decode(p gopacket.Packet) error
+		Decode(p gopacket.Packet, ctx *types.PacketContext) error
 	}
 )
 
@@ -333,10 +333,17 @@ func (pd *Decoder) GetDescription() string {
 // Decode is called for each layer
 // this calls the handler function of the decoder
 // and writes the serialized protobuf into the data pipe.
-func (pd *Decoder) Decode(p gopacket.Packet) error {
+func (pd *Decoder) Decode(p gopacket.Packet, ctx *types.PacketContext) error {
 	// call the Handler function of the decoder
 	record := pd.Handler(p)
 	if record != nil {
+
+		// apply packet context (community ID, IPs, ports) if available
+		if ctx != nil {
+			if auditRecord, ok := record.(types.AuditRecord); ok {
+				auditRecord.SetPacketContext(ctx)
+			}
+		}
 
 		// increase counter
 		atomic.AddInt64(&pd.NumRecordsWritten, 1)

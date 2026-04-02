@@ -76,6 +76,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			// create context for packet
 			ctx := &types.PacketContext{}
 
+			// Always calculate Community ID v1 for cross-tool correlation
+			ctx.CommunityID = packet.CalcCommunityID(pkt)
+
 			if c.config.DecoderConfig.AddContext {
 				netLayer = pkt.NetworkLayer()
 				transportLayer = pkt.TransportLayer()
@@ -93,9 +96,6 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 					ctx.SrcPort = utils.DecodePort(transportLayer.TransportFlow().Src().Raw())
 					ctx.DstPort = utils.DecodePort(transportLayer.TransportFlow().Dst().Raw())
 				}
-
-				// Calculate Community ID v1 for cross-tool correlation
-				ctx.CommunityID = packet.CalcCommunityID(pkt)
 			}
 
 			// iterate over all layers
@@ -171,7 +171,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			// call custom decoders
 			for _, customDec = range c.packetDecoders {
 				t := time.Now()
-				err = customDec.Decode(pkt)
+				err = customDec.Decode(pkt, ctx)
 				duration := time.Since(t)
 				customDecoderTime.WithLabelValues(customDec.GetName()).Set(float64(duration.Nanoseconds()))
 				c.perfTracker.RecordCustomDecoder(customDec.GetName(), duration)

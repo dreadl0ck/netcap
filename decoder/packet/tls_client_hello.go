@@ -280,8 +280,6 @@ var tlsClientHelloDecoder = newPacketDecoder(
 				// JA4 fingerprint
 				Ja4:            ja4Fingerprint,
 				Ja4Description: ja4Description,
-				// Community ID for flow correlation
-				CommunityID: CalcCommunityID(p),
 			}
 		}
 
