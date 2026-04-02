@@ -62,9 +62,11 @@ import {
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
+import { CommunityIDChip } from '../components/CommunityIDChip';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import { useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
+import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 interface FingerprintSummary {
@@ -75,6 +77,7 @@ interface FingerprintSummary {
   description: string;
   firstSeen: number;
   lastSeen: number;
+  communityIds: string[];
 }
 
 interface FingerprintsResponse {
@@ -87,6 +90,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function FingerprintsPage() {
   const api = useNetcapApi();
+  const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
@@ -128,6 +132,13 @@ export default function FingerprintsPage() {
   // Apply filters and sorting
   const filteredFingerprints = useMemo(() => {
     let filtered = fingerprints;
+
+    // Apply Community ID filter
+    if (isCommunityIDFilterActive && selectedCommunityIDs.size > 0) {
+      filtered = filtered.filter(fp =>
+        fp.communityIds && fp.communityIds.some(cid => selectedCommunityIDs.has(cid))
+      );
+    }
 
     // Apply type filter
     if (filterType !== 'all') {
@@ -172,7 +183,7 @@ export default function FingerprintsPage() {
     });
 
     return filtered;
-  }, [fingerprints, filterType, searchQuery, sortField, sortOrder]);
+  }, [fingerprints, filterType, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs]);
 
   const paginatedFingerprints = filteredFingerprints.slice(
     page * rowsPerPage,
@@ -671,7 +682,7 @@ export default function FingerprintsPage() {
             Refresh
           </Button>
           
-          {(searchQuery || filterType !== 'all') ? (
+          {(searchQuery || filterType !== 'all' || isCommunityIDFilterActive) ? (
             <Typography variant="body2" color="text.secondary">
               Showing {filteredFingerprints.length} of {totalCount} fingerprints
             </Typography>
@@ -881,6 +892,25 @@ export default function FingerprintsPage() {
                                             size="small"
                                             variant="outlined"
                                             sx={{ fontSize: '0.75rem', fontFamily: 'monospace' }}
+                                          />
+                                        ))}
+                                      </Box>
+                                    </Grid>
+                                  )}
+
+                                  {/* Community IDs */}
+                                  {fp.communityIds && fp.communityIds.length > 0 && (
+                                    <Grid item xs={12}>
+                                      <Typography variant="subtitle2" gutterBottom>
+                                        Community IDs ({fp.communityIds.length})
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                        {fp.communityIds.map((cid) => (
+                                          <CommunityIDChip
+                                            key={cid}
+                                            communityId={cid}
+                                            mode="chip"
+                                            truncate={false}
                                           />
                                         ))}
                                       </Box>
