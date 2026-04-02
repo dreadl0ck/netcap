@@ -422,3 +422,34 @@ func (s *Server) handleCertificateDownloadPCAP(w http.ResponseWriter, r *http.Re
 
 	log.Printf("[WebUI] Successfully sent PCAP file: %d bytes written", bytesWritten)
 }
+
+// CountUniqueCertificates counts deduplicated certificates by SHA256 fingerprint.
+// This matches the deduplication logic used by readCertificates / the certificates table.
+func CountUniqueCertificates(outDir string) int64 {
+	certs, err := readCertificates(outDir)
+	if err != nil {
+		return 0
+	}
+	return int64(len(certs))
+}
+
+// CountUniqueCertificatesWithCommunityIDFilter counts deduplicated certificates
+// that match any of the given community IDs.
+func CountUniqueCertificatesWithCommunityIDFilter(outDir string, communityIDs map[string]bool) int64 {
+	if len(communityIDs) == 0 {
+		return CountUniqueCertificates(outDir)
+	}
+
+	certs, err := readCertificates(outDir)
+	if err != nil {
+		return 0
+	}
+
+	var count int64
+	for _, cert := range certs {
+		if cert.CommunityID != "" && communityIDs[cert.CommunityID] {
+			count++
+		}
+	}
+	return count
+}
