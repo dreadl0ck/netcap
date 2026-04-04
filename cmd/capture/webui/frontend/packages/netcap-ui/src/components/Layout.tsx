@@ -101,23 +101,15 @@ const BADGE_SX = {
 
 const LINK_STYLE = { textDecoration: 'none', color: 'inherit' };
 
-const TOOLBAR_LOGO_SX = {
-  color: 'primary.main',
-  fontWeight: 'bold',
+const TOOLBAR_LOGO_IMG_STYLE: React.CSSProperties = {
+  width: '100%',
   cursor: 'pointer',
-  lineHeight: 1.2,
-  '&:hover': {
-    color: 'primary.dark',
-  },
-};
+  display: 'block',
+  userSelect: 'none',
+  WebkitUserDrag: 'none',
+  pointerEvents: 'none',
+} as React.CSSProperties;
 
-const SERVICE_MODE_CAPTION_SX = {
-  color: 'text.secondary',
-  fontSize: '0.65rem',
-  fontWeight: 500,
-  letterSpacing: '0.1em',
-  mt: -0.5,
-};
 
 const VERSION_BOX_SX = {
   p: 2,
@@ -280,54 +272,13 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
 
   const drawer = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box 
-          onClick={toggleFullscreen}
-          sx={{ 
-            textDecoration: 'none', 
-            flexGrow: 1,
-            cursor: 'pointer',
-          }}
-        >
-          <Box sx={status?.logoSubText ? { padding: '7px 0px 0px 50px' } : undefined}>
-            <Typography 
-              variant="h6" 
-              noWrap 
-              component="div" 
-              sx={TOOLBAR_LOGO_SX}
-            >
-              NETCAP
-            </Typography>
-            {status?.logoSubText ? (
-              <Typography 
-                variant="caption" 
-                component="div"
-                sx={SERVICE_MODE_CAPTION_SX}
-              >
-                {status.logoSubText}
-              </Typography>
-            ) : status?.isServiceMode ? (
-              <Typography 
-                variant="caption" 
-                component="div"
-                sx={SERVICE_MODE_CAPTION_SX}
-              >
-                SERVICE
-              </Typography>
-            ) : status && !status?.isTryService && (
-              <Typography 
-                variant="caption" 
-                component="div"
-                sx={SERVICE_MODE_CAPTION_SX}
-              >
-                LOCAL
-              </Typography>
-            )}
-          </Box>
-        </Box>
-        <LearnModeToggle />
+      <Toolbar
+        onClick={toggleFullscreen}
+        sx={{ px: '0 !important', minHeight: { xs: 'auto', sm: 64 }, cursor: 'pointer', justifyContent: 'center' }}
+      >
+        <img src="/logo.png" alt="Netcap" style={TOOLBAR_LOGO_IMG_STYLE} />
       </Toolbar>
-      <List sx={{ flexGrow: 1 }}>
+      <List sx={{ flexGrow: 1, pt: 0 }}>
         <Link href="/" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/')}
@@ -786,6 +737,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
               </Link>
             </Typography>
             <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <LearnModeToggle size="small" />
               <IconButton
                 data-learn="Documentation: Open the official Netcap documentation."
                 size="small"

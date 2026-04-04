@@ -21,14 +21,20 @@ import { IconButton, Tooltip, Box } from '@mui/material';
 import SchoolIcon from '@mui/icons-material/School';
 import { useLearnMode } from '../contexts/LearnModeContext';
 
-export function LearnModeToggle() {
+interface LearnModeToggleProps {
+  size?: 'small' | 'medium' | 'large';
+}
+
+export function LearnModeToggle({ size }: LearnModeToggleProps) {
   const { isLearnModeActive, toggleLearnMode } = useLearnMode();
+  const fontSize = size === 'small' ? 'small' : undefined;
 
   return (
     <Tooltip title={isLearnModeActive ? 'Exit Learn Mode' : 'Enter Learn Mode'}>
       <Box sx={{ position: 'relative' }}>
         <IconButton
           color="inherit"
+          size={size}
           onClick={toggleLearnMode}
           sx={{
             color: isLearnModeActive ? '#00bcd4' : 'inherit',
@@ -39,7 +45,7 @@ export function LearnModeToggle() {
             transition: 'all 0.3s',
           }}
         >
-          <SchoolIcon />
+          <SchoolIcon fontSize={fontSize} />
         </IconButton>
         {isLearnModeActive && (
           <Box
