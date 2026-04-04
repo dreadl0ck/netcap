@@ -1,6 +1,6 @@
 {
   "name": "@dreadl0ck/netcap-ui",
-  "version": "0.8.6",
+  "version": "0.8.7",
   "description": "Netcap UI components and pages as a reusable React library",
   "type": "module",
   "main": "dist/index.cjs",
