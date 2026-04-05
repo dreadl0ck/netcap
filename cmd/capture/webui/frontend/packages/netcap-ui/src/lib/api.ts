@@ -21,39 +21,30 @@
 // This is a copy of the original api.ts file for the netcap-ui package
 
 // Get backend URL - defaults to localhost:8080
-// In production builds, this can be overridden via NEXT_PUBLIC_BACKEND_URL
+// In production builds, this can be overridden via VITE_BACKEND_URL
 export function getBackendUrl(): string {
-  // Check if running in browser
-  if (typeof window !== 'undefined') {
-    // Allow override via window object (for embedded scenarios)
-    const windowWithBackend = window as { __BACKEND_URL__?: string };
-    if (windowWithBackend.__BACKEND_URL__) {
-      return windowWithBackend.__BACKEND_URL__;
-    }
+  // Allow override via window object (for embedded scenarios)
+  const windowWithBackend = window as { __BACKEND_URL__?: string };
+  if (windowWithBackend.__BACKEND_URL__) {
+    return windowWithBackend.__BACKEND_URL__;
   }
-  
-  // Use environment variable if set, otherwise default to localhost:8080
-  return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+
+  // Use Vite environment variable if set, otherwise default to localhost:8080.
+  // import.meta.env is statically replaced by Vite at build time.
+  // The cast is needed because this library is built by tsup (no vite/client types).
+  const env = (import.meta as unknown as { env?: Record<string, string> }).env;
+  return env?.VITE_BACKEND_URL || 'http://localhost:8080';
 }
 
 // Default API_BASE for backwards compatibility (computed once at module load)
 const DEFAULT_API_BASE = `${getBackendUrl()}/api`;
 
 /**
- * Check if we're running on the server (SSR)
- */
-const isSSR = typeof window === 'undefined';
-
-/**
  * Create an API client with a specific backend URL.
  * This factory function allows creating API clients that respect the configured backendUrl.
- * 
- * During SSR (static site generation), returns a no-op API that returns empty/default values.
- * This prevents errors during Next.js static export while the real API loads on the client.
  */
 export function createApi(backendUrl: string) {
-  // During SSR or with empty backendUrl, return no-op API to prevent errors
-  if (isSSR || !backendUrl) {
+  if (!backendUrl) {
     return createNoOpApi();
   }
   const apiBase = `${backendUrl}/api`;

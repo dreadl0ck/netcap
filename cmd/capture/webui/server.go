@@ -649,8 +649,7 @@ func (s *Server) Start() error {
 		mux.HandleFunc("/health", s.handleHealth)
 	}
 
-	// Static files - echarts assets and frontend
-	// Note: /static/ is served from Next.js public/ directory automatically
+	// Static files - frontend SPA with fallback to index.html for client-side routing
 	mux.Handle("/", s.handleStatic())
 
 	s.httpServer = &http.Server{
@@ -1006,8 +1005,7 @@ func shouldLogRequest(path string) bool {
 	return false
 
 	// Skip logging for static assets
-	if strings.HasPrefix(path, "/_next/static/") ||
-		strings.HasPrefix(path, "/_next/image/") ||
+	if strings.HasPrefix(path, "/assets/") ||
 		strings.HasPrefix(path, "/static/") ||
 		path == "/favicon.ico" ||
 		strings.HasSuffix(path, ".js") ||

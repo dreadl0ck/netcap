@@ -19,18 +19,18 @@
 
 import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
-import type { AppProps } from 'next/app';
-import { useRouter } from 'next/router';
-import Head from 'next/head';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter, useNavigate } from 'react-router';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { NextjsNetcapProvider } from '@dreadl0ck/netcap-ui/adapters/nextjs';
+import { ReactRouterNetcapProvider } from '@dreadl0ck/netcap-ui/adapters/react-router';
 import { api, getBackendUrl } from '@dreadl0ck/netcap-ui/lib';
 import { ConnectionOverlay } from '@dreadl0ck/netcap-ui/components';
 import { mutate as globalMutate } from 'swr';
+import { AppRoutes } from './routes';
 
 // Import self-hosted Roboto fonts (only the weights needed by MUI)
 import '@fontsource/roboto/300.css'; // Light
@@ -42,8 +42,6 @@ import '@fontsource/roboto-mono/400.css';
 import '@fontsource/roboto-mono/700.css';
 
 // Create theme once outside component to prevent recreation on every render
-// This is a critical performance optimization that prevents unnecessary re-renders
-// of all child components wrapped by ThemeProvider
 const theme = createTheme({
   palette: {
     mode: 'dark',
@@ -55,7 +53,6 @@ const theme = createTheme({
     },
   },
   typography: {
-    // Use self-hosted Roboto font
     fontFamily: [
       'Roboto',
       '-apple-system',
@@ -65,9 +62,7 @@ const theme = createTheme({
       'Arial',
       'sans-serif',
     ].join(','),
-    // Slightly smaller font sizes for mobile devices
-    fontSize: 14, // Base font size (default is 14)
-    // Font rendering optimizations for self-hosted fonts
+    fontSize: 14,
     fontWeightLight: 300,
     fontWeightRegular: 400,
     fontWeightMedium: 500,
@@ -140,7 +135,6 @@ const theme = createTheme({
           WebkitFontSmoothing: 'antialiased',
           MozOsxFontSmoothing: 'grayscale',
           WebkitTextSizeAdjust: '100%',
-          // Prevent iOS Safari overscroll/rubber-banding
           height: '100%',
           width: '100%',
           overflow: 'hidden',
@@ -150,22 +144,18 @@ const theme = createTheme({
           MozOsxFontSmoothing: 'grayscale',
           textRendering: 'optimizeLegibility',
           WebkitTextSizeAdjust: '100%',
-          // Explicit dark mode background
           backgroundColor: '#121212',
           color: '#fff',
-          // Prevent iOS Safari overscroll/rubber-banding
           height: '100%',
           width: '100%',
           margin: 0,
           padding: 0,
           overflow: 'hidden',
           position: 'fixed',
-          // Prevent pull-to-refresh and bounce
           overscrollBehavior: 'none',
           touchAction: 'pan-x pan-y',
         },
-        // Target Next.js root div
-        '#__next': {
+        '#root': {
           height: '100%',
           width: '100%',
           overflow: 'auto',
@@ -193,9 +183,6 @@ function isPcapFile(filename: string): boolean {
 }
 
 function hasFiles(dataTransfer: DataTransfer): boolean {
-  // Check if there are any files being dragged
-  // Note: During drag events, browsers don't always expose file names for security
-  // We show the overlay for any file drag and validate file types on drop
   if (dataTransfer.types?.includes('Files')) {
     return true;
   }
@@ -220,7 +207,6 @@ function useConnectionStatus() {
 
     const checkConnection = async () => {
       try {
-        // Try to fetch status - ensures backend is fully ready
         await api.getStatus();
         if (mounted) {
           setIsConnected(true);
@@ -229,16 +215,13 @@ function useConnectionStatus() {
       } catch {
         if (mounted) {
           setConnectionMessage('Connecting to backend...');
-          // Retry every 1 second forever
           retryTimeout = setTimeout(checkConnection, 1000);
         }
       }
     };
 
-    // Start initial connection check
     checkConnection();
 
-    // Set up periodic health check when connected
     const healthCheckInterval = setInterval(() => {
       if (isConnected) {
         api.getStatus().catch(() => {
@@ -249,7 +232,7 @@ function useConnectionStatus() {
           }
         });
       }
-    }, 10000); // Check every 10 seconds
+    }, 10000);
 
     return () => {
       mounted = false;
@@ -263,7 +246,7 @@ function useConnectionStatus() {
     isInitializing,
     showOverlay: !isConnected || isInitializing,
     message: connectionMessage,
-    subMessage: !isConnected && !isInitializing 
+    subMessage: !isConnected && !isInitializing
       ? ``
       : undefined,
   };
@@ -271,7 +254,7 @@ function useConnectionStatus() {
 
 // Global drop zone component that wraps the entire app
 function GlobalDropZone({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState('');
@@ -280,8 +263,7 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
   const handleDragEnter = useCallback((e: DragEvent) => {
     e.preventDefault();
     dragCounter.current++;
-    
-    // Show overlay for any file drag - we validate file types on drop
+
     if (e.dataTransfer && hasFiles(e.dataTransfer)) {
       setIsDraggingOver(true);
     }
@@ -290,7 +272,7 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
   const handleDragLeave = useCallback((e: DragEvent) => {
     e.preventDefault();
     dragCounter.current--;
-    
+
     if (dragCounter.current === 0) {
       setIsDraggingOver(false);
     }
@@ -298,10 +280,9 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
 
   const handleDragOver = useCallback((e: DragEvent) => {
     e.preventDefault();
-    
+
     if (e.dataTransfer) {
       e.dataTransfer.dropEffect = 'copy';
-      // Ensure overlay stays visible during drag
       if (hasFiles(e.dataTransfer)) {
         setIsDraggingOver(true);
       }
@@ -317,9 +298,8 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Filter for valid PCAP files
     const pcapFiles = Array.from(e.dataTransfer.files).filter(file => isPcapFile(file.name));
-    
+
     if (pcapFiles.length === 0) {
       setUploadMessage('No valid PCAP files found. Supported formats: .pcap, .pcapng, .cap');
       setTimeout(() => setUploadMessage(''), 3000);
@@ -331,14 +311,13 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
 
     try {
       const uploadedIds: string[] = [];
-      
+
       for (let i = 0; i < pcapFiles.length; i++) {
         const file = pcapFiles[i];
         setUploadMessage(`Uploading ${i + 1}/${pcapFiles.length}: ${file.name}...`);
-        
+
         const response = await api.uploadFile(file);
-        
-        // Track session/file IDs for progress polling
+
         if (response.sessionId) {
           uploadedIds.push(response.sessionId);
         } else if (response.id) {
@@ -347,17 +326,15 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
       }
 
       setUploadMessage(`Successfully uploaded ${pcapFiles.length} file(s)`);
-      
-      // Invalidate SWR cache for input files so other pages will refresh
+
       globalMutate('inputFiles');
-      
-      // Redirect to PCAPs page after a short delay
+
       setTimeout(() => {
         setIsUploading(false);
         setUploadMessage('');
-        router.push('/pcaps');
+        navigate('/pcaps');
       }, 1500);
-      
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Upload failed';
       setUploadMessage(`Error: ${errorMessage}`);
@@ -366,10 +343,9 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
         setUploadMessage('');
       }, 3000);
     }
-  }, [router]);
+  }, [navigate]);
 
   useEffect(() => {
-    // Add global event listeners
     document.addEventListener('dragenter', handleDragEnter);
     document.addEventListener('dragleave', handleDragLeave);
     document.addEventListener('dragover', handleDragOver);
@@ -386,7 +362,7 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
-      
+
       {/* Global drop overlay - active on all pages */}
       {(isDraggingOver || isUploading || uploadMessage) && (
         <Box
@@ -422,9 +398,9 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
               borderColor: 'primary.main',
             }}
           >
-            <CloudUploadIcon 
-              sx={{ 
-                fontSize: 64, 
+            <CloudUploadIcon
+              sx={{
+                fontSize: 64,
                 color: 'primary.main',
                 animation: isUploading ? 'pulse 1.5s infinite' : 'none',
                 '@keyframes pulse': {
@@ -432,13 +408,13 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
                   '50%': { opacity: 0.5 },
                   '100%': { opacity: 1 },
                 },
-              }} 
+              }}
             />
             <Typography variant="h6" color="primary">
-              {isUploading 
-                ? uploadMessage 
-                : uploadMessage 
-                  ? uploadMessage 
+              {isUploading
+                ? uploadMessage
+                : uploadMessage
+                  ? uploadMessage
                   : 'Drop PCAP files anywhere to upload'}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -452,13 +428,13 @@ function GlobalDropZone({ children }: { children: React.ReactNode }) {
 }
 
 // App content wrapper that uses the connection status
-function AppContent({ Component, pageProps }: AppProps) {
+function AppContent() {
   const connectionStatus = useConnectionStatus();
 
   return (
     <>
       <GlobalDropZone>
-        <Component {...pageProps} />
+        <AppRoutes />
       </GlobalDropZone>
       <ConnectionOverlay
         visible={connectionStatus.showOverlay}
@@ -469,19 +445,21 @@ function AppContent({ Component, pageProps }: AppProps) {
   );
 }
 
-export default function App(props: AppProps) {
+function App() {
   return (
-    <>
-      <Head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-      </Head>
+    <BrowserRouter>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <NextjsNetcapProvider backendUrl={getBackendUrl()}>
-          <AppContent {...props} />
-        </NextjsNetcapProvider>
+        <ReactRouterNetcapProvider backendUrl={getBackendUrl()}>
+          <AppContent />
+        </ReactRouterNetcapProvider>
       </ThemeProvider>
-    </>
+    </BrowserRouter>
   );
 }
 
+createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);

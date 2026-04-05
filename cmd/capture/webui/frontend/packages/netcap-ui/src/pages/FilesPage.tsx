@@ -77,11 +77,8 @@ import { formatBytes, formatTimestamp, type ExtractedFileInfo } from '../lib/api
 import { useNetcapApi, useTableKeyboardNavigation } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
 import OptimizedPieChart from '../components/OptimizedPieChart';
-import dynamic from 'next/dynamic';
-import { tomorrow } from 'react-syntax-highlighter/dist/cjs/styles/prism';
-
-// Dynamically import SyntaxHighlighter to avoid SSR issues
-const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export default function ExtractedFilesPage() {
   const api = useNetcapApi();

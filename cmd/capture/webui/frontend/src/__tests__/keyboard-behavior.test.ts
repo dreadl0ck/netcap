@@ -179,7 +179,7 @@ describe('Keyboard Event Handling', () => {
       const handler = new AutocompleteKeyHandler('Src', ['SrcPort', 'SrcIP']);
       handler.setAutocompleteOpen(true);
       
-      const event = { preventDefault: jest.fn() };
+      const event = { preventDefault: vi.fn() };
       handler.handleTab(event);
       
       expect(event.preventDefault).toHaveBeenCalled();
@@ -190,7 +190,7 @@ describe('Keyboard Event Handling', () => {
       const handler = new AutocompleteKeyHandler('SrcPort =', ['==']);
       handler.setAutocompleteOpen(false);
       
-      const event = { preventDefault: jest.fn() };
+      const event = { preventDefault: vi.fn() };
       handler.handleTab(event);
       
       expect(event.preventDefault).toHaveBeenCalled();
@@ -200,7 +200,7 @@ describe('Keyboard Event Handling', () => {
     test('TAB prevents default browser behavior', () => {
       const handler = new AutocompleteKeyHandler('', ['SrcPort']);
       
-      const event = { preventDefault: jest.fn() };
+      const event = { preventDefault: vi.fn() };
       handler.handleTab(event);
       
       expect(event.preventDefault).toHaveBeenCalled();
@@ -211,7 +211,7 @@ describe('Keyboard Event Handling', () => {
       const handler = new AutocompleteKeyHandler('Src', ['SrcPort']);
       handler.setAutocompleteOpen(true);
       
-      let event = { preventDefault: jest.fn() };
+      let event = { preventDefault: vi.fn() };
       handler.handleTab(event);
       expect(handler.getExpression()).toContain('SrcPort');
       
@@ -221,7 +221,7 @@ describe('Keyboard Event Handling', () => {
       handler.setAutocompleteOpen(true);
       
       // Second TAB - complete operator
-      event = { preventDefault: jest.fn() };
+      event = { preventDefault: vi.fn() };
       handler.handleTab(event);
       expect(handler.getExpression()).toContain('==');
     });
@@ -232,7 +232,7 @@ describe('Keyboard Event Handling', () => {
       const handler = new AutocompleteKeyHandler('SrcPort == 80');
       handler.setAutocompleteOpen(false);
       
-      const event = { preventDefault: jest.fn() };
+      const event = { preventDefault: vi.fn() };
       handler.handleEnter(event);
       
       expect(event.preventDefault).toHaveBeenCalled();
@@ -243,7 +243,7 @@ describe('Keyboard Event Handling', () => {
       const handler = new AutocompleteKeyHandler('Src', ['SrcPort']);
       handler.setAutocompleteOpen(true);
       
-      const event = { preventDefault: jest.fn() };
+      const event = { preventDefault: vi.fn() };
       handler.handleEnter(event);
       
       // Should not execute - dropdown handles selection
@@ -254,7 +254,7 @@ describe('Keyboard Event Handling', () => {
       const handler = new AutocompleteKeyHandler('DstPort == ', ['80', '443']);
       handler.setAutocompleteOpen(true);
       
-      const event = { preventDefault: jest.fn(), metaKey: true };
+      const event = { preventDefault: vi.fn(), metaKey: true };
       handler.handleEnter(event);
       
       expect(event.preventDefault).toHaveBeenCalled();
@@ -266,7 +266,7 @@ describe('Keyboard Event Handling', () => {
       const handler = new AutocompleteKeyHandler('DstPort == ', ['80', '443']);
       handler.setAutocompleteOpen(true);
       
-      const event = { preventDefault: jest.fn(), ctrlKey: true };
+      const event = { preventDefault: vi.fn(), ctrlKey: true };
       handler.handleEnter(event);
       
       expect(event.preventDefault).toHaveBeenCalled();
@@ -279,7 +279,7 @@ describe('Keyboard Event Handling', () => {
       const handler1 = new AutocompleteKeyHandler('Src');
       handler1.setAutocompleteOpen(true);
       
-      let event = { preventDefault: jest.fn() };
+      let event = { preventDefault: vi.fn() };
       handler1.handleEnter(event);
       expect(handler1.wasFilterExecuted()).toBe(false);
       
@@ -287,7 +287,7 @@ describe('Keyboard Event Handling', () => {
       const handler2 = new AutocompleteKeyHandler('SrcPort == 80');
       handler2.setAutocompleteOpen(false);
       
-      event = { preventDefault: jest.fn() };
+      event = { preventDefault: vi.fn() };
       handler2.handleEnter(event);
       expect(handler2.wasFilterExecuted()).toBe(true);
     });
@@ -299,7 +299,7 @@ describe('Keyboard Event Handling', () => {
       handler.setAutocompleteOpen(true);
       
       // TAB to complete
-      let event: any = { preventDefault: jest.fn() };
+      let event: any = { preventDefault: vi.fn() };
       handler.handleTab(event);
       expect(handler.getExpression()).toContain('SrcPort');
       
@@ -308,7 +308,7 @@ describe('Keyboard Event Handling', () => {
       handler.setAutocompleteOpen(false);
       
       // ENTER to execute
-      event = { preventDefault: jest.fn() };
+      event = { preventDefault: vi.fn() };
       handler.handleEnter(event);
       expect(handler.wasFilterExecuted()).toBe(true);
     });
@@ -318,7 +318,7 @@ describe('Keyboard Event Handling', () => {
       handler.setAutocompleteOpen(true);
       
       // CMD+ENTER executes immediately without completing
-      const event = { preventDefault: jest.fn(), metaKey: true };
+      const event = { preventDefault: vi.fn(), metaKey: true };
       handler.handleEnter(event);
       
       expect(handler.wasFilterExecuted()).toBe(true);
@@ -333,7 +333,7 @@ describe('Keyboard Event Handling', () => {
       handler.setSuggestions(['SrcPort']);
       handler.setAutocompleteOpen(true);
       
-      let event = { preventDefault: jest.fn() };
+      let event = { preventDefault: vi.fn() };
       handler.handleTab(event);
       
       // Type and TAB to complete operator
@@ -341,7 +341,7 @@ describe('Keyboard Event Handling', () => {
       handler.setSuggestions(['==', '!=']);
       handler.setAutocompleteOpen(true);
       
-      event = { preventDefault: jest.fn() };
+      event = { preventDefault: vi.fn() };
       handler.handleTab(event);
       expect(handler.getExpression()).toContain('==');
       
@@ -350,7 +350,7 @@ describe('Keyboard Event Handling', () => {
       handler.setSuggestions(['80', '443']);
       handler.setAutocompleteOpen(true);
       
-      event = { preventDefault: jest.fn() };
+      event = { preventDefault: vi.fn() };
       handler.handleTab(event);
       expect(handler.getExpression()).toContain('80');
     });
@@ -361,7 +361,7 @@ describe('Keyboard Event Handling', () => {
       const handler = new AutocompleteKeyHandler('SrcPort == 80', []);
       handler.setAutocompleteOpen(false);
       
-      const event = { preventDefault: jest.fn() };
+      const event = { preventDefault: vi.fn() };
       handler.handleTab(event);
       
       expect(event.preventDefault).toHaveBeenCalled();
@@ -373,7 +373,7 @@ describe('Keyboard Event Handling', () => {
       const handler = new AutocompleteKeyHandler('');
       handler.setAutocompleteOpen(false);
       
-      const event = { preventDefault: jest.fn() };
+      const event = { preventDefault: vi.fn() };
       handler.handleEnter(event);
       
       expect(handler.wasFilterExecuted()).toBe(true);
@@ -384,11 +384,11 @@ describe('Keyboard Event Handling', () => {
       handler.setAutocompleteOpen(true);
       
       // First TAB
-      let event = { preventDefault: jest.fn() };
+      let event = { preventDefault: vi.fn() };
       handler.handleTab(event);
       
       // Immediate second TAB (before suggestions update)
-      event = { preventDefault: jest.fn() };
+      event = { preventDefault: vi.fn() };
       handler.handleTab(event);
       
       // Should not crash or corrupt state

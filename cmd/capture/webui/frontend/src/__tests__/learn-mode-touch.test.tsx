@@ -115,7 +115,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
       cancelable: true,
     });
     
-    const preventDefaultSpy = jest.spyOn(clickEvent, 'preventDefault');
+    const preventDefaultSpy = vi.spyOn(clickEvent, 'preventDefault');
     fireEvent(buttonA, clickEvent);
 
     // Info box should appear with the hint
@@ -152,7 +152,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
       bubbles: true,
       cancelable: true,
     });
-    const preventDefaultSpy = jest.spyOn(secondClickEvent, 'preventDefault');
+    const preventDefaultSpy = vi.spyOn(secondClickEvent, 'preventDefault');
     fireEvent(buttonA, secondClickEvent);
 
     // Info should be cleared
@@ -190,7 +190,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
       bubbles: true,
       cancelable: true,
     });
-    const preventDefaultSpy = jest.spyOn(secondClickEvent, 'preventDefault');
+    const preventDefaultSpy = vi.spyOn(secondClickEvent, 'preventDefault');
     fireEvent(buttonB, secondClickEvent);
 
     // Should show info for button B
@@ -229,7 +229,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
       bubbles: true,
       cancelable: true,
     });
-    const preventDefaultSpy = jest.spyOn(secondClickEvent, 'preventDefault');
+    const preventDefaultSpy = vi.spyOn(secondClickEvent, 'preventDefault');
     fireEvent(buttonNoLearn, secondClickEvent);
 
     // Info should be cleared
@@ -341,7 +341,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
       bubbles: true,
       cancelable: true,
     });
-    const preventDefaultSpy = jest.spyOn(finalClickEvent, 'preventDefault');
+    const preventDefaultSpy = vi.spyOn(finalClickEvent, 'preventDefault');
     fireEvent(buttonA, finalClickEvent);
 
     await waitFor(() => {
@@ -364,7 +364,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
       bubbles: true,
       cancelable: true,
     });
-    const preventDefaultSpy = jest.spyOn(touchEvent, 'preventDefault');
+    const preventDefaultSpy = vi.spyOn(touchEvent, 'preventDefault');
     fireEvent(buttonA, touchEvent);
 
     // Info box should appear
@@ -385,7 +385,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
       bubbles: true,
       cancelable: true,
     });
-    const preventDefaultSpy = jest.spyOn(clickEvent, 'preventDefault');
+    const preventDefaultSpy = vi.spyOn(clickEvent, 'preventDefault');
     fireEvent(buttonNoLearn, clickEvent);
 
     // Should not show any info
@@ -427,7 +427,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
       bubbles: true,
       cancelable: true,
     });
-    const preventDefaultSpy = jest.spyOn(nextClickEvent, 'preventDefault');
+    const preventDefaultSpy = vi.spyOn(nextClickEvent, 'preventDefault');
     fireEvent(buttonA, nextClickEvent);
 
     await waitFor(() => {
@@ -457,7 +457,7 @@ describe('LearnModeOverlay Desktop Behavior', () => {
       bubbles: true,
       cancelable: true,
     });
-    const preventDefaultSpy = jest.spyOn(clickEvent, 'preventDefault');
+    const preventDefaultSpy = vi.spyOn(clickEvent, 'preventDefault');
     fireEvent(buttonA, clickEvent);
 
     // Should not prevent default on desktop

@@ -6,19 +6,20 @@ node_modules
 # Testing
 /coverage
 
-# Next.js
-/.next/
-# Keep /out/ since it's embedded in the Go binary
-# /out/
+# Build output
+# Keep /dist/ since it's embedded in the Go binary
+# /dist/
 
-# Production
+# Leftover from previous build tools
+/.next/
+/out/
 /build
 
 # Misc
 .DS_Store
 *.pem
 
-# Debug
+# Debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -28,12 +29,8 @@ yarn-error.log*
 .env*.local
 .env
 
-# Vercel
-.vercel
-
 # TypeScript
 *.tsbuildinfo
-next-env.d.ts
 
 # IDE
 .idea

@@ -2,43 +2,11 @@
 
 A web-based user interface for exploring Netcap packet capture data in real-time.
 
-## Features
+For comprehensive documentation of the frontend tech stack, architecture, and development workflow, see [docs/frontend.md](../../../docs/frontend.md).
 
-- **Dashboard**: Overview of capture status, input files, audit records, and logs
-- **Input Files**: Browse PCAP files that were processed
-- **Audit Records**: Explore audit record files with streaming support for large datasets
-- **Logs**: View log files generated during capture
+## Quick Start
 
-## Architecture
-
-### Backend (Go)
-- HTTP server with SSE (Server-Sent Events) for streaming
-- On-demand parsing of audit record files
-- RESTful API for file listing and metadata
-
-### Frontend (Next.js + TypeScript)
-- Material-UI components for modern interface
-- SWR for efficient data fetching
-- Server-Sent Events for streaming large audit records
-
-## Building the Frontend
-
-### Prerequisites
-- Node.js 18+ and pnpm (install via: `npm install -g pnpm` or `corepack enable pnpm`)
-
-### Build Steps
-
-```bash
-cd frontend
-pnpm install
-pnpm run build
-```
-
-This will create a static export in `frontend/out/` which is embedded into the Go binary.
-
-## Usage
-
-Start the capture command with the `-http` flag:
+Start a capture with the `-http` flag to enable the web interface:
 
 ```bash
 # Process a PCAP file with web UI
@@ -46,94 +14,52 @@ net capture -read traffic.pcap -out output -http localhost:8080
 
 # Process multiple files
 net capture -read "*.pcap" -out output -http localhost:8080
-
-# Live capture (web UI not available for live mode yet)
-net capture -iface eth0 -out output
 ```
 
-Once processing starts (or completes for file-based captures), the web UI will be available at the specified address (e.g., `http://localhost:8080`).
+The web UI will be available at `http://localhost:8080`. After processing completes, the server continues running so you can explore the results. Press `Ctrl+C` to stop.
 
-### Keep-Alive Behavior
+## Building
 
-When the `-http` flag is active and processing completes, the server will continue running so you can explore the results. Press `Ctrl+C` to stop the server.
+```bash
+# Build the frontend (requires Node.js 18+ and pnpm)
+cd frontend
+pnpm install
+pnpm build
+
+# Then build the Go binary (from repo root)
+go build -o net ./cmd/
+```
+
+The frontend is built with Vite and output to `frontend/dist/`, which is embedded into the Go binary via `//go:embed`.
 
 ## Development
 
-For frontend development with hot-reload:
-
 ```bash
+# Start the frontend dev server with hot reload
 cd frontend
-pnpm run dev
+pnpm dev
+
+# In another terminal, start the Go backend
+net capture -read traffic.pcap -out output -http localhost:8080
 ```
 
-Then run the capture command with the `-http-assets` flag pointing to the dev server:
+The Vite dev server runs at `http://localhost:5173` and proxies `/api/*` to the Go backend at `localhost:8080`.
 
-```bash
-net capture -read traffic.pcap -out output -http localhost:8080 -http-assets http://localhost:3000
-```
+## Architecture
+
+- **Backend**: Go HTTP server with REST API, gzip compression, and CORS support
+- **Frontend**: React 19 SPA with Vite, React Router 7, MUI 7, and SWR
+- **Embedding**: Frontend `dist/` is embedded in the Go binary with SPA fallback routing
 
 ## API Endpoints
 
-- `GET /api/status` - Get capture status
-- `GET /api/files/input` - List input PCAP files
-- `GET /api/files/audit` - List audit record files
-- `GET /api/files/logs` - List log files
-- `GET /api/audit/{type}/meta` - Get metadata for an audit record type
-- `GET /api/audit/{type}/stream` - Stream audit records (SSE)
-- `GET /api/logs/{name}` - Get log file contents
+The backend exposes 80+ REST endpoints. Key categories:
 
-## Screenshot Locations
+- `/api/status` — Capture status and metadata
+- `/api/files/*` — Input files, audit files, logs
+- `/api/hosts`, `/api/connections`, `/api/services` — Network data
+- `/api/certificates`, `/api/fingerprints` — TLS analysis
+- `/api/rules`, `/api/alerts` — Detection and alerting
+- `/api/chart/*`, `/api/visualize/*` — Charting data
 
-The UI includes:
-- **Dashboard**: Real-time status and statistics
-- **Input Files**: Table view of processed PCAP files
-- **Audit Records**: Browse and stream audit records by type
-- **Logs**: View log files from the capture process
-
-## Technical Details
-
-### Audit Record Streaming
-
-Audit records are streamed using Server-Sent Events (SSE) which provides:
-- Efficient one-way data flow from server to browser
-- Automatic reconnection on network errors
-- Native browser support without additional libraries
-- Progress updates during streaming
-
-The streaming endpoint supports:
-- Offset/limit pagination for memory efficiency
-- Progress events every 100 records
-- Completion event with total count
-- Error handling and recovery
-
-### File Format Support
-
-The UI can read audit records from:
-- Compressed files (`.ncap.gz`)
-- Uncompressed files (`.ncap`)
-
-All audit record types generated by Netcap are supported.
-
-## Troubleshooting
-
-### Frontend Assets Not Found
-
-If you see a message about frontend assets not being built:
-
-1. Make sure Node.js and pnpm are installed
-2. Navigate to `cmd/capture/webui/frontend`
-3. Run `pnpm install && pnpm run build`
-4. Rebuild the Go binary
-
-### Port Already in Use
-
-If the specified port is already in use, choose a different port:
-
-```bash
-net capture -read traffic.pcap -out output -http localhost:8081
-```
-
-### CORS Issues
-
-CORS is enabled by default for all origins. If you're running a custom frontend, make sure to use the same host for API calls or adjust the CORS settings in `webui/server.go`.
-
+See `server.go` for the complete route list.
