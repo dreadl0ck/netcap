@@ -3,10 +3,6 @@
 - Rename Credentials to Secret
 - Rename IPProfile to Host
 
-- fingerprints page: community id filter
-- Fingerprints table: the fingerprint hash should not line wrap. Prevent wrap and slightly decrease font size on smaller screens.
-
-- integrate magika and invoke on files folder after extraction (github.com/google/magika/tree/main/go)
 - configure fingerbank lookups and caching
 - make it configurable per harvester if it runs only for the default port or for all streams. for some harvester it makes sense to runs them against all plaintext protos.
 - data mining on plaintext connection data: extract URLs, what looks like secrets, ctf flags etc

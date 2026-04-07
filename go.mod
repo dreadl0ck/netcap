@@ -43,8 +43,8 @@ require (
 )
 
 require (
+	github.com/VirusTotal/yara-x/go v1.14.0
 	github.com/coreos/go-iptables v0.8.0
-	github.com/dreadl0ck/netcap/helpers v0.0.0-20251024121749-9bb050d95f59
 	github.com/expr-lang/expr v1.17.6
 	github.com/florianl/go-nfqueue/v2 v2.0.2
 	github.com/jcmturner/gokrb5/v8 v8.4.4

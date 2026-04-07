@@ -67,6 +67,7 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import BoltIcon from '@mui/icons-material/Bolt';
+import ShieldIcon from '@mui/icons-material/Shield';
 import useSWR from 'swr';
 
 import { useNetcapRouter } from '../hooks/useNetcapRouter';
@@ -568,6 +569,18 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                   </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Files" />
+              </ListItemButton>
+            </Link>
+            <Link href="/yara" passHref style={LINK_STYLE}>
+              <ListItemButton
+                selected={router.isActive('/yara')}
+                data-learn="YARA Rules: Upload and manage YARA rules, scan extracted files for malware signatures."
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
+              >
+                <ListItemIcon>
+                  <ShieldIcon />
+                </ListItemIcon>
+                <ListItemText primary="YARA Rules" />
               </ListItemButton>
             </Link>
             <Link href="/logs" passHref style={LINK_STYLE}>

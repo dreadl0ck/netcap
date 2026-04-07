@@ -176,6 +176,14 @@ function createNoOpApi(): NetcapApiClient {
     getLogsCount: noOpReturn(0),
     getMenuCounts: noOpReturn({ hostsCount: 0, devicesCount: 0, connectionsCount: 0, httpCount: 0, certificatesCount: 0, credentialsCount: 0, domainsCount: 0, fingerprintsCount: 0, softwareCount: 0, vulnerabilitiesCount: 0, auditRecordsCount: 0, servicesCount: 0, logsCount: 0, alertsGroupCount: 0, extractedFilesCount: 0 }),
     reanalyzeFile: noOpReturn({ success: false, message: '' }),
+    getYaraStatus: noOpReturn({ available: false, rulesDir: '', enabledRules: 0, totalRules: 0 }),
+    getYaraRules: noOpReturn({ rules: [] }),
+    uploadYaraRule: noOp as any,
+    getYaraRuleContent: noOp as any,
+    updateYaraRule: noOpReturn({ message: '' }),
+    deleteYaraRule: noOpReturn({ message: '' }),
+    scanWithYara: noOpReturn({ results: [], totalFiles: 0, filesScanned: 0, totalMatches: 0, scanTimeMs: 0 }),
+    scanFileWithYara: noOp as any,
     formatBytes,
     formatTimestamp,
     formatDuration,
@@ -332,12 +340,53 @@ export interface ExtractedFileInfo {
   threatName?: string;
   trueFileType?: string;
   contentType?: string;
+  // YARA matches
+  yaraMatches?: string[];
+  // AI-based file type classification (Magika)
+  magikaLabel?: string;
+  magikaMimeType?: string;
+  magikaGroup?: string;
+  magikaDescription?: string;
+  magikaIsText?: boolean;
 }
 
 export interface ExtractedFilesResponse {
   files: ExtractedFileInfo[];
   totalCount: number;
   filesDir: string;
+}
+
+// YARA scanning types
+export interface YaraRuleInfo {
+  name: string;
+  filename: string;
+  size: number;
+  enabled: boolean;
+  modifiedAt: number;
+  ruleCount: number;
+  description: string;
+}
+
+export interface YaraScanResult {
+  filePath: string;
+  fileName: string;
+  matches: string[];
+  scanTimeMs: number;
+}
+
+export interface YaraScanResponse {
+  results: YaraScanResult[];
+  totalFiles: number;
+  filesScanned: number;
+  totalMatches: number;
+  scanTimeMs: number;
+}
+
+export interface YaraStatusResponse {
+  available: boolean;
+  rulesDir: string;
+  enabledRules: number;
+  totalRules: number;
 }
 
 export interface ExtractedFileContentResponse {
@@ -2170,6 +2219,82 @@ function createApiWithBase(apiBase: string) {
     if (!res.ok) {
       const errorText = await res.text();
       throw new Error(errorText || 'Failed to reanalyze file');
+    }
+    return res.json();
+  },
+
+  // YARA Rules API
+  async getYaraStatus(): Promise<YaraStatusResponse> {
+    const res = await fetch(`${apiBase}/yara/status`);
+    if (!res.ok) throw new Error('Failed to fetch YARA status');
+    return res.json();
+  },
+
+  async getYaraRules(): Promise<{ rules: YaraRuleInfo[] }> {
+    const res = await fetch(`${apiBase}/yara/rules`);
+    if (!res.ok) throw new Error('Failed to fetch YARA rules');
+    return res.json();
+  },
+
+  async uploadYaraRule(file: File): Promise<{ message: string; filename: string; ruleCount: number }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${apiBase}/yara/rules/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.details || err.error || 'Failed to upload YARA rule');
+    }
+    return res.json();
+  },
+
+  async getYaraRuleContent(name: string): Promise<{ name: string; filename: string; content: string }> {
+    const res = await fetch(`${apiBase}/yara/rules/${encodeURIComponent(name)}`);
+    if (!res.ok) throw new Error('Failed to fetch YARA rule content');
+    return res.json();
+  },
+
+  async updateYaraRule(name: string, update: { content?: string; enabled?: boolean }): Promise<{ message: string }> {
+    const res = await fetch(`${apiBase}/yara/rules/${encodeURIComponent(name)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(update),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.details || err.error || 'Failed to update YARA rule');
+    }
+    return res.json();
+  },
+
+  async deleteYaraRule(name: string): Promise<{ message: string }> {
+    const res = await fetch(`${apiBase}/yara/rules/${encodeURIComponent(name)}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to delete YARA rule');
+    return res.json();
+  },
+
+  async scanWithYara(): Promise<YaraScanResponse> {
+    const res = await fetch(`${apiBase}/yara/scan`, { method: 'POST' });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'YARA scan failed');
+    }
+    return res.json();
+  },
+
+  async scanFileWithYara(filePath: string): Promise<YaraScanResult> {
+    const res = await fetch(`${apiBase}/yara/scan-file`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'YARA scan failed');
     }
     return res.json();
   },

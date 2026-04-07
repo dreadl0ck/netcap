@@ -523,6 +523,12 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/alerts/clear", s.handleClearAlerts)
 	mux.HandleFunc("/api/alerts/resolve", s.handleResolveAlert)
 	mux.HandleFunc("/api/alerts/unresolve", s.handleUnresolveAlert)
+	mux.HandleFunc("/api/yara/status", s.handleYaraStatus)
+	mux.HandleFunc("/api/yara/rules", s.handleYaraRules)
+	mux.HandleFunc("/api/yara/rules/upload", s.handleUploadYaraRule)
+	mux.HandleFunc("/api/yara/rules/", s.handleYaraRuleRouter) // GET, PUT, DELETE by name
+	mux.HandleFunc("/api/yara/scan", s.handleYaraScan)
+	mux.HandleFunc("/api/yara/scan-file", s.handleYaraScanFile)
 	mux.HandleFunc("/api/extracted-files", s.handleExtractedFiles)
 	mux.HandleFunc("/api/extracted-files/download-all", s.handleDownloadAllExtractedFiles)
 	mux.HandleFunc("/api/extracted-files/download/", s.handleDownloadExtractedFile)

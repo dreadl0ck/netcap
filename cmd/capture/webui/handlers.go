@@ -2498,6 +2498,13 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 		ThreatName        string
 		TrueFileType      string
 		ContentType       string
+		YaraMatches       []string
+		// AI-based file type classification (Magika)
+		MagikaLabel       string
+		MagikaMimeType    string
+		MagikaGroup       string
+		MagikaDescription string
+		MagikaIsText      bool
 	}
 	fileInfoMap := make(map[string]fileAuditInfo) // filename -> {name, hash, protocol}
 	fileAuditPath := filepath.Join(outDir, "File.ncap.gz")
@@ -2533,6 +2540,12 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 						ThreatName:        file.ThreatName,
 						TrueFileType:      file.TrueFileType,
 						ContentType:       file.ContentType,
+						YaraMatches:       file.YaraMatches,
+						MagikaLabel:       file.MagikaLabel,
+						MagikaMimeType:    file.MagikaMimeType,
+						MagikaGroup:       file.MagikaGroup,
+						MagikaDescription: file.MagikaDescription,
+						MagikaIsText:      file.MagikaIsText,
 					}
 				}
 			}
@@ -2608,6 +2621,18 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 			}
 			if auditInfo.ContentType != "" {
 				fileInfo["contentType"] = auditInfo.ContentType
+			}
+			// YARA matches
+			if len(auditInfo.YaraMatches) > 0 {
+				fileInfo["yaraMatches"] = auditInfo.YaraMatches
+			}
+			// AI-based file type classification (Magika)
+			if auditInfo.MagikaLabel != "" {
+				fileInfo["magikaLabel"] = auditInfo.MagikaLabel
+				fileInfo["magikaMimeType"] = auditInfo.MagikaMimeType
+				fileInfo["magikaGroup"] = auditInfo.MagikaGroup
+				fileInfo["magikaDescription"] = auditInfo.MagikaDescription
+				fileInfo["magikaIsText"] = auditInfo.MagikaIsText
 			}
 		}
 

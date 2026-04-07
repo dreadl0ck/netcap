@@ -2248,6 +2248,13 @@ message File {
   bool WasCompressed = 37;          // File was compressed in transit (gzip/deflate)
   string CompressionType = 38;      // Compression algorithm used (gzip, deflate)
   int64 CompressedSize = 39;        // Original compressed size in bytes
+
+  // AI-based file type classification (Google Magika)
+  string MagikaLabel = 40;          // Content type label (e.g., "python", "pdf", "png")
+  string MagikaMimeType = 41;       // Magika-detected MIME type
+  string MagikaGroup = 42;          // Content group (e.g., "code", "document", "image")
+  string MagikaDescription = 43;    // Human-readable description of detected type
+  bool MagikaIsText = 44;           // Whether Magika considers the content text-based
 }
 
 // SMTPResponse SMTP response type

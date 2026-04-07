@@ -24,6 +24,7 @@ const DpiPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ def
 const ErrorsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.ErrorsPage })));
 const ExplorePage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.ExplorePage })));
 const FilesPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.FilesPage })));
+const YaraPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.YaraPage })));
 const FingerprintsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.FingerprintsPage })));
 const HarvestersPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.HarvestersPage })));
 const HostsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.HostsPage })));
@@ -62,6 +63,7 @@ export function AppRoutes() {
         <Route path="/errors" element={<ErrorsPage />} />
         <Route path="/explore" element={<ExplorePage />} />
         <Route path="/files" element={<FilesPage />} />
+        <Route path="/yara" element={<YaraPage />} />
         <Route path="/fingerprints" element={<FingerprintsPage />} />
         <Route path="/harvesters" element={<HarvestersPage />} />
         <Route path="/hosts" element={<HostsPage />} />

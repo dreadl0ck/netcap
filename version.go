@@ -2,13 +2,10 @@
 package netcap
 
 // Version is the current version identifier for netcap.
-// Overridden at build time via -ldflags "-X github.com/dreadl0ck/netcap.Version=..."
 var Version = "v0.8.8"
 
 // Commit is the git commit id of the current version.
-// Overridden at build time via -ldflags "-X github.com/dreadl0ck/netcap.Commit=..."
-var Commit = "cccbf88ba83613021b0de8244c07b493ef58429b"
+var Commit = "a028e80dd7db7d72e1ca77528864d94e8b8a384d"
 
 // GopacketVersion is the version of gopacket library used.
-// Overridden at build time via -ldflags "-X github.com/dreadl0ck/netcap.GopacketVersion=..."
 var GopacketVersion = "v1.5.0"

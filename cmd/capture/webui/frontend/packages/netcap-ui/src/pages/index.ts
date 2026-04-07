@@ -42,6 +42,7 @@ export { default as DpiPage } from './DpiPage';
 export { default as ErrorsPage } from './ErrorsPage';
 export { default as ExplorePage } from './ExplorePage';
 export { default as FilesPage } from './FilesPage';
+export { default as YaraPage } from './YaraPage';
 export { default as FingerprintsPage } from './FingerprintsPage';
 export { default as HarvestersPage } from './HarvestersPage';
 export { default as HostsPage } from './HostsPage';

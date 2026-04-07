@@ -29,11 +29,11 @@ echo "[INFO] Version: ${VERSION}"
 echo "[INFO] Local go-dpi path: ${GO_DPI_PATH}"
 
 # Check if frontend assets exist
-if [ ! -d "$NETCAP_ROOT/cmd/capture/webui/frontend/out" ]; then
-    echo "[ERROR] Frontend assets not found at $NETCAP_ROOT/cmd/capture/webui/frontend/out"
+if [ ! -d "$NETCAP_ROOT/cmd/capture/webui/frontend/dist" ]; then
+    echo "[ERROR] Frontend assets not found at $NETCAP_ROOT/cmd/capture/webui/frontend/dist"
     echo "[INFO] Please build the frontend first:"
     echo "       zeus build-frontend-service"
-    echo "       (or manually: cd cmd/capture/webui/frontend && NEXT_PUBLIC_BACKEND_URL=https://try.netcap.io pnpm run build)"
+    echo "       (or manually: cd cmd/capture/webui/frontend && VITE_BACKEND_URL=https://try.netcap.io pnpm run build)"
     exit 1
 fi
 
@@ -120,7 +120,19 @@ RUN apk add --no-cache \
     libnetfilter_queue \
     libstdc++ \
     libgcc \
-    json-c
+    json-c \
+    gcompat
+
+# Install Google Magika CLI v1.0.2 for AI-based file type classification
+ARG MAGIKA_VERSION=1.0.2
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then MAGIKA_ARCH="x86_64-unknown-linux-gnu"; \
+    elif [ "$ARCH" = "aarch64" ]; then MAGIKA_ARCH="aarch64-unknown-linux-gnu"; \
+    else echo "Unsupported arch: $ARCH" && exit 1; fi && \
+    curl -LsSf "https://github.com/google/magika/releases/download/cli%2Fv${MAGIKA_VERSION}/magika-${MAGIKA_ARCH}.tar.xz" \
+    | tar -xJ -C /usr/local/bin/ && \
+    chmod +x /usr/local/bin/magika && \
+    magika --version
 
 # Create netcap user and group (non-root)
 RUN addgroup -g 1000 netcap && \
@@ -210,9 +222,9 @@ if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
     find . -name "*.proto" -type f -exec sh -c 'mkdir -p "'$BUILD_CONTEXT'/$(dirname {})" && cp {} "'$BUILD_CONTEXT'/{}"' \;
     
     # Copy frontend build output
-    if [ -d "cmd/capture/webui/frontend/out" ]; then
+    if [ -d "cmd/capture/webui/frontend/dist" ]; then
         mkdir -p "$BUILD_CONTEXT/cmd/capture/webui/frontend"
-        cp -r cmd/capture/webui/frontend/out "$BUILD_CONTEXT/cmd/capture/webui/frontend/"
+        cp -r cmd/capture/webui/frontend/dist "$BUILD_CONTEXT/cmd/capture/webui/frontend/"
     fi
     
     # Copy entrypoint script
@@ -275,9 +287,9 @@ else
     find . -name "*.proto" -type f -exec sh -c 'mkdir -p "'$BUILD_CONTEXT'/$(dirname {})" && cp {} "'$BUILD_CONTEXT'/{}"' \;
     
     # Copy frontend build output
-    if [ -d "cmd/capture/webui/frontend/out" ]; then
+    if [ -d "cmd/capture/webui/frontend/dist" ]; then
         mkdir -p "$BUILD_CONTEXT/cmd/capture/webui/frontend"
-        cp -r cmd/capture/webui/frontend/out "$BUILD_CONTEXT/cmd/capture/webui/frontend/"
+        cp -r cmd/capture/webui/frontend/dist "$BUILD_CONTEXT/cmd/capture/webui/frontend/"
     fi
     
     # Copy entrypoint script
@@ -352,8 +364,3 @@ echo ""
 echo "This container was built with local go-dpi from: ${GO_DPI_ABS_PATH}"
 echo ""
 echo "Access the service at: http://localhost:7070"
-
-
-cd $HOME/go/src/github.com/dreadl0ck/serverconfig
-zeus deploy service=netcap-try
-zeus logs service=netcap-try

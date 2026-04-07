@@ -3,7 +3,7 @@
 # Sync the webUI frontend from capture to try service
 # This ensures the try service has the latest frontend build
 
-SOURCE_DIR="cmd/capture/webui/frontend/out"
+SOURCE_DIR="cmd/capture/webui/frontend/dist"
 TARGET_DIR="cmd/try/webui/frontend"
 
 echo "[INFO] Syncing webUI frontend from capture to try service..."

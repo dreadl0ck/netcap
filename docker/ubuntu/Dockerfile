@@ -6,7 +6,7 @@ COPY . .
 
 ENV VERSION XXX
 
-ARG TAGS
+ARG TAGS="-tags noyara"
 RUN echo "tags: $TAGS"
 
 ENV CFLAGS -I/usr/local/include/
@@ -35,8 +35,18 @@ FROM --platform=linux/amd64 ubuntu:24.04
 ARG IPV6_SUPPORT=true
 
 RUN apt-get update
-RUN apt install -y --fix-missing libpcap0.8 software-properties-common ca-certificates liblzo2-2 libkeyutils-dev tcpdump
+RUN apt install -y --fix-missing libpcap0.8 software-properties-common ca-certificates liblzo2-2 libkeyutils-dev tcpdump curl xz-utils
 RUN update-ca-certificates
+
+# Install Google Magika CLI v1.0.2 for AI-based file type classification
+ARG MAGIKA_VERSION=1.0.2
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then MAGIKA_ARCH="x86_64-unknown-linux-gnu"; \
+    elif [ "$ARCH" = "aarch64" ]; then MAGIKA_ARCH="aarch64-unknown-linux-gnu"; \
+    else echo "Unsupported arch: $ARCH" && exit 1; fi && \
+    curl -LsSf "https://github.com/google/magika/releases/download/cli%2Fv${MAGIKA_VERSION}/magika-${MAGIKA_ARCH}.tar.xz" \
+    | tar -xJ -C /usr/local/bin/ && \
+    chmod +x /usr/local/bin/magika
 
 WORKDIR /netcap
 

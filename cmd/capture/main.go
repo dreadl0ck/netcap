@@ -72,6 +72,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
+	"github.com/dreadl0ck/netcap/magika"
 	"github.com/dreadl0ck/netcap/internal/metrics"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/reassembly"
@@ -408,6 +409,14 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		} else {
 			file.SetGlobalConfig(cfg)
 			log.Printf("Loaded file extraction configuration from: %s", flagFileConfig)
+
+			// Initialize Magika if enabled in config
+			if cfg.FileExtraction.Advanced.EnableMagika {
+				log.Printf("Initializing Magika AI file classifier (assets: %s, model: %s)",
+					cfg.FileExtraction.Advanced.MagikaAssetsDir,
+					cfg.FileExtraction.Advanced.MagikaModelName)
+				magika.Init(cfg.FileExtraction.Advanced.MagikaAssetsDir, cfg.FileExtraction.Advanced.MagikaModelName)
+			}
 		}
 	}
 
