@@ -73,8 +73,9 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import { formatBytes, formatTimestamp, type ExtractedFileInfo } from '../lib/api';
-import { useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useNetcapApi, useTableKeyboardNavigation, useIsMobile } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
 import OptimizedPieChart from '../components/OptimizedPieChart';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -82,6 +83,7 @@ import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export default function ExtractedFilesPage() {
   const api = useNetcapApi();
+  const isMobile = useIsMobile();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [mimeTypeFilter, setMimeTypeFilter] = useState<string>('');
@@ -1395,144 +1397,189 @@ export default function ExtractedFilesPage() {
             )}
           </>
         ) : (
-          <>
-            <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
-              <Table size="small" sx={{ minWidth: { xs: 700, md: 'auto' } }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>File Name</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>MIME Type</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Protocol</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Path</TableCell>
-                    <TableCell align="right">Size</TableCell>
-                    <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Modified</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedFiles.map((file) => (
-                    <TableRow 
-                      key={file.path}
-                      data-row-key={file.path}
-                      hover 
-                      onClick={() => handlePreviewFile(file)}
-                      selected={selectedFileKey === file.path}
-                      sx={{ cursor: 'pointer' }}
-                    >
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {getFileTypeIcon(file.mimeType)}
-                          <Tooltip title={(file.originalName || file.name).length > 50 ? (file.originalName || file.name) : ''}>
-                            <Typography 
-                              sx={{ 
-                                fontFamily: 'monospace', 
-                                fontSize: '0.85rem',
-                                maxWidth: 300,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              {truncateFileName(file.originalName || file.name)}
-                            </Typography>
-                          </Tooltip>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                        <Chip
-                          label={file.mimeType || 'unknown'}
-                          size="small"
-                          variant="outlined"
-                          sx={{ fontSize: '0.75rem' }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                        {file.protocol && (
+          <ResponsiveDataView<ExtractedFileInfo>
+            data={paginatedFiles}
+            totalCount={filteredFiles.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            onCardClick={(file) => handlePreviewFile(file)}
+            desktopTable={
+              <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+                <Table size="small" sx={{ minWidth: { xs: 700, md: 'auto' } }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>File Name</TableCell>
+                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>MIME Type</TableCell>
+                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Protocol</TableCell>
+                      <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Risk</TableCell>
+                      <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Path</TableCell>
+                      <TableCell align="right">Size</TableCell>
+                      <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Modified</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginatedFiles.map((file) => (
+                      <TableRow
+                        key={file.path}
+                        data-row-key={file.path}
+                        hover
+                        onClick={() => handlePreviewFile(file)}
+                        selected={selectedFileKey === file.path}
+                        sx={{ cursor: 'pointer' }}
+                      >
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {getFileTypeIcon(file.mimeType)}
+                            <Tooltip title={(file.originalName || file.name).length > 50 ? (file.originalName || file.name) : ''}>
+                              <Typography
+                                sx={{
+                                  fontFamily: 'monospace',
+                                  fontSize: '0.85rem',
+                                  maxWidth: 300,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                {truncateFileName(file.originalName || file.name)}
+                              </Typography>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                           <Chip
-                            label={file.protocol}
+                            label={file.mimeType || 'unknown'}
                             size="small"
-                            color="primary"
                             variant="outlined"
                             sx={{ fontSize: '0.75rem' }}
                           />
-                        )}
-                      </TableCell>
-                      <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            fontFamily: 'monospace', 
-                            fontSize: '0.75rem',
-                            color: 'text.secondary',
-                            maxWidth: 300,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          {file.path}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">
-                          {formatBytes(file.size)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                        <Typography variant="body2">
-                          {formatTimestamp(file.modifiedTime)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                          <Tooltip title="Preview file">
-                            <IconButton
-                              size="small"
-                              color="secondary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePreviewFile(file);
-                              }}
-                            >
-                              <VisibilityIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Download file">
-                            <IconButton
+                        </TableCell>
+                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                          {file.protocol && (
+                            <Chip
+                              label={file.protocol}
                               size="small"
                               color="primary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDownloadFile(file.path);
-                              }}
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            <TablePagination
-              component="div"
-              count={filteredFiles.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+                              variant="outlined"
+                              sx={{ fontSize: '0.75rem' }}
+                            />
+                          )}
+                        </TableCell>
+                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                            {file.isKnownMalware && (
+                              <Chip label={file.threatName || 'Malware'} size="small" color="error" sx={{ fontSize: '0.7rem' }} />
+                            )}
+                            {file.typeMismatch && (
+                              <Chip label="Type Mismatch" size="small" color="warning" sx={{ fontSize: '0.7rem' }} />
+                            )}
+                            {file.hasEmbeddedScript && (
+                              <Chip label="Script" size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}
+                            {file.isPasswordProtected && (
+                              <Chip label="Encrypted" size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}
+                            {(file.isPEExecutable || file.isELFExecutable || file.isMachO) && (
+                              <Chip label="Executable" size="small" color="info" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}
+                            {(file.entropy ?? 0) > 7.0 && (
+                              <Chip label={`Entropy ${(file.entropy ?? 0).toFixed(1)}`} size="small" color="default" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontFamily: 'monospace',
+                              fontSize: '0.75rem',
+                              color: 'text.secondary',
+                              maxWidth: 300,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {file.path}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2">
+                            {formatBytes(file.size)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
+                          <Typography variant="body2">
+                            {formatTimestamp(file.modifiedTime)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                            <Tooltip title="Preview file">
+                              <IconButton
+                                size="small"
+                                color="secondary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePreviewFile(file);
+                                }}
+                              >
+                                <VisibilityIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Download file">
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownloadFile(file.path);
+                                }}
+                              >
+                                <DownloadIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            }
+            renderCard={(file) => (
+              <Card variant="outlined">
+                <CardContent sx={{ pb: 1, '&:last-child': { pb: 1 } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                    {getFileTypeIcon(file.mimeType)}
+                    <Typography variant="subtitle2" noWrap sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                      {truncateFileName(file.originalName || file.name, 40)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Chip label={file.mimeType || 'unknown'} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                    {file.protocol && (
+                      <Chip label={file.protocol} size="small" color="primary" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                    )}
+                    <Typography variant="caption" color="text.secondary">
+                      {formatBytes(file.size)}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+          />
         )}
 
         {/* File Preview Dialog */}
         <Dialog
           open={previewFile !== null}
           onClose={handleClosePreview}
+          fullScreen={isMobile}
           maxWidth="lg"
           fullWidth
           PaperProps={{

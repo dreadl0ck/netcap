@@ -53,12 +53,13 @@ import {
   FilterAlt as FilterAltIcon,
   HelpOutline as HelpOutlineIcon,
   ContentCopy as ContentCopyIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatBytes, getBackendUrl } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useIsMobile } from '../hooks';
 import FilterExpressionHighlight, { FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 
 interface LayerGroup {
@@ -350,6 +351,7 @@ function syntaxHighlight(json: string) {
 }
 
 export default function AuditRecords() {
+  const isMobile = useIsMobile();
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const { data: files, error, mutate } = useSWR('auditFiles', () => api.getAuditFiles());
@@ -1130,7 +1132,7 @@ export default function AuditRecords() {
       </Box>
 
       {/* Record Viewer Dialog */}
-      <Dialog open={selectedType !== null} onClose={handleClose} maxWidth="lg" fullWidth>
+      <Dialog open={selectedType !== null} onClose={handleClose} maxWidth="lg" fullWidth fullScreen={isMobile}>
         <style>{`
           .json-key { color: #9cdcfe; }
           .json-string { color: #ce9178; }
@@ -1165,13 +1167,18 @@ export default function AuditRecords() {
             </Box>
             {executionTime > 0 && (
               <Tooltip title="Execution time">
-                <Chip 
-                  label={`${executionTime}ms`} 
-                  size="small" 
+                <Chip
+                  label={`${executionTime}ms`}
+                  size="small"
                   color="info"
                   icon={<FilterAltIcon />}
                 />
               </Tooltip>
+            )}
+            {isMobile && (
+              <IconButton onClick={handleClose} edge="end">
+                <CloseIcon />
+              </IconButton>
             )}
           </Box>
           {loading && <LinearProgress sx={{ mt: 1 }} />}

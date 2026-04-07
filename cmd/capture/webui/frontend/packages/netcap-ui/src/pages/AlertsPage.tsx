@@ -40,7 +40,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TablePagination,
   TableSortLabel,
   TextField,
   Tooltip,
@@ -61,10 +60,12 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import CheckIcon from '@mui/icons-material/Check';
 import UndoIcon from '@mui/icons-material/Undo';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import CloseIcon from '@mui/icons-material/Close';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import { Alert, GroupedAlert, AlertStatsResponse, formatBytes } from '../lib/api';
-import { useNetcapApi } from '../hooks';
+import { useNetcapApi, useIsMobile } from '../hooks';
 import useSWR, { mutate, mutate as globalMutate } from 'swr';
 import { FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 
@@ -150,6 +151,7 @@ function syntaxHighlight(json: string) {
 
 export default function AlertsPage() {
   const api = useNetcapApi();
+  const isMobile = useIsMobile();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [severityFilter, setSeverityFilter] = useState<string>('');
@@ -608,375 +610,433 @@ export default function AlertsPage() {
         </Paper>
 
         {/* Grouped Alerts Table */}
-        <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
-          <Table sx={{ minWidth: { xs: 800, md: 'auto' } }}>
-            <TableHead>
-              <TableRow>
-                <TableCell width="40px"></TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={sortBy === 'severity'}
-                    direction={sortBy === 'severity' ? sortOrder : 'desc'}
-                    onClick={() => handleSort('severity')}
-                  >
-                    Severity
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>Rule Name</TableCell>
-                <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Type</TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={sortBy === 'count'}
-                    direction={sortBy === 'count' ? sortOrder : 'desc'}
-                    onClick={() => handleSort('count')}
-                  >
-                    Count
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell>
-                  <TableSortLabel
-                    active={sortBy === 'firstSeen'}
-                    direction={sortBy === 'firstSeen' ? sortOrder : 'desc'}
-                    onClick={() => handleSort('firstSeen')}
-                  >
-                    First Seen
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                  <TableSortLabel
-                    active={sortBy === 'lastSeen'}
-                    direction={sortBy === 'lastSeen' ? sortOrder : 'desc'}
-                    onClick={() => handleSort('lastSeen')}
-                  >
-                    Last Seen
-                  </TableSortLabel>
-                </TableCell>
-                <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Unique IPs</TableCell>
-                <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Tags</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {groups.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={10} align="center">
-                    <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                      No alerts found. Alerts will appear here when detection rules match network traffic.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                groups.map((group, index) => {
-                  const groupKey = `${group.ruleName}-${group.severity}`;
-                  const isExpanded = expandedGroup === groupKey;
-                  
-                  return (
-                    <>
-                      <TableRow 
-                        key={groupKey} 
-                        hover 
-                        sx={{ 
-                          cursor: 'pointer',
-                          opacity: group.resolved ? 0.6 : 1,
-                          backgroundColor: group.resolved ? 'action.selected' : 'inherit',
-                        }}
+        <ResponsiveDataView<GroupedAlert>
+          data={groups}
+          totalCount={groupCount}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[10, 25, 50, 100]}
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} of ${count} groups (${totalCount.toLocaleString()} total alerts)`
+          }
+          onCardClick={(group) => {
+            const groupKey = `${group.ruleName}-${group.severity}`;
+            setExpandedGroup(expandedGroup === groupKey ? null : groupKey);
+          }}
+          renderCard={(group) => (
+            <Card variant="outlined">
+              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                  <Chip label={group.severity.toUpperCase()} size="small" color={getSeverityColor(group.severity) as any} />
+                  <Chip
+                    label={`x${group.count.toLocaleString()}`}
+                    size="small"
+                    color="primary"
+                    sx={{ fontWeight: 'bold' }}
+                  />
+                  {group.resolved && (
+                    <Chip label="Resolved" size="small" variant="outlined" color="success" />
+                  )}
+                </Box>
+                <Typography variant="body2" noWrap fontWeight="medium">{group.ruleName}</Typography>
+                <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                  {group.description}
+                </Typography>
+                <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
+                  <Typography variant="caption" color="text.secondary">
+                    {formatTimestamp(group.firstSeen)}
+                  </Typography>
+                  {group.resolved ? (
+                    <IconButton
+                      size="small"
+                      color="default"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleUnresolveGroup(group.groupId);
+                      }}
+                      disabled={resolvingGroups.has(group.groupId)}
+                    >
+                      <UndoIcon fontSize="small" />
+                    </IconButton>
+                  ) : (
+                    <IconButton
+                      size="small"
+                      color="success"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleResolveGroup(group.groupId);
+                      }}
+                      disabled={resolvingGroups.has(group.groupId)}
+                    >
+                      <CheckIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+          )}
+          desktopTable={
+            <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+              <Table sx={{ minWidth: { xs: 800, md: 'auto' } }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell width="40px"></TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={sortBy === 'severity'}
+                        direction={sortBy === 'severity' ? sortOrder : 'desc'}
+                        onClick={() => handleSort('severity')}
                       >
-                        <TableCell>
-                          <IconButton
-                            size="small"
-                            onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}
+                        Severity
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>Rule Name</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Type</TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={sortBy === 'count'}
+                        direction={sortBy === 'count' ? sortOrder : 'desc'}
+                        onClick={() => handleSort('count')}
+                      >
+                        Count
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={sortBy === 'firstSeen'}
+                        direction={sortBy === 'firstSeen' ? sortOrder : 'desc'}
+                        onClick={() => handleSort('firstSeen')}
+                      >
+                        First Seen
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
+                      <TableSortLabel
+                        active={sortBy === 'lastSeen'}
+                        direction={sortBy === 'lastSeen' ? sortOrder : 'desc'}
+                        onClick={() => handleSort('lastSeen')}
+                      >
+                        Last Seen
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Unique IPs</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Tags</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {groups.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={10} align="center">
+                        <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+                          No alerts found. Alerts will appear here when detection rules match network traffic.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    groups.map((group, index) => {
+                      const groupKey = `${group.ruleName}-${group.severity}`;
+                      const isExpanded = expandedGroup === groupKey;
+
+                      return (
+                        <>
+                          <TableRow
+                            key={groupKey}
+                            hover
+                            sx={{
+                              cursor: 'pointer',
+                              opacity: group.resolved ? 0.6 : 1,
+                              backgroundColor: group.resolved ? 'action.selected' : 'inherit',
+                            }}
                           >
-                            {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
-                          </IconButton>
-                        </TableCell>
-                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {getSeverityIcon(group.severity)}
-                            <Chip
-                              label={group.severity.toUpperCase()}
-                              size="small"
-                              color={getSeverityColor(group.severity) as any}
-                            />
-                          </Box>
-                        </TableCell>
-                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
-                          <Tooltip title={group.description}>
-                            <Typography 
-                              variant="body2" 
-                              fontWeight="medium"
-                              sx={{
-                                maxWidth: 300,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              {group.ruleName}
-                            </Typography>
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                          <Chip label={group.recordType} size="small" variant="outlined" />
-                        </TableCell>
-                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
-                          <Chip 
-                            label={group.count.toLocaleString()} 
-                            size="small" 
-                            color="primary"
-                            sx={{ fontWeight: 'bold' }}
-                          />
-                        </TableCell>
-                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
-                          <Typography variant="body2">
-                            {formatTimestamp(group.firstSeen)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                          <Typography variant="body2">
-                            {formatTimestamp(group.lastSeen)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                            <Typography variant="caption" color="text.secondary">
-                              Src: {group.uniqueSrcIPs.length} | Dst: {group.uniqueDstIPs.length}
-                            </Typography>
-                            {group.uniqueSrcPorts.length > 0 && (
-                              <Typography variant="caption" color="text.secondary">
-                                Ports: {group.uniqueSrcPorts.length + group.uniqueDstPorts.length}
-                              </Typography>
-                            )}
-                          </Box>
-                        </TableCell>
-                        <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            {group.tags.slice(0, 2).map((tag) => (
-                              <Chip key={tag} label={tag} size="small" />
-                            ))}
-                            {group.tags.length > 2 && (
-                              <Chip label={`+${group.tags.length - 2}`} size="small" variant="outlined" />
-                            )}
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 0.5 }}>
-                            {group.resolved ? (
-                              <Tooltip title="Mark as unresolved">
-                                <IconButton
-                                  data-learn="Mark as Unresolved: Reopen this alert group for investigation."
+                            <TableCell>
+                              <IconButton
+                                size="small"
+                                onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}
+                              >
+                                {isExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                              </IconButton>
+                            </TableCell>
+                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                {getSeverityIcon(group.severity)}
+                                <Chip
+                                  label={group.severity.toUpperCase()}
                                   size="small"
-                                  color="default"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleUnresolveGroup(group.groupId);
+                                  color={getSeverityColor(group.severity) as any}
+                                />
+                              </Box>
+                            </TableCell>
+                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
+                              <Tooltip title={group.description}>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight="medium"
+                                  sx={{
+                                    maxWidth: 300,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
                                   }}
-                                  disabled={resolvingGroups.has(group.groupId)}
                                 >
-                                  <UndoIcon fontSize="small" />
-                                </IconButton>
+                                  {group.ruleName}
+                                </Typography>
                               </Tooltip>
-                            ) : (
-                              <Tooltip title="Mark as resolved">
-                                <IconButton
-                                  data-learn="Mark as Resolved: Mark this alert group as investigated and resolved."
-                                  size="small"
-                                  color="success"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleResolveGroup(group.groupId);
-                                  }}
-                                  disabled={resolvingGroups.has(group.groupId)}
-                                >
-                                  <CheckIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            )}
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                      
-                      {/* Expanded Details */}
-                      {isExpanded && (
-                        <TableRow>
-                          <TableCell colSpan={10} sx={{ backgroundColor: 'action.hover', py: 2 }}>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, px: 2 }}>
-                              <Typography variant="subtitle2" fontWeight="bold">
-                                Alert Details
+                            </TableCell>
+                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
+                              <Chip label={group.recordType} size="small" variant="outlined" />
+                            </TableCell>
+                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
+                              <Chip
+                                label={group.count.toLocaleString()}
+                                size="small"
+                                color="primary"
+                                sx={{ fontWeight: 'bold' }}
+                              />
+                            </TableCell>
+                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)}>
+                              <Typography variant="body2">
+                                {formatTimestamp(group.firstSeen)}
                               </Typography>
-                              
-                              <Grid container spacing={2}>
-                                <Grid item xs={12} md={6}>
-                                  <Typography variant="caption" color="text.secondary" display="block">
-                                    Description
+                            </TableCell>
+                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
+                              <Typography variant="body2">
+                                {formatTimestamp(group.lastSeen)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                <Typography variant="caption" color="text.secondary">
+                                  Src: {group.uniqueSrcIPs.length} | Dst: {group.uniqueDstIPs.length}
+                                </Typography>
+                                {group.uniqueSrcPorts.length > 0 && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    Ports: {group.uniqueSrcPorts.length + group.uniqueDstPorts.length}
                                   </Typography>
-                                  <Typography variant="body2">{group.description}</Typography>
-                                </Grid>
-                                
-                                {group.mitre && (
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="caption" color="text.secondary" display="block">
-                                      MITRE ATT&CK
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                                      {group.mitre.split(',').map((mitre) => (
-                                        <Chip key={mitre.trim()} label={mitre.trim()} size="small" color="warning" />
-                                      ))}
-                                    </Box>
-                                  </Grid>
                                 )}
-                                
-                                {group.threshold > 0 && (
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="caption" color="text.secondary" display="block">
-                                      Threshold Configuration
-                                    </Typography>
-                                    <Paper
-                                      sx={{
-                                        p: 1,
-                                        mt: 0.5,
-                                        backgroundColor: 'background.paper',
-                                        border: 1,
-                                        borderColor: 'primary.main',
+                              </Box>
+                            </TableCell>
+                            <TableCell onClick={() => setExpandedGroup(isExpanded ? null : groupKey)} sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                {group.tags.slice(0, 2).map((tag) => (
+                                  <Chip key={tag} label={tag} size="small" />
+                                ))}
+                                {group.tags.length > 2 && (
+                                  <Chip label={`+${group.tags.length - 2}`} size="small" variant="outlined" />
+                                )}
+                              </Box>
+                            </TableCell>
+                            <TableCell>
+                              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                {group.resolved ? (
+                                  <Tooltip title="Mark as unresolved">
+                                    <IconButton
+                                      data-learn="Mark as Unresolved: Reopen this alert group for investigation."
+                                      size="small"
+                                      color="default"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleUnresolveGroup(group.groupId);
                                       }}
+                                      disabled={resolvingGroups.has(group.groupId)}
                                     >
-                                      <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
-                                        <strong>{group.threshold}</strong> matches within <strong>{group.thresholdWindow}s</strong>
-                                      </Typography>
-                                    </Paper>
-                                  </Grid>
-                                )}
-                                
-                                {group.uniqueSrcIPs.length > 0 && (
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="caption" color="text.secondary" display="block">
-                                      Unique Source IPs ({group.uniqueSrcIPs.length})
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                                      {group.uniqueSrcIPs.slice(0, 10).map((ip) => (
-                                        <Chip 
-                                          key={ip} 
-                                          label={ip} 
-                                          size="small" 
-                                          variant="outlined"
-                                          sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
-                                        />
-                                      ))}
-                                      {group.uniqueSrcIPs.length > 10 && (
-                                        <Chip 
-                                          label={`+${group.uniqueSrcIPs.length - 10} more`} 
-                                          size="small" 
-                                          variant="outlined" 
-                                        />
-                                      )}
-                                    </Box>
-                                  </Grid>
-                                )}
-                                
-                                {group.uniqueDstIPs.length > 0 && (
-                                  <Grid item xs={12} md={6}>
-                                    <Typography variant="caption" color="text.secondary" display="block">
-                                      Unique Destination IPs ({group.uniqueDstIPs.length})
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                                      {group.uniqueDstIPs.slice(0, 10).map((ip) => (
-                                        <Chip 
-                                          key={ip} 
-                                          label={ip} 
-                                          size="small" 
-                                          variant="outlined"
-                                          sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
-                                        />
-                                      ))}
-                                      {group.uniqueDstIPs.length > 10 && (
-                                        <Chip 
-                                          label={`+${group.uniqueDstIPs.length - 10} more`} 
-                                          size="small" 
-                                          variant="outlined" 
-                                        />
-                                      )}
-                                    </Box>
-                                  </Grid>
-                                )}
-                                
-                                {(group.uniqueSrcPorts.length > 0 || group.uniqueDstPorts.length > 0) && (
-                                  <Grid item xs={12}>
-                                    <Typography variant="caption" color="text.secondary" display="block">
-                                      Ports (Src: {group.uniqueSrcPorts.length}, Dst: {group.uniqueDstPorts.length})
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                                      {[...group.uniqueSrcPorts, ...group.uniqueDstPorts].slice(0, 20).map((port, idx) => (
-                                        <Chip 
-                                          key={`${port}-${idx}`} 
-                                          label={port} 
-                                          size="small" 
-                                          variant="outlined"
-                                          sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
-                                        />
-                                      ))}
-                                    </Box>
-                                  </Grid>
-                                )}
-                                
-                                {group.ruleExpression && (
-                                  <Grid item xs={12}>
-                                    <Typography variant="caption" color="text.secondary" display="block">
-                                      Rule Expression
-                                    </Typography>
-                                    <FilterExpressionBlock
-                                      expression={group.ruleExpression}
-                                      sx={{
-                                        mt: 0.5,
-                                        p: 1.5,
+                                      <UndoIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
+                                ) : (
+                                  <Tooltip title="Mark as resolved">
+                                    <IconButton
+                                      data-learn="Mark as Resolved: Mark this alert group as investigated and resolved."
+                                      size="small"
+                                      color="success"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleResolveGroup(group.groupId);
                                       }}
-                                    />
-                                  </Grid>
+                                      disabled={resolvingGroups.has(group.groupId)}
+                                    >
+                                      <CheckIcon fontSize="small" />
+                                    </IconButton>
+                                  </Tooltip>
                                 )}
-                              </Grid>
-                              
-                              {/* Sample Alerts */}
-                              {group.sampleAlerts.length > 0 && (
-                                <Box sx={{ mt: 2 }}>
-                                  <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                                    Sample Alerts ({group.sampleAlerts.length} of {group.count})
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+
+                          {/* Expanded Details */}
+                          {isExpanded && (
+                            <TableRow>
+                              <TableCell colSpan={10} sx={{ backgroundColor: 'action.hover', py: 2 }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, px: 2 }}>
+                                  <Typography variant="subtitle2" fontWeight="bold">
+                                    Alert Details
                                   </Typography>
-                                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                    {group.sampleAlerts.map((alert, idx) => (
-                                      <Button
-                                        key={`${alert.timestamp}-${idx}`}
-                                        size="small"
-                                        variant="outlined"
-                                        startIcon={<VisibilityIcon />}
-                                        onClick={() => handleViewDetails(alert)}
-                                      >
-                                        View Sample {idx + 1}
-                                      </Button>
-                                    ))}
-                                  </Box>
+
+                                  <Grid container spacing={2}>
+                                    <Grid item xs={12} md={6}>
+                                      <Typography variant="caption" color="text.secondary" display="block">
+                                        Description
+                                      </Typography>
+                                      <Typography variant="body2">{group.description}</Typography>
+                                    </Grid>
+
+                                    {group.mitre && (
+                                      <Grid item xs={12} md={6}>
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                          MITRE ATT&CK
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                                          {group.mitre.split(',').map((mitre) => (
+                                            <Chip key={mitre.trim()} label={mitre.trim()} size="small" color="warning" />
+                                          ))}
+                                        </Box>
+                                      </Grid>
+                                    )}
+
+                                    {group.threshold > 0 && (
+                                      <Grid item xs={12} md={6}>
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                          Threshold Configuration
+                                        </Typography>
+                                        <Paper
+                                          sx={{
+                                            p: 1,
+                                            mt: 0.5,
+                                            backgroundColor: 'background.paper',
+                                            border: 1,
+                                            borderColor: 'primary.main',
+                                          }}
+                                        >
+                                          <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
+                                            <strong>{group.threshold}</strong> matches within <strong>{group.thresholdWindow}s</strong>
+                                          </Typography>
+                                        </Paper>
+                                      </Grid>
+                                    )}
+
+                                    {group.uniqueSrcIPs.length > 0 && (
+                                      <Grid item xs={12} md={6}>
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                          Unique Source IPs ({group.uniqueSrcIPs.length})
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                                          {group.uniqueSrcIPs.slice(0, 10).map((ip) => (
+                                            <Chip
+                                              key={ip}
+                                              label={ip}
+                                              size="small"
+                                              variant="outlined"
+                                              sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
+                                            />
+                                          ))}
+                                          {group.uniqueSrcIPs.length > 10 && (
+                                            <Chip
+                                              label={`+${group.uniqueSrcIPs.length - 10} more`}
+                                              size="small"
+                                              variant="outlined"
+                                            />
+                                          )}
+                                        </Box>
+                                      </Grid>
+                                    )}
+
+                                    {group.uniqueDstIPs.length > 0 && (
+                                      <Grid item xs={12} md={6}>
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                          Unique Destination IPs ({group.uniqueDstIPs.length})
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                                          {group.uniqueDstIPs.slice(0, 10).map((ip) => (
+                                            <Chip
+                                              key={ip}
+                                              label={ip}
+                                              size="small"
+                                              variant="outlined"
+                                              sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
+                                            />
+                                          ))}
+                                          {group.uniqueDstIPs.length > 10 && (
+                                            <Chip
+                                              label={`+${group.uniqueDstIPs.length - 10} more`}
+                                              size="small"
+                                              variant="outlined"
+                                            />
+                                          )}
+                                        </Box>
+                                      </Grid>
+                                    )}
+
+                                    {(group.uniqueSrcPorts.length > 0 || group.uniqueDstPorts.length > 0) && (
+                                      <Grid item xs={12}>
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                          Ports (Src: {group.uniqueSrcPorts.length}, Dst: {group.uniqueDstPorts.length})
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                                          {[...group.uniqueSrcPorts, ...group.uniqueDstPorts].slice(0, 20).map((port, idx) => (
+                                            <Chip
+                                              key={`${port}-${idx}`}
+                                              label={port}
+                                              size="small"
+                                              variant="outlined"
+                                              sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
+                                            />
+                                          ))}
+                                        </Box>
+                                      </Grid>
+                                    )}
+
+                                    {group.ruleExpression && (
+                                      <Grid item xs={12}>
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                          Rule Expression
+                                        </Typography>
+                                        <FilterExpressionBlock
+                                          expression={group.ruleExpression}
+                                          sx={{
+                                            mt: 0.5,
+                                            p: 1.5,
+                                          }}
+                                        />
+                                      </Grid>
+                                    )}
+                                  </Grid>
+
+                                  {/* Sample Alerts */}
+                                  {group.sampleAlerts.length > 0 && (
+                                    <Box sx={{ mt: 2 }}>
+                                      <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                                        Sample Alerts ({group.sampleAlerts.length} of {group.count})
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                        {group.sampleAlerts.map((alert, idx) => (
+                                          <Button
+                                            key={`${alert.timestamp}-${idx}`}
+                                            size="small"
+                                            variant="outlined"
+                                            startIcon={<VisibilityIcon />}
+                                            onClick={() => handleViewDetails(alert)}
+                                          >
+                                            View Sample {idx + 1}
+                                          </Button>
+                                        ))}
+                                      </Box>
+                                    </Box>
+                                  )}
                                 </Box>
-                              )}
-                            </Box>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-          <TablePagination
-            rowsPerPageOptions={[10, 25, 50, 100]}
-            component="div"
-            count={groupCount}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            labelDisplayedRows={({ from, to, count }) => 
-              `${from}-${to} of ${count} groups (${totalCount.toLocaleString()} total alerts)`
-            }
-          />
-        </TableContainer>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          }
+        />
 
         {/* Alert Details Dialog */}
         <Dialog
@@ -984,6 +1044,7 @@ export default function AlertsPage() {
           onClose={() => setDetailsDialogOpen(false)}
           maxWidth="md"
           fullWidth
+          fullScreen={isMobile}
         >
           <style>{`
             .json-key { color: #9cdcfe; }
@@ -992,7 +1053,16 @@ export default function AlertsPage() {
             .json-boolean { color: #569cd6; }
             .json-null { color: #569cd6; }
           `}</style>
-          <DialogTitle>Alert Details</DialogTitle>
+          <DialogTitle>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              Alert Details
+              {isMobile && (
+                <IconButton onClick={() => setDetailsDialogOpen(false)} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             {selectedAlert && (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

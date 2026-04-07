@@ -136,7 +136,7 @@ export function FileSelectorHeader({
   }
 
   return (
-    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: 300, maxWidth: 400 }}>
+    <FormControl size="small" disabled={switchingFile} sx={{ minWidth: { xs: 200, sm: 300 }, maxWidth: { xs: '100%', sm: 400 } }}>
       <Select
         data-learn={learnHint}
         value={selectedValue}

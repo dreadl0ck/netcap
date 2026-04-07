@@ -2484,9 +2484,20 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 	// Read File audit records to get hash and protocol information
 	type fileAuditInfo struct {
-		Name     string // Original filename from network traffic
-		Hash     string
-		Protocol string
+		Name              string  // Original filename from network traffic
+		Hash              string
+		Protocol          string
+		Entropy           float64
+		TypeMismatch      bool
+		IsPEExecutable    bool
+		IsELFExecutable   bool
+		IsMachO           bool
+		HasEmbeddedScript bool
+		IsPasswordProtected bool
+		IsKnownMalware    bool
+		ThreatName        string
+		TrueFileType      string
+		ContentType       string
 	}
 	fileInfoMap := make(map[string]fileAuditInfo) // filename -> {name, hash, protocol}
 	fileAuditPath := filepath.Join(outDir, "File.ncap.gz")
@@ -2508,9 +2519,20 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 				if file.Location != "" {
 					filename := filepath.Base(file.Location)
 					fileInfoMap[filename] = fileAuditInfo{
-						Name:     file.Name, // Original filename from network traffic
-						Hash:     file.Hash,
-						Protocol: file.Protocol,
+						Name:              file.Name,
+						Hash:              file.Hash,
+						Protocol:          file.Protocol,
+						Entropy:           file.Entropy,
+						TypeMismatch:      file.TypeMismatch,
+						IsPEExecutable:    file.IsPEExecutable,
+						IsELFExecutable:   file.IsELFExecutable,
+						IsMachO:           file.IsMachO,
+						HasEmbeddedScript: file.HasEmbeddedScript,
+						IsPasswordProtected: file.IsPasswordProtected,
+						IsKnownMalware:    file.IsKnownMalware,
+						ThreatName:        file.ThreatName,
+						TrueFileType:      file.TrueFileType,
+						ContentType:       file.ContentType,
 					}
 				}
 			}
@@ -2557,17 +2579,35 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 		//log.Printf("[WebUI] Extracted file: name=%s, relPath=%s, mimeType=%s", info.Name(), relPath, mimeType)
 
-		// Add name, hash and protocol if available from File audit records
+		// Add name, hash, protocol, and security indicators from File audit records
 		// Match by filename since full paths may differ
 		if auditInfo, ok := fileInfoMap[info.Name()]; ok {
 			if auditInfo.Name != "" {
-				fileInfo["originalName"] = auditInfo.Name // Original filename from network traffic
+				fileInfo["originalName"] = auditInfo.Name
 			}
 			if auditInfo.Hash != "" {
 				fileInfo["hash"] = auditInfo.Hash
 			}
 			if auditInfo.Protocol != "" {
 				fileInfo["protocol"] = auditInfo.Protocol
+			}
+			// Security indicators
+			fileInfo["entropy"] = auditInfo.Entropy
+			fileInfo["typeMismatch"] = auditInfo.TypeMismatch
+			fileInfo["isPEExecutable"] = auditInfo.IsPEExecutable
+			fileInfo["isELFExecutable"] = auditInfo.IsELFExecutable
+			fileInfo["isMachO"] = auditInfo.IsMachO
+			fileInfo["hasEmbeddedScript"] = auditInfo.HasEmbeddedScript
+			fileInfo["isPasswordProtected"] = auditInfo.IsPasswordProtected
+			fileInfo["isKnownMalware"] = auditInfo.IsKnownMalware
+			if auditInfo.ThreatName != "" {
+				fileInfo["threatName"] = auditInfo.ThreatName
+			}
+			if auditInfo.TrueFileType != "" {
+				fileInfo["trueFileType"] = auditInfo.TrueFileType
+			}
+			if auditInfo.ContentType != "" {
+				fileInfo["contentType"] = auditInfo.ContentType
 			}
 		}
 

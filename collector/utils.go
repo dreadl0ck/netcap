@@ -34,12 +34,58 @@ import (
 )
 
 func (c *Collector) handleRawPacketData(data []byte, ci *gopacket.CaptureInfo) {
+	// Determine the correct base layer for this packet.
+	// For pcapng files with mixed link types, the per-packet link type
+	// is stored in ci.AncillaryData[0].
+	baseLayer := c.config.BaseLayer
+	if len(ci.AncillaryData) > 0 {
+		if lt, ok := ci.AncillaryData[0].(layers.LinkType); ok {
+			if lt == 274 && len(data) > 8 {
+				// LINKTYPE_ETHERNET_MPACKET (FPP): strip 8-byte Ethernet preamble+SFD
+				data = data[8:]
+				baseLayer = layers.LayerTypeEthernet
+			} else if layerType := linkTypeToLayerType(lt); layerType != 0 {
+				baseLayer = layerType
+			}
+		}
+	}
+
 	// when not using lazy here, the packet will be decoded on the main thread!
-	p := gopacket.NewPacket(data, c.config.BaseLayer, c.config.DecodeOptions)
+	p := gopacket.NewPacket(data, baseLayer, c.config.DecodeOptions)
 	p.Metadata().CaptureInfo = *ci
 
 	// pass packet to a worker routine
 	c.handlePacket(p)
+}
+
+// linkTypeToLayerType converts a pcap link type to a gopacket layer type.
+// Returns 0 if the link type is not recognized.
+func linkTypeToLayerType(lt layers.LinkType) gopacket.LayerType {
+	switch lt {
+	case layers.LinkTypeEthernet:
+		return layers.LayerTypeEthernet
+	case layers.LinkTypeRaw, layers.LinkTypeIPv4:
+		return layers.LayerTypeIPv4
+	case layers.LinkTypeIPv6:
+		return layers.LayerTypeIPv6
+	case layers.LinkTypeNull:
+		return layers.LayerTypeLoopback
+	case layers.LinkTypeFDDI:
+		return layers.LayerTypeFDDI
+	case layers.LinkTypeIEEE802_11:
+		return layers.LayerTypeDot11
+	case layers.LinkTypeIEEE80211Radio:
+		return layers.LayerTypeRadioTap
+	case layers.LinkTypePPP:
+		return layers.LayerTypePPP
+	case layers.LinkTypeLinuxSLL:
+		return layers.LayerTypeLinuxSLL
+	case 274: // LINKTYPE_ETHERNET_MPACKET (FPP - Frame Preemption Protocol)
+		// FPP frames in pcapng are standard Ethernet frames
+		return layers.LayerTypeEthernet
+	default:
+		return 0
+	}
 }
 
 // printProgressLive prints live statistics.

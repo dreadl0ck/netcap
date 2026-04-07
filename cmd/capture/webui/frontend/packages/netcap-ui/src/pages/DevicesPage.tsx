@@ -33,7 +33,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TableSortLabel,
   Tooltip,
@@ -56,6 +55,7 @@ import {
   BarChart as BarChartIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
@@ -460,7 +460,51 @@ export default function DevicesPage() {
             </Typography>
           </Paper>
         ) : (
-          <>
+          <ResponsiveDataView<DeviceProfileSummary>
+            data={paginatedDevices}
+            totalCount={filteredDevices.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            onCardClick={(device) => handleRowClick(device.macAddr)}
+            renderCard={(device) => (
+              <Card variant="outlined">
+                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Typography variant="subtitle2" sx={{ fontFamily: 'monospace' }}>
+                    {device.macAddr}
+                  </Typography>
+                  {device.deviceManufacturer && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      {device.deviceManufacturer}
+                    </Typography>
+                  )}
+                  <Box display="flex" gap={2} mt={0.5} flexWrap="wrap">
+                    <Typography variant="caption" color="text.secondary">
+                      {device.numPackets.toLocaleString()} pkts
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatBytes(device.bytes)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {device.numDeviceIPs} IPs
+                    </Typography>
+                  </Box>
+                  {device.os && (
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                      OS: {device.os}
+                    </Typography>
+                  )}
+                  {(device.devices || []).length > 0 && (
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5} noWrap>
+                      Types: {(device.devices || []).slice(0, 2).join(', ')}{(device.devices || []).length > 2 ? ` +${(device.devices || []).length - 2}` : ''}
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            desktopTable={
             <TableContainer component={Paper}>
               <Table size="small">
                 <TableHead>
@@ -840,17 +884,8 @@ export default function DevicesPage() {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <TablePagination
-              component="div"
-              count={filteredDevices.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+            }
+          />
         )}
         </>
         )}

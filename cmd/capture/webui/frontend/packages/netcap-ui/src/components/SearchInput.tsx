@@ -81,7 +81,7 @@ export default function SearchInput({
       placeholder={placeholder}
       value={value}
       onChange={handleChange}
-      sx={{ minWidth, ...sx }}
+      sx={{ minWidth: { xs: 0, sm: minWidth }, width: { xs: '100%', sm: 'auto' }, ...sx }}
       InputProps={{
         startAdornment: showSearchIcon ? (
           <InputAdornment position="start">

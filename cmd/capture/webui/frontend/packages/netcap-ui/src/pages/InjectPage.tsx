@@ -69,11 +69,12 @@ import WarningIcon from '@mui/icons-material/Warning';
 import SecurityIcon from '@mui/icons-material/Security';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import { Close as CloseIcon } from '@mui/icons-material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import Layout from '../components/Layout';
 import { InjectionRule, InjectionEvent, InjectionAction, CreateInjectionRuleRequest, UpdateInjectionRuleRequest, formatTimestamp } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
-import { useNetcapApi } from '../hooks';
+import { useNetcapApi, useIsMobile } from '../hooks';
 import useSWR, { mutate } from 'swr';
 import { SyntaxHighlightedTextArea } from '../components/SyntaxHighlightedInput';
 import { FilterExpressionInline } from '../components/FilterExpressionHighlight';
@@ -120,6 +121,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 export default function InjectPage() {
+  const isMobile = useIsMobile();
   const api = useNetcapApi();
   const [tabValue, setTabValue] = useState(0);
   const [openDialog, setOpenDialog] = useState(false);
@@ -947,8 +949,17 @@ export default function InjectPage() {
         </TabPanel>
 
         {/* Rule Dialog */}
-        <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-          <DialogTitle>{editingRule ? 'Edit Injection Rule' : 'Create New Injection Rule'}</DialogTitle>
+        <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth fullScreen={isMobile}>
+          <DialogTitle>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              {editingRule ? 'Edit Injection Rule' : 'Create New Injection Rule'}
+              {isMobile && (
+                <IconButton onClick={handleCloseDialog} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
               <TextField

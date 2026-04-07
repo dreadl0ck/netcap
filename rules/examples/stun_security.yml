@@ -1,0 +1,23 @@
+# STUN/TURN Security Detection Rules
+# Monitor NAT traversal and media relay activity
+
+description: "Detection rules for STUN and TURN protocol activity including NAT traversal and relay allocation."
+
+rules:
+  # STUN binding to external server - NAT traversal
+  - name: STUN External NAT Traversal
+    description: STUN binding request to an external server detected, indicating NAT traversal activity for WebRTC or VoIP
+    type: STUN
+    expression: 'Method == "Binding" && MessageClass == "Request" && IsPublicIP(DstIP)'
+    severity: info
+    tags: ["stun", "nat-traversal", "webrtc"]
+    enabled: true
+
+  # TURN relay allocation - media relay setup
+  - name: STUN TURN Relay Allocation
+    description: TURN relay allocation request detected, indicating media relay setup which can be used to tunnel traffic
+    type: STUN
+    expression: 'Method == "Allocate" && MessageClass == "Request"'
+    severity: low
+    tags: ["stun", "turn", "relay"]
+    enabled: true

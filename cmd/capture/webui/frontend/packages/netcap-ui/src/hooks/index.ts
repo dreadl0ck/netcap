@@ -26,3 +26,5 @@ export { useTableKeyboardNavigation } from './useTableKeyboardNavigation';
 
 export { useViewMode } from './useViewMode';
 export type { ViewMode } from './useViewMode';
+
+export { useIsMobile, useIsTablet } from './useIsMobile';

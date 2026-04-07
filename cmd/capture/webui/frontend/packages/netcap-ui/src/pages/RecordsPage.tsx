@@ -53,12 +53,13 @@ import {
   FilterAlt as FilterAltIcon,
   HelpOutline as HelpOutlineIcon,
   ContentCopy as ContentCopyIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatBytes, getBackendUrl, FilteredAuditFileInfo } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useIsMobile } from '../hooks';
 import FilterExpressionHighlight, { FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 import { highlightFilterExpression } from '../lib/filterSyntaxHighlight';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
@@ -226,8 +227,8 @@ function RecordUI({ data, level = 0 }: RecordUIProps) {
             >
               <Box 
                 sx={{ 
-                  minWidth: level === 0 ? 180 : 140,
-                  maxWidth: level === 0 ? 180 : 140,
+                  minWidth: level === 0 ? { xs: 100, sm: 180 } : { xs: 80, sm: 140 },
+                  maxWidth: level === 0 ? { xs: 120, sm: 180 } : { xs: 100, sm: 140 },
                   pt: 0.2
                 }}
               >
@@ -354,6 +355,7 @@ function syntaxHighlight(json: string) {
 export default function AuditRecords() {
   const router = useNetcapRouter();
   const api = useNetcapApi();
+  const isMobile = useIsMobile();
   const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   
   // Convert community IDs to array for API call
@@ -1217,7 +1219,7 @@ export default function AuditRecords() {
       </Box>
 
       {/* Record Viewer Dialog */}
-      <Dialog open={selectedType !== null} onClose={handleClose} maxWidth="lg" fullWidth>
+      <Dialog open={selectedType !== null} onClose={handleClose} maxWidth="lg" fullWidth fullScreen={isMobile}>
         <style>{`
           .json-key { color: #9cdcfe; }
           .json-string { color: #ce9178; }
@@ -1250,16 +1252,23 @@ export default function AuditRecords() {
                 </Button>
               </Box>
             </Box>
-            {executionTime > 0 && (
-              <Tooltip title="Execution time">
-                <Chip 
-                  label={`${executionTime}ms`} 
-                  size="small" 
-                  color="info"
-                  icon={<FilterAltIcon />}
-                />
-              </Tooltip>
-            )}
+            <Box display="flex" alignItems="center" gap={1}>
+              {executionTime > 0 && (
+                <Tooltip title="Execution time">
+                  <Chip
+                    label={`${executionTime}ms`}
+                    size="small"
+                    color="info"
+                    icon={<FilterAltIcon />}
+                  />
+                </Tooltip>
+              )}
+              {isMobile && (
+                <IconButton onClick={handleClose} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
+            </Box>
           </Box>
           {loading && <LinearProgress sx={{ mt: 1 }} />}
         </DialogTitle>

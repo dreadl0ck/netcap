@@ -33,7 +33,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TableSortLabel,
   Tooltip,
@@ -57,6 +56,7 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
@@ -473,7 +473,56 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
             </Typography>
           </Paper>
         ) : (
-          <>
+          <ResponsiveDataView<ServiceSummary>
+            data={paginatedServices}
+            totalCount={filteredServices.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            renderCard={(svc) => {
+              const svcTotalBytes = svc.bytesServer + svc.bytesClient;
+              return (
+                <Card variant="outlined">
+                  <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                      <Typography sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: '#2196f3', fontWeight: 'bold' }}>
+                        {svc.ip}
+                      </Typography>
+                      <Chip
+                        label={svc.protocol || 'Unknown'}
+                        size="small"
+                        color="primary"
+                        sx={{ fontSize: '0.7rem' }}
+                      />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 0.5 }}>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace', color: '#FFB74D', fontWeight: 'medium' }}>
+                        :{svc.port}
+                      </Typography>
+                      {svc.portName && (
+                        <Chip label={svc.portName} size="small" color="secondary" variant="outlined" sx={{ fontSize: '0.65rem' }} />
+                      )}
+                    </Box>
+                    {svc.banner && (
+                      <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', mb: 0.5 }}>
+                        {svc.banner.length > 60 ? svc.banner.substring(0, 60) + '...' : svc.banner}
+                      </Typography>
+                    )}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        {svc.numFlows} flows
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatBytes(svcTotalBytes)}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              );
+            }}
+            desktopTable={
             <TableContainer component={Paper}>
               <Table size="small" data-learn="Services Table: Detailed list of all discovered network services with sorting capabilities.">
                 <TableHead>
@@ -543,7 +592,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                     const totalBytes = svc.bytesServer + svc.bytesClient;
                     return (
                       <React.Fragment key={rowKey}>
-                        <TableRow 
+                        <TableRow
                           data-row-key={rowKey}
                           hover
                           onClick={() => handleRowClick(rowKey)}
@@ -552,18 +601,18 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                         >
                           <TableCell>
                             <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed service information.">
-                              <ExpandMoreIcon 
-                                sx={{ 
+                              <ExpandMoreIcon
+                                sx={{
                                   transform: expandedRow === rowKey ? 'rotate(180deg)' : 'rotate(0deg)',
                                   transition: 'transform 0.3s'
-                                }} 
+                                }}
                               />
                             </IconButton>
                           </TableCell>
                           <TableCell>
-                            <Typography 
-                              sx={{ 
-                                fontFamily: 'monospace', 
+                            <Typography
+                              sx={{
+                                fontFamily: 'monospace',
                                 fontSize: '0.875rem',
                                 color: '#2196f3',
                                 fontWeight: 'bold',
@@ -574,9 +623,9 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            <Typography 
+                            <Typography
                               variant="body2"
-                              sx={{ 
+                              sx={{
                                 fontFamily: 'monospace',
                                 color: '#FFB74D',
                                 fontWeight: 'medium',
@@ -639,7 +688,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                             )}
                           </TableCell>
                         </TableRow>
-                        
+
                         {/* Expandable Row Details */}
                         <TableRow>
                           <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
@@ -670,7 +719,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                                       </Typography>
                                     )}
                                   </Grid>
-                                  
+
                                   {/* Product & Version */}
                                   <Grid item xs={12} md={6}>
                                     <Typography variant="subtitle2" gutterBottom>
@@ -697,7 +746,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                                       </Typography>
                                     )}
                                   </Grid>
-                                  
+
                                   {/* Traffic Statistics */}
                                   <Grid item xs={12} md={6}>
                                     <Typography variant="subtitle2" gutterBottom>
@@ -716,7 +765,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                                       Number of Flows: {svc.numFlows.toLocaleString()}
                                     </Typography>
                                   </Grid>
-                                  
+
                                   {/* Host Information */}
                                   {(svc.hostname || svc.banner) && (
                                     <Grid item xs={12} md={6}>
@@ -729,10 +778,10 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                                         </Typography>
                                       )}
                                       {svc.banner && (
-                                        <Typography 
-                                          variant="body2" 
+                                        <Typography
+                                          variant="body2"
                                           color="text.secondary"
-                                          sx={{ 
+                                          sx={{
                                             fontFamily: 'monospace',
                                             fontSize: '0.75rem',
                                             whiteSpace: 'pre-wrap',
@@ -744,7 +793,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                                       )}
                                     </Grid>
                                   )}
-                                  
+
                                   {/* Applications */}
                                   {(svc.applications || []).length > 0 && (
                                     <Grid item xs={12}>
@@ -765,7 +814,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                                       </Box>
                                     </Grid>
                                   )}
-                                  
+
                                   {/* Notes */}
                                   {svc.notes && (
                                     <Grid item xs={12}>
@@ -777,7 +826,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                                       </Typography>
                                     </Grid>
                                   )}
-                                  
+
                                   {/* Action Buttons */}
                                   <Grid item xs={12}>
                                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -824,7 +873,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                                           Create Probe
                                         </Button>
                                       )}
-                                      
+
                                       {/* Custom row actions from parent */}
                                       {rowActions && rowActions(svc)}
                                     </Box>
@@ -840,18 +889,8 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <TablePagination
-              data-learn="Table Pagination: Navigate through pages of services and change how many rows to display per page."
-              component="div"
-              count={filteredServices.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+            }
+          />
         )}
         </>
         )}

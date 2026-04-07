@@ -143,8 +143,9 @@ func (s *Server) handleCredentials(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get file size for logging
-	fileInfo, _ := os.Stat(filePath)
-	log.Printf("[Credentials] Opening credentials file (size: %d bytes)", fileInfo.Size())
+	if fileInfo, err := os.Stat(filePath); err == nil {
+		log.Printf("[Credentials] Opening credentials file (size: %d bytes)", fileInfo.Size())
+	}
 
 	// Open the audit file
 	reader, err := netio.Open(filePath, defaults.BufferSize)
@@ -269,6 +270,151 @@ func (s *Server) handleCredentials(w http.ResponseWriter, r *http.Request) {
 	RespondJSON(w, http.StatusOK, CredentialsResponse{
 		Credentials: credentials,
 		TotalCount:  len(credentials),
+	})
+}
+
+// AuthActivityEvent represents a unified authentication event from any protocol
+type AuthActivityEvent struct {
+	Timestamp int64  `json:"timestamp"`
+	Protocol  string `json:"protocol"` // "Credentials", "TACACS", "Kerberos"
+	User      string `json:"user"`
+	Service   string `json:"service"`
+	Action    string `json:"action"`
+	Status    string `json:"status"`
+	SrcIP     string `json:"srcIP"`
+	DstIP     string `json:"dstIP"`
+	Details   string `json:"details"`
+}
+
+// AuthActivityResponse contains all authentication events
+type AuthActivityResponse struct {
+	Events     []AuthActivityEvent `json:"events"`
+	TotalCount int                 `json:"totalCount"`
+}
+
+// handleAuthActivity returns a unified authentication activity timeline
+// merging Credentials, TACACS+, and Kerberos records
+func (s *Server) handleAuthActivity(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	s.mu.RLock()
+	outDir := s.outDir
+	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
+		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
+			outDir = session.OutputDir
+		}
+	}
+	s.mu.RUnlock()
+
+	if outDir == "" {
+		RespondJSON(w, http.StatusOK, AuthActivityResponse{Events: []AuthActivityEvent{}})
+		return
+	}
+
+	var events []AuthActivityEvent
+
+	// Load TACACS+ records
+	tacacsFile := filepath.Join(outDir, "TACACS"+defaults.FileExtension+".gz")
+	if _, err := os.Stat(tacacsFile); err == nil {
+		if reader, err := netio.Open(tacacsFile, defaults.BufferSize); err == nil {
+			defer reader.Close()
+			if _, err := reader.ReadHeader(); err == nil {
+				var rec types.TACACS
+				for {
+					if err := reader.Next(&rec); err != nil {
+						break
+					}
+					events = append(events, AuthActivityEvent{
+						Timestamp: rec.Timestamp,
+						Protocol:  "TACACS+",
+						User:      rec.User,
+						Service:   rec.Service,
+						Action:    rec.Action,
+						Status:    rec.StatusName,
+						SrcIP:     rec.SrcIP,
+						DstIP:     rec.DstIP,
+						Details:   fmt.Sprintf("Type=%s Seq=%d Session=%d", rec.TypeName, rec.SequenceNumber, rec.SessionID),
+					})
+				}
+			}
+		}
+	}
+
+	// Load Kerberos records
+	kerbFile := filepath.Join(outDir, "Kerberos"+defaults.FileExtension+".gz")
+	if _, err := os.Stat(kerbFile); err == nil {
+		if reader, err := netio.Open(kerbFile, defaults.BufferSize); err == nil {
+			defer reader.Close()
+			if _, err := reader.ReadHeader(); err == nil {
+				var rec types.Kerberos
+				for {
+					if err := reader.Next(&rec); err != nil {
+						break
+					}
+					status := rec.MessageType
+					if rec.ErrorCode != 0 {
+						status = fmt.Sprintf("%s (error %d: %s)", rec.MessageType, rec.ErrorCode, rec.ErrorMessage)
+					}
+					events = append(events, AuthActivityEvent{
+						Timestamp: rec.Timestamp,
+						Protocol:  "Kerberos",
+						User:      rec.ClientName,
+						Service:   rec.ServerName,
+						Action:    rec.MessageType,
+						Status:    status,
+						SrcIP:     rec.SrcIP,
+						DstIP:     rec.DstIP,
+						Details:   fmt.Sprintf("Realm=%s Etype=%s", rec.Realm, rec.EncryptionTypeName),
+					})
+				}
+			}
+		}
+	}
+
+	// Load Credentials with auth results
+	credFile := filepath.Join(outDir, "Credentials"+defaults.FileExtension+".gz")
+	if _, err := os.Stat(credFile); err == nil {
+		if reader, err := netio.Open(credFile, defaults.BufferSize); err == nil {
+			defer reader.Close()
+			if _, err := reader.ReadHeader(); err == nil {
+				var rec types.Credentials
+				for {
+					if err := reader.Next(&rec); err != nil {
+						break
+					}
+					if rec.User == "" && rec.Password == "" {
+						continue
+					}
+					status := "captured"
+					if rec.AuthSuccessSet {
+						if rec.AuthSuccess {
+							status = "success"
+						} else {
+							status = "failure"
+						}
+					}
+					events = append(events, AuthActivityEvent{
+						Timestamp: rec.Timestamp,
+						Protocol:  rec.Service,
+						User:      rec.User,
+						Service:   rec.Service,
+						Action:    "credential-capture",
+						Status:    status,
+						SrcIP:     "",
+						DstIP:     "",
+						Details:   fmt.Sprintf("Flow=%s", rec.Flow),
+					})
+				}
+			}
+		}
+	}
+
+	RespondJSON(w, http.StatusOK, AuthActivityResponse{
+		Events:     events,
+		TotalCount: len(events),
 	})
 }
 

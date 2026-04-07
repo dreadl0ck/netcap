@@ -1,0 +1,37 @@
+# TACACS+ Security Detection Rules
+# Monitor network device authentication via TACACS+
+
+description: "Detection rules for TACACS+ authentication monitoring including failures, brute force, and privilege escalation on network infrastructure."
+
+rules:
+  # Authentication failure on network device
+  - name: TACACS Authentication Failure
+    description: TACACS+ authentication failure detected on a network device
+    type: TACACS
+    expression: 'StatusName == "FAIL"'
+    severity: medium
+    mitre: ["T1110"]
+    tags: ["tacacs", "credential-access", "auth-failure"]
+    enabled: true
+
+  # Brute force - multiple failures
+  - name: TACACS Brute Force
+    description: Multiple TACACS+ authentication failures detected, indicating a potential brute force attack against network infrastructure
+    type: TACACS
+    expression: 'StatusName == "FAIL"'
+    severity: high
+    mitre: ["T1110.001"]
+    tags: ["tacacs", "credential-access", "brute-force"]
+    enabled: true
+    threshold: 5
+    threshold_window: 120
+
+  # Enable mode access - privilege escalation
+  - name: TACACS Enable Mode Access
+    description: TACACS+ enable mode authentication detected on a network device, indicating privilege level change
+    type: TACACS
+    expression: 'Action == "Login" && Service == "enable"'
+    severity: info
+    mitre: ["T1078"]
+    tags: ["tacacs", "privilege-escalation", "enable"]
+    enabled: true

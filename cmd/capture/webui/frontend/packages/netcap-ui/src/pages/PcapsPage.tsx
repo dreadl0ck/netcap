@@ -38,7 +38,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TableSortLabel,
   TextField,
@@ -46,10 +45,13 @@ import {
   Typography,
   type SelectChangeEvent,
 } from '@mui/material';
-import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, Description as DescriptionIcon, BubbleChart as VisualizeIcon, Report as ReportIcon, BugReport as BugReportIcon, Download as DownloadIcon, Notifications as NotificationsIcon, Refresh as RefreshIcon } from '@mui/icons-material';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
+import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, Description as DescriptionIcon, BubbleChart as VisualizeIcon, Report as ReportIcon, BugReport as BugReportIcon, Download as DownloadIcon, Notifications as NotificationsIcon, Refresh as RefreshIcon, Close as CloseIcon } from '@mui/icons-material';
+import { useNetcapRouter, useNetcapApi, useIsMobile } from '../hooks';
 import Layout from '../components/Layout';
-import { formatBytes, formatTimestamp, formatDuration } from '../lib/api';
+import ResponsiveDataView from '../components/ResponsiveDataView';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import { formatBytes, formatTimestamp, formatDuration, type FileInfo } from '../lib/api';
 import { parseSearchQuery, matchesSingleValue } from '../lib/tableSearch';
 import useSWR from 'swr';
 import ReportIssueDialog from '../components/ReportIssueDialog';
@@ -59,6 +61,7 @@ type SortField = 'name' | 'size' | 'modifiedTime';
 type SortOrder = 'asc' | 'desc';
 
 export default function PCAPs() {
+  const isMobile = useIsMobile();
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const { data: files, error, mutate } = useSWR('inputFiles', () => api.getInputFiles(), {
@@ -481,308 +484,235 @@ export default function PCAPs() {
         </Box>
 
         {paginatedFiles && paginatedFiles.length > 0 ? (
-          <TableContainer component={Paper} sx={{ mt: 3, overflowX: 'auto', maxWidth: '100%' }}>
-            <Table sx={{ minWidth: { xs: 700, md: 'auto' } }}>
-              <TableHead>
-                <TableRow>
-                  <TableCell>
-                    <TableSortLabel
-                      active={sortField === 'name'}
-                      direction={sortField === 'name' ? sortOrder : 'asc'}
-                      onClick={() => handleSort('name')}
-                    >
-                      Filename
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right">
-                    <TableSortLabel
-                      active={sortField === 'size'}
-                      direction={sortField === 'size' ? sortOrder : 'asc'}
-                      onClick={() => handleSort('size')}
-                    >
-                      Size
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
-                    <TableSortLabel
-                      active={sortField === 'modifiedTime'}
-                      direction={sortField === 'modifiedTime' ? sortOrder : 'asc'}
-                      onClick={() => handleSort('modifiedTime')}
-                    >
-                      Modified
-                    </TableSortLabel>
-                  </TableCell>
-                  <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>Processing Time</TableCell>
-                  <TableCell align="right">Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedFiles.map((file) => {
-                  // Debug log for each file
-                  console.log('[PCAPs] File:', file.name, {
-                    error: file.error,
-                    errorLogPath: file.errorLogPath,
-                    sessionId: file.sessionId,
-                    hasError: !!file.error,
-                    hasErrorLogPath: !!file.errorLogPath,
-                    hasSessionId: !!file.sessionId,
-                  });
-                  
-                  return (
-                  <TableRow 
-                    key={file.path}
-                    sx={{ 
-                      backgroundColor: isActive(file.path) ? 'action.selected' : 'inherit',
-                      opacity: file.isCompleted ? 1 : 0.6,
-                      '&:hover': ((isMultiFile || status?.isServiceMode) && file.isCompleted) ? { backgroundColor: 'action.hover', cursor: 'pointer' } : {}
-                    }}
-                    onClick={((isMultiFile || status?.isServiceMode) && file.isCompleted) ? () => handleSelectFile(file.path) : undefined}
-                  >
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      {file.error ? (
-                        <Tooltip title={`Error: ${file.error}`}>
-                          <ErrorIcon color="error" fontSize="small" />
-                        </Tooltip>
-                      ) : isActive(file.path) && file.isCompleted ? (
-                        <CheckCircleIcon color="success" fontSize="small" />
-                      ) : !file.isCompleted ? (
-                        <HourglassEmptyIcon color="disabled" fontSize="small" />
-                      ) : null}
-                      <Box sx={{ minWidth: 0, flex: 1 }}>
-                        <Typography 
-                          sx={{ 
-                            fontFamily: 'monospace',
-                            maxWidth: { xs: 200, sm: 300, md: 'none' },
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}
+          <Box sx={{ mt: 3 }}>
+          <ResponsiveDataView<FileInfo>
+            data={paginatedFiles}
+            totalCount={sortedFiles.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPageTable}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            onCardClick={(file) => {
+              if ((isMultiFile || status?.isServiceMode) && file.isCompleted) {
+                handleSelectFile(file.path);
+              }
+            }}
+            desktopTable={
+              <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+                <Table sx={{ minWidth: { xs: 700, md: 'auto' } }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>
+                        <TableSortLabel
+                          active={sortField === 'name'}
+                          direction={sortField === 'name' ? sortOrder : 'asc'}
+                          onClick={() => handleSort('name')}
                         >
-                          {file.name}
-                          {!file.isCompleted && !file.error && (
-                            <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-                              {progressData[file.path]?.percent > 0 
-                                ? `(${progressData[file.path].percent.toFixed(1)}%)`
-                                : '(processing...)'
-                              }
-                            </Typography>
-                          )}
-                          {file.error && (
-                            <Typography component="span" variant="caption" color="error" sx={{ ml: 1 }}>
-                              (error)
-                            </Typography>
-                          )}
-                        </Typography>
-                        {/* Progress bar for processing files */}
-                        {!file.isCompleted && !file.error && progressData[file.path]?.percent > 0 && (
-                          <Box sx={{ mt: 0.5, width: '100%', maxWidth: 300 }}>
-                            <LinearProgress 
-                              variant="determinate" 
-                              value={progressData[file.path].percent}
-                              sx={{ height: 4, borderRadius: 1 }}
-                            />
-                          </Box>
-                        )}
-                        {file.bpfFilter && (
-                          <Box sx={{ mt: 0.5 }}>
-                            <Chip 
-                              label={`BPF: ${file.bpfFilter}`}
-                              size="small"
-                              color="info"
-                              variant="outlined"
-                              sx={{ 
+                          Filename
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell align="right">
+                        <TableSortLabel
+                          active={sortField === 'size'}
+                          direction={sortField === 'size' ? sortOrder : 'asc'}
+                          onClick={() => handleSort('size')}
+                        >
+                          Size
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                        <TableSortLabel
+                          active={sortField === 'modifiedTime'}
+                          direction={sortField === 'modifiedTime' ? sortOrder : 'asc'}
+                          onClick={() => handleSort('modifiedTime')}
+                        >
+                          Modified
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>Processing Time</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginatedFiles.map((file) => {
+                      // Debug log for each file
+                      console.log('[PCAPs] File:', file.name, {
+                        error: file.error,
+                        errorLogPath: file.errorLogPath,
+                        sessionId: file.sessionId,
+                        hasError: !!file.error,
+                        hasErrorLogPath: !!file.errorLogPath,
+                        hasSessionId: !!file.sessionId,
+                      });
+
+                      return (
+                      <TableRow
+                        key={file.path}
+                        sx={{
+                          backgroundColor: isActive(file.path) ? 'action.selected' : 'inherit',
+                          opacity: file.isCompleted ? 1 : 0.6,
+                          '&:hover': ((isMultiFile || status?.isServiceMode) && file.isCompleted) ? { backgroundColor: 'action.hover', cursor: 'pointer' } : {}
+                        }}
+                        onClick={((isMultiFile || status?.isServiceMode) && file.isCompleted) ? () => handleSelectFile(file.path) : undefined}
+                      >
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          {file.error ? (
+                            <Tooltip title={`Error: ${file.error}`}>
+                              <ErrorIcon color="error" fontSize="small" />
+                            </Tooltip>
+                          ) : isActive(file.path) && file.isCompleted ? (
+                            <CheckCircleIcon color="success" fontSize="small" />
+                          ) : !file.isCompleted ? (
+                            <HourglassEmptyIcon color="disabled" fontSize="small" />
+                          ) : null}
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Typography
+                              sx={{
                                 fontFamily: 'monospace',
-                                fontSize: '0.75rem',
-                                height: '20px'
+                                maxWidth: { xs: 200, sm: 300, md: 'none' },
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
                               }}
-                            />
-                          </Box>
-                        )}
-                        {file.error && (
-                          <Typography variant="caption" color="error" display="block" sx={{ mt: 0.5 }}>
-                            {file.error}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  </TableCell>
-                    <TableCell align="right">{formatBytes(file.size)}</TableCell>
-                    <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{formatTimestamp(file.modifiedTime)}</TableCell>
-                    <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                      {file.processingTime && file.isCompleted ? (
-                        <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-                          {formatDuration(file.processingTime)}
-                        </Typography>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          -
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                      <Box display="flex" justifyContent="flex-end" gap={1}>
-                        <Tooltip title={
-                          file.error ? "File encountered an error" :
-                          !file.isCompleted ? "Processing not complete" :
-                          isActive(file.path) ? "Currently viewing" : 
-                          "View audit records"
-                        }>
-                          <span>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleSelectFile(file.path)}
-                              disabled={!file.isCompleted || activating === file.path || isActive(file.path) || !!file.error}
-                              color={isActive(file.path) ? "success" : file.error ? "error" : "default"}
                             >
-                              {activating === file.path ? (
-                                <CircularProgress size={20} />
-                              ) : file.error ? (
-                                <ErrorIcon />
-                              ) : (
-                                <VisibilityIcon />
+                              {file.name}
+                              {!file.isCompleted && !file.error && (
+                                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                  {progressData[file.path]?.percent > 0
+                                    ? `(${progressData[file.path].percent.toFixed(1)}%)`
+                                    : '(processing...)'
+                                  }
+                                </Typography>
                               )}
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                        {file.isCompleted && !file.error && (
-                          <>
-                            <Tooltip title="View Logs">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleViewLogs(file.path)}
-                                disabled={activating === file.path}
-                              >
-                                <DescriptionIcon />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Visualize Protocols">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleVisualize(file.path)}
-                                disabled={activating === file.path}
-                                color="primary"
-                              >
-                                <VisualizeIcon />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Download PCAP">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDownload(
-                                  status?.isServiceMode && file.sessionId ? file.sessionId : file.path,
-                                  file.name
-                                )}
-                                disabled={activating === file.path}
-                                color="default"
-                              >
-                                <DownloadIcon />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Show Alerts">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleShowAlerts(file.path)}
-                                disabled={activating === file.path}
-                                color="warning"
-                              >
-                                <NotificationsIcon />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Reanalyze with current configuration">
+                              {file.error && (
+                                <Typography component="span" variant="caption" color="error" sx={{ ml: 1 }}>
+                                  (error)
+                                </Typography>
+                              )}
+                            </Typography>
+                            {/* Progress bar for processing files */}
+                            {!file.isCompleted && !file.error && progressData[file.path]?.percent > 0 && (
+                              <Box sx={{ mt: 0.5, width: '100%', maxWidth: 300 }}>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={progressData[file.path].percent}
+                                  sx={{ height: 4, borderRadius: 1 }}
+                                />
+                              </Box>
+                            )}
+                            {file.bpfFilter && (
+                              <Box sx={{ mt: 0.5 }}>
+                                <Chip
+                                  label={`BPF: ${file.bpfFilter}`}
+                                  size="small"
+                                  color="info"
+                                  variant="outlined"
+                                  sx={{
+                                    fontFamily: 'monospace',
+                                    fontSize: '0.75rem',
+                                    height: '20px'
+                                  }}
+                                />
+                              </Box>
+                            )}
+                            {file.error && (
+                              <Typography variant="caption" color="error" display="block" sx={{ mt: 0.5 }}>
+                                {file.error}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      </TableCell>
+                        <TableCell align="right">{formatBytes(file.size)}</TableCell>
+                        <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{formatTimestamp(file.modifiedTime)}</TableCell>
+                        <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                          {file.processingTime && file.isCompleted ? (
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                              {formatDuration(file.processingTime)}
+                            </Typography>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              -
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                          <Box display="flex" justifyContent="flex-end" gap={1}>
+                            <Tooltip title={
+                              file.error ? "File encountered an error" :
+                              !file.isCompleted ? "Processing not complete" :
+                              isActive(file.path) ? "Currently viewing" :
+                              "View audit records"
+                            }>
                               <span>
                                 <IconButton
                                   size="small"
-                                  onClick={() => handleReanalyzeClick({ path: file.path, name: file.name, sessionId: file.sessionId })}
-                                  disabled={activating === file.path || reanalyzing === file.path}
-                                  color="secondary"
+                                  onClick={() => handleSelectFile(file.path)}
+                                  disabled={!file.isCompleted || activating === file.path || isActive(file.path) || !!file.error}
+                                  color={isActive(file.path) ? "success" : file.error ? "error" : "default"}
                                 >
-                                  {reanalyzing === file.path ? (
+                                  {activating === file.path ? (
                                     <CircularProgress size={20} />
+                                  ) : file.error ? (
+                                    <ErrorIcon />
                                   ) : (
-                                    <RefreshIcon />
+                                    <VisibilityIcon />
                                   )}
                                 </IconButton>
                               </span>
                             </Tooltip>
-                          </>
-                        )}
-                        {/* Retry button for local mode files with errors */}
-                        {!status?.isServiceMode && file.error && (
-                          <Tooltip title="Retry analysis with current configuration">
-                            <span>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleReanalyzeClick({ path: file.path, name: file.name })}
-                                disabled={reanalyzing === file.path}
-                                color="secondary"
-                              >
-                                {reanalyzing === file.path ? (
-                                  <CircularProgress size={20} />
-                                ) : (
-                                  <RefreshIcon />
-                                )}
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                        )}
-                        {status?.isServiceMode && file.sessionId && (
-                            <>
-                              <Tooltip title={copiedFileId === file.path ? "Copied!" : "Copy Share Link"}>
-                                <IconButton
-                                  size="small"
-                                  color={copiedFileId === file.path ? "success" : "default"}
-                                  onClick={() => file.sessionId && handleCopyShareLink(file.sessionId, file.path)}
-                                >
-                                  {copiedFileId === file.path ? <CheckCircleIcon /> : <ShareIcon />}
-                                </IconButton>
-                              </Tooltip>
-                              {file.isCompleted && !file.error && (
-                                <Tooltip title={file.hasReportedIssue ? "Issue already reported for this file" : "Report Issue"}>
-                                  <span>
-                                    <IconButton
-                                      size="small"
-                                      color="error"
-                                      onClick={() => file.sessionId && handleReportIssue(file.sessionId, file.name)}
-                                      disabled={file.hasReportedIssue}
-                                    >
-                                      <ReportIcon />
-                                    </IconButton>
-                                  </span>
-                                </Tooltip>
-                              )}
-                              {file.error && file.errorLogPath && file.sessionId && (
-                                <Tooltip title="View Crash Log">
+                            {file.isCompleted && !file.error && (
+                              <>
+                                <Tooltip title="View Logs">
                                   <IconButton
                                     size="small"
-                                    color="error"
-                                    onClick={() => {
-                                      console.log('[PCAPs] Crash log button clicked for:', file.name);
-                                      handleViewErrorLog(file);
-                                    }}
-                                    sx={{
-                                      animation: 'glow-red 2s ease-in-out infinite',
-                                      '@keyframes glow-red': {
-                                        '0%, 100%': {
-                                          boxShadow: '0 0 5px rgba(244, 67, 54, 0.5)',
-                                        },
-                                        '50%': {
-                                          boxShadow: '0 0 20px rgba(244, 67, 54, 1), 0 0 30px rgba(244, 67, 54, 0.8)',
-                                        },
-                                      },
-                                    }}
+                                    onClick={() => handleViewLogs(file.path)}
+                                    disabled={activating === file.path}
                                   >
-                                    <BugReportIcon />
+                                    <DescriptionIcon />
                                   </IconButton>
                                 </Tooltip>
-                              )}
-                              {file.error && (
-                                <Tooltip title="Retry analysis with current configuration">
+                                <Tooltip title="Visualize Protocols">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleVisualize(file.path)}
+                                    disabled={activating === file.path}
+                                    color="primary"
+                                  >
+                                    <VisualizeIcon />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Download PCAP">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDownload(
+                                      status?.isServiceMode && file.sessionId ? file.sessionId : file.path,
+                                      file.name
+                                    )}
+                                    disabled={activating === file.path}
+                                    color="default"
+                                  >
+                                    <DownloadIcon />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Show Alerts">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleShowAlerts(file.path)}
+                                    disabled={activating === file.path}
+                                    color="warning"
+                                  >
+                                    <NotificationsIcon />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Reanalyze with current configuration">
                                   <span>
                                     <IconButton
                                       size="small"
                                       onClick={() => handleReanalyzeClick({ path: file.path, name: file.name, sessionId: file.sessionId })}
-                                      disabled={reanalyzing === file.path}
+                                      disabled={activating === file.path || reanalyzing === file.path}
                                       color="secondary"
                                     >
                                       {reanalyzing === file.path ? (
@@ -793,29 +723,147 @@ export default function PCAPs() {
                                     </IconButton>
                                   </span>
                                 </Tooltip>
+                              </>
+                            )}
+                            {/* Retry button for local mode files with errors */}
+                            {!status?.isServiceMode && file.error && (
+                              <Tooltip title="Retry analysis with current configuration">
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleReanalyzeClick({ path: file.path, name: file.name })}
+                                    disabled={reanalyzing === file.path}
+                                    color="secondary"
+                                  >
+                                    {reanalyzing === file.path ? (
+                                      <CircularProgress size={20} />
+                                    ) : (
+                                      <RefreshIcon />
+                                    )}
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            )}
+                            {status?.isServiceMode && file.sessionId && (
+                                <>
+                                  <Tooltip title={copiedFileId === file.path ? "Copied!" : "Copy Share Link"}>
+                                    <IconButton
+                                      size="small"
+                                      color={copiedFileId === file.path ? "success" : "default"}
+                                      onClick={() => file.sessionId && handleCopyShareLink(file.sessionId, file.path)}
+                                    >
+                                      {copiedFileId === file.path ? <CheckCircleIcon /> : <ShareIcon />}
+                                    </IconButton>
+                                  </Tooltip>
+                                  {file.isCompleted && !file.error && (
+                                    <Tooltip title={file.hasReportedIssue ? "Issue already reported for this file" : "Report Issue"}>
+                                      <span>
+                                        <IconButton
+                                          size="small"
+                                          color="error"
+                                          onClick={() => file.sessionId && handleReportIssue(file.sessionId, file.name)}
+                                          disabled={file.hasReportedIssue}
+                                        >
+                                          <ReportIcon />
+                                        </IconButton>
+                                      </span>
+                                    </Tooltip>
+                                  )}
+                                  {file.error && file.errorLogPath && file.sessionId && (
+                                    <Tooltip title="View Crash Log">
+                                      <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={() => {
+                                          console.log('[PCAPs] Crash log button clicked for:', file.name);
+                                          handleViewErrorLog(file);
+                                        }}
+                                        sx={{
+                                          animation: 'glow-red 2s ease-in-out infinite',
+                                          '@keyframes glow-red': {
+                                            '0%, 100%': {
+                                              boxShadow: '0 0 5px rgba(244, 67, 54, 0.5)',
+                                            },
+                                            '50%': {
+                                              boxShadow: '0 0 20px rgba(244, 67, 54, 1), 0 0 30px rgba(244, 67, 54, 0.8)',
+                                            },
+                                          },
+                                        }}
+                                      >
+                                        <BugReportIcon />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                                  {file.error && (
+                                    <Tooltip title="Retry analysis with current configuration">
+                                      <span>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleReanalyzeClick({ path: file.path, name: file.name, sessionId: file.sessionId })}
+                                          disabled={reanalyzing === file.path}
+                                          color="secondary"
+                                        >
+                                          {reanalyzing === file.path ? (
+                                            <CircularProgress size={20} />
+                                          ) : (
+                                            <RefreshIcon />
+                                          )}
+                                        </IconButton>
+                                      </span>
+                                    </Tooltip>
+                                  )}
+                                </>
                               )}
-                            </>
-                          )}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-            {sortedFiles.length > rowsPerPage && (
-              <TablePagination
-                rowsPerPageOptions={[10, 25, 50, 100, { label: 'All', value: sortedFiles.length }]}
-                component="div"
-                count={sortedFiles.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPageTable}
-                labelRowsPerPage="Files per page:"
-              />
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            }
+            renderCard={(file) => (
+              <Card variant="outlined" sx={{ opacity: file.isCompleted ? 1 : 0.6 }}>
+                <CardContent sx={{ pb: 1, '&:last-child': { pb: 1 } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                    {file.error ? (
+                      <ErrorIcon color="error" fontSize="small" />
+                    ) : isActive(file.path) && file.isCompleted ? (
+                      <CheckCircleIcon color="success" fontSize="small" />
+                    ) : !file.isCompleted ? (
+                      <HourglassEmptyIcon color="disabled" fontSize="small" />
+                    ) : null}
+                    <Typography variant="subtitle2" noWrap sx={{ fontFamily: 'monospace', flex: 1 }}>
+                      {file.name}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatBytes(file.size)}
+                    </Typography>
+                    {file.isCompleted && !file.error && (
+                      <Chip label="Completed" size="small" color="success" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                    )}
+                    {file.error && (
+                      <Chip label="Error" size="small" color="error" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                    )}
+                    {!file.isCompleted && !file.error && (
+                      <Chip label="Processing" size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                    )}
+                  </Box>
+                  {!file.isCompleted && !file.error && progressData[file.path]?.percent > 0 && (
+                    <LinearProgress
+                      variant="determinate"
+                      value={progressData[file.path].percent}
+                      sx={{ mt: 0.5, height: 4, borderRadius: 1 }}
+                    />
+                  )}
+                </CardContent>
+              </Card>
             )}
-          </TableContainer>
+          />
+          </Box>
         ) : (
           <Box mt={3}>
             <Typography color="text.secondary">
@@ -842,11 +890,19 @@ export default function PCAPs() {
           onClose={handleCloseErrorLog}
           maxWidth="lg"
           fullWidth
+          fullScreen={isMobile}
         >
           <DialogTitle>
-            <Box display="flex" alignItems="center" gap={1}>
-              <BugReportIcon color="error" />
-              <Typography variant="h6">Analysis Crash Log</Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Box display="flex" alignItems="center" gap={1}>
+                <BugReportIcon color="error" />
+                <Typography variant="h6">Analysis Crash Log</Typography>
+              </Box>
+              {isMobile && (
+                <IconButton onClick={handleCloseErrorLog} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
             </Box>
             {selectedErrorLog && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
@@ -894,11 +950,19 @@ export default function PCAPs() {
           onClose={handleCloseReanalyzeDialog}
           maxWidth="sm"
           fullWidth
+          fullScreen={isMobile}
         >
           <DialogTitle>
-            <Box display="flex" alignItems="center" gap={1}>
-              <RefreshIcon color="secondary" />
-              <Typography variant="h6">Reanalyze PCAP File</Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Box display="flex" alignItems="center" gap={1}>
+                <RefreshIcon color="secondary" />
+                <Typography variant="h6">Reanalyze PCAP File</Typography>
+              </Box>
+              {isMobile && (
+                <IconButton onClick={handleCloseReanalyzeDialog} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
             </Box>
           </DialogTitle>
           <DialogContent>

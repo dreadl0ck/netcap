@@ -1,0 +1,90 @@
+# File Security Detection Rules
+# Detect suspicious file transfers, evasion techniques, and malware indicators
+
+description: "Detection rules for file-based threats including type mismatches (evasion), high entropy (encryption/packing), embedded scripts, executables, and known malware."
+
+rules:
+  # Malware Detection
+  - name: Known Malware Detected
+    description: Extracted file matches known malware signature
+    type: File
+    expression: 'IsKnownMalware'
+    severity: critical
+    mitre: ["T1204"]
+    tags: ["malware", "ioc"]
+    enabled: true
+
+  - name: YARA Rule Match
+    description: Extracted file triggered a YARA detection rule
+    type: File
+    expression: 'len(YaraMatches) > 0'
+    severity: high
+    mitre: ["T1204"]
+    tags: ["malware", "yara"]
+    enabled: true
+
+  # Evasion Techniques
+  - name: File Type Mismatch
+    description: File extension does not match actual file type (magic bytes) - potential evasion technique
+    type: File
+    expression: 'TypeMismatch && Length > 1000'
+    severity: high
+    mitre: ["T1036.008"]
+    tags: ["evasion", "masquerading"]
+    enabled: true
+
+  - name: Executable With Wrong Extension
+    description: PE, ELF, or Mach-O executable disguised with non-executable extension
+    type: File
+    expression: '(IsPEExecutable || IsELFExecutable || IsMachO) && !MatchesPattern(Name, "(?i)\\.(exe|dll|sys|drv|so|dylib|bin|elf|com|scr|cpl|msi)$")'
+    severity: high
+    mitre: ["T1036.008"]
+    tags: ["evasion", "masquerading", "executable"]
+    enabled: true
+
+  # Suspicious File Properties
+  - name: High Entropy File
+    description: File with very high entropy (>7.5) may be encrypted, packed, or compressed malware
+    type: File
+    expression: 'Entropy > 7.5 && Length > 10000'
+    severity: medium
+    mitre: ["T1027"]
+    tags: ["obfuscation", "packed"]
+    enabled: true
+
+  - name: Password Protected Archive
+    description: Password-protected archive transferred over network (potential data exfiltration)
+    type: File
+    expression: 'IsPasswordProtected'
+    severity: medium
+    mitre: ["T1560.001"]
+    tags: ["exfiltration", "encrypted-archive"]
+    enabled: true
+
+  - name: Document With Embedded Script
+    description: Office document or PDF with embedded scripts/macros
+    type: File
+    expression: 'HasEmbeddedScript'
+    severity: medium
+    mitre: ["T1204.002"]
+    tags: ["macro", "script", "initial-access"]
+    enabled: true
+
+  # Executable Transfer Detection
+  - name: PE Executable Transferred
+    description: Windows PE executable transferred over network. Disabled by default - Windows Update and legitimate downloads trigger this frequently.
+    type: File
+    expression: 'IsPEExecutable && Length > 5000'
+    severity: low
+    mitre: ["T1105"]
+    tags: ["executable", "transfer"]
+    enabled: false
+
+  - name: ELF Executable Transferred
+    description: Linux ELF executable transferred over network. Disabled by default - package managers and updates trigger this frequently.
+    type: File
+    expression: 'IsELFExecutable && Length > 5000'
+    severity: low
+    mitre: ["T1105"]
+    tags: ["executable", "transfer"]
+    enabled: false

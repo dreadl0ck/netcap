@@ -297,6 +297,9 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 	p.Bytes += uint64(len(i.Packet.Data()))
 	p.NumPackets++
 
+	// Extract device discovery data from protocol layers
+	enrichDeviceProfileFromPacket(p, i.Packet)
+
 	// Ensure streamBuffers is initialized (defensive check)
 	if p.streamBuffers == nil {
 		p.streamBuffers = make(map[streamKey]*streamBuffer)
@@ -320,6 +323,112 @@ func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 					data:      copyPacketData(i.Packet),
 					timestamp: i.Timestamp,
 				}},
+			}
+		}
+	}
+}
+
+// FindByMAC returns the device profile for the given MAC address.
+func (a *atomicDeviceProfileMap) FindByMAC(mac string) *deviceProfile {
+	a.Lock()
+	defer a.Unlock()
+
+	return a.Items[mac]
+}
+
+// enrichDHCPDeviceProfile extracts hostname and vendor class from DHCP and applies to the correct device.
+// If the Ethernet source is a DHCP relay (ClientHWAddr differs from profile MAC), the info is applied
+// to the actual client's profile instead.
+func enrichDHCPDeviceProfile(p *deviceProfile, dhcp4 *layers.DHCPv4) {
+	var hostname, vendorClass string
+	for _, o := range dhcp4.Options {
+		switch o.Type {
+		case layers.DHCPOptHostname:
+			hostname = string(o.Data)
+		case layers.DHCPOptClassID:
+			vendorClass = string(o.Data)
+		}
+	}
+
+	if hostname == "" && vendorClass == "" {
+		return
+	}
+
+	// Check if this is a relayed DHCP packet
+	clientMAC := dhcp4.ClientHWAddr.String()
+	target := p
+	if clientMAC != "" && clientMAC != p.MacAddr {
+		if clientDP := DeviceProfiles.FindByMAC(clientMAC); clientDP != nil {
+			target = clientDP
+			target.Lock()
+			defer target.Unlock()
+		} else {
+			return // client profile doesn't exist yet, don't pollute relay's profile
+		}
+	}
+
+	if hostname != "" && !slices.Contains(target.Hostnames, hostname) {
+		target.Hostnames = append(target.Hostnames, hostname)
+	}
+	if vendorClass != "" && target.OS == "" {
+		target.OS = vendorClass
+	}
+}
+
+// enrichDeviceProfileFromPacket extracts device information from DHCP, CDP, and LLDP layers.
+// Called per-packet inside applyDeviceProfileUpdate (lock already held).
+func enrichDeviceProfileFromPacket(p *deviceProfile, pkt gopacket.Packet) {
+	// DHCP: extract hostname and vendor class (OS fingerprint)
+	// Use ClientHWAddr to find the correct device profile — if the packet came from
+	// a DHCP relay, the Ethernet source MAC is the relay, not the client.
+	if dhcpLayer := pkt.Layer(layers.LayerTypeDHCPv4); dhcpLayer != nil {
+		if dhcp4, ok := dhcpLayer.(*layers.DHCPv4); ok {
+			enrichDHCPDeviceProfile(p, dhcp4)
+		}
+	}
+
+	// CDP: extract device name, platform, and software version
+	if cdpLayer := pkt.Layer(layers.LayerTypeCiscoDiscovery); cdpLayer != nil {
+		if cdp, ok := cdpLayer.(*layers.CiscoDiscovery); ok {
+			for _, v := range cdp.Values {
+				switch v.Type {
+				case layers.CDPTLVDevID:
+					deviceID := string(v.Value)
+					if deviceID != "" && !slices.Contains(p.Hostnames, deviceID) {
+						p.Hostnames = append(p.Hostnames, deviceID)
+					}
+				case layers.CDPTLVPlatform:
+					platform := string(v.Value)
+					if platform != "" && !slices.Contains(p.DeviceTypes, platform) {
+						p.DeviceTypes = append(p.DeviceTypes, platform)
+					}
+				case layers.CDPTLVVersion:
+					version := string(v.Value)
+					if version != "" && p.OS == "" {
+						// Truncate long IOS version strings
+						if len(version) > 120 {
+							version = version[:120]
+						}
+						p.OS = version
+					}
+				}
+			}
+		}
+	}
+
+	// LLDP: extract system name and system description from the Info layer
+	if lldpInfoLayer := pkt.Layer(layers.LayerTypeLinkLayerDiscoveryInfo); lldpInfoLayer != nil {
+		if lldpInfo, ok := lldpInfoLayer.(*layers.LinkLayerDiscoveryInfo); ok {
+			sysName := string(lldpInfo.SysName)
+			if sysName != "" && !slices.Contains(p.Hostnames, sysName) {
+				p.Hostnames = append(p.Hostnames, sysName)
+			}
+			sysDesc := string(lldpInfo.SysDescription)
+			if sysDesc != "" && p.OS == "" {
+				if len(sysDesc) > 120 {
+					sysDesc = sysDesc[:120]
+				}
+				p.OS = sysDesc
 			}
 		}
 	}

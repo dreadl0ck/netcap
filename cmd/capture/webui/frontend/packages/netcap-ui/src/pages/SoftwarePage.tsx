@@ -33,7 +33,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TableSortLabel,
   Tooltip,
@@ -54,6 +53,7 @@ import {
   Cable as CableIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
 import SearchInput from '../components/SearchInput';
@@ -460,7 +460,43 @@ export default function SoftwarePage() {
             </Typography>
           </Paper>
         ) : (
-          <>
+          <ResponsiveDataView<SoftwareSummary>
+            data={paginatedSoftware}
+            totalCount={filteredSoftware.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            onCardClick={(sw) => handleRowClick(`${sw.product}-${sw.version}-${paginatedSoftware.indexOf(sw)}`)}
+            renderCard={(sw) => (
+              <Card variant="outlined">
+                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Typography variant="subtitle2" sx={{ fontFamily: 'monospace' }}>
+                    {sw.product}
+                  </Typography>
+                  <Box display="flex" gap={2} mt={0.5} flexWrap="wrap">
+                    {sw.version && (
+                      <Typography variant="caption" color="text.secondary">
+                        v{sw.version}
+                      </Typography>
+                    )}
+                    <Typography variant="caption" color="text.secondary">
+                      {sw.count.toLocaleString()} detections
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {sw.devices.length} devices
+                    </Typography>
+                  </Box>
+                  {sw.os && (
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                      OS: {sw.os}
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            desktopTable={
             <TableContainer component={Paper}>
               <Table size="small" data-learn="Software Table: Detailed list of all detected software with versions and associated devices.">
                 <TableHead>
@@ -901,18 +937,8 @@ export default function SoftwarePage() {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <TablePagination
-              data-learn="Table Pagination: Navigate through pages of software and change how many rows to display per page."
-              component="div"
-              count={filteredSoftware.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+            }
+          />
         )}
         </>
         )}

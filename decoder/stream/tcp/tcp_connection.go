@@ -476,7 +476,8 @@ func (t *tcpConnection) decode() {
 			zap.String("ident", t.ident),
 			zap.Int("availableDecoders", len(stream.DefaultStreamDecoders)),
 		)
-		for port, sd := range stream.DefaultStreamDecoders {
+		for _, port := range stream.SortedDecoderPorts {
+			sd := stream.DefaultStreamDecoders[port]
 			if sd.Transport() == core.TCP || sd.Transport() == core.All {
 				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
 					t.decoder = sd.GetReaderFactory().New(conv)

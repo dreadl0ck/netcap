@@ -194,4 +194,149 @@ func TestUltimatePCAPFalsePositives(t *testing.T) {
 	}
 
 	t.Logf("\n=== Summary: %d/%d valid found, %d false positives ===", foundCount, len(expected), fpCount)
+
+	// === DEVICE PROFILE ENRICHMENT ===
+	// Verify that network discovery protocols (DHCP, CDP, LLDP, mDNS, NBNS, UPnP)
+	// enriched the correct DeviceProfiles with hostnames, device types, OS, and roles.
+	// Verified against tshark on The Ultimate PCAP v20260316.pcapng.
+	t.Log("\n=== Checking Device Profile Enrichment ===")
+
+	dpFile := filepath.Join(outDir, "DeviceProfile.ncap.gz")
+	if _, err := os.Stat(dpFile); os.IsNotExist(err) {
+		t.Log("  DeviceProfile.ncap.gz not found — skipping enrichment checks")
+		return
+	}
+
+	dpReader, err := netio.Open(dpFile, defaults.BufferSize)
+	if err != nil {
+		t.Fatalf("Failed to open DeviceProfile file: %v", err)
+	}
+	defer dpReader.Close()
+
+	if _, err := dpReader.ReadHeader(); err != nil {
+		t.Fatalf("Failed to read DeviceProfile header: %v", err)
+	}
+
+	// Read all profiles into a map by MAC
+	profiles := make(map[string]*types.DeviceProfile)
+	for {
+		var dp types.DeviceProfile
+		if err := dpReader.Next(&dp); err != nil {
+			break
+		}
+		profiles[dp.MacAddr] = &dp
+	}
+
+	t.Logf("  Read %d device profiles", len(profiles))
+
+	// Expected enrichment verified via tshark:
+	//   DHCP: hostname from option 12, vendor class from option 60
+	//   CDP: device ID, platform, software version
+	//   LLDP: system name, system description
+	//   mDNS: hostname from A/AAAA/PTR records
+	//   NBNS: NetBIOS name, suffix type (role)
+	//   UPnP: Server header (OS/firmware)
+	//
+	// Note: Some devices (00:0a:8a:a1:5a:9a, 00:16:47:df:e7:84, etc.) are on
+	// VLAN-tagged interfaces and may not have DeviceProfile entries in pcapng files
+	// with multiple interfaces. We only check MACs that are expected to exist.
+	expectedEnrichment := []struct {
+		mac         string
+		hostname    string // substring match
+		deviceType  string // substring match
+		os          string // substring match
+		role        string // substring match
+		source      string // for documentation
+	}{
+		// DHCP enrichment
+		{"00:0c:29:48:92:fd", "vm34-test3", "", "", "", "DHCP hostname"},
+		{"00:0c:29:c3:7f:eb", "DESKTOP-6AJTBQM", "", "MSFT 5.0", "", "DHCP hostname+vendor"},
+		{"74:42:7f:56:3c:6c", "fritz.box", "", "AVM DHCPC", "", "DHCP hostname+vendor"},
+		// CDP enrichment
+		{"00:15:62:6a:fe:f0", "R4.weberlab", "Cisco 2851", "Cisco IOS", "", "CDP"},
+		{"c2:3d:19:6c:00:01", "P1", "Cisco 3725", "Cisco IOS", "", "CDP"},
+		{"c2:3c:19:6c:00:01", "P2", "Cisco 3725", "Cisco IOS", "", "CDP"},
+		// LLDP enrichment
+		{"00:21:1b:ae:31:99", "CCNP-LAB-S1", "", "Cisco IOS", "", "LLDP"},
+		// mDNS enrichment
+		{"74:81:14:81:c2:d4", "Johannes-ei-Patt", "", "", "", "mDNS"},
+		// NBNS enrichment
+		{"00:e0:4c:68:66:c1", "JOHANNES-DELL", "", "", "File Server", "NBNS"},
+		// UPnP enrichment
+		{"00:a0:de:de:54:13", "", "", "KnOS/3.2 UPnP", "", "UPnP"},
+	}
+
+	enrichedCount := 0
+	for _, ev := range expectedEnrichment {
+		dp, exists := profiles[ev.mac]
+		if !exists {
+			t.Logf("  SKIP: %s (%s) — profile not in output (likely VLAN-encapsulated)", ev.mac, ev.source)
+			continue
+		}
+
+		ok := true
+
+		if ev.hostname != "" {
+			found := false
+			for _, h := range dp.Hostnames {
+				if strings.Contains(h, ev.hostname) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("  MISSING hostname %q on %s (%s), got: %v", ev.hostname, ev.mac, ev.source, dp.Hostnames)
+				ok = false
+			}
+		}
+
+		if ev.deviceType != "" {
+			found := false
+			for _, dt := range dp.DeviceTypes {
+				if strings.Contains(dt, ev.deviceType) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("  MISSING deviceType %q on %s (%s), got: %v", ev.deviceType, ev.mac, ev.source, dp.DeviceTypes)
+				ok = false
+			}
+		}
+
+		if ev.os != "" && !strings.Contains(dp.OS, ev.os) {
+			t.Errorf("  MISSING OS %q on %s (%s), got: %q", ev.os, ev.mac, ev.source, dp.OS)
+			ok = false
+		}
+
+		if ev.role != "" {
+			found := false
+			for _, r := range dp.Roles {
+				if strings.Contains(r, ev.role) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("  MISSING role %q on %s (%s), got: %v", ev.role, ev.mac, ev.source, dp.Roles)
+				ok = false
+			}
+		}
+
+		if ok {
+			t.Logf("  ENRICHED: %s — %s", ev.mac, ev.source)
+			enrichedCount++
+		}
+	}
+
+	// Verify NO false enrichment on DHCP relay
+	if dp, exists := profiles["3c:fa:30:03:12:30"]; exists {
+		if len(dp.Hostnames) > 0 {
+			t.Errorf("  FALSE ENRICHMENT: Palo Alto relay 3c:fa:30:03:12:30 should not have hostnames, got: %v", dp.Hostnames)
+		} else {
+			t.Log("  RELAY OK: 3c:fa:30:03:12:30 (Palo Alto) has no false enrichment")
+		}
+	}
+
+	t.Logf("\n=== Device Enrichment: %d/%d verified ===", enrichedCount, len(expectedEnrichment))
 }

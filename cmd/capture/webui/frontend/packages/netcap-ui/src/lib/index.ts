@@ -44,6 +44,14 @@ export {
   filterBySearchQuery,
 } from './tableSearch';
 
+export {
+  mobileTouchTarget,
+  mobileTableCell,
+  mobileMonospaceFont,
+  responsiveTableContainer,
+  mobileTablePaginationSx,
+} from './mobileMixins';
+
 export type {
   // Response types
   ProcessingStats,

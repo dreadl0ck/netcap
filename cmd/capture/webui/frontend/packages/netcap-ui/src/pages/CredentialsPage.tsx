@@ -33,7 +33,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TableSortLabel,
   Typography,
@@ -58,6 +57,7 @@ import {
   Tag as TagIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
 import SearchInput from '../components/SearchInput';
@@ -274,7 +274,18 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
   const [chartRefreshKey, setChartRefreshKey] = useState(0);
   const [sortField, setSortField] = useState<CredentialSortField>('timestamp');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [viewMode, setViewMode] = useViewMode();
+  const [baseViewMode, setBaseViewMode] = useViewMode();
+  const [showAuth, setShowAuth] = useState(false);
+  // Extend view mode to support 'auth' tab locally
+  const viewMode = showAuth ? 'auth' : baseViewMode;
+  const setViewMode = (mode: string) => {
+    if (mode === 'auth') {
+      setShowAuth(true);
+    } else {
+      setShowAuth(false);
+      setBaseViewMode(mode as 'table' | 'chart');
+    }
+  };
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -482,13 +493,13 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
           <ToggleButtonGroup
             value={viewMode}
             exclusive
-            onChange={(_e, newValue) => {
+            onChange={(_e, newValue: string | null) => {
               if (newValue !== null) {
                 setViewMode(newValue);
               }
             }}
             size="small"
-            data-learn="View Mode Toggle: Switch between Table mode (showing data in a table) and Chart mode (showing only visualization charts)."
+            data-learn="View Mode Toggle: Switch between Table mode, Chart mode, and Auth Activity mode."
           >
             <ToggleButton value="table">
               <TableChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
@@ -500,6 +511,12 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
               <BarChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
               <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
                 Chart
+              </Box>
+            </ToggleButton>
+            <ToggleButton value="auth">
+              <SyncAltIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Auth Activity
               </Box>
             </ToggleButton>
           </ToggleButtonGroup>
@@ -695,7 +712,45 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
             </Typography>
           </Paper>
         ) : (
-          <>
+          <ResponsiveDataView<CredentialSummary>
+            data={paginatedCredentials}
+            totalCount={filteredCredentials.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            renderCard={(cred) => (
+              <Card variant="outlined">
+                <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                    <Chip
+                      label={cred.service || 'Unknown'}
+                      size="small"
+                      color={getServiceInfo(cred.service).color}
+                      sx={{ fontSize: '0.7rem' }}
+                    />
+                    <Typography variant="caption" color="text.secondary">
+                      {formatTimestamp(cred.timestamp)}
+                    </Typography>
+                  </Box>
+                  {cred.flow && (
+                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.75rem', mb: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {cred.flow}
+                    </Typography>
+                  )}
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                    {getServiceInfo(cred.service).userLabel}: {truncateString(cred.user, 30)}
+                  </Typography>
+                  {getServiceInfo(cred.service).passLabel && cred.password && (
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', color: 'error.main' }}>
+                      {getServiceInfo(cred.service).passLabel}: {truncateString(cred.password, 30)}
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            desktopTable={
             <TableContainer component={Paper}>
               <Table size="small" data-learn="Credentials Table: Detailed list of all captured credentials with sorting capabilities.">
                 <TableHead>
@@ -751,7 +806,7 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                     const rowKey = `${cred.timestamp}-${cred.service}-${cred.user}-${idx}`;
                     return (
                       <>
-                        <TableRow 
+                        <TableRow
                           key={rowKey}
                           data-row-key={rowKey}
                           hover
@@ -761,11 +816,11 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                         >
                           <TableCell>
                             <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed credential information.">
-                              <ExpandMoreIcon 
-                                sx={{ 
+                              <ExpandMoreIcon
+                                sx={{
                                   transform: expandedRow === rowKey ? 'rotate(180deg)' : 'rotate(0deg)',
                                   transition: 'transform 0.3s'
-                                }} 
+                                }}
                               />
                             </IconButton>
                           </TableCell>
@@ -784,9 +839,9 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                             />
                           </TableCell>
                           <TableCell>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }} 
+                            <Typography
+                              variant="body2"
+                              sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
                               data-learn="Username: The captured username from the authentication attempt."
                               title={cred.user.length > 25 ? cred.user : undefined}
                             >
@@ -794,9 +849,9 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
+                            <Typography
+                              variant="body2"
+                              sx={{
                                 fontFamily: 'monospace',
                                 fontSize: '0.875rem',
                               }}
@@ -814,7 +869,7 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                             )}
                           </TableCell>
                         </TableRow>
-                        
+
                         {/* Expandable Row Details */}
                         <TableRow>
                           <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={6}>
@@ -830,7 +885,7 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                                       {formatTimestamp(cred.timestamp)}
                                     </Typography>
                                   </Grid>
-                                  
+
                                   {/* Service */}
                                   <Grid item xs={12} md={6}>
                                     <Typography variant="subtitle2" gutterBottom data-learn="Service/Protocol Field: The application-layer protocol where this credential was harvested (e.g., HTTP Basic Auth, FTP, POP3).">
@@ -840,7 +895,7 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                                       {cred.service || 'Unknown'}
                                     </Typography>
                                   </Grid>
-                                  
+
                                   {/* Username/Primary Data */}
                                   <Grid item xs={12} md={6}>
                                     <Typography variant="subtitle2" gutterBottom data-learn={`${getServiceInfo(cred.service).userLabel} Field: Primary data captured for this service type.`}>
@@ -850,16 +905,16 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                                       {cred.user}
                                     </Typography>
                                   </Grid>
-                                  
+
                                   {/* Password/Secondary Data - only show if service has password field */}
                                   {getServiceInfo(cred.service).passLabel && (
                                   <Grid item xs={12} md={6}>
                                     <Typography variant="subtitle2" gutterBottom data-learn={`${getServiceInfo(cred.service).passLabel} Field: Secondary data or credential captured for this service type.`}>
                                       {getServiceInfo(cred.service).passLabel}
                                     </Typography>
-                                    <Typography 
-                                      variant="body2" 
-                                      sx={{ 
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
                                         fontFamily: 'monospace',
                                         color: getServiceInfo(cred.service).category === 'discovery' ? 'text.secondary' : 'error.main',
                                         fontWeight: getServiceInfo(cred.service).category === 'discovery' ? 'normal' : 'bold',
@@ -870,7 +925,7 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                                     </Typography>
                                   </Grid>
                                   )}
-                                  
+
                                   {/* Flow */}
                                   <Grid item xs={12} md={6}>
                                     <Typography variant="subtitle2" gutterBottom data-learn="Network Flow Field: Complete 5-tuple flow identifier (protocol, src IP:port, dst IP:port) showing the network connection where credential was captured.">
@@ -892,7 +947,7 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                                       </Button>
                                     )}
                                   </Grid>
-                                  
+
                                   {/* Community ID for Cross-Tool Correlation */}
                                   {cred.communityId && (
                                     <Grid item xs={12} md={6}>
@@ -902,7 +957,7 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                                       <CommunityIDChip communityId={cred.communityId} mode="text" />
                                     </Grid>
                                   )}
-                                  
+
                                   {/* Notes */}
                                   {cred.notes && (
                                     <Grid item xs={12}>
@@ -922,9 +977,9 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                                         Authentication Result
                                       </Typography>
                                       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                                        <Chip 
-                                          label={cred.authSuccess ? '✓ Success' : '✗ Failed'} 
-                                          size="small" 
+                                        <Chip
+                                          label={cred.authSuccess ? '✓ Success' : '✗ Failed'}
+                                          size="small"
                                           color={cred.authSuccess ? 'success' : 'error'}
                                           sx={{ fontWeight: 'bold' }}
                                         />
@@ -1083,7 +1138,7 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                                       )}
                                     </Grid>
                                   )}
-                                  
+
                                   {/* Custom row actions from parent */}
                                   {rowActions && (
                                     <Grid item xs={12}>
@@ -1103,23 +1158,154 @@ export default function CredentialsPage({ rowActions }: CredentialsPageProps = {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <TablePagination
-              data-learn="Table Pagination: Navigate through pages of credentials and change how many rows to display per page."
-              component="div"
-              count={filteredCredentials.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+            }
+          />
         )}
         </>
         )}
+
+        {/* Auth Activity View */}
+        {viewMode === 'auth' && (
+          <AuthActivityView />
+        )}
       </Box>
     </Layout>
+  );
+}
+
+// AuthActivityView shows unified authentication events from Credentials, TACACS+, and Kerberos
+function AuthActivityView() {
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    fetch(`${getBackendUrl()}/api/auth-activity`)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        setEvents(Array.isArray(data?.events) ? data.events : []);
+      })
+      .catch((err) => {
+        setError(err?.message || 'Failed to load auth activity');
+        setEvents([]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>;
+  }
+
+  if (events.length === 0) {
+    return (
+      <Alert severity="info" sx={{ mb: 2 }}>
+        No authentication activity found. Process a PCAP with TACACS+ or Kerberos traffic to see events here.
+      </Alert>
+    );
+  }
+
+  const sortedEvents = [...events].sort((a, b) => (b?.timestamp ?? 0) - (a?.timestamp ?? 0));
+
+  const protocolColors: Record<string, 'error' | 'warning' | 'info' | 'success' | 'default'> = {
+    'Kerberos': 'error',
+    'TACACS+': 'warning',
+    'RADIUS': 'info',
+    'FTP': 'default',
+    'Telnet': 'default',
+    'SNMP': 'default',
+  };
+
+  const getStatusColor = (status: unknown): 'success' | 'error' | 'default' => {
+    if (typeof status !== 'string') return 'default';
+    if (status === 'success' || status === 'PASS') return 'success';
+    if (status === 'failure' || status === 'FAIL') return 'error';
+    if (status.includes('error')) return 'error';
+    return 'default';
+  };
+
+  return (
+    <>
+      <Typography variant="h6" sx={{ mb: 2 }}>
+        Authentication Activity Timeline ({events.length} events)
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Unified view of authentication events from Credentials, TACACS+, and Kerberos decoders
+      </Typography>
+      <TableContainer component={Paper}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Time</TableCell>
+              <TableCell>Protocol</TableCell>
+              <TableCell>User</TableCell>
+              <TableCell>Service</TableCell>
+              <TableCell>Action</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Source</TableCell>
+              <TableCell>Destination</TableCell>
+              <TableCell>Details</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sortedEvents.slice(0, 500).map((event, idx) => (
+              <TableRow key={idx} hover>
+                <TableCell>
+                  <Typography variant="body2" noWrap>
+                    {event?.timestamp ? formatTimestamp(event.timestamp) : '-'}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={event?.protocol || 'unknown'}
+                    size="small"
+                    color={protocolColors[event?.protocol] || 'default'}
+                    variant="outlined"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2" fontWeight="bold">{event?.user || '-'}</Typography>
+                </TableCell>
+                <TableCell>{event?.service || '-'}</TableCell>
+                <TableCell>{event?.action || '-'}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={String(event?.status || 'unknown')}
+                    size="small"
+                    color={getStatusColor(event?.status)}
+                    variant="outlined"
+                  />
+                </TableCell>
+                <TableCell><Typography variant="body2" noWrap>{event?.srcIP || '-'}</Typography></TableCell>
+                <TableCell><Typography variant="body2" noWrap>{event?.dstIP || '-'}</Typography></TableCell>
+                <TableCell>
+                  <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>
+                    {event?.details || '-'}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      {sortedEvents.length > 500 && (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          Showing first 500 of {sortedEvents.length} events
+        </Typography>
+      )}
+    </>
   );
 }
 

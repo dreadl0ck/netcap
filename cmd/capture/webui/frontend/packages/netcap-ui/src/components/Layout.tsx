@@ -18,6 +18,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useIsMobile } from '../hooks/useIsMobile';
 import AppBar from '@mui/material/AppBar';
 import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
@@ -74,6 +75,7 @@ import { useNetcapLink } from '../providers/NetcapProvider';
 import LearnModeToggle from './LearnModeToggle';
 import LearnModeOverlay from './LearnModeOverlay';
 import CommunityIDFilterBar from './CommunityIDFilterBar';
+import MobileBottomNav from './MobileBottomNav';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 const drawerWidth = 240;
@@ -143,6 +145,7 @@ export interface LayoutProps {
 export function Layout({ children, title, headerAction, topPadding }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const isMobile = useIsMobile();
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const Link = useNetcapLink();
@@ -265,7 +268,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
   }, []);
 
   const defaultTopPadding = topPadding || {
-    xs: headerAction ? '140px' : '80px',
+    xs: headerAction ? '112px' : '72px',
     sm: headerAction ? '120px' : '88px',
     md: '88px',
   };
@@ -779,38 +782,46 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
         <Toolbar
           sx={{
             minHeight: { xs: 'auto', sm: 64 },
-            py: { xs: 1, sm: 0 },
-            flexDirection: { xs: 'column', md: 'row' },
-            alignItems: { xs: 'flex-start', md: 'center' },
-            gap: { xs: 1, md: 0 },
+            py: { xs: 0.5, sm: 0 },
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: { xs: 0.5, md: 0 },
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', width: { xs: '100%', md: 'auto' } }}>
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2, display: { lg: 'none' } }}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: headerAction ? 0 : 1 }}>
-              {title}
-            </Typography>
-          </Box>
-          {headerAction && (
-            <Box sx={{ 
-              ml: { xs: 0, md: 'auto' },
-              width: { xs: '100%', md: 'auto' },
-              display: 'flex', 
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: { xs: 1, sm: 2 }, display: { lg: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: headerAction ? 0 : 1, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+            {title}
+          </Typography>
+          {headerAction && !isMobile && (
+            <Box sx={{
+              ml: 'auto',
+              display: 'flex',
               alignItems: 'center',
-              flexGrow: { xs: 1, md: 0 },
             }}>
               {headerAction}
             </Box>
           )}
         </Toolbar>
+        {headerAction && isMobile && (
+          <Box sx={{
+            px: 1,
+            py: 0.5,
+            display: 'flex',
+            alignItems: 'center',
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}>
+            {headerAction}
+          </Box>
+        )}
       </AppBar>
       <Box
         component="nav"
@@ -847,6 +858,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
         sx={{
           flexGrow: 1,
           p: { xs: 2, sm: 3 },
+          pb: { xs: '72px', sm: '72px', md: 3 },
           width: { lg: `calc(100% - ${drawerWidth}px)` },
           minWidth: 0,
           overflowX: 'hidden',
@@ -856,6 +868,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
         <CommunityIDFilterBar />
         {children}
       </Box>
+      <MobileBottomNav onMoreClick={handleDrawerToggle} />
       <LearnModeOverlay />
     </Box>
   );

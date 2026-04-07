@@ -64,12 +64,13 @@ import {
   GetApp as GetAppIcon,
   OpenInNew as OpenInNewIcon,
   Code as CodeIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import useSWR from 'swr';
 import Layout from '../components/Layout';
 import type { DecoderInfo, DecoderConfig, FieldInfo, DecoderConfigFile } from '../lib/api';
 import { formatTimestamp } from '../lib/api';
-import { useNetcapApi } from '../hooks';
+import { useNetcapApi, useIsMobile } from '../hooks';
 
 interface DecoderCategory {
   name: string;
@@ -166,6 +167,7 @@ const getDecoderGitHubUrl = (categoryKey: string, decoderName: string): string =
 };
 
 export default function Decoders() {
+  const isMobile = useIsMobile();
   const api = useNetcapApi();
   const { data: decodersData, error: decodersError } = useSWR('decoders', () => api.getDecoders());
   const { data: configData, mutate: mutateConfig } = useSWR('decoderConfig', () => api.getDecoderConfig());
@@ -898,8 +900,17 @@ export default function Decoders() {
       )}
 
       {/* Load Configuration Dialog */}
-      <Dialog open={loadDialogOpen} onClose={() => setLoadDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Load Decoder Configuration</DialogTitle>
+      <Dialog open={loadDialogOpen} onClose={() => setLoadDialogOpen(false)} maxWidth="sm" fullWidth fullScreen={isMobile}>
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            Load Decoder Configuration
+            {isMobile && (
+              <IconButton onClick={() => setLoadDialogOpen(false)} edge="end">
+                <CloseIcon />
+              </IconButton>
+            )}
+          </Box>
+        </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Select a saved configuration to load:
@@ -955,8 +966,17 @@ export default function Decoders() {
       </Dialog>
 
       {/* Save As Dialog */}
-      <Dialog open={saveAsDialogOpen} onClose={() => setSaveAsDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Save Configuration As</DialogTitle>
+      <Dialog open={saveAsDialogOpen} onClose={() => setSaveAsDialogOpen(false)} maxWidth="sm" fullWidth fullScreen={isMobile}>
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            Save Configuration As
+            {isMobile && (
+              <IconButton onClick={() => setSaveAsDialogOpen(false)} edge="end">
+                <CloseIcon />
+              </IconButton>
+            )}
+          </Box>
+        </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Enter a name for this configuration:
@@ -980,8 +1000,17 @@ export default function Decoders() {
       </Dialog>
 
       {/* Upload Configuration Dialog */}
-      <Dialog open={uploadDialogOpen} onClose={() => setUploadDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Upload Decoder Configuration</DialogTitle>
+      <Dialog open={uploadDialogOpen} onClose={() => setUploadDialogOpen(false)} maxWidth="sm" fullWidth fullScreen={isMobile}>
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            Upload Decoder Configuration
+            {isMobile && (
+              <IconButton onClick={() => setUploadDialogOpen(false)} edge="end">
+                <CloseIcon />
+              </IconButton>
+            )}
+          </Box>
+        </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Upload a decoder configuration JSON file:

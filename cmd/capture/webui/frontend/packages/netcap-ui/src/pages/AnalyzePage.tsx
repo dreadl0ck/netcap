@@ -255,7 +255,7 @@ export default function AnalyzePage() {
                   </Typography>
                 </Box>
                 
-                <Box flex={1} minWidth={300}>
+                <Box flex={1} minWidth={{ xs: 0, sm: 300 }}>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Storage Usage
                   </Typography>

@@ -609,6 +609,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/credentials/timeline", s.handleCredentialsTimeline)
 	mux.HandleFunc("/api/credentials/usernames", s.handleCredentialsUsernames)
 	mux.HandleFunc("/api/credentials/flows", s.handleCredentialsFlows)
+	mux.HandleFunc("/api/auth-activity", s.handleAuthActivity)
+
 	mux.HandleFunc("/api/services", s.handleServices)
 	mux.HandleFunc("/api/services/top-by-traffic", s.handleServicesTopByTraffic)
 	mux.HandleFunc("/api/services/protocols", s.handleServicesProtocols)

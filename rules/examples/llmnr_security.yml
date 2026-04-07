@@ -1,0 +1,26 @@
+# LLMNR Security Detection Rules
+# Detect LLMNR poisoning and name resolution attacks on Windows networks
+
+description: "Detection rules for LLMNR-based attacks including name poisoning (Responder) and name conflict abuse."
+
+rules:
+  # LLMNR response detection - potential poisoning
+  # Tools like Responder send LLMNR responses to capture NTLMv2 hashes
+  - name: LLMNR Response Detected
+    description: LLMNR response detected on the network, which may indicate LLMNR poisoning by tools like Responder used to capture NTLMv2 hashes
+    type: LLMNR
+    expression: 'QR == true'
+    severity: medium
+    mitre: ["T1557.001"]
+    tags: ["llmnr", "credential-access", "poisoning", "responder"]
+    enabled: true
+
+  # LLMNR name conflict - active name collision
+  - name: LLMNR Name Conflict
+    description: LLMNR name conflict flag set, indicating an active name collision which may be caused by a poisoning attack
+    type: LLMNR
+    expression: 'C == true'
+    severity: high
+    mitre: ["T1557.001"]
+    tags: ["llmnr", "credential-access", "name-conflict"]
+    enabled: true

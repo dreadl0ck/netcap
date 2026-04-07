@@ -47,7 +47,6 @@ import {
   FormControl,
   FormControlLabel,
   InputLabel,
-  TablePagination,
   Alert,
   Snackbar,
   Switch,
@@ -61,8 +60,9 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 import useSWR from 'swr';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useIsMobile } from '../hooks';
 import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import type { ServiceProbeInfo, TestProbeRequest, TestProbeResponse } from '../lib/api';
 import type { api as apiType } from '../lib/api';
 import { SyntaxHighlightedTextArea } from '../components/SyntaxHighlightedInput';
@@ -70,6 +70,7 @@ import { SyntaxHighlightedTextArea } from '../components/SyntaxHighlightedInput'
 export default function ServiceProbes() {
   const router = useNetcapRouter();
   const api = useNetcapApi();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   
@@ -518,139 +519,183 @@ export default function ServiceProbes() {
         </Card>
 
         {/* Probes Table */}
-        <TableContainer component={Paper}>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell><strong>Protocol</strong></TableCell>
-                <TableCell><strong>Probe Name</strong></TableCell>
-                <TableCell><strong>Service</strong></TableCell>
-                <TableCell><strong>Product</strong></TableCell>
-                <TableCell><strong>Ports</strong></TableCell>
-                <TableCell><strong>Rarity</strong></TableCell>
-                <TableCell><strong>Type</strong></TableCell>
-                <TableCell><strong>Enabled</strong></TableCell>
-                <TableCell align="right"><strong>Actions</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {probesData.probes.length > 0 ? (
-                probesData.probes.map((probe) => (
-                  <TableRow 
-                    key={probe.id} 
-                    hover
-                    sx={{ 
-                      opacity: probe.enabled ? 1 : 0.5,
-                      bgcolor: probe.enabled ? 'inherit' : 'action.disabledBackground',
-                    }}
-                  >
-                    <TableCell>
-                      <Chip 
-                        label={probe.protocol} 
-                        size="small" 
-                        color={probe.protocol === 'TCP' ? 'primary' : 'secondary'}
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight="medium">
-                        {probe.probeName}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {probe.service}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {probe.product || '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {probe.ports && probe.ports.length > 0 ? (
-                          probe.ports.slice(0, 3).map((port) => (
-                            <Chip
-                              key={port}
-                              label={port}
-                              size="small"
-                              variant="outlined"
-                            />
-                          ))
-                        ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            -
-                          </Typography>
-                        )}
-                        {probe.ports && probe.ports.length > 3 && (
+        <ResponsiveDataView<ServiceProbeInfo>
+          data={probesData.probes}
+          totalCount={probesData.totalCount}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[10, 25, 50, 100]}
+          onCardClick={(probe) => handleEditClick(probe)}
+          desktopTable={
+            <TableContainer component={Paper}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell><strong>Protocol</strong></TableCell>
+                    <TableCell><strong>Probe Name</strong></TableCell>
+                    <TableCell><strong>Service</strong></TableCell>
+                    <TableCell><strong>Product</strong></TableCell>
+                    <TableCell><strong>Ports</strong></TableCell>
+                    <TableCell><strong>Rarity</strong></TableCell>
+                    <TableCell><strong>Type</strong></TableCell>
+                    <TableCell><strong>Enabled</strong></TableCell>
+                    <TableCell align="right"><strong>Actions</strong></TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {probesData.probes.length > 0 ? (
+                    probesData.probes.map((probe) => (
+                      <TableRow
+                        key={probe.id}
+                        hover
+                        sx={{
+                          opacity: probe.enabled ? 1 : 0.5,
+                          bgcolor: probe.enabled ? 'inherit' : 'action.disabledBackground',
+                        }}
+                      >
+                        <TableCell>
                           <Chip
-                            label={`+${probe.ports.length - 3}`}
+                            label={probe.protocol}
                             size="small"
+                            color={probe.protocol === 'TCP' ? 'primary' : 'secondary'}
                             variant="outlined"
                           />
-                        )}
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2">
-                        {probe.rarity || '-'}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={probe.isSoftMatch ? 'Softmatch' : 'Match'}
-                        size="small"
-                        color={probe.isSoftMatch ? 'default' : 'success'}
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Switch
-                        size="small"
-                        checked={probe.enabled}
-                        onChange={(e) => handleToggleEnabled(probe, e.target.checked)}
-                        color="success"
-                        data-learn="Enable/Disable: Toggle this probe on or off. Disabled probes are commented out in the file and won't be used for service detection."
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Edit probe">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleEditClick(probe)}
-                          data-learn="Edit Probe: Modify this probe's properties including service name, product, regex pattern, version extraction, and metadata."
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={9} align="center">
-                    <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                      {searchTerm || protocol !== 'all' || service !== 'all' || matchType !== 'all'
-                        ? 'No service probes match your search criteria'
-                        : 'No service probes available'}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight="medium">
+                            {probe.probeName}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {probe.service}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" color="text.secondary">
+                            {probe.product || '-'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {probe.ports && probe.ports.length > 0 ? (
+                              probe.ports.slice(0, 3).map((port) => (
+                                <Chip
+                                  key={port}
+                                  label={port}
+                                  size="small"
+                                  variant="outlined"
+                                />
+                              ))
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                -
+                              </Typography>
+                            )}
+                            {probe.ports && probe.ports.length > 3 && (
+                              <Chip
+                                label={`+${probe.ports.length - 3}`}
+                                size="small"
+                                variant="outlined"
+                              />
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {probe.rarity || '-'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={probe.isSoftMatch ? 'Softmatch' : 'Match'}
+                            size="small"
+                            color={probe.isSoftMatch ? 'default' : 'success'}
+                            variant="outlined"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Switch
+                            size="small"
+                            checked={probe.enabled}
+                            onChange={(e) => handleToggleEnabled(probe, e.target.checked)}
+                            color="success"
+                            data-learn="Enable/Disable: Toggle this probe on or off. Disabled probes are commented out in the file and won't be used for service detection."
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <Tooltip title="Edit probe">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleEditClick(probe)}
+                              data-learn="Edit Probe: Modify this probe's properties including service name, product, regex pattern, version extraction, and metadata."
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={9} align="center">
+                        <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
+                          {searchTerm || protocol !== 'all' || service !== 'all' || matchType !== 'all'
+                            ? 'No service probes match your search criteria'
+                            : 'No service probes available'}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          }
+          renderCard={(probe) => (
+            <Card variant="outlined" sx={{ opacity: probe.enabled ? 1 : 0.5 }}>
+              <CardContent sx={{ pb: 1, '&:last-child': { pb: 1 } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <Typography variant="subtitle2" sx={{ flex: 1 }}>
+                    {probe.probeName}
+                  </Typography>
+                  <Switch
+                    size="small"
+                    checked={probe.enabled}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      handleToggleEnabled(probe, e.target.checked);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    color="success"
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <Chip
+                    label={probe.protocol}
+                    size="small"
+                    color={probe.protocol === 'TCP' ? 'primary' : 'secondary'}
+                    variant="outlined"
+                    sx={{ fontSize: '0.7rem' }}
+                  />
+                  <Chip
+                    label={probe.service}
+                    size="small"
+                    variant="outlined"
+                    sx={{ fontSize: '0.7rem' }}
+                  />
+                  {probe.ports && probe.ports.length > 0 && (
+                    <Typography variant="caption" color="text.secondary">
+                      Ports: {probe.ports.slice(0, 3).join(', ')}{probe.ports.length > 3 ? ` +${probe.ports.length - 3}` : ''}
                     </Typography>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-          <TablePagination
-            rowsPerPageOptions={[10, 25, 50, 100]}
-            component="div"
-            count={probesData.totalCount}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={handleChangePage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-          />
-        </TableContainer>
+                  )}
+                </Box>
+              </CardContent>
+            </Card>
+          )}
+        />
 
         {/* Edit Modal */}
         <Dialog
@@ -658,6 +703,7 @@ export default function ServiceProbes() {
           onClose={() => setEditModalOpen(false)}
           maxWidth="md"
           fullWidth
+          fullScreen={isMobile}
         >
           <DialogTitle>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -875,8 +921,18 @@ export default function ServiceProbes() {
           onClose={() => !importing && setImportDialogOpen(false)}
           maxWidth="sm"
           fullWidth
+          fullScreen={isMobile}
         >
-          <DialogTitle>Import Service Probes</DialogTitle>
+          <DialogTitle>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              Import Service Probes
+              {isMobile && (
+                <IconButton onClick={() => !importing && setImportDialogOpen(false)} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent dividers>
             <Typography variant="body2" color="text.secondary" paragraph>
               Select an nmap-service-probes file to import. This will replace the current service probes database.
@@ -930,6 +986,7 @@ export default function ServiceProbes() {
           onClose={() => setCreateModalOpen(false)}
           maxWidth="md"
           fullWidth
+          fullScreen={isMobile}
         >
           <DialogTitle>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

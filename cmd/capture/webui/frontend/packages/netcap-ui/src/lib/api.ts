@@ -320,6 +320,18 @@ export interface ExtractedFileInfo {
   mimeType: string;
   hash?: string;     // SHA256 hash from File audit record
   protocol?: string; // Protocol used for file transfer (HTTP, FTP, SMB, SMTP, IRC)
+  // Security indicators from File audit record
+  entropy?: number;
+  typeMismatch?: boolean;
+  isPEExecutable?: boolean;
+  isELFExecutable?: boolean;
+  isMachO?: boolean;
+  hasEmbeddedScript?: boolean;
+  isPasswordProtected?: boolean;
+  isKnownMalware?: boolean;
+  threatName?: string;
+  trueFileType?: string;
+  contentType?: string;
 }
 
 export interface ExtractedFilesResponse {

@@ -17,7 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useIsMobile } from '../hooks';
 import {
   Box,
   Button,
@@ -208,6 +209,7 @@ export default function ConversationModal({
   hasPrevious = false,
   hasNext = false,
 }: ConversationModalProps) {
+  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentChunk, setCurrentChunk] = useState<ConversationData | null>(null);
@@ -359,6 +361,44 @@ export default function ConversationModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, currentOffset, currentChunk, onNavigatePrevious, onNavigateNext, hasPrevious, hasNext]);
 
+  // Touch swipe navigation (mobile equivalent of arrow key navigation)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+    const minSwipe = 50;
+
+    // Only trigger if swipe is clearly directional (not a tap or diagonal)
+    if (absDx > minSwipe && absDx > absDy * 1.5) {
+      // Horizontal swipe: chunk (page) navigation
+      if (dx > 0 && currentOffset > 0) {
+        // Swipe right = previous page
+        handlePrevious();
+      } else if (dx < 0 && currentChunk?.hasMore) {
+        // Swipe left = next page
+        handleNext();
+      }
+    } else if (absDy > minSwipe && absDy > absDx * 1.5) {
+      // Vertical swipe: connection navigation
+      if (dy > 0 && hasPrevious && onNavigatePrevious) {
+        // Swipe down = previous connection
+        onNavigatePrevious();
+      } else if (dy < 0 && hasNext && onNavigateNext) {
+        // Swipe up = next connection
+        onNavigateNext();
+      }
+    }
+    touchStartRef.current = null;
+  }, [currentOffset, currentChunk, hasPrevious, hasNext, onNavigatePrevious, onNavigateNext]);
+
   const hexRows = useMemo(() => {
     if (!currentChunk || !currentChunk.exists || !currentChunk.conversationData) {
       return [];
@@ -373,8 +413,9 @@ export default function ConversationModal({
       onClose={onClose}
       maxWidth="lg"
       fullWidth
+      fullScreen={isMobile}
       PaperProps={{
-        sx: {
+        sx: isMobile ? {} : {
           height: '85vh',
           maxHeight: '900px',
         },
@@ -382,7 +423,12 @@ export default function ConversationModal({
     >
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Box>
+          {isMobile && (
+            <IconButton onClick={onClose} edge="start" sx={{ mr: 1 }}>
+              <CloseIcon />
+            </IconButton>
+          )}
+          <Box sx={{ flex: 1 }}>
             <Typography variant="h6">Raw Conversation Data</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
               <Box component="span" sx={{ color: '#f44336', fontWeight: 'bold' }}>
@@ -446,7 +492,7 @@ export default function ConversationModal({
 
       {loading && <LinearProgress />}
 
-      <DialogContent dividers sx={{ p: 0 }}>
+      <DialogContent dividers sx={{ p: 0 }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
         {error && (
           <Box p={3}>
             <Alert severity="warning">{error}</Alert>
@@ -465,13 +511,14 @@ export default function ConversationModal({
                 borderColor: 'divider',
                 p: 1,
                 display: 'flex',
-                gap: 3,
+                flexDirection: { xs: 'column', sm: 'row' },
+                gap: { xs: 1, sm: 3 },
                 justifyContent: 'space-between',
-                alignItems: 'center',
+                alignItems: { xs: 'stretch', sm: 'center' },
                 zIndex: 1,
               }}
             >
-              <Box sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', gap: { xs: 1.5, sm: 3 }, alignItems: 'center', flexWrap: 'wrap' }}>
                 <Typography variant="caption" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                   <Box
                     sx={{
@@ -535,7 +582,7 @@ export default function ConversationModal({
               <Box
                 sx={{
                   fontFamily: 'Courier New, monospace',
-                  fontSize: '13px',
+                  fontSize: { xs: '11px', sm: '13px' },
                   lineHeight: 1.6,
                   p: 2,
                   bgcolor: '#1e1e1e',
@@ -577,7 +624,7 @@ export default function ConversationModal({
               <Box
                 sx={{
                   fontFamily: 'Courier New, monospace',
-                  fontSize: '13px',
+                  fontSize: { xs: '11px', sm: '13px' },
                   lineHeight: 1.4,
                   p: 2,
                   bgcolor: '#1e1e1e',
@@ -598,13 +645,13 @@ export default function ConversationModal({
                       borderLeft: row.isClient ? '3px solid #f44336' : '3px solid #2196f3',
                     }}
                   >
-                    {/* Offset */}
-                    <Box sx={{ color: '#858585', minWidth: '60px' }}>
+                    {/* Offset - hidden on mobile */}
+                    <Box sx={{ color: '#858585', minWidth: '60px', display: { xs: 'none', sm: 'block' } }}>
                       {row.offset.toString(16).padStart(8, '0')}
                     </Box>
 
                     {/* Hex bytes (split into two groups of 8) */}
-                    <Box sx={{ display: 'flex', gap: 2, minWidth: '400px' }}>
+                    <Box sx={{ display: 'flex', gap: { xs: 1, sm: 2 }, minWidth: { xs: 'auto', sm: '400px' }, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
                       <Box sx={{ display: 'flex', gap: 0.5 }}>
                         {row.hexBytes.slice(0, 8).map((hex, i) => (
                           <Box key={i} sx={{ minWidth: '20px' }}>
@@ -639,7 +686,7 @@ export default function ConversationModal({
         )}
       </DialogContent>
 
-      <DialogActions sx={{ justifyContent: 'space-between' }}>
+      <DialogActions sx={{ justifyContent: 'space-between', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
         {/* Page Selector */}
         {totalPages > 1 && (
           <Pagination
@@ -650,9 +697,10 @@ export default function ConversationModal({
             size="small"
             showFirstButton
             showLastButton
+            siblingCount={isMobile ? 0 : 1}
           />
         )}
-        <Box sx={{ flex: 1 }} />
+        <Box sx={{ flex: 1, display: { xs: 'none', sm: 'block' } }} />
         <Button onClick={onClose} startIcon={<CloseIcon />}>
           Close
         </Button>

@@ -36,7 +36,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TablePagination,
   TableSortLabel,
   Typography,
   Alert as MuiAlert,
@@ -51,8 +50,9 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import CloseIcon from '@mui/icons-material/Close';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import { ErrorLogInfo, AggregatedError, formatBytes } from '../lib/api';
-import { useNetcapApi } from '../hooks';
+import { useNetcapApi, useIsMobile } from '../hooks';
 import useSWR from 'swr';
 
 type SortField = 'errorCount' | 'inputFilename' | 'inputFileSize';
@@ -60,6 +60,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function ErrorsPage() {
   const api = useNetcapApi();
+  const isMobile = useIsMobile();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [sortField, setSortField] = useState<SortField>('errorCount');
@@ -267,6 +268,49 @@ export default function ErrorsPage() {
             )}
 
             {/* Errors Table */}
+            <ResponsiveDataView
+              data={paginatedErrorLogs}
+              totalCount={sortedErrorLogs.length}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[10, 25, 50, 100]}
+              onCardClick={(errorLog: ErrorLogInfo) => handleViewErrors(errorLog)}
+              renderCard={(errorLog: ErrorLogInfo) => (
+                <Card variant="outlined">
+                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <ErrorIcon color="error" fontSize="small" sx={{ flexShrink: 0 }} />
+                      <Typography
+                        variant="subtitle2"
+                        sx={{
+                          fontFamily: 'monospace',
+                          fontSize: '0.8rem',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          flex: 1,
+                        }}
+                      >
+                        {errorLog.inputFilename}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Size: {formatBytes(errorLog.inputFileSize)}
+                      </Typography>
+                      <Chip
+                        label={`${errorLog.errorCount.toLocaleString()} errors`}
+                        size="small"
+                        color="error"
+                        sx={{ fontWeight: 'bold' }}
+                      />
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+              desktopTable={
             <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
               <Table sx={{ minWidth: { xs: 600, md: 'auto' } }}>
                 <TableHead>
@@ -368,18 +412,9 @@ export default function ErrorsPage() {
                   )}
                 </TableBody>
               </Table>
-              {sortedErrorLogs.length > 0 && (
-                <TablePagination
-                  rowsPerPageOptions={[10, 25, 50, 100]}
-                  component="div"
-                  count={sortedErrorLogs.length}
-                  rowsPerPage={rowsPerPage}
-                  page={page}
-                  onPageChange={handleChangePage}
-                  onRowsPerPageChange={handleChangeRowsPerPage}
-                />
-              )}
             </TableContainer>
+              }
+            />
           </>
         )}
 
@@ -389,15 +424,18 @@ export default function ErrorsPage() {
           onClose={handleCloseDialog}
           maxWidth="lg"
           fullWidth
+          fullScreen={isMobile}
         >
           <DialogTitle>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Box>
                 Error Log: {selectedError?.inputFilename}
               </Box>
-              <IconButton onClick={handleCloseDialog} size="small">
-                <CloseIcon />
-              </IconButton>
+              {isMobile && (
+                <IconButton onClick={handleCloseDialog} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
             </Box>
           </DialogTitle>
           <DialogContent>
@@ -460,15 +498,18 @@ export default function ErrorsPage() {
           onClose={handleCloseAggregated}
           maxWidth="lg"
           fullWidth
+          fullScreen={isMobile}
         >
           <DialogTitle>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Box>
                 Aggregated Errors Across All Captures
               </Box>
-              <IconButton onClick={handleCloseAggregated} size="small">
-                <CloseIcon />
-              </IconButton>
+              {isMobile && (
+                <IconButton onClick={handleCloseAggregated} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
             </Box>
           </DialogTitle>
           <DialogContent>

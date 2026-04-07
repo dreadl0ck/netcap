@@ -36,7 +36,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TableSortLabel,
   Tooltip,
@@ -59,15 +58,18 @@ import {
   BarChart as BarChartIcon,
   Download as DownloadIcon,
   Cable as CableIcon,
+  FilterAlt as FilterAltIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
+import MobileFilterSheet from '../components/MobileFilterSheet';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
-import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode, useIsMobile } from '../hooks';
 
 interface ProtocolInfo {
   name: string;
@@ -132,6 +134,8 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
   const [sortField, setSortField] = useState<HostSortField>('addr');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [viewMode, setViewMode] = useViewMode();
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Initialize search query from URL parameter
   useEffect(() => {
@@ -493,6 +497,55 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
         {/* Filters and Actions - Only show in table mode */}
         {viewMode === 'table' && (
         <>
+        {isMobile ? (
+          <>
+            <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Chip
+                icon={<FilterAltIcon />}
+                label={`Filters${(searchQuery || filterType !== 'all') ? ` (${(searchQuery ? 1 : 0) + (filterType !== 'all' ? 1 : 0)})` : ''}`}
+                onClick={() => setFilterSheetOpen(true)}
+                variant="outlined"
+              />
+              <IconButton onClick={handleRefresh} size="small">
+                <RefreshIcon />
+              </IconButton>
+              {searchQuery || filterType !== 'all' ? (
+                <Typography variant="body2" color="text.secondary">
+                  Showing {filteredHosts.length} of {totalCount} hosts
+                </Typography>
+              ) : null}
+            </Box>
+            <MobileFilterSheet
+              open={filterSheetOpen}
+              onOpen={() => setFilterSheetOpen(true)}
+              onClose={() => setFilterSheetOpen(false)}
+            >
+              <SearchInput
+                value={searchQuery}
+                onChange={(value) => {
+                  setSearchQuery(value);
+                  setPage(0);
+                }}
+                placeholder="Search hosts..."
+                learnHint="Search Hosts: Filter the hosts table by IP address, DNS name, geolocation, or application name. Use !term to exclude matches (e.g., !192.168 excludes internal IPs)."
+              />
+              <FormControl size="small" fullWidth>
+                <Select
+                  data-learn="Host Type Filter: Show all hosts, only internal network hosts, or only external hosts."
+                  value={filterType}
+                  onChange={(e) => {
+                    setFilterType(e.target.value as 'all' | 'internal' | 'external');
+                    setPage(0);
+                  }}
+                >
+                  <MenuItem value="all">All Hosts</MenuItem>
+                  <MenuItem value="internal">Internal Only</MenuItem>
+                  <MenuItem value="external">External Only</MenuItem>
+                </Select>
+              </FormControl>
+            </MobileFilterSheet>
+          </>
+        ) : (
         <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <SearchInput
             value={searchQuery}
@@ -503,7 +556,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
             placeholder="Search hosts..."
             learnHint="Search Hosts: Filter the hosts table by IP address, DNS name, geolocation, or application name. Use !term to exclude matches (e.g., !192.168 excludes internal IPs)."
           />
-          
+
           <FormControl size="small" sx={{ minWidth: 150 }}>
             <Select
               data-learn="Host Type Filter: Show all hosts, only internal network hosts, or only external hosts."
@@ -518,23 +571,24 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
               <MenuItem value="external">External Only</MenuItem>
             </Select>
           </FormControl>
-          
-          <Button 
+
+          <Button
             data-learn="Refresh Hosts: Reload host data and visualization charts from the server."
-            variant="outlined" 
-            startIcon={<RefreshIcon />} 
+            variant="outlined"
+            startIcon={<RefreshIcon />}
             onClick={handleRefresh}
             size="small"
           >
             Refresh
           </Button>
-          
+
           {searchQuery || filterType !== 'all' ? (
             <Typography variant="body2" color="text.secondary">
               Showing {filteredHosts.length} of {totalCount} hosts
             </Typography>
           ) : null}
         </Box>
+        )}
 
         {/* Hosts Table */}
         {!hostsData && !error ? (
@@ -552,7 +606,46 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
             </Typography>
           </Paper>
         ) : (
-          <>
+          <ResponsiveDataView<IPProfileSummary>
+            data={paginatedHosts}
+            totalCount={filteredHosts.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            onCardClick={(host) => handleRowClick(host.addr)}
+            renderCard={(host) => (
+              <Card variant="outlined">
+                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Typography variant="subtitle2" sx={{ fontFamily: 'monospace' }}>
+                    {host.addr}
+                  </Typography>
+                  <Box display="flex" gap={2} mt={0.5} flexWrap="wrap">
+                    <Typography variant="caption" color="text.secondary">
+                      {host.isInternal ? 'Internal' : 'External'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {host.numPackets?.toLocaleString()} pkts
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatBytes(host.bytes)}
+                    </Typography>
+                  </Box>
+                  {host.geolocation && (
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                      {host.geolocation}
+                    </Typography>
+                  )}
+                  {host.dnsNames && host.dnsNames.length > 0 && (
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5} noWrap>
+                      {host.dnsNames.slice(0, 2).join(', ')}{host.dnsNames.length > 2 ? ` +${host.dnsNames.length - 2}` : ''}
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            desktopTable={
             <TableContainer component={Paper}>
               <Table size="small">
                 <TableHead>
@@ -602,7 +695,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                 <TableBody>
                   {paginatedHosts.map((host) => (
                     <>
-                      <TableRow 
+                      <TableRow
                         key={host.addr}
                         data-row-key={host.addr}
                         hover
@@ -612,18 +705,18 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                       >
                         <TableCell>
                           <IconButton size="small">
-                            <ExpandMoreIcon 
-                              sx={{ 
+                            <ExpandMoreIcon
+                              sx={{
                                 transform: expandedRow === host.addr ? 'rotate(180deg)' : 'rotate(0deg)',
                                 transition: 'transform 0.3s'
-                              }} 
+                              }}
                             />
                           </IconButton>
                         </TableCell>
                         <TableCell>
-                          <Typography 
-                            sx={{ 
-                              fontFamily: 'monospace', 
+                          <Typography
+                            sx={{
+                              fontFamily: 'monospace',
                               fontSize: '0.875rem',
                               fontWeight: 'medium'
                             }}
@@ -702,7 +795,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                           </Box>
                         </TableCell>
                       </TableRow>
-                      
+
                       {/* Expandable Row Details */}
                       <TableRow>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
@@ -734,11 +827,11 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                                 >
                                   Download as PCAP
                                 </Button>
-                                
+
                                 {/* Custom row actions from parent */}
                                 {rowActions && rowActions(host)}
                               </Box>
-                              
+
                               <Grid container spacing={2}>
                                 {/* Time Range */}
                                 <Grid item xs={12} md={6}>
@@ -752,7 +845,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                                     Last: {formatTimestamp(host.timestampLast)}
                                   </Typography>
                                 </Grid>
-                                
+
                                 {/* Statistics */}
                                 <Grid item xs={12} md={6}>
                                   <Typography variant="subtitle2" gutterBottom>
@@ -774,7 +867,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                                     SNIs: {host.snisCount}
                                   </Typography>
                                 </Grid>
-                                
+
                                 {/* Top Protocols */}
                                 {(host.topProtocols || []).length > 0 && (
                                   <Grid item xs={12} md={6}>
@@ -798,7 +891,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                                     </Box>
                                   </Grid>
                                 )}
-                                
+
                                 {/* Top Contacted Ports */}
                                 {(host.topContactedPorts || []).length > 0 && (
                                   <Grid item xs={12} md={6}>
@@ -823,7 +916,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                                     </Box>
                                   </Grid>
                                 )}
-                                
+
                                 {/* All DNS Names */}
                                 {(host.dnsNames || []).length > 0 && (
                                   <Grid item xs={12}>
@@ -843,7 +936,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                                     </Box>
                                   </Grid>
                                 )}
-                                
+
                                 {/* All Applications */}
                                 {(host.applications || []).length > 0 && (
                                   <Grid item xs={12}>
@@ -863,7 +956,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                                     </Box>
                                   </Grid>
                                 )}
-                                
+
                                 {/* JA3 Fingerprints */}
                                 {((host.ja3FingerprintMatches || []).length > 0 || (host.ja3sFingerprintMatches || []).length > 0) && (
                                   <Grid item xs={12}>
@@ -920,17 +1013,8 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <TablePagination
-              component="div"
-              count={filteredHosts.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+            }
+          />
         )}
         </>
         )}

@@ -33,7 +33,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TableSortLabel,
   Tooltip,
@@ -63,6 +62,7 @@ import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
 import SearchInput from '../components/SearchInput';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatBytes, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
@@ -522,6 +522,103 @@ export default function VulnerabilitiesPage() {
           <Button variant="outlined" startIcon={<RefreshIcon />} onClick={handleRefresh}>Refresh</Button>
         </Box>
 
+        <ResponsiveDataView
+          data={paginatedData}
+          totalCount={filteredData.length}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          renderCard={(row: any) => (
+            <Card variant="outlined">
+              <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                {tabValue === 0 && (
+                  <Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                        {row.id}
+                      </Typography>
+                      <Chip
+                        label={row.severity || 'UNKNOWN'}
+                        size="small"
+                        color={
+                          row.severity === 'HIGH' ? 'error' :
+                          row.severity === 'MEDIUM' ? 'warning' :
+                          row.severity === 'LOW' ? 'info' :
+                          'default'
+                        }
+                      />
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" noWrap>
+                      {getSoftwareDisplayName(row.software)}
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Count: {row.count}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Affected: {row.affected}
+                      </Typography>
+                    </Box>
+                  </Box>
+                )}
+                {tabValue === 1 && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem', mb: 0.5 }}>
+                      {row.id}
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
+                      <Chip label={row.type} size="small" variant="outlined" />
+                      <Chip label={row.platform} size="small" variant="outlined" />
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" noWrap>
+                      {getSoftwareDisplayName(row.software)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Count: {row.count}
+                    </Typography>
+                  </Box>
+                )}
+                {tabValue === 2 && (
+                  <Box>
+                    <Typography variant="subtitle2" sx={{ fontFamily: 'monospace', mb: 0.5 }}>
+                      {row.host}
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Vulns: {row.vulnerabilities}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Exploits: {row.exploits}
+                      </Typography>
+                    </Box>
+                    {row.topSeverity && (
+                      <Chip
+                        label={row.topSeverity}
+                        size="small"
+                        sx={{ mt: 0.5 }}
+                        color={
+                          row.topSeverity === 'HIGH' ? 'error' :
+                          row.topSeverity === 'MEDIUM' ? 'warning' :
+                          row.topSeverity === 'LOW' ? 'info' :
+                          'default'
+                        }
+                      />
+                    )}
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          )}
+          onCardClick={(row: any) => {
+            const key = tabValue === 0 ? row.id : tabValue === 1 ? row.id : row.host;
+            if (tabValue === 2) {
+              handleHostClick(row.host);
+            } else {
+              handleRowClick(key);
+            }
+          }}
+          desktopTable={
         <TableContainer component={Paper}>
           <Table size="small">
             <TableHead>
@@ -1071,13 +1168,7 @@ export default function VulnerabilitiesPage() {
             </TableBody>
           </Table>
         </TableContainer>
-        <TablePagination
-          component="div"
-          count={filteredData.length}
-          page={page}
-          onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
+          }
         />
         </>
         )}

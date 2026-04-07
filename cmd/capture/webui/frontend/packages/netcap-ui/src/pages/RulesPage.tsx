@@ -61,7 +61,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import SecurityIcon from '@mui/icons-material/Security';
 import BlockIcon from '@mui/icons-material/Block';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
+import CloseIcon from '@mui/icons-material/Close';
+import { useNetcapRouter, useNetcapApi, useIsMobile } from '../hooks';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { Rule, CreateRuleRequest, UpdateRuleRequest, ResponseAction, formatBytes } from '../lib/api';
@@ -74,6 +75,7 @@ import SearchInput from '../components/SearchInput';
 export default function RulesPage() {
   const router = useNetcapRouter();
   const api = useNetcapApi();
+  const isMobile = useIsMobile();
   const [openDialog, setOpenDialog] = useState(false);
   const [editingRule, setEditingRule] = useState<Rule | null>(null);
   const [formData, setFormData] = useState<CreateRuleRequest>({
@@ -817,9 +819,16 @@ export default function RulesPage() {
         </TableContainer>
 
         {/* Rule Dialog */}
-        <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+        <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth fullScreen={isMobile}>
           <DialogTitle>
-            {editingRule ? 'Edit Rule' : 'Create New Rule'}
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              {editingRule ? 'Edit Rule' : 'Create New Rule'}
+              {isMobile && (
+                <IconButton onClick={handleCloseDialog} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
+            </Box>
           </DialogTitle>
           <DialogContent>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
@@ -1307,16 +1316,24 @@ export default function RulesPage() {
         </Dialog>
 
         {/* Error Details Dialog */}
-        <Dialog 
-          open={errorDialogOpen} 
-          onClose={() => setErrorDialogOpen(false)} 
-          maxWidth="md" 
+        <Dialog
+          open={errorDialogOpen}
+          onClose={() => setErrorDialogOpen(false)}
+          maxWidth="md"
           fullWidth
+          fullScreen={isMobile}
         >
           <DialogTitle>
-            <Box display="flex" alignItems="center" gap={1}>
-              <ErrorIcon color="error" />
-              Rule Execution Error
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Box display="flex" alignItems="center" gap={1}>
+                <ErrorIcon color="error" />
+                Rule Execution Error
+              </Box>
+              {isMobile && (
+                <IconButton onClick={() => setErrorDialogOpen(false)} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
             </Box>
           </DialogTitle>
           <DialogContent>

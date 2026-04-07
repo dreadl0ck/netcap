@@ -17,11 +17,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { useState } from 'react';
 import { Box, Chip, Paper, Typography, Tooltip, Collapse, Switch, FormControlLabel } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import FilterListOffIcon from '@mui/icons-material/FilterListOff';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 /**
  * CommunityIDFilterBar - A bar component that displays the currently selected Community IDs
@@ -39,14 +41,20 @@ export function CommunityIDFilterBar() {
     toggleFilterEnabled,
   } = useCommunityIDFilter();
 
+  const isMobile = useIsMobile();
+  const [showAllChips, setShowAllChips] = useState(false);
+
   // Show bar if there are any IDs selected (whether enabled or not)
   const hasSelectedIDs = filterCount > 0;
-  
+
   if (!hasSelectedIDs) {
     return null;
   }
 
   const communityIDArray = Array.from(selectedCommunityIDs);
+  const maxVisibleChips = isMobile && !showAllChips ? 3 : communityIDArray.length;
+  const visibleChips = communityIDArray.slice(0, maxVisibleChips);
+  const hiddenCount = communityIDArray.length - maxVisibleChips;
 
   return (
     <Collapse in={hasSelectedIDs}>
@@ -100,7 +108,7 @@ export function CommunityIDFilterBar() {
           </Box>
           
           {/* ID Chips */}
-          {communityIDArray.map((id) => (
+          {visibleChips.map((id) => (
             <Tooltip key={id} title={`Remove "${id}" from filter`}>
               <Chip
                 label={id.length > 25 ? `${id.substring(0, 25)}...` : id}
@@ -112,7 +120,7 @@ export function CommunityIDFilterBar() {
                 sx={{
                   fontFamily: 'monospace',
                   fontSize: '0.75rem',
-                  maxWidth: 300,
+                  maxWidth: { xs: 200, sm: 300 },
                   opacity: isFilterEnabled ? 1 : 0.6,
                   '& .MuiChip-label': {
                     overflow: 'hidden',
@@ -122,6 +130,14 @@ export function CommunityIDFilterBar() {
               />
             </Tooltip>
           ))}
+          {hiddenCount > 0 && (
+            <Chip
+              label={`+${hiddenCount} more`}
+              size="small"
+              variant="outlined"
+              onClick={() => setShowAllChips(true)}
+            />
+          )}
           
           {/* Clear All Button */}
           {communityIDArray.length > 1 && (
@@ -140,7 +156,7 @@ export function CommunityIDFilterBar() {
           )}
         </Box>
         
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' }, mt: 1 }}>
           {isFilterEnabled 
             ? 'Filtering data by Community ID for cross-tool correlation (Zeek, Suricata, etc.)'
             : 'Filter disabled - toggle on to apply Community ID filtering'

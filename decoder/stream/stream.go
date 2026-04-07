@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"maps"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -13,12 +14,15 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/bacnetip"
 	"github.com/dreadl0ck/netcap/decoder/stream/bgp"
 	"github.com/dreadl0ck/netcap/decoder/stream/cip"
+	"github.com/dreadl0ck/netcap/decoder/stream/dcerpc"
 	"github.com/dreadl0ck/netcap/decoder/stream/dnp3"
 	"github.com/dreadl0ck/netcap/decoder/stream/ftp"
 	"github.com/dreadl0ck/netcap/decoder/stream/http"
 	"github.com/dreadl0ck/netcap/decoder/stream/iec62351"
 	"github.com/dreadl0ck/netcap/decoder/stream/imap"
+	"github.com/dreadl0ck/netcap/decoder/stream/ipp"
 	"github.com/dreadl0ck/netcap/decoder/stream/irc"
+	"github.com/dreadl0ck/netcap/decoder/stream/kerberosaudit"
 	"github.com/dreadl0ck/netcap/decoder/stream/modbus"
 	"github.com/dreadl0ck/netcap/decoder/stream/mqttsn"
 	"github.com/dreadl0ck/netcap/decoder/stream/opcua"
@@ -32,7 +36,9 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/socks"
 	"github.com/dreadl0ck/netcap/decoder/stream/ssh"
 	"github.com/dreadl0ck/netcap/decoder/stream/syslog"
+	"github.com/dreadl0ck/netcap/decoder/stream/tacacs"
 	"github.com/dreadl0ck/netcap/decoder/stream/tls"
+	"github.com/dreadl0ck/netcap/decoder/stream/zabbix"
 
 	"github.com/mgutz/ansi"
 	"github.com/pkg/errors"
@@ -81,6 +87,13 @@ var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
 	34964: profinet.Decoder, // PROFINET IO Context Manager (DCE/RPC)
 	44818: cip.Decoder,      // CIP ICS/SCADA (via EtherNet/IP)
 	47808: bacnetip.Decoder, // BACnet/IP building automation (UDP port 0xBAC0)
+	// New protocol decoders
+	49:    tacacs.Decoder,        // TACACS+ authentication
+	88:    kerberosaudit.Decoder, // Kerberos v5 authentication
+	135:   dcerpc.Decoder,        // DCE/RPC Endpoint Mapper
+	631:   ipp.Decoder,           // IPP printing
+	10050: zabbix.Decoder,        // Zabbix agent
+	10051: zabbix.Decoder,        // Zabbix server
 } // contains all available stream decoders
 
 // UDPStreamDecoders contains additional stream decoders specifically for UDP protocols.
@@ -88,11 +101,26 @@ var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
 // This is particularly useful for protocols that share port numbers with TCP protocols
 // (e.g., QUIC uses UDP port 443 while TLS uses TCP port 443).
 var UDPStreamDecoders = []core.StreamDecoderAPI{
-	quic.Decoder, // QUIC/HTTP3 (UDP port 443)
+	quic.Decoder,            // QUIC/HTTP3 (UDP port 443)
+	kerberosaudit.Decoder,   // Kerberos v5 (UDP port 88)
 }
+
+// SortedDecoderPorts provides a deterministic iteration order for DefaultStreamDecoders.
+// Go maps have non-deterministic iteration order, which causes the fallback decoder scan
+// (when no port-specific match is found) to select different decoders across runs.
+// This sorted list ensures consistent decoder selection.
+var SortedDecoderPorts []int32
 
 // package level init.
 func init() {
+	// build sorted port list for deterministic iteration
+	for port := range DefaultStreamDecoders {
+		SortedDecoderPorts = append(SortedDecoderPorts, port)
+	}
+	sort.Slice(SortedDecoderPorts, func(i, j int) bool {
+		return SortedDecoderPorts[i] < SortedDecoderPorts[j]
+	})
+
 	// collect all names for stream decoders on startup
 	for _, d := range DefaultStreamDecoders {
 		decoderutils.AllDecoderNames[d.GetName()] = struct{}{}

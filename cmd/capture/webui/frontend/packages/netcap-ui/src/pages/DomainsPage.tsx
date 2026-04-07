@@ -36,7 +36,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TableSortLabel,
   Tooltip,
@@ -57,6 +56,7 @@ import {
   BarChart as BarChartIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
 import SearchInput from '../components/SearchInput';
@@ -493,7 +493,47 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
             </Typography>
           </Paper>
         ) : (
-          <>
+          <ResponsiveDataView<DomainSummary>
+            data={paginatedDomains}
+            totalCount={filteredDomains.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            onCardClick={(domain) => handleRowClick(domain.domain)}
+            renderCard={(domain) => (
+              <Card variant="outlined">
+                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Typography variant="subtitle2" sx={{ fontFamily: 'monospace' }}>
+                    {domain.domain}
+                  </Typography>
+                  <Box display="flex" gap={2} mt={0.5} flexWrap="wrap">
+                    <Typography variant="caption" color="text.secondary">
+                      {domain.queryCount.toLocaleString()} queries
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {domain.uniqueClients.toLocaleString()} clients
+                    </Typography>
+                  </Box>
+                  {(domain.resolvedIPs || []).filter(ip => ip && ip !== '<nil>').length > 0 && (
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5} noWrap>
+                      IPs: {(domain.resolvedIPs || []).filter(ip => ip && ip !== '<nil>').slice(0, 3).join(', ')}
+                      {(domain.resolvedIPs || []).filter(ip => ip && ip !== '<nil>').length > 3 ? ` +${(domain.resolvedIPs || []).filter(ip => ip && ip !== '<nil>').length - 3}` : ''}
+                    </Typography>
+                  )}
+                  <Box display="flex" gap={1} mt={0.5} flexWrap="wrap">
+                    <Typography variant="caption" color="text.secondary">
+                      First: {formatTimestamp(domain.firstSeen)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Last: {formatTimestamp(domain.lastSeen)}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+            desktopTable={
             <TableContainer component={Paper}>
               <Table size="small" data-learn="Domains Table: Detailed list of all discovered domains with query statistics and sorting capabilities.">
                 <TableHead>
@@ -812,18 +852,8 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <TablePagination
-              data-learn="Table Pagination: Navigate through pages of domains and change how many rows to display per page."
-              component="div"
-              count={filteredDomains.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+            }
+          />
         )}
         </>
         )}
