@@ -76,6 +76,10 @@ interface DeviceProfileSummary {
   devices: string[];
   deviceIPs: string[];
   contacts: string[];
+  hostnames: string[];
+  deviceTypes: string[];
+  os: string;
+  roles: string[];
 }
 
 interface DevicesResponse {
@@ -665,6 +669,79 @@ export default function DevicesPage() {
                                   </Typography>
                                 </Grid>
                                 
+                                {/* Network Discovery: Hostnames */}
+                                {(device.hostnames || []).length > 0 && (
+                                  <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      Discovered Hostnames
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(device.hostnames || []).map((h) => (
+                                        <Chip
+                                          key={h}
+                                          label={h}
+                                          size="small"
+                                          color="primary"
+                                          variant="outlined"
+                                          sx={{ fontSize: '0.75rem', fontFamily: 'monospace' }}
+                                        />
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+
+                                {/* Network Discovery: OS */}
+                                {device.os && (
+                                  <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      Operating System / Firmware
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                                      {device.os}
+                                    </Typography>
+                                  </Grid>
+                                )}
+
+                                {/* Network Discovery: Device Types */}
+                                {(device.deviceTypes || []).length > 0 && (
+                                  <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      Discovered Device Types
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(device.deviceTypes || []).map((dt) => (
+                                        <Chip
+                                          key={dt}
+                                          label={dt}
+                                          size="small"
+                                          color="warning"
+                                          sx={{ fontSize: '0.75rem' }}
+                                        />
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+
+                                {/* Network Discovery: Roles */}
+                                {(device.roles || []).length > 0 && (
+                                  <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      Network Roles
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(device.roles || []).map((r) => (
+                                        <Chip
+                                          key={r}
+                                          label={r}
+                                          size="small"
+                                          color="secondary"
+                                          sx={{ fontSize: '0.75rem' }}
+                                        />
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+
                                 {/* All Device IPs */}
                                 {(device.deviceIPs || []).length > 0 && (
                                   <Grid item xs={12}>

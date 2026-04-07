@@ -22,6 +22,7 @@ package credentials
 import (
 	"bytes"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -30,92 +31,105 @@ import (
 const serviceRedis = "Redis"
 
 var (
-	// Redis AUTH command - simple text protocol
-	// Pattern: AUTH password\r\n or auth password\r\n (case insensitive)
-	reRedisAuth = regexp.MustCompile(`(?i)AUTH\s+([^\r\n]+)\r?\n`)
+	// Redis AUTH command - simple text protocol (must appear at start of a line)
+	// Pattern: AUTH password\r\n (case insensitive, anchored to line start)
+	reRedisAuth = regexp.MustCompile(`(?im)^AUTH\s+([^\r\n]+)\r?\n`)
 
 	// Redis RESP protocol AUTH (Redis Serialization Protocol)
 	// Pattern: *2\r\n$4\r\nAUTH\r\n$<len>\r\n<password>\r\n
 	reRedisRESP = regexp.MustCompile(`\*2\r\n\$4\r\n(?i:AUTH)\r\n\$(\d+)\r\n`)
+
+	// Redis 6+ ACL AUTH with username (must appear at start of a line)
+	// Pattern: AUTH username password\r\n (space separator only, not \r\n)
+	reRedisACL = regexp.MustCompile(`(?im)^AUTH[ \t]+([^\s\r\n]+)[ \t]+([^\r\n]+)\r?\n`)
+
+	// Known false positive password values from protocol keywords
+	redisFalsePositivePasswords = []string{"TLS", "SSL", "STARTTLS"}
 )
 
 // redisHarvesterFunc extracts credentials from Redis AUTH commands
 // Redis uses a simple text protocol and RESP (Redis Serialization Protocol)
 // Both plaintext AUTH and RESP format are supported
 func redisHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
-	// Try simple AUTH command first
-	matches := reRedisAuth.FindSubmatch(data)
-	if len(matches) > 1 {
-		password := string(matches[1])
-		// Remove any trailing whitespace or newlines
-		password = string(bytes.TrimSpace([]byte(password)))
-
-		return &types.Credentials{
-			Timestamp: ts.UnixNano(),
-			Service:   serviceRedis,
-			Flow:      ident,
-			User:      "", // Redis doesn't have usernames in basic AUTH (only password)
-			Password:  string(password),
-			Notes:     "Redis AUTH command",
-		}
+	// Redis text protocol requires \r\n line terminators
+	if !bytes.Contains(data, []byte("\r\n")) {
+		return nil
 	}
 
-	// Try RESP protocol format
+	// Try RESP protocol format first (most specific)
 	matchesRESP := reRedisRESP.FindSubmatch(data)
 	if len(matchesRESP) > 1 {
-		// Extract the length of the password
 		lengthStr := string(matchesRESP[1])
-		// Find the position after the length line
 		lengthPos := bytes.Index(data, matchesRESP[0])
 		if lengthPos != -1 {
-			// Calculate where the password starts
 			passwordStart := lengthPos + len(matchesRESP[0])
-			// Parse the length
 			var passwordLen int
-			if regexp.MustCompile(`\d+`).MatchString(lengthStr) {
-				// Simple conversion
-				for _, ch := range lengthStr {
-					if ch >= '0' && ch <= '9' {
-						passwordLen = passwordLen*10 + int(ch-'0')
-					}
+			for _, ch := range lengthStr {
+				if ch >= '0' && ch <= '9' {
+					passwordLen = passwordLen*10 + int(ch-'0')
 				}
+			}
+			if passwordLen > 0 && passwordStart+passwordLen <= len(data) {
+				password := string(data[passwordStart : passwordStart+passwordLen])
 
-				// Extract password if we have enough data
-				if passwordStart+passwordLen <= len(data) {
-					password := string(data[passwordStart : passwordStart+passwordLen])
-
-					return &types.Credentials{
-						Timestamp: ts.UnixNano(),
-						Service:   serviceRedis,
-						Flow:      ident,
-						User:      "", // Redis doesn't have usernames in basic AUTH
-						Password:  password,
-						Notes:     "Redis RESP protocol AUTH",
-					}
+				return &types.Credentials{
+					Timestamp: ts.UnixNano(),
+					Service:   serviceRedis,
+					Flow:      ident,
+					User:      "",
+					Password:  password,
+					Notes:     "Redis RESP protocol AUTH",
 				}
 			}
 		}
 	}
 
-	// Also check for Redis 6+ ACL AUTH with username
-	// Pattern: AUTH username password or AUTH default password
-	reRedisACL := regexp.MustCompile(`(?i)AUTH\s+([^\s\r\n]+)\s+([^\r\n]+)\r?\n`)
+	// Try ACL AUTH (two capture groups - more specific than simple AUTH)
 	matchesACL := reRedisACL.FindSubmatch(data)
 	if len(matchesACL) > 2 {
 		username := string(matchesACL[1])
-		password := bytes.TrimSpace(matchesACL[2])
+		password := string(bytes.TrimSpace(matchesACL[2]))
 
-		return &types.Credentials{
-			Timestamp: ts.UnixNano(),
-			Service:   serviceRedis,
-			Flow:      ident,
-			User:      username,
-			Password:  string(password),
-			Notes:     "Redis 6+ ACL AUTH",
+		if !isRedisFalsePositive(password) {
+			return &types.Credentials{
+				Timestamp: ts.UnixNano(),
+				Service:   serviceRedis,
+				Flow:      ident,
+				User:      username,
+				Password:  password,
+				Notes:     "Redis 6+ ACL AUTH",
+			}
+		}
+	}
+
+	// Try simple AUTH command (least specific)
+	matches := reRedisAuth.FindSubmatch(data)
+	if len(matches) > 1 {
+		password := string(bytes.TrimSpace(matches[1]))
+
+		if !isRedisFalsePositive(password) {
+			return &types.Credentials{
+				Timestamp: ts.UnixNano(),
+				Service:   serviceRedis,
+				Flow:      ident,
+				User:      "",
+				Password:  password,
+				Notes:     "Redis AUTH command",
+			}
 		}
 	}
 
 	return nil
+}
+
+// isRedisFalsePositive checks if a password value is a known false positive
+func isRedisFalsePositive(password string) bool {
+	for _, fp := range redisFalsePositivePasswords {
+		if strings.EqualFold(password, fp) {
+			return true
+		}
+	}
+	return false
 }
 
 // redisHarvester is the harvester definition for Redis

@@ -3364,15 +3364,50 @@ func (s *Server) handleErrorLogContent(w http.ResponseWriter, r *http.Request) {
 	// Local mode: sessionID is the file path or error log path
 	s.mu.RLock()
 	fileErrors := s.fileErrors
+	inputFiles := s.inputFiles
+	fileOutputDirs := make(map[string]string)
+	maps.Copy(fileOutputDirs, s.fileOutputDirs)
+	baseOutDir := s.baseOutDir
 	s.mu.RUnlock()
 
 	// Try to find the error log for this file
 	var errorLogPath string
+
+	// Priority 1: Check fileErrors map (for files that failed during processing)
 	for filePath, ferr := range fileErrors {
 		// Match by file path or base name
 		if filePath == sessionID || filepath.Base(filePath) == sessionID {
 			if ferr.ErrorLogPath != "" {
 				errorLogPath = ferr.ErrorLogPath
+				break
+			}
+		}
+	}
+
+	// Priority 2: Check output directory for errors.log (for successful processing with packet errors)
+	if errorLogPath == "" {
+		for _, inputFile := range inputFiles {
+			if inputFile == sessionID || filepath.Base(inputFile) == sessionID {
+				var outputDir string
+				if dir, exists := fileOutputDirs[inputFile]; exists {
+					outputDir = dir
+				} else if len(inputFiles) == 1 {
+					outputDir = baseOutDir
+				} else {
+					baseName := filepath.Base(inputFile)
+					dirName := baseName
+					for _, ext := range []string{".pcap", ".pcapng", ".cap", ".dmp"} {
+						if before, ok := strings.CutSuffix(dirName, ext); ok {
+							dirName = before
+							break
+						}
+					}
+					outputDir = filepath.Join(baseOutDir, dirName)
+				}
+				candidate := filepath.Join(outputDir, "errors.log")
+				if _, err := os.Stat(candidate); err == nil {
+					errorLogPath = candidate
+				}
 				break
 			}
 		}

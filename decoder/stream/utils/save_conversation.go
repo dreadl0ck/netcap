@@ -34,12 +34,16 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/discovery"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// TODO: remove dups
+// DeviceEnricher is a callback function to enrich a device profile by IP.
+// Set by the collector during initialization to avoid circular imports.
+var DeviceEnricher func(ip string, hostnames, deviceTypes, roles []string, os string)
+
 const (
 	binaryFileExtension = ".bin"
 	protoTCP            = "TCP"
@@ -73,6 +77,16 @@ func SaveConversation(proto string, conversation core.DataFragments, ident strin
 
 	banner := createBannerFromConversation(conversation)
 	credentials.RunHarvesters(banner, transport, ident, firstPacket, communityID)
+
+	// Run network discovery extractors and enrich device profiles
+	if DeviceEnricher != nil {
+		srcIP := conversation.SourceIP()
+		if srcIP != "" {
+			for _, r := range discovery.RunDiscovery(banner, transport, ident, firstPacket, srcIP) {
+				DeviceEnricher(r.SourceIP, r.Hostnames, r.DeviceTypes, r.Roles, r.OS)
+			}
+		}
+	}
 
 	if !decoderconfig.Instance.SaveConns {
 		return nil

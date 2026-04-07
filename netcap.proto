@@ -2136,6 +2136,10 @@ message DeviceProfile {
   uint64 Bytes = 7;
   repeated string Applications = 8; // DPI detected applications
   repeated string Devices = 9; // Devices associated with the MAC address, from DHCP db / fingerbank.org lookups
+  repeated string Hostnames = 10; // discovered hostnames (mDNS, NBNS, reverse DNS)
+  repeated string DeviceTypes = 11; // device types (UPnP: "Router/Gateway", WSD: "Printer", NBNS: "Domain Controller")
+  string OS = 12; // OS/firmware from UPnP server strings
+  repeated string Roles = 13; // network roles from NBNS (File Server, Master Browser, etc.)
 }
 
 // Port models a transport layer port and basic stats such as the number of packets, bytes transferred and protocol type.

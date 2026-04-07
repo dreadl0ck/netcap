@@ -47,27 +47,19 @@ func TestRADIUSHarvester(t *testing.T) {
 			expectCreds: false,
 		},
 		{
-			name:          "Valid Access-Request with username",
-			data:          buildRADIUSAccessRequest("testuser"),
-			expectCreds:   true,
-			expectUser:    "testuser",
-			expectService: serviceRADIUS,
+			name:        "Access-Request with username but no password is skipped",
+			data:        buildRADIUSAccessRequest("testuser"),
+			expectCreds: false,
 		},
 		{
-			name:          "Access-Accept response",
-			data:          buildRADIUSAccessAccept(),
-			expectCreds:   true,
-			expectService: serviceRADIUS,
-			expectAuthSet: true,
-			expectSuccess: true,
+			name:        "Access-Accept response without password is skipped",
+			data:        buildRADIUSAccessAccept(),
+			expectCreds: false,
 		},
 		{
-			name:          "Access-Reject response",
-			data:          buildRADIUSAccessReject(),
-			expectCreds:   true,
-			expectService: serviceRADIUS,
-			expectAuthSet: true,
-			expectSuccess: false,
+			name:        "Access-Reject response without password is skipped",
+			data:        buildRADIUSAccessReject(),
+			expectCreds: false,
 		},
 	}
 
@@ -818,9 +810,9 @@ func TestHarvesterPortFiltering(t *testing.T) {
 		{"SOCKS on 1081", "SOCKS", 1081, 12345, true},
 		{"SOCKS on wrong port", "SOCKS", 80, 443, false},
 
-		// NBNS tests (port 137)
-		{"NBNS on 137", "NBNS", 137, 12345, true},
-		{"NBNS on 137 dst", "NBNS", 12345, 137, true},
+		// NBNS tests (disabled by default, so port matching returns false)
+		{"NBNS on 137", "NBNS", 137, 12345, false},
+		{"NBNS on 137 dst", "NBNS", 12345, 137, false},
 		{"NBNS on wrong port", "NBNS", 43, 80, false},
 
 		// FTP tests (port 21)

@@ -77,7 +77,12 @@ func mysqlHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credenti
 		// Find server version string (null-terminated)
 		versionStart := i + 5
 		nullIdx := bytes.IndexByte(data[versionStart:i+4+pktLen], 0)
-		if nullIdx == -1 || nullIdx > 100 {
+		if nullIdx == -1 || nullIdx < 3 || nullIdx > 100 {
+			continue
+		}
+
+		// MySQL version strings start with a digit (e.g., "5.7.32", "8.0.21-MySQL")
+		if data[versionStart] < '0' || data[versionStart] > '9' {
 			continue
 		}
 
@@ -158,7 +163,8 @@ func mysqlHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credenti
 	}
 
 	// If we have username, challenge, and response, create credential entry
-	if username != "" && len(challenge) > 0 && len(response) > 0 {
+	// Validate username is printable ASCII to avoid false positives from binary data
+	if username != "" && len(challenge) > 0 && len(response) > 0 && isValidMySQLUsername(username) {
 		// Format for Hashcat mode 300: $mysqlna$challenge*response
 		// Or mode 11200 for MySQL-sha1: username:salt:hash
 		challengeHex := hex.EncodeToString(challenge)
@@ -242,6 +248,20 @@ func parseMySQLLengthEncodedInteger(data []byte) (value int, bytesRead int) {
 	}
 
 	return 0, 0
+}
+
+// isValidMySQLUsername checks that a string looks like a valid MySQL username
+// (printable ASCII, reasonable length) to prevent false positives from binary data
+func isValidMySQLUsername(s string) bool {
+	if len(s) == 0 || len(s) > 80 {
+		return false
+	}
+	for _, b := range []byte(s) {
+		if b < 0x20 || b > 0x7e {
+			return false
+		}
+	}
+	return true
 }
 
 // mysqlHarvester is the harvester definition for MySQL

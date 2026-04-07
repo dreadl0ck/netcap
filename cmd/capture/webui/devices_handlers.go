@@ -44,6 +44,10 @@ type DeviceProfileSummary struct {
 	Devices            []string `json:"devices"`
 	DeviceIPs          []string `json:"deviceIPs"`
 	Contacts           []string `json:"contacts"`
+	Hostnames          []string `json:"hostnames"`
+	DeviceTypes        []string `json:"deviceTypes"`
+	OS                 string   `json:"os"`
+	Roles              []string `json:"roles"`
 }
 
 // DevicesResponse contains the list of device profiles
@@ -145,6 +149,10 @@ func readDeviceProfiles(outDir string) ([]DeviceProfileSummary, error) {
 			Devices:            deviceProfile.Devices,
 			DeviceIPs:          deviceProfile.DeviceIPs,
 			Contacts:           deviceProfile.Contacts,
+			Hostnames:          deviceProfile.Hostnames,
+			DeviceTypes:        deviceProfile.DeviceTypes,
+			OS:                 deviceProfile.OS,
+			Roles:              deviceProfile.Roles,
 		})
 	}
 

@@ -104,6 +104,46 @@ func (a *atomicDeviceProfileMap) Size() int {
 	return len(a.Items)
 }
 
+// FindByIP returns the device profile that has the given IP in its DeviceIPs list.
+// Returns nil if no match is found.
+func (a *atomicDeviceProfileMap) FindByIP(ip string) *deviceProfile {
+	a.Lock()
+	defer a.Unlock()
+
+	for _, dp := range a.Items {
+		if slices.Contains(dp.DeviceIPs, ip) {
+			return dp
+		}
+	}
+
+	return nil
+}
+
+// EnrichFromDiscovery merges discovery data into the device profile.
+func (dp *deviceProfile) EnrichFromDiscovery(hostnames, deviceTypes, roles []string, os string) {
+	dp.Lock()
+	defer dp.Unlock()
+
+	for _, h := range hostnames {
+		if !slices.Contains(dp.Hostnames, h) {
+			dp.Hostnames = append(dp.Hostnames, h)
+		}
+	}
+	for _, dt := range deviceTypes {
+		if !slices.Contains(dp.DeviceTypes, dt) {
+			dp.DeviceTypes = append(dp.DeviceTypes, dt)
+		}
+	}
+	for _, r := range roles {
+		if !slices.Contains(dp.Roles, r) {
+			dp.Roles = append(dp.Roles, r)
+		}
+	}
+	if os != "" && dp.OS == "" {
+		dp.OS = os
+	}
+}
+
 var (
 	// DeviceProfiles hold all connections.
 	DeviceProfiles = &atomicDeviceProfileMap{

@@ -41,8 +41,6 @@ cover.out
 coverage.html
 deploy.sh
 node_modules/
-cmd/capture/webui/frontend/out
-cmd/capture/webui/frontend/.next
 cmd/try/webui/frontend
 tmp/
 net

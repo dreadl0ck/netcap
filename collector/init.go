@@ -27,6 +27,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/decoder/stream"
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
+	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
@@ -52,6 +53,13 @@ func (c *Collector) Init() (err error) {
 	// set configuration for decoder pkgs
 	c.config.DecoderConfig.PerfTracker = c.perfTracker
 	packet.SetConfig(c.config.DecoderConfig)
+
+	// Wire up device enrichment callback for network discovery protocols
+	streamutils.DeviceEnricher = func(ip string, hostnames, deviceTypes, roles []string, os string) {
+		if dp := packet.DeviceProfiles.FindByIP(ip); dp != nil {
+			dp.EnrichFromDiscovery(hostnames, deviceTypes, roles, os)
+		}
+	}
 
 	decoderconfig.Instance = c.config.DecoderConfig
 	stream.Debug = c.config.DecoderConfig.Debug

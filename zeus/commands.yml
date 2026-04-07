@@ -31,7 +31,14 @@ commands:
         exec: |
             # Extract gopacket version from go.mod
             GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
-            
+
+            # Determine version and commit from git
+            VERSION=$(git describe --tags --always 2>/dev/null || echo "dev")
+            COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+
+            # Common ldflags for version injection
+            VERSION_FLAGS="-X github.com/dreadl0ck/netcap.Version=${VERSION} -X github.com/dreadl0ck/netcap.Commit=${COMMIT} -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}"
+
             # Detect OS and handle DPI libraries automatically
             if [[ "$OSTYPE" == "darwin"* ]]; then
                 # macOS - check for DPI libraries
@@ -41,24 +48,22 @@ commands:
                     LPI_VERSION=$(brew list --versions libprotoident 2>/dev/null | awk '{print $2}')
                     # Extract go-dpi version from go.mod
                     GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" go.mod | grep -v indirect | awk '{print $2}')
-                    echo "[INFO] Building with DPI support (nDPI ${NDPI_VERSION}, libprotoident ${LPI_VERSION}, go-dpi ${GO_DPI_VERSION})"
+                    echo "[INFO] Building ${VERSION} (${COMMIT}) with DPI support (nDPI ${NDPI_VERSION}, libprotoident ${LPI_VERSION}, go-dpi ${GO_DPI_VERSION})"
                     # go-dpi v1.1.0+ already includes the correct CGO directives for Homebrew
-                    go build -trimpath -ldflags "-s -w \
-                        -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
+                    go build -trimpath -ldflags "-s -w ${VERSION_FLAGS} \
                         -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=${NDPI_VERSION} \
                         -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=${LPI_VERSION} \
                         -X github.com/dreadl0ck/netcap/dpi.GoDPIVersion=${GO_DPI_VERSION}" \
                         -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
                 else
-                    echo "[INFO] Building without DPI support (install with: brew install ndpi libprotoident)"
-                    go build -trimpath -tags nodpi -ldflags "-s -w \
-                        -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}" \
+                    echo "[INFO] Building ${VERSION} (${COMMIT}) without DPI support (install with: brew install ndpi libprotoident)"
+                    go build -trimpath -tags nodpi -ldflags "-s -w ${VERSION_FLAGS}" \
                         -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
                 fi
             else
                 # Linux or other - use default build
-                go build -trimpath -ldflags "-s -w \
-                    -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}" \
+                echo "[INFO] Building ${VERSION} (${COMMIT})"
+                go build -trimpath -ldflags "-s -w ${VERSION_FLAGS}" \
                     -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
             fi
 

@@ -10,9 +10,7 @@ node_modules
 # Keep /dist/ since it's embedded in the Go binary
 # /dist/
 
-# Leftover from previous build tools
-/.next/
-/out/
+# Production
 /build
 
 # Misc

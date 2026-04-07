@@ -181,15 +181,14 @@ func teamviewerHarvesterFunc(data []byte, ident string, ts time.Time) *types.Cre
 			continue
 		}
 
-		// Found a valid TeamViewer packet
-		notes := fmt.Sprintf("Remote Desktop Protocol v%s - Command: %s", pkt.Version, pkt.CommandName)
-
-		// For authentication events, mark as security-critical
-		if pkt.IsAuthEvent {
-			notes = fmt.Sprintf("SECURITY: Remote Desktop Auth Event v%s - %s", pkt.Version, pkt.CommandName)
+		// Only emit credentials for security-critical events (auth, login, meeting auth)
+		// Skip keepalive, ping, and other non-credential protocol messages
+		if !isSecurityCriticalCommand(pkt.CommandCode) {
+			continue
 		}
 
-		// Determine service sub-type based on command
+		notes := fmt.Sprintf("SECURITY: Remote Desktop Auth Event v%s - %s", pkt.Version, pkt.CommandName)
+
 		service := serviceRemoteDesktop
 		if pkt.IsAuthEvent {
 			service = "TeamViewer Auth"
@@ -199,7 +198,7 @@ func teamviewerHarvesterFunc(data []byte, ident string, ts time.Time) *types.Cre
 			Timestamp: ts.UnixNano(),
 			Service:   service,
 			Flow:      ident,
-			User:      pkt.CommandName, // Store command in user field for visibility
+			User:      pkt.CommandName,
 			Password:  "",
 			Notes:     notes,
 		}

@@ -178,46 +178,81 @@ const truncateString = (str: string, maxLength: number) => {
   return str.substring(0, maxLength) + '…';
 };
 
+// parseIPPort splits "IP:port" for both IPv4 and IPv6 addresses.
+// IPv6 example: "2001:470:1f0b:16b0:20c:29ff:feb7:1d68:51580" — last colon separates port
+// IPv4 example: "192.168.1.1:80"
+const parseIPPort = (s: string): [string, string] | null => {
+  const lastColon = s.lastIndexOf(':');
+  if (lastColon === -1) return null;
+  const ip = s.substring(0, lastColon);
+  const port = s.substring(lastColon + 1);
+  if (!/^\d+$/.test(port)) return null;
+  return [ip, port];
+};
+
 // Helper function to parse and render colorized flow identifier
-// Expected format: "TCP:192.168.1.1:80->10.0.0.1:443" or similar
+// Handles both IPv4 and IPv6 flows:
+//   IPv4: "192.168.1.1:80->10.0.0.1:443"
+//   IPv6: "2001:470:1f0b::1d68:51580->2001:470:1f0b::fea8:26f7:1812"
+//   With protocol: "TCP:192.168.1.1:80->10.0.0.1:443"
 const renderColorizedFlow = (flow: string) => {
   if (!flow) return null;
-  
-  // Try to parse the flow string - typical format: "PROTO:srcIP:srcPort->dstIP:dstPort"
-  // or "srcIP:srcPort->dstIP:dstPort"
-  const arrowMatch = flow.match(/^(?:([A-Z]+):)?([^:]+):(\d+)->([^:]+):(\d+)$/);
-  if (arrowMatch) {
-    const [, proto, srcIP, srcPort, dstIP, dstPort] = arrowMatch;
+
+  // Split on "->" to get src and dst sides
+  const arrowIdx = flow.indexOf('->');
+  if (arrowIdx === -1) {
     return (
-      <Box 
-        sx={{ 
-          fontFamily: 'monospace', 
-          fontSize: '0.8rem',
-          display: 'flex',
-          alignItems: 'center',
-        }}
-      >
-        {proto && (
-          <>
-            <Box component="span" sx={{ color: 'text.secondary' }}>{proto}:</Box>
-          </>
-        )}
-        <Box component="span" sx={{ color: '#f44336', fontWeight: 'bold' }}>{srcIP}</Box>
-        <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
-        <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>{srcPort}</Box>
-        <Box component="span" sx={{ color: 'text.secondary', mx: 0.5 }}>→</Box>
-        <Box component="span" sx={{ color: '#2196f3', fontWeight: 'bold' }}>{dstIP}</Box>
-        <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
-        <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>{dstPort}</Box>
-      </Box>
+      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+        {flow}
+      </Typography>
     );
   }
-  
-  // Fallback: just display the flow as-is if it doesn't match the expected pattern
+
+  let srcSide = flow.substring(0, arrowIdx);
+  const dstSide = flow.substring(arrowIdx + 2);
+
+  // Check for optional protocol prefix (e.g., "TCP:")
+  let proto: string | undefined;
+  const protoMatch = srcSide.match(/^([A-Z]+):(.+)$/);
+  if (protoMatch) {
+    proto = protoMatch[1];
+    srcSide = protoMatch[2];
+  }
+
+  const src = parseIPPort(srcSide);
+  const dst = parseIPPort(dstSide);
+
+  if (!src || !dst) {
+    return (
+      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
+        {flow}
+      </Typography>
+    );
+  }
+
+  const [srcIP, srcPort] = src;
+  const [dstIP, dstPort] = dst;
+
   return (
-    <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-      {flow}
-    </Typography>
+    <Box
+      sx={{
+        fontFamily: 'monospace',
+        fontSize: '0.8rem',
+        display: 'flex',
+        alignItems: 'center',
+      }}
+    >
+      {proto && (
+        <Box component="span" sx={{ color: 'text.secondary' }}>{proto}:</Box>
+      )}
+      <Box component="span" sx={{ color: '#f44336', fontWeight: 'bold' }}>{srcIP}</Box>
+      <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
+      <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>{srcPort}</Box>
+      <Box component="span" sx={{ color: 'text.secondary', mx: 0.5 }}>→</Box>
+      <Box component="span" sx={{ color: '#2196f3', fontWeight: 'bold' }}>{dstIP}</Box>
+      <Box component="span" sx={{ color: 'text.secondary' }}>:</Box>
+      <Box component="span" sx={{ color: '#FFB74D', fontWeight: 'medium' }}>{dstPort}</Box>
+    </Box>
   );
 };
 

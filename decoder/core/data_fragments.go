@@ -59,6 +59,15 @@ func (d DataFragments) First() []byte {
 	return nil
 }
 
+// SourceIP returns the source IP address from the first fragment's network layer.
+// Returns empty string if no fragments are available.
+func (d DataFragments) SourceIP() string {
+	if len(d) > 0 {
+		return d[0].Network().Src().String()
+	}
+	return ""
+}
+
 // Len returns the length.
 func (d DataFragments) Len() int {
 	return len(d)
