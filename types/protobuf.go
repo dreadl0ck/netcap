@@ -33,6 +33,9 @@ const (
 	fieldIsValid         = "IsValid"
 	fieldErrorMsg        = "ErrorMsg"
 	fieldDetectionMethod = "DetectionMethod"
+	fieldProtoFile       = "ProtoFile"
+	fieldFullMessageName = "FullMessageName"
+	fieldSchemaResolved  = "SchemaResolved"
 )
 
 var fieldsProtobuf = []string{
@@ -49,6 +52,9 @@ var fieldsProtobuf = []string{
 	fieldErrorMsg,
 	fieldDetectionMethod,
 	fieldMessageCount,
+	fieldProtoFile,
+	fieldFullMessageName,
+	fieldSchemaResolved,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -72,6 +78,9 @@ func (p *Protobuf) CSVRecord() []string {
 		p.ErrorMsg,
 		p.DetectionMethod,
 		formatInt32(p.MessageCount),
+		p.ProtoFile,
+		p.FullMessageName,
+		strconv.FormatBool(p.SchemaResolved),
 	})
 }
 
@@ -135,6 +144,9 @@ func (p *Protobuf) Encode() []string {
 		protobufEncoder.String(fieldErrorMsg, p.ErrorMsg),
 		protobufEncoder.String(fieldDetectionMethod, p.DetectionMethod),
 		protobufEncoder.Int32(fieldMessageCount, p.MessageCount),
+		protobufEncoder.String(fieldProtoFile, p.ProtoFile),
+		protobufEncoder.String(fieldFullMessageName, p.FullMessageName),
+		protobufEncoder.Bool(p.SchemaResolved),
 	})
 }
 

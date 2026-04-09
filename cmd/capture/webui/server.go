@@ -543,6 +543,13 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/decoders/config/save-as", s.handleSaveDecoderConfigAs)
 	mux.HandleFunc("/api/decoders/", s.handleDecodersRouter) // Custom router for decoder endpoints
 	mux.HandleFunc("/api/decoders", s.handleDecoders)
+	mux.HandleFunc("/api/proto/status", s.handleProtoStatus)
+	mux.HandleFunc("/api/proto/messages", s.handleProtoMessages)
+	mux.HandleFunc("/api/proto/search-paths", s.handleProtoSearchPaths)
+	mux.HandleFunc("/api/proto/upload", s.handleProtoUpload)
+	mux.HandleFunc("/api/proto/mappings", s.handleProtoMappings)
+	mux.HandleFunc("/api/proto/preferences", s.handleProtoPreferences)
+	mux.HandleFunc("/api/proto/recompile", s.handleProtoRecompile)
 	mux.HandleFunc("/api/harvesters", s.handleHarvesters)
 	mux.HandleFunc("/api/harvesters/config", s.handleHarvestersConfig)
 	mux.HandleFunc("/api/harvesters/presets", s.handleHarvestersPresets)

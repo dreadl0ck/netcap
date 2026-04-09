@@ -68,6 +68,7 @@ import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import BoltIcon from '@mui/icons-material/Bolt';
 import ShieldIcon from '@mui/icons-material/Shield';
+import CodeIcon from '@mui/icons-material/Code';
 import useSWR from 'swr';
 
 import { useNetcapRouter } from '../hooks/useNetcapRouter';
@@ -669,6 +670,18 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
               <AccountTreeIcon />
             </ListItemIcon>
             <ListItemText primary="Decoders" />
+          </ListItemButton>
+        </Link>
+        <Link href="/protobuf" passHref style={LINK_STYLE}>
+          <ListItemButton
+            selected={router.isActive('/protobuf')}
+            data-learn="Protobuf Schemas: Manage .proto schema files for decoding Protocol Buffer traffic."
+            sx={SELECTED_MENU_ITEM_SX}
+          >
+            <ListItemIcon>
+              <CodeIcon />
+            </ListItemIcon>
+            <ListItemText primary="Protobuf Schemas" />
           </ListItemButton>
         </Link>
         <Link href="/harvesters" passHref style={LINK_STYLE}>

@@ -44,6 +44,7 @@ require (
 
 require (
 	github.com/VirusTotal/yara-x/go v1.14.0
+	github.com/bufbuild/protocompile v0.14.1
 	github.com/coreos/go-iptables v0.8.0
 	github.com/expr-lang/expr v1.17.8
 	github.com/florianl/go-nfqueue/v2 v2.0.2
@@ -51,6 +52,7 @@ require (
 	github.com/namsral/flag v1.7.4-pre
 	github.com/satta/gommunityid v1.0.2
 	github.com/urfave/cli/v3 v3.6.1
+	google.golang.org/protobuf v1.36.10
 )
 
 require (
@@ -128,7 +130,6 @@ require (
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/term v0.41.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
-	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

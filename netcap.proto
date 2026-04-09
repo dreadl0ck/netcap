@@ -4282,7 +4282,9 @@ message RARP {
 }
 
 // Protobuf - Generic Protocol Buffer message detected on the wire
-// Decodes arbitrary protobuf wire format without requiring a schema
+// Decodes arbitrary protobuf wire format without requiring a schema.
+// When .proto schema files are provided, fields are resolved to their
+// named definitions with full type information and enum labels.
 message Protobuf {
   int64 Timestamp = 1;
   string SrcIP = 2;
@@ -4300,4 +4302,11 @@ message Protobuf {
   string DetectionMethod = 14;
   repeated string FieldOrder = 15;
   int32 MessageCount = 16;
+
+  // Schema-aware fields (populated when .proto files are loaded)
+  string ProtoFile = 17;                            // source .proto file used for decoding
+  string FullMessageName = 18;                      // fully qualified message name (e.g. "tutorial.Person")
+  map<string, string> SchemaFields = 19;            // named fields from schema (e.g. "name" -> "Lily")
+  map<string, string> FieldAlternatives = 20;       // alternative type interpretations (e.g. "varint_1.as_sint64" -> "-75")
+  bool SchemaResolved = 21;                         // true if message was decoded using a .proto schema
 }

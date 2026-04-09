@@ -53,6 +53,7 @@ export { default as InterfacesPage } from './InterfacesPage';
 export { default as LogsPage } from './LogsPage';
 export { default as PcapsPage } from './PcapsPage';
 export { default as ProbesPage } from './ProbesPage';
+export { default as ProtobufPage } from './ProtobufPage';
 export { default as RecordsPage } from './RecordsPage';
 export { default as RulesPage } from './RulesPage';
 export { default as RulesetsPage } from './RulesetsPage';

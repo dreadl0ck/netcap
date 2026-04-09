@@ -957,6 +957,9 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			RemoveClosedStreams:            flagRemoveClosedStreams,
 			CompressionBlockSize:           flagCompressionBlockSize,
 			CompressionLevel:               getCompressionLevel(flagCompressionLevel),
+			ProtoSearchPaths:               flagProtoSearchPaths,
+			ProtoShowAlternatives:          flagProtoShowAlternatives,
+			ProtoMessageTypes:              flagProtoMessageTypes,
 		},
 		ResolverConfig: resolvers.Config{
 			ReverseDNS: flagReverseDNS,
@@ -1298,6 +1301,9 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 					RemoveClosedStreams:            flagRemoveClosedStreams,
 					CompressionBlockSize:           flagCompressionBlockSize,
 					CompressionLevel:               getCompressionLevel(flagCompressionLevel),
+					ProtoSearchPaths:               flagProtoSearchPaths,
+					ProtoShowAlternatives:          flagProtoShowAlternatives,
+					ProtoMessageTypes:              flagProtoMessageTypes,
 				},
 				ResolverConfig: resolvers.Config{
 					ReverseDNS: flagReverseDNS,

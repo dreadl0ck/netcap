@@ -184,6 +184,15 @@ function createNoOpApi(): NetcapApiClient {
     deleteYaraRule: noOpReturn({ message: '' }),
     scanWithYara: noOpReturn({ results: [], totalFiles: 0, filesScanned: 0, totalMatches: 0, scanTimeMs: 0 }),
     scanFileWithYara: noOp as any,
+    getProtoStatus: noOpReturn({ loaded: false, fileCount: 0, messageCount: 0, searchPaths: [], showAlternatives: false, portMappings: [], errors: [], lastCompiled: '' }),
+    getProtoMessages: noOpReturn({ messages: [] }),
+    addProtoSearchPath: noOpReturn({ success: false, message: '' }),
+    removeProtoSearchPath: noOpReturn({ success: false, message: '' }),
+    uploadProtoFiles: noOp as any,
+    addProtoMapping: noOpReturn({ success: false, message: '' }),
+    removeProtoMapping: noOpReturn({ success: false, message: '' }),
+    setProtoPreferences: noOpReturn({ success: false, message: '' }),
+    recompileProtos: noOpReturn({ success: false, message: '' }),
     formatBytes,
     formatTimestamp,
     formatDuration,
@@ -387,6 +396,51 @@ export interface YaraStatusResponse {
   rulesDir: string;
   enabledRules: number;
   totalRules: number;
+}
+
+// Protobuf Schema types
+export interface ProtoStatusResponse {
+  loaded: boolean;
+  fileCount: number;
+  messageCount: number;
+  searchPaths: string[];
+  showAlternatives: boolean;
+  portMappings: ProtoPortMapping[];
+  errors: string[];
+  lastCompiled: string;
+}
+
+export interface ProtoPortMapping {
+  port: number;
+  messageType: string;
+}
+
+export interface ProtoFieldInfo {
+  name: string;
+  number: number;
+  type: string;
+  label: string;
+  typeName?: string;
+  enumValues?: { name: string; number: number }[];
+}
+
+export interface ProtoMessageInfo {
+  fullName: string;
+  package: string;
+  name: string;
+  protoFile: string;
+  fields: ProtoFieldInfo[];
+}
+
+export interface ProtoMessagesResponse {
+  messages: ProtoMessageInfo[];
+}
+
+export interface ProtoMutationResponse {
+  success: boolean;
+  message: string;
+  status?: ProtoStatusResponse;
+  uploadedFiles?: string[];
 }
 
 export interface ExtractedFileContentResponse {
@@ -2295,6 +2349,109 @@ function createApiWithBase(apiBase: string) {
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.error || 'YARA scan failed');
+    }
+    return res.json();
+  },
+
+  // Protobuf Schema API
+  async getProtoStatus(): Promise<ProtoStatusResponse> {
+    const res = await fetch(`${apiBase}/proto/status`);
+    if (!res.ok) throw new Error('Failed to fetch proto status');
+    return res.json();
+  },
+
+  async getProtoMessages(): Promise<ProtoMessagesResponse> {
+    const res = await fetch(`${apiBase}/proto/messages`);
+    if (!res.ok) throw new Error('Failed to fetch proto messages');
+    return res.json();
+  },
+
+  async addProtoSearchPath(path: string): Promise<ProtoMutationResponse> {
+    const res = await fetch(`${apiBase}/proto/search-paths`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to add search path');
+    }
+    return res.json();
+  },
+
+  async removeProtoSearchPath(path: string): Promise<ProtoMutationResponse> {
+    const res = await fetch(`${apiBase}/proto/search-paths`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to remove search path');
+    }
+    return res.json();
+  },
+
+  async uploadProtoFiles(files: File[]): Promise<ProtoMutationResponse> {
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append('files', file);
+    }
+    const res = await fetch(`${apiBase}/proto/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Upload failed');
+    }
+    return res.json();
+  },
+
+  async addProtoMapping(port: number, messageType: string): Promise<ProtoMutationResponse> {
+    const res = await fetch(`${apiBase}/proto/mappings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port, messageType }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to add mapping');
+    }
+    return res.json();
+  },
+
+  async removeProtoMapping(port: number): Promise<ProtoMutationResponse> {
+    const res = await fetch(`${apiBase}/proto/mappings`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to remove mapping');
+    }
+    return res.json();
+  },
+
+  async setProtoPreferences(prefs: { showAlternatives: boolean }): Promise<ProtoMutationResponse> {
+    const res = await fetch(`${apiBase}/proto/preferences`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(prefs),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to update preferences');
+    }
+    return res.json();
+  },
+
+  async recompileProtos(): Promise<ProtoMutationResponse> {
+    const res = await fetch(`${apiBase}/proto/recompile`, { method: 'POST' });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Recompilation failed');
     }
     return res.json();
   },

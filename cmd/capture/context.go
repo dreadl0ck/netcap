@@ -145,6 +145,9 @@ var (
 	flagFilter                         string
 	flagRules                          string
 	flagDev                            bool
+	flagProtoSearchPaths               []string
+	flagProtoShowAlternatives          bool
+	flagProtoMessageTypes              []string
 )
 
 // setFlagsFromContext populates global flag variables from CLI context
@@ -267,4 +270,7 @@ func setFlagsFromContext(c *cli.Command) {
 	flagFilter = c.String("filter")
 	flagRules = c.String("rules")
 	flagDev = c.Bool("dev")
+	flagProtoSearchPaths = c.StringSlice("proto-paths")
+	flagProtoShowAlternatives = c.Bool("proto-show-alternatives")
+	flagProtoMessageTypes = c.StringSlice("proto-message-types")
 }

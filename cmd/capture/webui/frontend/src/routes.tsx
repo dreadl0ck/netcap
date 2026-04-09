@@ -34,6 +34,7 @@ const InterfacesPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m =>
 const LogsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.LogsPage })));
 const PcapsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.PcapsPage })));
 const ProbesPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.ProbesPage })));
+const ProtobufPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.ProtobufPage })));
 const RecordsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.RecordsPage })));
 const RulesPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.RulesPage })));
 const RulesetsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.RulesetsPage })));
@@ -73,6 +74,7 @@ export function AppRoutes() {
         <Route path="/logs" element={<LogsPage />} />
         <Route path="/pcaps" element={<PcapsPage />} />
         <Route path="/probes" element={<ProbesPage />} />
+        <Route path="/protobuf" element={<ProtobufPage />} />
         <Route path="/records" element={<RecordsPage />} />
         <Route path="/rules" element={<RulesPage />} />
         <Route path="/rulesets" element={<RulesetsPage />} />

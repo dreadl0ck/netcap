@@ -21,6 +21,7 @@ package protobuf
 
 import (
 	"bytes"
+	"os"
 	"testing"
 )
 
@@ -337,6 +338,379 @@ func TestFieldOrderPreserved(t *testing.T) {
 		if order[i] != want {
 			t.Errorf("order[%d] = %s, want %s", i, order[i], want)
 		}
+	}
+}
+
+// --- Multi-interpretation tests ---
+
+func TestVarintAlternatives(t *testing.T) {
+	tests := []struct {
+		name     string
+		value    uint64
+		wantKeys []string
+	}{
+		{
+			"small value with bool",
+			1,
+			[]string{"sint64", "int64", "bool"},
+		},
+		{
+			"zero with bool",
+			0,
+			[]string{"sint64", "int64", "bool"},
+		},
+		{
+			"large value no bool",
+			150,
+			[]string{"sint64", "int64"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			alts := varintAlternatives(tt.value)
+			for _, key := range tt.wantKeys {
+				if _, ok := alts[key]; !ok {
+					t.Errorf("missing key %q in alternatives", key)
+				}
+			}
+		})
+	}
+
+	// Verify zigzag decoding: zigzag(1) = -1, zigzag(2) = 1, zigzag(3) = -2
+	alts := varintAlternatives(1)
+	if alts["sint64"] != "-1" {
+		t.Errorf("zigzag(1) = %s, want -1", alts["sint64"])
+	}
+	alts = varintAlternatives(2)
+	if alts["sint64"] != "1" {
+		t.Errorf("zigzag(2) = %s, want 1", alts["sint64"])
+	}
+}
+
+func TestFixed64Alternatives(t *testing.T) {
+	alts := fixed64Alternatives(4614253070214989087) // math.Float64bits(3.14)
+	if _, ok := alts["double"]; !ok {
+		t.Error("missing double alternative")
+	}
+	if _, ok := alts["int64"]; !ok {
+		t.Error("missing int64 alternative")
+	}
+}
+
+func TestFixed32Alternatives(t *testing.T) {
+	alts := fixed32Alternatives(1078523331) // math.Float32bits(3.14)
+	if _, ok := alts["float"]; !ok {
+		t.Error("missing float alternative")
+	}
+	if _, ok := alts["int32"]; !ok {
+		t.Error("missing int32 alternative")
+	}
+}
+
+func TestMultiInterpretationEnabled(t *testing.T) {
+	// Enable alternatives
+	SetShowAlternatives(true)
+	defer SetShowAlternatives(false)
+
+	msgs, err := DecodeMessages(validProtobufData)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Field 1 is varint 150 — should have alternatives
+	field := msgs[0][0]
+	if field.Alternatives == nil {
+		t.Fatal("expected alternatives for varint field when showAlternatives=true")
+	}
+	if _, ok := field.Alternatives["sint64"]; !ok {
+		t.Error("missing sint64 alternative")
+	}
+}
+
+func TestMultiInterpretationDisabled(t *testing.T) {
+	SetShowAlternatives(false)
+
+	msgs, err := DecodeMessages(validProtobufData)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// No alternatives when disabled
+	field := msgs[0][0]
+	if field.Alternatives != nil {
+		t.Error("expected nil alternatives when showAlternatives=false")
+	}
+}
+
+func TestPopulateFieldsDoesNotIncludeAlternatives(t *testing.T) {
+	fields := []Field{
+		{
+			Number:       1,
+			Type:         "varint",
+			Value:        "150",
+			Alternatives: map[string]string{"sint64": "75", "int64": "150"},
+		},
+	}
+
+	out := make(map[string]string)
+	var order []string
+	PopulateFields(fields, out, &order)
+
+	if out["varint_1"] != "150" {
+		t.Errorf("primary value = %s, want 150", out["varint_1"])
+	}
+	// Alternatives should NOT be in the primary Fields map
+	if _, ok := out["varint_1.as_sint64"]; ok {
+		t.Error("alternatives should not be stored in primary Fields map")
+	}
+	if _, ok := out["varint_1.as_int64"]; ok {
+		t.Error("alternatives should not be stored in primary Fields map")
+	}
+}
+
+// --- Packed repeated tests ---
+
+func TestTryParsePackedVarints(t *testing.T) {
+	// Two varints: 150 (0x96 0x01) and 300 (0xAC 0x02)
+	data := []byte{0x96, 0x01, 0xAC, 0x02}
+	result := tryParsePackedVarints(data)
+	if result == nil {
+		t.Fatal("expected packed varints")
+	}
+	if len(result) != 2 || result[0] != 150 || result[1] != 300 {
+		t.Errorf("got %v, want [150, 300]", result)
+	}
+}
+
+func TestTryParsePackedVarintsInvalid(t *testing.T) {
+	// Single varint — not meaningful as packed
+	if tryParsePackedVarints([]byte{0x01}) != nil {
+		t.Error("single varint should not be packed")
+	}
+	// Incomplete varint
+	if tryParsePackedVarints([]byte{0x80}) != nil {
+		t.Error("incomplete varint should fail")
+	}
+}
+
+func TestTryParsePackedFixed32(t *testing.T) {
+	// Two little-endian uint32s: 1 and 2
+	data := []byte{
+		0x01, 0x00, 0x00, 0x00,
+		0x02, 0x00, 0x00, 0x00,
+	}
+	result := tryParsePackedFixed32(data)
+	if result == nil {
+		t.Fatal("expected packed fixed32")
+	}
+	if len(result) != 2 || result[0] != 1 || result[1] != 2 {
+		t.Errorf("got %v, want [1, 2]", result)
+	}
+}
+
+func TestTryParsePackedFixed32Invalid(t *testing.T) {
+	// Not aligned to 4 bytes
+	if tryParsePackedFixed32([]byte{0x01, 0x02, 0x03}) != nil {
+		t.Error("non-aligned data should fail")
+	}
+	// Too short (need at least 8 bytes for 2 values)
+	if tryParsePackedFixed32([]byte{0x01, 0x00, 0x00, 0x00}) != nil {
+		t.Error("single value should fail")
+	}
+}
+
+func TestTryParsePackedFixed64(t *testing.T) {
+	// Two little-endian uint64s: 1 and 2
+	data := []byte{
+		0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	}
+	result := tryParsePackedFixed64(data)
+	if result == nil {
+		t.Fatal("expected packed fixed64")
+	}
+	if len(result) != 2 || result[0] != 1 || result[1] != 2 {
+		t.Errorf("got %v, want [1, 2]", result)
+	}
+}
+
+func TestPackedVarintInMessage(t *testing.T) {
+	// Protobuf message with field 4 as packed repeated varints [1, 2, 3]
+	// Tag: field 4, wire type 2 (length-delimited) = (4 << 3) | 2 = 0x22
+	// Length: 3
+	// Values: 1, 2, 3 (single-byte varints, but NOT printable ASCII)
+	data := []byte{
+		0x22, 0x03, 0x01, 0x02, 0x03,
+	}
+
+	msgs, err := DecodeMessages(data)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(msgs) != 1 || len(msgs[0]) != 1 {
+		t.Fatalf("expected 1 message with 1 field, got %d messages", len(msgs))
+	}
+
+	f := msgs[0][0]
+	if f.Type != "packed_varint" {
+		t.Errorf("type = %s, want packed_varint", f.Type)
+	}
+	if f.Value != "[1, 2, 3]" {
+		t.Errorf("value = %s, want [1, 2, 3]", f.Value)
+	}
+}
+
+// --- Schema tests ---
+
+func TestParseMessageTypeMappings(t *testing.T) {
+	ParseMessageTypeMappings([]string{
+		"50051:tutorial.AddressBook",
+		"8080:api.Request",
+		"invalid",
+		"notaport:foo.Bar",
+	})
+
+	mt, ok := lookupMessageTypeByPort(50051)
+	if !ok || mt != "tutorial.AddressBook" {
+		t.Errorf("port 50051 = %q, want tutorial.AddressBook", mt)
+	}
+	mt, ok = lookupMessageTypeByPort(8080)
+	if !ok || mt != "api.Request" {
+		t.Errorf("port 8080 = %q, want api.Request", mt)
+	}
+	_, ok = lookupMessageTypeByPort(9999)
+	if ok {
+		t.Error("unexpected mapping for port 9999")
+	}
+}
+
+func TestSchemaRegistryWithTestProto(t *testing.T) {
+	// Create a temporary .proto file
+	tmpDir := t.TempDir()
+	protoContent := `syntax = "proto3";
+package test;
+
+enum PhoneType {
+  MOBILE = 0;
+  HOME = 1;
+  WORK = 2;
+}
+
+message Person {
+  string name = 1;
+  int32 id = 2;
+  string email = 3;
+  PhoneType phone_type = 4;
+}
+`
+	protoPath := tmpDir + "/test.proto"
+	if err := os.WriteFile(protoPath, []byte(protoContent), 0o644); err != nil {
+		t.Fatalf("failed to write test proto: %v", err)
+	}
+
+	reg, err := NewSchemaRegistry([]string{tmpDir})
+	if err != nil {
+		t.Fatalf("NewSchemaRegistry failed: %v", err)
+	}
+
+	if reg.FileCount() != 1 {
+		t.Errorf("FileCount = %d, want 1", reg.FileCount())
+	}
+	if reg.MessageCount() != 1 {
+		t.Errorf("MessageCount = %d, want 1", reg.MessageCount())
+	}
+
+	md, ok := reg.LookupMessage("test.Person")
+	if !ok {
+		t.Fatal("failed to look up test.Person")
+	}
+
+	if string(md.FullName()) != "test.Person" {
+		t.Errorf("FullName = %s, want test.Person", md.FullName())
+	}
+}
+
+func TestResolveFieldsWithSchema(t *testing.T) {
+	// Create a temp proto and compile it
+	tmpDir := t.TempDir()
+	protoContent := `syntax = "proto3";
+package test;
+
+enum PhoneType {
+  MOBILE = 0;
+  HOME = 1;
+  WORK = 2;
+}
+
+message Person {
+  string name = 1;
+  int32 id = 2;
+  string email = 3;
+  PhoneType phone_type = 4;
+}
+`
+	if err := os.WriteFile(tmpDir+"/test.proto", []byte(protoContent), 0o644); err != nil {
+		t.Fatalf("failed to write test proto: %v", err)
+	}
+
+	reg, err := NewSchemaRegistry([]string{tmpDir})
+	if err != nil {
+		t.Fatalf("NewSchemaRegistry failed: %v", err)
+	}
+
+	md, ok := reg.LookupMessage("test.Person")
+	if !ok {
+		t.Fatal("failed to look up test.Person")
+	}
+
+	// Simulate wire-format fields
+	fields := []Field{
+		{Number: 1, Type: "string", Value: "Alice"},
+		{Number: 2, Type: "varint", Value: "42"},
+		{Number: 3, Type: "string", Value: "alice@example.com"},
+		{Number: 4, Type: "varint", Value: "2"},  // WORK enum
+		{Number: 99, Type: "varint", Value: "7"},  // unknown field
+	}
+
+	named := ResolveFields(fields, md)
+
+	if named["name"] != "Alice" {
+		t.Errorf("name = %q, want Alice", named["name"])
+	}
+	if named["id"] != "42" {
+		t.Errorf("id = %q, want 42", named["id"])
+	}
+	if named["email"] != "alice@example.com" {
+		t.Errorf("email = %q, want alice@example.com", named["email"])
+	}
+	if named["phone_type"] != "WORK" {
+		t.Errorf("phone_type = %q, want WORK", named["phone_type"])
+	}
+	// Unknown field kept with wire-format key
+	if named["varint_99"] != "7" {
+		t.Errorf("unknown field = %q, want 7", named["varint_99"])
+	}
+}
+
+func TestLengthDelimitedAlternatives(t *testing.T) {
+	SetShowAlternatives(true)
+	defer SetShowAlternatives(false)
+
+	// Binary data that parses as packed fixed32
+	data := []byte{
+		0x01, 0x00, 0x00, 0x00,
+		0x02, 0x00, 0x00, 0x00,
+	}
+
+	alts := lengthDelimitedAlternatives(data)
+
+	if _, ok := alts["bytes"]; !ok {
+		t.Error("missing bytes alternative")
+	}
+	if _, ok := alts["packed_fixed32"]; !ok {
+		t.Error("missing packed_fixed32 alternative")
 	}
 }
 

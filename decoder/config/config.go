@@ -306,4 +306,16 @@ type Config struct {
 
 	// PerfTracker tracks performance metrics
 	PerfTracker *performance.Tracker
+
+	// ProtoSearchPaths contains directories to search for .proto schema files.
+	// When set, the protobuf decoder resolves field names from schema definitions.
+	ProtoSearchPaths []string
+
+	// ProtoShowAlternatives enables multi-interpretation mode for unknown protobuf fields.
+	// When true, fields include alternative type interpretations (e.g. varint as sint64, bool).
+	ProtoShowAlternatives bool
+
+	// ProtoMessageTypes maps port numbers to fully qualified protobuf message types.
+	// Format: "port:package.MessageType" (e.g. "50051:tutorial.AddressBook").
+	ProtoMessageTypes []string
 }

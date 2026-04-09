@@ -22,10 +22,12 @@ package protobuf
 import (
 	"bufio"
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"math"
 	"strconv"
+	"strings"
 	"sync"
 
 	"go.uber.org/zap"
@@ -52,7 +54,35 @@ var Decoder = &decoder.StreamDecoder{
 			"protobuf",
 			decoderconfig.Instance.Debug,
 		)
-		return err
+		if err != nil {
+			return err
+		}
+
+		// Enable multi-interpretation mode if configured
+		if decoderconfig.Instance.ProtoShowAlternatives {
+			SetShowAlternatives(true)
+		}
+
+		// Initialize schema registry if proto search paths are configured
+		if len(decoderconfig.Instance.ProtoSearchPaths) > 0 {
+			registry, rErr := NewSchemaRegistry(decoderconfig.Instance.ProtoSearchPaths)
+			if rErr != nil {
+				pbLog.Warn("failed to initialize proto schema registry", zap.Error(rErr))
+			} else {
+				SetSchemaRegistry(registry)
+				pbLog.Info("proto schema registry initialized",
+					zap.Int("files", registry.FileCount()),
+					zap.Int("messages", registry.MessageCount()),
+				)
+			}
+		}
+
+		// Parse port-to-message-type mappings
+		if len(decoderconfig.Instance.ProtoMessageTypes) > 0 {
+			ParseMessageTypeMappings(decoderconfig.Instance.ProtoMessageTypes)
+		}
+
+		return nil
 	},
 	CanDecode: func(client, server []byte) bool {
 		return IsProtobufData(client) || IsProtobufData(server)
@@ -66,9 +96,10 @@ var Decoder = &decoder.StreamDecoder{
 
 // Field represents a single decoded protobuf field, preserving wire order.
 type Field struct {
-	Number uint64 // protobuf field number
-	Type   string // "varint", "fixed64", "string", "bytes", "nested", "fixed32"
-	Value  string // string representation of the value
+	Number       uint64            // protobuf field number
+	Type         string            // "varint", "fixed64", "string", "bytes", "nested", "fixed32", "packed_varint", "packed_fixed32", "packed_fixed64"
+	Value        string            // string representation of the value
+	Alternatives map[string]string // alternative interpretations keyed by type name (e.g. "sint64", "double", "bool")
 }
 
 // protobufReader implements core.StreamDecoderFactory and core.StreamDecoderInterface.
@@ -130,16 +161,17 @@ func (r *protobufReader) processData(b *bufio.Reader, isClient bool) error {
 	}
 
 	pb := &types.Protobuf{
-		Timestamp:       ts,
-		SrcIP:           r.conversation.ClientIP,
-		DstIP:           r.conversation.ServerIP,
-		SrcPort:         r.conversation.ClientPort,
-		DstPort:         r.conversation.ServerPort,
-		PayloadSize:     int32(len(data)),
-		PayloadEntropy:  e,
-		RawPayload:      data,
-		Fields:          make(map[string]string),
-		DetectionMethod: "heuristic",
+		Timestamp:         ts,
+		SrcIP:             r.conversation.ClientIP,
+		DstIP:             r.conversation.ServerIP,
+		SrcPort:           r.conversation.ClientPort,
+		DstPort:           r.conversation.ServerPort,
+		PayloadSize:       int32(len(data)),
+		PayloadEntropy:    e,
+		RawPayload:        data,
+		Fields:            make(map[string]string),
+		FieldAlternatives: make(map[string]string),
+		DetectionMethod:   "heuristic",
 	}
 
 	messages, parseErr := DecodeMessages(data)
@@ -151,12 +183,39 @@ func (r *protobufReader) processData(b *bufio.Reader, isClient bool) error {
 		pb.IsValid = true
 		pb.MessageCount = int32(len(messages))
 
+		// Try to resolve message type from port mappings
+		var msgTypeName string
+		if mt, ok := lookupMessageTypeByPort(r.conversation.ServerPort); ok {
+			msgTypeName = mt
+		} else if mt, ok := lookupMessageTypeByPort(r.conversation.ClientPort); ok {
+			msgTypeName = mt
+		}
+
 		for i, msg := range messages {
 			if i == 0 {
 				pb.MessageType = DetectMessageType(msg)
 				pb.ServiceName = DetectServiceName(r.conversation.ClientPort, r.conversation.ServerPort)
 			}
 			PopulateFields(msg, pb.Fields, &pb.FieldOrder)
+
+			// Store alternatives in the dedicated FieldAlternatives map
+			if showAlternatives {
+				for _, f := range msg {
+					for altType, altValue := range f.Alternatives {
+						altKey := fmt.Sprintf("%s_%d.as_%s", f.Type, f.Number, altType)
+						pb.FieldAlternatives[altKey] = altValue
+					}
+				}
+			}
+
+			// Schema-aware field resolution
+			if reg := GetSchemaRegistry(); reg != nil && msgTypeName != "" {
+				if md, ok := reg.LookupMessage(msgTypeName); ok {
+					pb.SchemaResolved = true
+					pb.FullMessageName = msgTypeName
+					pb.SchemaFields = ResolveFields(msg, md)
+				}
+			}
 		}
 	}
 
@@ -277,22 +336,30 @@ func ParseMessage(buf *bytes.Reader) ([]Field, error) {
 			if vErr != nil {
 				return nil, vErr
 			}
-			fields = append(fields, Field{
+			f := Field{
 				Number: fieldNumber,
 				Type:   "varint",
 				Value:  strconv.FormatUint(value, 10),
-			})
+			}
+			if showAlternatives {
+				f.Alternatives = varintAlternatives(value)
+			}
+			fields = append(fields, f)
 
 		case 1: // 64-bit fixed
 			var value uint64
 			if fErr := readFixed64(buf, &value); fErr != nil {
 				return nil, fErr
 			}
-			fields = append(fields, Field{
+			f := Field{
 				Number: fieldNumber,
 				Type:   "fixed64",
 				Value:  strconv.FormatUint(value, 10),
-			})
+			}
+			if showAlternatives {
+				f.Alternatives = fixed64Alternatives(value)
+			}
+			fields = append(fields, f)
 
 		case 2: // Length-delimited (string, bytes, nested message, packed repeated)
 			length, lErr := ReadVarint(buf)
@@ -320,24 +387,57 @@ func ParseMessage(buf *bytes.Reader) ([]Field, error) {
 				return nil, fmt.Errorf("incomplete read: expected %d bytes, got %d", length, n)
 			}
 
+			// Priority: nested message > printable string > packed repeated > raw bytes.
+			// String check before packed varints prevents ASCII text from being
+			// misidentified as packed repeated fields.
 			if nested, nErr := tryParseNested(value); nErr == nil && len(nested) > 0 {
-				fields = append(fields, Field{
+				f := Field{
 					Number: fieldNumber,
 					Type:   "nested",
 					Value:  formatNested(nested),
-				})
+				}
+				if showAlternatives {
+					f.Alternatives = lengthDelimitedAlternatives(value)
+				}
+				fields = append(fields, f)
 			} else if IsPrintable(value) {
-				fields = append(fields, Field{
+				f := Field{
 					Number: fieldNumber,
 					Type:   "string",
 					Value:  string(value),
+				}
+				if showAlternatives {
+					f.Alternatives = lengthDelimitedAlternatives(value)
+				}
+				fields = append(fields, f)
+			} else if packedVarints := tryParsePackedVarints(value); packedVarints != nil {
+				fields = append(fields, Field{
+					Number: fieldNumber,
+					Type:   "packed_varint",
+					Value:  formatUint64Slice(packedVarints),
+				})
+			} else if packedFixed32 := tryParsePackedFixed32(value); packedFixed32 != nil {
+				fields = append(fields, Field{
+					Number: fieldNumber,
+					Type:   "packed_fixed32",
+					Value:  formatUint32Slice(packedFixed32),
+				})
+			} else if packedFixed64 := tryParsePackedFixed64(value); packedFixed64 != nil {
+				fields = append(fields, Field{
+					Number: fieldNumber,
+					Type:   "packed_fixed64",
+					Value:  formatUint64Slice(packedFixed64),
 				})
 			} else {
-				fields = append(fields, Field{
+				f := Field{
 					Number: fieldNumber,
 					Type:   "bytes",
 					Value:  fmt.Sprintf("[%d bytes]", len(value)),
-				})
+				}
+				if showAlternatives {
+					f.Alternatives = lengthDelimitedAlternatives(value)
+				}
+				fields = append(fields, f)
 			}
 
 		case 3, 4: // Deprecated group start/end — skip gracefully
@@ -348,11 +448,15 @@ func ParseMessage(buf *bytes.Reader) ([]Field, error) {
 			if fErr := readFixed32(buf, &value); fErr != nil {
 				return nil, fErr
 			}
-			fields = append(fields, Field{
+			f := Field{
 				Number: fieldNumber,
 				Type:   "fixed32",
 				Value:  strconv.FormatUint(uint64(value), 10),
-			})
+			}
+			if showAlternatives {
+				f.Alternatives = fixed32Alternatives(value)
+			}
+			fields = append(fields, f)
 
 		default:
 			return nil, fmt.Errorf("unknown wire type: %d", wireType)
@@ -541,8 +645,154 @@ func inRange(port, lo, hi int32) bool {
 	return port >= lo && port <= hi
 }
 
+// showAlternatives controls whether multi-interpretation mode is enabled.
+// When true, fields include alternative type interpretations.
+var showAlternatives bool
+
+// SetShowAlternatives enables or disables multi-interpretation mode.
+func SetShowAlternatives(enabled bool) {
+	showAlternatives = enabled
+}
+
+// varintAlternatives returns alternative interpretations for a varint value.
+func varintAlternatives(v uint64) map[string]string {
+	alts := make(map[string]string, 3)
+
+	// Zigzag-decoded sint64
+	sint := int64((v >> 1) ^ -(v & 1))
+	alts["sint64"] = strconv.FormatInt(sint, 10)
+
+	// Bool interpretation (only meaningful for 0/1)
+	if v <= 1 {
+		alts["bool"] = strconv.FormatBool(v == 1)
+	}
+
+	// Signed int64 (two's complement)
+	alts["int64"] = strconv.FormatInt(int64(v), 10)
+
+	return alts
+}
+
+// fixed64Alternatives returns alternative interpretations for a 64-bit fixed value.
+func fixed64Alternatives(v uint64) map[string]string {
+	alts := make(map[string]string, 2)
+	alts["int64"] = strconv.FormatInt(int64(v), 10)
+	alts["double"] = strconv.FormatFloat(math.Float64frombits(v), 'g', -1, 64)
+	return alts
+}
+
+// fixed32Alternatives returns alternative interpretations for a 32-bit fixed value.
+func fixed32Alternatives(v uint32) map[string]string {
+	alts := make(map[string]string, 2)
+	alts["int32"] = strconv.FormatInt(int64(int32(v)), 10)
+	alts["float"] = strconv.FormatFloat(float64(math.Float32frombits(v)), 'g', -1, 32)
+	return alts
+}
+
+// lengthDelimitedAlternatives returns alternative interpretations for length-delimited data.
+// Shows what the data could be if interpreted as different types.
+func lengthDelimitedAlternatives(data []byte) map[string]string {
+	alts := make(map[string]string)
+
+	if IsPrintable(data) {
+		alts["string"] = string(data)
+	}
+
+	if packed := tryParsePackedVarints(data); packed != nil {
+		alts["packed_varint"] = formatUint64Slice(packed)
+	}
+
+	if packed := tryParsePackedFixed32(data); packed != nil {
+		alts["packed_fixed32"] = formatUint32Slice(packed)
+	}
+
+	if packed := tryParsePackedFixed64(data); packed != nil {
+		alts["packed_fixed64"] = formatUint64Slice(packed)
+	}
+
+	alts["bytes"] = fmt.Sprintf("[%d bytes]", len(data))
+
+	return alts
+}
+
+// tryParsePackedVarints attempts to parse bytes as packed repeated varints.
+// Returns nil if the data doesn't parse cleanly as a sequence of varints.
+func tryParsePackedVarints(data []byte) []uint64 {
+	if len(data) < 2 {
+		return nil
+	}
+
+	buf := bytes.NewReader(data)
+	var values []uint64
+
+	for buf.Len() > 0 {
+		v, err := ReadVarint(buf)
+		if err != nil {
+			return nil
+		}
+		values = append(values, v)
+	}
+
+	// Need at least 2 values to be a meaningful packed repeated
+	if len(values) < 2 {
+		return nil
+	}
+
+	return values
+}
+
+// tryParsePackedFixed32 attempts to parse bytes as packed repeated fixed32 values.
+func tryParsePackedFixed32(data []byte) []uint32 {
+	if len(data) < 8 || len(data)%4 != 0 {
+		return nil
+	}
+
+	count := len(data) / 4
+	values := make([]uint32, count)
+	for i := range count {
+		values[i] = binary.LittleEndian.Uint32(data[i*4:])
+	}
+
+	return values
+}
+
+// tryParsePackedFixed64 attempts to parse bytes as packed repeated fixed64 values.
+func tryParsePackedFixed64(data []byte) []uint64 {
+	if len(data) < 16 || len(data)%8 != 0 {
+		return nil
+	}
+
+	count := len(data) / 8
+	values := make([]uint64, count)
+	for i := range count {
+		values[i] = binary.LittleEndian.Uint64(data[i*8:])
+	}
+
+	return values
+}
+
+// formatUint64Slice formats a slice of uint64 values as a compact string.
+func formatUint64Slice(values []uint64) string {
+	parts := make([]string, len(values))
+	for i, v := range values {
+		parts[i] = strconv.FormatUint(v, 10)
+	}
+	return "[" + strings.Join(parts, ", ") + "]"
+}
+
+// formatUint32Slice formats a slice of uint32 values as a compact string.
+func formatUint32Slice(values []uint32) string {
+	parts := make([]string, len(values))
+	for i, v := range values {
+		parts[i] = strconv.FormatUint(uint64(v), 10)
+	}
+	return "[" + strings.Join(parts, ", ") + "]"
+}
+
 // PopulateFields converts ordered decoded fields into the audit record's
 // Fields map (keyed as "type_fieldnum") and FieldOrder slice (preserving wire order).
+// Alternative interpretations are NOT stored here — they go into the
+// dedicated FieldAlternatives map in processData.
 func PopulateFields(fields []Field, out map[string]string, order *[]string) {
 	for _, f := range fields {
 		key := fmt.Sprintf("%s_%d", f.Type, f.Number)
