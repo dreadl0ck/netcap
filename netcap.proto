@@ -192,6 +192,7 @@ enum Type {
   NC_CLDAP = 142;
   NC_ISIS = 143;
   NC_RARP = 144;
+  NC_Protobuf = 145;
 }
 
 //
@@ -4278,4 +4279,25 @@ message RARP {
   string SrcProtocolAddress = 9;
   string DstHwAddress = 10;
   string DstProtocolAddress = 11;
+}
+
+// Protobuf - Generic Protocol Buffer message detected on the wire
+// Decodes arbitrary protobuf wire format without requiring a schema
+message Protobuf {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  int32 PayloadSize = 6;
+  double PayloadEntropy = 7;
+  string ServiceName = 8;
+  string MessageType = 9;
+  map<string, string> Fields = 10;
+  bytes RawPayload = 11;
+  bool IsValid = 12;
+  string ErrorMsg = 13;
+  string DetectionMethod = 14;
+  repeated string FieldOrder = 15;
+  int32 MessageCount = 16;
 }

@@ -64,3 +64,4 @@ cmd/capture/webui/frontend/packages/netcap-ui/tsup.config.bundled*
 
 # Build artifacts
 cmd/transform/transform
+types/netcap.pb.go
