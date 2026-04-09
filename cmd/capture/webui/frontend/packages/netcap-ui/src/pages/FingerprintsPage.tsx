@@ -255,16 +255,26 @@ export default function FingerprintsPage() {
     />
   );
 
-  // Calculate summary statistics
-  const ja4Count = fingerprints.filter(fp => fp.type === 'JA4').length;
-  const ja4sCount = fingerprints.filter(fp => fp.type === 'JA4S').length;
-  const ja4hCount = fingerprints.filter(fp => fp.type === 'JA4H').length;
-  const ja4xCount = fingerprints.filter(fp => fp.type === 'JA4X').length;
-  const ja4tCount = fingerprints.filter(fp => fp.type === 'JA4T').length;
-  const ja4tsCount = fingerprints.filter(fp => fp.type === 'JA4TS').length;
-  const ja4sshCount = fingerprints.filter(fp => fp.type === 'JA4SSH').length;
-  const dhcpCount = fingerprints.filter(fp => fp.type === 'DHCP').length;
-  const totalOccurrences = fingerprints.reduce((sum, fp) => sum + fp.count, 0);
+  // Apply only Community ID filter for summary card counts (not type/search filters)
+  const communityFilteredFingerprints = useMemo(() => {
+    if (!isCommunityIDFilterActive || selectedCommunityIDs.size === 0) {
+      return fingerprints;
+    }
+    return fingerprints.filter(fp =>
+      fp.communityIds && fp.communityIds.some(cid => selectedCommunityIDs.has(cid))
+    );
+  }, [fingerprints, isCommunityIDFilterActive, selectedCommunityIDs]);
+
+  // Calculate summary statistics from community-filtered fingerprints
+  const ja4Count = communityFilteredFingerprints.filter(fp => fp.type === 'JA4').length;
+  const ja4sCount = communityFilteredFingerprints.filter(fp => fp.type === 'JA4S').length;
+  const ja4hCount = communityFilteredFingerprints.filter(fp => fp.type === 'JA4H').length;
+  const ja4xCount = communityFilteredFingerprints.filter(fp => fp.type === 'JA4X').length;
+  const ja4tCount = communityFilteredFingerprints.filter(fp => fp.type === 'JA4T').length;
+  const ja4tsCount = communityFilteredFingerprints.filter(fp => fp.type === 'JA4TS').length;
+  const ja4sshCount = communityFilteredFingerprints.filter(fp => fp.type === 'JA4SSH').length;
+  const dhcpCount = communityFilteredFingerprints.filter(fp => fp.type === 'DHCP').length;
+  const totalOccurrences = communityFilteredFingerprints.reduce((sum, fp) => sum + fp.count, 0);
 
   if (error) {
     return (
@@ -328,7 +338,7 @@ export default function FingerprintsPage() {
                       Total Fingerprints
                     </Typography>
                     <Typography variant="h6">
-                      {totalCount.toLocaleString()}
+                      {communityFilteredFingerprints.length.toLocaleString()}
                     </Typography>
                   </Box>
                 </Box>
