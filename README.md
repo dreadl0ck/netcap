@@ -19,7 +19,7 @@
 **Netcap** (NETwork CAPture) converts network packets into structured, type-safe Protocol Buffer audit records — designed for security monitoring, forensic analysis, and machine learning. A single Go binary with 83 packet decoders, 40+ stream decoders, and 141+ audit record types, backed by a concurrent architecture and a built-in web UI.
 
 <a href="docs/GALLERY.md">
-  <img alt="Netcap Web UI — Protocol Hierarchy" src="docs/gallery/Screenshot%202025-11-22%20at%2002.57.52.png" width="100%">
+  <img alt="Netcap Web UI — Protocol Hierarchy" src="docs/gallery/protocol-hierarchy-sankey.png" width="100%">
 </a>
 
 <p align="center"><em>Protocol hierarchy visualization in the Netcap web UI — <a href="docs/GALLERY.md">more screenshots</a></em></p>
