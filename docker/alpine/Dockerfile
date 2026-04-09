@@ -34,9 +34,12 @@ RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then MAGIKA_ARCH="x86_64-unknown-linux-gnu"; \
     elif [ "$ARCH" = "aarch64" ]; then MAGIKA_ARCH="aarch64-unknown-linux-gnu"; \
     else echo "Unsupported arch: $ARCH" && exit 1; fi && \
+    mkdir -p /tmp/magika && \
     curl -LsSf "https://github.com/google/magika/releases/download/cli%2Fv${MAGIKA_VERSION}/magika-${MAGIKA_ARCH}.tar.xz" \
-    | tar -xJ -C /usr/local/bin/ && \
-    chmod +x /usr/local/bin/magika
+    | tar -xJ -C /tmp/magika && \
+    cp /tmp/magika/*/magika /usr/local/bin/magika && \
+    chmod +x /usr/local/bin/magika && \
+    rm -rf /tmp/magika
 
 WORKDIR /
 
