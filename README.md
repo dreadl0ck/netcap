@@ -14,6 +14,7 @@
 [![Homepage](https://img.shields.io/badge/Homepage-blue.svg)](https://netcap.io)
 [![Documentation](https://img.shields.io/badge/Documentation-blue.svg)](https://docs.netcap.io)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap?ref=badge_shield)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/dreadl0ck/netcap)
 
 The *Netcap* (NETwork CAPture) framework efficiently converts a stream of network packets into platform neutral type-safe structured audit records that represent specific protocols or custom abstractions.
 These audit records can be stored on disk or exchanged over the network,
