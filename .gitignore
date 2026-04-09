@@ -61,3 +61,6 @@ links.txt
 collector/errors.pcap
 
 cmd/capture/webui/frontend/packages/netcap-ui/tsup.config.bundled*
+
+# Build artifacts
+cmd/transform/transform
