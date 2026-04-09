@@ -1,0 +1,102 @@
+# Netcap File Extraction Configuration
+# This file controls how files are extracted from network traffic
+
+file_extraction:
+  # Enable or disable file extraction globally
+  enabled: true
+  
+  # Protocol-specific extraction controls
+  protocols:
+    http: true
+    ftp: true
+    smtp: true
+    pop3: true
+    imap: true
+    smb: true
+    irc: true
+    
+  # Size and resource limits
+  size_limits:
+    # Maximum size per file in bytes (100MB default, 0 = unlimited)
+    max_file_size: 104857600
+    
+    # Whether to count missing bytes toward the size limit
+    include_missing_bytes: true
+    
+    # Maximum number of files to extract per capture session (0 = unlimited)
+    max_files_per_session: 0
+    
+  # Hash algorithm configuration
+  hash_algorithms:
+    # Which hash algorithms to compute (all enabled by default)
+    md5: true
+    sha1: true
+    sha256: true
+    
+  # MIME type filtering
+  mime_types:
+    # Only extract these MIME types (empty = all types)
+    whitelist: []
+    
+    # Never extract these MIME types
+    blacklist:
+      # Optionally skip common text formats to reduce disk usage
+      # - "text/html"
+      # - "text/plain"
+      # - "text/css"
+      # - "text/javascript"
+      
+  # Storage organization options
+  storage:
+    # Organize extracted files by detected MIME type
+    organize_by_mime: true
+    
+    # Organize by protocol instead of MIME type
+    organize_by_protocol: false
+    
+    # Add date-based subdirectories (YYYY-MM-DD)
+    organize_by_date: false
+    
+    # Compress stored files with gzip
+    compress_stored_files: false
+    
+    # Include connection identifier in filename
+    include_connection_id: true
+    
+  # Incomplete file handling
+  incomplete_files:
+    # Extract files even if reassembly is incomplete
+    write_incomplete: false
+    
+    # Prefix incomplete files with this string
+    incomplete_prefix: "incomplete-"
+    
+  # File reassembly settings
+  reassembly:
+    # Enable reassembly for out-of-order packets
+    enabled: true
+    
+    # Create sparse files when bytes are missing
+    allow_sparse_files: true
+    
+    # Maximum reassembly buffer size per file in bytes
+    max_buffer_size: 10485760  # 10MB
+    
+  # Advanced options
+  advanced:
+    # Detect content type using magic numbers (more accurate)
+    use_magic_detection: true
+    
+    # Decode compressed content (gzip, deflate, bzip2)
+    decode_compressed: true
+    
+    # Decode base64 encoded content
+    decode_base64: true
+    
+    # Maximum filename length
+    max_filename_length: 255
+
+    # AI-based file type classification using Google Magika Rust CLI
+    # Requires the magika binary in PATH (install: curl -LsSf https://securityresearch.google/magika/install.sh | sh)
+    enable_magika: false
+

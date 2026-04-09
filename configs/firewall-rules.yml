@@ -1,0 +1,395 @@
+# NETCAP Firewall Response Rules Configuration
+# =============================================
+#
+# This file contains example rules that trigger iptables firewall actions
+# when specific security events are detected. These rules extend the
+# standard detection rules with automated response capabilities.
+#
+# IMPORTANT: Firewall response actions require:
+# 1. Linux operating system with iptables
+# 2. Root/sudo privileges
+# 3. Firewall manager to be enabled in netcap configuration
+#
+# WARNING: Misconfigured firewall rules can lock you out of systems.
+# Always test rules in a controlled environment first.
+# Use whitelisting to prevent blocking critical infrastructure.
+
+description: "Firewall response rules for automated threat mitigation"
+
+rules:
+  # ========================================
+  # PORT SCANNING DETECTION & RESPONSE
+  # ========================================
+
+  - name: Block Port Scanner - Threshold Based
+    description: Block hosts performing port scans after 5 scan attempts in 60 seconds
+    type: Connection
+    expression: |
+      DstPortCount > 20 &&
+      Duration < 60000000000
+    severity: high
+    threshold: 5
+    threshold_window: 60
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 30m
+    enabled: true
+    tags: ["scanning", "recon", "block"]
+
+  - name: Block SYN Scanner
+    description: Block hosts sending many SYN packets without completing handshake
+    type: TCP
+    expression: |
+      SYN && !ACK && PayloadSize == 0
+    severity: high
+    threshold: 50
+    threshold_window: 10
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 1h
+    enabled: true
+    mitre: ["T1046"]
+    tags: ["syn-scan", "recon", "block"]
+
+  # ========================================
+  # BRUTE FORCE DETECTION & RESPONSE
+  # ========================================
+
+  - name: Block SSH Brute Force
+    description: Block hosts after 10 failed SSH connection attempts in 5 minutes
+    type: SSH
+    expression: |
+      DstPort == 22
+    severity: high
+    threshold: 10
+    threshold_window: 300
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 2h
+    enabled: true
+    mitre: ["T1110"]
+    tags: ["ssh", "brute-force", "block"]
+
+  - name: Block FTP Brute Force
+    description: Block hosts after 10 FTP connection attempts in 5 minutes
+    type: TCP
+    expression: |
+      DstPort == 21
+    severity: medium
+    threshold: 10
+    threshold_window: 300
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 1h
+    enabled: true
+    mitre: ["T1110"]
+    tags: ["ftp", "brute-force", "block"]
+
+  - name: Block HTTP Login Brute Force
+    description: Block hosts making excessive POST requests to login endpoints
+    type: HTTP
+    expression: |
+      Method == "POST" &&
+      (MatchesPattern(URL, "(?i)/login") ||
+       MatchesPattern(URL, "(?i)/auth") ||
+       MatchesPattern(URL, "(?i)/signin"))
+    severity: high
+    threshold: 20
+    threshold_window: 60
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 30m
+    enabled: true
+    mitre: ["T1110"]
+    tags: ["http", "login", "brute-force", "block"]
+
+  # ========================================
+  # DENIAL OF SERVICE DETECTION & RESPONSE
+  # ========================================
+
+  - name: Block SYN Flood Source
+    description: Block hosts generating SYN flood attacks
+    type: TCP
+    expression: |
+      SYN && !ACK &&
+      PayloadSize == 0
+    severity: critical
+    threshold: 100
+    threshold_window: 5
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 6h
+      - type: iptables_log
+        config:
+          prefix: "SYN_FLOOD: "
+    enabled: true
+    mitre: ["T1498"]
+    tags: ["dos", "syn-flood", "block"]
+
+  - name: Block UDP Flood Source
+    description: Block hosts generating UDP flood attacks
+    type: UDP
+    expression: |
+      PayloadSize > 0
+    severity: critical
+    threshold: 500
+    threshold_window: 10
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 6h
+    enabled: true
+    mitre: ["T1498"]
+    tags: ["dos", "udp-flood", "block"]
+
+  - name: Block DNS Amplification Source
+    description: Block potential DNS amplification attack sources
+    type: DNS
+    expression: |
+      QR == true &&
+      len(Answers) > 5
+    severity: high
+    threshold: 50
+    threshold_window: 10
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 4h
+    enabled: true
+    mitre: ["T1498.002"]
+    tags: ["dos", "dns", "amplification", "block"]
+
+  # ========================================
+  # MALWARE & C2 DETECTION & RESPONSE
+  # ========================================
+
+  - name: Block Known Malicious Domain Communication
+    description: Block hosts communicating with known malicious domains
+    type: DNS
+    expression: |
+      len(Questions) > 0 &&
+      (MatchesPattern(Questions[0].Name, "(?i)malware-domain\\.") ||
+       MatchesPattern(Questions[0].Name, "(?i)c2-server\\.") ||
+       MatchesPattern(Questions[0].Name, "(?i)botnet-controller\\."))
+    severity: critical
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 24h
+    enabled: false  # Enable and customize for your environment
+    mitre: ["T1071.004", "T1568"]
+    tags: ["malware", "c2", "dns", "block"]
+
+  - name: Block IRC Traffic (Potential Botnet)
+    description: Block hosts using IRC which may indicate botnet activity
+    type: TCP
+    expression: |
+      DstPort == 6667 || DstPort == 6668 || DstPort == 6669
+    severity: high
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 12h
+    enabled: false  # Enable based on your policy
+    mitre: ["T1071.001"]
+    tags: ["irc", "botnet", "c2", "block"]
+
+  # ========================================
+  # DATA EXFILTRATION DETECTION & RESPONSE
+  # ========================================
+
+  - name: Block DNS Tunneling
+    description: Block hosts using DNS tunneling for data exfiltration
+    type: DNS
+    expression: |
+      len(Questions) > 0 &&
+      len(Questions[0].Name) > 100
+    severity: high
+    threshold: 20
+    threshold_window: 60
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 4h
+      - type: iptables_log
+        config:
+          prefix: "DNS_TUNNEL: "
+    enabled: true
+    mitre: ["T1071.004", "T1048"]
+    tags: ["dns", "tunneling", "exfiltration", "block"]
+
+  - name: Block Large Data Transfer
+    description: Block hosts transferring unusually large amounts of data
+    type: Connection
+    expression: |
+      TotalBytes > 1073741824 &&
+      Duration < 300000000000
+    severity: high
+    actions:
+      - type: iptables_log
+        config:
+          prefix: "LARGE_TRANSFER: "
+    enabled: true
+    mitre: ["T1048"]
+    tags: ["exfiltration", "data-transfer", "log"]
+
+  # ========================================
+  # WEB ATTACK DETECTION & RESPONSE
+  # ========================================
+
+  - name: Block SQL Injection Attempts
+    description: Block hosts attempting SQL injection attacks
+    type: HTTP
+    expression: |
+      MatchesPattern(URL, "(?i)(union.*select|select.*from|insert.*into|drop.*table|delete.*from|update.*set)")
+    severity: critical
+    threshold: 3
+    threshold_window: 60
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 1h
+    enabled: true
+    mitre: ["T1190"]
+    tags: ["sql-injection", "web-attack", "block"]
+
+  - name: Block XSS Attempts
+    description: Block hosts attempting cross-site scripting attacks
+    type: HTTP
+    expression: |
+      MatchesPattern(URL, "(?i)(<script|javascript:|onerror=|onload=)")
+    severity: high
+    threshold: 5
+    threshold_window: 60
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 30m
+    enabled: true
+    mitre: ["T1190"]
+    tags: ["xss", "web-attack", "block"]
+
+  - name: Block Path Traversal Attempts
+    description: Block hosts attempting directory traversal attacks
+    type: HTTP
+    expression: |
+      MatchesPattern(URL, "(?i)(\\.\\./|\\.\\.\\\\|%2e%2e%2f|%2e%2e/|%252e%252e)")
+    severity: high
+    threshold: 3
+    threshold_window: 60
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 1h
+    enabled: true
+    mitre: ["T1083"]
+    tags: ["path-traversal", "web-attack", "block"]
+
+  - name: Block Known Exploit Tool User-Agents
+    description: Block hosts using known exploit tool user agents
+    type: HTTP
+    expression: |
+      MatchesPattern(UserAgent, "(?i)(sqlmap|nikto|dirbuster|gobuster|nmap|masscan|wpscan|nuclei)")
+    severity: critical
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 24h
+    enabled: true
+    mitre: ["T1595"]
+    tags: ["exploit-tool", "scanning", "block"]
+
+  # ========================================
+  # UNAUTHORIZED ACCESS DETECTION & RESPONSE
+  # ========================================
+
+  - name: Block Telnet Access Attempts
+    description: Block hosts attempting to use insecure Telnet protocol
+    type: TCP
+    expression: |
+      DstPort == 23
+    severity: medium
+    threshold: 3
+    threshold_window: 300
+    actions:
+      - type: iptables_reject
+        config:
+          target: source
+          duration: 30m
+    enabled: false  # Enable based on your policy
+    mitre: ["T1021.002"]
+    tags: ["telnet", "legacy", "block"]
+
+  - name: Block RDP Brute Force
+    description: Block hosts attempting RDP brute force attacks
+    type: TCP
+    expression: |
+      DstPort == 3389
+    severity: high
+    threshold: 5
+    threshold_window: 300
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 2h
+    enabled: false  # Enable based on your policy
+    mitre: ["T1110", "T1021.001"]
+    tags: ["rdp", "brute-force", "block"]
+
+  # ========================================
+  # SUSPICIOUS NETWORK BEHAVIOR
+  # ========================================
+
+  - name: Block ICMP Tunnel
+    description: Block potential ICMP tunneling attempts
+    type: ICMPv4
+    expression: |
+      PayloadSize > 100
+    severity: high
+    threshold: 50
+    threshold_window: 60
+    actions:
+      - type: iptables_block
+        config:
+          target: source
+          duration: 2h
+    enabled: true
+    mitre: ["T1095"]
+    tags: ["icmp", "tunneling", "block"]
+
+  - name: Block TOR Exit Node Communication
+    description: Log and optionally block communication with known TOR patterns
+    type: TCP
+    expression: |
+      DstPort == 9001 || DstPort == 9030 || DstPort == 9050 || DstPort == 9051
+    severity: medium
+    actions:
+      - type: iptables_log
+        config:
+          prefix: "TOR: "
+    enabled: false  # Enable based on your policy
+    mitre: ["T1090.003"]
+    tags: ["tor", "anonymization", "log"]
+

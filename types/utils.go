@@ -1,19 +1,26 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package types
 
 import (
+	"hash/fnv"
 	"math/big"
 	"net"
 	"reflect"
@@ -27,13 +34,13 @@ import (
 
 var (
 	// StructureBegin marks the beginning of a structure in CSV.
-	StructureBegin = "("
+	StructureBegin = ""
 
 	// StructureEnd marks the end of a structure in CSV.
-	StructureEnd = ")"
+	StructureEnd = ""
 
 	// FieldSeparator separates fields within a structure in CSV.
-	FieldSeparator = "-"
+	FieldSeparator = ","
 )
 
 type stringer interface {
@@ -52,7 +59,7 @@ type stringer interface {
 func toString(c stringer) string {
 	// make sure its not a nil pointer
 	// a simple nil check is apparently not enough here
-	if c == nil || (reflect.ValueOf(c).Kind() == reflect.Ptr && reflect.ValueOf(c).IsNil()) {
+	if c == nil || (reflect.ValueOf(c).Kind() == reflect.Pointer && reflect.ValueOf(c).IsNil()) {
 		return ""
 	}
 
@@ -158,18 +165,26 @@ func formatFloat64(v float64) string {
 }
 
 func ipToInt64(addr string) int64 {
-
 	ip := net.ParseIP(addr)
-
-	n := big.NewInt(0)
-	if ip.To4() != nil {
-		n.SetBytes(ip.To4())
-	} else {
-		n.SetBytes(ip.To16())
+	if ip == nil {
+		return 0
 	}
 
-	// TODO: IPv6, first half of the address will be ignored...
-	return n.Int64()
+	// For IPv4: convert 4 bytes directly to int64 (no information loss)
+	if ip4 := ip.To4(); ip4 != nil {
+		n := big.NewInt(0)
+		n.SetBytes(ip4)
+		return n.Int64()
+	}
+
+	// For IPv6: use FNV-1a hash to get a collision-resistant 64-bit value
+	// This is necessary because IPv6 addresses are 128 bits and cannot fit in int64.
+	// Using a hash ensures different IPv6 addresses produce different values with
+	// high probability, avoiding the collision problem of using only lower 64 bits.
+	ip6 := ip.To16()
+	h := fnv.New64a()
+	h.Write(ip6)
+	return int64(h.Sum64())
 }
 
 func macToUint64(addr string) uint64 {

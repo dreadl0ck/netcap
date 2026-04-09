@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package types
@@ -39,6 +45,8 @@ const (
 	fieldNS         = "NS"
 	fieldWindow     = "Window"
 	fieldUrgent     = "Urgent"
+	fieldJa4t       = "Ja4t"
+	fieldJa4ts      = "Ja4ts"
 )
 
 var fieldsTCP = []string{
@@ -65,6 +73,9 @@ var fieldsTCP = []string{
 	fieldPayloadSize,
 	fieldSrcIP,
 	fieldDstIP,
+	fieldJa4t,
+	fieldJa4ts,
+	fieldCommunityID,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -98,6 +109,9 @@ func (t *TCP) CSVRecord() []string {
 		formatInt32(t.PayloadSize),                        // int32
 		t.SrcIP,
 		t.DstIP,
+		t.Ja4T,        // JA4T TCP fingerprint
+		t.Ja4Ts,       // JA4TS TCP server fingerprint
+		t.CommunityID, // Community ID v1
 	})
 }
 
@@ -211,6 +225,7 @@ func (t *TCP) Inc() {
 func (t *TCP) SetPacketContext(ctx *PacketContext) {
 	t.SrcIP = ctx.SrcIP
 	t.DstIP = ctx.DstIP
+	t.CommunityID = ctx.CommunityID
 }
 
 // Src returns the source address of the audit record.
@@ -251,6 +266,9 @@ func (t *TCP) Encode() []string {
 		tcpEncoder.Int32(fieldPayloadSize, t.PayloadSize),         // int32
 		tcpEncoder.Int64(fieldSrcIP, ipToInt64(t.SrcIP)),
 		tcpEncoder.Int64(fieldDstIP, ipToInt64(t.DstIP)),
+		tcpEncoder.String(fieldJa4t, t.Ja4T),              // JA4T fingerprint
+		tcpEncoder.String(fieldJa4ts, t.Ja4Ts),            // JA4TS fingerprint
+		tcpEncoder.String(fieldCommunityID, t.CommunityID), // Community ID v1
 	})
 }
 

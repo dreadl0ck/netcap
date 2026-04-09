@@ -1,0 +1,47 @@
+{
+  "name": "netcap-webui",
+  "version": "0.1.0",
+  "private": true,
+  "license": "GPL-3.0",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "concurrently -n ui,vite -c blue,green \"pnpm --filter @dreadl0ck/netcap-ui dev\" \"vite\"",
+    "build": "pnpm --filter @dreadl0ck/netcap-ui build && vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@dreadl0ck/netcap-ui": "workspace:*",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@fontsource/roboto": "^5.2.9",
+    "@fontsource/roboto-mono": "^5.2.8",
+    "@mui/icons-material": "^7.3.6",
+    "@mui/material": "^7.3.6",
+    "echarts": "^6.0.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-router": "^7.14.0",
+    "react-syntax-highlighter": "^16.1.0",
+    "swr": "^2.3.8"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^25.0.3",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "@vitejs/plugin-react": "^4.4.1",
+    "baseline-browser-mapping": "^2.9.11",
+    "concurrently": "^9.2.1",
+    "jsdom": "^26.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^6.3.2",
+    "vitest": "^3.1.2"
+  }
+}

@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package collect
@@ -28,12 +34,20 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dreadl0ck/cryptoutils"
 	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap/internal/cryptoutils"
+	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
+)
+
+// Global context variables for helper functions
+var (
+	currentPrivKey string
+	files          = make(map[string]*auditRecordHandle)
 )
 
 // maxBufferSize specifies the size of the buffers that
@@ -44,25 +58,38 @@ const (
 )
 
 // Run parses the subcommand flags and handles the arguments.
+// This is a compatibility wrapper for the old Run() interface.
 func Run() {
-	// parse commandline flags
-	fs.Usage = printUsage
+	// Remove date/time from log output to prevent duplicate timestamps
+	// when running in Docker/systemd (which add their own timestamps)
+	log.SetFlags(0)
 
-	err := fs.Parse(os.Args[2:])
-	if err != nil {
-		log.Fatal(err)
+	// Create a new CLI app just for parsing flags
+	cmd := &cli.Command{
+		Name:  "collect",
+		Usage: "collector for audit records from agents",
+		Flags: GetFlags(),
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return RunWithContext(ctx, c)
+		},
 	}
 
-	if *flagGenerateConfig {
-		netio.GenerateConfig(fs, "collect")
+	if err := cmd.Run(context.Background(), os.Args[1:]); err != nil {
+		log.Fatal(err)
+	}
+}
 
-		return
+// RunWithContext runs the collect command with a CLI context.
+func RunWithContext(ctx context.Context, c *cli.Command) error {
+	if c.Bool("gen-config") {
+		// TODO: Update GenerateConfig to work with urfave/cli
+		fmt.Println("gen-config not yet implemented with urfave/cli")
+		return nil
 	}
 
 	netio.PrintBuildInfo()
 
-	if *flagGenKeypair {
-
+	if c.Bool("gen-keypair") {
 		// generate a new keypair
 		pub, priv, errGenKey := cryptoutils.GenerateKeypair()
 		if errGenKey != nil {
@@ -80,7 +107,7 @@ func Run() {
 		}
 
 		// close file handle
-		err = pubFile.Close()
+		err := pubFile.Close()
 		if err != nil {
 			panic(err)
 		}
@@ -103,16 +130,21 @@ func Run() {
 
 		fmt.Println("wrote keys")
 
-		return
+		return nil
 	}
 
-	if *flagPrivKey == "" {
+	flagPrivKey := c.String("privkey")
+	if flagPrivKey == "" {
 		log.Fatal("no path to private key specified")
 	}
 
+	// Set global context variables for helper functions
+	currentMemBufferSize = c.Int("membuf-size")
+	currentPrivKey = flagPrivKey
+
 	// serve
-	ctx := context.Background()
-	log.Fatal(udpServer(ctx, *flagAddr))
+	log.Fatal(udpServer(ctx, c.String("addr")))
+	return nil
 }
 
 // udpServer implements a simple UDP server.
@@ -147,7 +179,7 @@ func udpServer(ctx context.Context, address string) (err error) {
 	handleSignals()
 
 	// read private key file contents
-	privKeyContents, err = ioutil.ReadFile(*flagPrivKey)
+	privKeyContents, err = ioutil.ReadFile(currentPrivKey)
 	if err != nil {
 		log.Fatal("failed to read private key file: ", err)
 	}

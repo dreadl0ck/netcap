@@ -27,6 +27,10 @@ import (
 
 // Run parses the subcommand flags and handles the arguments.
 func Run() {
+	// Remove date/time from log output to prevent duplicate timestamps
+	// when running in Docker/systemd (which add their own timestamps)
+	log.SetFlags(0)
+	
 	if len(os.Args) < 3 {
 		log.Fatal("expecting transform name")
 	}
@@ -92,7 +96,6 @@ func Run() {
 		toFilesForContentType,
 		toGeolocation,
 		toIPProfiles,
-		toJA3HashesForProfile,
 		toParameterValues,
 		toNetworkInterfaces,
 		toHTTPContentTypes,
@@ -145,8 +148,6 @@ func Run() {
 		toConnectionsForService,
 		toConnectionsForHost,
 		toConnectionsForPort,
-		toJA3Hashes,
-		toJA3SHashes,
 		openConnectionInWireshark,
 		openFlowInWireshark,
 		openHostTrafficInWireshark,

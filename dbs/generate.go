@@ -1,21 +1,26 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package dbs
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/utils"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -25,9 +30,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/utils"
+
 	"github.com/dustin/go-humanize"
-	"github.com/evilsocket/islazy/zip"
+
+	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/archive"
 )
 
 // A simple hook function that provides the option to modify the fetched data
@@ -75,15 +83,16 @@ var sources = []*datasource{
 	// TODO: manage custom netcap probes separately and merge
 	makeSource("https://svn.nmap.org/nmap/nmap-service-probes", "", moveToDbs),
 	makeSource("https://macaddress.io/database/macaddress.io-db.json", "", moveToDbs),
-	makeSource("https://ja3er.com/getAllHashesJson", "ja3erDB.json", moveToDbs),
-	makeSource("https://ja3er.com/getAllUasJson", "ja3UserAgents.json", moveToDbs),
-	makeSource("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/dbs/ja_3_3s.json", "", moveToDbs),
+
+	// JA4+ fingerprint database from FoxIO
+	makeSource("https://ja4db.com/api/download/", "ja4db.json", moveToDbs),
+
 	makeSource("https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv", "", moveToDbs),
-	makeSource("https://raw.githubusercontent.com/trisulnsm/trisul-scripts/master/lua/frontend_scripts/reassembly/ja3/prints/ja3fingerprint.json", "", moveToDbs),
 	makeSource("https://web.archive.org/web/20191227182527if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
 	makeSource("https://web.archive.org/web/20191227182209if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
+
 	makeSource("", "nvd.bleve", downloadAndIndexNVD),
-	makeSource("https://raw.githubusercontent.com/offensive-security/exploitdb/master/files_exploits.csv", "", downloadAndIndexExploitDB),
+	makeSource("https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_exploits.csv", "", downloadAndIndexExploitDB),
 }
 
 /*
@@ -91,7 +100,7 @@ var sources = []*datasource{
  */
 
 func unzipAndMoveToDbs(in string, d *datasource, base string) error {
-	filenames, err := zip.Unzip(in, filepath.Join(base, "build"))
+	filenames, err := archive.ExtractZip(in, filepath.Join(base, "build"))
 	if err != nil {
 		return err
 	}
@@ -109,31 +118,62 @@ func unzipAndMoveToDbs(in string, d *datasource, base string) error {
 }
 
 func downloadAndIndexNVD(_ string, _ *datasource, base string) error {
-	var errors []error
 	
 	for _, year := range yearRange(nvdStartYear, time.Now().Year()) {
-		s := makeSource(fmt.Sprintf("https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-%s.json.gz", year), "", nil)
-		err := fetchResource(s, filepath.Join(base, "build", s.name))
-		if err != nil {
+
+		s := makeSource(fmt.Sprintf("https://nvd.nist.gov/feeds/json/cve/2.0/nvdcve-2.0-%s.json.gz", year), "", nil)
+    err := fetchResource(s, filepath.Join(base, "build", s.name))
+    if err != nil {
 			log.Printf("ERROR: failed to fetch NVD data for year %s: %v", year, err)
-			errors = append(errors, err)
 			continue
 		}
-	}
-	
-	// Only proceed with indexing if we have at least some data
-	if len(errors) < len(yearRange(nvdStartYear, time.Now().Year())) {
-		IndexData("nvd", filepath.Join(base, "dbs"), filepath.Join(base, "build"), nvdStartYear, false)
-	}
-	
-	if len(errors) > 0 {
-		return fmt.Errorf("failed to download %d NVD datasets", len(errors))
 	}
 	
 	return nil
 }
 
 func downloadAndIndexExploitDB(_ string, _ *datasource, base string) error {
+	// Clone the exploitdb repository to get the actual exploit files
+	exploitdbPath := filepath.Join(base, "dbs", "exploitdb")
+
+	// Always clone fresh to get the latest exploits
+	if _, err := os.Stat(exploitdbPath); err == nil {
+		fmt.Println("Removing existing exploitdb to clone fresh...")
+		if err := os.RemoveAll(exploitdbPath); err != nil {
+			log.Printf("Warning: Failed to remove existing exploitdb: %v", err)
+		}
+	}
+
+	fmt.Println("Cloning exploitdb repository (this may take a few minutes)...")
+
+	// Ensure parent directory exists
+	if err := os.MkdirAll(filepath.Dir(exploitdbPath), defaults.DirectoryPermission); err != nil {
+		log.Printf("Warning: Failed to create parent directory for exploitdb: %v", err)
+	} else {
+		// Use shallow clone with depth 1 to save space and time
+		cmd := exec.Command("git", "clone", "--depth", "1",
+			"https://gitlab.com/exploit-database/exploitdb.git",
+			exploitdbPath)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			log.Printf("Warning: Failed to clone exploitdb repository: %v", err)
+			log.Println("Exploit POC files will not be available, but metadata indexing will continue")
+		} else {
+			fmt.Printf("Successfully cloned exploitdb to %s\n", exploitdbPath)
+
+			// Remove .git directory to save space in the tarball
+			gitDir := filepath.Join(exploitdbPath, ".git")
+			if err := os.RemoveAll(gitDir); err != nil {
+				log.Printf("Warning: Failed to remove .git directory: %v", err)
+			} else {
+				fmt.Println("Removed .git directory to save space")
+			}
+		}
+	}
+
+	// Index the exploit metadata
 	IndexData("exploit-db", filepath.Join(base, "dbs"), filepath.Join(base, "build"), 0, false)
 	return nil
 }
@@ -295,9 +335,43 @@ func GenerateDBs(nvdIndexStartYear int) {
 	// prior to cloning the repo via the netcap toolchain
 	saveTotalDatabaseSize(base)
 
-	fmt.Printf("Operation completed: fetched %d sources successfully ("+humanize.Bytes(numBytesFetched)+") in %v\n", successCount, time.Since(start))
+  fmt.Printf("Operation completed: fetched %d sources successfully ("+humanize.Bytes(numBytesFetched)+") in %v\n", successCount, time.Since(start))
+  
+	// Verify exploitdb folder is present
+	exploitdbPath := filepath.Join(base, "dbs", "exploitdb")
+	if stat, err := os.Stat(exploitdbPath); err == nil && stat.IsDir() {
+		// Count files in exploitdb to give user feedback
+		var fileCount int
+		_ = filepath.Walk(exploitdbPath, func(_ string, info os.FileInfo, _ error) error {
+			if info != nil && !info.IsDir() {
+				fileCount++
+			}
+			return nil
+		})
+		fmt.Printf("✓ exploitdb folder present with %d files (exploit code snippets will be bundled)\n", fileCount)
+	} else {
+		fmt.Println("⚠ exploitdb folder not found - exploit code snippets will not be available")
+	}
 
-	gitLfsPrune()
+	// Create the tarball automatically
+	tarballPath := filepath.Join(base, "dbs.tar.gz")
+	fmt.Printf("Creating tarball: %s\n", tarballPath)
+
+	tarballFile, err := os.Create(tarballPath)
+	if err != nil {
+		log.Printf("Warning: failed to create tarball file: %v", err)
+	} else {
+		if err := makeTarball(filepath.Join(base, "dbs"), "dbs", tarballFile); err != nil {
+			log.Printf("Warning: failed to create tarball: %v", err)
+		} else {
+			tarballFile.Close()
+			if stat, err := os.Stat(tarballPath); err == nil {
+				fmt.Printf("✓ Tarball created: %s (%s)\n", tarballPath, humanize.Bytes(uint64(stat.Size())))
+			}
+		}
+	}
+
+	fmt.Println("fetched", total, "sources ("+humanize.Bytes(numBytesFetched)+")", "in", time.Since(start))
 }
 
 func processSource(s *datasource, base string) bool {

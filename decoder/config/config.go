@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package config
@@ -20,6 +26,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/performance"
 )
 
 // Instance contains the config at runtime.
@@ -27,51 +34,55 @@ var Instance *Config
 
 // DefaultConfig is a sane example configuration for the decoder package.
 var DefaultConfig = &Config{
-	Buffer:                     true,
-	MemBufferSize:              defaults.BufferSize,
-	Compression:                true,
-	CSV:                        false,
-	IncludeDecoders:            "",
-	ExcludeDecoders:            "",
-	Out:                        "",
-	Chan:                       false,
-	Proto:                      true,
-	Source:                     "",
-	IncludePayloads:            false,
-	ExportMetrics:              false,
-	AddContext:                 true,
-	FlushEvery:                 100,
-	DefragIPv4:                 false,
-	Checksum:                   false,
-	NoOptCheck:                 false,
-	IgnoreFSMerr:               false,
-	AllowMissingInit:           false,
-	Debug:                      false,
-	HexDump:                    false,
-	WaitForConnections:         true,
-	WriteIncomplete:            false,
-	MemProfile:                 "",
-	ConnFlushInterval:          10000,
-	ConnTimeOut:                10 * time.Second,
-	FlowFlushInterval:          2000,
-	FlowTimeOut:                10 * time.Second,
-	CloseInactiveTimeOut:       24 * time.Hour,
-	ClosePendingTimeOut:        5 * time.Second,
-	FileStorage:                defaults.FileStorage,
-	CalculateEntropy:           false,
-	SaveConns:                  false,
-	TCPDebug:                   false,
-	UseRE2:                     true,
-	HarvesterBannerSize:        512,
-	BannerSize:                 512,
-	StopAfterHarvesterMatch:    true,
-	StopAfterServiceProbeMatch: true,
-	IgnoreDecoderInitErrors:    true,
-	RemoveClosedStreams:        false,
-	CompressionBlockSize:       defaults.CompressionBlockSize,
-	CompressionLevel:           defaults.CompressionLevel,
-	NumStreamWorkers:           runtime.NumCPU(),
-	StreamBufferSize:           100,
+	Buffer:                        true,
+	MemBufferSize:                 defaults.BufferSize,
+	Compression:                   true,
+	CSV:                           false,
+	IncludeDecoders:               "",
+	ExcludeDecoders:               "",
+	Out:                           "",
+	Chan:                          false,
+	Proto:                         true,
+	Source:                        "",
+	IncludePayloads:               false,
+	ExportMetrics:                 false,
+	AddContext:                    true,
+	FlushEvery:                    100,
+	DefragIPv4:                    false,
+	Checksum:                      false,
+	NoOptCheck:                    false,
+	IgnoreFSMerr:                  false,
+	AllowMissingInit:              false,
+	Debug:                         false,
+	HexDump:                       false,
+	WaitForConnections:            true,
+	WriteIncomplete:               false,
+	MemProfile:                    "",
+	ConnFlushInterval:             10000,
+	ConnTimeOut:                   10 * time.Second,
+	FlowFlushInterval:             2000,
+	FlowTimeOut:                   10 * time.Second,
+	CloseInactiveTimeOut:          24 * time.Hour,
+	ClosePendingTimeOut:           5 * time.Second,
+	FileStorage:                   defaults.FileStorage,
+	CalculateEntropy:              false,
+	SaveConns:                     false,
+	TCPDebug:                      false,
+	UseRE2:                        true,
+	HarvesterBannerSize:           512,
+	BannerSize:                    512,
+	StopAfterHarvesterMatch:       true,
+	HarvesterPortFilter:           true,
+	StopAfterServiceProbeMatch:    true,
+	IgnoreDecoderInitErrors:       true,
+	RemoveClosedStreams:           false,
+	CompressionBlockSize:          defaults.CompressionBlockSize,
+	CompressionLevel:              defaults.CompressionLevel,
+	NumStreamWorkers:              runtime.NumCPU(),
+	StreamBufferSize:              100,
+	MaxStreamBytes:                10485760, // 10MB per stream direction by default
+	MaxBufferedPagesPerConnection: 0,        // unlimited by default
+	MaxBufferedPagesTotal:         0,        // unlimited by default
 }
 
 // Config contains configuration parameters
@@ -88,6 +99,9 @@ type Config struct {
 
 	// CustomRegex to use for credentials harvester
 	CustomRegex string
+
+	// HarvestersConfigPath is the path to the harvesters configuration file
+	HarvestersConfigPath string
 
 	// Will create a memory dump at the specified path for debugging and profiling
 	MemProfile string
@@ -120,6 +134,10 @@ type Config struct {
 	FlushEvery int
 
 	// Maximum number of bytes of the client and server conversation to be used for the harvesters
+	// This is a performance-critical setting that prevents harvesters from processing large data streams
+	// (e.g., file transfers) which could cause excessive CPU and memory usage.
+	// Default: 512 bytes - increase if credential detection is failing for protocols with longer auth sequences.
+	// Recommended range: 512-8192 bytes depending on your use case.
 	HarvesterBannerSize int
 
 	// Maximum number of bytes stored as service banner
@@ -140,6 +158,11 @@ type Config struct {
 
 	// stop processing the conversation when the first credential harvester returns a result
 	StopAfterHarvesterMatch bool
+
+	// HarvesterPortFilter when enabled (default: true), only invokes harvesters on their configured ports
+	// This prevents false positives from harvesters matching unrelated protocol traffic
+	// Set to false to run all harvesters against all traffic (legacy behavior)
+	HarvesterPortFilter bool
 
 	// stop processing the conversation when the first service probe returns a result
 	StopAfterServiceProbeMatch bool
@@ -265,4 +288,22 @@ type Config struct {
 
 	// CompressionLevel is the compression level to use by default
 	CompressionLevel int
+
+	// MaxStreamBytes is the maximum number of bytes to reassemble from a single stream direction
+	// before ignoring the stream for performance reasons. If <= 0, this is unlimited.
+	// Default: 10485760 (10MB) to prevent excessive memory usage from large transfers.
+	MaxStreamBytes int
+
+	// MaxBufferedPagesPerConnection is the maximum number of pages (~1900 bytes each) to buffer
+	// per connection for out-of-order packets. If <= 0, this is unlimited.
+	// When exceeded, forces flush of oldest buffered packet. Default: 0 (unlimited)
+	MaxBufferedPagesPerConnection int
+
+	// MaxBufferedPagesTotal is the maximum total number of pages (~1900 bytes each) to buffer
+	// across all connections for out-of-order packets. If <= 0, this is unlimited.
+	// When exceeded, forces flush globally. Default: 0 (unlimited)
+	MaxBufferedPagesTotal int
+
+	// PerfTracker tracks performance metrics
+	PerfTracker *performance.Tracker
 }

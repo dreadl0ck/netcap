@@ -1,0 +1,24 @@
+# OCSP Security Detection Rules
+# Detect certificate revocation and validation issues
+
+description: "Detection rules for certificate status issues detected via OCSP responses."
+
+rules:
+  # Revoked certificate in use
+  - name: OCSP Revoked Certificate
+    description: OCSP response indicates a certificate has been revoked, which may indicate use of a compromised or stolen certificate
+    type: OCSP
+    expression: 'IsResponse == true && CertStatus == "revoked"'
+    severity: high
+    mitre: ["T1553.004"]
+    tags: ["ocsp", "defense-evasion", "revoked-certificate"]
+    enabled: true
+
+  # Unknown certificate status
+  - name: OCSP Unknown Certificate Status
+    description: OCSP response returned unknown status for a certificate, which may indicate an untrusted or suspicious certificate
+    type: OCSP
+    expression: 'IsResponse == true && CertStatus == "unknown"'
+    severity: medium
+    tags: ["ocsp", "certificate", "unknown-status"]
+    enabled: true

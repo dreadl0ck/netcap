@@ -1,112 +1,164 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package util
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/dreadl0ck/netcap/dbs"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/resolvers"
-
-	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-// Run parses the subcommand flags and handles the arguments.
-func Run() {
-	// parse commandline flags
-	fs.Usage = printUsage
+// Global context for helper functions
+var currentCtx *cli.Command
 
-	err := fs.Parse(os.Args[2:])
-	if err != nil {
+// Run parses the subcommand flags and handles the arguments.
+// This is a compatibility wrapper for the old Run() interface.
+func Run() {
+	// Remove date/time from log output to prevent duplicate timestamps
+	// when running in Docker/systemd (which add their own timestamps)
+	log.SetFlags(0)
+
+	// Create a new CLI app just for parsing flags
+	cmd := &cli.Command{
+		Name:  "util",
+		Usage: "general utility tool",
+		Flags: GetFlags(),
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return RunWithContext(ctx, c)
+		},
+	}
+
+	if err := cmd.Run(context.Background(), os.Args[1:]); err != nil {
 		log.Fatal(err)
 	}
+}
 
-	if *flagGenerateConfig {
-		io.GenerateConfig(fs, "util")
-		return
+// RunWithContext runs the util command with a CLI context.
+func RunWithContext(ctx context.Context, c *cli.Command) error {
+	// Store context for helper functions
+	currentCtx = c
+
+	if c.Bool("gen-config") {
+		// TODO: Update GenerateConfig to work with urfave/cli
+		fmt.Println("gen-config not yet implemented with urfave/cli")
+		return nil
 	}
 
-	if *flagCloneDBs {
-		dbs.CloneDBs(*flagForce)
-		return
+	if c.Bool("generate-dbs") {
+		dbs.GenerateDBs(c.Int("nvd-start-year"))
+		return nil
 	}
 
-	if *flagGenerateDBs {
-		dbs.GenerateDBs(*flagNVDIndexStart)
-		return
-	}
-
-	if *flagUpdateDBs {
+	if c.Bool("update-dbs") {
 		dbs.UpdateDBs()
-		return
+		return nil
 	}
 
-	if *flagDownloadGeolite {
+	if c.Bool("download-geolite") {
 		dbs.DownloadGeoLite()
-		return
+		return nil
+	}
+
+	if c.Bool("serve-dbs") {
+		server := dbs.NewDBServer(c.String("serve-addr"), c.Int("nvd-start-year"), c.Bool("verbose"))
+		if err := server.Start(); err != nil {
+			log.Fatal("failed to start database server: ", err)
+		}
+		return nil
+	}
+
+	if c.Bool("download-dbs") {
+		if err := dbs.DownloadDBs(c.String("dbs-url"), c.Bool("force")); err != nil {
+			log.Fatal("failed to download databases: ", err)
+		}
+		return nil
 	}
 
 	// Simple util to construct a IPv4 pcapng packet, with a TCP / UDP layer and a given payload.
 	// Will add dummy values for the Ethernet and IPv4 layers.
 	// Useful to dissect a specific TCP / UDP payload in wireshark, to compare the results with other tools.
-	if *flagMkPacket != "" {
+	flagMkPacket := c.String("mkpacket")
+	if flagMkPacket != "" {
 		makePacket()
-		return
+		return nil
 	}
 
 	// util to convert netcap timestamp to UTC time
-	if *flagToUTC != "" {
-		fmt.Println(utils.TimeToUTC(*flagToUTC))
-		return
+	flagToUTC := c.String("ts2utc")
+	if flagToUTC != "" {
+		fmt.Println(utils.TimeToUTC(flagToUTC))
+		return nil
 	}
 
 	// util to check if fields count matches for all generated rows
-	if *flagCheckFields {
+	if c.Bool("check") {
 		checkFields()
-		return
+		return nil
 	}
 
-	if *flagEnv {
+	if c.Bool("env") {
 		out, errEnv := exec.Command("env").CombinedOutput()
 		if errEnv != nil {
 			log.Fatal(errEnv)
 		}
 
-		for _, line := range strings.Split(string(out), "\n") {
+		for line := range strings.SplitSeq(string(out), "\n") {
 			if strings.HasPrefix(line, defaults.NetcapTypePrefix) {
 				fmt.Println(line)
 			}
 		}
 
-		return
+		return nil
 	}
 
-	if *flagInterfaces {
+	if c.Bool("interfaces") {
 		utils.ListAllNetworkInterfaces()
-		return
+		return nil
 	}
 
-	if *flagIndex != "" {
-		dbs.IndexData(*flagIndex, resolvers.DataBaseFolderPath, resolvers.DataBaseBuildPath, *flagNVDIndexStart, *flagVerbose)
-		return
+	flagIndex := c.String("index")
+	if flagIndex != "" {
+		dbs.IndexData(flagIndex, resolvers.DataBaseFolderPath, resolvers.DataBaseBuildPath, c.Int("nvd-start-year"), c.Bool("verbose"))
+		return nil
+	}
+
+	if c.Bool("decoders") {
+		printDecoders()
+		return nil
+	}
+
+	if c.Bool("gopacket-coverage") {
+		analyzeGoPacketCoverage()
+		return nil
 	}
 
 	printHeader()
+	return nil
 }

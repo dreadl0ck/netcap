@@ -1,24 +1,39 @@
-FROM golang:1.24.0-alpine as builder
-RUN apk update
-RUN apk add --no-cache gcc libpcap-dev libnetfilter_queue-dev linux-headers musl-utils musl-dev git vim autoconf automake libtool make g++ bison flex cmake build-base abuild binutils binutils-doc gcc-doc cmake-doc extra-cmake-modules extra-cmake-modules-doc
+FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-latest as builder
 
+# Copy netcap source
 WORKDIR /netcap
-COPY go.mod go.sum ./
-RUN go mod download
 COPY . .
+
 ENV VERSION XXX
-ARG TAGS
+ARG TAGS="-tags noyara"
 RUN echo "tags: $TAGS"
 
-RUN echo go build -mod=readonly ${TAGS} -ldflags "-r /usr/local/lib -s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
-RUN go build -mod=readonly ${TAGS} -ldflags "-r /usr/local/lib -s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+# Extract gopacket version from go.mod
+RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
+    echo go build ${TAGS} -trimpath -ldflags "-r /usr/local/lib -s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION} -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd && \
+    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build ${TAGS} -trimpath \
+    -ldflags "-s -w \
+        -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
+        -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}" \
+    -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
 RUN ls -la /netcap
 RUN file /netcap/bin/net
 
-FROM alpine:latest
+FROM --platform=linux/amd64 alpine:latest
 ARG IPV6_SUPPORT=true
-RUN apk add --no-cache ca-certificates iptables libpcap-dev libnetfilter_queue ${IPV6_SUPPORT:+ip6tables}
+RUN apk add --no-cache ca-certificates iptables libpcap libnetfilter_queue tcpdump curl gcompat ${IPV6_SUPPORT:+ip6tables}
+
+# Install Google Magika CLI v1.0.2 for AI-based file type classification
+ARG MAGIKA_VERSION=1.0.2
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then MAGIKA_ARCH="x86_64-unknown-linux-gnu"; \
+    elif [ "$ARCH" = "aarch64" ]; then MAGIKA_ARCH="aarch64-unknown-linux-gnu"; \
+    else echo "Unsupported arch: $ARCH" && exit 1; fi && \
+    curl -LsSf "https://github.com/google/magika/releases/download/cli%2Fv${MAGIKA_VERSION}/magika-${MAGIKA_ARCH}.tar.xz" \
+    | tar -xJ -C /usr/local/bin/ && \
+    chmod +x /usr/local/bin/magika
+
 WORKDIR /
 COPY --from=builder /netcap/bin/* /usr/bin/
 COPY --from=builder /usr/lib/* /usr/lib/

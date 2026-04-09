@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package software
@@ -33,7 +39,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/db"
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
-	"github.com/dreadl0ck/netcap/logger"
+	"github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -60,20 +66,8 @@ var Decoder = &decoder.AbstractDecoder{
 			return errInitUAParser
 		}
 
-		// Load the JSON database of JA3/JA3S combinations into memory
-		data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseFolderPath, "ja_3_3s.json"))
-		if err != nil {
-			return err
-		}
-
-		// unpack JSON
-		err = json.Unmarshal(data, &ja3db.Servers)
-		if err != nil {
-			return err
-		}
-
-		// Load the JSON database of HASSH signatures
-		data, err = ioutil.ReadFile(filepath.Join(resolvers.DataBaseFolderPath, "hasshdb.json"))
+		// Load the JSON database of SSH fingerprint signatures (legacy HASSH format)
+		data, err := ioutil.ReadFile(filepath.Join(resolvers.DataBaseFolderPath, "hasshdb.json"))
 		if err != nil {
 			return err
 		}
@@ -90,7 +84,7 @@ var Decoder = &decoder.AbstractDecoder{
 			HashDBMap[v.Hash] = v.Software
 		}
 
-		softwareLog.Info("loaded HASSH digests", zap.Int("total", len(HashDBMap)))
+		softwareLog.Info("loaded SSH fingerprint digests", zap.Int("total", len(HashDBMap)))
 
 		// read CMS db JSON
 		err = loadCmsDB()
@@ -109,8 +103,6 @@ var Decoder = &decoder.AbstractDecoder{
 
 			return errors.Wrap(err, "failed to open vulnerability bleve index at: "+indexName)
 		}
-
-		softwareLog.Info("loaded Ja3/ja3S database", zap.Int("total_records", len(ja3db.Servers)))
 
 		return nil
 	},
@@ -133,6 +125,13 @@ var Decoder = &decoder.AbstractDecoder{
 		var err error
 		for _, item := range Store.Items {
 			item.Lock()
+
+			// Enhance software record with detection context and behavioral fields
+			EnhanceSoftwareRecord(item.Software)
+
+			// Update instance count based on number of flows
+			item.Software.InstanceCount = int32(len(item.Software.Flows))
+
 			err = e.Writer.Write(item.Software)
 			if err != nil {
 				softwareLog.Error("failed to flush software audit record", zap.Error(err))
@@ -183,8 +182,7 @@ var (
 	UserAgentCache   = make(map[string]*userAgent)
 	regExpServerName = regexp.MustCompile(`(.*?)(?:/(.*?))?(?:\s*?)(?:\((.*?)\))?$`)
 	regexpXPoweredBy = regexp.MustCompile(`(.*?)(?:(?:\s|/)(.*?))?$`)
-	ja3Cache         = make(map[string]string)
-	jaCacheMutex     sync.Mutex
+	cacheMutex       sync.Mutex
 
 	// RegexGenericVersion is a regular expression for anything that could be a product / version indicator.
 	RegexGenericVersion = regexp.MustCompile(`(?m)(?:^)(.*?)(\d+)\.(\d+)\.(\d+)(.*?)(?:$)`)
@@ -227,9 +225,8 @@ var (
 	// UserAgentParserMutex ensures atomic access to the user agent parser.
 	UserAgentParserMutex sync.Mutex
 
-	ja3db   ja3CombinationsDB
 	hasshDB []sshHash
-	// HashDBMap contains HASSH digests mapped to software products at runtime.
+	// HashDBMap contains SSH fingerprint digests mapped to software products at runtime.
 	HashDBMap map[string][]sshSoftware
 )
 
@@ -241,27 +238,6 @@ type userAgent struct {
 	Version string
 	Full    string
 	OS      string
-}
-
-type process struct {
-	Process string `json:"process"`
-	JA3     string `json:"JA3"`
-	JA3s    string `json:"JA3S"`
-}
-
-type client struct {
-	Os        string    `json:"os"`
-	Arch      string    `json:"arch"`
-	Processes []process `json:"processes"`
-}
-
-type server struct {
-	Server  string   `json:"server"`
-	Clients []client `json:"clients"`
-}
-
-type ja3CombinationsDB struct {
-	Servers []server `json:"servers"`
 }
 
 type sshSoftware struct {
@@ -369,85 +345,12 @@ func softwareHarvester(data []byte, flowIdent string, ts time.Time, service stri
 	return s
 }
 
-// TODO: cleanup
-// tries to determine the kind of software and version
-// based on the provided input data.
-//func whatSoftware(dp *packet.DeviceProfile, i *decoderutils.PacketInfo, flowIdent, serviceNameSrc, serviceNameDst, JA3, JA3s string, protos []string) (s []*AtomicSoftware) {
-//	var (
-//		serviceIdent string
-//		dpIdent      = dp.MacAddr
-//	)
-//
-//	if serviceNameSrc != "" {
-//		serviceIdent = serviceNameSrc
-//	}
-//
-//	if serviceNameDst != "" {
-//		serviceIdent = serviceNameDst
-//	}
-//
-//	if dp.DeviceManufacturer != "" {
-//		dpIdent += " <" + dp.DeviceManufacturer + ">"
-//	}
-//
-//	// Only do JA3 fingerprinting when both fingerprints for client and server are present
-//	// TODO: improve efficiency for this lookup
-//	if len(JA3) > 0 && len(JA3s) > 0 {
-//		// for each server
-//		for _, srv := range ja3db.Servers {
-//			// for each client
-//			for _, c := range srv.Clients {
-//				// for each process
-//				for _, p := range c.Processes {
-//					// if the process had both client and server fingerprints
-//					if p.JA3 == JA3 && p.JA3s == JA3s {
-//						values := regExpServerName.FindStringSubmatch(srv.Server)
-//						s = append(s, &AtomicSoftware{
-//							Software: &types.Software{
-//								Timestamp:      i.Timestamp,
-//								Product:        values[1], // Name of the server (Apache, Nginx, ...)
-//								Version:        values[2], // Version as found after the '/'
-//								Vendor:         values[3], // Often the operating system
-//								DeviceProfiles: []string{dpIdent},
-//								SourceName:     "JA3s",
-//								SourceData:     JA3s,
-//								Service:        serviceIdent,
-//								DPIResults:     protos,
-//								Flows:          []string{flowIdent},
-//							},
-//						}, &AtomicSoftware{
-//							Software: &types.Software{
-//								Timestamp:      i.Timestamp,
-//								Product:        p.Process,                 // Name of the browser, including version
-//								Vendor:         c.Os + "(" + c.Arch + ")", // Name of the OS
-//								Version:        "",                        // TODO parse client name
-//								DeviceProfiles: []string{dpIdent},
-//								SourceName:     "JA3",
-//								SourceData:     JA3,
-//								Service:        serviceIdent,
-//								DPIResults:     protos,
-//								Flows:          []string{flowIdent},
-//							},
-//						})
-//					}
-//				}
-//			}
-//		}
-//	}
-//
-//	// if nothing was found with all above attempts, try to throw the generic version number harvester at it
-//	// and see if this delivers anything interesting
-//	if len(s) == 0 && !decoderconfig.Instance.DisableGenericVersionHarvester {
-//		return softwareHarvester(i.Packet.Data(), flowIdent, i.Packet.Metadata().CaptureInfo.Timestamp, serviceIdent, dpIdent, protos)
-//	}
-//
-//	return s
-//}
-
 // WhatSoftwareHTTP TODO: pass in the device profile.
 func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
+	// Get community ID from the HTTP record for correlation
+	communityID := h.CommunityID
+
 	// HTTP User Agents
-	// TODO: check for userAgents retrieved by Ja3 lookup as well
 	if h.UserAgent != "" && h.UserAgent != " " {
 
 		UserAgentParserMutex.Lock()
@@ -465,6 +368,10 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 
 		if userInfo != nil {
 			if userInfo.Product != "" || userInfo.Vendor != "" || userInfo.Version != "" {
+				var communityIDs []string
+				if communityID != "" {
+					communityIDs = []string{communityID}
+				}
 				s = append(s, &AtomicSoftware{
 					Software: &types.Software{
 						Timestamp: h.Timestamp,
@@ -472,12 +379,13 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 						Vendor:    userInfo.Vendor,
 						Version:   userInfo.Version,
 						// DeviceProfiles: []string{dpIdent},
-						SourceName: "UserAgent",
-						SourceData: h.UserAgent,
-						Service:    "HTTP",
-						Flows:      []string{flowIdent},
-						Notes:      userInfo.Full,
-						OS:         userInfo.OS,
+						SourceName:   "UserAgent",
+						SourceData:   h.UserAgent,
+						Service:      "HTTP",
+						Flows:        []string{flowIdent},
+						Notes:        userInfo.Full,
+						OS:           userInfo.OS,
+						CommunityIDs: communityIDs,
 					},
 				})
 			}
@@ -488,6 +396,10 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 	if h.ServerName != "" && h.ServerName != " " {
 		values := regExpServerName.FindStringSubmatch(h.ServerName)
 
+		var communityIDs []string
+		if communityID != "" {
+			communityIDs = []string{communityID}
+		}
 		s = append(s, &AtomicSoftware{
 			Software: &types.Software{
 				Timestamp: h.Timestamp,
@@ -495,10 +407,11 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 				Version:   values[2], // Version as found after the '/'
 				OS:        values[3], // potentially operating system
 				// DeviceProfiles: []string{dpIdent},
-				SourceName: "ServerName",
-				SourceData: h.ServerName,
-				Service:    "HTTP",
-				Flows:      []string{flowIdent},
+				SourceName:   "ServerName",
+				SourceData:   h.ServerName,
+				Service:      "HTTP",
+				Flows:        []string{flowIdent},
+				CommunityIDs: communityIDs,
 			},
 		})
 	}
@@ -508,16 +421,21 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 		if poweredBy != "" && poweredBy != " " {
 			values := regexpXPoweredBy.FindStringSubmatch(poweredBy)
 
+			var communityIDs []string
+			if communityID != "" {
+				communityIDs = []string{communityID}
+			}
 			s = append(s, &AtomicSoftware{
 				Software: &types.Software{
 					Timestamp: h.Timestamp,
 					Product:   values[1], // Name of the server (Apache, Nginx, ...)
 					Version:   values[2], // Version as found after the '/'
 					// DeviceProfiles: []string{dpIdent},
-					SourceName: "X-Powered-By",
-					SourceData: poweredBy,
-					Service:    "HTTP",
-					Flows:      []string{flowIdent},
+					SourceName:   "X-Powered-By",
+					SourceData:   poweredBy,
+					Service:      "HTTP",
+					Flows:        []string{flowIdent},
+					CommunityIDs: communityIDs,
 				},
 			})
 		}
@@ -590,7 +508,7 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 				if matchesHeader() {
 
 					// we found a match
-					s = append(s, makeSoftware(h.Timestamp, product, info.Website, sourceName, sourceData, flowIdent))
+					s = append(s, makeSoftware(h.Timestamp, product, info.Website, sourceName, sourceData, flowIdent, communityID))
 
 					if decoderconfig.Instance.StopAfterServiceProbeMatch {
 						return s
@@ -631,7 +549,7 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 				if matchesCookie() {
 
 					// we found a match
-					s = append(s, makeSoftware(h.Timestamp, product, info.Website, sourceName, sourceData, flowIdent))
+					s = append(s, makeSoftware(h.Timestamp, product, info.Website, sourceName, sourceData, flowIdent, communityID))
 
 					if decoderconfig.Instance.StopAfterServiceProbeMatch {
 						return s
@@ -643,97 +561,6 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 
 	return s
 }
-
-// TODO: deprecated - SSH and TLS fingerprinting should be done in the stream decoders from now on.
-// TODO: DPI is already invoked for each packet with the ipProfile decoders.
-// analyzeSoftware tries to identify software based on observations from the data
-// this function first gathers as much data as possible and then calls into whatSoftware
-// to determine what software the packet belongs to.
-//func analyzeSoftware(i *decoderutils.PacketInfo) {
-//	var (
-//		serviceNameSrc, serviceNameDst string
-//		ja3Hash                        = ja3.DigestHexPacket(i.Packet)
-//		JA3s                           string
-//		JA3                            string
-//		protos                         []string
-//		f                              string
-//	)
-//
-//	if ja3Hash == "" {
-//		ja3Hash = ja3.DigestHexPacketJa3s(i.Packet)
-//	}
-//
-//	// Lookup Service For Port Numbers
-//	if tl := i.Packet.TransportLayer(); tl != nil { // set flow ident
-//		f = utils.CreateFlowIdent(i.SrcIP, tl.TransportFlow().Src().String(), i.DstIP, tl.TransportFlow().Dst().String())
-//
-//		// get source port and convert to integer
-//		src, err := strconv.Atoi(tl.TransportFlow().Src().String())
-//		if err == nil {
-//			switch tl.LayerType() {
-//			case layers.LayerTypeTCP:
-//				serviceNameSrc = resolvers.LookupServiceByPort(src, stream.typeTCP)
-//			case layers.LayerTypeUDP:
-//				serviceNameSrc = resolvers.LookupServiceByPort(src, stream.typeUDP)
-//			default:
-//			}
-//		}
-//
-//		dst, err := strconv.Atoi(tl.TransportFlow().Dst().String())
-//		if err == nil {
-//			switch tl.LayerType() {
-//			case layers.LayerTypeTCP:
-//				serviceNameDst = resolvers.LookupServiceByPort(dst, stream.typeTCP)
-//			case layers.LayerTypeUDP:
-//				serviceNameDst = resolvers.LookupServiceByPort(dst, stream.typeUDP)
-//			default:
-//			}
-//		}
-//	} else {
-//		// no transport layer
-//		f = i.SrcIP + "->" + i.DstIP
-//	}
-//
-//	// Deep Packet Inspection
-//	results := dpi.GetProtocols(i.Packet)
-//	for p := range results {
-//		protos = append(protos, p)
-//	}
-//
-//	// The underlying assumption is that we will always observe a client TLS Hello before seeing a server TLS Hello
-//	// Assuming the packet captured corresponds to the server Hello, first try to see if a client Hello (client being the
-//	// destination IP) was observed. If not, this is the client. Therefore add client ja3 signature to the store.
-//	if len(ja3Hash) > 0 {
-//		var ok bool
-//		jaCacheMutex.Lock()
-//		JA3, ok = ja3Cache[i.DstIP]
-//		jaCacheMutex.Unlock()
-//		if !ok {
-//			jaCacheMutex.Lock()
-//			ja3Cache[i.SrcIP] = ja3Hash
-//			jaCacheMutex.Unlock()
-//
-//			JA3 = ""
-//			JA3s = ""
-//		} else {
-//			JA3s = ja3Hash
-//		}
-//	}
-//
-//	// fetch the associated device profile
-//	dp := packet.GetDeviceProfile(i.SrcMAC, i)
-//
-//	// now that we have some information at hands
-//	// try to determine what kind of software it is
-//	soft := whatSoftware(dp, i, f, serviceNameSrc, serviceNameDst, JA3, JA3s, protos)
-//	if len(soft) == 0 {
-//		return
-//	}
-//
-//	writeSoftware(soft, func(s *software) {
-//		updateSoftwareAuditRecord(dp, s, i)
-//	})
-//}
 
 // WriteSoftware can be used to write software to the software audit record writer.
 func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
@@ -774,13 +601,13 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 	Store.Unlock()
 
 	if len(newSoftwareProducts) > 0 {
-		// lookup known issues with identified software in the background
-		go func() {
-			for _, s := range newSoftwareProducts {
-				vulnerability.VulnerabilitiesLookup(s)
-				exploit.ExploitsLookup(s)
-			}
-		}()
+		// lookup known issues with identified software
+		// NOTE: Do NOT spawn goroutine here - causes goroutine leak!
+		// These lookups are fast enough to do synchronously
+		for _, s := range newSoftwareProducts {
+			vulnerability.VulnerabilitiesLookup(s)
+			exploit.ExploitsLookup(s)
+		}
 	}
 }
 
@@ -816,3 +643,21 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 //	}
 //	s.Unlock()
 //}
+
+// ResetCaches clears all global caches to prevent memory accumulation
+// between multi-file processing runs.
+// CRITICAL: This must be called between file processing to prevent unbounded memory growth.
+func ResetCaches() {
+	// Clear UserAgent cache
+	cacheMutex.Lock()
+	UserAgentCache = make(map[string]*userAgent)
+	cacheMutex.Unlock()
+
+	// CRITICAL: Clear software store - accumulates ALL software detections
+	Store.Lock()
+	Store.Items = make(map[string]*AtomicSoftware)
+	Store.Unlock()
+
+	// cmsDB is loaded once from file and should not be cleared
+	// CMSCookies and CMSHeaders are also static configuration, not cleared
+}

@@ -1,32 +1,44 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package types
 
 import (
-	"github.com/dreadl0ck/netcap/encoder"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
-	fieldName        = "Name"
-	fieldHash        = "Hash"
-	fieldIdent       = "Ident"
-	fieldSource      = "Source"
-	fieldContentType = "ContentType"
+	fieldName            = "Name"
+	fieldHash            = "Hash"
+	fieldIdent           = "Ident"
+	fieldFileSource      = "Source"
+	fieldContentType     = "ContentType"
+	fieldFileProtocol    = "Protocol"
+	fieldWasCompressed   = "WasCompressed"
+	fieldCompressionType = "CompressionType"
+	fieldCompressedSize  = "CompressedSize"
 )
 
 var fieldsFile = []string{
@@ -36,12 +48,16 @@ var fieldsFile = []string{
 	fieldHash,
 	fieldLocation,
 	fieldIdent,
-	fieldSource,
+	fieldFileSource,
 	fieldContentType,
 	fieldSrcIP,
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	fieldFileProtocol,
+	fieldWasCompressed,
+	fieldCompressionType,
+	fieldCompressedSize,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -64,6 +80,10 @@ func (a *File) CSVRecord() []string {
 		a.DstIP,
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
+		a.Protocol,
+		strconv.FormatBool(a.WasCompressed),
+		a.CompressionType,
+		formatInt64(a.CompressedSize),
 	})
 }
 
@@ -86,12 +106,16 @@ var fieldsFileMetric = []string{
 	fieldHash,
 	fieldLocation,
 	fieldIdent,
-	fieldSource,
+	fieldFileSource,
 	fieldContentType,
 	fieldSrcIP,
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	fieldFileProtocol,
+	fieldWasCompressed,
+	fieldCompressionType,
+	fieldCompressedSize,
 }
 
 var fileMetric = prometheus.NewCounterVec(
@@ -102,7 +126,7 @@ var fileMetric = prometheus.NewCounterVec(
 	fieldsFileMetric,
 )
 
-// CSVRecord returns the CSV record for the audit record.
+// metricValues returns the metric values for the audit record.
 func (a *File) metricValues() []string {
 	return filter([]string{
 		a.Name,
@@ -116,6 +140,10 @@ func (a *File) metricValues() []string {
 		a.DstIP,
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
+		a.Protocol,
+		strconv.FormatBool(a.WasCompressed),
+		a.CompressionType,
+		formatInt64(a.CompressedSize),
 	})
 }
 
@@ -148,12 +176,16 @@ func (a *File) Encode() []string {
 		fileEncoder.String(fieldHash, a.Hash),
 		fileEncoder.String(fieldLocation, a.Location),
 		fileEncoder.String(fieldIdent, a.Ident),
-		fileEncoder.String(fieldSource, a.Source),
+		fileEncoder.String(fieldFileSource, a.Source),
 		fileEncoder.String(fieldContentType, a.ContentType),
 		fileEncoder.String(fieldSrcIP, a.SrcIP),
 		fileEncoder.String(fieldDstIP, a.DstIP),
 		fileEncoder.Int32(fieldSrcPort, a.SrcPort),
 		fileEncoder.Int32(fieldDstPort, a.DstPort),
+		fileEncoder.String(fieldFileProtocol, a.Protocol),
+		fileEncoder.Bool(a.WasCompressed),
+		fileEncoder.String(fieldCompressionType, a.CompressionType),
+		fileEncoder.Int64(fieldCompressedSize, a.CompressedSize),
 	})
 }
 

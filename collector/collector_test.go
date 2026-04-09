@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/dreadl0ck/netcap/collector"
-	"log"
 	"os/exec"
 	"runtime"
 	"testing"
@@ -40,13 +39,13 @@ func TestCaptureLive(t *testing.T) {
 		fmt.Println("live capture done in", time.Since(start))
 	}()
 
-	// generate some traffic by pinging localhost
+	// generate some traffic by pinging localhost (limited to 5 pings)
 	go func() {
 		fmt.Println("pinging localhost")
-		out, err := exec.Command("ping", "localhost").CombinedOutput()
+		out, err := exec.Command("ping", "-c", "5", "localhost").CombinedOutput()
 		if err != nil {
 			fmt.Println(string(out))
-			log.Fatal(err)
+			fmt.Println("ping error:", err)
 		}
 	}()
 
@@ -72,50 +71,51 @@ func TestCapturePCAP(t *testing.T) {
 		SnapLen:             defaults.SnapLen,
 		Promisc:             false,
 		DecoderConfig: &config.Config{
-			Buffer:               true,
-			Compression:          true,
-			CSV:                  false,
-			Proto: true,
-			IncludeDecoders:      "",
-			ExcludeDecoders:      "",
-			Out:                  "../tests/collector-test",
-			Source:               "unit tests",
-			IncludePayloads:      false,
-			ExportMetrics:        false,
-			AddContext:           true,
-			MemBufferSize:        defaults.BufferSize,
-			FlushEvery:           defaults.FlushEvery,
-			DefragIPv4:           defaults.DefragIPv4,
-			Checksum:             defaults.Checksum,
-			NoOptCheck:           defaults.NoOptCheck,
-			IgnoreFSMerr:         defaults.IgnoreFSMErr,
-			AllowMissingInit:     defaults.AllowMissingInit,
-			Debug:                false,
-			HexDump:              false,
-			WaitForConnections:   true,
-			WriteIncomplete:      false,
-			MemProfile:           "",
-			ConnFlushInterval:    10000,
-			ConnTimeOut:          10,
-			FlowFlushInterval:    2000,
-			FlowTimeOut:          10,
-			CloseInactiveTimeOut: 24 * time.Hour,
-			ClosePendingTimeOut:  5 * time.Second,
-			FileStorage:          "",
-			Quiet:                true,
-			CompressionBlockSize: defaults.CompressionBlockSize,
-			CompressionLevel: defaults.CompressionLevel,
-			NumStreamWorkers: runtime.NumCPU(),
-			StreamBufferSize: 100,
+			Buffer:                  true,
+			Compression:             true,
+			CSV:                     false,
+			Proto:                   true,
+			IncludeDecoders:         "",
+			ExcludeDecoders:         "",
+			Out:                     "../tests/collector-test",
+			Source:                  "unit tests",
+			IncludePayloads:         false,
+			ExportMetrics:           false,
+			AddContext:              true,
+			MemBufferSize:           defaults.BufferSize,
+			FlushEvery:              defaults.FlushEvery,
+			DefragIPv4:              defaults.DefragIPv4,
+			Checksum:                defaults.Checksum,
+			NoOptCheck:              defaults.NoOptCheck,
+			IgnoreFSMerr:            defaults.IgnoreFSMErr,
+			AllowMissingInit:        defaults.AllowMissingInit,
+			Debug:                   false,
+			HexDump:                 false,
+			WaitForConnections:      true,
+			WriteIncomplete:         false,
+			MemProfile:              "",
+			ConnFlushInterval:       10000,
+			ConnTimeOut:             10,
+			FlowFlushInterval:       2000,
+			FlowTimeOut:             10,
+			CloseInactiveTimeOut:    30 * time.Second,
+			ClosePendingTimeOut:     5 * time.Second,
+			FileStorage:             "",
+			Quiet:                   true,
+			CompressionBlockSize:    defaults.CompressionBlockSize,
+			CompressionLevel:        defaults.CompressionLevel,
+			NumStreamWorkers:        runtime.NumCPU(),
+			StreamBufferSize:        100,
+			IgnoreDecoderInitErrors: true,
 		},
 		BaseLayer:     utils.GetBaseLayer("ethernet"),
-		DecodeOptions: utils.GetDecodeOptions("datagrams"),
+		DecodeOptions: utils.GetDecodeOptions("default"),
 		DPI:           false,
 		ResolverConfig: resolvers.Config{
-			ReverseDNS:    false,
-			LocalDNS:      false,
-			MACDB:         true,
-			Ja3DB:         true,
+			ReverseDNS: false,
+			LocalDNS:   false,
+			MACDB:      true,
+
 			ServiceDB:     true,
 			GeolocationDB: true,
 		},

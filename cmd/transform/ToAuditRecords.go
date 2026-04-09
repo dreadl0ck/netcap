@@ -86,6 +86,9 @@ var maltegoBaseConfig = collector.Config{
 		IgnoreDecoderInitErrors:        true,
 		NumStreamWorkers:               100,
 		StreamBufferSize:               100,
+		MaxStreamBytes:                 10485760, // 10MB per stream direction
+		MaxBufferedPagesPerConnection:  0,        // unlimited
+		MaxBufferedPagesTotal:          0,        // unlimited
 	},
 	BaseLayer:     utils.GetBaseLayer("ethernet"),
 	DecodeOptions: utils.GetDecodeOptions("lazy"),
@@ -94,7 +97,7 @@ var maltegoBaseConfig = collector.Config{
 		ReverseDNS:    false,
 		LocalDNS:      true,
 		MACDB:         true,
-		Ja3DB:         true,
+		
 		ServiceDB:     true,
 		GeolocationDB: true,
 	},

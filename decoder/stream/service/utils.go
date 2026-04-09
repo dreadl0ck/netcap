@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package service
@@ -24,6 +30,9 @@ import (
 type service struct {
 	sync.Mutex
 	*types.Service
+
+	// track unique applications detected via DPI for flows associated with this service
+	applications map[string]struct{}
 }
 
 // atomicDeviceProfileMap contains all connections and provides synchronized access.
@@ -44,6 +53,14 @@ func (a *atomicServiceMap) Size() int {
 // Store ServiceStore holds all tcp service banners.
 var Store = &atomicServiceMap{
 	Items: make(map[string]*service),
+}
+
+// ResetStore clears all services from memory
+// This should be called when resetting state between processing different files
+func ResetStore() {
+	Store.Lock()
+	Store.Items = make(map[string]*service)
+	Store.Unlock()
 }
 
 // addInfo is util to append information to a string using a delimiter
@@ -84,5 +101,26 @@ func NewService(ts int64, numBytesServer, numBytesClient int, ip string) *servic
 			BytesClient: int32(numBytesClient),
 			Hostname:    host,
 		},
+		applications: make(map[string]struct{}),
+	}
+}
+
+// AddApplications adds DPI-detected application protocols to a service.
+// This function is thread-safe and can be called from packet decoders.
+func AddApplications(serviceIdent string, applications []string) {
+	Store.Lock()
+	defer Store.Unlock()
+
+	if serv, ok := Store.Items[serviceIdent]; ok {
+		serv.Lock()
+		defer serv.Unlock()
+
+		if serv.applications == nil {
+			serv.applications = make(map[string]struct{})
+		}
+
+		for _, app := range applications {
+			serv.applications[app] = struct{}{}
+		}
 	}
 }

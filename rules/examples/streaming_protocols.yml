@@ -1,0 +1,168 @@
+# Media Streaming Protocol Detection Rules
+# Rules for detecting network-based media streaming protocols including RTSP, RTMP, and related technologies
+
+description: "Port-based detection rules for monitoring real-time media streaming protocols used for audio and video transmission over networks. Includes RTSP, RTMP, and other streaming technologies commonly used in IP cameras, media servers, and streaming services."
+
+rules:
+  # ========================================
+  # RTSP (Real-Time Streaming Protocol)
+  # ========================================
+
+  # Port 554: RTSP
+  - name: RTSP Traffic Detected
+    description: Real-Time Streaming Protocol (RTSP) detected on port 554 - commonly used for IP cameras, security systems, and media streaming servers
+    type: TCP
+    expression: DstPort == 554
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["streaming", "media", "rtsp"]
+    enabled: true
+
+  - name: RTSP Traffic Detected (UDP)
+    description: Real-Time Streaming Protocol (RTSP) detected on UDP port 554 - used for real-time audio/video streaming
+    type: UDP
+    expression: DstPort == 554
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["streaming", "media", "rtsp", "voip"]
+    enabled: true
+
+  - name: RTSP External Connection
+    description: RTSP connection to external IP detected - potential unauthorized streaming or data exfiltration via media streams
+    type: TCP
+    expression: DstPort == 554 && IsPublicIP(DstIP)
+    severity: high
+    mitre: ["T1071.001", "T1041"]
+    tags: ["streaming", "external", "rtsp"]
+    enabled: true
+
+  # ========================================
+  # RTMP (Real-Time Messaging Protocol)
+  # ========================================
+
+  # Port 1935: RTMP
+  - name: RTMP Traffic Detected
+    description: Real-Time Messaging Protocol (RTMP) detected on port 1935 - used for streaming audio, video, and data (Flash-based streaming)
+    type: TCP
+    expression: DstPort == 1935
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["streaming", "media", "rtmp"]
+    enabled: true
+
+  - name: RTMP External Connection
+    description: RTMP connection to external IP detected - monitor for unauthorized live streaming or data channels
+    type: TCP
+    expression: DstPort == 1935 && IsPublicIP(DstIP)
+    severity: medium
+    mitre: ["T1071.001", "T1041"]
+    tags: ["streaming", "external", "rtmp"]
+    enabled: true
+
+  # ========================================
+  # RTMPS (RTMP over TLS)
+  # ========================================
+
+  # Port 443: RTMPS (often uses standard HTTPS port)
+  - name: RTMPS Traffic Detected
+    description: "RTMP over TLS detected - encrypted streaming protocol (note: shares port 443 with HTTPS)"
+    type: TCP
+    expression: DstPort == 443
+    severity: info
+    mitre: ["T1071.001"]
+    tags: ["streaming", "media", "rtmps", "encrypted"]
+    enabled: false
+
+  # ========================================
+  # HLS/DASH (HTTP-based Streaming)
+  # ========================================
+
+  # Ports 8080, 8081: Alternate HTTP streaming ports
+  - name: HTTP Streaming Alternate Port Detected
+    description: HTTP-based streaming on alternate ports detected - commonly used for HLS, DASH, or custom streaming servers
+    type: TCP
+    expression: DstPort == 8080 || DstPort == 8081
+    severity: low
+    mitre: ["T1071.001"]
+    tags: ["streaming", "http", "alternate-port"]
+    enabled: false
+
+  # ========================================
+  # MMS (Microsoft Media Server)
+  # ========================================
+
+  # Port 1755: MMS
+  - name: MMS Protocol Detected
+    description: Microsoft Media Server (MMS) protocol detected on port 1755 - legacy Windows Media streaming
+    type: TCP
+    expression: DstPort == 1755
+    severity: low
+    mitre: ["T1071.001"]
+    tags: ["streaming", "media", "mms", "legacy", "microsoft"]
+    enabled: true
+
+  # ========================================
+  # ICECAST (Open Source Streaming)
+  # ========================================
+
+  # Port 8000: Icecast
+  - name: Icecast Streaming Server Detected
+    description: Icecast streaming server detected on port 8000 - open source audio streaming
+    type: TCP
+    expression: DstPort == 8000
+    severity: info
+    mitre: ["T1071.001"]
+    tags: ["streaming", "audio", "icecast"]
+    enabled: true
+
+  # ========================================
+  # SHOUTcast
+  # ========================================
+
+  # Port 8001: SHOUTcast
+  - name: SHOUTcast Server Detected
+    description: SHOUTcast streaming server detected on port 8001 - internet radio streaming
+    type: TCP
+    expression: DstPort == 8001
+    severity: info
+    mitre: ["T1071.001"]
+    tags: ["streaming", "audio", "shoutcast"]
+    enabled: true
+
+  # ========================================
+  # RTP/RTCP (Real-time Transport Protocol)
+  # ========================================
+
+  # Ports 5004-5005: RTP/RTCP
+  - name: RTP Audio Video Stream Detected
+    description: Real-time Transport Protocol (RTP) detected - carries audio/video streams (often paired with RTSP)
+    type: UDP
+    expression: DstPort >= 5004 && DstPort <= 5005
+    severity: info
+    mitre: ["T1071.001"]
+    tags: ["streaming", "rtp", "voip", "media"]
+    enabled: true
+
+  # Dynamic RTP port range (common range)
+  - name: RTP Dynamic Port Range Detected
+    description: RTP on dynamic port range detected (16384-32767) - commonly used for VoIP and streaming media
+    type: UDP
+    expression: DstPort >= 16384 && DstPort <= 32767
+    severity: info
+    mitre: ["T1071.001"]
+    tags: ["streaming", "rtp", "voip", "dynamic-ports"]
+    enabled: false
+
+  # ========================================
+  # SRTP (Secure RTP)
+  # ========================================
+
+  - name: SRTP Encrypted Stream Detected
+    description: Secure Real-time Transport Protocol (SRTP) detected - encrypted audio/video streams
+    type: UDP
+    expression: DstPort >= 5004 && DstPort <= 5005
+    severity: info
+    mitre: ["T1071.001"]
+    tags: ["streaming", "srtp", "encrypted", "voip"]
+    enabled: false
+

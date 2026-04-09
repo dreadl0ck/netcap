@@ -1,22 +1,29 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package types
 
 import (
-	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -24,13 +31,19 @@ import (
 const (
 	fieldFunction      = "Function"
 	fieldReceiptNumber = "ReceiptNumber"
+	fieldDataSize      = "DataSize"
+	fieldDataEntropy   = "DataEntropy"
 )
 
 var fieldsEthernetCTPReply = []string{
 	fieldTimestamp,
 	fieldFunction,      // int32
 	fieldReceiptNumber, // int32
-	//fieldData,          // bytes
+	fieldSrcMAC,        // string
+	fieldDstMAC,        // string
+	fieldFunctionName,  // string
+	fieldDataSize,      // int32
+	fieldDataEntropy,   // float64
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -44,7 +57,11 @@ func (ectpr *EthernetCTPReply) CSVRecord() []string {
 		formatTimestamp(ectpr.Timestamp),
 		formatInt32(ectpr.Function),
 		formatInt32(ectpr.ReceiptNumber),
-		//hex.EncodeToString(ectpr.Data),
+		ectpr.SrcMAC,
+		ectpr.DstMAC,
+		ectpr.FunctionName,
+		formatInt32(ectpr.DataSize),
+		formatFloat64(ectpr.DataEntropy),
 	})
 }
 
@@ -77,15 +94,14 @@ func (ectpr *EthernetCTPReply) Inc() {
 // SetPacketContext sets the associated packet context for the audit record.
 func (ectpr *EthernetCTPReply) SetPacketContext(*PacketContext) {}
 
-// Src TODO.
 // Src returns the source address of the audit record.
 func (ectpr *EthernetCTPReply) Src() string {
-	return ""
+	return ectpr.SrcMAC
 }
 
 // Dst returns the destination address of the audit record.
 func (ectpr *EthernetCTPReply) Dst() string {
-	return ""
+	return ectpr.DstMAC
 }
 
 var ethCTPReplyEncoder = encoder.NewValueEncoder()
@@ -96,6 +112,11 @@ func (ectpr *EthernetCTPReply) Encode() []string {
 		ethCTPReplyEncoder.Int64(fieldTimestamp, ectpr.Timestamp),
 		ethCTPReplyEncoder.Int32(fieldFunction, ectpr.Function),
 		ethCTPReplyEncoder.Int32(fieldReceiptNumber, ectpr.ReceiptNumber),
+		ethCTPReplyEncoder.String(fieldSrcMAC, ectpr.SrcMAC),
+		ethCTPReplyEncoder.String(fieldDstMAC, ectpr.DstMAC),
+		ethCTPReplyEncoder.String(fieldFunctionName, ectpr.FunctionName),
+		ethCTPReplyEncoder.Int32(fieldDataSize, ectpr.DataSize),
+		ethCTPReplyEncoder.Float64(fieldDataEntropy, ectpr.DataEntropy),
 	})
 }
 

@@ -1,3 +1,13 @@
+# macOS/Windows goreleaser configuration
+# For Linux builds, use .goreleaser-linux.yml on a Linux system
+# Cross-compiling for Linux from macOS with CGO dependencies is not supported
+#
+# macOS builds include:
+#   - netcap: DPI-enabled (darwin/arm64 only)
+#   - netcap_macOS_nodpi: No-DPI version (darwin/arm64)
+# Windows builds include:
+#   - netcap_nodpi: No-DPI version (windows/amd64)
+
 builds:
   - main: ./cmd
     binary: net
@@ -7,9 +17,11 @@ builds:
     goos:
       - darwin
     ldflags:
-      - ""
+      - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap.GopacketVersion=v1.4.0 -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14 -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-2
+    flags:
+      - -trimpath
     goarch:
-      - amd64
+      - arm64
   - main: ./cmd
     binary: macOS_nodpi/net
     id: netcap_macOS_nodpi
@@ -18,41 +30,32 @@ builds:
     goos:
       - darwin
     goarch:
-      - amd64
       - arm64
     ldflags:
-      - ""
+      - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap.GopacketVersion=v1.4.0
     flags:
+      - -trimpath
       - -tags=nodpi
   - main: ./cmd
     id: netcap_nodpi
     binary: net
     env:
-    #- CGO_ENABLED=1
-    # experiments to compile godpi with nDPI module
-    #- CC=/usr/local/Cellar/mingw-w64/7.0.0_2/bin/x86_64-w64-mingw32-gcc
-    #- CXX=/usr/local/Cellar/mingw-w64/7.0.0_2/bin/x86_64-w64-mingw32-g++
-    #- LDFLAGS="-L/usr/local/opt/libpcap/lib -L/usr/local/Cellar/liblinear/2.30/lib -s -w -lndpi -lpcap -lm -pthread"
-    #- CFLAGS="-I/usr/local/Cellar/libpcap/1.9.1/include/"
-    #- CPPFLAGS="-I/usr/local/opt/libpcap/include -I/usr/local/Cellar/liblinear/2.30/include -I/usr/local/Cellar/mingw-w64/7.0.0_1/toolchain-x86_64/x86_64-w64-mingw32/include"
-    #- PKG_CONFIG_PATH="/usr/local/opt/libpcap/lib/pkgconfig"
-
-    # For more info refer to: https://golang.org/doc/install/source#environment
+      - CGO_ENABLED=1
     goos:
       - windows
-
-    # Custom ldflags templates.
-    # Default is `-s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}`.
     ldflags:
-      - "" # -L /usr/local/opt/libpcap/lib -s -w
+      - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap.GopacketVersion=v1.4.0
     flags:
+      - -trimpath
       - -tags=nodpi
     goarch:
       - amd64
 
 archives:
   - id: "netcap"
-    builds: [ 'net' ]
+    builds: [ 'netcap' ]
+    name_template: '{{ .ProjectName }}-{{ .Tag }}-{{ .Os }}-{{ .Arch }}'
+    rlcp: true
     files:
       - LICENSE
       - README.md
@@ -66,6 +69,8 @@ archives:
       - types/netcap.pb.go
   - id: "netcap_macOS_nodpi"
     builds: [ 'netcap_macOS_nodpi' ]
+    name_template: '{{ .ProjectName }}-nodpi-{{ .Tag }}-{{ .Os }}-{{ .Arch }}'
+    rlcp: true
     files:
       - LICENSE
       - README.md
@@ -79,6 +84,8 @@ archives:
       - types/netcap.pb.go
   - id: "netcap_nodpi"
     builds: [ 'netcap_nodpi' ]
+    name_template: '{{ .ProjectName }}-nodpi-{{ .Tag }}-{{ .Os }}-{{ .Arch }}'
+    rlcp: true
     files:
       - LICENSE
       - README.md
@@ -118,7 +125,7 @@ archives:
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ .Tag }}-next"
+  name_template: "{{ .Tag }}"
 changelog:
   sort: asc
   filters:
@@ -126,8 +133,57 @@ changelog:
       - '^docs:'
       - '^test:'
 
+release:
+  header: |
+    ### 📦 Available Builds
+    
+    | Build | OS | Architecture | DPI Support | Description |
+    |-------|----|--------------| ------------|-------------|
+    | `netcap-{{ .Tag }}-darwin-arm64` | macOS | ARM64 | ✅ Yes | Full DPI support with nDPI |
+    | `netcap-{{ .Tag }}-linux-amd64-libc` | Linux | AMD64 | ✅ Yes | glibc-based with DPI |
+    | `netcap-{{ .Tag }}-linux-amd64-musl` | Linux | AMD64 | ✅ Yes | musl-based with DPI (Alpine) |
+    | `netcap-nodpi-{{ .Tag }}-darwin-arm64` | macOS | ARM64 | ❌ No | Static build, no DPI |
+    | `netcap-nodpi-{{ .Tag }}-linux-amd64-libc` | Linux | AMD64 | ❌ No | glibc-based, no DPI |
+    | `netcap-nodpi-{{ .Tag }}-linux-amd64-musl` | Linux | AMD64 | ❌ No | musl-based, no DPI |
+    | `netcap-nodpi-{{ .Tag }}-windows-amd64` | Windows | AMD64 | ❌ No | Windows build |
+    
+    ### 🔍 Choosing the Right Build
+    
+    - **With DPI** (`netcap-*`): Choose if you need Deep Packet Inspection features (protocol classification, application detection)
+    - **Without DPI** (`netcap-nodpi-*`): Choose for basic packet capture and analysis, smaller binary size
+    - **libc vs musl**: Use `libc` for standard Linux distros (Ubuntu, Debian, CentOS). Use `musl` for Alpine Linux or minimal containers
+    
+    ### Installing on macOS via homebrew
+
+    Builds distributed via homebrew are built with DPI support.
+    You need to install the libprotoident and ndpi libraries via homebrew.
+
+    ```
+      $ brew install libprotoident ndpi
+      $ brew tap dreadl0ck/formulas
+      $ brew install netcap
+    ```
+
+    Afterwards try running 'net' in your terminal.
+
+    ### 📚 Documentation
+    
+    - [Full Documentation](https://github.com/dreadl0ck/netcap/tree/master/docs)
+    - [Installation Guide](https://github.com/dreadl0ck/netcap/blob/master/docs/installation.md)
+    - [Command Reference](https://github.com/dreadl0ck/netcap/blob/master/docs/commands.md)
+    
+    ### ⚠️ Notes
+    
+    - On macOS/Linux, you may need to grant necessary permissions: `sudo chmod +x net`
+    - Live capture requires root/administrator privileges
+    - Verify checksums with `checksums.txt` before use
+  footer: |
+    **Full Changelog**: https://github.com/dreadl0ck/netcap/compare/{{ .PreviousTag }}...{{ .Tag }}
+
 brews:
   -
+    ids:
+      - netcap
     tap:
       owner: dreadl0ck
       name: homebrew-formulas
@@ -136,7 +192,3 @@ brews:
 
 before:
   hooks:
-  # You may remove this if you don't use go modules.
-  #- go mod download
-  # you may remove this if you don't need go generate
-  #- go generate ./...

@@ -9,7 +9,7 @@
 // The reassembly package implements uni-directional TCP reassembly, for use in
 // packet-sniffing applications.  The caller reads packets off the wire, then
 // presents them to an Assembler in the form of gopacket layers.TCP packets
-// (github.com/dreadl0ck/gopacket, github.com/dreadl0ck/gopacket/layers).
+// (github.com/gopacket/gopacket, github.com/gopacket/gopacket/layers).
 //
 // The Assembler uses a user-supplied
 // streamFactory to create a user-defined Stream interface, then passes packet
@@ -21,7 +21,7 @@
 package reassembly
 
 import (
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 )
 
 // TODO:
@@ -33,6 +33,7 @@ import (
 var Debug = false
 
 // TCPAssemblyStats provides some figures for a ScatterGather.
+//
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
 type TCPAssemblyStats struct {
 	// For this ScatterGather
@@ -79,12 +80,4 @@ type byteContainer interface {
 	isEnd() bool
 	getSeq() Sequence
 	isPacket() bool
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-
-	return b
 }

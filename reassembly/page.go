@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 )
 
 const pageBytes = 1900

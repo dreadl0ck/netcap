@@ -1,0 +1,33 @@
+# Basic Filter Examples
+# Simple single-condition filters for common use cases
+
+# Filter by destination port (HTTPS)
+DstPort == 443
+
+# Filter by source port (HTTP)
+SrcPort == 80
+
+# Filter by source IP
+SrcIP == "192.168.1.1"
+
+# Filter by destination IP
+DstIP == "8.8.8.8"
+
+# Filter by timestamp (after specific time)
+Timestamp > 1609459200000000000
+
+# Filter TCP SYN packets
+SYN == true
+
+# Filter TCP packets with ACK flag
+ACK == true
+
+# Filter HTTP POST requests
+Method == "POST"
+
+# Filter HTTP GET requests
+Method == "GET"
+
+# Filter DNS queries
+len(Questions) > 0
+

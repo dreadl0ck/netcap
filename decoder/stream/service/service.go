@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package service
@@ -18,14 +24,13 @@ import (
 
 	"github.com/dreadl0ck/netcap/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
-	logging "github.com/dreadl0ck/netcap/logger"
+	logging "github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/types"
 	"go.uber.org/zap"
 )
 
 var (
-	serviceLog        *zap.Logger
-	serviceLogSugared *zap.SugaredLogger
+	serviceLog *zap.Logger
 )
 
 // Decoder for protocol analysis and writing audit records to disk.
@@ -44,8 +49,6 @@ var Decoder = &decoder.AbstractDecoder{
 			return err
 		}
 
-		serviceLogSugared = serviceLog.Sugar()
-
 		return initServiceProbes()
 	},
 	DeInit: func(e *decoder.AbstractDecoder) error {
@@ -53,6 +56,27 @@ var Decoder = &decoder.AbstractDecoder{
 		var err error
 		for _, item := range Store.Items {
 			item.Lock()
+
+			// populate Applications from DPI results
+			if len(item.applications) > 0 {
+				item.Service.Applications = make([]string, 0, len(item.applications))
+				for app := range item.applications {
+					item.Service.Applications = append(item.Service.Applications, app)
+				}
+			}
+
+			// Set DetectedProtocolName based on available information
+			if len(item.Service.Applications) > 0 {
+				// Use the first DPI-detected application as the protocol name
+				item.Service.DetectedProtocolName = item.Service.Applications[0]
+			} else if item.Service.Product != "" {
+				// Use product name if available from service probe matching
+				item.Service.DetectedProtocolName = item.Service.Product
+			} else if item.Service.Name != "" {
+				// Fallback to the service name from port lookup
+				item.Service.DetectedProtocolName = item.Service.Name
+			}
+
 			err = e.Writer.Write(item.Service)
 			if err != nil {
 				serviceLog.Error("failed to flush service audit record", zap.Error(err))

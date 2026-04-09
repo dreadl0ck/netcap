@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package collector
@@ -24,7 +30,7 @@ import (
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	netio "github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/logger"
+	"github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/resolvers"
 )
 
@@ -63,47 +69,47 @@ func (c *Collector) initLogging() error {
 	c.netcapLog = lNetcap
 	c.netcapLogFile = netcapLogFile
 
-	// setup logger for collector
-	lCollector, collectorLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "collector", c.config.DecoderConfig.Debug)
+	// setup logger for collector with atomic level
+	lCollector, collectorLogFile, collectorLevel, err := logger.InitZapLoggerWithAtomicLevel(c.config.DecoderConfig.Out, "collector", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
 
 	c.log = lCollector
 
-	// setup logger for resolvers
-	lResolvers, resolversLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "resolvers", c.config.DecoderConfig.Debug)
+	// setup logger for resolvers with atomic level
+	lResolvers, resolversLogFile, resolversLevel, err := logger.InitZapLoggerWithAtomicLevel(c.config.DecoderConfig.Out, "resolvers", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
 
 	resolvers.SetLogger(lResolvers)
 
-	// setup logger for io pkg
-	lIO, ioLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "io", c.config.DecoderConfig.Debug)
+	// setup logger for io pkg with atomic level
+	lIO, ioLogFile, ioLevel, err := logger.InitZapLoggerWithAtomicLevel(c.config.DecoderConfig.Out, "io", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
 
 	netio.SetLogger(lIO)
 
-	// setup general logger for decoder pkg
-	lDecoder, decoderLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "decoder", c.config.DecoderConfig.Debug)
+	// setup general logger for decoder pkg with atomic level
+	lDecoder, decoderLogFile, decoderLevel, err := logger.InitZapLoggerWithAtomicLevel(c.config.DecoderConfig.Out, "decoder", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
 
 	packet.SetDecoderLogger(lDecoder)
 
-	lDB, dbLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "db", c.config.DecoderConfig.Debug)
+	lDB, dbLogFile, dbLevel, err := logger.InitZapLoggerWithAtomicLevel(c.config.DecoderConfig.Out, "db", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
 
 	db.SetLogger(lDB)
 
-	// setup logger for reassembly pkg
-	lReassembly, reassemblyLogFile, err := logger.InitZapLogger(c.config.DecoderConfig.Out, "reassembly", c.config.DecoderConfig.Debug)
+	// setup logger for reassembly pkg with atomic level
+	lReassembly, reassemblyLogFile, reassemblyLevel, err := logger.InitZapLoggerWithAtomicLevel(c.config.DecoderConfig.Out, "reassembly", c.config.DecoderConfig.Debug)
 	if err != nil {
 		return err
 	}
@@ -130,6 +136,16 @@ func (c *Collector) initLogging() error {
 		decoderLogFile,
 		reassemblyLogFile,
 		dbLogFile,
+	)
+
+	// store atomic levels for runtime log level changes
+	c.atomicLogLevels = append(c.atomicLogLevels,
+		collectorLevel,
+		resolversLevel,
+		ioLevel,
+		decoderLevel,
+		reassemblyLevel,
+		dbLevel,
 	)
 
 	// create errors.log file

@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package collector
@@ -17,7 +23,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 
 	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
@@ -62,19 +68,28 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			if c.config.ReassembleConnections {
 				t := time.Now()
 				tcp.ReassemblePacket(pkt, assembler)
-				reassemblyTime.WithLabelValues().Set(float64(time.Since(t).Nanoseconds()))
+				duration := time.Since(t)
+				reassemblyTime.WithLabelValues().Set(float64(duration.Nanoseconds()))
+				c.perfTracker.RecordReassembly(duration)
 			}
 
 			// create context for packet
 			ctx := &types.PacketContext{}
+
+			// Always calculate Community ID v1 for cross-tool correlation
+			ctx.CommunityID = packet.CalcCommunityID(pkt)
 
 			if c.config.DecoderConfig.AddContext {
 				netLayer = pkt.NetworkLayer()
 				transportLayer = pkt.TransportLayer()
 
 				if netLayer != nil {
-					ctx.SrcIP = netLayer.NetworkFlow().Src().String()
-					ctx.DstIP = netLayer.NetworkFlow().Dst().String()
+					if len(netLayer.NetworkFlow().Src().Raw()) > 0 {
+						ctx.SrcIP = netLayer.NetworkFlow().Src().String()
+					}
+					if len(netLayer.NetworkFlow().Dst().Raw()) > 0 {
+						ctx.DstIP = netLayer.NetworkFlow().Dst().String()
+					}
 				}
 
 				if transportLayer != nil {
@@ -120,7 +135,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 					for _, dec = range decoders {
 						t := time.Now()
 						err = dec.Decode(ctx, pkt, layer)
-						gopacketDecoderTime.WithLabelValues(layer.LayerType().String()).Set(float64(time.Since(t).Nanoseconds()))
+						duration := time.Since(t)
+						gopacketDecoderTime.WithLabelValues(layer.LayerType().String()).Set(float64(duration.Nanoseconds()))
+						c.perfTracker.RecordGoPacketDecoder(layer.LayerType().String(), duration)
 						if err != nil {
 							if c.config.DecoderConfig.ExportMetrics {
 								decodingErrorsTotal.WithLabelValues(layer.LayerType().String(), err.Error()).Inc()
@@ -154,8 +171,10 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			// call custom decoders
 			for _, customDec = range c.packetDecoders {
 				t := time.Now()
-				err = customDec.Decode(pkt)
-				customDecoderTime.WithLabelValues(customDec.GetName()).Set(float64(time.Since(t).Nanoseconds()))
+				err = customDec.Decode(pkt, ctx)
+				duration := time.Since(t)
+				customDecoderTime.WithLabelValues(customDec.GetName()).Set(float64(duration.Nanoseconds()))
+				c.perfTracker.RecordCustomDecoder(customDec.GetName(), duration)
 				if err != nil {
 					if c.config.DecoderConfig.ExportMetrics {
 						decodingErrorsTotal.WithLabelValues(customDec.GetName(), err.Error()).Inc()
@@ -183,6 +202,12 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 
 			c.wg.Done()
 
+			// If using pool mode, dispose of the packet to return it to the pool
+			// This must be done after all packet processing is complete
+			if pooledPkt, ok := pkt.(gopacket.PooledPacket); ok {
+				pooledPkt.Dispose()
+			}
+
 			continue
 		}
 	}()
@@ -200,6 +225,18 @@ func (c *Collector) initWorkers() []chan gopacket.Packet {
 	// create assemblers
 	for i := range workers {
 		a := reassembly.NewAssembler(tcp.GetStreamPool())
+
+		// Configure stream reassembly limits from config
+		if c.config.DecoderConfig.MaxStreamBytes > 0 {
+			a.MaxStreamBytes = c.config.DecoderConfig.MaxStreamBytes
+		}
+		if c.config.DecoderConfig.MaxBufferedPagesPerConnection > 0 {
+			a.MaxBufferedPagesPerConnection = c.config.DecoderConfig.MaxBufferedPagesPerConnection
+		}
+		if c.config.DecoderConfig.MaxBufferedPagesTotal > 0 {
+			a.MaxBufferedPagesTotal = c.config.DecoderConfig.MaxBufferedPagesTotal
+		}
+
 		c.assemblers = append(c.assemblers, a)
 		workers[i] = c.worker(a)
 	}

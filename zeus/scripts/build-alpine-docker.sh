@@ -25,32 +25,32 @@ tag="dreadl0ck/netcap:alpine-${VERSION}"
 
 echo "[INFO] $tag args: ${ARGS}"
 
-# build image
+# build image directly from project root
 # dont quote ARGS or passing arguments wont work anymore
-docker build ${ARGS} -t "$tag" .
-if (( $? != 0 )); then
+if [ -n "${ARGS:-}" ]; then
+  docker build ${ARGS} -t "$tag" -f Dockerfile .
+else
+  docker build -t "$tag" -f Dockerfile .
+fi
+BUILD_EXIT_CODE=$?
+
+if (( $BUILD_EXIT_CODE != 0 )); then
 	echo "[ERROR] building container failed"
 	exit 1
 fi
 
-echo "[INFO] running docker image"
-
-docker run "$tag"
-
-# echo "[INFO] docker images"
-# docker image ls
-
-# grab container ID
-echo "[INFO] looking for $tag container ID"
-CONTAINER_ID=$(docker ps -a -f ancestor=$tag -q --latest)
+# Create container without running it (avoids architecture issues on non-Linux hosts)
+echo "[INFO] creating container from image $tag"
+CONTAINER_ID=$(docker create "$tag")
 if [[ $CONTAINER_ID == "" ]]; then
-	echo "[ERROR] no docker container found"
+	echo "[ERROR] failed to create docker container"
 	exit 1
 fi
+echo "[INFO] container ID: $CONTAINER_ID"
 
-ARCHIVE="netcap_${VERSION}_linux_amd64_musl"
+ARCHIVE="netcap-${VERSION}-linux-amd64-musl"
 
-echo "[INFO] preparing dist-linux folder, CONTAINER_ID: $CONTAINER_ID"
+echo "[INFO] preparing dist-linux folder"
 
 # clean up
 rm -rf dist-linux/${ARCHIVE}

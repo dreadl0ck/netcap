@@ -1,55 +1,161 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package util
 
 import (
-	"github.com/dreadl0ck/netcap/env"
-	"os"
-
-	"github.com/namsral/flag"
+	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/env"
 )
 
-// Flags returns all flags.
-func Flags() (flags []string) {
-	fs.VisitAll(func(f *flag.Flag) {
-		flags = append(flags, f.Name)
-	})
-
-	return
+// Flags returns all flag names for the util subcommand.
+func Flags() []string {
+	var flags []string
+	for _, f := range GetFlags() {
+		flags = append(flags, f.Names()[0])
+	}
+	return flags
 }
 
-var (
-	// util.
-	fs                  = flag.NewFlagSetWithEnvPrefix(os.Args[0], "NC", flag.ExitOnError)
-	flagGenerateConfig  = fs.Bool("gen-config", false, "generate config")
-	_                   = fs.String("config", "", "read configuration from file at path")
-	flagCheckFields     = fs.Bool("check", false, "check number of occurrences of the separator, in fields of an audit record file")
-	flagToUTC           = fs.String("ts2utc", "", "util to convert seconds.microseconds timestamp to UTC")
-	flagInput           = fs.String("read", "", "read specified audit record file")
-	flagSeparator       = fs.String("sep", ",", "set separator string for csv output")
-	flagCloneDBs        = fs.Bool("clone-dbs", false, "clone netcap-dbs repository to the expected path and exit")
-	flagGenerateDBs     = fs.Bool("generate-dbs", false, "fetch and generate netcap-dbs and exit")
-	flagUpdateDBs       = fs.Bool("update-dbs", false, "update the current databases to the latest version and exit")
-	flagMemBufferSize   = fs.Int("membuf-size", defaults.BufferSize, "set size for membuf")
-	flagEnv             = fs.Bool("env", false, "print netcap environment variables and exit")
-	flagInterfaces      = fs.Bool("interfaces", false, "print netcap environment variables and exit")
-	flagIndex           = fs.String("index", "", "index data for full text search")
-	flagMkPacket        = fs.String("mkpacket", "", "create a TCP or UDP packet with piped input from stdin")
-	flagNVDIndexStart   = fs.Int("nvd-start-year", 2002, "year to start indexing the nvd dbs from")
-	flagForce           = fs.Bool("force", false, "disable prompts for user interaction")
-	flagVerbose         = fs.Bool("verbose", false, "enable verbose output")
-	flagDownloadGeolite = fs.Bool("download-geolite", false, "download geolite DB, requires API key in environment: "+env.GeoLiteAPIKey)
-)
+// GetFlags returns the CLI flags for the util subcommand.
+func GetFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.BoolFlag{
+			Name:    "gen-config",
+			Usage:   "generate config",
+			Sources: cli.EnvVars("NC_GEN_CONFIG"),
+		},
+		&cli.StringFlag{
+			Name:    "config",
+			Usage:   "read configuration from file at path",
+			Sources: cli.EnvVars("NC_CONFIG"),
+		},
+		&cli.BoolFlag{
+			Name:    "check",
+			Usage:   "check number of occurrences of the separator, in fields of an audit record file",
+			Sources: cli.EnvVars("NC_CHECK"),
+		},
+		&cli.StringFlag{
+			Name:    "ts2utc",
+			Usage:   "util to convert seconds.microseconds timestamp to UTC",
+			Sources: cli.EnvVars("NC_TS2UTC"),
+		},
+		&cli.StringFlag{
+			Name:    "read",
+			Usage:   "read specified audit record file",
+			Sources: cli.EnvVars("NC_READ"),
+		},
+		&cli.StringFlag{
+			Name:    "sep",
+			Value:   ",",
+			Usage:   "set separator string for csv output",
+			Sources: cli.EnvVars("NC_SEP"),
+		},
+		&cli.BoolFlag{
+			Name:    "generate-dbs",
+			Usage:   "fetch and generate netcap-dbs and exit",
+			Sources: cli.EnvVars("NC_GENERATE_DBS"),
+		},
+		&cli.BoolFlag{
+			Name:    "update-dbs",
+			Usage:   "update the current databases to the latest version and exit",
+			Sources: cli.EnvVars("NC_UPDATE_DBS"),
+		},
+		&cli.IntFlag{
+			Name:    "membuf-size",
+			Value:   defaults.BufferSize,
+			Usage:   "set size for membuf",
+			Sources: cli.EnvVars("NC_MEMBUF_SIZE"),
+		},
+		&cli.BoolFlag{
+			Name:    "env",
+			Usage:   "print netcap environment variables and exit",
+			Sources: cli.EnvVars("NC_ENV"),
+		},
+		&cli.BoolFlag{
+			Name:    "interfaces",
+			Usage:   "print network interfaces and exit",
+			Sources: cli.EnvVars("NC_INTERFACES"),
+		},
+		&cli.StringFlag{
+			Name:    "index",
+			Usage:   "index data for full text search",
+			Sources: cli.EnvVars("NC_INDEX"),
+		},
+		&cli.StringFlag{
+			Name:    "mkpacket",
+			Usage:   "create a TCP or UDP packet with piped input from stdin",
+			Sources: cli.EnvVars("NC_MKPACKET"),
+		},
+		&cli.IntFlag{
+			Name:    "nvd-start-year",
+			Value:   2002,
+			Usage:   "year to start indexing the nvd dbs from",
+			Sources: cli.EnvVars("NC_NVD_START_YEAR"),
+		},
+		&cli.BoolFlag{
+			Name:    "force",
+			Usage:   "disable prompts for user interaction",
+			Sources: cli.EnvVars("NC_FORCE"),
+		},
+		&cli.BoolFlag{
+			Name:    "verbose",
+			Usage:   "enable verbose output",
+			Sources: cli.EnvVars("NC_VERBOSE"),
+		},
+		&cli.BoolFlag{
+			Name:    "download-geolite",
+			Usage:   "download geolite DB, requires API key in environment: " + env.GeoLiteAPIKey,
+			Sources: cli.EnvVars("NC_DOWNLOAD_GEOLITE"),
+		},
+		&cli.BoolFlag{
+			Name:    "serve-dbs",
+			Usage:   "start HTTP server to serve databases with nightly rebuilds",
+			Sources: cli.EnvVars("NC_SERVE_DBS"),
+		},
+		&cli.StringFlag{
+			Name:    "serve-addr",
+			Value:   ":8080",
+			Usage:   "address for database server",
+			Sources: cli.EnvVars("NC_SERVE_ADDR"),
+		},
+		&cli.BoolFlag{
+			Name:    "download-dbs",
+			Usage:   "download databases from remote server",
+			Sources: cli.EnvVars("NC_DOWNLOAD_DBS"),
+		},
+		&cli.StringFlag{
+			Name:    "dbs-url",
+			Usage:   "URL to download databases from (default: " + env.NetcapDBsURL + ")",
+			Sources: cli.EnvVars("NC_DBS_URL"),
+		},
+		&cli.BoolFlag{
+			Name:    "decoders",
+			Usage:   "display tree view of all supported audit record types and their encapsulation levels",
+			Sources: cli.EnvVars("NC_DECODERS"),
+		},
+		&cli.BoolFlag{
+			Name:    "gopacket-coverage",
+			Usage:   "analyze gopacket layer type coverage and show unused layer types",
+			Sources: cli.EnvVars("NC_GOPACKET_COVERAGE"),
+		},
+	}
+}

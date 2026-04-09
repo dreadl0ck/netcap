@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io
@@ -153,6 +159,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.POP3)
 	case types.Type_NC_TLSServerHello:
 		record = new(types.TLSServerHello)
+	case types.Type_NC_TLSCertificate:
+		record = new(types.TLSCertificate)
 	case types.Type_NC_Software:
 		record = new(types.Software)
 	case types.Type_NC_Service:
@@ -171,6 +179,86 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.Mail)
 	case types.Type_NC_Alert:
 		record = new(types.Alert)
+	case types.Type_NC_FTP:
+		record = new(types.FTP)
+	case types.Type_NC_IRC:
+		record = new(types.IRC)
+	case types.Type_NC_SMB:
+		record = new(types.SMB)
+	case types.Type_NC_IMAP:
+		record = new(types.IMAP)
+	case types.Type_NC_BGP:
+		record = new(types.BGP)
+	case types.Type_NC_RADIUS:
+		record = new(types.RADIUS)
+	case types.Type_NC_Syslog:
+		record = new(types.Syslog)
+	case types.Type_NC_RDP:
+		record = new(types.RDP)
+	case types.Type_NC_DNP3:
+		record = new(types.DNP3)
+	case types.Type_NC_SOCKS:
+		record = new(types.SOCKS)
+	case types.Type_NC_GTP:
+		record = new(types.GTP)
+	case types.Type_NC_PPPoE:
+		record = new(types.PPPoE)
+	case types.Type_NC_PPP:
+		record = new(types.PPP)
+	case types.Type_NC_RMCP:
+		record = new(types.RMCP)
+	case types.Type_NC_STP:
+		record = new(types.STP)
+	case types.Type_NC_MLDv2MulticastListenerQuery:
+		record = new(types.MLDv2MulticastListenerQuery)
+	case types.Type_NC_MLDv2MulticastListenerReport:
+		record = new(types.MLDv2MulticastListenerReport)
+	case types.Type_NC_OPCUA:
+		record = new(types.OPCUA)
+	case types.Type_NC_S7Comm:
+		record = new(types.S7Comm)
+	case types.Type_NC_MQTTSN:
+		record = new(types.MQTTSN)
+	case types.Type_NC_BACnetIP:
+		record = new(types.BACnetIP)
+	case types.Type_NC_IEC62351:
+		record = new(types.IEC62351)
+	case types.Type_NC_PROFINET:
+		record = new(types.PROFINET)
+	case types.Type_NC_QUIC:
+		record = new(types.QUIC)
+	case types.Type_NC_QUICClientHello:
+		record = new(types.QUICClientHello)
+	case types.Type_NC_LLMNR:
+		record = new(types.LLMNR)
+	case types.Type_NC_STUN:
+		record = new(types.STUN)
+	case types.Type_NC_Kerberos:
+		record = new(types.Kerberos)
+	case types.Type_NC_TACACS:
+		record = new(types.TACACS)
+	case types.Type_NC_NetFlowV9:
+		record = new(types.NetFlowV9)
+	case types.Type_NC_DCERPC:
+		record = new(types.DCERPC)
+	case types.Type_NC_OCSP:
+		record = new(types.OCSP)
+	case types.Type_NC_IPP:
+		record = new(types.IPP)
+	case types.Type_NC_PIM:
+		record = new(types.PIM)
+	case types.Type_NC_Zabbix:
+		record = new(types.Zabbix)
+	case types.Type_NC_CLDAP:
+		record = new(types.CLDAP)
+	case types.Type_NC_ISIS:
+		record = new(types.ISIS)
+	case types.Type_NC_RARP:
+		record = new(types.RARP)
+	case types.Type_NC_Header:
+		// NC_Header is a file header type, not an audit record type
+		// Return nil to indicate this type should not be initialized as a record
+		return nil
 	default:
 		panic("InitRecord: unknown type: " + typ.String())
 	}

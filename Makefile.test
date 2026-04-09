@@ -1,0 +1,134 @@
+# Netcap Test Makefile
+# Include this from main Makefile or use directly: make -f Makefile.test test-unit
+
+.PHONY: test test-unit test-integration test-regression test-e2e test-bench test-all
+.PHONY: test-coverage test-coverage-html test-race
+.PHONY: test-golden-update test-golden-verify
+.PHONY: fixtures-download fixtures-generate test-databases-generate
+
+# Test targets
+test: test-unit
+
+test-all: test-unit test-integration test-regression
+
+# Unit tests (fast, isolated, with mocks)
+test-unit:
+	@echo "Running unit tests..."
+	go test -short -race -coverprofile=coverage.out ./...
+
+# Integration tests (with real files and fixtures)
+test-integration:
+	@echo "Running integration tests..."
+	go test -v -tags=integration ./tests/integration/...
+
+# Regression tests (golden file comparisons)
+test-regression:
+	@echo "Running regression tests..."
+	go test -v -tags=regression ./tests/regression/...
+
+test-regression-verify:
+	@echo "Verifying regression test outputs..."
+	@./scripts/verify-golden-files.sh
+
+# Update golden files (use after verifying changes are correct)
+test-golden-update:
+	@echo "Updating golden files..."
+	UPDATE_GOLDEN=1 go test -v -tags=regression ./tests/regression/...
+	@echo "Golden files updated. Please review changes before committing."
+
+# E2E tests (full CLI workflows)
+test-e2e:
+	@echo "Running end-to-end tests..."
+	go test -v -tags=e2e -timeout=10m ./tests/e2e/...
+
+# Performance benchmarks
+test-bench:
+	@echo "Running benchmarks..."
+	go test -bench=. -benchmem -cpuprofile=cpu.prof -memprofile=mem.prof ./tests/benchmarks/...
+	@echo "Profiles saved: cpu.prof, mem.prof"
+
+# Coverage reports
+test-coverage:
+	@echo "Generating coverage report..."
+	go test -coverprofile=coverage.out ./...
+	go tool cover -func=coverage.out
+
+test-coverage-html:
+	@echo "Generating HTML coverage report..."
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report: coverage.html"
+
+# Race detector
+test-race:
+	@echo "Running tests with race detector..."
+	go test -race ./...
+
+# Memory sanitizer (requires clang)
+test-msan:
+	@echo "Running tests with memory sanitizer..."
+	CC=clang go test -msan ./...
+
+# Test specific package
+test-pkg:
+	@test -n "$(PKG)" || (echo "Usage: make test-pkg PKG=./collector/" && exit 1)
+	go test -v -race -cover $(PKG)
+
+# Test with verbose output
+test-verbose:
+	go test -v ./...
+
+# Coverage enforcement (fail if below threshold)
+test-coverage-check: test-coverage
+	@echo "Checking coverage threshold (80%)..."
+	@go tool cover -func=coverage.out | grep total | awk '{print $$3}' | sed 's/%//' | \
+	  awk '{if ($$1 < 80) {print "Coverage below 80%: " $$1 "%"; exit 1} else {print "Coverage OK: " $$1 "%"}}'
+
+# Test data management
+fixtures-download:
+	@echo "Downloading test fixtures..."
+	@mkdir -p tests/fixtures/pcaps
+	@./scripts/download-test-fixtures.sh
+
+fixtures-generate:
+	@echo "Generating synthetic test fixtures..."
+	go run ./helpers/pcap_generator.go
+
+test-databases-generate:
+	@echo "Generating test databases..."
+	go run ./helpers/generate_test_dbs.go
+
+# Clean test artifacts
+test-clean:
+	@echo "Cleaning test artifacts..."
+	rm -f coverage.out coverage.html
+	rm -f cpu.prof mem.prof
+	rm -rf tests/fixtures/tmp/
+	find . -name "*.test" -delete
+
+# Help
+test-help:
+	@echo "Netcap Test Targets:"
+	@echo ""
+	@echo "  test              - Run unit tests (default)"
+	@echo "  test-all          - Run unit, integration, and regression tests"
+	@echo "  test-unit         - Run fast unit tests"
+	@echo "  test-integration  - Run integration tests"
+	@echo "  test-regression   - Run regression tests"
+	@echo "  test-e2e          - Run end-to-end tests"
+	@echo "  test-bench        - Run performance benchmarks"
+	@echo ""
+	@echo "  test-coverage     - Generate coverage report"
+	@echo "  test-coverage-html - Generate HTML coverage report"
+	@echo "  test-race         - Run tests with race detector"
+	@echo ""
+	@echo "  test-golden-update - Update golden files"
+	@echo "  test-golden-verify - Verify against golden files"
+	@echo ""
+	@echo "  test-pkg PKG=./collector/ - Test specific package"
+	@echo "  test-verbose      - Run tests with verbose output"
+	@echo ""
+	@echo "  fixtures-download - Download test fixtures"
+	@echo "  fixtures-generate - Generate synthetic fixtures"
+	@echo "  test-clean        - Clean test artifacts"
+

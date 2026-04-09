@@ -1,33 +1,41 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package types
 
 import (
-	"github.com/dreadl0ck/netcap/encoder"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 )
 
 const (
-	fieldAddr         = "Addr"
-	fieldGeolocation  = "Geolocation"
-	fieldDNSNames     = "DNSNames"
-	fieldApplications = "Applications"
-	fieldJa3          = "Ja3"
-	fieldProtocols    = "Protocols"
-	fieldDstPorts     = "DstPorts"
-	fieldSrcPorts     = "SrcPorts"
-	fieldSNIs         = "SNIs"
+	fieldAddr                   = "Addr"
+	fieldGeolocation            = "Geolocation"
+	fieldDNSNames               = "DNSNames"
+	fieldApplications           = "Applications"
+	fieldProtocols        = "Protocols"
+	fieldDstPorts         = "DstPorts"
+	fieldSrcPorts         = "SrcPorts"
+	fieldSNIs             = "SNIs"
+	fieldJa4Fingerprints  = "Ja4Fingerprints"
+	fieldJa4SFingerprints = "Ja4SFingerprints"
 )
 
 var fieldsIPProfile = []string{
@@ -38,12 +46,13 @@ var fieldsIPProfile = []string{
 	fieldTimestampFirst, // int64
 	fieldTimestampLast,  // int64
 	fieldApplications,   // []string
-	//fieldJa3,            // map[string]string
-	//fieldProtocols,      // map[string]*Protocol
+	//fieldProtocols,            // map[string]*Protocol
 	fieldBytes, // uint64
-	//fieldDstPorts,       // map[string]*Port
-	//fieldSrcPorts,       // map[string]*Port
-	//fieldSNIs,           // map[string]int64
+	//fieldDstPorts,             // map[string]*Port
+	//fieldSrcPorts,             // map[string]*Port
+	//fieldSNIs,                 // map[string]int64
+	fieldJa4Fingerprints,  // []string
+	fieldJa4SFingerprints, // []string
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -61,12 +70,13 @@ func (d *IPProfile) CSVRecord() []string {
 		formatInt64(d.TimestampFirst),
 		formatInt64(d.TimestampLast),
 		join(d.Applications...),
-		// d.Ja3,
 		// d.Protocols,
 		formatUint64(d.Bytes),
 		// d.DstPorts,
 		// d.SrcPorts,
 		// d.SNIs,
+		join(d.Ja4Fingerprints...),
+		join(d.Ja4SFingerprints...),
 	})
 }
 
@@ -113,6 +123,8 @@ func (d *IPProfile) Encode() []string {
 		ipProfileEncoder.Int64(fieldTimestampLast, d.TimestampLast),
 		ipProfileEncoder.String(fieldApplications, join(d.Applications...)),
 		ipProfileEncoder.Uint64(fieldBytes, d.Bytes),
+		ipProfileEncoder.String(fieldJa4Fingerprints, join(d.Ja4Fingerprints...)),
+		ipProfileEncoder.String(fieldJa4SFingerprints, join(d.Ja4SFingerprints...)),
 	})
 }
 

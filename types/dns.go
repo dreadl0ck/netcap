@@ -1,24 +1,31 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package types
 
 import (
 	"encoding/hex"
-	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -76,22 +83,22 @@ func (d *DNS) CSVHeader() []string {
 // CSVRecord returns the CSV record for the audit record.
 func (d *DNS) CSVRecord() []string {
 	var (
-		questions   = make([]string, len(d.Questions))
-		answers     = make([]string, len(d.Answers))
-		authorities = make([]string, len(d.Authorities))
-		additionals = make([]string, len(d.Additionals))
+		questions   = make([]string, 0, len(d.Questions))
+		answers     = make([]string, 0, len(d.Answers))
+		authorities = make([]string, 0, len(d.Authorities))
+		additionals = make([]string, 0, len(d.Additionals))
 	)
 	for _, q := range d.Questions {
 		questions = append(questions, q.toString())
 	}
 	for _, q := range d.Answers {
-		answers = append(questions, q.toString())
+		answers = append(answers, q.toString())
 	}
 	for _, q := range d.Authorities {
-		authorities = append(questions, q.toString())
+		authorities = append(authorities, q.toString())
 	}
 	for _, q := range d.Additionals {
-		additionals = append(questions, q.toString())
+		additionals = append(additionals, q.toString())
 	}
 
 	return filter([]string{
@@ -138,7 +145,7 @@ func (q *DNSQuestion) toString() string {
 }
 
 func (q *DNSResourceRecord) toString() string {
-	var txts []string
+	txts := make([]string, 0, len(q.TXTs))
 	for _, t := range q.TXTs {
 		txts = append(txts, string(t))
 	}
@@ -246,6 +253,7 @@ func (d *DNS) SetPacketContext(ctx *PacketContext) {
 	d.DstIP = ctx.DstIP
 	d.SrcPort = ctx.SrcPort
 	d.DstPort = ctx.DstPort
+	d.CommunityID = ctx.CommunityID
 }
 
 // Src returns the source address of the audit record.
@@ -264,22 +272,22 @@ var dnsEncoder = encoder.NewValueEncoder()
 func (d *DNS) Encode() []string {
 
 	var (
-		questions   = make([]string, len(d.Questions))
-		answers     = make([]string, len(d.Answers))
-		authorities = make([]string, len(d.Authorities))
-		additionals = make([]string, len(d.Additionals))
+		questions   = make([]string, 0, len(d.Questions))
+		answers     = make([]string, 0, len(d.Answers))
+		authorities = make([]string, 0, len(d.Authorities))
+		additionals = make([]string, 0, len(d.Additionals))
 	)
 	for _, q := range d.Questions {
 		questions = append(questions, q.toString())
 	}
 	for _, q := range d.Answers {
-		answers = append(questions, q.toString())
+		answers = append(answers, q.toString())
 	}
 	for _, q := range d.Authorities {
-		authorities = append(questions, q.toString())
+		authorities = append(authorities, q.toString())
 	}
 	for _, q := range d.Additionals {
-		additionals = append(questions, q.toString())
+		additionals = append(additionals, q.toString())
 	}
 
 	return filter([]string{

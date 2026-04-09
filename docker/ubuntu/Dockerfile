@@ -1,37 +1,12 @@
-FROM ubuntu:18.04 as builder
+FROM --platform=linux/amd64 dreadl0ck/netcap-builder:ubuntu-dpi-latest as builder
 
-RUN apt-get clean
-RUN apt-get update
-RUN apt-get install -y software-properties-common net-tools
-RUN add-apt-repository ppa:longsleep/golang-backports
-RUN apt-get update
-RUN apt-get install -y golang-go
-
-RUN apt-get install -y apt-transport-https curl lsb-release wget autogen autoconf libtool gcc libpcap-dev linux-headers-generic git vim
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libwandio/cfg/setup/bash.deb.sh' | bash
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libwandder/cfg/setup/bash.deb.sh' | bash
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libtrace/cfg/setup/bash.deb.sh' | bash
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libflowmanager/cfg/setup/bash.deb.sh' | bash
-RUN curl -1sLf 'https://dl.cloudsmith.io/public/wand/libprotoident/cfg/setup/bash.deb.sh' | bash
-RUN apt-get update
-RUN apt install -y liblinear-dev libprotoident libprotoident-dev libprotoident-tools libtrace4-dev libtrace4-tools
-
-# nDPI
-RUN apt-get install -y libjson-c-dev
-RUN wget https://github.com/ntop/nDPI/archive/4.0.tar.gz
-RUN tar xfz 4.0.tar.gz
-RUN cd nDPI-4.0 && ./autogen.sh && ./configure && make && make install
-
-WORKDIR /src
-
-COPY go.mod go.sum ./
-RUN go mod download
-
+# Copy netcap source
+WORKDIR /netcap
 COPY . .
+
 ENV VERSION XXX
 
-ARG tags
-ENV TAGS $tags
+ARG TAGS="-tags noyara"
 RUN echo "tags: $TAGS"
 
 ENV CFLAGS -I/usr/local/include/
@@ -44,15 +19,34 @@ RUN find / -iname libprotoident.h
 RUN find / -iname libtrace.h
 RUN ls /usr/lib/*
 
-# compile
-RUN go build -mod=readonly ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+# Extract library versions from go.mod
+RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
+    GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
+    GOOS=linux GOARCH=amd64 go build ${TAGS} -trimpath \
+    -ldflags "-s -w \
+        -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
+        -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
+        -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
+        -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1 \
+        -X github.com/dreadl0ck/netcap/dpi.GoDPIVersion=${GO_DPI_VERSION}" \
+    -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
-FROM ubuntu:18.04
+FROM --platform=linux/amd64 ubuntu:24.04
 ARG IPV6_SUPPORT=true
 
 RUN apt-get update
-RUN apt install -y --fix-missing libpcap-dev software-properties-common ca-certificates liblzo2-2 libkeyutils-dev
+RUN apt install -y --fix-missing libpcap0.8 software-properties-common ca-certificates liblzo2-2 libkeyutils-dev tcpdump curl xz-utils
 RUN update-ca-certificates
+
+# Install Google Magika CLI v1.0.2 for AI-based file type classification
+ARG MAGIKA_VERSION=1.0.2
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then MAGIKA_ARCH="x86_64-unknown-linux-gnu"; \
+    elif [ "$ARCH" = "aarch64" ]; then MAGIKA_ARCH="aarch64-unknown-linux-gnu"; \
+    else echo "Unsupported arch: $ARCH" && exit 1; fi && \
+    curl -LsSf "https://github.com/google/magika/releases/download/cli%2Fv${MAGIKA_VERSION}/magika-${MAGIKA_ARCH}.tar.xz" \
+    | tar -xJ -C /usr/local/bin/ && \
+    chmod +x /usr/local/bin/magika
 
 WORKDIR /netcap
 

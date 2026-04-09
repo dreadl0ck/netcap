@@ -32,15 +32,16 @@ Lets look at the protocol buffer definition for a device profile:
 message DeviceProfile {
     string             MacAddr            = 1;
     string             DeviceManufacturer = 2;
-    repeated IPProfile DeviceIPs          = 3;
-    repeated IPProfile Contacts           = 4;
+    repeated string    DeviceIPs          = 3;
+    repeated string    Contacts           = 4;
     int64              NumPackets         = 5;
-    string             Timestamp          = 6; // first seen
+    int64              Timestamp          = 6; // first seen
     uint64             Bytes              = 7;
+    repeated string    Applications       = 8; // DPI detected applications
 }
 ```
 
-As you can see, a DeviceProfile is a summary structure built around the hardware address of a physical device. It captures the addresses that have been used, as well as the contacted addresses in form of IPProfiles, among other meta information, like the number of packets or the hardware manufacturer.
+As you can see, a DeviceProfile is a summary structure built around the hardware address of a physical device. It captures the addresses that have been used, as well as the contacted addresses in form of IPProfiles, among other meta information, like the number of packets, the hardware manufacturer, and DPI detected applications.
 
 Lets take a closer look at an IPProfile:
 

@@ -1,0 +1,1002 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+import { useState, useEffect } from 'react';
+import {
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  IconButton,
+  LinearProgress,
+  MenuItem,
+  Paper,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TableSortLabel,
+  TextField,
+  Tooltip,
+  Typography,
+  type SelectChangeEvent,
+} from '@mui/material';
+import { CheckCircle as CheckCircleIcon, Visibility as VisibilityIcon, HourglassEmpty as HourglassEmptyIcon, Error as ErrorIcon, Share as ShareIcon, Description as DescriptionIcon, BubbleChart as VisualizeIcon, Report as ReportIcon, BugReport as BugReportIcon, Download as DownloadIcon, Notifications as NotificationsIcon, Refresh as RefreshIcon, Close as CloseIcon } from '@mui/icons-material';
+import { useNetcapRouter, useNetcapApi, useIsMobile } from '../hooks';
+import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import { formatBytes, formatTimestamp, formatDuration, type FileInfo } from '../lib/api';
+import { parseSearchQuery, matchesSingleValue } from '../lib/tableSearch';
+import useSWR from 'swr';
+import ReportIssueDialog from '../components/ReportIssueDialog';
+import SearchInput from '../components/SearchInput';
+
+type SortField = 'name' | 'size' | 'modifiedTime';
+type SortOrder = 'asc' | 'desc';
+
+export default function PCAPs() {
+  const isMobile = useIsMobile();
+  const router = useNetcapRouter();
+  const api = useNetcapApi();
+  const { data: files, error, mutate } = useSWR('inputFiles', () => api.getInputFiles(), {
+    refreshInterval: 5000, // Auto-refresh every 5 seconds to catch new uploads
+  });
+  const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
+  const [activating, setActivating] = useState<string | null>(null);
+  const [progressData, setProgressData] = useState<Record<string, { percent: number; message: string }>>({});
+
+  // Debug: Log files when they change
+  useEffect(() => {
+    if (files) {
+      console.log('[PCAPs] Loaded files:', files.length);
+      const filesWithErrors = files.filter(f => f.error);
+      const filesWithErrorLogs = files.filter(f => f.errorLogPath);
+      console.log('[PCAPs] Files with errors:', filesWithErrors.length);
+      console.log('[PCAPs] Files with errorLogPath:', filesWithErrorLogs.length);
+      if (filesWithErrorLogs.length > 0) {
+        console.log('[PCAPs] Files with errorLogPath:', filesWithErrorLogs.map(f => ({
+          name: f.name,
+          error: f.error,
+          errorLogPath: f.errorLogPath,
+          sessionId: f.sessionId,
+        })));
+      }
+    }
+  }, [files]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [copiedFileId, setCopiedFileId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [reportIssueOpen, setReportIssueOpen] = useState(false);
+  const [reportingFile, setReportingFile] = useState<{ sessionId: string; filename: string } | null>(null);
+  const [selectedErrorLog, setSelectedErrorLog] = useState<{ sessionId: string; filename: string } | null>(null);
+  const [errorLogContent, setErrorLogContent] = useState<string>('');
+  const [loadingErrorLog, setLoadingErrorLog] = useState(false);
+  const [reanalyzeFile, setReanalyzeFile] = useState<{ path: string; name: string; sessionId?: string } | null>(null);
+  const [reanalyzing, setReanalyzing] = useState<string | null>(null);
+  
+  // Listen for directory changes and refresh input files
+  useEffect(() => {
+    const handleDirectoryChange = () => {
+      console.log('Directory changed, refreshing input files...');
+      mutate(); // Refresh input files
+    };
+    
+    window.addEventListener('directory-changed', handleDirectoryChange);
+    return () => window.removeEventListener('directory-changed', handleDirectoryChange);
+  }, [mutate]);
+
+  // Poll progress for non-completed files
+  useEffect(() => {
+    if (!files || files.length === 0) {
+      return;
+    }
+
+    // Find files that are being processed (not completed and no error)
+    const processingFiles = files.filter(f => !f.isCompleted && !f.error);
+    
+    if (processingFiles.length === 0) {
+      return;
+    }
+
+    console.log('[PCAPs] Polling progress for', processingFiles.length, 'file(s)');
+
+    const interval = setInterval(async () => {
+      const newProgressData: Record<string, { percent: number; message: string }> = {};
+      
+      for (const file of processingFiles) {
+        try {
+          // Use file ID for progress tracking
+          console.log(`[PCAPs] Fetching progress for file: ${file.name}, ID: ${file.id}`);
+          const progress = await api.getProgress(file.id);
+          
+          newProgressData[file.path] = {
+            percent: progress.progressPercent,
+            message: progress.message,
+          };
+          console.log(`[PCAPs] Progress received for ${file.name}: ${progress.progressPercent}%`);
+        } catch (error) {
+          console.error(`[PCAPs] Failed to get progress for ${file.name}:`, error);
+        }
+      }
+      
+      setProgressData(prev => ({ ...prev, ...newProgressData }));
+    }, 2000); // Poll every 2 seconds
+
+    return () => clearInterval(interval);
+  }, [files]);
+
+  const handleSelectFile = async (file: string) => {
+    setActivating(file);
+    try {
+      const result = await api.setActiveDirectory(file);
+      console.log('Directory changed to:', result.outputDir);
+      await mutateStatus(); // Refresh status
+      
+      // Force refresh of audit files by triggering a global event
+      window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
+      
+      // Navigate to records page
+      router.push('/records');
+    } catch (err) {
+      console.error('Failed to set active directory:', err);
+      alert('Failed to switch to this file');
+    } finally {
+      setActivating(null);
+    }
+  };
+
+  const handleViewLogs = async (file: string) => {
+    setActivating(file);
+    try {
+      const result = await api.setActiveDirectory(file);
+      console.log('Directory changed to:', result.outputDir);
+      await mutateStatus(); // Refresh status
+      
+      // Force refresh of log files by triggering a global event
+      window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
+      
+      // Navigate to logs page
+      router.push('/logs');
+    } catch (err) {
+      console.error('Failed to set active directory:', err);
+      alert('Failed to switch to this file');
+    } finally {
+      setActivating(null);
+    }
+  };
+
+  const handleVisualize = async (file: string) => {
+    setActivating(file);
+    try {
+      const result = await api.setActiveDirectory(file);
+      console.log('Directory changed to:', result.outputDir);
+      await mutateStatus(); // Refresh status
+      
+      // Force refresh by triggering a global event
+      window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
+      
+      // Navigate to visualize page
+      router.push('/visualize');
+    } catch (err) {
+      console.error('Failed to set active directory:', err);
+      alert('Failed to switch to this file');
+    } finally {
+      setActivating(null);
+    }
+  };
+
+  const handleDownload = (identifier: string, filename: string) => {
+    // Create a temporary link element and trigger download
+    const downloadUrl = api.downloadInputFile(identifier);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleShowAlerts = async (file: string) => {
+    setActivating(file);
+    try {
+      const result = await api.setActiveDirectory(file);
+      console.log('Directory changed to:', result.outputDir);
+      await mutateStatus(); // Refresh status
+      
+      // Force refresh by triggering a global event
+      window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
+      
+      // Navigate to alerts page
+      router.push('/alerts');
+    } catch (err) {
+      console.error('Failed to set active directory:', err);
+      alert('Failed to switch to this file');
+    } finally {
+      setActivating(null);
+    }
+  };
+
+  const handleCopyShareLink = async (sessionId: string, filePath: string) => {
+    const protocol = window.location.protocol;
+    const host = window.location.host;
+    const shareUrl = `${protocol}//${host}/view/${sessionId}`;
+    
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedFileId(filePath);
+      setTimeout(() => setCopiedFileId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy share link:', err);
+      alert('Failed to copy share link to clipboard');
+    }
+  };
+
+  const handleReportIssue = (sessionId: string, filename: string) => {
+    setReportingFile({ sessionId, filename });
+    setReportIssueOpen(true);
+  };
+
+  const handleCloseReportDialog = () => {
+    setReportIssueOpen(false);
+    setReportingFile(null);
+    // Trigger a refresh of the file list
+    mutate();
+  };
+
+  const handleViewErrorLog = async (file: { path: string; name: string; sessionId?: string; errorLogPath?: string }) => {
+    console.log('[PCAPs] View error log clicked for:', file.name, 'errorLogPath:', file.errorLogPath);
+    
+    if (!file.errorLogPath) {
+      console.log('[PCAPs] No errorLogPath available for this file');
+      alert('Error log not available for this file');
+      return;
+    }
+
+    if (!file.sessionId) {
+      console.log('[PCAPs] No sessionId available for this file');
+      alert('Session ID not available');
+      return;
+    }
+
+    setSelectedErrorLog({ sessionId: file.sessionId, filename: file.name });
+    setLoadingErrorLog(true);
+    setErrorLogContent('');
+    
+    try {
+      console.log('[PCAPs] Fetching error log for session:', file.sessionId);
+      const content = await api.getErrorLogContent(file.sessionId);
+      console.log('[PCAPs] Error log content received, length:', content.length);
+      setErrorLogContent(content);
+    } catch (error) {
+      console.error('[PCAPs] Failed to load error log:', error);
+      setErrorLogContent(`Failed to load error log: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setLoadingErrorLog(false);
+    }
+  };
+
+  const handleCloseErrorLog = () => {
+    setSelectedErrorLog(null);
+    setErrorLogContent('');
+  };
+
+  const handleReanalyzeClick = (file: { path: string; name: string; sessionId?: string }) => {
+    setReanalyzeFile(file);
+  };
+
+  const handleCloseReanalyzeDialog = () => {
+    setReanalyzeFile(null);
+  };
+
+  const handleConfirmReanalyze = async () => {
+    if (!reanalyzeFile) return;
+    
+    setReanalyzing(reanalyzeFile.path);
+    handleCloseReanalyzeDialog();
+    
+    try {
+      const result = await api.reanalyzeFile(reanalyzeFile.path, reanalyzeFile.sessionId);
+      console.log('[PCAPs] Reanalysis queued:', result);
+      
+      // Refresh the file list to show the file as processing
+      await mutate();
+      
+      // Show success feedback (you could also use a snackbar here)
+      console.log('[PCAPs] File queued for reanalysis successfully');
+    } catch (err) {
+      console.error('[PCAPs] Failed to reanalyze file:', err);
+      alert(`Failed to reanalyze file: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setReanalyzing(null);
+    }
+  };
+
+  const isActive = (file: string) => {
+    return status?.activeInputFile === file;
+  };
+
+  const isMultiFile = status?.isMultiFile || false;
+
+  // Handle sort column click
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle sort order if clicking the same field
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new field and default to ascending
+      setSortField(field);
+      setSortOrder('asc');
+    }
+    setPage(0); // Reset to first page when sorting changes
+  };
+
+  // Filter files by search query with negation support (e.g., "!test" excludes test files)
+  const filteredFiles = files ? files.filter(file => {
+    if (!searchQuery) return true;
+    const searchTerms = parseSearchQuery(searchQuery);
+    return matchesSingleValue(file.name, searchTerms);
+  }) : [];
+
+  // Sort files: completed files first, then by selected sort field
+  const sortedFiles = filteredFiles ? [...filteredFiles].sort((a, b) => {
+    // Completed files come first
+    if (a.isCompleted && !b.isCompleted) return -1;
+    if (!a.isCompleted && b.isCompleted) return 1;
+    
+    // Within same completion status, sort by selected field
+    let comparison = 0;
+    switch (sortField) {
+      case 'name':
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case 'size':
+        comparison = a.size - b.size;
+        break;
+      case 'modifiedTime':
+        comparison = new Date(a.modifiedTime).getTime() - new Date(b.modifiedTime).getTime();
+        break;
+    }
+    
+    return sortOrder === 'asc' ? comparison : -comparison;
+  }) : [];
+
+  // Paginate files
+  const paginatedFiles = sortedFiles.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPageSelect = (event: SelectChangeEvent<number>) => {
+    setRowsPerPage(Number(event.target.value));
+    setPage(0);
+  };
+
+  const handleChangeRowsPerPageTable = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  if (!files && !error) {
+    return (
+      <Layout title="PCAP Files">
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+          <CircularProgress />
+        </Box>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout title="PCAP Files">
+        <Box>
+          <Typography color="error">Error loading PCAP files</Typography>
+        </Box>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout title="PCAP Files">
+      <Box sx={{ minWidth: 0 }}>
+        {/* Search Bar */}
+        <Box mb={3}>
+          <SearchInput
+            value={searchQuery}
+            onChange={(value) => {
+              setSearchQuery(value);
+              setPage(0); // Reset to first page when search changes
+            }}
+            placeholder="Search files by name..."
+            learnHint="Search Files: Filter the list of PCAP files by filename to quickly find specific captures. Use !term to exclude matches."
+            sx={{ maxWidth: { xs: '100%', sm: 600 }, width: '100%' }}
+          />
+        </Box>
+
+        <Box display="flex" gap={{ xs: 1, sm: 2 }} alignItems="center" mb={2} flexWrap="wrap">
+          <Typography variant="body2" color="text.secondary">
+            {sortedFiles.length} of {files?.length || 0} file(s) {searchQuery && 'matching search'}
+          </Typography>
+          <Chip 
+            label={
+              isMultiFile || status?.isServiceMode
+                ? "Click a file or use the view button to see its audit records"
+                : "Use action buttons to view audit records, logs, and visualizations"
+            }
+            color="primary" 
+            size="small" 
+            variant="outlined"
+          />
+          {sortedFiles.length > 10 && (
+            <Box display="flex" alignItems="center" gap={1} ml="auto">
+              <Typography variant="body2" color="text.secondary">
+                Show:
+              </Typography>
+              <FormControl size="small" variant="outlined">
+                <Select
+                  data-learn="Page Size: Control how many PCAP files are displayed per page (10, 25, 50, 100, or All)."
+                  value={rowsPerPage}
+                  onChange={handleChangeRowsPerPageSelect}
+                  sx={{ minWidth: 80 }}
+                >
+                  <MenuItem value={10}>10</MenuItem>
+                  <MenuItem value={25}>25</MenuItem>
+                  <MenuItem value={50}>50</MenuItem>
+                  <MenuItem value={100}>100</MenuItem>
+                  <MenuItem value={sortedFiles.length}>All</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+        </Box>
+
+        {paginatedFiles && paginatedFiles.length > 0 ? (
+          <Box sx={{ mt: 3 }}>
+          <ResponsiveDataView<FileInfo>
+            data={paginatedFiles}
+            totalCount={sortedFiles.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPageTable}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            onCardClick={(file) => {
+              if ((isMultiFile || status?.isServiceMode) && file.isCompleted) {
+                handleSelectFile(file.path);
+              }
+            }}
+            desktopTable={
+              <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+                <Table sx={{ minWidth: { xs: 700, md: 'auto' } }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>
+                        <TableSortLabel
+                          active={sortField === 'name'}
+                          direction={sortField === 'name' ? sortOrder : 'asc'}
+                          onClick={() => handleSort('name')}
+                        >
+                          Filename
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell align="right">
+                        <TableSortLabel
+                          active={sortField === 'size'}
+                          direction={sortField === 'size' ? sortOrder : 'asc'}
+                          onClick={() => handleSort('size')}
+                        >
+                          Size
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
+                        <TableSortLabel
+                          active={sortField === 'modifiedTime'}
+                          direction={sortField === 'modifiedTime' ? sortOrder : 'asc'}
+                          onClick={() => handleSort('modifiedTime')}
+                        >
+                          Modified
+                        </TableSortLabel>
+                      </TableCell>
+                      <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>Processing Time</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginatedFiles.map((file) => {
+                      // Debug log for each file
+                      console.log('[PCAPs] File:', file.name, {
+                        error: file.error,
+                        errorLogPath: file.errorLogPath,
+                        sessionId: file.sessionId,
+                        hasError: !!file.error,
+                        hasErrorLogPath: !!file.errorLogPath,
+                        hasSessionId: !!file.sessionId,
+                      });
+
+                      return (
+                      <TableRow
+                        key={file.path}
+                        sx={{
+                          backgroundColor: isActive(file.path) ? 'action.selected' : 'inherit',
+                          opacity: file.isCompleted ? 1 : 0.6,
+                          '&:hover': ((isMultiFile || status?.isServiceMode) && file.isCompleted) ? { backgroundColor: 'action.hover', cursor: 'pointer' } : {}
+                        }}
+                        onClick={((isMultiFile || status?.isServiceMode) && file.isCompleted) ? () => handleSelectFile(file.path) : undefined}
+                      >
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          {file.error ? (
+                            <Tooltip title={`Error: ${file.error}`}>
+                              <ErrorIcon color="error" fontSize="small" />
+                            </Tooltip>
+                          ) : isActive(file.path) && file.isCompleted ? (
+                            <CheckCircleIcon color="success" fontSize="small" />
+                          ) : !file.isCompleted ? (
+                            <HourglassEmptyIcon color="disabled" fontSize="small" />
+                          ) : null}
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Typography
+                              sx={{
+                                fontFamily: 'monospace',
+                                maxWidth: { xs: 200, sm: 300, md: 'none' },
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                              }}
+                            >
+                              {file.name}
+                              {!file.isCompleted && !file.error && (
+                                <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                  {progressData[file.path]?.percent > 0
+                                    ? `(${progressData[file.path].percent.toFixed(1)}%)`
+                                    : '(processing...)'
+                                  }
+                                </Typography>
+                              )}
+                              {file.error && (
+                                <Typography component="span" variant="caption" color="error" sx={{ ml: 1 }}>
+                                  (error)
+                                </Typography>
+                              )}
+                            </Typography>
+                            {/* Progress bar for processing files */}
+                            {!file.isCompleted && !file.error && progressData[file.path]?.percent > 0 && (
+                              <Box sx={{ mt: 0.5, width: '100%', maxWidth: 300 }}>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={progressData[file.path].percent}
+                                  sx={{ height: 4, borderRadius: 1 }}
+                                />
+                              </Box>
+                            )}
+                            {file.bpfFilter && (
+                              <Box sx={{ mt: 0.5 }}>
+                                <Chip
+                                  label={`BPF: ${file.bpfFilter}`}
+                                  size="small"
+                                  color="info"
+                                  variant="outlined"
+                                  sx={{
+                                    fontFamily: 'monospace',
+                                    fontSize: '0.75rem',
+                                    height: '20px'
+                                  }}
+                                />
+                              </Box>
+                            )}
+                            {file.error && (
+                              <Typography variant="caption" color="error" display="block" sx={{ mt: 0.5 }}>
+                                {file.error}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      </TableCell>
+                        <TableCell align="right">{formatBytes(file.size)}</TableCell>
+                        <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{formatTimestamp(file.modifiedTime)}</TableCell>
+                        <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                          {file.processingTime && file.isCompleted ? (
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                              {formatDuration(file.processingTime)}
+                            </Typography>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              -
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                          <Box display="flex" justifyContent="flex-end" gap={1}>
+                            <Tooltip title={
+                              file.error ? "File encountered an error" :
+                              !file.isCompleted ? "Processing not complete" :
+                              isActive(file.path) ? "Currently viewing" :
+                              "View audit records"
+                            }>
+                              <span>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleSelectFile(file.path)}
+                                  disabled={!file.isCompleted || activating === file.path || isActive(file.path) || !!file.error}
+                                  color={isActive(file.path) ? "success" : file.error ? "error" : "default"}
+                                >
+                                  {activating === file.path ? (
+                                    <CircularProgress size={20} />
+                                  ) : file.error ? (
+                                    <ErrorIcon />
+                                  ) : (
+                                    <VisibilityIcon />
+                                  )}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                            {file.isCompleted && !file.error && (
+                              <>
+                                <Tooltip title="View Logs">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleViewLogs(file.path)}
+                                    disabled={activating === file.path}
+                                  >
+                                    <DescriptionIcon />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Visualize Protocols">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleVisualize(file.path)}
+                                    disabled={activating === file.path}
+                                    color="primary"
+                                  >
+                                    <VisualizeIcon />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Download PCAP">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDownload(
+                                      status?.isServiceMode && file.sessionId ? file.sessionId : file.path,
+                                      file.name
+                                    )}
+                                    disabled={activating === file.path}
+                                    color="default"
+                                  >
+                                    <DownloadIcon />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Show Alerts">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleShowAlerts(file.path)}
+                                    disabled={activating === file.path}
+                                    color="warning"
+                                  >
+                                    <NotificationsIcon />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="Reanalyze with current configuration">
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleReanalyzeClick({ path: file.path, name: file.name, sessionId: file.sessionId })}
+                                      disabled={activating === file.path || reanalyzing === file.path}
+                                      color="secondary"
+                                    >
+                                      {reanalyzing === file.path ? (
+                                        <CircularProgress size={20} />
+                                      ) : (
+                                        <RefreshIcon />
+                                      )}
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                              </>
+                            )}
+                            {/* Retry button for local mode files with errors */}
+                            {!status?.isServiceMode && file.error && (
+                              <Tooltip title="Retry analysis with current configuration">
+                                <span>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleReanalyzeClick({ path: file.path, name: file.name })}
+                                    disabled={reanalyzing === file.path}
+                                    color="secondary"
+                                  >
+                                    {reanalyzing === file.path ? (
+                                      <CircularProgress size={20} />
+                                    ) : (
+                                      <RefreshIcon />
+                                    )}
+                                  </IconButton>
+                                </span>
+                              </Tooltip>
+                            )}
+                            {status?.isServiceMode && file.sessionId && (
+                                <>
+                                  <Tooltip title={copiedFileId === file.path ? "Copied!" : "Copy Share Link"}>
+                                    <IconButton
+                                      size="small"
+                                      color={copiedFileId === file.path ? "success" : "default"}
+                                      onClick={() => file.sessionId && handleCopyShareLink(file.sessionId, file.path)}
+                                    >
+                                      {copiedFileId === file.path ? <CheckCircleIcon /> : <ShareIcon />}
+                                    </IconButton>
+                                  </Tooltip>
+                                  {file.isCompleted && !file.error && (
+                                    <Tooltip title={file.hasReportedIssue ? "Issue already reported for this file" : "Report Issue"}>
+                                      <span>
+                                        <IconButton
+                                          size="small"
+                                          color="error"
+                                          onClick={() => file.sessionId && handleReportIssue(file.sessionId, file.name)}
+                                          disabled={file.hasReportedIssue}
+                                        >
+                                          <ReportIcon />
+                                        </IconButton>
+                                      </span>
+                                    </Tooltip>
+                                  )}
+                                  {file.error && file.errorLogPath && file.sessionId && (
+                                    <Tooltip title="View Crash Log">
+                                      <IconButton
+                                        size="small"
+                                        color="error"
+                                        onClick={() => {
+                                          console.log('[PCAPs] Crash log button clicked for:', file.name);
+                                          handleViewErrorLog(file);
+                                        }}
+                                        sx={{
+                                          animation: 'glow-red 2s ease-in-out infinite',
+                                          '@keyframes glow-red': {
+                                            '0%, 100%': {
+                                              boxShadow: '0 0 5px rgba(244, 67, 54, 0.5)',
+                                            },
+                                            '50%': {
+                                              boxShadow: '0 0 20px rgba(244, 67, 54, 1), 0 0 30px rgba(244, 67, 54, 0.8)',
+                                            },
+                                          },
+                                        }}
+                                      >
+                                        <BugReportIcon />
+                                      </IconButton>
+                                    </Tooltip>
+                                  )}
+                                  {file.error && (
+                                    <Tooltip title="Retry analysis with current configuration">
+                                      <span>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleReanalyzeClick({ path: file.path, name: file.name, sessionId: file.sessionId })}
+                                          disabled={reanalyzing === file.path}
+                                          color="secondary"
+                                        >
+                                          {reanalyzing === file.path ? (
+                                            <CircularProgress size={20} />
+                                          ) : (
+                                            <RefreshIcon />
+                                          )}
+                                        </IconButton>
+                                      </span>
+                                    </Tooltip>
+                                  )}
+                                </>
+                              )}
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            }
+            renderCard={(file) => (
+              <Card variant="outlined" sx={{ opacity: file.isCompleted ? 1 : 0.6 }}>
+                <CardContent sx={{ pb: 1, '&:last-child': { pb: 1 } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                    {file.error ? (
+                      <ErrorIcon color="error" fontSize="small" />
+                    ) : isActive(file.path) && file.isCompleted ? (
+                      <CheckCircleIcon color="success" fontSize="small" />
+                    ) : !file.isCompleted ? (
+                      <HourglassEmptyIcon color="disabled" fontSize="small" />
+                    ) : null}
+                    <Typography variant="subtitle2" noWrap sx={{ fontFamily: 'monospace', flex: 1 }}>
+                      {file.name}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatBytes(file.size)}
+                    </Typography>
+                    {file.isCompleted && !file.error && (
+                      <Chip label="Completed" size="small" color="success" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                    )}
+                    {file.error && (
+                      <Chip label="Error" size="small" color="error" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                    )}
+                    {!file.isCompleted && !file.error && (
+                      <Chip label="Processing" size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                    )}
+                  </Box>
+                  {!file.isCompleted && !file.error && progressData[file.path]?.percent > 0 && (
+                    <LinearProgress
+                      variant="determinate"
+                      value={progressData[file.path].percent}
+                      sx={{ mt: 0.5, height: 4, borderRadius: 1 }}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          />
+          </Box>
+        ) : (
+          <Box mt={3}>
+            <Typography color="text.secondary">
+              {searchQuery 
+                ? `No PCAP files matching "${searchQuery}"`
+                : 'No PCAP files found'}
+            </Typography>
+          </Box>
+        )}
+
+        {/* Report Issue Dialog */}
+        {reportingFile && (
+          <ReportIssueDialog
+            open={reportIssueOpen}
+            onClose={handleCloseReportDialog}
+            sessionId={reportingFile.sessionId}
+            filename={reportingFile.filename}
+          />
+        )}
+
+        {/* Crash Log Dialog */}
+        <Dialog
+          open={selectedErrorLog !== null}
+          onClose={handleCloseErrorLog}
+          maxWidth="lg"
+          fullWidth
+          fullScreen={isMobile}
+        >
+          <DialogTitle>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Box display="flex" alignItems="center" gap={1}>
+                <BugReportIcon color="error" />
+                <Typography variant="h6">Analysis Crash Log</Typography>
+              </Box>
+              {isMobile && (
+                <IconButton onClick={handleCloseErrorLog} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
+            </Box>
+            {selectedErrorLog && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Session: {selectedErrorLog.sessionId} - {selectedErrorLog.filename}
+              </Typography>
+            )}
+          </DialogTitle>
+          <DialogContent>
+            {loadingErrorLog ? (
+              <Box display="flex" justifyContent="center" alignItems="center" p={3}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <Paper
+                sx={{
+                  p: 2,
+                  bgcolor: 'grey.900',
+                  maxHeight: '70vh',
+                  overflow: 'auto',
+                }}
+              >
+                <pre
+                  style={{
+                    margin: 0,
+                    fontFamily: 'monospace',
+                    fontSize: '0.85rem',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    color: '#ff6b6b',
+                  }}
+                >
+                  {errorLogContent || 'No error log content available'}
+                </pre>
+              </Paper>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button data-learn="Close Dialog: Close the error log viewer dialog." onClick={handleCloseErrorLog}>Close</Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Reanalyze Confirmation Dialog */}
+        <Dialog
+          open={reanalyzeFile !== null}
+          onClose={handleCloseReanalyzeDialog}
+          maxWidth="sm"
+          fullWidth
+          fullScreen={isMobile}
+        >
+          <DialogTitle>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Box display="flex" alignItems="center" gap={1}>
+                <RefreshIcon color="secondary" />
+                <Typography variant="h6">Reanalyze PCAP File</Typography>
+              </Box>
+              {isMobile && (
+                <IconButton onClick={handleCloseReanalyzeDialog} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body1" paragraph>
+              Are you sure you want to reanalyze this file?
+            </Typography>
+            {reanalyzeFile && (
+              <Paper sx={{ p: 2, bgcolor: 'background.default', mb: 2 }}>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                  {reanalyzeFile.name}
+                </Typography>
+              </Paper>
+            )}
+            <Typography variant="body2" color="warning.main" paragraph>
+              ⚠️ This will delete all existing audit records and extracted files for this capture and rerun the analysis with the current netcap configuration.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Use this if you&apos;ve changed decoder settings, harvesters, or other configuration options and want to regenerate the analysis results.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseReanalyzeDialog}>Cancel</Button>
+            <Button 
+              onClick={handleConfirmReanalyze}
+              variant="contained"
+              color="secondary"
+              startIcon={<RefreshIcon />}
+            >
+              Reanalyze
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    </Layout>
+  );
+}
+

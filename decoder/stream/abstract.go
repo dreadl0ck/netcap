@@ -2,11 +2,12 @@ package stream
 
 import (
 	"fmt"
-	"github.com/dreadl0ck/netcap/decoder"
 	"log"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/dreadl0ck/netcap/decoder"
 
 	"github.com/dreadl0ck/netcap/decoder/stream/alert"
 	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
@@ -180,6 +181,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 				StartTime:            time.Now(),
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
+				PerfTracker:          c.PerfTracker,
 			})
 			d.SetWriter(w)
 

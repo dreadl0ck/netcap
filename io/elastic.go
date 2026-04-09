@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io
@@ -106,7 +112,7 @@ func newElasticWriter(wc *WriterConfig) *elasticWriter {
 		wc:        wc,
 		queue:     make([]proto.Message, wc.BulkSize),
 		indexName: makeElasticIndexIdent(wc),
-		meta:      []byte(fmt.Sprintf(`{ "index" : { } }%s`, "\n")),
+		meta:      fmt.Appendf(nil, `{ "index" : { } }%s`, "\n"),
 	}
 }
 
@@ -186,6 +192,23 @@ func (w *elasticWriter) Write(msg proto.Message) error {
 
 // WriteHeader writes a CSV header.
 func (w *elasticWriter) WriteHeader(_ types.Type) error {
+	return nil
+}
+
+// Flush sends any queued records to Elasticsearch.
+func (w *elasticWriter) Flush() error {
+	w.Lock()
+	defer w.Unlock()
+
+	if w.queueIndex > 0 {
+		if err := w.sendBulk(0, w.queueIndex); err != nil {
+			return err
+		}
+		// Reset queue after successful flush
+		w.queueIndex = 0
+		w.queue = make([]proto.Message, w.wc.BulkSize)
+	}
+
 	return nil
 }
 
@@ -443,14 +466,14 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 
 		// if the whole request failed, print error and mark all documents as failed
 		if res.IsError() {
-			var raw map[string]interface{}
+			var raw map[string]any
 			if err = json.NewDecoder(res.Body).Decode(&raw); err != nil {
 				log.Printf("failure to parse response body: %s", err)
 			} else {
 				ioLog.Error("elastic bulk request failed",
 					zap.Int("status", res.StatusCode),
-					zap.String("type", raw["error"].(map[string]interface{})["type"].(string)),
-					zap.String("reason", raw["error"].(map[string]interface{})["reason"].(string)),
+					zap.String("type", raw["error"].(map[string]any)["type"].(string)),
+					zap.String("reason", raw["error"].(map[string]any)["reason"].(string)),
 					zap.String("index", w.indexName),
 				)
 			}
@@ -515,13 +538,15 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 
 // JSON properties for elastic indices.
 // e.g:
-// {
-// 	"properties": {
-// 		"Timestamp": {
-// 			"type": "date"
-// 		},
-// 	}
-// }
+//
+//	{
+//		"properties": {
+//			"Timestamp": {
+//				"type": "date"
+//			},
+//		}
+//	}
+//
 // contains the type mapping for indexed documents.
 type mappingJSON struct {
 	Properties map[string]map[string]string `json:"properties"`
@@ -602,7 +627,8 @@ var typeMapping = map[string]string{
 	"Platform":                    "keyword",
 	"File":                        "keyword",
 	"Hash":                        "keyword",
-	"HASSH":                       "keyword",
+	"Ja4Ssh":                      "keyword",
+	"Ja4SshSessionType":           "keyword",
 	"Ident":                       "keyword",
 	"Flow":                        "keyword",
 	"Referer":                     "keyword",
@@ -614,8 +640,8 @@ var typeMapping = map[string]string{
 	"ResponseHeader.Etag":         "keyword",
 	"ResponseHeader.Content-Type": "keyword",
 	"Algorithms":                  "keyword",
-	"Ja3":                         "keyword",
-	"Ja3S":                        "keyword",
+	"Ja4":                         "keyword",
+	"Ja4s":                        "keyword",
 	"Random":                      "keyword",
 	"SessionID":                   "keyword",
 	"SNI":                         "keyword",
@@ -699,7 +725,7 @@ func generateMapping(t types.Type) []byte {
 				if field.Type.Elem().Kind() == reflect.Struct {
 					mapping.Properties[field.Name] = map[string]string{"type": "object"}
 				} else {
-					if field.Type.Elem().Kind() == reflect.Ptr {
+					if field.Type.Elem().Kind() == reflect.Pointer {
 						mapping.Properties[field.Name] = map[string]string{"type": "object"}
 					} else {
 						// scalar array types

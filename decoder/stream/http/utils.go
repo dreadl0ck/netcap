@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package http
@@ -21,6 +27,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/internal/ja4"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -62,12 +70,36 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 	h.Referer = removeCommas(req.request.Referer())
 	h.URL = removeCommas(req.request.URL.String())
 
-	// retrieve ip addresses set on the request while processing
+	// retrieve ip addresses and ports set on the request while processing
 	h.SrcIP = req.clientIP
 	h.DstIP = req.serverIP
+	h.SrcPort = req.clientPort
+	h.DstPort = req.serverPort
+	h.Flow = req.flow
 
 	h.ReqCookies = readCookies(req.request.Cookies())
 	h.Parameters = readParameters(req.request.Form)
+
+	// Security-relevant request headers
+	h.AuthorizationType = extractAuthType(req.request.Header.Get("Authorization"))
+	h.XForwardedFor = req.request.Header.Get("X-Forwarded-For")
+	h.XRealIP = req.request.Header.Get("X-Real-IP")
+
+	// JA4H HTTP client fingerprinting
+	// Compute JA4H fingerprint if we have header order
+	if len(req.headerOrder) > 0 {
+		ja4hData := &ja4.HTTPData{
+			Method:         req.request.Method,
+			Version:        req.request.Proto,
+			HeaderOrder:    req.headerOrder,
+			HasCookie:      len(req.request.Cookies()) > 0,
+			CookieFields:   req.cookieFields,
+			AcceptLanguage: req.acceptLang,
+		}
+		h.Ja4H = ja4.ComputeJA4H(ja4hData)
+		// Lookup JA4H fingerprint in database for enrichment
+		h.Ja4HDescription = resolvers.LookupJA4H(h.Ja4H)
+	}
 }
 
 func removeCommas(s string) string {
@@ -135,7 +167,30 @@ func newHTTPFromResponse(res *http.Response) *types.HTTP {
 		ResContentTypeDetected: detected,
 		ResCookies:             readCookies(res.Cookies()),
 		ResponseHeader:         readHeader(res.Header),
+		// Security headers from response
+		StrictTransportSecurity:  res.Header.Get("Strict-Transport-Security"),
+		ContentSecurityPolicy:    res.Header.Get("Content-Security-Policy"),
+		XContentTypeOptions:      res.Header.Get("X-Content-Type-Options"),
+		XFrameOptions:            res.Header.Get("X-Frame-Options"),
+		XXSSProtection:           res.Header.Get("X-XSS-Protection"),
+		ReferrerPolicy:           res.Header.Get("Referrer-Policy"),
+		AccessControlAllowOrigin: res.Header.Get("Access-Control-Allow-Origin"),
+		HasServerTiming:          res.Header.Get("Server-Timing") != "",
+		Server:                   res.Header.Get("Server"),
+		XPoweredBy:               res.Header.Get("X-Powered-By"),
 	}
+}
+
+// extractAuthType extracts the authorization type from the Authorization header
+func extractAuthType(authHeader string) string {
+	if authHeader == "" {
+		return ""
+	}
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) >= 1 {
+		return parts[0]
+	}
+	return ""
 }
 
 func readHeader(h http.Header) map[string]string {

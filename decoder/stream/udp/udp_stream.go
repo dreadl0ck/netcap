@@ -1,25 +1,32 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package udp
 
 import (
 	"reflect"
+	"slices"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
@@ -35,6 +42,12 @@ import (
 var Streams = newUDPStreamPool()
 
 const typeUDP = "udp"
+
+// ResetStreams creates a new UDP stream pool to clear all stream state
+// This should be called when resetting state between processing different files
+func ResetStreams() {
+	Streams = newUDPStreamPool()
+}
 
 // udpData represents a udp data stream.
 type udpStream struct {
@@ -101,32 +114,57 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 	// check if we already have a banner for the IP + Port combination
 	service.Store.Lock()
 	if serv, ok := service.Store.Items[serviceIdent]; ok {
-		defer service.Store.Unlock()
+		service.Store.Unlock()
 
-		for _, f := range serv.Flows {
-			if f == flowIdent {
-				return
-			}
+		// Lock the individual service to ensure thread-safe modification
+		serv.Lock()
+		defer serv.Unlock()
+
+		// invoke the service probe matching on all streams towards this service
+		service.MatchServiceProbes(serv, banner, flowIdent)
+
+		// ensure we don't duplicate any flows
+		if slices.Contains(serv.Flows, flowIdent) {
+			return
 		}
 
 		serv.Flows = append(serv.Flows, flowIdent)
+
+		// if this flow had a longer response from the server then what we have previously (in case we dont have c.Banner bytes yet)
+		// set this service response on the service and update the timestamp
+		// more data means more information and is therefore preferred for identification purposes
+		if len(serv.Banner) < len(banner) {
+			serv.Banner = string(banner)
+			serv.Timestamp = firstPacket.UnixNano()
+		}
+
 		return
 	}
 	service.Store.Unlock()
 
 	// nope. lets create a new one
-	serv := service.NewService(firstPacket.UnixNano(), serverBytes, clientBytes, net.Dst().String())
+	// Safely extract network destination
+	var networkDst string
+	if len(net.Dst().Raw()) > 0 {
+		networkDst = net.Dst().String()
+	}
+
+	serv := service.NewService(firstPacket.UnixNano(), serverBytes, clientBytes, networkDst)
 	serv.Banner = string(banner)
-	serv.IP = net.Dst().String()
+	serv.IP = networkDst
 	serv.Port = utils.DecodePort(transport.Dst().Raw())
 
 	// set flow ident, h.parent.ident is the client flow
 	serv.Flows = []string{flowIdent}
 
-	dst, err := strconv.Atoi(transport.Dst().String())
-	if err == nil {
-		serv.Protocol = "UDP"
-		serv.Name = resolvers.LookupServiceByPort(dst, typeUDP)
+	// Safely extract transport destination port for service name lookup
+	if len(transport.Dst().Raw()) > 0 {
+		dst, err := strconv.Atoi(transport.Dst().String())
+		if err == nil {
+			serv.Protocol = "UDP"
+			serv.Name = resolvers.LookupServiceByPort(dst, typeUDP)
+			serv.PortName = serv.Name // Set PortName to the same lookup result
+		}
 	}
 
 	service.MatchServiceProbes(serv, banner, flowIdent)
@@ -186,6 +224,12 @@ func (u *udpStream) decode() {
 		ServerIP:          u.data[0].Network().Dst().String(),
 		ClientPort:        utils.DecodePort(u.data[0].Transport().Src().Raw()),
 		ServerPort:        utils.DecodePort(u.data[0].Transport().Dst().Raw()),
+		CommunityID: streamutils.CalcCommunityIDUDP(
+			u.data[0].Network().Src().String(),
+			u.data[0].Network().Dst().String(),
+			uint16(utils.DecodePort(u.data[0].Transport().Src().Raw())),
+			uint16(utils.DecodePort(u.data[0].Transport().Dst().Raw())),
+		),
 	}
 
 	// make a good first guess based on the destination port of the connection
@@ -202,6 +246,19 @@ func (u *udpStream) decode() {
 	// try all available decoders and use the first one that matches
 	if !found {
 		for _, sd := range stream.DefaultStreamDecoders {
+			if sd.Transport() == core.UDP || sd.Transport() == core.All {
+				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
+					u.decoder = sd.GetReaderFactory().New(conv)
+					found = true
+					break
+				}
+			}
+		}
+	}
+
+	// Try UDP-specific decoders (e.g., QUIC which shares port 443 with TLS)
+	if !found {
+		for _, sd := range stream.UDPStreamDecoders {
 			if sd.Transport() == core.UDP || sd.Transport() == core.All {
 				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
 					u.decoder = sd.GetReaderFactory().New(conv)

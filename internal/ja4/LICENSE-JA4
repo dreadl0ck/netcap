@@ -1,0 +1,114 @@
+JA4+ TLS Fingerprinting License
+================================
+
+The JA4+ implementation in this directory is based on the JA4+ network
+fingerprinting standard developed by FoxIO LLC (https://github.com/FoxIO-LLC/ja4).
+
+LICENSE STRUCTURE
+-----------------
+
+JA4: TLS Client Fingerprinting
+  License: BSD 3-Clause License
+  Copyright (c) 2024, FoxIO, LLC.
+
+JA4+ (JA4S, JA4L, JA4H, JA4X, JA4SSH, JA4T, JA4TS, JA4TScan and all future additions):
+  License: FoxIO License 1.1
+
+-------------------------------------------------------------------------------
+
+BSD 3-Clause License (for JA4)
+
+Copyright (c) 2024, FoxIO, LLC.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-------------------------------------------------------------------------------
+
+FoxIO License 1.1 (for JA4S, JA4L, JA4H, JA4X, JA4SSH, JA4T, JA4TS, JA4TScan)
+
+Copyright (c) 2024, FoxIO, LLC.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+4. This license does not grant permission to use the trade names, trademarks,
+   service marks, or product names of FoxIO, except as required for reasonable
+   and customary use in describing the origin of the JA4+ methods.
+
+5. Any modifications or derivative works based on this software must be
+   clearly marked as modified versions and may not be misrepresented as
+   being the original software.
+
+6. Monetization Restriction: Licensee may not charge, whether directly or
+   indirectly, for the use of this software as a core offering or primary
+   functionality of a product or service, or bundle this software as a
+   charged feature with other paid products or services, without prior
+   written permission from FoxIO, LLC. This does not restrict using this
+   software as part of a larger offering where the primary value is derived
+   from features other than this software.
+
+   For OEM licensing to remove this restriction, contact FoxIO at:
+   https://www.foxio.io
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-------------------------------------------------------------------------------
+
+ATTRIBUTION
+-----------
+
+This implementation is based on the JA4+ fingerprinting methods developed by
+John Althouse and the team at FoxIO, LLC.
+
+For more information about JA4+, see:
+- https://github.com/FoxIO-LLC/ja4
+- https://blog.foxio.io/ja4%2B-network-fingerprinting
+
+Reference Implementations:
+- https://github.com/FoxIO-LLC/ja4 (Official Python/Rust/Zeek implementations)
+

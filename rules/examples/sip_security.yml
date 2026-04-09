@@ -1,0 +1,314 @@
+# SIP (Session Initiation Protocol) Security Detection Rules
+# Based on NIDS best practices for VoIP security monitoring
+# Reference: SIP.md security monitoring guidance
+
+description: "Detection rules for SIP VoIP security threats including reconnaissance, brute force attacks, spoofing, fuzzing, and media hijacking attempts."
+
+rules:
+  # ========================================
+  # SCANNING & RECONNAISSANCE
+  # ========================================
+
+  - name: SIP Known Attack Tool Detected
+    description: Known SIP scanning or attack tool detected via User-Agent header (sipvicious, sip-scan, friendly-scanner, etc.)
+    type: SIP
+    expression: HasKnownAttackTool == true
+    severity: high
+    mitre: ["T1595", "T1046"]
+    tags: ["recon", "voip", "sip-scanner"]
+    enabled: true
+
+  - name: SIPVicious Scanner User Agent Detected
+    description: SIPVicious reconnaissance tool detected - commonly used for VoIP enumeration
+    type: SIP
+    expression: MatchesPattern(UserAgent, "(?i)sipvicious")
+    severity: high
+    mitre: ["T1595", "T1046"]
+    tags: ["recon", "voip", "sipvicious"]
+    enabled: true
+
+  - name: Friendly Scanner User Agent Detected
+    description: Friendly-scanner reconnaissance tool detected - associated with VoIP scanning
+    type: SIP
+    expression: MatchesPattern(UserAgent, "(?i)friendly-scanner")
+    severity: high
+    mitre: ["T1595", "T1046"]
+    tags: ["recon", "voip", "friendly-scanner"]
+    enabled: true
+
+  - name: SIP Scan Tool User Agent Detected
+    description: SIP-scan tool detected via User-Agent header
+    type: SIP
+    expression: MatchesPattern(UserAgent, "(?i)sip-scan")
+    severity: high
+    mitre: ["T1595", "T1046"]
+    tags: ["recon", "voip", "sip-scan"]
+    enabled: true
+
+  - name: SIPSAK Tool User Agent Detected
+    description: SIPSAK (SIP swiss army knife) tool detected - used for SIP testing and attacks
+    type: SIP
+    expression: MatchesPattern(UserAgent, "(?i)sipsak")
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["recon", "voip", "sipsak"]
+    enabled: true
+
+  # ========================================
+  # BRUTE FORCE ATTACKS
+  # ========================================
+
+  - name: SIP Excessive REGISTER Attempts
+    description: High rate of SIP REGISTER requests from single source indicates brute force authentication attack
+    type: SIP
+    expression: MethodName == "REGISTER" && !IsResponse
+    severity: high
+    mitre: ["T1110"]
+    tags: ["brute-force", "voip", "credential-access"]
+    threshold: 30
+    threshold_window: 60
+    enabled: true
+
+  - name: SIP Authentication Challenge Response
+    description: SIP 401 Unauthorized response - authentication challenge (track for correlation)
+    type: SIP
+    expression: IsResponse && ResponseCode == 401
+    severity: info
+    mitre: ["T1110"]
+    tags: ["authentication", "voip"]
+    enabled: true
+
+  - name: SIP Authentication Forbidden
+    description: SIP 403 Forbidden response - explicit authentication failure
+    type: SIP
+    expression: IsResponse && ResponseCode == 403
+    severity: medium
+    mitre: ["T1110"]
+    tags: ["authentication", "voip", "auth-failure"]
+    enabled: true
+
+  - name: SIP Excessive Authentication Failures
+    description: Multiple SIP 403 Forbidden responses indicating repeated auth failures (brute force)
+    type: SIP
+    expression: IsResponse && ResponseCode == 403
+    severity: high
+    mitre: ["T1110"]
+    tags: ["brute-force", "voip", "credential-access"]
+    threshold: 10
+    threshold_window: 60
+    enabled: true
+
+  # ========================================
+  # SPOOFING ATTACKS
+  # ========================================
+
+  - name: SIP Via Header Spoofing Detected
+    description: Via header contains internal IP but packet source is external - possible spoofing or topology bypass attempt
+    type: SIP
+    expression: HasViaSpoofing == true
+    severity: high
+    mitre: ["T1557", "T1036"]
+    tags: ["spoofing", "voip", "bypass"]
+    enabled: true
+
+  - name: SIP High Risk Score
+    description: SIP message has high security risk score indicating multiple anomalies
+    type: SIP
+    expression: RiskScore >= 50
+    severity: high
+    mitre: ["T1595"]
+    tags: ["anomaly", "voip", "security"]
+    enabled: true
+
+  - name: SIP Anomalous Message Detected
+    description: SIP message flagged as anomalous by security analysis
+    type: SIP
+    expression: IsAnomalous == true
+    severity: medium
+    mitre: ["T1595"]
+    tags: ["anomaly", "voip"]
+    enabled: true
+
+  # ========================================
+  # FUZZING & BUFFER OVERFLOW ATTEMPTS
+  # ========================================
+
+  - name: SIP Oversized Headers Detected
+    description: SIP message contains oversized headers (>256 bytes) - potential buffer overflow attempt
+    type: SIP
+    expression: HasOversizedHeaders == true
+    severity: critical
+    mitre: ["T1499", "T1190"]
+    tags: ["fuzzing", "voip", "dos", "overflow"]
+    enabled: true
+
+  - name: SIP Malformed Long Call-ID
+    description: Call-ID header exceeds safe length - potential fuzzing or overflow attempt
+    type: SIP
+    expression: len(CallID) > 256
+    severity: critical
+    mitre: ["T1499", "T1190"]
+    tags: ["fuzzing", "voip", "overflow"]
+    enabled: true
+
+  - name: SIP Malformed Long From Header
+    description: From header exceeds safe length - potential fuzzing or overflow attempt
+    type: SIP
+    expression: len(From) > 256
+    severity: critical
+    mitre: ["T1499", "T1190"]
+    tags: ["fuzzing", "voip", "overflow"]
+    enabled: true
+
+  # ========================================
+  # TOPOLOGY MAPPING
+  # ========================================
+
+  - name: SIP Max-Forwards Zero Topology Mapping
+    description: Max-Forwards value is 0 in initial request - topology discovery attempt (SIP traceroute)
+    type: SIP
+    expression: MaxForwards == 0 && !IsResponse
+    severity: medium
+    mitre: ["T1018"]
+    tags: ["recon", "voip", "topology-mapping"]
+    enabled: true
+
+  - name: SIP Max-Forwards Low Value Topology Mapping
+    description: Max-Forwards value is very low (1-2) - potential topology discovery attempt
+    type: SIP
+    expression: MaxForwards > 0 && MaxForwards <= 2 && !IsResponse
+    severity: low
+    mitre: ["T1018"]
+    tags: ["recon", "voip", "topology-mapping"]
+    enabled: true
+
+  # ========================================
+  # MEDIA HIJACKING (SDP ANOMALIES)
+  # ========================================
+
+  - name: SIP SDP Private IP Leakage
+    description: SDP body contains private IP (RFC1918) from external source - media hijacking or misconfiguration
+    type: SIP
+    expression: HasSDPPrivateIPLeak == true
+    severity: high
+    mitre: ["T1557", "T1040"]
+    tags: ["media-hijacking", "voip", "sdp"]
+    enabled: true
+
+  - name: SIP SDP Audio Stream
+    description: SIP INVITE with audio media stream (informational - for traffic analysis)
+    type: SIP
+    expression: SDPMediaType == "audio" && MethodName == "INVITE"
+    severity: info
+    mitre: []
+    tags: ["voip", "media", "audio"]
+    enabled: false
+
+  - name: SIP SDP Video Stream
+    description: SIP INVITE with video media stream (informational - for traffic analysis)
+    type: SIP
+    expression: SDPMediaType == "video" && MethodName == "INVITE"
+    severity: info
+    mitre: []
+    tags: ["voip", "media", "video"]
+    enabled: false
+
+  # ========================================
+  # OPTIONS FLOOD / ENUMERATION
+  # ========================================
+
+  - name: SIP OPTIONS Flood
+    description: High rate of SIP OPTIONS requests - service enumeration or DoS attempt
+    type: SIP
+    expression: MethodName == "OPTIONS" && !IsResponse
+    severity: medium
+    mitre: ["T1046", "T1499"]
+    tags: ["recon", "voip", "dos"]
+    threshold: 50
+    threshold_window: 60
+    enabled: true
+
+  # ========================================
+  # CALL SECURITY EVENTS
+  # ========================================
+
+  - name: SIP INVITE Request
+    description: SIP INVITE request for call initiation (informational - for call tracking)
+    type: SIP
+    expression: MethodName == "INVITE" && !IsResponse
+    severity: info
+    mitre: []
+    tags: ["voip", "call", "invite"]
+    enabled: false
+
+  - name: SIP REGISTER Request
+    description: SIP REGISTER request for endpoint registration (informational)
+    type: SIP
+    expression: MethodName == "REGISTER" && !IsResponse
+    severity: info
+    mitre: []
+    tags: ["voip", "registration"]
+    enabled: false
+
+  - name: SIP BYE Request
+    description: SIP BYE request for call termination (informational)
+    type: SIP
+    expression: MethodName == "BYE" && !IsResponse
+    severity: info
+    mitre: []
+    tags: ["voip", "call", "bye"]
+    enabled: false
+
+  # ========================================
+  # UNUSUAL METHODS
+  # ========================================
+
+  - name: SIP REFER Request
+    description: SIP REFER request for call transfer - could be used for toll fraud
+    type: SIP
+    expression: MethodName == "REFER" && !IsResponse
+    severity: low
+    mitre: ["T1496"]
+    tags: ["voip", "call-transfer"]
+    enabled: true
+
+  - name: SIP MESSAGE Request
+    description: SIP MESSAGE request for instant messaging (informational)
+    type: SIP
+    expression: MethodName == "MESSAGE" && !IsResponse
+    severity: info
+    mitre: []
+    tags: ["voip", "messaging"]
+    enabled: false
+
+  # ========================================
+  # RESPONSE MONITORING
+  # ========================================
+
+  - name: SIP Server Error Response
+    description: SIP 5xx server error response - may indicate server issues or attack impact
+    type: SIP
+    expression: IsResponse && ResponseCode >= 500 && ResponseCode < 600
+    severity: medium
+    mitre: ["T1499"]
+    tags: ["voip", "error", "server-error"]
+    enabled: true
+
+  - name: SIP Request Timeout
+    description: SIP 408 Request Timeout - may indicate network issues or DoS
+    type: SIP
+    expression: IsResponse && ResponseCode == 408
+    severity: low
+    mitre: ["T1499"]
+    tags: ["voip", "timeout"]
+    enabled: true
+
+  - name: SIP Service Unavailable
+    description: SIP 503 Service Unavailable - server overload or DoS condition
+    type: SIP
+    expression: IsResponse && ResponseCode == 503
+    severity: medium
+    mitre: ["T1499"]
+    tags: ["voip", "dos", "unavailable"]
+    enabled: true
+

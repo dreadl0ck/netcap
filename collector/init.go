@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -17,7 +18,7 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/dreadl0ck/gopacket/pcap"
+	"github.com/gopacket/gopacket/pcap"
 	"github.com/mgutz/ansi"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -25,10 +26,13 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
+	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
+	"github.com/dreadl0ck/netcap/magika"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
@@ -49,7 +53,15 @@ func (c *Collector) Init() (err error) {
 	}
 
 	// set configuration for decoder pkgs
+	c.config.DecoderConfig.PerfTracker = c.perfTracker
 	packet.SetConfig(c.config.DecoderConfig)
+
+	// Wire up device enrichment callback for network discovery protocols
+	streamutils.DeviceEnricher = func(ip string, hostnames, deviceTypes, roles []string, os string) {
+		if dp := packet.DeviceProfiles.FindByIP(ip); dp != nil {
+			dp.EnrichFromDiscovery(hostnames, deviceTypes, roles, os)
+		}
+	}
 
 	decoderconfig.Instance = c.config.DecoderConfig
 	stream.Debug = c.config.DecoderConfig.Debug
@@ -62,15 +74,22 @@ func (c *Collector) Init() (err error) {
 		SupportMissingEstablishment: c.config.DecoderConfig.AllowMissingInit,
 	}
 
-	// handle signals for a clean exit
-	c.handleSignals()
+	// handle signals for a clean exit (unless disabled for service mode)
+	if !c.config.NoSignalHandling {
+		c.handleSignals()
+	}
 
 	// init logfile if necessary
-	if c.netcapLogFile == nil && c.config.DecoderConfig.Quiet {
+	if c.netcapLogFile == nil {
 		err = c.initLogging()
 		if err != nil {
 			return err
 		}
+	}
+
+	// Log signal handling status after logger is initialized
+	if c.config.NoSignalHandling {
+		c.log.Info("signal handling disabled (NoSignalHandling=true) - parent process will handle signals")
 	}
 
 	// start workers
@@ -88,11 +107,24 @@ func (c *Collector) Init() (err error) {
 	// init deep packet inspection
 	if c.config.DPI {
 		c.printlnStdOut("initializing dpi libs")
-		dpi.Init()
+		dpi.Init(c.config.DPIModules)
+	}
+
+	// init AI-based file type classification
+	fileCfg := file.GetGlobalConfig()
+	if fileCfg.FileExtraction.Advanced.EnableMagika {
+		c.printlnStdOut("initializing magika AI file classifier")
+		magika.Init(fileCfg.FileExtraction.Advanced.MagikaAssetsDir, fileCfg.FileExtraction.Advanced.MagikaModelName)
 	}
 
 	// initialize resolvers
+	resolvers.SetPerfTracker(c.perfTracker)
 	resolvers.Init(c.config.ResolverConfig, c.config.DecoderConfig.Quiet)
+
+	// print database load confirmation in debug mode
+	if c.config.DecoderConfig.Debug {
+		c.printlnStdOut("loaded netcap databases from", resolvers.DataBaseFolderPath)
+	}
 
 	if c.config.ResolverConfig.LocalDNS {
 		packet.LocalDNS = true
@@ -213,8 +245,9 @@ func (c *Collector) Init() (err error) {
 	// this is meant for diagnostic purposes and should not be used in production
 	if c.config.FreeOSMem != 0 {
 		fmt.Println("will free the OS memory every", c.config.FreeOSMem, "minutes")
-
-		go c.freeOSMemory()
+		ctx, cancel := context.WithCancel(context.Background())
+		c.freeOSMemCancel = cancel
+		go c.freeOSMemory(ctx)
 	}
 
 	// wait for decoder init to finish
@@ -226,6 +259,9 @@ func (c *Collector) Init() (err error) {
 		zap.Int("abstractDecoders", len(c.abstractDecoders)),
 	)
 
+	// Wrap decoders with filtering/rules if configured
+	c.WrapWritersWithFiltering()
+
 	c.buildProgressString()
 	c.printlnStdOut("done in", time.Since(start))
 
@@ -234,7 +270,14 @@ func (c *Collector) Init() (err error) {
 
 func handleDecoderInitError(err error, target string) {
 	if errors.Is(err, packet.ErrInvalidDecoder) {
-		invalidDecoder(strings.Split(errors.Unwrap(err).Error(), ":")[0])
+		// Safety check: extract decoder name from error message
+		errMsg := errors.Unwrap(err).Error()
+		parts := strings.Split(errMsg, ":")
+		if len(parts) > 0 {
+			invalidDecoder(parts[0])
+		} else {
+			invalidDecoder(errMsg)
+		}
 	} else if err != nil {
 		log.Fatal("failed to initialize "+target+" decoders: ", err)
 	}

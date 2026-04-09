@@ -1,0 +1,116 @@
+# Data Exfiltration Detection Rules
+# These rules detect potential data exfiltration attempts
+
+description: "Detection rules for data exfiltration attempts including large DNS responses, large HTTP POST uploads to external hosts, and suspicious data transfers over alternative protocols."
+
+rules:
+  # Large DNS Response
+  - name: DNS Large Response
+    description: Detect unusually large DNS responses that may indicate data exfiltration
+    type: DNS
+    expression: len(Answers) > 10
+    severity: medium
+    mitre: ["T1048.003"]
+    tags: ["exfiltration"]
+    enabled: true
+
+  # Large ICMP Packet
+  - name: Large ICMP Packet
+    description: Detect unusually large ICMP packets that may contain exfiltrated data
+    type: IPv4
+    expression: Protocol == 1 && PayloadSize > 1024
+    severity: medium
+    mitre: ["T1048.003"]
+    tags: ["exfiltration", "icmp"]
+    enabled: true
+
+  # Large Outbound Data Transfer
+  - name: Large Outbound Data Transfer
+    description: Detect large outbound data transfers (potential data exfiltration)
+    type: TCP
+    expression: IsPrivateIP(SrcIP) && IsPublicIP(DstIP) && PayloadSize > 10000
+    severity: info
+    mitre: ["T1041", "T1048"]
+    tags: ["exfiltration"]
+    enabled: true
+
+  # Large HTTP POST Outbound
+  - name: Large HTTP POST Outbound
+    description: Detect large HTTP POST requests leaving the network (>10MB may indicate exfiltration)
+    type: HTTP
+    expression: Method == "POST" && ReqContentLength > 10000000 && IsPublicIP(DstIP)
+    severity: medium
+    mitre: ["T1041", "T1567.002"]
+    tags: ["exfiltration"]
+    enabled: true
+
+  # DNS Excessive Query Length
+  - name: DNS Excessive Query Length
+    description: Detect DNS queries with excessively long names (potential tunneling)
+    type: DNS
+    expression: len(Questions) > 0 && len(Questions[0].Name) > 100
+    severity: low
+    mitre: ["T1071.004"]
+    tags: ["tunneling"]
+    enabled: true
+
+  # DNS TXT Record Query
+  - name: DNS TXT Record Query
+    description: Detect DNS TXT record queries that may be used for C2 or exfiltration
+    type: DNS
+    expression: len(Questions) > 0 && Questions[0].Type == 16
+    severity: info
+    mitre: ["T1071.004"]
+    tags: ["c2"]
+    enabled: true
+
+  # After Hours Data Transfer
+  - name: After Hours Data Transfer
+    description: Detect large data transfers during non-business hours
+    type: TCP
+    expression: IsPrivateIP(SrcIP) && IsPublicIP(DstIP) && PayloadSize > 5000
+    severity: low
+    mitre: ["T1020"]
+    tags: ["after-hours"]
+    enabled: true
+
+  # Internal File Transfer SMB
+  - name: Internal File Transfer SMB
+    description: Detect large file transfers over SMB within the network
+    type: TCP
+    expression: DstPort == 445 && IsPrivateIP(SrcIP) && IsPrivateIP(DstIP) && PayloadSize > 1000
+    severity: info
+    mitre: ["T1005", "T1039"]
+    tags: ["file-transfer"]
+    enabled: true
+
+  # FTP External Transfer
+  - name: FTP External Transfer
+    description: Detect FTP control/data connections to external hosts (potential exfiltration)
+    type: TCP
+    expression: (DstPort == 21 || DstPort == 20) && IsPublicIP(DstIP)
+    severity: medium
+    mitre: ["T1048.002"]
+    tags: ["exfiltration"]
+    enabled: true
+
+  # Cloud Storage Upload
+  - name: Cloud Storage Upload
+    description: Detect large uploads >5MB (configure domain allow-list for cloud services)
+    type: HTTP
+    expression: Method == "POST" && ReqContentLength > 5000000 && IsPublicIP(DstIP)
+    severity: medium
+    mitre: ["T1567.002"]
+    tags: ["exfiltration"]
+    enabled: false  # Disabled - requires domain-based filtering for known cloud services
+
+  # DNS High Query Volume
+  - name: DNS High Query Volume
+    description: Detect high volume DNS queries that may indicate DNS-based C2
+    type: DNS
+    expression: len(Questions) > 5
+    severity: info
+    mitre: ["T1071.004"]
+    tags: ["c2"]
+    enabled: true
+

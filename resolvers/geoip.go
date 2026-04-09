@@ -1,26 +1,36 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package resolvers
 
 import (
 	"fmt"
+	"log"
 	"net"
+	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/oschwald/maxminddb-golang"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 var (
@@ -45,14 +55,44 @@ type geoRecord struct {
 }
 
 // initGeolocationDB opens handles to the geolocation databases.
+// This function is called when the GeolocationDB flag is enabled, so it will
+// fail fatally if the databases cannot be found or loaded.
 func initGeolocationDB() {
-	if err := initCityReader(); err != nil {
-		logger.WithError(err).Error("failed to open city GeoDB")
+	cityPath := filepath.Join(DataBaseFolderPath, "GeoLite2-City.mmdb")
+	asnPath := filepath.Join(DataBaseFolderPath, "GeoLite2-ASN.mmdb")
+
+	resolverLog.Info("initializing geolocation databases",
+		zap.String("cityDB", cityPath),
+		zap.String("asnDB", asnPath),
+	)
+
+	// Check if City database file exists
+	if _, err := os.Stat(cityPath); os.IsNotExist(err) {
+		log.Fatalf("geolocation database not found: %s\nPlease download the GeoLite2 databases or disable geolocation with -geoDB=false", cityPath)
 	}
 
-	if err := initAsnReader(); err != nil {
-		logger.WithError(err).Error("failed to open ASN GeoDB")
+	// Check if ASN database file exists
+	if _, err := os.Stat(asnPath); os.IsNotExist(err) {
+		log.Fatalf("geolocation database not found: %s\nPlease download the GeoLite2 databases or disable geolocation with -geoDB=false", asnPath)
 	}
+
+	// Initialize City reader
+	if err := initCityReader(); err != nil {
+		log.Fatalf("failed to open city geolocation database at %s: %v\nPlease ensure the database file is valid or disable geolocation with -geoDB=false", cityPath, err)
+	}
+	resolverLog.Info("successfully loaded city geolocation database",
+		zap.String("path", cityPath),
+	)
+
+	// Initialize ASN reader
+	if err := initAsnReader(); err != nil {
+		log.Fatalf("failed to open ASN geolocation database at %s: %v\nPlease ensure the database file is valid or disable geolocation with -geoDB=false", asnPath, err)
+	}
+	resolverLog.Info("successfully loaded ASN geolocation database",
+		zap.String("path", asnPath),
+	)
+
+	resolverLog.Info("geolocation databases initialized successfully")
 }
 
 func initCityReader() (err error) {
@@ -81,6 +121,14 @@ func (record geoRecord) repr() (geoloc, asn string) {
 // LookupGeolocation returns all associated geolocations for a given address and db handle
 // results are being cached in an atomic map to avoid unnecessary lookups.
 func LookupGeolocation(addr string) (string, string) {
+	startTime := time.Now()
+	cacheHit := false
+	defer func() {
+		if perfTracker != nil {
+			perfTracker.RecordResolver("Geolocation", time.Since(startTime), cacheHit)
+		}
+	}()
+
 	if asnReader == nil || cityReader == nil {
 		return "", ""
 	}
@@ -96,6 +144,7 @@ func LookupGeolocation(addr string) (string, string) {
 	}
 
 	if result, ok := geolocations.Load(ip.String()); ok {
+		cacheHit = true
 		return result.(geoRecord).repr()
 	}
 

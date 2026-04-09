@@ -14,7 +14,7 @@ The resolvers package provides primitives for such tasks, and if possible, cache
 
 ## Design
 
-External data sources are stored in a central directory on the system, which defaults to **/usr/local/etc/netcap/db** but can be overridden using the **NC\_DATABASE\_SOURCE** environment variable.
+External data sources are stored in a central directory on the system, which defaults to **~/.config/netcap/dbs** but can be overridden using the **NC\_CONFIG\_ROOT** environment variable.
 
 Database files:
 
@@ -68,7 +68,7 @@ You can download the CSV file here:
 Rename it to **domain-whitelist.csv** and move it into the database path:
 
 ```text
-$ mv top-1m.csv /usr/local/etc/netcap/db/domain-whitelist.csv
+$ mv top-1m.csv ~/.config/netcap/dbs/domain-whitelist.csv
 ```
 
 ## Geolocation
@@ -77,7 +77,7 @@ To determine the geolocation for a given host, the MaxMind GeoLite database is u
 
 {% embed url="https://dev.maxmind.com/geoip/geoip2/geolite2/" caption="GeoLite2 MaxMind" %}
 
-Geolocation lookups can provide the Country, City and ASN where an ip address is registered.
+Geolocation lookups can provide the Country, City and ASN for a given IP address.
 
 Download the databases and move them into the database path.
 

@@ -1,7 +1,7 @@
 package reassembly
 
 import (
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 	"sync"
 )
 

@@ -1,5 +1,7 @@
 .DS_Store
 dist-linux
+.docker-build-timestamp
+.docker-build-context
 analyze/dnn/models/
 analyze/dnn/checkpoints/
 test-params/
@@ -36,4 +38,29 @@ FlameGraph
 Dockerfile
 bin/
 cover.out
+coverage.html
 deploy.sh
+node_modules/
+cmd/try/webui/frontend
+tmp/
+net
+
+evals/
+
+# Test outputs
+test-output/
+links.txt
+
+# IDE
+.cursor/
+
+# Log files at any level
+**/*.log
+
+# Collector artifacts
+collector/errors.pcap
+
+cmd/capture/webui/frontend/packages/netcap-ui/tsup.config.bundled*
+
+# Build artifacts
+cmd/transform/transform

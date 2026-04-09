@@ -1,0 +1,289 @@
+# HTTP Security Headers Analysis Rules
+# These rules detect missing or weak HTTP security headers
+# Extracted from httpx analysis and security best practices
+
+description: "Detection rules for analyzing HTTP security headers including HSTS, CSP, X-Frame-Options, X-Content-Type-Options, and cookie security flags. Helps identify misconfigured web applications and information disclosure via server headers."
+
+rules:
+  # ========================================
+  # STRICT TRANSPORT SECURITY (HSTS)
+  # ========================================
+
+  # Missing HSTS on HTTPS
+  - name: Missing HSTS Header
+    description: Detect HTTPS responses without Strict-Transport-Security header (MITM risk)
+    type: HTTP
+    expression: StatusCode == 200 && MatchesPattern(Proto, "(?i)https") && ResponseHeader["Strict-Transport-Security"] == ""
+    severity: low
+    tags: ["security-headers", "hsts", "misconfiguration", "mitm"]
+    enabled: true
+
+  # HSTS Present (Positive Detection)
+  - name: HSTS Header Present
+    description: Detect Strict-Transport-Security header (positive security control)
+    type: HTTP
+    expression: ResponseHeader["Strict-Transport-Security"] != ""
+    severity: info
+    tags: ["security-headers", "hsts", "positive"]
+    enabled: false  # Informational only
+
+  # ========================================
+  # CLICKJACKING PROTECTION
+  # ========================================
+
+  # Missing X-Frame-Options
+  - name: Missing X-Frame-Options Header
+    description: Detect HTML responses without clickjacking protection (X-Frame-Options or CSP)
+    type: HTTP
+    expression: StatusCode == 200 && MatchesPattern(ContentType, "(?i)text/html") && ResponseHeader["X-Frame-Options"] == "" && ResponseHeader["Content-Security-Policy"] == ""
+    severity: low
+    tags: ["security-headers", "clickjacking", "misconfiguration"]
+    enabled: true
+
+  # X-Frame-Options Present
+  - name: X-Frame-Options Header Present
+    description: Detect X-Frame-Options header (positive security control)
+    type: HTTP
+    expression: ResponseHeader["X-Frame-Options"] != ""
+    severity: info
+    tags: ["security-headers", "clickjacking", "positive"]
+    enabled: false  # Informational only
+
+  # Weak X-Frame-Options (ALLOW-FROM)
+  - name: Weak X-Frame-Options Configuration
+    description: Detect deprecated ALLOW-FROM directive in X-Frame-Options
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["X-Frame-Options"], "(?i)ALLOW-FROM")
+    severity: low
+    tags: ["security-headers", "clickjacking", "weak-config"]
+    enabled: true
+
+  # ========================================
+  # MIME-SNIFFING PROTECTION
+  # ========================================
+
+  # Missing X-Content-Type-Options
+  - name: Missing X-Content-Type-Options
+    description: Detect responses without MIME-sniffing protection (XSS risk)
+    type: HTTP
+    expression: StatusCode == 200 && ResponseHeader["X-Content-Type-Options"] == ""
+    severity: info
+    tags: ["security-headers", "mime-sniffing", "misconfiguration"]
+    enabled: true
+
+  # X-Content-Type-Options Present
+  - name: X-Content-Type-Options Present
+    description: Detect X-Content-Type-Options nosniff (positive security control)
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["X-Content-Type-Options"], "(?i)nosniff")
+    severity: info
+    tags: ["security-headers", "mime-sniffing", "positive"]
+    enabled: false  # Informational only
+
+  # ========================================
+  # CONTENT SECURITY POLICY (CSP)
+  # ========================================
+
+  # CSP Header Present
+  - name: Content Security Policy Detected
+    description: Detect Content-Security-Policy headers (positive security control)
+    type: HTTP
+    expression: ResponseHeader["Content-Security-Policy"] != "" || ResponseHeader["Content-Security-Policy-Report-Only"] != ""
+    severity: info
+    tags: ["security-headers", "csp", "positive"]
+    enabled: false  # Informational only
+
+  # Weak CSP - unsafe-inline
+  - name: Weak CSP with unsafe-inline
+    description: Detect CSP allowing unsafe-inline (XSS risk)
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Content-Security-Policy"], "(?i)unsafe-inline")
+    severity: medium
+    tags: ["security-headers", "csp", "weak-config", "xss"]
+    enabled: true
+
+  # Weak CSP - unsafe-eval
+  - name: Weak CSP with unsafe-eval
+    description: Detect CSP allowing unsafe-eval (code injection risk)
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Content-Security-Policy"], "(?i)unsafe-eval")
+    severity: medium
+    tags: ["security-headers", "csp", "weak-config", "injection"]
+    enabled: true
+
+  # Overly Permissive CSP
+  - name: Overly Permissive CSP
+    description: Detect CSP with wildcard (*) allowing all sources
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Content-Security-Policy"], "(?i)(default-src|script-src|style-src)\\s+[^;]*\\*")
+    severity: medium
+    tags: ["security-headers", "csp", "weak-config"]
+    enabled: true
+
+  # ========================================
+  # XSS PROTECTION (LEGACY)
+  # ========================================
+
+  # X-XSS-Protection Header
+  - name: X-XSS-Protection Header Detected
+    description: Detect legacy X-XSS-Protection header (informational, deprecated)
+    type: HTTP
+    expression: ResponseHeader["X-XSS-Protection"] != ""
+    severity: info
+    tags: ["security-headers", "xss", "legacy"]
+    enabled: false  # Informational only, deprecated header
+
+  # ========================================
+  # REFERRER POLICY
+  # ========================================
+
+  # Missing Referrer-Policy
+  - name: Missing Referrer-Policy
+    description: Detect responses without Referrer-Policy (information leakage risk)
+    type: HTTP
+    expression: StatusCode == 200 && ResponseHeader["Referrer-Policy"] == ""
+    severity: info
+    tags: ["security-headers", "referrer", "privacy"]
+    enabled: false  # Low priority
+
+  # Unsafe Referrer-Policy
+  - name: Unsafe Referrer-Policy
+    description: Detect unsafe-url or no-referrer-when-downgrade Referrer-Policy
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Referrer-Policy"], "(?i)(unsafe-url|no-referrer-when-downgrade)")
+    severity: low
+    tags: ["security-headers", "referrer", "privacy", "weak-config"]
+    enabled: true
+
+  # ========================================
+  # PERMISSIONS POLICY
+  # ========================================
+
+  # Permissions-Policy Present
+  - name: Permissions-Policy Header Present
+    description: Detect Permissions-Policy header (modern Feature-Policy replacement)
+    type: HTTP
+    expression: ResponseHeader["Permissions-Policy"] != "" || ResponseHeader["Feature-Policy"] != ""
+    severity: info
+    tags: ["security-headers", "permissions", "positive"]
+    enabled: false  # Informational only
+
+  # ========================================
+  # COOKIE SECURITY
+  # ========================================
+
+  # Cookie Without Secure Flag on HTTPS
+  - name: Cookie Without Secure Flag on HTTPS
+    description: Detect Set-Cookie on HTTPS without Secure flag (MITM risk)
+    type: HTTP
+    expression: MatchesPattern(Proto, "(?i)https") && ResponseHeader["Set-Cookie"] != "" && !MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)Secure")
+    severity: medium
+    tags: ["security-headers", "cookies", "misconfiguration", "mitm"]
+    enabled: true
+
+  # Session Cookie Without HttpOnly
+  - name: Session Cookie Without HttpOnly
+    description: Detect session cookies without HttpOnly flag (XSS risk)
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)(session|PHPSESSID|JSESSIONID|ASP\\.NET_SessionId|connect\\.sid)") && !MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)HttpOnly")
+    severity: medium
+    tags: ["security-headers", "cookies", "xss", "session"]
+    enabled: true
+
+  # Cookie Without SameSite
+  - name: Cookie Without SameSite Attribute
+    description: Detect cookies without SameSite attribute (CSRF risk)
+    type: HTTP
+    expression: ResponseHeader["Set-Cookie"] != "" && !MatchesPattern(ResponseHeader["Set-Cookie"], "(?i)SameSite")
+    severity: low
+    tags: ["security-headers", "cookies", "csrf", "misconfiguration"]
+    enabled: true
+
+  # ========================================
+  # INFORMATION DISCLOSURE
+  # ========================================
+
+  # X-Powered-By Header Disclosure
+  - name: X-Powered-By Information Disclosure
+    description: Detect X-Powered-By header revealing server technology
+    type: HTTP
+    expression: ResponseHeader["X-Powered-By"] != ""
+    severity: info
+    tags: ["information-disclosure", "fingerprinting", "opsec"]
+    enabled: true
+
+  # Verbose Server Header with Version
+  - name: Verbose Server Header
+    description: Detect detailed Server header with version information
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Server"], "/(\\d+\\.\\d+)")
+    severity: info
+    tags: ["information-disclosure", "fingerprinting", "opsec"]
+    enabled: true
+
+  # X-AspNet-Version Disclosure
+  - name: ASP.NET Version Disclosure
+    description: Detect X-AspNet-Version header revealing framework version
+    type: HTTP
+    expression: ResponseHeader["X-AspNet-Version"] != "" || ResponseHeader["X-AspNetMvc-Version"] != ""
+    severity: info
+    tags: ["information-disclosure", "fingerprinting", "aspnet"]
+    enabled: true
+
+  # X-Generator Disclosure (CMS)
+  - name: X-Generator CMS Disclosure
+    description: Detect X-Generator header revealing CMS/framework
+    type: HTTP
+    expression: ResponseHeader["X-Generator"] != ""
+    severity: info
+    tags: ["information-disclosure", "fingerprinting", "cms"]
+    enabled: true
+
+  # ========================================
+  # CORS CONFIGURATION
+  # ========================================
+
+  # Overly Permissive CORS
+  - name: Overly Permissive CORS Configuration
+    description: Detect Access-Control-Allow-Origin wildcard (*) with credentials
+    type: HTTP
+    expression: ResponseHeader["Access-Control-Allow-Origin"] == "*" && MatchesPattern(ResponseHeader["Access-Control-Allow-Credentials"], "(?i)true")
+    severity: high
+    tags: ["security-headers", "cors", "misconfiguration"]
+    enabled: true
+
+  # CORS with Credentials Enabled
+  - name: CORS with Credentials Enabled
+    description: Detect CORS allowing credentials (requires careful origin validation)
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Access-Control-Allow-Credentials"], "(?i)true")
+    severity: info
+    tags: ["security-headers", "cors"]
+    enabled: false  # Informational only
+
+  # ========================================
+  # CACHE CONTROL
+  # ========================================
+
+  # Sensitive Content Caching Allowed
+  - name: Sensitive Content Caching Allowed
+    description: Detect responses with sensitive paths allowing caching
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)(/login|/auth|/password|/admin|/api/token)") && !MatchesPattern(ResponseHeader["Cache-Control"], "(?i)(no-store|no-cache|private)")
+    severity: medium
+    tags: ["security-headers", "cache", "misconfiguration"]
+    enabled: true
+
+  # ========================================
+  # SECURITY.TXT
+  # ========================================
+
+  # Security.txt Present
+  - name: Security.txt File Detected
+    description: Detect security.txt file (positive - vulnerability disclosure program)
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)(\\.well-known/security\\.txt|security\\.txt)") && StatusCode == 200
+    severity: info
+    tags: ["security-policy", "positive", "disclosure"]
+    enabled: false  # Informational only
+

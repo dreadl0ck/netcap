@@ -10,6 +10,18 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 )
 
+var reassemblyLog = zap.NewNop()
+
+// SetReassemblyLogger configures the logger for this package.
+func SetReassemblyLogger(l *zap.Logger) {
+	reassemblyLog = l
+}
+
+// SetLogger is an alias for SetReassemblyLogger for backward compatibility
+func SetLogger(l *zap.Logger) {
+	SetReassemblyLogger(l)
+}
+
 // keep track which paths for content types of extracted files have already been created.
 var (
 	contentTypeMap   = make(map[string]struct{})

@@ -1,0 +1,668 @@
+# Application Detection Rules Based on go-dpi
+# These rules detect specific applications and application categories using DPI
+# Rules are organized by logical application groups
+
+description: "Application-layer detection rules using deep packet inspection (DPI) to identify specific applications and services including gaming, streaming, social media, messaging, video conferencing, cloud storage, VPN services, P2P file sharing, cryptocurrency, and enterprise business applications."
+
+rules:
+  # ========================================
+  # GAMING APPLICATIONS
+  # ========================================
+
+  - name: Gaming Applications Detected
+    description: Gaming applications detected including Steam, Xbox, PlayStation, Nintendo, and popular online games
+    type: Connection
+    expression: |
+      "STEAM" in Applications || "XBOX" in Applications || 
+      "PLAYSTATION" in Applications || "PSN_STORE" in Applications || 
+      "NINTENDO" in Applications || "WORLDOFWARCRAFT" in Applications || 
+      "WOW" in Applications || "BATTLEFIELD" in Applications || 
+      "HALFLIFE2" in Applications || "CSGO" in Applications || 
+      "DOTA2" in Applications || "STARCRAFT" in Applications || 
+      "GUILDWARS" in Applications || "GUILDWARS2" in Applications || 
+      "MAPLESTORY" in Applications || "ARMAGETRON" in Applications || 
+      "DOFUS" in Applications || "FIESTA" in Applications || 
+      "FLORENSIA" in Applications || "WORLD_OF_KUNG_FU" in Applications || 
+      "HEARTHSTONE" in Applications || "DIABLO3" in Applications || 
+      "MINECRAFT" in Applications || "TRACKMANIA" in Applications || 
+      "CONQUER" in Applications || "WARCRAFT3" in Applications || 
+      "RUNESCAPE" in Applications || "SECONDLIFE" in Applications || 
+      "CLASH_OF_CLANS" in Applications || "ROBLOX" in Applications || 
+      "AMONG_US" in Applications || "GENSHIN_IMPACT" in Applications || 
+      "EPICGAMES" in Applications || "ACTIVISION" in Applications || 
+      "RIOTGAMES" in Applications || "ELECTRONICARTS" in Applications || 
+      "EA_GAMES" in Applications || "BLIZZARD" in Applications || 
+      "OVERWATCH" in Applications || "PATHOFEXILE" in Applications || 
+      "TESO" in Applications || "LOLWILDRIFT" in Applications || 
+      "HOTS" in Applications || "HOTS_NEW" in Applications || 
+      "DESTINY" in Applications || "THE_DIVISION" in Applications || 
+      "BLACKDESERT" in Applications || "CROSSFIRE" in Applications || 
+      "FINALFANTASY_XIV" in Applications || "TERA" in Applications || 
+      "SILKROADONLINE" in Applications || "TETRISONLINE" in Applications || 
+      "RAGNAROK_ONLINE" in Applications || "WIZARD101" in Applications || 
+      "KINGOFGLORY" in Applications || "DNF" in Applications || 
+      "SKYFORGE" in Applications || "SMITE" in Applications || 
+      "GEFORCENOW" in Applications || "BLACKNUT" in Applications || 
+      "BOOSTEROID" in Applications || "COD_MOBILE" in Applications || 
+      "COD_WAW" in Applications || "MUMBLE" in Applications || 
+      "NEXON" in Applications || "TENCENTGAMES" in Applications || 
+      "NETEASE_GAMES" in Applications || "GAIJIN" in Applications || 
+      "ROCKSTAR_GAMES" in Applications
+    severity: info
+    tags: ["gaming"]
+    enabled: true
+
+  # ========================================
+  # STREAMING & MEDIA
+  # ========================================
+
+  - name: Video Streaming Services Detected
+    description: Video streaming services detected including Netflix, YouTube, Hulu, Disney+, HBO, Amazon Video, etc.
+    type: Connection
+    expression: |
+      "NETFLIX" in Applications || "YOUTUBE" in Applications || 
+      "YOUTUBE_UPLOAD" in Applications || "HULU" in Applications || 
+      "DISNEYPLUS" in Applications || "HBO" in Applications || 
+      "AMAZON_VIDEO" in Applications || "TWITCH" in Applications || 
+      "VIMEO" in Applications || "DAILYMOTION" in Applications || 
+      "LIVESTREAM" in Applications || "IQIYI" in Applications || 
+      "IFLIX" in Applications || "PPLIVE" in Applications || 
+      "PPSTREAM" in Applications || "SOPCAST" in Applications || 
+      "TVANTS" in Applications || "TVUPLAYER" in Applications || 
+      "ZATTOO" in Applications || "PS_VUE" in Applications || 
+      "APPLETVPLUS" in Applications || "DIRECTV" in Applications || 
+      "VUDU" in Applications || "SHOWTIME" in Applications || 
+      "TENCENTVIDEO" in Applications || "DAZN" in Applications || 
+      "PARAMOUNTPLUS" in Applications || "ESPN" in Applications || 
+      "KICK" in Applications || "TIKTOK" in Applications || 
+      "RUMBLE" in Applications || "RUTUBE" in Applications
+    severity: info
+    tags: ["streaming"]
+    enabled: true
+
+  - name: Music Streaming Services Detected
+    description: Music streaming services detected including Spotify, Pandora, Deezer, Apple Music, etc.
+    type: Connection
+    expression: |
+      "SPOTIFY" in Applications || "PANDORA" in Applications || 
+      "DEEZER" in Applications || "SOUNDCLOUD" in Applications || 
+      "LASTFM" in Applications || "IHEARTRADIO" in Applications || 
+      "TIDAL" in Applications || "TUNEIN" in Applications || 
+      "SIRIUSXMRADIO" in Applications || "SHOUTCAST" in Applications || 
+      "ICECAST" in Applications || "APPLE_ITUNES" in Applications || 
+      "YANDEX_MUSIC" in Applications
+    severity: info
+    tags: ["streaming"]
+    enabled: true
+
+  # ========================================
+  # SOCIAL MEDIA & COMMUNICATION
+  # ========================================
+
+  - name: Social Media Applications Detected
+    description: Social media platforms detected including Facebook, Twitter, Instagram, TikTok, LinkedIn, etc.
+    type: Connection
+    expression: |
+      "FACEBOOK" in Applications || "FACEBOOK_MESSENGER" in Applications || 
+      "FACEBOOK_VOIP" in Applications || "FACEBOOK_REEL_STORY" in Applications || 
+      "TWITTER" in Applications || "INSTAGRAM" in Applications || 
+      "TIKTOK" in Applications || "SNAPCHAT" in Applications || 
+      "SNAPCHAT_CALL" in Applications || "LINKEDIN" in Applications || 
+      "PINTEREST" in Applications || "REDDIT" in Applications || 
+      "TUMBLR" in Applications || "BLUESKY" in Applications || 
+      "MASTODON" in Applications || "THREADS" in Applications || 
+      "VK" in Applications || "SINA" in Applications || 
+      "SINA_WEIBO" in Applications || "WEIBO" in Applications || 
+      "QQ" in Applications || "WECHAT" in Applications || 
+      "BADOO" in Applications || "LIKEE" in Applications
+    severity: info
+    tags: ["social-media"]
+    enabled: true
+
+  - name: Instant Messaging Applications Detected
+    description: Instant messaging applications detected including WhatsApp, Telegram, Signal, Viber, etc.
+    type: Connection
+    expression: |
+      "WHATSAPP" in Applications || "WHATSAPP_CALL" in Applications || 
+      "WHATSAPP_FILES" in Applications || "TELEGRAM" in Applications || 
+      "TELEGRAM_VOIP" in Applications || "SIGNAL" in Applications || 
+      "SIGNAL_VOIP" in Applications || "VIBER" in Applications || 
+      "VIBER_VOIP" in Applications || "MESSENGER" in Applications || 
+      "SLACK" in Applications || "DISCORD" in Applications || 
+      "SKYPE" in Applications || "SKYPE_CALL" in Applications || 
+      "SKYPE_TCP" in Applications || "KIK" in Applications || 
+      "LINE" in Applications || "LINE_NEW" in Applications || 
+      "LINE_CALL" in Applications || "KAKAOTALK" in Applications || 
+      "KAKAOTALK_VOICE" in Applications || "IMO" in Applications || 
+      "THREEMA" in Applications || "JABBER" in Applications || 
+      "UNENCRYPTED_JABBER" in Applications || "XMPP" in Applications || 
+      "XMPPS" in Applications || "ICQ" in Applications || 
+      "IRC" in Applications || "MSN" in Applications || 
+      "YAHOO" in Applications || "DINGTALK" in Applications || 
+      "NAVER" in Applications
+    severity: info
+    tags: ["messaging"]
+    enabled: true
+
+  # ========================================
+  # VIDEO CONFERENCING
+  # ========================================
+
+  - name: Video Conferencing Applications Detected
+    description: Video conferencing applications detected including Zoom, Teams, Webex, Google Meet, etc.
+    type: Connection
+    expression: |
+      "ZOOM" in Applications || "MSTEAMS" in Applications || 
+      "MSTEAMS_CALL" in Applications || "WEBEX" in Applications || 
+      "WEBEX_STUN" in Applications || "GOOGLE_MEET" in Applications || 
+      "GOOGLE_CALL" in Applications || "GOOGLE_HANGOUTS" in Applications || 
+      "HANGOUT_DUO" in Applications || "TEAMVIEWER" in Applications || 
+      "ANYDESK" in Applications || "GOTO" in Applications || 
+      "GOTOMEETING" in Applications || "ADOBE_CONNECT" in Applications || 
+      "FUZE" in Applications || "CLASSIN" in Applications
+    severity: info
+    tags: ["video-conferencing"]
+    enabled: true
+
+  # ========================================
+  # CLOUD STORAGE & FILE SHARING
+  # ========================================
+
+  - name: Cloud Storage Services Detected
+    description: Cloud storage services detected including Dropbox, Google Drive, OneDrive, iCloud, etc.
+    type: Connection
+    expression: |
+      "DROPBOX" in Applications || "GOOGLE_DRIVE" in Applications || 
+      "MS_ONE_DRIVE" in Applications || "APPLE_ICLOUD" in Applications || 
+      "ICLOUD_PRIVATE_RELAY" in Applications || "YANDEX_DISK" in Applications || 
+      "YANDEX_CLOUD" in Applications || "SYNCTHING" in Applications || 
+      "BTSYNC" in Applications || "IDRIVE_SYNC" in Applications
+    severity: info
+    tags: ["cloud-storage"]
+    enabled: true
+
+  # ========================================
+  # E-COMMERCE & SHOPPING
+  # ========================================
+
+  - name: E Commerce Applications Detected
+    description: E-commerce and shopping platforms detected including Amazon, eBay, Alibaba, etc.
+    type: Connection
+    expression: |
+      "AMAZON" in Applications || "EBAY" in Applications || 
+      "ALIBABA" in Applications || "TAOBAO" in Applications || 
+      "TAOBAO_NEW" in Applications || "FLIGGY" in Applications || 
+      "SHEIN" in Applications || "TEMU" in Applications
+    severity: info
+    tags: ["e-commerce"]
+    enabled: true
+
+  # ========================================
+  # CLOUD SERVICES & CDN
+  # ========================================
+
+  - name: Major Cloud Providers Detected
+    description: Major cloud service providers detected including AWS, Azure, Google Cloud, Alibaba Cloud, etc.
+    type: Connection
+    expression: |
+      "AMAZON_AWS" in Applications || "AWS_COGNITO" in Applications || 
+      "AWS_API_GATEWAY" in Applications || "AWS_KINESIS" in Applications || 
+      "AWS_EC2" in Applications || "AWS_EMR" in Applications || 
+      "AWS_S3" in Applications || "AWS_CLOUDFRONT" in Applications || 
+      "AWS_DYNAMODB" in Applications || "MICROSOFT_AZURE" in Applications || 
+      "GOOGLE_CLOUD" in Applications || "ALIBABA" in Applications || 
+      "ALICLOUD" in Applications || "HUAWEI_CLOUD" in Applications || 
+      "DIGITALOCEAN" in Applications || "CLOUDFLARE" in Applications || 
+      "CLOUDFLARE_WARP" in Applications || "AKAMAI" in Applications || 
+      "EDGECAST" in Applications || "CACHEFLY" in Applications || 
+      "MERAKI_CLOUD" in Applications
+    severity: info
+    tags: ["cloud"]
+    enabled: true
+
+  # ========================================
+  # VPN & PROXY SERVICES
+  # ========================================
+
+  - name: VPN Services Detected
+    description: VPN services detected including commercial VPN providers and tunneling protocols
+    type: Connection
+    expression: |
+      "OPENVPN" in Applications || "WIREGUARD" in Applications || 
+      "NORDVPN" in Applications || "SURFSHARK" in Applications || 
+      "PROTONVPN" in Applications || "MULLVAD" in Applications || 
+      "HOTSPOT_SHIELD" in Applications || "TUNNELBEAR" in Applications || 
+      "PSIPHON" in Applications || "ULTRASURF" in Applications || 
+      "OPERA_VPN" in Applications || "PIA" in Applications || 
+      "CACTUSVPN" in Applications || "WINDSCRIBE" in Applications || 
+      "SOFTETHER" in Applications || "HAMACHI" in Applications || 
+      "TAILSCALE" in Applications || "VPN_UNLIMITED" in Applications || 
+      "VPNROBOT" in Applications || "TURBOVPN" in Applications || 
+      "SNAPVPN" in Applications || "VPNMASTER" in Applications || 
+      "CISCOVPN" in Applications || "CISCO_VPN" in Applications || 
+      "FORTICLIENT" in Applications || "PPTP" in Applications || 
+      "L2TP" in Applications || "TEREDO" in Applications || 
+      "TOR" in Applications || "SOCKS" in Applications || 
+      "SOCKS4" in Applications || "SOCKS5" in Applications || 
+      "HTTP_PROXY" in Applications || "HTTP_TUNNEL" in Applications
+    severity: low
+    mitre: ["T1090"]
+    tags: ["vpn"]
+    enabled: true
+
+  # ========================================
+  # REMOTE ACCESS
+  # ========================================
+
+  - name: Remote Access Applications Detected
+    description: Remote access and remote desktop applications detected
+    type: Connection
+    expression: |
+      "RDP" in Applications || "VNC" in Applications || 
+      "TEAMVIEWER" in Applications || "ANYDESK" in Applications || 
+      "CITRIX" in Applications || "PCANYWHERE" in Applications || 
+      "RADMIN" in Applications || "REALVNC" in Applications || 
+      "NOMACHINE" in Applications || "NOMACHINE_NEW" in Applications || 
+      "REMOTE_MANIPULATOR" in Applications || "SSH" in Applications || 
+      "TELNET" in Applications || "RSH" in Applications || 
+      "VMWARE" in Applications
+    severity: low
+    mitre: ["T1021"]
+    tags: ["remote-access"]
+    enabled: true
+
+  # ========================================
+  # DEVELOPMENT & IT TOOLS
+  # ========================================
+
+  - name: Development Tools Detected
+    description: Development and IT tools detected including Git, GitHub, GitLab, databases, etc.
+    type: Connection
+    expression: |
+      "GIT" in Applications || "GITHUB" in Applications || 
+      "GITLAB" in Applications || "MONGODB" in Applications || 
+      "MONGO" in Applications || "REDIS" in Applications || 
+      "ELASTICSEARCH" in Applications || "CASSANDRA" in Applications || 
+      "POSTGRES" in Applications || "POSTGRESQL" in Applications || 
+      "MYSQL" in Applications || "MSSQL_TDS" in Applications || 
+      "ORACLE" in Applications || "CLICKHOUSE" in Applications
+    severity: info
+    tags: ["development"]
+    enabled: true
+
+  # ========================================
+  # BUSINESS & PRODUCTIVITY
+  # ========================================
+
+  - name: Business Productivity Applications Detected
+    description: Business and productivity applications detected including Office 365, Google Workspace, Salesforce, etc.
+    type: Connection
+    expression: |
+      "OFFICE_365" in Applications || "MICROSOFT_365" in Applications || 
+      "GOOGLE_DOCS" in Applications || "GOOGLE_CLASSROOM" in Applications || 
+      "GOOGLE_SERVICES" in Applications || "SALESFORCE" in Applications || 
+      "SLACK" in Applications || "MSTEAMS" in Applications || 
+      "ZOOM" in Applications || "WEBEX" in Applications || 
+      "LOTUS_NOTES" in Applications || "HCL_NOTES" in Applications || 
+      "SAP" in Applications || "BLOOMBERG" in Applications || 
+      "PLURALSIGHT" in Applications
+    severity: info
+    tags: ["business"]
+    enabled: true
+
+  # ========================================
+  # MAIL SERVICES
+  # ========================================
+
+  - name: Web Mail Services Detected
+    description: Web-based email services detected including Gmail, Outlook, Yahoo Mail, etc.
+    type: Connection
+    expression: |
+      "GMAIL" in Applications || "HOTMAIL" in Applications || 
+      "MS_OUTLOOK" in Applications || "YAHOO" in Applications || 
+      "YANDEX_MAIL" in Applications
+    severity: info
+    tags: ["email"]
+    enabled: true
+
+  # ========================================
+  # P2P & FILE SHARING
+  # ========================================
+
+  - name: P2P Applications Detected
+    description: Peer-to-peer file sharing applications detected including BitTorrent, eMule, etc.
+    type: Connection
+    expression: |
+      "BITTORRENT" in Applications || "EMULE" in Applications || 
+      "GNUTELLA" in Applications || "EDONKEY" in Applications || 
+      "ARES" in Applications || "NAPSTER" in Applications || 
+      "DIRECTCONNECT" in Applications || "DC" in Applications || 
+      "FASTTRACK" in Applications || "OPENFT" in Applications || 
+      "SOULSEEK" in Applications || "APPLEJUICE" in Applications || 
+      "KONTIKI" in Applications || "PANDO" in Applications || 
+      "THUNDER" in Applications || "XUNLEI" in Applications || 
+      "XUNLEI_ACCEL" in Applications || "AZUREUS" in Applications || 
+      "ACESTREAM" in Applications || "IPFS" in Applications
+    severity: medium
+    mitre: ["T1567"]
+    tags: ["p2p"]
+    enabled: true
+
+  # ========================================
+  # CRYPTOCURRENCY & BLOCKCHAIN
+  # ========================================
+
+  - name: Cryptocurrency Applications Detected
+    description: Cryptocurrency and blockchain applications detected
+    type: Connection
+    expression: |
+      "BITCOIN" in Applications || "BITCOIN_NEW" in Applications || 
+      "ETHEREUM" in Applications || "MONERO" in Applications || 
+      "LITECOIN" in Applications || "DOGECOIN" in Applications || 
+      "DASH" in Applications || "TENFIVECOIN" in Applications || 
+      "ANTCOIN" in Applications || "MINING" in Applications || 
+      "STRATUM" in Applications || "NANO" in Applications
+    severity: medium
+    mitre: ["T1496"]
+    tags: ["cryptocurrency"]
+    enabled: true
+
+  # ========================================
+  # MALWARE & SUSPICIOUS
+  # ========================================
+
+  - name: Malware Related Applications Detected
+    description: Known malware, trojans, or suspicious applications detected
+    type: Connection
+    expression: |
+      "TROJAN_WIN32_GENERIC_SB" in Applications || 
+      "TROJAN_ZEROACCESS" in Applications || 
+      "GLUPTEBA" in Applications || "BADBAIDU" in Applications || 
+      "INVALID_BT" in Applications || "INVALID_HTTP" in Applications || 
+      "INVALID_SMTP" in Applications || "INVALID_POP3" in Applications || 
+      "TELNET_EXPLOIT" in Applications || "VXWORKS_EXPLOIT" in Applications || 
+      "CHARGEN_EXPLOIT" in Applications || "STORM_WORM" in Applications || 
+      "WORM_22105" in Applications
+    severity: critical
+    mitre: ["T1071", "T1568", "T1105"]
+    tags: ["malware"]
+    enabled: true
+
+  # ========================================
+  # ADULT CONTENT
+  # ========================================
+
+  - name: Adult Content Detected
+    description: Adult content websites or services detected
+    type: Connection
+    expression: '"ADULT_CONTENT" in Applications'
+    severity: low
+    tags: ["policy-violation"]
+    enabled: true
+
+  # ========================================
+  # ADVERTISING & ANALYTICS
+  # ========================================
+
+  - name: Advertising Analytics Detected
+    description: Advertising and analytics tracking services detected
+    type: Connection
+    expression: |
+      "ADS_ANALYTICS_TRACK" in Applications || 
+      "YANDEX_METRIKA" in Applications || 
+      "YANDEX_DIRECT" in Applications
+    severity: info
+    tags: ["tracking"]
+    enabled: true
+
+  # ========================================
+  # NEWS & MEDIA
+  # ========================================
+
+  - name: News Media Sites Detected
+    description: News and media websites detected
+    type: Connection
+    expression: |
+      "CNN" in Applications || "ESPN" in Applications || 
+      "WIKIPEDIA" in Applications || "MOZILLA" in Applications || 
+      "ACCUWEATHER" in Applications
+    severity: info
+    tags: ["news", "media", "web"]
+    enabled: true
+
+  # ========================================
+  # APPLE ECOSYSTEM
+  # ========================================
+
+  - name: Apple Services Detected
+    description: Apple ecosystem services detected including iCloud, iTunes, App Store, Siri, etc.
+    type: Connection
+    expression: |
+      "APPLE" in Applications || "APPLE_ICLOUD" in Applications || 
+      "APPLE_ITUNES" in Applications || "APPLE_PUSH" in Applications || 
+      "APPLE_SIRI" in Applications || "APPLESTORE" in Applications || 
+      "APPLETVPLUS" in Applications || "ICLOUD_PRIVATE_RELAY" in Applications
+    severity: info
+    tags: ["apple", "mobile", "cloud"]
+    enabled: true
+
+  # ========================================
+  # MICROSOFT ECOSYSTEM
+  # ========================================
+
+  - name: Microsoft Services Detected
+    description: Microsoft ecosystem services detected including Azure, OneDrive, Office 365, Teams, etc.
+    type: Connection
+    expression: |
+      "MICROSOFT" in Applications || "MICROSOFT_AZURE" in Applications || 
+      "MICROSOFT_365" in Applications || "MS_ONE_DRIVE" in Applications || 
+      "MSTEAMS" in Applications || "MSTEAMS_CALL" in Applications || 
+      "MS_OUTLOOK" in Applications || "OFFICE_365" in Applications || 
+      "WINDOWS_UPDATE" in Applications || "MSDO" in Applications
+    severity: info
+    tags: ["microsoft", "cloud", "business"]
+    enabled: true
+
+  # ========================================
+  # GOOGLE ECOSYSTEM
+  # ========================================
+
+  - name: Google Services Detected
+    description: Google ecosystem services detected including Search, YouTube, Drive, Meet, etc.
+    type: Connection
+    expression: |
+      "GOOGLE" in Applications || "GOOGLE_DRIVE" in Applications || 
+      "GOOGLE_DOCS" in Applications || "GOOGLE_MAPS" in Applications || 
+      "GOOGLE_CLOUD" in Applications || "GOOGLE_SERVICES" in Applications || 
+      "GOOGLE_MEET" in Applications || "GOOGLE_CALL" in Applications || 
+      "GOOGLE_CHAT" in Applications || "GOOGLE_CLASSROOM" in Applications || 
+      "GOOGLE_HANGOUTS" in Applications || "HANGOUT_DUO" in Applications || 
+      "GMAIL" in Applications || "YOUTUBE" in Applications || 
+      "YOUTUBE_UPLOAD" in Applications || "GOOGLE_PLUS" in Applications
+    severity: info
+    tags: ["google", "cloud", "web"]
+    enabled: true
+
+  # ========================================
+  # CHINESE PLATFORMS
+  # ========================================
+
+  - name: Chinese Platforms Detected
+    description: Popular Chinese platforms and services detected
+    type: Connection
+    expression: |
+      "WECHAT" in Applications || "QQ" in Applications || 
+      "TENCENT" in Applications || "TENCENT_GAMES" in Applications || 
+      "TENCENTGAMES" in Applications || "TENCENTVIDEO" in Applications || 
+      "ALIBABA" in Applications || "ALICLOUD" in Applications || 
+      "TAOBAO" in Applications || "TAOBAO_NEW" in Applications || 
+      "BADBAIDU" in Applications || "WEIBO" in Applications || 
+      "SINA" in Applications || "SINA_WEIBO" in Applications || 
+      "DOUYU" in Applications || "DOUYU_CHAT" in Applications || 
+      "YOUKU" in Applications || "IQIYI" in Applications || 
+      "QQLIVE" in Applications || "KANKAN" in Applications || 
+      "FUNSHION" in Applications || "BAOFENG" in Applications || 
+      "XIAMI" in Applications || "DIANPING" in Applications || 
+      "HUAWEI" in Applications || "HUAWEI_CLOUD" in Applications || 
+      "XIAOMI" in Applications || "DINGTALK" in Applications || 
+      "OICQ" in Applications
+    severity: info
+    tags: ["chinese-platforms", "asia", "monitoring"]
+    enabled: true
+
+  # ========================================
+  # YANDEX ECOSYSTEM
+  # ========================================
+
+  - name: Yandex Services Detected
+    description: Yandex ecosystem services detected (Russian search engine and services)
+    type: Connection
+    expression: |
+      "YANDEX" in Applications || "YANDEX_MAIL" in Applications || 
+      "YANDEX_MUSIC" in Applications || "YANDEX_MARKET" in Applications || 
+      "YANDEX_DISK" in Applications || "YANDEX_CLOUD" in Applications || 
+      "YANDEX_METRIKA" in Applications || "YANDEX_DIRECT" in Applications || 
+      "YANDEX_ALICE" in Applications
+    severity: info
+    tags: ["yandex", "russian-services", "monitoring"]
+    enabled: true
+
+  # ========================================
+  # SECURITY & MONITORING TOOLS
+  # ========================================
+
+  - name: Security Monitoring Tools Detected
+    description: Security and monitoring tools detected
+    type: Connection
+    expression: |
+      "CHECKMK" in Applications || "ZABBIX" in Applications || 
+      "MUNIN" in Applications || "XYMON" in Applications || 
+      "COLLECTD" in Applications || "COLLECTD_NEW" in Applications || 
+      "KASPERSKY" in Applications || "AVAST" in Applications || 
+      "AVAST_SECUREDNS" in Applications || "NORTON_BACKUP" in Applications || 
+      "CYBERSECURITY" in Applications
+    severity: info
+    tags: ["security", "monitoring", "it-tools"]
+    enabled: true
+
+  # ========================================
+  # DNS SERVICES
+  # ========================================
+
+  - name: Alternative DNS Services Detected
+    description: Alternative DNS services detected including DNS over HTTPS, DNSCrypt, etc.
+    type: Connection
+    expression: |
+      "DNS_OVER_HTTPS" in Applications || "DOH_DOT" in Applications || 
+      "DNSCRYPT" in Applications || "OPENDNS" in Applications || 
+      "CLOUDFLARE" in Applications
+    severity: low
+    tags: ["dns", "privacy", "security"]
+    enabled: true
+
+  # ========================================
+  # VOIP SERVICES
+  # ========================================
+
+  - name: VoIP Services Detected
+    description: Voice over IP services detected (excluding video conferencing)
+    type: Connection
+    expression: |
+      "VIBER" in Applications || "VIBER_VOIP" in Applications || 
+      "WHATSAPP_CALL" in Applications || "TELEGRAM_VOIP" in Applications || 
+      "SIGNAL_VOIP" in Applications || "SKYPE_CALL" in Applications || 
+      "FACEBOOK_VOIP" in Applications || "KAKAOTALK_VOICE" in Applications || 
+      "LINE_CALL" in Applications || "SNAPCHAT_CALL" in Applications || 
+      "IAX" in Applications || "SIP" in Applications || 
+      "MGCP" in Applications || "H323" in Applications || 
+      "RTP" in Applications || "RTCP" in Applications || 
+      "SRTP" in Applications
+    severity: info
+    tags: ["voip", "communication", "voice"]
+    enabled: true
+
+  # ========================================
+  # IOT & SMART DEVICES
+  # ========================================
+
+  - name: IoT Smart Devices Detected
+    description: IoT and smart home devices detected
+    type: Connection
+    expression: |
+      "NEST_LOG_SINK" in Applications || "SONOS" in Applications || 
+      "TUYA_LP" in Applications || "TPLINK_SHP" in Applications || 
+      "SAMSUNG_SDP" in Applications || "MATTER" in Applications || 
+      "AMAZON_ALEXA" in Applications || "APPLE_SIRI" in Applications || 
+      "YANDEX_ALICE" in Applications
+    severity: info
+    tags: ["iot", "smart-home", "devices"]
+    enabled: true
+
+  # ========================================
+  # IP CAMERAS & SURVEILLANCE
+  # ========================================
+
+  - name: IP Camera Systems Detected
+    description: IP camera and surveillance systems detected
+    type: Connection
+    expression: |
+      "NETCAT_CCTV" in Applications || "DAHUA" in Applications || 
+      "FOSCAM" in Applications || "UMEYE" in Applications
+    severity: info
+    tags: ["ipcamera", "surveillance", "iot", "security"]
+    enabled: true
+
+  # ========================================
+  # INDUSTRIAL CONTROL SYSTEMS
+  # ========================================
+
+  - name: ICS Protocols Detected
+    description: Industrial control system protocols detected
+    type: Connection
+    expression: |
+      "MODBUS" in Applications || "S7COMM" in Applications || 
+      "S7COMM_PLUS" in Applications || "DNP3" in Applications || 
+      "IEC60870" in Applications || "IEC62056" in Applications || 
+      "ETHERNET_IP" in Applications || "ETHERNETIP" in Applications || 
+      "BACNET" in Applications || "PROFINET_IO" in Applications || 
+      "OPC_UA" in Applications || "MELSEC" in Applications || 
+      "FINS" in Applications || "CIP" in Applications || 
+      "BECKHOFF_ADS" in Applications || "ISO9506_1_MMS" in Applications || 
+      "HART_IP" in Applications || "KNXNET_IP" in Applications || 
+      "C1222" in Applications || "TRISTATION" in Applications || 
+      "EGD" in Applications
+    severity: high
+    mitre: ["T0855", "T0836"]
+    tags: ["ics", "scada", "ot", "industrial", "critical-infrastructure"]
+    enabled: true
+
+  # ========================================
+  # MESSAGE QUEUE SYSTEMS
+  # ========================================
+
+  - name: Message Queue Systems Detected
+    description: Message queue and streaming systems detected
+    type: Connection
+    expression: |
+      "MQTT" in Applications || "AMQP" in Applications || 
+      "APACHE_KAFKA" in Applications || "RABBITMQ" in Applications || 
+      "ZMQ" in Applications || "NATS" in Applications || 
+      "STOMP" in Applications || "OPENWIRE" in Applications || 
+      "NSQ" in Applications
+    severity: info
+    tags: ["message-queue", "middleware", "iot", "development"]
+    enabled: true
+
+  # ========================================
+  # EDUCATIONAL PLATFORMS
+  # ========================================
+
+  - name: Educational Platforms Detected
+    description: Educational and e-learning platforms detected
+    type: Connection
+    expression: |
+      "GOOGLE_CLASSROOM" in Applications || "PLURALSIGHT" in Applications || 
+      "CLASSIN" in Applications || "TOCA_BOCA" in Applications
+    severity: info
+    tags: ["education", "e-learning", "training"]
+    enabled: true

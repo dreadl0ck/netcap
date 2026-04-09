@@ -1,68 +1,230 @@
 # TODOs
 
--- integrate feeds from https://threatview.io
-+- DBs: add country blocklists: "did a user browse a flagged website?"
-+  - http://netzsperre.liwest.at
-+- DBs: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
-+  - would require to retrieve IOCs for a CVE id, maybe via greynoise.io api?
-+
-+- http host session duration:
-+  - how much time did a user spent on a specific host?
-+    - eg measure as duration between first and last http request to a host
-+
-+Install ndpi on m1 mac:
-+
-+  brew install ndpi
-+
-+- ip and domain reputation
-+  - domain age: mark domains registered in the past 30 days
-+  - categorize domains (sector etc)
-+  - integrate feeds from https://threatview.io
-+- add config to apply extra asset info to audit records: eg employee workstations in internal network etc
+- Rename Credentials to Secret
+- Rename IPProfile to Host
 
-- add dpi / nodpi arm64 builds for linux
-- extend api with context to allow stopping collector
-- improve unit tests
-- https://github.com/dreadl0ck/netcap/issues/19
-- add test for reading SLL pcaps: https://wiki.wireshark.org/SLL
-- implement rule engine
-- check:
+- configure fingerbank lookups and caching
+- make it configurable per harvester if it runs only for the default port or for all streams. for some harvester it makes sense to runs them against all plaintext protos.
+- data mining on plaintext connection data: extract URLs, what looks like secrets, ctf flags etc
+- fix capture and inspect local results
+- dashboards feature: save and load dashboards, made of different charts. create a simple UI to rearrange charts and choose the audit record type, field and type of chart for each.
+- auto extract information from robots.txt and content security policy and use it to enrich audit records
+- records: rename Download All to Download Records + new Download CSV button to convert and download all records as CSV files (caution with gzip compression middleware causing issues again)
+- integrate gohs with vectorscan on mac
+- Command to show capinfos for PCAP also in webUI
+- Analysis session format, storing and loading
 
-panic: runtime error: index out of range [-1]
+- fix dev mode: since moving frontend into pkg the live rebuild does not work anymore on changes
+- dev mode: enable debugging with https://nextjs.org/docs/app/guides/mcp
 
-goroutine 38175 [running]:
-github.com/dreadl0ck/netcap/reassembly.(*reassemblyObject).Info(0xc0003ea078, 0x177, 0x0)
-/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/reassemblyObject.go:82 +0xd9
-github.com/dreadl0ck/netcap/decoder/stream/tcp.(*tcpConnection).ReassembledSG(0xc02c9fb040, 0x58a36d0, 0xc0003ea078, 0x0, 0x0)
-/Users/alien/go/src/github.com/dreadl0ck/netcap/decoder/stream/tcp/tcpConnection.go:243 +0x77
-github.com/dreadl0ck/netcap/reassembly.(*Assembler).sendToConnection(0xc0003ea000, 0xc0187eab20, 0xc0187eac18, 0xf385bb1)
-/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:787 +0x171
-github.com/dreadl0ck/netcap/reassembly.(*Assembler).skipFlush(0xc0003ea000, 0xc0187eab20, 0xc0187eac18)
-/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:901 +0xb4
-github.com/dreadl0ck/netcap/reassembly.(*Assembler).closeConn(0xc0003ea000, 0xc0187eab20)
-/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:1114 +0x75
-github.com/dreadl0ck/netcap/reassembly.(*Assembler).FlushAllProgress.func1(0xc0003ea000, 0xc066ec29a0, 0xc0647127b0, 0xc0187eab20)
-/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:1098 +0x35
-created by github.com/dreadl0ck/netcap/reassembly.(*Assembler).FlushAllProgress
-/Users/alien/go/src/github.com/dreadl0ck/netcap/reassembly/assembler.go:1097 +0x188
+check sensitveParamnames defaultls in config used
+----
 
+Later
 
+- test suite using tshark and a set of pcaps 
+- EthernetCTP / LinkLayerDiscovery / others - Group audit record types into one per protocol?
+- VSCode plugin to open pcaps with netcap and render the webUI in tab for analysis of the loaded PCAP file
+
+----
+
+Charts
+
+- echarts v6 currently used only for pie chart on Files page. Add more charts using v6 (https://echarts.apache.org/en/index.html)
+- Geolocation chart with ingress / egress based coloring switch
+- Table with PCAPs and number of audit records of each type, sortable ("eg: which capture file had the most Credentials")
+- DHCP fingerprinting results for DeviceProfile and IPProfile
+
+- overview: standard VS non standard ports in use for services
+- Visualize Applications (Clustering)
+- Sankey Diagram for Flows between IPs
+- Sankey Diagram for Flows between Devices
+- treemap explorer: click audit record type, choose field, see all values
+
+----
+
+DBs
+
+- update dbs
+  - dbs: TorDB (torlookup) databases
+    - https://www.dan.me.uk/tornodes
+    - https://github.com/alireza-rezaee/tor-nodes?tab=readme-ov-file
+- add custom data support for dbs and integrate it in UI
+- ip and domain reputation
+  - domain age: mark domains registered in the past 30 days
+  - categorize domains (sector etc)
+  - integrate feeds from https://threatview.io
+- add config to apply extra asset info to audit records: eg employee workstations in internal network etc
 - resolver API: add ip blacklist and integrate feeds
 - resolvers: integrate IP and domain reputation feeds
+automate downloading latest geolite dbs:
 
-- document: stateful VS stateless packet decoders (eg UDP vs Connection)
+https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
+https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
+https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
+
+----
+
+New features:
+
+- view that groups audit records by communityID
+- rethink PacketContext use now that we have CommunityIDs
+- mimicry rule: alert if traffic on standard port does not match the expected protocol (using DPI results)
+- Connections VS Conversations (= all Connections between two hosts) Abstraction
+
+- compression for /api/chart/data - Chart data endpoints - currently disabled 
+- compression for downloading ALL files and pcaps currently disabled
+
+- model more security rules on top of HTTP
+- model more security rules on top of DNS
+
+- Audit records data duplications: IPProfile Ja3Hashes, Alerts
+
+- audit records filter help box: make suggestions context specific for the current audit record type and data with configurable inputs as template, load a couple audit records to obtain real values and populate the template for help text with real values
+- add guide how to add new protocol support and show example commit
+
+- add some test for stream reassembly that are run with -count flag to ensure number and properties of reassembled streams are consistent
+
+- docs iteration
+- tests iteration
+
+- update engine: rules / filters need to be executed in batches so that large amounts of data can be processed.
+
+- add rules to alert on the presence of certain audit record types, eg Credentials, Vulns, Exploits etc
+- implement bug reporting in local mode
+
+- add detailed field descriptions for each protocol and show in explore view when selecting a field
+
+- netcap core should produce info which fields contain data for the audit records, so that UI can use this only show fields that make sense for filtering, without having to parse the entire data again.
+
+- try-service: crash reporting mechanism: when the service panics and crashes, we need the full service log, and all netcap logfiles copied and archived together with the input pcap file for reproduction. An alert should be fired via email. add support to connect an SMTP service to send alert emails to an administrator.
+
+- enriching audit records should be two stage process? parse minimal info in first step and everything that can be derived later in a second step
+
+- switch to gopacket/reassembly and tcpassembly? implement tests to verify the decoded streams are consistent in between executions
+
+- decoders page: clean up list and mapping
+  - document: stateful VS stateless packet decoders (eg UDP vs Connection)
+
+-----
+
+  for f in *.pcap *.pcapng; do [ -f "$f" ] && net capture -y -read "$f" -out "${f%.*}"; done
+
+with break on interrupt:
+
+  for f in *.pcap *.pcapng; do [ -f "$f" ] && { net capture -read "$f" -out "${f%.*}" || break; }; done
+
+or with trap:
+
+  trap 'exit 130' INT; for f in *.pcap *.pcapng; do [ -f "$f" ] && net capture -read "$f" -out "${f%.*}"; done
+
+or
+
+  find . -maxdepth 1 \( -name "*.pcap" -o -name "*.pcapng" \) -type f -exec sh -c 'net capture -read "$1" -out "${1%.*}"' _ {} \;
+
+
+----
+
+PCAPs for test suite:
+- check out wireshark / suricata test pcap suite.
+- scrape all files from https://www.malware-traffic-analysis.net/training-exercises.html
+- https://github.com/pevma/mrp
+- https://github.com/brett-fitz/malware-pcap
+- https://github.com/ntop/nDPI/tree/dev/tests/cfgs/default/pcap
+- https://wiki.wireshark.org/samplecaptures
+- https://github.com/wireshark/wireshark/tree/master/test/captures
+- https://github.com/OISF/suricata-verify
+- https://wiki.wireshark.org/uploads/2b93239dd0d98241e2173b78a91163b8/The-Ultimate-PCAP.7z
+- https://weberblog.net/tag/pcap/
+- https://www.chappell-university.com/post/check-out-the-ultimate-pcapng
+- https://www.netresec.com/?page=PcapFiles
+
+Integration Tests as github action:
+
+1) artifact
+
+You can store the .pcap files (or compressed bundles of them) as artifacts attached to a previous workflow.
+Then, your test workflow can download them when it runs.
+
+Example:
+
+Upload job (run once manually):
+
+```
+name: Upload PCAP dataset
+on:
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Upload PCAPs
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-pcaps
+          path: testdata/pcaps/
+```          
+
+test workflow
+
+```
+name: Run Tests
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download PCAP dataset
+        uses: actions/download-artifact@v4
+        with:
+          name: test-pcaps
+          path: ./testdata/pcaps
+      - name: Run tests
+        run: pytest
+```
+
+This works perfectly for datasets ≤5 GB total and ≤2 GB per file.
+Artifacts last up to 90 days by default (you can set a shorter retention if needed).
+
+2) download
+
+name: Download test dataset
+  run: |
+    mkdir testdata/pcaps
+    curl -L https://example.com/pcaps/testset.tar.gz -o testset.tar.gz
+    tar -xzvf testset.tar.gz -C testdata/pcaps
+
+You can download files up to ~20–25 GB safely on a GitHub-hosted runner.
+
+----
+
+https://github.com/florianl/go-nflog
+
+- http host session duration:
+  - how much time did a user spent on a specific host?
+    - eg measure as duration between first and last http request to a host
+
+
+
+- add dpi / nodpi arm64 builds for linux
+
+- extend api with context to allow stopping collector
 
 ## NEXT
 
-- implement support for MLDv2MulticastListenerReport packets
 - create elastic indices: netcap-ospf does already exist?
 - censor passwords from dumped config in netcap.log
 - log hint to use pcapfix tool for errors during pcap processing like 'capture length exceeds snap length'
-- add force flag to disable prompts: flagNoPrompt already exists
+
 - overwrite check does not include other formats than ncap or ncap.gz
-- service detection seems racy, debug
-- add flag to disable writing files to disk (but: still generating the audit records
-- unify flag naming and update docs, eg fileStorage
+
+- add flag to disable writing files to disk (but: still generating the audit records)
+- unify flag naming and update docs, eg fileStorage is camel case
 
 ## BACKLOG
   
@@ -79,14 +241,9 @@ created by github.com/dreadl0ck/netcap/reassembly.(*Assembler).FlushAllProgress
 
 - restrict reassembly from growing unbounded when reading from pcap (+ how to handle it in live mode)
 
-Add tool to download latest geolite dbs:
 
-https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
-https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
-https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key=YOUR_LICENSE_KEY&suffix=tar.gz
 
 - set all link types
-- add PPP audit records
 
 - https://github.com/fyne-io/fyne
 - https://github.com/blushft/go-diagrams
@@ -135,12 +292,8 @@ https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license
 - add intel hyperscan regex support, see https://github.com/intel-go/nff-go/blob/master/examples/dpi/main/dpi.go 
 
 - add default port and transport protocol during stream decoder creation
-- regenerate from latest nmap-services database and automate
-- port CIP, ENIP and ModbusTCP decoding to stream decoders, add to docs that decodeOpt datagrams must be set for the packet based decoders to be called
 
 - database source: set default for windows to home directory
-- dbs update script
-- script netcap installation, add setup check util command 
 
 - two entities: different value for property - will be combined and the last value for the property will be used?
 - to files for content type: remove encodings after ; in graph view
@@ -411,7 +564,6 @@ entities:
 - map known RPC numbers? https://github.com/nmap/nmap/blob/master/nmap-rpc
 - use official source for OUIs: http://standards-oui.ieee.org/oui/oui.txt
 - use ip whitelist for DeviceProfiles
-- add Ja3 / ja3s whitelisting
 
 ## Bugs / Errors
 
@@ -429,7 +581,7 @@ entities:
 ## DPI
 
 - batch DPI calls per flow?
-- add support for nDPI 3.2
+- add support for nDPI 4.14 Stable
 
 ## net collect
 
@@ -500,3 +652,12 @@ the following can be used to fix the imports after applying the global find and 
 
     directories=$(go list -f {{.Dir}} ./...)
     test -z "`for dir in $directories; do goimports -w $dir/*.go | tee /dev/stderr; done`"
+
+## Install notes
+
+Install ndpi on m1 mac:
+
+  brew install ndpi
+
+
+  brew install vectorscan

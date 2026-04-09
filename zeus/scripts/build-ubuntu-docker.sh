@@ -1,4 +1,6 @@
 #!/bin/bash
+# Alternate build script for linux binaries in docker container using goreleaser and not the build-linux command.
+# Not used atm.
 
 if [ -z "$NODPI" ]; then
   NODPI=true
@@ -15,38 +17,38 @@ fi
 # generate version, add update the VERSION env var in the Dockerfile that was moved to the project root
 zeus gen-version
 
-tag="dreadl0ck/netcap:ubuntu-${VERSION}"
-
-echo "[INFO] $tag args: ${ARGS}"
-
 # in case of cache annoyances:
 # docker rm -f $(docker ps -a -q)
 # docker rmi -f $(docker images -a -q)
 
-# build image
+tag="dreadl0ck/netcap:ubuntu-${VERSION}"
+
+echo "[INFO] $tag args: ${ARGS}"
+
+# build image directly from project root
 # dont quote ARGS or passing arguments wont work anymore
-docker build ${ARGS} -t "$tag" .
-if (( $? != 0 )); then
+if [ -n "${ARGS:-}" ]; then
+  docker build ${ARGS} -t "$tag" -f Dockerfile .
+else
+  docker build -t "$tag" -f Dockerfile .
+fi
+BUILD_EXIT_CODE=$?
+
+if (( $BUILD_EXIT_CODE != 0 )); then
 	echo "[ERROR] building container failed"
 	exit 1
 fi
 
-echo "[INFO] running docker image $tag"
-
-docker run "$tag"
-
-# echo "[INFO] docker images"
-# docker image ls
-
-# grab container ID
-echo "[INFO] looking for $tag container ID"
-CONTAINER_ID=$(docker ps -a -f ancestor=$tag -q --latest)
+# Create container without running it (avoids architecture issues on non-Linux hosts)
+echo "[INFO] creating container from image $tag"
+CONTAINER_ID=$(docker create "$tag")
 if [[ $CONTAINER_ID == "" ]]; then
-	echo "[ERROR] no docker container found"
+	echo "[ERROR] failed to create docker container"
 	exit 1
 fi
+echo "[INFO] container ID: $CONTAINER_ID"
 
-ARCHIVE="netcap_${VERSION}_linux_amd64_libc"
+ARCHIVE="netcap-${VERSION}-linux-amd64-libc"
 
 echo "[INFO] preparing dist-linux folder, CONTAINER_ID: $CONTAINER_ID, archive: $ARCHIVE"
 

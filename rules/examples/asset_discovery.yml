@@ -1,0 +1,75 @@
+# Asset Discovery & Device Classification Rules
+# Use DeviceProfile fields enriched from DHCP, CDP, LLDP, mDNS, NBNS, UPnP
+
+description: "Detection rules for network asset discovery and device classification using passively enriched DeviceProfile data from DHCP, CDP, LLDP, mDNS, NBNS, and UPnP protocols."
+
+rules:
+  # Legacy OS Detection
+  - name: Legacy Windows OS Detected
+    description: Device running end-of-life Windows version (XP, Vista, 7, Server 2003/2008)
+    type: DeviceProfile
+    expression: 'MatchesPattern(OS, "(?i)(Windows XP|Windows Vista|Windows 7|Windows Server 200[38]|MSFT 5\\.0)")'
+    severity: medium
+    mitre: ["T1588.001"]
+    tags: ["legacy-os", "asset-inventory", "eol"]
+    enabled: true
+
+  - name: Legacy Cisco IOS Detected
+    description: Cisco device running old IOS version (12.x or earlier)
+    type: DeviceProfile
+    expression: 'MatchesPattern(OS, "(?i)Cisco IOS.*Version 12\\.")'
+    severity: low
+    mitre: ["T1588.001"]
+    tags: ["legacy-os", "asset-inventory", "cisco"]
+    enabled: true
+
+  # Infrastructure Device Detection
+  - name: Domain Controller Detected
+    description: Windows Domain Controller identified via NBNS name service
+    type: DeviceProfile
+    expression: 'Contains(Roles, "Domain Controller") || Contains(Roles, "Domain Master Browser")'
+    severity: info
+    tags: ["asset-inventory", "critical-asset", "active-directory"]
+    enabled: true
+
+  - name: File Server Detected
+    description: Windows file server identified via NBNS name service
+    type: DeviceProfile
+    expression: 'Contains(Roles, "File Server")'
+    severity: info
+    tags: ["asset-inventory", "file-server"]
+    enabled: true
+
+  - name: Network Router Detected
+    description: Router or gateway device detected via UPnP or CDP
+    type: DeviceProfile
+    expression: 'len(DeviceTypes) > 0'
+    severity: info
+    tags: ["asset-inventory", "infrastructure"]
+    enabled: true
+
+  # Rogue Device Detection
+  - name: Unknown Manufacturer High Traffic
+    description: Device with unresolved manufacturer sending significant traffic (potential rogue device)
+    type: DeviceProfile
+    expression: 'DeviceManufacturer == "" && NumPackets > 500'
+    severity: medium
+    tags: ["rogue-device", "asset-inventory"]
+    enabled: true
+
+  - name: Device With No Hostname
+    description: Active device with no discoverable hostname from any protocol (DHCP, mDNS, NBNS, CDP, LLDP)
+    type: DeviceProfile
+    expression: 'len(Hostnames) == 0 && NumPackets > 1000'
+    severity: low
+    tags: ["asset-inventory", "unidentified"]
+    enabled: false  # May be noisy in some environments
+
+  # IoT / Embedded Device Detection
+  - name: UPnP Media Device
+    description: Media server or renderer detected via UPnP (potential IoT device)
+    type: DeviceProfile
+    expression: 'Contains(DeviceTypes, "Media Server") || Contains(DeviceTypes, "Media Renderer")'
+    severity: info
+    tags: ["asset-inventory", "iot", "media"]
+    enabled: true

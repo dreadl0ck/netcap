@@ -1,0 +1,1025 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  FormControl,
+  Grid,
+  IconButton,
+  MenuItem,
+  Paper,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TableSortLabel,
+  Tooltip,
+  Typography,
+  Alert,
+  Collapse,
+  ToggleButtonGroup,
+  ToggleButton,
+} from '@mui/material';
+import {
+  Refresh as RefreshIcon,
+  ExpandMore as ExpandMoreIcon,
+  Public as GeoIcon,
+  Devices as DevicesIcon,
+  Security as SecurityIcon,
+  Language as LanguageIcon,
+  LocalOffer as TagIcon,
+  TrendingUp as TrendingUpIcon,
+  TableChart as TableChartIcon,
+  BarChart as BarChartIcon,
+  Download as DownloadIcon,
+  Cable as CableIcon,
+  FilterAlt as FilterAltIcon,
+} from '@mui/icons-material';
+import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
+import FileSelectorHeader from '../components/FileSelectorHeader';
+import SearchInput from '../components/SearchInput';
+import MobileFilterSheet from '../components/MobileFilterSheet';
+import StatBox, { StatBoxGrid } from '../components/StatBox';
+import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
+import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
+import useSWR, { mutate as globalMutate } from 'swr';
+import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode, useIsMobile } from '../hooks';
+
+interface ProtocolInfo {
+  name: string;
+  packets: number;
+  category: string;
+}
+
+interface PortInfo {
+  port: number;
+  protocol: string;
+  packets: number;
+  bytes: number;
+}
+
+export interface IPProfileSummary {
+  addr: string;
+  numPackets: number;
+  bytes: number;
+  geolocation: string;
+  dnsNames: string[];
+  timestampFirst: number;
+  timestampLast: number;
+  applications: string[];
+  ja3Hashes: Record<string, string>;
+  protocolsCount: number;
+  snisCount: number;
+  srcPortsCount: number;
+  dstPortsCount: number;
+  contactedPortsCount: number;
+  ja3FingerprintMatches: string[];
+  ja3sFingerprintMatches: string[];
+  topProtocols: ProtocolInfo[];
+  topSrcPorts: PortInfo[];
+  topDstPorts: PortInfo[];
+  topContactedPorts: PortInfo[];
+  isInternal: boolean;
+}
+
+interface HostsResponse {
+  hosts: IPProfileSummary[];
+  totalCount: number;
+}
+
+type HostSortField = 'addr' | 'type' | 'packets' | 'bytes';
+type SortOrder = 'asc' | 'desc';
+
+export interface HostsPageProps {
+  /** Custom row actions to render in the expanded row details */
+  rowActions?: (row: IPProfileSummary) => React.ReactNode;
+}
+
+export default function HostsPage({ rowActions }: HostsPageProps = {}) {
+  const router = useNetcapRouter();
+  const api = useNetcapApi();
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'internal' | 'external'>('all');
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [switchingFile, setSwitchingFile] = useState(false);
+  const [chartRefreshKey, setChartRefreshKey] = useState(0);
+  const [sortField, setSortField] = useState<HostSortField>('addr');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [viewMode, setViewMode] = useViewMode();
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  // Initialize search query from URL parameter
+  useEffect(() => {
+    if (router.isReady && router.query.search && typeof router.query.search === 'string') {
+      setSearchQuery(router.query.search);
+      setPage(0);
+    }
+  }, [router.isReady, router.query.search]);
+
+  // Fetch status and input files for capture selector
+  const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
+  const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
+
+  // Fetch hosts data
+  const { data: hostsData, error, mutate } = useSWR<HostsResponse>(
+    'hosts',
+    () => fetch(`${getBackendUrl()}/api/hosts`).then(res => res.json()),
+    {
+      // Disable auto-refresh to prevent table from reordering while user is viewing
+      refreshInterval: 0,
+    }
+  );
+
+  const hosts = hostsData?.hosts || [];
+  const totalCount = hostsData?.totalCount || 0;
+
+  // Handle sort column click
+  const handleSort = (field: HostSortField) => {
+    if (sortField === field) {
+      // Toggle sort order if clicking the same field
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new field and default to ascending
+      setSortField(field);
+      setSortOrder('asc');
+    }
+    setPage(0); // Reset to first page when sorting changes
+  };
+
+  // Apply filters and sorting
+  const filteredHosts = useMemo(() => {
+    let filtered = hosts;
+
+    // Apply type filter
+    if (filterType === 'internal') {
+      filtered = filtered.filter(h => h.isInternal);
+    } else if (filterType === 'external') {
+      filtered = filtered.filter(h => !h.isInternal);
+    }
+
+    // Apply search filter with negation support (e.g., "!192.168" excludes internal IPs)
+    if (searchQuery) {
+      const searchTerms = parseSearchQuery(searchQuery);
+      filtered = filtered.filter(h =>
+        matchesSearchTerms([
+          h.addr,
+          ...(h.dnsNames || []),
+          h.geolocation || '',
+          ...(h.applications || []),
+        ], searchTerms)
+      );
+    }
+
+    // Apply sorting with stable secondary sort by address
+    filtered = [...filtered].sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case 'addr':
+          comparison = a.addr.localeCompare(b.addr);
+          break;
+        case 'type':
+          // Sort internal first (true > false), then by address
+          if (a.isInternal === b.isInternal) {
+            comparison = a.addr.localeCompare(b.addr);
+          } else {
+            comparison = a.isInternal ? -1 : 1;
+          }
+          break;
+        case 'packets':
+          comparison = a.numPackets - b.numPackets;
+          break;
+        case 'bytes':
+          comparison = a.bytes - b.bytes;
+          break;
+      }
+      // Stable secondary sort by address for consistent ordering
+      if (comparison === 0) {
+        comparison = a.addr.localeCompare(b.addr);
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    return filtered;
+  }, [hosts, filterType, searchQuery, sortField, sortOrder]);
+
+  // Paginate hosts
+  const paginatedHosts = filteredHosts.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Generate row keys for keyboard navigation
+  const rowKeys = useMemo(() => 
+    paginatedHosts.map(host => host.addr),
+    [paginatedHosts]
+  );
+
+  // Enable keyboard navigation for detail views (UP/DOWN arrows)
+  useTableKeyboardNavigation(expandedRow, rowKeys, setExpandedRow);
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Memoize event handlers to prevent recreation on every render
+  const handleRefresh = useCallback(() => {
+    mutate();
+    // Also refresh charts
+    setChartRefreshKey(prev => prev + 1);
+  }, [mutate]);
+
+  const handleFileChange = useCallback(async (filePath: string) => {
+    setSwitchingFile(true);
+    try {
+      const result = await api.setActiveDirectory(filePath);
+      console.log('Directory changed to:', result.outputDir);
+      
+      // Refresh local data
+      await mutateStatus();
+      await mutate();
+      
+      // Globally invalidate status cache for all pages
+      await globalMutate('status');
+      
+      // Trigger global event for other components
+      window.dispatchEvent(new CustomEvent('directory-changed', { detail: result }));
+      
+      // Refresh charts
+      setChartRefreshKey(prev => prev + 1);
+    } catch (err) {
+      console.error('Failed to switch file:', err);
+      alert('Failed to switch to this capture');
+    } finally {
+      setSwitchingFile(false);
+    }
+  }, [api, mutateStatus, mutate]);
+
+  const handleRowClick = useCallback((addr: string) => {
+    setExpandedRow(prev => prev === addr ? null : addr);
+  }, []);
+
+  const handleDownloadPCAP = useCallback(async (host: IPProfileSummary) => {
+    try {
+      // Generate download URL with host IP filter
+      const params = new URLSearchParams({
+        host: host.addr,
+      });
+      const downloadUrl = `${getBackendUrl()}/api/hosts/download-pcap?${params}`;
+      
+      // Fetch the file as a blob
+      const response = await fetch(downloadUrl);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        alert(`Failed to download PCAP: ${errorText}`);
+        return;
+      }
+      
+      // Get the blob and create a download link
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a temporary anchor element and trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `host_${host.addr.replace(/[:.]/g, '_')}.pcap`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert(`Failed to download PCAP: ${error}`);
+    }
+  }, []);
+
+  // Use shared FileSelectorHeader component
+  const fileSelector = (
+    <FileSelectorHeader
+      inputFiles={inputFiles || []}
+      status={status}
+      switchingFile={switchingFile}
+      onFileChange={handleFileChange}
+      learnHint="Capture Selector: Switch between different analyzed PCAP files to view their discovered network hosts and connections."
+    />
+  );
+
+  if (error) {
+    return (
+      <Layout title="Hosts" headerAction={fileSelector}>
+        <Alert severity="error">Error loading hosts: {error.message}</Alert>
+      </Layout>
+    );
+  }
+
+  return (
+    <Layout title="Hosts" headerAction={fileSelector}>
+      <Box sx={{ minWidth: 0 }}>
+        {/* View Mode Toggle */}
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_e, newValue) => {
+              if (newValue !== null) {
+                setViewMode(newValue);
+              }
+            }}
+            size="small"
+            data-learn="View Mode Toggle: Switch between Table mode (showing data in a table) and Chart mode (showing only visualization charts)."
+          >
+            <ToggleButton value="table">
+              <TableChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Table
+              </Box>
+            </ToggleButton>
+            <ToggleButton value="chart">
+              <BarChartIcon sx={{ mr: { xs: 0, sm: 0.5 }, fontSize: 18 }} />
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                Chart
+              </Box>
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
+        {/* Summary Cards - Only show in table mode */}
+        {viewMode === 'table' && (
+        <StatBoxGrid>
+          <StatBox
+            icon={<DevicesIcon color="primary" />}
+            label="Total Hosts"
+            value={totalCount}
+          />
+          <StatBox
+            icon={<SecurityIcon color="success" />}
+            label="Internal Hosts"
+            value={hosts.filter(h => h.isInternal).length}
+            onClick={() => {
+              setFilterType(filterType === 'internal' ? 'all' : 'internal');
+              setPage(0);
+            }}
+            isActive={filterType === 'internal'}
+            activeColor="success"
+            activeText="✓ Filter active"
+            learnHint="Internal Hosts Filter: Click to filter the table to show only internal (private network) hosts. Click again to show all hosts."
+          />
+          <StatBox
+            icon={<LanguageIcon color="warning" />}
+            label="External Hosts"
+            value={hosts.filter(h => !h.isInternal).length}
+            onClick={() => {
+              setFilterType(filterType === 'external' ? 'all' : 'external');
+              setPage(0);
+            }}
+            isActive={filterType === 'external'}
+            activeColor="warning"
+            activeText="✓ Filter active"
+            learnHint="External Hosts Filter: Click to filter the table to show only external (public internet) hosts. Click again to show all hosts."
+          />
+          <StatBox
+            icon={<TrendingUpIcon color="info" />}
+            label="Total Traffic"
+            value={formatBytes(hosts.reduce((sum, h) => sum + h.bytes, 0))}
+          />
+        </StatBoxGrid>
+        )}
+
+        {/* Visualization Charts - Only show in chart mode */}
+        {viewMode === 'chart' && (
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
+              <CardContent sx={{ height: '100%', p: 1 }}>
+                <iframe
+                  key={`top-talkers-${chartRefreshKey}`}
+                  src={`${getBackendUrl()}/api/hosts/top-talkers`}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                  }}
+                  title="Top Hosts by Traffic"
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
+              <CardContent sx={{ height: '100%', p: 1 }}>
+                <iframe
+                  key={`traffic-dist-${chartRefreshKey}`}
+                  src={`${getBackendUrl()}/api/hosts/traffic-distribution?showLegend=false`}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                  }}
+                  title="Traffic Distribution"
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
+              <CardContent sx={{ height: '100%', p: 1 }}>
+                <iframe
+                  key={`applications-${chartRefreshKey}`}
+                  src={`${getBackendUrl()}/api/hosts/applications`}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                  }}
+                  title="Top Applications"
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+          
+          <Grid item xs={12} md={6}>
+            <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
+              <CardContent sx={{ height: '100%', p: 1 }}>
+                <iframe
+                  key={`protocols-${chartRefreshKey}`}
+                  src={`${getBackendUrl()}/api/hosts/protocols?showLegend=false`}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                  }}
+                  title="Protocol Distribution"
+                />
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+        )}
+
+        {/* Filters and Actions - Only show in table mode */}
+        {viewMode === 'table' && (
+        <>
+        {isMobile ? (
+          <>
+            <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Chip
+                icon={<FilterAltIcon />}
+                label={`Filters${(searchQuery || filterType !== 'all') ? ` (${(searchQuery ? 1 : 0) + (filterType !== 'all' ? 1 : 0)})` : ''}`}
+                onClick={() => setFilterSheetOpen(true)}
+                variant="outlined"
+              />
+              <IconButton onClick={handleRefresh} size="small">
+                <RefreshIcon />
+              </IconButton>
+              {searchQuery || filterType !== 'all' ? (
+                <Typography variant="body2" color="text.secondary">
+                  Showing {filteredHosts.length} of {totalCount} hosts
+                </Typography>
+              ) : null}
+            </Box>
+            <MobileFilterSheet
+              open={filterSheetOpen}
+              onOpen={() => setFilterSheetOpen(true)}
+              onClose={() => setFilterSheetOpen(false)}
+            >
+              <SearchInput
+                value={searchQuery}
+                onChange={(value) => {
+                  setSearchQuery(value);
+                  setPage(0);
+                }}
+                placeholder="Search hosts..."
+                learnHint="Search Hosts: Filter the hosts table by IP address, DNS name, geolocation, or application name. Use !term to exclude matches (e.g., !192.168 excludes internal IPs)."
+              />
+              <FormControl size="small" fullWidth>
+                <Select
+                  data-learn="Host Type Filter: Show all hosts, only internal network hosts, or only external hosts."
+                  value={filterType}
+                  onChange={(e) => {
+                    setFilterType(e.target.value as 'all' | 'internal' | 'external');
+                    setPage(0);
+                  }}
+                >
+                  <MenuItem value="all">All Hosts</MenuItem>
+                  <MenuItem value="internal">Internal Only</MenuItem>
+                  <MenuItem value="external">External Only</MenuItem>
+                </Select>
+              </FormControl>
+            </MobileFilterSheet>
+          </>
+        ) : (
+        <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <SearchInput
+            value={searchQuery}
+            onChange={(value) => {
+              setSearchQuery(value);
+              setPage(0);
+            }}
+            placeholder="Search hosts..."
+            learnHint="Search Hosts: Filter the hosts table by IP address, DNS name, geolocation, or application name. Use !term to exclude matches (e.g., !192.168 excludes internal IPs)."
+          />
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <Select
+              data-learn="Host Type Filter: Show all hosts, only internal network hosts, or only external hosts."
+              value={filterType}
+              onChange={(e) => {
+                setFilterType(e.target.value as 'all' | 'internal' | 'external');
+                setPage(0);
+              }}
+            >
+              <MenuItem value="all">All Hosts</MenuItem>
+              <MenuItem value="internal">Internal Only</MenuItem>
+              <MenuItem value="external">External Only</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Button
+            data-learn="Refresh Hosts: Reload host data and visualization charts from the server."
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={handleRefresh}
+            size="small"
+          >
+            Refresh
+          </Button>
+
+          {searchQuery || filterType !== 'all' ? (
+            <Typography variant="body2" color="text.secondary">
+              Showing {filteredHosts.length} of {totalCount} hosts
+            </Typography>
+          ) : null}
+        </Box>
+        )}
+
+        {/* Hosts Table */}
+        {!hostsData && !error ? (
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress />
+          </Box>
+        ) : totalCount === 0 ? (
+          <Paper sx={{ p: 4, textAlign: 'center' }}>
+            <DevicesIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              No Hosts Found
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              No IP profiles have been captured yet.
+            </Typography>
+          </Paper>
+        ) : (
+          <ResponsiveDataView<IPProfileSummary>
+            data={paginatedHosts}
+            totalCount={filteredHosts.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            onCardClick={(host) => handleRowClick(host.addr)}
+            renderCard={(host) => (
+              <Card variant="outlined">
+                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Typography variant="subtitle2" sx={{ fontFamily: 'monospace' }}>
+                    {host.addr}
+                  </Typography>
+                  <Box display="flex" gap={2} mt={0.5} flexWrap="wrap">
+                    <Typography variant="caption" color="text.secondary">
+                      {host.isInternal ? 'Internal' : 'External'}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {host.numPackets?.toLocaleString()} pkts
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatBytes(host.bytes)}
+                    </Typography>
+                  </Box>
+                  {host.geolocation && (
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                      {host.geolocation}
+                    </Typography>
+                  )}
+                  {host.dnsNames && host.dnsNames.length > 0 && (
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5} noWrap>
+                      {host.dnsNames.slice(0, 2).join(', ')}{host.dnsNames.length > 2 ? ` +${host.dnsNames.length - 2}` : ''}
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            desktopTable={
+            <TableContainer component={Paper}>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell width={40}></TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={sortField === 'addr'}
+                        direction={sortField === 'addr' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('addr')}
+                      >
+                        IP Address
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={sortField === 'type'}
+                        direction={sortField === 'type' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('type')}
+                      >
+                        Type
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right">
+                      <TableSortLabel
+                        active={sortField === 'packets'}
+                        direction={sortField === 'packets' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('packets')}
+                      >
+                        Packets
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell align="right">
+                      <TableSortLabel
+                        active={sortField === 'bytes'}
+                        direction={sortField === 'bytes' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('bytes')}
+                      >
+                        Bytes
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>Geolocation</TableCell>
+                    <TableCell>DNS Names</TableCell>
+                    <TableCell>Applications</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {paginatedHosts.map((host) => (
+                    <>
+                      <TableRow
+                        key={host.addr}
+                        data-row-key={host.addr}
+                        hover
+                        onClick={() => handleRowClick(host.addr)}
+                        sx={{ cursor: 'pointer', '& > *': { borderBottom: 'unset !important' } }}
+                        data-learn="Host Row: Click to expand and view detailed information about this host. Use ↑↓ arrows to navigate between rows when expanded."
+                      >
+                        <TableCell>
+                          <IconButton size="small">
+                            <ExpandMoreIcon
+                              sx={{
+                                transform: expandedRow === host.addr ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.3s'
+                              }}
+                            />
+                          </IconButton>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            sx={{
+                              fontFamily: 'monospace',
+                              fontSize: '0.875rem',
+                              fontWeight: 'medium'
+                            }}
+                          >
+                            {host.addr}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={host.isInternal ? 'Internal' : 'External'}
+                            size="small"
+                            color={host.isInternal ? 'success' : 'warning'}
+                            sx={{ fontSize: '0.7rem' }}
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2">
+                            {host.numPackets.toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2">
+                            {formatBytes(host.bytes)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {host.geolocation && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                              <GeoIcon fontSize="small" color="action" />
+                              <Typography variant="body2">
+                                {host.geolocation}
+                              </Typography>
+                            </Box>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                            {(host.dnsNames || []).slice(0, 2).map((name) => (
+                              <Chip
+                                key={name}
+                                label={name}
+                                size="small"
+                                variant="outlined"
+                                sx={{ fontSize: '0.7rem', height: 20 }}
+                              />
+                            ))}
+                            {(host.dnsNames || []).length > 2 && (
+                              <Chip
+                                label={`+${(host.dnsNames || []).length - 2}`}
+                                size="small"
+                                variant="outlined"
+                                sx={{ fontSize: '0.7rem', height: 20 }}
+                              />
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                            {(host.applications || []).slice(0, 2).map((app) => (
+                              <Chip
+                                key={app}
+                                label={app}
+                                size="small"
+                                color="info"
+                                sx={{ fontSize: '0.7rem', height: 20 }}
+                              />
+                            ))}
+                            {(host.applications || []).length > 2 && (
+                              <Chip
+                                label={`+${(host.applications || []).length - 2}`}
+                                size="small"
+                                color="info"
+                                sx={{ fontSize: '0.7rem', height: 20 }}
+                              />
+                            )}
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Expandable Row Details */}
+                      <TableRow>
+                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
+                          <Collapse in={expandedRow === host.addr} timeout="auto" unmountOnExit>
+                            <Box sx={{ py: 2 }}>
+                              {/* Action Buttons */}
+                              <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', gap: 1, flexWrap: 'wrap' }}>
+                                <Button
+                                  data-learn="Show Connections: Navigate to the Connections page filtered for this host IP to view all network connections involving this host."
+                                  variant="outlined"
+                                  size="small"
+                                  startIcon={<CableIcon />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push(`/connections?search=${encodeURIComponent(host.addr)}`);
+                                  }}
+                                >
+                                  Show Connections
+                                </Button>
+                                <Button
+                                  data-learn="Download Host PCAP: Download a filtered PCAP file containing all packets from or to this host."
+                                  variant="outlined"
+                                  size="small"
+                                  startIcon={<DownloadIcon />}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDownloadPCAP(host);
+                                  }}
+                                >
+                                  Download as PCAP
+                                </Button>
+
+                                {/* Custom row actions from parent */}
+                                {rowActions && rowActions(host)}
+                              </Box>
+
+                              <Grid container spacing={2}>
+                                {/* Time Range */}
+                                <Grid item xs={12} md={6}>
+                                  <Typography variant="subtitle2" gutterBottom>
+                                    Time Range
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    First: {formatTimestamp(host.timestampFirst)}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Last: {formatTimestamp(host.timestampLast)}
+                                  </Typography>
+                                </Grid>
+
+                                {/* Statistics */}
+                                <Grid item xs={12} md={6}>
+                                  <Typography variant="subtitle2" gutterBottom>
+                                    Statistics
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Protocols: {host.protocolsCount}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Source Ports: {host.srcPortsCount}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Destination Ports: {host.dstPortsCount}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Contacted Ports: {host.contactedPortsCount}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    SNIs: {host.snisCount}
+                                  </Typography>
+                                </Grid>
+
+                                {/* Top Protocols */}
+                                {(host.topProtocols || []).length > 0 && (
+                                  <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      Top Protocols
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(host.topProtocols || []).map((proto) => (
+                                        <Tooltip
+                                          key={proto.name}
+                                          title={`${proto.packets.toLocaleString()} packets (${proto.category})`}
+                                        >
+                                          <Chip
+                                            label={proto.name}
+                                            size="small"
+                                            variant="outlined"
+                                            sx={{ fontSize: '0.75rem' }}
+                                          />
+                                        </Tooltip>
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+
+                                {/* Top Contacted Ports */}
+                                {(host.topContactedPorts || []).length > 0 && (
+                                  <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      Top Contacted Ports
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(host.topContactedPorts || []).map((port) => (
+                                        <Tooltip
+                                          key={`${port.port}-${port.packets}`}
+                                          title={`${port.packets.toLocaleString()} packets, ${formatBytes(port.bytes)}`}
+                                        >
+                                          <Chip
+                                            label={`${port.port}/${port.protocol}`}
+                                            size="small"
+                                            variant="outlined"
+                                            color="primary"
+                                            sx={{ fontSize: '0.75rem' }}
+                                          />
+                                        </Tooltip>
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+
+                                {/* All DNS Names */}
+                                {(host.dnsNames || []).length > 0 && (
+                                  <Grid item xs={12}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      All DNS Names ({(host.dnsNames || []).length})
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(host.dnsNames || []).map((name) => (
+                                        <Chip
+                                          key={name}
+                                          label={name}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{ fontSize: '0.75rem' }}
+                                        />
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+
+                                {/* All Applications */}
+                                {(host.applications || []).length > 0 && (
+                                  <Grid item xs={12}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      All Applications ({(host.applications || []).length})
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(host.applications || []).map((app) => (
+                                        <Chip
+                                          key={app}
+                                          label={app}
+                                          size="small"
+                                          color="info"
+                                          sx={{ fontSize: '0.75rem' }}
+                                        />
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+
+                                {/* JA3 Fingerprints */}
+                                {((host.ja3FingerprintMatches || []).length > 0 || (host.ja3sFingerprintMatches || []).length > 0) && (
+                                  <Grid item xs={12}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      TLS Fingerprints
+                                    </Typography>
+                                    {(host.ja3FingerprintMatches || []).length > 0 && (
+                                      <Box sx={{ mb: 1 }}>
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                          JA3 (Client):
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                          {(host.ja3FingerprintMatches || []).map((match) => (
+                                            <Chip
+                                              key={match}
+                                              label={match}
+                                              size="small"
+                                              variant="outlined"
+                                              color="secondary"
+                                              sx={{ fontSize: '0.7rem' }}
+                                            />
+                                          ))}
+                                        </Box>
+                                      </Box>
+                                    )}
+                                    {(host.ja3sFingerprintMatches || []).length > 0 && (
+                                      <Box>
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+                                          JA3S (Server):
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                          {(host.ja3sFingerprintMatches || []).map((match) => (
+                                            <Chip
+                                              key={match}
+                                              label={match}
+                                              size="small"
+                                              variant="outlined"
+                                              color="secondary"
+                                              sx={{ fontSize: '0.7rem' }}
+                                            />
+                                          ))}
+                                        </Box>
+                                      </Box>
+                                    )}
+                                  </Grid>
+                                )}
+                              </Grid>
+                            </Box>
+                          </Collapse>
+                        </TableCell>
+                      </TableRow>
+                    </>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            }
+          />
+        )}
+        </>
+        )}
+      </Box>
+    </Layout>
+  );
+}
+

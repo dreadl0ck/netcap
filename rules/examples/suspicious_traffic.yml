@@ -1,0 +1,446 @@
+# Suspicious Traffic Detection Rules
+# These rules detect potentially suspicious network traffic patterns
+
+description: "Detection rules for suspicious network traffic patterns including SSH connection monitoring, high port scanning, internal lateral movement indicators, and anomalous communication patterns requiring further investigation."
+
+rules:
+  # Port Scanning Detection
+  - name: Port Scan High Port
+    description: Detect connections to uncommon high ports that may indicate port scanning
+    type: TCP
+    expression: DstPort > 49152 && SYN && !ACK
+    severity: info
+    mitre: ["T1046"]
+    tags: ["port-scan"]
+    enabled: true
+
+  # Suspicious Internal-to-Internal Traffic
+  # NOTE: Many legitimate services use high ports. Consider maintaining an allow-list
+  # of known internal services or focusing on specific suspicious port ranges.
+  - name: High Port Internal Communication
+    description: Monitor internal communication on high ports (configure allow-list for known services)
+    type: TCP
+    expression: IsPrivateIP(SrcIP) && IsPrivateIP(DstIP) && DstPort > 49152 && SYN && !ACK
+    severity: low
+    mitre: ["T1021"]
+    tags: ["lateral-movement"]
+    enabled: false  # Disabled - requires allow-list configuration
+
+  # HTTP Base64 Auth Bruteforce
+  - name: HTTP Base64 Auth Bruteforce
+    description: Detect HTTP Basic Authentication attempts that may indicate brute forcing
+    type: HTTP
+    expression: MatchesPattern(URL, "(?i)authorization") || StatusCode == 401
+    severity: low
+    mitre: ["T1110.001"]
+    tags: ["brute-force"]
+    enabled: true
+    threshold: 50
+    threshold_window: 300
+
+  # HTTP Basic Auth Usage
+  - name: HTTP Basic Auth Usage
+    description: Detect usage of HTTP Basic Authentication (insecure)
+    type: HTTP
+    expression: StatusCode == 401 || MatchesPattern(URL, "(?i)www-authenticate")
+    severity: low
+    mitre: ["T1110"]
+    tags: ["insecure"]
+    enabled: true
+
+  # SSH Connection Activity
+  - name: SSH Connection Activity
+    description: Detect SSH connection activity for correlation analysis
+    type: TCP
+    expression: DstPort == 22 && ACK && PayloadSize > 0
+    severity: info
+    mitre: ["T1110.001", "T1021.004"]
+    tags: ["baseline"]
+    enabled: true
+
+  # RADIUS Auth Attempts
+  - name: RADIUS Auth Attempts
+    description: Detect RADIUS authentication traffic that may indicate brute forcing
+    type: UDP
+    expression: DstPort == 1812 || DstPort == 1645
+    severity: medium
+    mitre: ["T1110"]
+    tags: ["brute-force"]
+    enabled: true
+    threshold: 50
+    threshold_window: 120
+
+  # Unknown HTTP Proxy Detection
+  # Standard Traffic: Standard web servers (hosting a website) rarely accept the CONNECT method.
+  # Proxy Traffic: The CONNECT method is explicitly designed for HTTP tunneling (usually to tunnel HTTPS traffic through a proxy). If an internal server receives a CONNECT packet, it is almost certainly acting as a proxy.
+  # Standard Traffic: When a browser talks to a web server, the request line usually contains a relative path:
+  # GET /index.html HTTP/1.1
+  # Proxy Traffic: When a browser talks to a Forward Proxy, it sends the absolute URI so the proxy knows where to go:
+  # GET http://www.google.com/index.html HTTP/1.1
+  # Authorized Proxies: If this rule runs on traffic flowing to your corporate Secure Web Gateway (SWG), Firewall, or Load Balancer, it will flag every single outbound web request.
+  - name: Unknown HTTP Proxy Detection
+    description: Detect servers behaving as HTTP proxies
+    type: HTTP
+    expression: Method == "CONNECT" || MatchesPattern(URL, "^https?://")
+    severity: medium
+    mitre: ["T1090.002"]
+    tags: ["proxy"]
+    enabled: true
+
+  # HTTP CONNECT Tunneling to Non-Standard Ports (Enhanced Detection)
+  # Most legitimate CONNECT tunneling is to HTTPS (443) or secure-web (8443).
+  # CONNECT to other ports is highly suspicious and may indicate:
+  # - Tunneling non-HTTP protocols through HTTP proxies
+  # - Bypassing firewall restrictions
+  # - Covert channels for data exfiltration or C2
+  - name: HTTP CONNECT Tunnel to Unusual Port
+    description: Detect HTTP CONNECT to non-standard ports (potential tunneling or firewall bypass)
+    type: HTTP
+    expression: Method == "CONNECT" && !MatchesPattern(URL, ":443$|:8443$")
+    severity: high
+    mitre: ["T1090.002", "T1572"]
+    tags: ["tunneling", "proxy", "suspicious", "firewall-bypass"]
+    enabled: true
+
+  # HTTP Upgrade to Unknown Protocol (Enhanced Detection)
+  # The HTTP Upgrade header is used for legitimate protocol upgrades:
+  # - WebSocket (RFC 6455)
+  # - HTTP/2 cleartext (h2c)
+  # - TLS upgrade (rare)
+  # Any other protocol in the Upgrade header is suspicious and may indicate:
+  # - Custom tunneling protocols
+  # - Covert channels
+  # - Protocol-based data exfiltration
+  - name: HTTP Upgrade to Unknown Protocol
+    description: Detect HTTP Upgrade header with non-standard protocols (potential custom tunneling)
+    type: HTTP
+    expression: RequestHeader["Upgrade"] != "" && !MatchesPattern(RequestHeader["Upgrade"], "(?i)(websocket|h2c|TLS/1\\.)") && MatchesPattern(RequestHeader["Connection"], "(?i)Upgrade")
+    severity: medium
+    mitre: ["T1090", "T1572"]
+    tags: ["tunneling", "suspicious", "protocol-upgrade"]
+    enabled: true
+
+  # Unexpected Protocol Switch (101 Switching Protocols to Unknown Protocol)
+  # Status code 101 indicates successful protocol upgrade.
+  # Legitimate uses:
+  # - WebSocket connections
+  # - HTTP/2 cleartext (h2c)
+  # Any other protocol is highly suspicious and indicates:
+  # - Custom protocol tunneling
+  # - Covert communication channels
+  # - Advanced persistent threats (APT) techniques
+  - name: Unexpected Protocol Switch
+    description: Detect 101 Switching Protocols to unexpected protocols (not WebSocket/h2c)
+    type: HTTP
+    expression: StatusCode == 101 && ResponseHeader["Upgrade"] != "" && !MatchesPattern(ResponseHeader["Upgrade"], "(?i)(websocket|h2c)")
+    severity: medium
+    mitre: ["T1090", "T1572"]
+    tags: ["tunneling", "anomaly", "protocol-switch"]
+    enabled: true
+
+  # SSH Suspiciously Long Version
+  - name: SSH Suspiciously Long Version
+    description: Detect SSH connections with abnormally long version strings (potential data exfil)
+    type: SSH
+    expression: len(Ident) > 200
+    severity: info
+    mitre: ["T1048.002"]
+    tags: ["tunneling"]
+    enabled: true
+
+  # MySQL External Connection
+  - name: MySQL External Connection
+    description: Detect MySQL connections crossing private-public boundary
+    type: TCP
+    expression: DstPort == 3306 && IsPrivateIP(SrcIP) && IsPublicIP(DstIP)
+    severity: high
+    mitre: ["T1021"]
+    tags: ["exposure"]
+    enabled: true
+
+  # Connection To Unusual Country
+  - name: Connection To Unusual Country
+    description: Monitor external connections (requires GeoIP enrichment for country filtering)
+    type: TCP
+    expression: IsPublicIP(DstIP) && ACK
+    severity: low
+    mitre: ["T1071"]
+    tags: ["geolocation"]
+    enabled: false  # Disabled - requires GeoIP data and allow-list configuration
+
+  # FTP Data Channel Activity
+  - name: FTP Data Channel Activity
+    description: Detect FTP data channel activity (port 20 or ephemeral ports in passive mode)
+    type: TCP
+    expression: DstPort == 20 && PayloadSize > 0
+    severity: info
+    mitre: ["T1048.002"]
+    tags: ["file-transfer"]
+    enabled: true
+
+  # HTTP Server Error Spike
+  - name: HTTP Server Error Spike
+    description: Detect server-side errors that may indicate attacks or issues
+    type: HTTP
+    expression: StatusCode >= 500
+    severity: medium
+    mitre: ["T1499"]
+    tags: ["dos"]
+    enabled: true
+    threshold: 30
+    threshold_window: 120
+
+  # RDP Connection
+  - name: RDP Connection
+    description: Detect RDP connections that may indicate lateral movement
+    type: TCP
+    expression: DstPort == 3389
+    severity: low
+    mitre: ["T1021.001"]
+    tags: ["lateral-movement"]
+    enabled: true
+
+  # SMB Admin Share Connection
+  - name: SMB Admin Share Connection
+    description: Detect connections to SMB ports that may indicate admin share access
+    type: TCP
+    expression: (DstPort == 445 || DstPort == 139) && SYN && !RST
+    severity: medium
+    mitre: ["T1021.002", "T1570"]
+    tags: ["lateral-movement"]
+    enabled: true
+
+  # SSH Internal Lateral Movement
+  - name: SSH Internal Lateral Movement
+    description: Detect internal SSH connections that may indicate lateral movement
+    type: TCP
+    expression: DstPort == 22 && IsPrivateIP(SrcIP) && IsPrivateIP(DstIP)
+    severity: low
+    mitre: ["T1021.004"]
+    tags: ["lateral-movement"]
+    enabled: true
+
+  # WinRM Connection
+  - name: WinRM Connection
+    description: Detect WinRM connections for remote code execution
+    type: TCP
+    expression: DstPort == 5985 || DstPort == 5986
+    severity: medium
+    mitre: ["T1021.006"]
+    tags: ["lateral-movement"]
+    enabled: true
+
+  # LDAP Replication Activity
+  - name: LDAP Replication Activity
+    description: Detect LDAP connections that may indicate DCSync credential dumping
+    type: TCP
+    expression: (DstPort == 389 || DstPort == 636) && SYN
+    severity: medium
+    mitre: ["T1003.006"]
+    tags: ["credential-access"]
+    enabled: true
+
+  # Kerberos Activity
+  - name: Kerberos Activity
+    description: Detect Kerberos traffic that may indicate ticket attacks (Golden/Silver Ticket)
+    type: TCP
+    expression: DstPort == 88
+    severity: info
+    mitre: ["T1558.001", "T1558.003"]
+    tags: ["credential-access"]
+    enabled: true
+
+  # Authentication Brute Force
+  - name: Authentication Brute Force
+    description: Detect high frequency connections to authentication services
+    type: TCP
+    expression: (DstPort == 389 || DstPort == 636 || DstPort == 88) && SYN && !ACK
+    severity: medium
+    mitre: ["T1110.001", "T1110.003"]
+    tags: ["brute-force"]
+    enabled: true
+    threshold: 50
+    threshold_window: 120
+
+  # SMB Service Execution
+  - name: SMB Service Execution
+    description: Detect SMB connections that may indicate remote service execution (PsExec-style)
+    type: TCP
+    expression: DstPort == 445 && PSH && ACK
+    severity: medium
+    mitre: ["T1569.002"]
+    tags: ["execution"]
+    enabled: true
+
+  # WinRM PowerShell Execution
+  - name: WinRM PowerShell Execution
+    description: Detect WinRM connections used for PowerShell remote execution
+    type: TCP
+    expression: (DstPort == 5985 || DstPort == 5986) && ACK && PSH
+    severity: medium
+    mitre: ["T1059.001", "T1021.006"]
+    tags: ["execution"]
+    enabled: true
+
+  # WMI Activity
+  - name: WMI Activity
+    description: Detect connections to WMI ports for remote execution
+    type: TCP
+    expression: DstPort == 135 || DstPort == 49152
+    severity: low
+    mitre: ["T1047", "T1021.003"]
+    tags: ["execution"]
+    enabled: true
+
+  # SSH Tunneling Detection
+  - name: SSH Tunneling Detection
+    description: Detect SSH connections with high data transfer that may indicate tunneling
+    type: TCP
+    expression: DstPort == 22 && PayloadSize > 1400
+    severity: low
+    mitre: ["T1572", "T1090"]
+    tags: ["tunneling"]
+    enabled: true
+
+  # High Volume SMB Write
+  - name: High Volume SMB Write
+    description: Detect high volume SMB activity that may indicate ransomware encryption
+    type: TCP
+    expression: DstPort == 445 && ACK && PSH && PayloadSize > 1000
+    severity: critical
+    mitre: ["T1486"]
+    tags: ["ransomware"]
+    enabled: true
+  
+  # Port 1337: Leet Port
+  - name: Port 1337 Detected
+    description: Traffic on port 1337 detected - unusual port often used by malware, backdoors, and hackers
+    type: TCP
+    expression: DstPort == 1337
+    severity: info
+    mitre: ["T1071.001"]
+    tags: ["suspicious", "backdoor", "unusual-port"]
+    enabled: true
+
+  # ========================================
+  # DPI-BASED PROTOCOL ANOMALIES
+  # ========================================
+
+  # Nonstandard HTTP Traffic Detection (DPI)
+  # NONSTANDARD_HTTP is flagged by DPI when HTTP-like traffic is detected on non-standard ports
+  # or when the traffic doesn't fully conform to HTTP protocol specifications.
+  # This is a strong indicator of:
+  # - HTTP tunneling over non-standard ports
+  # - C2 (Command & Control) communication disguised as HTTP
+  # - Malware using HTTP-like protocols for data exfiltration
+  # - Protocol obfuscation techniques
+  - name: Nonstandard HTTP Traffic Detected
+    description: HTTP-like traffic detected on non-standard ports or with protocol anomalies (potential C2/tunneling)
+    type: Connection
+    expression: '"NONSTANDARD_HTTP" in Applications'
+    severity: medium
+    mitre: ["T1071.001", "T1090.002", "T1572"]
+    tags: ["suspicious", "tunneling", "protocol-anomaly", "c2", "http"]
+    enabled: true
+
+  # HTTP Traffic on Non-HTTP Ports
+  # Detects HTTP traffic on ports other than 80, 8080, 443
+  - name: HTTP on Unusual Port
+    description: HTTP traffic detected on non-standard port (potential C2 or evasion)
+    type: Connection
+    expression: |
+      ("HTTP" in Applications || "HTTP_DOWNLOAD" in Applications || "HTTP_PROXY" in Applications) && 
+      DstPort != "80" && DstPort != "8080" && DstPort != "443" && DstPort != "8443" && 
+      DstPort != "3128" && DstPort != "8888"
+    severity: low
+    mitre: ["T1071.001", "T1571"]
+    tags: ["suspicious", "protocol-anomaly", "http", "evasion"]
+    enabled: true
+
+  # TLS on Non-Standard Ports
+  # TLS/SSL traffic on unusual ports may indicate C2 or covert channels
+  - name: TLS on Unusual Port
+    description: TLS/SSL traffic on non-standard port (potential encrypted C2)
+    type: Connection
+    expression: |
+      ("TLS" in Applications || "SSL" in Applications || "DTLS" in Applications) && 
+      DstPort != "443" && DstPort != "8443" && DstPort != "993" && DstPort != "995" && 
+      DstPort != "465" && DstPort != "636" && DstPort != "989" && DstPort != "990" &&
+      DstPort != "5061" && DstPort != "853" && DstPort != "3389"
+    severity: low
+    mitre: ["T1573.002", "T1571"]
+    tags: ["suspicious", "protocol-anomaly", "tls", "encrypted"]
+    enabled: true
+
+  # DNS on Non-Standard Port
+  # DNS traffic on ports other than 53 is highly suspicious
+  - name: DNS on Unusual Port
+    description: DNS traffic on non-standard port (potential DNS tunneling)
+    type: Connection
+    expression: |
+      ("DNS" in Applications || "MDNS" in Applications || "LLMNR" in Applications) && 
+      DstPort != "53" && DstPort != "5353" && DstPort != "5355" && DstPort != "853"
+    severity: high
+    mitre: ["T1071.004", "T1572"]
+    tags: ["suspicious", "dns", "tunneling", "protocol-anomaly"]
+    enabled: true
+
+  # SOCKS Protocol Detection
+  - name: SOCKS Proxy Traffic Detected
+    description: SOCKS proxy traffic detected (potential unauthorized proxy or tunneling)
+    type: Connection
+    expression: '"SOCKS" in Applications || "SOCKS4" in Applications || "SOCKS5" in Applications'
+    severity: medium
+    mitre: ["T1090.002", "T1090.003"]
+    tags: ["proxy", "tunneling", "suspicious"]
+    enabled: true
+
+  # Tor Network Traffic
+  - name: Tor Network Traffic Detected
+    description: Tor onion routing traffic detected (anonymization network)
+    type: Connection
+    expression: '"TOR" in Applications'
+    severity: medium
+    mitre: ["T1090.003"]
+    tags: ["tor", "anonymization", "suspicious"]
+    enabled: true
+
+  # IRC Traffic Detection
+  - name: IRC Traffic Detected
+    description: IRC protocol detected (commonly used for botnet C2)
+    type: Connection
+    expression: '"IRC" in Applications'
+    severity: medium
+    mitre: ["T1071.001", "T1219"]
+    tags: ["irc", "botnet", "c2", "suspicious"]
+    enabled: true
+
+  # SSH on Non-Standard Port
+  - name: SSH on Unusual Port
+    description: SSH traffic on non-standard port (potential evasion or backdoor)
+    type: Connection
+    expression: '"SSH" in Applications && DstPort != "22"'
+    severity: low
+    mitre: ["T1021.004", "T1571"]
+    tags: ["ssh", "evasion", "protocol-anomaly"]
+    enabled: true
+
+  # Telnet Traffic Detection
+  - name: Telnet Traffic Detected
+    description: Unencrypted Telnet traffic detected (insecure remote access)
+    type: Connection
+    expression: '"TELNET" in Applications'
+    severity: medium
+    mitre: ["T1021.001"]
+    tags: ["telnet", "insecure", "cleartext"]
+    enabled: true
+
+  # FTP Traffic Detection
+  - name: FTP Traffic Detected
+    description: Unencrypted FTP traffic detected (potential data exfiltration)
+    type: Connection
+    expression: '"FTP_CONTROL" in Applications || "FTP_DATA" in Applications || "FTP" in Applications'
+    severity: low
+    mitre: ["T1048.002", "T1021.001"]
+    tags: ["ftp", "cleartext", "file-transfer"]
+    enabled: true

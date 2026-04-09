@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package http
@@ -21,6 +27,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"path"
+	"slices"
 	"strings"
 	"sync/atomic"
 
@@ -29,6 +36,7 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
@@ -55,17 +63,26 @@ const (
  */
 
 type httpRequest struct {
-	request   *http.Request
-	timestamp int64
-	clientIP  string
-	serverIP  string
+	request      *http.Request
+	timestamp    int64
+	clientIP     string
+	serverIP     string
+	clientPort   int32
+	serverPort   int32
+	flow         string
+	headerOrder  []string // Header names in wire order for JA4H
+	cookieFields []string // Cookie field names in order for JA4H
+	acceptLang   string   // Accept-Language value for JA4H
 }
 
 type httpResponse struct {
-	response  *http.Response
-	timestamp int64
-	clientIP  string
-	serverIP  string
+	response   *http.Response
+	timestamp  int64
+	clientIP   string
+	serverIP   string
+	clientPort int32
+	serverPort int32
+	flow       string
 }
 
 type httpReader struct {
@@ -104,23 +121,30 @@ func (h *httpReader) Decode() {
 	for _, res := range h.responses { // populate types.HTTP with all infos from response
 		ht := newHTTPFromResponse(res.response)
 
-		_ = h.findRequest(res.response)
+		matchedReq := h.findRequest(res.response)
 
 		atomic.AddInt64(&streamutils.Stats.NumResponses, 1)
 
 		// now add request information
-		if res.response.Request != nil {
+		if matchedReq != nil && res.response.Request != nil {
 			if credentials.Decoder.Writer != nil {
 				h.searchForLoginParams(res.response.Request)
 				h.searchForBasicAuth(res.response.Request)
 			}
 
 			atomic.AddInt64(&streamutils.Stats.NumRequests, 1)
+			// Use the matched request which preserves JA4H header order info
 			setRequest(ht, &httpRequest{
-				request:   res.response.Request,
-				timestamp: res.timestamp,
-				clientIP:  res.clientIP,
-				serverIP:  res.serverIP,
+				request:      res.response.Request,
+				timestamp:    res.timestamp,
+				clientIP:     res.clientIP,
+				serverIP:     res.serverIP,
+				clientPort:   res.clientPort,
+				serverPort:   res.serverPort,
+				flow:         res.flow,
+				headerOrder:  matchedReq.headerOrder,
+				cookieFields: matchedReq.cookieFields,
+				acceptLang:   matchedReq.acceptLang,
 			})
 		} else {
 			// response without matching request
@@ -130,6 +154,8 @@ func (h *httpReader) Decode() {
 			continue
 		}
 
+		// Set Community ID for cross-tool correlation
+		ht.CommunityID = h.conversation.CommunityID
 		writeHTTP(ht, h.conversation.Ident)
 	}
 
@@ -147,6 +173,8 @@ func (h *httpReader) Decode() {
 			atomic.AddInt64(&streamutils.Stats.NumRequests, 1)
 			atomic.AddInt64(&streamutils.Stats.NumUnansweredRequests, 1)
 
+			// Set Community ID for cross-tool correlation
+			ht.CommunityID = h.conversation.CommunityID
 			writeHTTP(ht, h.conversation.Ident)
 		} else {
 			atomic.AddInt64(&streamutils.Stats.NumNilRequests, 1)
@@ -230,17 +258,22 @@ func writeHTTP(h *types.HTTP, ident string) {
 		return
 	}
 
+	communityID := h.CommunityID
 	software.WriteSoftware(soft, func(s *software.AtomicSoftware) {
 		s.Lock()
-		for _, f := range s.Flows {
-			// prevent duplicates
-			if f == ident {
-				s.Unlock()
-				return
+		// Check if flow already exists
+		flowExists := slices.Contains(s.Flows, ident)
+		// Add flow if not exists
+		if !flowExists {
+			s.Flows = append(s.Flows, ident)
+		}
+		// Add community ID if not exists
+		if communityID != "" {
+			cidExists := slices.Contains(s.CommunityIDs, communityID)
+			if !cidExists {
+				s.CommunityIDs = append(s.CommunityIDs, communityID)
 			}
 		}
-		// add flow
-		s.Flows = append(s.Flows, ident)
 		s.Unlock()
 	})
 }
@@ -308,10 +341,13 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 	streamutils.Stats.Unlock()
 
 	h.responses = append(h.responses, &httpResponse{
-		response:  res,
-		timestamp: h.conversation.FirstServerPacket.UnixNano(),
-		clientIP:  h.conversation.ClientIP,
-		serverIP:  h.conversation.ServerIP,
+		response:   res,
+		timestamp:  h.conversation.FirstServerPacket.UnixNano(),
+		clientIP:   h.conversation.ClientIP,
+		serverIP:   h.conversation.ServerIP,
+		clientPort: h.conversation.ClientPort,
+		serverPort: h.conversation.ServerPort,
+		flow:       h.conversation.Ident,
 	})
 
 	// write responses to disk if configured
@@ -319,11 +355,13 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 
 		var (
 			name         = "unknown"
-			source       = "HTTP RESPONSE"
 			ctype        string
 			numResponses = len(h.responses)
 			numRequests  = len(h.requests)
 			host         string
+			method       = ""
+			statusCode   = res.StatusCode
+			urlPath      = ""
 		)
 
 		// check if there is a matching request for the current stream
@@ -333,43 +371,61 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 			if req != nil {
 				host = req.request.Host
 				name = path.Base(req.request.URL.Path)
-				source += " from " + req.request.Host + req.request.URL.Path
+				method = req.request.Method
+				urlPath = req.request.URL.Path
 				ctype = strings.Join(req.request.Header[headerContentType], " ")
 			}
 		}
 
-		// save file to disk
-		return streamutils.SaveFile(h.conversation, source, name, err, body, encoding, host, ctype)
+		// Use new file extraction framework
+		extractor, ok := file.GetExtractor("HTTP")
+		if !ok {
+			httpLog.Error("HTTP file extractor not registered")
+			return nil
+		}
+
+		metadata := file.FileMetadata{
+			ConnectionUID:  h.conversation.Ident,
+			FlowDirection:  "server_to_client",
+			HTTPMethod:     method,
+			HTTPStatusCode: statusCode,
+			HTTPURL:        urlPath,
+			Filename:       name,
+			ContentType:    ctype,
+			Host:           host,
+			Encoding:       encoding,
+		}
+		return extractor.ExtractFile(h.conversation, body, metadata)
 	}
 
 	return nil
 }
 
-func (h *httpReader) findRequest(res *http.Response) string {
+func (h *httpReader) findRequest(res *http.Response) *httpRequest {
 	// try to find the matching HTTP request for the response
-	var (
-		req    *http.Request
-		reqURL string
-	)
+	var httpReq *httpRequest
 
 	if len(h.requests) != 0 {
 		// take the request from the parent stream and delete it from there
-		req, h.requests = h.requests[0].request, h.requests[1:]
-		reqURL = req.URL.String()
+		httpReq, h.requests = h.requests[0], h.requests[1:]
 	}
 
 	// set request instance on response
-	if req != nil {
-		res.Request = req
+	if httpReq != nil {
+		res.Request = httpReq.request
 		atomic.AddInt64(&streamutils.Stats.NumFoundRequests, 1)
 	}
 
-	return reqURL
+	return httpReq
 }
 
 // HTTP Request
 
 func (h *httpReader) readRequest(b *bufio.Reader) error {
+	// Extract header order for JA4H fingerprinting before parsing
+	// We need to peek at the raw bytes to preserve header order
+	headerOrder, cookieFields, acceptLang := extractHeaderOrderFromReader(b)
+
 	req, err := http.ReadRequest(b)
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return err
@@ -412,10 +468,16 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 	t := h.conversation.FirstClientPacket.UnixNano()
 
 	request := &httpRequest{
-		request:   req,
-		timestamp: t,
-		clientIP:  h.conversation.ClientIP,
-		serverIP:  h.conversation.ServerIP,
+		request:      req,
+		timestamp:    t,
+		clientIP:     h.conversation.ClientIP,
+		serverIP:     h.conversation.ServerIP,
+		clientPort:   h.conversation.ClientPort,
+		serverPort:   h.conversation.ServerPort,
+		flow:         h.conversation.Ident,
+		headerOrder:  headerOrder,
+		cookieFields: cookieFields,
+		acceptLang:   acceptLang,
 	}
 
 	// parse form values
@@ -438,18 +500,127 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 	if req.Method == methodPOST {
 		// write request payload to disk if configured
 		if (err == nil || decoderconfig.Instance.WriteIncomplete) && decoderconfig.Instance.FileStorage != "" {
-			return streamutils.SaveFile(
-				h.conversation,
-				"HTTP POST REQUEST to "+req.URL.Path,
-				path.Base(req.URL.Path),
-				err,
-				body,
-				req.Header[headerContentEncoding],
-				req.Host,
-				strings.Join(req.Header[headerContentType], " "),
-			)
+			// Use new file extraction framework
+			extractor, ok := file.GetExtractor("HTTP")
+			if !ok {
+				httpLog.Error("HTTP file extractor not registered")
+				return nil
+			}
+
+			metadata := file.FileMetadata{
+				ConnectionUID:  h.conversation.Ident,
+				FlowDirection:  "client_to_server",
+				HTTPMethod:     methodPOST,
+				HTTPStatusCode: 0, // Request doesn't have status code
+				HTTPURL:        req.URL.Path,
+				Filename:       path.Base(req.URL.Path),
+				ContentType:    strings.Join(req.Header[headerContentType], " "),
+				Host:           req.Host,
+				Encoding:       req.Header[headerContentEncoding],
+			}
+			return extractor.ExtractFile(h.conversation, body, metadata)
 		}
 	}
 
 	return nil
+}
+
+// extractHeaderOrderFromReader extracts HTTP header order from a bufio.Reader
+// by peeking at the raw bytes before http.ReadRequest consumes them.
+// This is needed for JA4H fingerprinting which requires header order preservation.
+func extractHeaderOrderFromReader(b *bufio.Reader) (headerOrder []string, cookieFields []string, acceptLang string) {
+	// Try to peek enough bytes to see the headers
+	// HTTP headers typically end with \r\n\r\n
+	// We'll peek progressively larger amounts until we find the header end
+
+	peekSizes := []int{1024, 4096, 8192, 16384, 32768}
+	var peeked []byte
+
+	for _, size := range peekSizes {
+		data, err := b.Peek(size)
+		if err != nil && len(data) == 0 {
+			// Can't peek, return empty
+			return nil, nil, ""
+		}
+		peeked = data
+
+		// Check if we have the complete headers (ends with \r\n\r\n or \n\n)
+		if bytes.Contains(peeked, []byte("\r\n\r\n")) || bytes.Contains(peeked, []byte("\n\n")) {
+			break
+		}
+
+		// If we got less than requested, we've read all available data
+		if len(data) < size {
+			break
+		}
+	}
+
+	if len(peeked) == 0 {
+		return nil, nil, ""
+	}
+
+	// Find the end of headers
+	headerEnd := bytes.Index(peeked, []byte("\r\n\r\n"))
+	if headerEnd == -1 {
+		headerEnd = bytes.Index(peeked, []byte("\n\n"))
+		if headerEnd == -1 {
+			headerEnd = len(peeked)
+		}
+	}
+
+	headerBytes := peeked[:headerEnd]
+	lines := bytes.Split(headerBytes, []byte("\n"))
+
+	// Skip the request line (first line)
+	for i := 1; i < len(lines); i++ {
+		line := bytes.TrimRight(lines[i], "\r")
+		if len(line) == 0 {
+			continue
+		}
+
+		colonIdx := bytes.Index(line, []byte(":"))
+		if colonIdx <= 0 {
+			continue
+		}
+
+		headerName := string(bytes.TrimSpace(line[:colonIdx]))
+		headerValue := string(bytes.TrimSpace(line[colonIdx+1:]))
+
+		headerOrder = append(headerOrder, headerName)
+
+		// Extract cookie field names
+		if strings.EqualFold(headerName, "Cookie") {
+			cookieFields = parseCookieFieldNamesFromValue(headerValue)
+		}
+
+		// Extract Accept-Language
+		if strings.EqualFold(headerName, "Accept-Language") {
+			acceptLang = headerValue
+		}
+	}
+
+	return headerOrder, cookieFields, acceptLang
+}
+
+// parseCookieFieldNamesFromValue extracts cookie field names from a Cookie header value
+func parseCookieFieldNamesFromValue(cookieValue string) []string {
+	var fields []string
+
+	pairs := strings.SplitSeq(cookieValue, ";")
+	for pair := range pairs {
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+
+		eqIdx := strings.Index(pair, "=")
+		if eqIdx > 0 {
+			fields = append(fields, strings.TrimSpace(pair[:eqIdx]))
+		} else if eqIdx == -1 {
+			// Cookie without value
+			fields = append(fields, pair)
+		}
+	}
+
+	return fields
 }

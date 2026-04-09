@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package packet
@@ -16,11 +22,12 @@ package packet
 import (
 	"encoding/binary"
 
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/ja3"
 	"github.com/dreadl0ck/tlsx"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gopacket/gopacket"
 
+	"github.com/dreadl0ck/netcap/internal/ja4"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -45,19 +52,48 @@ var tlsServerHelloDecoder = newPacketDecoder(
 			)
 
 			if ll := p.LinkLayer(); ll != nil {
-				srcMac = ll.LinkFlow().Src().String()
-				dstMac = ll.LinkFlow().Dst().String()
+				if len(ll.LinkFlow().Src().Raw()) > 0 {
+					srcMac = ll.LinkFlow().Src().String()
+				}
+				if len(ll.LinkFlow().Dst().Raw()) > 0 {
+					dstMac = ll.LinkFlow().Dst().String()
+				}
 			}
 
 			if nl := p.NetworkLayer(); nl != nil {
-				srcIP = p.NetworkLayer().NetworkFlow().Src().String()
-				dstIP = p.NetworkLayer().NetworkFlow().Dst().String()
+				if len(nl.NetworkFlow().Src().Raw()) > 0 {
+					srcIP = p.NetworkLayer().NetworkFlow().Src().String()
+				}
+				if len(nl.NetworkFlow().Dst().Raw()) > 0 {
+					dstIP = p.NetworkLayer().NetworkFlow().Dst().String()
+				}
 			}
 
 			if tl := p.TransportLayer(); tl != nil {
-				srcPort = int(binary.BigEndian.Uint16(p.TransportLayer().TransportFlow().Src().Raw()))
-				dstPort = int(binary.BigEndian.Uint16(p.TransportLayer().TransportFlow().Dst().Raw()))
+				if len(tl.TransportFlow().Src().Raw()) >= 2 {
+					srcPort = int(binary.BigEndian.Uint16(p.TransportLayer().TransportFlow().Src().Raw()))
+				}
+				if len(tl.TransportFlow().Dst().Raw()) >= 2 {
+					dstPort = int(binary.BigEndian.Uint16(p.TransportLayer().TransportFlow().Dst().Raw()))
+				}
 			}
+
+			// Compute JA4S fingerprint
+			ja4sExtensions := make([]uint16, len(hello.Extensions))
+			for i, ext := range hello.Extensions {
+				ja4sExtensions[i] = uint16(ext)
+			}
+			ja4sFingerprint := ja4.ComputeJA4S(&ja4.ServerHelloData{
+				Version:       uint16(hello.Vers),
+				CipherSuite:   uint16(hello.CipherSuite),
+				Extensions:    ja4sExtensions,
+				SupportedVers: hello.SupportedVersion,
+				IsQUIC:        false, // TCP/TLS connection
+				ALPN:          hello.AlpnProtocol,
+			})
+
+			// Lookup JA4S fingerprint in database for enrichment
+			ja4sDescription := resolvers.LookupJA4S(ja4sFingerprint)
 
 			return &types.TLSServerHello{
 				Timestamp:                    p.Metadata().Timestamp.UnixNano(),
@@ -80,7 +116,6 @@ var tlsServerHelloDecoder = newPacketDecoder(
 				SelectedIdentity:             int32(hello.SelectedIdentity),
 				Cookie:                       hello.Cookie,
 				SelectedGroup:                int32(hello.SelectedGroup),
-				Ja3S:                         ja3.DigestHexJa3s(&hello.ServerHelloBasic),
 				SrcIP:                        srcIP,
 				DstIP:                        dstIP,
 				SrcMAC:                       srcMac,
@@ -88,6 +123,9 @@ var tlsServerHelloDecoder = newPacketDecoder(
 				SrcPort:                      int32(srcPort),
 				DstPort:                      int32(dstPort),
 				Extensions:                   extensions,
+				// JA4S fingerprint
+				Ja4S:            ja4sFingerprint,
+				Ja4SDescription: ja4sDescription,
 			}
 		}
 

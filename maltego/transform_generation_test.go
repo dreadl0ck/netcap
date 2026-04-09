@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package maltego_test
@@ -106,8 +112,8 @@ var transforms = []*maltego.TransformCoreInfo{
 	{"ToDevices", "netcap.DeviceProfileAuditRecords", "Show all discovered device audit records"},
 	{"ToIPProfiles", "netcap.IPProfileAuditRecords", "Show all discovered ip hosts"},
 	{"ToIPProfilesForSoftware", "netcap.Software", "Show all ip hosts for the selected software"},
-	{"ToJA3Hashes", "netcap.TLSClientHelloAuditRecords", "Show all discovered ja3 client hashes"},
-	{"ToJA3SHashes", "netcap.TLSServerHelloAuditRecords", "Show all discovered ja3 server hashes"},
+	{"ToJA4Hashes", "netcap.TLSClientHelloAuditRecords", "Show all discovered JA4 client hashes"},
+	{"ToJA4SHashes", "netcap.TLSServerHelloAuditRecords", "Show all discovered JA4S server hashes"},
 	{"ToSMTPCommandTypes", "netcap.SMTPAuditRecords", "Show all SMTP command types"},
 	{"ToDNSOpCodes", "netcap.DNSAuditRecords", "Show all DNS op codes"},
 
@@ -146,7 +152,7 @@ var transforms = []*maltego.TransformCoreInfo{
 	{"ToServiceTypes", "netcap.ServiceAuditRecords", "Show detected network service types"},
 
 	{"ToSourceDevices", "netcap.IPProfile", "Show the source devices for the given ip profile"},
-	{"ToJA3HashesForProfile", "netcap.IPProfile", "Show the ja3 hashes seen for the given ip profile"},
+	{"ToJA4HashesForProfile", "netcap.IPProfile", "Show the JA4 hashes seen for the given ip profile"},
 
 	{"ToVisitorsForURL", "netcap.URL", "Show all visitors for the selected URL"},
 	{"ToVisitorsForHost", "netcap.Host", "Show all visitors for the selected website"},

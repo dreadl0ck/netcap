@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package udp
@@ -20,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 	"github.com/prometheus/client_golang/prometheus"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
@@ -79,8 +85,10 @@ func FlushUDPStreams() {
 	sp.wg.Wait()
 
 	// explicitly feed a nil stream to exit the goroutines used for processing
-	for _, w := range sp.workers {
-		w <- nil
+	for i, w := range sp.workers {
+		w <- nil            // Signal worker to exit
+		close(w)            // Close the channel
+		sp.workers[i] = nil // Nil out reference to help GC
 	}
 }
 
@@ -161,17 +169,22 @@ func (usp *udpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan *udpStream 
 
 			var serverBanner bytes.Buffer
 
+			// Track if we've captured the first server packet for banner extraction
+			var firstServerPacketCaptured bool
+
 			for _, d := range s.data {
 				if d.Transport() == clientTransport {
 					clientBytes += len(d.Raw())
 				} else {
 					// server
 					serverBytes += len(d.Raw())
-					for _, b := range d.Raw() {
-						if serverBanner.Len() == decoderconfig.Instance.BannerSize {
-							break
-						}
-						serverBanner.WriteByte(b)
+
+					// Extract banner ONLY from the first server packet
+					// Nmap service probes are designed to match against the initial server greeting
+					if !firstServerPacketCaptured {
+						limit := min(len(d.Raw()), decoderconfig.Instance.BannerSize)
+						serverBanner.Write(d.Raw()[:limit])
+						firstServerPacketCaptured = true
 					}
 				}
 			}
@@ -181,16 +194,33 @@ func (usp *udpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan *udpStream 
 			s.decode()
 
 			// save stream data
-			err := streamutils.SaveConversation("UDP", s.data, ident, firstPacket, clientTransport)
+			// Calculate Community ID once for use by harvesters
+			communityID := streamutils.CalcCommunityIDUDP(
+				clientNetwork.Src().String(),
+				clientNetwork.Dst().String(),
+				uint16(utils.DecodePort(clientTransport.Src().Raw())),
+				uint16(utils.DecodePort(clientTransport.Dst().Raw())),
+			)
+			err := streamutils.SaveConversation("UDP", s.data, ident, firstPacket, clientTransport, communityID)
 			if err != nil {
 				fmt.Println("failed to save UDP conversation:", err)
 			}
 
 			// save service banner
+			// Safely build server address string
+			serverAddr := ""
+			if len(clientNetwork.Dst().Raw()) > 0 {
+				serverAddr = clientNetwork.Dst().String()
+			}
+			serverAddr += ":"
+			if len(clientTransport.Dst().Raw()) > 0 {
+				serverAddr += clientTransport.Dst().String()
+			}
+
 			saveUDPServiceBanner(
 				serverBanner.Bytes(),
 				ident,
-				clientNetwork.Dst().String()+":"+clientTransport.Dst().String(),
+				serverAddr,
 				firstPacket,
 				serverBytes,
 				clientBytes,
@@ -201,7 +231,7 @@ func (usp *udpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan *udpStream 
 			usp.Lock()
 			usp.numDone++
 
-			if !decoderconfig.Instance.Quiet {
+			if !decoderconfig.Instance.Quiet && usp.numTotal > 0 {
 				utils.ClearLine()
 				fmt.Print("processing UDP streams... ", "(", usp.numDone, "/", usp.numTotal, ")")
 			}

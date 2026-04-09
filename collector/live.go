@@ -1,16 +1,22 @@
-// +build !linux
+//go:build !linux
 
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package collector
@@ -21,8 +27,8 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/pcap"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/pcap"
 	"github.com/pkg/errors"
 )
 
@@ -31,6 +37,9 @@ import (
 // this is the darwin version that uses the pcap lib with c bindings to fetch packets
 // currently there is no other option to do that.
 func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
+	// Recover from any panics during processing
+	defer c.recoverFromPanic()
+
 	// open interface in live mode
 	// snaplen, promiscuous mode and the timeout value can be configured over the collector instance
 	handle, err := pcap.OpenLive(iface, int32(c.config.SnapLen), c.config.Promisc, c.config.Timeout)
@@ -48,7 +57,9 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 		}
 	}
 
-	c.handleLinkType(handle.LinkType())
+	if err = c.handleLinkType(handle.LinkType()); err != nil {
+		return err
+	}
 
 	// initialize collector
 	if err = c.Init(); err != nil {
@@ -56,6 +67,7 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 	}
 
 	stopProgress := c.printProgressInterval()
+	stopPeriodicFlush := c.startPeriodicFlush()
 
 	c.mu.Lock()
 	c.isLive = true
@@ -81,7 +93,24 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 					break
 				}
 
-				return errors.Wrap(err, errReadingPacketData+" interface: "+iface)
+				// Check if shutdown has been initiated (e.g., via signal handler)
+				c.statMutex.Lock()
+				isShutdown := c.shutdown
+				c.statMutex.Unlock()
+
+				// If cleanup is already in progress, exit gracefully
+				if isShutdown {
+					goto done
+				}
+
+				// Pcap timeouts are expected during live capture when no packets arrive
+				// within the timeout period. Just continue reading.
+				if err.Error() == "Timeout Expired" {
+					continue
+				}
+
+				// For other errors, perform cleanup and return the error
+				goto done
 			}
 
 			// increment atomic packet counter
@@ -100,13 +129,24 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 		}
 	}
 
-	done:
+done:
 
 	// Stop progress reporting
 	stopProgress <- struct{}{}
 
-	// run cleanup on channel exit
-	c.cleanup(false)
+	// Stop periodic flushing
+	close(stopPeriodicFlush)
+
+	// Check if cleanup is already in progress (e.g., triggered by signal handler)
+	c.statMutex.Lock()
+	isShutdown := c.shutdown
+	c.statMutex.Unlock()
+
+	// Only run cleanup if it hasn't been triggered yet
+	// If shutdown is already true, cleanup is being handled elsewhere (e.g., signal handler)
+	if !isShutdown {
+		c.cleanup(false)
+	}
 
 	return nil
 }

@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package dbs
@@ -35,8 +41,11 @@ func makeTarball(source string, revision string, buf io.Writer) error {
 
 	// tar -> gzip -> buffer
 	var (
-		zipWriter = gzip.NewWriter(buf)
-		tarWriter = tar.NewWriter(zipWriter)
+		zipWriter         = gzip.NewWriter(buf)
+		tarWriter         = tar.NewWriter(zipWriter)
+		fileCount         int
+		dirCount          int
+		exploitdbIncluded bool
 	)
 
 	// process every file in the source folder
@@ -52,6 +61,12 @@ func makeTarball(source string, revision string, buf io.Writer) error {
 		// (see https://golang.org/src/archive/tar/common.go?#L626)
 		hdr.Name = strings.ReplaceAll(filepath.ToSlash(file), source, revision)
 
+		// Track if exploitdb directory is being included
+		if fi.IsDir() && fi.Name() == "exploitdb" {
+			exploitdbIncluded = true
+			fmt.Println("✓ Including exploitdb folder with exploit code snippets")
+		}
+
 		// write header in archive
 		if err = tarWriter.WriteHeader(hdr); err != nil {
 			return err
@@ -59,6 +74,7 @@ func makeTarball(source string, revision string, buf io.Writer) error {
 
 		// if not a directory, write file content
 		if !fi.IsDir() {
+			fileCount++
 
 			f, errOpen := os.Open(file)
 			if errOpen != nil {
@@ -75,11 +91,18 @@ func makeTarball(source string, revision string, buf io.Writer) error {
 			if _, err = io.Copy(tarWriter, f); err != nil {
 				return err
 			}
+		} else {
+			dirCount++
 		}
 		return nil
 	})
 	if err != nil {
 		log.Fatalln("failed to collect files: ", err)
+	}
+
+	fmt.Printf("Tarball contains: %d files, %d directories\n", fileCount, dirCount)
+	if exploitdbIncluded {
+		fmt.Println("✓ exploitdb folder successfully bundled in archive")
 	}
 
 	// produce tarball

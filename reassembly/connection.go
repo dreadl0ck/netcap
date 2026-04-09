@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 )
 
 // Bi-directional TCP network connection.

@@ -3,7 +3,7 @@ package reassembly
 import (
 	"fmt"
 
-	"github.com/dreadl0ck/gopacket"
+	"github.com/gopacket/gopacket"
 )
 
 type key [2]gopacket.Flow

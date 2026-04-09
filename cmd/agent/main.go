@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package agent
@@ -24,8 +30,10 @@ import (
 	"os"
 
 	"github.com/denisbrodbeck/machineid"
-	"github.com/dreadl0ck/cryptoutils"
 	"github.com/gogo/protobuf/proto"
+
+	"github.com/dreadl0ck/netcap/internal/cryptoutils"
+	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/config"
@@ -37,31 +45,46 @@ import (
 )
 
 // Run parses the subcommand flags and handles the arguments.
+// This is a compatibility wrapper for the old Run() interface.
 func Run() {
-	// parse commandline flags
-	fs.Usage = printUsage
+	// Remove date/time from log output to prevent duplicate timestamps
+	// when running in Docker/systemd (which add their own timestamps)
+	log.SetFlags(0)
 
-	err := fs.Parse(os.Args[2:])
-	if err != nil {
-		log.Fatal(err)
+	// Create a new CLI app just for parsing flags
+	cmd := &cli.Command{
+		Name:  "agent",
+		Usage: "agent for distributed capture",
+		Flags: GetFlags(),
+		Action: func(ctx context.Context, c *cli.Command) error {
+			return RunWithContext(ctx, c)
+		},
 	}
 
-	if *flagGenerateConfig {
-		io.GenerateConfig(fs, "agent")
+	if err := cmd.Run(context.Background(), os.Args[1:]); err != nil {
+		log.Fatal(err)
+	}
+}
 
-		return
+// RunWithContext runs the agent command with a CLI context.
+func RunWithContext(ctx context.Context, c *cli.Command) error {
+	if c.Bool("gen-config") {
+		// TODO: Update GenerateConfig to work with urfave/cli
+		fmt.Println("gen-config not yet implemented with urfave/cli")
+		return nil
 	}
 
 	io.PrintBuildInfo()
 
 	// no server public key specified - no party
-	if *flagServerPubKey == "" {
+	flagServerPubKey := c.String("pubkey")
+	if flagServerPubKey == "" {
 		fmt.Println("need public key of server")
 		os.Exit(1)
 	}
 
 	// read server public key contents from file
-	pubKeyContents, err := ioutil.ReadFile(*flagServerPubKey)
+	pubKeyContents, err := ioutil.ReadFile(flagServerPubKey)
 	if err != nil {
 		panic(err)
 	}
@@ -74,16 +97,14 @@ func Run() {
 		panic(err)
 	}
 
-	if *flagDecoders {
+	if c.Bool("decoders") {
 		packet.ShowDecoders(true)
-
-		return
+		return nil
 	}
 
-	if *flagListInterfaces {
+	if c.Bool("interfaces") {
 		utils.ListAllNetworkInterfaces()
-
-		return
+		return nil
 	}
 
 	// create keypair
@@ -93,61 +114,61 @@ func Run() {
 	}
 
 	// init collector
-	c := collector.New(collector.Config{
-		Workers:             *flagWorkers,
-		PacketBufferSize:    *flagPacketBuffer,
+	coll := collector.New(collector.Config{
+		Workers:             c.Int("workers"),
+		PacketBufferSize:    c.Int("pbuf"),
 		WriteUnknownPackets: false,
-		Promisc:             *flagPromiscMode,
-		SnapLen:             *flagSnapLen,
-		LogErrors:           *flagLogErrors,
+		Promisc:             c.Bool("promisc"),
+		SnapLen:             c.Int("snaplen"),
+		LogErrors:           c.Bool("log-errors"),
 		DecoderConfig: &config.Config{
 			Buffer:               false,
 			Compression:          false,
 			CSV:                  false,
 			Chan:                 true,
-			ChanSize:             *flagChanSize,
-			IncludeDecoders:      *flagInclude,
-			ExcludeDecoders:      *flagExclude,
+			ChanSize:             c.Int("chan-size"),
+			IncludeDecoders:      c.String("include"),
+			ExcludeDecoders:      c.String("exclude"),
 			Out:                  "",
-			Source:               *flagInterface,
-			IncludePayloads:      *flagPayload,
-			AddContext:           *flagContext,
-			MemBufferSize:        *flagMemBufferSize,
-			FlushEvery:           *flagFlushevery,
-			DefragIPv4:           *flagDefragIPv4,
-			Checksum:             *flagChecksum,
-			NoOptCheck:           *flagNooptcheck,
-			IgnoreFSMerr:         *flagIgnorefsmerr,
-			AllowMissingInit:     *flagAllowmissinginit,
-			Debug:                *flagDebug,
-			HexDump:              *flagHexdump,
-			WaitForConnections:   *flagWaitForConnections,
-			WriteIncomplete:      *flagWriteincomplete,
-			MemProfile:           *flagMemprofile,
-			ConnFlushInterval:    *flagConnFlushInterval,
-			ConnTimeOut:          *flagConnTimeOut,
-			FlowFlushInterval:    *flagFlowFlushInterval,
-			FlowTimeOut:          *flagFlowTimeOut,
-			CloseInactiveTimeOut: *flagCloseInactiveTimeout,
-			ClosePendingTimeOut:  *flagClosePendingTimeout,
-			FileStorage:          *flagFileStorage,
-			CalculateEntropy:     *flagCalcEntropy,
+			Source:               c.String("iface"),
+			IncludePayloads:      c.Bool("payload"),
+			AddContext:           c.Bool("context"),
+			MemBufferSize:        c.Int("membuf-size"),
+			FlushEvery:           c.Int("flushevery"),
+			DefragIPv4:           c.Bool("ip4defrag"),
+			Checksum:             c.Bool("checksum"),
+			NoOptCheck:           c.Bool("nooptcheck"),
+			IgnoreFSMerr:         c.Bool("ignorefsmerr"),
+			AllowMissingInit:     c.Bool("allowmissinginit"),
+			Debug:                c.Bool("debug"),
+			HexDump:              c.Bool("hexdump"),
+			WaitForConnections:   c.Bool("wait-conns"),
+			WriteIncomplete:      c.Bool("writeincomplete"),
+			MemProfile:           c.String("memprofile"),
+			ConnFlushInterval:    c.Int("conn-flush-interval"),
+			ConnTimeOut:          c.Duration("conn-timeout"),
+			FlowFlushInterval:    c.Int("flow-flush-interval"),
+			FlowTimeOut:          c.Duration("flow-timeout"),
+			CloseInactiveTimeOut: c.Duration("close-inactive-timeout"),
+			ClosePendingTimeOut:  c.Duration("close-pending-timeout"),
+			FileStorage:          c.String("fileStorage"),
+			CalculateEntropy:     c.Bool("entropy"),
 		},
 		ResolverConfig: resolvers.Config{
-			ReverseDNS:    *flagReverseDNS,
-			LocalDNS:      *flagLocalDNS,
-			MACDB:         *flagMACDB,
-			Ja3DB:         *flagJa3DB,
-			ServiceDB:     *flagServiceDB,
-			GeolocationDB: *flagGeolocationDB,
+			ReverseDNS:    c.Bool("reverse-dns"),
+			LocalDNS:      c.Bool("local-dns"),
+			MACDB:         c.Bool("macDB"),
+			ServiceDB:     c.Bool("serviceDB"),
+			GeolocationDB: c.Bool("geoDB"),
 		},
-		DPI:           *flagDPI,
-		BaseLayer:     utils.GetBaseLayer(*flagBaseLayer),
-		DecodeOptions: utils.GetDecodeOptions(*flagDecodeOptions),
+		DPI:           c.Bool("dpi"),
+		DPIModules:    c.String("dpi-modules"),
+		BaseLayer:     utils.GetBaseLayer(c.String("base")),
+		DecodeOptions: utils.GetDecodeOptions(c.String("opts")),
 	})
 
 	// initialize batching
-	chans, handle, err := c.InitBatching(*flagBPF, *flagInterface)
+	chans, handle, err := coll.InitBatching(c.String("bpf"), c.String("iface"))
 	if err != nil {
 		panic(err)
 	}
@@ -211,7 +232,7 @@ func Run() {
 							newSize := int32(len(size)+len(data)) + b.TotalSize
 
 							// if the new size would exceed the maximum size
-							if newSize > int32(*flagMaxSize) {
+							if newSize > int32(c.Int("max")) {
 								// buffer and break from loop
 								leftOverBuf = append(size, data...) //nolint:gocritic // append to different slice is intended here!
 
@@ -288,7 +309,7 @@ func Run() {
 				encB.Write(encData)
 
 				// send to server
-				err = sendUDP(context.Background(), *flagAddr, &encB)
+				err = sendUDP(context.Background(), c.String("addr"), &encB)
 				if err != nil {
 					panic(err)
 				}
@@ -299,4 +320,6 @@ func Run() {
 	// wait until the end of time
 	wait := make(chan bool)
 	<-wait
+
+	return nil
 }

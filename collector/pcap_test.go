@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/dreadl0ck/gopacket/pcapgo"
+	"github.com/gopacket/gopacket/pcapgo"
 )
 
 var (

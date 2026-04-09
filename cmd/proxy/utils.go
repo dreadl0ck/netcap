@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package proxy
@@ -38,12 +44,6 @@ func printHeader() {
 	fmt.Println("	$ net proxy -local 127.0.0.1:4444 -remote https://github.com -maxIdle 300")
 	fmt.Println("	$ net proxy -local 127.0.0.1:4444 -remote https://github.com -dump")
 	fmt.Println()
-}
-
-// usage prints the use.
-func printUsage() {
-	printHeader()
-	fs.PrintDefaults()
 }
 
 // cleanup when receiving OS signals.
@@ -175,30 +175,67 @@ func inRange(r ipRange, ipAddress net.IP) bool {
 }
 
 var privateRanges = []ipRange{
+	// IPv4 Private and Special-Use Ranges
+	{
+		start: net.ParseIP("0.0.0.0"),
+		end:   net.ParseIP("0.255.255.255"),
+	}, // RFC 1122 - "This" Network
 	{
 		start: net.ParseIP("10.0.0.0"),
 		end:   net.ParseIP("10.255.255.255"),
-	},
+	}, // RFC 1918 - Private-Use
 	{
 		start: net.ParseIP("100.64.0.0"),
 		end:   net.ParseIP("100.127.255.255"),
-	},
+	}, // RFC 6598 - Shared Address Space (CGN)
+	{
+		start: net.ParseIP("127.0.0.0"),
+		end:   net.ParseIP("127.255.255.255"),
+	}, // RFC 1122 - Loopback
+	{
+		start: net.ParseIP("169.254.0.0"),
+		end:   net.ParseIP("169.254.255.255"),
+	}, // RFC 3927 - Link-Local
 	{
 		start: net.ParseIP("172.16.0.0"),
 		end:   net.ParseIP("172.31.255.255"),
-	},
+	}, // RFC 1918 - Private-Use
 	{
 		start: net.ParseIP("192.0.0.0"),
 		end:   net.ParseIP("192.0.0.255"),
-	},
+	}, // RFC 6890 - IETF Protocol Assignments
+	{
+		start: net.ParseIP("192.0.2.0"),
+		end:   net.ParseIP("192.0.2.255"),
+	}, // RFC 5737 - TEST-NET-1
 	{
 		start: net.ParseIP("192.168.0.0"),
 		end:   net.ParseIP("192.168.255.255"),
-	},
+	}, // RFC 1918 - Private-Use
 	{
 		start: net.ParseIP("198.18.0.0"),
 		end:   net.ParseIP("198.19.255.255"),
-	},
+	}, // RFC 2544 - Benchmarking
+	{
+		start: net.ParseIP("198.51.100.0"),
+		end:   net.ParseIP("198.51.100.255"),
+	}, // RFC 5737 - TEST-NET-2
+	{
+		start: net.ParseIP("203.0.113.0"),
+		end:   net.ParseIP("203.0.113.255"),
+	}, // RFC 5737 - TEST-NET-3
+	{
+		start: net.ParseIP("224.0.0.0"),
+		end:   net.ParseIP("239.255.255.255"),
+	}, // RFC 5771 - Multicast
+	{
+		start: net.ParseIP("240.0.0.0"),
+		end:   net.ParseIP("255.255.255.254"),
+	}, // RFC 1112 - Reserved
+	{
+		start: net.ParseIP("255.255.255.255"),
+		end:   net.ParseIP("255.255.255.255"),
+	}, // RFC 919 - Limited Broadcast
 }
 
 // isPrivateSubnet - check to see if this ip is in a private subnet.

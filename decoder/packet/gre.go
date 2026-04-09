@@ -1,25 +1,43 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package packet
 
 import (
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 
 	"github.com/dreadl0ck/netcap/types"
 )
+
+// greProtocolNames maps GRE protocol types to human-readable names
+var greProtocolNames = map[layers.EthernetType]string{
+	layers.EthernetTypeIPv4:           "IPv4",
+	layers.EthernetTypeIPv6:           "IPv6",
+	layers.EthernetTypeARP:            "ARP",
+	layers.EthernetTypeDot1Q:          "802.1Q VLAN",
+	layers.EthernetTypePPPoEDiscovery: "PPPoE Discovery",
+	layers.EthernetTypePPPoESession:   "PPPoE Session",
+	layers.EthernetTypeMPLSUnicast:    "MPLS Unicast",
+	layers.EthernetTypeMPLSMulticast:  "MPLS Multicast",
+}
 
 var greDecoder = newGoPacketDecoder(
 	types.Type_NC_GRE,
@@ -27,6 +45,22 @@ var greDecoder = newGoPacketDecoder(
 	"Generic Routing Encapsulation is a tunneling protocol developed by Cisco Systems that can encapsulate a wide variety of network layer protocols inside virtual point-to-point links or point-to-multipoint links over an Internet Protocol network",
 	func(layer gopacket.Layer, timestamp int64) proto.Message {
 		if gre, ok := layer.(*layers.GRE); ok {
+			// Get encapsulated payload
+			grePayload := layer.LayerPayload()
+			payloadSize := int32(len(grePayload))
+
+			// Capture payload if configured (for tunnel inspection)
+			var payload []byte
+			if conf.IncludePayloads {
+				payload = grePayload
+			}
+
+			// Get encapsulated protocol name
+			encapProto := greProtocolNames[gre.Protocol]
+			if encapProto == "" {
+				encapProto = "Unknown"
+			}
+
 			return &types.GRE{
 				Timestamp:         timestamp,
 				ChecksumPresent:   gre.ChecksumPresent,
@@ -46,6 +80,10 @@ var greDecoder = newGoPacketDecoder(
 				Ack:               gre.Ack,
 				// @TODO: DEBUG nil pointer exception when acessing gre.Next
 				// Routing: encodeGRERouting(gre.AddressFamily, gre.SREOffset, gre.SRELength, gre.RoutingInformation, nil),
+				// Encapsulated payload for tunnel inspection
+				Payload:              payload,
+				PayloadSize:          payloadSize,
+				EncapsulatedProtocol: encapProto,
 			}
 		}
 

@@ -1,6 +1,7 @@
 package tcp
 
 import (
+	"slices"
 	"strconv"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
@@ -36,17 +37,19 @@ func saveTCPServiceBanner(s streamReader) {
 	// we will keep the first banner that reaches the size configured in c.BannerSize
 	service.Store.Lock()
 	if sv, ok := service.Store.Items[s.ServiceIdent()]; ok {
-		defer service.Store.Unlock()
+		service.Store.Unlock()
+
+		// Lock the individual service to ensure thread-safe modification
+		sv.Lock()
+		defer sv.Unlock()
 
 		// invoke the service probe matching on all streams towards this service
 		// TODO: make matching more banners than the first one configurable
 		service.MatchServiceProbes(sv, banner, s.Ident())
 
 		// ensure we don't duplicate any flows
-		for _, f := range sv.Flows {
-			if f == ident {
-				return
-			}
+		if slices.Contains(sv.Flows, ident) {
+			return
 		}
 
 		// collect the flow on the audit record
@@ -65,18 +68,28 @@ func saveTCPServiceBanner(s streamReader) {
 	service.Store.Unlock()
 
 	// nope. lets create a new one
-	serv := service.NewService(s.FirstPacket().UnixNano(), s.NumBytes(), s.Client().NumBytes(), s.Network().Dst().String())
+	// Safely extract network destination
+	var networkDst string
+	if len(s.Network().Dst().Raw()) > 0 {
+		networkDst = s.Network().Dst().String()
+	}
+
+	serv := service.NewService(s.FirstPacket().UnixNano(), s.NumBytes(), s.Client().NumBytes(), networkDst)
 	serv.Banner = string(banner)
-	serv.IP = s.Network().Dst().String()
+	serv.IP = networkDst
 	serv.Port = utils.DecodePort(s.Transport().Dst().Raw())
 
 	// set flow ident, h.parent.ident is the client flow
 	serv.Flows = []string{s.Ident()}
 
-	dst, err := strconv.Atoi(s.Transport().Dst().String())
-	if err == nil {
-		serv.Protocol = "TCP"
-		serv.Name = resolvers.LookupServiceByPort(dst, "TCP")
+	// Safely extract transport destination port for service name lookup
+	if len(s.Transport().Dst().Raw()) > 0 {
+		dst, err := strconv.Atoi(s.Transport().Dst().String())
+		if err == nil {
+			serv.Protocol = "TCP"
+			serv.Name = resolvers.LookupServiceByPort(dst, "TCP")
+			serv.PortName = serv.Name // Set PortName to the same lookup result
+		}
 	}
 
 	service.MatchServiceProbes(serv, banner, s.Ident())

@@ -1,29 +1,35 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package packet
 
 import (
 	"fmt"
-	"go.uber.org/zap"
 	"log"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/davecgh/go-spew/spew"
-	"github.com/dreadl0ck/gopacket"
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
@@ -31,6 +37,7 @@ import (
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gopacket/gopacket"
 	"github.com/mgutz/ansi"
 	"github.com/pkg/errors"
 )
@@ -77,6 +84,11 @@ type (
 		PostInit func(*Decoder) error
 		DeInit   func(*Decoder) error
 
+		// FlushState is called during live capture to write current state without clearing it.
+		// This allows accumulating decoders (DeviceProfile, IPProfile, Connection) to periodically
+		// make their data visible while continuing to track state.
+		FlushState func(*Decoder) int64
+
 		// Writer for audit records
 		Writer io.AuditRecordWriter
 
@@ -90,7 +102,7 @@ type (
 		core.DecoderAPI
 
 		// Decode parses a gopacket and returns an error
-		Decode(p gopacket.Packet) error
+		Decode(p gopacket.Packet, ctx *types.PacketContext) error
 	}
 )
 
@@ -102,7 +114,7 @@ func init() {
 	}
 	// collect all names for gopacket decoders on startup
 	for _, d := range defaultGoPacketDecoders {
-		decoderutils.AllDecoderNames[d.Layer.String()] = struct{}{}
+		decoderutils.AllDecoderNames[d.GetName()] = struct{}{}
 	}
 }
 
@@ -113,6 +125,22 @@ func newPacketDecoder(t types.Type, name, description string, postinit func(*Dec
 		Handler:     handler,
 		DeInit:      deinit,
 		PostInit:    postinit,
+		Type:        t,
+		Description: description,
+	}
+	defaultPacketDecoders = append(defaultPacketDecoders, d)
+	return d
+}
+
+// newAccumulatingPacketDecoder returns a new Decoder instance for decoders that accumulate state.
+// The flushState function is called during live capture to write current state without clearing it.
+func newAccumulatingPacketDecoder(t types.Type, name, description string, postinit func(*Decoder) error, handler packetDecoderHandler, deinit func(*Decoder) error, flushState func(*Decoder) int64) *Decoder {
+	d := &Decoder{
+		Name:        strings.Title(name),
+		Handler:     handler,
+		DeInit:      deinit,
+		PostInit:    postinit,
+		FlushState:  flushState,
 		Type:        t,
 		Description: description,
 	}
@@ -191,7 +219,8 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 		wg.Add(1)
 
 		go func(dec DecoderAPI) {
-			w := io.NewAuditRecordWriter(&io.WriterConfig{
+			// Use shared writer to handle potential file sharing across decoders
+			w := io.GetSharedAuditRecordWriter(&io.WriterConfig{
 				UnixSocket: c.UnixSocket,
 				CSV:        c.CSV,
 				Label:      c.Label,
@@ -221,6 +250,7 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 				StartTime:            time.Now(),
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
+				PerfTracker:          c.PerfTracker,
 			})
 			dec.SetWriter(w)
 
@@ -285,6 +315,11 @@ func (pd *Decoder) SetWriter(w io.AuditRecordWriter) {
 	pd.Writer = w
 }
 
+// GetWriter returns the current writer.
+func (pd *Decoder) GetWriter() io.AuditRecordWriter {
+	return pd.Writer
+}
+
 // GetType returns the netcap type of the decoder.
 func (pd *Decoder) GetType() types.Type {
 	return pd.Type
@@ -298,10 +333,17 @@ func (pd *Decoder) GetDescription() string {
 // Decode is called for each layer
 // this calls the handler function of the decoder
 // and writes the serialized protobuf into the data pipe.
-func (pd *Decoder) Decode(p gopacket.Packet) error {
+func (pd *Decoder) Decode(p gopacket.Packet, ctx *types.PacketContext) error {
 	// call the Handler function of the decoder
 	record := pd.Handler(p)
 	if record != nil {
+
+		// apply packet context (community ID, IPs, ports) if available
+		if ctx != nil {
+			if auditRecord, ok := record.(types.AuditRecord); ok {
+				auditRecord.SetPacketContext(ctx)
+			}
+		}
 
 		// increase counter
 		atomic.AddInt64(&pd.NumRecordsWritten, 1)
@@ -359,6 +401,29 @@ func (pd *Decoder) GetChan() <-chan []byte {
 // NumRecords returns the number of written records.
 func (pd *Decoder) NumRecords() int64 {
 	return atomic.LoadInt64(&pd.NumRecordsWritten)
+}
+
+// FlushCurrentState writes the current state of accumulating records to disk
+// without clearing the in-memory state. This is used during live capture
+// to periodically make data visible while continuing to track state.
+// Returns the number of records flushed.
+func (pd *Decoder) FlushCurrentState() int64 {
+	if pd.FlushState == nil {
+		// Not an accumulating decoder - just flush the writer buffer
+		if pd.Writer != nil {
+			_ = pd.Writer.Flush()
+		}
+		return 0
+	}
+
+	numFlushed := pd.FlushState(pd)
+
+	// Flush the writer buffer to make records visible on disk
+	if pd.Writer != nil {
+		_ = pd.Writer.Flush()
+	}
+
+	return numFlushed
 }
 
 // writeDeviceProfile writes the profile.

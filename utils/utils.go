@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package utils
@@ -26,10 +32,12 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
-	"github.com/evilsocket/islazy/tui"
+	"github.com/gopacket/gopacket"
+
+	"github.com/dreadl0ck/netcap/internal/table"
+	"github.com/gopacket/gopacket/layers"
 
 	"github.com/dreadl0ck/netcap/defaults"
 )
@@ -136,7 +144,7 @@ func IsASCII(d []byte) bool {
 		return false
 	}
 
-	for i := 0; i < len(d); i++ {
+	for i := range d {
 		if d[i] > unicode.MaxASCII {
 			return false
 		}
@@ -162,7 +170,7 @@ func ListAllNetworkInterfaces() {
 		index++
 	}
 
-	tui.Table(os.Stdout, []string{"Index", "Name", "Flags", "HardwareAddr", "MTU"}, rows)
+	table.Render(os.Stdout, []string{"Index", "Name", "Flags", "HardwareAddr", "MTU"}, rows)
 }
 
 // GetBaseLayer resolves a baselayer string to the gopacket.LayerType.
@@ -184,6 +192,13 @@ func GetBaseLayer(value string) (t gopacket.LayerType) {
 }
 
 // GetDecodeOptions resolves a decode option string to the gopacket.DecodeOptions type.
+// Supported options:
+//   - "default": Safe, eager decoding with buffer copying (slowest but safest)
+//   - "lazy": Lazy decoding - minimum layers decoded (faster, but not concurrency-safe)
+//   - "nocopy": No buffer copy - faster but input buffer must not be modified
+//   - "datagrams": Decode TCP streams as datagrams (enables app-level layer decoding in TCP)
+//   - "pool": Use memory pooling for packet buffers (requires calling Dispose() on packets)
+//     When using pool mode, packets must be disposed via packet.Dispose() once processing is complete
 func GetDecodeOptions(value string) (o gopacket.DecodeOptions) {
 	switch value {
 	case "lazy":
@@ -194,6 +209,8 @@ func GetDecodeOptions(value string) (o gopacket.DecodeOptions) {
 		o = gopacket.NoCopy
 	case "datagrams":
 		o = gopacket.DecodeStreamsAsDatagrams
+	case "pool":
+		o = gopacket.DecodeOptions{Pool: true}
 	default:
 		log.Fatal("invalid decode options:", value)
 	}
@@ -202,7 +219,7 @@ func GetDecodeOptions(value string) (o gopacket.DecodeOptions) {
 }
 
 // Pad the input up to the given number of space characters..
-func Pad(in interface{}, length int) string {
+func Pad(in any, length int) string {
 	return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", in)
 }
 
@@ -352,4 +369,30 @@ func StripQueryString(inputUrl string) string {
 	}
 	u.RawQuery = ""
 	return u.String()
+}
+
+// SanitizeUTF8 replaces invalid UTF-8 sequences with the Unicode replacement character.
+// This is necessary because protobuf string fields require valid UTF-8.
+func SanitizeUTF8(s string) string {
+	if utf8.ValidString(s) {
+		return s
+	}
+
+	// Build a new string with invalid sequences replaced
+	var b strings.Builder
+	b.Grow(len(s))
+
+	for i := 0; i < len(s); {
+		r, size := utf8.DecodeRuneInString(s[i:])
+		if r == utf8.RuneError && size == 1 {
+			// Invalid UTF-8 sequence, replace with replacement character
+			b.WriteRune(utf8.RuneError)
+			i++
+		} else {
+			b.WriteRune(r)
+			i += size
+		}
+	}
+
+	return b.String()
 }

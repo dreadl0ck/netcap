@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package maltego
@@ -31,6 +37,7 @@ import (
 )
 
 // IPTransformationFunc is a transformation over IP profiles for a selected DeviceProfile.
+//
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
 type IPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ip string)
 
@@ -48,6 +55,7 @@ var CountIPPackets = func(profile *types.IPProfile, mac string, min, max *uint64
 }
 
 // IPProfileTransformationFunc is a transformation over IP profiles
+//
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
 type IPProfileTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ip string)
 
@@ -205,19 +213,20 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 		}
 
 		profiles[profile.Addr] = &types.IPProfile{
-			Addr:           profile.Addr,
-			NumPackets:     profile.NumPackets,
-			Geolocation:    profile.Geolocation,
-			DNSNames:       profile.DNSNames,
-			TimestampFirst: profile.TimestampFirst,
-			TimestampLast:  profile.TimestampLast,
-			Applications:   profile.Applications,
-			Ja3Hashes:      profile.Ja3Hashes,
-			Protocols:      profile.Protocols,
-			Bytes:          profile.Bytes,
-			SrcPorts:       profile.SrcPorts,
-			DstPorts:       profile.DstPorts,
-			SNIs:           profile.SNIs,
+			Addr:             profile.Addr,
+			NumPackets:       profile.NumPackets,
+			Geolocation:      profile.Geolocation,
+			DNSNames:         profile.DNSNames,
+			TimestampFirst:   profile.TimestampFirst,
+			TimestampLast:    profile.TimestampLast,
+			Applications:     profile.Applications,
+			Protocols:        profile.Protocols,
+			Bytes:            profile.Bytes,
+			SrcPorts:         profile.SrcPorts,
+			DstPorts:         profile.DstPorts,
+			SNIs:             profile.SNIs,
+			Ja4Fingerprints:  profile.Ja4Fingerprints,
+			Ja4SFingerprints: profile.Ja4SFingerprints,
 		}
 	}
 

@@ -1,131 +1,153 @@
 <a href="https://netcap.io">
-  <img alt="Netcap Logo" src="docs/graphics/Netcap-Logov2.jpg" width="100%" height="300">
+  <img alt="Netcap Logo" src="docs/graphics/logo.png" width="100%">
 </a>
 
-<br>
-<br>
 <br>
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/dreadl0ck/netcap)](https://goreportcard.com/report/github.com/dreadl0ck/netcap)
 [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://raw.githubusercontent.com/dreadl0ck/netcap/master/docs/LICENSE)
-[![Golang](https://img.shields.io/badge/Go-1.14-blue.svg)](https://golang.org)
+[![Golang](https://img.shields.io/badge/Go-1.25-blue.svg)](https://golang.org)
 ![Linux](https://img.shields.io/badge/Supports-Linux-green.svg)
 ![macOS](https://img.shields.io/badge/Supports-macOS-green.svg)
 ![windows](https://img.shields.io/badge/Supports-windows-green.svg)
 [![GoDoc](https://img.shields.io/badge/GoDoc-reference-blue.svg)](https://godoc.org/github.com/dreadl0ck/netcap)
 [![Homepage](https://img.shields.io/badge/Homepage-blue.svg)](https://netcap.io)
 [![Documentation](https://img.shields.io/badge/Documentation-blue.svg)](https://docs.netcap.io)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/dreadl0ck/netcap.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/dreadl0ck/netcap/alerts/)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap?ref=badge_shield)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/dreadl0ck/netcap)
 
-The *Netcap* (NETwork CAPture) framework efficiently converts a stream of network packets into platform neutral type-safe structured audit records that represent specific protocols or custom abstractions.
-These audit records can be stored on disk or exchanged over the network,
-and are well suited as a data source for machine learning algorithms.
-Since parsing of untrusted input can be dangerous and network data is potentially malicious,
-a programming language that provides a garbage collected memory safe runtime is used for the implementation.
+**Netcap** (NETwork CAPture) converts network packets into structured, type-safe Protocol Buffer audit records — designed for security monitoring, forensic analysis, and machine learning. A single Go binary with 83 packet decoders, 40+ stream decoders, and 141+ audit record types, backed by a concurrent architecture and a built-in web UI.
 
-It was developed for a series of experiments in my bachelor thesis: _Implementation and evaluation of secure and scalable anomaly-based network intrusion detection_.
-Slides from my presentation at the Leibniz Supercomputing Centre of the Bavarian Academy of Sciences and Humanities are available on [researchgate](https://www.researchgate.net/project/Anomaly-based-Network-Security-Monitoring).
+<a href="docs/GALLERY.md">
+  <img alt="Netcap Web UI — Protocol Hierarchy" src="docs/gallery/protocol-hierarchy-sankey.png" width="100%">
+</a>
 
-The project won the 2nd Place at Kaspersky Labs SecurIT Cup 2018 in Budapest.
+<p align="center"><em>Protocol hierarchy visualization in the Netcap web UI — <a href="docs/GALLERY.md">more screenshots</a></em></p>
 
-*Netcap* uses Google's Protocol Buffers to encode its output, which allows accessing it across a wide range of programming languages.
-Alternatively, output can be emitted as comma separated values, which is a common input format for data analysis tools and systems.
-The tool is extensible and provides multiple ways of adding support for new protocols, 
-while implementing the parsing logic in a memory safe way.
-It provides high dimensional data about observed traffic and allows the researcher to focus on experimenting with novel approaches for detecting malicious behavior in network environments,
-instead of fiddling with data collection mechanisms and post processing steps.
-It has a concurrent design that makes use of multi-core architectures.
-The name *Netcap* was chosen to be simple and descriptive.
-The command-line tool was designed with usability and readability in mind,
-and displays progress when processing packets.
-The latest version offers 58 audit record types of which 53 are protocol specific and 5 are flow models.
+## Features
 
-For more details please refer to the [Documentation](https://docs.netcap.io), visit the [Homepage](https://netcap.io) and read the [thesis](https://github.com/dreadl0ck/netcap/blob/master/mied18.pdf).
+### Protocol Analysis
 
-A simple demonstration of generating audit records from a PCAP dump file,
-querying and displaying the collected information in various ways:
+- **83 packet-layer decoders** — Ethernet, IPv4/6, TCP, UDP, DNS, DHCP, ARP, TLS ClientHello/ServerHello, ICMP, NTP, SIP, OSPF, BGP, MPLS, GRE, VXLAN, 802.11, and many more
+- **40+ stream decoders** — TLS, SSH, HTTP/2, QUIC, SMB, FTP, SMTP, POP3, IMAP, IRC, Kerberos, DCERPC, and more
+- **Industrial protocols** — Modbus, S7Comm, DNP3, OPC-UA, PROFINET, BACnet, CIP, IEC 62351
+- **Full TCP/UDP stream reassembly** with configurable limits
 
-[![asciicast](https://asciinema.org/a/Mw2PldBOcPZeTOeN8XTKxFA5h.svg)](https://asciinema.org/a/Mw2PldBOcPZeTOeN8XTKxFA5h)
+### Web UI
 
-And live operation decoding traffic from my wireless network interface, while I am surfing the web:
+Built-in React (Vite + TypeScript) dashboard in service mode with interactive visualizations:
 
-[![asciicast](https://asciinema.org/a/hOkjEZlTR4C9FRZ9ky7RTt2nA.svg)](https://asciinema.org/a/hOkjEZlTR4C9FRZ9ky7RTt2nA)
+- Sankey diagrams, treemaps, 3D scatter plots, geo maps, host communication graphs
+- Record browsing with JSON/UI views and field-level filtering
+- Protocol statistics, connection analysis, host profiling, alert management
 
-## Design Goals
+See the [Gallery](docs/GALLERY.md) for screenshots.
 
-- memory safety when parsing untrusted input
-- ease of extension
-- output format interoperable with many different programming languages
-- concurrent design
-- output with small storage footprint on disk
-- gather everything, separate what can be understood from what can't
-- allow implementation of custom abstractions
-- rich platform and architecture support
+### Security Analysis
 
-## Use Cases
+- **JA4 fingerprinting** — JA4, JA4S, JA4H, JA4SSH, JA4X for TLS, HTTP, SSH, and X.509 classification
+- **YARA rules** — file scanning with compiled yara-x rules for malware detection
+- **Magika AI** — Google's AI-based file type classification on extracted files
+- **Credential harvesting detection** — configurable protocol-aware credential capture
+- **File extraction** — extract files from HTTP, FTP, SMTP, POP3, IMAP, SMB, IRC with hashing (MD5, SHA1, SHA256) and MIME detection
+- **Detection rules** — 30+ YAML rule categories covering reconnaissance, exfiltration, web attacks, industrial ports, and more
 
-- monitoring honeypots
-- monitoring medical / industrial devices
-- research on anomaly-based detection mechanisms
-- forensic data analysis
+### Output Formats
 
-## Framework Components
+- **Protocol Buffers** (default) — compact binary, accessible from any language
+- **CSV** — configurable separators for data analysis pipelines
+- **JSON** — human-readable structured output
+- **Elasticsearch** — direct bulk indexing for ELK stack analysis
 
-The framework consists of 9 logically separate tools compiled into a single binary:
+### Enrichment
 
-- capture (capture audit records live or from dumpfiles)
-- dump (dump with audit records in various formats)
-- label (tool for creating labeled CSV datasets from netcap data)
-- collect (collection server for distributed collection)
-- agent (sensor agent for distributed collection)
-- proxy (http reverse proxy for capturing traffic from web services)
-- util (utility tool for validating audit records and converting timestamps)
-- export (exporter for prometheus metrics)
-- transform (maltego transformation plugin)
+- DNS reverse resolution
+- GeoIP geolocation (MaxMind)
+- MAC vendor lookup
+- Deep Packet Inspection (optional, via nDPI/libprotoident)
 
-## Integrations
+### Integrations
 
-### Prometheus Metrics
+- **Prometheus + Grafana** — real-time metrics and dashboards
+- **Elasticsearch + Kibana** — full-text search and visualization
+- **Maltego** — 45+ OSINT entity types and transforms
 
-Overview Dashboard example:
+### Distributed Capture
 
-![](docs/.gitbook/assets/screenshot-2019-05-04-at-23.39.19.png)
+Agent/collector architecture for multi-sensor deployments with encrypted communication and configurable collection servers.
 
-HTTP Dashboard example:
+## Quick Start
 
-![](docs/.gitbook/assets/screenshot-2019-05-04-at-23.40.05.png)
+Pre-built binaries are available on the [Releases](https://github.com/dreadl0ck/netcap/releases) page. To build from source:
 
-You can read more about the Prometheus integration in the [docs](https://app.gitbook.com/@netcap/s/netcap/v/v0.5/maltego-integration).
+```bash
+# Build (requires libpcap)
+go build -o net ./cmd/
 
-### Maltego
+# Build without DPI (fewer C dependencies)
+go build -tags=nodpi -o net ./cmd/
 
-Extract DHCP information from local network devices of a PCAP dump file:
+# Capture from PCAP file
+./net capture -read traffic.pcap
 
-![](docs/.gitbook/assets/dhcp.mov.gif)
+# Live capture
+sudo ./net capture -iface en0
 
-HTTP File extraction:
+# Service mode (starts web UI)
+./net capture -read traffic.pcap --service
 
-![](docs/.gitbook/assets/screenshot-2020-03-24-at-23.52.23.png)
+# Service mode with hot reload (development)
+air
+```
 
-HTTP parameter command injection analysis: 
+## Subcommands
 
-![](docs/.gitbook/assets/screenshot-2020-03-25-at-15.00.55.png)
+| Command | Description |
+|---------|-------------|
+| `capture` | Capture audit records from live interfaces or PCAP files; `--service` enables the web UI |
+| `dump` | Read and display audit record files in CSV, JSON, or table format |
+| `label` | Apply attack labels to audit records using Suricata or CSV mappings |
+| `collect` | Collection server for receiving data from distributed agents |
+| `agent` | Sensor agent for distributed capture on remote hosts |
+| `proxy` | HTTP/HTTPS reverse proxy with MITM traffic inspection |
+| `export` | Export audit records with Prometheus metrics exposure |
+| `transform` | Maltego OSINT transform plugin |
+| `util` | Utilities: timestamp conversion, interface listing, database generation, search indexing |
+| `inject` | Inline packet manipulation via NFQueue (Linux) |
+| `split` | Split audit record files |
 
-You can read more about the Maltego integration in the [docs](https://app.gitbook.com/@netcap/s/netcap/v/v0.5/maltego-integration).
+## Docker
+
+Pre-built images are available for multiple configurations:
+
+| Image | Description |
+|-------|-------------|
+| Alpine | Minimal image with full DPI support |
+| Alpine (nodpi) | Lightweight, no DPI dependencies |
+| Ubuntu | Full-featured Ubuntu-based image |
+| Service | Web UI service mode image |
+
+See the [`docker/`](docker/) directory for all Dockerfiles and build variants.
+
+## Documentation
+
+- [Documentation](https://docs.netcap.io) — full usage guide
+- [Homepage](https://netcap.io) — project homepage
+- [DeepWiki](https://deepwiki.com/dreadl0ck/netcap) — AI-powered codebase exploration
+- [Thesis](https://github.com/dreadl0ck/netcap/blob/master/mied18.pdf) — original research paper
 
 ## Contributing
 
-Contributions welcome, there's plenty of stuff to do, from simple additions to low level framework engineering!
+Contributions welcome — from protocol decoder additions to core framework improvements.
 
-Please see the [Contributing Page](https://docs.netcap.io/v/v0.5/contributing) for more information.
+**Development Setup:**
+- [macOS Development Setup Guide](docs/macos-development-setup.md)
+- [Installation Guide](docs/installation.md)
 
-## Bug Reports
-
-If you encounter a bug while using Netcap, please fill out the [bugreport template](https://github.com/dreadl0ck/netcap/blob/master/docs/bugreport.md) and open a github issue.
+Please use the [bug report template](https://github.com/dreadl0ck/netcap/blob/master/docs/bugreport.md) for issue reports.
 
 ## License
 
-Netcap is licensed under the GNU General Public License v3, which is a very permissive open source license, that allows others to do almost anything they want with the project, except to distribute closed source versions. This license type was chosen with Netcaps research purpose in mind, and in the hope that it leads to further improvements and new capabilities contributed by other researchers on the long term.
+Netcap is licensed under the GNU General Public License v3, which is a very permissive open source license, that allows others to do almost anything they want with the project, except to distribute closed source versions. This license type was chosen with Netcap's research purpose in mind, and in the hope that it leads to further improvements and new capabilities contributed by other researchers on the long term.
 
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fdreadl0ck%2Fnetcap?ref=badge_large)

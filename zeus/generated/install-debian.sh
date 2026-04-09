@@ -35,9 +35,9 @@ tar xfz 2.0.14-1.tar.gz
 cd libprotoident-2.0.14-1 && ./bootstrap.sh && ./configure && make && sudo make install
 cd ..
 
-wget -qN https://github.com/ntop/nDPI/archive/3.2.tar.gz
-tar xfz 3.2.tar.gz
-cd nDPI-3.2 && ./autogen.sh && ./configure && make && sudo make install
+wget -qN https://github.com/ntop/nDPI/archive/4.14.tar.gz
+tar xfz 4.14.tar.gz
+cd nDPI-4.14 && ./autogen.sh && ./configure && make && sudo make install
 cd ..
 
 sudo apt install -y liblinear-dev

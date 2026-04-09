@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package packet
@@ -16,11 +22,11 @@ package packet
 import (
 	"bytes"
 	"crypto/md5"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
-	"github.com/pkg/errors"
 	"math"
+	"net"
 	"os"
 	"reflect"
 	"sort"
@@ -28,15 +34,31 @@ import (
 	"strings"
 	"sync"
 
+	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
+	"github.com/pkg/errors"
+	"github.com/satta/gommunityid"
+
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
 	"github.com/dreadl0ck/netcap/defaults"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/internal/table"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/evilsocket/islazy/tui"
 )
+
+// GetPacketDecoders returns all available packet decoders
+func GetPacketDecoders() []DecoderAPI {
+	return defaultPacketDecoders
+}
+
+// GetGoPacketDecoders returns all available gopacket layer decoders
+func GetGoPacketDecoders() []*GoPacketDecoder {
+	return defaultGoPacketDecoders
+}
 
 var (
 	typeMap      = make(map[string]int)
@@ -85,6 +107,97 @@ func calcMd5(s string) string {
 	return hex.EncodeToString(out)
 }
 
+// communityIDGenerator is a reusable Community ID generator
+// using the Corelight Community ID v1 specification.
+// See: https://github.com/corelight/community-id-spec
+var communityIDGenerator = gommunityid.CommunityIDv1{
+	Seed: 0, // default seed
+}
+
+// CalcCommunityID generates a Community ID v1 for a packet.
+// This provides a standardized flow identifier that is compatible
+// with Zeek, Suricata, and other network monitoring tools.
+// Returns an empty string if the packet lacks the necessary layers.
+func CalcCommunityID(p gopacket.Packet) string {
+	// Extract network layer for IP addresses
+	nl := p.NetworkLayer()
+	if nl == nil {
+		return ""
+	}
+
+	var srcIP, dstIP net.IP
+	var proto uint8
+
+	// Extract IPs and protocol from network layer
+	switch v := nl.(type) {
+	case *layers.IPv4:
+		srcIP = v.SrcIP
+		dstIP = v.DstIP
+		proto = uint8(v.Protocol)
+	case *layers.IPv6:
+		srcIP = v.SrcIP
+		dstIP = v.DstIP
+		proto = uint8(v.NextHeader)
+	default:
+		return ""
+	}
+
+	// Extract ports from transport layer
+	var srcPort, dstPort uint16
+	tl := p.TransportLayer()
+
+	if tl != nil {
+		switch v := tl.(type) {
+		case *layers.TCP:
+			srcPort = uint16(v.SrcPort)
+			dstPort = uint16(v.DstPort)
+		case *layers.UDP:
+			srcPort = uint16(v.SrcPort)
+			dstPort = uint16(v.DstPort)
+		case *layers.SCTP:
+			srcPort = uint16(v.SrcPort)
+			dstPort = uint16(v.DstPort)
+		default:
+			// For transport layers we don't handle specifically,
+			// try to get ports from raw data
+			if len(tl.TransportFlow().Src().Raw()) >= 2 {
+				srcPort = binary.BigEndian.Uint16(tl.TransportFlow().Src().Raw())
+			}
+			if len(tl.TransportFlow().Dst().Raw()) >= 2 {
+				dstPort = binary.BigEndian.Uint16(tl.TransportFlow().Dst().Raw())
+			}
+		}
+	}
+
+	// Handle ICMP specially
+	if icmpLayer := p.Layer(layers.LayerTypeICMPv4); icmpLayer != nil {
+		icmp := icmpLayer.(*layers.ICMPv4)
+		ft := gommunityid.MakeFlowTupleICMP(srcIP, dstIP, uint16(icmp.TypeCode.Type()), uint16(icmp.TypeCode.Code()))
+		return communityIDGenerator.CalcBase64(ft)
+	}
+	if icmpLayer := p.Layer(layers.LayerTypeICMPv6); icmpLayer != nil {
+		icmp := icmpLayer.(*layers.ICMPv6)
+		ft := gommunityid.MakeFlowTupleICMP6(srcIP, dstIP, uint16(icmp.TypeCode.Type()), uint16(icmp.TypeCode.Code()))
+		return communityIDGenerator.CalcBase64(ft)
+	}
+
+	// Create flow tuple based on protocol
+	var ft gommunityid.FlowTuple
+	switch proto {
+	case 6: // TCP
+		ft = gommunityid.MakeFlowTupleTCP(srcIP, dstIP, srcPort, dstPort)
+	case 17: // UDP
+		ft = gommunityid.MakeFlowTupleUDP(srcIP, dstIP, srcPort, dstPort)
+	case 132: // SCTP
+		ft = gommunityid.MakeFlowTupleSCTP(srcIP, dstIP, srcPort, dstPort)
+	default:
+		// Generic flow tuple for other protocols
+		ft = gommunityid.MakeFlowTuple(srcIP, dstIP, srcPort, dstPort, proto)
+	}
+
+	return communityIDGenerator.CalcBase64(ft)
+}
+
 func countFields(t types.Type) int {
 	recordFields := 0
 	if r, ok := netio.InitRecord(t).(types.AuditRecord); ok {
@@ -106,7 +219,7 @@ func countFields(t types.Type) int {
 					recordFields += field.Type.Elem().NumField()
 					typeMap[strings.TrimPrefix(field.Type.String(), "*")] = field.Type.Elem().NumField()
 				} else {
-					if field.Type.Elem().Kind() == reflect.Ptr {
+					if field.Type.Elem().Kind() == reflect.Pointer {
 						recordFields += field.Type.Elem().Elem().NumField()
 						// fmt.Println("  ", field.Name, field.Type, field.Type.Elem().Elem().NumField())
 						typeMap[strings.TrimPrefix(strings.TrimPrefix(field.Type.String(), "[]"), "*")] = field.Type.Elem().Elem().NumField()
@@ -218,17 +331,17 @@ func ShowDecoders(verbose bool) {
 	printDecoderStats := func(name string, d []core.DecoderAPI) {
 
 		var newFields, newAuditRecords int
-		var sum string
+		var sum strings.Builder
 
 		for _, de := range d {
 			newAuditRecords++
 			f := countFields(de.GetType())
 			newFields += f
-			sum += pad("+ "+strings.TrimPrefix(de.GetType().String(), defaults.NetcapTypePrefix)+" ( "+strconv.Itoa(f)+" )", 35) + " " + de.GetDescription() + "\n"
+			sum.WriteString(pad("+ "+strings.TrimPrefix(de.GetType().String(), defaults.NetcapTypePrefix)+" ( "+strconv.Itoa(f)+" )", 35) + " " + de.GetDescription() + "\n")
 		}
 
 		fmt.Println(name+" Audit Records (", len(d), "/", newFields, ")")
-		fmt.Println(sum)
+		fmt.Println(sum.String())
 		fmt.Println() // newline
 
 		totalFields += newFields
@@ -275,7 +388,7 @@ func ShowDecoders(verbose bool) {
 		}
 
 		fmt.Println("\nTypes with highest number of fields (Top Ten):")
-		tui.Table(os.Stdout, []string{"Type", "NumFields"}, rows)
+		table.Render(os.Stdout, []string{"Type", "NumFields"}, rows)
 
 		rows = [][]string{}
 		for _, p := range rankByWordCount(fieldNameMap)[:10] {
@@ -283,7 +396,7 @@ func ShowDecoders(verbose bool) {
 		}
 
 		fmt.Println("\nFields with highest number of occurrences (Top Ten):")
-		tui.Table(os.Stdout, []string{"Name", "Count"}, rows)
+		table.Render(os.Stdout, []string{"Name", "Count"}, rows)
 
 		fmt.Println("> total fields: ", totalFields)
 		fmt.Println("> total audit records:", totalAuditRecords)
@@ -297,7 +410,7 @@ func entropy(data []byte) (entropy float64) {
 	if len(data) == 0 {
 		return 0
 	}
-	for i := 0; i < 256; i++ {
+	for i := range 256 {
 		px := float64(bytes.Count(data, []byte{byte(i)})) / float64(len(data))
 		if px > 0 {
 			entropy += -px * math.Log2(px)
@@ -373,7 +486,7 @@ func formatMac(mac []byte) string {
 }
 
 // pad the input up to the given number of space characters.
-func pad(in interface{}, length int) string {
+func pad(in any, length int) string {
 	return fmt.Sprintf("%-"+strconv.Itoa(length)+"s", in)
 }
 

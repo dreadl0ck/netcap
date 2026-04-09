@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package collector
@@ -20,9 +26,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/pcapgo"
 	"github.com/dustin/go-humanize"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/pkg/errors"
 )
 
@@ -35,9 +41,16 @@ func openPcapNG(file string) (*pcapgo.NgReader, *os.File, error) {
 	}
 
 	// try to create pcap reader
-	r, err := pcapgo.NewNgReader(f, pcapgo.DefaultNgReaderOptions)
+	// Enable mixed link types to support pcapng files with multiple interface types
+	// (e.g., Ethernet + FPP for IS-IS, different encapsulations)
+	opts := pcapgo.DefaultNgReaderOptions
+	opts.WantMixedLinkType = true
+	r, err := pcapgo.NewNgReader(f, opts)
 	if err != nil {
-		return nil, nil, err
+		// Close the file before returning error
+		f.Close()
+		// Enhance the error with file type detection
+		return nil, nil, enhancePcapError(file, err)
 	}
 
 	return r, f, nil
@@ -78,6 +91,9 @@ func countPacketsNG(path string) (count int64, err error) {
 
 // CollectPcapNG implements parallel decoding of incoming packets.
 func (c *Collector) CollectPcapNG(path string) error {
+	// Recover from any panics during processing
+	defer c.recoverFromPanic()
+
 	// stat input file
 	stat, err := os.Stat(path)
 	if err != nil {
@@ -116,7 +132,9 @@ func (c *Collector) CollectPcapNG(path string) error {
 		}
 	}()
 
-	c.handleLinkType(r.LinkType())
+	if err = c.handleLinkType(r.LinkType()); err != nil {
+		return err
+	}
 
 	// initialize collector
 	if err = c.Init(); err != nil {

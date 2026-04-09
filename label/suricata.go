@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package label
@@ -26,8 +32,9 @@ import (
 	"time"
 
 	"github.com/cheggaaa/pb"
-	"github.com/evilsocket/islazy/tui"
 	"github.com/pkg/errors"
+
+	"github.com/dreadl0ck/netcap/internal/table"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/utils"
@@ -145,13 +152,13 @@ func Suricata(inputPcap, outputPath string, useDescription bool, separator, sele
 
 	fmt.Println("got", len(labels), "labels")
 
-	var rows [][]string
+	rows := make([][]string, 0, len(classificationMap))
 	for c, num := range classificationMap {
 		rows = append(rows, []string{c, strconv.Itoa(num)})
 	}
 
 	// print alert summary
-	tui.Table(os.Stdout, []string{"Classification", "Count"}, rows)
+	table.Render(os.Stdout, []string{"Classification", "Count"}, rows)
 	fmt.Println()
 
 	// apply labels to data
@@ -248,7 +255,7 @@ func parseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[in
 	fmt.Println("parsing suricata fast.log")
 
 	if len(excluded) != 0 {
-		var excludedNames []string
+		excludedNames := make([]string, 0, len(excluded))
 		for n := range excluded {
 			excludedNames = append(excludedNames, n)
 		}
@@ -256,13 +263,13 @@ func parseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[in
 	}
 
 	// alerts that have a duplicate timestamp
-	var duplicates []*suricataAlert
+	duplicates := make([]*suricataAlert, 0)
 
 	// ts:alert
 	labelMap = make(map[int64]*suricataAlert)
 
 	// range fast.log contents line by line
-	for _, l := range strings.Split(string(contents), "\n") {
+	for l := range strings.SplitSeq(string(contents), "\n") {
 		// minimum 27 chars for a valid log line starting with a timestamp
 		if len(l) > 27 {
 
@@ -394,7 +401,7 @@ func parseSuricataFastLog(contents []byte, useDescription bool) (labelMap map[in
 		fmt.Println(len(duplicates), "duplicate labels. stopping")
 
 		for _, a := range duplicates {
-			tui.Table(os.Stdout, []string{"Field", "Value"}, [][]string{
+			table.Render(os.Stdout, []string{"Field", "Value"}, [][]string{
 				{"Timestamp", time.Unix(0, a.Timestamp).UTC().String()},
 				{"Proto", a.Proto},
 				{"SrcIP", a.SrcIP},

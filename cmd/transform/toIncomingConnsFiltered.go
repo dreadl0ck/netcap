@@ -14,6 +14,8 @@
 package transform
 
 import (
+	"slices"
+
 	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"log"
 	"os"
@@ -66,10 +68,5 @@ func toIncomingConnsFiltered() {
 }
 
 func isInTop12(val int32, sizes *[]int) bool {
-	for _, s := range *sizes {
-		if s == int(val) {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(*sizes, int(val))
 }

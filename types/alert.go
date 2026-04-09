@@ -1,29 +1,42 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package types
 
 import (
-	"github.com/dreadl0ck/netcap/encoder"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
-	fieldMITRE        = "MITRE"        // string
-	fieldIPReputation = "IPReputation" // string
+	fieldMITRE          = "MITRE"          // string
+	fieldIPReputation   = "IPReputation"   // string
+	fieldRuleName       = "RuleName"       // string
+	fieldRecordType     = "RecordType"     // string
+	fieldAlertSeverity  = "Severity"       // string (renamed to avoid conflict with vulnerability.go)
+	fieldTags           = "Tags"           // string
+	fieldMatchedRecord  = "MatchedRecord"  // string
+	fieldRuleExpression = "RuleExpression" // string
 )
 
 var fieldsAlert = []string{
@@ -36,6 +49,12 @@ var fieldsAlert = []string{
 	fieldDstPort,
 	fieldMITRE,
 	fieldIPReputation,
+	fieldRuleName,
+	fieldRecordType,
+	fieldAlertSeverity,
+	fieldTags,
+	fieldMatchedRecord,
+	fieldRuleExpression,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -55,6 +74,12 @@ func (a *Alert) CSVRecord() []string {
 		a.DstPort,
 		a.MITRE,
 		a.IPReputation,
+		a.RuleName,
+		a.RecordType,
+		a.Severity,
+		strings.Join(a.Tags, ","),
+		a.MatchedRecord,
+		a.RuleExpression,
 	})
 }
 
@@ -113,6 +138,12 @@ func (a *Alert) Encode() []string {
 		aEncoder.String(fieldDstPort, a.DstPort),
 		aEncoder.String(fieldMITRE, a.MITRE),
 		aEncoder.String(fieldIPReputation, a.IPReputation),
+		aEncoder.String(fieldRuleName, a.RuleName),
+		aEncoder.String(fieldRecordType, a.RecordType),
+		aEncoder.String(fieldAlertSeverity, a.Severity),
+		aEncoder.String(fieldTags, strings.Join(a.Tags, ",")),
+		aEncoder.String(fieldMatchedRecord, a.MatchedRecord),
+		aEncoder.String(fieldRuleExpression, a.RuleExpression),
 	})
 }
 

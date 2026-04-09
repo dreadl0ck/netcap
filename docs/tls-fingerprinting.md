@@ -10,63 +10,87 @@ Watch a quick demo of creating and exploring the **TLSClientHello** audit record
 
 {% embed url="https://asciinema.org/a/KfhJRM3P4b0GsMtVCtelzWMbK" caption="" %}
 
-## JA3
+## JA4 Fingerprinting
 
-JA3 is a technique developed by Salesforce, to fingerprint the TLS client and server hellos.
+JA4 is the successor to JA3, developed by FoxIO-LLC. It addresses JA3's limitations with modern browsers that randomize TLS extension order (like Chrome), and adds QUIC protocol support. Unlike JA3's MD5 hash, JA4 fingerprints are human-readable.
 
-The official python implementation can be found [here](https://github.com/salesforce/ja3).
+### JA4 Format
 
-More details can be found in their blog post:
-
-{% embed url="https://engineering.salesforce.com/open-sourcing-ja3-92c9e53c3c41" caption="JA3 blog post from salesforce" %}
-
-Support for JA3 and JA3S in netcap is implemented via:
-
-{% embed url="https://github.com/dreadl0ck/ja3" caption="JA3\(S\) go package" %}
-
-The _TLSClientHello_ and _TLSServerHello_ audit records, as well as the _DeviceProfiles_ provide JA3 hashes.
-
-## JA3 Details
-
-JA3 gathers the decimal values of the bytes for the following fields: **SSL Version, Accepted Ciphers, List of Extensions, Elliptic Curves, and Elliptic Curve Formats**.
-
-It then concatenates those values together in order, using a “,” to delimit each field and a “-” to delimit each value in each field.
-
-**The field order is as follows:**
+JA4 consists of three parts separated by underscores:
 
 ```text
-SSLVersion,Ciphers,Extensions,EllipticCurves,EllipticCurvePointFormats
+{ja4_a}_{ja4_b}_{ja4_c}
 ```
+
+**JA4_a** (10 characters): `{protocol}{version}{sni}{cipher_count:2d}{ext_count:2d}{alpn_first}`
+- `protocol`: `t` for TCP/TLS, `q` for QUIC
+- `version`: `13` (TLS 1.3), `12` (TLS 1.2), `11` (TLS 1.1), `10` (TLS 1.0), `s3` (SSL 3.0)
+- `sni`: `d` (domain present) or `i` (IP/missing)
+- `cipher_count`: Number of cipher suites (excluding GREASE), 2 digits
+- `ext_count`: Number of extensions (excluding GREASE), 2 digits
+- `alpn_first`: First two characters of first ALPN, or `00` if none
+
+**JA4_b** (12 characters): Truncated SHA256 of sorted cipher suites (GREASE filtered, comma-separated hex)
+
+**JA4_c** (12 characters): Truncated SHA256 of sorted extensions (GREASE + SNI + ALPN filtered, comma-separated hex), followed by signature algorithms (if present) separated by underscore
 
 **Example:**
 
 ```text
-769,47–53–5–10–49161–49162–49171–49172–50–56–19–4,0–10–11,23–24–25,0
+t13d1516h2_8daaf6152771_e5627efa2ab1
 ```
 
-If there are no SSL Extensions in the Client Hello, the fields are left empty.
+This fingerprint indicates:
+- `t`: TCP/TLS connection
+- `13`: TLS 1.3
+- `d`: Domain present in SNI
+- `15`: 15 cipher suites
+- `16`: 16 extensions
+- `h2`: HTTP/2 (first ALPN)
 
-**Example:**
+### JA4S Format (Server Hello)
+
+JA4S fingerprints the server's response:
 
 ```text
-769,4–5–10–9–100–98–3–6–19–18–99,,,
+{ja4s_a}_{ja4s_b}_{ja4s_c}
 ```
 
-These strings are then MD5 hashed to produce an easily consumable and shareable 32 character fingerprint.
+**JA4S_a** (7 characters): `{protocol}{version}{ext_count:2d}{alpn}`
+- `protocol`: `t` for TCP/TLS, `q` for QUIC
+- `version`: `13` (TLS 1.3), `12` (TLS 1.2), etc.
+- `ext_count`: Number of extensions (excluding GREASE), 2 digits
+- `alpn`: First and last character of selected ALPN, or `00` if none
 
-This is the JA3 SSL Client Fingerprint.
+**JA4S_b** (4 characters): Cipher suite in hex
 
-JA3 is a much more effective way to detect malicious activity over SSL than IP or domain based IOCs. Since JA3 detects the client application, it doesn’t matter if malware uses DGA \(Domain Generation Algorithms\), or different IPs for each C2 host, or even if the malware uses Twitter for C2, JA3 can detect the malware itself based on how it communicates rather than what it communicates to.
+**JA4S_c** (12 characters): Truncated SHA256 of extensions (SNI and ALPN filtered, NOT sorted per spec)
 
-JA3 is also an excellent detection mechanism in locked-down environments where only a few specific applications are allowed to be installed. In these types of environments one could build a whitelist of expected applications and then alert on any other JA3 hits.
+### Advantages over JA3
 
-For more details on what you can see and do with JA3 and JA3S, please see this Shmoocon 2018 talk: [https://youtu.be/oprPu7UIEuk?t=6m44s](https://youtu.be/oprPu7UIEuk?t=6m44s)
+1. **Resistant to TLS extension randomization**: JA4 sorts extensions, so Chrome's randomization doesn't affect the fingerprint
+2. **Human-readable**: The JA4_a component is immediately interpretable
+3. **QUIC support**: Works with QUIC protocol connections
+4. **Includes ALPN**: Captures application protocol negotiation details
+
+### References
+
+- [JA4+ GitHub Repository](https://github.com/FoxIO-LLC/ja4)
+- [JA4+ Technical Specification](https://blog.foxio.io/ja4%2B-network-fingerprinting)
+
+### License
+
+JA4 (TLS Client Fingerprinting) is licensed under BSD 3-Clause.
+JA4S, JA4H, JA4X, JA4T, JA4SSH and other JA4+ methods are licensed under FoxIO License 1.1.
+See `internal/ja4/LICENSE-JA4` for full license text.
+
+---
 
 ### Client Hello Audit Record
 
-```erlang
+```protobuf
 message TLSClientHello {
-    string Timestamp                  = 1;
+    int64 Timestamp                   = 1;
     int32  Type                       = 2;
     int32  Version                    = 3;
     int32  MessageLen                 = 4;
@@ -86,7 +110,6 @@ message TLSClientHello {
     repeated int32 SupportedGroups    = 18;
     repeated int32 SupportedPoints    = 19;
     repeated string ALPNs             = 20;
-    string Ja3                        = 21;
     string SrcIP                      = 22;
     string DstIP                      = 23;
     string SrcMAC                     = 24;
@@ -94,42 +117,22 @@ message TLSClientHello {
     int32 SrcPort                     = 26;
     int32 DstPort                     = 27;
     repeated int32 Extensions         = 28;
+    // Threat intelligence fields
+    bool IsKnownMalware               = 30;
+    string ThreatCategory             = 31;
+    bool HasGreaseExtensions          = 32;
+    bool IsSuspiciousCipherOrder      = 34;
+    int32 ExtensionCount              = 35;
+    // JA4 fingerprint
+    string Ja4                        = 36;
 }
 ```
 
-## JA3S Details
-
-JA3S is JA3 for the Server side of the SSL/TLS communication and fingerprints how servers respond to particular clients.
-
-JA3S uses the following field order:
-
-```text
-SSLVersion,Cipher,SSLExtension
-```
-
-With JA3S it is possible to fingerprint the entire cryptographic negotiation between client and it's server by combining JA3 + JA3S. That is because servers will respond to different clients differently but will always respond to the same client the same.
-
-For the Trickbot example:
-
-```text
-JA3 = 6734f37431670b3ab4292b8f60f29984 ( Fingerprint of Trickbot )
-JA3S = 623de93db17d313345d7ea481e7443cf ( Fingerprint of Command and Control Server Response )
-```
-
-For the Emotet example:
-
-```text
-JA3 = 4d7a28d6f2263ed61de88ca66eb011e3 ( Fingerprint of Emotet )
-JA3S = 80b3a14bccc8598a1f3bbe83e71f735f ( Fingerprint of Command and Control Server Response )
-```
-
-In these malware examples, the command and control server always responds to the malware client in exactly the same way, it does not deviate. So even though the traffic is encrypted and one may not know the command and control server's IPs or domains as they are constantly changing, we can still identify, with reasonable confidence, the malicious communication by fingerprinting the TLS negotiation between client and server. Again, please be aware that these are examples, not indicative of all versions ever, and are intended to illustrate what is possible.
-
 ### Server Hello Audit Record
 
-```erlang
+```protobuf
 message TLSServerHello {
-    string Timestamp                   = 1;
+    int64 Timestamp                    = 1;
     int32  Version                     = 2;
     bytes  Random                      = 3;
     bytes  SessionID                   = 4;
@@ -156,7 +159,23 @@ message TLSServerHello {
     string DstMAC                      = 26;
     int32 SrcPort                      = 27;
     int32 DstPort                      = 28;
-    string Ja3s                        = 29;
+    // JA4S fingerprint
+    string Ja4s                        = 30;
 }
 ```
 
+---
+
+## Migration from JA3
+
+JA3 support has been removed from netcap in favor of JA4. If you have existing JA3-based workflows:
+
+1. **Threat Intelligence**: JA4 fingerprint databases are being developed. In the meantime, you can use the human-readable JA4_a component for basic client identification.
+
+2. **Filtering/Detection Rules**: Update rules to match on `Ja4` field instead of the former `Ja3` field.
+
+3. **Historical Data**: Existing audit records with JA3 fields will remain readable, but new captures will only contain JA4 fingerprints.
+
+### Why JA3 Was Removed
+
+Modern browsers (Chrome, Firefox, Edge) randomize TLS extension order to prevent fingerprinting-based tracking. This makes JA3 fingerprints inconsistent and unreliable for the same browser version. JA4's sorted extension approach provides stable fingerprints regardless of extension ordering.

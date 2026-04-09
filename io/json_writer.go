@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io
@@ -17,20 +23,22 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
+	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gogo/protobuf/proto"
 	"github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/delimited"
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -108,6 +116,19 @@ func (w *jsonWriter) Write(msg proto.Message) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
+	// Track disk I/O performance
+	if w.wc.PerfTracker != nil {
+		start := time.Now()
+		n, err := w.jWriter.writeRecord(msg)
+		duration := time.Since(start)
+
+		if err == nil && n > 0 {
+			w.wc.PerfTracker.RecordDiskWrite(w.wc.Name, duration, int64(n))
+		}
+
+		return err
+	}
+
 	_, err := w.jWriter.writeRecord(msg)
 
 	return err
@@ -123,6 +144,36 @@ func (w *jsonWriter) WriteHeader(t types.Type) error {
 	return err
 }
 
+// Flush flushes any buffered data to disk without closing the writer.
+// This is used during live capture to make audit records visible periodically.
+func (w *jsonWriter) Flush() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	// Flush the buffered writer
+	if w.wc.Buffer && w.bWriter != nil {
+		if err := w.bWriter.Flush(); err != nil {
+			return err
+		}
+	}
+
+	// For compressed streams, flush the gzip writer
+	if w.wc.Compress && w.gWriter != nil {
+		if err := w.gWriter.Flush(); err != nil {
+			return err
+		}
+	}
+
+	// Sync file to disk
+	if w.file != nil {
+		if err := w.file.Sync(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Close flushes and closes the writer and the associated file handles.
 func (w *jsonWriter) Close(numRecords int64) (name string, size int64) {
 	w.mu.Lock()
@@ -134,6 +185,13 @@ func (w *jsonWriter) Close(numRecords int64) (name string, size int64) {
 
 	if w.wc.Compress {
 		closeGzipWriters(w.gWriter)
+	}
+
+	// Track file sync performance
+	if w.wc.PerfTracker != nil && w.file != nil {
+		start := time.Now()
+		_ = w.file.Sync()
+		w.wc.PerfTracker.RecordDiskSync(w.wc.Name, time.Since(start))
 	}
 
 	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)

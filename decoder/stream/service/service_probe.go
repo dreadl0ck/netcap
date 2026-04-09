@@ -1,19 +1,26 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package service
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
@@ -21,6 +28,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -59,6 +67,7 @@ var (
 		"crossmatchverifier": {},
 		"landesk-rc":         {},
 		"nagios-nsca":        {},
+		"smtp-proxy":         {}, // Contains non-capturing groups that clean() converts to .*, matching everything
 	}
 
 	// ignored probes for .NET compatible engine (supports backtracking).
@@ -72,7 +81,6 @@ var (
 func init() {
 	decoderconfig.Instance = decoderconfig.DefaultConfig
 	serviceLog = zap.NewNop()
-	serviceLogSugared = serviceLog.Sugar()
 }
 
 const (
@@ -184,7 +192,6 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 		if probes, ok := serviceProbes[expectedCategory]; ok {
 			serviceLog.Debug("matching probes", zap.String("ident", ident), zap.String("expectedCategory", expectedCategory))
 			found, matched = matchProbes(serv, probes, banner, ident)
-			serviceLogSugared.Info(ident, "found?", found, "at", matched, "of", len(probes), "expected", expectedCategory)
 		}
 		if !found && decoderconfig.Instance.StopAfterServiceCategoryMiss {
 			return
@@ -202,30 +209,289 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 
 			found, matched = matchProbes(serv, probes, banner, ident)
 			if found && decoderconfig.Instance.StopAfterServiceProbeMatch {
-				serviceLogSugared.Info(ident, "FOUND at", matched, "of", len(probes), "expected", expectedCategory)
+				serviceLog.Info("service probe match found",
+					zap.String("ident", ident),
+					zap.Int("matched", matched),
+					zap.Int("total", len(probes)),
+					zap.String("expected", expectedCategory),
+				)
+				// Check if Product is still empty even after probe match - if so, try HTTP headers
+				if serv.Product == "" {
+					matchHTTPHeaders(serv, banner, ident)
+				}
 				return
 			}
 		}
 
 		serviceLog.Debug("all probes tried", zap.String("ident", ident), zap.Bool("found", found), zap.Int("matched", matched))
 	}
+
+	// If no match was found, or if a match was found but Product field is still empty,
+	// try to extract information from HTTP headers as a fallback
+	if !found || serv.Product == "" {
+		matchHTTPHeaders(serv, banner, ident)
+	}
+}
+
+// matchHTTPHeaders attempts to extract service information from HTTP response headers
+// when nmap service probes don't deliver results.
+func matchHTTPHeaders(serv *service, banner []byte, ident string) {
+	// Priority-ordered headers to check for service identification
+	priorityHeaders := []string{
+		"Server",              // Primary service identification
+		"X-Powered-By",        // Framework/language detection
+		"X-AspNet-Version",    // ASP.NET apps
+		"X-AspNetMvc-Version", // ASP.NET MVC apps
+		"X-Generator",         // CMS identification
+		"Via",                 // Proxy detection
+		"X-Cache",             // CDN detection
+	}
+
+	var detectedValue string
+	var detectedHeader string
+
+	// First, check if this looks like an HTTP response
+	bannerStr := string(banner)
+	if !strings.HasPrefix(bannerStr, "HTTP/") {
+		return
+	}
+
+	// Try to parse as a complete HTTP response first
+	// Note: http.ReadResponse requires headers to end with \r\n\r\n
+	// For truncated banners, we'll fall back to manual extraction
+	resp, err := http.ReadResponse(bufio.NewReader(bytes.NewReader(banner)), nil)
+	if err == nil {
+		// Successfully parsed as HTTP response
+		for _, headerName := range priorityHeaders {
+			if value := resp.Header.Get(headerName); value != "" {
+				detectedValue = value
+				detectedHeader = headerName
+				break
+			}
+		}
+	}
+
+	// If standard parsing failed or didn't find headers, try manual extraction
+	// This handles truncated banners that don't have the \r\n\r\n terminator
+	if detectedValue == "" {
+		detectedHeader, detectedValue = extractHeaderManually(bannerStr, priorityHeaders)
+	}
+
+	if detectedValue == "" {
+		// No relevant headers found
+		return
+	}
+
+	// Parse the detected value to extract product, version, and vendor information
+	parseHeaderValue(serv, detectedHeader, detectedValue, ident)
+
+	serviceLog.Debug("HTTP header match",
+		zap.String("ident", ident),
+		zap.String("header", detectedHeader),
+		zap.String("value", detectedValue),
+		zap.String("product", serv.Product),
+		zap.String("version", serv.Version),
+	)
+}
+
+// extractHeaderManually extracts HTTP headers from a banner string manually.
+// This is used as a fallback when http.ReadResponse fails due to truncated banners.
+func extractHeaderManually(banner string, priorityHeaders []string) (headerName, headerValue string) {
+	// Split by common line endings (handle both \r\n and \n)
+	lines := strings.Split(banner, "\n")
+
+	for _, targetHeader := range priorityHeaders {
+		targetLower := strings.ToLower(targetHeader)
+		for _, line := range lines {
+			// Clean up the line (remove \r if present)
+			line = strings.TrimRight(line, "\r")
+			line = strings.TrimSpace(line)
+
+			// Check if this line starts with the header name (case-insensitive)
+			if len(line) > len(targetHeader)+1 && line[len(targetHeader)] == ':' {
+				lineLower := strings.ToLower(line[:len(targetHeader)])
+				if lineLower == targetLower {
+					// Extract the value after the colon
+					value := strings.TrimSpace(line[len(targetHeader)+1:])
+					if value != "" {
+						return targetHeader, value
+					}
+				}
+			}
+		}
+	}
+
+	return "", ""
+}
+
+// parseHeaderValue parses the header value to extract product, version, and vendor information.
+func parseHeaderValue(serv *service, headerName, value, ident string) {
+	var product, version, vendor string
+
+	// Normalize the value
+	value = strings.TrimSpace(value)
+
+	switch headerName {
+	case "Server":
+		// Common formats: "Apache/2.4.41", "nginx/1.18.0", "Microsoft-IIS/10.0"
+		product, version = parseServerHeader(value)
+	case "X-Powered-By":
+		// Common formats: "PHP/7.4.3", "ASP.NET", "Express"
+		product, version = parseXPoweredByHeader(value)
+	case "X-AspNet-Version":
+		product = "ASP.NET"
+		version = value
+	case "X-AspNetMvc-Version":
+		product = "ASP.NET MVC"
+		version = value
+	case "X-Generator":
+		// Common formats: "WordPress 5.8", "Drupal 9", "Jekyll v4.2.0"
+		product, version = parseGeneratorHeader(value)
+	case "Via":
+		product, version = parseViaHeader(value)
+	case "X-Cache":
+		product = "CDN/Cache: " + value
+	}
+
+	if product != "" {
+		serv.Product = addInfo(serv.Product, product)
+		serv.MatchedProbeID = "http-header-" + strings.ToLower(headerName)
+
+		// Write software detection result
+		software.WriteSoftware([]*software.AtomicSoftware{
+			{
+				Software: &types.Software{
+					Timestamp:  serv.Timestamp,
+					Product:    product,
+					Vendor:     vendor,
+					Version:    version,
+					SourceName: "HTTP Header Match: " + headerName,
+					Service:    serv.Name,
+					Flows:      []string{ident},
+					Notes:      "Header: " + headerName + " = " + value,
+				},
+			},
+		}, nil)
+	}
+
+	if version != "" {
+		serv.Version = addInfo(serv.Version, version)
+	}
+
+	if vendor != "" {
+		serv.Vendor = addInfo(serv.Vendor, vendor)
+	}
+}
+
+// parseServerHeader parses the Server header value.
+// Examples: "Apache/2.4.41 (Ubuntu)", "nginx/1.18.0", "Microsoft-IIS/10.0"
+func parseServerHeader(value string) (product, version string) {
+	// Split by space to handle cases like "Apache/2.4.41 (Ubuntu)"
+	parts := strings.Fields(value)
+	if len(parts) == 0 {
+		return "", ""
+	}
+
+	// Parse the first part which usually contains product/version
+	firstPart := parts[0]
+	if before, after, ok := strings.Cut(firstPart, "/"); ok {
+		product = before
+		version = after
+	} else {
+		product = firstPart
+	}
+
+	return product, version
+}
+
+// parseXPoweredByHeader parses the X-Powered-By header value.
+// Examples: "PHP/7.4.3", "ASP.NET", "Express"
+func parseXPoweredByHeader(value string) (product, version string) {
+	if before, after, ok := strings.Cut(value, "/"); ok {
+		product = before
+		version = after
+	} else {
+		product = value
+	}
+
+	return product, version
+}
+
+// parseGeneratorHeader parses the X-Generator header value.
+// Examples: "WordPress 5.8", "Drupal 9 (https://www.drupal.org)", "Jekyll v4.2.0"
+func parseGeneratorHeader(value string) (product, version string) {
+	// Split by space to handle "WordPress 5.8" format
+	parts := strings.Fields(value)
+	if len(parts) == 0 {
+		return "", ""
+	}
+
+	product = parts[0]
+
+	if len(parts) >= 2 {
+		// Extract version, removing any leading 'v' if present
+		version = strings.TrimPrefix(parts[1], "v")
+	}
+
+	return product, version
+}
+
+// parseViaHeader parses the Via header value.
+// Examples: "1.1 varnish", "1.1 squid/4.10"
+func parseViaHeader(value string) (product, version string) {
+	// Via format: "protocol proxy-name"
+	// Example: "1.1 varnish" or "1.1 squid/4.10"
+	parts := strings.Fields(value)
+	if len(parts) < 2 {
+		product = "Proxy"
+		return product, ""
+	}
+
+	proxyInfo := parts[1]
+	if before, after, ok := strings.Cut(proxyInfo, "/"); ok {
+		product = before
+		version = after
+	} else {
+		product = proxyInfo
+	}
+
+	return product, version
 }
 
 func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident string) (found bool, index int) {
 	for i, probe := range probes {
 		if decoderconfig.Instance.UseRE2 {
+			// Skip probes with nil RegEx (may happen if probe was compiled with UseRE2=false)
+			if probe.RegEx == nil {
+				continue
+			}
 			if m := probe.RegEx.FindStringSubmatch(string(banner)); m != nil {
 
 				// add initial values, may contain group identifiers ($1, $2 etc)
-				serv.Product = addInfo(serv.Product, extractGroup(&probe.Product, m))
-				serv.Vendor = addInfo(serv.Vendor, extractGroup(&probe.Vendor, m))
-				serv.Hostname = addInfo(serv.Hostname, extractGroup(&probe.Hostname, m))
-				serv.OS = addInfo(serv.OS, extractGroup(&probe.OS, m))
-				serv.Version = addInfo(serv.Version, extractGroup(&probe.Version, m))
+				product := extractGroup(&probe.Product, m)
+				vendor := extractGroup(&probe.Vendor, m)
+				hostname := extractGroup(&probe.Hostname, m)
+				os := extractGroup(&probe.OS, m)
+				version := extractGroup(&probe.Version, m)
+
+				serv.Product = addInfo(serv.Product, product)
+				serv.Vendor = addInfo(serv.Vendor, vendor)
+				serv.Hostname = addInfo(serv.Hostname, hostname)
+				serv.OS = addInfo(serv.OS, os)
+				serv.Version = addInfo(serv.Version, version)
+
+				// Store the matched probe ID for UI navigation
+				if serv.MatchedProbeID == "" {
+					serv.MatchedProbeID = probe.Ident
+				}
 
 				if decoderconfig.Instance.Debug { // prevent evaluating the log statement if not in debug mode
-					serviceLogSugared.Info("\n\nMATCH!", ident)
-					serviceLogSugared.Info(probe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
+					serviceLog.Info("service probe match detail",
+						zap.String("ident", ident),
+						zap.String("probe", fmt.Sprintf("%+v", probe)),
+						zap.String("service", proto.MarshalTextString(serv.Service)),
+						zap.String("banner", hex.Dump(banner)),
+					)
 				}
 
 				writeSoftwareFromBanner(serv, ident, probe.Ident)
@@ -239,18 +505,37 @@ func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident str
 				found = true
 			}
 		} else { // use the .NET compatible regex implementation
+			// Skip probes with nil RegExDotNet (may happen if probe was compiled with UseRE2=true)
+			if probe.RegExDotNet == nil {
+				continue
+			}
 			if m, err := probe.RegExDotNet.FindStringMatch(string(banner)); err == nil && m != nil {
 
 				// add initial values, may contain group identifiers ($1, $2 etc)
-				serv.Product = addInfo(serv.Product, extractGroupDotNet(&probe.Product, m))
-				serv.Vendor = addInfo(serv.Vendor, extractGroupDotNet(&probe.Vendor, m))
-				serv.Hostname = addInfo(serv.Hostname, extractGroupDotNet(&probe.Hostname, m))
-				serv.OS = addInfo(serv.OS, extractGroupDotNet(&probe.OS, m))
-				serv.Version = addInfo(serv.Version, extractGroupDotNet(&probe.Version, m))
+				product := extractGroupDotNet(&probe.Product, m)
+				vendor := extractGroupDotNet(&probe.Vendor, m)
+				hostname := extractGroupDotNet(&probe.Hostname, m)
+				os := extractGroupDotNet(&probe.OS, m)
+				version := extractGroupDotNet(&probe.Version, m)
+
+				serv.Product = addInfo(serv.Product, product)
+				serv.Vendor = addInfo(serv.Vendor, vendor)
+				serv.Hostname = addInfo(serv.Hostname, hostname)
+				serv.OS = addInfo(serv.OS, os)
+				serv.Version = addInfo(serv.Version, version)
+
+				// Store the matched probe ID for UI navigation
+				if serv.MatchedProbeID == "" {
+					serv.MatchedProbeID = probe.Ident
+				}
 
 				if decoderconfig.Instance.Debug { // prevent evaluating the log statement if not in debug mode
-					serviceLogSugared.Info("\n\nMATCH!", ident)
-					serviceLogSugared.Info(probe, "\n\nSERVICE:\n"+proto.MarshalTextString(serv.Service), "\nBanner:", "\n"+hex.Dump(banner))
+					serviceLog.Info("service probe match detail",
+						zap.String("ident", ident),
+						zap.String("probe", fmt.Sprintf("%+v", probe)),
+						zap.String("service", proto.MarshalTextString(serv.Service)),
+						zap.String("banner", hex.Dump(banner)),
+					)
 				}
 
 				writeSoftwareFromBanner(serv, ident, probe.Ident)
@@ -360,6 +645,12 @@ func enumerate(in string) string {
 	serviceProbeIdentEnums[in] = 1
 
 	return in + "-1"
+}
+
+// ResetProbeEnums clears the service probe enumeration map
+// This should be called when resetting state between processing different files
+func ResetProbeEnums() {
+	serviceProbeIdentEnums = make(map[string]int)
 }
 
 func initServiceProbes() error {
@@ -590,19 +881,30 @@ func initServiceProbes() error {
 				if decoderconfig.Instance.Debug {
 					if decoderconfig.Instance.UseRE2 {
 						if before != finalReg {
-							serviceLogSugared.Info("before != finalReg:", before)
+							serviceLog.Info("regex before != finalReg",
+								zap.String("before", before),
+							)
 						}
 
-						serviceLogSugared.Info("failed to compile regex:", ansi.Yellow, s.Ident, ansi.Red, errCompile, ansi.White, finalReg, ansi.Reset) // stdlib regexp only logs the broken part of the regex. this logs the full regex string for debugging
+						serviceLog.Info("failed to compile regex",
+							zap.String("ident", s.Ident),
+							zap.Error(errCompile),
+							zap.String("regex", finalReg),
+						) // stdlib regexp only logs the broken part of the regex. this logs the full regex string for debugging
 					} else {
-						serviceLogSugared.Info("failed to compile regex:", ansi.Yellow, s.Ident, ansi.Red, errCompile, ansi.Reset)
-						serviceLogSugared.Info(ansi.White, line, ansi.Reset)
+						serviceLog.Info("failed to compile regex",
+							zap.String("ident", s.Ident),
+							zap.Error(errCompile),
+							zap.String("line", line),
+						)
 					}
 				}
 			} else {
 				s.RegExRaw = finalReg
 				if arr, ok := serviceProbes[ident]; ok {
-					arr = append(arr, s)
+					// MUST assign the result back to the map!
+					// append() may create a new slice if capacity is exceeded
+					serviceProbes[ident] = append(arr, s)
 				} else {
 					serviceProbes[ident] = []*serviceProbe{s}
 				}
@@ -669,7 +971,7 @@ func clean(in string) string {
 		}
 		count++
 
-		debug := func(args ...interface{}) {
+		debug := func(args ...any) {
 			if !debugRegexClean {
 				return
 			}
@@ -710,7 +1012,7 @@ func clean(in string) string {
 							debug("missing )", missing)
 
 							if missing > 0 {
-								for i := 0; i < missing; i++ {
+								for range missing {
 									debug("add missing )", missing, numIgnored)
 
 									out = append(out, byte(')'))

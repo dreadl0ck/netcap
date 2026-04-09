@@ -1,6 +1,6 @@
 /*
 * NETCAP - Traffic Analysis Framework
-* Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+* Copyright (c) 2017-2025 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
 *
 * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
 * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
@@ -16,7 +16,6 @@ package ssh
 import (
 	"bufio"
 	"bytes"
-	"crypto/md5"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -32,6 +31,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
+	"github.com/dreadl0ck/netcap/internal/ja4"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -44,24 +44,38 @@ import (
 type sshReader struct {
 	conversation *core.ConversationInfo
 
-	clientIdent   string
-	serverIdent   string
-	clientKexInit *KexInitMsg
-	serverKexInit *KexInitMsg
-	software      []*types.Software
+	clientIdent       string
+	serverIdent       string
+	clientKexInit     *KexInitMsg
+	serverKexInit     *KexInitMsg
+	software          []*types.Software
+	ja4sshData        *ja4.SSHStreamData
+	ja4sshFingerprint string
+	ja4sshSessionType string
 }
 
 // New returns a new SSH reader.
 func (h *sshReader) New(conversation *core.ConversationInfo) core.StreamDecoderInterface {
 	return &sshReader{
 		conversation: conversation,
+		ja4sshData:   ja4.NewSSHStreamData(),
 	}
 }
 
 // Decode parses the stream according to the SSH protocol.
 func (h *sshReader) Decode() {
+	sshLog.Info("SSH Decode() called",
+		zap.String("ident", h.conversation.Ident),
+		zap.Int("dataFragments", len(h.conversation.Data)),
+		zap.String("clientIP", h.conversation.ClientIP),
+		zap.String("serverIP", h.conversation.ServerIP),
+		zap.Int("clientPort", int(h.conversation.ClientPort)),
+		zap.Int("serverPort", int(h.conversation.ServerPort)),
+	)
+
 	// prevent nil pointer access if decoder is not initialized
 	if Decoder.Writer == nil {
+		sshLog.Error("SSH Decoder.Writer is nil - cannot write SSH audit records!")
 		return
 	}
 
@@ -71,24 +85,105 @@ func (h *sshReader) Decode() {
 	)
 
 	for _, d := range h.conversation.Data {
+		payloadLen := len(d.Raw())
 		if d.Direction() == reassembly.TCPDirClientToServer {
 			// 2255k bytes should be enough to capture ident (max 255 bytes) + kexInit (usually ~1200-1700 bytes)
 			if clientBuf.Len() < 2255 {
 				clientBuf.Write(d.Raw())
+			}
+			// Track for JA4SSH
+			if payloadLen > 0 {
+				h.ja4sshData.AddClientPacket(payloadLen)
+			} else {
+				h.ja4sshData.AddClientACK()
 			}
 		} else {
 			// 2255k bytes should be enough to capture ident (max 255 bytes) + kexInit (usually ~1200-1700 bytes)
 			if serverBuf.Len() < 2255 {
 				serverBuf.Write(d.Raw())
 			}
+			// Track for JA4SSH
+			if payloadLen > 0 {
+				h.ja4sshData.AddServerPacket(payloadLen)
+			} else {
+				h.ja4sshData.AddServerACK()
+			}
 		}
 	}
+
+	// Compute JA4SSH fingerprint from all collected packet data
+	h.ja4sshFingerprint = ja4.ComputeJA4SSH(h.ja4sshData)
+	h.ja4sshSessionType = ja4.DetectSessionType(h.ja4sshFingerprint)
 
 	h.searchKexInit(bufio.NewReader(&clientBuf), reassembly.TCPDirClientToServer)
 	h.searchKexInit(bufio.NewReader(&serverBuf), reassembly.TCPDirServerToClient)
 
+	sshLog.Info("SSH decode complete",
+		zap.String("ident", h.conversation.Ident),
+		zap.Int("softwareRecords", len(h.software)),
+		zap.String("clientIdent", h.clientIdent),
+		zap.String("serverIdent", h.serverIdent),
+		zap.Bool("clientKexInit", h.clientKexInit != nil),
+		zap.Bool("serverKexInit", h.serverKexInit != nil),
+	)
+
+	// If we have idents but no KexInit, create audit records for incomplete handshakes
+	if h.clientKexInit == nil && h.serverKexInit == nil {
+		// Create audit records for ident-only connections (incomplete handshakes)
+		if h.clientIdent != "" {
+			err := Decoder.Writer.Write(&types.SSH{
+				Timestamp:         h.conversation.FirstClientPacket.UnixNano(),
+				Ja4Ssh:            h.ja4sshFingerprint,
+				Flow:              h.conversation.Ident,
+				Ident:             h.clientIdent,
+				Algorithms:        "", // No algorithms without KexInit
+				IsClient:          true,
+				Notes:             "Incomplete handshake - no KexInit",
+				Ja4SshSessionType: h.ja4sshSessionType,
+				CommunityID:       h.conversation.CommunityID,
+			})
+			if err != nil {
+				sshLog.Error("failed to write SSH audit record for client ident", zap.Error(err))
+			} else {
+				sshLog.Info("SSH audit record written (client ident-only)",
+					zap.String("ident", h.conversation.Ident),
+					zap.String("clientIdent", h.clientIdent),
+					zap.String("ja4ssh", h.ja4sshFingerprint),
+				)
+				atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+			}
+		}
+
+		if h.serverIdent != "" {
+			err := Decoder.Writer.Write(&types.SSH{
+				Timestamp:         h.conversation.FirstServerPacket.UnixNano(),
+				Ja4Ssh:            h.ja4sshFingerprint,
+				Flow:              utils.ReverseFlowIdent(h.conversation.Ident),
+				Ident:             h.serverIdent,
+				Algorithms:        "", // No algorithms without KexInit
+				IsClient:          false,
+				Notes:             "Incomplete handshake - no KexInit",
+				Ja4SshSessionType: h.ja4sshSessionType,
+				CommunityID:       h.conversation.CommunityID,
+			})
+			if err != nil {
+				sshLog.Error("failed to write SSH audit record for server ident", zap.Error(err))
+			} else {
+				sshLog.Info("SSH audit record written (server ident-only)",
+					zap.String("ident", h.conversation.Ident),
+					zap.String("serverIdent", h.serverIdent),
+					zap.String("ja4ssh", h.ja4sshFingerprint),
+				)
+				atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+			}
+		}
+	}
+
 	if len(h.software) == 0 {
-		return
+		sshLog.Debug("No SSH software records generated",
+			zap.String("ident", h.conversation.Ident),
+		)
+		// Don't return early anymore - we may have written ident-only audit records
 	}
 
 	// add new audit records or update existing
@@ -130,12 +225,32 @@ func (h *sshReader) processSSHIdent(ident string, entity string) {
 }
 
 func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirection) {
+	dirStr := "client"
+	if dir != reassembly.TCPDirClientToServer {
+		dirStr = "server"
+	}
+
+	sshLog.Debug("searchKexInit called",
+		zap.String("ident", h.conversation.Ident),
+		zap.String("direction", dirStr),
+		zap.Bool("serverKexInitAlreadySet", h.serverKexInit != nil),
+		zap.Bool("clientKexInitAlreadySet", h.clientKexInit != nil),
+	)
+
 	if h.serverKexInit != nil && h.clientKexInit != nil {
+		sshLog.Debug("Both KexInit already set, skipping",
+			zap.String("ident", h.conversation.Ident),
+		)
 		return
 	}
 
 	data, err := ioutil.ReadAll(r)
 	if err != nil && !errors.Is(err, io.EOF) {
+		sshLog.Warn("Failed to read data from buffer",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+			zap.Error(err),
+		)
 		fmt.Println(err)
 
 		return
@@ -143,13 +258,28 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 	// fmt.Println(dir, len(data), "\n", hex.Dump(data))
 
 	if len(data) == 0 {
+		sshLog.Debug("No data to parse",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+		)
 		return
 	}
+
+	sshLog.Debug("Read data from buffer",
+		zap.String("ident", h.conversation.Ident),
+		zap.String("direction", dirStr),
+		zap.Int("dataLen", len(data)),
+	)
 
 	// length of the ident if it was found
 	offset := 0
 
 	if h.clientIdent == "" || h.serverIdent == "" { // read the SSH ident from the buffer
+		sshLog.Debug("Parsing SSH ident",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+		)
+
 		var (
 			br       = bytes.NewReader(data)
 			b        byte
@@ -163,9 +293,15 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 				break
 			}
 
-			if lastByte == 0x0d && b == 0x0a {
+			// SSH ident can end with either \n or \r\n
+			// Check for \n (LF) alone
+			if b == 0x0a {
 				offset = len(ident) + 1
-
+				// Don't include the \r if it was the last byte
+				if lastByte == 0x0d && len(ident) > 0 {
+					ident = ident[:len(ident)-1]
+					offset = len(ident) + 2 // +2 because we consumed \r\n
+				}
 				break
 			}
 
@@ -175,37 +311,81 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 		if dir == reassembly.TCPDirClientToServer {
 			h.clientIdent = strings.TrimSpace(string(ident))
+			sshLog.Info("Parsed client SSH ident",
+				zap.String("ident", h.conversation.Ident),
+				zap.String("sshIdent", h.clientIdent),
+				zap.Int("offset", offset),
+			)
 			h.processSSHIdent(h.clientIdent, "client")
 		} else {
 			h.serverIdent = strings.TrimSpace(string(ident))
+			sshLog.Info("Parsed server SSH ident",
+				zap.String("ident", h.conversation.Ident),
+				zap.String("sshIdent", h.serverIdent),
+				zap.Int("offset", offset),
+			)
 			h.processSSHIdent(h.serverIdent, "server")
 		}
 	}
 
 	// search the entire data fragment for the KexInit
+	kexInitFound := false
 	for i, b := range data {
 		// 0x14 marks the beginning of the SSH KexInitMsg
 		if !(b == 0x14) {
 			continue
 		}
 
+		sshLog.Debug("Found KexInit marker (0x14)",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+			zap.Int("position", i),
+			zap.Int("offset", offset),
+		)
+
 		// fmt.Println(dir, offset, len(data), i-1, "data[",offset,":",i-1,"]")
 		// fmt.Println(hex.Dump(data))
 
 		// check if length would have correct length
 		if (i-1)-offset != 4 {
+			sshLog.Debug("Invalid length field size",
+				zap.String("ident", h.conversation.Ident),
+				zap.String("direction", dirStr),
+				zap.Int("lengthFieldSize", (i-1)-offset),
+				zap.Int("expected", 4),
+			)
 			break
 		}
 
 		// check if array access is safe
 		if offset > i-1 || len(data) <= i-1 {
+			sshLog.Debug("Array access unsafe",
+				zap.String("ident", h.conversation.Ident),
+				zap.String("direction", dirStr),
+				zap.Int("offset", offset),
+				zap.Int("i-1", i-1),
+				zap.Int("dataLen", len(data)),
+			)
 			break
 		}
 
 		length := int(binary.BigEndian.Uint32(data[offset : i-1]))
 		padding := int(data[i-1])
 
+		sshLog.Debug("Parsing SSH packet",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+			zap.Int("packetLength", length),
+			zap.Int("padding", padding),
+		)
+
 		if len(data) < i+length-padding-1 {
+			sshLog.Debug("Insufficient data for KexInit",
+				zap.String("ident", h.conversation.Ident),
+				zap.String("direction", dirStr),
+				zap.Int("dataLen", len(data)),
+				zap.Int("required", i+length-padding-1),
+			)
 			// fmt.Println("break: len(data) < i+length-padding-1")
 			break
 		}
@@ -217,23 +397,49 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 
 		err = Unmarshal(data[i:i+length-padding-1], &init)
 		if err != nil {
+			sshLog.Warn("Failed to unmarshal KexInit",
+				zap.String("ident", h.conversation.Ident),
+				zap.String("direction", dirStr),
+				zap.Error(err),
+			)
 			fmt.Println(err)
+			break
 		}
 
-		// spew.Dump("found SSH KexInit", h.parent.ident, init)
-		hash, raw := computeHASSH(init)
+		kexInitFound = true
+		sshLog.Info("Successfully parsed KexInit",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+		)
+
+		// Build algorithms string from KexInit for display/analysis
+		raw := buildAlgorithmsString(init)
 
 		if dir == reassembly.TCPDirClientToServer {
 			err = Decoder.Writer.Write(&types.SSH{
-				Timestamp:  h.conversation.FirstClientPacket.UnixNano(),
-				HASSH:      hash,
-				Flow:       h.conversation.Ident,
-				Ident:      h.clientIdent,
-				Algorithms: raw,
-				IsClient:   true,
+				Timestamp:               h.conversation.FirstClientPacket.UnixNano(),
+				Ja4Ssh:                  h.ja4sshFingerprint,
+				Flow:                    h.conversation.Ident,
+				Ident:                   h.clientIdent,
+				Algorithms:              raw,
+				IsClient:                true,
+				Ja4SshSessionType:       h.ja4sshSessionType,
+				SoftwareVersion:         extractSoftwareVersion(h.clientIdent),
+				OSGuess:                 guessOS(h.clientIdent),
+				HasWeakKex:              hasWeakKex(init.KexAlgos),
+				HasWeakCipher:           hasWeakCipher(init.CiphersClientServer),
+				HasWeakMAC:              hasWeakMAC(init.MACsClientServer),
+				ServerHostKeyAlgorithms: strings.Join(init.ServerHostKeyAlgos, ","),
+				CommunityID:             h.conversation.CommunityID,
 			})
 			if err != nil {
 				sshLog.Error("failed to flush ssh audit record", zap.Error(err))
+			} else {
+				sshLog.Info("SSH audit record written (client)",
+					zap.String("ident", h.conversation.Ident),
+					zap.String("ja4ssh", h.ja4sshFingerprint),
+					zap.String("clientIdent", h.clientIdent),
+				)
 			}
 
 			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
@@ -243,15 +449,29 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			sshLog.Info("found clientKexInit", zap.String("ident", h.conversation.Ident))
 		} else {
 			err = Decoder.Writer.Write(&types.SSH{
-				Timestamp:  h.conversation.FirstServerPacket.UnixNano(),
-				HASSH:      hash,
-				Flow:       utils.ReverseFlowIdent(h.conversation.Ident),
-				Ident:      h.serverIdent,
-				Algorithms: raw,
-				IsClient:   false,
+				Timestamp:               h.conversation.FirstServerPacket.UnixNano(),
+				Ja4Ssh:                  h.ja4sshFingerprint,
+				Flow:                    utils.ReverseFlowIdent(h.conversation.Ident),
+				Ident:                   h.serverIdent,
+				Algorithms:              raw,
+				IsClient:                false,
+				Ja4SshSessionType:       h.ja4sshSessionType,
+				SoftwareVersion:         extractSoftwareVersion(h.serverIdent),
+				OSGuess:                 guessOS(h.serverIdent),
+				HasWeakKex:              hasWeakKex(init.KexAlgos),
+				HasWeakCipher:           hasWeakCipher(init.CiphersServerClient),
+				HasWeakMAC:              hasWeakMAC(init.MACsServerClient),
+				ServerHostKeyAlgorithms: strings.Join(init.ServerHostKeyAlgos, ","),
+				CommunityID:             h.conversation.CommunityID,
 			})
 			if err != nil {
 				sshLog.Error("failed to flush ssh audit record", zap.Error(err))
+			} else {
+				sshLog.Info("SSH audit record written (server)",
+					zap.String("ident", h.conversation.Ident),
+					zap.String("ja4ssh", h.ja4sshFingerprint),
+					zap.String("serverIdent", h.serverIdent),
+				)
 			}
 
 			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
@@ -261,26 +481,15 @@ func (h *sshReader) searchKexInit(r *bufio.Reader, dir reassembly.TCPFlowDirecti
 			sshLog.Info("found serverKexInit", zap.String("ident", h.conversation.Ident))
 		}
 
-		// TODO fetch device profile
-		for _, soft := range software.HashDBMap[hash] {
-			sshVersion, product, version, os := parseSSHInfoFromHasshDB(soft.Version)
-
-			h.software = append(h.software, &types.Software{
-				Timestamp: h.conversation.FirstClientPacket.UnixNano(),
-				Product:   product,
-				Vendor:    "", // do not set the vendor for now
-				Version:   version,
-				// DeviceProfiles: []string{dpIdent},
-				SourceName: "HASSH Lookup",
-				SourceData: hash,
-				Service:    serviceSSH,
-				// DPIResults:     protos,
-				Flows: []string{h.conversation.Ident},
-				Notes: "Likelihood: " + soft.Likelihood + " Possible OS: " + os + "SSH Version: " + sshVersion,
-			})
-		}
-
 		break
+	}
+
+	if !kexInitFound {
+		sshLog.Warn("No KexInit found in stream",
+			zap.String("ident", h.conversation.Ident),
+			zap.String("direction", dirStr),
+			zap.Int("dataLen", len(data)),
+		)
 	}
 }
 
@@ -289,20 +498,46 @@ func parseSSHInfoFromHasshDB(soft string) (sshVersion string, product string, ve
 		firstSplit    = strings.Split(soft, " ? ")
 		sshVersionTmp = firstSplit[0]
 		sshVersionArr = strings.Split(sshVersionTmp, " | ")
-		vendorVersion = strings.Split(sshVersionArr[1], " ")
 	)
+
+	// Check if we have at least 2 parts after splitting by " | "
+	if len(sshVersionArr) < 2 {
+		// Handle malformed entries - return what we can
+		if len(sshVersionArr) > 0 {
+			sshVersion = sshVersionArr[0]
+		}
+		if len(firstSplit) > 1 {
+			os = firstSplit[len(firstSplit)-1]
+		}
+		return sshVersion, product, version, os
+	}
+
+	// Now safe to access sshVersionArr[1]
+	vendorVersion := strings.Split(sshVersionArr[1], " ")
 
 	if len(firstSplit) > 1 {
 		os = firstSplit[len(firstSplit)-1]
 
-		return sshVersionArr[0], vendorVersion[0], vendorVersion[1], os
+		// Check bounds before accessing vendorVersion elements
+		if len(vendorVersion) > 0 {
+			product = vendorVersion[0]
+		}
+		if len(vendorVersion) > 1 {
+			version = vendorVersion[1]
+		}
+
+		return sshVersionArr[0], product, version, os
 	}
 
+	// Check bounds before accessing vendorVersion elements
+	if len(vendorVersion) > 0 {
+		product = vendorVersion[0]
+	}
 	if len(vendorVersion) > 1 {
 		version = vendorVersion[1]
 	}
 
-	return sshVersionArr[0], vendorVersion[0], version, os
+	return sshVersionArr[0], product, version, os
 }
 
 type sshVersionInfo struct {
@@ -332,18 +567,113 @@ func parseSSHIdent(ident string) *sshVersionInfo {
 	return nil
 }
 
-// HASSH SSH Fingerprint
-// TODO: move this functionality into standalone package.
-func computeHASSH(init KexInitMsg) (hash string, raw string) {
+// buildAlgorithmsString creates a summary of the SSH algorithms from KexInit
+func buildAlgorithmsString(init KexInitMsg) string {
 	var b strings.Builder
 
+	b.WriteString("kex:")
 	b.WriteString(strings.Join(init.KexAlgos, ","))
-	b.WriteString(";")
+	b.WriteString(";ciphers:")
 	b.WriteString(strings.Join(init.CiphersClientServer, ","))
-	b.WriteString(";")
+	b.WriteString(";macs:")
 	b.WriteString(strings.Join(init.MACsClientServer, ","))
-	b.WriteString(";")
+	b.WriteString(";compression:")
 	b.WriteString(strings.Join(init.CompressionClientServer, ","))
 
-	return fmt.Sprintf("%x", md5.Sum([]byte(b.String()))), b.String()
+	return b.String()
+}
+
+// weakKexAlgorithms contains key exchange algorithms considered weak
+var weakKexAlgorithms = map[string]bool{
+	"diffie-hellman-group1-sha1":         true,
+	"diffie-hellman-group14-sha1":        true,
+	"diffie-hellman-group-exchange-sha1": true,
+}
+
+// weakCiphers contains encryption ciphers considered weak
+var weakCiphers = map[string]bool{
+	"3des-cbc":     true,
+	"arcfour":      true,
+	"arcfour128":   true,
+	"arcfour256":   true,
+	"blowfish-cbc": true,
+	"cast128-cbc":  true,
+	"aes128-cbc":   true, // CBC mode is weak
+	"aes192-cbc":   true,
+	"aes256-cbc":   true,
+}
+
+// weakMACs contains MAC algorithms considered weak
+var weakMACs = map[string]bool{
+	"hmac-md5":     true,
+	"hmac-md5-96":  true,
+	"hmac-sha1":    true,
+	"hmac-sha1-96": true,
+}
+
+// hasWeakKex checks if any offered key exchange algorithm is weak
+func hasWeakKex(kexAlgos []string) bool {
+	for _, kex := range kexAlgos {
+		if weakKexAlgorithms[kex] {
+			return true
+		}
+	}
+	return false
+}
+
+// hasWeakCipher checks if any offered cipher is weak
+func hasWeakCipher(ciphers []string) bool {
+	for _, cipher := range ciphers {
+		if weakCiphers[cipher] {
+			return true
+		}
+	}
+	return false
+}
+
+// hasWeakMAC checks if any offered MAC algorithm is weak
+func hasWeakMAC(macs []string) bool {
+	for _, mac := range macs {
+		if weakMACs[mac] {
+			return true
+		}
+	}
+	return false
+}
+
+// extractSoftwareVersion extracts the software version from SSH ident string
+func extractSoftwareVersion(ident string) string {
+	// SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5
+	// Extract the part after SSH-x.x-
+	parts := strings.SplitN(ident, "-", 3)
+	if len(parts) >= 3 {
+		// Return everything after SSH-2.0-
+		return parts[2]
+	}
+	return ""
+}
+
+// guessOS attempts to guess the OS from the SSH ident string
+func guessOS(ident string) string {
+	identLower := strings.ToLower(ident)
+
+	if strings.Contains(identLower, "ubuntu") {
+		return "Ubuntu Linux"
+	} else if strings.Contains(identLower, "debian") {
+		return "Debian Linux"
+	} else if strings.Contains(identLower, "centos") || strings.Contains(identLower, "rhel") || strings.Contains(identLower, "red hat") {
+		return "Red Hat/CentOS Linux"
+	} else if strings.Contains(identLower, "freebsd") {
+		return "FreeBSD"
+	} else if strings.Contains(identLower, "windows") {
+		return "Windows"
+	} else if strings.Contains(identLower, "cisco") {
+		return "Cisco IOS"
+	} else if strings.Contains(identLower, "dropbear") {
+		return "Embedded Linux"
+	} else if strings.Contains(identLower, "openssh") {
+		// Generic OpenSSH - likely Unix/Linux
+		return "Unix/Linux"
+	}
+	return ""
 }

@@ -16,7 +16,6 @@ package transform
 import (
 	"bytes"
 	"fmt"
-	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"io"
 	"log"
 	"os"
@@ -25,6 +24,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	netmaltego "github.com/dreadl0ck/netcap/maltego"
 
 	"github.com/dreadl0ck/maltego"
 )
@@ -64,7 +65,7 @@ func startCaptureProcess() {
 		if err != nil {
 			maltego.Die(err.Error(), "failed to execute getmac to the transport name identifier")
 		}
-		for _, line := range strings.Split(string(out), "\n") {
+		for line := range strings.SplitSeq(string(out), "\n") {
 			if strings.Contains(line, iface) {
 				elements := strings.Split(line, ",")
 				if len(elements) != 4 {
@@ -88,7 +89,7 @@ func startCaptureProcess() {
 		"-conns",
 		"-debug",
 		//"-config=" + filepath.Join("/usr", "local", "etc", "netcap", "livecapture.conf"),
-		"-noprompt",
+		"-y",
 		"-workers=1",
 		"-http-shutdown=true",
 	}

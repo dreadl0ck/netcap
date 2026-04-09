@@ -25,7 +25,7 @@ func toSSHClients() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, ssh *types.SSH, min, max uint64, path string, mac string, ipaddr string) {
 			if ssh.IsClient {
-				val := ssh.HASSH
+				val := ssh.Ja4Ssh
 				if len(ssh.Ident) > 0 {
 					val += "\n" + ssh.Ident
 				}
@@ -34,6 +34,8 @@ func toSSHClients() {
 				ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(ssh.Timestamp))
 				ent.AddProperty("ident", "Ident", maltego.Strict, ssh.Ident)
 				ent.AddProperty("algorithms", "Algorithms", maltego.Strict, ssh.Algorithms)
+				ent.AddProperty("ja4ssh", "JA4SSH", maltego.Strict, ssh.Ja4Ssh)
+				ent.AddProperty("sessionType", "Session Type", maltego.Strict, ssh.Ja4SshSessionType)
 
 				ent.AddDisplayInformation(ssh.Flow+"<br>", "Flows")
 			}

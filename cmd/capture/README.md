@@ -2,6 +2,8 @@
 
 *net capture* is a commandline tool that provides capturing *Netcap* audit records from PCAP / PCAP-NG files or live from a network interface.
 
+**NEW**: Wildcard support for batch processing! Use patterns like `*.pcap` to process multiple files. Each file gets its own output directory with full state reset between files. See [WILDCARD-CAPTURE.md](../../docs/WILDCARD-CAPTURE.md) for details.
+
 ## Description
 
 Traffic can be captured and written to disk with various options, and decoders used to create the audit records can be included or excluded from the generated output.
@@ -17,6 +19,26 @@ Capture from dumpfile:
 Capture from interface:
 
         $ net capture -iface eth0
+
+Capture without prompts (answer yes to all):
+
+        $ net capture -r dump.pcap -y
+
+## Debugging and Profiling
+
+For debugging goroutine leaks or performance issues, use the `-pprof` flag to start a pprof HTTP server:
+
+```bash
+$ net capture -r file1.pcap,file2.pcap -pprof localhost:6060
+```
+
+Then access profiling data via:
+- Goroutines: `curl http://localhost:6060/debug/pprof/goroutine?debug=2`
+- Heap profile: `curl http://localhost:6060/debug/pprof/heap`
+- CPU profile: `curl http://localhost:6060/debug/pprof/profile`
+- Interactive: Visit `http://localhost:6060/debug/pprof/` in a browser
+
+See [DEBUGGING.md](../../docs/DEBUGGING.md) for more details.
 
 ## Help
 
@@ -56,7 +78,7 @@ Capture from interface:
       -dpi=false: use DPI for device profiling
       -decoders=false: show all available decoders
       -exclude="LinkFlow,NetworkFlow,TransportFlow": exclude specific decoders
-      -fileStorage="": path to created extracted files (currently only for HTTP)
+      -fileStorage="files": path to created extracted files (relative to output directory, empty string disables file extraction)
       -flow-flush-interval=2000: flushes flows every X flows
       -flow-timeout=10s: closes flows older than flowTimeout
       -flushevery=100: flush assembler every N packets
@@ -77,7 +99,7 @@ Capture from interface:
       -memprofile="": write memory profile
       -nodefrag=false: if true, do not do IPv4 defrag
       -nooptcheck=false: do not check TCP options (useful to ignore MSS on captures with TSO)
-      -opts="datagrams": select decoding options
+      -opts="default": select decoding options
       -out="": specify output directory, will be created if it does not exist
       -overview=false: print a list of all available decoders and fields
       -payload=false: capture payload for supported layers

@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package types
@@ -23,29 +29,37 @@ import (
 )
 
 const (
-	fieldTimestampFirst      = "TimestampFirst"
-	fieldLinkProto           = "LinkProto"
-	fieldNetworkProto        = "NetworkProto"
-	fieldTransportProto      = "TransportProto"
-	fieldApplicationProto    = "ApplicationProto"
-	fieldTotalSize           = "TotalSize"
-	fieldAppPayloadSize      = "AppPayloadSize"
-	fieldNumPackets          = "NumPackets"
-	fieldUID                 = "UID"
-	fieldDuration            = "Duration"
-	fieldTimestampLast       = "TimestampLast"
-	fieldBytesClientToServer = "BytesClientToServer"
-	fieldBytesServerToClient = "BytesServerToClient"
-	fieldNumFINFlags         = "NumFINFlags"
-	fieldNumRSTFlags         = "NumRSTFlags"
-	fieldNumACKFlags         = "NumACKFlags"
-	fieldNumSYNFlags         = "NumSYNFlags"
-	fieldNumURGFlags         = "NumURGFlags"
-	fieldNumECEFlags         = "NumECEFlags"
-	fieldNumPSHFlags         = "NumPSHFlags"
-	fieldNumCWRFlags         = "NumCWRFlags"
-	fieldNumNSFlags          = "NumNSFlags"
-	fieldMeanWindowSize      = "MeanWindowSize"
+	fieldTimestampFirst       = "TimestampFirst"
+	fieldLinkProto            = "LinkProto"
+	fieldNetworkProto         = "NetworkProto"
+	fieldTransportProto       = "TransportProto"
+	fieldApplicationProto     = "ApplicationProto"
+	fieldTotalSize            = "TotalSize"
+	fieldAppPayloadSize       = "AppPayloadSize"
+	fieldNumPackets           = "NumPackets"
+	fieldCommunityID          = "CommunityID"
+	fieldDuration             = "Duration"
+	fieldTimestampLast        = "TimestampLast"
+	fieldBytesClientToServer  = "BytesClientToServer"
+	fieldBytesServerToClient  = "BytesServerToClient"
+	fieldNumFINFlags          = "NumFINFlags"
+	fieldNumRSTFlags          = "NumRSTFlags"
+	fieldNumACKFlags          = "NumACKFlags"
+	fieldNumSYNFlags          = "NumSYNFlags"
+	fieldNumURGFlags          = "NumURGFlags"
+	fieldNumECEFlags          = "NumECEFlags"
+	fieldNumPSHFlags          = "NumPSHFlags"
+	fieldNumCWRFlags          = "NumCWRFlags"
+	fieldNumNSFlags           = "NumNSFlags"
+	fieldMeanWindowSize       = "MeanWindowSize"
+	fieldServerPortName       = "ServerPortName"
+	fieldDetectedProtocolName = "DetectedProtocolName"
+	fieldTcpRttNanos          = "TcpRttNanos"
+	fieldTlsHandshakeNanos    = "TlsHandshakeNanos"
+	fieldJa4lClient           = "Ja4lClient"
+	fieldJa4lServer           = "Ja4lServer"
+	fieldSynTtl               = "SynTtl"
+	// fieldApplications is defined in types/ip_profile.go
 )
 
 var fieldsConnection = []string{
@@ -63,7 +77,7 @@ var fieldsConnection = []string{
 	fieldTotalSize,
 	fieldAppPayloadSize,
 	fieldNumPackets,
-	//fieldUID,
+	//fieldCommunityID,
 	fieldDuration,
 	fieldTimestampLast,
 	fieldBytesClientToServer,
@@ -78,6 +92,15 @@ var fieldsConnection = []string{
 	fieldNumCWRFlags,
 	fieldNumNSFlags,
 	fieldMeanWindowSize,
+	fieldApplications,
+	fieldServerPortName,
+	fieldDetectedProtocolName,
+	// JA4L timing fields
+	fieldTcpRttNanos,
+	fieldTlsHandshakeNanos,
+	fieldJa4lClient,
+	fieldJa4lServer,
+	fieldSynTtl,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -102,7 +125,7 @@ func (c *Connection) CSVRecord() []string {
 		formatInt32(c.TotalSize),
 		formatInt32(c.AppPayloadSize),
 		formatInt32(c.NumPackets),
-		//c.UID,
+		//c.CommunityID,
 		formatInt64(c.Duration),
 		formatTimestamp(c.TimestampLast),
 		formatInt64(c.BytesClientToServer),
@@ -117,6 +140,15 @@ func (c *Connection) CSVRecord() []string {
 		formatInt32(c.NumCWRFlags),
 		formatInt32(c.NumNSFlags),
 		formatInt32(c.MeanWindowSize),
+		join(c.Applications...),
+		c.ServerPortName,
+		c.DetectedProtocolName,
+		// JA4L timing fields
+		formatInt64(c.TcpRttNanos),
+		formatInt64(c.TlsHandshakeNanos),
+		c.Ja4LClient,
+		c.Ja4LServer,
+		formatInt32(c.SynTtl),
 	})
 }
 
@@ -245,7 +277,7 @@ func (c *Connection) Encode() []string {
 		connectionEncoder.Int32(fieldTotalSize, c.TotalSize),
 		connectionEncoder.Int32(fieldAppPayloadSize, c.AppPayloadSize),
 		connectionEncoder.Int32(fieldNumPackets, c.NumPackets),
-		//connectionEncoder.String(fieldUID, c.UID),
+		//connectionEncoder.String(fieldCommunityID, c.CommunityID),
 		connectionEncoder.Int64(fieldDuration, c.Duration),
 		connectionEncoder.Int64(fieldTimestampLast, c.TimestampLast),
 		connectionEncoder.Int64(fieldBytesClientToServer, c.BytesClientToServer),
@@ -260,6 +292,7 @@ func (c *Connection) Encode() []string {
 		connectionEncoder.Int32(fieldNumCWRFlags, c.NumCWRFlags),
 		connectionEncoder.Int32(fieldNumNSFlags, c.NumNSFlags),
 		connectionEncoder.Int32(fieldMeanWindowSize, c.MeanWindowSize),
+		connectionEncoder.String(fieldApplications, join(c.Applications...)),
 	})
 }
 

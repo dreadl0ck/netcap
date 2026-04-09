@@ -1,23 +1,30 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package types
 
 import (
-	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -26,6 +33,24 @@ const (
 	fieldHeaders        = "Headers"
 	fieldIsResponse     = "IsResponse"
 	fieldResponseStatus = "ResponseStatus"
+	// SIP-specific security fields (only constants not defined elsewhere)
+	fieldMethodName          = "MethodName"
+	fieldCallID              = "CallID"
+	fieldContact             = "Contact"
+	fieldContentLength       = "ContentLength"
+	fieldVia                 = "Via"
+	fieldCSeq                = "CSeq"
+	fieldCSeqNumber          = "CSeqNumber"
+	fieldCSeqMethod          = "CSeqMethod"
+	fieldRequestURI          = "RequestURI"
+	fieldMaxForwards         = "MaxForwards"
+	fieldAuthorization       = "Authorization"
+	fieldHasKnownAttackTool  = "HasKnownAttackTool"
+	fieldHasViaSpoofing      = "HasViaSpoofing"
+	fieldHasOversizedHeaders = "HasOversizedHeaders"
+	fieldHasSDPPrivateIPLeak = "HasSDPPrivateIPLeak"
+	fieldSDPConnectionIP     = "SDPConnectionIP"
+	fieldSDPMediaType        = "SDPMediaType"
 )
 
 var fieldsSIP = []string{
@@ -40,6 +65,33 @@ var fieldsSIP = []string{
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	// Security monitoring fields
+	fieldMethodName,
+	fieldCallID,
+	fieldFrom,
+	fieldTo,
+	fieldContact,
+	fieldUserAgent,
+	fieldContentType,
+	fieldContentLength,
+	fieldVia,
+	fieldCSeq,
+	fieldCSeqNumber,
+	fieldCSeqMethod,
+	fieldRequestURI,
+	fieldMaxForwards,
+	fieldAuthorization,
+	// Security analysis fields
+	fieldIsAnomalous,
+	fieldAnomalyReason,
+	fieldRiskScore,
+	fieldRiskFactors,
+	fieldHasKnownAttackTool,
+	fieldHasViaSpoofing,
+	fieldHasOversizedHeaders,
+	fieldHasSDPPrivateIPLeak,
+	fieldSDPConnectionIP,
+	fieldSDPMediaType,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -51,16 +103,43 @@ func (s *SIP) CSVHeader() []string {
 func (s *SIP) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(s.Timestamp),
-		formatInt32(s.Version),           //  int32 `protobuf:"varint,2,opt,name=Version,proto3" json:"Version,omitempty"`
-		formatInt32(s.Method),            //   int32 `protobuf:"varint,3,opt,name=Method,proto3" json:"Method,omitempty"`
-		join(s.Headers...),               //  []string `protobuf:"bytes,4,rep,name=Headers,proto3" json:"Headers,omitempty"`
-		strconv.FormatBool(s.IsResponse), //            bool     `protobuf:"varint,5,opt,name=IsResponse,proto3" json:"IsResponse,omitempty"`
-		formatInt32(s.ResponseCode),      //          int32    `protobuf:"varint,6,opt,name=ResponseCode,proto3" json:"ResponseCode,omitempty"`
-		s.ResponseStatus,                 //        string   `protobuf
+		formatInt32(s.Version),
+		formatInt32(s.Method),
+		join(s.Headers...),
+		strconv.FormatBool(s.IsResponse),
+		formatInt32(s.ResponseCode),
+		s.ResponseStatus,
 		s.SrcIP,
 		s.DstIP,
 		formatInt32(s.SrcPort),
 		formatInt32(s.DstPort),
+		// Security monitoring fields
+		s.MethodName,
+		s.CallID,
+		s.From,
+		s.To,
+		s.Contact,
+		s.UserAgent,
+		s.ContentType,
+		formatInt32(s.ContentLength),
+		s.Via,
+		s.CSeq,
+		formatInt32(s.CSeqNumber),
+		s.CSeqMethod,
+		s.RequestURI,
+		formatInt32(s.MaxForwards),
+		s.Authorization,
+		// Security analysis fields
+		strconv.FormatBool(s.IsAnomalous),
+		s.AnomalyReason,
+		formatInt32(s.RiskScore),
+		join(s.RiskFactors...),
+		strconv.FormatBool(s.HasKnownAttackTool),
+		strconv.FormatBool(s.HasViaSpoofing),
+		strconv.FormatBool(s.HasOversizedHeaders),
+		strconv.FormatBool(s.HasSDPPrivateIPLeak),
+		s.SDPConnectionIP,
+		s.SDPMediaType,
 	})
 }
 
@@ -96,6 +175,7 @@ func (s *SIP) SetPacketContext(ctx *PacketContext) {
 	s.DstIP = ctx.DstIP
 	s.SrcPort = ctx.SrcPort
 	s.DstPort = ctx.DstPort
+	s.CommunityID = ctx.CommunityID
 }
 
 // Src returns the source address of the audit record.
@@ -114,16 +194,43 @@ var sipEncoder = encoder.NewValueEncoder()
 func (s *SIP) Encode() []string {
 	return filter([]string{
 		sipEncoder.Int64(fieldTimestamp, s.Timestamp),
-		sipEncoder.Int32(fieldVersion, s.Version),                //  int32 `protobuf:"varint,2,opt,name=Version,proto3" json:"Version,omitempty"`
-		sipEncoder.Int32(fieldMethod, s.Method),                  //   int32 `protobuf:"varint,3,opt,name=Method,proto3" json:"Method,omitempty"`
-		sipEncoder.String(fieldHeaders, join(s.Headers...)),      //  []string `protobuf:"bytes,4,rep,name=Headers,proto3" json:"Headers,omitempty"`
-		sipEncoder.Bool(s.IsResponse),                            //            bool     `protobuf:"varint,5,opt,name=IsResponse,proto3" json:"IsResponse,omitempty"`
-		sipEncoder.Int32(fieldResponseCode, s.ResponseCode),      //          int32    `protobuf:"varint,6,opt,name=ResponseCode,proto3" json:"ResponseCode,omitempty"`
-		sipEncoder.String(fieldResponseStatus, s.ResponseStatus), //        string   `protobuf
+		sipEncoder.Int32(fieldVersion, s.Version),
+		sipEncoder.Int32(fieldMethod, s.Method),
+		sipEncoder.String(fieldHeaders, join(s.Headers...)),
+		sipEncoder.Bool(s.IsResponse),
+		sipEncoder.Int32(fieldResponseCode, s.ResponseCode),
+		sipEncoder.String(fieldResponseStatus, s.ResponseStatus),
 		sipEncoder.String(fieldSrcIP, s.SrcIP),
 		sipEncoder.String(fieldDstIP, s.DstIP),
 		sipEncoder.Int32(fieldSrcPort, s.SrcPort),
 		sipEncoder.Int32(fieldDstPort, s.DstPort),
+		// Security monitoring fields
+		sipEncoder.String(fieldMethodName, s.MethodName),
+		sipEncoder.String(fieldCallID, s.CallID),
+		sipEncoder.String(fieldFrom, s.From),
+		sipEncoder.String(fieldTo, s.To),
+		sipEncoder.String(fieldContact, s.Contact),
+		sipEncoder.String(fieldUserAgent, s.UserAgent),
+		sipEncoder.String(fieldContentType, s.ContentType),
+		sipEncoder.Int32(fieldContentLength, s.ContentLength),
+		sipEncoder.String(fieldVia, s.Via),
+		sipEncoder.String(fieldCSeq, s.CSeq),
+		sipEncoder.Int32(fieldCSeqNumber, s.CSeqNumber),
+		sipEncoder.String(fieldCSeqMethod, s.CSeqMethod),
+		sipEncoder.String(fieldRequestURI, s.RequestURI),
+		sipEncoder.Int32(fieldMaxForwards, s.MaxForwards),
+		sipEncoder.String(fieldAuthorization, s.Authorization),
+		// Security analysis fields
+		sipEncoder.Bool(s.IsAnomalous),
+		sipEncoder.String(fieldAnomalyReason, s.AnomalyReason),
+		sipEncoder.Int32(fieldRiskScore, s.RiskScore),
+		sipEncoder.String(fieldRiskFactors, join(s.RiskFactors...)),
+		sipEncoder.Bool(s.HasKnownAttackTool),
+		sipEncoder.Bool(s.HasViaSpoofing),
+		sipEncoder.Bool(s.HasOversizedHeaders),
+		sipEncoder.Bool(s.HasSDPPrivateIPLeak),
+		sipEncoder.String(fieldSDPConnectionIP, s.SDPConnectionIP),
+		sipEncoder.String(fieldSDPMediaType, s.SDPMediaType),
 	})
 }
 

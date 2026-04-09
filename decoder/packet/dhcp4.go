@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package packet
@@ -17,11 +23,34 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 
+	"github.com/dreadl0ck/netcap/internal/ja4"
 	"github.com/dreadl0ck/netcap/types"
+)
+
+// dhcpv4MessageTypeNames maps DHCP message types to names
+var dhcpv4MessageTypeNames = map[layers.DHCPMsgType]string{
+	layers.DHCPMsgTypeDiscover: "DISCOVER",
+	layers.DHCPMsgTypeOffer:    "OFFER",
+	layers.DHCPMsgTypeRequest:  "REQUEST",
+	layers.DHCPMsgTypeDecline:  "DECLINE",
+	layers.DHCPMsgTypeAck:      "ACK",
+	layers.DHCPMsgTypeNak:      "NAK",
+	layers.DHCPMsgTypeRelease:  "RELEASE",
+	layers.DHCPMsgTypeInform:   "INFORM",
+}
+
+// DHCP option types
+const (
+	dhcpOptHostname         = 12
+	dhcpOptVendorClass      = 60
+	dhcpOptServerID         = 54
+	dhcpOptMessageType      = 53
+	dhcpOptLeaseTime        = 51
+	dhcpOptParamRequestList = 55
 )
 
 var dhcpv4Decoder = newGoPacketDecoder(
@@ -32,40 +61,97 @@ var dhcpv4Decoder = newGoPacketDecoder(
 		if dhcp4, ok := layer.(*layers.DHCPv4); ok {
 
 			var (
-				opts   []*types.DHCPOption
-				fp     strings.Builder
-				length = len(dhcp4.Options) - 1
+				opts             = make([]*types.DHCPOption, 0, len(dhcp4.Options))
+				optTypes         = make([]uint8, 0, len(dhcp4.Options))
+				fp               strings.Builder
+				length           = len(dhcp4.Options) - 1
+				messageType      string
+				messageTypeCode  int32
+				leaseTime        uint32
+				serverIdentifier string
+				hostname         string
+				vendorClass      string
+				paramRequestList []uint8
 			)
+
 			for i, o := range dhcp4.Options {
 				opts = append(opts, &types.DHCPOption{
 					Data:   string(o.Data),
 					Length: int32(o.Length),
 					Type:   int32(o.Type),
 				})
+				optTypes = append(optTypes, uint8(o.Type))
 				fp.WriteString(strconv.Itoa(int(o.Type)))
 				if i != length {
 					fp.WriteString(",")
 				}
+
+				// Extract security-relevant DHCP options
+				switch o.Type {
+				case dhcpOptMessageType:
+					if len(o.Data) >= 1 {
+						msgType := layers.DHCPMsgType(o.Data[0])
+						messageTypeCode = int32(msgType)
+						messageType = dhcpv4MessageTypeNames[msgType]
+						if messageType == "" {
+							messageType = "UNKNOWN"
+						}
+					}
+				case dhcpOptLeaseTime:
+					if len(o.Data) >= 4 {
+						leaseTime = uint32(o.Data[0])<<24 | uint32(o.Data[1])<<16 | uint32(o.Data[2])<<8 | uint32(o.Data[3])
+					}
+				case dhcpOptServerID:
+					if len(o.Data) >= 4 {
+						serverIdentifier = parseIPv4(o.Data[:4])
+					}
+				case dhcpOptHostname:
+					hostname = string(o.Data)
+				case dhcpOptVendorClass:
+					vendorClass = string(o.Data)
+				case dhcpOptParamRequestList:
+					// Extract Parameter Request List for JA4D fingerprinting
+					paramRequestList = make([]uint8, len(o.Data))
+					copy(paramRequestList, o.Data)
+				}
 			}
 
+			// Compute JA4D fingerprint
+			ja4dData := ja4.BuildDHCPv4DataFromOptions(
+				uint8(messageTypeCode),
+				uint8(dhcp4.HardwareType),
+				optTypes,
+				paramRequestList,
+				vendorClass,
+				hostname,
+			)
+			ja4dFingerprint := ja4.ComputeJA4D(ja4dData)
+
 			return &types.DHCPv4{
-				Timestamp:    timestamp,
-				Operation:    int32(dhcp4.Operation),
-				HardwareType: int32(dhcp4.HardwareType),
-				HardwareLen:  int32(dhcp4.HardwareLen),
-				HardwareOpts: int32(dhcp4.HardwareOpts),
-				Xid:          dhcp4.Xid,
-				Secs:         int32(dhcp4.Secs),
-				Flags:        int32(dhcp4.Flags),
-				ClientIP:     dhcp4.ClientIP.String(),
-				YourClientIP: dhcp4.YourClientIP.String(),
-				NextServerIP: dhcp4.NextServerIP.String(),
-				RelayAgentIP: dhcp4.RelayAgentIP.String(),
-				ClientHWAddr: dhcp4.ClientHWAddr.String(),
-				ServerName:   dhcp4.ServerName,
-				File:         dhcp4.File,
-				Options:      opts,
-				Fingerprint:  fp.String(),
+				Timestamp:        timestamp,
+				Operation:        int32(dhcp4.Operation),
+				HardwareType:     int32(dhcp4.HardwareType),
+				HardwareLen:      int32(dhcp4.HardwareLen),
+				RelayHops:        int32(dhcp4.RelayHops),
+				Xid:              dhcp4.Xid,
+				Secs:             int32(dhcp4.Secs),
+				Flags:            int32(dhcp4.Flags),
+				ClientIP:         dhcp4.ClientIP.String(),
+				YourClientIP:     dhcp4.YourClientIP.String(),
+				NextServerIP:     dhcp4.NextServerIP.String(),
+				RelayAgentIP:     dhcp4.RelayAgentIP.String(),
+				ClientHWAddr:     dhcp4.ClientHWAddr.String(),
+				ServerName:       dhcp4.ServerName,
+				File:             dhcp4.File,
+				Options:          opts,
+				Fingerprint:      fp.String(),
+				MessageType:      messageType,
+				MessageTypeCode:  messageTypeCode,
+				LeaseTime:        leaseTime,
+				ServerIdentifier: serverIdentifier,
+				Hostname:         hostname,
+				VendorClass:      vendorClass,
+				JA4D:             ja4dFingerprint,
 			}
 		}
 

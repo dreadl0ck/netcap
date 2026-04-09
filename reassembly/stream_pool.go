@@ -83,6 +83,37 @@ func (p *StreamPool) remove(conn *connection) {
 	p.mu.Unlock()
 }
 
+// Reset clears all internal state and releases backing arrays.
+// This should be called when the pool is no longer needed to allow
+// garbage collection of the underlying connection arrays.
+// CRITICAL for preventing memory leaks in multi-file processing.
+func (p *StreamPool) Reset() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	// Clear connections map
+	p.conns = make(map[key]*connection, initialAllocSize)
+
+	// Clear free list
+	p.free = make([]*connection, 0, initialAllocSize)
+
+	// CRITICAL: Clear the backing arrays by nil'ing references
+	// The p.all slice stores backing arrays for all connection objects
+	// and grows unbounded. We must explicitly nil these to allow GC.
+	for i := range p.all {
+		p.all[i] = nil
+	}
+	p.all = nil
+
+	// Reset allocation counter to initial size
+	p.nextAlloc = initialAllocSize
+	p.newConnectionCount = 0
+
+	if Debug {
+		log.Println("StreamPool: reset complete, all backing arrays released")
+	}
+}
+
 // NewStreamPool creates a new connection pool.  Streams will
 // be created as necessary using the passed-in streamFactory.
 func NewStreamPool(factory streamFactory) *StreamPool {

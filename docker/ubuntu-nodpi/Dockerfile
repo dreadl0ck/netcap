@@ -1,30 +1,40 @@
-FROM ubuntu:18.04 as builder
-RUN apt-get clean
-RUN apt-get update
-RUN apt-get install -y software-properties-common
-RUN add-apt-repository ppa:longsleep/golang-backports
-RUN apt-get update
-RUN apt-get install -y golang-go
-RUN apt-get install -y apt-transport-https curl lsb-release wget autogen autoconf libtool gcc libpcap-dev linux-headers-generic git vim
+FROM --platform=linux/amd64 dreadl0ck/netcap-builder:ubuntu-latest as builder
 
-WORKDIR /src
-COPY go.mod go.sum ./
-RUN go mod download
+# Copy netcap source
+WORKDIR /netcap
 COPY . .
+
 ENV VERSION XXX
-ARG TAGS
+ARG TAGS="-tags noyara"
 RUN echo "tags: $TAGS"
 
-RUN echo go build -mod=readonly ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
-RUN go build -mod=readonly ${TAGS} -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+# Extract gopacket version from go.mod
+RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
+    echo go build ${TAGS} -trimpath -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION} -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}" -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd && \
+    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build ${TAGS} -trimpath \
+    -ldflags "-s -w \
+        -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
+        -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}" \
+    -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
 #RUN ls -la /usr/lib/
 
-FROM ubuntu:18.04
+FROM --platform=linux/amd64 ubuntu:24.04
 ARG IPV6_SUPPORT=true
 RUN apt-get update
-RUN apt install -y --fix-missing libpcap-dev software-properties-common ca-certificates liblzo2-2 libkeyutils-dev git-lfs
+RUN apt install -y --fix-missing libpcap0.8 software-properties-common ca-certificates liblzo2-2 libkeyutils-dev tcpdump curl xz-utils
 RUN update-ca-certificates
+
+# Install Google Magika CLI v1.0.2 for AI-based file type classification
+ARG MAGIKA_VERSION=1.0.2
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then MAGIKA_ARCH="x86_64-unknown-linux-gnu"; \
+    elif [ "$ARCH" = "aarch64" ]; then MAGIKA_ARCH="aarch64-unknown-linux-gnu"; \
+    else echo "Unsupported arch: $ARCH" && exit 1; fi && \
+    curl -LsSf "https://github.com/google/magika/releases/download/cli%2Fv${MAGIKA_VERSION}/magika-${MAGIKA_ARCH}.tar.xz" \
+    | tar -xJ -C /usr/local/bin/ && \
+    chmod +x /usr/local/bin/magika
+
 WORKDIR /netcap
 COPY --from=builder /netcap/bin/* /usr/bin/
 #COPY --from=builder /usr/lib/* /usr/lib/

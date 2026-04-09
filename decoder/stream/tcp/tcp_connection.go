@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package tcp
@@ -26,18 +32,19 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/layers"
-	"github.com/evilsocket/islazy/tui"
+	"github.com/gopacket/gopacket"
+
+	"github.com/dreadl0ck/netcap/internal/table"
+	"github.com/gopacket/gopacket/layers"
 	"go.uber.org/zap"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/decoder/stream/udp"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -316,13 +323,23 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 	// reorder the stream fragments
 	t.reorder(ac, firstFlow)
 
-	reassemblyLog.Debug("ReassemblyComplete",
+	clientSaved := false
+	serverSaved := false
+	if t.client != nil {
+		clientSaved = t.client.Saved()
+	}
+	if t.server != nil {
+		serverSaved = t.server.Saved()
+	}
+
+	reassemblyLog.Info("ReassemblyComplete called",
 		zap.String("ident", t.ident),
 		zap.String("reason", reason),
 		zap.Bool("clientIsNil", t.client == nil),
-		zap.Bool("clientSaved:", t.client.Saved()),
+		zap.Bool("clientSaved", clientSaved),
 		zap.Bool("serverIsNil", t.server == nil),
-		zap.Bool("serverSaved:", t.server.Saved()),
+		zap.Bool("serverSaved", serverSaved),
+		zap.Int("mergedFragments", len(t.merged)),
 	)
 
 	ti := time.Now()
@@ -333,8 +350,20 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 
 		t.sortAndMergeFragments()
 
+		reassemblyLog.Info("Processing client stream - will call decode()",
+			zap.String("ident", t.ident),
+			zap.Int("mergedFragments", len(t.merged)),
+		)
+
 		// save the full conversation to disk if enabled
-		err := streamutils.SaveConversation("TCP", t.merged, t.client.Ident(), t.client.FirstPacket(), t.client.Transport())
+		// Calculate Community ID once for use by harvesters
+		communityID := streamutils.CalcCommunityIDTCP(
+			t.client.Network().Src().String(),
+			t.client.Network().Dst().String(),
+			uint16(utils.DecodePort(t.client.Transport().Src().Raw())),
+			uint16(utils.DecodePort(t.client.Transport().Dst().Raw())),
+		)
+		err := streamutils.SaveConversation("TCP", t.merged, t.client.Ident(), t.client.FirstPacket(), t.client.Transport(), communityID)
 		if err != nil {
 			reassemblyLog.Error("failed to save stream", zap.Error(err), zap.String("ident", t.client.Ident()))
 		}
@@ -344,6 +373,12 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		// this needs to be invoked only once, and since ReassemblyComplete is invoked for each side of the connection
 		// decode should be called either when processing the client or the server stream
 		t.decode()
+	} else {
+		reassemblyLog.Debug("Skipping decode() call",
+			zap.String("ident", t.ident),
+			zap.Bool("serverIsNil", t.server == nil),
+			zap.Bool("clientAlreadySaved", t.client != nil && t.client.Saved()),
+		)
 	}
 
 	if t.server != nil && !t.server.Saved() {
@@ -384,25 +419,73 @@ func (t *tcpConnection) decode() {
 		ServerIP:          t.client.Network().Dst().String(),
 		ClientPort:        utils.DecodePort(t.client.Transport().Src().Raw()),
 		ServerPort:        utils.DecodePort(t.client.Transport().Dst().Raw()),
+		CommunityID: streamutils.CalcCommunityIDTCP(
+			t.client.Network().Src().String(),
+			t.client.Network().Dst().String(),
+			uint16(utils.DecodePort(t.client.Transport().Src().Raw())),
+			uint16(utils.DecodePort(t.client.Transport().Dst().Raw())),
+		),
 	}
 
+	// Use the client's destination port (= server's listening port) for decoder matching
+	// NOT the server's destination port (which would be the client's ephemeral port)
+	serverPort := utils.DecodePort(t.client.Transport().Dst().Raw())
+	reassemblyLog.Debug("TCP decode() - attempting decoder selection",
+		zap.String("ident", t.ident),
+		zap.Int("serverPort", int(serverPort)),
+		zap.Int("clientDataLen", len(cr)),
+		zap.Int("serverDataLen", len(sr)),
+		zap.Int("mergedFragments", len(t.merged)),
+	)
+
 	// make a good first guess based on the destination port of the connection
-	if sd, exists := stream.DefaultStreamDecoders[utils.DecodePort(t.server.Transport().Dst().Raw())]; exists {
+	if sd, exists := stream.DefaultStreamDecoders[serverPort]; exists {
+		reassemblyLog.Debug("Found decoder for port",
+			zap.String("ident", t.ident),
+			zap.Int("port", int(serverPort)),
+			zap.String("decoder", sd.GetName()),
+		)
 		if sd.Transport() == core.TCP || sd.Transport() == core.All {
 			if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
 				t.decoder = sd.GetReaderFactory().New(conv)
 				found = true
+				reassemblyLog.Info("Stream decoder selected by port",
+					zap.String("ident", t.ident),
+					zap.String("decoder", sd.GetName()),
+					zap.Int("port", int(serverPort)),
+				)
+			} else {
+				reassemblyLog.Debug("Decoder rejected stream by CanDecode",
+					zap.String("ident", t.ident),
+					zap.String("decoder", sd.GetName()),
+					zap.Int("port", int(serverPort)),
+				)
 			}
 		}
+	} else {
+		reassemblyLog.Debug("No decoder registered for port",
+			zap.String("ident", t.ident),
+			zap.Int("port", int(serverPort)),
+		)
 	}
 
 	// if no stream decoder for the port was found, or the stream decoder did not match
 	// try all available decoders and use the first one that matches
 	if !found {
-		for _, sd := range stream.DefaultStreamDecoders {
+		reassemblyLog.Debug("Trying all available decoders",
+			zap.String("ident", t.ident),
+			zap.Int("availableDecoders", len(stream.DefaultStreamDecoders)),
+		)
+		for _, port := range stream.SortedDecoderPorts {
+			sd := stream.DefaultStreamDecoders[port]
 			if sd.Transport() == core.TCP || sd.Transport() == core.All {
 				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
 					t.decoder = sd.GetReaderFactory().New(conv)
+					reassemblyLog.Info("Stream decoder selected by fallback scan",
+						zap.String("ident", t.ident),
+						zap.String("decoder", sd.GetName()),
+						zap.Int("registeredPort", int(port)),
+					)
 					break
 				}
 			}
@@ -413,10 +496,25 @@ func (t *tcpConnection) decode() {
 	if t.decoder != nil {
 		ti := time.Now()
 
+		reassemblyLog.Info("Calling decoder.Decode()",
+			zap.String("ident", t.ident),
+			zap.String("decoderType", reflect.TypeOf(t.decoder).String()),
+		)
+
 		// call the associated decoder
 		t.decoder.Decode()
 
 		tcpStreamDecodeTime.WithLabelValues(reflect.TypeOf(t.decoder).String()).Set(float64(time.Since(ti).Nanoseconds()))
+
+		reassemblyLog.Info("Decoder.Decode() completed",
+			zap.String("ident", t.ident),
+			zap.Duration("duration", time.Since(ti)),
+		)
+	} else {
+		reassemblyLog.Debug("No decoder selected for stream",
+			zap.String("ident", t.ident),
+			zap.Int("serverPort", int(serverPort)),
+		)
 	}
 }
 
@@ -434,6 +532,13 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 		udpLayer := packet.Layer(layers.LayerTypeUDP)
 		if udpLayer != nil {
 			udp.Streams.HandleUDP(packet, udpLayer)
+			return
+		}
+
+		// handle network-layer-only protocols (ICMP, IGMP, GRE, etc.)
+		// These packets have a network layer but no transport layer
+		if nl := packet.NetworkLayer(); nl != nil {
+			handleNetworkLayerPacket(packet)
 		}
 
 		return
@@ -530,6 +635,7 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 // assembleWithContextTimeout is a function that times out with a log message after a specified interval
 // when the stream reassembly gets stuck
 // used for debugging.
+//
 //goland:noinspection GoUnusedFunction
 func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.Assembler, tcp *layers.TCP) {
 	done := make(chan bool, 1)
@@ -576,7 +682,11 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			}
 		}
 
-		if !decoderconfig.Instance.Quiet {
+		StreamFactory.Lock()
+		numTotal := len(StreamFactory.streamReaders)
+		StreamFactory.Unlock()
+
+		if !decoderconfig.Instance.Quiet && numTotal > 1 {
 			fmt.Println("\nprocessing last TCP streams")
 		}
 
@@ -588,7 +698,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 				zap.Int("numAssemblers", len(assemblers)),
 			)
 
-			if i == 0 && (!decoderconfig.Instance.Quiet || decoderconfig.Instance.PrintProgress) {
+			if i == 0 && (!decoderconfig.Instance.Quiet || decoderconfig.Instance.PrintProgress) && numTotal > 1 {
 				// only display progress bar for the first flush, since all following ones will be instant.
 				reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAllProgress()))
 			} else {
@@ -596,21 +706,13 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			}
 		}
 
-		StreamFactory.Lock()
-		numTotal := len(StreamFactory.streamReaders)
-		StreamFactory.Unlock()
-
 		startFlush := time.Now()
 		reassemblyLog.Info("flushTCPStreams", zap.Int("numTotal", numTotal))
 		flushTCPStreams(numTotal)
 		reassemblyLog.Info("flushTCPStreams DONE", zap.String("delta", time.Since(startFlush).String()))
 
 		udp.FlushUDPStreams()
-	}
-
-	if dpi.IsEnabled() {
-		// teardown DPI C libs
-		dpi.Destroy()
+		network.FlushNetworkStreams()
 	}
 
 	// create a memory snapshot for debugging
@@ -647,7 +749,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 
 		// print configuration
 		// print configuration as table
-		tui.Table(reassemblyLogFileHandle, []string{"Reassembly Setting", "Value"}, [][]string{
+		table.Render(reassemblyLogFileHandle, []string{"Reassembly Setting", "Value"}, [][]string{
 			{"FlushEvery", strconv.Itoa(decoderconfig.Instance.FlushEvery)},
 			{"CloseInactiveTimeout", decoderconfig.Instance.CloseInactiveTimeOut.String()},
 			{"ClosePendingTimeout", decoderconfig.Instance.ClosePendingTimeOut.String()},
@@ -690,7 +792,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		)
 		streamutils.Stats.Unlock()
 
-		tui.Table(reassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
+		table.Render(reassemblyLogFileHandle, []string{"TCP Stat", "Value"}, rows)
 
 		errorsMapMutex.Lock()
 		streamutils.Stats.Lock()
@@ -700,7 +802,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 				rows = append(rows, []string{e, strconv.FormatUint(uint64(errorsMap[e]), 10)})
 			}
 
-			tui.Table(reassemblyLogFileHandle, []string{"Error Subject", "Count"}, rows)
+			table.Render(reassemblyLogFileHandle, []string{"Error Subject", "Count"}, rows)
 		}
 
 		streamutils.Stats.Unlock()
@@ -709,7 +811,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 }
 
 func waitForConns() chan struct{} {
-	out := make(chan struct{})
+	out := make(chan struct{}, 1) // Buffered channel to prevent goroutine leak when timeout occurs
 
 	go func() {
 		// WaitGoRoutines waits until the goroutines launched to process TCP streams are done
@@ -748,4 +850,55 @@ func printProgress(current, total int64) {
 func progress(current, total int64) string {
 	percent := (float64(current) / float64(total)) * 100
 	return strconv.Itoa(int(percent)) + "%"
+}
+
+// handleNetworkLayerPacket processes packets that have a network layer but no transport layer
+// These include ICMP, IGMP, GRE, and other network-layer protocols
+func handleNetworkLayerPacket(packet gopacket.Packet) {
+	nl := packet.NetworkLayer()
+	if nl == nil {
+		return
+	}
+
+	// Determine the protocol type and payload
+	var protocol string
+	var payload []byte
+
+	// Check for ICMPv4
+	if icmpv4Layer := packet.Layer(layers.LayerTypeICMPv4); icmpv4Layer != nil {
+		protocol = "ICMPv4"
+		icmp := icmpv4Layer.(*layers.ICMPv4)
+		payload = icmp.Payload
+	} else if icmpv6Layer := packet.Layer(layers.LayerTypeICMPv6); icmpv6Layer != nil {
+		// Check for ICMPv6
+		protocol = "ICMPv6"
+		icmp := icmpv6Layer.(*layers.ICMPv6)
+		payload = icmp.Payload
+	} else if igmpLayer := packet.Layer(layers.LayerTypeIGMP); igmpLayer != nil {
+		// Check for IGMP
+		protocol = "IGMP"
+		payload = igmpLayer.LayerPayload()
+	} else if greLayer := packet.Layer(layers.LayerTypeGRE); greLayer != nil {
+		// Check for GRE
+		protocol = "GRE"
+		payload = greLayer.LayerPayload()
+	} else if ipv4Layer := packet.Layer(layers.LayerTypeIPv4); ipv4Layer != nil {
+		// Fallback to IPv4 payload for unknown protocol
+		ipv4 := ipv4Layer.(*layers.IPv4)
+		protocol = ipv4.Protocol.String()
+		payload = ipv4.Payload
+	} else if ipv6Layer := packet.Layer(layers.LayerTypeIPv6); ipv6Layer != nil {
+		// Fallback to IPv6 payload
+		ipv6 := ipv6Layer.(*layers.IPv6)
+		protocol = ipv6.NextHeader.String()
+		payload = ipv6.Payload
+	} else {
+		// Unknown network layer packet
+		return
+	}
+
+	// Handle the packet in the network stream pool
+	if len(payload) > 0 || protocol != "" {
+		network.Streams.HandleNetworkPacket(packet, payload, protocol)
+	}
 }

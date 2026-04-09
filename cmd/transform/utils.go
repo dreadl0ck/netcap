@@ -99,11 +99,11 @@ func dieIfExecutable(loc string) {
 //	os.Exit(0) // don't signal an error for the transform invocation
 //}
 
-func createJa3TableHTML(m map[string]string) string {
+func createJa4TableHTML(m map[string]string) string {
 	out := []string{"<table style='width:100%'>"}
 
 	out = append(out, `<tr>
-    <th>Ja3</th>
+    <th>JA4</th>
     <th>Lookup Result</th>
   </tr>`)
 

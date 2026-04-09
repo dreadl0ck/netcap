@@ -1,0 +1,48 @@
+# Network-Based Filter Examples
+# Filters based on IP addresses, ports, and network characteristics
+
+# Private to Public traffic
+IsPrivateIP(SrcIP) && IsPublicIP(DstIP)
+
+# Public to Private traffic (inbound)
+IsPublicIP(SrcIP) && IsPrivateIP(DstIP)
+
+# Internal-only traffic
+IsPrivateIP(SrcIP) && IsPrivateIP(DstIP)
+
+# Traffic from specific subnet
+InSubnet(SrcIP, "192.168.0.0/16")
+
+# Traffic to specific subnet
+InSubnet(DstIP, "10.0.0.0/8")
+
+# High ports (ephemeral range)
+DstPort > 49152
+
+# Well-known ports
+DstPort >= 1 && DstPort <= 1023
+
+# Registered ports
+DstPort >= 1024 && DstPort <= 49151
+
+# Port range
+PortInRange(DstPort, 8000, 9000)
+
+# Common web ports
+DstPort == 80 || DstPort == 443 || DstPort == 8080 || DstPort == 8443
+
+# Common database ports
+DstPort == 3306 || DstPort == 5432 || DstPort == 1433 || DstPort == 27017
+
+# SSH traffic
+DstPort == 22
+
+# RDP traffic
+DstPort == 3389
+
+# SMB/CIFS traffic
+DstPort == 445 || DstPort == 139
+
+# FTP traffic
+DstPort == 21 || SrcPort == 20 || DstPort == 20
+

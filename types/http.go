@@ -1,23 +1,30 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package types
 
 import (
-	"github.com/dreadl0ck/netcap/encoder"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/encoder"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -35,6 +42,8 @@ const (
 	fieldStatusCode         = "StatusCode"
 	fieldReqContentEncoding = "ReqContentEncoding"
 	fieldResContentEncoding = "ResContentEncoding"
+	fieldJa4h               = "Ja4h"
+	// fieldFlow, fieldSrcPort, fieldDstPort are defined in other type files
 )
 
 var fieldsHTTP = []string{
@@ -53,9 +62,13 @@ var fieldsHTTP = []string{
 	fieldStatusCode,
 	fieldSrcIP,
 	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
 	fieldReqContentEncoding,
 	fieldResContentEncoding,
 	fieldServerName,
+	fieldFlow,
+	fieldJa4h,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -65,11 +78,11 @@ func (h *HTTP) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (h *HTTP) CSVRecord() []string {
-	var reqCookies []string
+	reqCookies := make([]string, 0, len(h.ReqCookies))
 	for _, c := range h.ReqCookies {
 		reqCookies = append(reqCookies, c.toString())
 	}
-	var resCookies []string
+	resCookies := make([]string, 0, len(h.ResCookies))
 	for _, c := range h.ResCookies {
 		resCookies = append(resCookies, c.toString())
 	}
@@ -89,9 +102,13 @@ func (h *HTTP) CSVRecord() []string {
 		formatInt32(h.StatusCode),
 		h.SrcIP,
 		h.DstIP,
+		formatInt32(h.SrcPort),
+		formatInt32(h.DstPort),
 		h.ReqContentEncoding,
 		h.ResContentEncoding,
 		h.ServerName,
+		h.Flow,
+		h.Ja4H,
 	})
 }
 
@@ -183,9 +200,13 @@ func (h *HTTP) Encode() []string {
 		httpEncoder.Int32(fieldStatusCode, h.StatusCode),
 		httpEncoder.String(fieldSrcIP, h.SrcIP),
 		httpEncoder.String(fieldDstIP, h.DstIP),
+		httpEncoder.Int32(fieldSrcPort, h.SrcPort),
+		httpEncoder.Int32(fieldDstPort, h.DstPort),
 		httpEncoder.String(fieldReqContentEncoding, h.ReqContentEncoding),
 		httpEncoder.String(fieldResContentEncoding, h.ResContentEncoding),
 		httpEncoder.String(fieldServerName, h.ServerName),
+		httpEncoder.String(fieldFlow, h.Flow),
+		httpEncoder.String(fieldJa4h, h.Ja4H),
 	})
 }
 

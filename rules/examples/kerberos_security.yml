@@ -1,0 +1,61 @@
+# Kerberos Security Detection Rules
+# Detect Kerberoasting, AS-REP roasting, brute force, and user enumeration
+
+description: "Detection rules for Kerberos authentication attacks including Kerberoasting, AS-REP roasting, brute force, and Active Directory enumeration."
+
+rules:
+  # Kerberoasting - TGS-REP with RC4 encryption (etype 23)
+  # Attackers request service tickets with weak encryption to crack offline
+  - name: Kerberos TGS-REP with RC4 Encryption
+    description: TGS-REP using RC4 encryption detected, a common indicator of Kerberoasting attacks where service tickets are requested for offline cracking
+    type: Kerberos
+    expression: 'MessageTypeCode == 13 && EncryptionType == 23'
+    severity: high
+    mitre: ["T1558.003"]
+    tags: ["kerberos", "credential-access", "kerberoasting"]
+    enabled: true
+
+  # AS-REP Roasting - AS-REP without pre-authentication using RC4
+  # Accounts with "Do not require Kerberos preauthentication" are vulnerable
+  - name: Kerberos AS-REP with RC4 Encryption
+    description: AS-REP response with RC4 encryption detected, indicating an account without pre-authentication requirement that may be targeted for AS-REP roasting
+    type: Kerberos
+    expression: 'MessageTypeCode == 11 && EncryptionType == 23'
+    severity: high
+    mitre: ["T1558.004"]
+    tags: ["kerberos", "credential-access", "asrep-roasting"]
+    enabled: true
+
+  # KDC_ERR_PREAUTH_FAILED (error code 24) - brute force indicator
+  - name: Kerberos Pre-Authentication Failure Burst
+    description: Multiple Kerberos pre-authentication failures detected from the same source, indicating a potential brute force or password spraying attack
+    type: Kerberos
+    expression: 'MessageTypeCode == 30 && ErrorCode == 24'
+    severity: medium
+    mitre: ["T1110"]
+    tags: ["kerberos", "credential-access", "brute-force"]
+    enabled: true
+    threshold: 5
+    threshold_window: 60
+
+  # KDC_ERR_C_PRINCIPAL_UNKNOWN (error code 6) - user enumeration
+  - name: Kerberos User Enumeration
+    description: Multiple Kerberos principal-not-found errors detected, indicating Active Directory user enumeration via Kerberos
+    type: Kerberos
+    expression: 'MessageTypeCode == 30 && ErrorCode == 6'
+    severity: medium
+    mitre: ["T1087.002"]
+    tags: ["kerberos", "discovery", "user-enumeration"]
+    enabled: true
+    threshold: 10
+    threshold_window: 60
+
+  # Weak encryption types (DES or RC4) in any Kerberos exchange
+  - name: Kerberos Weak Encryption
+    description: Kerberos exchange using weak encryption (DES or RC4) which is vulnerable to offline cracking and downgrade attacks
+    type: Kerberos
+    expression: 'EncryptionType == 23 || EncryptionType == 3 || EncryptionType == 1'
+    severity: medium
+    mitre: ["T1557"]
+    tags: ["kerberos", "weak-crypto"]
+    enabled: true

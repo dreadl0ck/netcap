@@ -1,0 +1,161 @@
+# HTTP/2 and WebSocket Protocol Detection Rules
+# These rules detect modern HTTP protocols including HTTP/2 (h2, h2c) and WebSocket upgrades
+# Extracted from httpx analysis and ProjectDiscovery patterns
+
+description: "Detection rules for modern HTTP protocols including HTTP/2 (h2, h2c) via ALPN and upgrade headers, HTTP/3 (QUIC), and WebSocket connections. Includes detection of non-browser WebSocket usage which may indicate C2 communication."
+
+rules:
+  # ========================================
+  # HTTP/2 DETECTION
+  # ========================================
+
+  # HTTP/2 via ALPN (TLS)
+  - name: HTTP/2 ALPN Negotiation
+    description: Detect HTTP/2 protocol negotiation via TLS ALPN extension (h2, h2-16, h2-15, h2-14)
+    type: TLSClientHello
+    expression: (len(ALPNs) > 0 && MatchesPattern(ALPNs[0], "(?i)^h2(-\\d+)?$")) || (len(ALPNs) > 1 && MatchesPattern(ALPNs[1], "(?i)^h2(-\\d+)?$")) || (len(ALPNs) > 2 && MatchesPattern(ALPNs[2], "(?i)^h2(-\\d+)?$"))
+    severity: info
+    tags: ["protocol-detection", "http2", "modern", "alpn"]
+    enabled: true
+
+  # HTTP/2 Cleartext (h2c) via Upgrade header
+  - name: HTTP/2 Cleartext Upgrade Request
+    description: Detect HTTP/2 cleartext (h2c) upgrade attempt via HTTP/1.1 Upgrade header
+    type: HTTP
+    expression: MatchesPattern(RequestHeader["Upgrade"], "(?i)h2c") || (MatchesPattern(RequestHeader["Connection"], "(?i)Upgrade") && MatchesPattern(RequestHeader["HTTP2-Settings"], ".+"))
+    severity: info
+    tags: ["protocol-detection", "http2", "h2c", "cleartext"]
+    enabled: true
+
+  # HTTP/2 Upgrade Success
+  - name: HTTP/2 Cleartext Upgrade Response
+    description: Detect server accepting HTTP/2 cleartext upgrade (101 Switching Protocols)
+    type: HTTP
+    expression: StatusCode == 101 && MatchesPattern(ResponseHeader["Upgrade"], "(?i)h2c")
+    severity: info
+    tags: ["protocol-detection", "http2", "h2c", "upgrade-success"]
+    enabled: true
+
+  # ========================================
+  # HTTP/3 DETECTION
+  # ========================================
+
+  # HTTP/3 Detection via ALPN
+  - name: HTTP/3 ALPN Negotiation
+    description: Detect HTTP/3 (QUIC) protocol negotiation via TLS ALPN extension
+    type: TLSClientHello
+    expression: (len(ALPNs) > 0 && MatchesPattern(ALPNs[0], "(?i)^h3(-\\d+)?$")) || (len(ALPNs) > 1 && MatchesPattern(ALPNs[1], "(?i)^h3(-\\d+)?$")) || (len(ALPNs) > 2 && MatchesPattern(ALPNs[2], "(?i)^h3(-\\d+)?$"))
+    severity: info
+    tags: ["protocol-detection", "http3", "quic", "alpn"]
+    enabled: true
+
+  # Alt-Svc header indicating HTTP/3 support
+  - name: HTTP/3 Advertisement via Alt-Svc
+    description: Detect server advertising HTTP/3 support via Alt-Svc header
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Alt-Svc"], "(?i)h3=")
+    severity: info
+    tags: ["protocol-detection", "http3", "alt-svc"]
+    enabled: true
+
+  # ========================================
+  # WEBSOCKET DETECTION
+  # ========================================
+
+  # WebSocket Upgrade Request
+  - name: WebSocket Upgrade Request
+    description: Detect WebSocket connection upgrade request (Upgrade + Connection headers)
+    type: HTTP
+    expression: MatchesPattern(RequestHeader["Upgrade"], "(?i)websocket") && MatchesPattern(RequestHeader["Connection"], "(?i)Upgrade")
+    severity: info
+    tags: ["protocol-detection", "websocket", "upgrade-request"]
+    enabled: true
+
+  # WebSocket Upgrade Success
+  - name: WebSocket Upgrade Success
+    description: Detect successful WebSocket upgrade (101 Switching Protocols to WebSocket)
+    type: HTTP
+    expression: StatusCode == 101 && MatchesPattern(ResponseHeader["Upgrade"], "(?i)websocket")
+    severity: info
+    tags: ["protocol-detection", "websocket", "upgrade-success"]
+    enabled: true
+
+  # Secure WebSocket (wss://)
+  - name: Secure WebSocket Connection
+    description: Detect secure WebSocket (wss://) upgrade requests
+    type: HTTP
+    expression: MatchesPattern(RequestHeader["Upgrade"], "(?i)websocket") && MatchesPattern(RequestHeader["Connection"], "(?i)Upgrade")
+    severity: info
+    tags: ["protocol-detection", "websocket", "encrypted", "wss"]
+    enabled: true
+
+  # Suspicious WebSocket from Non-Browser
+  - name: Non-Browser WebSocket Connection
+    description: Detect WebSocket connections from non-browser user agents (potential C2 or automation)
+    type: HTTP
+    expression: MatchesPattern(RequestHeader["Upgrade"], "(?i)websocket") && !MatchesPattern(UserAgent, "(?i)(Mozilla|Chrome|Safari|Edge|Opera|Firefox)")
+    severity: medium
+    mitre: ["T1071.001", "T1573.002"]
+    tags: ["c2", "websocket", "suspicious", "non-browser"]
+    enabled: true
+
+  # WebSocket from Scripting/Automation Tools
+  - name: Automated WebSocket Connection
+    description: Detect WebSocket connections from known automation tools (curl, python, etc.)
+    type: HTTP
+    expression: MatchesPattern(RequestHeader["Upgrade"], "(?i)websocket") && MatchesPattern(UserAgent, "(?i)(python|curl|wget|Go-http-client|node-fetch|ws|websocket)")
+    severity: medium
+    mitre: ["T1071.001"]
+    tags: ["automation", "websocket", "suspicious"]
+    enabled: true
+
+  # ========================================
+  # PROTOCOL UPGRADE ANOMALIES
+  # ========================================
+
+  # HTTP Upgrade to Unknown Protocol
+  - name: HTTP Upgrade to Unknown Protocol
+    description: Detect HTTP Upgrade header with non-standard protocols (potential tunneling)
+    type: HTTP
+    expression: RequestHeader["Upgrade"] != "" && !MatchesPattern(RequestHeader["Upgrade"], "(?i)(websocket|h2c|TLS/1\\.)") && MatchesPattern(RequestHeader["Connection"], "(?i)Upgrade")
+    severity: medium
+    mitre: ["T1090", "T1572"]
+    tags: ["tunneling", "suspicious", "protocol-upgrade"]
+    enabled: true
+
+  # Unexpected Protocol Switch
+  - name: Unexpected Protocol Switch
+    description: Detect 101 Switching Protocols to unexpected protocols (not WebSocket/h2c)
+    type: HTTP
+    expression: StatusCode == 101 && ResponseHeader["Upgrade"] != "" && !MatchesPattern(ResponseHeader["Upgrade"], "(?i)(websocket|h2c)")
+    severity: medium
+    mitre: ["T1090", "T1572"]
+    tags: ["tunneling", "anomaly", "protocol-switch"]
+    enabled: true
+
+  # ========================================
+  # HTTP/2 PUSH & FEATURES
+  # ========================================
+
+  # Server Push Detection (via Link preload)
+  - name: HTTP/2 Server Push Advertisement
+    description: Detect HTTP/2 Server Push via Link header with preload
+    type: HTTP
+    expression: MatchesPattern(ResponseHeader["Link"], "(?i)rel=preload")
+    severity: info
+    tags: ["http2", "server-push", "performance"]
+    enabled: false  # Informational, high volume
+
+  # ========================================
+  # CLEARTEXT HTTP PROTOCOL UPGRADES
+  # ========================================
+
+  # Cleartext Protocol Upgrade Detection
+  - name: HTTP Protocol Upgrade Attempt
+    description: Detect HTTP protocol upgrade attempts (101 Switching Protocols or Upgrade header present)
+    type: HTTP
+    expression: StatusCode == 101 || RequestHeader["Upgrade"] != ""
+    severity: info
+    tags: ["protocol-upgrade", "protocol-switching"]
+    enabled: true
+

@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package resolvers
@@ -23,6 +29,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 )
@@ -72,8 +79,9 @@ func getServiceName(in string) string {
 // InitServiceDB initializes the ports to service names mapping.
 // TODO: include service names for other transport protocols
 func InitServiceDB() {
+	dbPath := filepath.Join(DataBaseFolderPath, "service-names-port-numbers.csv")
 	var (
-		f, err    = os.Open(filepath.Join(DataBaseFolderPath, "service-names-port-numbers.csv"))
+		f, err    = os.Open(dbPath)
 		csvReader = csv.NewReader(f)
 	)
 
@@ -186,20 +194,34 @@ func InitServiceDB() {
 		}
 	}
 
-	if !quiet {
-		resolverLog.Info("loaded TCP service records", zap.Int("total", len(tcpPortMap)))
-		resolverLog.Info("loaded UDP service records", zap.Int("total", len(udpPortMap)))
-	}
+	resolverLog.Info("loaded TCP service records",
+		zap.Int("total", len(tcpPortMap)),
+		zap.String("from", dbPath),
+	)
+	resolverLog.Info("loaded UDP service records",
+		zap.Int("total", len(udpPortMap)),
+		zap.String("from", dbPath),
+	)
 }
 
 // LookupServiceByPort looks up the service name associated with a given port and protocol.
 func LookupServiceByPort(port int, protocol string) string {
+	startTime := time.Now()
+	cacheHit := false
+	defer func() {
+		if perfTracker != nil {
+			perfTracker.RecordResolver("Service", time.Since(startTime), cacheHit)
+		}
+	}()
+
 	if protocol == "TCP" {
 		if res, ok := tcpPortMap[port]; ok {
+			cacheHit = true
 			return res.service
 		}
 	} else {
 		if res, ok := udpPortMap[port]; ok {
+			cacheHit = true
 			return res.service
 		}
 	}

@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io
@@ -21,19 +27,24 @@ import (
 	"log"
 	"os"
 	"path"
+	"reflect"
 	"runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/evilsocket/islazy/tui"
+	"github.com/expr-lang/expr"
+
+	"github.com/dreadl0ck/netcap/internal/table"
+	"github.com/expr-lang/expr/vm"
 	"github.com/gogo/protobuf/proto"
 	"github.com/mgutz/ansi"
 	"github.com/namsral/flag"
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -42,7 +53,7 @@ const newline = "\n"
 
 var errMissingInterface = errors.New("type does not implement the types.AuditRecord interface")
 
-var logo = `                       / |
+var logoTemplate = `                       / |
  _______    ______   _10 |_     _______   ______    ______
 /     / \  /    / \ / 01/  |   /     / | /    / \  /    / \
 0010100 /|/011010 /|101010/   /0101010/  001010  |/100110  |
@@ -53,7 +64,9 @@ var logo = `                       / |
                                                   00 |
 Network Protocol Analysis Framework               00 |
 created by Philipp Mieden, 2018                   00/
-` + netcap.Version
+`
+
+var logo = logoTemplate + netcap.Version + " - " + dpi.GetVersionInfo()
 
 // PrintLogo prints the netcap logo.
 func PrintLogo() {
@@ -78,12 +91,26 @@ func FPrintBuildInfo(w io.Writer) {
 	_, _ = fmt.Fprintln(w, "> NETCAP build commit:", netcap.Commit)
 	_, _ = fmt.Fprintln(w, "> go runtime version:", runtime.Version())
 	_, _ = fmt.Fprintln(w, "> number of cores:", runtime.NumCPU(), "cores")
+	_, _ = fmt.Fprintln(w, ">", dpi.GetVersionInfo())
 
 	b, ok := debug.ReadBuildInfo()
 	if ok {
 		for _, d := range b.Deps {
 			if path.Base(d.Path) == "gopacket" {
-				_, _ = fmt.Fprintln(w, "> gopacket:", d.Path, "version:", d.Version)
+				version := d.Version
+				// Use hardcoded version if build info shows "(devel)"
+				if version == "(devel)" {
+					version = netcap.GopacketVersion
+				}
+				_, _ = fmt.Fprintln(w, "> gopacket:", d.Path, "version:", version)
+			}
+			if path.Base(d.Path) == "go-dpi" && dpi.HasDPISupport() {
+				version := d.Version
+				// Use hardcoded version if build info shows "(devel)"
+				if version == "(devel)" {
+					version = dpi.GoDPIVersion
+				}
+				_, _ = fmt.Fprintln(w, "> go-dpi:", d.Path, "version:", version)
 			}
 		}
 	}
@@ -95,6 +122,7 @@ type DumpConfig struct {
 	Path          string
 	Separator     string
 	Selection     string
+	FilterProgram *vm.Program
 	MemBufferSize int
 	JSON          bool
 	Table         bool
@@ -110,9 +138,10 @@ type DumpConfig struct {
 // and dumps the output according to the configuration to the specified *io.File.
 func Dump(w *os.File, c DumpConfig) error {
 	var (
-		isTTY  = terminal.IsTerminal(int(w.Fd())) || c.ForceColors
-		count  = 0
-		r, err = Open(c.Path, c.MemBufferSize)
+		isTTY         = terminal.IsTerminal(int(w.Fd())) || c.ForceColors
+		count         = 0
+		filteredCount = 0
+		r, err        = Open(c.Path, c.MemBufferSize)
 	)
 
 	if err != nil {
@@ -174,6 +203,19 @@ func Dump(w *os.File, c DumpConfig) error {
 
 		if p, ok := record.(types.AuditRecord); ok {
 
+			// Apply filter if configured
+			if c.FilterProgram != nil {
+				match, errEval := evaluateFilter(c.FilterProgram, p)
+				if errEval != nil {
+					log.Printf("warning: filter evaluation error: %v\n", errEval)
+					continue
+				}
+				if !match {
+					continue
+				}
+			}
+			filteredCount++
+
 			// JSON
 			if c.JSON {
 				marshaled, errMarshal := json.Marshal(p)
@@ -192,7 +234,7 @@ func Dump(w *os.File, c DumpConfig) error {
 				rows = append(rows, p.CSVRecord())
 
 				if count%100 == 0 {
-					tui.Table(w, p.CSVHeader(), rows)
+					table.Render(w, p.CSVHeader(), rows)
 					rows = [][]string{}
 				}
 
@@ -228,7 +270,7 @@ func Dump(w *os.File, c DumpConfig) error {
 	// in table mode: dump remaining
 	if c.Table {
 		if p, ok := record.(types.AuditRecord); ok {
-			tui.Table(w, p.CSVHeader(), rows)
+			table.Render(w, p.CSVHeader(), rows)
 			fmt.Println()
 		} else {
 			return fmt.Errorf("type does not implement the types.AuditRecord interface: %#v", record)
@@ -237,10 +279,61 @@ func Dump(w *os.File, c DumpConfig) error {
 
 	// print number of records when dumping structured
 	if c.Structured || c.Table {
-		_, _ = w.WriteString(strconv.Itoa(count) + " records.\n")
+		if c.FilterProgram != nil {
+			_, _ = w.WriteString(strconv.Itoa(filteredCount) + " records (filtered from " + strconv.Itoa(count) + " total).\n")
+		} else {
+			_, _ = w.WriteString(strconv.Itoa(count) + " records.\n")
+		}
 	}
 
 	return nil
+}
+
+// evaluateFilter evaluates a filter expression against an audit record.
+// This is a simplified version that avoids importing the filter package to prevent import cycles.
+func evaluateFilter(program *vm.Program, record types.AuditRecord) (bool, error) {
+	if program == nil {
+		return true, nil // No filter means all records pass
+	}
+
+	// Create environment from record fields using reflection
+	env := make(map[string]any)
+
+	protoMsg, ok := record.(proto.Message)
+	if !ok {
+		return false, fmt.Errorf("record does not implement proto.Message")
+	}
+
+	v := reflect.ValueOf(protoMsg)
+	if v.Kind() == reflect.Pointer {
+		v = v.Elem()
+	}
+
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		fieldValue := v.Field(i)
+
+		// Skip unexported fields
+		if !fieldValue.CanInterface() {
+			continue
+		}
+
+		// Add the field to the environment
+		env[field.Name] = fieldValue.Interface()
+	}
+
+	result, err := expr.Run(program, env)
+	if err != nil {
+		return false, fmt.Errorf("failed to evaluate expression: %w", err)
+	}
+
+	match, ok := result.(bool)
+	if !ok {
+		return false, fmt.Errorf("expression did not return a boolean value: got %T", result)
+	}
+
+	return match, nil
 }
 
 // GenerateConfig generates a default configuration for the given flag set.
@@ -303,7 +396,7 @@ func colorizeProto(in string, colorMap map[string]string, c *DumpConfig) string 
 		}
 	}
 
-	for _, line := range strings.Split(in, newline) {
+	for line := range strings.SplitSeq(in, newline) {
 		if line == "" {
 			continue
 		}

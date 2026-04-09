@@ -37,34 +37,34 @@ func toEmails() {
 
 			ent := addEntityWithPath(trx, "netcap.Email", buf.String(), path)
 
-			var attachments string
+			var attachments strings.Builder
 			for _, p := range m.Body {
 				cType := p.Header["Content-Type"]
 				if cType != "" && strings.Contains(p.Header["Content-Disposition"], "attachment") {
-					attachments += "<br>Attachment Content Type: " + cType + "<br>"
-					attachments += "Filename: " + p.Filename + "<br><br>"
+					attachments.WriteString("<br>Attachment Content Type: " + cType + "<br>")
+					attachments.WriteString("Filename: " + p.Filename + "<br><br>")
 					if p.Content != "" && p.Content != "\n" {
-						attachments += p.Content + "<br>"
+						attachments.WriteString(p.Content + "<br>")
 					}
 				}
 			}
 
-			var body string
+			var body strings.Builder
 			for _, p := range m.Body {
 				cType := p.Header["Content-Type"]
 				if strings.Contains(cType, "text/plain") || cType == "" {
-					body += p.Content + "\n"
+					body.WriteString(p.Content + "\n")
 				}
 			}
 
 			// escape XML
 			buf.Reset()
-			err = xml.EscapeText(&buf, []byte(body))
+			err = xml.EscapeText(&buf, []byte(body.String()))
 			if err != nil {
 				fmt.Println(err)
 			}
 
-			di := "<h3>EMail: " + m.Subject + "</h3><p>Timestamp First: " + utils.UnixTimeToUTC(m.Timestamp) + "</p><p>From: " + m.From + "</p><p>To: " + m.To + "</p><p>Text: " + buf.String() + "</p><p>Additional parts: " + attachments + "</p>"
+			di := "<h3>EMail: " + m.Subject + "</h3><p>Timestamp First: " + utils.UnixTimeToUTC(m.Timestamp) + "</p><p>From: " + m.From + "</p><p>To: " + m.To + "</p><p>Text: " + buf.String() + "</p><p>Additional parts: " + attachments.String() + "</p>"
 			ent.AddDisplayInformation(di, "Netcap Info")
 		},
 	)

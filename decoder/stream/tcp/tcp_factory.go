@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package tcp
@@ -16,8 +22,8 @@ package tcp
 import (
 	"sync"
 
-	"github.com/dreadl0ck/gopacket"
-	"github.com/dreadl0ck/gopacket/ip4defrag"
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/ip4defrag"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/reassembly"
@@ -35,6 +41,78 @@ func newStreamFactory() *connectionFactory {
 	f.StreamPool = reassembly.NewStreamPool(f)
 
 	return f
+}
+
+// CloseStreamReaderChannelsAndWait closes all TCP stream reader channels and waits for goroutines to finish.
+// This MUST be called BEFORE closing log files to avoid write errors.
+// CRITICAL: Each TCP connection spawns 2 goroutines (client + server) that run tcpStreamReader.Run()
+// These goroutines must be properly shut down before log files are closed.
+func CloseStreamReaderChannelsAndWait() {
+	closeStreamReaderChannelsAndWaitInternal(true)
+}
+
+// CloseStreamReaderChannelsAndWaitQuiet is like CloseStreamReaderChannelsAndWait but doesn't log.
+// Use this when log files may already be closed (e.g., between multi-file processing).
+func CloseStreamReaderChannelsAndWaitQuiet() {
+	closeStreamReaderChannelsAndWaitInternal(false)
+}
+
+// closeStreamReaderChannelsAndWaitInternal implements the actual cleanup logic.
+func closeStreamReaderChannelsAndWaitInternal(doLog bool) {
+	if StreamFactory == nil {
+		return
+	}
+
+	// Close all dataChan channels to signal EOF and let goroutines exit
+	StreamFactory.Lock()
+	for _, reader := range StreamFactory.streamReaders {
+		if reader != nil && reader.DataChan() != nil {
+			// Close the dataChan to send EOF to the reading goroutine
+			// Use defer/recover to handle potential double-close panics safely
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						// Channel already closed or closing caused panic - that's OK
+						if doLog {
+							reassemblyLog.Debug("dataChan close panic (expected if already closed)", zap.Any("recover", r))
+						}
+					}
+				}()
+				close(reader.DataChan())
+			}()
+		}
+	}
+	StreamFactory.Unlock()
+
+	// Now wait for all goroutines to finish
+	// This will block until all tcpStreamReader.Run() goroutines have exited
+	// and called Cleanup() which does wg.Done()
+	if doLog {
+		StreamFactory.Lock()
+		reassemblyLog.Info("waiting for last TCP streams to process", zap.Int64("num", StreamFactory.numActive))
+		StreamFactory.Unlock()
+	}
+	StreamFactory.wg.Wait()
+}
+
+// ResetStreamFactory creates a new stream factory to clear all stream state.
+// This should be called when resetting state between processing different files.
+// CRITICAL: This explicitly resets the old StreamPool to release backing arrays
+// before creating a new factory, preventing memory leaks.
+func ResetStreamFactory() {
+	if StreamFactory != nil {
+		// Explicitly reset the old pool to clear its backing arrays
+		// This is CRITICAL to prevent the StreamPool.all slice from accumulating
+		// across multiple file processing runs
+		if StreamFactory.StreamPool != nil {
+			StreamFactory.StreamPool.Reset()
+			StreamFactory.StreamPool = nil
+		}
+		StreamFactory = nil
+	}
+
+	// Create completely fresh factory with new pool
+	StreamFactory = newStreamFactory()
 }
 
 // GetStreamPool returns the stream pool.

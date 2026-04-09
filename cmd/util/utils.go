@@ -1,14 +1,20 @@
 /*
  * NETCAP - Traffic Analysis Framework
- * Copyright (c) 2017-2020 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
  *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package util
@@ -35,20 +41,15 @@ func printHeader() {
 	fmt.Println("	$ net util -ts2utc 1505839354.197231")
 	fmt.Println("	$ net util -download-geolite")
 	fmt.Println("	$ net util -update-dbs")
-	fmt.Println("	$ net util -clone-dbs")
+	fmt.Println("	$ net util -gopacket-coverage")
+	fmt.Println("	$ net util -decoders")
 	fmt.Println()
-}
-
-// usage prints the use.
-func printUsage() {
-	printHeader()
-	fs.PrintDefaults()
 }
 
 // CheckFields checks if the separator occurs inside fields of audit records
 // to prevent this breaking the generated CSV file.
 func checkFields() {
-	r, err := io.Open(*flagInput, *flagMemBufferSize)
+	r, err := io.Open(currentCtx.String("read"), currentCtx.Int("membuf-size"))
 	if err != nil {
 		panic(err)
 	}
@@ -98,7 +99,7 @@ func checkFields() {
 				// bail out and print error if field count does not match
 				if len(p.CSVRecord()) != numStructFields { // print all struct fields
 					fmt.Println(h.Type.String() + " struct fields:")
-					for i := 0; i < numStructFields; i++ {
+					for i := range numStructFields {
 						fmt.Println("- " + reflectedValue.Type().Field(i).Name)
 					}
 
@@ -112,7 +113,7 @@ func checkFields() {
 			}
 
 			// check if all fields are in the right order and have the correct name
-			for i := 0; i < numStructFields; i++ {
+			for i := range numStructFields {
 				if allFieldNames[i] != reflectedValue.Type().Field(i).Name {
 					log.Fatal("[ERROR] different field names: ", allFieldNames[i], " and ", reflectedValue.Type().Field(i).Name)
 				}
@@ -132,16 +133,18 @@ func checkFields() {
 
 	// call netcap and parse output line by line
 	// TODO refactor to use netcap lib to read file instead of calling it as command
-	out, err := exec.Command("net.capture", "-r", *flagInput).Output()
+	out, err := exec.Command("net.capture", "-r", currentCtx.String("read")).Output()
 	if err != nil {
 		panic(err)
 	}
 
+	flagSeparator := currentCtx.String("sep")
+
 	// iterate over lines
-	for _, line := range strings.Split(string(out), "\n") {
-		count := strings.Count(line, *flagSeparator)
+	for line := range strings.SplitSeq(string(out), "\n") {
+		count := strings.Count(line, flagSeparator)
 		if count != numExpectedFields-1 {
-			fmt.Println(strings.Replace(line, *flagSeparator, ansi.Red+*flagSeparator+ansi.Reset, -1), ansi.Red, count, ansi.Reset)
+			fmt.Println(strings.Replace(line, flagSeparator, ansi.Red+flagSeparator+ansi.Reset, -1), ansi.Red, count, ansi.Reset)
 		}
 	}
 }
