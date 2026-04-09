@@ -20,11 +20,11 @@
 package resolvers
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -113,10 +113,10 @@ func initAsnReader() (err error) {
 func (record geoRecord) repr() (geoloc, asn string) {
 	geoloc = record.Country.ISOCode
 	if city, ok := record.City.Names["en"]; ok {
-		geoloc += fmt.Sprintf(" (%s)", city)
+		geoloc += " (" + city + ")"
 	}
 	if record.ASN.Number > 0 {
-		asn = fmt.Sprintf("ASN %d (%s)", record.ASN.Number, record.ASN.Organization)
+		asn = "ASN " + strconv.FormatInt(record.ASN.Number, 10) + " (" + record.ASN.Organization + ")"
 	}
 	return
 }

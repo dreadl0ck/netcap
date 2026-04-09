@@ -28,6 +28,10 @@
 | TCP flow .String() caching in decode() | DONE | `go build` |
 | MAC OUI: normalize at insert, direct hex parse | DONE | `go build`, `go test ./resolvers/` |
 | Replace deprecated ioutil → io/os | DONE | `go build`, `go test ./io/` |
+| Cache reflect.TypeOf().String() in TCP decoder | DONE | `go build` |
+| Replace deprecated ioutil in HTTP decoder | DONE | `go build` |
+| GeoIP repr(): replace fmt.Sprintf with concat | DONE | `go build` |
+| DNS: RWMutex for read path (RLock on cache hit) | DONE | `go build`, `go test ./resolvers/` |
 
 ---
 

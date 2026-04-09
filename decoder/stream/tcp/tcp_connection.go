@@ -502,16 +502,17 @@ func (t *tcpConnection) decode() {
 	// call the decoder if one was found
 	if t.decoder != nil {
 		ti := time.Now()
+		decoderTypeName := reflect.TypeOf(t.decoder).String()
 
 		reassemblyLog.Info("Calling decoder.Decode()",
 			zap.String("ident", t.ident),
-			zap.String("decoderType", reflect.TypeOf(t.decoder).String()),
+			zap.String("decoderType", decoderTypeName),
 		)
 
 		// call the associated decoder
 		t.decoder.Decode()
 
-		tcpStreamDecodeTime.WithLabelValues(reflect.TypeOf(t.decoder).String()).Set(float64(time.Since(ti).Nanoseconds()))
+		tcpStreamDecodeTime.WithLabelValues(decoderTypeName).Set(float64(time.Since(ti).Nanoseconds()))
 
 		reassemblyLog.Info("Decoder.Decode() completed",
 			zap.String("ident", t.ident),

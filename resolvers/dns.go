@@ -38,7 +38,7 @@ const (
 var (
 	timeout           = 2 * time.Second // reduced from 10s to avoid blocking workers
 	dnsNamesDB        = make(map[string][]string)
-	dnsNamesMu        sync.Mutex
+	dnsNamesMu        sync.RWMutex
 	privateIPBlocks   []*net.IPNet
 	disableReverseDNS = true
 )
@@ -117,10 +117,10 @@ func LookupDNSNames(ip string) []string {
 		return nil
 	}
 
-	// check if ip has already been resolved
-	dnsNamesMu.Lock()
+	// check if ip has already been resolved (RLock for concurrent reads)
+	dnsNamesMu.RLock()
 	if res, ok := dnsNamesDB[ip]; ok {
-		dnsNamesMu.Unlock()
+		dnsNamesMu.RUnlock()
 
 		// Record cache hit
 		if perfTracker != nil {
@@ -129,7 +129,7 @@ func LookupDNSNames(ip string) []string {
 
 		return res
 	}
-	dnsNamesMu.Unlock()
+	dnsNamesMu.RUnlock()
 
 	// resolve
 	ctx, cancelCtx := context.WithTimeout(context.TODO(), timeout)

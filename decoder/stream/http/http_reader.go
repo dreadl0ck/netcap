@@ -24,7 +24,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"path"
 	"slices"
@@ -294,7 +293,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 		return err
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	s := len(body)
 	if err != nil {
 		httpLog.Debug(
@@ -307,7 +306,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 		_ = res.Body.Close()
 
 		// Restore body so it can be read again
-		res.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		res.Body = io.NopCloser(bytes.NewBuffer(body))
 	}
 	//if h.parent.hexdump {
 	//	logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
@@ -438,7 +437,7 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 		return err
 	}
 
-	body, err := ioutil.ReadAll(req.Body)
+	body, err := io.ReadAll(req.Body)
 	s := len(body)
 	if err != nil {
 		httpLog.Error(
@@ -452,7 +451,7 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 		_ = req.Body.Close()
 
 		// Restore body so it can be read again
-		req.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		req.Body = io.NopCloser(bytes.NewBuffer(body))
 	}
 	//if h.tcpStreamReader.hexdump {
 	//	logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
