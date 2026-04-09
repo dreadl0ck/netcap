@@ -71,8 +71,9 @@ var (
 	reURL = regexp.MustCompile(`https?://[^\s<>"]+`)
 
 	// Email address pattern
-	reEmailAddr   = regexp.MustCompile(`<([^>]+)>`)
-	reEmailDomain = regexp.MustCompile(`@([^\s>]+)`)
+	reEmailAddr       = regexp.MustCompile(`<([^>]+)>`)
+	reEmailDomain     = regexp.MustCompile(`@([^\s>]+)`)
+	reDKIMSigDomain   = regexp.MustCompile(`d=([^\s;]+)`)
 
 	// Urgency keywords
 	urgencyKeywords = []string{
@@ -203,7 +204,7 @@ func parseAuthenticationResults(headers map[string]string, analysis *MailSecurit
 
 	if dkim := headers["DKIM-Signature"]; dkim != "" && analysis.DKIMDomain == "" {
 		// Extract domain from DKIM-Signature header
-		if matches := regexp.MustCompile(`d=([^\s;]+)`).FindStringSubmatch(dkim); len(matches) > 1 {
+		if matches := reDKIMSigDomain.FindStringSubmatch(dkim); len(matches) > 1 {
 			analysis.DKIMDomain = matches[1]
 		}
 	}

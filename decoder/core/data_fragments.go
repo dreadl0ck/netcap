@@ -46,9 +46,13 @@ func (d DataFragments) bytes() []byte {
 	return b.Bytes()
 }
 
-// TODO: implement a read that does not duplicate the data, but instead iterates over the fragments when being read from
+// reader returns a reader that iterates over the fragments without copying data.
 func (d DataFragments) reader() io.Reader {
-	return bytes.NewReader(d.bytes())
+	readers := make([]io.Reader, len(d))
+	for i, dt := range d {
+		readers[i] = bytes.NewReader(dt.Raw())
+	}
+	return io.MultiReader(readers...)
 }
 
 // First returns the first fragment.

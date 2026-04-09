@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -37,6 +38,8 @@ import (
 
 // csvWriter is a structure that supports writing CSV audit records to disk.
 type csvWriter struct {
+	mu sync.Mutex
+
 	bWriter   *bufio.Writer
 	gWriter   *pgzip.Writer
 	csvWriter *csvProtoWriter
@@ -104,6 +107,9 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 
 // WriteCSV writes a CSV record.
 func (w *csvWriter) Write(msg proto.Message) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	// Track disk I/O performance
 	if w.wc.PerfTracker != nil {
 		start := time.Now()
@@ -124,6 +130,8 @@ func (w *csvWriter) Write(msg proto.Message) error {
 
 // WriteHeader writes a CSV header.
 func (w *csvWriter) WriteHeader(t types.Type) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 
 	_, err := w.csvWriter.writeHeader(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime), InitRecord(t))
 
@@ -133,6 +141,9 @@ func (w *csvWriter) WriteHeader(t types.Type) error {
 // Flush flushes any buffered data to disk without closing the writer.
 // This is used during live capture to make audit records visible periodically.
 func (w *csvWriter) Flush() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
 	// Flush the buffered writer
 	if w.wc.Buffer && w.bWriter != nil {
 		if err := w.bWriter.Flush(); err != nil {
@@ -159,6 +170,8 @@ func (w *csvWriter) Flush() error {
 
 // Close flushes and closes the writer and the associated file handles.
 func (w *csvWriter) Close(numRecords int64) (name string, size int64) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 
 	if w.wc.Buffer {
 		flushWriters(w.bWriter)

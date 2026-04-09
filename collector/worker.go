@@ -21,6 +21,7 @@ package collector
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/gopacket/gopacket"
@@ -31,6 +32,11 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
+
+// packetContextPool reuses PacketContext objects to reduce GC pressure.
+var packetContextPool = sync.Pool{
+	New: func() any { return &types.PacketContext{} },
+}
 
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
@@ -73,8 +79,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				c.perfTracker.RecordReassembly(duration)
 			}
 
-			// create context for packet
-			ctx := &types.PacketContext{}
+			// create context for packet (reuse from pool to reduce GC pressure)
+			ctx := packetContextPool.Get().(*types.PacketContext)
+			*ctx = types.PacketContext{}
 
 			// Always calculate Community ID v1 for cross-tool correlation
 			ctx.CommunityID = packet.CalcCommunityID(pkt)
@@ -201,6 +208,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			}
 
 			c.wg.Done()
+
+			// Return PacketContext to pool for reuse
+			packetContextPool.Put(ctx)
 
 			// If using pool mode, dispose of the packet to return it to the pool
 			// This must be done after all packet processing is complete

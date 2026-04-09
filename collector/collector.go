@@ -96,7 +96,7 @@ type Collector struct {
 	streamDecoders           []core.StreamDecoderAPI
 	abstractDecoders         []core.DecoderAPI
 	progressString           string
-	next                     int
+	next                     atomic.Int64
 	unkownPcapWriterAtomic   *atomicPcapGoWriter
 	unknownPcapFile          *os.File
 	errorsPcapWriterBuffered *bufio.Writer
@@ -371,8 +371,7 @@ func New(config Config) *Collector {
 		config.OutDirPermission = defaults.DirectoryPermission
 	}
 
-	return &Collector{
-		next:                1,
+	c := &Collector{
 		unknownProtosAtomic: decoderutils.NewAtomicCounterMap(),
 		allProtosAtomic:     decoderutils.NewAtomicCounterMap(),
 		errorMap:            decoderutils.NewAtomicCounterMap(),
@@ -384,6 +383,9 @@ func New(config Config) *Collector {
 		statsInterval:       5 * time.Second,
 		perfTracker:         performance.NewTracker(),
 	}
+	c.next.Store(1)
+
+	return c
 }
 
 // recoverFromPanic handles panic recovery, logs the panic to netcap.log, and triggers cleanup.
@@ -604,10 +606,9 @@ func (c *Collector) getSymmetricWorkerIndex(p gopacket.Packet) int {
 		if ll := p.LinkLayer(); ll != nil {
 			hash = hashFlow(ll.LinkFlow().Src().Raw(), ll.LinkFlow().Dst().Raw())
 		} else {
-			// Round robin fallback
-			idx := c.next
-			c.next = (c.next + 1) % c.numWorkers
-			return idx
+			// Round robin fallback (atomic to avoid races)
+			idx := c.next.Add(1) - 1
+			return int(idx % int64(c.numWorkers))
 		}
 	}
 

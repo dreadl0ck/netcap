@@ -214,6 +214,8 @@ func (w *elasticWriter) Flush() error {
 
 // Close flushes and closes the writer and the associated file handles.
 func (w *elasticWriter) Close(_ int64) (name string, size int64) {
+	w.Lock()
+	defer w.Unlock()
 
 	ioLog.Info("closing elastic writer", zap.String("index", w.indexName))
 

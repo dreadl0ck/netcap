@@ -6,6 +6,21 @@
 
 ---
 
+## Implementation Status
+
+| Fix | Status | Verified |
+|-----|--------|----------|
+| CSV writer missing mutex | DONE | `go build`, `go test ./io/`, `go vet` |
+| Elastic `sendBulk()` race in `Close()` | DONE | `go build`, `go vet` |
+| Round-robin counter race (atomic) | DONE | `go build`, `go vet` |
+| `sync.Pool` for PacketContext | DONE | `go build`, `go vet` |
+| DataFragments `reader()` → `io.MultiReader` | DONE | `go build` |
+| Regex compiled in loop (mail) | DONE | `go build` |
+| CIDR blocks pre-parsed at init (filter) | DONE | `go build`, `go test ./internal/filter/` |
+| Filter regex cache (`MatchesPattern`) | DONE | `go build`, `go test ./internal/filter/` |
+
+---
+
 ## Table of Contents
 
 1. [Executive Summary](#1-executive-summary)
