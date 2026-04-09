@@ -27,6 +27,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/mqttsn"
 	"github.com/dreadl0ck/netcap/decoder/stream/opcua"
 	"github.com/dreadl0ck/netcap/decoder/stream/pop3"
+	"github.com/dreadl0ck/netcap/decoder/stream/protobuf"
 	"github.com/dreadl0ck/netcap/decoder/stream/profinet"
 	"github.com/dreadl0ck/netcap/decoder/stream/quic"
 	"github.com/dreadl0ck/netcap/decoder/stream/rdp"
@@ -94,6 +95,8 @@ var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
 	631:   ipp.Decoder,           // IPP printing
 	10050: zabbix.Decoder,        // Zabbix agent
 	10051: zabbix.Decoder,        // Zabbix server
+	9090:  protobuf.Decoder,      // Generic protobuf/gRPC
+	50051: protobuf.Decoder,      // gRPC default port
 } // contains all available stream decoders
 
 // UDPStreamDecoders contains additional stream decoders specifically for UDP protocols.
