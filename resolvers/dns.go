@@ -29,8 +29,14 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	// maxDNSCacheSize is the maximum number of entries in the DNS cache.
+	// When exceeded, the cache is cleared to prevent unbounded memory growth.
+	maxDNSCacheSize = 100000
+)
+
 var (
-	timeout           = 10 * time.Second
+	timeout           = 2 * time.Second // reduced from 10s to avoid blocking workers
 	dnsNamesDB        = make(map[string][]string)
 	dnsNamesMu        sync.Mutex
 	privateIPBlocks   []*net.IPNet
@@ -138,6 +144,10 @@ func LookupDNSNames(ip string) []string {
 
 	// add to DB
 	dnsNamesMu.Lock()
+	// evict cache if it grows too large to prevent unbounded memory usage
+	if len(dnsNamesDB) >= maxDNSCacheSize {
+		dnsNamesDB = make(map[string][]string, maxDNSCacheSize/2)
+	}
 	dnsNamesDB[ip] = names
 	dnsNamesMu.Unlock()
 

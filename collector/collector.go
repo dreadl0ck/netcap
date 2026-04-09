@@ -371,6 +371,10 @@ func New(config Config) *Collector {
 		config.OutDirPermission = defaults.DirectoryPermission
 	}
 
+	if config.Workers <= 0 {
+		config.Workers = defaultWorkers()
+	}
+
 	c := &Collector{
 		unknownProtosAtomic: decoderutils.NewAtomicCounterMap(),
 		allProtosAtomic:     decoderutils.NewAtomicCounterMap(),

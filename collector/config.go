@@ -21,6 +21,7 @@ package collector
 
 import (
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/gopacket/gopacket/pcap"
@@ -33,12 +34,21 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
+// defaultWorkers returns a CPU-proportional worker count.
+func defaultWorkers() int {
+	n := runtime.NumCPU() * 4
+	if n < 4 {
+		n = 4
+	}
+	return n
+}
+
 // DefaultConfig is a sane example configuration.
 //
 //goland:noinspection GoUnusedGlobalVariable,GoUnnecessarilyExportedIdentifiers
 var DefaultConfig = Config{
-	Workers:             1000,
-	PacketBufferSize:    100,
+	Workers:             0, // 0 means use defaultWorkers() at init time
+	PacketBufferSize:    1000,
 	WriteUnknownPackets: false,
 	Promisc:             false,
 	SnapLen:             defaults.SnapLen,
@@ -55,8 +65,8 @@ var DefaultConfig = Config{
 //
 //goland:noinspection GoUnusedGlobalVariable,GoUnnecessarilyExportedIdentifiers
 var DefaultConfigDPI = Config{
-	Workers:             1000,
-	PacketBufferSize:    100,
+	Workers:             0, // 0 means use defaultWorkers() at init time
+	PacketBufferSize:    1000,
 	WriteUnknownPackets: false,
 	Promisc:             false,
 	SnapLen:             defaults.SnapLen,

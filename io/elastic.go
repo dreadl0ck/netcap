@@ -452,15 +452,22 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 		return nil
 	}
 
-	for {
+	const maxRetries = 5
+
+	for attempt := range maxRetries {
 		// send off the bulk data
 		res, err := w.client.Bulk(bytes.NewReader(w.buf.Bytes()), w.client.Bulk.WithIndex(w.indexName))
 		if err != nil {
+			// exponential backoff: 500ms, 1s, 2s, 4s, 8s
+			dur := time.Duration(500<<uint(attempt)) * time.Millisecond
 
-			// network error - wait a little and retry
-			dur := 500 * time.Millisecond
-
-			fmt.Println("failure indexing batch:", err, "will sleep for", dur, "and retry")
+			ioLog.Warn("failure indexing batch, retrying",
+				zap.Error(err),
+				zap.Int("attempt", attempt+1),
+				zap.Int("maxRetries", maxRetries),
+				zap.Duration("backoff", dur),
+				zap.String("index", w.indexName),
+			)
 			time.Sleep(dur)
 
 			continue
@@ -531,11 +538,17 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 		)
 		w.buf.Reset()
 
-		// exit loop on success
-		break
+		return nil
 	}
 
-	return nil
+	// All retries exhausted — drop batch and return error
+	ioLog.Error("elastic bulk send failed after all retries, dropping batch",
+		zap.Int("maxRetries", maxRetries),
+		zap.String("index", w.indexName),
+	)
+	w.buf.Reset()
+
+	return fmt.Errorf("%w: all %d retries exhausted for index %s", errElasticFailed, maxRetries, w.indexName)
 }
 
 // JSON properties for elastic indices.

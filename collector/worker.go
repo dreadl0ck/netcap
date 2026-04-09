@@ -108,21 +108,24 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			// iterate over all layers
 			for _, layer = range pkt.Layers() {
 
+				// cache the layer type string to avoid repeated String() allocations
+				layerTypeStr := layer.LayerType().String()
+
 				// increment counter for layer type
-				c.allProtosAtomic.Inc(layer.LayerType().String())
+				c.allProtosAtomic.Inc(layerTypeStr)
 
 				if c.config.DecoderConfig.ExportMetrics {
-					allProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
+					allProtosTotal.WithLabelValues(layerTypeStr).Inc()
 				}
 
 				// check if packet contains an unknown layer
 				switch layer.LayerType() {
 				case gopacket.LayerTypeZero: // not known to gopacket
 					// increase counter
-					c.unknownProtosAtomic.Inc(layer.LayerType().String())
+					c.unknownProtosAtomic.Inc(layerTypeStr)
 
 					if c.config.DecoderConfig.ExportMetrics {
-						unknownProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
+						unknownProtosTotal.WithLabelValues(layerTypeStr).Inc()
 					}
 
 					// write to unknown.pcap file
@@ -143,14 +146,14 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 						t := time.Now()
 						err = dec.Decode(ctx, pkt, layer)
 						duration := time.Since(t)
-						gopacketDecoderTime.WithLabelValues(layer.LayerType().String()).Set(float64(duration.Nanoseconds()))
-						c.perfTracker.RecordGoPacketDecoder(layer.LayerType().String(), duration)
+						gopacketDecoderTime.WithLabelValues(layerTypeStr).Set(float64(duration.Nanoseconds()))
+						c.perfTracker.RecordGoPacketDecoder(layerTypeStr, duration)
 						if err != nil {
 							if c.config.DecoderConfig.ExportMetrics {
-								decodingErrorsTotal.WithLabelValues(layer.LayerType().String(), err.Error()).Inc()
+								decodingErrorsTotal.WithLabelValues(layerTypeStr, err.Error()).Inc()
 							}
 
-							if err = c.logPacketError(pkt, "GoPacketDecoder Error: "+layer.LayerType().String()+": "+err.Error()); err != nil {
+							if err = c.logPacketError(pkt, "GoPacketDecoder Error: "+layerTypeStr+": "+err.Error()); err != nil {
 								fmt.Println("failed to log packet error:", err)
 							}
 
@@ -160,9 +163,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				} else { // no netcap decoder implemented
 
 					// increment unknown layer type counter
-					c.unknownProtosAtomic.Inc(layer.LayerType().String())
+					c.unknownProtosAtomic.Inc(layerTypeStr)
 					if c.config.DecoderConfig.ExportMetrics {
-						unknownProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
+						unknownProtosTotal.WithLabelValues(layerTypeStr).Inc()
 					}
 
 					// if its not a payload layer, write to unknown .pcap file

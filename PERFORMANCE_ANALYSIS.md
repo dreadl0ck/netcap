@@ -18,6 +18,12 @@
 | Regex compiled in loop (mail) | DONE | `go build` |
 | CIDR blocks pre-parsed at init (filter) | DONE | `go build`, `go test ./internal/filter/` |
 | Filter regex cache (`MatchesPattern`) | DONE | `go build`, `go test ./internal/filter/` |
+| JSON writer: remove outer lock (inner suffices) | DONE | `go build`, `go test ./io/` |
+| Elastic writer: exponential backoff (max 5 retries) | DONE | `go build`, `go test ./io/` |
+| PacketBufferSize 100→1000, Workers CPU-proportional | DONE | `go build`, `go test ./collector/` |
+| Cache layerTypeStr per layer iteration | DONE | `go build` |
+| Bounded DNS cache (100K max, evict on overflow) | DONE | `go build`, `go test ./resolvers/` |
+| DNS timeout reduced 10s→2s | DONE | `go build` |
 
 ---
 
