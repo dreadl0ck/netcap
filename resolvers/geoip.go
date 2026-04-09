@@ -33,11 +33,14 @@ import (
 	"go.uber.org/zap"
 )
 
+const maxGeoCacheSize = 100000
+
 var (
-	geolocations sync.Map
-	cityReader   *maxminddb.Reader
-	asnReader    *maxminddb.Reader
-	logger       = logrus.New()
+	geolocations   = make(map[string]geoRecord)
+	geolocationsMu sync.RWMutex
+	cityReader     *maxminddb.Reader
+	asnReader      *maxminddb.Reader
+	logger         = logrus.New()
 )
 
 // geoRecord is a simple Geolocation Record for fast lookups.
@@ -143,10 +146,15 @@ func LookupGeolocation(addr string) (string, string) {
 		return "", ""
 	}
 
-	if result, ok := geolocations.Load(ip.String()); ok {
+	ipStr := ip.String()
+
+	geolocationsMu.RLock()
+	if result, ok := geolocations[ipStr]; ok {
+		geolocationsMu.RUnlock()
 		cacheHit = true
-		return result.(geoRecord).repr()
+		return result.repr()
 	}
+	geolocationsMu.RUnlock()
 
 	record := geoRecord{}
 	err := cityReader.Lookup(ip, &record)
@@ -161,7 +169,13 @@ func LookupGeolocation(addr string) (string, string) {
 		logger.WithError(err).Error("failed to lookup asn")
 	}
 
-	geolocations.Store(addr, record)
+	geolocationsMu.Lock()
+	// evict cache if it grows too large
+	if len(geolocations) >= maxGeoCacheSize {
+		geolocations = make(map[string]geoRecord, maxGeoCacheSize/2)
+	}
+	geolocations[ipStr] = record
+	geolocationsMu.Unlock()
 
 	return record.repr()
 }

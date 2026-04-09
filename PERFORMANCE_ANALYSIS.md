@@ -24,6 +24,10 @@
 | Cache layerTypeStr per layer iteration | DONE | `go build` |
 | Bounded DNS cache (100K max, evict on overflow) | DONE | `go build`, `go test ./resolvers/` |
 | DNS timeout reduced 10s→2s | DONE | `go build` |
+| Bounded GeoIP cache (100K max, RWMutex) | DONE | `go build`, `go test ./resolvers/` |
+| TCP flow .String() caching in decode() | DONE | `go build` |
+| MAC OUI: normalize at insert, direct hex parse | DONE | `go build`, `go test ./resolvers/` |
+| Replace deprecated ioutil → io/os | DONE | `go build`, `go test ./io/` |
 
 ---
 

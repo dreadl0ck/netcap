@@ -24,7 +24,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"reflect"
@@ -161,7 +161,7 @@ func CreateElasticIndex(wc *WriterConfig) {
 			fmt.Println("failed to create index pattern:", errAPI)
 
 			if resp != nil {
-				data, _ := ioutil.ReadAll(resp.Body)
+				data, _ := io.ReadAll(resp.Body)
 				fmt.Println(string(data))
 				_ = resp.Body.Close()
 			}
@@ -305,7 +305,7 @@ func createElasticIndex(c *elasticsearch.Client, ident string) {
 
 		if res != nil {
 			// ignore error in case the index exists already
-			data, _ := ioutil.ReadAll(res.Body)
+			data, _ := io.ReadAll(res.Body)
 			fmt.Println(string(data))
 		}
 	} else {
@@ -348,7 +348,7 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 	)
 	if err != nil || res.StatusCode != http.StatusOK {
 		if res != nil {
-			data, _ := ioutil.ReadAll(res.Body)
+			data, _ := io.ReadAll(res.Body)
 			fmt.Println(string(data))
 		}
 
@@ -396,7 +396,7 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 	)
 	if err != nil || res.StatusCode != http.StatusOK {
 		if res != nil {
-			d, _ = ioutil.ReadAll(res.Body)
+			d, _ = io.ReadAll(res.Body)
 			fmt.Println(string(d))
 		}
 
@@ -787,7 +787,7 @@ func deleteElasticIndexPattern(index string, wc *WriterConfig) {
 			log.Println("deleted mapping", index, ":", resp.Status)
 
 			if resp.StatusCode != http.StatusOK {
-				r, err := ioutil.ReadAll(resp.Body)
+				r, err := io.ReadAll(resp.Body)
 				if err == nil {
 					fmt.Println(string(r))
 				}

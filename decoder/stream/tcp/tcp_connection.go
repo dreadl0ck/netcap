@@ -355,13 +355,19 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 			zap.Int("mergedFragments", len(t.merged)),
 		)
 
+		// cache endpoint strings to avoid repeated conversions
+		clientIP := t.client.Network().Src().String()
+		serverIP := t.client.Network().Dst().String()
+		clientPort := utils.DecodePort(t.client.Transport().Src().Raw())
+		serverPort := utils.DecodePort(t.client.Transport().Dst().Raw())
+
 		// save the full conversation to disk if enabled
 		// Calculate Community ID once for use by harvesters
 		communityID := streamutils.CalcCommunityIDTCP(
-			t.client.Network().Src().String(),
-			t.client.Network().Dst().String(),
-			uint16(utils.DecodePort(t.client.Transport().Src().Raw())),
-			uint16(utils.DecodePort(t.client.Transport().Dst().Raw())),
+			clientIP,
+			serverIP,
+			uint16(clientPort),
+			uint16(serverPort),
 		)
 		err := streamutils.SaveConversation("TCP", t.merged, t.client.Ident(), t.client.FirstPacket(), t.client.Transport(), communityID)
 		if err != nil {
@@ -410,21 +416,22 @@ func (t *tcpConnection) decode() {
 		found  bool
 	)
 
+	// cache endpoint strings to avoid repeated conversions
+	cIP := t.client.Network().Src().String()
+	sIP := t.client.Network().Dst().String()
+	cPort := utils.DecodePort(t.client.Transport().Src().Raw())
+	sPort := utils.DecodePort(t.client.Transport().Dst().Raw())
+
 	conv := &core.ConversationInfo{
 		Data:              t.merged,
 		Ident:             t.ident,
 		FirstClientPacket: t.client.FirstPacket(),
 		FirstServerPacket: t.server.FirstPacket(),
-		ClientIP:          t.client.Network().Src().String(),
-		ServerIP:          t.client.Network().Dst().String(),
-		ClientPort:        utils.DecodePort(t.client.Transport().Src().Raw()),
-		ServerPort:        utils.DecodePort(t.client.Transport().Dst().Raw()),
-		CommunityID: streamutils.CalcCommunityIDTCP(
-			t.client.Network().Src().String(),
-			t.client.Network().Dst().String(),
-			uint16(utils.DecodePort(t.client.Transport().Src().Raw())),
-			uint16(utils.DecodePort(t.client.Transport().Dst().Raw())),
-		),
+		ClientIP:          cIP,
+		ServerIP:          sIP,
+		ClientPort:        cPort,
+		ServerPort:        sPort,
+		CommunityID:       streamutils.CalcCommunityIDTCP(cIP, sIP, uint16(cPort), uint16(sPort)),
 	}
 
 	// Use the client's destination port (= server's listening port) for decoder matching
