@@ -66,6 +66,8 @@ docker rm $CONTAINER_ID
 
 cp LICENSE dist-linux/${ARCHIVE}
 cp README.md dist-linux/${ARCHIVE}
+mkdir -p dist-linux/${ARCHIVE}/docs
+cp "docs/NETCAP Software Report.pdf" dist-linux/${ARCHIVE}/docs/
 
 cd dist-linux
 
@@ -76,9 +78,10 @@ tar -czvf ${ARCHIVE}.tar.gz ${ARCHIVE}
 # by default the checksums.txt file is truncated when being opened
 shasum -a 256 ${ARCHIVE}.tar.gz >> checksums.txt
 
-# remove license and readme from binary folder
+# remove license, readme and docs from binary folder
 rm ${ARCHIVE}/LICENSE
 rm ${ARCHIVE}/README.md
+rm -rf ${ARCHIVE}/docs
 
 echo "[INFO] pushing container to docker registry"
 docker push "$tag"

@@ -59,6 +59,7 @@ archives:
     files:
       - LICENSE
       - README.md
+      - docs/NETCAP Software Report.pdf
       - types/cpp/*
       - types/csharp/*
       - types/java/*
@@ -74,6 +75,7 @@ archives:
     files:
       - LICENSE
       - README.md
+      - docs/NETCAP Software Report.pdf
       - types/cpp/*
       - types/csharp/*
       - types/java/*
@@ -89,6 +91,7 @@ archives:
     files:
       - LICENSE
       - README.md
+      - docs/NETCAP Software Report.pdf
       - types/cpp/*
       - types/csharp/*
       - types/java/*
