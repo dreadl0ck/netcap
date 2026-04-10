@@ -477,8 +477,11 @@ func (t *tcpConnection) decode() {
 	}
 
 	// if no stream decoder for the port was found, or the stream decoder did not match
-	// try all available decoders and use the first one that matches
+	// try all available decoders and use the first one that matches.
+	// Use concatenated fragment data for better protocol detection when
+	// the first fragment alone is insufficient (e.g., length-prefixed framing).
 	if !found {
+		crFull, srFull := t.client.DataSlice().Bytes(), t.server.DataSlice().Bytes()
 		reassemblyLog.Debug("Trying all available decoders",
 			zap.String("ident", t.ident),
 			zap.Int("availableDecoders", len(stream.DefaultStreamDecoders)),
@@ -486,7 +489,7 @@ func (t *tcpConnection) decode() {
 		for _, port := range stream.SortedDecoderPorts {
 			sd := stream.DefaultStreamDecoders[port]
 			if sd.Transport() == core.TCP || sd.Transport() == core.All {
-				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
+				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(crFull, srFull) {
 					t.decoder = sd.GetReaderFactory().New(conv)
 					reassemblyLog.Info("Stream decoder selected by fallback scan",
 						zap.String("ident", t.ident),

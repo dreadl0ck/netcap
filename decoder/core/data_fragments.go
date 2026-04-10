@@ -36,7 +36,8 @@ func (d DataFragments) Size() int {
 	return s
 }
 
-func (d DataFragments) bytes() []byte {
+// Bytes returns all fragment data concatenated into a single byte slice.
+func (d DataFragments) Bytes() []byte {
 	var b bytes.Buffer
 
 	for _, dt := range d {

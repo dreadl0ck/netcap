@@ -29,6 +29,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"go.uber.org/zap"
 
@@ -91,7 +92,7 @@ var Decoder = &decoder.StreamDecoder{
 		return pbLog.Sync()
 	},
 	Factory: &protobufReader{},
-	Typ:     core.TCP,
+	Typ:     core.All,
 }
 
 // Field represents a single decoded protobuf field, preserving wire order.
@@ -174,7 +175,18 @@ func (r *protobufReader) processData(b *bufio.Reader, isClient bool) error {
 		DetectionMethod:   "heuristic",
 	}
 
+	// Try direct parsing first, then fall back to length-prefixed framing
 	messages, parseErr := DecodeMessages(data)
+	if parseErr != nil {
+		// Try stripping 4-byte big-endian length-prefixed framing,
+		// common in gRPC and custom protobuf-over-TCP protocols.
+		if stripped := stripLengthPrefixedFraming(data); stripped != nil {
+			messages, parseErr = DecodeMessages(stripped)
+			if parseErr == nil {
+				pb.DetectionMethod = "heuristic+length_prefix"
+			}
+		}
+	}
 	if parseErr != nil {
 		pb.IsValid = false
 		pb.ErrorMsg = parseErr.Error()
@@ -222,9 +234,39 @@ func (r *protobufReader) processData(b *bufio.Reader, isClient bool) error {
 	writeErr := Decoder.Writer.Write(pb)
 	if writeErr != nil {
 		pbLog.Debug("failed to write protobuf audit record", zap.Error(writeErr))
+	} else {
+		atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 	}
 
 	return nil
+}
+
+// stripLengthPrefixedFraming extracts protobuf payloads from data with
+// 4-byte big-endian length prefixes. Returns concatenated protobuf data
+// or nil if the framing doesn't match.
+func stripLengthPrefixedFraming(data []byte) []byte {
+	if len(data) < 5 { // minimum: 4-byte length + 1 byte payload
+		return nil
+	}
+
+	var result []byte
+	pos := 0
+
+	for pos+4 < len(data) {
+		msgLen := int(binary.BigEndian.Uint32(data[pos : pos+4]))
+		if msgLen <= 0 || msgLen > maxFieldSize || pos+4+msgLen > len(data) {
+			break
+		}
+
+		result = append(result, data[pos+4:pos+4+msgLen]...)
+		pos += 4 + msgLen
+	}
+
+	if len(result) == 0 {
+		return nil
+	}
+
+	return result
 }
 
 // --- Protobuf wire format detection and parsing ---

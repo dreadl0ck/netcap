@@ -387,10 +387,115 @@ func BenchmarkFullPipeline(b *testing.B) {
 	}
 }
 
+// --- PCAP integration tests ---
+
+const protobufTestdataDir = "../decoder/stream/protobuf/testdata"
+
+// TestProtobufPCAPExtraction processes real protobuf PCAP files through the
+// collector pipeline and verifies Protobuf audit records are extracted.
+func TestProtobufPCAPExtraction(t *testing.T) {
+	testCases := []struct {
+		name      string
+		pcapFile  string
+		transport string
+		srcIP     string // expected source IP to filter relevant records
+		dstIP     string // expected destination IP to filter relevant records
+	}{
+		{
+			name:      "TCP_AddressBook",
+			pcapFile:  "protobuf_tcp_addressbook.pcapng",
+			transport: "TCP",
+			srcIP:     "127.0.0.1",
+			dstIP:     "127.0.0.1",
+		},
+		{
+			name:      "UDP_AddressBook",
+			pcapFile:  "protobuf_udp_addressbook.pcapng",
+			transport: "UDP",
+			srcIP:     "127.0.0.1",
+			dstIP:     "127.0.0.1",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			pcapPath := filepath.Join(protobufTestdataDir, tc.pcapFile)
+
+			if _, err := os.Stat(pcapPath); os.IsNotExist(err) {
+				t.Skipf("Test pcap file not found: %s", pcapPath)
+			}
+
+			outDir := t.TempDir()
+
+			if err := processWithCollector(pcapPath, outDir); err != nil {
+				t.Fatalf("Failed to process pcap: %v", err)
+			}
+
+			pbFile := filepath.Join(outDir, "Protobuf.ncap.gz")
+			info, err := os.Stat(pbFile)
+			if os.IsNotExist(err) {
+				t.Fatalf("Protobuf.ncap.gz was not created — no protobuf records extracted from %s", tc.pcapFile)
+			}
+			if err != nil {
+				t.Fatalf("Failed to stat Protobuf.ncap.gz: %v", err)
+			}
+			if info.Size() == 0 {
+				t.Fatalf("Protobuf.ncap.gz is empty")
+			}
+
+			allRecords, err := readProtobufRecords(pbFile)
+			if err != nil {
+				t.Fatalf("Failed to read Protobuf records: %v", err)
+			}
+
+			// Filter records to those matching the expected IPs from this PCAP.
+			// The global decoder state may carry records from prior tests in the same
+			// process due to shared decoder instances.
+			var records []*types.Protobuf
+			for _, rec := range allRecords {
+				if rec.SrcIP == tc.srcIP && rec.DstIP == tc.dstIP {
+					records = append(records, rec)
+				}
+			}
+
+			if len(records) == 0 {
+				t.Fatalf("No Protobuf records with expected IPs (%s -> %s) extracted from %s (total records: %d)",
+					tc.srcIP, tc.dstIP, tc.pcapFile, len(allRecords))
+			}
+
+			t.Logf("Extracted %d Protobuf record(s) from %s (%s) [%d total, %d filtered]",
+				len(records), tc.pcapFile, tc.transport, len(allRecords), len(allRecords)-len(records))
+
+			for i, rec := range records {
+				t.Logf("Record %d: valid=%v msgType=%s service=%s srcIP=%s dstIP=%s srcPort=%d dstPort=%d payloadSize=%d fields=%d",
+					i+1, rec.IsValid, rec.MessageType, rec.ServiceName,
+					rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort,
+					rec.PayloadSize, len(rec.Fields))
+
+				if !rec.IsValid {
+					t.Errorf("Record %d: IsValid = false, error: %s", i+1, rec.ErrorMsg)
+				}
+				if rec.MessageCount < 1 {
+					t.Errorf("Record %d: MessageCount = %d, want >= 1", i+1, rec.MessageCount)
+				}
+				if rec.PayloadSize <= 0 {
+					t.Errorf("Record %d: PayloadSize = %d, want > 0", i+1, rec.PayloadSize)
+				}
+				if len(rec.Fields) == 0 {
+					t.Errorf("Record %d: Fields map is empty — no fields decoded", i+1)
+				}
+			}
+		})
+	}
+}
+
 // --- helpers ---
 
 // processWithCollector runs the netcap collector on a PCAP file.
 func processWithCollector(pcapPath, outDir string) error {
+	// Reset shared writer registry to ensure test isolation
+	netio.ResetWriterRegistry()
+
 	cfg := collector.DefaultConfig
 
 	decoderCfg := *decoderconfig.DefaultConfig
