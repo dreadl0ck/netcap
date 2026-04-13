@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -61,10 +61,12 @@ import {
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import CommunityIDChip from '../components/CommunityIDChip';
 import SearchInput from '../components/SearchInput';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import { useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
+import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 interface FingerprintSummary {
@@ -75,6 +77,7 @@ interface FingerprintSummary {
   description: string;
   firstSeen: number;
   lastSeen: number;
+  communityIDs: string[];
 }
 
 interface FingerprintsResponse {
@@ -87,6 +90,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function FingerprintsPage() {
   const api = useNetcapApi();
+  const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
@@ -128,6 +132,13 @@ export default function FingerprintsPage() {
   // Apply filters and sorting
   const filteredFingerprints = useMemo(() => {
     let filtered = fingerprints;
+
+    // Apply Community ID filter first (if active)
+    if (isCommunityIDFilterActive && selectedCommunityIDs.size > 0) {
+      filtered = filtered.filter(fp =>
+        fp.communityIDs && fp.communityIDs.some(id => selectedCommunityIDs.has(id))
+      );
+    }
 
     // Apply type filter
     if (filterType !== 'all') {
@@ -172,7 +183,7 @@ export default function FingerprintsPage() {
     });
 
     return filtered;
-  }, [fingerprints, filterType, searchQuery, sortField, sortOrder]);
+  }, [fingerprints, filterType, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs]);
 
   const paginatedFingerprints = filteredFingerprints.slice(
     page * rowsPerPage,
@@ -237,16 +248,30 @@ export default function FingerprintsPage() {
     />
   );
 
-  // Calculate summary statistics
-  const ja4Count = fingerprints.filter(fp => fp.type === 'JA4').length;
-  const ja4sCount = fingerprints.filter(fp => fp.type === 'JA4S').length;
-  const ja4hCount = fingerprints.filter(fp => fp.type === 'JA4H').length;
-  const ja4xCount = fingerprints.filter(fp => fp.type === 'JA4X').length;
-  const ja4tCount = fingerprints.filter(fp => fp.type === 'JA4T').length;
-  const ja4tsCount = fingerprints.filter(fp => fp.type === 'JA4TS').length;
-  const ja4sshCount = fingerprints.filter(fp => fp.type === 'JA4SSH').length;
-  const dhcpCount = fingerprints.filter(fp => fp.type === 'DHCP').length;
-  const totalOccurrences = fingerprints.reduce((sum, fp) => sum + fp.count, 0);
+  // Reset pagination when Community ID filter changes
+  useEffect(() => {
+    setPage(0);
+  }, [isCommunityIDFilterActive, selectedCommunityIDs]);
+
+  // Calculate summary statistics from filtered data so counts stay consistent with active filter
+  const statsSource = useMemo(() => {
+    if (isCommunityIDFilterActive && selectedCommunityIDs.size > 0) {
+      return fingerprints.filter(fp =>
+        fp.communityIDs && fp.communityIDs.some(id => selectedCommunityIDs.has(id))
+      );
+    }
+    return fingerprints;
+  }, [fingerprints, isCommunityIDFilterActive, selectedCommunityIDs]);
+
+  const ja4Count = statsSource.filter(fp => fp.type === 'JA4').length;
+  const ja4sCount = statsSource.filter(fp => fp.type === 'JA4S').length;
+  const ja4hCount = statsSource.filter(fp => fp.type === 'JA4H').length;
+  const ja4xCount = statsSource.filter(fp => fp.type === 'JA4X').length;
+  const ja4tCount = statsSource.filter(fp => fp.type === 'JA4T').length;
+  const ja4tsCount = statsSource.filter(fp => fp.type === 'JA4TS').length;
+  const ja4sshCount = statsSource.filter(fp => fp.type === 'JA4SSH').length;
+  const dhcpCount = statsSource.filter(fp => fp.type === 'DHCP').length;
+  const totalOccurrences = statsSource.reduce((sum, fp) => sum + fp.count, 0);
 
   if (error) {
     return (
@@ -310,7 +335,7 @@ export default function FingerprintsPage() {
                       Total Fingerprints
                     </Typography>
                     <Typography variant="h6">
-                      {totalCount.toLocaleString()}
+                      {statsSource.length.toLocaleString()}
                     </Typography>
                   </Box>
                 </Box>
@@ -671,9 +696,10 @@ export default function FingerprintsPage() {
             Refresh
           </Button>
           
-          {(searchQuery || filterType !== 'all') ? (
+          {(searchQuery || filterType !== 'all' || isCommunityIDFilterActive) ? (
             <Typography variant="body2" color="text.secondary">
               Showing {filteredFingerprints.length} of {totalCount} fingerprints
+              {isCommunityIDFilterActive && ` (Community ID filter active)`}
             </Typography>
           ) : null}
         </Box>
@@ -864,6 +890,23 @@ export default function FingerprintsPage() {
                                       <Typography variant="body2" color="text.secondary">
                                         {fp.description}
                                       </Typography>
+                                    </Grid>
+                                  )}
+                                  
+                                  {/* Community IDs */}
+                                  {fp.communityIDs && fp.communityIDs.length > 0 && (
+                                    <Grid item xs={12}>
+                                      <Typography variant="subtitle2" gutterBottom>
+                                        Community IDs ({fp.communityIDs.length})
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                        {fp.communityIDs.map((id) => (
+                                          <CommunityIDChip
+                                            key={id}
+                                            communityId={id}
+                                          />
+                                        ))}
+                                      </Box>
                                     </Grid>
                                   )}
                                   
