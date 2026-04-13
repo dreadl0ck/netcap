@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -62,9 +62,11 @@ import {
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
+import CommunityIDChip from '../components/CommunityIDChip';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import { useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
+import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 interface FingerprintSummary {
@@ -75,6 +77,7 @@ interface FingerprintSummary {
   description: string;
   firstSeen: number;
   lastSeen: number;
+  communityIds: string[];
 }
 
 interface FingerprintsResponse {
@@ -98,18 +101,37 @@ export default function FingerprintsPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [viewMode, setViewMode] = useViewMode();
 
+  // Community ID filter integration
+  const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
+
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
 
-  // Fetch fingerprints data
+  // Build Community ID query parameter
+  const communityIDsParam = useMemo(() => {
+    if (!isCommunityIDFilterActive || selectedCommunityIDs.size === 0) return '';
+    return Array.from(selectedCommunityIDs).join(',');
+  }, [isCommunityIDFilterActive, selectedCommunityIDs]);
+
+  // Fetch fingerprints data (re-fetches when Community ID filter changes)
   const { data: fingerprintsData, error, mutate } = useSWR<FingerprintsResponse>(
-    'fingerprints',
-    () => fetch(`${getBackendUrl()}/api/fingerprints`).then(res => res.json()),
+    communityIDsParam ? `fingerprints?communityIds=${communityIDsParam}` : 'fingerprints',
+    () => {
+      const url = communityIDsParam
+        ? `${getBackendUrl()}/api/fingerprints?communityIds=${encodeURIComponent(communityIDsParam)}`
+        : `${getBackendUrl()}/api/fingerprints`;
+      return fetch(url).then(res => res.json());
+    },
     {
       refreshInterval: 0,
     }
   );
+
+  // Reset pagination when Community ID filter changes
+  useEffect(() => {
+    setPage(0);
+  }, [communityIDsParam]);
 
   const fingerprints = fingerprintsData?.fingerprints || [];
   const totalCount = fingerprintsData?.totalCount || 0;
@@ -671,9 +693,10 @@ export default function FingerprintsPage() {
             Refresh
           </Button>
           
-          {(searchQuery || filterType !== 'all') ? (
+          {(searchQuery || filterType !== 'all' || isCommunityIDFilterActive) ? (
             <Typography variant="body2" color="text.secondary">
               Showing {filteredFingerprints.length} of {totalCount} fingerprints
+              {isCommunityIDFilterActive && ` (filtered by ${selectedCommunityIDs.size} Community ID${selectedCommunityIDs.size !== 1 ? 's' : ''})`}
             </Typography>
           ) : null}
         </Box>
@@ -867,6 +890,24 @@ export default function FingerprintsPage() {
                                     </Grid>
                                   )}
                                   
+                                  {/* Associated Community IDs */}
+                                  {fp.communityIds && fp.communityIds.length > 0 && (
+                                    <Grid item xs={12}>
+                                      <Typography variant="subtitle2" gutterBottom>
+                                        Associated Community IDs ({fp.communityIds.length})
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                        {fp.communityIds.map((cid) => (
+                                          <CommunityIDChip
+                                            key={cid}
+                                            communityId={cid}
+                                            mode="chip"
+                                          />
+                                        ))}
+                                      </Box>
+                                    </Grid>
+                                  )}
+
                                   {/* Associated Hosts */}
                                   {fp.hosts.length > 0 && (
                                     <Grid item xs={12}>
