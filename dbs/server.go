@@ -76,6 +76,17 @@ func (s *DBServer) Start() error {
 		return fmt.Errorf("failed to create dbs directory: %w", err)
 	}
 
+	// Pre-flight: verify both directories are writable by the current process.
+	// Without this check, a permission misconfiguration on a bind-mounted host
+	// directory would only surface at the next scheduled rebuild (midnight),
+	// making the server appear healthy while silently failing.
+	if err := checkWritable(filepath.Join(s.buildDir, "build")); err != nil {
+		return fmt.Errorf("build directory not writable: %w", err)
+	}
+	if err := checkWritable(s.dbsDir); err != nil {
+		return fmt.Errorf("dbs directory not writable: %w", err)
+	}
+
 	// Check if we have pre-existing databases (e.g., from a mounted volume)
 	hasExisting, existingVersion := s.checkExistingDatabases()
 
@@ -581,6 +592,31 @@ func (s *DBServer) ensureLatestLinks() error {
 		}
 	}
 
+	return nil
+}
+
+// checkWritable verifies that the given directory is writable by the current
+// process by creating and removing a temporary probe file. It returns a
+// descriptive error including the running uid/gid and a hint about bind-mount
+// permissions when the probe fails.
+func checkWritable(dir string) error {
+	f, err := os.CreateTemp(dir, ".write-probe-*")
+	if err != nil {
+		uid := os.Getuid()
+		gid := os.Getgid()
+		return fmt.Errorf(
+			"cannot write to %s (running as uid=%d gid=%d): %w; "+
+				"if this is a bind-mounted host directory, ensure it is owned by the container user "+
+				"(e.g. `sudo chown -R 1000:1000 <hostdir>` for the default netcap user)",
+			dir, uid, gid, err,
+		)
+	}
+	name := f.Name()
+	f.Close()
+	if err := os.Remove(name); err != nil {
+		// Non-fatal: we could create the file, removal failure is a warning.
+		log.Printf("Warning: failed to remove write-probe file %s: %v", name, err)
+	}
 	return nil
 }
 

@@ -24,6 +24,67 @@ The storage location is controlled by the `NC_CONFIG_ROOT` environment variable:
 - **Default (Docker)**: `/data/netcap-dbs-server/`
 - **Custom**: Set via `NC_CONFIG_ROOT` environment variable
 
+## Permissions (Bind Mounts)
+
+> **IMPORTANT** — When using a **bind mount** (host path → container path), the
+> host directory must be writable by the user the container runs as. Otherwise
+> the nightly database rebuild will fail with errors like:
+>
+> ```
+> Scheduled rebuild failed: failed to create versioned directory:
+>   mkdir /data/netcap-dbs-server/dbs/2026-04-23: permission denied
+> ```
+
+### Container User
+
+The official image creates and runs as a non-root user:
+
+- **User:** `netcap`
+- **UID / GID:** `1000` / `1000`
+
+This is set in `docker/dbs-server/Dockerfile`. The `chown` step in the Dockerfile
+only applies when Docker initializes a **named volume** for the first time — it
+has no effect on bind mounts, because the bind mount overlays the image path
+with the host directory's existing ownership.
+
+### Fix for Bind Mounts
+
+On the host, set ownership to UID/GID 1000 before starting the container:
+
+```bash
+sudo chown -R 1000:1000 /path/on/host/netcap-dbs-server
+sudo chmod -R u+rwX,g+rwX /path/on/host/netcap-dbs-server
+```
+
+If your host already has a `netcap` user with a different UID, either:
+
+- Use the numeric UID/GID 1000 explicitly (as above), or
+- Run the container as your host user via `--user "$(id -u):$(id -g)"` and
+  ensure the host directory is owned by that user.
+
+### Pre-flight Writability Check
+
+The server now performs a writability probe at startup against both the
+`build/` and `dbs/` directories. If either is not writable, startup **fails
+fast** with a message including the running uid/gid and a hint:
+
+```
+dbs directory not writable: cannot write to /data/netcap-dbs-server/dbs
+  (running as uid=1000 gid=1000): open ...: permission denied;
+  if this is a bind-mounted host directory, ensure it is owned by the
+  container user (e.g. `sudo chown -R 1000:1000 <hostdir>` for the default
+  netcap user)
+```
+
+This prevents the previous failure mode where the container appeared healthy
+and only failed at midnight during the scheduled rebuild.
+
+### Named Volumes
+
+Named Docker volumes (`-v netcap-dbs-data:/data`) do **not** require manual
+permission fixes — Docker initializes the volume from the image, preserving
+the `chown` performed in the Dockerfile.
+
 ## Automatic Detection of Pre-existing Databases
 
 The dbs-server now includes intelligent detection of pre-existing databases:
@@ -254,15 +315,20 @@ The `Start()` function now:
 
 ### Permission Issues
 
-**Symptom**: Cannot write to mounted directory
+**Symptom**: Cannot write to mounted directory; container fails to start with
+`dbs directory not writable: ...`, or scheduled rebuild logs
+`mkdir ...: permission denied`.
 
-**Solutions**:
+See the [Permissions (Bind Mounts)](#permissions-bind-mounts) section for the
+full explanation. Quick fix:
+
 ```bash
-# Fix permissions on host
+# Fix permissions on host (UID/GID 1000 = netcap user inside the container)
 sudo chown -R 1000:1000 /path/to/host/netcap-dbs-server
+sudo chmod -R u+rwX,g+rwX /path/to/host/netcap-dbs-server
 
-# Or run container as root (not recommended for production)
-docker run --user root ...
+# Or run container as your host user
+docker run --user "$(id -u):$(id -g)" ...
 ```
 
 ### Symlink Issues
