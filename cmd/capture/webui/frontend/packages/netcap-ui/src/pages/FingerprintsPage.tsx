@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -36,7 +36,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TableSortLabel,
   Tooltip,
@@ -62,9 +61,12 @@ import {
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
+import ResponsiveDataView from '../components/ResponsiveDataView';
+import { CommunityIDChip } from '../components/CommunityIDChip';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import { useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
+import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 interface FingerprintSummary {
@@ -75,6 +77,7 @@ interface FingerprintSummary {
   description: string;
   firstSeen: number;
   lastSeen: number;
+  communityIds: string[];
 }
 
 interface FingerprintsResponse {
@@ -87,6 +90,7 @@ type SortOrder = 'asc' | 'desc';
 
 export default function FingerprintsPage() {
   const api = useNetcapApi();
+  const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
@@ -97,6 +101,13 @@ export default function FingerprintsPage() {
   const [sortField, setSortField] = useState<FingerprintSortField>('count');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [viewMode, setViewMode] = useViewMode();
+
+  // Reset page to 0 when the Community ID filter changes via global context
+  // (e.g., clicking a CommunityIDChip on another page), so the user never
+  // lands on an out-of-range page that shows an empty table.
+  useEffect(() => {
+    setPage(0);
+  }, [selectedCommunityIDs, isCommunityIDFilterActive]);
 
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -128,6 +139,13 @@ export default function FingerprintsPage() {
   // Apply filters and sorting
   const filteredFingerprints = useMemo(() => {
     let filtered = fingerprints;
+
+    // Apply Community ID filter
+    if (isCommunityIDFilterActive && selectedCommunityIDs.size > 0) {
+      filtered = filtered.filter(fp =>
+        fp.communityIds && fp.communityIds.some(cid => selectedCommunityIDs.has(cid))
+      );
+    }
 
     // Apply type filter
     if (filterType !== 'all') {
@@ -172,7 +190,7 @@ export default function FingerprintsPage() {
     });
 
     return filtered;
-  }, [fingerprints, filterType, searchQuery, sortField, sortOrder]);
+  }, [fingerprints, filterType, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs]);
 
   const paginatedFingerprints = filteredFingerprints.slice(
     page * rowsPerPage,
@@ -671,7 +689,7 @@ export default function FingerprintsPage() {
             Refresh
           </Button>
           
-          {(searchQuery || filterType !== 'all') ? (
+          {(searchQuery || filterType !== 'all' || isCommunityIDFilterActive) ? (
             <Typography variant="body2" color="text.secondary">
               Showing {filteredFingerprints.length} of {totalCount} fingerprints
             </Typography>
@@ -695,6 +713,66 @@ export default function FingerprintsPage() {
           </Paper>
         ) : (
           <>
+            <ResponsiveDataView
+              data={paginatedFingerprints}
+              totalCount={filteredFingerprints.length}
+              page={page}
+              rowsPerPage={rowsPerPage}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[10, 25, 50, 100]}
+              onCardClick={(fp: FingerprintSummary) => {
+                const idx = paginatedFingerprints.indexOf(fp);
+                const rowKey = `${fp.type}-${fp.fingerprint}-${idx}`;
+                handleRowClick(rowKey);
+              }}
+              renderCard={(fp: FingerprintSummary, idx: number) => (
+                <Card variant="outlined">
+                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all', flex: 1, mr: 1 }}
+                      >
+                        {fp.fingerprint}
+                      </Typography>
+                      <Chip
+                        label={fp.type}
+                        size="small"
+                        color={
+                          fp.type === 'JA4' ? 'success' :
+                          fp.type === 'JA4S' ? 'primary' :
+                          fp.type === 'JA4H' ? 'secondary' :
+                          fp.type === 'JA4X' ? 'default' :
+                          fp.type === 'JA4T' ? 'error' :
+                          fp.type === 'JA4TS' ? 'error' :
+                          fp.type === 'JA4SSH' ? 'warning' :
+                          'info'
+                        }
+                        sx={{
+                          fontSize: '0.7rem',
+                          ...(fp.type === 'JA4X' && { backgroundColor: '#9c27b0', color: 'white' }),
+                          ...(fp.type === 'JA4TS' && { backgroundColor: '#795548', color: 'white' }),
+                        }}
+                      />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 2, mb: 0.5 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Count: {fp.count.toLocaleString()}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Hosts: {fp.hosts.length.toLocaleString()}
+                      </Typography>
+                    </Box>
+                    {fp.description && (
+                      <Typography variant="caption" color="text.secondary" noWrap>
+                        {fp.description}
+                      </Typography>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+              desktopTable={
             <TableContainer component={Paper}>
               <Table size="small" data-learn="Fingerprints Table: Detailed list of all discovered fingerprints with occurrence counts and associated hosts.">
                 <TableHead>
@@ -886,6 +964,25 @@ export default function FingerprintsPage() {
                                       </Box>
                                     </Grid>
                                   )}
+
+                                  {/* Community IDs */}
+                                  {fp.communityIds && fp.communityIds.length > 0 && (
+                                    <Grid item xs={12}>
+                                      <Typography variant="subtitle2" gutterBottom>
+                                        Community IDs ({fp.communityIds.length})
+                                      </Typography>
+                                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                        {fp.communityIds.map((cid) => (
+                                          <CommunityIDChip
+                                            key={cid}
+                                            communityId={cid}
+                                            mode="chip"
+                                            truncate={false}
+                                          />
+                                        ))}
+                                      </Box>
+                                    </Grid>
+                                  )}
                                 </Grid>
                               </Box>
                             </Collapse>
@@ -897,16 +994,7 @@ export default function FingerprintsPage() {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <TablePagination
-              data-learn="Table Pagination: Navigate through pages of fingerprints and change how many rows to display per page."
-              component="div"
-              count={filteredFingerprints.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
+              }
             />
           </>
         )}

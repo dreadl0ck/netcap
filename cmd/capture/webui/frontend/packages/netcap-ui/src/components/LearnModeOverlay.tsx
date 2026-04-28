@@ -243,12 +243,12 @@ export function LearnModeOverlay() {
         elevation={8}
         sx={{
           position: 'fixed',
-          bottom: 24,
+          bottom: { xs: 80, sm: 24 },
           left: '50%',
           transform: 'translateX(-50%)',
-          maxWidth: 600,
-          minWidth: 384,
-          p: 3,
+          maxWidth: { xs: 'calc(100vw - 48px)', sm: 600 },
+          minWidth: { xs: 'calc(100vw - 48px)', sm: 384 },
+          p: { xs: 2, sm: 3 },
           zIndex: 9999,
           backgroundColor: 'rgba(0, 188, 212, 0.95)',
           color: 'white',
@@ -261,9 +261,9 @@ export function LearnModeOverlay() {
             <Typography 
               variant="h6" 
               sx={{ 
-                fontWeight: 'bold', 
+                fontWeight: 'bold',
                 mb: 1,
-                fontSize: '1.32rem',
+                fontSize: { xs: '1rem', sm: '1.32rem' },
               }}
             >
               {currentElementTitle || 'UI Element'}
@@ -272,7 +272,7 @@ export function LearnModeOverlay() {
               variant="body1" 
               sx={{ 
                 lineHeight: 1.6,
-                fontSize: '1.2rem',
+                fontSize: { xs: '0.9rem', sm: '1.2rem' },
               }}
             >
               {currentHint}

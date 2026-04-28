@@ -26,10 +26,13 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
+	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
+	"github.com/dreadl0ck/netcap/magika"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
@@ -52,6 +55,13 @@ func (c *Collector) Init() (err error) {
 	// set configuration for decoder pkgs
 	c.config.DecoderConfig.PerfTracker = c.perfTracker
 	packet.SetConfig(c.config.DecoderConfig)
+
+	// Wire up device enrichment callback for network discovery protocols
+	streamutils.DeviceEnricher = func(ip string, hostnames, deviceTypes, roles []string, os string) {
+		if dp := packet.DeviceProfiles.FindByIP(ip); dp != nil {
+			dp.EnrichFromDiscovery(hostnames, deviceTypes, roles, os)
+		}
+	}
 
 	decoderconfig.Instance = c.config.DecoderConfig
 	stream.Debug = c.config.DecoderConfig.Debug
@@ -98,6 +108,13 @@ func (c *Collector) Init() (err error) {
 	if c.config.DPI {
 		c.printlnStdOut("initializing dpi libs")
 		dpi.Init(c.config.DPIModules)
+	}
+
+	// init AI-based file type classification
+	fileCfg := file.GetGlobalConfig()
+	if fileCfg.FileExtraction.Advanced.EnableMagika {
+		c.printlnStdOut("initializing magika AI file classifier")
+		magika.Init(fileCfg.FileExtraction.Advanced.MagikaAssetsDir, fileCfg.FileExtraction.Advanced.MagikaModelName)
 	}
 
 	// initialize resolvers

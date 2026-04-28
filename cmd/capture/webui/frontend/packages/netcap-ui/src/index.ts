@@ -21,13 +21,13 @@
  * @dreadl0ck/netcap-ui - Netcap UI Component Library
  * 
  * A React component library for building network analysis interfaces.
- * These components can be used in any React application, not just Next.js.
- * 
+ * These components can be used in any React application.
+ *
  * @example
  * ```tsx
  * // Basic usage in any React app
  * import { NetcapProvider, Layout, useNetcapApi } from '@dreadl0ck/netcap-ui';
- * 
+ *
  * function App() {
  *   return (
  *     <NetcapProvider config={{
@@ -39,29 +39,6 @@
  *         <MyContent />
  *       </Layout>
  *     </NetcapProvider>
- *   );
- * }
- * ```
- * 
- * @example
- * ```tsx
- * // Usage in Next.js with the adapter
- * import { NextjsNetcapProvider } from '@dreadl0ck/netcap-ui/adapters/nextjs';
- * import { Layout } from '@dreadl0ck/netcap-ui/components';
- * 
- * function MyPage() {
- *   return (
- *     <Layout title="My Page">
- *       <MyContent />
- *     </Layout>
- *   );
- * }
- * 
- * export default function App({ Component, pageProps }) {
- *   return (
- *     <NextjsNetcapProvider backendUrl="http://localhost:8080">
- *       <Component {...pageProps} />
- *     </NextjsNetcapProvider>
  *   );
  * }
  * ```

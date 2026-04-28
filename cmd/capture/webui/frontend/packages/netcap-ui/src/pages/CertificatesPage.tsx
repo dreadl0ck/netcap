@@ -33,7 +33,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TableSortLabel,
   Typography,
@@ -56,6 +55,7 @@ import {
   BarChart as BarChartIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
@@ -593,7 +593,57 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
             </Typography>
           </Paper>
         ) : (
-          <>
+          <ResponsiveDataView<CertificateSummary>
+            data={paginatedCertificates}
+            totalCount={filteredCertificates.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            renderCard={(cert) => (
+              <Card variant="outlined">
+                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box display="flex" alignItems="center" gap={1} mb={0.5}>
+                    {getStatusIcon(cert)}
+                    <Typography variant="body2" fontWeight="medium" noWrap sx={{ fontFamily: 'monospace', flex: 1 }}>
+                      {cert.subjectCommonName || '-'}
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Issuer: {cert.issuerCommonName || '-'}
+                    {cert.isSelfSigned && ' (Self-Signed)'}
+                  </Typography>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mt={0.5}>
+                    <Typography
+                      variant="caption"
+                      color={
+                        cert.isExpired ? 'error' :
+                        cert.daysUntilExpiration < 30 ? 'warning.main' :
+                        'text.secondary'
+                      }
+                    >
+                      {cert.isExpired ? 'Expired' : `Expires in ${cert.daysUntilExpiration} days`}
+                    </Typography>
+                    <Box display="flex" gap={0.5} alignItems="center">
+                      <Chip
+                        label={`${cert.publicKeySize} bits`}
+                        size="small"
+                        color={cert.hasShortKeySize ? 'error' : 'default'}
+                        sx={{ fontSize: '0.65rem', height: 18 }}
+                      />
+                      <Typography variant="caption" color="text.secondary">
+                        Seen {cert.seenCount.toLocaleString()}x
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                    Valid: {formatTimestamp(cert.notBefore)} &ndash; {formatTimestamp(cert.notAfter)}
+                  </Typography>
+                </CardContent>
+              </Card>
+            )}
+            desktopTable={
             <TableContainer component={Paper}>
               <Table size="small" data-learn="Certificates Table: Detailed list of all captured TLS certificates with sorting capabilities.">
                 <TableHead>
@@ -1136,18 +1186,8 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <TablePagination
-              data-learn="Table Pagination: Navigate through pages of certificates and change how many rows to display per page."
-              component="div"
-              count={filteredCertificates.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+            }
+          />
         )}
         </>
         )}

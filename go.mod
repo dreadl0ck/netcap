@@ -35,28 +35,30 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20250917011043-9c86a9b0f8f0
 	github.com/umisama/go-cpe v0.0.0-20190323060751-cdd6c3c28a23
 	go.uber.org/zap v1.27.0
-	golang.org/x/crypto v0.43.0
-	golang.org/x/net v0.46.0
+	golang.org/x/crypto v0.49.0
+	golang.org/x/net v0.51.0
 	gonum.org/v1/gonum v0.16.0
 	gopkg.in/yaml.v2 v2.4.0
 	mvdan.cc/xurls/v2 v2.6.0
 )
 
 require (
+	github.com/VirusTotal/yara-x/go v1.14.0
+	github.com/bufbuild/protocompile v0.14.1
 	github.com/coreos/go-iptables v0.8.0
-	github.com/dreadl0ck/netcap/helpers v0.0.0-20251024121749-9bb050d95f59
-	github.com/expr-lang/expr v1.17.6
+	github.com/expr-lang/expr v1.17.8
 	github.com/florianl/go-nfqueue/v2 v2.0.2
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/namsral/flag v1.7.4-pre
 	github.com/satta/gommunityid v1.0.2
 	github.com/urfave/cli/v3 v3.6.1
+	google.golang.org/protobuf v1.36.10
 )
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
-	github.com/Microsoft/go-winio v0.6.1 // indirect
-	github.com/ProtonMail/go-crypto v1.1.3 // indirect
+	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/RoaringBitmap/roaring v1.9.4 // indirect
 	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -72,19 +74,19 @@ require (
 	github.com/blevesearch/zap/v15 v15.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.2.0 // indirect
-	github.com/cloudflare/circl v1.6.1 // indirect
+	github.com/cloudflare/circl v1.6.3 // indirect
 	github.com/couchbase/vellum v1.0.2 // indirect
-	github.com/cyphar/filepath-securejoin v0.2.5 // indirect
+	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
-	github.com/go-git/go-billy/v5 v5.6.0 // indirect
-	github.com/go-git/go-git/v5 v5.13.0 // indirect
+	github.com/go-git/go-billy/v5 v5.8.0 // indirect
+	github.com/go-git/go-git/v5 v5.17.2 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/geo v0.0.0-20251020193347-f750d7aa221b // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
@@ -110,12 +112,12 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/pjbgf/sha1cd v0.3.0 // indirect
+	github.com/pjbgf/sha1cd v0.3.2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.1 // indirect
 	github.com/prometheus/procfs v0.18.0 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
-	github.com/skeema/knownhosts v1.3.0 // indirect
+	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/steveyen/gtreap v0.1.0 // indirect
 	github.com/willf/bitset v1.1.11 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
@@ -124,13 +126,10 @@ require (
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	golang.org/x/exp v0.0.0-20251017212417-90e834f514db // indirect
 	golang.org/x/image v0.25.0 // indirect
-	golang.org/x/mod v0.29.0 // indirect
-	golang.org/x/sync v0.17.0 // indirect
-	golang.org/x/sys v0.37.0 // indirect
-	golang.org/x/term v0.36.0 // indirect
-	golang.org/x/text v0.30.0 // indirect
-	golang.org/x/tools v0.38.0 // indirect
-	google.golang.org/protobuf v1.36.10 // indirect
+	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/sys v0.42.0 // indirect
+	golang.org/x/term v0.41.0 // indirect
+	golang.org/x/text v0.35.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

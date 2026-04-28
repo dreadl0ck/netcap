@@ -33,7 +33,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TableSortLabel,
   Typography,
@@ -56,6 +55,7 @@ import {
   VpnKey as VpnKeyIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import ConversationModal from '../components/ConversationModal';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
@@ -766,7 +766,79 @@ export default function HTTPPage() {
             </Typography>
           </Paper>
         ) : (
-          <>
+          <ResponsiveDataView<HTTPSummary>
+            data={paginatedHTTP}
+            totalCount={filteredHTTP.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            renderCard={(http) => {
+              const totalSize = http.reqContentLength + http.resContentLength;
+              return (
+                <Card variant="outlined">
+                  <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      <Chip
+                        label={http.method || 'N/A'}
+                        size="small"
+                        color="primary"
+                        sx={{ fontSize: '0.7rem', fontWeight: 'bold' }}
+                      />
+                      <Chip
+                        label={http.statusCode || 'N/A'}
+                        size="small"
+                        color={getStatusCodeColor(http.statusCode) as any}
+                        sx={{ fontSize: '0.7rem' }}
+                      />
+                      <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto' }}>
+                        {formatBytes(totalSize)}
+                      </Typography>
+                    </Box>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontFamily: 'monospace',
+                        fontSize: '0.8rem',
+                        fontWeight: 500,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        mb: 0.5,
+                      }}
+                    >
+                      {http.host || 'N/A'}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        fontFamily: 'monospace',
+                        fontSize: '0.75rem',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        mb: 0.5,
+                      }}
+                    >
+                      {http.url || '/'}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {http.contentType && (
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                          {http.contentType.length > 30 ? http.contentType.substring(0, 30) + '...' : http.contentType}
+                        </Typography>
+                      )}
+                      <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto', fontSize: '0.7rem' }}>
+                        {formatTimestamp(http.timestamp)}
+                      </Typography>
+                    </Box>
+                  </CardContent>
+                </Card>
+              );
+            }}
+            desktopTable={
             <TableContainer component={Paper}>
               <Table size="small" data-learn="HTTP Table: Detailed list of all captured HTTP requests and responses with sorting capabilities.">
                 <TableHead>
@@ -831,7 +903,7 @@ export default function HTTPPage() {
                     const totalSize = http.reqContentLength + http.resContentLength;
                     return (
                       <>
-                        <TableRow 
+                        <TableRow
                           key={rowKey}
                           data-row-key={rowKey}
                           hover
@@ -841,11 +913,11 @@ export default function HTTPPage() {
                         >
                           <TableCell>
                             <IconButton size="small" data-learn="Expand Button: Click to show/hide detailed HTTP information.">
-                              <ExpandMoreIcon 
-                                sx={{ 
+                              <ExpandMoreIcon
+                                sx={{
                                   transform: expandedRow === rowKey ? 'rotate(180deg)' : 'rotate(0deg)',
                                   transition: 'transform 0.3s'
-                                }} 
+                                }}
                               />
                             </IconButton>
                           </TableCell>
@@ -864,10 +936,10 @@ export default function HTTPPage() {
                             />
                           </TableCell>
                           <TableCell>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                fontFamily: 'monospace', 
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontFamily: 'monospace',
                                 fontSize: '0.875rem',
                                 maxWidth: 200,
                                 overflow: 'hidden',
@@ -880,10 +952,10 @@ export default function HTTPPage() {
                             </Typography>
                           </TableCell>
                           <TableCell>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                fontFamily: 'monospace', 
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontFamily: 'monospace',
                                 fontSize: '0.75rem',
                                 maxWidth: 250,
                                 overflow: 'hidden',
@@ -910,7 +982,7 @@ export default function HTTPPage() {
                             </Typography>
                           </TableCell>
                         </TableRow>
-                        
+
                         {/* Expandable Row Details */}
                         <TableRow>
                           <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={7}>
@@ -934,10 +1006,10 @@ export default function HTTPPage() {
                                     <Typography variant="body2" color="text.secondary">
                                       Host: {http.host}
                                     </Typography>
-                                    <Typography 
-                                      variant="body2" 
+                                    <Typography
+                                      variant="body2"
                                       color="text.secondary"
-                                      sx={{ 
+                                      sx={{
                                         wordBreak: 'break-all',
                                         maxWidth: '100%',
                                       }}
@@ -945,7 +1017,7 @@ export default function HTTPPage() {
                                       URL: {http.url}
                                     </Typography>
                                   </Grid>
-                                  
+
                                   {/* Response Details */}
                                   <Grid item xs={12} md={6}>
                                     <Typography variant="subtitle2" gutterBottom>
@@ -982,7 +1054,7 @@ export default function HTTPPage() {
                                       Response Size: {formatBytes(http.resContentLength)}
                                     </Typography>
                                   </Grid>
-                                  
+
                                   {/* Network Details */}
                                   <Grid item xs={12} md={6}>
                                     <Typography variant="subtitle2" gutterBottom>
@@ -1013,7 +1085,7 @@ export default function HTTPPage() {
                                       </Box>
                                     )}
                                   </Grid>
-                                  
+
                                   {/* Timing Information */}
                                   {(http.doneAfter > 0 || http.dnsDoneAfter > 0 || http.tlsDoneAfter > 0 || http.firstByteAfter > 0) && (
                                     <Grid item xs={12} md={6}>
@@ -1044,7 +1116,7 @@ export default function HTTPPage() {
                                   )}
 
                                   {/* Security Headers */}
-                                  {(http.strictTransportSecurity || http.contentSecurityPolicy || http.xContentTypeOptions || 
+                                  {(http.strictTransportSecurity || http.contentSecurityPolicy || http.xContentTypeOptions ||
                                     http.xFrameOptions || http.xXSSProtection || http.referrerPolicy || http.accessControlAllowOrigin) && (
                                     <Grid item xs={12} md={6}>
                                       <Typography variant="subtitle2" gutterBottom data-learn="Security Headers: HTTP response security headers that protect against common web vulnerabilities.">
@@ -1132,9 +1204,9 @@ export default function HTTPPage() {
                                           <Typography variant="body2" color="text.secondary">
                                             Auth Type:
                                           </Typography>
-                                          <Chip 
-                                            label={http.authorizationType} 
-                                            size="small" 
+                                          <Chip
+                                            label={http.authorizationType}
+                                            size="small"
                                             color="primary"
                                             variant="outlined"
                                             sx={{ fontSize: '0.7rem' }}
@@ -1152,9 +1224,9 @@ export default function HTTPPage() {
                                         </Typography>
                                       )}
                                       {http.hasServerTiming && (
-                                        <Chip 
-                                          label="⚠️ Server-Timing present" 
-                                          size="small" 
+                                        <Chip
+                                          label="⚠️ Server-Timing present"
+                                          size="small"
                                           color="warning"
                                           sx={{ fontSize: '0.7rem', mt: 0.5 }}
                                           data-learn="Server-Timing header may expose internal performance metrics."
@@ -1170,9 +1242,9 @@ export default function HTTPPage() {
                                         JA4H HTTP Fingerprint
                                       </Typography>
                                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                        <Chip 
-                                          label={http.ja4h} 
-                                          size="small" 
+                                        <Chip
+                                          label={http.ja4h}
+                                          size="small"
                                           color="secondary"
                                           sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}
                                         />
@@ -1184,15 +1256,15 @@ export default function HTTPPage() {
                                       )}
                                     </Grid>
                                   )}
-                                  
+
                                   {/* User Agent & Referer */}
                                   <Grid item xs={12}>
                                     <Typography variant="subtitle2" gutterBottom>
                                       Client Information
                                     </Typography>
                                     {http.userAgent && (
-                                      <Typography 
-                                        variant="body2" 
+                                      <Typography
+                                        variant="body2"
                                         color="text.secondary"
                                         sx={{ wordBreak: 'break-all', mb: 1 }}
                                       >
@@ -1200,8 +1272,8 @@ export default function HTTPPage() {
                                       </Typography>
                                     )}
                                     {http.referer && (
-                                      <Typography 
-                                        variant="body2" 
+                                      <Typography
+                                        variant="body2"
                                         color="text.secondary"
                                         sx={{ wordBreak: 'break-all' }}
                                       >
@@ -1209,7 +1281,7 @@ export default function HTTPPage() {
                                       </Typography>
                                     )}
                                   </Grid>
-                                  
+
                                   {/* URL Parameters */}
                                   {http.parameters && Object.keys(http.parameters).length > 0 && (
                                     <Grid item xs={12}>
@@ -1218,9 +1290,9 @@ export default function HTTPPage() {
                                       </Typography>
                                       <Box sx={{ maxHeight: 200, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1 }}>
                                         {Object.entries(http.parameters).map(([key, value]) => (
-                                          <Typography 
+                                          <Typography
                                             key={key}
-                                            variant="body2" 
+                                            variant="body2"
                                             color="text.secondary"
                                             sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}
                                           >
@@ -1230,7 +1302,7 @@ export default function HTTPPage() {
                                       </Box>
                                     </Grid>
                                   )}
-                                  
+
                                   {/* Request Headers */}
                                   {http.requestHeader && Object.keys(http.requestHeader).length > 0 && (
                                     <Grid item xs={12} md={6}>
@@ -1239,9 +1311,9 @@ export default function HTTPPage() {
                                       </Typography>
                                       <Box sx={{ maxHeight: 300, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1 }}>
                                         {Object.entries(http.requestHeader).sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => (
-                                          <Typography 
+                                          <Typography
                                             key={key}
-                                            variant="body2" 
+                                            variant="body2"
                                             color="text.secondary"
                                             sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}
                                           >
@@ -1251,7 +1323,7 @@ export default function HTTPPage() {
                                       </Box>
                                     </Grid>
                                   )}
-                                  
+
                                   {/* Response Headers */}
                                   {http.responseHeader && Object.keys(http.responseHeader).length > 0 && (
                                     <Grid item xs={12} md={6}>
@@ -1260,9 +1332,9 @@ export default function HTTPPage() {
                                       </Typography>
                                       <Box sx={{ maxHeight: 300, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1 }}>
                                         {Object.entries(http.responseHeader).sort(([a], [b]) => a.localeCompare(b)).map(([key, value]) => (
-                                          <Typography 
+                                          <Typography
                                             key={key}
-                                            variant="body2" 
+                                            variant="body2"
                                             color="text.secondary"
                                             sx={{ fontFamily: 'monospace', fontSize: '0.75rem', wordBreak: 'break-all' }}
                                           >
@@ -1272,7 +1344,7 @@ export default function HTTPPage() {
                                       </Box>
                                     </Grid>
                                   )}
-                                  
+
                                   {/* Action Buttons */}
                                   <Grid item xs={12}>
                                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -1336,18 +1408,8 @@ export default function HTTPPage() {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <TablePagination
-              data-learn="Table Pagination: Navigate through pages of HTTP requests and change how many rows to display per page."
-              component="div"
-              count={filteredHTTP.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+            }
+          />
         )}
         </>
         )}

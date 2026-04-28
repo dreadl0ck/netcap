@@ -1,6 +1,6 @@
 {
   "name": "@dreadl0ck/netcap-ui",
-  "version": "0.8.6",
+  "version": "0.8.8",
   "description": "Netcap UI components and pages as a reusable React library",
   "type": "module",
   "main": "dist/index.cjs",
@@ -32,10 +32,10 @@
       "import": "./dist/hooks/index.js",
       "require": "./dist/hooks/index.cjs"
     },
-    "./adapters/nextjs": {
-      "types": "./dist/adapters/nextjs.d.ts",
-      "import": "./dist/adapters/nextjs.js",
-      "require": "./dist/adapters/nextjs.cjs"
+    "./adapters/react-router": {
+      "types": "./dist/adapters/react-router.d.ts",
+      "import": "./dist/adapters/react-router.js",
+      "require": "./dist/adapters/react-router.cjs"
     },
     "./lib": {
       "types": "./dist/lib/index.d.ts",
@@ -70,10 +70,10 @@
     "@emotion/react": "^11.0.0",
     "@emotion/styled": "^11.0.0",
     "swr": "^2.0.0",
-    "next": "^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0"
+    "react-router": "^7.0.0"
   },
   "peerDependenciesMeta": {
-    "next": {
+    "react-router": {
       "optional": true
     }
   },

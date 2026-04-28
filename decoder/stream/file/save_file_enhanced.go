@@ -33,6 +33,7 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/defaults"
+	magikapkg "github.com/dreadl0ck/netcap/magika"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -343,6 +344,19 @@ func SaveFileEnhanced(
 	// Perform security analysis on the decompressed file content
 	analysis := AnalyzeFile(contentInfo.DecodedContent, fileName)
 
+	// AI-based file type classification (if enabled)
+	var magikaResult *magikapkg.Result
+	if cfg.FileExtraction.Advanced.EnableMagika && magikapkg.IsEnabled() {
+		magikaResult, err = magikapkg.ClassifyBytes(contentInfo.DecodedContent)
+		if err != nil {
+			saveFileLog.Warn("magika classification failed",
+				zap.String("name", name),
+				zap.Error(err),
+			)
+			err = nil // don't propagate magika errors
+		}
+	}
+
 	// Sanitize string fields to ensure valid UTF-8 for protobuf encoding
 	sanitizedSource, sanitizedHost, sanitizedContentType, sanitizedCTypeDetected, sanitizedFlowDirection :=
 		sanitizeStringFields(source, host, contentType, cTypeDetected, flowDirection)
@@ -393,6 +407,12 @@ func SaveFileEnhanced(
 		WasCompressed:   contentInfo.WasCompressed,
 		CompressionType: contentInfo.CompressionType,
 		CompressedSize:  contentInfo.CompressedSize,
+		// AI-based file type classification (Magika)
+		MagikaLabel:       magikaLabel(magikaResult),
+		MagikaMimeType:    magikaMimeType(magikaResult),
+		MagikaGroup:       magikaGroup(magikaResult),
+		MagikaDescription: magikaDescription(magikaResult),
+		MagikaIsText:      magikaIsText(magikaResult),
 	})
 
 	return nil
@@ -404,6 +424,46 @@ func trimEncoding(contentType string) string {
 		return strings.TrimSpace(contentType[:idx])
 	}
 	return contentType
+}
+
+// magikaLabel safely extracts the label from a possibly-nil Magika result.
+func magikaLabel(r *magikapkg.Result) string {
+	if r == nil {
+		return ""
+	}
+	return r.Label
+}
+
+// magikaMimeType safely extracts the MIME type from a possibly-nil Magika result.
+func magikaMimeType(r *magikapkg.Result) string {
+	if r == nil {
+		return ""
+	}
+	return r.MimeType
+}
+
+// magikaGroup safely extracts the group from a possibly-nil Magika result.
+func magikaGroup(r *magikapkg.Result) string {
+	if r == nil {
+		return ""
+	}
+	return r.Group
+}
+
+// magikaDescription safely extracts the description from a possibly-nil Magika result.
+func magikaDescription(r *magikapkg.Result) string {
+	if r == nil {
+		return ""
+	}
+	return r.Description
+}
+
+// magikaIsText safely extracts the IsText flag from a possibly-nil Magika result.
+func magikaIsText(r *magikapkg.Result) bool {
+	if r == nil {
+		return false
+	}
+	return r.IsText
 }
 
 // createContentTypePathIfRequired creates a directory for a content type if it doesn't exist

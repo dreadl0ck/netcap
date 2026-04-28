@@ -35,7 +35,7 @@ func TestEmbeddedEchartsFiles(t *testing.T) {
 		"static/echarts/themes/macarons.js",
 	}
 
-	fsSub, err := fs.Sub(EmbeddedAssets, "frontend/out")
+	fsSub, err := fs.Sub(EmbeddedAssets, "frontend/dist")
 	if err != nil {
 		t.Fatalf("Failed to access embedded assets: %v", err)
 	}
@@ -80,10 +80,10 @@ func TestEmbedDirective(t *testing.T) {
 		t.Logf("  - %s (isDir: %v)", entry.Name(), entry.IsDir())
 	}
 
-	// Check if frontend/out exists
-	fsSub, err := fs.Sub(EmbeddedAssets, "frontend/out")
+	// Check if frontend/dist exists
+	fsSub, err := fs.Sub(EmbeddedAssets, "frontend/dist")
 	if err != nil {
-		t.Fatalf("frontend/out not embedded: %v", err)
+		t.Fatalf("frontend/dist not embedded: %v", err)
 	}
 
 	// Check if static directory exists
@@ -92,7 +92,7 @@ func TestEmbedDirective(t *testing.T) {
 		t.Fatalf("static directory not found in embedded assets: %v", err)
 	}
 
-	t.Log("\nDirectories in frontend/out/static:")
+	t.Log("\nDirectories in frontend/dist/static:")
 	for _, entry := range entries {
 		if entry.IsDir() {
 			t.Logf("  - %s/", entry.Name())

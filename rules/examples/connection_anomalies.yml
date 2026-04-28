@@ -1,0 +1,81 @@
+# Connection Anomaly Detection Rules
+# Detect suspicious connection patterns using behavioral metrics
+
+description: "Detection rules for connection-level anomalies including C2 beaconing, protocol misuse, long-lived sessions, and suspicious traffic patterns using behavioral metrics like byte ratios and timing."
+
+rules:
+  # C2 Communication Indicators
+  - name: Potential C2 Beaconing
+    description: Connection with symmetric byte ratio to public IP (near 1:1 traffic pattern typical of C2 beacons)
+    type: Connection
+    expression: 'ByteRatio > 0.8 && ByteRatio < 1.2 && NumPackets > 20 && IsPublicIP(DstIP) && IsPrivateIP(SrcIP) && TotalSize > 1000'
+    severity: medium
+    mitre: ["T1071", "T1573"]
+    tags: ["c2", "beaconing"]
+    enabled: true
+
+  - name: Long Lived External Connection
+    description: Connection to public IP lasting longer than 1 hour (potential C2 or persistent tunnel). Disabled by default - triggers on VPN, streaming, websockets.
+    type: Connection
+    expression: 'Duration > 3600000000000 && IsPublicIP(DstIP) && IsPrivateIP(SrcIP)'
+    severity: low
+    mitre: ["T1071"]
+    tags: ["c2", "persistent"]
+    enabled: false
+
+  - name: TLS Without SNI to Public IP
+    description: TLS connection to public IP without Server Name Indication (potential C2 with direct IP communication). Disabled by default - older clients, CDNs, and IoT devices often skip SNI.
+    type: Connection
+    expression: 'DstPort == "443" && Sni == "" && IsPublicIP(DstIP) && IsPrivateIP(SrcIP) && TotalSize > 500'
+    severity: medium
+    mitre: ["T1573.002"]
+    tags: ["c2", "tls", "no-sni"]
+    enabled: false
+
+  # Protocol Anomalies
+  - name: Non-TLS Traffic on Port 443
+    description: Traffic on port 443 that is not TLS (potential protocol tunneling)
+    type: Connection
+    expression: 'DstPort == "443" && DetectedProtocolName != "" && DetectedProtocolName != "TLS" && DetectedProtocolName != "QUIC"'
+    severity: medium
+    mitre: ["T1572"]
+    tags: ["tunneling", "protocol-anomaly"]
+    enabled: true
+
+  - name: Non-DNS Traffic on Port 53
+    description: Traffic on DNS port that is not DNS (potential DNS tunneling or C2)
+    type: Connection
+    expression: 'DstPort == "53" && DetectedProtocolName != "" && DetectedProtocolName != "DNS"'
+    severity: high
+    mitre: ["T1572"]
+    tags: ["tunneling", "dns", "protocol-anomaly"]
+    enabled: true
+
+  - name: Non-HTTP Traffic on Port 80
+    description: Traffic on port 80 that is not HTTP (potential tunneling). Disabled by default - WebSocket upgrades, gRPC, and proxies commonly use port 80.
+    type: Connection
+    expression: 'DstPort == "80" && DetectedProtocolName != "" && !MatchesPattern(DetectedProtocolName, "(?i)HTTP")'
+    severity: medium
+    mitre: ["T1572"]
+    tags: ["tunneling", "protocol-anomaly"]
+    enabled: false
+
+  # Data Exfiltration Indicators
+  - name: Large Upload to External IP
+    description: Significantly more data sent to external IP than received (potential data exfiltration)
+    type: Connection
+    expression: 'BytesClientToServer > 10000000 && IsPublicIP(DstIP) && IsPrivateIP(SrcIP) && BytesClientToServer > BytesServerToClient * 10'
+    severity: medium
+    mitre: ["T1041"]
+    tags: ["exfiltration", "large-upload"]
+    enabled: true
+
+  # Scanning and Reconnaissance
+  - name: RST Flood Indicator
+    description: Connection with high RST count relative to packets (potential scan response or attack). Disabled by default - normal TCP behavior on refused connections generates RSTs.
+    type: Connection
+    expression: 'NumRSTFlags > 5 && NumPackets < 20 && IsPrivateIP(SrcIP)'
+    severity: low
+    mitre: ["T1046"]
+    tags: ["scanning", "reconnaissance"]
+    enabled: false

@@ -96,3 +96,7 @@ file_extraction:
     # Maximum filename length
     max_filename_length: 255
 
+    # AI-based file type classification using Google Magika Rust CLI
+    # Requires the magika binary in PATH (install: curl -LsSf https://securityresearch.google/magika/install.sh | sh)
+    enable_magika: false
+

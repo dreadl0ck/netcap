@@ -269,35 +269,8 @@ func GetDefaultHarvestersConfig() *HarvestersConfigFile {
 				Ports:       []int{5938},
 				Parameters:  map[string]any{},
 			},
-			// Network discovery protocols
-			{
-				Name:        "mDNS",
-				Description: "Multicast DNS local network service discovery",
-				Enabled:     true,
-				Ports:       []int{5353},
-				Parameters:  map[string]any{},
-			},
-			{
-				Name:        "NBNS",
-				Description: "NetBIOS Name Service Windows hostname discovery",
-				Enabled:     true,
-				Ports:       []int{137},
-				Parameters:  map[string]any{},
-			},
-			{
-				Name:        "UPnP",
-				Description: "Universal Plug and Play device discovery",
-				Enabled:     true,
-				Ports:       []int{1900},
-				Parameters:  map[string]any{},
-			},
-			{
-				Name:        "WSD",
-				Description: "Web Services Discovery for Windows devices",
-				Enabled:     true,
-				Ports:       []int{3702},
-				Parameters:  map[string]any{},
-			},
+			// Network discovery protocols (mDNS, NBNS, UPnP, WSD) have been moved to
+			// decoder/stream/discovery/ for device profile enrichment.
 			// New protocol harvesters
 			{
 				Name:        "RADIUS",

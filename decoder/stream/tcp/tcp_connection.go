@@ -355,13 +355,19 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 			zap.Int("mergedFragments", len(t.merged)),
 		)
 
+		// cache endpoint strings to avoid repeated conversions
+		clientIP := t.client.Network().Src().String()
+		serverIP := t.client.Network().Dst().String()
+		clientPort := utils.DecodePort(t.client.Transport().Src().Raw())
+		serverPort := utils.DecodePort(t.client.Transport().Dst().Raw())
+
 		// save the full conversation to disk if enabled
 		// Calculate Community ID once for use by harvesters
 		communityID := streamutils.CalcCommunityIDTCP(
-			t.client.Network().Src().String(),
-			t.client.Network().Dst().String(),
-			uint16(utils.DecodePort(t.client.Transport().Src().Raw())),
-			uint16(utils.DecodePort(t.client.Transport().Dst().Raw())),
+			clientIP,
+			serverIP,
+			uint16(clientPort),
+			uint16(serverPort),
 		)
 		err := streamutils.SaveConversation("TCP", t.merged, t.client.Ident(), t.client.FirstPacket(), t.client.Transport(), communityID)
 		if err != nil {
@@ -410,21 +416,22 @@ func (t *tcpConnection) decode() {
 		found  bool
 	)
 
+	// cache endpoint strings to avoid repeated conversions
+	cIP := t.client.Network().Src().String()
+	sIP := t.client.Network().Dst().String()
+	cPort := utils.DecodePort(t.client.Transport().Src().Raw())
+	sPort := utils.DecodePort(t.client.Transport().Dst().Raw())
+
 	conv := &core.ConversationInfo{
 		Data:              t.merged,
 		Ident:             t.ident,
 		FirstClientPacket: t.client.FirstPacket(),
 		FirstServerPacket: t.server.FirstPacket(),
-		ClientIP:          t.client.Network().Src().String(),
-		ServerIP:          t.client.Network().Dst().String(),
-		ClientPort:        utils.DecodePort(t.client.Transport().Src().Raw()),
-		ServerPort:        utils.DecodePort(t.client.Transport().Dst().Raw()),
-		CommunityID: streamutils.CalcCommunityIDTCP(
-			t.client.Network().Src().String(),
-			t.client.Network().Dst().String(),
-			uint16(utils.DecodePort(t.client.Transport().Src().Raw())),
-			uint16(utils.DecodePort(t.client.Transport().Dst().Raw())),
-		),
+		ClientIP:          cIP,
+		ServerIP:          sIP,
+		ClientPort:        cPort,
+		ServerPort:        sPort,
+		CommunityID:       streamutils.CalcCommunityIDTCP(cIP, sIP, uint16(cPort), uint16(sPort)),
 	}
 
 	// Use the client's destination port (= server's listening port) for decoder matching
@@ -470,15 +477,19 @@ func (t *tcpConnection) decode() {
 	}
 
 	// if no stream decoder for the port was found, or the stream decoder did not match
-	// try all available decoders and use the first one that matches
+	// try all available decoders and use the first one that matches.
+	// Use concatenated fragment data for better protocol detection when
+	// the first fragment alone is insufficient (e.g., length-prefixed framing).
 	if !found {
+		crFull, srFull := t.client.DataSlice().Bytes(), t.server.DataSlice().Bytes()
 		reassemblyLog.Debug("Trying all available decoders",
 			zap.String("ident", t.ident),
 			zap.Int("availableDecoders", len(stream.DefaultStreamDecoders)),
 		)
-		for port, sd := range stream.DefaultStreamDecoders {
+		for _, port := range stream.SortedDecoderPorts {
+			sd := stream.DefaultStreamDecoders[port]
 			if sd.Transport() == core.TCP || sd.Transport() == core.All {
-				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
+				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(crFull, srFull) {
 					t.decoder = sd.GetReaderFactory().New(conv)
 					reassemblyLog.Info("Stream decoder selected by fallback scan",
 						zap.String("ident", t.ident),
@@ -494,16 +505,17 @@ func (t *tcpConnection) decode() {
 	// call the decoder if one was found
 	if t.decoder != nil {
 		ti := time.Now()
+		decoderTypeName := reflect.TypeOf(t.decoder).String()
 
 		reassemblyLog.Info("Calling decoder.Decode()",
 			zap.String("ident", t.ident),
-			zap.String("decoderType", reflect.TypeOf(t.decoder).String()),
+			zap.String("decoderType", decoderTypeName),
 		)
 
 		// call the associated decoder
 		t.decoder.Decode()
 
-		tcpStreamDecodeTime.WithLabelValues(reflect.TypeOf(t.decoder).String()).Set(float64(time.Since(ti).Nanoseconds()))
+		tcpStreamDecodeTime.WithLabelValues(decoderTypeName).Set(float64(time.Since(ti).Nanoseconds()))
 
 		reassemblyLog.Info("Decoder.Decode() completed",
 			zap.String("ident", t.ident),

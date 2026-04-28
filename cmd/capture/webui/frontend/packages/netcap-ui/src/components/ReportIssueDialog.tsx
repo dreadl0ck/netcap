@@ -29,8 +29,11 @@ import {
   Alert,
   Box,
   CircularProgress,
+  IconButton,
 } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import { api } from '../lib/api';
+import { useIsMobile } from '../hooks';
 
 interface ReportIssueDialogProps {
   open: boolean;
@@ -40,6 +43,7 @@ interface ReportIssueDialogProps {
 }
 
 export default function ReportIssueDialog({ open, onClose, sessionId, filename }: ReportIssueDialogProps) {
+  const isMobile = useIsMobile();
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,8 +84,17 @@ export default function ReportIssueDialog({ open, onClose, sessionId, filename }
   };
 
   return (
-    <Dialog open={open} onClose={submitting ? undefined : handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>Report Issue with PCAP</DialogTitle>
+    <Dialog open={open} onClose={submitting ? undefined : handleClose} maxWidth="md" fullWidth fullScreen={isMobile}>
+      <DialogTitle>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          Report Issue with PCAP
+          {isMobile && (
+            <IconButton onClick={submitting ? undefined : handleClose} edge="end" disabled={submitting}>
+              <CloseIcon />
+            </IconButton>
+          )}
+        </Box>
+      </DialogTitle>
       <DialogContent>
         <Box mb={2}>
           <Typography variant="body2" color="text.secondary">

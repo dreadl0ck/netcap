@@ -21,6 +21,7 @@ package collector
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/gopacket/gopacket"
@@ -31,6 +32,11 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
 )
+
+// packetContextPool reuses PacketContext objects to reduce GC pressure.
+var packetContextPool = sync.Pool{
+	New: func() any { return &types.PacketContext{} },
+}
 
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
@@ -73,8 +79,12 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				c.perfTracker.RecordReassembly(duration)
 			}
 
-			// create context for packet
-			ctx := &types.PacketContext{}
+			// create context for packet (reuse from pool to reduce GC pressure)
+			ctx := packetContextPool.Get().(*types.PacketContext)
+			*ctx = types.PacketContext{}
+
+			// Always calculate Community ID v1 for cross-tool correlation
+			ctx.CommunityID = packet.CalcCommunityID(pkt)
 
 			if c.config.DecoderConfig.AddContext {
 				netLayer = pkt.NetworkLayer()
@@ -93,29 +103,29 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 					ctx.SrcPort = utils.DecodePort(transportLayer.TransportFlow().Src().Raw())
 					ctx.DstPort = utils.DecodePort(transportLayer.TransportFlow().Dst().Raw())
 				}
-
-				// Calculate Community ID v1 for cross-tool correlation
-				ctx.CommunityID = packet.CalcCommunityID(pkt)
 			}
 
 			// iterate over all layers
 			for _, layer = range pkt.Layers() {
 
+				// cache the layer type string to avoid repeated String() allocations
+				layerTypeStr := layer.LayerType().String()
+
 				// increment counter for layer type
-				c.allProtosAtomic.Inc(layer.LayerType().String())
+				c.allProtosAtomic.Inc(layerTypeStr)
 
 				if c.config.DecoderConfig.ExportMetrics {
-					allProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
+					allProtosTotal.WithLabelValues(layerTypeStr).Inc()
 				}
 
 				// check if packet contains an unknown layer
 				switch layer.LayerType() {
 				case gopacket.LayerTypeZero: // not known to gopacket
 					// increase counter
-					c.unknownProtosAtomic.Inc(layer.LayerType().String())
+					c.unknownProtosAtomic.Inc(layerTypeStr)
 
 					if c.config.DecoderConfig.ExportMetrics {
-						unknownProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
+						unknownProtosTotal.WithLabelValues(layerTypeStr).Inc()
 					}
 
 					// write to unknown.pcap file
@@ -136,14 +146,14 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 						t := time.Now()
 						err = dec.Decode(ctx, pkt, layer)
 						duration := time.Since(t)
-						gopacketDecoderTime.WithLabelValues(layer.LayerType().String()).Set(float64(duration.Nanoseconds()))
-						c.perfTracker.RecordGoPacketDecoder(layer.LayerType().String(), duration)
+						gopacketDecoderTime.WithLabelValues(layerTypeStr).Set(float64(duration.Nanoseconds()))
+						c.perfTracker.RecordGoPacketDecoder(layerTypeStr, duration)
 						if err != nil {
 							if c.config.DecoderConfig.ExportMetrics {
-								decodingErrorsTotal.WithLabelValues(layer.LayerType().String(), err.Error()).Inc()
+								decodingErrorsTotal.WithLabelValues(layerTypeStr, err.Error()).Inc()
 							}
 
-							if err = c.logPacketError(pkt, "GoPacketDecoder Error: "+layer.LayerType().String()+": "+err.Error()); err != nil {
+							if err = c.logPacketError(pkt, "GoPacketDecoder Error: "+layerTypeStr+": "+err.Error()); err != nil {
 								fmt.Println("failed to log packet error:", err)
 							}
 
@@ -153,9 +163,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				} else { // no netcap decoder implemented
 
 					// increment unknown layer type counter
-					c.unknownProtosAtomic.Inc(layer.LayerType().String())
+					c.unknownProtosAtomic.Inc(layerTypeStr)
 					if c.config.DecoderConfig.ExportMetrics {
-						unknownProtosTotal.WithLabelValues(layer.LayerType().String()).Inc()
+						unknownProtosTotal.WithLabelValues(layerTypeStr).Inc()
 					}
 
 					// if its not a payload layer, write to unknown .pcap file
@@ -171,7 +181,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			// call custom decoders
 			for _, customDec = range c.packetDecoders {
 				t := time.Now()
-				err = customDec.Decode(pkt)
+				err = customDec.Decode(pkt, ctx)
 				duration := time.Since(t)
 				customDecoderTime.WithLabelValues(customDec.GetName()).Set(float64(duration.Nanoseconds()))
 				c.perfTracker.RecordCustomDecoder(customDec.GetName(), duration)
@@ -201,6 +211,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			}
 
 			c.wg.Done()
+
+			// Return PacketContext to pool for reuse
+			packetContextPool.Put(ctx)
 
 			// If using pool mode, dispose of the packet to return it to the pool
 			// This must be done after all packet processing is complete

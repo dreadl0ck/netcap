@@ -36,7 +36,8 @@ func (d DataFragments) Size() int {
 	return s
 }
 
-func (d DataFragments) bytes() []byte {
+// Bytes returns all fragment data concatenated into a single byte slice.
+func (d DataFragments) Bytes() []byte {
 	var b bytes.Buffer
 
 	for _, dt := range d {
@@ -46,9 +47,13 @@ func (d DataFragments) bytes() []byte {
 	return b.Bytes()
 }
 
-// TODO: implement a read that does not duplicate the data, but instead iterates over the fragments when being read from
+// reader returns a reader that iterates over the fragments without copying data.
 func (d DataFragments) reader() io.Reader {
-	return bytes.NewReader(d.bytes())
+	readers := make([]io.Reader, len(d))
+	for i, dt := range d {
+		readers[i] = bytes.NewReader(dt.Raw())
+	}
+	return io.MultiReader(readers...)
 }
 
 // First returns the first fragment.
@@ -57,6 +62,15 @@ func (d DataFragments) First() []byte {
 		return d[0].Raw()
 	}
 	return nil
+}
+
+// SourceIP returns the source IP address from the first fragment's network layer.
+// Returns empty string if no fragments are available.
+func (d DataFragments) SourceIP() string {
+	if len(d) > 0 {
+		return d[0].Network().Src().String()
+	}
+	return ""
 }
 
 // Len returns the length.

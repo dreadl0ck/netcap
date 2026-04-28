@@ -692,5 +692,21 @@ func GetFlags() []cli.Flag {
 			Usage:   "development mode: use current binary instead of 'net' for job execution",
 			Sources: cli.EnvVars("NC_DEV"),
 		},
+		// Protobuf schema-aware decoding flags
+		&cli.StringSliceFlag{
+			Name:    "proto-paths",
+			Usage:   "search paths for .proto schema files (can be specified multiple times)",
+			Sources: cli.EnvVars("NC_PROTO_PATHS"),
+		},
+		&cli.BoolFlag{
+			Name:    "proto-show-alternatives",
+			Usage:   "show alternative type interpretations for unknown protobuf fields",
+			Sources: cli.EnvVars("NC_PROTO_SHOW_ALTERNATIVES"),
+		},
+		&cli.StringSliceFlag{
+			Name:    "proto-message-types",
+			Usage:   "port-to-message-type mappings (format: port:package.MessageType, can be specified multiple times)",
+			Sources: cli.EnvVars("NC_PROTO_MESSAGE_TYPES"),
+		},
 	}
 }

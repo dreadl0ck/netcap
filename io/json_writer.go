@@ -111,11 +111,10 @@ func newJSONWriter(wc *WriterConfig) *jsonWriter {
 	return w
 }
 
-// WriteCSV writes a CSV record.
+// Write writes a JSON record.
+// The inner jsonProtoWriter handles its own locking for the actual write,
+// so we don't hold the outer lock during JSON marshaling.
 func (w *jsonWriter) Write(msg proto.Message) error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	// Track disk I/O performance
 	if w.wc.PerfTracker != nil {
 		start := time.Now()
@@ -134,11 +133,8 @@ func (w *jsonWriter) Write(msg proto.Message) error {
 	return err
 }
 
-// WriteHeader writes a CSV header.
+// WriteHeader writes a JSON header.
 func (w *jsonWriter) WriteHeader(t types.Type) error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	_, err := w.jWriter.writeHeader(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
 
 	return err

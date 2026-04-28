@@ -23,9 +23,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"log"
 	"path/filepath"
 	"strings"
@@ -58,6 +57,20 @@ type macSummary struct {
 
 var macDB = make(map[string]macSummary)
 
+// hexVal returns the numeric value of a hex character, or 0xFF if invalid.
+func hexVal(c byte) byte {
+	switch {
+	case c >= '0' && c <= '9':
+		return c - '0'
+	case c >= 'A' && c <= 'F':
+		return c - 'A' + 10
+	case c >= 'a' && c <= 'f':
+		return c - 'a' + 10
+	default:
+		return 0xFF
+	}
+}
+
 // initMACResolver loads the MAC DB into memory.
 // It first attempts to use gopacket's built-in MAC prefix data,
 // and optionally supplements it with the JSON database from macaddress.io if available.
@@ -66,7 +79,7 @@ func initMACResolver() {
 
 	// First, try to load the optional JSON database as a supplement
 	dbPath := filepath.Join(DataBaseFolderPath, "macaddress.io-db.json")
-	data, err := ioutil.ReadFile(dbPath)
+	data, err := os.ReadFile(dbPath)
 	if err != nil {
 		// Not an error - we'll use gopacket's built-in data only
 		resolverLog.Info("macaddress.io-db.json not found, using gopacket's built-in MAC prefix database")
@@ -86,7 +99,7 @@ func initMACResolver() {
 				continue
 			}
 
-			macDB[sum.OUI] = sum
+			macDB[strings.ToUpper(sum.OUI)] = sum
 			sums++
 		}
 		resolverLog.Info("loaded additional OUI summaries from JSON",
@@ -131,24 +144,20 @@ func LookupManufacturer(mac string) string {
 	// The gopacket map uses [3]byte as key (first 3 bytes of MAC)
 	// Parse the MAC address to get the first 3 bytes
 	if len(mac) >= 8 {
-		// Parse "E8:9F:80" or "e8:9f:80" format to bytes
-		parts := strings.Split(oui, ":")
-		if len(parts) >= 3 {
-			var prefix [3]byte
-			for i := range 3 {
-				// Parse hex string to byte
-				var b byte
-				if _, err := fmt.Sscanf(parts[i], "%02X", &b); err == nil {
-					prefix[i] = b
-				} else {
-					// Try lowercase
-					if _, err := fmt.Sscanf(parts[i], "%02x", &b); err != nil {
-						return ""
-					}
-					prefix[i] = b
-				}
+		// Parse "E8:9F:80" or "e8:9f:80" format to [3]byte using direct hex decoding
+		var prefix [3]byte
+		valid := true
+		for i, start := 0, 0; i < 3 && start+1 < len(oui); i++ {
+			hi := hexVal(oui[start])
+			lo := hexVal(oui[start+1])
+			if hi == 0xFF || lo == 0xFF {
+				valid = false
+				break
 			}
-
+			prefix[i] = hi<<4 | lo
+			start += 3 // skip "XX:"
+		}
+		if valid {
 			if vendor, ok := macs.ValidMACPrefixMap[prefix]; ok {
 				return vendor
 			}

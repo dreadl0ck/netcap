@@ -29,10 +29,16 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	// maxDNSCacheSize is the maximum number of entries in the DNS cache.
+	// When exceeded, the cache is cleared to prevent unbounded memory growth.
+	maxDNSCacheSize = 100000
+)
+
 var (
-	timeout           = 10 * time.Second
+	timeout           = 2 * time.Second // reduced from 10s to avoid blocking workers
 	dnsNamesDB        = make(map[string][]string)
-	dnsNamesMu        sync.Mutex
+	dnsNamesMu        sync.RWMutex
 	privateIPBlocks   []*net.IPNet
 	disableReverseDNS = true
 )
@@ -111,10 +117,10 @@ func LookupDNSNames(ip string) []string {
 		return nil
 	}
 
-	// check if ip has already been resolved
-	dnsNamesMu.Lock()
+	// check if ip has already been resolved (RLock for concurrent reads)
+	dnsNamesMu.RLock()
 	if res, ok := dnsNamesDB[ip]; ok {
-		dnsNamesMu.Unlock()
+		dnsNamesMu.RUnlock()
 
 		// Record cache hit
 		if perfTracker != nil {
@@ -123,7 +129,7 @@ func LookupDNSNames(ip string) []string {
 
 		return res
 	}
-	dnsNamesMu.Unlock()
+	dnsNamesMu.RUnlock()
 
 	// resolve
 	ctx, cancelCtx := context.WithTimeout(context.TODO(), timeout)
@@ -138,6 +144,10 @@ func LookupDNSNames(ip string) []string {
 
 	// add to DB
 	dnsNamesMu.Lock()
+	// evict cache if it grows too large to prevent unbounded memory usage
+	if len(dnsNamesDB) >= maxDNSCacheSize {
+		dnsNamesDB = make(map[string][]string, maxDNSCacheSize/2)
+	}
 	dnsNamesDB[ip] = names
 	dnsNamesMu.Unlock()
 

@@ -21,39 +21,30 @@
 // This is a copy of the original api.ts file for the netcap-ui package
 
 // Get backend URL - defaults to localhost:8080
-// In production builds, this can be overridden via NEXT_PUBLIC_BACKEND_URL
+// In production builds, this can be overridden via VITE_BACKEND_URL
 export function getBackendUrl(): string {
-  // Check if running in browser
-  if (typeof window !== 'undefined') {
-    // Allow override via window object (for embedded scenarios)
-    const windowWithBackend = window as { __BACKEND_URL__?: string };
-    if (windowWithBackend.__BACKEND_URL__) {
-      return windowWithBackend.__BACKEND_URL__;
-    }
+  // Allow override via window object (for embedded scenarios)
+  const windowWithBackend = window as { __BACKEND_URL__?: string };
+  if (windowWithBackend.__BACKEND_URL__) {
+    return windowWithBackend.__BACKEND_URL__;
   }
-  
-  // Use environment variable if set, otherwise default to localhost:8080
-  return process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+
+  // Use Vite environment variable if set, otherwise default to localhost:8080.
+  // import.meta.env is statically replaced by Vite at build time.
+  // The cast is needed because this library is built by tsup (no vite/client types).
+  const env = (import.meta as unknown as { env?: Record<string, string> }).env;
+  return env?.VITE_BACKEND_URL || 'http://localhost:8080';
 }
 
 // Default API_BASE for backwards compatibility (computed once at module load)
 const DEFAULT_API_BASE = `${getBackendUrl()}/api`;
 
 /**
- * Check if we're running on the server (SSR)
- */
-const isSSR = typeof window === 'undefined';
-
-/**
  * Create an API client with a specific backend URL.
  * This factory function allows creating API clients that respect the configured backendUrl.
- * 
- * During SSR (static site generation), returns a no-op API that returns empty/default values.
- * This prevents errors during Next.js static export while the real API loads on the client.
  */
 export function createApi(backendUrl: string) {
-  // During SSR or with empty backendUrl, return no-op API to prevent errors
-  if (isSSR || !backendUrl) {
+  if (!backendUrl) {
     return createNoOpApi();
   }
   const apiBase = `${backendUrl}/api`;
@@ -185,6 +176,23 @@ function createNoOpApi(): NetcapApiClient {
     getLogsCount: noOpReturn(0),
     getMenuCounts: noOpReturn({ hostsCount: 0, devicesCount: 0, connectionsCount: 0, httpCount: 0, certificatesCount: 0, credentialsCount: 0, domainsCount: 0, fingerprintsCount: 0, softwareCount: 0, vulnerabilitiesCount: 0, auditRecordsCount: 0, servicesCount: 0, logsCount: 0, alertsGroupCount: 0, extractedFilesCount: 0 }),
     reanalyzeFile: noOpReturn({ success: false, message: '' }),
+    getYaraStatus: noOpReturn({ available: false, rulesDir: '', enabledRules: 0, totalRules: 0 }),
+    getYaraRules: noOpReturn({ rules: [] }),
+    uploadYaraRule: noOp as any,
+    getYaraRuleContent: noOp as any,
+    updateYaraRule: noOpReturn({ message: '' }),
+    deleteYaraRule: noOpReturn({ message: '' }),
+    scanWithYara: noOpReturn({ results: [], totalFiles: 0, filesScanned: 0, totalMatches: 0, scanTimeMs: 0 }),
+    scanFileWithYara: noOp as any,
+    getProtoStatus: noOpReturn({ loaded: false, fileCount: 0, messageCount: 0, searchPaths: [], showAlternatives: false, portMappings: [], errors: [], lastCompiled: '' }),
+    getProtoMessages: noOpReturn({ messages: [] }),
+    addProtoSearchPath: noOpReturn({ success: false, message: '' }),
+    removeProtoSearchPath: noOpReturn({ success: false, message: '' }),
+    uploadProtoFiles: noOp as any,
+    addProtoMapping: noOpReturn({ success: false, message: '' }),
+    removeProtoMapping: noOpReturn({ success: false, message: '' }),
+    setProtoPreferences: noOpReturn({ success: false, message: '' }),
+    recompileProtos: noOpReturn({ success: false, message: '' }),
     formatBytes,
     formatTimestamp,
     formatDuration,
@@ -329,12 +337,110 @@ export interface ExtractedFileInfo {
   mimeType: string;
   hash?: string;     // SHA256 hash from File audit record
   protocol?: string; // Protocol used for file transfer (HTTP, FTP, SMB, SMTP, IRC)
+  // Security indicators from File audit record
+  entropy?: number;
+  typeMismatch?: boolean;
+  isPEExecutable?: boolean;
+  isELFExecutable?: boolean;
+  isMachO?: boolean;
+  hasEmbeddedScript?: boolean;
+  isPasswordProtected?: boolean;
+  isKnownMalware?: boolean;
+  threatName?: string;
+  trueFileType?: string;
+  contentType?: string;
+  // YARA matches
+  yaraMatches?: string[];
+  // AI-based file type classification (Magika)
+  magikaLabel?: string;
+  magikaMimeType?: string;
+  magikaGroup?: string;
+  magikaDescription?: string;
+  magikaIsText?: boolean;
 }
 
 export interface ExtractedFilesResponse {
   files: ExtractedFileInfo[];
   totalCount: number;
   filesDir: string;
+}
+
+// YARA scanning types
+export interface YaraRuleInfo {
+  name: string;
+  filename: string;
+  size: number;
+  enabled: boolean;
+  modifiedAt: number;
+  ruleCount: number;
+  description: string;
+}
+
+export interface YaraScanResult {
+  filePath: string;
+  fileName: string;
+  matches: string[];
+  scanTimeMs: number;
+}
+
+export interface YaraScanResponse {
+  results: YaraScanResult[];
+  totalFiles: number;
+  filesScanned: number;
+  totalMatches: number;
+  scanTimeMs: number;
+}
+
+export interface YaraStatusResponse {
+  available: boolean;
+  rulesDir: string;
+  enabledRules: number;
+  totalRules: number;
+}
+
+// Protobuf Schema types
+export interface ProtoStatusResponse {
+  loaded: boolean;
+  fileCount: number;
+  messageCount: number;
+  searchPaths: string[];
+  showAlternatives: boolean;
+  portMappings: ProtoPortMapping[];
+  errors: string[];
+  lastCompiled: string;
+}
+
+export interface ProtoPortMapping {
+  port: number;
+  messageType: string;
+}
+
+export interface ProtoFieldInfo {
+  name: string;
+  number: number;
+  type: string;
+  label: string;
+  typeName?: string;
+  enumValues?: { name: string; number: number }[];
+}
+
+export interface ProtoMessageInfo {
+  fullName: string;
+  package: string;
+  name: string;
+  protoFile: string;
+  fields: ProtoFieldInfo[];
+}
+
+export interface ProtoMessagesResponse {
+  messages: ProtoMessageInfo[];
+}
+
+export interface ProtoMutationResponse {
+  success: boolean;
+  message: string;
+  status?: ProtoStatusResponse;
+  uploadedFiles?: string[];
 }
 
 export interface ExtractedFileContentResponse {
@@ -2167,6 +2273,185 @@ function createApiWithBase(apiBase: string) {
     if (!res.ok) {
       const errorText = await res.text();
       throw new Error(errorText || 'Failed to reanalyze file');
+    }
+    return res.json();
+  },
+
+  // YARA Rules API
+  async getYaraStatus(): Promise<YaraStatusResponse> {
+    const res = await fetch(`${apiBase}/yara/status`);
+    if (!res.ok) throw new Error('Failed to fetch YARA status');
+    return res.json();
+  },
+
+  async getYaraRules(): Promise<{ rules: YaraRuleInfo[] }> {
+    const res = await fetch(`${apiBase}/yara/rules`);
+    if (!res.ok) throw new Error('Failed to fetch YARA rules');
+    return res.json();
+  },
+
+  async uploadYaraRule(file: File): Promise<{ message: string; filename: string; ruleCount: number }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${apiBase}/yara/rules/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.details || err.error || 'Failed to upload YARA rule');
+    }
+    return res.json();
+  },
+
+  async getYaraRuleContent(name: string): Promise<{ name: string; filename: string; content: string }> {
+    const res = await fetch(`${apiBase}/yara/rules/${encodeURIComponent(name)}`);
+    if (!res.ok) throw new Error('Failed to fetch YARA rule content');
+    return res.json();
+  },
+
+  async updateYaraRule(name: string, update: { content?: string; enabled?: boolean }): Promise<{ message: string }> {
+    const res = await fetch(`${apiBase}/yara/rules/${encodeURIComponent(name)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(update),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.details || err.error || 'Failed to update YARA rule');
+    }
+    return res.json();
+  },
+
+  async deleteYaraRule(name: string): Promise<{ message: string }> {
+    const res = await fetch(`${apiBase}/yara/rules/${encodeURIComponent(name)}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to delete YARA rule');
+    return res.json();
+  },
+
+  async scanWithYara(): Promise<YaraScanResponse> {
+    const res = await fetch(`${apiBase}/yara/scan`, { method: 'POST' });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'YARA scan failed');
+    }
+    return res.json();
+  },
+
+  async scanFileWithYara(filePath: string): Promise<YaraScanResult> {
+    const res = await fetch(`${apiBase}/yara/scan-file`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filePath }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'YARA scan failed');
+    }
+    return res.json();
+  },
+
+  // Protobuf Schema API
+  async getProtoStatus(): Promise<ProtoStatusResponse> {
+    const res = await fetch(`${apiBase}/proto/status`);
+    if (!res.ok) throw new Error('Failed to fetch proto status');
+    return res.json();
+  },
+
+  async getProtoMessages(): Promise<ProtoMessagesResponse> {
+    const res = await fetch(`${apiBase}/proto/messages`);
+    if (!res.ok) throw new Error('Failed to fetch proto messages');
+    return res.json();
+  },
+
+  async addProtoSearchPath(path: string): Promise<ProtoMutationResponse> {
+    const res = await fetch(`${apiBase}/proto/search-paths`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to add search path');
+    }
+    return res.json();
+  },
+
+  async removeProtoSearchPath(path: string): Promise<ProtoMutationResponse> {
+    const res = await fetch(`${apiBase}/proto/search-paths`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to remove search path');
+    }
+    return res.json();
+  },
+
+  async uploadProtoFiles(files: File[]): Promise<ProtoMutationResponse> {
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append('files', file);
+    }
+    const res = await fetch(`${apiBase}/proto/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Upload failed');
+    }
+    return res.json();
+  },
+
+  async addProtoMapping(port: number, messageType: string): Promise<ProtoMutationResponse> {
+    const res = await fetch(`${apiBase}/proto/mappings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port, messageType }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to add mapping');
+    }
+    return res.json();
+  },
+
+  async removeProtoMapping(port: number): Promise<ProtoMutationResponse> {
+    const res = await fetch(`${apiBase}/proto/mappings`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to remove mapping');
+    }
+    return res.json();
+  },
+
+  async setProtoPreferences(prefs: { showAlternatives: boolean }): Promise<ProtoMutationResponse> {
+    const res = await fetch(`${apiBase}/proto/preferences`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(prefs),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to update preferences');
+    }
+    return res.json();
+  },
+
+  async recompileProtos(): Promise<ProtoMutationResponse> {
+    const res = await fetch(`${apiBase}/proto/recompile`, { method: 'POST' });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Recompilation failed');
     }
     return res.json();
   },

@@ -18,6 +18,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useIsMobile } from '../hooks/useIsMobile';
 import AppBar from '@mui/material/AppBar';
 import Badge from '@mui/material/Badge';
 import Box from '@mui/material/Box';
@@ -66,6 +67,8 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import BoltIcon from '@mui/icons-material/Bolt';
+import ShieldIcon from '@mui/icons-material/Shield';
+import CodeIcon from '@mui/icons-material/Code';
 import useSWR from 'swr';
 
 import { useNetcapRouter } from '../hooks/useNetcapRouter';
@@ -74,6 +77,7 @@ import { useNetcapLink } from '../providers/NetcapProvider';
 import LearnModeToggle from './LearnModeToggle';
 import LearnModeOverlay from './LearnModeOverlay';
 import CommunityIDFilterBar from './CommunityIDFilterBar';
+import MobileBottomNav from './MobileBottomNav';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 const drawerWidth = 240;
@@ -101,23 +105,15 @@ const BADGE_SX = {
 
 const LINK_STYLE = { textDecoration: 'none', color: 'inherit' };
 
-const TOOLBAR_LOGO_SX = {
-  color: 'primary.main',
-  fontWeight: 'bold',
+const TOOLBAR_LOGO_IMG_STYLE: React.CSSProperties = {
+  width: '100%',
   cursor: 'pointer',
-  lineHeight: 1.2,
-  '&:hover': {
-    color: 'primary.dark',
-  },
-};
+  display: 'block',
+  userSelect: 'none',
+  WebkitUserDrag: 'none',
+  pointerEvents: 'none',
+} as React.CSSProperties;
 
-const SERVICE_MODE_CAPTION_SX = {
-  color: 'text.secondary',
-  fontSize: '0.65rem',
-  fontWeight: 500,
-  letterSpacing: '0.1em',
-  mt: -0.5,
-};
 
 const VERSION_BOX_SX = {
   p: 2,
@@ -151,6 +147,7 @@ export interface LayoutProps {
 export function Layout({ children, title, headerAction, topPadding }: LayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const isMobile = useIsMobile();
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const Link = useNetcapLink();
@@ -273,61 +270,20 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
   }, []);
 
   const defaultTopPadding = topPadding || {
-    xs: headerAction ? '140px' : '80px',
+    xs: headerAction ? '112px' : '72px',
     sm: headerAction ? '120px' : '88px',
     md: '88px',
   };
 
   const drawer = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box 
-          onClick={toggleFullscreen}
-          sx={{ 
-            textDecoration: 'none', 
-            flexGrow: 1,
-            cursor: 'pointer',
-          }}
-        >
-          <Box sx={status?.logoSubText ? { padding: '7px 0px 0px 50px' } : undefined}>
-            <Typography 
-              variant="h6" 
-              noWrap 
-              component="div" 
-              sx={TOOLBAR_LOGO_SX}
-            >
-              NETCAP
-            </Typography>
-            {status?.logoSubText ? (
-              <Typography 
-                variant="caption" 
-                component="div"
-                sx={SERVICE_MODE_CAPTION_SX}
-              >
-                {status.logoSubText}
-              </Typography>
-            ) : status?.isServiceMode ? (
-              <Typography 
-                variant="caption" 
-                component="div"
-                sx={SERVICE_MODE_CAPTION_SX}
-              >
-                SERVICE
-              </Typography>
-            ) : status && !status?.isTryService && (
-              <Typography 
-                variant="caption" 
-                component="div"
-                sx={SERVICE_MODE_CAPTION_SX}
-              >
-                LOCAL
-              </Typography>
-            )}
-          </Box>
-        </Box>
-        <LearnModeToggle />
+      <Toolbar
+        onClick={toggleFullscreen}
+        sx={{ px: '0 !important', minHeight: { xs: 'auto', sm: 64 }, cursor: 'pointer', justifyContent: 'center' }}
+      >
+        <img src="/logo.png" alt="Netcap" style={TOOLBAR_LOGO_IMG_STYLE} />
       </Toolbar>
-      <List sx={{ flexGrow: 1 }}>
+      <List sx={{ flexGrow: 1, pt: 0 }}>
         <Link href="/" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/')}
@@ -616,6 +572,18 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                 <ListItemText primary="Files" />
               </ListItemButton>
             </Link>
+            <Link href="/yara" passHref style={LINK_STYLE}>
+              <ListItemButton
+                selected={router.isActive('/yara')}
+                data-learn="YARA Rules: Upload and manage YARA rules, scan extracted files for malware signatures."
+                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
+              >
+                <ListItemIcon>
+                  <ShieldIcon />
+                </ListItemIcon>
+                <ListItemText primary="YARA Rules" />
+              </ListItemButton>
+            </Link>
             <Link href="/logs" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/logs')}
@@ -704,6 +672,18 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             <ListItemText primary="Decoders" />
           </ListItemButton>
         </Link>
+        <Link href="/protobuf" passHref style={LINK_STYLE}>
+          <ListItemButton
+            selected={router.isActive('/protobuf')}
+            data-learn="Protobuf Schemas: Manage .proto schema files for decoding Protocol Buffer traffic."
+            sx={SELECTED_MENU_ITEM_SX}
+          >
+            <ListItemIcon>
+              <CodeIcon />
+            </ListItemIcon>
+            <ListItemText primary="Protobuf Schemas" />
+          </ListItemButton>
+        </Link>
         <Link href="/harvesters" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/harvesters')}
@@ -786,6 +766,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
               </Link>
             </Typography>
             <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <LearnModeToggle size="small" />
               <IconButton
                 data-learn="Documentation: Open the official Netcap documentation."
                 size="small"
@@ -827,38 +808,46 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
         <Toolbar
           sx={{
             minHeight: { xs: 'auto', sm: 64 },
-            py: { xs: 1, sm: 0 },
-            flexDirection: { xs: 'column', md: 'row' },
-            alignItems: { xs: 'flex-start', md: 'center' },
-            gap: { xs: 1, md: 0 },
+            py: { xs: 0.5, sm: 0 },
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: { xs: 0.5, md: 0 },
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', width: { xs: '100%', md: 'auto' } }}>
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2, display: { lg: 'none' } }}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: headerAction ? 0 : 1 }}>
-              {title}
-            </Typography>
-          </Box>
-          {headerAction && (
-            <Box sx={{ 
-              ml: { xs: 0, md: 'auto' },
-              width: { xs: '100%', md: 'auto' },
-              display: 'flex', 
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: { xs: 1, sm: 2 }, display: { lg: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: headerAction ? 0 : 1, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+            {title}
+          </Typography>
+          {headerAction && !isMobile && (
+            <Box sx={{
+              ml: 'auto',
+              display: 'flex',
               alignItems: 'center',
-              flexGrow: { xs: 1, md: 0 },
             }}>
               {headerAction}
             </Box>
           )}
         </Toolbar>
+        {headerAction && isMobile && (
+          <Box sx={{
+            px: 1,
+            py: 0.5,
+            display: 'flex',
+            alignItems: 'center',
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}>
+            {headerAction}
+          </Box>
+        )}
       </AppBar>
       <Box
         component="nav"
@@ -895,6 +884,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
         sx={{
           flexGrow: 1,
           p: { xs: 2, sm: 3 },
+          pb: { xs: '72px', sm: '72px', md: 3 },
           width: { lg: `calc(100% - ${drawerWidth}px)` },
           minWidth: 0,
           overflowX: 'hidden',
@@ -904,6 +894,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
         <CommunityIDFilterBar />
         {children}
       </Box>
+      <MobileBottomNav onMoreClick={handleDrawerToggle} />
       <LearnModeOverlay />
     </Box>
   );

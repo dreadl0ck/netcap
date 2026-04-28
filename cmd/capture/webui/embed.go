@@ -30,18 +30,10 @@ import (
 	"time"
 )
 
-// Embed the frontend assets
+// Embed the frontend assets (Vite build output in frontend/dist/).
+// The "all:" prefix includes dotfiles. The frontend must be built before compiling.
 //
-//go:embed frontend/out
-//go:embed frontend/out/_next
-//go:embed frontend/out/_next/static
-//go:embed frontend/out/_next/static/chunks
-//go:embed frontend/out/_next/static/chunks/*.js
-//go:embed frontend/out/_next/static/*/*.js
-//go:embed frontend/out/_next/static/*/*.json
-//go:embed frontend/out/*.html
-//go:embed frontend/out/*/*.html
-//go:embed all:frontend/out/static
+//go:embed all:frontend/dist
 var EmbeddedAssets embed.FS
 
 // responseWriterWrapper wraps http.ResponseWriter to intercept WriteHeader
@@ -79,9 +71,8 @@ func cacheControlMiddleware(next http.Handler) http.Handler {
 		// Determine cache duration based on file type
 		var cacheControl string
 
-		// Immutable assets with content hashes (Next.js chunks) - cache for 1 year
-		if strings.Contains(path, "/_next/static/") ||
-			strings.Contains(path, "/_next/static/chunks/") {
+		// Immutable assets with content hashes (Vite hashed chunks) - cache for 1 year
+		if strings.HasPrefix(path, "/assets/") {
 			// These files have content hashes in their names and never change
 			cacheControl = "public, max-age=31536000, immutable"
 		} else if strings.HasSuffix(path, ".js") ||
@@ -124,6 +115,26 @@ func cacheControlMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// spaFallbackHandler wraps an http.FileServer with SPA fallback logic.
+// For paths that don't match a static file (no file extension) and aren't API routes,
+// it serves index.html so React Router can handle client-side routing.
+func spaFallbackHandler(fileServer http.Handler, fsys fs.FS) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+
+		// If the path has a file extension or is the root, serve directly
+		if path == "/" || strings.Contains(path, ".") {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+
+		// For paths without extensions (SPA routes like /alerts, /hosts, etc.),
+		// serve index.html so React Router handles routing
+		r.URL.Path = "/"
+		fileServer.ServeHTTP(w, r)
+	})
+}
+
 // handleStatic serves static frontend assets
 func (s *Server) handleStatic() http.Handler {
 	// If custom assets path is specified (dev mode), serve from filesystem
@@ -132,14 +143,15 @@ func (s *Server) handleStatic() http.Handler {
 		if err == nil {
 			if _, err := os.Stat(absPath); err == nil {
 				log.Printf("[WebUI] Serving assets from filesystem: %s", absPath)
-				return cacheControlMiddleware(http.FileServer(http.Dir(absPath)))
+				fileServer := http.FileServer(http.Dir(absPath))
+				return cacheControlMiddleware(spaFallbackHandler(fileServer, os.DirFS(absPath)))
 			}
 		}
 		log.Printf("[WebUI] Warning: Custom assets path not accessible: %s", s.assetsPath)
 	}
 
 	// Otherwise, serve embedded assets
-	fsSub, err := fs.Sub(EmbeddedAssets, "frontend/out")
+	fsSub, err := fs.Sub(EmbeddedAssets, "frontend/dist")
 	if err != nil {
 		// Fallback to serving a simple message if assets aren't built
 		log.Printf("[WebUI] Warning: Failed to load embedded assets: %v", err)
@@ -152,7 +164,7 @@ func (s *Server) handleStatic() http.Handler {
 				<body>
 					<h1>Netcap Web UI</h1>
 					<p>Frontend assets not built. Build the frontend with:</p>
-					<pre>cd cmd/capture/webui/frontend && npm install && npm run build</pre>
+					<pre>cd cmd/capture/webui/frontend && pnpm install && pnpm build</pre>
 					<p>API endpoints are available at <a href="/api/status">/api/status</a></p>
 				</body>
 				</html>
@@ -160,7 +172,8 @@ func (s *Server) handleStatic() http.Handler {
 		})
 	}
 
-	log.Printf("[WebUI] Serving embedded assets from frontend/out")
+	log.Printf("[WebUI] Serving embedded assets from frontend/dist")
 
-	return cacheControlMiddleware(http.FileServer(http.FS(fsSub)))
+	fileServer := http.FileServer(http.FS(fsSub))
+	return cacheControlMiddleware(spaFallbackHandler(fileServer, fsSub))
 }

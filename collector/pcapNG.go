@@ -41,7 +41,11 @@ func openPcapNG(file string) (*pcapgo.NgReader, *os.File, error) {
 	}
 
 	// try to create pcap reader
-	r, err := pcapgo.NewNgReader(f, pcapgo.DefaultNgReaderOptions)
+	// Enable mixed link types to support pcapng files with multiple interface types
+	// (e.g., Ethernet + FPP for IS-IS, different encapsulations)
+	opts := pcapgo.DefaultNgReaderOptions
+	opts.WantMixedLinkType = true
+	r, err := pcapgo.NewNgReader(f, opts)
 	if err != nil {
 		// Close the file before returning error
 		f.Close()

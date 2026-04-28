@@ -286,7 +286,7 @@ export default function Dashboard() {
                       <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
                         Exploits
                       </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
                         {auditStats.exploitCount.toLocaleString()}
                       </Typography>
                     </Box>
@@ -303,7 +303,7 @@ export default function Dashboard() {
                       <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
                         Vulnerabilities
                       </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
                         {auditStats.vulnerabilityCount.toLocaleString()}
                       </Typography>
                     </Box>
@@ -320,7 +320,7 @@ export default function Dashboard() {
                       <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
                         Credentials
                       </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
                         {auditStats.credentialsCount.toLocaleString()}
                       </Typography>
                     </Box>
@@ -337,7 +337,7 @@ export default function Dashboard() {
                       <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
                         Software
                       </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
                         {auditStats.softwareCount.toLocaleString()}
                       </Typography>
                     </Box>
@@ -355,7 +355,7 @@ export default function Dashboard() {
                 <Typography color="text.secondary" gutterBottom>
                   Data Sources
                 </Typography>
-                <Typography variant="h3">{inputFiles?.length || 0}</Typography>
+                <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{inputFiles?.length || 0}</Typography>
               </CardContent>
             </Card>
           </Grid>
@@ -366,7 +366,7 @@ export default function Dashboard() {
                 <Typography color="text.secondary" gutterBottom>
                   Audit Record Types
                 </Typography>
-                <Typography variant="h3">{auditFiles?.length || 0}</Typography>
+                <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{auditFiles?.length || 0}</Typography>
               </CardContent>
             </Card>
           </Grid>
@@ -377,7 +377,7 @@ export default function Dashboard() {
                 <Typography color="text.secondary" gutterBottom>
                   Total Records
                 </Typography>
-                <Typography variant="h3">{totalAuditRecords.toLocaleString()}</Typography>
+                <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{totalAuditRecords.toLocaleString()}</Typography>
               </CardContent>
             </Card>
           </Grid>
@@ -388,7 +388,7 @@ export default function Dashboard() {
                 <Typography color="text.secondary" gutterBottom>
                   Log Files
                 </Typography>
-                <Typography variant="h3">{logFiles?.length || 0}</Typography>
+                <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{logFiles?.length || 0}</Typography>
               </CardContent>
             </Card>
           </Grid>
@@ -408,7 +408,7 @@ export default function Dashboard() {
                 <Box 
                   sx={{ 
                     width: '100%', 
-                    height: 600,
+                    height: { xs: 300, sm: 450, md: 600 },
                     borderRadius: 1,
                     overflow: 'hidden',
                     backgroundColor: '#1e1e1e'
@@ -461,7 +461,7 @@ export default function Dashboard() {
                       <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
                         CPU Cores
                       </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
                         {systemInfo.numCPU}
                       </Typography>
                     </Box>
@@ -483,7 +483,7 @@ export default function Dashboard() {
                       <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
                         Total Memory
                       </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
                         {formatBytes(systemInfo.totalMemory)}
                       </Typography>
                     </Box>
@@ -505,7 +505,7 @@ export default function Dashboard() {
                       <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
                         Free Memory
                       </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
+                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
                         {formatBytes(systemInfo.freeMemory)}
                       </Typography>
                       <Typography variant="caption" sx={{ opacity: 0.8, display: 'block', mt: 0.5 }}>

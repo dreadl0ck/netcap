@@ -45,7 +45,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import ShareIcon from '@mui/icons-material/Share';
 import DescriptionIcon from '@mui/icons-material/Description';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
-import Link from 'next/link';
+import { NetcapLink } from '../components/NetcapLink';
 import { useNetcapRouter, useNetcapApi } from '../hooks';
 
 interface QuotaInfo {
@@ -255,7 +255,7 @@ export default function AnalyzePage() {
                   </Typography>
                 </Box>
                 
-                <Box flex={1} minWidth={300}>
+                <Box flex={1} minWidth={{ xs: 0, sm: 300 }}>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Storage Usage
                   </Typography>
@@ -312,7 +312,7 @@ export default function AnalyzePage() {
               </Alert>
               <BPFExpressionBlock expression={bpfData.currentFilter} />
               <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                <Link href="/bpf" style={{ color: 'inherit', textDecoration: 'none' }}>
+                <NetcapLink href="/bpf" style={{ color: 'inherit', textDecoration: 'none' }}>
                   <Button 
                     data-learn="Edit BPF Filter: Modify the Berkeley Packet Filter to include or exclude specific network traffic."
                     variant="outlined" 
@@ -320,7 +320,7 @@ export default function AnalyzePage() {
                   >
                     Edit Filter
                   </Button>
-                </Link>
+                </NetcapLink>
               </Box>
             </CardContent>
           </Card>
@@ -351,7 +351,7 @@ export default function AnalyzePage() {
               </Typography>
               {isServiceMode && (
                 <Alert severity="info" sx={{ mt: 2, maxWidth: 600 }}>
-                  You can also browse results from pre-analyzed files on the <Link href="/pcaps" style={{ color: 'inherit', fontWeight: 'bold' }}>PCAPs page</Link>.
+                  You can also browse results from pre-analyzed files on the <NetcapLink href="/pcaps" style={{ color: 'inherit', fontWeight: 'bold' }}>PCAPs page</NetcapLink>.
                 </Alert>
               )}
             </Box>

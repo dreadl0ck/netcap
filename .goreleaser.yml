@@ -41,13 +41,15 @@ builds:
     binary: net
     env:
       - CGO_ENABLED=1
+      - CC=x86_64-w64-mingw32-gcc
+      - CXX=x86_64-w64-mingw32-g++
     goos:
       - windows
     ldflags:
       - -s -w -X github.com/dreadl0ck/netcap.Version={{.Version}} -X github.com/dreadl0ck/netcap.GopacketVersion=v1.4.0
     flags:
       - -trimpath
-      - -tags=nodpi
+      - -tags=nodpi,noyara
     goarch:
       - amd64
 
@@ -59,6 +61,7 @@ archives:
     files:
       - LICENSE
       - README.md
+      - docs/NETCAP Software Report.pdf
       - types/cpp/*
       - types/csharp/*
       - types/java/*
@@ -74,6 +77,7 @@ archives:
     files:
       - LICENSE
       - README.md
+      - docs/NETCAP Software Report.pdf
       - types/cpp/*
       - types/csharp/*
       - types/java/*
@@ -89,6 +93,7 @@ archives:
     files:
       - LICENSE
       - README.md
+      - docs/NETCAP Software Report.pdf
       - types/cpp/*
       - types/csharp/*
       - types/java/*

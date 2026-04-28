@@ -1,0 +1,41 @@
+# Infrastructure Protocol Security Detection Rules
+# Monitor routing, multicast, printing, and monitoring infrastructure
+
+description: "Detection rules for infrastructure protocol monitoring including IS-IS routing changes, PIM multicast, IPP printing, and Zabbix monitoring."
+
+rules:
+  # IS-IS new adjacency - routing topology change
+  - name: ISIS Adjacency Hello
+    description: IS-IS Hello PDU detected, indicating router adjacency activity on the network infrastructure
+    type: ISIS
+    expression: 'PDUTypeName == "L1 LAN Hello" || PDUTypeName == "L2 LAN Hello" || PDUTypeName == "P2P Hello"'
+    severity: info
+    tags: ["isis", "routing", "adjacency"]
+    enabled: true
+
+  # PIM multicast group change
+  - name: PIM Join Prune Activity
+    description: PIM Join/Prune message detected, indicating multicast routing group membership change
+    type: PIM
+    expression: 'TypeName == "Join/Prune"'
+    severity: info
+    tags: ["pim", "multicast", "routing"]
+    enabled: true
+
+  # Zabbix agent communication
+  - name: Zabbix Agent Activity
+    description: Zabbix monitoring agent communication detected
+    type: Zabbix
+    expression: 'RequestType == "active checks" || RequestType == "agent data"'
+    severity: info
+    tags: ["zabbix", "monitoring", "agent"]
+    enabled: true
+
+  # IPP print job - potential data exfiltration vector
+  - name: IPP Print Job Submitted
+    description: Print job submitted via IPP, which can be a data exfiltration vector in sensitive environments
+    type: IPP
+    expression: 'OperationName == "Print-Job" || OperationName == "Create-Job"'
+    severity: info
+    tags: ["ipp", "printing"]
+    enabled: true

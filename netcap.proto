@@ -179,6 +179,20 @@ enum Type {
   NC_PROFINET = 129;
   NC_QUIC = 130;
   NC_QUICClientHello = 131;
+  NC_LLMNR = 132;
+  NC_STUN = 133;
+  NC_Kerberos = 134;
+  NC_TACACS = 135;
+  NC_NetFlowV9 = 136;
+  NC_DCERPC = 137;
+  NC_OCSP = 138;
+  NC_IPP = 139;
+  NC_PIM = 140;
+  NC_Zabbix = 141;
+  NC_CLDAP = 142;
+  NC_ISIS = 143;
+  NC_RARP = 144;
+  NC_Protobuf = 145;
 }
 
 //
@@ -793,6 +807,7 @@ message TCP {
   string Ja4ts = 36;                    // JA4TS TCP server fingerprint (from SYN-ACK)
   string Ja4tDescription = 37;          // JA4T database lookup description (OS/device)
   string Ja4tsDescription = 38;         // JA4TS database lookup description (OS/device)
+  string CommunityID = 39;              // Corelight Community ID v1 for cross-tool correlation
 }
 
 message TCPOption {
@@ -2135,6 +2150,10 @@ message DeviceProfile {
   uint64 Bytes = 7;
   repeated string Applications = 8; // DPI detected applications
   repeated string Devices = 9; // Devices associated with the MAC address, from DHCP db / fingerbank.org lookups
+  repeated string Hostnames = 10; // discovered hostnames (mDNS, NBNS, reverse DNS)
+  repeated string DeviceTypes = 11; // device types (UPnP: "Router/Gateway", WSD: "Printer", NBNS: "Domain Controller")
+  string OS = 12; // OS/firmware from UPnP server strings
+  repeated string Roles = 13; // network roles from NBNS (File Server, Master Browser, etc.)
 }
 
 // Port models a transport layer port and basic stats such as the number of packets, bytes transferred and protocol type.
@@ -2230,6 +2249,13 @@ message File {
   bool WasCompressed = 37;          // File was compressed in transit (gzip/deflate)
   string CompressionType = 38;      // Compression algorithm used (gzip, deflate)
   int64 CompressedSize = 39;        // Original compressed size in bytes
+
+  // AI-based file type classification (Google Magika)
+  string MagikaLabel = 40;          // Content type label (e.g., "python", "pdf", "png")
+  string MagikaMimeType = 41;       // Magika-detected MIME type
+  string MagikaGroup = 42;          // Content group (e.g., "code", "document", "image")
+  string MagikaDescription = 43;    // Human-readable description of detected type
+  bool MagikaIsText = 44;           // Whether Magika considers the content text-based
 }
 
 // SMTPResponse SMTP response type
@@ -3993,4 +4019,294 @@ message QUICClientHello {
   
   // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
   string CommunityID = 31;
+}
+
+// LLMNR - Link-Local Multicast Name Resolution
+// DNS-like protocol on UDP port 5355 for local name resolution on Windows networks
+message LLMNR {
+  int64 Timestamp = 1;
+  int32 ID = 2;
+  bool QR = 3;              // Query (false) or Response (true)
+  int32 OpCode = 4;
+  bool C = 5;               // Conflict flag (LLMNR-specific, replaces AA in DNS)
+  bool TC = 6;              // Truncation
+  bool T = 7;               // Tentative flag (LLMNR-specific, replaces RD in DNS)
+  int32 ResponseCode = 8;
+  int32 QDCount = 9;
+  int32 ANCount = 10;
+  int32 NSCount = 11;
+  int32 ARCount = 12;
+  repeated DNSQuestion Questions = 13;
+  repeated DNSResourceRecord Answers = 14;
+  repeated DNSResourceRecord Authorities = 15;
+  repeated DNSResourceRecord Additionals = 16;
+  string SrcIP = 17;
+  string DstIP = 18;
+  int32 SrcPort = 19;
+  int32 DstPort = 20;
+}
+
+// STUN - Session Traversal Utilities for NAT (RFC 5389)
+// Used for NAT traversal in VoIP and WebRTC
+message STUN {
+  int64 Timestamp = 1;
+  int32 MessageType = 2;       // Full 14-bit message type
+  int32 MessageLength = 3;
+  bytes TransactionID = 4;     // 12 bytes
+  string MessageClass = 5;     // "Request", "SuccessResponse", "ErrorResponse", "Indication"
+  string Method = 6;           // "Binding", "Allocate", etc.
+  string MappedAddress = 7;    // MAPPED-ADDRESS or XOR-MAPPED-ADDRESS IP:port
+  string SrcIP = 8;
+  string DstIP = 9;
+  int32 SrcPort = 10;
+  int32 DstPort = 11;
+  bool IsRFC5389 = 12;        // Has magic cookie 0x2112A442
+  repeated STUNAttribute Attributes = 13;
+}
+
+message STUNAttribute {
+  int32 Type = 1;
+  string TypeName = 2;
+  int32 Length = 3;
+  bytes Value = 4;
+  string DecodedValue = 5;    // Human-readable decoded value
+}
+
+// Kerberos v5 authentication protocol
+message Kerberos {
+  int64 Timestamp = 1;
+  string MessageType = 2;      // AS-REQ, AS-REP, TGS-REQ, TGS-REP, AP-REQ, AP-REP, KRB-ERROR
+  int32 MessageTypeCode = 3;   // 10=AS-REQ, 11=AS-REP, 12=TGS-REQ, 13=TGS-REP, 14=AP-REQ, 15=AP-REP, 30=KRB-ERROR
+  string ClientName = 4;       // cname principal
+  string ServerName = 5;       // sname principal
+  string Realm = 6;
+  int32 EncryptionType = 7;
+  string EncryptionTypeName = 8;
+  int32 ErrorCode = 9;
+  string ErrorMessage = 10;
+  int64 Till = 11;             // Requested end time
+  repeated int32 PADataTypes = 12;
+  string Flow = 13;
+  string SrcIP = 14;
+  string DstIP = 15;
+  int32 SrcPort = 16;
+  int32 DstPort = 17;
+}
+
+// TACACS+ - Terminal Access Controller Access-Control System Plus
+// Network authentication protocol on TCP port 49
+message TACACS {
+  int64 Timestamp = 1;
+  int32 VersionMajor = 2;
+  int32 VersionMinor = 3;
+  int32 Type = 4;              // Authentication(1), Authorization(2), Accounting(3)
+  string TypeName = 5;
+  int32 SequenceNumber = 6;
+  int32 Flags = 7;
+  int32 SessionID = 8;
+  int32 Length = 9;
+  string Action = 10;          // Login, ChangePass, SendAuth
+  string User = 11;
+  string RemoteAddr = 12;
+  string Service = 13;
+  int32 Status = 14;
+  string StatusName = 15;
+  string Flow = 16;
+  string SrcIP = 17;
+  string DstIP = 18;
+  int32 SrcPort = 19;
+  int32 DstPort = 20;
+}
+
+// NetFlow v9 - Cisco flow telemetry
+message NetFlowV9 {
+  int64 Timestamp = 1;
+  int32 Version = 2;           // Always 9
+  int32 Count = 3;             // Number of FlowSets in this packet
+  int64 SysUptime = 4;
+  int64 UnixSecs = 5;
+  int32 SequenceNumber = 6;
+  int32 SourceID = 7;
+  bool IsTemplate = 8;
+  repeated NetFlowV9FlowSet FlowSets = 9;
+  string SrcIP = 10;
+  string DstIP = 11;
+}
+
+message NetFlowV9FlowSet {
+  int32 FlowSetID = 1;        // 0=Template, 1=Options Template, 256+=Data
+  int32 Length = 2;
+  repeated NetFlowV9Field Fields = 3;
+}
+
+message NetFlowV9Field {
+  int32 Type = 1;
+  string TypeName = 2;
+  bytes Value = 3;
+  string DecodedValue = 4;
+}
+
+// DCE/RPC - Distributed Computing Environment / Remote Procedure Call
+message DCERPC {
+  int64 Timestamp = 1;
+  int32 Version = 2;
+  int32 VersionMinor = 3;
+  int32 PacketType = 4;
+  string PacketTypeName = 5;
+  int32 Flags = 6;
+  int32 FragLength = 7;
+  int32 CallID = 8;
+  string InterfaceUUID = 9;
+  string InterfaceName = 10;   // Known interface name if recognized
+  int32 OpNum = 11;
+  string Flow = 12;
+  string SrcIP = 13;
+  string DstIP = 14;
+  int32 SrcPort = 15;
+  int32 DstPort = 16;
+}
+
+// OCSP - Online Certificate Status Protocol
+message OCSP {
+  int64 Timestamp = 1;
+  bool IsResponse = 2;
+  int32 ResponseStatus = 3;   // 0=successful, 1=malformedRequest, etc.
+  string CertSerial = 4;
+  string CertStatus = 5;      // "good", "revoked", "unknown"
+  string IssuerNameHash = 6;
+  string IssuerKeyHash = 7;
+  string ResponderID = 8;
+  int64 ProducedAt = 9;
+  int64 ThisUpdate = 10;
+  int64 NextUpdate = 11;
+  string SrcIP = 12;
+  string DstIP = 13;
+}
+
+// IPP - Internet Printing Protocol (HTTP-based, port 631)
+message IPP {
+  int64 Timestamp = 1;
+  int32 VersionMajor = 2;
+  int32 VersionMinor = 3;
+  int32 OperationOrStatus = 4;
+  string OperationName = 5;
+  int32 RequestID = 6;
+  repeated IPPAttribute Attributes = 7;
+  string PrinterURI = 8;
+  string JobName = 9;
+  string Flow = 10;
+  string SrcIP = 11;
+  string DstIP = 12;
+  int32 SrcPort = 13;
+  int32 DstPort = 14;
+}
+
+message IPPAttribute {
+  int32 Tag = 1;
+  string Name = 2;
+  string Value = 3;
+}
+
+// PIM - Protocol Independent Multicast
+message PIM {
+  int64 Timestamp = 1;
+  int32 Version = 2;
+  int32 Type = 3;
+  string TypeName = 4;
+  int32 Checksum = 5;
+  repeated string GroupAddresses = 6;
+  string SrcIP = 7;
+  string DstIP = 8;
+}
+
+// Zabbix monitoring agent protocol
+message Zabbix {
+  int64 Timestamp = 1;
+  string RequestType = 2;     // "active checks", "agent data", etc.
+  string Host = 3;
+  string Key = 4;
+  string Value = 5;
+  int32 DataLength = 6;
+  string Flow = 7;
+  string SrcIP = 8;
+  string DstIP = 9;
+  int32 SrcPort = 10;
+  int32 DstPort = 11;
+}
+
+// CLDAP - Connectionless LDAP (UDP 389) used for AD domain discovery
+message CLDAP {
+  int64 Timestamp = 1;
+  int32 MessageID = 2;
+  string Operation = 3;       // "SearchRequest", "SearchResultEntry", etc.
+  string BaseObject = 4;
+  string Filter = 5;
+  repeated string Attributes = 6;
+  string DomainName = 7;
+  string ForestName = 8;
+  string DCSiteName = 9;
+  string SrcIP = 10;
+  string DstIP = 11;
+  int32 SrcPort = 12;
+  int32 DstPort = 13;
+}
+
+// IS-IS - Intermediate System to Intermediate System routing protocol
+message ISIS {
+  int64 Timestamp = 1;
+  int32 PDUType = 2;
+  string PDUTypeName = 3;
+  string SystemID = 4;        // 6-byte system ID as hex
+  int32 HoldingTime = 5;
+  int32 CircuitType = 6;      // L1(1), L2(2), L1L2(3)
+  repeated string AreaAddresses = 7;
+  string SrcMAC = 8;
+  string DstMAC = 9;
+  int32 PDULength = 10;
+  int32 Version = 11;
+}
+
+// RARP - Reverse Address Resolution Protocol
+message RARP {
+  int64 Timestamp = 1;
+  int32 AddrType = 2;
+  int32 Protocol = 3;
+  int32 HwAddressSize = 4;
+  int32 ProtocolAddressSize = 5;
+  int32 Operation = 6;
+  string OperationName = 7;   // "RARP Request", "RARP Reply"
+  string SrcHwAddress = 8;
+  string SrcProtocolAddress = 9;
+  string DstHwAddress = 10;
+  string DstProtocolAddress = 11;
+}
+
+// Protobuf - Generic Protocol Buffer message detected on the wire
+// Decodes arbitrary protobuf wire format without requiring a schema.
+// When .proto schema files are provided, fields are resolved to their
+// named definitions with full type information and enum labels.
+message Protobuf {
+  int64 Timestamp = 1;
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  int32 PayloadSize = 6;
+  double PayloadEntropy = 7;
+  string ServiceName = 8;
+  string MessageType = 9;
+  map<string, string> Fields = 10;
+  bytes RawPayload = 11;
+  bool IsValid = 12;
+  string ErrorMsg = 13;
+  string DetectionMethod = 14;
+  repeated string FieldOrder = 15;
+  int32 MessageCount = 16;
+
+  // Schema-aware fields (populated when .proto files are loaded)
+  string ProtoFile = 17;                            // source .proto file used for decoding
+  string FullMessageName = 18;                      // fully qualified message name (e.g. "tutorial.Person")
+  map<string, string> SchemaFields = 19;            // named fields from schema (e.g. "name" -> "Lily")
+  map<string, string> FieldAlternatives = 20;       // alternative type interpretations (e.g. "varint_1.as_sint64" -> "-75")
+  bool SchemaResolved = 21;                         // true if message was decoded using a .proto schema
 }

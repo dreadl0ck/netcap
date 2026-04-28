@@ -33,7 +33,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TableSortLabel,
   Tooltip,
@@ -56,6 +55,7 @@ import {
   BarChart as BarChartIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
@@ -76,6 +76,10 @@ interface DeviceProfileSummary {
   devices: string[];
   deviceIPs: string[];
   contacts: string[];
+  hostnames: string[];
+  deviceTypes: string[];
+  os: string;
+  roles: string[];
 }
 
 interface DevicesResponse {
@@ -456,7 +460,51 @@ export default function DevicesPage() {
             </Typography>
           </Paper>
         ) : (
-          <>
+          <ResponsiveDataView<DeviceProfileSummary>
+            data={paginatedDevices}
+            totalCount={filteredDevices.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            onCardClick={(device) => handleRowClick(device.macAddr)}
+            renderCard={(device) => (
+              <Card variant="outlined">
+                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Typography variant="subtitle2" sx={{ fontFamily: 'monospace' }}>
+                    {device.macAddr}
+                  </Typography>
+                  {device.deviceManufacturer && (
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      {device.deviceManufacturer}
+                    </Typography>
+                  )}
+                  <Box display="flex" gap={2} mt={0.5} flexWrap="wrap">
+                    <Typography variant="caption" color="text.secondary">
+                      {device.numPackets.toLocaleString()} pkts
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatBytes(device.bytes)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {device.numDeviceIPs} IPs
+                    </Typography>
+                  </Box>
+                  {device.os && (
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                      OS: {device.os}
+                    </Typography>
+                  )}
+                  {(device.devices || []).length > 0 && (
+                    <Typography variant="caption" color="text.secondary" display="block" mt={0.5} noWrap>
+                      Types: {(device.devices || []).slice(0, 2).join(', ')}{(device.devices || []).length > 2 ? ` +${(device.devices || []).length - 2}` : ''}
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            desktopTable={
             <TableContainer component={Paper}>
               <Table size="small">
                 <TableHead>
@@ -665,6 +713,79 @@ export default function DevicesPage() {
                                   </Typography>
                                 </Grid>
                                 
+                                {/* Network Discovery: Hostnames */}
+                                {(device.hostnames || []).length > 0 && (
+                                  <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      Discovered Hostnames
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(device.hostnames || []).map((h) => (
+                                        <Chip
+                                          key={h}
+                                          label={h}
+                                          size="small"
+                                          color="primary"
+                                          variant="outlined"
+                                          sx={{ fontSize: '0.75rem', fontFamily: 'monospace' }}
+                                        />
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+
+                                {/* Network Discovery: OS */}
+                                {device.os && (
+                                  <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      Operating System / Firmware
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+                                      {device.os}
+                                    </Typography>
+                                  </Grid>
+                                )}
+
+                                {/* Network Discovery: Device Types */}
+                                {(device.deviceTypes || []).length > 0 && (
+                                  <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      Discovered Device Types
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(device.deviceTypes || []).map((dt) => (
+                                        <Chip
+                                          key={dt}
+                                          label={dt}
+                                          size="small"
+                                          color="warning"
+                                          sx={{ fontSize: '0.75rem' }}
+                                        />
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+
+                                {/* Network Discovery: Roles */}
+                                {(device.roles || []).length > 0 && (
+                                  <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      Network Roles
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                      {(device.roles || []).map((r) => (
+                                        <Chip
+                                          key={r}
+                                          label={r}
+                                          size="small"
+                                          color="secondary"
+                                          sx={{ fontSize: '0.75rem' }}
+                                        />
+                                      ))}
+                                    </Box>
+                                  </Grid>
+                                )}
+
                                 {/* All Device IPs */}
                                 {(device.deviceIPs || []).length > 0 && (
                                   <Grid item xs={12}>
@@ -763,17 +884,8 @@ export default function DevicesPage() {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <TablePagination
-              component="div"
-              count={filteredDevices.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+            }
+          />
         )}
         </>
         )}

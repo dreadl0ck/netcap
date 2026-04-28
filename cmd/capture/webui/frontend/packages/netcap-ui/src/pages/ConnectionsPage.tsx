@@ -33,7 +33,6 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TablePagination,
   TableRow,
   TableSortLabel,
   Typography,
@@ -61,6 +60,7 @@ import {
   DeviceHub as DeviceHubIcon,
   VpnKey as VpnKeyIcon,
 } from '@mui/icons-material';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import Layout from '../components/Layout';
 import ConversationModal from '../components/ConversationModal';
 import FileSelectorHeader from '../components/FileSelectorHeader';
@@ -1021,7 +1021,54 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
             </Typography>
           </Paper>
         ) : (
-          <>
+          <ResponsiveDataView<ConnectionSummary>
+            data={paginatedConnections}
+            totalCount={filteredConnections.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            onCardClick={(conn) => {
+              const idx = paginatedConnections.indexOf(conn);
+              const rowKey = `${conn.srcIP}-${conn.srcPort}-${conn.dstIP}-${conn.dstPort}-${idx}`;
+              handleRowClick(rowKey);
+            }}
+            renderCard={(conn) => (
+              <Card variant="outlined">
+                <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                  <Box display="flex" alignItems="center" gap={0.5} flexWrap="wrap">
+                    <Typography variant="subtitle2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#f44336' }}>
+                      {conn.srcIP || conn.srcMAC || 'N/A'}{conn.srcPort ? `:${conn.srcPort}` : ''}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">→</Typography>
+                    <Typography variant="subtitle2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#2196f3' }}>
+                      {conn.dstIP || conn.dstMAC || 'N/A'}{conn.dstPort ? `:${conn.dstPort}` : ''}
+                    </Typography>
+                  </Box>
+                  <Box display="flex" gap={2} mt={0.5} flexWrap="wrap" alignItems="center">
+                    {conn.transportProto && conn.transportProto !== 'Unknown' && conn.transportProto !== 'Payload' && (
+                      <Chip label={conn.transportProto} size="small" color="primary" sx={{ fontSize: '0.7rem' }} />
+                    )}
+                    <Typography variant="caption" color="text.secondary">
+                      {formatBytes(conn.totalSize)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {conn.numPackets.toLocaleString()} pkts
+                    </Typography>
+                    {conn.sni && (
+                      <Typography variant="caption" color="success.main" sx={{ fontFamily: 'monospace', fontSize: '0.7rem' }}>
+                        {conn.sni}
+                      </Typography>
+                    )}
+                    {conn.serverPortName && (
+                      <Chip label={conn.serverPortName} size="small" color="secondary" variant="outlined" sx={{ fontSize: '0.65rem' }} />
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+            desktopTable={
             <TableContainer component={Paper}>
               <Table size="small" data-learn="Connections Table: Detailed list of all captured network connections with sorting capabilities.">
                 <TableHead>
@@ -1727,18 +1774,8 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                 </TableBody>
               </Table>
             </TableContainer>
-
-            <TablePagination
-              data-learn="Table Pagination: Navigate through pages of connections and change how many rows to display per page."
-              component="div"
-              count={filteredConnections.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+            }
+          />
         )}
         </>
         )}

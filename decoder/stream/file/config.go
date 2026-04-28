@@ -111,6 +111,9 @@ type AdvancedConfig struct {
 	DetectEmbeddedScripts bool   `yaml:"detect_embedded_scripts"` // Detect embedded VBA/JS/PowerShell
 	EnableYaraScanning    bool   `yaml:"enable_yara_scanning"`    // Enable YARA rule matching (requires yara rules path)
 	YaraRulesPath         string `yaml:"yara_rules_path"`         // Path to YARA rules directory
+	EnableMagika          bool   `yaml:"enable_magika"`           // Enable AI-based file type classification (requires magika CLI in PATH)
+	MagikaAssetsDir       string `yaml:"magika_assets_dir"`       // Unused (Rust CLI embeds model), kept for config compatibility
+	MagikaModelName       string `yaml:"magika_model_name"`       // Unused (Rust CLI embeds model), kept for config compatibility
 }
 
 var (
@@ -208,6 +211,9 @@ func GetDefaultConfig() *Config {
 				DetectEmbeddedScripts: true,
 				EnableYaraScanning:    false, // Disabled by default - requires rules
 				YaraRulesPath:         "",
+				EnableMagika:          false, // Disabled by default - requires Magika assets and ONNX Runtime
+				MagikaAssetsDir:       "",
+				MagikaModelName:       "",
 			},
 		},
 	}

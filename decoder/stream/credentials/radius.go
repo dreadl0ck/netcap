@@ -126,6 +126,14 @@ func radiusHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credent
 		return nil
 	}
 
+	// Skip any RADIUS packet without password data - no credential material to extract.
+	// This filters: Access-Accept/Reject (auth results, not credentials),
+	// Access-Requests without User-Password or CHAP-Password attributes,
+	// and 802.1X EAP outer identity ("anonymous" with no password).
+	if password == "" {
+		return nil
+	}
+
 	// Determine code name for notes
 	codeName := "Unknown"
 	switch code {

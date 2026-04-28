@@ -229,6 +229,32 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.QUIC)
 	case types.Type_NC_QUICClientHello:
 		record = new(types.QUICClientHello)
+	case types.Type_NC_LLMNR:
+		record = new(types.LLMNR)
+	case types.Type_NC_STUN:
+		record = new(types.STUN)
+	case types.Type_NC_Kerberos:
+		record = new(types.Kerberos)
+	case types.Type_NC_TACACS:
+		record = new(types.TACACS)
+	case types.Type_NC_NetFlowV9:
+		record = new(types.NetFlowV9)
+	case types.Type_NC_DCERPC:
+		record = new(types.DCERPC)
+	case types.Type_NC_OCSP:
+		record = new(types.OCSP)
+	case types.Type_NC_IPP:
+		record = new(types.IPP)
+	case types.Type_NC_PIM:
+		record = new(types.PIM)
+	case types.Type_NC_Zabbix:
+		record = new(types.Zabbix)
+	case types.Type_NC_CLDAP:
+		record = new(types.CLDAP)
+	case types.Type_NC_ISIS:
+		record = new(types.ISIS)
+	case types.Type_NC_RARP:
+		record = new(types.RARP)
 	case types.Type_NC_Header:
 		// NC_Header is a file header type, not an audit record type
 		// Return nil to indicate this type should not be initialized as a record

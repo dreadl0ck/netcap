@@ -24,7 +24,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"reflect"
@@ -161,7 +161,7 @@ func CreateElasticIndex(wc *WriterConfig) {
 			fmt.Println("failed to create index pattern:", errAPI)
 
 			if resp != nil {
-				data, _ := ioutil.ReadAll(resp.Body)
+				data, _ := io.ReadAll(resp.Body)
 				fmt.Println(string(data))
 				_ = resp.Body.Close()
 			}
@@ -214,6 +214,8 @@ func (w *elasticWriter) Flush() error {
 
 // Close flushes and closes the writer and the associated file handles.
 func (w *elasticWriter) Close(_ int64) (name string, size int64) {
+	w.Lock()
+	defer w.Unlock()
 
 	ioLog.Info("closing elastic writer", zap.String("index", w.indexName))
 
@@ -303,7 +305,7 @@ func createElasticIndex(c *elasticsearch.Client, ident string) {
 
 		if res != nil {
 			// ignore error in case the index exists already
-			data, _ := ioutil.ReadAll(res.Body)
+			data, _ := io.ReadAll(res.Body)
 			fmt.Println(string(data))
 		}
 	} else {
@@ -346,7 +348,7 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 	)
 	if err != nil || res.StatusCode != http.StatusOK {
 		if res != nil {
-			data, _ := ioutil.ReadAll(res.Body)
+			data, _ := io.ReadAll(res.Body)
 			fmt.Println(string(data))
 		}
 
@@ -394,7 +396,7 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 	)
 	if err != nil || res.StatusCode != http.StatusOK {
 		if res != nil {
-			d, _ = ioutil.ReadAll(res.Body)
+			d, _ = io.ReadAll(res.Body)
 			fmt.Println(string(d))
 		}
 
@@ -450,15 +452,22 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 		return nil
 	}
 
-	for {
+	const maxRetries = 5
+
+	for attempt := range maxRetries {
 		// send off the bulk data
 		res, err := w.client.Bulk(bytes.NewReader(w.buf.Bytes()), w.client.Bulk.WithIndex(w.indexName))
 		if err != nil {
+			// exponential backoff: 500ms, 1s, 2s, 4s, 8s
+			dur := time.Duration(500<<uint(attempt)) * time.Millisecond
 
-			// network error - wait a little and retry
-			dur := 500 * time.Millisecond
-
-			fmt.Println("failure indexing batch:", err, "will sleep for", dur, "and retry")
+			ioLog.Warn("failure indexing batch, retrying",
+				zap.Error(err),
+				zap.Int("attempt", attempt+1),
+				zap.Int("maxRetries", maxRetries),
+				zap.Duration("backoff", dur),
+				zap.String("index", w.indexName),
+			)
 			time.Sleep(dur)
 
 			continue
@@ -529,11 +538,17 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 		)
 		w.buf.Reset()
 
-		// exit loop on success
-		break
+		return nil
 	}
 
-	return nil
+	// All retries exhausted — drop batch and return error
+	ioLog.Error("elastic bulk send failed after all retries, dropping batch",
+		zap.Int("maxRetries", maxRetries),
+		zap.String("index", w.indexName),
+	)
+	w.buf.Reset()
+
+	return fmt.Errorf("%w: all %d retries exhausted for index %s", errElasticFailed, maxRetries, w.indexName)
 }
 
 // JSON properties for elastic indices.
@@ -772,7 +787,7 @@ func deleteElasticIndexPattern(index string, wc *WriterConfig) {
 			log.Println("deleted mapping", index, ":", resp.Status)
 
 			if resp.StatusCode != http.StatusOK {
-				r, err := ioutil.ReadAll(resp.Body)
+				r, err := io.ReadAll(resp.Body)
 				if err == nil {
 					fmt.Println(string(r))
 				}

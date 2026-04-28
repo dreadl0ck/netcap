@@ -106,11 +106,8 @@ var (
 		"VNC":        vncHarvester,
 		"TeamViewer": teamviewerHarvester,
 
-		// Network discovery protocols
-		"mDNS": mdnsHarvester,
-		"NBNS": nbnsHarvester,
-		"UPnP": upnpHarvester,
-		"WSD":  wsdHarvester,
+		// Network discovery protocols moved to decoder/stream/discovery/ package
+		// for device profile enrichment instead of credential extraction.
 	}
 
 	// harvesters to be ran against all seen bi-directional communication in a TCP session

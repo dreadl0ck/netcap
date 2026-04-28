@@ -47,6 +47,7 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Layout from '../components/Layout';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import { useNetcapApi } from '../hooks';
 import { parseSearchQuery, matchesSingleValue } from '../lib/tableSearch';
 import useSWR from 'swr';
@@ -68,6 +69,8 @@ export default function DPIPage() {
   const [searchQueries, setSearchQueries] = useState<Record<string, string>>({});
   const [enabledModules, setEnabledModules] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
+  const [protocolPage, setProtocolPage] = useState(0);
+  const [protocolRowsPerPage, setProtocolRowsPerPage] = useState(50);
 
   // Check if running in try service mode
   const { data: status } = useSWR('status', () => api.getStatus(), {
@@ -418,7 +421,10 @@ export default function DPIPage() {
                     <Accordion 
                       key={module}
                       expanded={expandedModule === module}
-                      onChange={() => setExpandedModule(expandedModule === module ? null : module)}
+                      onChange={() => {
+                        setExpandedModule(expandedModule === module ? null : module);
+                        setProtocolPage(0);
+                      }}
                       sx={{ 
                         mb: 1,
                         opacity: isEnabledInSession ? 1 : 0.6,
@@ -495,16 +501,61 @@ export default function DPIPage() {
                             {(() => {
                               const searchQuery = searchQueries[module] || '';
                               const searchTerms = parseSearchQuery(searchQuery);
-                              const filteredProtocols = protocols.filter(protocol => 
+                              const filteredProtocols = protocols.filter(protocol =>
                                 matchesSingleValue(protocol, searchTerms)
                               );
-                              
+                              const paginatedProtocols = filteredProtocols.slice(
+                                protocolPage * protocolRowsPerPage,
+                                protocolPage * protocolRowsPerPage + protocolRowsPerPage
+                              );
+
                               return (
                                 <>
                                   <Typography variant="subtitle2" gutterBottom sx={{ mb: 1 }}>
                                     Supported Protocols ({filteredProtocols.length}{searchQuery && ` of ${protocols.length}`})
                                   </Typography>
                                   {filteredProtocols.length > 0 ? (
+                                    <ResponsiveDataView<string>
+                                      data={paginatedProtocols}
+                                      totalCount={filteredProtocols.length}
+                                      page={protocolPage}
+                                      rowsPerPage={protocolRowsPerPage}
+                                      onPageChange={(_e, newPage) => setProtocolPage(newPage)}
+                                      onRowsPerPageChange={(e) => {
+                                        setProtocolRowsPerPage(parseInt(e.target.value, 10));
+                                        setProtocolPage(0);
+                                      }}
+                                      rowsPerPageOptions={[25, 50, 100]}
+                                      renderCard={(protocol) => (
+                                        <Card variant="outlined">
+                                          <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
+                                            <Typography variant="subtitle2" sx={{ fontFamily: 'monospace' }}>
+                                              {protocol}
+                                            </Typography>
+                                            <Box display="flex" gap={1} mt={0.5} alignItems="center">
+                                              <Chip label={module} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                                              <MuiLink
+                                                href={getProtocolSourceUrl(module, protocol)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={(e) => e.stopPropagation()}
+                                                sx={{
+                                                  display: 'inline-flex',
+                                                  alignItems: 'center',
+                                                  gap: 0.5,
+                                                  fontSize: '0.75rem',
+                                                  textDecoration: 'none',
+                                                  '&:hover': { textDecoration: 'underline' }
+                                                }}
+                                              >
+                                                Source
+                                                <OpenInNewIcon sx={{ fontSize: 14 }} />
+                                              </MuiLink>
+                                            </Box>
+                                          </CardContent>
+                                        </Card>
+                                      )}
+                                      desktopTable={
                                     <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 400 }}>
                                       <Table size="small" stickyHeader>
                                         <TableHead>
@@ -515,8 +566,8 @@ export default function DPIPage() {
                                           </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                          {filteredProtocols.map((protocol, idx) => (
-                                            <TableRow 
+                                          {paginatedProtocols.map((protocol) => (
+                                            <TableRow
                                               key={protocol}
                                               sx={{ '&:last-child td': { border: 0 } }}
                                             >
@@ -532,8 +583,8 @@ export default function DPIPage() {
                                                   target="_blank"
                                                   rel="noopener noreferrer"
                                                   onClick={(e) => e.stopPropagation()}
-                                                  sx={{ 
-                                                    display: 'inline-flex', 
+                                                  sx={{
+                                                    display: 'inline-flex',
                                                     alignItems: 'center',
                                                     gap: 0.5,
                                                     textDecoration: 'none',
@@ -549,6 +600,8 @@ export default function DPIPage() {
                                         </TableBody>
                                       </Table>
                                     </TableContainer>
+                                      }
+                                    />
                                   ) : (
                                     <Alert severity="info">
                                       <Typography variant="body2">

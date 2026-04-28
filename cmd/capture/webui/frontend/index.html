@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="description" content="Netcap Web UI - Network Traffic Analysis" />
+    <link rel="icon" href="/favicon.ico" />
+    <title>Netcap Web UI</title>
+    <!-- Inline critical CSS for dark mode - prevents flash of white on load -->
+    <style>
+      html, body {
+        background-color: #121212 !important;
+        color: #fff !important;
+        margin: 0;
+        padding: 0;
+      }
+      #root {
+        background-color: #121212 !important;
+        min-height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

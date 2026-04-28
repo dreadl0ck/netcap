@@ -523,6 +523,12 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/alerts/clear", s.handleClearAlerts)
 	mux.HandleFunc("/api/alerts/resolve", s.handleResolveAlert)
 	mux.HandleFunc("/api/alerts/unresolve", s.handleUnresolveAlert)
+	mux.HandleFunc("/api/yara/status", s.handleYaraStatus)
+	mux.HandleFunc("/api/yara/rules", s.handleYaraRules)
+	mux.HandleFunc("/api/yara/rules/upload", s.handleUploadYaraRule)
+	mux.HandleFunc("/api/yara/rules/", s.handleYaraRuleRouter) // GET, PUT, DELETE by name
+	mux.HandleFunc("/api/yara/scan", s.handleYaraScan)
+	mux.HandleFunc("/api/yara/scan-file", s.handleYaraScanFile)
 	mux.HandleFunc("/api/extracted-files", s.handleExtractedFiles)
 	mux.HandleFunc("/api/extracted-files/download-all", s.handleDownloadAllExtractedFiles)
 	mux.HandleFunc("/api/extracted-files/download/", s.handleDownloadExtractedFile)
@@ -537,6 +543,13 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/decoders/config/save-as", s.handleSaveDecoderConfigAs)
 	mux.HandleFunc("/api/decoders/", s.handleDecodersRouter) // Custom router for decoder endpoints
 	mux.HandleFunc("/api/decoders", s.handleDecoders)
+	mux.HandleFunc("/api/proto/status", s.handleProtoStatus)
+	mux.HandleFunc("/api/proto/messages", s.handleProtoMessages)
+	mux.HandleFunc("/api/proto/search-paths", s.handleProtoSearchPaths)
+	mux.HandleFunc("/api/proto/upload", s.handleProtoUpload)
+	mux.HandleFunc("/api/proto/mappings", s.handleProtoMappings)
+	mux.HandleFunc("/api/proto/preferences", s.handleProtoPreferences)
+	mux.HandleFunc("/api/proto/recompile", s.handleProtoRecompile)
 	mux.HandleFunc("/api/harvesters", s.handleHarvesters)
 	mux.HandleFunc("/api/harvesters/config", s.handleHarvestersConfig)
 	mux.HandleFunc("/api/harvesters/presets", s.handleHarvestersPresets)
@@ -609,6 +622,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/credentials/timeline", s.handleCredentialsTimeline)
 	mux.HandleFunc("/api/credentials/usernames", s.handleCredentialsUsernames)
 	mux.HandleFunc("/api/credentials/flows", s.handleCredentialsFlows)
+	mux.HandleFunc("/api/auth-activity", s.handleAuthActivity)
+
 	mux.HandleFunc("/api/services", s.handleServices)
 	mux.HandleFunc("/api/services/top-by-traffic", s.handleServicesTopByTraffic)
 	mux.HandleFunc("/api/services/protocols", s.handleServicesProtocols)
@@ -649,8 +664,7 @@ func (s *Server) Start() error {
 		mux.HandleFunc("/health", s.handleHealth)
 	}
 
-	// Static files - echarts assets and frontend
-	// Note: /static/ is served from Next.js public/ directory automatically
+	// Static files - frontend SPA with fallback to index.html for client-side routing
 	mux.Handle("/", s.handleStatic())
 
 	s.httpServer = &http.Server{
@@ -1006,8 +1020,7 @@ func shouldLogRequest(path string) bool {
 	return false
 
 	// Skip logging for static assets
-	if strings.HasPrefix(path, "/_next/static/") ||
-		strings.HasPrefix(path, "/_next/image/") ||
+	if strings.HasPrefix(path, "/assets/") ||
 		strings.HasPrefix(path, "/static/") ||
 		path == "/favicon.ico" ||
 		strings.HasSuffix(path, ".js") ||

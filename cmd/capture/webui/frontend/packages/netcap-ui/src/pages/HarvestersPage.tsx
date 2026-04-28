@@ -62,11 +62,12 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Code as CodeIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import useSWR from 'swr';
 import Layout from '../components/Layout';
 import type { HarvestersConfig, HarvesterConfigItem, HarvesterPresetInfo } from '../lib/api';
-import { useNetcapApi } from '../hooks';
+import { useNetcapApi, useIsMobile } from '../hooks';
 
 // Helper function to convert harvester name to snake_case filename
 const toSnakeCase = (str: string): string => {
@@ -119,6 +120,7 @@ const getHarvesterGitHubUrl = (harvesterName: string): string => {
 
 
 export default function Harvesters() {
+  const isMobile = useIsMobile();
   const api = useNetcapApi();
   const { data: configData, mutate: mutateConfig } = useSWR('harvesters-config', () => api.getHarvestersConfig());
   const { data: presetsData, mutate: mutatePresets } = useSWR('harvester-presets', () => api.getHarvesterPresets());
@@ -565,8 +567,17 @@ export default function Harvesters() {
         )}
 
         {/* Save Preset Dialog */}
-        <Dialog open={savePresetDialogOpen} onClose={() => setSavePresetDialogOpen(false)}>
-          <DialogTitle>Save Configuration as Preset</DialogTitle>
+        <Dialog open={savePresetDialogOpen} onClose={() => setSavePresetDialogOpen(false)} fullScreen={isMobile}>
+          <DialogTitle>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              Save Configuration as Preset
+              {isMobile && (
+                <IconButton onClick={() => setSavePresetDialogOpen(false)} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <TextField
               autoFocus
@@ -584,8 +595,17 @@ export default function Harvesters() {
         </Dialog>
 
         {/* Upload Preset Dialog */}
-        <Dialog open={uploadDialogOpen} onClose={() => setUploadDialogOpen(false)}>
-          <DialogTitle>Upload Preset File</DialogTitle>
+        <Dialog open={uploadDialogOpen} onClose={() => setUploadDialogOpen(false)} fullScreen={isMobile}>
+          <DialogTitle>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              Upload Preset File
+              {isMobile && (
+                <IconButton onClick={() => setUploadDialogOpen(false)} edge="end">
+                  <CloseIcon />
+                </IconButton>
+              )}
+            </Box>
+          </DialogTitle>
           <DialogContent>
             <input
               type="file"

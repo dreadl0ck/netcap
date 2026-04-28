@@ -75,6 +75,7 @@ var fieldsTCP = []string{
 	fieldDstIP,
 	fieldJa4t,
 	fieldJa4ts,
+	fieldCommunityID,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -108,8 +109,9 @@ func (t *TCP) CSVRecord() []string {
 		formatInt32(t.PayloadSize),                        // int32
 		t.SrcIP,
 		t.DstIP,
-		t.Ja4T,  // JA4T TCP fingerprint
-		t.Ja4Ts, // JA4TS TCP server fingerprint
+		t.Ja4T,        // JA4T TCP fingerprint
+		t.Ja4Ts,       // JA4TS TCP server fingerprint
+		t.CommunityID, // Community ID v1
 	})
 }
 
@@ -223,6 +225,7 @@ func (t *TCP) Inc() {
 func (t *TCP) SetPacketContext(ctx *PacketContext) {
 	t.SrcIP = ctx.SrcIP
 	t.DstIP = ctx.DstIP
+	t.CommunityID = ctx.CommunityID
 }
 
 // Src returns the source address of the audit record.
@@ -263,8 +266,9 @@ func (t *TCP) Encode() []string {
 		tcpEncoder.Int32(fieldPayloadSize, t.PayloadSize),         // int32
 		tcpEncoder.Int64(fieldSrcIP, ipToInt64(t.SrcIP)),
 		tcpEncoder.Int64(fieldDstIP, ipToInt64(t.DstIP)),
-		tcpEncoder.String(fieldJa4t, t.Ja4T),   // JA4T fingerprint
-		tcpEncoder.String(fieldJa4ts, t.Ja4Ts), // JA4TS fingerprint
+		tcpEncoder.String(fieldJa4t, t.Ja4T),              // JA4T fingerprint
+		tcpEncoder.String(fieldJa4ts, t.Ja4Ts),            // JA4TS fingerprint
+		tcpEncoder.String(fieldCommunityID, t.CommunityID), // Community ID v1
 	})
 }
 

@@ -2484,9 +2484,27 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 	// Read File audit records to get hash and protocol information
 	type fileAuditInfo struct {
-		Name     string // Original filename from network traffic
-		Hash     string
-		Protocol string
+		Name              string  // Original filename from network traffic
+		Hash              string
+		Protocol          string
+		Entropy           float64
+		TypeMismatch      bool
+		IsPEExecutable    bool
+		IsELFExecutable   bool
+		IsMachO           bool
+		HasEmbeddedScript bool
+		IsPasswordProtected bool
+		IsKnownMalware    bool
+		ThreatName        string
+		TrueFileType      string
+		ContentType       string
+		YaraMatches       []string
+		// AI-based file type classification (Magika)
+		MagikaLabel       string
+		MagikaMimeType    string
+		MagikaGroup       string
+		MagikaDescription string
+		MagikaIsText      bool
 	}
 	fileInfoMap := make(map[string]fileAuditInfo) // filename -> {name, hash, protocol}
 	fileAuditPath := filepath.Join(outDir, "File.ncap.gz")
@@ -2508,9 +2526,26 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 				if file.Location != "" {
 					filename := filepath.Base(file.Location)
 					fileInfoMap[filename] = fileAuditInfo{
-						Name:     file.Name, // Original filename from network traffic
-						Hash:     file.Hash,
-						Protocol: file.Protocol,
+						Name:              file.Name,
+						Hash:              file.Hash,
+						Protocol:          file.Protocol,
+						Entropy:           file.Entropy,
+						TypeMismatch:      file.TypeMismatch,
+						IsPEExecutable:    file.IsPEExecutable,
+						IsELFExecutable:   file.IsELFExecutable,
+						IsMachO:           file.IsMachO,
+						HasEmbeddedScript: file.HasEmbeddedScript,
+						IsPasswordProtected: file.IsPasswordProtected,
+						IsKnownMalware:    file.IsKnownMalware,
+						ThreatName:        file.ThreatName,
+						TrueFileType:      file.TrueFileType,
+						ContentType:       file.ContentType,
+						YaraMatches:       file.YaraMatches,
+						MagikaLabel:       file.MagikaLabel,
+						MagikaMimeType:    file.MagikaMimeType,
+						MagikaGroup:       file.MagikaGroup,
+						MagikaDescription: file.MagikaDescription,
+						MagikaIsText:      file.MagikaIsText,
 					}
 				}
 			}
@@ -2557,17 +2592,47 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 		//log.Printf("[WebUI] Extracted file: name=%s, relPath=%s, mimeType=%s", info.Name(), relPath, mimeType)
 
-		// Add name, hash and protocol if available from File audit records
+		// Add name, hash, protocol, and security indicators from File audit records
 		// Match by filename since full paths may differ
 		if auditInfo, ok := fileInfoMap[info.Name()]; ok {
 			if auditInfo.Name != "" {
-				fileInfo["originalName"] = auditInfo.Name // Original filename from network traffic
+				fileInfo["originalName"] = auditInfo.Name
 			}
 			if auditInfo.Hash != "" {
 				fileInfo["hash"] = auditInfo.Hash
 			}
 			if auditInfo.Protocol != "" {
 				fileInfo["protocol"] = auditInfo.Protocol
+			}
+			// Security indicators
+			fileInfo["entropy"] = auditInfo.Entropy
+			fileInfo["typeMismatch"] = auditInfo.TypeMismatch
+			fileInfo["isPEExecutable"] = auditInfo.IsPEExecutable
+			fileInfo["isELFExecutable"] = auditInfo.IsELFExecutable
+			fileInfo["isMachO"] = auditInfo.IsMachO
+			fileInfo["hasEmbeddedScript"] = auditInfo.HasEmbeddedScript
+			fileInfo["isPasswordProtected"] = auditInfo.IsPasswordProtected
+			fileInfo["isKnownMalware"] = auditInfo.IsKnownMalware
+			if auditInfo.ThreatName != "" {
+				fileInfo["threatName"] = auditInfo.ThreatName
+			}
+			if auditInfo.TrueFileType != "" {
+				fileInfo["trueFileType"] = auditInfo.TrueFileType
+			}
+			if auditInfo.ContentType != "" {
+				fileInfo["contentType"] = auditInfo.ContentType
+			}
+			// YARA matches
+			if len(auditInfo.YaraMatches) > 0 {
+				fileInfo["yaraMatches"] = auditInfo.YaraMatches
+			}
+			// AI-based file type classification (Magika)
+			if auditInfo.MagikaLabel != "" {
+				fileInfo["magikaLabel"] = auditInfo.MagikaLabel
+				fileInfo["magikaMimeType"] = auditInfo.MagikaMimeType
+				fileInfo["magikaGroup"] = auditInfo.MagikaGroup
+				fileInfo["magikaDescription"] = auditInfo.MagikaDescription
+				fileInfo["magikaIsText"] = auditInfo.MagikaIsText
 			}
 		}
 
@@ -3364,15 +3429,50 @@ func (s *Server) handleErrorLogContent(w http.ResponseWriter, r *http.Request) {
 	// Local mode: sessionID is the file path or error log path
 	s.mu.RLock()
 	fileErrors := s.fileErrors
+	inputFiles := s.inputFiles
+	fileOutputDirs := make(map[string]string)
+	maps.Copy(fileOutputDirs, s.fileOutputDirs)
+	baseOutDir := s.baseOutDir
 	s.mu.RUnlock()
 
 	// Try to find the error log for this file
 	var errorLogPath string
+
+	// Priority 1: Check fileErrors map (for files that failed during processing)
 	for filePath, ferr := range fileErrors {
 		// Match by file path or base name
 		if filePath == sessionID || filepath.Base(filePath) == sessionID {
 			if ferr.ErrorLogPath != "" {
 				errorLogPath = ferr.ErrorLogPath
+				break
+			}
+		}
+	}
+
+	// Priority 2: Check output directory for errors.log (for successful processing with packet errors)
+	if errorLogPath == "" {
+		for _, inputFile := range inputFiles {
+			if inputFile == sessionID || filepath.Base(inputFile) == sessionID {
+				var outputDir string
+				if dir, exists := fileOutputDirs[inputFile]; exists {
+					outputDir = dir
+				} else if len(inputFiles) == 1 {
+					outputDir = baseOutDir
+				} else {
+					baseName := filepath.Base(inputFile)
+					dirName := baseName
+					for _, ext := range []string{".pcap", ".pcapng", ".cap", ".dmp"} {
+						if before, ok := strings.CutSuffix(dirName, ext); ok {
+							dirName = before
+							break
+						}
+					}
+					outputDir = filepath.Join(baseOutDir, dirName)
+				}
+				candidate := filepath.Join(outputDir, "errors.log")
+				if _, err := os.Stat(candidate); err == nil {
+					errorLogPath = candidate
+				}
 				break
 			}
 		}
@@ -3902,7 +4002,7 @@ func (s *Server) getUnfilteredMenuCounts(outDir string) MenuCountsResponse {
 	response.DevicesCount = CountRecords(filepath.Join(outDir, "DeviceProfile.ncap.gz"))
 	response.ConnectionsCount = CountRecords(filepath.Join(outDir, "Connection.ncap.gz"))
 	response.HTTPCount = CountRecords(filepath.Join(outDir, "HTTP.ncap.gz"))
-	response.CertificatesCount = CountRecords(filepath.Join(outDir, "TLSServerHello.ncap.gz"))
+	response.CertificatesCount = CountUniqueCertificates(outDir)
 	response.CredentialsCount = CountRecords(filepath.Join(outDir, "Credentials.ncap.gz"))
 	response.SoftwareCount = CountRecords(filepath.Join(outDir, "Software.ncap.gz"))
 	response.VulnerabilitiesCount = CountRecords(filepath.Join(outDir, "Vulnerability.ncap.gz"))
@@ -3972,16 +4072,24 @@ func (s *Server) getFilteredMenuCounts(outDir string, communityIDs map[string]bo
 	response.DevicesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "DeviceProfile.ncap.gz"), communityIDs)
 	response.ConnectionsCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Connection.ncap.gz"), communityIDs)
 	response.HTTPCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "HTTP.ncap.gz"), communityIDs)
-	response.CertificatesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "TLSServerHello.ncap.gz"), communityIDs)
+	response.CertificatesCount = CountUniqueCertificatesWithCommunityIDFilter(outDir, communityIDs)
 	response.CredentialsCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Credentials.ncap.gz"), communityIDs)
 	response.SoftwareCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Software.ncap.gz"), communityIDs)
 	response.VulnerabilitiesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Vulnerability.ncap.gz"), communityIDs)
 	response.ServicesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Service.ncap.gz"), communityIDs)
 
-	// Count unique fingerprints using the same logic as the fingerprints page
-	// Note: community ID filtering not implemented for fingerprints, use unfiltered count
+	// Count unique fingerprints filtered by community IDs
 	if fingerprints, err := readFingerprints(outDir); err == nil {
-		response.FingerprintsCount = int64(len(fingerprints))
+		count := int64(0)
+		for _, fp := range fingerprints {
+			for _, cid := range fp.CommunityIDs {
+				if communityIDs[cid] {
+					count++
+					break
+				}
+			}
+		}
+		response.FingerprintsCount = count
 	}
 
 	// Count domains from DNS with filtering

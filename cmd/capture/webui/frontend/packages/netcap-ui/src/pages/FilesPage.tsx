@@ -73,22 +73,22 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 import { formatBytes, formatTimestamp, type ExtractedFileInfo } from '../lib/api';
-import { useNetcapApi, useTableKeyboardNavigation } from '../hooks';
+import { useNetcapApi, useTableKeyboardNavigation, useIsMobile } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
 import OptimizedPieChart from '../components/OptimizedPieChart';
-import dynamic from 'next/dynamic';
-import { tomorrow } from 'react-syntax-highlighter/dist/cjs/styles/prism';
-
-// Dynamically import SyntaxHighlighter to avoid SSR issues
-const SyntaxHighlighter = dynamic(() => import('react-syntax-highlighter').then(mod => mod.Prism), { ssr: false });
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 export default function ExtractedFilesPage() {
   const api = useNetcapApi();
+  const isMobile = useIsMobile();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [mimeTypeFilter, setMimeTypeFilter] = useState<string>('');
   const [protocolFilter, setProtocolFilter] = useState<string>('');
+  const [magikaGroupFilter, setMagikaGroupFilter] = useState<string>('');
   const [switchingFile, setSwitchingFile] = useState(false);
   const [previewFile, setPreviewFile] = useState<ExtractedFileInfo | null>(null);
   const [previewContent, setPreviewContent] = useState<string>('');
@@ -309,6 +309,12 @@ export default function ExtractedFilesPage() {
   // Get unique protocols for filter
   const protocols = Array.from(new Set(files.map(f => f.protocol).filter(Boolean)));
 
+  // Get unique Magika groups for filter
+  const magikaGroups = Array.from(new Set(files.map(f => f.magikaGroup).filter(Boolean)));
+
+  // Check if any files have Magika classification
+  const hasMagikaData = files.some(f => f.magikaLabel);
+
   // Calculate MIME type distribution for pie chart
   const mimeTypeDistribution = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -423,6 +429,74 @@ export default function ExtractedFilesPage() {
     ]
   }), [protocolDistribution]);
 
+  // Calculate Magika group distribution for pie chart
+  const magikaGroupDistribution = useMemo(() => {
+    const counts: Record<string, number> = {};
+    files.forEach(file => {
+      if (file.magikaGroup) {
+        counts[file.magikaGroup] = (counts[file.magikaGroup] || 0) + 1;
+      }
+    });
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [files]);
+
+  // ECharts pie chart option for Magika groups
+  const magikaGroupPieChartOption = useMemo(() => ({
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)'
+    },
+    legend: {
+      orient: 'vertical',
+      right: 10,
+      top: 'center',
+      type: 'scroll',
+      textStyle: {
+        fontSize: 11
+      }
+    },
+    series: [
+      {
+        name: 'AI Type Groups',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: true,
+        itemStyle: {
+          borderRadius: 8,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: false,
+          position: 'center'
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 14,
+            fontWeight: 'bold'
+          }
+        },
+        labelLine: {
+          show: false
+        },
+        data: magikaGroupDistribution
+      }
+    ]
+  }), [magikaGroupDistribution]);
+
+  // Handler for Magika group chart click
+  const handleMagikaGroupChartClick = useCallback((params: { name: string }) => {
+    if (magikaGroupFilter === params.name) {
+      setMagikaGroupFilter('');
+    } else {
+      setMagikaGroupFilter(params.name);
+    }
+    setPage(0);
+  }, [magikaGroupFilter]);
+
   // Handler for MIME type chart click
   const handleMimeTypeChartClick = useCallback((params: { name: string }) => {
     // Toggle filter: if already filtered by this type, clear the filter
@@ -445,10 +519,11 @@ export default function ExtractedFilesPage() {
     setPage(0);
   }, [protocolFilter]);
 
-  // Apply MIME type and protocol filters
+  // Apply MIME type, protocol, and Magika group filters
   const filteredFiles = files.filter(f => {
     if (mimeTypeFilter && f.mimeType !== mimeTypeFilter) return false;
     if (protocolFilter && f.protocol !== protocolFilter) return false;
+    if (magikaGroupFilter && f.magikaGroup !== magikaGroupFilter) return false;
     return true;
   });
 
@@ -457,6 +532,7 @@ export default function ExtractedFilesPage() {
   const filteredImageFiles = imageFiles.filter(f => {
     if (mimeTypeFilter && f.mimeType !== mimeTypeFilter) return false;
     if (protocolFilter && f.protocol !== protocolFilter) return false;
+    if (magikaGroupFilter && f.magikaGroup !== magikaGroupFilter) return false;
     return true;
   });
 
@@ -1172,16 +1248,16 @@ export default function ExtractedFilesPage() {
 
             {/* Protocol Distribution - only show if more than one protocol */}
             {protocolDistribution.length > 1 && (
-              <Paper 
+              <Paper
                 data-learn="Protocol Distribution: Visual breakdown of network protocols used to transfer extracted files. Click on a slice to filter the table by that protocol."
                 sx={{ flex: 1, p: 2 }}
               >
                 <Typography variant="h6" gutterBottom>
                   Protocol Distribution
                   {protocolFilter && (
-                    <Chip 
-                      label={`Filtered: ${protocolFilter}`} 
-                      size="small" 
+                    <Chip
+                      label={`Filtered: ${protocolFilter}`}
+                      size="small"
                       color="primary"
                       onDelete={() => { setProtocolFilter(''); setPage(0); }}
                       sx={{ ml: 1 }}
@@ -1191,10 +1267,38 @@ export default function ExtractedFilesPage() {
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
                   Click a slice to filter
                 </Typography>
-                <OptimizedPieChart 
-                  option={protocolPieChartOption} 
+                <OptimizedPieChart
+                  option={protocolPieChartOption}
                   style={{ height: '250px', width: '100%' }}
                   onItemClick={handleProtocolChartClick}
+                />
+              </Paper>
+            )}
+            {/* AI Type Group Distribution - only show if Magika data exists */}
+            {magikaGroupDistribution.length > 1 && (
+              <Paper
+                data-learn="AI Type Distribution: Visual breakdown of AI-detected file type groups (Google Magika). Click on a slice to filter the table by that group."
+                sx={{ flex: 1, p: 2 }}
+              >
+                <Typography variant="h6" gutterBottom>
+                  AI Type Distribution
+                  {magikaGroupFilter && (
+                    <Chip
+                      label={`Filtered: ${magikaGroupFilter}`}
+                      size="small"
+                      color="secondary"
+                      onDelete={() => { setMagikaGroupFilter(''); setPage(0); }}
+                      sx={{ ml: 1 }}
+                    />
+                  )}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  Click a slice to filter
+                </Typography>
+                <OptimizedPieChart
+                  option={magikaGroupPieChartOption}
+                  style={{ height: '250px', width: '100%' }}
+                  onItemClick={handleMagikaGroupChartClick}
                 />
               </Paper>
             )}
@@ -1243,7 +1347,29 @@ export default function ExtractedFilesPage() {
               ))}
             </Select>
           </FormControl>
-          {(mimeTypeFilter || protocolFilter) && (
+          {hasMagikaData && (
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <Select
+                data-learn="AI Type Filter: Filter extracted files by their AI-detected content group (Google Magika classification)."
+                value={magikaGroupFilter}
+                onChange={(e) => {
+                  setMagikaGroupFilter(e.target.value);
+                  setPage(0);
+                }}
+                displayEmpty
+              >
+                <MenuItem value="">
+                  <em>All AI Types</em>
+                </MenuItem>
+                {magikaGroups.sort().map((group) => (
+                  <MenuItem key={group} value={group}>
+                    {group}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+          {(mimeTypeFilter || protocolFilter || magikaGroupFilter) && (
             <Typography variant="body2" color="text.secondary">
               {filteredFiles.length} of {files.length} files
             </Typography>
@@ -1398,144 +1524,213 @@ export default function ExtractedFilesPage() {
             )}
           </>
         ) : (
-          <>
-            <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
-              <Table size="small" sx={{ minWidth: { xs: 700, md: 'auto' } }}>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>File Name</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>MIME Type</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Protocol</TableCell>
-                    <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Path</TableCell>
-                    <TableCell align="right">Size</TableCell>
-                    <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Modified</TableCell>
-                    <TableCell align="right">Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedFiles.map((file) => (
-                    <TableRow 
-                      key={file.path}
-                      data-row-key={file.path}
-                      hover 
-                      onClick={() => handlePreviewFile(file)}
-                      selected={selectedFileKey === file.path}
-                      sx={{ cursor: 'pointer' }}
-                    >
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          {getFileTypeIcon(file.mimeType)}
-                          <Tooltip title={(file.originalName || file.name).length > 50 ? (file.originalName || file.name) : ''}>
-                            <Typography 
-                              sx={{ 
-                                fontFamily: 'monospace', 
-                                fontSize: '0.85rem',
-                                maxWidth: 300,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                              }}
-                            >
-                              {truncateFileName(file.originalName || file.name)}
-                            </Typography>
-                          </Tooltip>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                        <Chip
-                          label={file.mimeType || 'unknown'}
-                          size="small"
-                          variant="outlined"
-                          sx={{ fontSize: '0.75rem' }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                        {file.protocol && (
+          <ResponsiveDataView<ExtractedFileInfo>
+            data={paginatedFiles}
+            totalCount={filteredFiles.length}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 25, 50, 100]}
+            onCardClick={(file) => handlePreviewFile(file)}
+            desktopTable={
+              <TableContainer component={Paper} sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+                <Table size="small" sx={{ minWidth: { xs: 700, md: 'auto' } }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>File Name</TableCell>
+                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>MIME Type</TableCell>
+                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Protocol</TableCell>
+                      {hasMagikaData && (
+                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>AI Type</TableCell>
+                      )}
+                      <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Risk</TableCell>
+                      <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Path</TableCell>
+                      <TableCell align="right">Size</TableCell>
+                      <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>Modified</TableCell>
+                      <TableCell align="right">Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginatedFiles.map((file) => (
+                      <TableRow
+                        key={file.path}
+                        data-row-key={file.path}
+                        hover
+                        onClick={() => handlePreviewFile(file)}
+                        selected={selectedFileKey === file.path}
+                        sx={{ cursor: 'pointer' }}
+                      >
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {getFileTypeIcon(file.mimeType)}
+                            <Tooltip title={(file.originalName || file.name).length > 50 ? (file.originalName || file.name) : ''}>
+                              <Typography
+                                sx={{
+                                  fontFamily: 'monospace',
+                                  fontSize: '0.85rem',
+                                  maxWidth: 300,
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}
+                              >
+                                {truncateFileName(file.originalName || file.name)}
+                              </Typography>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                           <Chip
-                            label={file.protocol}
+                            label={file.mimeType || 'unknown'}
                             size="small"
-                            color="primary"
                             variant="outlined"
                             sx={{ fontSize: '0.75rem' }}
                           />
-                        )}
-                      </TableCell>
-                      <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            fontFamily: 'monospace', 
-                            fontSize: '0.75rem',
-                            color: 'text.secondary',
-                            maxWidth: 300,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}
-                        >
-                          {file.path}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Typography variant="body2">
-                          {formatBytes(file.size)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
-                        <Typography variant="body2">
-                          {formatTimestamp(file.modifiedTime)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
-                          <Tooltip title="Preview file">
-                            <IconButton
-                              size="small"
-                              color="secondary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePreviewFile(file);
-                              }}
-                            >
-                              <VisibilityIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Download file">
-                            <IconButton
+                        </TableCell>
+                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                          {file.protocol && (
+                            <Chip
+                              label={file.protocol}
                               size="small"
                               color="primary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDownloadFile(file.path);
-                              }}
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            <TablePagination
-              component="div"
-              count={filteredFiles.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-            />
-          </>
+                              variant="outlined"
+                              sx={{ fontSize: '0.75rem' }}
+                            />
+                          )}
+                        </TableCell>
+                        {hasMagikaData && (
+                          <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                            {file.magikaLabel && (
+                              <Tooltip title={`${file.magikaDescription || ''} (${file.magikaMimeType || ''})`}>
+                                <Chip
+                                  label={file.magikaLabel}
+                                  size="small"
+                                  color={file.magikaIsText ? 'default' : 'secondary'}
+                                  variant="outlined"
+                                  sx={{ fontSize: '0.75rem' }}
+                                />
+                              </Tooltip>
+                            )}
+                          </TableCell>
+                        )}
+                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                            {file.isKnownMalware && (
+                              <Chip label={file.threatName || 'Malware'} size="small" color="error" sx={{ fontSize: '0.7rem' }} />
+                            )}
+                            {file.yaraMatches && file.yaraMatches.length > 0 && file.yaraMatches.map((match: string) => (
+                              <Chip key={match} label={`YARA: ${match}`} size="small" color="error" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            ))}
+                            {file.typeMismatch && (
+                              <Chip label="Type Mismatch" size="small" color="warning" sx={{ fontSize: '0.7rem' }} />
+                            )}
+                            {file.magikaMimeType && file.mimeType && file.magikaMimeType !== file.mimeType && (
+                              <Chip label="AI Type Mismatch" size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}
+                            {file.hasEmbeddedScript && (
+                              <Chip label="Script" size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}
+                            {file.isPasswordProtected && (
+                              <Chip label="Encrypted" size="small" color="warning" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}
+                            {(file.isPEExecutable || file.isELFExecutable || file.isMachO) && (
+                              <Chip label="Executable" size="small" color="info" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}
+                            {(file.entropy ?? 0) > 7.0 && (
+                              <Chip label={`Entropy ${(file.entropy ?? 0).toFixed(1)}`} size="small" color="default" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontFamily: 'monospace',
+                              fontSize: '0.75rem',
+                              color: 'text.secondary',
+                              maxWidth: 300,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {file.path}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2">
+                            {formatBytes(file.size)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right" sx={{ display: { xs: 'none', xl: 'table-cell' } }}>
+                          <Typography variant="body2">
+                            {formatTimestamp(file.modifiedTime)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right" onClick={(e) => e.stopPropagation()}>
+                          <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'flex-end' }}>
+                            <Tooltip title="Preview file">
+                              <IconButton
+                                size="small"
+                                color="secondary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePreviewFile(file);
+                                }}
+                              >
+                                <VisibilityIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Download file">
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDownloadFile(file.path);
+                                }}
+                              >
+                                <DownloadIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            }
+            renderCard={(file) => (
+              <Card variant="outlined">
+                <CardContent sx={{ pb: 1, '&:last-child': { pb: 1 } }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                    {getFileTypeIcon(file.mimeType)}
+                    <Typography variant="subtitle2" noWrap sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                      {truncateFileName(file.originalName || file.name, 40)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <Chip label={file.mimeType || 'unknown'} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                    {file.protocol && (
+                      <Chip label={file.protocol} size="small" color="primary" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+                    )}
+                    <Typography variant="caption" color="text.secondary">
+                      {formatBytes(file.size)}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            )}
+          />
         )}
 
         {/* File Preview Dialog */}
         <Dialog
           open={previewFile !== null}
           onClose={handleClosePreview}
+          fullScreen={isMobile}
           maxWidth="lg"
           fullWidth
           PaperProps={{

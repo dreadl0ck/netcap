@@ -27,7 +27,7 @@ const entries = {
   'hooks/index': 'src/hooks/index.ts',
   'pages/index': 'src/pages/index.ts',
   'contexts/index': 'src/contexts/index.ts',
-  'adapters/nextjs': 'src/adapters/nextjs.tsx',
+  'adapters/react-router': 'src/adapters/react-router.tsx',
   'lib/index': 'src/lib/index.ts',
 };
 
@@ -50,9 +50,9 @@ const sharedExternals = [
   // SWR
   'swr',
   /^swr\//,
-  // Next.js - all subpaths
-  'next',
-  /^next\//,
+  // React Router - all subpaths
+  'react-router',
+  /^react-router\//,
 ];
 
 export default defineConfig({

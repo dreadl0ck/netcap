@@ -4,83 +4,104 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build Commands
 
-**Build main binary:**
 ```bash
+# Build main binary (CGO required for libpcap)
 go build -o net ./cmd/
+
+# Build with version info
+go build -ldflags "-X github.com/dreadl0ck/netcap.Version=$(git describe --tags --always)" -o net ./cmd/
+
+# Build without DPI support (fewer C dependencies)
+go build -tags=nodpi -o net ./cmd/
+
+# Service mode with hot reload (requires air: go install github.com/air-verse/air@latest)
+air
 ```
 
-**Build with specific flags (from go.mod):**
+## Testing
+
 ```bash
-go build -ldflags "-X main.version=$(git describe --tags --always)" -o net ./cmd/
+# Unit tests (default, fast)
+make -f Makefile.test test-unit
+
+# All tests: unit + integration + regression
+make -f Makefile.test test-all
+
+# Test a specific package
+make -f Makefile.test test-pkg PKG=./collector/
+go test -v -run TestSpecificFunc ./collector/
+
+# Integration tests (require test fixtures/PCAPs)
+make -f Makefile.test test-integration
+
+# Race detector
+make -f Makefile.test test-race
+
+# Benchmarks (outputs cpu.prof and mem.prof)
+make -f Makefile.test test-bench
+
+# Coverage with 80% threshold enforcement
+make -f Makefile.test test-coverage-check
+
+# Update golden files after intentional output changes
+make -f Makefile.test test-golden-update
 ```
 
-**Test commands:**
+## Linting
+
 ```bash
-go test ./...                    # Run all tests
-go test -v ./types/              # Run specific package tests with verbose output
-go test -bench=. ./encoder/      # Run benchmarks for encoder package
+golangci-lint run
 ```
+
+Key settings in `.golangci.yml`:
+- Line length limit: 300 chars
+- Function limits: 20 cyclomatic complexity, 125 lines, 60 statements
+- Imports: `goimports` with local prefix `github.com/dreadl0ck/netcap`
+- Test files excluded from linting (TODO to enable)
+- `sshx/` and `tls/` directories skipped
+- `issues-exit-code: 0` (not yet enforced)
+
+## Go Workspace
+
+The project uses `go.work` referencing a local `../go-dpi` dependency. Ensure `github.com/dreadl0ck/go-dpi` is cloned as a sibling directory for DPI features.
 
 ## High-Level Architecture
 
-Netcap is a network packet analysis framework that converts network traffic into structured audit records using Protocol Buffers. The architecture is organized into several key components:
+Netcap converts network traffic (live capture or PCAP files) into structured Protocol Buffer audit records. Module path: `github.com/dreadl0ck/netcap`.
 
-### Core Components
+### Processing Pipeline
 
-**Command Structure (`cmd/`):**
-- Single binary with multiple subcommands: `capture`, `dump`, `label`, `collect`, `agent`, `proxy`, `export`, `transform`, `util`
-- Main entry point at `cmd/main.go` routes to subcommand handlers
-- Each subcommand has its own package with `main.go`, `flags.go`, and `utils.go`
+1. **Collector** (`collector/`) — reads packets from live interfaces or PCAP files, distributes to worker pool
+2. **Decoder** (`decoder/`) — converts raw packets to typed audit records
+   - `decoder/packet/` — 75+ individual protocol decoders (one per protocol layer)
+   - `decoder/stream/` — 40+ TCP stream-based decoders (TLS, SSH, QUIC, SMB, etc.)
+   - `decoder/config/` — decoder selection via `-include`/`-exclude` flags
+3. **Types** (`types/`) — all 58 audit record types defined in `netcap.proto`, generated with `protoc-gen-gogo`
+4. **IO** (`io/`) — output writers: Protocol Buffers (default), CSV, JSON, Elasticsearch
+5. **Reassembly** (`reassembly/`) — TCP stream reconstruction
+6. **Resolvers** (`resolvers/`) — enrichment: DNS, GeoIP, MAC vendor lookup
+7. **DPI** (`dpi/`) — optional Deep Packet Inspection via nDPI/libprotoident (requires CGO)
 
-**Packet Processing Pipeline:**
-1. **Collector (`collector/`)** - Handles live capture and PCAP file reading
-2. **Decoder (`decoder/`)** - Converts raw packets to structured data
-   - `packet/` - Individual packet decoders for each protocol
-   - `stream/` - TCP stream reassembly and stream-based decoders
-3. **Types (`types/`)** - Protocol Buffer definitions for all audit record types
-4. **IO (`io/`)** - Output writers (protobuf, CSV, JSON, Elasticsearch)
+### Command Structure
 
-**Key Architectural Patterns:**
-- **Concurrent Processing**: Configurable worker pools with packet buffering
-- **Stream Reassembly**: TCP stream reconstruction in `reassembly/` package
-- **Protocol Extensibility**: Easy to add new protocol decoders
-- **Multiple Output Formats**: Protocol Buffers (default), CSV, JSON, null sink
+Single binary (`cmd/main.go`) with subcommands via `urfave/cli/v3`: `capture`, `dump`, `label`, `collect`, `agent`, `proxy`, `export`, `transform`, `util`, `inject`, `split`. Each subcommand is its own package under `cmd/` with `main.go`, `flags.go`, `utils.go`.
 
-### Important Directories
+### Service Mode
 
-- `types/` - Protocol Buffer audit record definitions (58 types total)
-- `decoder/packet/` - Individual protocol packet decoders
-- `decoder/stream/` - TCP stream-based protocol decoders
-- `collector/` - Core packet collection and processing engine
-- `reassembly/` - TCP stream reassembly implementation
-- `io/` - Output format writers and file utilities
-- `resolvers/` - DNS, GeoIP, MAC address, and other enrichment resolvers
-- `maltego/` - Maltego OSINT platform integration transforms
+The `capture` subcommand supports `--service` mode serving an HTTP API with a Next.js frontend at `cmd/capture/webui/frontend/` (pnpm-based). Use `air` for hot-reload during development.
 
-### Testing and Development
+### Version Variables
 
-**Performance Testing:**
-- Use `zeus/scripts/test-params.sh` to benchmark different configuration combinations
-- Test various worker counts, buffer sizes, compression settings, and decoder selections
+`version.go` at root defines `Version`, `Commit`, and `GopacketVersion` — overridable via `-ldflags` at build time.
 
-**Common Development Tasks:**
-- Add new protocol decoders in `decoder/packet/` and `decoder/stream/`
-- Protocol Buffer definitions in `types/` with corresponding `.proto` files
-- Update `cmd/main.go` to add new subcommands
-- IO writers are in `io/` for new output formats
+### Proto Code Generation
 
-### Configuration Notes
+All types are defined in `netcap.proto` and generated to `types/netcap.pb.go` using `protoc-gen-gogo`. There are no `go:generate` directives — proto compilation is manual.
 
-- Worker count defaults to number of CPU cores
-- Packet buffer size (`-pbuf`) affects memory usage and performance
-- TCP reassembly can be disabled for performance with `-reassemble-connections false`
-- Deep Packet Inspection (DPI) available via `-dpi` flag
-- Multiple database integrations: Elasticsearch, Prometheus metrics, GeoIP, MAC vendors
+### Key Directories
 
-### Key Performance Flags
-
-- `-workers N` - Number of worker goroutines
-- `-pbuf N` - Packet buffer size per worker
-- `-compression-level` - Compression settings (none, max-speed, max-compression)
-- `-flushevery N` - TCP assembler flush interval
-- `-include/-exclude` - Decoder selection for performance tuning
+- `internal/` — ja4 TLS fingerprinting, logger, metrics, filter, helpers
+- `maltego/` — Maltego OSINT platform integration transforms
+- `configs/` — YAML configs for file extraction, firewall rules, harvesters
+- `rules/examples/` — YAML detection rule definitions
+- `zeus/scripts/` — build and performance testing scripts

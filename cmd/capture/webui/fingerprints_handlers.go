@@ -33,13 +33,14 @@ import (
 
 // FingerprintSummary represents aggregated fingerprint information
 type FingerprintSummary struct {
-	Fingerprint string   `json:"fingerprint"`
-	Type        string   `json:"type"` // JA4, JA4S, JA4H, JA4X, JA4T, JA4TS, JA4SSH, or DHCP
-	Count       int      `json:"count"`
-	Hosts       []string `json:"hosts"`
-	Description string   `json:"description"`
-	FirstSeen   int64    `json:"firstSeen"`
-	LastSeen    int64    `json:"lastSeen"`
+	Fingerprint  string   `json:"fingerprint"`
+	Type         string   `json:"type"` // JA4, JA4S, JA4H, JA4X, JA4T, JA4TS, JA4SSH, or DHCP
+	Count        int      `json:"count"`
+	Hosts        []string `json:"hosts"`
+	Description  string   `json:"description"`
+	FirstSeen    int64    `json:"firstSeen"`
+	LastSeen     int64    `json:"lastSeen"`
+	CommunityIDs []string `json:"communityIds"`
 }
 
 // FingerprintsResponse contains the list of fingerprints
@@ -129,14 +130,20 @@ func readFingerprints(outDir string) ([]FingerprintSummary, error) {
 			hosts = append(hosts, host)
 		}
 
+		communityIDs := make([]string, 0, len(agg.communityIDs))
+		for cid := range agg.communityIDs {
+			communityIDs = append(communityIDs, cid)
+		}
+
 		fingerprints = append(fingerprints, FingerprintSummary{
-			Fingerprint: agg.fingerprint,
-			Type:        agg.fpType,
-			Count:       agg.count,
-			Hosts:       hosts,
-			Description: agg.description,
-			FirstSeen:   agg.firstSeen,
-			LastSeen:    agg.lastSeen,
+			Fingerprint:  agg.fingerprint,
+			Type:         agg.fpType,
+			Count:        agg.count,
+			Hosts:        hosts,
+			Description:  agg.description,
+			FirstSeen:    agg.firstSeen,
+			LastSeen:     agg.lastSeen,
+			CommunityIDs: communityIDs,
 		})
 	}
 
@@ -190,11 +197,12 @@ func readJA4SSHFingerprints(outDir string, fingerprintMap map[string]*fingerprin
 		agg, exists := fingerprintMap[key]
 		if !exists {
 			agg = &fingerprintAggregator{
-				fingerprint: ssh.Ja4Ssh,
-				fpType:      "JA4SSH",
-				hosts:       make(map[string]bool),
-				firstSeen:   ssh.Timestamp,
-				lastSeen:    ssh.Timestamp,
+				fingerprint:  ssh.Ja4Ssh,
+				fpType:       "JA4SSH",
+				hosts:        make(map[string]bool),
+				communityIDs: make(map[string]bool),
+				firstSeen:    ssh.Timestamp,
+				lastSeen:     ssh.Timestamp,
 			}
 			// Use session type as description
 			if ssh.Ja4SshSessionType != "" {
@@ -207,6 +215,9 @@ func readJA4SSHFingerprints(outDir string, fingerprintMap map[string]*fingerprin
 		// Extract host from Flow field (format: "src:port-dst:port")
 		if ssh.Flow != "" {
 			agg.hosts[ssh.Flow] = true
+		}
+		if ssh.CommunityID != "" {
+			agg.communityIDs[ssh.CommunityID] = true
 		}
 
 		if ssh.Timestamp < agg.firstSeen {
@@ -283,11 +294,12 @@ func readJA4FromTLSClientHello(outDir string, fingerprintMap map[string]*fingerp
 		agg, exists := fingerprintMap[key]
 		if !exists {
 			agg = &fingerprintAggregator{
-				fingerprint: hello.Ja4,
-				fpType:      "JA4",
-				hosts:       make(map[string]bool),
-				firstSeen:   hello.Timestamp,
-				lastSeen:    hello.Timestamp,
+				fingerprint:  hello.Ja4,
+				fpType:       "JA4",
+				hosts:        make(map[string]bool),
+				communityIDs: make(map[string]bool),
+				firstSeen:    hello.Timestamp,
+				lastSeen:     hello.Timestamp,
 			}
 			// Use Ja4Description from database lookup
 			if hello.Ja4Description != "" {
@@ -299,6 +311,9 @@ func readJA4FromTLSClientHello(outDir string, fingerprintMap map[string]*fingerp
 		agg.count++
 		if hello.SrcIP != "" {
 			agg.hosts[hello.SrcIP] = true
+		}
+		if hello.CommunityID != "" {
+			agg.communityIDs[hello.CommunityID] = true
 		}
 
 		if hello.Timestamp < agg.firstSeen {
@@ -354,11 +369,12 @@ func readJA4SFromTLSServerHello(outDir string, fingerprintMap map[string]*finger
 		agg, exists := fingerprintMap[key]
 		if !exists {
 			agg = &fingerprintAggregator{
-				fingerprint: hello.Ja4S,
-				fpType:      "JA4S",
-				hosts:       make(map[string]bool),
-				firstSeen:   hello.Timestamp,
-				lastSeen:    hello.Timestamp,
+				fingerprint:  hello.Ja4S,
+				fpType:       "JA4S",
+				hosts:        make(map[string]bool),
+				communityIDs: make(map[string]bool),
+				firstSeen:    hello.Timestamp,
+				lastSeen:     hello.Timestamp,
 			}
 			// Use Ja4sDescription from database lookup
 			if hello.Ja4SDescription != "" {
@@ -370,6 +386,9 @@ func readJA4SFromTLSServerHello(outDir string, fingerprintMap map[string]*finger
 		agg.count++
 		if hello.SrcIP != "" {
 			agg.hosts[hello.SrcIP] = true
+		}
+		if hello.CommunityID != "" {
+			agg.communityIDs[hello.CommunityID] = true
 		}
 
 		if hello.Timestamp < agg.firstSeen {
@@ -431,11 +450,12 @@ func readJA4FromIPProfile(outDir string, fingerprintMap map[string]*fingerprintA
 			agg, exists := fingerprintMap[key]
 			if !exists {
 				agg = &fingerprintAggregator{
-					fingerprint: ja4fp,
-					fpType:      "JA4",
-					hosts:       make(map[string]bool),
-					firstSeen:   ipProfile.TimestampFirst,
-					lastSeen:    ipProfile.TimestampLast,
+					fingerprint:  ja4fp,
+					fpType:       "JA4",
+					hosts:        make(map[string]bool),
+					communityIDs: make(map[string]bool),
+					firstSeen:    ipProfile.TimestampFirst,
+					lastSeen:     ipProfile.TimestampLast,
 				}
 				fingerprintMap[key] = agg
 			}
@@ -461,11 +481,12 @@ func readJA4FromIPProfile(outDir string, fingerprintMap map[string]*fingerprintA
 			agg, exists := fingerprintMap[key]
 			if !exists {
 				agg = &fingerprintAggregator{
-					fingerprint: ja4sfp,
-					fpType:      "JA4S",
-					hosts:       make(map[string]bool),
-					firstSeen:   ipProfile.TimestampFirst,
-					lastSeen:    ipProfile.TimestampLast,
+					fingerprint:  ja4sfp,
+					fpType:       "JA4S",
+					hosts:        make(map[string]bool),
+					communityIDs: make(map[string]bool),
+					firstSeen:    ipProfile.TimestampFirst,
+					lastSeen:     ipProfile.TimestampLast,
 				}
 				fingerprintMap[key] = agg
 			}
@@ -535,11 +556,12 @@ func readDHCPFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 		agg, exists := fingerprintMap[key]
 		if !exists {
 			agg = &fingerprintAggregator{
-				fingerprint: fingerprint,
-				fpType:      "DHCP",
-				hosts:       make(map[string]bool),
-				firstSeen:   dhcp.Timestamp,
-				lastSeen:    dhcp.Timestamp,
+				fingerprint:  fingerprint,
+				fpType:       "DHCP",
+				hosts:        make(map[string]bool),
+				communityIDs: make(map[string]bool),
+				firstSeen:    dhcp.Timestamp,
+				lastSeen:     dhcp.Timestamp,
 			}
 			fingerprintMap[key] = agg
 		}
@@ -565,13 +587,14 @@ func readDHCPFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 
 // fingerprintAggregator holds temporary aggregation data for a fingerprint
 type fingerprintAggregator struct {
-	fingerprint string
-	fpType      string
-	count       int
-	hosts       map[string]bool
-	description string
-	firstSeen   int64
-	lastSeen    int64
+	fingerprint  string
+	fpType       string
+	count        int
+	hosts        map[string]bool
+	communityIDs map[string]bool
+	description  string
+	firstSeen    int64
+	lastSeen     int64
 }
 
 // readJA4HFingerprints reads JA4H fingerprints from HTTP records
@@ -616,11 +639,12 @@ func readJA4HFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 		agg, exists := fingerprintMap[key]
 		if !exists {
 			agg = &fingerprintAggregator{
-				fingerprint: http.Ja4H,
-				fpType:      "JA4H",
-				hosts:       make(map[string]bool),
-				firstSeen:   http.Timestamp,
-				lastSeen:    http.Timestamp,
+				fingerprint:  http.Ja4H,
+				fpType:       "JA4H",
+				hosts:        make(map[string]bool),
+				communityIDs: make(map[string]bool),
+				firstSeen:    http.Timestamp,
+				lastSeen:     http.Timestamp,
 			}
 			// Use Ja4hDescription if available
 			if http.Ja4HDescription != "" {
@@ -632,6 +656,9 @@ func readJA4HFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 		agg.count++
 		if http.SrcIP != "" {
 			agg.hosts[http.SrcIP] = true
+		}
+		if http.CommunityID != "" {
+			agg.communityIDs[http.CommunityID] = true
 		}
 
 		if http.Timestamp < agg.firstSeen {
@@ -687,11 +714,12 @@ func readJA4XFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 		agg, exists := fingerprintMap[key]
 		if !exists {
 			agg = &fingerprintAggregator{
-				fingerprint: cert.Ja4X,
-				fpType:      "JA4X",
-				hosts:       make(map[string]bool),
-				firstSeen:   cert.Timestamp,
-				lastSeen:    cert.Timestamp,
+				fingerprint:  cert.Ja4X,
+				fpType:       "JA4X",
+				hosts:        make(map[string]bool),
+				communityIDs: make(map[string]bool),
+				firstSeen:    cert.Timestamp,
+				lastSeen:     cert.Timestamp,
 			}
 			// Use Ja4xDescription if available
 			if cert.Ja4XDescription != "" {
@@ -709,6 +737,9 @@ func readJA4XFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 		}
 		if cert.DstIP != "" {
 			agg.hosts[cert.DstIP] = true
+		}
+		if cert.CommunityID != "" {
+			agg.communityIDs[cert.CommunityID] = true
 		}
 
 		if cert.Timestamp < agg.firstSeen {
@@ -766,11 +797,12 @@ func readJA4TFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 			agg, exists := fingerprintMap[key]
 			if !exists {
 				agg = &fingerprintAggregator{
-					fingerprint: tcp.Ja4T,
-					fpType:      "JA4T",
-					hosts:       make(map[string]bool),
-					firstSeen:   tcp.Timestamp,
-					lastSeen:    tcp.Timestamp,
+					fingerprint:  tcp.Ja4T,
+					fpType:       "JA4T",
+					hosts:        make(map[string]bool),
+					communityIDs: make(map[string]bool),
+					firstSeen:    tcp.Timestamp,
+					lastSeen:     tcp.Timestamp,
 				}
 				// Use Ja4tDescription if available
 				if tcp.Ja4TDescription != "" {
@@ -782,6 +814,9 @@ func readJA4TFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 			agg.count++
 			if tcp.SrcIP != "" {
 				agg.hosts[tcp.SrcIP] = true
+			}
+			if tcp.CommunityID != "" {
+				agg.communityIDs[tcp.CommunityID] = true
 			}
 
 			if tcp.Timestamp < agg.firstSeen {
@@ -798,11 +833,12 @@ func readJA4TFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 			agg, exists := fingerprintMap[key]
 			if !exists {
 				agg = &fingerprintAggregator{
-					fingerprint: tcp.Ja4Ts,
-					fpType:      "JA4TS",
-					hosts:       make(map[string]bool),
-					firstSeen:   tcp.Timestamp,
-					lastSeen:    tcp.Timestamp,
+					fingerprint:  tcp.Ja4Ts,
+					fpType:       "JA4TS",
+					hosts:        make(map[string]bool),
+					communityIDs: make(map[string]bool),
+					firstSeen:    tcp.Timestamp,
+					lastSeen:     tcp.Timestamp,
 				}
 				// Use Ja4tsDescription if available
 				if tcp.Ja4TsDescription != "" {
@@ -814,6 +850,9 @@ func readJA4TFingerprints(outDir string, fingerprintMap map[string]*fingerprintA
 			agg.count++
 			if tcp.SrcIP != "" {
 				agg.hosts[tcp.SrcIP] = true
+			}
+			if tcp.CommunityID != "" {
+				agg.communityIDs[tcp.CommunityID] = true
 			}
 
 			if tcp.Timestamp < agg.firstSeen {

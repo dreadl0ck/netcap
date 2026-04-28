@@ -1,0 +1,27 @@
+# CLDAP Security Detection Rules
+# Detect Active Directory reconnaissance via Connectionless LDAP
+
+description: "Detection rules for CLDAP-based Active Directory reconnaissance and enumeration."
+
+rules:
+  # CLDAP domain discovery from external source
+  - name: CLDAP External AD Discovery
+    description: CLDAP Active Directory domain discovery query from a non-private IP address
+    type: CLDAP
+    expression: 'Operation == "SearchRequest" && !IsPrivateIP(SrcIP)'
+    severity: high
+    mitre: ["T1018"]
+    tags: ["cldap", "discovery", "ad-enumeration", "external"]
+    enabled: true
+
+  # CLDAP enumeration burst - high volume queries
+  - name: CLDAP Enumeration Burst
+    description: High volume of CLDAP queries detected from a single source, indicating Active Directory enumeration
+    type: CLDAP
+    expression: 'Operation == "SearchRequest"'
+    severity: medium
+    mitre: ["T1018"]
+    tags: ["cldap", "discovery", "enumeration"]
+    enabled: true
+    threshold: 20
+    threshold_window: 60

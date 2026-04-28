@@ -28,6 +28,7 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  IconButton,
   MenuItem,
   Paper,
   Select,
@@ -40,13 +41,15 @@ import {
   TableRow,
   Typography,
 } from '@mui/material';
+import { Close as CloseIcon } from '@mui/icons-material';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { formatBytes, formatTimestamp } from '../lib/api';
-import { useNetcapApi } from '../hooks';
+import { useNetcapApi, useIsMobile } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
 
 export default function Logs() {
+  const isMobile = useIsMobile();
   const api = useNetcapApi();
   const { data: files, error, mutate } = useSWR('logFiles', () => api.getLogFiles());
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
@@ -291,8 +294,17 @@ export default function Logs() {
         )}
       </Box>
 
-      <Dialog open={selectedLog !== null} onClose={handleClose} maxWidth="lg" fullWidth>
-        <DialogTitle>{selectedLog}</DialogTitle>
+      <Dialog open={selectedLog !== null} onClose={handleClose} maxWidth="lg" fullWidth fullScreen={isMobile}>
+        <DialogTitle>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            {selectedLog}
+            {isMobile && (
+              <IconButton onClick={handleClose} edge="end">
+                <CloseIcon />
+              </IconButton>
+            )}
+          </Box>
+        </DialogTitle>
         <DialogContent>
           {loading ? (
             <Box display="flex" justifyContent="center" p={3}>

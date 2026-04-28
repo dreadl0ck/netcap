@@ -28,11 +28,11 @@ echo "[INFO] Registry: ${REGISTRY}"
 echo "[INFO] Version: ${VERSION}"
 
 # Check if frontend assets exist
-if [ ! -d "cmd/capture/webui/frontend/out" ]; then
-    echo "[ERROR] Frontend assets not found at cmd/capture/webui/frontend/out"
+if [ ! -d "cmd/capture/webui/frontend/dist" ]; then
+    echo "[ERROR] Frontend assets not found at cmd/capture/webui/frontend/dist"
     echo "[INFO] Please build the frontend first:"
     echo "       zeus build-frontend-service"
-    echo "       (or manually: cd cmd/capture/webui/frontend && NEXT_PUBLIC_BACKEND_URL=https://try.netcap.io pnpm run build)"
+    echo "       (or manually: cd cmd/capture/webui/frontend && pnpm run build)"
     exit 1
 fi
 
@@ -177,8 +177,3 @@ echo "To disable multi-platform build (single platform only):"
 echo "  export NETCAP_USE_BUILDX=false"
 echo ""
 echo "Access the service at: http://localhost:7070"
-
-
-cd $HOME/go/src/github.com/dreadl0ck/serverconfig
-zeus deploy service=netcap-try
-zeus logs service=netcap-try | sed -E 's/^[^ ]+  \| [^ ]+ //'
