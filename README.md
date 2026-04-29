@@ -48,7 +48,7 @@ See the [Gallery](docs/GALLERY.md) for screenshots.
 - **JA4 fingerprinting** — JA4, JA4S, JA4H, JA4SSH, JA4X for TLS, HTTP, SSH, and X.509 classification
 - **YARA rules** — file scanning with compiled yara-x rules for malware detection
 - **Magika AI** — Google's AI-based file type classification on extracted files
-- **Credential harvesting detection** — configurable protocol-aware credential capture
+- **Credential harvesting** — configurable protocol-aware credential capture
 - **File extraction** — extract files from HTTP, FTP, SMTP, POP3, IMAP, SMB, IRC with hashing (MD5, SHA1, SHA256) and MIME detection
 - **Detection rules** — 30+ YAML rule categories covering reconnaissance, exfiltration, web attacks, industrial ports, and more
 
