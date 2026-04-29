@@ -36,6 +36,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/archive"
+	"github.com/dreadl0ck/netcap/internal/httputil"
 )
 
 // A simple hook function that provides the option to modify the fetched data
@@ -430,7 +431,8 @@ func fetchResource(s *datasource, outFilePath string) error {
 
 		// check status
 		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
+			// drain body so the underlying connection can be reused for the retry
+			httputil.DrainAndClose(resp.Body)
 			lastErr = fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.Status)
 			numRetries++
 			if numRetries <= maxRetries {

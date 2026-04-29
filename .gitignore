@@ -1,4 +1,5 @@
 .DS_Store
+coverage.out
 dist-linux
 .docker-build-timestamp
 .docker-build-context

@@ -33,6 +33,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/dreadl0ck/netcap/internal/httputil"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -132,6 +133,11 @@ makeHTTPRequest:
 			zap.String("newLocation", newLoc),
 		)
 
+		// drain and close the intermediate redirect response body so that the
+		// underlying connection can be reused for the follow-up request. Without
+		// this the body would leak and keep-alive would be defeated on every 302.
+		httputil.DrainAndClose(resp.Body)
+
 		// try again
 		goto makeHTTPRequest
 	}
@@ -151,10 +157,31 @@ makeHTTPRequest:
 	}
 
 	// read the raw bytes of the response body
-	// to set content length manually in case the value in the header is wrong
-	rawbody, err := ioutil.ReadAll(resp.Body)
+	// to set content length manually in case the value in the header is wrong.
+	// the original body is replaced below with a NopCloser wrapping the buffered
+	// bytes. the underlying ReadCloser must still be closed explicitly so that
+	// the default Transport can return the TCP connection to its pool; the
+	// ReverseProxy downstream will only ever close the substituted NopCloser.
+	origBody := resp.Body
+	rawbody, err := ioutil.ReadAll(origBody)
 	if err != nil {
+		// partially-read body: drain whatever is left and close so we do not
+		// leak the connection / FD on transient read errors.
+		httputil.DrainAndClose(origBody)
 		return nil, err
+	}
+	// full body read to EOF; close the original ReadCloser to release the conn.
+	_ = origBody.Close()
+
+	if len(rawbody) != 0 {
+		// restore resp body or dumping it will fail later
+		var b bytes.Buffer
+
+		b.Write(rawbody)
+		resp.Body = ioutil.NopCloser(&b)
+
+		// set content length manually in case the service did not
+		resp.ContentLength = int64(len(rawbody))
 	}
 
 	if len(rawbody) != 0 {
