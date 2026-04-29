@@ -498,10 +498,11 @@ func processWithCollector(pcapPath, outDir string) error {
 
 	cfg := collector.DefaultConfig
 
-	decoderCfg := *decoderconfig.DefaultConfig
+	// Clone() avoids the go vet lock-copy issue on Config (embeds sync.Mutex).
+	decoderCfg := decoderconfig.DefaultConfig.Clone()
 	decoderCfg.Out = outDir
 	decoderCfg.Source = pcapPath
-	cfg.DecoderConfig = &decoderCfg
+	cfg.DecoderConfig = decoderCfg
 	cfg.ReassembleConnections = true
 
 	c := collector.New(cfg)

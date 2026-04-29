@@ -21,6 +21,7 @@ package io
 
 import (
 	"sync"
+	"sync/atomic"
 
 	"github.com/gogo/protobuf/proto"
 	"go.uber.org/zap"
@@ -48,9 +49,11 @@ var globalWriterRegistry = &writerRegistry{
 
 // sharedWriter wraps an AuditRecordWriter to support shared access from multiple callers.
 // Each caller gets their own sharedWriter instance, but they all share the same underlying writer.
+// localRecords is updated atomically because the same *sharedWriter pointer is
+// reached from multiple decoder worker goroutines (e.g. connection writers).
 type sharedWriter struct {
 	key          string // registry key (file path)
-	localRecords int64  // records written by this instance
+	localRecords int64  // records written by this instance (atomic)
 }
 
 // getOrCreateWriter returns a shared writer for the given key.
@@ -93,7 +96,7 @@ func (sw *sharedWriter) Write(msg proto.Message) error {
 
 	err := entry.writer.Write(msg)
 	if err == nil {
-		sw.localRecords++
+		atomic.AddInt64(&sw.localRecords, 1)
 	}
 	return err
 }

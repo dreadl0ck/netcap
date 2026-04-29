@@ -11,7 +11,11 @@ maltego/netcap
 maltego/transforms
 maltego/entities/
 zeus/data.yml
-tests
+# Keep most of tests/ ignored (runtime artefacts, downloaded fixtures,
+# brim outputs, etc.). Specific tracked files are re-included via the
+# negations near the bottom of this file (after the broad *.pcap /
+# *.pcapng patterns, otherwise they cannot win).
+tests/*
 .idea
 types/python
 types/java
@@ -29,6 +33,11 @@ pcaps
 */*.pcap
 */*.pcapng
 *.ncap*
+# Re-include specific tracked test fixtures and Go test sources under
+# tests/. Must come after the broad *.pcap / *.pcapng / tests/* rules
+# above, otherwise the negations are ignored.
+!tests/new_decoders_test.go
+!tests/The Ultimate PCAP v20260316.pcapng
 zeus/.history
 zeus/dumps
 priv.key

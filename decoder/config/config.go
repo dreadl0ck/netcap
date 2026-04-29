@@ -319,3 +319,18 @@ type Config struct {
 	// Format: "port:package.MessageType" (e.g. "50051:tutorial.AddressBook").
 	ProtoMessageTypes []string
 }
+
+// Clone returns a shallow copy of the receiver with a fresh sync.Mutex.
+//
+// Plain value-copying a *Config is a `go vet` lock-copy violation because
+// Config embeds sync.Mutex. Callers that need a mutable copy of an existing
+// configuration (typically tests starting from DefaultConfig) should use
+// Clone instead of `cfg := *src`.
+func (c *Config) Clone() *Config {
+	if c == nil {
+		return nil
+	}
+	dup := *c            //nolint:govet // intentionally copying field-by-field, mutex reset below
+	dup.Mutex = sync.Mutex{}
+	return &dup
+}
