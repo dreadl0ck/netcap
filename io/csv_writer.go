@@ -76,9 +76,9 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 				panic(errGzipWriter)
 			}
 
-			w.csvWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label)
+			w.csvWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label, wc.LabelManager)
 		} else {
-			w.csvWriter = newCSVProtoWriter(w.bWriter, wc.Encode, wc.Label)
+			w.csvWriter = newCSVProtoWriter(w.bWriter, wc.Encode, wc.Label, wc.LabelManager)
 		}
 	} else {
 		if wc.Compress {
@@ -87,9 +87,9 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
 			}
-			w.csvWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label)
+			w.csvWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label, wc.LabelManager)
 		} else {
-			w.csvWriter = newCSVProtoWriter(w.file, wc.Encode, wc.Label)
+			w.csvWriter = newCSVProtoWriter(w.file, wc.Encode, wc.Label, wc.LabelManager)
 		}
 	}
 

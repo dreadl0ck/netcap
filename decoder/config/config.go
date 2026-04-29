@@ -25,8 +25,9 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/internal/performance"
+	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/label/manager"
 )
 
 // Instance contains the config at runtime.
@@ -306,6 +307,10 @@ type Config struct {
 
 	// PerfTracker tracks performance metrics
 	PerfTracker *performance.Tracker
+
+	// LabelManager produces a label string per audit record when Label is true.
+	// Decoders forward this to the io.WriterConfig they construct.
+	LabelManager *manager.LabelManager
 
 	// ProtoSearchPaths contains directories to search for .proto schema files.
 	// When set, the protobuf decoder resolves field names from schema definitions.

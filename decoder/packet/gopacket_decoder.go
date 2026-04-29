@@ -214,6 +214,7 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
 				PerfTracker:          c.PerfTracker,
+				LabelManager:         c.LabelManager,
 			})
 
 			// write netcap header

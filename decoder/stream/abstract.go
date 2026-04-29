@@ -185,6 +185,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
 				PerfTracker:          c.PerfTracker,
+				LabelManager:         c.LabelManager,
 			})
 			d.SetWriter(w)
 

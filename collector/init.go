@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/encoder"
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/label/manager"
 
 	"github.com/dreadl0ck/netcap/utils"
 
@@ -66,7 +66,14 @@ func (c *Collector) Init() (err error) {
 	decoderconfig.Instance = c.config.DecoderConfig
 	stream.Debug = c.config.DecoderConfig.Debug
 	if c.config.Labels != "" {
-		io.InitLabelManager(c.config.Labels, c.config.DecoderConfig.Debug, c.config.Scatter, c.config.ScatterDuration)
+		lm := manager.NewLabelManager(false, false, false, c.config.Scatter, c.config.ScatterDuration)
+		// Set Debug before Init so any verbose logging emitted while parsing the
+		// mapping file is honoured. Also keeps the field write strictly before
+		// the manager is published via DecoderConfig, avoiding any future race
+		// with a concurrent reader.
+		lm.Debug = c.config.DecoderConfig.Debug
+		lm.Init(c.config.Labels)
+		c.config.DecoderConfig.LabelManager = lm
 	}
 
 	// create state machine options
