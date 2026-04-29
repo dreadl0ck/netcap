@@ -226,8 +226,21 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 		mu sync.Mutex
 	)
 
+	// Several decoders are registered under multiple keys (e.g. cip.Decoder
+	// on TCP ports 2222 + 44818, tls.Decoder on 443 + 8443, mqttsn on 1883 +
+	// 1884, kerberosaudit on TCP/88 and the UDP list, etc.). Without dedup
+	// here, two goroutines race to assign sd.Writer / call sd.PostInit on
+	// the same *StreamDecoder pointer. The shared-writer registry handles
+	// the file side, but the field assignment itself is unguarded. Dedup by
+	// pointer so each underlying decoder is initialised exactly once.
+	seen := make(map[core.StreamDecoderAPI]bool)
+
 	// initialize decoders
 	for _, d := range activeDecoders {
+		if seen[d] {
+			continue
+		}
+		seen[d] = true
 
 		// reset decoder stat in case it is reinitialized at runtime.
 		d.(*decoder.StreamDecoder).NumRecordsWritten = 0
@@ -272,6 +285,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
 				PerfTracker:          c.PerfTracker,
+				LabelManager:         c.LabelManager,
 			})
 			dec.SetWriter(w)
 
@@ -305,8 +319,16 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 
 	wg.Wait()
 
-	// Initialize UDP-specific stream decoders (e.g., QUIC)
+	// Initialize UDP-specific stream decoders (e.g., QUIC). The same `seen`
+	// set is reused so a decoder registered in both DefaultStreamDecoders
+	// and UDPStreamDecoders (currently kerberosaudit.Decoder) is not
+	// initialised twice.
 	for _, d := range UDPStreamDecoders {
+		if seen[d] {
+			continue
+		}
+		seen[d] = true
+
 		// reset decoder stat in case it is reinitialized at runtime.
 		d.(*decoder.StreamDecoder).NumRecordsWritten = 0
 
@@ -347,6 +369,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
 				PerfTracker:          c.PerfTracker,
+				LabelManager:         c.LabelManager,
 			})
 			dec.SetWriter(w)
 

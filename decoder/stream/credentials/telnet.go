@@ -21,6 +21,7 @@ package credentials
 
 import (
 	"regexp"
+	"sync"
 	"time"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -78,6 +79,36 @@ func getTelnetPasswordPatterns() []string {
 	return []string{"Password:", "password:", "Pass:", "passwd:"}
 }
 
+// telnetPatternsOnce guards lazy compilation of telnet credential regexes.
+// Harvester configuration is set once via InitializeHarvesters at decoder
+// init time and is not hot-reloaded (a capture restart is required to apply
+// changes), so caching the cartesian product of login/password patterns is
+// safe for the lifetime of the process.
+var (
+	telnetPatternsOnce sync.Once
+	telnetPatterns     []*regexp.Regexp
+)
+
+// getTelnetPatterns returns the precompiled telnet credential regexes,
+// building them on first call from the configured login/password prompt
+// patterns. This avoids recompiling the cartesian product on every stream.
+func getTelnetPatterns() []*regexp.Regexp {
+	telnetPatternsOnce.Do(func() {
+		logins := getTelnetLoginPatterns()
+		passes := getTelnetPasswordPatterns()
+		telnetPatterns = make([]*regexp.Regexp, 0, len(logins)*len(passes))
+		for _, loginPat := range logins {
+			for _, passPat := range passes {
+				pattern := `(?:.*?)` + regexp.QuoteMeta(loginPat) +
+					`(?:.*?)(\w*?)\r\n(?:.*?)\r\n` +
+					regexp.QuoteMeta(passPat) + `\s(.*?)\r\n(?:.*?)`
+				telnetPatterns = append(telnetPatterns, regexp.MustCompile(pattern))
+			}
+		}
+	})
+	return telnetPatterns
+}
+
 // telnetHarvesterFunc is the harvester function for telnet traffic.
 func telnetHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credentials {
 	// Try default pattern first for backwards compatibility
@@ -98,31 +129,23 @@ func telnetHarvesterFunc(data []byte, ident string, ts time.Time) *types.Credent
 		}
 	}
 
-	// Try configurable patterns
-	loginPatterns := getTelnetLoginPatterns()
-	passwordPatterns := getTelnetPasswordPatterns()
-
-	for _, loginPat := range loginPatterns {
-		for _, passPat := range passwordPatterns {
-			// Build dynamic regex pattern
-			pattern := `(?:.*?)` + regexp.QuoteMeta(loginPat) + `(?:.*?)(\w*?)\r\n(?:.*?)\r\n` + regexp.QuoteMeta(passPat) + `\s(.*?)\r\n(?:.*?)`
-			re := regexp.MustCompile(pattern)
-			matches := re.FindSubmatch(data)
-			if len(matches) > 1 {
-				var username string
-				for i, letter := range string(matches[1]) {
-					if i%2 == 0 {
-						username = username + string(letter)
-					}
+	// Try configurable patterns (precompiled and cached on first call)
+	for _, re := range getTelnetPatterns() {
+		matches := re.FindSubmatch(data)
+		if len(matches) > 1 {
+			var username string
+			for i, letter := range string(matches[1]) {
+				if i%2 == 0 {
+					username = username + string(letter)
 				}
-				if len(username) > 0 || len(matches[2]) > 0 {
-					return &types.Credentials{
-						Timestamp: ts.UnixNano(),
-						Service:   serviceTelnet,
-						Flow:      ident,
-						User:      username,
-						Password:  string(matches[2]),
-					}
+			}
+			if len(username) > 0 || len(matches[2]) > 0 {
+				return &types.Credentials{
+					Timestamp: ts.UnixNano(),
+					Service:   serviceTelnet,
+					Flow:      ident,
+					User:      username,
+					Password:  string(matches[2]),
 				}
 			}
 		}

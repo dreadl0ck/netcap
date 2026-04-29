@@ -28,6 +28,8 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/decoder/stream/alert"
+	"github.com/dreadl0ck/netcap/decoder/stream/network"
+	"github.com/dreadl0ck/netcap/decoder/stream/udp"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/label/manager"
@@ -139,6 +141,17 @@ func (c *Collector) doCleanup(force bool) {
 	c.mu.Unlock()
 
 	c.teardown()
+
+	// Reset package-level stream pools so a subsequent CollectPcap call in
+	// the same process starts from a clean slate. Without this, tests (or
+	// any library consumer) that run multiple captures back-to-back leak
+	// UDP/network streams between runs, fooling per-run record counts and
+	// occasionally producing records into a previous run's writer.
+	// The capture binary performs the same reset between files in
+	// cmd/capture/main.go.
+	udp.ResetStreams()
+	network.ResetStreams()
+	tcp.ResetStreamFactory()
 }
 
 // FlushAssemblers flushes all TCP assemblers to release their pageCaches

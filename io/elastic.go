@@ -39,6 +39,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/httputil"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -167,7 +168,8 @@ func CreateElasticIndex(wc *WriterConfig) {
 			}
 		} else {
 			fmt.Println("index pattern ", index+"* created:", resp.Status)
-			_ = resp.Body.Close()
+			// drain body so the underlying connection can be reused (keep-alive)
+			httputil.DrainAndClose(resp.Body)
 		}
 	}
 
@@ -350,14 +352,15 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 		if res != nil {
 			data, _ := io.ReadAll(res.Body)
 			fmt.Println(string(data))
+			_ = res.Body.Close()
 		}
 
 		log.Println("error getting the response for", index, ":", err)
 	} else {
 		log.Println("configured index mapping for", index, ":", res)
+		// drain body so the underlying connection can be reused (keep-alive)
+		httputil.DrainAndClose(res.Body)
 	}
-
-	_ = res.Body.Close()
 
 	// TODO: update Duration fieldFormatMap to milliseconds for flows and conns via saved objects API
 	// e.g: /api/saved_objects/index-pattern/flow
@@ -398,14 +401,15 @@ func configureIndex(c *elasticsearch.Client, wc *WriterConfig, index string) {
 		if res != nil {
 			d, _ = io.ReadAll(res.Body)
 			fmt.Println(string(d))
+			_ = res.Body.Close()
 		}
 
 		log.Println("failed to put index settings for", index, ":", err)
 	} else {
 		log.Println("put index settings for", index, ":", res)
+		// drain body so the underlying connection can be reused (keep-alive)
+		httputil.DrainAndClose(res.Body)
 	}
-
-	_ = res.Body.Close()
 }
 
 // send a bulk of audit records and metadata to the elastic database daemon.
@@ -473,72 +477,80 @@ func (w *elasticWriter) sendBulk(start, limit int) error {
 			continue
 		}
 
-		// if the whole request failed, print error and mark all documents as failed
-		if res.IsError() {
-			var raw map[string]any
-			if err = json.NewDecoder(res.Body).Decode(&raw); err != nil {
-				log.Printf("failure to parse response body: %s", err)
-			} else {
-				ioLog.Error("elastic bulk request failed",
-					zap.Int("status", res.StatusCode),
-					zap.String("type", raw["error"].(map[string]any)["type"].(string)),
-					zap.String("reason", raw["error"].(map[string]any)["reason"].(string)),
-					zap.String("index", w.indexName),
-				)
+		// handle the response in a closure so that drain-and-close runs on every
+		// return path (previously early returns leaked FDs and defeated keep-alive).
+		done, bulkErr := func() (bool, error) {
+			// always drain and close the body so http.Transport can reuse the conn
+			defer httputil.DrainAndClose(res.Body)
+
+			// if the whole request failed, print error and mark all documents as failed
+			if res.IsError() {
+				var raw map[string]any
+				if decErr := json.NewDecoder(res.Body).Decode(&raw); decErr != nil {
+					log.Printf("failure to parse response body: %s", decErr)
+				} else {
+					ioLog.Error("elastic bulk request failed",
+						zap.Int("status", res.StatusCode),
+						zap.String("type", raw["error"].(map[string]any)["type"].(string)),
+						zap.String("reason", raw["error"].(map[string]any)["reason"].(string)),
+						zap.String("index", w.indexName),
+					)
+				}
+
+				// dump buffer in case of errors
+				ioLog.Debug(w.buf.String())
+				w.buf.Reset()
+
+				return true, fmt.Errorf("%w: %s %s", errElasticFailed, res.Status(), res.String())
+			}
+
+			// a successful response can still contain errors for some documents
+			var blk *bulkResponse
+			if decErr := json.NewDecoder(res.Body).Decode(&blk); decErr != nil {
+				log.Printf("failure to parse response body: %s", decErr)
+
+				// dump buffer in case of errors
+				ioLog.Debug(w.buf.String())
+				w.buf.Reset()
+
+				return true, fmt.Errorf("%w: %s", errElasticFailed, decErr)
+			}
+
+			var hadErrors bool
+
+			// log errors for HTTP status codes above 201
+			for _, d := range blk.Items {
+				if d.Index.Status > 201 {
+					hadErrors = true
+
+					ioLog.Error("error for item in elastic bulk request",
+						zap.Int("status", d.Index.Status),
+						zap.String("type", d.Index.Error.Type),
+						zap.String("reason", d.Index.Error.Reason),
+						zap.String("causeType", d.Index.Error.Cause.Type),
+						zap.String("causeReason", d.Index.Error.Cause.Reason),
+						zap.String("index", w.indexName),
+					)
+				}
 			}
 
 			// dump buffer in case of errors
-			ioLog.Debug(w.buf.String())
-			w.buf.Reset()
-
-			return fmt.Errorf("%w: %s %s", errElasticFailed, res.Status(), res.String())
-		}
-
-		// a successful response can still contain errors for some documents
-		var blk *bulkResponse
-		if err = json.NewDecoder(res.Body).Decode(&blk); err != nil {
-			log.Printf("failure to parse response body: %s", err)
-
-			// dump buffer in case of errors
-			ioLog.Debug(w.buf.String())
-			w.buf.Reset()
-
-			return fmt.Errorf("%w: %s", errElasticFailed, err)
-		}
-
-		var hadErrors bool
-
-		// log errors for HTTP status codes above 201
-		for _, d := range blk.Items {
-			if d.Index.Status > 201 {
-				hadErrors = true
-
-				ioLog.Error("error for item in elastic bulk request",
-					zap.Int("status", d.Index.Status),
-					zap.String("type", d.Index.Error.Type),
-					zap.String("reason", d.Index.Error.Reason),
-					zap.String("causeType", d.Index.Error.Cause.Type),
-					zap.String("causeReason", d.Index.Error.Cause.Reason),
-					zap.String("index", w.indexName),
-				)
+			if hadErrors {
+				ioLog.Debug(w.buf.String())
 			}
+
+			ioLog.Info("sent audit records to elastic",
+				zap.Int("total", total),
+				zap.String("type", w.wc.Name),
+			)
+			w.buf.Reset()
+
+			return true, nil
+		}()
+
+		if done {
+			return bulkErr
 		}
-
-		// dump buffer in case of errors
-		if hadErrors {
-			ioLog.Debug(w.buf.String())
-		}
-
-		// close the response body, to prevent reaching the limit for goroutines or file handles
-		_ = res.Body.Close()
-
-		ioLog.Info("sent audit records to elastic",
-			zap.Int("total", total),
-			zap.String("type", w.wc.Name),
-		)
-		w.buf.Reset()
-
-		return nil
 	}
 
 	// All retries exhausted — drop batch and return error
@@ -784,6 +796,10 @@ func deleteElasticIndexPattern(index string, wc *WriterConfig) {
 		if err != nil {
 			log.Println("deleting mapping", index, "failed:", err)
 		} else {
+			// always drain and close the body so the conn can be reused (keep-alive)
+			// and to avoid FD leaks
+			defer httputil.DrainAndClose(resp.Body)
+
 			log.Println("deleted mapping", index, ":", resp.Status)
 
 			if resp.StatusCode != http.StatusOK {

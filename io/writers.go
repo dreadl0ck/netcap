@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/performance"
+	"github.com/dreadl0ck/netcap/label/manager"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -83,4 +84,8 @@ type WriterConfig struct {
 
 	// Performance tracker for measuring disk I/O
 	PerfTracker *performance.Tracker
+
+	// LabelManager is used to assign labels to records when Label is true.
+	// If nil and Label is true, no label column will be appended.
+	LabelManager *manager.LabelManager
 }

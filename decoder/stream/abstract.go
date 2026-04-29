@@ -90,10 +90,14 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 
 		// include map
 		inMap = make(map[string]bool)
-
-		// new selection
-		selection []core.DecoderAPI
 	)
+
+	// Work with a copy of the decoders slice to avoid mutating package-level
+	// state. Prior implementations reassigned DefaultAbstractDecoders so a
+	// single test using IncludeDecoders permanently emptied the global slice
+	// for the remainder of the run, breaking File/Service/Mail/etc. output
+	// for every later test.
+	active := append([]core.DecoderAPI(nil), DefaultAbstractDecoders...)
 
 	// if there are includes and the first item is not an empty string
 	if len(in) > 0 && in[0] != "" { // iterate over includes
@@ -109,14 +113,13 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 		}
 
 		// iterate over packet decoders and collect those that are named in the includeMap
-		for _, dec := range DefaultAbstractDecoders {
+		var selection []core.DecoderAPI
+		for _, dec := range active {
 			if _, ok := inMap[dec.GetName()]; ok {
 				selection = append(selection, dec)
 			}
 		}
-
-		// update packet decoders to new selection
-		DefaultAbstractDecoders = selection
+		active = selection
 	}
 
 	// iterate over excluded decoders
@@ -126,11 +129,11 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 				return nil, errors.Wrap(errInvalidAbstractDecoder, name)
 			}
 
-			// remove named decoder from defaultPacketDecoders
-			for i, dec := range DefaultAbstractDecoders {
+			// remove named decoder from the active slice
+			for i, dec := range active {
 				if name == dec.GetName() {
 					// remove decoder
-					DefaultAbstractDecoders = append(DefaultAbstractDecoders[:i], DefaultAbstractDecoders[i+1:]...)
+					active = append(active[:i], active[i+1:]...)
 
 					break
 				}
@@ -144,7 +147,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 	)
 
 	// initialize decoders
-	for _, d := range DefaultAbstractDecoders {
+	for _, d := range active {
 
 		// reset decoder stat in case it is reinitialized at runtime.
 		d.(*decoder.AbstractDecoder).NumRecordsWritten = 0
@@ -182,6 +185,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
 				PerfTracker:          c.PerfTracker,
+				LabelManager:         c.LabelManager,
 			})
 			d.SetWriter(w)
 

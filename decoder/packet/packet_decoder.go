@@ -157,10 +157,13 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 
 		// include map
 		inMap = make(map[string]bool)
-
-		// new selection
-		selection []DecoderAPI
 	)
+
+	// Work with a copy of the decoders slice to avoid mutating package-level
+	// state. This is critical for test isolation: prior implementations
+	// reassigned defaultPacketDecoders, so a single test using IncludeDecoders
+	// would permanently shrink the global slice for the rest of the run.
+	active := append([]DecoderAPI(nil), defaultPacketDecoders...)
 
 	// if there are includes and the first item is not an empty string
 	if len(in) > 0 && in[0] != "" { // iterate over includes
@@ -176,14 +179,13 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 		}
 
 		// iterate over packet decoders and collect those that are named in the includeMap
-		for _, e := range defaultPacketDecoders {
+		var selection []DecoderAPI
+		for _, e := range active {
 			if _, ok := inMap[e.GetName()]; ok {
 				selection = append(selection, e)
 			}
 		}
-
-		// update packet decoders to new selection
-		defaultPacketDecoders = selection
+		active = selection
 	}
 
 	// iterate over excluded decoders
@@ -193,11 +195,11 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 				return nil, errors.Wrap(ErrInvalidDecoder, name)
 			}
 
-			// remove named decoder from defaultPacketDecoders
-			for i, e := range defaultPacketDecoders {
+			// remove named decoder from the active slice
+			for i, e := range active {
 				if name == e.GetName() {
 					// remove decoder
-					defaultPacketDecoders = append(defaultPacketDecoders[:i], defaultPacketDecoders[i+1:]...)
+					active = append(active[:i], active[i+1:]...)
 
 					break
 				}
@@ -211,7 +213,7 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 	)
 
 	// initialize decoders
-	for _, d := range defaultPacketDecoders {
+	for _, d := range active {
 
 		// reset decoder stat in case it is reinitialized at runtime.
 		d.(*Decoder).NumRecordsWritten = 0
@@ -251,6 +253,7 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
 				PerfTracker:          c.PerfTracker,
+				LabelManager:         c.LabelManager,
 			})
 			dec.SetWriter(w)
 

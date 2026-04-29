@@ -106,10 +106,14 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 
 		// include map
 		inMap = make(map[string]bool)
-
-		// new selection
-		selection []*GoPacketDecoder
 	)
+
+	// Work with a copy of the gopacket decoders slice to avoid mutating
+	// package-level state. Prior implementations reassigned
+	// defaultGoPacketDecoders so a single test using IncludeDecoders
+	// permanently shrunk the global slice for the rest of the run, killing
+	// TCP/Ethernet/IPv4 record output for every later test.
+	active := append([]*GoPacketDecoder(nil), defaultGoPacketDecoders...)
 
 	// if there are includes and the first item is not an empty string
 	if len(in) > 0 && in[0] != "" { // iterate over includes
@@ -125,14 +129,13 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 		}
 
 		// iterate over gopacket decoders and collect those that are named in the includeMap
-		for _, e := range defaultGoPacketDecoders {
+		var selection []*GoPacketDecoder
+		for _, e := range active {
 			if _, ok := inMap[e.Layer.String()]; ok {
 				selection = append(selection, e)
 			}
 		}
-
-		// update gopacket decoders to new selection
-		defaultGoPacketDecoders = selection
+		active = selection
 	}
 
 	// iterate over excluded decoders
@@ -142,11 +145,11 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 				return nil, errors.Wrap(ErrInvalidDecoder, name)
 			}
 
-			// remove named decoder from defaultGoPacketDecoders
-			for i, e := range defaultGoPacketDecoders {
+			// remove named decoder from the active slice
+			for i, e := range active {
 				if name == e.Layer.String() {
 					// remove decoder
-					defaultGoPacketDecoders = append(defaultGoPacketDecoders[:i], defaultGoPacketDecoders[i+1:]...)
+					active = append(active[:i], active[i+1:]...)
 					break
 				}
 			}
@@ -159,7 +162,7 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 	)
 
 	// initialize decoders
-	for _, e := range defaultGoPacketDecoders { // fmt.Println("init", e.Layer)
+	for _, e := range active { // fmt.Println("init", e.Layer)
 
 		// reset decoder stat in case it is reinitialized at runtime.
 		e.numRecords = 0
@@ -211,6 +214,7 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
 				PerfTracker:          c.PerfTracker,
+				LabelManager:         c.LabelManager,
 			})
 
 			// write netcap header

@@ -7,8 +7,8 @@ services:
       dockerfile: docker/dbs-server/Dockerfile
     container_name: netcap-dbs-server
     restart: unless-stopped
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     volumes:
       - netcap-dbs-data:/data
     environment:

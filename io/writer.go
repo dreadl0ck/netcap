@@ -65,6 +65,4 @@ func NewAuditRecordWriter(wc *WriterConfig) AuditRecordWriter {
 		// Default to proto when no writer type is specified
 		return newProtoWriter(wc)
 	}
-
-	return nil //nolint:govet // stop complaining that this is unreachable
 }
