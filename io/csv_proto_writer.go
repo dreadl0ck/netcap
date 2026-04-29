@@ -49,15 +49,14 @@ type csvProtoWriter struct {
 
 // newCSVProtoWriter returns a new CSV writer instance.
 //
-// lm may be nil only when label is false. Constructing a writer with
-// label==true and lm==nil would silently drop the Category column from
-// every row while the header still advertises it, producing malformed
-// CSV. The constructor logs a loud warning and disables the label flag
-// so the writer remains internally consistent rather than producing
-// corrupt output.
+// lm may be nil even when label is true. Both writeHeader and writeRecord gate
+// on w.labelManager != nil, so the Category column is consistently omitted from
+// both header and rows when lm is nil — output remains well-formed. The
+// constructor additionally clears the label flag in that case to make the
+// intent explicit and avoid redundant nil checks at every write site.
 func newCSVProtoWriter(w io.Writer, encode bool, label bool, lm labeler) *csvProtoWriter {
 	if label && lm == nil {
-		ioLog.Warn("csvProtoWriter constructed with label=true but no LabelManager; disabling label column to keep CSV well-formed")
+		ioLog.Warn("csvProtoWriter constructed with label=true but no LabelManager; disabling label flag — Category column will be omitted from header and rows")
 		label = false
 	}
 	return &csvProtoWriter{
