@@ -1,6 +1,7 @@
 package io
 
 import (
+	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -10,10 +11,16 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/netcap/encoder"
-	"github.com/dreadl0ck/netcap/label/manager"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
+
+// labeler is the minimal contract csvProtoWriter needs from a label source.
+// *manager.LabelManager satisfies this interface in production; tests can
+// substitute a stub without pulling in YAML mapping files.
+type labeler interface {
+	Label(record types.AuditRecord) string
+}
 
 // csvProtoWriter implements writing audit records to disk in the CSV format.
 type csvProtoWriter struct {
@@ -29,6 +36,10 @@ type csvProtoWriter struct {
 	analyze bool
 	label   bool
 
+	// labelManager is used to assign a category label to each record when
+	// label is true. May be nil when label is false.
+	labelManager labeler
+
 	// avoid allocations by reusing these variables
 	//values []string
 	//out    []byte
@@ -37,11 +48,22 @@ type csvProtoWriter struct {
 }
 
 // newCSVProtoWriter returns a new CSV writer instance.
-func newCSVProtoWriter(w io.Writer, encode bool, label bool) *csvProtoWriter {
+//
+// lm may be nil even when label is true. Both writeHeader and writeRecord gate
+// on w.labelManager != nil, so the Category column is consistently omitted from
+// both header and rows when lm is nil — output remains well-formed. The
+// constructor additionally clears the label flag in that case to make the
+// intent explicit and avoid redundant nil checks at every write site.
+func newCSVProtoWriter(w io.Writer, encode bool, label bool, lm labeler) *csvProtoWriter {
+	if label && lm == nil {
+		ioLog.Warn("csvProtoWriter constructed with label=true but no LabelManager; disabling label flag — Category column will be omitted from header and rows")
+		label = false
+	}
 	return &csvProtoWriter{
-		w:      w,
-		encode: encode,
-		label:  label,
+		w:            w,
+		encode:       encode,
+		label:        label,
+		labelManager: lm,
 	}
 }
 
@@ -60,7 +82,12 @@ func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, e
 
 	if csv, ok := msg.(types.AuditRecord); ok {
 
-		if w.label {
+		// The header must remain symmetric with rows produced by writeRecord:
+		// only emit the Category column when we have a labelManager that will
+		// actually populate it. The constructor already enforces that label
+		// implies labelManager != nil; the extra nil check defends against
+		// future paths that might mutate the field after construction.
+		if w.label && w.labelManager != nil {
 			// TODO: make label column name configurable
 			return w.w.Write([]byte(strings.Join(append(csv.CSVHeader(), "Category"), ",") + "\n"))
 		}
@@ -69,16 +96,7 @@ func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, e
 	}
 
 	spew.Dump(msg)
-	panic("protocol buffer does not implement the types.AuditRecord interface")
-}
-
-var labelManager *manager.LabelManager
-
-// InitLabelManager can be invoked to configure the labels
-func InitLabelManager(pathMappingInfo string, debug bool, scatter bool, scatterDuration time.Duration) {
-	labelManager = manager.NewLabelManager(false, false, false, scatter, scatterDuration)
-	labelManager.Init(pathMappingInfo)
-	labelManager.Debug = debug
+	panic(fmt.Sprintf("csv writer: %T does not implement types.AuditRecord", msg))
 }
 
 var labelEncoder = encoder.NewValueEncoder()
@@ -107,15 +125,15 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 		if w.encode {
 			// encode values to numeric format and normalize
 			values = record.Encode()
-			if w.label {
-				values = append(values, labelManager.Label(record))
+			if w.label && w.labelManager != nil {
+				values = append(values, w.labelManager.Label(record))
 			}
 			out = []byte(strings.Join(values, ",") + "\n")
 		} else {
 			// use raw values
 			values = record.CSVRecord()
-			if w.label {
-				values = append(values, labelManager.Label(record))
+			if w.label && w.labelManager != nil {
+				values = append(values, w.labelManager.Label(record))
 			}
 			out = []byte(strings.Join(values, ",") + "\n")
 		}
@@ -142,5 +160,5 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 	}
 
 	spew.Dump(msg)
-	panic("can not write as CSV")
+	panic(fmt.Sprintf("csv writer: cannot write %T as CSV; type does not implement types.AuditRecord", msg))
 }

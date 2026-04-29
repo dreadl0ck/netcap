@@ -25,8 +25,9 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/internal/performance"
+	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/label/manager"
 )
 
 // Instance contains the config at runtime.
@@ -307,6 +308,13 @@ type Config struct {
 	// PerfTracker tracks performance metrics
 	PerfTracker *performance.Tracker
 
+	// LabelManager produces a label string per audit record when Label is true.
+	// Decoders forward this to the io.WriterConfig they construct.
+	// May be nil even when Label is true; in that case CSV writers will omit
+	// the Category column from both header and rows, so output stays well-formed
+	// but unlabeled.
+	LabelManager *manager.LabelManager
+
 	// ProtoSearchPaths contains directories to search for .proto schema files.
 	// When set, the protobuf decoder resolves field names from schema definitions.
 	ProtoSearchPaths []string
@@ -330,7 +338,7 @@ func (c *Config) Clone() *Config {
 	if c == nil {
 		return nil
 	}
-	dup := *c            //nolint:govet // intentionally copying field-by-field, mutex reset below
+	dup := *c //nolint:govet // intentionally copying field-by-field, mutex reset below
 	dup.Mutex = sync.Mutex{}
 	return &dup
 }

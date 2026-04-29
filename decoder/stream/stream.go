@@ -285,6 +285,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
 				PerfTracker:          c.PerfTracker,
+				LabelManager:         c.LabelManager,
 			})
 			dec.SetWriter(w)
 
@@ -368,6 +369,7 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 				CompressionBlockSize: c.CompressionBlockSize,
 				CompressionLevel:     c.CompressionLevel,
 				PerfTracker:          c.PerfTracker,
+				LabelManager:         c.LabelManager,
 			})
 			dec.SetWriter(w)
 
