@@ -50,8 +50,10 @@ test-hyperscan:
 	@pkg-config --exists libhs || (echo "libhs not found via pkg-config. Install vectorscan (brew install vectorscan) or hyperscan (apt install libhyperscan-dev)." && exit 1)
 	CGO_ENABLED=1 go test -v -tags hyperscan \
 		./internal/hsmatch/... \
+		./internal/filter/... \
 		./decoder/stream/service/... \
-		./decoder/stream/software/...
+		./decoder/stream/software/... \
+		./rules/...
 
 # Performance benchmarks
 test-bench:

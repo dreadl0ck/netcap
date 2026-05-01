@@ -163,7 +163,20 @@ func ContainsAny(str string, substrs []string) bool {
 
 // MatchesPattern checks if a string matches a regular expression pattern.
 // Compiled regexes are cached to avoid recompilation on repeated calls.
+//
+// When the binary is built with `-tags hyperscan` and the pattern is
+// one Hyperscan accepts, the boolean answer is taken directly from a
+// per-pattern Hyperscan database (single-pattern block-mode DBs return
+// the same true/false predicate as RE2 for the HS-supported subset of
+// PCRE). Patterns Hyperscan refuses to compile transparently fall
+// through to the existing RE2 cache path so behaviour is preserved.
 func MatchesPattern(str, pattern string) bool {
+	// Optional Hyperscan fast path. In stub builds this always reports
+	// "no decision" so the function falls through to RE2.
+	if matched, decided := hsMatchesPatternPrecheck(str, pattern); decided {
+		return matched
+	}
+
 	var re *regexp.Regexp
 	if cached, ok := regexCache.Load(pattern); ok {
 		re = cached.(*regexp.Regexp)

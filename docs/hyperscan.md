@@ -59,6 +59,18 @@ then iterates only that subset of `cmsDB` instead of all 1100+
 frameworks. Header-name-only entries (no value regex) are always kept
 in the candidate set so behaviour is identical.
 
+### 3. Rule engine `MatchesPattern`
+
+`internal/filter/helpers.go` + `matches_pattern_hs.go`
+
+`MatchesPattern(field, pattern)` — used pervasively in `rules/` and
+`firewall/` YAML expressions — gains a per-pattern HS cache. The first
+call with a given pattern compiles it into a tiny single-pattern HS
+database; subsequent calls take the boolean answer directly from HS,
+which is several times faster than RE2 for typical alternation-heavy
+detection patterns. Patterns Hyperscan refuses to compile transparently
+fall through to the existing RE2 cache path.
+
 ### Cross-subsystem registry
 
 `internal/hsmatch/registry.go` lets each consumer self-register a
@@ -313,6 +325,19 @@ The miss-only case is identical because both paths early-exit when no
 known CMS headers/cookies are present. The win shows up on responses
 that *do* carry CMS-known header names: HS skips the full 1100-product
 sweep through `cmsDB` and only iterates the candidate set.
+
+### `filter.MatchesPattern` (rule engine helper, 11 representative shipped patterns × 11 inputs)
+
+| Workload | RE2 baseline | RE2 + Hyperscan | Speedup |
+|---|---:|---:|---:|
+| **Mixed** (half hit / half miss) | 10380 ns/op | **3634 ns/op** | **2.86×** |
+| **MissOnly** (no pattern matches) | 21336 ns/op | **3494 ns/op** | **6.11×** |
+| **HitOnly** (every pattern matches) | 21294 ns/op | **5335 ns/op** | **3.99×** |
+
+The miss-only workload is the dominant case in real rule evaluation:
+firewall and detection rules want to reject 99%+ of traffic. HS short
+circuits with a "no match" answer in a few hundred nanoseconds where
+RE2 has to walk the alternation each time.
 
 The miss-only workload is where multi-pattern Hyperscan dominates: every
 probe in every category gets evaluated when no hit short-circuits, which
