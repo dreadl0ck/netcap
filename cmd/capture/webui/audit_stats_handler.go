@@ -28,10 +28,38 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 )
 
-// handleAuditStats delegates to the shared handler or aggregates across all sessions in service mode
+// handleAuditStats serves audit statistics. Honors the optional `scope` query
+// parameter:
+//
+//   - "" / "current": legacy behavior — single active output dir (or service
+//     mode "across all sessions" aggregation when no current session exists).
+//   - "all": always aggregate across every completed capture/session.
+//   - any other value: scoped to the matching pcap id / file path.
 func (s *Server) handleAuditStats(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	scope := r.URL.Query().Get("scope")
+
+	// Honor explicit scope parameter via the shared resolver.
+	if scope != "" && scope != "current" {
+		dirs, status, err := s.resolveChartScopeDirs(scope, r)
+		if err != nil {
+			http.Error(w, err.Error(), status)
+			return
+		}
+		response := AuditStatsResponse{}
+		for _, dir := range dirs {
+			d := s.getAuditStatsForDirectory(dir)
+			response.TotalRecords += d.TotalRecords
+			response.ExploitCount += d.ExploitCount
+			response.VulnerabilityCount += d.VulnerabilityCount
+			response.SecretCount += d.SecretCount
+			response.SoftwareCount += d.SoftwareCount
+		}
+		RespondJSON(w, http.StatusOK, response)
 		return
 	}
 

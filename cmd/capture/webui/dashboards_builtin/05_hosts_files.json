@@ -1,0 +1,76 @@
+{
+  "id": "builtin-hosts-files",
+  "name": "Hosts, Files & Software",
+  "description": "Attack-surface inventory: who is talking on the wire, what software they run, and which files crossed the network. Pair with the Security Posture tab for exposure context.",
+  "gridCols": 12,
+  "rowHeight": 80,
+  "builtin": true,
+  "charts": [
+    {
+      "id": "hf-host-packets",
+      "title": "Active Hosts (Packet Counts)",
+      "description": "Hosts ranked by packet volume. Top talkers are usually the priority pivots for investigation: noisy clients, busy servers and unmonitored infra appear here.",
+      "auditType": "Host",
+      "field": "NumPackets",
+      "chartType": "bar",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": "hf-device-vendors",
+      "title": "Device Manufacturers",
+      "description": "OUI-derived hardware vendors of devices observed on the LAN. Unexpected vendors (consumer gear in a server VLAN, IoT in a corporate net) point to rogue or shadow-IT devices.",
+      "auditType": "DeviceProfile",
+      "field": "DeviceManufacturer",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": "hf-software-products",
+      "title": "Software Products Detected",
+      "description": "Inventory of software products fingerprinted on the wire (banners, headers, TLS, DPI). Cross-reference with the Vulnerability records to spot exposed versions.",
+      "auditType": "Software",
+      "field": "Product",
+      "chartType": "wordcloud",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 4, "w": 6, "h": 4 }
+    },
+    {
+      "id": "hf-software-vulnerable",
+      "title": "Software With Known Vulnerabilities",
+      "description": "Share of detected software linked to at least one CVE in our local database. A high true-share is a strong signal that the environment is not patched.",
+      "auditType": "Software",
+      "field": "HasKnownVulnerabilities",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 4, "w": 6, "h": 4 }
+    },
+    {
+      "id": "hf-file-types",
+      "title": "Extracted File Types (Magika)",
+      "description": "File-content categories detected by Google Magika across extracted artifacts. Executables, scripts or archives appearing on unexpected channels (mail, HTTP) deserve attention.",
+      "auditType": "File",
+      "field": "MagikaLabel",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 8, "w": 6, "h": 4 }
+    },
+    {
+      "id": "hf-file-pe",
+      "title": "Windows Executables on the Wire",
+      "description": "Share of extracted files identified as Windows PE binaries. Any non-zero share warrants a hash check against malware reputation services.",
+      "auditType": "File",
+      "field": "IsPEExecutable",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 8, "w": 6, "h": 4 }
+    }
+  ]
+}

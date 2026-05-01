@@ -1,0 +1,76 @@
+{
+  "id": "builtin-security-posture",
+  "name": "Security Posture",
+  "description": "Top-level threat dashboard: alerts triggered by detection rules, exposed vulnerabilities, exploit-matched software, and MITRE ATT&CK coverage. Start here for a fast triage view.",
+  "gridCols": 12,
+  "rowHeight": 80,
+  "builtin": true,
+  "charts": [
+    {
+      "id": "sec-alerts-severity",
+      "title": "Alerts by Severity",
+      "description": "Distribution of triggered detection rules by severity. A growing share of high or critical alerts means active threats requiring triage.",
+      "auditType": "Alert",
+      "field": "Severity",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": "sec-alerts-rules",
+      "title": "Top Triggering Rules",
+      "description": "Rule names firing most often. Reveals the dominant attack patterns in the capture and helps surface noisy or low-fidelity rules that need tuning.",
+      "auditType": "Alert",
+      "field": "RuleName",
+      "chartType": "bar",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": "sec-alerts-protocol",
+      "title": "Alerts by Protocol",
+      "description": "Which network protocols generated the most alerts. Concentrated activity on a single protocol (HTTP, DNS, SMB, etc.) is a strong pivot point for investigation.",
+      "auditType": "Alert",
+      "field": "Protocol",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 4, "w": 6, "h": 4 }
+    },
+    {
+      "id": "sec-vuln-cvss",
+      "title": "Vulnerabilities by CVSS Score",
+      "description": "CVSS v2 score distribution across vulnerable software detected on the wire. A heavy upper tail (7.0+) indicates serious exposure that warrants immediate patching.",
+      "auditType": "Vulnerability",
+      "field": "V2Score",
+      "chartType": "bar",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 4, "w": 6, "h": 4 }
+    },
+    {
+      "id": "sec-exploit-platform",
+      "title": "Exploits by Target Platform",
+      "description": "Platforms (windows / linux / php / multiple / …) for which Exploit-DB matched the observed software. Identifies which OS or runtime in your environment is most exposed.",
+      "auditType": "Exploit",
+      "field": "Platform",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 8, "w": 6, "h": 4 }
+    },
+    {
+      "id": "sec-mitre",
+      "title": "MITRE ATT&CK Tags",
+      "description": "Frequency of MITRE ATT&CK technique tags from triggered rules. Indicates which kill-chain stages (initial access, execution, exfiltration, …) were exercised in the capture.",
+      "auditType": "Alert",
+      "field": "MITRE",
+      "chartType": "wordcloud",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 8, "w": 6, "h": 4 }
+    }
+  ]
+}

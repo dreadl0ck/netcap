@@ -1,0 +1,76 @@
+{
+  "id": "builtin-dns-web",
+  "name": "DNS & Web Recon",
+  "description": "DNS-tunneling, DGA and web reconnaissance signals. Combines DNS query patterns with HTTP host, user-agent and status-code distributions to expose suspicious browsing.",
+  "gridCols": 12,
+  "rowHeight": 80,
+  "builtin": true,
+  "charts": [
+    {
+      "id": "dnsweb-top-queries",
+      "title": "Top DNS Queries",
+      "description": "Most-queried hostnames in the capture. Random-looking subdomains, very long names, or repeated odd lookups suggest DGA-driven malware or DNS-tunneled exfiltration.",
+      "auditType": "DNS",
+      "field": "Questions.Name",
+      "chartType": "wordcloud",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": "dnsweb-rcodes",
+      "title": "DNS Response Codes",
+      "description": "Distribution of DNS response codes. A high share of NXDOMAIN responses is a classic indicator of beaconing or DGA-based C2 looking for its rendezvous domain.",
+      "auditType": "DNS",
+      "field": "ResponseCodeName",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": "dnsweb-entropy",
+      "title": "DNS Query Name Entropy",
+      "description": "Shannon entropy of query names over time. Sustained high entropy points to encoded payloads carried inside DNS labels (tunneling, exfil).",
+      "auditType": "DNS",
+      "field": "QueryNameEntropy",
+      "chartType": "area",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 4, "w": 6, "h": 4 }
+    },
+    {
+      "id": "dnsweb-http-hosts",
+      "title": "HTTP Hosts Contacted",
+      "description": "Most-contacted HTTP hosts. Unfamiliar or low-reputation hosts deserve a pivot into Connection / TLS detail and a check against threat-intel feeds.",
+      "auditType": "HTTP",
+      "field": "Host",
+      "chartType": "wordcloud",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 4, "w": 6, "h": 4 }
+    },
+    {
+      "id": "dnsweb-user-agents",
+      "title": "HTTP User Agents",
+      "description": "Top User-Agent strings. Outliers like curl, wget, python-requests, Go-http-client or custom strings frequently indicate automation, scanners or malware.",
+      "auditType": "HTTP",
+      "field": "UserAgent",
+      "chartType": "wordcloud",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 8, "w": 6, "h": 4 }
+    },
+    {
+      "id": "dnsweb-status-codes",
+      "title": "HTTP Status Codes",
+      "description": "HTTP status code distribution. A spike in 401/403/404 responses typically means credential probing, path enumeration or an actively-scanning attacker.",
+      "auditType": "HTTP",
+      "field": "StatusCode",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 8, "w": 6, "h": 4 }
+    }
+  ]
+}

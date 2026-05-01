@@ -242,6 +242,44 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 
 // handleAuditFiles delegates to the shared handler
 func (s *Server) handleAuditFiles(w http.ResponseWriter, r *http.Request) {
+	scope := r.URL.Query().Get("scope")
+	if scope != "" && scope != "current" {
+		// Scoped variant: use shared resolver and union the union of audit
+		// files across all returned directories. Record counts sum across
+		// dirs, file size sums, modified time = max.
+		dirs, status, err := s.resolveChartScopeDirs(scope, r)
+		if err != nil {
+			http.Error(w, err.Error(), status)
+			return
+		}
+		merged := map[string]*AuditFileInfo{}
+		for _, dir := range dirs {
+			files, err := ListAuditFiles(dir)
+			if err != nil {
+				continue
+			}
+			for _, f := range files {
+				if existing, ok := merged[f.Type]; ok {
+					existing.RecordCount += f.RecordCount
+					existing.Size += f.Size
+					if f.ModifiedTime > existing.ModifiedTime {
+						existing.ModifiedTime = f.ModifiedTime
+					}
+				} else {
+					copy := f // capture
+					merged[f.Type] = &copy
+				}
+			}
+		}
+		out := make([]AuditFileInfo, 0, len(merged))
+		for _, v := range merged {
+			out = append(out, *v)
+		}
+		SortAuditFiles(out)
+		RespondJSON(w, http.StatusOK, out)
+		return
+	}
+
 	s.mu.RLock()
 	outDir := s.outDir
 

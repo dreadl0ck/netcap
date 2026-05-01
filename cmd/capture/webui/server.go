@@ -193,6 +193,11 @@ type Server struct {
 	rulesConfig      any // Cached rules config (uses rules.Config type to avoid circular import)
 	rulesConfigMutex sync.RWMutex
 
+	// dashboardsFolderOverride lets tests pin the on-disk dashboards folder to
+	// a temp directory without depending on the host's user-config dir. Empty in
+	// production.
+	dashboardsFolderOverride string
+
 	// Service mode fields (nil in local mode)
 	isServiceMode     bool              // Flag to differentiate modes
 	sessionManager    *SessionManager   // Session manager (nil in local mode)
@@ -576,6 +581,8 @@ func (s *Server) Start() error {
 
 	mux.HandleFunc("/api/chart/data", s.handleChartData)
 	mux.HandleFunc("/api/chart/fields", s.handleChartFields)
+	mux.HandleFunc("/api/dashboards", s.handleDashboards)
+	mux.HandleFunc("/api/dashboards/", s.handleDashboardByID)
 	mux.HandleFunc("/api/visualize/protocol-hierarchy", s.handleProtocolHierarchy)
 	mux.HandleFunc("/api/visualize/sankey", s.handleVisualizeSankey)
 	mux.HandleFunc("/api/visualize/treemap", s.handleVisualizeTreemap)

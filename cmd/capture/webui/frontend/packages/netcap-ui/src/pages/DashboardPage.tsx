@@ -17,534 +17,239 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
-import CircularProgress from '@mui/material/CircularProgress';
-import Grid from '@mui/material/Grid';
-import LinearProgress from '@mui/material/LinearProgress';
-import Typography from '@mui/material/Typography';
-import Chip from '@mui/material/Chip';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
+import Stack from '@mui/material/Stack';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+
 import Layout from '../components/Layout';
-import { formatTimestamp, formatBytes, getBackendUrl } from '../lib/api';
+import OverviewView from '../components/OverviewView';
+import CustomDashboardView from '../components/CustomDashboardView';
+import DashboardViewTabs, { OVERVIEW_VIEW_ID } from '../components/DashboardViewTabs';
+import DashboardPcapScopeSelector, { ALL_PCAPS_SCOPE } from '../components/DashboardPcapScopeSelector';
+import { useNetcapApi } from '../hooks';
 import useSWR from 'swr';
-import { useNetcapRouter, useNetcapApi } from '../hooks';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import SpeedIcon from '@mui/icons-material/Speed';
-import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
-import MemoryIcon from '@mui/icons-material/Memory';
-import StopIcon from '@mui/icons-material/Stop';
-import RadioButtonCheckedIcon from '@mui/icons-material/RadioButtonChecked';
-import PublicIcon from '@mui/icons-material/Public';
+import { DashboardApiError, type Dashboard } from '../lib/api';
 
-export default function Dashboard() {
-  const router = useNetcapRouter();
+const SCOPE_STORAGE_KEY = 'dashboard-pcap-scope';
+const VIEW_STORAGE_KEY = 'dashboard-active-view';
+
+function describeError(err: unknown): string {
+  if (err instanceof DashboardApiError) return err.message;
+  if (err instanceof Error) return err.message;
+  return String(err);
+}
+
+export default function DashboardPage() {
   const api = useNetcapApi();
-  const [stopping, setStopping] = useState(false);
-  const [stopMessage, setStopMessage] = useState<string | null>(null);
-  const { data: status, error: statusError, mutate: mutateStatus } = useSWR('status', () => api.getStatus(), {
-    refreshInterval: 2000,
-  });
-  const { data: stats, mutate: mutateStats } = useSWR('stats', () => api.getStats(), {
-    refreshInterval: status?.isProcessing ? 1000 : 0, // Poll every second when processing
-  });
-  const { data: auditStats, error: auditStatsError, mutate: mutateAuditStats } = useSWR('auditStats', () => api.getAuditStats(), {
-    refreshInterval: status?.isProcessing ? 5000 : 10000, // Poll every 5 seconds when processing, every 10 seconds otherwise
-  });
-  const { data: inputFiles, error: inputError, mutate: mutateInputFiles } = useSWR('inputFiles', () => api.getInputFiles());
-  const { data: auditFiles, error: auditError, mutate: mutateAuditFiles } = useSWR('auditFiles', () => api.getAuditFiles());
-  const { data: logFiles, error: logError, mutate: mutateLogFiles } = useSWR('logFiles', () => api.getLogFiles());
-  const { data: systemInfo, error: systemInfoError } = useSWR('systemInfo', () => api.getSystemInfo());
 
-  const handleStopCapture = async () => {
+  const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
+  const {
+    data: dashboards,
+    error: dashboardsError,
+    mutate: mutateDashboards,
+  } = useSWR('dashboards-list', () => api.listDashboards());
+
+  // Page-level scope (persisted across reloads).
+  const [scope, setScope] = useState<string>(() => {
+    if (typeof window === 'undefined') return ALL_PCAPS_SCOPE;
+    return window.localStorage.getItem(SCOPE_STORAGE_KEY) || ALL_PCAPS_SCOPE;
+  });
+  useEffect(() => {
+    window.localStorage.setItem(SCOPE_STORAGE_KEY, scope);
+  }, [scope]);
+
+  // Active tab/view (persisted across reloads).
+  const [activeView, setActiveView] = useState<string>(() => {
+    if (typeof window === 'undefined') return OVERVIEW_VIEW_ID;
+    return window.localStorage.getItem(VIEW_STORAGE_KEY) || OVERVIEW_VIEW_ID;
+  });
+  useEffect(() => {
+    window.localStorage.setItem(VIEW_STORAGE_KEY, activeView);
+  }, [activeView]);
+
+  // If the persisted activeView no longer exists (e.g. user deleted it from
+  // another tab), fall back to overview.
+  useEffect(() => {
+    if (!dashboards || activeView === OVERVIEW_VIEW_ID) return;
+    if (!dashboards.some((d) => d.id === activeView)) {
+      setActiveView(OVERVIEW_VIEW_ID);
+    }
+  }, [dashboards, activeView]);
+
+  // New / rename dialog state
+  const [dialogMode, setDialogMode] = useState<null | 'create' | 'rename'>(null);
+  const [dialogTarget, setDialogTarget] = useState<Dashboard | null>(null);
+  const [draftName, setDraftName] = useState('');
+  const [draftDesc, setDraftDesc] = useState('');
+  const [pending, setPending] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  const openCreate = () => {
+    setDialogTarget(null);
+    setDraftName('');
+    setDraftDesc('');
+    setDialogMode('create');
+  };
+  const openRename = (d: Dashboard) => {
+    setDialogTarget(d);
+    setDraftName(d.name);
+    setDraftDesc(d.description || '');
+    setDialogMode('rename');
+  };
+  const closeDialog = () => {
+    setDialogMode(null);
+    setDialogTarget(null);
+  };
+
+  const handleDialogSubmit = async () => {
+    const name = draftName.trim();
+    if (!name) return;
+    setPending(true);
+    setActionError(null);
     try {
-      setStopping(true);
-      setStopMessage(null);
-      const response = await api.stopCapture();
-      setStopMessage(response.message);
-      // Refresh status after stopping
-      setTimeout(() => {
-        mutateStatus();
-      }, 1000);
+      if (dialogMode === 'create') {
+        const created = await api.createDashboard({
+          name,
+          description: draftDesc.trim() || undefined,
+          charts: [],
+          gridCols: 12,
+          rowHeight: 80,
+        });
+        await mutateDashboards();
+        setActiveView(created.id);
+      } else if (dialogMode === 'rename' && dialogTarget) {
+        const updated = await api.updateDashboard(dialogTarget.id, {
+          ...dialogTarget,
+          name,
+          description: draftDesc.trim() || undefined,
+        });
+        await mutateDashboards();
+        // Force the per-dashboard SWR cache to refresh too.
+        await api.getDashboard(updated.id);
+      }
+      closeDialog();
     } catch (err) {
-      console.error('Failed to stop capture:', err);
-      setStopMessage('Failed to stop capture: ' + (err as Error).message);
+      console.error('[Dashboard] dialog action failed', err);
+      setActionError(describeError(err));
     } finally {
-      setStopping(false);
+      setPending(false);
     }
   };
 
-  // Redirect to upload page if in try service mode and no active session
-  useEffect(() => {
-    // Only redirect if we have status data and confirmed no session/files
-    if (status && status.isServiceMode && !status.sessionId && inputFiles && inputFiles.length === 0) {
-      router.push('/analyze');
+  const handleDuplicate = async (d: Dashboard) => {
+    setActionError(null);
+    try {
+      const copy = await api.createDashboard({
+        name: `${d.name} (copy)`,
+        description: d.description,
+        charts: d.charts.map((c) => ({ ...c, id: '' })),
+        gridCols: d.gridCols,
+        rowHeight: d.rowHeight,
+      });
+      await mutateDashboards();
+      setActiveView(copy.id);
+    } catch (err) {
+      console.error('[Dashboard] duplicate failed', err);
+      setActionError(describeError(err));
     }
-  }, [status, inputFiles, router]);
+  };
 
-  // Refresh stats periodically when processing
-  useEffect(() => {
-    if (!status?.isProcessing) return;
-    
-    const interval = setInterval(() => {
-      mutateStats();
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, [status?.isProcessing, mutateStats]);
+  const handleDelete = async (d: Dashboard) => {
+    if (!confirm(`Delete dashboard "${d.name}"? This cannot be undone.`)) return;
+    setActionError(null);
+    try {
+      await api.deleteDashboard(d.id);
+      await mutateDashboards();
+      if (activeView === d.id) setActiveView(OVERVIEW_VIEW_ID);
+    } catch (err) {
+      console.error('[Dashboard] delete failed', err);
+      setActionError(describeError(err));
+    }
+  };
 
-  // Listen for directory changes and refresh all data
-  useEffect(() => {
-    const handleDirectoryChange = () => {
-      console.log('Directory changed, refreshing dashboard...');
-      mutateStatus();
-      mutateAuditFiles();
-      mutateLogFiles();
-      mutateStats();
-      mutateAuditStats();
-    };
-    
-    window.addEventListener('directory-changed', handleDirectoryChange);
-    return () => window.removeEventListener('directory-changed', handleDirectoryChange);
-  }, [mutateStatus, mutateAuditFiles, mutateLogFiles, mutateStats, mutateAuditStats]);
+  const noOutDir = dashboardsError instanceof DashboardApiError && dashboardsError.noOutputDir;
 
-  const isLoading = !status && !statusError;
-  const hasError = statusError || inputError || auditError || logError || auditStatsError || systemInfoError;
-
-  if (isLoading) {
-    return (
-      <Layout title="Dashboard">
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-          <CircularProgress />
-        </Box>
-      </Layout>
-    );
-  }
-
-  if (hasError) {
-    return (
-      <Layout title="Dashboard">
-        <Box>
-          <Typography color="error" variant="h6" gutterBottom>
-            Error loading dashboard data
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Make sure the backend server is running and accessible.
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Check the browser console for detailed error messages.
-          </Typography>
-          {statusError && (
-            <Typography variant="body2" sx={{ mt: 2, fontFamily: 'monospace', color: 'error.light' }}>
-              {statusError.toString()}
-            </Typography>
-          )}
-        </Box>
-      </Layout>
-    );
-  }
-
-  const totalAuditRecords = auditFiles?.reduce((sum, file) => sum + (file.recordCount || 0), 0) || 0;
+  // Build the tab list, filtering out overview placeholder.
+  const userDashboards: Dashboard[] = useMemo(() => dashboards || [], [dashboards]);
 
   return (
     <Layout title="Dashboard">
-      <Box>
-        {/* Live Processing Stats */}
-        {status?.isProcessing && stats?.processingStats && (
-          <Box mb={4}>
-            <Card data-learn="Live Processing: Real-time statistics showing current PCAP analysis progress, packet counts, and processing speed.">
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={2}>
-                  <SpeedIcon color="primary" />
-                  <Typography variant="h6">
-                    Live Processing Statistics
-                  </Typography>
-                </Box>
-                
-                {status.isServiceMode ? (
-                  // Service mode: simplified view with queue and current file
-                  (<Grid container spacing={3}>
-                    <Grid item xs={12} md={6}>
-                      <Box display="flex" alignItems="center" gap={2} mb={1}>
-                        <InsertDriveFileIcon fontSize="small" color="action" />
-                        <Typography variant="body2">
-                          <strong>Currently Processing:</strong>
-                        </Typography>
-                      </Box>
-                      <Typography variant="h6" sx={{ ml: 4, fontFamily: 'monospace' }}>
-                        {stats.processingStats.currentFile || 'Idle'}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                      <Box display="flex" alignItems="center" gap={2} mb={1}>
-                        <Typography variant="body2">
-                          <strong>Queue Status:</strong>
-                        </Typography>
-                      </Box>
-                      <Typography variant="h6" sx={{ ml: 4 }}>
-                        {stats.processingStats.queueLength || 0} files waiting
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ ml: 4 }}>
-                        {stats.processingStats.jobsProcessed || 0} / {stats.processingStats.jobsScheduled || 0} jobs completed
-                      </Typography>
-                    </Grid>
-                  </Grid>)
-                ) : (
-                  // Local mode: detailed view with progress
-                  (<Grid container spacing={2}>
-                    <Grid item xs={12}>
-                      <Box display="flex" alignItems="center" gap={2} mb={1}>
-                        <InsertDriveFileIcon fontSize="small" color="action" />
-                        <Typography variant="body2">
-                          <strong>Current File:</strong> {stats.processingStats.currentFile || 'N/A'}
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ ml: 4 }}>
-                        File {stats.processingStats.fileIndex} of {stats.processingStats.totalFiles}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Box mb={1}>
-                        <Box display="flex" justifyContent="space-between" mb={0.5}>
-                          <Typography variant="body2" color="text.secondary">
-                            Progress
-                          </Typography>
-                          <Typography variant="body2" fontWeight="bold">
-                            {stats.processingStats.progressPercent.toFixed(1)}%
-                          </Typography>
-                        </Box>
-                        <LinearProgress 
-                          variant="determinate" 
-                          value={stats.processingStats.progressPercent} 
-                          sx={{ height: 8, borderRadius: 1 }}
-                        />
-                      </Box>
-                      <Typography variant="caption" color="text.secondary">
-                        {stats.processingStats.packetsProcessed.toLocaleString()} / {stats.processingStats.totalPackets.toLocaleString()} packets
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Typography variant="body2" color="text.secondary">
-                        Packets/Second
-                      </Typography>
-                      <Typography variant="h5">
-                        {stats.processingStats.packetsPerSecond.toLocaleString()}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Typography variant="body2" color="text.secondary">
-                        Profiles
-                      </Typography>
-                      <Typography variant="h5">
-                        {stats.processingStats.profilesCount}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Typography variant="body2" color="text.secondary">
-                        Services
-                      </Typography>
-                      <Typography variant="h5">
-                        {stats.processingStats.servicesCount}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6} md={3}>
-                      <Typography variant="body2" color="text.secondary">
-                        Last Update
-                      </Typography>
-                      <Typography variant="body1">
-                        {new Date(stats.processingStats.lastUpdate * 1000).toLocaleTimeString()}
-                      </Typography>
-                    </Grid>
-                  </Grid>)
-                )}
-              </CardContent>
-            </Card>
-          </Box>
+      <Stack spacing={2}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+          <DashboardPcapScopeSelector value={scope} onChange={setScope} inputFiles={inputFiles} />
+          <Box sx={{ flex: 1 }} />
+        </Box>
+
+        <DashboardViewTabs
+          dashboards={userDashboards}
+          activeId={activeView}
+          onSelect={setActiveView}
+          onCreate={openCreate}
+          onRename={openRename}
+          onDuplicate={handleDuplicate}
+          onDelete={handleDelete}
+        />
+
+        {dashboardsError && (
+          <Alert
+            severity={noOutDir ? 'info' : 'error'}
+            action={<Button color="inherit" size="small" onClick={() => mutateDashboards()}>Retry</Button>}
+          >
+            {noOutDir
+              ? 'Dashboards storage is unavailable. Check service configuration.'
+              : `Failed to load dashboards: ${describeError(dashboardsError)}`}
+          </Alert>
+        )}
+        {actionError && (
+          <Alert severity="error" onClose={() => setActionError(null)}>{actionError}</Alert>
         )}
 
-        {/* Audit Statistics Section */}
-        {auditStats && (auditStats.exploitCount > 0 || auditStats.vulnerabilityCount > 0 || auditStats.secretCount > 0 || auditStats.softwareCount > 0) && (
-          <Box mb={4}>
-            <Card data-learn="Security Audit Summary: Quick overview of security-relevant findings including exploits, vulnerabilities, credentials, and detected software.">
-              <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>
-                  Security Audit Records
-                </Typography>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Box sx={{ 
-                      p: 2, 
-                      borderRadius: 2, 
-                      backgroundColor: 'error.dark',
-                      color: 'white',
-                      textAlign: 'center'
-                    }}>
-                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                        Exploits
-                      </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
-                        {auditStats.exploitCount.toLocaleString()}
-                      </Typography>
-                    </Box>
-                  </Grid>
-
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Box sx={{ 
-                      p: 2, 
-                      borderRadius: 2, 
-                      backgroundColor: 'warning.dark',
-                      color: 'white',
-                      textAlign: 'center'
-                    }}>
-                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                        Vulnerabilities
-                      </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
-                        {auditStats.vulnerabilityCount.toLocaleString()}
-                      </Typography>
-                    </Box>
-                  </Grid>
-
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Box sx={{ 
-                      p: 2, 
-                      borderRadius: 2, 
-                      backgroundColor: 'info.dark',
-                      color: 'white',
-                      textAlign: 'center'
-                    }}>
-                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                        Secrets
-                      </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
-                        {auditStats.secretCount.toLocaleString()}
-                      </Typography>
-                    </Box>
-                  </Grid>
-
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Box sx={{ 
-                      p: 2, 
-                      borderRadius: 2, 
-                      backgroundColor: 'success.dark',
-                      color: 'white',
-                      textAlign: 'center'
-                    }}>
-                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                        Software
-                      </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
-                        {auditStats.softwareCount.toLocaleString()}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Box>
+        {activeView === OVERVIEW_VIEW_ID ? (
+          <OverviewView scope={scope} />
+        ) : (
+          <CustomDashboardView
+            dashboardId={activeView}
+            scope={scope}
+            onForkComplete={(newId) => setActiveView(newId)}
+          />
         )}
+      </Stack>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Data Sources: Number of input PCAP files that have been analyzed.">
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  Data Sources
-                </Typography>
-                <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{inputFiles?.length || 0}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Audit Record Types: Number of different protocol types found in the analyzed traffic.">
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  Audit Record Types
-                </Typography>
-                <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{auditFiles?.length || 0}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Total Records: Total number of audit records extracted from all analyzed PCAP files.">
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  Total Records
-                </Typography>
-                <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{totalAuditRecords.toLocaleString()}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card data-learn="Log Files: Number of log files generated during processing, useful for debugging and monitoring.">
-              <CardContent>
-                <Typography color="text.secondary" gutterBottom>
-                  Log Files
-                </Typography>
-                <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{logFiles?.length || 0}</Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        {/* Geolocation Chart Section */}
-        {totalAuditRecords > 0 && (
-          <Box mt={4}>
-            <Card data-learn="Geolocation Map: Interactive world map showing the geographic distribution of IP addresses found in network traffic.">
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={2}>
-                  <PublicIcon color="primary" />
-                  <Typography variant="h6">
-                    Global IP Geolocation Distribution
-                  </Typography>
-                </Box>
-                <Box 
-                  sx={{ 
-                    width: '100%', 
-                    height: { xs: 300, sm: 450, md: 600 },
-                    borderRadius: 1,
-                    overflow: 'hidden',
-                    backgroundColor: '#1e1e1e'
-                  }}
-                >
-                  <iframe
-                    src={`${getBackendUrl()}/api/visualize/geo-all?showLegend=false`}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      border: 'none',
-                      display: 'block'
-                    }}
-                    title="Global Geolocation Chart"
-                  />
-                </Box>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                  Aggregated geolocation data from all Hosts across all captures
-                </Typography>
-              </CardContent>
-            </Card>
-          </Box>
-        )}
-
-        {/* System Information Section */}
-        {systemInfo && (
-          <Box mt={4}>
-            <Card data-learn="System Information: Hardware and runtime statistics of the Netcap server including CPU cores, memory usage, and platform details.">
-              <CardContent>
-                <Box display="flex" alignItems="center" gap={1} mb={2}>
-                  <MemoryIcon color="primary" />
-                  <Typography variant="h6">
-                    System Information
-                  </Typography>
-                </Box>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Box sx={{ 
-                      p: 2, 
-                      borderRadius: 2, 
-                      backgroundColor: 'primary.dark',
-                      color: 'white',
-                      textAlign: 'center',
-                      height: '100%',
-                      minHeight: 140,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center'
-                    }}>
-                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                        CPU Cores
-                      </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
-                        {systemInfo.numCPU}
-                      </Typography>
-                    </Box>
-                  </Grid>
-
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Box sx={{ 
-                      p: 2, 
-                      borderRadius: 2, 
-                      backgroundColor: 'success.dark',
-                      color: 'white',
-                      textAlign: 'center',
-                      height: '100%',
-                      minHeight: 140,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center'
-                    }}>
-                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                        Total Memory
-                      </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
-                        {formatBytes(systemInfo.totalMemory)}
-                      </Typography>
-                    </Box>
-                  </Grid>
-
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Box sx={{ 
-                      p: 2, 
-                      borderRadius: 2, 
-                      backgroundColor: 'info.dark',
-                      color: 'white',
-                      textAlign: 'center',
-                      height: '100%',
-                      minHeight: 140,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center'
-                    }}>
-                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                        Free Memory
-                      </Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
-                        {formatBytes(systemInfo.freeMemory)}
-                      </Typography>
-                      <Typography variant="caption" sx={{ opacity: 0.8, display: 'block', mt: 0.5 }}>
-                        {((systemInfo.freeMemory / systemInfo.totalMemory) * 100).toFixed(1)}% free
-                      </Typography>
-                    </Box>
-                  </Grid>
-
-                  <Grid item xs={12} sm={6} md={3}>
-                    <Box sx={{ 
-                      p: 2, 
-                      borderRadius: 2, 
-                      backgroundColor: 'secondary.dark',
-                      color: 'white',
-                      textAlign: 'center',
-                      height: '100%',
-                      minHeight: 140,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center'
-                    }}>
-                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                        Platform
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                        {systemInfo.goos}/{systemInfo.goarch}
-                      </Typography>
-                      <Typography variant="caption" sx={{ opacity: 0.8, display: 'block', mt: 0.5 }}>
-                        {systemInfo.numGoroutine} goroutines
-                      </Typography>
-                    </Box>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Box>
-        )}
-      </Box>
+      <Dialog open={dialogMode !== null} onClose={closeDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>{dialogMode === 'rename' ? 'Rename Dashboard' : 'New Dashboard'}</DialogTitle>
+        <DialogContent>
+          <TextField
+            label="Name"
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
+            fullWidth
+            autoFocus
+            sx={{ mt: 1, mb: 2 }}
+            required
+          />
+          <TextField
+            label="Description (optional)"
+            value={draftDesc}
+            onChange={(e) => setDraftDesc(e.target.value)}
+            fullWidth
+            multiline
+            rows={2}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDialog} disabled={pending}>Cancel</Button>
+          <Button onClick={handleDialogSubmit} variant="contained" disabled={!draftName.trim() || pending}>
+            {dialogMode === 'rename' ? 'Save' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Layout>
   );
 }
-

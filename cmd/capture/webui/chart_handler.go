@@ -177,6 +177,128 @@ type ChartFieldInfo struct {
 	Description string `json:"description"`
 }
 
+// resolveChartScopeDirs returns one or more output directories matching the
+// requested scope. Possible scope values:
+//   - "" or "current": the currently-active output dir (legacy behavior).
+//   - "all": every completed session/file's output dir.
+//   - any other value: treated as a pcap selector (session id in service mode,
+//     or input file path / id in local mode).
+//
+// The returned status is the HTTP status to use if err is non-nil.
+func (s *Server) resolveChartScopeDirs(scope string, r *http.Request) ([]string, int, error) {
+	s.mu.RLock()
+	isServiceMode := s.isServiceMode
+	currentSession := s.currentSession
+	outDir := s.outDir
+	baseOutDir := s.baseOutDir
+	inputFiles := append([]string(nil), s.inputFiles...)
+	fileOutputDirs := make(map[string]string, len(s.fileOutputDirs))
+	for k, v := range s.fileOutputDirs {
+		fileOutputDirs[k] = v
+	}
+	fileIDToPath := make(map[string]string, len(s.fileIDToPath))
+	for k, v := range s.fileIDToPath {
+		fileIDToPath[k] = v
+	}
+	s.mu.RUnlock()
+
+	// Helper: derive an output dir for an input file in local mode
+	deriveLocalOutDir := func(inputFile string) string {
+		if dir, ok := fileOutputDirs[inputFile]; ok {
+			return dir
+		}
+		if len(inputFiles) == 1 {
+			return baseOutDir
+		}
+		base := filepath.Base(inputFile)
+		for _, ext := range []string{".pcap", ".pcapng", ".cap", ".dmp"} {
+			if before, ok := strings.CutSuffix(base, ext); ok {
+				base = before
+				break
+			}
+		}
+		return filepath.Join(baseOutDir, base)
+	}
+
+	switch scope {
+	case "", "current":
+		dir := outDir
+		if isServiceMode && currentSession != "" && s.sessionManager != nil {
+			if sess, ok := s.sessionManager.GetSession(currentSession); ok {
+				dir = sess.OutputDir
+			}
+		}
+		if dir == "" {
+			return nil, http.StatusServiceUnavailable, fmt.Errorf("no output directory available")
+		}
+		return []string{dir}, http.StatusOK, nil
+	case "all":
+		var dirs []string
+		seen := make(map[string]bool)
+		add := func(d string) {
+			if d == "" || seen[d] {
+				return
+			}
+			seen[d] = true
+			dirs = append(dirs, d)
+		}
+		if isServiceMode && s.sessionManager != nil {
+			for _, sess := range s.sessionManager.GetAllSessions() {
+				if sess.Status == StatusCompleted && sess.OutputDir != "" {
+					add(sess.OutputDir)
+				}
+			}
+		} else {
+			for _, in := range inputFiles {
+				add(deriveLocalOutDir(in))
+			}
+			if len(dirs) == 0 && outDir != "" {
+				add(outDir)
+			}
+		}
+		if len(dirs) == 0 {
+			return nil, http.StatusServiceUnavailable, fmt.Errorf("no completed captures available")
+		}
+		return dirs, http.StatusOK, nil
+	default:
+		// Treat scope as a pcap identifier. Accept several forms because the
+		// frontend may send any of: session id, full input file path, or just
+		// the file's basename.
+		if isServiceMode && s.sessionManager != nil {
+			// Direct session-id lookup is the cheapest.
+			if sess, ok := s.sessionManager.GetSession(scope); ok {
+				if sess.OutputDir == "" {
+					return nil, http.StatusNotFound, fmt.Errorf("session has no output directory yet")
+				}
+				return []string{sess.OutputDir}, http.StatusOK, nil
+			}
+			// Fall back to scanning all sessions: PcapsPage / scope selector
+			// uses InputFile (full path) as the value, so match by InputFile,
+			// InputFilename, and basename.
+			scopeBase := filepath.Base(scope)
+			for _, sess := range s.sessionManager.GetAllSessions() {
+				if sess.OutputDir == "" {
+					continue
+				}
+				if sess.InputFile == scope || sess.InputFilename == scope ||
+					filepath.Base(sess.InputFile) == scopeBase {
+					return []string{sess.OutputDir}, http.StatusOK, nil
+				}
+			}
+		}
+		// Local mode: scope may be a file path, file id, or basename.
+		if path, ok := fileIDToPath[scope]; ok {
+			return []string{deriveLocalOutDir(path)}, http.StatusOK, nil
+		}
+		for _, in := range inputFiles {
+			if in == scope || filepath.Base(in) == scope {
+				return []string{deriveLocalOutDir(in)}, http.StatusOK, nil
+			}
+		}
+		return nil, http.StatusNotFound, fmt.Errorf("unknown scope: %s", scope)
+	}
+}
+
 // handleChartData generates and serves HTML charts using go-echarts
 func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -191,6 +313,7 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	interval := r.URL.Query().Get("interval")   // e.g., "1s", "1m", "1h"
 	showLegendStr := r.URL.Query().Get("showLegend")
 	maxDataPointsStr := r.URL.Query().Get("maxDataPoints")
+	scope := r.URL.Query().Get("scope") // "all", "current" (default), or pcap id/path
 
 	if auditType == "" || field == "" {
 		http.Error(w, "Missing required parameters: type, field", http.StatusBadRequest)
@@ -215,32 +338,24 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// No default interval - empty means use all records with actual timestamps
-
-	// Get output directory
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
-
-	if outDir == "" {
-		http.Error(w, "No output directory available", http.StatusServiceUnavailable)
+	dirs, status, err := s.resolveChartScopeDirs(scope, r)
+	if err != nil {
+		log.Printf("[WebUI] chart: scope %q resolution failed: %v", scope, err)
+		http.Error(w, err.Error(), status)
 		return
 	}
 
 	// Generate chart using go-echarts
+	start := time.Now()
 	generator := NewChartGenerator(auditType, field, chartType, interval, showLegend, maxDataPoints)
-	chartHTML, err := generator.GenerateChart(outDir)
+	chartHTML, err := generator.GenerateChartFromDirs(dirs)
 	if err != nil {
-		log.Printf("[WebUI] Failed to generate chart: %v", err)
+		log.Printf("[WebUI] Failed to generate chart (type=%s field=%s scope=%s dirs=%d): %v", auditType, field, scope, len(dirs), err)
 		http.Error(w, fmt.Sprintf("Failed to generate chart: %v", err), http.StatusInternalServerError)
 		return
+	}
+	if elapsed := time.Since(start); elapsed > time.Second {
+		log.Printf("[WebUI] chart: slow generation (type=%s field=%s scope=%s dirs=%d) took %s", auditType, field, scope, len(dirs), elapsed)
 	}
 
 	// Serve HTML
@@ -479,31 +594,31 @@ func (s *Server) handleChartFields(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Missing required parameter: type", http.StatusBadRequest)
 		return
 	}
+	scope := r.URL.Query().Get("scope")
 
-	// Get output directory
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
-
-	if outDir == "" {
-		http.Error(w, "No output directory available", http.StatusServiceUnavailable)
+	dirs, status, err := s.resolveChartScopeDirs(scope, r)
+	if err != nil {
+		log.Printf("[WebUI] chart fields: scope %q resolution failed: %v", scope, err)
+		http.Error(w, err.Error(), status)
 		return
 	}
 
-	// Construct file path
-	filePath := filepath.Join(outDir, auditType+defaults.FileExtension+".gz")
-
-	// Read up to 100 records to get field information
-	reader, err := NewAuditRecordReader(filePath)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to open audit file: %v", err), http.StatusInternalServerError)
+	// Field schema is identical across captures, so probe the first dir that
+	// actually has the file.
+	var reader *AuditRecordReader
+	var lastErr error
+	for _, dir := range dirs {
+		filePath := filepath.Join(dir, auditType+defaults.FileExtension+".gz")
+		r2, err := NewAuditRecordReader(filePath)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		reader = r2
+		break
+	}
+	if reader == nil {
+		http.Error(w, fmt.Sprintf("Failed to open audit file in any scope dir: %v", lastErr), http.StatusInternalServerError)
 		return
 	}
 	defer reader.Close()

@@ -1,0 +1,76 @@
+{
+  "id": "builtin-authentication",
+  "name": "Authentication & Secrets",
+  "description": "Captured credentials, hashes, authentication outcomes and HTTP authorization schemes. Surfaces brute-force activity, plaintext-credential exposure and weak hashing.",
+  "gridCols": 12,
+  "rowHeight": 80,
+  "builtin": true,
+  "charts": [
+    {
+      "id": "auth-secret-service",
+      "title": "Captured Credentials by Service",
+      "description": "Which services leak credentials on the wire (HTTP, FTP, POP3, SMB, RADIUS, …). Anything other than encrypted services is a critical leak that should be remediated.",
+      "auditType": "Secret",
+      "field": "Service",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": "auth-hash-types",
+      "title": "Hash Types Observed",
+      "description": "Distribution of hash schemes captured (NTLMv2, Kerberos AS-REP, MD5, …). Highlights weak schemes (LM, MD5) that can be cracked with commodity hardware.",
+      "auditType": "Secret",
+      "field": "HashType",
+      "chartType": "bar",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": "auth-success-failure",
+      "title": "Authentication Success vs Failure",
+      "description": "Ratio of successful to failed authentication events. A high failure share is a strong indicator of password-spraying or credential-stuffing campaigns.",
+      "auditType": "Secret",
+      "field": "AuthSuccess",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 4, "w": 6, "h": 4 }
+    },
+    {
+      "id": "auth-top-users",
+      "title": "Top Usernames",
+      "description": "Most-frequent usernames seen in authentication traffic. Familiar admin / service accounts (admin, root, svc_*) appearing here are common targets for guessing attacks.",
+      "auditType": "Secret",
+      "field": "User",
+      "chartType": "wordcloud",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 4, "w": 6, "h": 4 }
+    },
+    {
+      "id": "auth-attempts-trend",
+      "title": "Authentication Attempts Over Time",
+      "description": "Auth-attempt counts per record. Bursts correlate with credential-stuffing windows; a flat baseline indicates routine auth traffic.",
+      "auditType": "Secret",
+      "field": "AuthAttempts",
+      "chartType": "line",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 8, "w": 6, "h": 4 }
+    },
+    {
+      "id": "auth-http-schemes",
+      "title": "HTTP Authorization Schemes",
+      "description": "Authorization header schemes seen on HTTP (Bearer, Basic, Digest, NTLM, …). Basic over plain HTTP is a critical credential leak; NTLM exposure enables Pass-the-Hash.",
+      "auditType": "HTTP",
+      "field": "AuthorizationType",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 8, "w": 6, "h": 4 }
+    }
+  ]
+}

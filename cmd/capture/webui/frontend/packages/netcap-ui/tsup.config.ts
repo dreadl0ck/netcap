@@ -53,6 +53,10 @@ const sharedExternals = [
   // React Router - all subpaths
   'react-router',
   /^react-router\//,
+  // React Grid Layout - keep external so esbuild does not emit `require('react')`
+  // for its inlined dependencies, which breaks ESM consumers in the browser.
+  'react-grid-layout',
+  /^react-grid-layout\//,
 ];
 
 export default defineConfig({

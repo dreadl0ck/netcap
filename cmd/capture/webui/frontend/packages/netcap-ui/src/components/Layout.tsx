@@ -390,6 +390,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                 <ListItemText primary="Visualize" />
               </ListItemButton>
             </Link>
+
             <Link href="/hosts" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/hosts')}

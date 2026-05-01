@@ -70,10 +70,14 @@
     "@emotion/react": "^11.0.0",
     "@emotion/styled": "^11.0.0",
     "swr": "^2.0.0",
-    "react-router": "^7.0.0"
+    "react-router": "^7.0.0",
+    "react-grid-layout": "^2.0.0"
   },
   "peerDependenciesMeta": {
     "react-router": {
+      "optional": true
+    },
+    "react-grid-layout": {
       "optional": true
     }
   },

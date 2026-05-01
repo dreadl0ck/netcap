@@ -123,6 +123,11 @@ function createNoOpApi(): NetcapApiClient {
     stopCapture: noOpReturn({ success: false, message: '' }),
     getChartData: noOpReturn({ type: '', field: '', interval: '', data: [], count: 0, minValue: 0, maxValue: 0, avgValue: 0 }),
     getChartFields: noOpReturn({ type: '', fields: [], totalFields: 0, filteredCount: 0 }),
+    listDashboards: noOpReturn([]),
+    getDashboard: noOp as any,
+    createDashboard: noOp as any,
+    updateDashboard: noOp as any,
+    deleteDashboard: noOpReturn(undefined as unknown as void),
     getProtocolHierarchy: noOpReturn({ links: [], nodes: [], stats: {} }),
     reportIssue: noOpReturn({ success: false, issueId: '', message: '', remaining: 0 }),
     getRules: noOpReturn({ rules: [] }),
@@ -737,6 +742,41 @@ export interface ChartFieldsResponse {
   filteredCount: number; // Number of fields filtered out due to no data
 }
 
+export interface DashboardChartLayout {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface DashboardChart {
+  id: string;
+  title: string;
+  /** Optional human-readable explanation of what the chart shows. */
+  description?: string;
+  auditType: string;
+  field: string;
+  chartType: string;
+  interval?: string;
+  showLegend: boolean;
+  maxDataPoints?: number;
+  layout: DashboardChartLayout;
+}
+
+export interface Dashboard {
+  id: string;
+  name: string;
+  description?: string;
+  charts: DashboardChart[];
+  gridCols: number;
+  rowHeight: number;
+  createdAt: number;
+  updatedAt: number;
+  builtin?: boolean;
+}
+
+export type DashboardCreateInput = Omit<Dashboard, 'id' | 'createdAt' | 'updatedAt' | 'builtin'>;
+
 export interface SankeyLink {
   source: string;
   target: string;
@@ -1051,6 +1091,40 @@ export interface MenuCountsResponse {
   extractedFilesCount: number;
 }
 
+// DashboardApiError exposes the HTTP status alongside the error message so UI
+// can branch on cases like "no output directory selected" (503) or "not found"
+// (404) without parsing strings.
+export class DashboardApiError extends Error {
+  status: number;
+  noOutputDir: boolean;
+  notFound: boolean;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'DashboardApiError';
+    this.status = status;
+    this.noOutputDir = status === 503;
+    this.notFound = status === 404;
+  }
+}
+
+// dashboardError builds a DashboardApiError from a non-OK Response, preferring
+// the server-provided body for diagnostic detail.
+async function dashboardError(res: Response, fallback: string): Promise<DashboardApiError> {
+  let body = '';
+  try {
+    body = (await res.text()).trim();
+  } catch {
+    // ignore — body may be empty
+  }
+  if (res.status === 503) {
+    return new DashboardApiError(res.status, body || 'No output directory selected — please select or set an output directory first.');
+  }
+  if (res.status === 404) {
+    return new DashboardApiError(res.status, body || 'Dashboard not found.');
+  }
+  return new DashboardApiError(res.status, body || `${fallback} (HTTP ${res.status})`);
+}
+
 // Internal function to create API client with a specific base URL
 // Note: Return type is inferred to avoid circular reference
 function createApiWithBase(apiBase: string) {
@@ -1067,8 +1141,9 @@ function createApiWithBase(apiBase: string) {
     return res.json();
   },
 
-  async getAuditStats(): Promise<AuditStatsResponse> {
-    const res = await fetch(`${apiBase}/audit-stats`);
+  async getAuditStats(scope?: string): Promise<AuditStatsResponse> {
+    const url = scope ? `${apiBase}/audit-stats?scope=${encodeURIComponent(scope)}` : `${apiBase}/audit-stats`;
+    const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch audit stats');
     return res.json();
   },
@@ -1079,8 +1154,9 @@ function createApiWithBase(apiBase: string) {
     return res.json();
   },
 
-  async getAuditFiles(): Promise<AuditFileInfo[]> {
-    const res = await fetch(`${apiBase}/files/audit`);
+  async getAuditFiles(scope?: string): Promise<AuditFileInfo[]> {
+    const url = scope ? `${apiBase}/files/audit?scope=${encodeURIComponent(scope)}` : `${apiBase}/files/audit`;
+    const res = await fetch(url);
     if (!res.ok) throw new Error('Failed to fetch audit files');
     return res.json();
   },
@@ -1707,8 +1783,10 @@ function createApiWithBase(apiBase: string) {
     return res.json();
   },
 
-  async getChartFields(type: string): Promise<ChartFieldsResponse> {
-    const res = await fetch(`${apiBase}/chart/fields?type=${encodeURIComponent(type)}`);
+  async getChartFields(type: string, scope?: string): Promise<ChartFieldsResponse> {
+    const params = new URLSearchParams({ type });
+    if (scope) params.set('scope', scope);
+    const res = await fetch(`${apiBase}/chart/fields?${params.toString()}`);
     if (!res.ok) {
       if (res.status === 404) {
         throw new Error('Chart API not found');
@@ -1720,6 +1798,47 @@ function createApiWithBase(apiBase: string) {
       throw new Error(text || 'Failed to fetch chart fields');
     }
     return res.json();
+  },
+
+  async listDashboards(): Promise<Dashboard[]> {
+    const res = await fetch(`${apiBase}/dashboards`);
+    if (!res.ok) throw await dashboardError(res, 'Failed to list dashboards');
+    return res.json();
+  },
+
+  async getDashboard(id: string): Promise<Dashboard> {
+    const res = await fetch(`${apiBase}/dashboards/${encodeURIComponent(id)}`);
+    if (!res.ok) throw await dashboardError(res, 'Failed to load dashboard');
+    return res.json();
+  },
+
+  async createDashboard(input: DashboardCreateInput): Promise<Dashboard> {
+    const res = await fetch(`${apiBase}/dashboards`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) throw await dashboardError(res, 'Failed to create dashboard');
+    return res.json();
+  },
+
+  async updateDashboard(id: string, dashboard: Dashboard): Promise<Dashboard> {
+    const res = await fetch(`${apiBase}/dashboards/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dashboard),
+    });
+    if (!res.ok) throw await dashboardError(res, 'Failed to update dashboard');
+    return res.json();
+  },
+
+  async deleteDashboard(id: string): Promise<void> {
+    const res = await fetch(`${apiBase}/dashboards/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok && res.status !== 204) {
+      throw await dashboardError(res, 'Failed to delete dashboard');
+    }
   },
 
   async getProtocolHierarchy(): Promise<ProtocolHierarchyResponse> {

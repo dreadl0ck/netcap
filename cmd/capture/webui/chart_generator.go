@@ -77,40 +77,245 @@ func NewChartGenerator(auditType, field, chartType, interval string, showLegend 
 
 // GenerateChart generates a chart and returns it as HTML
 func (cg *ChartGenerator) GenerateChart(outDir string) (io.Reader, error) {
-	filePath := filepath.Join(outDir, cg.auditType+defaults.FileExtension+".gz")
+	return cg.GenerateChartFromDirs([]string{outDir})
+}
 
-	reader, err := NewAuditRecordReader(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open audit file: %w", err)
+// GenerateChartFromDirs generates a chart aggregating audit records from
+// multiple output directories. When called with a single directory it behaves
+// identically to GenerateChart. Directories that don't contain the requested
+// audit file are skipped silently. Returns an error if no directory yields
+// any data.
+func (cg *ChartGenerator) GenerateChartFromDirs(outDirs []string) (io.Reader, error) {
+	if len(outDirs) == 0 {
+		return nil, fmt.Errorf("no output directories provided")
 	}
-	defer reader.Close()
 
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read header: %w", err)
+	// Probe field type using the first dir that has the file. Audit record
+	// schemas are identical across captures, so a single probe is enough.
+	var probeReader *AuditRecordReader
+	var probePath string
+	for _, dir := range outDirs {
+		path := filepath.Join(dir, cg.auditType+defaults.FileExtension+".gz")
+		r, err := NewAuditRecordReader(path)
+		if err != nil {
+			continue
+		}
+		if _, hErr := r.ReadHeader(); hErr != nil {
+			r.Close()
+			continue
+		}
+		probeReader = r
+		probePath = path
+		break
+	}
+	if probeReader == nil {
+		return nil, fmt.Errorf("audit file %s not found in any of %d directories", cg.auditType, len(outDirs))
 	}
 
-	// Determine if field is numeric or string
-	isNumeric, err := cg.isFieldNumeric(reader)
+	isNumeric, err := cg.isFieldNumeric(probeReader)
+	probeReader.Close()
+	if err != nil {
+		return nil, fmt.Errorf("failed to probe field type for %s: %w", probePath, err)
+	}
+
+	// Categorical sankey chart needs raw access to the reader to build link
+	// pairs; aggregating across multiple files would need a new flat
+	// reader-of-readers implementation. For v1 the sankey path falls back to
+	// the first directory that has the file when scope is multi-dir.
+	if !isNumeric && cg.chartType == "sankey" {
+		return cg.GenerateChart(filepath.Dir(probePath))
+	}
+
+	if isNumeric {
+		return cg.generateNumericChartFromDirs(outDirs)
+	}
+	return cg.generateCategoricalChartFromDirs(outDirs)
+}
+
+// generateNumericChartFromDirs aggregates numeric data points across dirs and
+// then renders the chart using the existing per-type renderers.
+func (cg *ChartGenerator) generateNumericChartFromDirs(outDirs []string) (io.Reader, error) {
+	dataPoints, err := cg.collectNumericDataMulti(outDirs)
 	if err != nil {
 		return nil, err
 	}
+	if len(dataPoints) == 0 {
+		return nil, fmt.Errorf("no records found with valid numeric field %s in any of %d directories", cg.field, len(outDirs))
+	}
+	switch cg.chartType {
+	case "line":
+		return cg.generateLineChart(dataPoints), nil
+	case "bar":
+		return cg.generateBarChart(dataPoints), nil
+	case "area":
+		return cg.generateAreaChart(dataPoints), nil
+	case "scatter":
+		return cg.generateScatterChart(dataPoints), nil
+	case "funnel":
+		return cg.generateFunnelChart(dataPoints), nil
+	case "radar":
+		return cg.generateRadarChart(dataPoints), nil
+	default:
+		return cg.generateLineChart(dataPoints), nil
+	}
+}
 
-	// Reset reader
-	reader.Close()
-	reader, err = NewAuditRecordReader(filePath)
+// generateCategoricalChartFromDirs aggregates categorical counts across dirs
+// and renders the chart.
+func (cg *ChartGenerator) generateCategoricalChartFromDirs(outDirs []string) (io.Reader, error) {
+	counts, err := cg.collectCategoricalDataMulti(outDirs)
 	if err != nil {
-		return nil, fmt.Errorf("failed to reopen audit file: %w", err)
+		return nil, err
 	}
-	defer reader.Close()
-	_, _ = reader.ReadHeader()
+	if len(counts) == 0 {
+		return nil, fmt.Errorf("no records found with valid field %s in any of %d directories", cg.field, len(outDirs))
+	}
 
-	// Generate appropriate chart based on field type and chart type
-	if isNumeric {
-		return cg.generateNumericChart(reader)
+	var sorted []kvPair
+	for k, v := range counts {
+		sorted = append(sorted, kvPair{k, v})
 	}
-	return cg.generateCategoricalChart(reader, outDir)
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].value > sorted[j].value
+	})
+	if len(sorted) > 20 {
+		sorted = sorted[:20]
+	}
+
+	switch cg.chartType {
+	case "pie":
+		return cg.generatePieChart(sorted), nil
+	case "bar":
+		return cg.generateCategoryBarChart(sorted), nil
+	case "wordcloud":
+		return cg.generateWordCloudChart(sorted), nil
+	case "funnel":
+		return cg.generateCategoryFunnelChart(sorted), nil
+	case "graph":
+		return cg.generateGraphChart(sorted), nil
+	default:
+		return cg.generatePieChart(sorted), nil
+	}
+}
+
+// collectNumericDataMulti reads numeric data points from each directory,
+// concatenating them up to maxDataPoints across the entire scope.
+func (cg *ChartGenerator) collectNumericDataMulti(outDirs []string) ([]dataPoint, error) {
+	var all []dataPoint
+	bucketing := cg.interval != ""
+	var duration time.Duration
+	if bucketing {
+		d, err := time.ParseDuration(cg.interval)
+		if err != nil {
+			return nil, fmt.Errorf("invalid interval: %w", err)
+		}
+		duration = d
+	}
+	timeBuckets := make(map[int64][]float64)
+
+	for _, dir := range outDirs {
+		if len(all) >= cg.maxDataPoints && !bucketing {
+			break
+		}
+		filePath := filepath.Join(dir, cg.auditType+defaults.FileExtension+".gz")
+		reader, err := NewAuditRecordReader(filePath)
+		if err != nil {
+			continue
+		}
+		if _, err := reader.ReadHeader(); err != nil {
+			reader.Close()
+			continue
+		}
+
+		for (bucketing || len(all) < cg.maxDataPoints) {
+			msg, err := reader.NextRecord()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				break
+			}
+			ar, ok := msg.(netcaptypes.AuditRecord)
+			if !ok {
+				continue
+			}
+			value, err := extractNumericField(msg, cg.field)
+			if err != nil {
+				continue
+			}
+			ts := ar.Time()
+			if bucketing {
+				bucket := (ts / int64(duration)) * int64(duration)
+				timeBuckets[bucket] = append(timeBuckets[bucket], value)
+			} else {
+				all = append(all, dataPoint{time: time.Unix(0, ts), value: value})
+			}
+		}
+		reader.Close()
+	}
+
+	if bucketing {
+		for bucket, values := range timeBuckets {
+			var sum float64
+			for _, v := range values {
+				sum += v
+			}
+			avg := sum / float64(len(values))
+			all = append(all, dataPoint{time: time.Unix(0, bucket), value: avg})
+		}
+	}
+
+	sort.Slice(all, func(i, j int) bool {
+		return all[i].time.Before(all[j].time)
+	})
+
+	// Cap final size to avoid blowing up the chart with very large multi-dir
+	// aggregates.
+	if len(all) > cg.maxDataPoints {
+		all = all[:cg.maxDataPoints]
+	}
+	return all, nil
+}
+
+// collectCategoricalDataMulti accumulates value counts across all directories,
+// stopping once the total record count reaches maxDataPoints.
+func (cg *ChartGenerator) collectCategoricalDataMulti(outDirs []string) (map[string]int, error) {
+	counts := make(map[string]int)
+	totalRecords := 0
+	for _, dir := range outDirs {
+		if totalRecords >= cg.maxDataPoints {
+			break
+		}
+		filePath := filepath.Join(dir, cg.auditType+defaults.FileExtension+".gz")
+		reader, err := NewAuditRecordReader(filePath)
+		if err != nil {
+			continue
+		}
+		if _, err := reader.ReadHeader(); err != nil {
+			reader.Close()
+			continue
+		}
+		for totalRecords < cg.maxDataPoints {
+			msg, err := reader.NextRecord()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				break
+			}
+			value, err := extractStringField(msg, cg.field)
+			if err != nil || value == "" {
+				continue
+			}
+			if len(value) > 100 {
+				value = value[:100] + "..."
+			}
+			counts[value]++
+			totalRecords++
+		}
+		reader.Close()
+	}
+	return counts, nil
 }
 
 // isFieldNumeric checks if the specified field is numeric

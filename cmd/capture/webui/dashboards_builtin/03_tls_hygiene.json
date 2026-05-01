@@ -1,0 +1,76 @@
+{
+  "id": "builtin-tls-hygiene",
+  "name": "TLS & Certificates",
+  "description": "Crypto exposure: client and server TLS choices, certificate hygiene, and JA4 fingerprints used to spot malware C2 traffic blending in with regular HTTPS.",
+  "gridCols": 12,
+  "rowHeight": 80,
+  "builtin": true,
+  "charts": [
+    {
+      "id": "tls-ja4-clients",
+      "title": "JA4 Client Fingerprints",
+      "description": "Distribution of TLS clients by JA4 fingerprint. Rare or unique fingerprints in your environment frequently belong to malware, RAT or research-tooling rather than legitimate browsers.",
+      "auditType": "TLSClientHello",
+      "field": "Ja4",
+      "chartType": "wordcloud",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": "tls-threat-category",
+      "title": "Suspected Malware Fingerprints",
+      "description": "Direct hits against the threat-category list (CobaltStrike, Emotet, Metasploit, …). Any non-empty value here is critical and worth a manual review of the matching flow.",
+      "auditType": "TLSClientHello",
+      "field": "ThreatCategory",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "id": "tls-versions",
+      "title": "TLS Versions in Use",
+      "description": "Server-selected TLS versions across observed handshakes. Anything below TLS 1.2 (e.g. TLS 1.0, 1.1, SSLv3) indicates obsolete crypto and downgrade-attack exposure.",
+      "auditType": "TLSServerHello",
+      "field": "Version",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 4, "w": 6, "h": 4 }
+    },
+    {
+      "id": "tls-server-ciphers",
+      "title": "Server-Selected Cipher Suites",
+      "description": "Cipher suites chosen by servers. Concentration of weak ciphers (RC4, 3DES, NULL, EXPORT) means servers in your estate accept downgraded encryption.",
+      "auditType": "TLSServerHello",
+      "field": "CipherSuite",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 4, "w": 6, "h": 4 }
+    },
+    {
+      "id": "tls-self-signed",
+      "title": "Self-Signed Certificates",
+      "description": "Share of certificates that are self-signed. A meaningful share indicates dev/test infrastructure, MITM proxies, or attacker-operated infra leaking into production traffic.",
+      "auditType": "TLSCertificate",
+      "field": "IsSelfSigned",
+      "chartType": "pie",
+      "showLegend": true,
+      "maxDataPoints": 1000,
+      "layout": { "x": 0, "y": 8, "w": 6, "h": 4 }
+    },
+    {
+      "id": "tls-sig-algos",
+      "title": "Certificate Signature Algorithms",
+      "description": "Distribution of certificate signature algorithms. MD5 / SHA-1 signatures are deprecated; their presence indicates outdated PKI or rogue certificate authorities.",
+      "auditType": "TLSCertificate",
+      "field": "SignatureAlgorithm",
+      "chartType": "bar",
+      "showLegend": false,
+      "maxDataPoints": 1000,
+      "layout": { "x": 6, "y": 8, "w": 6, "h": 4 }
+    }
+  ]
+}
