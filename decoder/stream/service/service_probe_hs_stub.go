@@ -21,6 +21,17 @@
 
 package service
 
+import "github.com/dreadl0ck/netcap/internal/hsmatch"
+
+func init() {
+	// Register even in stub builds so the web UI can render a clear
+	// "disabled" badge for this subsystem instead of an empty section.
+	hsmatch.RegisterSubsystem(hsmatch.SubsystemFunc{
+		N: "service_probes",
+		F: func() any { return GetHyperscanStatus() },
+	})
+}
+
 // HyperscanBuildStats is the stub-build twin of the tagged type.
 type HyperscanBuildStats struct {
 	Categories     int `json:"categories"`

@@ -59,6 +59,16 @@ var (
 	hsLastBuildStats atomic.Pointer[HyperscanBuildStats]
 )
 
+func init() {
+	// Self-register with the cross-subsystem hsmatch registry so
+	// /api/hyperscan can enumerate all Hyperscan consumers without
+	// being taught about each one.
+	hsmatch.RegisterSubsystem(hsmatch.SubsystemFunc{
+		N: "service_probes",
+		F: func() any { return GetHyperscanStatus() },
+	})
+}
+
 // HyperscanBuildStats summarises the outcome of buildServiceProbeHSIndex.
 type HyperscanBuildStats struct {
 	Categories     int `json:"categories"`

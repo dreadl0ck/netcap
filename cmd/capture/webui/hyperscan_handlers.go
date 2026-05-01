@@ -24,7 +24,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/dreadl0ck/netcap/decoder/stream/service"
+	// Side-effect imports: each package's init() registers its
+	// HyperscanStatus producer with internal/hsmatch.
+	_ "github.com/dreadl0ck/netcap/decoder/stream/service"
+
 	"github.com/dreadl0ck/netcap/internal/hsmatch"
 )
 
@@ -32,6 +35,11 @@ import (
 // the web UI. Independent of the build tag — when the binary was compiled
 // without `-tags hyperscan` the handler still answers, with Enabled=false
 // so the UI can render an explicit "disabled" badge instead of timing out.
+//
+// `Subsystems` carries one entry per registered Hyperscan consumer
+// (service probes, CMS detection, rule engine, …). The map values are
+// arbitrary JSON owned by the producer; consumers can render whatever
+// fields they care about.
 type HyperscanInfo struct {
 	// Enabled is true when this binary was compiled with -tags hyperscan
 	// AND libhs is linked.
@@ -47,10 +55,10 @@ type HyperscanInfo struct {
 	// DocsURL points to the in-tree docs page so the UI can deep-link.
 	DocsURL string `json:"docs_url"`
 
-	// ServiceProbes carries the per-category probe stats for the nmap
-	// service-probe matcher. Empty when HS is disabled or no probes have
-	// been loaded yet.
-	ServiceProbes service.HyperscanStatus `json:"service_probes"`
+	// Subsystems is keyed by subsystem name (e.g. "service_probes",
+	// "cms", "rules"). Each value is the JSON snapshot the subsystem
+	// chooses to expose.
+	Subsystems map[string]any `json:"subsystems"`
 }
 
 // handleHyperscanInfo returns the integration status as JSON.
@@ -63,11 +71,11 @@ func (s *Server) handleHyperscanInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	info := HyperscanInfo{
-		Enabled:       hsmatch.Enabled,
-		LibVersion:    hsmatch.Version(),
-		BuildTag:      "hyperscan",
-		DocsURL:       "https://github.com/dreadl0ck/netcap/blob/master/docs/hyperscan.md",
-		ServiceProbes: service.GetHyperscanStatus(),
+		Enabled:    hsmatch.Enabled,
+		LibVersion: hsmatch.Version(),
+		BuildTag:   "hyperscan",
+		DocsURL:    "https://github.com/dreadl0ck/netcap/blob/master/docs/hyperscan.md",
+		Subsystems: hsmatch.SnapshotMap(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
