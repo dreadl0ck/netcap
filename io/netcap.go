@@ -255,12 +255,16 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.ISIS)
 	case types.Type_NC_RARP:
 		record = new(types.RARP)
+	case types.Type_NC_Protobuf:
+		record = new(types.Protobuf)
 	case types.Type_NC_Header:
 		// NC_Header is a file header type, not an audit record type
 		// Return nil to indicate this type should not be initialized as a record
 		return nil
 	default:
-		panic("InitRecord: unknown type: " + typ.String())
+		// Unknown type: return nil instead of panicking to prevent webui crashes
+		// when reading audit files produced by a different netcap version.
+		return nil
 	}
 
 	return record
