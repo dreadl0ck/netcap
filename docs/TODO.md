@@ -13,7 +13,7 @@
 - records: rename Download All to Download Records + new Download CSV button to convert and download all 
 records as CSV files (caution with gzip compression middleware causing issues again)
 
-- integrate gohs with vectorscan on mac
+- [x] integrate gohs with vectorscan on mac (see docs/hyperscan.md; opt-in via `-tags hyperscan`)
 
 - Command to show capinfos for PCAP also in webUI
 - Analysis session format, storing and loading
@@ -293,7 +293,7 @@ https://github.com/florianl/go-nflog
 
 - more SMTP transforms
 - more DNS transforms / DNSSEC
-- add intel hyperscan regex support, see https://github.com/intel-go/nff-go/blob/master/examples/dpi/main/dpi.go 
+- [x] add intel hyperscan regex support, see https://github.com/intel-go/nff-go/blob/master/examples/dpi/main/dpi.go (implemented via gohs/vectorscan, see docs/hyperscan.md)
 
 - add default port and transport protocol during stream decoder creation
 

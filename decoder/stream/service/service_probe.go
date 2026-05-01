@@ -191,7 +191,7 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 	if expectedCategory != "" {
 		if probes, ok := serviceProbes[expectedCategory]; ok {
 			serviceLog.Debug("matching probes", zap.String("ident", ident), zap.String("expectedCategory", expectedCategory))
-			found, matched = matchProbes(serv, probes, banner, ident)
+			found, matched = matchProbes(serv, expectedCategory, probes, banner, ident)
 		}
 		if !found && decoderconfig.Instance.StopAfterServiceCategoryMiss {
 			return
@@ -207,7 +207,7 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 				continue
 			}
 
-			found, matched = matchProbes(serv, probes, banner, ident)
+			found, matched = matchProbes(serv, category, probes, banner, ident)
 			if found && decoderconfig.Instance.StopAfterServiceProbeMatch {
 				serviceLog.Info("service probe match found",
 					zap.String("ident", ident),
@@ -458,12 +458,29 @@ func parseViaHeader(value string) (product, version string) {
 	return product, version
 }
 
-func matchProbes(serv *service, probes []*serviceProbe, banner []byte, ident string) (found bool, index int) {
+func matchProbes(serv *service, category string, probes []*serviceProbe, banner []byte, ident string) (found bool, index int) {
+	// Optional Hyperscan fast path: when compiled with -tags hyperscan and
+	// the RE2 engine is in use, we ask the per-category Hyperscan database
+	// for the small set of probe indices that actually fire on `banner`.
+	// We then run the existing RE2 path against only those probes for
+	// capture-group extraction. When the build tag is absent or no HS DB
+	// exists for this category, candidates is nil and we fall back to the
+	// full linear scan (existing behaviour).
+	candidates := hsCandidatesForCategory(category, probes, banner)
+
 	for i, probe := range probes {
 		if decoderconfig.Instance.UseRE2 {
 			// Skip probes with nil RegEx (may happen if probe was compiled with UseRE2=false)
 			if probe.RegEx == nil {
 				continue
+			}
+			// Hyperscan prefilter: skip probes the HS DB ruled out for this
+			// banner. Only applied when candidates was actually produced
+			// (Enabled + non-empty DB built for this category).
+			if candidates != nil {
+				if _, ok := candidates[i]; !ok {
+					continue
+				}
 			}
 			if m := probe.RegEx.FindStringSubmatch(string(banner)); m != nil {
 
@@ -913,6 +930,12 @@ func initServiceProbes() error {
 	}
 
 	serviceLog.Info("loaded nmap service probes", zap.Int("total", len(serviceProbes)))
+
+	// Build the optional Hyperscan acceleration index. With the `hyperscan`
+	// build tag this populates serviceProbeHSIndex with a multi-pattern
+	// block-mode database per category, used by matchProbes to skip the
+	// linear RE2 loop. Without the tag this is a no-op.
+	buildServiceProbeHSIndex()
 
 	return nil
 }

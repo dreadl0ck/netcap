@@ -506,6 +506,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/version", s.handleVersion)
 	mux.HandleFunc("/api/dpi", s.handleDPIInfo)
 	mux.HandleFunc("/api/dpi/preferences", s.handleDPIPreferences)
+	mux.HandleFunc("/api/hyperscan", s.handleHyperscanInfo)
 	mux.HandleFunc("/api/config", s.handleConfig)
 	mux.HandleFunc("/api/config/debug", s.handleDebugToggle)
 	mux.HandleFunc("/api/config/payload", s.handlePayloadToggle)

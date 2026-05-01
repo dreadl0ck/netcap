@@ -47,6 +47,7 @@ require (
 	github.com/bufbuild/protocompile v0.14.1
 	github.com/coreos/go-iptables v0.8.0
 	github.com/expr-lang/expr v1.17.8
+	github.com/flier/gohs v1.2.3
 	github.com/florianl/go-nfqueue/v2 v2.0.2
 	github.com/jcmturner/gokrb5/v8 v8.4.4
 	github.com/namsral/flag v1.7.4-pre

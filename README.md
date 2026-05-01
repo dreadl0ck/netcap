@@ -65,6 +65,7 @@ See the [Gallery](docs/GALLERY.md) for screenshots.
 - GeoIP geolocation (MaxMind)
 - MAC vendor lookup
 - Deep Packet Inspection (optional, via nDPI/libprotoident)
+- **Hyperscan / Vectorscan** acceleration (optional) — multi-pattern regex prefilter for nmap service probes; ~2.2× faster on typical traffic, see [docs/hyperscan.md](docs/hyperscan.md)
 
 ### Integrations
 
@@ -86,6 +87,11 @@ go build -o net ./cmd/
 
 # Build without DPI (fewer C dependencies)
 go build -tags=nodpi -o net ./cmd/
+
+# Build with Hyperscan / Vectorscan acceleration for service probes
+# (requires libhs via pkg-config; e.g. `brew install vectorscan` on macOS)
+# See docs/hyperscan.md for details.
+CGO_ENABLED=1 go build -tags hyperscan -o net ./cmd/
 
 # Capture from PCAP file
 ./net capture -read traffic.pcap

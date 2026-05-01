@@ -5,6 +5,7 @@
 .PHONY: test-coverage test-coverage-html test-race
 .PHONY: test-golden-update test-golden-verify
 .PHONY: fixtures-download fixtures-generate test-databases-generate
+.PHONY: test-hyperscan
 
 # Test targets
 test: test-unit
@@ -40,6 +41,14 @@ test-golden-update:
 test-e2e:
 	@echo "Running end-to-end tests..."
 	go test -v -tags=e2e -timeout=10m ./tests/e2e/...
+
+# Hyperscan / Vectorscan integration tests (requires libhs from
+# pkg-config). Builds with the `hyperscan` tag and exercises the
+# multi-pattern fast path used by service probe matching.
+test-hyperscan:
+	@echo "Running Hyperscan integration tests (requires libhs / vectorscan)..."
+	@pkg-config --exists libhs || (echo "libhs not found via pkg-config. Install vectorscan (brew install vectorscan) or hyperscan (apt install libhyperscan-dev)." && exit 1)
+	CGO_ENABLED=1 go test -v -tags hyperscan ./internal/hsmatch/... ./decoder/stream/service/...
 
 # Performance benchmarks
 test-bench:
