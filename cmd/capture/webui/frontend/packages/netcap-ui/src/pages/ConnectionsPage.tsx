@@ -131,13 +131,13 @@ interface ConnectionsResponse {
   totalCount: number;
 }
 
-interface CredentialSummary {
+interface SecretSummary {
   communityId: string;
   flow: string;
 }
 
-interface CredentialsResponse {
-  credentials: CredentialSummary[];
+interface SecretsResponse {
+  secrets: SecretSummary[];
   totalCount: number;
 }
 
@@ -189,9 +189,9 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
   );
 
   // Fetch credentials to check which connections have secrets
-  const { data: credentialsData, mutate: mutateCredentials } = useSWR<CredentialsResponse>(
-    'credentials',
-    () => fetch(`${getBackendUrl()}/api/credentials`).then(res => res.json()),
+  const { data: credentialsData, mutate: mutateSecrets } = useSWR<SecretsResponse>(
+    'secrets',
+    () => fetch(`${getBackendUrl()}/api/secrets`).then(res => res.json()),
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,
@@ -204,8 +204,8 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
   // Build a set of community IDs that have credentials for quick lookup
   const credentialCommunityIds = useMemo(() => {
     const ids = new Set<string>();
-    if (credentialsData?.credentials) {
-      for (const cred of credentialsData.credentials) {
+    if (credentialsData?.secrets) {
+      for (const cred of credentialsData.secrets) {
         if (cred.communityId) {
           ids.add(cred.communityId);
         }
@@ -215,15 +215,15 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
   }, [credentialsData]);
 
   // Helper function to check if a connection has credentials
-  const hasCredentials = useCallback((conn: ConnectionSummary): boolean => {
+  const hasSecrets = useCallback((conn: ConnectionSummary): boolean => {
     return conn.communityId ? credentialCommunityIds.has(conn.communityId) : false;
   }, [credentialCommunityIds]);
 
   // Helper function to get the flow identifier for credentials search
-  const getFlowIdentForCredentials = useCallback((conn: ConnectionSummary): string => {
+  const getFlowIdentForSecret = useCallback((conn: ConnectionSummary): string => {
     // Try to find the exact credential for this connection and return its flow
-    if (credentialsData?.credentials && conn.communityId) {
-      const cred = credentialsData.credentials.find(c => c.communityId === conn.communityId);
+    if (credentialsData?.secrets && conn.communityId) {
+      const cred = credentialsData.secrets.find(c => c.communityId === conn.communityId);
       if (cred?.flow) {
         return cred.flow;
       }
@@ -407,10 +407,10 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
   // Memoize event handlers to prevent recreation on every render
   const handleRefresh = useCallback(() => {
     mutate();
-    mutateCredentials();
+    mutateSecrets();
     // Also refresh charts
     setChartRefreshKey(prev => prev + 1);
-  }, [mutate, mutateCredentials]);
+  }, [mutate, mutateSecrets]);
 
   const handleFileChange = useCallback(async (filePath: string) => {
     setSwitchingFile(true);
@@ -421,7 +421,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
       // Refresh local data
       await mutateStatus();
       await mutate();
-      await mutateCredentials();
+      await mutateSecrets();
       
       // Globally invalidate status cache for all pages
       await globalMutate('status');
@@ -437,7 +437,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
     } finally {
       setSwitchingFile(false);
     }
-  }, [api, mutateStatus, mutate, mutateCredentials]);
+  }, [api, mutateStatus, mutate, mutateSecrets]);
 
   const handleRowClick = useCallback((key: string) => {
     setExpandedRow(prev => prev === key ? null : key);
@@ -1627,7 +1627,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                                   <Grid item xs={12}>
                                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                       {/* Show Secrets - only show when credentials exist for this connection */}
-                                      {hasCredentials(conn) && (
+                                      {hasSecrets(conn) && (
                                         <Button
                                           data-learn="Show Secrets: View captured credentials (usernames, passwords, hashes) associated with this connection."
                                           variant="contained"
@@ -1635,8 +1635,8 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                                           startIcon={<VpnKeyIcon />}
                                           onClick={(e) => {
                                             e.stopPropagation();
-                                            const flowIdent = getFlowIdentForCredentials(conn);
-                                            router.push(`/credentials?search=${encodeURIComponent(flowIdent)}`);
+                                            const flowIdent = getFlowIdentForSecret(conn);
+                                            router.push(`/secrets?search=${encodeURIComponent(flowIdent)}`);
                                           }}
                                           size="small"
                                         >

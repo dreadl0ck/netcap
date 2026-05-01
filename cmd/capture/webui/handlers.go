@@ -3917,7 +3917,7 @@ type MenuCountsResponse struct {
 	ConnectionsCount     int64 `json:"connectionsCount"`
 	HTTPCount            int64 `json:"httpCount"`
 	CertificatesCount    int64 `json:"certificatesCount"`
-	CredentialsCount     int64 `json:"credentialsCount"`
+	SecretCount     int64 `json:"secretCount"`
 	DomainsCount         int64 `json:"domainsCount"`
 	FingerprintsCount    int64 `json:"fingerprintsCount"`
 	SoftwareCount        int64 `json:"softwareCount"`
@@ -4003,7 +4003,7 @@ func (s *Server) getUnfilteredMenuCounts(outDir string) MenuCountsResponse {
 	response.ConnectionsCount = CountRecords(filepath.Join(outDir, "Connection.ncap.gz"))
 	response.HTTPCount = CountRecords(filepath.Join(outDir, "HTTP.ncap.gz"))
 	response.CertificatesCount = CountUniqueCertificates(outDir)
-	response.CredentialsCount = CountRecords(filepath.Join(outDir, "Credentials.ncap.gz"))
+	response.SecretCount = CountRecords(filepath.Join(outDir, "Secret.ncap.gz"))
 	response.SoftwareCount = CountRecords(filepath.Join(outDir, "Software.ncap.gz"))
 	response.VulnerabilitiesCount = CountRecords(filepath.Join(outDir, "Vulnerability.ncap.gz"))
 	response.ServicesCount = CountRecords(filepath.Join(outDir, "Service.ncap.gz"))
@@ -4073,7 +4073,7 @@ func (s *Server) getFilteredMenuCounts(outDir string, communityIDs map[string]bo
 	response.ConnectionsCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Connection.ncap.gz"), communityIDs)
 	response.HTTPCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "HTTP.ncap.gz"), communityIDs)
 	response.CertificatesCount = CountUniqueCertificatesWithCommunityIDFilter(outDir, communityIDs)
-	response.CredentialsCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Credentials.ncap.gz"), communityIDs)
+	response.SecretCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Secret.ncap.gz"), communityIDs)
 	response.SoftwareCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Software.ncap.gz"), communityIDs)
 	response.VulnerabilitiesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Vulnerability.ncap.gz"), communityIDs)
 	response.ServicesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Service.ncap.gz"), communityIDs)

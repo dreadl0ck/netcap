@@ -59,7 +59,7 @@ func (s *Server) handleServiceModeAuditStats(w http.ResponseWriter, r *http.Requ
 		TotalRecords:       0,
 		ExploitCount:       0,
 		VulnerabilityCount: 0,
-		CredentialsCount:   0,
+		SecretCount:   0,
 		SoftwareCount:      0,
 	}
 
@@ -78,7 +78,7 @@ func (s *Server) handleServiceModeAuditStats(w http.ResponseWriter, r *http.Requ
 		response.TotalRecords += sessionStats.TotalRecords
 		response.ExploitCount += sessionStats.ExploitCount
 		response.VulnerabilityCount += sessionStats.VulnerabilityCount
-		response.CredentialsCount += sessionStats.CredentialsCount
+		response.SecretCount += sessionStats.SecretCount
 		response.SoftwareCount += sessionStats.SoftwareCount
 	}
 
@@ -91,7 +91,7 @@ func (s *Server) getAuditStatsForDirectory(outputDir string) AuditStatsResponse 
 		TotalRecords:       0,
 		ExploitCount:       0,
 		VulnerabilityCount: 0,
-		CredentialsCount:   0,
+		SecretCount:   0,
 		SoftwareCount:      0,
 	}
 
@@ -137,8 +137,8 @@ func (s *Server) getAuditStatsForDirectory(outputDir string) AuditStatsResponse 
 			stats.ExploitCount = count
 		case "Vulnerability":
 			stats.VulnerabilityCount = count
-		case "Credentials":
-			stats.CredentialsCount = count
+		case "Secret":
+			stats.SecretCount = count
 		case "Software":
 			stats.SoftwareCount = count
 		}

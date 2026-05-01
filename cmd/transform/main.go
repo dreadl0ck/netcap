@@ -54,7 +54,7 @@ func Run() {
 		toSSHServers,
 		toSoftwareProducts,
 		toIPProfilesForSoftware,
-		toCredentialsByService,
+		toSecretsByService,
 		toLoginInformation,
 		toHosts,
 		toUDPHosts,

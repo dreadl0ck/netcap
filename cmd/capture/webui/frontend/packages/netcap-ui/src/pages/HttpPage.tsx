@@ -123,7 +123,7 @@ interface HTTPResponse {
   totalCount: number;
 }
 
-interface CredentialSummary {
+interface SecretSummary {
   timestamp: number;
   service: string;
   flow: string;
@@ -132,8 +132,8 @@ interface CredentialSummary {
   communityId: string;
 }
 
-interface CredentialsResponse {
-  credentials: CredentialSummary[];
+interface SecretsResponse {
+  secrets: SecretSummary[];
   totalCount: number;
 }
 
@@ -180,9 +180,9 @@ export default function HTTPPage() {
   );
 
   // Fetch credentials to check which HTTP requests have secrets
-  const { data: credentialsData, mutate: mutateCredentials } = useSWR<CredentialsResponse>(
-    'credentials',
-    () => fetch(`${getBackendUrl()}/api/credentials`).then(res => res.json()),
+  const { data: credentialsData, mutate: mutateSecrets } = useSWR<SecretsResponse>(
+    'secrets',
+    () => fetch(`${getBackendUrl()}/api/secrets`).then(res => res.json()),
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,
@@ -195,8 +195,8 @@ export default function HTTPPage() {
   // Build a set of community IDs that have credentials for quick lookup
   const credentialCommunityIds = useMemo(() => {
     const ids = new Set<string>();
-    if (credentialsData?.credentials) {
-      for (const cred of credentialsData.credentials) {
+    if (credentialsData?.secrets) {
+      for (const cred of credentialsData.secrets) {
         if (cred.communityId) {
           ids.add(cred.communityId);
         }
@@ -206,7 +206,7 @@ export default function HTTPPage() {
   }, [credentialsData]);
 
   // Helper function to check if an HTTP request has credentials
-  const hasCredentials = useCallback((http: HTTPSummary): boolean => {
+  const hasSecrets = useCallback((http: HTTPSummary): boolean => {
     return http.communityId ? credentialCommunityIds.has(http.communityId) : false;
   }, [credentialCommunityIds]);
 
@@ -350,9 +350,9 @@ export default function HTTPPage() {
 
   const handleRefresh = useCallback(() => {
     mutate();
-    mutateCredentials();
+    mutateSecrets();
     setChartRefreshKey(prev => prev + 1);
-  }, [mutate, mutateCredentials]);
+  }, [mutate, mutateSecrets]);
 
   const handleFileChange = useCallback(async (filePath: string) => {
     setSwitchingFile(true);
@@ -1362,7 +1362,7 @@ export default function HTTPPage() {
                                       >
                                         Show Connection
                                       </Button>
-                                      {hasCredentials(http) && (
+                                      {hasSecrets(http) && (
                                         <Button
                                           data-learn="Show Secrets: Navigate to the Credentials page to view the captured credentials associated with this HTTP request."
                                           variant="outlined"
@@ -1372,10 +1372,10 @@ export default function HTTPPage() {
                                             e.stopPropagation();
                                             // Navigate to credentials page filtered by community ID
                                             if (http.communityId) {
-                                              router.push(`/credentials?search=${encodeURIComponent(http.communityId)}`);
+                                              router.push(`/secrets?search=${encodeURIComponent(http.communityId)}`);
                                             } else {
                                               // Fallback to searching by IP/host
-                                              router.push(`/credentials?search=${encodeURIComponent(http.srcIP)}`);
+                                              router.push(`/secrets?search=${encodeURIComponent(http.srcIP)}`);
                                             }
                                           }}
                                           size="small"

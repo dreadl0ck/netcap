@@ -34,7 +34,7 @@ import (
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
-	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
@@ -126,7 +126,7 @@ func (h *httpReader) Decode() {
 
 		// now add request information
 		if matchedReq != nil && res.response.Request != nil {
-			if credentials.Decoder.Writer != nil {
+			if secret.Decoder.Writer != nil {
 				h.searchForLoginParams(res.response.Request)
 				h.searchForBasicAuth(res.response.Request)
 			}
@@ -164,7 +164,7 @@ func (h *httpReader) Decode() {
 			ht := &types.HTTP{}
 			setRequest(ht, req)
 
-			if credentials.Decoder.Writer != nil {
+			if secret.Decoder.Writer != nil {
 				h.searchForLoginParams(req.request)
 				h.searchForBasicAuth(req.request)
 			}
@@ -185,7 +185,7 @@ func (h *httpReader) Decode() {
 func (h *httpReader) searchForBasicAuth(req *http.Request) {
 	if u, p, ok := req.BasicAuth(); ok {
 		if u != "" || p != "" {
-			credentials.WriteCredentials(&types.Credentials{
+			secret.WriteSecret(&types.Secret{
 				Timestamp: h.conversation.FirstClientPacket.UnixNano(),
 				Service:   "HTTP Basic Auth",
 				Flow:      h.conversation.Ident,
@@ -218,7 +218,7 @@ func (h *httpReader) searchForLoginParams(req *http.Request) {
 			pass = strings.Join(arr, "; ")
 		}
 
-		credentials.WriteCredentials(&types.Credentials{
+		secret.WriteSecret(&types.Secret{
 			Timestamp: h.conversation.FirstClientPacket.UnixNano(),
 			Service:   "HTTP",
 			Flow:      h.conversation.Ident,

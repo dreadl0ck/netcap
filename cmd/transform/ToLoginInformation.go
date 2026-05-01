@@ -21,15 +21,15 @@ import (
 )
 
 func toLoginInformation() {
-	netmaltego.CredentialsTransform(
+	netmaltego.SecretTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, cred *types.Credentials, min, max uint64, path string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, cred *types.Secret, min, max uint64, path string, mac string, ipaddr string) {
 			val := cred.User + "\n" + cred.Password + "\n" + cred.Service
 			if len(cred.Notes) > 0 {
 				val += "\n" + cred.Notes
 			}
 
-			ent := addEntityWithPath(trx, "netcap.Credentials", val, path)
+			ent := addEntityWithPath(trx, "netcap.Secret", val, path)
 			ent.AddProperty("timestamp", "Timestamp", maltego.Strict, utils.UnixTimeToUTC(cred.Timestamp))
 			ent.AddProperty("service", "Service", maltego.Strict, cred.Service)
 			ent.AddProperty("flow", "Flow", maltego.Strict, cred.Flow)

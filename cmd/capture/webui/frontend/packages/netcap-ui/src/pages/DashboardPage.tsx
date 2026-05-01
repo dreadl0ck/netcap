@@ -267,7 +267,7 @@ export default function Dashboard() {
         )}
 
         {/* Audit Statistics Section */}
-        {auditStats && (auditStats.exploitCount > 0 || auditStats.vulnerabilityCount > 0 || auditStats.credentialsCount > 0 || auditStats.softwareCount > 0) && (
+        {auditStats && (auditStats.exploitCount > 0 || auditStats.vulnerabilityCount > 0 || auditStats.secretCount > 0 || auditStats.softwareCount > 0) && (
           <Box mb={4}>
             <Card data-learn="Security Audit Summary: Quick overview of security-relevant findings including exploits, vulnerabilities, credentials, and detected software.">
               <CardContent>
@@ -318,10 +318,10 @@ export default function Dashboard() {
                       textAlign: 'center'
                     }}>
                       <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
-                        Credentials
+                        Secrets
                       </Typography>
                       <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>
-                        {auditStats.credentialsCount.toLocaleString()}
+                        {auditStats.secretCount.toLocaleString()}
                       </Typography>
                     </Box>
                   </Grid>

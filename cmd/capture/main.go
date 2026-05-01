@@ -60,7 +60,7 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/capture/webui"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/packet"
-	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	httpstream "github.com/dreadl0ck/netcap/decoder/stream/http"
 	"github.com/dreadl0ck/netcap/decoder/stream/network"
@@ -1145,7 +1145,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 				// Step 2b: CRITICAL - Reset deduplication stores
 				// These accumulate ALL unique credentials/exploits/vulns across files
-				credentials.ResetCredStore()
+				secret.ResetSecretStore()
 				exploit.ResetExploitStore()
 				vulnerability.ResetVulnStore()
 

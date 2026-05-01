@@ -144,7 +144,7 @@ enum Type {
   NC_TLSServerHello = 94;
   NC_Software = 95;
   NC_Service = 96;
-  NC_Credentials = 97;
+  NC_Secret = 97;
   NC_SSH = 98;
   NC_Vulnerability = 99;
   NC_Exploit = 100;
@@ -2672,7 +2672,7 @@ message Service {
   string MatchedProbeID = 19; // ID of the nmap service probe that matched (e.g., "http-3924")
 }
 
-message Credentials {
+message Secret {
   int64 Timestamp = 1;
   string Service = 2;
   string Flow = 3;
@@ -2680,7 +2680,7 @@ message Credentials {
   string Password = 5;  // For plaintext passwords
   string Notes = 6;
   
-  // Hash-based credentials
+  // Hash-based secrets
   string Hash = 7;           // The actual hash value
   string HashType = 8;       // e.g., "NTLMv2", "Kerberos AS-REP etype 23"
   string Domain = 9;         // For Kerberos, NTLM

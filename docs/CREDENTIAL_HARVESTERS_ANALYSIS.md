@@ -363,10 +363,10 @@ Current status:
 netcap -r testdata/SMB\ -\ NTLMSSP\ \(Windows\ 10\).pcap -out results/
 
 # View credentials
-netcap -r results/Credentials.ncap.gz
+netcap -r results/Secret.ncap.gz
 
 # Export for Hashcat
-netcap export -r results/Credentials.ncap.gz -format hashcat -out hashes.txt
+netcap export -r results/Secret.ncap.gz -format hashcat -out hashes.txt
 
 # Test with Hashcat
 hashcat -m 5600 hashes.txt wordlist.txt

@@ -26,7 +26,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 )
 
 // HarvesterInfo represents information about a credential harvester
@@ -63,7 +63,7 @@ func (s *Server) handleHarvesters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get harvesters from the credentials package (real loaded harvesters with actual port mappings)
-	credHarvesters := credentials.GetHarvesters()
+	credHarvesters := secret.GetHarvesters()
 
 	// Convert to response format
 	harvesters := make([]HarvesterInfo, len(credHarvesters))

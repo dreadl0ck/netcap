@@ -33,7 +33,7 @@ import (
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
-	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/discovery"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/reassembly"
@@ -76,7 +76,7 @@ func SaveConversation(proto string, conversation core.DataFragments, ident strin
 	// fmt.Println("saving conv", conversation.size(), ident)
 
 	banner := createBannerFromConversation(conversation)
-	credentials.RunHarvesters(banner, transport, ident, firstPacket, communityID)
+	secret.RunHarvesters(banner, transport, ident, firstPacket, communityID)
 
 	// Run network discovery extractors and enrich device profiles
 	if DeviceEnricher != nil {

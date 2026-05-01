@@ -866,7 +866,7 @@ export default function RulesPage() {
                   <MenuItem value="CIP">CIP</MenuItem>
                   <MenuItem value="CiscoDiscovery">CiscoDiscovery</MenuItem>
                   <MenuItem value="Connection">Connection</MenuItem>
-                  <MenuItem value="Credentials">Credentials</MenuItem>
+                  <MenuItem value="Secret">Secret</MenuItem>
                   <MenuItem value="DeviceProfile">DeviceProfile</MenuItem>
                   <MenuItem value="DHCPv4">DHCPv4</MenuItem>
                   <MenuItem value="DHCPv6">DHCPv6</MenuItem>

@@ -108,7 +108,7 @@ var maltegoEntities = []maltego.EntityCoreInfo{
 	{"ApplicationCategory", "design_services", "An application category discovered via DPI", "", nil},
 
 	// overwrites
-	{"Credentials", "security", "Credentials for accessing services that require user authentication", "", []*maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
+	{"Secret", "security", "Secret for accessing services that require user authentication", "", []*maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
 	{"File", "text_snippet", "A file", "maltego.File", []*maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
 	{"Software", "apps", "A software product", "", []*maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},
 	{"Service", "miscellaneous_services", "A software product", "", []*maltego.PropertyField{maltego.NewStringField("path", "path to the audit records on disk")}},

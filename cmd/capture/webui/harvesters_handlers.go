@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 )
 
 // handleHarvestersConfig handles GET and POST requests for harvester configuration
@@ -26,7 +26,7 @@ func (s *Server) handleHarvestersConfig(w http.ResponseWriter, r *http.Request) 
 
 // getHarvestersConfig returns the current harvester configuration
 func (s *Server) getHarvestersConfig(w http.ResponseWriter, r *http.Request) {
-	config := credentials.GetHarvesterConfig()
+	config := secret.GetHarvesterConfig()
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(config); err != nil {
@@ -36,7 +36,7 @@ func (s *Server) getHarvestersConfig(w http.ResponseWriter, r *http.Request) {
 
 // saveHarvestersConfig saves the harvester configuration
 func (s *Server) saveHarvestersConfig(w http.ResponseWriter, r *http.Request) {
-	var config credentials.HarvestersConfigFile
+	var config secret.HarvestersConfigFile
 	if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid request: %v", err), http.StatusBadRequest)
 		return
@@ -51,7 +51,7 @@ func (s *Server) saveHarvestersConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := credentials.SaveHarvestersConfig(configPath, &config); err != nil {
+	if err := secret.SaveHarvestersConfig(configPath, &config); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to save configuration: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -96,7 +96,7 @@ func (s *Server) handleHarvestersPresets(w http.ResponseWriter, r *http.Request)
 		}
 
 		presetPath := filepath.Join(presetsDir, entry.Name())
-		config, err := credentials.LoadHarvestersConfig(presetPath)
+		config, err := secret.LoadHarvestersConfig(presetPath)
 		if err != nil {
 			continue
 		}
@@ -131,7 +131,7 @@ func (s *Server) handleSaveHarvesterPreset(w http.ResponseWriter, r *http.Reques
 
 	var request struct {
 		Name   string                           `json:"name"`
-		Config credentials.HarvestersConfigFile `json:"config"`
+		Config secret.HarvestersConfigFile `json:"config"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -156,7 +156,7 @@ func (s *Server) handleSaveHarvesterPreset(w http.ResponseWriter, r *http.Reques
 	filename := sanitizeFilename(request.Name) + ".yml"
 	presetPath := filepath.Join(presetsDir, filename)
 
-	if err := credentials.SaveHarvestersConfig(presetPath, &request.Config); err != nil {
+	if err := secret.SaveHarvestersConfig(presetPath, &request.Config); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to save preset: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -194,7 +194,7 @@ func (s *Server) handleLoadHarvesterPreset(w http.ResponseWriter, r *http.Reques
 	presetPath := filepath.Join(presetsDir, filename)
 
 	// Load the preset
-	config, err := credentials.LoadHarvestersConfig(presetPath)
+	config, err := secret.LoadHarvestersConfig(presetPath)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to load preset: %v", err), http.StatusNotFound)
 		return
@@ -202,7 +202,7 @@ func (s *Server) handleLoadHarvesterPreset(w http.ResponseWriter, r *http.Reques
 
 	// Save as active configuration
 	configPath := s.getHarvestersConfigPath()
-	if err := credentials.SaveHarvestersConfig(configPath, config); err != nil {
+	if err := secret.SaveHarvestersConfig(configPath, config); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to apply preset: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -294,7 +294,7 @@ func (s *Server) handleUploadHarvesterPreset(w http.ResponseWriter, r *http.Requ
 	}
 	defer os.Remove(tmpFile)
 
-	config, err := credentials.LoadHarvestersConfig(tmpFile)
+	config, err := secret.LoadHarvestersConfig(tmpFile)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Invalid configuration file: %v", err), http.StatusBadRequest)
 		return
@@ -319,7 +319,7 @@ func (s *Server) handleUploadHarvesterPreset(w http.ResponseWriter, r *http.Requ
 
 	// Save the preset
 	presetPath := filepath.Join(presetsDir, configName+".yml")
-	if err := credentials.SaveHarvestersConfig(presetPath, config); err != nil {
+	if err := secret.SaveHarvestersConfig(presetPath, config); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to save preset: %v", err), http.StatusInternalServerError)
 		return
 	}

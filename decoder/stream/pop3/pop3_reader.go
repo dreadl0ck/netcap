@@ -26,7 +26,7 @@ import (
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
-	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/mail"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/decoder/utils"
@@ -194,7 +194,7 @@ func (h *pop3Reader) Decode() {
 	}
 
 	if user != "" || pass != "" {
-		credentials.WriteCredentials(&types.Credentials{
+		secret.WriteSecret(&types.Secret{
 			Timestamp: h.conversation.FirstClientPacket.UnixNano(),
 			Service:   servicePOP3,
 			Flow:      h.conversation.Ident,

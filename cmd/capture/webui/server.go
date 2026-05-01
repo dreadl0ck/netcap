@@ -42,7 +42,7 @@ import (
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/packet"
-	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	httpstream "github.com/dreadl0ck/netcap/decoder/stream/http"
 	"github.com/dreadl0ck/netcap/decoder/stream/network"
@@ -617,11 +617,11 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/certificates/status-distribution", s.handleCertificatesStatusDistribution)
 	mux.HandleFunc("/api/certificates/key-algorithms", s.handleCertificatesKeyAlgorithms)
 	mux.HandleFunc("/api/certificates/expiration-timeline", s.handleCertificatesExpirationTimeline)
-	mux.HandleFunc("/api/credentials", s.handleCredentials)
-	mux.HandleFunc("/api/credentials/by-service", s.handleCredentialsByService)
-	mux.HandleFunc("/api/credentials/timeline", s.handleCredentialsTimeline)
-	mux.HandleFunc("/api/credentials/usernames", s.handleCredentialsUsernames)
-	mux.HandleFunc("/api/credentials/flows", s.handleCredentialsFlows)
+	mux.HandleFunc("/api/secrets", s.handleSecrets)
+	mux.HandleFunc("/api/secrets/by-service", s.handleSecretsByService)
+	mux.HandleFunc("/api/secrets/timeline", s.handleSecretsTimeline)
+	mux.HandleFunc("/api/secrets/usernames", s.handleSecretsUsernames)
+	mux.HandleFunc("/api/secrets/flows", s.handleSecretsFlows)
 	mux.HandleFunc("/api/auth-activity", s.handleAuthActivity)
 
 	mux.HandleFunc("/api/services", s.handleServices)
@@ -2048,7 +2048,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 
 	// Step 2b: Reset deduplication stores
 	// These accumulate ALL unique credentials/exploits/vulns across files
-	credentials.ResetCredStore()
+	secret.ResetSecretStore()
 	exploit.ResetExploitStore()
 	vulnerability.ResetVulnStore()
 

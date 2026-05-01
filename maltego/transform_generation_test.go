@@ -102,7 +102,7 @@ var transforms = []*maltego.TransformCoreInfo{
 	{"ToHTTPHostnames", "netcap.HTTPAuditRecords", "Show all visited website hostnames"},
 	{"ToIANAServices", "netcap.ConnectionAuditRecords", "Show all IANA services identified by the connection destination port"},
 	{"ToLiveAuditRecords", "netcap.Interface", "Show current state of captured traffic"},
-	{"ToLoginInformation", "netcap.CredentialsAuditRecords", "Show captured login credentials"},
+	{"ToLoginInformation", "netcap.SecretAuditRecords", "Show captured login secrets"},
 	{"ToSoftwareProducts", "netcap.SoftwareAuditRecords", "Show software products and version information"},
 	{"ToSSHClients", "netcap.SSHAuditRecords", "Show detected SSH client"},
 	{"ToSSHServers", "netcap.SSHAuditRecords", "Show all SSH server software"},

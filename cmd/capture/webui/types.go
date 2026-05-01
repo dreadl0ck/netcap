@@ -65,7 +65,7 @@ type AuditStatsResponse struct {
 	TotalRecords       int64 `json:"totalRecords"`
 	ExploitCount       int64 `json:"exploitCount"`
 	VulnerabilityCount int64 `json:"vulnerabilityCount"`
-	CredentialsCount   int64 `json:"credentialsCount"`
+	SecretCount   int64 `json:"secretCount"`
 	SoftwareCount      int64 `json:"softwareCount"`
 }
 

@@ -181,7 +181,7 @@ const DEFAULT_FIELD_MAP: Record<string, { field: string; chartType: string }> = 
   
   // Special Records - Security & Analysis
   'File': { field: 'Size', chartType: 'bar' },                     // File size distribution
-  'Credentials': { field: 'Service', chartType: 'pie' },           // Service distribution
+  'Secret': { field: 'Service', chartType: 'pie' },           // Service distribution
   'Software': { field: 'Product', chartType: 'wordcloud' },        // Product popularity
   'Vulnerability': { field: 'V2Score', chartType: 'pie' },          
   'Exploit': { field: 'Platform', chartType: 'pie' },              

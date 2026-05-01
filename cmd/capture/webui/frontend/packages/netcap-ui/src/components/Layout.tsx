@@ -157,7 +157,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
   
   // Initialize dataMenuOpen based on current route
   const [dataMenuOpen, setDataMenuOpen] = useState(() => {
-    const dataRoutes = ['/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/http', '/certificates', '/credentials',
+    const dataRoutes = ['/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/http', '/certificates', '/secrets',
                         '/services', '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files', '/logs'];
     return dataRoutes.some(route => router.pathname.startsWith(route));
   });
@@ -204,7 +204,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
   const connectionsCount = menuCounts?.connectionsCount || 0;
   const httpCount = menuCounts?.httpCount || 0;
   const certificatesCount = menuCounts?.certificatesCount || 0;
-  const credentialsCount = menuCounts?.credentialsCount || 0;
+  const secretCount = menuCounts?.secretCount || 0;
   const domainsCount = menuCounts?.domainsCount || 0;
   const fingerprintsCount = menuCounts?.fingerprintsCount || 0;
   const softwareCount = menuCounts?.softwareCount || 0;
@@ -234,7 +234,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
 
   // Auto-expand Data menu when navigating to data routes
   useEffect(() => {
-    const dataRoutes = ['/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/http', '/certificates', '/credentials',
+    const dataRoutes = ['/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/http', '/certificates', '/secrets',
                         '/services', '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files', '/logs'];
     const isDataRoute = dataRoutes.some(route => router.pathname.startsWith(route));
     
@@ -460,18 +460,18 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                 <ListItemText primary="Certificates" />
               </ListItemButton>
             </Link>
-            <Link href="/credentials" passHref style={LINK_STYLE}>
+            <Link href="/secrets" passHref style={LINK_STYLE}>
               <ListItemButton
-                selected={router.isActive('/credentials')}
-                data-learn="Credentials: View captured credentials from network traffic."
+                selected={router.isActive('/secrets')}
+                data-learn="Secrets: View captured secrets from network traffic."
                 sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
               >
                 <ListItemIcon>
-                  <Badge badgeContent={credentialsCount} color="primary" max={999} sx={BADGE_SX}>
+                  <Badge badgeContent={secretCount} color="primary" max={999} sx={BADGE_SX}>
                     <VpnKeyIcon />
                   </Badge>
                 </ListItemIcon>
-                <ListItemText primary="Credentials" />
+                <ListItemText primary="Secrets" />
               </ListItemButton>
             </Link>
             <Link href="/services" passHref style={LINK_STYLE}>

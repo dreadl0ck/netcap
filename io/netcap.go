@@ -165,8 +165,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.Software)
 	case types.Type_NC_Service:
 		record = new(types.Service)
-	case types.Type_NC_Credentials:
-		record = new(types.Credentials)
+	case types.Type_NC_Secret:
+		record = new(types.Secret)
 	case types.Type_NC_SSH:
 		record = new(types.SSH)
 	case types.Type_NC_Vulnerability:

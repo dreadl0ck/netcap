@@ -31,8 +31,8 @@ export type { CertificateSummary, CertificatesPageProps } from './CertificatesPa
 export { default as ConfigPage } from './ConfigPage';
 export { default as ConnectionsPage } from './ConnectionsPage';
 export type { ConnectionSummary, ConnectionsPageProps } from './ConnectionsPage';
-export { default as CredentialsPage } from './CredentialsPage';
-export type { CredentialSummary, CredentialsPageProps } from './CredentialsPage';
+export { default as SecretsPage } from './SecretsPage';
+export type { SecretSummary, SecretsPageProps } from './SecretsPage';
 export { default as DbsPage } from './DbsPage';
 export { default as DecodersPage } from './DecodersPage';
 export { default as DevicesPage } from './DevicesPage';

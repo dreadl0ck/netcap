@@ -62,7 +62,7 @@ function createNoOpApi(): NetcapApiClient {
   return {
     getStatus: noOpReturn({ isProcessing: false, outputDir: '', inputFiles: [], serverStarted: '', activeInputFile: '', isMultiFile: false, isLiveMode: false }),
     getStats: noOpReturn({ processingStats: {} as ProcessingStats, fileErrors: {} }),
-    getAuditStats: noOpReturn({ totalRecords: 0, exploitCount: 0, vulnerabilityCount: 0, credentialsCount: 0, softwareCount: 0 }),
+    getAuditStats: noOpReturn({ totalRecords: 0, exploitCount: 0, vulnerabilityCount: 0, secretCount: 0, softwareCount: 0 }),
     getInputFiles: noOpReturn([]),
     getAuditFiles: noOpReturn([]),
     getAuditFilesFiltered: noOpReturn([]),
@@ -166,7 +166,7 @@ function createNoOpApi(): NetcapApiClient {
     getConnectionsCount: noOpReturn(0),
     getCertificatesCount: noOpReturn(0),
     getHTTPCount: noOpReturn(0),
-    getCredentialsCount: noOpReturn(0),
+    getSecretCount: noOpReturn(0),
     getDomainsCount: noOpReturn(0),
     getFingerprintsCount: noOpReturn(0),
     getSoftwareCount: noOpReturn(0),
@@ -174,7 +174,7 @@ function createNoOpApi(): NetcapApiClient {
     getAuditRecordsCount: noOpReturn(0),
     getServicesCount: noOpReturn(0),
     getLogsCount: noOpReturn(0),
-    getMenuCounts: noOpReturn({ hostsCount: 0, devicesCount: 0, connectionsCount: 0, httpCount: 0, certificatesCount: 0, credentialsCount: 0, domainsCount: 0, fingerprintsCount: 0, softwareCount: 0, vulnerabilitiesCount: 0, auditRecordsCount: 0, servicesCount: 0, logsCount: 0, alertsGroupCount: 0, extractedFilesCount: 0 }),
+    getMenuCounts: noOpReturn({ hostsCount: 0, devicesCount: 0, connectionsCount: 0, httpCount: 0, certificatesCount: 0, secretCount: 0, domainsCount: 0, fingerprintsCount: 0, softwareCount: 0, vulnerabilitiesCount: 0, auditRecordsCount: 0, servicesCount: 0, logsCount: 0, alertsGroupCount: 0, extractedFilesCount: 0 }),
     reanalyzeFile: noOpReturn({ success: false, message: '' }),
     getYaraStatus: noOpReturn({ available: false, rulesDir: '', enabledRules: 0, totalRules: 0 }),
     getYaraRules: noOpReturn({ rules: [] }),
@@ -232,7 +232,7 @@ export interface AuditStatsResponse {
   totalRecords: number;
   exploitCount: number;
   vulnerabilityCount: number;
-  credentialsCount: number;
+  secretCount: number;
   softwareCount: number;
 }
 
@@ -1039,7 +1039,7 @@ export interface MenuCountsResponse {
   connectionsCount: number;
   httpCount: number;
   certificatesCount: number;
-  credentialsCount: number;
+  secretCount: number;
   domainsCount: number;
   fingerprintsCount: number;
   softwareCount: number;
@@ -2177,8 +2177,8 @@ function createApiWithBase(apiBase: string) {
     return data.totalCount || 0;
   },
 
-  async getCredentialsCount(): Promise<number> {
-    const res = await fetch(`${apiBase}/credentials`);
+  async getSecretCount(): Promise<number> {
+    const res = await fetch(`${apiBase}/secrets`);
     if (!res.ok) return 0;
     const data = await res.json();
     return data.totalCount || 0;
@@ -2248,7 +2248,7 @@ function createApiWithBase(apiBase: string) {
         connectionsCount: 0,
         httpCount: 0,
         certificatesCount: 0,
-        credentialsCount: 0,
+        secretCount: 0,
         domainsCount: 0,
         fingerprintsCount: 0,
         softwareCount: 0,

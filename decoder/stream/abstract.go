@@ -10,7 +10,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder"
 
 	"github.com/dreadl0ck/netcap/decoder/stream/alert"
-	"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	"github.com/dreadl0ck/netcap/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/decoder/stream/mail"
@@ -25,7 +25,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 
-	//"github.com/dreadl0ck/netcap/decoder/stream/credentials"
+	//"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	netio "github.com/dreadl0ck/netcap/io"
 )
@@ -42,7 +42,7 @@ var DefaultAbstractDecoders = []core.DecoderAPI{
 	mail.Decoder,
 	software.Decoder,
 	vulnerability.Decoder,
-	credentials.Decoder,
+	secret.Decoder,
 	alert.Decoder,
 } // contains all available abstract decoders
 

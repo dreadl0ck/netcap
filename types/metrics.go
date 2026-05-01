@@ -6,7 +6,7 @@ import "github.com/prometheus/client_golang/prometheus"
 var Metrics = []prometheus.Collector{
 	sipMetric,
 	enipMetric,
-	credentialsMetric,
+	secretMetric,
 	llcMetric,
 	ipSecEspMetric,
 	tlsClientMetric,

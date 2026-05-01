@@ -1,16 +1,20 @@
 # TODOs
 
-- Rename Credentials to Secret
-- Rename IPProfile to Host
-
 - configure fingerbank lookups and caching
 - make it configurable per harvester if it runs only for the default port or for all streams. for some harvester it makes sense to runs them against all plaintext protos.
 - data mining on plaintext connection data: extract URLs, what looks like secrets, ctf flags etc
+
 - fix capture and inspect local results
+
 - dashboards feature: save and load dashboards, made of different charts. create a simple UI to rearrange charts and choose the audit record type, field and type of chart for each.
+
 - auto extract information from robots.txt and content security policy and use it to enrich audit records
-- records: rename Download All to Download Records + new Download CSV button to convert and download all records as CSV files (caution with gzip compression middleware causing issues again)
+
+- records: rename Download All to Download Records + new Download CSV button to convert and download all 
+records as CSV files (caution with gzip compression middleware causing issues again)
+
 - integrate gohs with vectorscan on mac
+
 - Command to show capinfos for PCAP also in webUI
 - Analysis session format, storing and loading
 

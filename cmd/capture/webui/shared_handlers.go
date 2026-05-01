@@ -442,7 +442,7 @@ func HandleAuditStats(outputDir string) http.HandlerFunc {
 			TotalRecords:       0,
 			ExploitCount:       0,
 			VulnerabilityCount: 0,
-			CredentialsCount:   0,
+			SecretCount:   0,
 			SoftwareCount:      0,
 		}
 
@@ -491,8 +491,8 @@ func HandleAuditStats(outputDir string) http.HandlerFunc {
 				response.ExploitCount = count
 			case "Vulnerability":
 				response.VulnerabilityCount = count
-			case "Credentials":
-				response.CredentialsCount = count
+			case "Secret":
+				response.SecretCount = count
 			case "Software":
 				response.SoftwareCount = count
 			}

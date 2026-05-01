@@ -15,7 +15,7 @@ const BPFPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ def
 const CertificatesPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.CertificatesPage })));
 const ConfigPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.ConfigPage })));
 const ConnectionsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.ConnectionsPage })));
-const CredentialsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.CredentialsPage })));
+const SecretsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.SecretsPage })));
 const DbsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.DbsPage })));
 const DecodersPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.DecodersPage })));
 const DevicesPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.DevicesPage })));
@@ -55,7 +55,7 @@ export function AppRoutes() {
         <Route path="/certificates" element={<CertificatesPage />} />
         <Route path="/config" element={<ConfigPage />} />
         <Route path="/connections" element={<ConnectionsPage />} />
-        <Route path="/credentials" element={<CredentialsPage />} />
+        <Route path="/secrets" element={<SecretsPage />} />
         <Route path="/dbs" element={<DbsPage />} />
         <Route path="/decoders" element={<DecodersPage />} />
         <Route path="/devices" element={<DevicesPage />} />
