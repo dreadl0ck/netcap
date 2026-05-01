@@ -94,6 +94,12 @@ var Decoder = &decoder.AbstractDecoder{
 
 		softwareLog.Info("loaded CMS db", zap.Int("total", len(cmsDB)))
 
+		// Build the optional Hyperscan prefilter for CMS header / cookie
+		// regex matching. With the `hyperscan` build tag this populates
+		// per-source HS databases used by generateSoftware to skip the
+		// full cmsDB nested loop. Without the tag this is a no-op.
+		buildCMSHSIndex()
+
 		// Load vulnerabilities DB index
 		indexName := filepath.Join(resolvers.DataBaseFolderPath, db.VulnerabilityDBName)
 		db.VulnerabilitiesIndex, err = db.OpenBleve(indexName)
@@ -470,8 +476,29 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 	)
 
 	if len(serverHeaders) > 0 {
-		// for all items in the CMS db
-		for product, info := range cmsDB {
+		// Optional Hyperscan prefilter: ask the per-source HS DB for the
+		// union of products that any of the received headers/cookies
+		// might match. Falls back to the full cmsDB sweep when HS is
+		// disabled or returns nil for a particular (name, value) pair.
+		candidates := cmsCandidateProducts(serverHeaders, serverCookies)
+
+		productOrder := make([]string, 0, len(cmsDB))
+		if candidates == nil {
+			for product := range cmsDB {
+				productOrder = append(productOrder, product)
+			}
+		} else {
+			for product := range candidates {
+				productOrder = append(productOrder, product)
+			}
+		}
+
+		// for all items in the CMS db (or the prefiltered subset)
+		for _, product := range productOrder {
+			info, ok := cmsDB[product]
+			if !ok {
+				continue
+			}
 
 			// compare the known headers
 			for headerName, re := range info.Headers {
@@ -560,6 +587,61 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 	}
 
 	return s
+}
+
+// cmsCandidateProducts unions the per-(name, value) candidate sets from
+// the Hyperscan prefilter into a single product set. Returns nil when
+// the prefilter is unavailable so the caller falls back to the full
+// cmsDB iteration. Returning a non-nil empty map is meaningful: the
+// prefilter examined every covered product and none matched.
+func cmsCandidateProducts(headers []header, cookies []cookie) map[string]struct{} {
+	var union map[string]struct{}
+	merge := func(part map[string]struct{}) {
+		if part == nil {
+			// At least one (name, value) had no prefilter info → we
+			// cannot safely shrink the iteration set; fall back.
+			union = nil
+			return
+		}
+		if union == nil {
+			union = make(map[string]struct{}, len(part))
+		}
+		for p := range part {
+			union[p] = struct{}{}
+		}
+	}
+
+	probed := false
+	for _, hh := range headers {
+		c := cmsHeaderCandidates(hh.name, hh.value)
+		if c == nil {
+			return nil
+		}
+		probed = true
+		merge(c)
+		if union == nil {
+			return nil
+		}
+	}
+	for _, cc := range cookies {
+		c := cmsCookieCandidates(cc.name, cc.value)
+		if c == nil {
+			return nil
+		}
+		probed = true
+		merge(c)
+		if union == nil {
+			return nil
+		}
+	}
+	if !probed {
+		return nil
+	}
+	if union == nil {
+		// All (name, value) calls returned non-nil empty maps.
+		return map[string]struct{}{}
+	}
+	return union
 }
 
 // WriteSoftware can be used to write software to the software audit record writer.

@@ -28,22 +28,43 @@ produces a binary with zero new C library dependencies.
 
 Hyperscan is a vectorised regex matcher that excels when the same input
 buffer must be tested against many patterns at once. Netcap uses it as a
-**prefilter** in front of the existing RE2 engine for the nmap-style service
-probe matcher (`decoder/stream/service/service_probe.go`):
+**prefilter** in front of the existing RE2 engine in two places:
 
-1. At startup all RE2-compatible service-probe expressions are compiled into
-   a single per-category Hyperscan block-mode database.
+### 1. Service probe matcher
+
+`decoder/stream/service/service_probe.go`
+
+1. At startup all RE2-compatible service-probe expressions are compiled
+   into per-category Hyperscan block-mode databases.
 2. For every banner, Hyperscan reports the (small) set of probes whose
    pattern fires.
 3. RE2 is then invoked only on those probes for capture-group extraction
    (Hyperscan does not return submatches).
 
 Probes that Hyperscan refuses to compile (e.g. patterns with PCRE
-backreferences) automatically stay on the existing RE2 path — no behavioural
-change.
+backreferences) automatically stay on the existing RE2 path — no
+behavioural change. The .NET-compatible `regexp2` engine path is left
+untouched because it deliberately exists to support PCRE features
+Hyperscan does not implement.
 
-The .NET-compatible `regexp2` engine path is left untouched because it
-deliberately exists to support PCRE features Hyperscan does not implement.
+### 2. CMS / web framework detection
+
+`decoder/stream/software/software.go` + `cms_hs.go`
+
+The `cmsdb.json` database (1100+ frameworks, ~600 header/cookie regexes)
+is compiled into two per-source HS databases (one for headers, one for
+cookies). For every HTTP response, the matcher computes the union of
+candidate products that any received header/cookie value could match,
+then iterates only that subset of `cmsDB` instead of all 1100+
+frameworks. Header-name-only entries (no value regex) are always kept
+in the candidate set so behaviour is identical.
+
+### Cross-subsystem registry
+
+`internal/hsmatch/registry.go` lets each consumer self-register a
+JSON-friendly status snapshot. The web UI handler enumerates the
+registry rather than hard-coding consumers, so future migrations don't
+need to touch `cmd/capture/webui/`.
 
 ---
 
@@ -280,6 +301,18 @@ categories). `benchtime=3s`.
 | **All** (mixed hit/miss) | 994.8 µs/op, 227 KB, 6243 allocs | **454.2 µs/op**, 146 KB, 4919 allocs | **2.19×** | −36% B, −21% allocs |
 | **HitOnly** (well-known port → expectedCategory) | 638.8 µs/op, 149 KB, 4862 allocs | **344.4 µs/op**, 113 KB, 3793 allocs | **1.85×** | −24% B, −22% allocs |
 | **MissOnly** (no probe matches → full category sweep) | 2511.3 µs/op, 568 KB, 11802 allocs | **936.6 µs/op**, 291 KB, 9828 allocs | **2.68×** | −49% B, −17% allocs |
+
+### `software.WhatSoftwareHTTP` (CMS detection on HTTP responses, real ~1100-product cmsdb.json)
+
+| Workload | RE2 baseline | RE2 + Hyperscan | Speedup |
+|---|---:|---:|---:|
+| **All** (realistic mix of CMS + plain responses) | 51.2 µs/op | **36.8 µs/op** | **1.41×** |
+| **MissOnly** (responses with no CMS-relevant headers) | 103 ns/op | 103 ns/op | 1.00× (early-exit short-circuits in both paths) |
+
+The miss-only case is identical because both paths early-exit when no
+known CMS headers/cookies are present. The win shows up on responses
+that *do* carry CMS-known header names: HS skips the full 1100-product
+sweep through `cmsDB` and only iterates the candidate set.
 
 The miss-only workload is where multi-pattern Hyperscan dominates: every
 probe in every category gets evaluated when no hit short-circuits, which
