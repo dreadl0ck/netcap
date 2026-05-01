@@ -14,23 +14,31 @@
 package transform
 
 import (
-	"github.com/dreadl0ck/maltego"
 	netmaltego "github.com/dreadl0ck/netcap/maltego"
+	"log"
+
+	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func toProviderIPProfilesForHost() {
+func toProviderHostsForURL() {
 	var (
-		p    = netmaltego.LoadIPProfiles()
+		p    = netmaltego.LoadHosts()
 		ips  = make(map[string]struct{})
+		url  string
 		host string
 	)
 
 	netmaltego.HTTPTransform(
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
-			if host == "" {
-				host = lt.Value
+			if url == "" {
+				url = lt.Values["properties.url"]
+				host = lt.Values["host"]
+				if url == "" || host == "" {
+					maltego.Die("properties.url or host is not set", "")
+				}
+				log.Println("got URL", url, "and host", host, netmaltego.PropertyIpAddr, ipaddr)
 			}
 
 			if http.Host == host {
@@ -38,14 +46,18 @@ func toProviderIPProfilesForHost() {
 					return
 				}
 
+				if http.URL != url {
+					return
+				}
+
 				if http.DstIP != ipaddr {
 					return
 				}
 
-				// check if srcIP host has already been added
+				// check if dstIP host has already been added
 				if _, ok := ips[http.DstIP]; !ok {
 					if profile, exists := p[http.DstIP]; exists {
-						addIPProfile(trx, profile, path, min, max)
+						addHost(trx, profile, path, min, max)
 					}
 					ips[http.DstIP] = struct{}{}
 				}

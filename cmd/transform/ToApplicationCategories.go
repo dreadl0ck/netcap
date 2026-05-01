@@ -22,9 +22,9 @@ import (
 )
 
 func toApplicationCategories() {
-	netmaltego.IPProfileTransform(
+	netmaltego.HostTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Host, min, max uint64, path string, mac string, ipaddr string) {
 			if ipaddr == "" {
 				ipaddr = lt.Values[netmaltego.PropertyIpAddr]
 				if ipaddr == "" {
@@ -36,7 +36,7 @@ func toApplicationCategories() {
 	)
 }
 
-func toCategory(p *types.IPProfile, mac, path string, trx *maltego.Transform) {
+func toCategory(p *types.Host, mac, path string, trx *maltego.Transform) {
 	for _, proto := range p.Protocols {
 		if proto.Category == "" {
 			continue

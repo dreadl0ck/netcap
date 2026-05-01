@@ -39,13 +39,13 @@ import (
 // IPTransformationFunc is a transformation over IP profiles for a selected DeviceProfile.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type IPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ip string)
+type IPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Host, min, max uint64, path string, mac string, ip string)
 
 // deviceProfileCountFunc is a function that counts something over DeviceProfiles.
-type ipProfileCountFunc = func(profile *types.IPProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile)
+type hostCountFunc = func(profile *types.Host, mac string, min, max *uint64, ips map[string]*types.Host)
 
 // CountIPPackets returns the lowest and highest number of packets seen for a given IPProfile.
-var CountIPPackets = func(profile *types.IPProfile, mac string, min, max *uint64, _ map[string]*types.IPProfile) {
+var CountIPPackets = func(profile *types.Host, mac string, min, max *uint64, _ map[string]*types.Host) {
 	if uint64(profile.NumPackets) < *min {
 		*min = uint64(profile.NumPackets)
 	}
@@ -54,13 +54,13 @@ var CountIPPackets = func(profile *types.IPProfile, mac string, min, max *uint64
 	}
 }
 
-// IPProfileTransformationFunc is a transformation over IP profiles
+// HostTransformationFunc is a transformation over IP profiles
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type IPProfileTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ip string)
+type HostTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Host, min, max uint64, path string, mac string, ip string)
 
-// IPProfileTransform applies a maltego transformation over IP profiles
-func IPProfileTransform(count ipProfileCountFunc, transform IPProfileTransformationFunc) {
+// HostTransform applies a maltego transformation over IP profiles
+func HostTransform(count hostCountFunc, transform HostTransformationFunc) {
 	var (
 		lt     = maltego.ParseLocalArguments(os.Args[3:])
 		path   = strings.TrimPrefix(lt.Values["path"], "file://")
@@ -69,8 +69,8 @@ func IPProfileTransform(count ipProfileCountFunc, transform IPProfileTransformat
 		trx    = maltego.Transform{}
 	)
 
-	if !strings.HasPrefix(filepath.Base(path), "IPProfile.ncap") {
-		path = filepath.Join(filepath.Dir(path), "IPProfile.ncap.gz")
+	if !strings.HasPrefix(filepath.Base(path), "Host.ncap") {
+		path = filepath.Join(filepath.Dir(path), "Host.ncap.gz")
 	}
 
 	netio.FPrintBuildInfo(os.Stderr)
@@ -90,12 +90,12 @@ func IPProfileTransform(count ipProfileCountFunc, transform IPProfileTransformat
 		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 
-	if header.Type != types.Type_NC_IPProfile {
-		maltego.Die("file does not contain DeviceProfile records", header.Type.String())
+	if header.Type != types.Type_NC_Host {
+		maltego.Die("file does not contain Host records", header.Type.String())
 	}
 
 	var (
-		profile = new(types.IPProfile)
+		profile = new(types.Host)
 		pm      proto.Message
 		ok      bool
 	)
@@ -109,7 +109,7 @@ func IPProfileTransform(count ipProfileCountFunc, transform IPProfileTransformat
 	var (
 		min      uint64 = 10000000
 		max      uint64 = 0
-		profiles        = LoadIPProfiles()
+		profiles        = LoadHosts()
 		err      error
 	)
 
@@ -159,16 +159,16 @@ func IPProfileTransform(count ipProfileCountFunc, transform IPProfileTransformat
 	fmt.Println(trx.ReturnOutput())
 }
 
-// LoadIPProfiles will load the ipProfiles into memory and return them.
-func LoadIPProfiles() map[string]*types.IPProfile {
+// LoadHosts will load the ipProfiles into memory and return them.
+func LoadHosts() map[string]*types.Host {
 	var (
 		lt       = maltego.ParseLocalArguments(os.Args[3:])
-		path     = filepath.Join(filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://")), "IPProfile.ncap.gz")
-		profiles = make(map[string]*types.IPProfile)
+		path     = filepath.Join(filepath.Dir(strings.TrimPrefix(lt.Values["path"], "file://")), "Host.ncap.gz")
+		profiles = make(map[string]*types.Host)
 		err      error
 	)
 
-	log.Println("LoadIPProfiles called")
+	log.Println("LoadHosts called")
 
 	netio.FPrintBuildInfo(os.Stderr)
 	f, path := openFile(path)
@@ -186,12 +186,12 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 		maltego.Die("failed to read file header", errFileHeader.Error())
 	}
 
-	if header.Type != types.Type_NC_IPProfile {
-		maltego.Die("file does not contain IPProfile records", header.Type.String())
+	if header.Type != types.Type_NC_Host {
+		maltego.Die("file does not contain Host records", header.Type.String())
 	}
 
 	var (
-		profile = new(types.IPProfile)
+		profile = new(types.Host)
 		pm      proto.Message
 		ok      bool
 	)
@@ -212,7 +212,7 @@ func LoadIPProfiles() map[string]*types.IPProfile {
 			return profiles
 		}
 
-		profiles[profile.Addr] = &types.IPProfile{
+		profiles[profile.Addr] = &types.Host{
 			Addr:             profile.Addr,
 			NumPackets:       profile.NumPackets,
 			Geolocation:      profile.Geolocation,

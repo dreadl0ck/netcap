@@ -20,12 +20,12 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 )
 
-func toIPProfilesForSoftware() {
+func toHostsForSoftware() {
 	var (
 		product string
 		version string
 		vendor  string
-		p       = netmaltego.LoadIPProfiles()
+		p       = netmaltego.LoadHosts()
 		ips     = make(map[string]struct{})
 	)
 	netmaltego.SoftwareTransform(
@@ -47,7 +47,7 @@ func toIPProfilesForSoftware() {
 					// check if srcIP host has already been added
 					if _, ok := ips[srcIP]; !ok {
 						if profile, exists := p[srcIP]; exists {
-							addIPProfile(trx, profile, path, min, max)
+							addHost(trx, profile, path, min, max)
 						}
 						ips[srcIP] = struct{}{}
 					}
@@ -55,7 +55,7 @@ func toIPProfilesForSoftware() {
 					// check if dstIP host has already been added
 					if _, ok := ips[dstIP]; !ok {
 						if profile, exists := p[dstIP]; exists {
-							addIPProfile(trx, profile, path, min, max)
+							addHost(trx, profile, path, min, max)
 						}
 						ips[dstIP] = struct{}{}
 					}

@@ -900,7 +900,7 @@ export default function RulesPage() {
                   <MenuItem value="IEC62351">IEC62351</MenuItem>
                   <MenuItem value="IGMP">IGMP</MenuItem>
                   <MenuItem value="IMAP">IMAP</MenuItem>
-                  <MenuItem value="IPProfile">IPProfile</MenuItem>
+                  <MenuItem value="Host">Host</MenuItem>
                   <MenuItem value="IRC">IRC</MenuItem>
                   <MenuItem value="IPSecAH">IPSecAH</MenuItem>
                   <MenuItem value="IPSecESP">IPSecESP</MenuItem>

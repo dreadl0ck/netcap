@@ -24,9 +24,9 @@ import (
 func toApplicationsForCategory() {
 	var category string
 
-	netmaltego.IPProfileTransform(
+	netmaltego.HostTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Host, min, max uint64, path string, mac string, ipaddr string) {
 			if category == "" {
 				category = lt.Value
 			}
@@ -36,7 +36,7 @@ func toApplicationsForCategory() {
 	)
 }
 
-func addApplicationForCategory(p *types.IPProfile, category string, trx *maltego.Transform, path string) {
+func addApplicationForCategory(p *types.Host, category string, trx *maltego.Transform, path string) {
 	for protoName, proto := range p.Protocols {
 		if proto.Category == category {
 			ent := addEntityWithPath(trx, "netcap.Application", protoName, path)

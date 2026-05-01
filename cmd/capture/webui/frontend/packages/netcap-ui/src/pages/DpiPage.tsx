@@ -684,7 +684,7 @@ export default function DPIPage() {
                 <Alert severity="info">
                   <Typography variant="body2">
                     DPI results are available in the <strong>Connection</strong>, <strong>Service</strong>, 
-                    <strong> DeviceProfile</strong>, and <strong>IPProfile</strong> audit records in the{' '}
+                    <strong> DeviceProfile</strong>, and <strong>Host</strong> audit records in the{' '}
                     <code>Applications</code> field.
                   </Typography>
                 </Alert>

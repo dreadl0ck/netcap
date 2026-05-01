@@ -37,7 +37,7 @@ import (
 )
 
 // CountPacketsDevices returns the lowest and highest number of packets seen for a given DeviceProfile.
-var CountPacketsDevices = func(profile *types.DeviceProfile, mac string, min, max *uint64, _ map[string]*types.IPProfile) {
+var CountPacketsDevices = func(profile *types.DeviceProfile, mac string, min, max *uint64, _ map[string]*types.Host) {
 	if uint64(profile.NumPackets) < *min {
 		*min = uint64(profile.NumPackets)
 	}
@@ -48,7 +48,7 @@ var CountPacketsDevices = func(profile *types.DeviceProfile, mac string, min, ma
 
 // CountPacketsDeviceIPs CountPacketsDevices returns the lowest and highest number of packets
 // seen for all DeviceIPs of a given DeviceProfile.
-var CountPacketsDeviceIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile) {
+var CountPacketsDeviceIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.Host) {
 	if profile.MacAddr != mac {
 		for _, ip := range profile.DeviceIPs {
 			countIP(ips, ip, min, max)
@@ -58,7 +58,7 @@ var CountPacketsDeviceIPs = func(profile *types.DeviceProfile, mac string, min, 
 
 // CountPacketsContactIPs returns the lowest and highest number of packets
 // seen for all ContactIPs of a given DeviceProfile.
-var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile) {
+var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.Host) {
 	if profile.MacAddr != mac {
 		return
 	}
@@ -67,7 +67,7 @@ var CountPacketsContactIPs = func(profile *types.DeviceProfile, mac string, min,
 	}
 }
 
-func countIP(ips map[string]*types.IPProfile, ip string, min, max *uint64) {
+func countIP(ips map[string]*types.Host, ip string, min, max *uint64) {
 	if p, ok := ips[ip]; ok {
 		if uint64(p.NumPackets) < *min {
 			*min = uint64(p.NumPackets)
@@ -80,7 +80,7 @@ func countIP(ips map[string]*types.IPProfile, ip string, min, max *uint64) {
 }
 
 // deviceProfileCountFunc is a function that counts something over DeviceProfiles.
-type deviceProfileCountFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.IPProfile)
+type deviceProfileCountFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.Host)
 
 // deviceProfileTransformationFunc is transform over DeviceProfiles.
 type deviceProfileTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string)
@@ -135,7 +135,7 @@ func DeviceProfileTransform(count deviceProfileCountFunc, transform deviceProfil
 	var (
 		min      uint64 = 10000000
 		max      uint64 = 0
-		profiles        = LoadIPProfiles()
+		profiles        = LoadHosts()
 		err      error
 	)
 

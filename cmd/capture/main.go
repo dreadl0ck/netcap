@@ -1128,7 +1128,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 				// Step 1: Reset packet-level state (lightweight, no heavy allocations)
 				packet.ResetDeviceProfiles()
-				packet.ResetIPProfiles()
+				packet.ResetHosts()
 				packet.ResetConnections()
 
 				// Step 2: Reset stream-level state (lightweight)

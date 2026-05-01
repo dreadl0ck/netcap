@@ -187,7 +187,7 @@ const DEFAULT_FIELD_MAP: Record<string, { field: string; chartType: string }> = 
   'Exploit': { field: 'Platform', chartType: 'pie' },              
   'Alert': { field: 'Classification', chartType: 'pie' },          // Alert type distribution
   'DeviceProfile': { field: 'DeviceManufacturer', chartType: 'pie' }, // Device manufacturer distribution
-  'IPProfile': { field: 'NumPackets', chartType: 'line' },         // Packet count time series
+  'Host': { field: 'NumPackets', chartType: 'line' },         // Packet count time series
 };
 
 export default function Explore() {

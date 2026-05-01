@@ -27,7 +27,7 @@ import (
 )
 
 func toSourceIPs() {
-	profiles := netmaltego.LoadIPProfiles()
+	profiles := netmaltego.LoadHosts()
 
 	netmaltego.DeviceProfileTransform(
 		netmaltego.CountPacketsDeviceIPs,

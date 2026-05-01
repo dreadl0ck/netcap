@@ -245,7 +245,7 @@ func readJA4Fingerprints(outDir string, fingerprintMap map[string]*fingerprintAg
 	}
 
 	// Also read from IPProfile for additional hosts (but don't overwrite descriptions)
-	if err := readJA4FromIPProfile(outDir, fingerprintMap); err != nil {
+	if err := readJA4FromHost(outDir, fingerprintMap); err != nil {
 		log.Printf("[WebUI] Warning: Failed to read JA4 from IPProfile: %v", err)
 	}
 
@@ -402,9 +402,9 @@ func readJA4SFromTLSServerHello(outDir string, fingerprintMap map[string]*finger
 	return nil
 }
 
-// readJA4FromIPProfile reads JA4/JA4S fingerprints from IPProfile records (for additional hosts)
-func readJA4FromIPProfile(outDir string, fingerprintMap map[string]*fingerprintAggregator) error {
-	filePath := filepath.Join(outDir, "IPProfile.ncap.gz")
+// readJA4FromHost reads JA4/JA4S fingerprints from IPProfile records (for additional hosts)
+func readJA4FromHost(outDir string, fingerprintMap map[string]*fingerprintAggregator) error {
+	filePath := filepath.Join(outDir, "Host.ncap.gz")
 
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -435,7 +435,7 @@ func readJA4FromIPProfile(outDir string, fingerprintMap map[string]*fingerprintA
 			continue
 		}
 
-		ipProfile, ok := record.(*types.IPProfile)
+		ipProfile, ok := record.(*types.Host)
 		if !ok {
 			continue
 		}

@@ -84,7 +84,7 @@ interface PortInfo {
   bytes: number;
 }
 
-export interface IPProfileSummary {
+export interface HostSummary {
   addr: string;
   numPackets: number;
   bytes: number;
@@ -109,7 +109,7 @@ export interface IPProfileSummary {
 }
 
 interface HostsResponse {
-  hosts: IPProfileSummary[];
+  hosts: HostSummary[];
   totalCount: number;
 }
 
@@ -118,7 +118,7 @@ type SortOrder = 'asc' | 'desc';
 
 export interface HostsPageProps {
   /** Custom row actions to render in the expanded row details */
-  rowActions?: (row: IPProfileSummary) => React.ReactNode;
+  rowActions?: (row: HostSummary) => React.ReactNode;
 }
 
 export default function HostsPage({ rowActions }: HostsPageProps = {}) {
@@ -292,7 +292,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
     setExpandedRow(prev => prev === addr ? null : addr);
   }, []);
 
-  const handleDownloadPCAP = useCallback(async (host: IPProfileSummary) => {
+  const handleDownloadPCAP = useCallback(async (host: HostSummary) => {
     try {
       // Generate download URL with host IP filter
       const params = new URLSearchParams({
@@ -606,7 +606,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
             </Typography>
           </Paper>
         ) : (
-          <ResponsiveDataView<IPProfileSummary>
+          <ResponsiveDataView<HostSummary>
             data={paginatedHosts}
             totalCount={filteredHosts.length}
             page={page}

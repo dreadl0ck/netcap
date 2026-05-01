@@ -28,7 +28,7 @@ func toHTTPHostnames() {
 		nil,
 		func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ipaddr string) {
 			if http.Host != "" {
-				ent := addEntityWithPath(trx, "netcap.Host", http.Host, path)
+				ent := addEntityWithPath(trx, "netcap.HTTPHost", http.Host, path)
 
 				hostStats[http.Host]++
 				ent.SetLinkLabel(strconv.Itoa(hostStats[http.Host]))

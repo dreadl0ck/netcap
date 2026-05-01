@@ -21,21 +21,21 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-func toUDPHosts() {
+func toPOP3Hosts() {
 	var (
 		profiles = netmaltego.LoadHosts()
 		hosts    = make(map[string]struct{})
 		pathName string
 	)
 
-	netmaltego.UDPTransform(
+	netmaltego.POP3Transform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, udp *types.UDP, min, max uint64, path string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, pop3 *types.POP3, min, max uint64, path string, ipaddr string) {
+			hosts[pop3.ServerIP] = struct{}{}
+			hosts[pop3.ClientIP] = struct{}{}
 			if pathName == "" {
 				pathName = path
 			}
-			hosts[udp.SrcIP] = struct{}{}
-			hosts[udp.DstIP] = struct{}{}
 		},
 		true,
 	)

@@ -22,9 +22,9 @@ import (
 )
 
 func toGeolocation() {
-	netmaltego.IPProfileTransform(
+	netmaltego.HostTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Host, min, max uint64, path string, mac string, ipaddr string) {
 			if profile.Addr != ipaddr {
 				return
 			}
@@ -36,7 +36,7 @@ func toGeolocation() {
 	)
 }
 
-func addGeolocation(trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string) {
+func addGeolocation(trx *maltego.Transform, profile *types.Host, min, max uint64, path string) {
 	ent := addEntityWithPath(trx, "netcap.Location", profile.Geolocation, path)
 	ent.SetLinkLabel(strconv.FormatInt(profile.NumPackets, 10) + " pkts")
 	ent.SetLinkThickness(maltego.GetThickness(uint64(profile.NumPackets), min, max))

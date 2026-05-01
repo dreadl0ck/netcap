@@ -37,8 +37,8 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// IPProfileSummary represents aggregated information for a single IP address
-type IPProfileSummary struct {
+// HostSummary represents aggregated information for a single IP address
+type HostSummary struct {
 	Addr                string         `json:"addr"`
 	NumPackets          int64          `json:"numPackets"`
 	Bytes               uint64         `json:"bytes"`
@@ -78,7 +78,7 @@ type PortInfo struct {
 
 // HostsResponse contains the list of IP profiles
 type HostsResponse struct {
-	Hosts      []IPProfileSummary `json:"hosts"`
+	Hosts      []HostSummary `json:"hosts"`
 	TotalCount int                `json:"totalCount"`
 }
 
@@ -105,7 +105,7 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hosts, err := readIPProfiles(outDir)
+	hosts, err := readHosts(outDir)
 	if err != nil {
 		log.Printf("[WebUI] Failed to read IP profiles: %v", err)
 		http.Error(w, "Failed to read IP profiles", http.StatusInternalServerError)
@@ -121,14 +121,14 @@ func (s *Server) handleHosts(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// readIPProfiles reads and aggregates IPProfile data from the output directory
-func readIPProfiles(outDir string) ([]IPProfileSummary, error) {
-	filePath := filepath.Join(outDir, "IPProfile.ncap.gz")
+// readHosts reads and aggregates IPProfile data from the output directory
+func readHosts(outDir string) ([]HostSummary, error) {
+	filePath := filepath.Join(outDir, "Host.ncap.gz")
 
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		log.Printf("[WebUI] IPProfile file not found: %s", filePath)
-		return []IPProfileSummary{}, nil
+		return []HostSummary{}, nil
 	}
 
 	// Read IPProfile records
@@ -144,7 +144,7 @@ func readIPProfiles(outDir string) ([]IPProfileSummary, error) {
 		return nil, err
 	}
 
-	hosts := make([]IPProfileSummary, 0)
+	hosts := make([]HostSummary, 0)
 
 	// Read all records
 	for {
@@ -158,7 +158,7 @@ func readIPProfiles(outDir string) ([]IPProfileSummary, error) {
 		}
 
 		// Type assert to IPProfile
-		ipProfile, ok := record.(*types.IPProfile)
+		ipProfile, ok := record.(*types.Host)
 		if !ok {
 			continue
 		}
@@ -203,7 +203,7 @@ func readIPProfiles(outDir string) ([]IPProfileSummary, error) {
 		// Extract top contacted ports (limited to top 5)
 		topContactedPorts := extractTopPorts(ipProfile.ContactedPorts, 5)
 
-		hosts = append(hosts, IPProfileSummary{
+		hosts = append(hosts, HostSummary{
 			Addr:                ipProfile.Addr,
 			NumPackets:          ipProfile.NumPackets,
 			Bytes:               ipProfile.Bytes,

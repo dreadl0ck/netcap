@@ -426,7 +426,7 @@ export default function Dashboard() {
                   />
                 </Box>
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                  Aggregated geolocation data from all IPProfiles across all captures
+                  Aggregated geolocation data from all Hosts across all captures
                 </Typography>
               </CardContent>
             </Card>

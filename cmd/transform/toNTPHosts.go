@@ -23,7 +23,7 @@ import (
 
 func toNTPHosts() {
 	var (
-		profiles = netmaltego.LoadIPProfiles()
+		profiles = netmaltego.LoadHosts()
 		hosts    = make(map[string]struct{})
 		pathName string
 	)
@@ -43,7 +43,7 @@ func toNTPHosts() {
 	trx := &maltego.Transform{}
 	for ip := range hosts {
 		if p, ok := profiles[ip]; ok {
-			addIPProfile(trx, p, pathName, 0, 0)
+			addHost(trx, p, pathName, 0, 0)
 		}
 	}
 

@@ -319,7 +319,7 @@ func initElasticBuffer(wc *WriterConfig, index string) bytes.Buffer {
 	timeField := "Timestamp"
 
 	switch wc.Name {
-	case "Connection", "Flow", "IPProfile":
+	case "Connection", "Flow", "Host":
 		timeField = "TimestampFirst"
 	}
 

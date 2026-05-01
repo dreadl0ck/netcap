@@ -180,9 +180,9 @@ func (s *Server) handleHostsProtocols(w http.ResponseWriter, r *http.Request) {
 
 // generateHostsTopTalkersChart creates a bar chart showing top hosts by traffic
 func generateHostsTopTalkersChart(outDir string, showLegend bool) *charts.Bar {
-	hosts, err := readIPProfiles(outDir)
+	hosts, err := readHosts(outDir)
 	if err != nil {
-		hosts = []IPProfileSummary{}
+		hosts = []HostSummary{}
 	}
 
 	// Take top 20 hosts
@@ -251,9 +251,9 @@ func generateHostsTopTalkersChart(outDir string, showLegend bool) *charts.Bar {
 
 // generateHostsTrafficDistributionChart creates a pie chart showing internal vs external traffic
 func generateHostsTrafficDistributionChart(outDir string, showLegend bool) *charts.Pie {
-	hosts, err := readIPProfiles(outDir)
+	hosts, err := readHosts(outDir)
 	if err != nil {
-		hosts = []IPProfileSummary{}
+		hosts = []HostSummary{}
 	}
 
 	// Aggregate internal vs external traffic
@@ -332,9 +332,9 @@ func generateHostsTrafficDistributionChart(outDir string, showLegend bool) *char
 
 // generateHostsApplicationsChart creates a bar chart showing top applications
 func generateHostsApplicationsChart(outDir string, showLegend bool) *charts.Bar {
-	hosts, err := readIPProfiles(outDir)
+	hosts, err := readHosts(outDir)
 	if err != nil {
-		hosts = []IPProfileSummary{}
+		hosts = []HostSummary{}
 	}
 
 	// Aggregate applications
@@ -428,9 +428,9 @@ func generateHostsApplicationsChart(outDir string, showLegend bool) *charts.Bar 
 
 // generateHostsProtocolsChart creates a sunburst chart showing protocol distribution
 func generateHostsProtocolsChart(outDir string, showLegend bool) *charts.Sunburst {
-	hosts, err := readIPProfiles(outDir)
+	hosts, err := readHosts(outDir)
 	if err != nil {
-		hosts = []IPProfileSummary{}
+		hosts = []HostSummary{}
 	}
 
 	// Aggregate protocols by category

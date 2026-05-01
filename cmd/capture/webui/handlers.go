@@ -3998,7 +3998,7 @@ func (s *Server) getUnfilteredMenuCounts(outDir string) MenuCountsResponse {
 	}
 
 	// Count from specific audit record files
-	response.HostsCount = CountRecords(filepath.Join(outDir, "IPProfile.ncap.gz"))
+	response.HostsCount = CountRecords(filepath.Join(outDir, "Host.ncap.gz"))
 	response.DevicesCount = CountRecords(filepath.Join(outDir, "DeviceProfile.ncap.gz"))
 	response.ConnectionsCount = CountRecords(filepath.Join(outDir, "Connection.ncap.gz"))
 	response.HTTPCount = CountRecords(filepath.Join(outDir, "HTTP.ncap.gz"))
@@ -4068,7 +4068,7 @@ func (s *Server) getFilteredMenuCounts(outDir string, communityIDs map[string]bo
 	response.LogsCount = 0
 
 	// Count from specific audit record files with filtering
-	response.HostsCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "IPProfile.ncap.gz"), communityIDs)
+	response.HostsCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Host.ncap.gz"), communityIDs)
 	response.DevicesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "DeviceProfile.ncap.gz"), communityIDs)
 	response.ConnectionsCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Connection.ncap.gz"), communityIDs)
 	response.HTTPCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "HTTP.ncap.gz"), communityIDs)

@@ -155,9 +155,9 @@ var transforms = []*maltego.TransformCoreInfo{
 	{"ToJA4HashesForProfile", "netcap.IPProfile", "Show the JA4 hashes seen for the given ip profile"},
 
 	{"ToVisitorsForURL", "netcap.URL", "Show all visitors for the selected URL"},
-	{"ToVisitorsForHost", "netcap.Host", "Show all visitors for the selected website"},
+	{"ToVisitorsForHost", "netcap.HTTPHost", "Show all visitors for the selected website"},
 	{"ToProviderIPProfilesForURL", "netcap.URL", "Show all ProviderIPProfiles for the selected URL"},
-	{"ToProviderIPProfilesForHost", "netcap.Host", "Show all ProviderIPProfiles for the selected website"},
+	{"ToProviderIPProfilesForHost", "netcap.HTTPHost", "Show all ProviderIPProfiles for the selected website"},
 
 	{"ToTCPFlagCombinations", "netcap.TCPAuditRecords", "Show all TCP flag combinations seen"},
 	{"ToEthernetTypes", "netcap.EthernetAuditRecords", "Show all Ethernet types"},

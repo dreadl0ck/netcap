@@ -272,7 +272,7 @@ func buildSoftwareToHostsMap(outDir string) map[string][]string {
 	softwareToHosts := make(map[string][]string)
 
 	// Read IPProfile records to find which hosts have which software
-	ipProfilePath := filepath.Join(outDir, "IPProfile.ncap.gz")
+	ipProfilePath := filepath.Join(outDir, "Host.ncap.gz")
 	if _, err := os.Stat(ipProfilePath); err != nil {
 		log.Printf("[WebUI][Vulnerabilities] IPProfile file not found: %s", ipProfilePath)
 		return softwareToHosts
@@ -301,7 +301,7 @@ func buildSoftwareToHostsMap(outDir string) map[string][]string {
 			continue
 		}
 
-		ipProfile, ok := record.(*types.IPProfile)
+		ipProfile, ok := record.(*types.Host)
 		if !ok || ipProfile.Addr == "" {
 			continue
 		}

@@ -20,7 +20,7 @@ import (
 )
 
 func toServerNameIndicators() {
-	netmaltego.IPProfileTransform(netmaltego.CountIPPackets, func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ip string) {
+	netmaltego.HostTransform(netmaltego.CountIPPackets, func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Host, min, max uint64, path string, mac string, ip string) {
 		if profile.Addr == ip {
 			for s, count := range profile.SNIs {
 				ent := addEntityWithPath(trx, "netcap.Domain", s, path)

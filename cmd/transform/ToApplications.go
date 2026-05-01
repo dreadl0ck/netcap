@@ -24,9 +24,9 @@ import (
 )
 
 func toApplications() {
-	netmaltego.IPProfileTransform(
+	netmaltego.HostTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Host, min, max uint64, path string, mac string, ipaddr string) {
 			if profile.Addr == ipaddr {
 				log.Println(profile.Applications)
 				for app, info := range profile.Protocols {
@@ -37,7 +37,7 @@ func toApplications() {
 	)
 }
 
-func addApplication(app string, info *types.Protocol, trx *maltego.Transform, path string, profile *types.IPProfile) {
+func addApplication(app string, info *types.Protocol, trx *maltego.Transform, path string, profile *types.Host) {
 	ent := addEntityWithPath(trx, "netcap.Application", app, path)
 
 	di := "<h3>Application</h3><p>Timestamp first seen: " + utils.UnixTimeToUTC(profile.TimestampFirst) + "</p>"

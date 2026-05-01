@@ -38,7 +38,7 @@ const (
 	fieldJa4SFingerprints = "Ja4SFingerprints"
 )
 
-var fieldsIPProfile = []string{
+var fieldsHost = []string{
 	fieldAddr,           // string
 	fieldNumPackets,     // int64
 	fieldGeolocation,    // string
@@ -56,12 +56,12 @@ var fieldsIPProfile = []string{
 }
 
 // CSVHeader returns the CSV header for the audit record.
-func (d *IPProfile) CSVHeader() []string {
-	return filter(fieldsIPProfile)
+func (d *Host) CSVHeader() []string {
+	return filter(fieldsHost)
 }
 
 // CSVRecord returns the CSV record for the audit record.
-func (d *IPProfile) CSVRecord() []string {
+func (d *Host) CSVRecord() []string {
 	return filter([]string{
 		d.Addr,
 		formatInt64(d.NumPackets),
@@ -81,12 +81,12 @@ func (d *IPProfile) CSVRecord() []string {
 }
 
 // Time returns the timestamp associated with the audit record.
-func (d *IPProfile) Time() int64 {
+func (d *Host) Time() int64 {
 	return d.TimestampFirst
 }
 
 // JSON returns the JSON representation of the audit record.
-func (d *IPProfile) JSON() (string, error) {
+func (d *Host) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
 	d.TimestampFirst /= int64(time.Millisecond)
 	d.TimestampLast /= int64(time.Millisecond)
@@ -95,43 +95,43 @@ func (d *IPProfile) JSON() (string, error) {
 }
 
 // Inc increments the metrics for the audit record.
-func (d *IPProfile) Inc() {}
+func (d *Host) Inc() {}
 
 // SetPacketContext sets the associated packet context for the audit record.
-func (d *IPProfile) SetPacketContext(*PacketContext) {}
+func (d *Host) SetPacketContext(*PacketContext) {}
 
 // Src returns the source address of the audit record.
-func (d *IPProfile) Src() string {
+func (d *Host) Src() string {
 	return ""
 }
 
 // Dst returns the destination address of the audit record.
-func (d *IPProfile) Dst() string {
+func (d *Host) Dst() string {
 	return ""
 }
 
-var ipProfileEncoder = encoder.NewValueEncoder()
+var hostEncoder = encoder.NewValueEncoder()
 
 // Encode will encode categorical values and normalize according to configuration
-func (d *IPProfile) Encode() []string {
+func (d *Host) Encode() []string {
 	return filter([]string{
-		ipProfileEncoder.String(fieldAddr, d.Addr),
-		ipProfileEncoder.Int64(fieldNumPackets, d.NumPackets),
-		ipProfileEncoder.String(fieldGeolocation, d.Geolocation),
-		ipProfileEncoder.String(fieldDNSNames, join(d.DNSNames...)),
-		ipProfileEncoder.Int64(fieldTimestampFirst, d.TimestampFirst),
-		ipProfileEncoder.Int64(fieldTimestampLast, d.TimestampLast),
-		ipProfileEncoder.String(fieldApplications, join(d.Applications...)),
-		ipProfileEncoder.Uint64(fieldBytes, d.Bytes),
-		ipProfileEncoder.String(fieldJa4Fingerprints, join(d.Ja4Fingerprints...)),
-		ipProfileEncoder.String(fieldJa4SFingerprints, join(d.Ja4SFingerprints...)),
+		hostEncoder.String(fieldAddr, d.Addr),
+		hostEncoder.Int64(fieldNumPackets, d.NumPackets),
+		hostEncoder.String(fieldGeolocation, d.Geolocation),
+		hostEncoder.String(fieldDNSNames, join(d.DNSNames...)),
+		hostEncoder.Int64(fieldTimestampFirst, d.TimestampFirst),
+		hostEncoder.Int64(fieldTimestampLast, d.TimestampLast),
+		hostEncoder.String(fieldApplications, join(d.Applications...)),
+		hostEncoder.Uint64(fieldBytes, d.Bytes),
+		hostEncoder.String(fieldJa4Fingerprints, join(d.Ja4Fingerprints...)),
+		hostEncoder.String(fieldJa4SFingerprints, join(d.Ja4SFingerprints...)),
 	})
 }
 
 // Analyze will invoke the configured analyzer for the audit record and return a score.
-func (d *IPProfile) Analyze() {}
+func (d *Host) Analyze() {}
 
 // NetcapType returns the type of the current audit record
-func (d *IPProfile) NetcapType() Type {
-	return Type_NC_IPProfile
+func (d *Host) NetcapType() Type {
+	return Type_NC_Host
 }

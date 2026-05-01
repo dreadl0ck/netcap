@@ -45,9 +45,9 @@ func toSourcePorts() {
 	resolvers.InitServiceDB()
 	os.Stdout = stdOut
 
-	netmaltego.IPProfileTransform(
+	netmaltego.HostTransform(
 		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.IPProfile, min, max uint64, path string, mac string, ipaddr string) {
+		func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Host, min, max uint64, path string, mac string, ipaddr string) {
 			if profile.Addr != ipaddr {
 				return
 			}
@@ -58,7 +58,7 @@ func toSourcePorts() {
 	)
 }
 
-func addSourcePort(trx *maltego.Transform, portStr string, port *types.Port, min uint64, max uint64, ip *types.IPProfile, path string) {
+func addSourcePort(trx *maltego.Transform, portStr string, port *types.Port, min uint64, max uint64, ip *types.Host, path string) {
 	np, err := strconv.Atoi(portStr)
 	if err != nil {
 		fmt.Println(err)

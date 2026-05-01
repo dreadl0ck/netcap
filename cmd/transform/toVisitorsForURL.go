@@ -23,7 +23,7 @@ import (
 
 func toVisitorsForURL() {
 	var (
-		p    = netmaltego.LoadIPProfiles()
+		p    = netmaltego.LoadHosts()
 		ips  = make(map[string]struct{})
 		url  string
 		host string
@@ -57,7 +57,7 @@ func toVisitorsForURL() {
 				// check if srcIP host has already been added
 				if _, ok := ips[http.SrcIP]; !ok {
 					if profile, exists := p[http.SrcIP]; exists {
-						addIPProfile(trx, profile, path, min, max)
+						addHost(trx, profile, path, min, max)
 					}
 					ips[http.SrcIP] = struct{}{}
 				}

@@ -270,7 +270,7 @@ func TestNestedFieldAccess(t *testing.T) {
 
 func TestNestedArrayFieldAccess(t *testing.T) {
 	// Create a test IPProfile with nested SrcPorts array
-	profile := &types.IPProfile{
+	profile := &types.Host{
 		Addr: "192.168.1.1",
 		SrcPorts: []*types.Port{
 			{
@@ -334,7 +334,7 @@ func TestNestedArrayFieldAccess(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			program, err := CompileExpression(tt.expression, types.Type_NC_IPProfile)
+			program, err := CompileExpression(tt.expression, types.Type_NC_Host)
 			if err != nil {
 				t.Fatalf("Failed to compile expression: %v", err)
 			}

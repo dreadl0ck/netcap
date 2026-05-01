@@ -378,7 +378,7 @@ The data directory is automatically determined based on environment:
 │   │   ├── Connection.ncap.gz
 │   │   ├── DNS.ncap.gz
 │   │   ├── HTTP.ncap.gz
-│   │   ├── IPProfile.ncap.gz
+│   │   ├── Host.ncap.gz
 │   │   ├── TCP.ncap.gz
 │   │   ├── UDP.ncap.gz
 │   │   ├── netcap.log

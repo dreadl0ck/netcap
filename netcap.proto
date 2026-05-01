@@ -148,7 +148,7 @@ enum Type {
   NC_SSH = 98;
   NC_Vulnerability = 99;
   NC_Exploit = 100;
-  NC_IPProfile = 101;
+  NC_Host = 101;
   NC_Mail = 102;
   NC_Alert = 103;
   NC_TLSCertificate = 104;
@@ -2172,7 +2172,7 @@ message PortStats {
   uint64 Bytes = 2;
 }
 
-message IPProfile {
+message Host {
   string Addr = 1;
   int64 NumPackets = 2;
   string Geolocation = 3;

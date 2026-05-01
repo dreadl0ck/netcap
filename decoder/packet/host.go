@@ -46,60 +46,60 @@ var (
 	LocalDNS = true
 )
 
-// atomicIPProfileMap contains all connections and provides synchronized access.
-type atomicIPProfileMap struct {
+// atomicHostMap contains all connections and provides synchronized access.
+type atomicHostMap struct {
 	// SrcIP to DeviceProfiles
-	Items map[string]*ipProfile
+	Items map[string]*hostEntry
 	sync.Mutex
 }
 
 // Size returns the number of elements in the Items map.
-func (a *atomicIPProfileMap) Size() int {
+func (a *atomicHostMap) Size() int {
 	a.Lock()
 	defer a.Unlock()
 
 	return len(a.Items)
 }
 
-// ipProfiles contains a map of IP specific behavior profiles at runtime.
-var ipProfiles = &atomicIPProfileMap{
-	Items: make(map[string]*ipProfile),
+// hosts contains a map of IP specific behavior profiles at runtime.
+var hosts = &atomicHostMap{
+	Items: make(map[string]*hostEntry),
 }
 
-// ResetIPProfiles clears all IP profiles from memory
+// ResetHosts clears all IP profiles from memory
 // This should be called when resetting state between processing different files
-func ResetIPProfiles() {
-	ipProfiles.Lock()
-	ipProfiles.Items = make(map[string]*ipProfile)
-	ipProfiles.Unlock()
+func ResetHosts() {
+	hosts.Lock()
+	hosts.Items = make(map[string]*hostEntry)
+	hosts.Unlock()
 }
 
-// wrapper for the types.IPProfile that can be locked.
-type ipProfile struct {
+// wrapper for the types.Host that can be locked.
+type hostEntry struct {
 	sync.Mutex
-	*types.IPProfile
+	*types.Host
 
 	// buffer packets for deferred DPI analysis (keyed by stream)
 	// Uses bufferedPacket to store copied data, avoiding gopacket buffer reuse issues
 	streamPackets map[streamKey][]bufferedPacket
 }
 
-// updateIPProfile updates or creates an IP profile, buffering packets for deferred DPI
-func updateIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) {
+// updateHost updates or creates an IP profile, buffering packets for deferred DPI
+func updateHost(ipAddr string, i *decoderutils.PacketInfo, source bool) {
 	if ipAddr == "" {
 		return
 	}
 
-	ipProfiles.Lock()
-	p, exists := ipProfiles.Items[ipAddr]
+	hosts.Lock()
+	p, exists := hosts.Items[ipAddr]
 	if !exists {
 		// Create new IP profile
-		p = createNewIPProfile(ipAddr, i, source)
-		ipProfiles.Items[ipAddr] = p
-		ipProfiles.Unlock()
+		p = createNewHost(ipAddr, i, source)
+		hosts.Items[ipAddr] = p
+		hosts.Unlock()
 		return
 	}
-	ipProfiles.Unlock()
+	hosts.Unlock()
 
 	// Update existing profile
 	p.Lock()
@@ -153,8 +153,8 @@ func updateIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) {
 	}
 }
 
-// createNewIPProfile creates a new IP profile with initial packet data
-func createNewIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipProfile {
+// createNewHost creates a new IP profile with initial packet data
+func createNewHost(ipAddr string, i *decoderutils.PacketInfo, source bool) *hostEntry {
 	var (
 		dataLen = uint64(len(i.Packet.Data()))
 		sniMap  = make(map[string]int64)
@@ -247,8 +247,8 @@ func createNewIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) 
 		timestamp: i.Timestamp,
 	}}
 
-	return &ipProfile{
-		IPProfile: &types.IPProfile{
+	return &hostEntry{
+		Host: &types.Host{
 			Addr:             ipAddr,
 			NumPackets:       1,
 			Geolocation:      loc,
@@ -269,7 +269,7 @@ func createNewIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) 
 }
 
 // handleTLSFingerprinting handles TLS fingerprinting for an IP profile
-func handleTLSFingerprinting(p *ipProfile, i *decoderutils.PacketInfo) {
+func handleTLSFingerprinting(p *hostEntry, i *decoderutils.PacketInfo) {
 	// Handle JA4 (TLS Client Hello) fingerprinting
 	ch := tlsx.GetClientHello(i.Packet)
 	if ch != nil {
@@ -324,7 +324,7 @@ func handleTLSFingerprinting(p *ipProfile, i *decoderutils.PacketInfo) {
 }
 
 // handleDHCPFingerprinting handles DHCP fingerprinting for an IP profile
-func handleDHCPFingerprinting(p *ipProfile, i *decoderutils.PacketInfo) {
+func handleDHCPFingerprinting(p *hostEntry, i *decoderutils.PacketInfo) {
 	if dhcpFp := extractDHCPFingerprint(i.Packet); dhcpFp != "" {
 		deviceName := resolvers.LookupDHCPFingerprintLocal(dhcpFp)
 		if deviceName != "" {
@@ -333,8 +333,8 @@ func handleDHCPFingerprinting(p *ipProfile, i *decoderutils.PacketInfo) {
 	}
 }
 
-// processIPProfileDeferredDPI runs DPI analysis on buffered packets during flush
-func processIPProfileDeferredDPI(p *ipProfile) {
+// processHostDeferredDPI runs DPI analysis on buffered packets during flush
+func processHostDeferredDPI(p *hostEntry) {
 	if p.streamPackets == nil {
 		return
 	}
@@ -364,9 +364,9 @@ func processIPProfileDeferredDPI(p *ipProfile) {
 	p.streamPackets = nil
 }
 
-// processIPProfileDeferredDPIWithoutClear runs DPI analysis but keeps the buffers for continued tracking
+// processHostDeferredDPIWithoutClear runs DPI analysis but keeps the buffers for continued tracking
 // This is used during live capture periodic flushing
-func processIPProfileDeferredDPIWithoutClear(p *ipProfile) {
+func processHostDeferredDPIWithoutClear(p *hostEntry) {
 	if p.streamPackets == nil {
 		return
 	}
@@ -394,10 +394,10 @@ func processIPProfileDeferredDPIWithoutClear(p *ipProfile) {
 	// Note: We do NOT clear stream buffers here to allow continued tracking
 }
 
-var ipProfileDecoder = newAccumulatingPacketDecoder(
-	types.Type_NC_IPProfile,
-	"IPProfile",
-	"An IPProfile contains information about a single IPv4 or IPv6 address seen on the network and it's behavior",
+var hostDecoder = newAccumulatingPacketDecoder(
+	types.Type_NC_Host,
+	"Host",
+	"A Host contains information about a single IPv4 or IPv6 address seen on the network and it's behavior",
 	func(d *Decoder) error {
 		return nil
 	},
@@ -405,27 +405,27 @@ var ipProfileDecoder = newAccumulatingPacketDecoder(
 		// Buffer packets for both source and destination IPs
 		info := decoderutils.NewPacketInfo(p)
 		if info.SrcIP != "" {
-			updateIPProfile(info.SrcIP, info, true)
+			updateHost(info.SrcIP, info, true)
 		}
 		if info.DstIP != "" {
-			updateIPProfile(info.DstIP, info, false)
+			updateHost(info.DstIP, info, false)
 		}
 		return nil
 	},
 	func(d *Decoder) error {
 		// Take a snapshot of items under lock to avoid race conditions
-		ipProfiles.Lock()
-		items := make([]*ipProfile, 0, len(ipProfiles.Items))
-		for _, item := range ipProfiles.Items {
+		hosts.Lock()
+		items := make([]*hostEntry, 0, len(hosts.Items))
+		for _, item := range hosts.Items {
 			items = append(items, item)
 		}
-		ipProfiles.Unlock()
+		hosts.Unlock()
 
 		// Process buffered packets and run deferred DPI analysis
 		for _, item := range items {
 			item.Lock()
-			processIPProfileDeferredDPI(item)
-			d.writeIPProfile(item.IPProfile)
+			processHostDeferredDPI(item)
+			d.writeHost(item.Host)
 			item.Unlock()
 		}
 
@@ -436,19 +436,19 @@ var ipProfileDecoder = newAccumulatingPacketDecoder(
 		var numFlushed int64
 
 		// Take a snapshot of items under lock to avoid race conditions
-		ipProfiles.Lock()
-		items := make([]*ipProfile, 0, len(ipProfiles.Items))
-		for _, item := range ipProfiles.Items {
+		hosts.Lock()
+		items := make([]*hostEntry, 0, len(hosts.Items))
+		for _, item := range hosts.Items {
 			items = append(items, item)
 		}
-		ipProfiles.Unlock()
+		hosts.Unlock()
 
 		// Write current state of each profile without clearing
 		for _, item := range items {
 			item.Lock()
 			// Process any buffered DPI data before writing (without clearing buffers)
-			processIPProfileDeferredDPIWithoutClear(item)
-			d.writeIPProfile(item.IPProfile)
+			processHostDeferredDPIWithoutClear(item)
+			d.writeHost(item.Host)
 			numFlushed++
 			item.Unlock()
 		}
@@ -457,16 +457,16 @@ var ipProfileDecoder = newAccumulatingPacketDecoder(
 	},
 )
 
-// getIPProfile is DEPRECATED. Replaced by updateIPProfile with deferred DPI for performance.
+// getHost is DEPRECATED. Replaced by updateHost with deferred DPI for performance.
 // This function performed immediate DPI analysis which was a major performance bottleneck.
 // The new implementation buffers packets per stream and runs DPI during the flush phase.
-func getIPProfile(ipAddr string, i *decoderutils.PacketInfo, source bool) *ipProfile {
-	// This function is no longer used. Calls should use updateIPProfile instead.
+func getHost(ipAddr string, i *decoderutils.PacketInfo, source bool) *hostEntry {
+	// This function is no longer used. Calls should use updateHost instead.
 	// Keeping this stub for backward compatibility during migration.
 	return nil
 }
 
-func doSrcPortUpdate(p *ipProfile, srcPort int32, layerType string, dataLen uint64) {
+func doSrcPortUpdate(p *hostEntry, srcPort int32, layerType string, dataLen uint64) {
 	var found bool
 
 	// source port
@@ -494,7 +494,7 @@ func doSrcPortUpdate(p *ipProfile, srcPort int32, layerType string, dataLen uint
 	}
 }
 
-func doContactedPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLen uint64) {
+func doContactedPortUpdate(p *hostEntry, dstPort int32, layerType string, dataLen uint64) {
 	var found bool
 
 	for _, port := range p.ContactedPorts {
@@ -521,7 +521,7 @@ func doContactedPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLe
 	}
 }
 
-func doDstPortUpdate(p *ipProfile, dstPort int32, layerType string, dataLen uint64) {
+func doDstPortUpdate(p *hostEntry, dstPort int32, layerType string, dataLen uint64) {
 	var found bool
 
 	// destination port
@@ -601,8 +601,8 @@ func initPorts(i *decoderutils.PacketInfo, source bool) (
 	return
 }
 
-// writeIPProfile writes the ip profile.
-func (d *Decoder) writeIPProfile(i *types.IPProfile) {
+// writeHost writes the ip profile.
+func (d *Decoder) writeHost(i *types.Host) {
 	// Populate Applications field from Protocols map
 	// This ensures the Applications field is correctly populated before writing
 	if len(i.Protocols) > 0 {

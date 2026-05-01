@@ -14,39 +14,44 @@
 package transform
 
 import (
-	"fmt"
 	netmaltego "github.com/dreadl0ck/netcap/maltego"
+	"net"
+	"strconv"
+	"strings"
+
+	"github.com/dustin/go-humanize"
 
 	"github.com/dreadl0ck/maltego"
+	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 func toHosts() {
-	var (
-		profiles = netmaltego.LoadIPProfiles()
-		hosts    = make(map[string]struct{})
-		pathName string
-	)
+	netmaltego.HostTransform(netmaltego.CountIPPackets, func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Host, min, max uint64, path string, mac string, ip string) {
+		addHost(trx, profile, path, min, max)
+	})
+}
 
-	netmaltego.POP3Transform(
-		nil,
-		func(lt maltego.LocalTransform, trx *maltego.Transform, pop3 *types.POP3, min, max uint64, path string, ipaddr string) {
-			hosts[pop3.ServerIP] = struct{}{}
-			hosts[pop3.ClientIP] = struct{}{}
-			if pathName == "" {
-				pathName = path
-			}
-		},
-		true,
-	)
+func addHost(trx *maltego.Transform, profile *types.Host, path string, min, max uint64) {
+	ident := profile.Addr + "\n" + profile.Geolocation
 
-	trx := &maltego.Transform{}
-	for ip := range hosts {
-		if p, ok := profiles[ip]; ok {
-			addIPProfile(trx, p, pathName, 0, 0)
-		}
+	var ent *maltego.Entity
+	if resolvers.IsPrivateIP(net.ParseIP(profile.Addr)) {
+		ent = addEntityWithPath(trx, "netcap.InternalHost", ident, path)
+	} else {
+		ent = addEntityWithPath(trx, "netcap.ExternalHost", ident, path)
 	}
 
-	trx.AddUIMessage("completed!", maltego.UIMessageInform)
-	fmt.Println(trx.ReturnOutput())
+	ent.SetLinkLabel(strconv.FormatInt(profile.NumPackets, 10) + " pkts\n" + humanize.Bytes(profile.Bytes))
+	ent.SetLinkThickness(maltego.GetThickness(uint64(profile.NumPackets), min, max))
+	ent.AddProperty(netmaltego.PropertyIpAddr, "IPAddr", maltego.Strict, profile.Addr)
+	ent.AddDisplayInformation(strings.Join(profile.Applications, "<br>"), "Applications")
+	ent.AddDisplayInformation(strings.Join(profile.DNSNames, "<br>"), "DNS Names")
+	ent.AddDisplayInformation(strings.Join(profile.Ja4Fingerprints, "<br>"), "JA4 Fingerprints")
+	ent.AddDisplayInformation(strings.Join(profile.Ja4SFingerprints, "<br>"), "JA4S Fingerprints")
+	ent.AddDisplayInformation(createSNITableHTML(profile.SNIs), "SNIs")
+	ent.AddDisplayInformation(createProtocolsTableHTML(profile.Protocols), "Protocols")
+	ent.AddDisplayInformation(createPortsTableHTML(profile.SrcPorts), "Source Ports")
+	ent.AddDisplayInformation(createPortsTableHTML(profile.DstPorts), "Destination Ports")
+	ent.AddDisplayInformation(createPortsTableHTML(profile.ContactedPorts), "Contacted Ports")
 }

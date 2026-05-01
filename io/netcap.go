@@ -173,8 +173,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.Vulnerability)
 	case types.Type_NC_Exploit:
 		record = new(types.Exploit)
-	case types.Type_NC_IPProfile:
-		record = new(types.IPProfile)
+	case types.Type_NC_Host:
+		record = new(types.Host)
 	case types.Type_NC_Mail:
 		record = new(types.Mail)
 	case types.Type_NC_Alert:

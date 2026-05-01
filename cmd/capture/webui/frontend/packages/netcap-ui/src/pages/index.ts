@@ -46,7 +46,7 @@ export { default as YaraPage } from './YaraPage';
 export { default as FingerprintsPage } from './FingerprintsPage';
 export { default as HarvestersPage } from './HarvestersPage';
 export { default as HostsPage } from './HostsPage';
-export type { IPProfileSummary, HostsPageProps } from './HostsPage';
+export type { HostSummary, HostsPageProps } from './HostsPage';
 export { default as HttpPage } from './HttpPage';
 export { default as InjectPage } from './InjectPage';
 export { default as InterfacesPage } from './InterfacesPage';

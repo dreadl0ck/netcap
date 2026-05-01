@@ -65,7 +65,7 @@ var (
 
 	abstractDecoders = []string{
 		"Alert", "Connection", "Secret", "DeviceProfile",
-		"Exploit", "File", "IPProfile", "Mail", "Service",
+		"Exploit", "File", "Host", "Mail", "Service",
 		"Software", "Vulnerability",
 	}
 )

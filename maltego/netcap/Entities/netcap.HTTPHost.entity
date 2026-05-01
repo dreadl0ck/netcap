@@ -1,0 +1,16 @@
+<MaltegoEntity id="netcap.HTTPHost" displayName="HTTPHost" displayNamePlural="HTTPHosts" description="A HTTP Hostname" category="Netcap" smallIconResource="netcap/web_black" largeIconResource="netcap/web_black" allowedRoot="true" conversionOrder="2147483647" visible="true">
+ <Properties value="properties.httphost" displayValue="properties.httphost">
+  <Groups></Groups>
+  <Fields>
+   <Field name="properties.httphost" type="string" nullable="true" hidden="false" readonly="false" description="" displayName="HTTPHost">
+    <SampleValue>-</SampleValue>
+   </Field>
+   <Field name="path" type="string" nullable="true" hidden="false" readonly="false" description="path to the audit records on disk" displayName="Path">
+    <SampleValue></SampleValue>
+   </Field>
+  </Fields>
+ </Properties>
+ <BaseEntities>
+  <BaseEntity>netcap.IPAddr</BaseEntity>
+ </BaseEntities>
+</MaltegoEntity>

@@ -1273,7 +1273,7 @@ func getLayerMap() map[string]string {
 
 // generateGeoChart creates a geo chart showing IP geolocation distribution from IPProfile data
 func generateGeoChart(outDir string, showLegend bool) *charts.Geo {
-	geoData := getIPProfileGeolocations(outDir)
+	geoData := getHostGeolocations(outDir)
 
 	geo := charts.NewGeo()
 	geo.SetGlobalOptions(
@@ -1342,12 +1342,12 @@ func generateGeoChart(outDir string, showLegend bool) *charts.Geo {
 	return geo
 }
 
-// getIPProfileGeolocations reads IPProfile data and extracts geolocation information
-func getIPProfileGeolocations(outDir string) []opts.GeoData {
+// getHostGeolocations reads IPProfile data and extracts geolocation information
+func getHostGeolocations(outDir string) []opts.GeoData {
 	geoMap := make(map[string]int) // country/city -> count
 	locationCoords := getLocationCoordinates()
 
-	filePath := filepath.Join(outDir, "IPProfile.ncap.gz")
+	filePath := filepath.Join(outDir, "Host.ncap.gz")
 
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -1382,7 +1382,7 @@ func getIPProfileGeolocations(outDir string) []opts.GeoData {
 		}
 
 		// Type assert to IPProfile
-		ipProfile, ok := record.(*types.IPProfile)
+		ipProfile, ok := record.(*types.Host)
 		if !ok {
 			continue
 		}
@@ -1584,7 +1584,7 @@ func (s *Server) getAllCapturesGeolocations() []opts.GeoData {
 
 	// Iterate through all output directories and aggregate geolocation data
 	for _, dir := range outputDirs {
-		filePath := filepath.Join(dir, "IPProfile.ncap.gz")
+		filePath := filepath.Join(dir, "Host.ncap.gz")
 
 		// Check if file exists
 		if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -1618,7 +1618,7 @@ func (s *Server) getAllCapturesGeolocations() []opts.GeoData {
 			}
 
 			// Type assert to IPProfile
-			ipProfile, ok := record.(*types.IPProfile)
+			ipProfile, ok := record.(*types.Host)
 			if !ok {
 				continue
 			}
@@ -1875,15 +1875,15 @@ func getConnectionScatter3DData(outDir string, maxConnections int) []opts.Chart3
 
 	// If no connection data, try IPProfile
 	if len(data) == 0 {
-		return getIPProfileScatter3DData(outDir)
+		return getHostScatter3DData(outDir)
 	}
 
 	return data
 }
 
-// getIPProfileScatter3DData reads IPProfile data as fallback for 3D scatter
-func getIPProfileScatter3DData(outDir string) []opts.Chart3DData {
-	filePath := filepath.Join(outDir, "IPProfile.ncap.gz")
+// getHostScatter3DData reads IPProfile data as fallback for 3D scatter
+func getHostScatter3DData(outDir string) []opts.Chart3DData {
+	filePath := filepath.Join(outDir, "Host.ncap.gz")
 
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -1921,7 +1921,7 @@ func getIPProfileScatter3DData(outDir string) []opts.Chart3DData {
 		}
 
 		// Type assert to IPProfile
-		ipProfile, ok := record.(*types.IPProfile)
+		ipProfile, ok := record.(*types.Host)
 		if !ok {
 			continue
 		}

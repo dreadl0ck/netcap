@@ -51,7 +51,7 @@
   <Transform name="netcap.ToEmails"></Transform>
   <Transform name="netcap.ToICMPV4ControlMessages"></Transform>
   <Transform name="netcap.ToICMPV6ControlMessages"></Transform>
-  <Transform name="netcap.ToHosts"></Transform>
+  <Transform name="netcap.ToPOP3Hosts"></Transform>
   <Transform name="netcap.ToFileTypes"></Transform>
   <Transform name="netcap.ToHTTPHostnames"></Transform>
   <Transform name="netcap.ToIANAServices"></Transform>
@@ -63,8 +63,8 @@
   <Transform name="netcap.ToSoftwareExploits"></Transform>
   <Transform name="netcap.ToSoftwareVulnerabilities"></Transform>
   <Transform name="netcap.ToDevices"></Transform>
-  <Transform name="netcap.ToIPProfiles"></Transform>
-  <Transform name="netcap.ToIPProfilesForSoftware"></Transform>
+  <Transform name="netcap.ToHosts"></Transform>
+  <Transform name="netcap.ToHostsForSoftware"></Transform>
   <Transform name="netcap.ToJA4Hashes"></Transform>
   <Transform name="netcap.ToJA4SHashes"></Transform>
   <Transform name="netcap.ToSMTPCommandTypes"></Transform>
@@ -101,8 +101,8 @@
   <Transform name="netcap.ToJA4HashesForProfile"></Transform>
   <Transform name="netcap.ToVisitorsForURL"></Transform>
   <Transform name="netcap.ToVisitorsForHost"></Transform>
-  <Transform name="netcap.ToProviderIPProfilesForURL"></Transform>
-  <Transform name="netcap.ToProviderIPProfilesForHost"></Transform>
+  <Transform name="netcap.ToProviderHostsForURL"></Transform>
+  <Transform name="netcap.ToProviderHostsForHTTPHost"></Transform>
   <Transform name="netcap.ToTCPFlagCombinations"></Transform>
   <Transform name="netcap.ToEthernetTypes"></Transform>
   <Transform name="netcap.ToIPV4Protocols"></Transform>

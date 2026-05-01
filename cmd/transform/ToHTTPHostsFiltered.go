@@ -50,7 +50,7 @@ func toHTTPHostsFiltered() {
 			}
 			if http.Host != "" {
 				if !resolvers.IsWhitelistedDomain(http.Host) {
-					ent := addEntityWithPath(trx, "netcap.Host", http.Host, path)
+					ent := addEntityWithPath(trx, "netcap.HTTPHost", http.Host, path)
 					ent.AddProperty(netmaltego.PropertyIpAddr, netmaltego.PropertyIpAddrLabel, maltego.Strict, ipaddr)
 
 				}
