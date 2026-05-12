@@ -93,7 +93,12 @@ Single binary (`cmd/main.go`) with subcommands via `urfave/cli/v3`: `capture`, `
 
 ### Service Mode
 
-The `capture` subcommand supports `--service` mode serving an HTTP API with a Next.js frontend at `cmd/capture/webui/frontend/` (pnpm-based). Use `air` for hot-reload during development.
+The `capture` subcommand supports `--service` mode serving an HTTP API with a Vite + React 19 single-page frontend at `cmd/capture/webui/frontend/`. The frontend is a pnpm workspace containing:
+
+- the app shell (root `package.json`, built with Vite, tested with Vitest)
+- a reusable UI library `@dreadl0ck/netcap-ui` at `cmd/capture/webui/frontend/packages/netcap-ui/` (built with tsup)
+
+Client-side routing uses `react-router` v7; data fetching uses `swr`; UI is MUI 7 + Emotion. There is no Next.js, no SSR, and no `middleware.js`/`proxy.js`. Use `air` for Go hot-reload during development; use `pnpm dev` inside the frontend directory for the UI dev server.
 
 ### Version Variables
 
