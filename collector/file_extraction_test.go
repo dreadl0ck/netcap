@@ -78,7 +78,7 @@ func createTestCollector(outDir string, enableDPI bool) *collector.Collector {
 			CSV:                            false,
 			Proto:                          true,
 			IncludeDecoders:                "",
-			ExcludeDecoders:                "Connection,DeviceProfile,IPProfile", // Exclude DPI-dependent decoders
+			ExcludeDecoders:                "Connection", // Only stream-decoder names allowed here; DeviceProfile/IPProfile are packet decoders.
 			IncludePayloads:                false,
 			ExportMetrics:                  false,
 			AddContext:                     true,

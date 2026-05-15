@@ -60,7 +60,7 @@ func TestSSHPcapDecoding(t *testing.T) {
 			CSV:              false,
 			Proto:            true,
 			IncludeDecoders:  "",
-			ExcludeDecoders:  "DeviceProfile,IPProfile,Connection", // Exclude decoders that use DPI
+			ExcludeDecoders:  "Connection", // Only stream-decoder names allowed here; DeviceProfile/IPProfile are packet decoders.
 			Out:              outputDir,
 			Source:           "ssh.pcap unit test",
 			IncludePayloads:  false,

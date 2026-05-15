@@ -4,6 +4,8 @@
  * License: GNU General Public License v3.0
  */
 
+//go:build e2e
+
 package secret_test
 
 import (

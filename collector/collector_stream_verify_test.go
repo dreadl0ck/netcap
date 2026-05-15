@@ -57,8 +57,11 @@ func TestStreamDirectionHTTP(t *testing.T) {
 			StreamBufferSize:        100,
 			NumStreamWorkers:        4,
 			IgnoreDecoderInitErrors: true,
-			// Exclude DPI-dependent decoders to prevent crash
-			ExcludeDecoders: "DeviceProfile,IPProfile,Connection",
+			// Exclude the Connection stream decoder. DeviceProfile and IPProfile
+			// are packet decoders (handled separately) and listing them here
+			// triggers stream.InitDecoders to reject them as unknown stream
+			// decoder names.
+			ExcludeDecoders: "Connection",
 			// Use defaults for others
 			BannerSize: 256,
 		},
