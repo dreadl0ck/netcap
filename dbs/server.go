@@ -30,6 +30,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
@@ -46,6 +47,17 @@ type DBServer struct {
 	mu           sync.RWMutex
 	verbose      bool // read-only after construction
 	nvdStartYear int  // read-only after construction
+
+	// ready is true once an initial database revision is available to serve.
+	// /health returns HTTP 200 in both states; the JSON body distinguishes
+	// "initializing" from "healthy" so orchestrators using a simple curl -f
+	// healthcheck pass immediately while clients can still detect readiness.
+	ready atomic.Bool
+
+	// initFn runs the first-revision initialization (existing-cache discovery
+	// or fresh rebuild). It is injectable for tests; defaults to
+	// (*DBServer).initialize when nil.
+	initFn func() error
 }
 
 // NewDBServer creates a new database server instance
@@ -66,7 +78,15 @@ func NewDBServer(addr string, nvdStartYear int, verbose bool) *DBServer {
 	}
 }
 
-// Start starts the database server
+// Start starts the database server.
+//
+// HTTP listener readiness is decoupled from database readiness: handlers are
+// registered and ListenAndServe is called synchronously, while the initial
+// database population runs on a background goroutine. This lets orchestrator
+// healthchecks (e.g. `curl -f /health`) succeed within seconds even on a cold
+// start where the first rebuild may take several minutes (NVD downloads,
+// exploitdb clone, indexing). The /health body distinguishes "initializing"
+// from "healthy" so clients that care can wait for true readiness.
 func (s *DBServer) Start() error {
 	// Create directories
 	if err := os.MkdirAll(filepath.Join(s.buildDir, "build"), defaults.DirectoryPermission); err != nil {
@@ -87,10 +107,42 @@ func (s *DBServer) Start() error {
 		return fmt.Errorf("dbs directory not writable: %w", err)
 	}
 
-	// Check if we have pre-existing databases (e.g., from a mounted volume)
-	hasExisting, existingVersion := s.checkExistingDatabases()
+	// Setup HTTP handlers BEFORE doing any expensive initialization, so the
+	// healthcheck endpoint is reachable as soon as the listener binds.
+	http.HandleFunc("/", s.handleRoot)
+	http.HandleFunc("/dbs/", s.handleDownload)
+	http.HandleFunc("/dbs/latest", s.handleLatest)
+	http.HandleFunc("/dbs/list", s.handleList)
+	http.HandleFunc("/health", s.handleHealth)
 
-	if hasExisting {
+	// Background initialization: discover an existing revision on the volume
+	// (fast path; sets ready immediately) or run the initial rebuild
+	// (slow path; can take minutes). Either way the HTTP listener is up
+	// and /health returns 200 with status="initializing" until done.
+	initFn := s.initFn
+	if initFn == nil {
+		initFn = s.initialize
+	}
+	go func() {
+		if err := initFn(); err != nil {
+			log.Printf("Warning: initial database setup failed: %v", err)
+		}
+		// Start nightly rebuild scheduler only after the initial attempt
+		// finishes (success or failure). Subsequent nightly rebuilds will
+		// retry transient sources like ja4db.
+		go s.scheduleDailyRebuild()
+	}()
+
+	log.Printf("Starting database server on %s", s.addr)
+	return http.ListenAndServe(s.addr, nil)
+}
+
+// initialize runs the first-revision setup: prefer an existing cached
+// revision on the volume; otherwise perform a cold rebuild. On success it
+// sets ready=true so /health reports "healthy".
+func (s *DBServer) initialize() error {
+	// Check if we have pre-existing databases (e.g., from a mounted volume)
+	if hasExisting, existingVersion := s.checkExistingDatabases(); hasExisting {
 		log.Printf("Found existing databases (version: %s)", existingVersion)
 		log.Println("Using existing databases as initial revision")
 
@@ -103,26 +155,20 @@ func (s *DBServer) Start() error {
 		if err := s.ensureLatestLinks(); err != nil {
 			log.Printf("Warning: failed to create latest links: %v", err)
 		}
-	} else {
-		// Initial database generation
-		log.Println("No existing databases found. Generating initial databases...")
-		if err := s.rebuildDatabases(); err != nil {
-			log.Printf("Warning: initial database generation failed: %v", err)
-		}
+
+		s.ready.Store(true)
+		return nil
 	}
 
-	// Start nightly rebuild scheduler
-	go s.scheduleDailyRebuild()
-
-	// Setup HTTP handlers
-	http.HandleFunc("/", s.handleRoot)
-	http.HandleFunc("/dbs/", s.handleDownload)
-	http.HandleFunc("/dbs/latest", s.handleLatest)
-	http.HandleFunc("/dbs/list", s.handleList)
-	http.HandleFunc("/health", s.handleHealth)
-
-	log.Printf("Starting database server on %s", s.addr)
-	return http.ListenAndServe(s.addr, nil)
+	// Initial database generation (cold path)
+	log.Println("No existing databases found. Generating initial databases...")
+	if err := s.rebuildDatabases(); err != nil {
+		// Rebuild failed; remain not-ready. The nightly scheduler will
+		// retry. Caller logs the error.
+		return err
+	}
+	s.ready.Store(true)
+	return nil
 }
 
 // rebuildDatabases generates a new version of the databases
@@ -206,6 +252,9 @@ func (s *DBServer) rebuildDatabases() error {
 	s.mu.Lock()
 	s.currentDate = newDate
 	s.mu.Unlock()
+
+	// Mark the server as ready once a revision has been published. Idempotent.
+	s.ready.Store(true)
 
 	// Clean up old database versions to save storage space
 	// Note: This reads s.currentDate but we just updated it, so it's safe
@@ -707,10 +756,15 @@ func (s *DBServer) handleRoot(w http.ResponseWriter, r *http.Request) {
 	currentVersion := s.currentDate
 	s.mu.RUnlock()
 
+	statusLabel := "INITIALIZING"
+	if s.ready.Load() {
+		statusLabel = "HEALTHY"
+	}
+
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	fmt.Fprintf(w, "NETCAP Database Server\n")
 	fmt.Fprintf(w, "======================\n\n")
-	fmt.Fprintf(w, "Status: HEALTHY\n")
+	fmt.Fprintf(w, "Status: %s\n", statusLabel)
 	fmt.Fprintf(w, "Latest Database Version: %s\n", currentVersion)
 	fmt.Fprintf(w, "Timestamp: %s\n\n", time.Now().UTC().Format(time.RFC3339))
 	fmt.Fprintf(w, "Available Endpoints:\n")
@@ -721,15 +775,27 @@ func (s *DBServer) handleRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "  GET /dbs/<file>    - Download database file\n")
 }
 
-// handleHealth provides a health check endpoint
+// handleHealth provides a health check endpoint.
+//
+// Always responds with HTTP 200 so that a simple liveness probe (e.g. the
+// container-level `curl -f /health`) succeeds as soon as the listener binds,
+// even before the first database revision is available. The JSON status field
+// distinguishes "initializing" (no revision published yet) from "healthy"
+// (at least one revision available). Clients that need true readiness can
+// poll for status == "healthy" or use /dbs/latest.
 func (s *DBServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 	// Read current date with lock (lock is now only held briefly during rebuilds)
 	s.mu.RLock()
 	currentVersion := s.currentDate
 	s.mu.RUnlock()
 
+	status := "initializing"
+	if s.ready.Load() {
+		status = "healthy"
+	}
+
 	health := map[string]any{
-		"status":          "healthy",
+		"status":          status,
 		"current_version": currentVersion,
 		"timestamp":       time.Now().UTC().Format(time.RFC3339),
 	}
