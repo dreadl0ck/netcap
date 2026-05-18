@@ -83,3 +83,83 @@ func TestFetchResource_NoURL(t *testing.T) {
 	}
 }
 
+// TestSkippedSourceNames covers the env parsing for NC_DBS_SKIP_SOURCES,
+// including empty values, whitespace tolerance, and the "no env var set"
+// path that should return nil so callers can avoid allocating a map.
+func TestSkippedSourceNames(t *testing.T) {
+	cases := []struct {
+		name string
+		v    string
+		want []string // sorted list of expected keys; nil/empty means nil map
+	}{
+		{"unset", "", nil},
+		{"empty", "   ", nil},
+		{"single", "ja4db.json", []string{"ja4db.json"}},
+		{"multi", "ja4db.json,hasshdb.json", []string{"hasshdb.json", "ja4db.json"}},
+		{"whitespace", " ja4db.json , , hasshdb.json ", []string{"hasshdb.json", "ja4db.json"}},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			t.Setenv("NC_DBS_SKIP_SOURCES", c.v)
+			got := skippedSourceNames()
+			if len(c.want) == 0 {
+				if got != nil {
+					t.Errorf("expected nil, got %v", got)
+				}
+				return
+			}
+			if len(got) != len(c.want) {
+				t.Fatalf("len: got %d (%v), want %d (%v)", len(got), got, len(c.want), c.want)
+			}
+			for _, k := range c.want {
+				if _, ok := got[k]; !ok {
+					t.Errorf("missing key %q in %v", k, got)
+				}
+			}
+		})
+	}
+}
+
+// TestActiveSources_FiltersByEnv verifies that activeSources removes the
+// requested datasource from the default list. Uses a real source name from
+// the package-level `sources` slice to keep the test honest.
+func TestActiveSources_FiltersByEnv(t *testing.T) {
+	// Sanity: ja4db.json is one of the defaults; this test is meaningless
+	// otherwise. Loud failure is preferable to a silent skip.
+	var foundJA4 bool
+	for _, s := range sources {
+		if s.name == "ja4db.json" {
+			foundJA4 = true
+			break
+		}
+	}
+	if !foundJA4 {
+		t.Fatal("default sources list no longer contains ja4db.json; update this test or the skip target")
+	}
+
+	t.Setenv("NC_DBS_SKIP_SOURCES", "ja4db.json")
+	// Force a fresh log-once for this test scope so subsequent runs in the
+	// same `go test` invocation aren't quieted. activeSources uses
+	// sync.Once at package scope; we don't assert on the log line itself,
+	// only on filtering.
+	got := activeSources()
+	if len(got) != len(sources)-1 {
+		t.Fatalf("activeSources returned %d entries, want %d", len(got), len(sources)-1)
+	}
+	for _, s := range got {
+		if s.name == "ja4db.json" {
+			t.Errorf("activeSources did not skip ja4db.json")
+		}
+	}
+}
+
+// TestActiveSources_NoEnvReturnsAll exercises the fast path.
+func TestActiveSources_NoEnvReturnsAll(t *testing.T) {
+	t.Setenv("NC_DBS_SKIP_SOURCES", "")
+	got := activeSources()
+	if len(got) != len(sources) {
+		t.Errorf("activeSources returned %d entries, want %d (no skip env)", len(got), len(sources))
+	}
+}
+

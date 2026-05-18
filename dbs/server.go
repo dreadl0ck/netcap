@@ -208,9 +208,11 @@ func (s *DBServer) rebuildDatabases() error {
 		return fmt.Errorf("failed to create temp dbs directory: %w", err)
 	}
 
-	// Process each source (exploitdb will be cloned fresh to get latest exploits)
+	// Process each source (exploitdb will be cloned fresh to get latest exploits).
+	// activeSources honours NC_DBS_SKIP_SOURCES so operators can bypass
+	// known-bad upstreams (e.g. ja4db.json) without rebuilding the image.
 	var wg sync.WaitGroup
-	for _, source := range sources {
+	for _, source := range activeSources() {
 		wg.Add(1)
 		go s.processSourceForServer(source, tempBuildDir, tempDBsDir, &wg)
 	}

@@ -29,6 +29,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -59,6 +60,60 @@ func sourceTimeout() time.Duration {
 		}
 	}
 	return defaultSourceTimeout
+}
+
+// skippedSourceNames returns the set of data-source names operators have
+// asked to skip via the NC_DBS_SKIP_SOURCES env variable (comma-separated,
+// values matched against datasource.name). Used to bypass upstreams that
+// are known-bad from this network without rebuilding the image, e.g.
+// NC_DBS_SKIP_SOURCES=ja4db.json when the host can't reach ja4db.com.
+func skippedSourceNames() map[string]struct{} {
+	raw := os.Getenv("NC_DBS_SKIP_SOURCES")
+	if raw == "" {
+		return nil
+	}
+	out := make(map[string]struct{})
+	for _, name := range strings.Split(raw, ",") {
+		if name = strings.TrimSpace(name); name != "" {
+			out[name] = struct{}{}
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// activeSources returns the data-source list with operator-requested skips
+// applied. The first call per process logs which sources were skipped.
+func activeSources() []*datasource {
+	skip := skippedSourceNames()
+	if len(skip) == 0 {
+		return sources
+	}
+	out := make([]*datasource, 0, len(sources))
+	skipped := make([]string, 0, len(skip))
+	for _, s := range sources {
+		if _, drop := skip[s.name]; drop {
+			skipped = append(skipped, s.name)
+			continue
+		}
+		out = append(out, s)
+	}
+	logSkippedSourcesOnce(skipped)
+	return out
+}
+
+var logSkippedOnce sync.Once
+
+func logSkippedSourcesOnce(names []string) {
+	if len(names) == 0 {
+		return
+	}
+	logSkippedOnce.Do(func() {
+		log.Printf("dbs: skipping %d data source(s) per NC_DBS_SKIP_SOURCES: %s",
+			len(names), strings.Join(names, ", "))
+	})
 }
 
 // A simple hook function that provides the option to modify the fetched data
@@ -312,7 +367,7 @@ func GenerateDBs(nvdIndexStartYear int) {
 		nvdStartYear = nvdIndexStartYear
 	}
 
-	for _, s := range sources {
+	for _, s := range activeSources() {
 		total++
 		wg.Add(1)
 		go func(source *datasource) {
