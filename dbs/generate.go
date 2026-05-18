@@ -20,6 +20,8 @@
 package dbs
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -38,6 +40,26 @@ import (
 	"github.com/dreadl0ck/netcap/internal/archive"
 	"github.com/dreadl0ck/netcap/internal/httputil"
 )
+
+// defaultSourceTimeout caps the total wall-clock time spent fetching a single
+// data source (including retries and backoff). It exists so a blackholed
+// upstream like ja4db.com cannot keep the rebuild stalled for minutes per
+// run. The default mirrors the slowest known good source on a healthy network
+// with headroom. Overridable via the NC_DBS_SOURCE_TIMEOUT environment
+// variable (Go duration syntax, e.g. "90s" or "2m").
+const defaultSourceTimeout = 60 * time.Second
+
+// sourceTimeout returns the per-source overall timeout, honouring the
+// NC_DBS_SOURCE_TIMEOUT env override. Invalid values fall back to the
+// default.
+func sourceTimeout() time.Duration {
+	if v := os.Getenv("NC_DBS_SOURCE_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil && d > 0 {
+			return d
+		}
+	}
+	return defaultSourceTimeout
+}
 
 // A simple hook function that provides the option to modify the fetched data
 type datasourceHook func(in string, d *datasource, base string) error
@@ -399,8 +421,12 @@ func processSource(s *datasource, base string) bool {
 	return true
 }
 
-// fetchResource will attempt to download a resource
-// Returns error instead of fataling on errors, allowing other downloads to continue
+// fetchResource will attempt to download a resource.
+//
+// Returns an error instead of log.Fatal so other downloads can continue. A
+// per-source overall context budget caps total wall-clock time across all
+// retries; this prevents a single blackholed upstream from stalling a rebuild
+// for several minutes per run (see sourceTimeout / NC_DBS_SOURCE_TIMEOUT).
 func fetchResource(s *datasource, outFilePath string) error {
 	if s.url == "" {
 		// No URL means this is handled by a hook (like NVD indexing)
@@ -409,6 +435,9 @@ func fetchResource(s *datasource, outFilePath string) error {
 
 	fmt.Printf("fetching %s from %s\n", s.name, utils.StripQueryString(s.url))
 
+	ctx, cancel := context.WithTimeout(context.Background(), sourceTimeout())
+	defer cancel()
+
 	var (
 		numRetries int
 		maxRetries = 3
@@ -416,14 +445,34 @@ func fetchResource(s *datasource, outFilePath string) error {
 	)
 
 	for numRetries <= maxRetries {
+		// Stop early if the overall budget has expired.
+		if err := ctx.Err(); err != nil {
+			if lastErr == nil {
+				lastErr = err
+			}
+			return fmt.Errorf("failed to retrieve data from %s (timeout %s exceeded): %v", s.name, sourceTimeout(), lastErr)
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.url, nil)
+		if err != nil {
+			return fmt.Errorf("failed to build request for %s: %v", s.name, err)
+		}
+
 		// execute GET request
-		resp, err := http.Get(s.url)
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			lastErr = err
 			numRetries++
+			// If the failure is from our own deadline elapsing there is no
+			// point in sleeping further; surface the error immediately.
+			if errors.Is(err, context.DeadlineExceeded) || ctx.Err() != nil {
+				return fmt.Errorf("failed to retrieve data from %s (timeout %s exceeded): %v", s.name, sourceTimeout(), lastErr)
+			}
 			if numRetries <= maxRetries {
 				fmt.Printf("failed to retrieve data from %s (attempt %d/%d): %v - retrying...\n", s.name, numRetries, maxRetries, err)
-				time.Sleep(time.Duration(numRetries) * time.Second) // exponential backoff
+				if !sleepWithCtx(ctx, time.Duration(numRetries)*time.Second) {
+					return fmt.Errorf("failed to retrieve data from %s (timeout %s exceeded): %v", s.name, sourceTimeout(), lastErr)
+				}
 				continue
 			}
 			return fmt.Errorf("failed to retrieve data from %s after %d attempts: %v", s.name, maxRetries, lastErr)
@@ -437,7 +486,9 @@ func fetchResource(s *datasource, outFilePath string) error {
 			numRetries++
 			if numRetries <= maxRetries {
 				fmt.Printf("received HTTP %d from %s (attempt %d/%d) - retrying...\n", resp.StatusCode, s.name, numRetries, maxRetries)
-				time.Sleep(time.Duration(numRetries) * time.Second)
+				if !sleepWithCtx(ctx, time.Duration(numRetries)*time.Second) {
+					return fmt.Errorf("failed to retrieve data from %s (timeout %s exceeded): %v", s.name, sourceTimeout(), lastErr)
+				}
 				continue
 			}
 			return fmt.Errorf("failed to retrieve data from %s: %s", s.name, lastErr)
@@ -478,6 +529,22 @@ func fetchResource(s *datasource, outFilePath string) error {
 	}
 
 	return lastErr
+}
+
+// sleepWithCtx sleeps for d, but returns false if the context expires first
+// so callers can stop the retry loop without further work.
+func sleepWithCtx(ctx context.Context, d time.Duration) bool {
+	if d <= 0 {
+		return ctx.Err() == nil
+	}
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-t.C:
+		return true
+	case <-ctx.Done():
+		return false
+	}
 }
 
 // webTechnologies models different web technologies
