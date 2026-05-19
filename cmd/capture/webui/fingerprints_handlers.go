@@ -27,29 +27,78 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// FingerprintSummary represents aggregated fingerprint information
+// Per-row bounds applied before sending fingerprint summaries to the UI.
+// These prevent the browser from being overloaded when a fingerprint is
+// associated with very large numbers of distinct community IDs or hosts.
+const (
+	maxCommunityIDsPerRow = 10
+	maxHostsPerRow        = 50
+
+	defaultFingerprintsLimit = 100
+	maxFingerprintsLimit     = 1000
+)
+
+// FingerprintSummary represents aggregated fingerprint information.
+//
+// Hosts and CommunityIDs are capped server-side (see maxHostsPerRow and
+// maxCommunityIDsPerRow). HostsTotal / CommunityIDsTotal carry the
+// pre-cap counts so the UI can display "X of Y" hints.
 type FingerprintSummary struct {
-	Fingerprint  string   `json:"fingerprint"`
-	Type         string   `json:"type"` // JA4, JA4S, JA4H, JA4X, JA4T, JA4TS, JA4SSH, or DHCP
-	Count        int      `json:"count"`
-	Hosts        []string `json:"hosts"`
-	Description  string   `json:"description"`
-	FirstSeen    int64    `json:"firstSeen"`
-	LastSeen     int64    `json:"lastSeen"`
-	CommunityIDs []string `json:"communityIds"`
+	Fingerprint           string   `json:"fingerprint"`
+	Type                  string   `json:"type"` // JA4, JA4S, JA4H, JA4X, JA4T, JA4TS, JA4SSH, or DHCP
+	Count                 int      `json:"count"`
+	Hosts                 []string `json:"hosts"`
+	HostsTotal            int      `json:"hostsTotal"`
+	HostsTruncated        bool     `json:"hostsTruncated"`
+	Description           string   `json:"description"`
+	FirstSeen             int64    `json:"firstSeen"`
+	LastSeen              int64    `json:"lastSeen"`
+	CommunityIDs          []string `json:"communityIds"`
+	CommunityIDsTotal     int      `json:"communityIdsTotal"`
+	CommunityIDsTruncated bool     `json:"communityIdsTruncated"`
+}
+
+// FingerprintsStats summarises the full dataset (independent of the current
+// page) so the UI can render summary cards without scanning the entire list
+// client-side.
+type FingerprintsStats struct {
+	TotalFingerprints int            `json:"totalFingerprints"`
+	TotalOccurrences  int            `json:"totalOccurrences"`
+	CountsByType      map[string]int `json:"countsByType"`
 }
 
 // FingerprintsResponse contains the list of fingerprints
 type FingerprintsResponse struct {
 	Fingerprints []FingerprintSummary `json:"fingerprints"`
-	TotalCount   int                  `json:"totalCount"`
+	TotalCount   int                  `json:"totalCount"` // post-filter, pre-pagination
+	Offset       int                  `json:"offset"`
+	Limit        int                  `json:"limit"`
+	Stats        FingerprintsStats    `json:"stats"`
 }
 
-// handleFingerprints returns a list of all fingerprints (JA4, JA4S, JA4H, JA4X, JA4T, JA4TS, JA4SSH, DHCP)
+// handleFingerprints returns a paginated list of fingerprints (JA4, JA4S,
+// JA4H, JA4X, JA4T, JA4TS, JA4SSH, DHCP). All filtering, sorting and
+// pagination is performed server-side; per-row hosts and community IDs are
+// capped so the browser never receives unbounded arrays.
+//
+// Query parameters:
+//
+//	limit         - max rows to return (default 100, cap 1000)
+//	offset        - row offset for pagination (default 0)
+//	type          - one of JA4|JA4S|JA4H|JA4X|JA4T|JA4TS|JA4SSH|DHCP|all
+//	search        - case-insensitive substring matched against fingerprint,
+//	                type, description and host list
+//	communityId   - repeatable; rows are included only if any of their
+//	                community IDs is in the set. Matching IDs are also
+//	                promoted to the front of the per-row CommunityIDs slice.
+//	sortField     - fingerprint|type|count|hosts (default count)
+//	sortOrder     - asc|desc (default desc)
 func (s *Server) handleFingerprints(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -72,20 +121,371 @@ func (s *Server) handleFingerprints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fingerprints, err := readFingerprints(outDir)
+	all, err := readFingerprints(outDir)
 	if err != nil {
 		log.Printf("[WebUI] Failed to read fingerprints: %v", err)
 		http.Error(w, "Failed to read fingerprints", http.StatusInternalServerError)
 		return
 	}
 
+	q := r.URL.Query()
+	opts := parseFingerprintListOptions(q)
+
+	// Compute global stats over the full unfiltered dataset so the UI summary
+	// cards remain meaningful regardless of which slice the user is viewing.
+	stats := computeFingerprintStats(all)
+
+	filtered := filterFingerprints(all, opts)
+	sortFingerprints(filtered, opts.sortField, opts.sortOrder)
+
+	totalCount := len(filtered)
+
+	// Apply pagination.
+	start := opts.offset
+	if start > totalCount {
+		start = totalCount
+	}
+	end := start + opts.limit
+	if end > totalCount {
+		end = totalCount
+	}
+	page := filtered[start:end]
+
+	// Cap per-row arrays and promote matching community IDs.
+	out := make([]FingerprintSummary, 0, len(page))
+	for _, fp := range page {
+		out = append(out, capFingerprintSummary(fp, opts.communityIDFilter))
+	}
+
 	response := FingerprintsResponse{
-		Fingerprints: fingerprints,
-		TotalCount:   len(fingerprints),
+		Fingerprints: out,
+		TotalCount:   totalCount,
+		Offset:       opts.offset,
+		Limit:        opts.limit,
+		Stats:        stats,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// fingerprintListOptions holds the parsed query parameters for the
+// /api/fingerprints handler.
+type fingerprintListOptions struct {
+	limit             int
+	offset            int
+	typeFilter        string // "" means all
+	search            string // lower-cased
+	communityIDFilter map[string]struct{}
+	sortField         string
+	sortOrder         string
+}
+
+func parseFingerprintListOptions(q map[string][]string) fingerprintListOptions {
+	get := func(key string) string {
+		if v, ok := q[key]; ok && len(v) > 0 {
+			return v[0]
+		}
+		return ""
+	}
+
+	limit := defaultFingerprintsLimit
+	if v := get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			if n > maxFingerprintsLimit {
+				n = maxFingerprintsLimit
+			}
+			limit = n
+		}
+	}
+
+	offset := 0
+	if v := get("offset"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+			offset = n
+		}
+	}
+
+	typeFilter := strings.ToUpper(strings.TrimSpace(get("type")))
+	if typeFilter == "ALL" {
+		typeFilter = ""
+	}
+
+	search := strings.TrimSpace(get("search"))
+
+	var cidSet map[string]struct{}
+	if cids, ok := q["communityId"]; ok && len(cids) > 0 {
+		cidSet = make(map[string]struct{}, len(cids))
+		for _, cid := range cids {
+			cid = strings.TrimSpace(cid)
+			if cid != "" {
+				cidSet[cid] = struct{}{}
+			}
+		}
+		if len(cidSet) == 0 {
+			cidSet = nil
+		}
+	}
+
+	sortField := strings.ToLower(strings.TrimSpace(get("sortField")))
+	switch sortField {
+	case "fingerprint", "type", "count", "hosts":
+	default:
+		sortField = "count"
+	}
+
+	sortOrder := strings.ToLower(strings.TrimSpace(get("sortOrder")))
+	if sortOrder != "asc" && sortOrder != "desc" {
+		sortOrder = "desc"
+	}
+
+	return fingerprintListOptions{
+		limit:             limit,
+		offset:            offset,
+		typeFilter:        typeFilter,
+		search:            search,
+		communityIDFilter: cidSet,
+		sortField:         sortField,
+		sortOrder:         sortOrder,
+	}
+}
+
+// filterFingerprints returns the subset of in that satisfies all active
+// filters in opts. The input slice is not modified.
+func filterFingerprints(in []FingerprintSummary, opts fingerprintListOptions) []FingerprintSummary {
+	searchTerms := parseSearchQuery(opts.search)
+
+	if opts.typeFilter == "" && len(searchTerms) == 0 && len(opts.communityIDFilter) == 0 {
+		out := make([]FingerprintSummary, len(in))
+		copy(out, in)
+		return out
+	}
+
+	out := make([]FingerprintSummary, 0, len(in))
+	for _, fp := range in {
+		if opts.typeFilter != "" && fp.Type != opts.typeFilter {
+			continue
+		}
+		if len(opts.communityIDFilter) > 0 {
+			if !containsAnyCommunityID(fp.CommunityIDs, opts.communityIDFilter) {
+				continue
+			}
+		}
+		if len(searchTerms) > 0 && !fingerprintMatchesSearch(fp, searchTerms) {
+			continue
+		}
+		out = append(out, fp)
+	}
+	return out
+}
+
+func containsAnyCommunityID(ids []string, set map[string]struct{}) bool {
+	for _, id := range ids {
+		if _, ok := set[id]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+// searchTerm is a single token parsed from a user-supplied search query.
+// Tokens may be optionally negated with a leading '!' (e.g. "!JA3" excludes
+// rows that mention JA3).
+type searchTerm struct {
+	term   string // already lower-cased; never empty
+	negate bool
+}
+
+// parseSearchQuery splits a raw query into whitespace-separated tokens,
+// stripping a leading '!' to mark negation. Mirrors the frontend helper at
+// cmd/capture/webui/frontend/packages/netcap-ui/src/lib/tableSearch.ts so
+// the same syntax users typed before client-side filtering went away keeps
+// working against the backend.
+func parseSearchQuery(query string) []searchTerm {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return nil
+	}
+	tokens := strings.Fields(query)
+	out := make([]searchTerm, 0, len(tokens))
+	for _, tok := range tokens {
+		if tok == "" {
+			continue
+		}
+		if strings.HasPrefix(tok, "!") && len(tok) > 1 {
+			out = append(out, searchTerm{term: strings.ToLower(tok[1:]), negate: true})
+			continue
+		}
+		// A lone "!" is treated as a literal positive token (matches the
+		// frontend behaviour, which keeps it as a non-negated term).
+		out = append(out, searchTerm{term: strings.ToLower(tok), negate: false})
+	}
+	return out
+}
+
+// fingerprintMatchesSearch implements the same OR-on-positives /
+// AND-on-negatives semantics as matchesSearchTerms in tableSearch.ts:
+// the row matches if none of the negated terms is found anywhere in the
+// searchable fields AND, when at least one positive term is present, at
+// least one of them is found.
+func fingerprintMatchesSearch(fp FingerprintSummary, terms []searchTerm) bool {
+	if len(terms) == 0 {
+		return true
+	}
+
+	// Combine all searchable fields into one lower-cased haystack so a
+	// negative term spanning fields also excludes correctly (matches the
+	// frontend's combinedValues approach).
+	var b strings.Builder
+	b.Grow(len(fp.Fingerprint) + len(fp.Type) + len(fp.Description) + 32)
+	b.WriteString(strings.ToLower(fp.Fingerprint))
+	b.WriteByte(' ')
+	b.WriteString(strings.ToLower(fp.Type))
+	b.WriteByte(' ')
+	if fp.Description != "" {
+		b.WriteString(strings.ToLower(fp.Description))
+		b.WriteByte(' ')
+	}
+	for _, h := range fp.Hosts {
+		b.WriteString(strings.ToLower(h))
+		b.WriteByte(' ')
+	}
+	haystack := b.String()
+
+	hasPositive := false
+	positiveMatch := false
+	for _, t := range terms {
+		if t.negate {
+			if strings.Contains(haystack, t.term) {
+				return false
+			}
+			continue
+		}
+		hasPositive = true
+		if !positiveMatch && strings.Contains(haystack, t.term) {
+			positiveMatch = true
+		}
+	}
+	if hasPositive {
+		return positiveMatch
+	}
+	return true
+}
+
+// sortFingerprints sorts the slice in place according to field and order.
+// A stable secondary sort by fingerprint string keeps results deterministic
+// across requests.
+func sortFingerprints(in []FingerprintSummary, field, order string) {
+	asc := order == "asc"
+	sort.SliceStable(in, func(i, j int) bool {
+		a, b := in[i], in[j]
+		var less bool
+		var equal bool
+		switch field {
+		case "fingerprint":
+			cmp := strings.Compare(a.Fingerprint, b.Fingerprint)
+			less = cmp < 0
+			equal = cmp == 0
+		case "type":
+			cmp := strings.Compare(a.Type, b.Type)
+			less = cmp < 0
+			equal = cmp == 0
+		case "hosts":
+			less = len(a.Hosts) < len(b.Hosts)
+			equal = len(a.Hosts) == len(b.Hosts)
+		default: // "count"
+			less = a.Count < b.Count
+			equal = a.Count == b.Count
+		}
+		if equal {
+			// Stable secondary sort by fingerprint.
+			return a.Fingerprint < b.Fingerprint
+		}
+		if asc {
+			return less
+		}
+		return !less
+	})
+}
+
+// computeFingerprintStats summarises the full dataset so the UI can render
+// the per-type summary cards without iterating the (possibly truncated)
+// current page.
+func computeFingerprintStats(in []FingerprintSummary) FingerprintsStats {
+	counts := make(map[string]int, 8)
+	totalOcc := 0
+	for _, fp := range in {
+		counts[fp.Type]++
+		totalOcc += fp.Count
+	}
+	return FingerprintsStats{
+		TotalFingerprints: len(in),
+		TotalOccurrences:  totalOcc,
+		CountsByType:      counts,
+	}
+}
+
+// capFingerprintSummary returns a copy of fp with Hosts and CommunityIDs
+// truncated to per-row limits. When communityIDFilter is non-empty, any
+// community IDs present in the filter are promoted to the front of the
+// returned slice so the UI surfaces the matching ID at position 0.
+func capFingerprintSummary(fp FingerprintSummary, communityIDFilter map[string]struct{}) FingerprintSummary {
+	out := fp
+
+	// Hosts: deterministic order + cap.
+	hostsTotal := len(fp.Hosts)
+	if hostsTotal > 0 {
+		sortedHosts := make([]string, hostsTotal)
+		copy(sortedHosts, fp.Hosts)
+		sort.Strings(sortedHosts)
+		if hostsTotal > maxHostsPerRow {
+			out.Hosts = sortedHosts[:maxHostsPerRow]
+			out.HostsTruncated = true
+		} else {
+			out.Hosts = sortedHosts
+			out.HostsTruncated = false
+		}
+	} else {
+		out.Hosts = []string{}
+		out.HostsTruncated = false
+	}
+	out.HostsTotal = hostsTotal
+
+	// Community IDs: matches first (sorted), then non-matches (sorted), capped.
+	cidTotal := len(fp.CommunityIDs)
+	out.CommunityIDsTotal = cidTotal
+	if cidTotal == 0 {
+		out.CommunityIDs = []string{}
+		out.CommunityIDsTruncated = false
+		return out
+	}
+
+	matched := make([]string, 0)
+	unmatched := make([]string, 0, cidTotal)
+	for _, cid := range fp.CommunityIDs {
+		if len(communityIDFilter) > 0 {
+			if _, ok := communityIDFilter[cid]; ok {
+				matched = append(matched, cid)
+				continue
+			}
+		}
+		unmatched = append(unmatched, cid)
+	}
+	sort.Strings(matched)
+	sort.Strings(unmatched)
+
+	merged := make([]string, 0, len(matched)+len(unmatched))
+	merged = append(merged, matched...)
+	merged = append(merged, unmatched...)
+
+	if len(merged) > maxCommunityIDsPerRow {
+		out.CommunityIDs = merged[:maxCommunityIDsPerRow]
+		out.CommunityIDsTruncated = true
+	} else {
+		out.CommunityIDs = merged
+		out.CommunityIDsTruncated = false
+	}
+	return out
 }
 
 // readFingerprints reads and aggregates fingerprint data from SSH, IPProfile, HTTP, TCP, TLSCertificate, and DHCP records

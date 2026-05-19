@@ -98,6 +98,7 @@ function createNoOpApi(): NetcapApiClient {
     deleteHarvesterPreset: noOpReturn({ success: false, message: '' }),
     uploadHarvesterPreset: noOpReturn({ success: false, message: '', name: '' }),
     downloadHarvesterPreset: noOp as any,
+    getFingerprints: noOpReturn({ fingerprints: [], totalCount: 0, offset: 0, limit: 0, stats: { totalFingerprints: 0, totalOccurrences: 0, countsByType: {} } }),
     getServiceProbes: noOpReturn({ probes: [], totalCount: 0 }),
     getServiceProbe: noOp as any,
     updateServiceProbe: noOpReturn({ success: false, message: '' }),
@@ -664,6 +665,35 @@ export interface ServiceProbeInfo {
 export interface ServiceProbesResponse {
   probes: ServiceProbeInfo[];
   totalCount: number;
+}
+
+export interface FingerprintSummary {
+  fingerprint: string;
+  type: string;
+  count: number;
+  hosts: string[];
+  hostsTotal: number;
+  hostsTruncated: boolean;
+  description: string;
+  firstSeen: number;
+  lastSeen: number;
+  communityIds: string[];
+  communityIdsTotal: number;
+  communityIdsTruncated: boolean;
+}
+
+export interface FingerprintsStats {
+  totalFingerprints: number;
+  totalOccurrences: number;
+  countsByType: Record<string, number>;
+}
+
+export interface FingerprintsResponse {
+  fingerprints: FingerprintSummary[];
+  totalCount: number;
+  offset: number;
+  limit: number;
+  stats: FingerprintsStats;
 }
 
 export interface TestProbeRequest {
@@ -1427,6 +1457,35 @@ function createApiWithBase(apiBase: string) {
     const res = await fetch(`${apiBase}/harvesters/presets/download?name=${encodeURIComponent(name)}`);
     if (!res.ok) throw new Error('Failed to download harvester preset');
     return res.blob();
+  },
+
+  async getFingerprints(params?: {
+    limit?: number;
+    offset?: number;
+    type?: string;
+    search?: string;
+    communityIds?: string[];
+    sortField?: 'fingerprint' | 'type' | 'count' | 'hosts';
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<FingerprintsResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit !== undefined) queryParams.set('limit', params.limit.toString());
+    if (params?.offset !== undefined) queryParams.set('offset', params.offset.toString());
+    if (params?.type) queryParams.set('type', params.type);
+    if (params?.search) queryParams.set('search', params.search);
+    if (params?.sortField) queryParams.set('sortField', params.sortField);
+    if (params?.sortOrder) queryParams.set('sortOrder', params.sortOrder);
+    if (params?.communityIds) {
+      for (const cid of params.communityIds) {
+        if (cid) queryParams.append('communityId', cid);
+      }
+    }
+
+    const qs = queryParams.toString();
+    const url = qs ? `${apiBase}/fingerprints?${qs}` : `${apiBase}/fingerprints`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Failed to fetch fingerprints');
+    return res.json();
   },
 
   async getServiceProbes(params?: {
