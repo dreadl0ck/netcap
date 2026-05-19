@@ -59,6 +59,8 @@ func newUnixSocketWriter(wc *WriterConfig) *unixSocketWriter {
 	w.conn = createUnixSocket(filepath.Join(wc.Out, w.wc.Name))
 	ioLog.Info("create unixSocketWriter", zap.String("base", filepath.Join(wc.Out, wc.Name)), zap.String("type", wc.Type.String()))
 
+	lm := labelerFromManager(wc.LabelManager)
+
 	if wc.Buffer {
 		w.bWriter = bufio.NewWriterSize(w.conn, wc.MemBufferSize)
 
@@ -70,9 +72,9 @@ func newUnixSocketWriter(wc *WriterConfig) *unixSocketWriter {
 				panic(errGzipWriter)
 			}
 
-			w.unixSocketWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label, wc.LabelManager)
+			w.unixSocketWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label, lm)
 		} else {
-			w.unixSocketWriter = newCSVProtoWriter(w.bWriter, wc.Encode, wc.Label, wc.LabelManager)
+			w.unixSocketWriter = newCSVProtoWriter(w.bWriter, wc.Encode, wc.Label, lm)
 		}
 	} else {
 		if wc.Compress {
@@ -81,9 +83,9 @@ func newUnixSocketWriter(wc *WriterConfig) *unixSocketWriter {
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
 			}
-			w.unixSocketWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label, wc.LabelManager)
+			w.unixSocketWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label, lm)
 		} else {
-			w.unixSocketWriter = newCSVProtoWriter(w.conn, wc.Encode, wc.Label, wc.LabelManager)
+			w.unixSocketWriter = newCSVProtoWriter(w.conn, wc.Encode, wc.Label, lm)
 		}
 	}
 

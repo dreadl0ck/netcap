@@ -67,10 +67,7 @@ func (c *Collector) Init() (err error) {
 	stream.Debug = c.config.DecoderConfig.Debug
 	if c.config.Labels != "" {
 		lm := manager.NewLabelManager(false, false, false, c.config.Scatter, c.config.ScatterDuration)
-		// Set Debug before Init so any verbose logging emitted while parsing the
-		// mapping file is honoured. Also keeps the field write strictly before
-		// the manager is published via DecoderConfig, avoiding any future race
-		// with a concurrent reader.
+		// Set Debug before Init so verbose logging during mapping load is honored.
 		lm.Debug = c.config.DecoderConfig.Debug
 		lm.Init(c.config.Labels)
 		c.config.DecoderConfig.LabelManager = lm

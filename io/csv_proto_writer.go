@@ -1,7 +1,6 @@
 package io
 
 import (
-	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/label/manager"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
@@ -20,6 +20,17 @@ import (
 // substitute a stub without pulling in YAML mapping files.
 type labeler interface {
 	Label(record types.AuditRecord) string
+}
+
+// labelerFromManager converts a *manager.LabelManager into a labeler interface,
+// returning an untyped nil when m is nil. Without this wrapper a typed-nil
+// *manager.LabelManager becomes a non-nil interface value, defeating the nil
+// guard in newCSVProtoWriter.
+func labelerFromManager(m *manager.LabelManager) labeler {
+	if m == nil {
+		return nil
+	}
+	return m
 }
 
 // csvProtoWriter implements writing audit records to disk in the CSV format.
@@ -37,26 +48,16 @@ type csvProtoWriter struct {
 	label   bool
 
 	// labelManager is used to assign a category label to each record when
-	// label is true. May be nil when label is false.
+	// label is true. Guaranteed non-nil when label is true (enforced by the
+	// constructor).
 	labelManager labeler
-
-	// avoid allocations by reusing these variables
-	//values []string
-	//out    []byte
-	//record types.AuditRecord
-	//ok     bool
 }
 
-// newCSVProtoWriter returns a new CSV writer instance.
-//
-// lm may be nil even when label is true. Both writeHeader and writeRecord gate
-// on w.labelManager != nil, so the Category column is consistently omitted from
-// both header and rows when lm is nil — output remains well-formed. The
-// constructor additionally clears the label flag in that case to make the
-// intent explicit and avoid redundant nil checks at every write site.
+// newCSVProtoWriter returns a new CSV writer. If label is true but lm is nil,
+// label is downgraded to false so header and rows stay column-aligned.
 func newCSVProtoWriter(w io.Writer, encode bool, label bool, lm labeler) *csvProtoWriter {
 	if label && lm == nil {
-		ioLog.Warn("csvProtoWriter constructed with label=true but no LabelManager; disabling label flag — Category column will be omitted from header and rows")
+		ioLog.Warn("csvProtoWriter constructed with label=true but no LabelManager; disabling label flag")
 		label = false
 	}
 	return &csvProtoWriter{
@@ -81,13 +82,7 @@ func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, e
 	// }
 
 	if csv, ok := msg.(types.AuditRecord); ok {
-
-		// The header must remain symmetric with rows produced by writeRecord:
-		// only emit the Category column when we have a labelManager that will
-		// actually populate it. The constructor already enforces that label
-		// implies labelManager != nil; the extra nil check defends against
-		// future paths that might mutate the field after construction.
-		if w.label && w.labelManager != nil {
+		if w.label {
 			// TODO: make label column name configurable
 			return w.w.Write([]byte(strings.Join(append(csv.CSVHeader(), "Category"), ",") + "\n"))
 		}
@@ -96,7 +91,7 @@ func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, e
 	}
 
 	spew.Dump(msg)
-	panic(fmt.Sprintf("csv writer: %T does not implement types.AuditRecord", msg))
+	panic("protocol buffer does not implement the types.AuditRecord interface")
 }
 
 var labelEncoder = encoder.NewValueEncoder()
@@ -125,14 +120,14 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 		if w.encode {
 			// encode values to numeric format and normalize
 			values = record.Encode()
-			if w.label && w.labelManager != nil {
+			if w.label {
 				values = append(values, w.labelManager.Label(record))
 			}
 			out = []byte(strings.Join(values, ",") + "\n")
 		} else {
 			// use raw values
 			values = record.CSVRecord()
-			if w.label && w.labelManager != nil {
+			if w.label {
 				values = append(values, w.labelManager.Label(record))
 			}
 			out = []byte(strings.Join(values, ",") + "\n")
@@ -160,5 +155,5 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 	}
 
 	spew.Dump(msg)
-	panic(fmt.Sprintf("csv writer: cannot write %T as CSV; type does not implement types.AuditRecord", msg))
+	panic("can not write as CSV")
 }

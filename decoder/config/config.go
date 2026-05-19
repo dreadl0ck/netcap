@@ -338,7 +338,7 @@ func (c *Config) Clone() *Config {
 	if c == nil {
 		return nil
 	}
-	dup := *c //nolint:govet // intentionally copying field-by-field, mutex reset below
+	dup := *c            //nolint:govet // intentionally copying field-by-field, mutex reset below
 	dup.Mutex = sync.Mutex{}
 	return &dup
 }

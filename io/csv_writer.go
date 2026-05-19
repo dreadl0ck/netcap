@@ -65,6 +65,8 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 	}
 	ioLog.Info("create csvWriter", zap.String("base", filepath.Join(wc.Out, wc.Name)), zap.String("type", wc.Type.String()))
 
+	lm := labelerFromManager(wc.LabelManager)
+
 	if wc.Buffer {
 		w.bWriter = bufio.NewWriterSize(w.file, wc.MemBufferSize)
 
@@ -76,9 +78,9 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 				panic(errGzipWriter)
 			}
 
-			w.csvWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label, wc.LabelManager)
+			w.csvWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label, lm)
 		} else {
-			w.csvWriter = newCSVProtoWriter(w.bWriter, wc.Encode, wc.Label, wc.LabelManager)
+			w.csvWriter = newCSVProtoWriter(w.bWriter, wc.Encode, wc.Label, lm)
 		}
 	} else {
 		if wc.Compress {
@@ -87,9 +89,9 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
 			}
-			w.csvWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label, wc.LabelManager)
+			w.csvWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label, lm)
 		} else {
-			w.csvWriter = newCSVProtoWriter(w.file, wc.Encode, wc.Label, wc.LabelManager)
+			w.csvWriter = newCSVProtoWriter(w.file, wc.Encode, wc.Label, lm)
 		}
 	}
 
