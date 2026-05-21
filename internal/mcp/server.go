@@ -305,6 +305,7 @@ func (s *Server) Logger() *log.Logger { return s.logger }
 func (s *Server) registerAll() error {
 	for _, fn := range []func() error{
 		s.registerPipelineTools,
+		s.registerRecordTools,
 		s.registerInventoryTools,
 		s.registerFlowTools,
 		s.registerProtocolTools,
