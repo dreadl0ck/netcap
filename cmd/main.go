@@ -37,6 +37,7 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/export"
 	"github.com/dreadl0ck/netcap/cmd/inject"
 	"github.com/dreadl0ck/netcap/cmd/label"
+	"github.com/dreadl0ck/netcap/cmd/mcp"
 	"github.com/dreadl0ck/netcap/cmd/proxy"
 	"github.com/dreadl0ck/netcap/cmd/transform"
 	"github.com/dreadl0ck/netcap/cmd/util"
@@ -56,6 +57,7 @@ const (
 	cmdTransform = "transform"
 	cmdAgent     = "agent"
 	cmdInject    = "inject"
+	cmdMCP       = "mcp"
 	cmdVersion   = "version"
 
 	nameReadFlag   = "-read"
@@ -178,6 +180,14 @@ func main() {
 					return inject.RunWithContext(ctx, cmd)
 				},
 			},
+			{
+				Name:  cmdMCP,
+				Usage: "Model Context Protocol server (stdio) for LLM-driven PCAP analysis",
+				Flags: mcp.GetFlags(),
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return mcp.RunWithContext(ctx, cmd)
+				},
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			io.PrintLogo()
@@ -193,6 +203,7 @@ available subcommands:
   > transform     maltego plugin
   > agent         agent for distributed capture
   > inject        inline packet manipulation (MITM mode, Linux only)
+  > mcp           MCP server (stdio) for LLM-driven PCAP analysis
 
 usage: ./net <subcommand> [flags]
 or: ./net <subcommand> [-h] to get help for the subcommand`)
@@ -254,6 +265,7 @@ func printCompletions(previous, current, full string) {
 		cmdTransform,
 		cmdAgent,
 		cmdInject,
+		cmdMCP,
 	}
 
 	if os.Getenv(env.CompletionDebug) == "1" {
@@ -287,6 +299,8 @@ func printCompletions(previous, current, full string) {
 		printFlags(agent.Flags())
 	case cmdInject:
 		printFlags(inject.Flags())
+	case cmdMCP:
+		printFlags(mcp.Flags())
 	case cmdTransform:
 		return
 	}

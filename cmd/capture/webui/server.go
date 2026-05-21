@@ -672,6 +672,12 @@ func (s *Server) Start() error {
 		mux.HandleFunc("/health", s.handleHealth)
 	}
 
+	// Mount MCP endpoint (admin-token protected). The MCP server is mounted
+	// in both local and service mode so operators can opt into it on a
+	// trusted host without enabling the rest of service mode. When the
+	// NETCAP_MCP_ADMIN_TOKEN env var is unset, this is a no-op.
+	s.mountMCP(mux, "http://"+s.addr)
+
 	// Static files - frontend SPA with fallback to index.html for client-side routing
 	mux.Handle("/", s.handleStatic())
 
