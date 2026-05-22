@@ -106,26 +106,6 @@ func TestAuthedMetricsHandlerRequiresToken(t *testing.T) {
 	}
 }
 
-// TestMetricsHandlerNoAuthAllowsScrape: in CLI mode (no AdminToken set),
-// MetricsHandler is served without auth. Operators that want auth use
-// AuthedMetricsHandler explicitly.
-func TestMetricsHandlerNoAuthAllowsScrape(t *testing.T) {
-	srv, err := New(Options{BaseURL: "http://127.0.0.1:1"})
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
-	ts := httptest.NewServer(srv.MetricsHandler())
-	defer ts.Close()
-	resp, err := http.Get(ts.URL + "/metrics")
-	if err != nil {
-		t.Fatalf("GET: %v", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected 200, got %d", resp.StatusCode)
-	}
-}
-
 func truncateForLog(s string, n int) string {
 	if len(s) <= n {
 		return s

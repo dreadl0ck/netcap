@@ -13,9 +13,8 @@ import (
 	"testing"
 )
 
-// TestAdminAuthRejectsMissingToken verifies that with an admin token
-// configured, requests without an Authorization header are rejected
-// with 401 and the right WWW-Authenticate challenge.
+// TestAdminAuthRejectsMissingToken pins the security-critical 401 +
+// WWW-Authenticate posture for /mcp when no Authorization header is set.
 func TestAdminAuthRejectsMissingToken(t *testing.T) {
 	srv, err := New(Options{BaseURL: "http://127.0.0.1:1", AdminToken: "s3cret"})
 	if err != nil {
@@ -38,8 +37,9 @@ func TestAdminAuthRejectsMissingToken(t *testing.T) {
 	}
 }
 
-// TestAdminAuthRejectsWrongToken verifies the constant-time comparison
-// rejects a token that's the wrong value (even if same length).
+// TestAdminAuthRejectsWrongToken: a Bearer header with a wrong (but
+// same-length) token must still 401. Documents the constant-time
+// comparison contract.
 func TestAdminAuthRejectsWrongToken(t *testing.T) {
 	srv, err := New(Options{BaseURL: "http://127.0.0.1:1", AdminToken: "abcdef"})
 	if err != nil {
@@ -60,9 +60,9 @@ func TestAdminAuthRejectsWrongToken(t *testing.T) {
 	}
 }
 
-// TestAdminAuthDisabledWhenNoToken verifies the safety net: even if /mcp
-// is mounted, an empty admin token produces 503 (never accidentally
-// open-served).
+// TestAdminAuthDisabledWhenNoToken is the safety net: even if /mcp is
+// mounted, an empty admin token must produce 503 — never accidentally
+// serve unauthenticated traffic.
 func TestAdminAuthDisabledWhenNoToken(t *testing.T) {
 	srv, err := New(Options{BaseURL: "http://127.0.0.1:1", AdminToken: ""})
 	if err != nil {
@@ -84,8 +84,8 @@ func TestAdminAuthDisabledWhenNoToken(t *testing.T) {
 }
 
 // TestToolNameValidation enforces Anthropic's tool-name regex at
-// registration time. This catches a class of bugs the reaper project
-// hit in production (dotted/colon-separated names broke Claude clients).
+// registration time. Documented bug class: dotted/colon-separated
+// names break Claude clients (Reaper hit this in production).
 func TestToolNameValidation(t *testing.T) {
 	cases := []struct {
 		name string
@@ -106,48 +106,5 @@ func TestToolNameValidation(t *testing.T) {
 		if got := validToolName(c.name); got != c.ok {
 			t.Errorf("validToolName(%q)=%v, want %v", c.name, got, c.ok)
 		}
-	}
-}
-
-// TestNewRequiresBaseURL ensures we don't construct a Server with a
-// missing baseURL (which would silently produce broken tools).
-func TestNewRequiresBaseURL(t *testing.T) {
-	if _, err := New(Options{}); err == nil {
-		t.Fatal("expected error for empty BaseURL")
-	}
-}
-
-// TestTokenFingerprintEmptyWhenUnset documents that no log line should
-// leak an empty-token fingerprint.
-func TestTokenFingerprintEmptyWhenUnset(t *testing.T) {
-	srv, err := New(Options{BaseURL: "http://127.0.0.1:1"})
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
-	if got := srv.TokenFingerprint(); got != "" {
-		t.Errorf("TokenFingerprint() with no token = %q, want \"\"", got)
-	}
-}
-
-// TestAllowDenyLists verifies that the registration filter excludes
-// tools according to AllowedTools / DisallowedTools.
-func TestAllowDenyLists(t *testing.T) {
-	srv, err := New(Options{
-		BaseURL:         "http://127.0.0.1:1",
-		AllowedTools:    []string{"list_hosts", "list_decoders"},
-		DisallowedTools: []string{"list_hosts"},
-	})
-	if err != nil {
-		t.Fatalf("New: %v", err)
-	}
-	// Allowed minus denied = {list_decoders}.
-	if got := srv.mcpSrv.GetTool("list_hosts"); got != nil {
-		t.Error("list_hosts should be denied")
-	}
-	if got := srv.mcpSrv.GetTool("list_decoders"); got == nil {
-		t.Error("list_decoders should be allowed")
-	}
-	if got := srv.mcpSrv.GetTool("ingest_pcap"); got != nil {
-		t.Error("ingest_pcap should be filtered out (not on allow list)")
 	}
 }

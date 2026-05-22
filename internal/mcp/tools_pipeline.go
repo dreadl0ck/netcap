@@ -430,22 +430,18 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 		return errResult(err), nil
 	}
 	client := s.newClient()
-
-	var stats, status, files json.RawMessage
-	withErr := s.withSession(client, ref, func() error {
-		// audit-stats is the analytical truth; /api/status carries
-		// IsProcessing; /api/files/input has IsCompleted per file.
-		stats, err = client.Get("/api/audit-stats", nil)
-		if err != nil {
-			return fmt.Errorf("audit-stats: %w", err)
-		}
-		status, _ = client.Get("/api/status", nil)
-		files, _ = client.Get("/api/files/input", nil)
-		return nil
-	})
-	if withErr != nil {
-		return errResult(withErr), nil
+	// audit-stats accepts ?scope=<session id> to scope per-session
+	// without mutating the global currentSession. /api/status and
+	// /api/files/input are global; /api/files/input is filtered locally
+	// by deriveCompleted / extractSessionError below.
+	statsQ := ref.sessionQueryParams()
+	statsQ.Set("scope", ref.ID)
+	stats, sErr := client.Get("/api/audit-stats", statsQ)
+	if sErr != nil {
+		return errResult(fmt.Errorf("audit-stats: %w", sErr)), nil
 	}
+	status, _ := client.Get("/api/status", nil)
+	files, _ := client.Get("/api/files/input", nil)
 
 	completed := deriveCompleted(ref, files, status)
 	out := map[string]any{
@@ -562,14 +558,13 @@ func (s *Server) handleListAuditRecords(_ context.Context, req mcplib.CallToolRe
 	if err != nil {
 		return errResult(err), nil
 	}
-	client := s.newClient()
-	var raw json.RawMessage
-	if err := s.withSession(client, ref, func() error {
-		body, gErr := client.Get("/api/files/audit", nil)
-		raw = body
-		return gErr
-	}); err != nil {
-		return errResult(err), nil
+	q := ref.sessionQueryParams()
+	// /api/files/audit accepts ?scope=<session-id-or-path> via the
+	// shared chart-scope resolver.
+	q.Set("scope", ref.ID)
+	raw, gErr := s.newClient().Get("/api/files/audit", q)
+	if gErr != nil {
+		return errResult(fmt.Errorf("files/audit: %w", gErr)), nil
 	}
 	return rawJSONResult(raw), nil
 }

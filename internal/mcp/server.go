@@ -87,9 +87,6 @@ type Server struct {
 	// frames). Defaults to log.New(os.Stderr, ...).
 	logger *log.Logger
 
-	// gate serialises session-switching tool calls. See sessionGate.
-	gate sessionGate
-
 	// cve fetches CVE details from NVD with caching. Disabled when the
 	// AllowNetwork option is false (or NETCAP_MCP_DISABLE_NETWORK is set).
 	cve *CVELookup
@@ -436,15 +433,4 @@ func (s *Server) requireSessionID(req mcplib.CallToolRequest) (SessionRef, error
 	return SessionRef{}, fmt.Errorf("session_id is required (call ingest_pcap or list_sessions first)")
 }
 
-// withSession switches the webui to ref under the session gate and runs
-// fn. Use this for every analytical tool handler that reads per-session
-// audit records. Errors from selectSession are wrapped with context.
-func (s *Server) withSession(client *NetcapClient, ref SessionRef, fn func() error) error {
-	return s.gate.run(func() error {
-		if err := client.selectSession(ref); err != nil {
-			s.logger.Printf("session select failed: %v", err)
-			return err
-		}
-		return fn()
-	})
-}
+

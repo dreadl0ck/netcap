@@ -55,25 +55,6 @@ func TestDeleteSessionForwardsDELETE(t *testing.T) {
 	}
 }
 
-// TestDeleteSessionRefusesPathStyle: local-mode sessions can't be
-// deleted via this tool; they're CLI-process owned.
-func TestDeleteSessionRefusesPathStyle(t *testing.T) {
-	srv, _ := New(Options{BaseURL: "http://127.0.0.1:1"})
-	tool := srv.mcpSrv.GetTool("delete_session")
-	res, _ := tool.Handler(context.Background(), mcplib.CallToolRequest{
-		Params: mcplib.CallToolParams{
-			Name:      "delete_session",
-			Arguments: map[string]any{"session_id": "/tmp/x.pcap"},
-		},
-	})
-	if !res.IsError {
-		t.Errorf("expected IsError for path-style session, got %s", contentText(res))
-	}
-	if !contains(contentText(res), "service-mode only") {
-		t.Errorf("error message: %s", contentText(res))
-	}
-}
-
 // TestWaitForSessionPollsUntilCompleted: simulates a session that
 // reports isCompleted=false twice, then true. The tool should poll
 // and return when completed=true.

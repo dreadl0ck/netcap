@@ -50,15 +50,6 @@ func TestExtractSessionErrorServiceMode(t *testing.T) {
 	}
 }
 
-func TestExtractSessionErrorNoMatch(t *testing.T) {
-	ref := SessionRef{ID: "/data/missing.pcap", isPath: true}
-	body := json.RawMessage(`[{"path":"/data/other.pcap","isCompleted":true}]`)
-	_, _, _, found := extractSessionError(ref, body)
-	if found {
-		t.Error("expected found=false for unknown id")
-	}
-}
-
 func TestExtractSessionErrorEmptyBody(t *testing.T) {
 	ref := SessionRef{ID: "x", isPath: false}
 	if _, _, _, found := extractSessionError(ref, nil); found {

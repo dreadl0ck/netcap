@@ -106,14 +106,6 @@ func TestCarveStoreEvictsByAge(t *testing.T) {
 func TestCarveHandlerEndToEnd(t *testing.T) {
 	pcapBody := []byte("\xd4\xc3\xb2\xa1pretend pcap bytes ABCDEF")
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/try/session/", func(w http.ResponseWriter, r *http.Request) {
-		// Service-mode session selection.
-		fmt.Fprint(w, `{"success":true}`)
-	})
-	mux.HandleFunc("/api/set-directory", func(w http.ResponseWriter, r *http.Request) {
-		// Local-mode session selection.
-		fmt.Fprint(w, `{"success":true}`)
-	})
 	mux.HandleFunc("/api/hosts/download-pcap", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Query().Get("host") != "10.0.0.1" {
 			t.Errorf("unexpected host param: %q", r.URL.Query().Get("host"))
@@ -207,8 +199,6 @@ func TestCarveHandlerEndToEnd(t *testing.T) {
 // TestCarveHandlerEmptyResponse maps to a clear error.
 func TestCarveHandlerEmptyResponse(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/try/session/", func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, `{"success":true}`) })
-	mux.HandleFunc("/api/set-directory", func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, `{"success":true}`) })
 	mux.HandleFunc("/api/hosts/download-pcap", func(w http.ResponseWriter, r *http.Request) {
 		// Empty body.
 	})

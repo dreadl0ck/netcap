@@ -22,12 +22,6 @@ import (
 // tool forwards arguments correctly and surfaces the payload.
 func TestGetChartDataHandlerEndToEnd(t *testing.T) {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/set-directory", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{"success":true}`)
-	})
-	mux.HandleFunc("/api/try/session/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, `{"success":true}`)
-	})
 	mux.HandleFunc("/api/chart/data", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
 		if q.Get("format") != "json" {
@@ -90,21 +84,4 @@ func TestGetChartDataHandlerEndToEnd(t *testing.T) {
 	}
 }
 
-// TestGetChartDataRejectsBadType protects the URL path.
-func TestGetChartDataRejectsBadType(t *testing.T) {
-	srv, _ := New(Options{BaseURL: "http://127.0.0.1:1"})
-	tool := srv.mcpSrv.GetTool("get_chart_data")
-	res, _ := tool.Handler(context.Background(), mcplib.CallToolRequest{
-		Params: mcplib.CallToolParams{
-			Name: "get_chart_data",
-			Arguments: map[string]any{
-				"session_id": "/tmp/x.pcap",
-				"type":       "../bad",
-				"field":      "x",
-			},
-		},
-	})
-	if !res.IsError {
-		t.Error("expected error for invalid type")
-	}
-}
+

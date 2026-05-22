@@ -8,7 +8,6 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
@@ -82,17 +81,9 @@ func (s *Server) handleExecuteYaraScan(_ context.Context, req mcplib.CallToolReq
 	if err != nil {
 		return errResult(err), nil
 	}
-	client := s.newClient()
-	var raw json.RawMessage
-	if err := s.withSession(client, ref, func() error {
-		body, pErr := client.PostEmpty("/api/yara/scan")
-		if pErr != nil {
-			return fmt.Errorf("yara scan: %w", pErr)
-		}
-		raw = body
-		return nil
-	}); err != nil {
-		return errResult(err), nil
+	raw, pErr := s.newClient().PostEmpty("/api/yara/scan", ref.sessionQueryParams())
+	if pErr != nil {
+		return errResult(fmt.Errorf("yara scan: %w", pErr)), nil
 	}
 	if len(raw) == 0 {
 		return textResult("YARA scan returned no body. Use list_alerts to inspect any new alerts."), nil
@@ -105,17 +96,9 @@ func (s *Server) handleExecuteAllRules(_ context.Context, req mcplib.CallToolReq
 	if err != nil {
 		return errResult(err), nil
 	}
-	client := s.newClient()
-	var raw json.RawMessage
-	if err := s.withSession(client, ref, func() error {
-		body, pErr := client.PostEmpty("/api/rules/execute-all")
-		if pErr != nil {
-			return fmt.Errorf("execute rules: %w", pErr)
-		}
-		raw = body
-		return nil
-	}); err != nil {
-		return errResult(err), nil
+	raw, pErr := s.newClient().PostEmpty("/api/rules/execute-all", ref.sessionQueryParams())
+	if pErr != nil {
+		return errResult(fmt.Errorf("execute rules: %w", pErr)), nil
 	}
 	if len(raw) == 0 {
 		return textResult("Detection rules executed. Use list_alerts to inspect new alerts."), nil

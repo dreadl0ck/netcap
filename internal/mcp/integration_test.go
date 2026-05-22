@@ -247,12 +247,12 @@ func (f *fakeNetcapWebui) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case r.URL.Path == "/api/chart/data":
 		fmt.Fprint(w, `{"type":"Connection","field":"TotalSize","interval":"1s","data":[{"timestamp":1700000000,"value":200}],"count":1,"minValue":200,"maxValue":200,"avgValue":200}`)
 	case strings.HasPrefix(r.URL.Path, "/api/try/session/"):
-		// Both GET (select) and DELETE land here.
+		// Only DELETE is exercised by the workflow after T2.1.
 		if r.Method == http.MethodDelete {
 			fmt.Fprintf(w, `{"success":true,"session_id":%q,"removed_paths":["/tmp/uploads/x","/tmp/results/x"]}`, f.sessionID)
 			return
 		}
-		fmt.Fprintf(w, `{"success":true,"session":{"sessionId":%q}}`, f.sessionID)
+		http.NotFound(w, r)
 	default:
 		http.NotFound(w, r)
 	}

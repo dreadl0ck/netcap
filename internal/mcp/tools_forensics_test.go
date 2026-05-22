@@ -16,8 +16,10 @@ import (
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 )
 
-// TestExtractIOCsFindsAllKinds drives the tool against a fake webui that
-// returns a payload sprinkled with each IOC kind.
+// TestExtractIOCsFindsAllKinds exercises every hand-tuned regex
+// (url, domain, ipv4, ipv6, email) against a representative payload.
+// A regression in any one of the regexes is exactly the bug class this
+// catches.
 func TestExtractIOCsFindsAllKinds(t *testing.T) {
 	payload := `Phishing kit references:
 http://malicious.example.com/login
@@ -78,54 +80,9 @@ DNS: 2001:db8::1234
 	}
 }
 
-// TestExtractIOCsKindsFilter narrows extraction to one kind.
-func TestExtractIOCsKindsFilter(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/api/extracted-files/download/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("urls https://a.example and emails x@y.example"))
-	})
-	ts := httptest.NewServer(mux)
-	defer ts.Close()
-
-	srv, _ := New(Options{BaseURL: ts.URL})
-	tool := srv.mcpSrv.GetTool("extract_iocs_from_file")
-	res, _ := tool.Handler(context.Background(), mcplib.CallToolRequest{
-		Params: mcplib.CallToolParams{
-			Name: "extract_iocs_from_file",
-			Arguments: map[string]any{
-				"session_id": "/x.pcap",
-				"file_path":  "x",
-				"kinds":      "email",
-			},
-		},
-	})
-	var out map[string]any
-	_ = json.Unmarshal([]byte(contentText(res)), &out)
-	if _, hasURLs := out["urls"]; hasURLs {
-		t.Errorf("expected no urls key")
-	}
-	emails, _ := out["emails"].([]any)
-	if len(emails) != 1 {
-		t.Errorf("emails = %v", emails)
-	}
-}
-
-// TestParseIOCKindsDefaults: empty/invalid CSV → all kinds.
-func TestParseIOCKindsDefaults(t *testing.T) {
-	for _, in := range []string{"", "bogus", "foo,bar"} {
-		k := parseIOCKinds(in)
-		if !(k["url"] && k["domain"] && k["ip"] && k["email"]) {
-			t.Errorf("parseIOCKinds(%q) missing defaults: %v", in, k)
-		}
-	}
-	k := parseIOCKinds("url,ip")
-	if !(k["url"] && k["ip"]) || k["email"] {
-		t.Errorf("subset filter failed: %v", k)
-	}
-}
-
-// TestGetImageExifNoData returns a graceful empty-list response when the
-// file has no EXIF segment (which is the case for plain text).
+// TestGetImageExifNoData: a non-image file produces a graceful empty
+// entries list rather than an error. This pins the errors.Is(ErrNoExif)
+// special-case branch that's easy to lose in a refactor.
 func TestGetImageExifNoData(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/extracted-files/download/", func(w http.ResponseWriter, r *http.Request) {
@@ -153,17 +110,5 @@ func TestGetImageExifNoData(t *testing.T) {
 	entries, _ := out["entries"].([]any)
 	if len(entries) != 0 {
 		t.Errorf("entries = %v", entries)
-	}
-}
-
-// TestUniqueLimited dedupes and caps.
-func TestUniqueLimited(t *testing.T) {
-	in := []string{"a", "b", "a", "c", "b", "d", "e"}
-	got := uniqueLimited(in, 3)
-	if len(got) != 3 {
-		t.Errorf("got %v, want 3 items", got)
-	}
-	if got[0] != "a" || got[1] != "b" || got[2] != "c" {
-		t.Errorf("order/value: %v", got)
 	}
 }

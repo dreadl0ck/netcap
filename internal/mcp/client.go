@@ -89,10 +89,14 @@ func (c *NetcapClient) PostForm(path string, form url.Values) (json.RawMessage, 
 	return c.do(req)
 }
 
-// PostEmpty sends a POST with no body — used to trigger actions that take
-// no parameters (yara scan, execute rules).
-func (c *NetcapClient) PostEmpty(path string) (json.RawMessage, error) {
-	req, err := http.NewRequest(http.MethodPost, c.baseURL+path, nil)
+// PostEmpty sends a POST with no body and optional query params — used
+// to trigger actions that take no body (yara scan, execute rules).
+func (c *NetcapClient) PostEmpty(path string, query url.Values) (json.RawMessage, error) {
+	u := c.baseURL + path
+	if len(query) > 0 {
+		u += "?" + query.Encode()
+	}
+	req, err := http.NewRequest(http.MethodPost, u, nil)
 	if err != nil {
 		return nil, err
 	}

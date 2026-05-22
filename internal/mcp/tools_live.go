@@ -84,7 +84,7 @@ func (s *Server) handleLiveStatus(_ context.Context, _ mcplib.CallToolRequest) (
 }
 
 func (s *Server) handleStopLiveCapture(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	raw, err := s.newClient().PostEmpty("/api/stop-capture")
+	raw, err := s.newClient().PostEmpty("/api/stop-capture", nil)
 	if err != nil {
 		return errResult(fmt.Errorf("stop-capture: %w", err)), nil
 	}
