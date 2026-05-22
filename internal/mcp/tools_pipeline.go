@@ -56,8 +56,21 @@ func (s *Server) registerPipelineTools() error {
 					"List analysis sessions visible to this server. In service mode this "+
 						"returns the operator's session inventory; in CLI mode it returns "+
 						"the pre-loaded session (if any) plus everything uploaded via "+
-						"ingest_pcap in this process. Each entry includes session_id, "+
-						"input_file, size, completed status, and any error message."),
+						"ingest_pcap in this process. Response shape is identical across "+
+						"modes: every entry has session_id, mode, input_file, input_name, "+
+						"size_bytes, completed, status, plus mode-specific fields. "+
+						"Use limit/offset to paginate; completed_only filters to ready sessions."),
+				mcplib.WithNumber("limit",
+					mcplib.Description("Max sessions to return (default 100, max 500)."),
+					mcplib.Max(500)),
+				mcplib.WithNumber("offset",
+					mcplib.Description("Pagination offset.")),
+				mcplib.WithString("search",
+					mcplib.Description("Case-insensitive substring match against input_name and input_file.")),
+				mcplib.WithBoolean("completed_only",
+					mcplib.Description("If true, return only sessions whose analysis has completed.")),
+				mcplib.WithBoolean("failed_only",
+					mcplib.Description("If true, return only sessions in a failed state.")),
 				mcplib.WithReadOnlyHintAnnotation(true),
 				mcplib.WithDestructiveHintAnnotation(false),
 				mcplib.WithIdempotentHintAnnotation(true),
@@ -204,86 +217,187 @@ func (s *Server) handleIngestPCAP(_ context.Context, req mcplib.CallToolRequest)
 }
 
 // handleListSessions tries service-mode first, falls back to local-mode
-// input-file enumeration. Returns a uniform shape: each session has
-// session_id, input_file, size_bytes, completed, error (optional).
-func (s *Server) handleListSessions(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	client := s.newClient()
+// input-file enumeration. Returns a uniform shape: every session has the
+// same set of base keys so an LLM (or tool consumer) doesn't have to
+// branch on `mode`. Filters (search/completed_only/failed_only) and
+// pagination (limit/offset) are applied after normalisation.
+func (s *Server) handleListSessions(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+	limit := req.GetInt("limit", 100)
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 500 {
+		limit = 500
+	}
+	offset := req.GetInt("offset", 0)
+	if offset < 0 {
+		offset = 0
+	}
+	search := strings.ToLower(strings.TrimSpace(req.GetString("search", "")))
+	completedOnly := req.GetBool("completed_only", false)
+	failedOnly := req.GetBool("failed_only", false)
 
-	// Try service mode first.
+	client := s.newClient()
+	all, mode, err := s.collectSessions(client)
+	if err != nil {
+		return errResult(err), nil
+	}
+
+	filtered := make([]map[string]any, 0, len(all))
+	for _, sess := range all {
+		if search != "" && !sessionMatchesSearch(sess, search) {
+			continue
+		}
+		comp, _ := sess["completed"].(bool)
+		if completedOnly && !comp {
+			continue
+		}
+		if failedOnly {
+			status, _ := sess["status"].(string)
+			if !strings.EqualFold(status, "failed") {
+				continue
+			}
+		}
+		filtered = append(filtered, sess)
+	}
+
+	total := len(filtered)
+	end := offset + limit
+	if offset > total {
+		offset = total
+	}
+	if end > total {
+		end = total
+	}
+	page := filtered[offset:end]
+
+	return jsonResult(map[string]any{
+		"mode":     mode,
+		"total":    total,
+		"limit":    limit,
+		"offset":   offset,
+		"returned": len(page),
+		"sessions": page,
+	}), nil
+}
+
+// collectSessions probes service mode first, falling back to local-mode
+// file enumeration. Always returns sessions in the unified shape.
+func (s *Server) collectSessions(client *NetcapClient) ([]map[string]any, string, error) {
 	if raw, err := client.Get("/api/try/sessions", nil); err == nil {
 		var resp struct {
 			Sessions []map[string]any `json:"sessions"`
 		}
 		if jsonErr := json.Unmarshal(raw, &resp); jsonErr == nil && resp.Sessions != nil {
 			out := make([]map[string]any, 0, len(resp.Sessions))
-			for _, s := range resp.Sessions {
-				out = append(out, normaliseServiceSession(s))
+			for _, sess := range resp.Sessions {
+				out = append(out, unifiedSession("service", sess))
 			}
-			return jsonResult(map[string]any{
-				"mode":     "service",
-				"sessions": out,
-			}), nil
+			return out, "service", nil
 		}
 	}
 
-	// Local mode: /api/files/input returns the file list with IsCompleted.
 	raw, err := client.Get("/api/files/input", nil)
 	if err != nil {
-		return errResult(fmt.Errorf("listing input files: %w", err)), nil
+		return nil, "", fmt.Errorf("listing input files: %w", err)
 	}
 	var files []map[string]any
 	if jsonErr := json.Unmarshal(raw, &files); jsonErr != nil {
-		return errResult(fmt.Errorf("decoding file list: %w", jsonErr)), nil
+		return nil, "", fmt.Errorf("decoding file list: %w", jsonErr)
 	}
 	out := make([]map[string]any, 0, len(files)+1)
-	if s.activeSession != "" {
-		// Make the pre-loaded session discoverable even if it hasn't yet
-		// shown up in /api/files/input (rare timing case).
-		out = append(out, map[string]any{
-			"session_id": s.activeSession,
-			"source":     "cli-preloaded",
-		})
-	}
 	for _, f := range files {
-		out = append(out, normaliseLocalFile(f))
+		out = append(out, unifiedSession("local", f))
 	}
-	return jsonResult(map[string]any{
-		"mode":     "local",
-		"sessions": out,
-	}), nil
+	if s.activeSession != "" && !sessionsContain(out, s.activeSession) {
+		// CLI preload not yet visible in /api/files/input — synthesise a
+		// minimal row so the LLM can still call analytical tools.
+		out = append(out, unifiedSession("local", map[string]any{
+			"path":              s.activeSession,
+			"name":              s.activeSession,
+			"isCompleted":       false,
+			"cli_preloaded_flag": true,
+		}))
+	}
+	return out, "local", nil
 }
 
-func normaliseServiceSession(s map[string]any) map[string]any {
+// unifiedSession converts either a service-mode session envelope or a
+// local-mode file row into the single shape MCP clients can rely on.
+// Mode-specific fields are preserved under their original names so
+// callers that want them aren't blocked.
+func unifiedSession(mode string, raw map[string]any) map[string]any {
 	out := map[string]any{
-		"session_id":   firstString(s, "sessionId", "session_id"),
-		"input_file":   firstString(s, "inputFile", "input_file"),
-		"input_name":   firstString(s, "inputFilename", "input_name"),
-		"size_bytes":   s["inputFileSize"],
-		"status":       s["status"],
-		"completed":    isCompleted(s["status"], s["resultsReady"]),
-		"share_url":    s["shareUrl"],
-		"is_preloaded": s["isPreloaded"],
+		"mode":         mode,
+		"session_id":   "",
+		"input_file":   "",
+		"input_name":   "",
+		"size_bytes":   nil,
+		"completed":    false,
+		"status":       "",
+		"is_preloaded": false,
 	}
-	if errMsg := firstString(s, "errorMessage", "error"); errMsg != "" {
-		out["error"] = errMsg
+	switch mode {
+	case "service":
+		sid := firstString(raw, "sessionId", "session_id")
+		out["session_id"] = sid
+		out["input_file"] = firstString(raw, "inputFile", "input_file")
+		out["input_name"] = firstString(raw, "inputFilename", "input_name")
+		out["size_bytes"] = raw["inputFileSize"]
+		out["status"] = firstString(raw, "status")
+		out["completed"] = isCompletedAny(raw["status"], raw["resultsReady"])
+		if b, ok := raw["isPreloaded"].(bool); ok {
+			out["is_preloaded"] = b
+		}
+		if v := firstString(raw, "shareUrl"); v != "" {
+			out["share_url"] = v
+		}
+		if msg := firstString(raw, "errorMessage", "error"); msg != "" {
+			out["error"] = msg
+		}
+	case "local":
+		path := firstString(raw, "path")
+		out["session_id"] = path
+		out["input_file"] = path
+		out["input_name"] = firstString(raw, "name")
+		out["size_bytes"] = raw["size"]
+		out["completed"] = isCompletedAny(nil, raw["isCompleted"])
+		if out["completed"].(bool) {
+			out["status"] = "completed"
+		} else {
+			out["status"] = "processing"
+		}
+		if fid := firstString(raw, "id"); fid != "" {
+			out["file_id"] = fid
+		}
+		if msg, ok := raw["error"].(string); ok && msg != "" {
+			out["error"] = msg
+			out["status"] = "failed"
+		}
+		if b, ok := raw["cli_preloaded_flag"].(bool); ok && b {
+			out["source"] = "cli-preloaded"
+		}
 	}
 	return out
 }
 
-func normaliseLocalFile(f map[string]any) map[string]any {
-	out := map[string]any{
-		"session_id": firstString(f, "path"),
-		"input_name": firstString(f, "name"),
-		"size_bytes": f["size"],
-		"completed":  isCompleted(nil, f["isCompleted"]),
-		"file_id":    firstString(f, "id"),
+func sessionsContain(sessions []map[string]any, id string) bool {
+	for _, s := range sessions {
+		if sid, _ := s["session_id"].(string); sid == id {
+			return true
+		}
 	}
-	if errMsg, ok := f["error"].(string); ok && errMsg != "" {
-		out["error"] = errMsg
-	} else if errPtr, ok := f["error"].(*string); ok && errPtr != nil {
-		out["error"] = *errPtr
+	return false
+}
+
+func sessionMatchesSearch(sess map[string]any, lowerNeedle string) bool {
+	if name, _ := sess["input_name"].(string); strings.Contains(strings.ToLower(name), lowerNeedle) {
+		return true
 	}
-	return out
+	if file, _ := sess["input_file"].(string); strings.Contains(strings.ToLower(file), lowerNeedle) {
+		return true
+	}
+	return false
 }
 
 func firstString(m map[string]any, keys ...string) string {
@@ -295,7 +409,7 @@ func firstString(m map[string]any, keys ...string) string {
 	return ""
 }
 
-func isCompleted(status, resultsReady any) bool {
+func isCompletedAny(status, resultsReady any) bool {
 	if b, ok := resultsReady.(bool); ok && b {
 		return true
 	}

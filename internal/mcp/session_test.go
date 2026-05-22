@@ -7,6 +7,7 @@
 package mcp
 
 import (
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -73,8 +74,9 @@ func TestSessionGateSerialises(t *testing.T) {
 	}
 }
 
-// TestNormaliseServiceSession checks the upstream→MCP shape translation.
-func TestNormaliseServiceSession(t *testing.T) {
+// TestUnifiedSessionService checks the service-mode upstream→MCP
+// translation produces the canonical key set.
+func TestUnifiedSessionService(t *testing.T) {
 	in := map[string]any{
 		"sessionId":     "abc",
 		"inputFile":     "/data/x.pcap",
@@ -85,17 +87,18 @@ func TestNormaliseServiceSession(t *testing.T) {
 		"shareUrl":      "/view/abc",
 		"isPreloaded":   false,
 	}
-	out := normaliseServiceSession(in)
-	if out["session_id"] != "abc" {
-		t.Errorf("session_id = %v", out["session_id"])
-	}
-	if out["completed"] != true {
-		t.Errorf("completed = %v", out["completed"])
-	}
+	out := unifiedSession("service", in)
+	mustEq(t, "mode", out["mode"], "service")
+	mustEq(t, "session_id", out["session_id"], "abc")
+	mustEq(t, "input_file", out["input_file"], "/data/x.pcap")
+	mustEq(t, "input_name", out["input_name"], "x.pcap")
+	mustEq(t, "status", out["status"], "completed")
+	mustEq(t, "completed", out["completed"], true)
+	mustEq(t, "share_url", out["share_url"], "/view/abc")
 }
 
-// TestNormaliseLocalFile checks the local-mode path→session translation.
-func TestNormaliseLocalFile(t *testing.T) {
+// TestUnifiedSessionLocal checks local-mode shape.
+func TestUnifiedSessionLocal(t *testing.T) {
 	in := map[string]any{
 		"id":          "hash123",
 		"name":        "x.pcap",
@@ -103,14 +106,52 @@ func TestNormaliseLocalFile(t *testing.T) {
 		"size":        1234,
 		"isCompleted": true,
 	}
-	out := normaliseLocalFile(in)
-	if out["session_id"] != "/data/x.pcap" {
-		t.Errorf("session_id = %v", out["session_id"])
+	out := unifiedSession("local", in)
+	mustEq(t, "mode", out["mode"], "local")
+	mustEq(t, "session_id", out["session_id"], "/data/x.pcap")
+	mustEq(t, "input_file", out["input_file"], "/data/x.pcap")
+	mustEq(t, "status", out["status"], "completed")
+	mustEq(t, "completed", out["completed"], true)
+	mustEq(t, "file_id", out["file_id"], "hash123")
+}
+
+// TestUnifiedSessionLocalError surfaces the error message and forces
+// status=failed.
+func TestUnifiedSessionLocalError(t *testing.T) {
+	in := map[string]any{
+		"name":        "bad.pcap",
+		"path":        "/data/bad.pcap",
+		"isCompleted": false,
+		"error":       "tcpdump exit 1",
 	}
-	if out["completed"] != true {
-		t.Errorf("completed = %v", out["completed"])
+	out := unifiedSession("local", in)
+	mustEq(t, "status", out["status"], "failed")
+	mustEq(t, "error", out["error"], "tcpdump exit 1")
+}
+
+// TestSessionMatchesSearch is case-insensitive across input_file and
+// input_name.
+func TestSessionMatchesSearch(t *testing.T) {
+	s := map[string]any{
+		"input_file": "/data/Suspicious_File.pcapng",
+		"input_name": "Suspicious_File.pcapng",
 	}
-	if out["file_id"] != "hash123" {
-		t.Errorf("file_id = %v", out["file_id"])
+	cases := map[string]bool{
+		"suspic":   true,
+		"PCAPNG":   true,
+		"/data/":   true,
+		"missing":  false,
+	}
+	for needle, want := range cases {
+		if got := sessionMatchesSearch(s, strings.ToLower(needle)); got != want {
+			t.Errorf("sessionMatchesSearch(%q) = %v, want %v", needle, got, want)
+		}
+	}
+}
+
+func mustEq(t *testing.T, label string, got, want any) {
+	t.Helper()
+	if got != want {
+		t.Errorf("%s = %v (%T), want %v (%T)", label, got, got, want, want)
 	}
 }
