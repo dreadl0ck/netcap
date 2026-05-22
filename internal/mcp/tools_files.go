@@ -78,20 +78,13 @@ func (s *Server) handleGetExtractedFileContent(_ context.Context, req mcplib.Cal
 
 	client := s.newClient()
 	endpoint := "/api/extracted-files/content/" + url.PathEscape(filePath)
-	q := url.Values{}
+	q := ref.sessionQueryParams()
 	q.Set("offset", fmt.Sprintf("%d", offset))
 	q.Set("limit", fmt.Sprintf("%d", limit))
 
-	var raw json.RawMessage
-	if err := s.withSession(client, ref, func() error {
-		body, gErr := client.Get(endpoint, q)
-		if gErr != nil {
-			return fmt.Errorf("read file %s: %w", filePath, gErr)
-		}
-		raw = body
-		return nil
-	}); err != nil {
-		return errResult(err), nil
+	raw, gErr := client.Get(endpoint, q)
+	if gErr != nil {
+		return errResult(fmt.Errorf("read file %s: %w", filePath, gErr)), nil
 	}
 
 	// Parse the upstream response and augment with the download URL.

@@ -75,23 +75,47 @@ func isHex(s string) bool {
 	return true
 }
 
-// sessionGate serialises (selectSession + call) pairs so two concurrent
-// MCP tool invocations against different sessions don't stomp on the
-// webui's global currentSession / currentOutDir. Until the analytical
-// handlers accept a per-request session id, this is the only safe option.
+// sessionGate used to serialise (selectSession + call) pairs while the
+// webui analytical handlers all shared a global currentSession. After
+// T2.1 most JSON endpoints accept ?sessionId= / ?inputFile= directly,
+// so the gate is now effectively a no-op for those paths.
+//
+// We keep it around for the few legacy endpoints that still rely on
+// currentSession (mainly the upload + reanalyze + set-directory triple);
+// the cost is a single mutex hop on those rare control-plane calls.
 type sessionGate struct {
 	mu sync.Mutex
 }
 
-// run holds the gate for the duration of fn. fn typically does
-//
-//	client.SelectSession(ref); client.Get("/api/foo")
-//
-// and so must complete before another session can be selected.
+// run holds the gate for the duration of fn.
 func (g *sessionGate) run(fn func() error) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	return fn()
+}
+
+// sessionQueryParams returns the URL query params that tell migrated
+// webui analytical handlers which session to use. Prefer this over
+// selectSession+gate for any endpoint that supports it (after T2.1 that's
+// most JSON endpoints under /api/{hosts,connections,services,domains,
+// http,certificates,fingerprints,software,vulnerabilities,secrets,
+// alerts,rules,extracted-files,audit,files/audit,visualize/protocol-
+// hierarchy,auth-activity}).
+//
+// Service-mode refs become ?sessionId=<hex>; local-mode refs become
+// ?inputFile=<abs path>. The migrated webui resolver tries both keys
+// before falling back to the global currentSession.
+func (ref SessionRef) sessionQueryParams() url.Values {
+	v := url.Values{}
+	if ref.ID == "" {
+		return v
+	}
+	if ref.isPath {
+		v.Set("inputFile", ref.ID)
+	} else {
+		v.Set("sessionId", ref.ID)
+	}
+	return v
 }
 
 // selectSession switches the webui to ref via the right endpoint for the

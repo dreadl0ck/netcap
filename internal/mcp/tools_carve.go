@@ -184,23 +184,19 @@ func (s *Server) carveFourTuple(req mcplib.CallToolRequest, endpoint, label stri
 	return s.doCarve(ref, endpoint, label, q)
 }
 
-// doCarve performs the actual session-select + download + store cycle
-// and returns a response shaped for the LLM.
+// doCarve performs the actual download + store cycle and returns a
+// response shaped for the LLM. The session is passed via ?sessionId= /
+// ?inputFile= rather than going through /api/set-directory.
 func (s *Server) doCarve(ref SessionRef, endpoint, label string, q url.Values) (*mcplib.CallToolResult, error) {
-	client := s.newClient()
-	var (
-		body []byte
-		ct   string
-	)
-	if err := s.withSession(client, ref, func() error {
-		var gErr error
-		body, ct, gErr = client.GetRaw(endpoint, q)
-		if gErr != nil {
-			return fmt.Errorf("download %s: %w", endpoint, gErr)
+	for k, vs := range ref.sessionQueryParams() {
+		for _, v := range vs {
+			q.Set(k, v)
 		}
-		return nil
-	}); err != nil {
-		return errResult(err), nil
+	}
+	client := s.newClient()
+	body, ct, gErr := client.GetRaw(endpoint, q)
+	if gErr != nil {
+		return errResult(fmt.Errorf("download %s: %w", endpoint, gErr)), nil
 	}
 
 	source := fmt.Sprintf("%s%s?%s", client.BaseURL(), endpoint, q.Encode())

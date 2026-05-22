@@ -280,80 +280,35 @@ func (s *Server) handleAuditFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	HandleAuditFiles(outDir)(w, r)
 }
 
 // handleAuditFilesFiltered delegates to the shared handler with community ID filtering
 func (s *Server) handleAuditFilesFiltered(w http.ResponseWriter, r *http.Request) {
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	HandleAuditFilesFiltered(outDir)(w, r)
 }
 
 // handleLogFiles delegates to the shared handler
 func (s *Server) handleLogFiles(w http.ResponseWriter, r *http.Request) {
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	HandleLogFiles(outDir)(w, r)
 }
 
 // handleAuditRecords delegates to the shared handler
 func (s *Server) handleAuditRecords(w http.ResponseWriter, r *http.Request) {
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	HandleAuditRecords(outDir)(w, r)
 }
 
 // handleLogContent delegates to the shared handler
 func (s *Server) handleLogContent(w http.ResponseWriter, r *http.Request) {
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	HandleLogContent(outDir)(w, r)
 }
@@ -2488,16 +2443,7 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Determine the output directory
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
@@ -2721,16 +2667,7 @@ func (s *Server) handleDownloadExtractedFile(w http.ResponseWriter, r *http.Requ
 	log.Printf("[WebUI] Download extracted file request: encodedPath=%s, decodedPath=%s", encodedPath, relativePath)
 
 	// Determine the output directory
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory selected", http.StatusServiceUnavailable)
@@ -2839,16 +2776,7 @@ func (s *Server) handleExtractedFileContent(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Determine the output directory
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory selected", http.StatusServiceUnavailable)
@@ -2956,16 +2884,7 @@ func (s *Server) handleDownloadAllExtractedFiles(w http.ResponseWriter, r *http.
 	}
 
 	// Determine the output directory
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		http.Error(w, "No output directory selected", http.StatusServiceUnavailable)
@@ -3975,16 +3894,7 @@ func (s *Server) handleMenuCounts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	response := MenuCountsResponse{}
 

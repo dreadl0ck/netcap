@@ -8,9 +8,7 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/url"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -74,23 +72,15 @@ func (s *Server) handleGetConversation(_ context.Context, req mcplib.CallToolReq
 		return errResult(err), nil
 	}
 
-	q := url.Values{}
+	q := ref.sessionQueryParams()
 	q.Set("srcIP", srcIP)
 	q.Set("srcPort", srcPort)
 	q.Set("dstIP", dstIP)
 	q.Set("dstPort", dstPort)
 
-	client := s.newClient()
-	var raw json.RawMessage
-	if err := s.withSession(client, ref, func() error {
-		body, gErr := client.Get("/api/connections/conversation", q)
-		if gErr != nil {
-			return fmt.Errorf("conversation: %w", gErr)
-		}
-		raw = body
-		return nil
-	}); err != nil {
-		return errResult(err), nil
+	raw, gErr := s.newClient().Get("/api/connections/conversation", q)
+	if gErr != nil {
+		return errResult(fmt.Errorf("conversation: %w", gErr)), nil
 	}
 	return rawJSONResult(raw), nil
 }

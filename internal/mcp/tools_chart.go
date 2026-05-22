@@ -8,9 +8,7 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/url"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -79,24 +77,21 @@ func (s *Server) handleChartData(_ context.Context, req mcplib.CallToolRequest) 
 		maxPts = 10000
 	}
 
-	q := url.Values{}
+	q := ref.sessionQueryParams()
 	q.Set("type", auditType)
 	q.Set("field", field)
 	q.Set("interval", interval)
 	q.Set("maxDataPoints", fmt.Sprintf("%d", maxPts))
 	q.Set("format", "json")
+	// The chart endpoint uses ?scope= for the scope dispatch; pass our
+	// session_id through so it's resolved per-request.
+	if sid := ref.ID; sid != "" {
+		q.Set("scope", sid)
+	}
 
-	client := s.newClient()
-	var raw json.RawMessage
-	if err := s.withSession(client, ref, func() error {
-		body, gErr := client.Get("/api/chart/data", q)
-		if gErr != nil {
-			return fmt.Errorf("chart_data %s.%s: %w", auditType, field, gErr)
-		}
-		raw = body
-		return nil
-	}); err != nil {
-		return errResult(err), nil
+	raw, gErr := s.newClient().Get("/api/chart/data", q)
+	if gErr != nil {
+		return errResult(fmt.Errorf("chart_data %s.%s: %w", auditType, field, gErr)), nil
 	}
 	return rawJSONResult(raw), nil
 }

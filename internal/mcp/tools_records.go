@@ -123,7 +123,7 @@ func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolR
 	countOnly := req.GetBool("count_only", false)
 	filterExpr := req.GetString("filter", "")
 
-	q := url.Values{}
+	q := ref.sessionQueryParams()
 	q.Set("limit", strconv.Itoa(limit))
 	if offset > 0 {
 		q.Set("offset", strconv.Itoa(offset))
@@ -133,22 +133,9 @@ func (s *Server) handleQueryAuditRecords(_ context.Context, req mcplib.CallToolR
 	}
 
 	client := s.newClient()
-	var (
-		records      []json.RawMessage
-		completeJSON json.RawMessage
-		terminal     string
-	)
-	if gateErr := s.withSession(client, ref, func() error {
-		recs, comp, term, sErr := client.StreamAuditRecords(auditType, q, 8<<20)
-		if sErr != nil {
-			return fmt.Errorf("stream %s: %w", auditType, sErr)
-		}
-		records = recs
-		completeJSON = comp
-		terminal = term
-		return nil
-	}); gateErr != nil {
-		return errResult(gateErr), nil
+	records, completeJSON, terminal, sErr := client.StreamAuditRecords(auditType, q, 8<<20)
+	if sErr != nil {
+		return errResult(fmt.Errorf("stream %s: %w", auditType, sErr)), nil
 	}
 
 	if terminal == "error" {
@@ -207,17 +194,9 @@ func (s *Server) handleGetAuditRecordValues(_ context.Context, req mcplib.CallTo
 	if !validAuditTypeName(auditType) {
 		return errResult(fmt.Errorf("invalid audit type %q", auditType)), nil
 	}
-	client := s.newClient()
-	var raw json.RawMessage
-	if err := s.withSession(client, ref, func() error {
-		body, gErr := client.Get("/api/audit/"+url.PathEscape(auditType)+"/values", nil)
-		if gErr != nil {
-			return fmt.Errorf("values %s: %w", auditType, gErr)
-		}
-		raw = body
-		return nil
-	}); err != nil {
-		return errResult(err), nil
+	raw, gErr := s.newClient().Get("/api/audit/"+url.PathEscape(auditType)+"/values", ref.sessionQueryParams())
+	if gErr != nil {
+		return errResult(fmt.Errorf("values %s: %w", auditType, gErr)), nil
 	}
 	return rawJSONResult(raw), nil
 }

@@ -8,7 +8,6 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
@@ -45,9 +44,10 @@ func (s *Server) registerInventoryTools() error {
 }
 
 // simpleSessionTool builds a ServerTool that takes only session_id (plus
-// any extra queryArgs) and forwards to a single GET endpoint. The handler
-// runs under the session gate so two concurrent calls don't race on the
-// webui's global currentSession.
+// any extra queryArgs) and forwards to a single GET endpoint. After
+// T2.1 the handler passes ?sessionId= / ?inputFile= directly so it no
+// longer holds the session gate; multiple parallel tool calls against
+// different sessions can now run concurrently.
 func simpleSessionTool(s *Server, name, desc, endpoint string, queryArgs []queryArg) server.ServerTool {
 	opts := []mcplib.ToolOption{
 		mcplib.WithDescription(desc),
@@ -69,21 +69,17 @@ func simpleSessionTool(s *Server, name, desc, endpoint string, queryArgs []query
 			if err != nil {
 				return errResult(err), nil
 			}
-			client := s.newClient()
-			var raw json.RawMessage
-			err = s.withSession(client, ref, func() error {
-				q := buildQuery(req, queryArgs)
-				body, gErr := client.Get(endpoint, q)
-				if gErr != nil {
-					return fmt.Errorf("%s: %w", endpoint, gErr)
+			q := buildQuery(req, queryArgs)
+			for k, vs := range ref.sessionQueryParams() {
+				for _, v := range vs {
+					q.Set(k, v)
 				}
-				raw = body
-				return nil
-			})
-			if err != nil {
-				return errResult(err), nil
 			}
-			return rawJSONResult(raw), nil
+			body, gErr := s.newClient().Get(endpoint, q)
+			if gErr != nil {
+				return errResult(fmt.Errorf("%s: %w", endpoint, gErr)), nil
+			}
+			return rawJSONResult(body), nil
 		},
 	}
 }

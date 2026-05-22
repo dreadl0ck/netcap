@@ -881,16 +881,7 @@ func (s *Server) handleExecuteRule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Determine the output directory
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
@@ -978,16 +969,7 @@ func (s *Server) handleExecuteAllRules(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Determine the output directory
-	s.mu.RLock()
-	outDir := s.outDir
-
-	// In service mode, use the current session's output directory
-	if s.isServiceMode && s.currentSession != "" && s.sessionManager != nil {
-		if session, ok := s.sessionManager.GetSession(s.currentSession); ok {
-			outDir = session.OutputDir
-		}
-	}
-	s.mu.RUnlock()
+	outDir, _ := s.resolveOutDirFromRequest(r)
 
 	if outDir == "" {
 		RespondJSON(w, http.StatusServiceUnavailable, map[string]any{
