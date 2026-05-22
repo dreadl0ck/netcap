@@ -33,7 +33,7 @@ Each tool exposes the standard MCP hint annotations (read-only,
 destructive, idempotent, open-world). Treat them as advisory: a
 `destructive` tool should prompt the user before invocation.
 
-## Tool catalogue (44 tools)
+## Tool catalogue (46 tools)
 
 Auto-generated from the live tool registry. Do not edit by hand; run `go test ./internal/mcp/ -run TestToolDocsUpToDate -update` to regenerate.
 
@@ -246,6 +246,15 @@ Parse EXIF metadata from a carved image file. Returns a flat list of {ifd_path, 
 | --- | --- | --- | --- |
 | `file_path` | string | yes | Relative path inside files/, as returned by list_extracted_files. |
 | `session_id` | string | yes | Session identifier. |
+
+
+### `get_live_capture_status`
+
+Report whether the netcap webui is currently in live-capture mode (reading from a network interface rather than a finite PCAP file). Returns {is_live_mode, is_processing, current_session, ...} from the /api/status endpoint.
+
+**Hints:** read-only, idempotent
+
+**Arguments:** none
 
 
 ### `get_protocol_hierarchy`
@@ -678,5 +687,14 @@ Run one of netcap's local resolvers against a value: reverse DNS, GeoIP lookup, 
 | `kind` | string | yes | One of: dns, geoip, mac_vendor, iana_service, ja4, ja4s, ja4h, ja4x, ja4t, ja4ts, ja4tscan. |
 | `protocol` | string |  | For iana_service only: "tcp" or "udp" (default tcp). |
 | `value` | string | yes | Lookup key: an IP for dns/geoip, MAC for mac_vendor, port for iana_service, fingerprint hash for ja4*. |
+
+
+### `stop_live_capture`
+
+Stop an in-progress live capture on the netcap webui host. Returns immediately; ongoing audit-record processing continues until the existing buffers drain. No-op (and returns an error) if the webui isn't currently in live-capture mode.
+
+**Hints:** destructive, idempotent
+
+**Arguments:** none
 
 
