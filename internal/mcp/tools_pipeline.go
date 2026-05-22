@@ -307,7 +307,9 @@ func isCompleted(status, resultsReady any) bool {
 
 // handleGetSessionInfo selects the session and bundles together the most
 // useful poll-progress endpoints: /api/audit-stats, /api/status, and the
-// session's record in /api/files/input.
+// session's record in /api/files/input. If the session has errored, the
+// upstream error message is surfaced verbatim in the response so the LLM
+// can react rather than spin forever on completed=false.
 func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 	ref, err := s.requireSessionID(req)
 	if err != nil {
@@ -339,7 +341,63 @@ func (s *Server) handleGetSessionInfo(_ context.Context, req mcplib.CallToolRequ
 		"audit_stats":  json.RawMessage(stats),
 		"capture_stat": json.RawMessage(status),
 	}
+
+	// Surface per-file errors (local mode) and session error fields
+	// (service mode). The upstream FileInfo JSON has an optional `error`
+	// (string pointer) plus `errorLogPath`; in service mode the session
+	// envelope also has `errorMessage` and `status`.
+	if errMsg, errLog, fStatus, found := extractSessionError(ref, files); found {
+		if errMsg != "" {
+			out["error"] = errMsg
+		}
+		if errLog != "" {
+			out["error_log_path"] = errLog
+		}
+		if fStatus != "" {
+			out["status"] = fStatus
+		}
+	}
 	return jsonResult(out), nil
+}
+
+// extractSessionError walks /api/files/input and pulls out the error
+// message, error log path, and status for the matching session row.
+// Returns found=true when the row was located (regardless of whether
+// it carried an error). For local mode we match by `path`; for service
+// mode by `sessionId`.
+func extractSessionError(ref SessionRef, files json.RawMessage) (msg, logPath, status string, found bool) {
+	if len(files) == 0 {
+		return "", "", "", false
+	}
+	var rows []map[string]any
+	if err := json.Unmarshal(files, &rows); err != nil {
+		return "", "", "", false
+	}
+	for _, row := range rows {
+		var key string
+		if ref.isPath {
+			key, _ = row["path"].(string)
+		} else {
+			key, _ = row["sessionId"].(string)
+		}
+		if key != ref.ID {
+			continue
+		}
+		found = true
+		// `error` may be a string (service envelope) or a pointer-to-
+		// string after JSON round-trip; both come through as string here.
+		if v, ok := row["error"].(string); ok {
+			msg = v
+		}
+		if v, ok := row["errorLogPath"].(string); ok {
+			logPath = v
+		}
+		if v, ok := row["status"].(string); ok {
+			status = v
+		}
+		break
+	}
+	return msg, logPath, status, found
 }
 
 // deriveCompleted reads /api/files/input + /api/status to figure out
