@@ -59,6 +59,12 @@ func (s *Server) mountMCP(mux *http.ServeMux, loopbackBase string) {
 	mux.Handle("/mcp", handler)
 	mux.Handle("/mcp/", handler)
 
+	// Prometheus scrape endpoint, also admin-token protected via the
+	// same adminAuth wrapper installed on /mcp itself. Operators who
+	// run a separate scraper inside the trust boundary just need to
+	// include the bearer token.
+	mux.Handle("/mcp/metrics", srv.AuthedMetricsHandler())
+
 	log.Printf("[MCP] Admin endpoint registered at /mcp (loopback=%s, token fingerprint=%s)",
 		resolved, srv.TokenFingerprint())
 }

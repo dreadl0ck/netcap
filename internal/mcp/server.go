@@ -99,6 +99,10 @@ type Server struct {
 	// default (CarveStore.gc).
 	carve *CarveStore
 
+	// metrics holds the Prometheus collectors published at /mcp/metrics
+	// when the HTTP transport is mounted.
+	metrics *Metrics
+
 	mcpSrv     *server.MCPServer
 	httpServer *server.StreamableHTTPServer
 }
@@ -155,6 +159,7 @@ func New(opts Options) (*Server, error) {
 		logger:          opts.Logger,
 		cve:             NewCVELookup(networkEnabled),
 		carve:           NewCarveStore(opts.CarveDir, 32, time.Hour),
+		metrics:         NewMetrics(),
 	}
 
 	s.mcpSrv = server.NewMCPServer(
@@ -252,26 +257,59 @@ func (s *Server) corsForMCP(next http.Handler) http.Handler {
 }
 
 // toolLogMiddleware is a server.ToolHandlerMiddleware that logs every
-// tool invocation with its duration, response size, and error status.
-// This is invaluable when debugging an LLM session.
+// tool invocation with its duration, response size, and error status,
+// and records the same data as Prometheus metrics.
 func (s *Server) toolLogMiddleware(next server.ToolHandlerFunc) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 		name := req.Params.Name
 		start := time.Now()
 		result, err := next(ctx, req)
 		dur := time.Since(start)
+		bytesOut := contentSize(result)
+		status := "ok"
 		switch {
 		case err != nil:
+			status = "error"
 			s.logger.Printf("tool=%s duration=%s error=%v", name, dur, err)
 		case result != nil && result.IsError:
+			status = "error_result"
 			s.logger.Printf("tool=%s duration=%s status=error_result content=%d bytes",
-				name, dur, contentSize(result))
+				name, dur, bytesOut)
 		default:
 			s.logger.Printf("tool=%s duration=%s status=ok content=%d bytes",
-				name, dur, contentSize(result))
+				name, dur, bytesOut)
+		}
+		if s.metrics != nil {
+			s.metrics.observeToolCall(name, status, dur.Seconds(), bytesOut)
+			// Surface up-to-date carve gauge values on every call so a
+			// scrape never returns stale numbers.
+			if s.carve != nil {
+				count, total := s.carve.Stats()
+				s.metrics.carve.Set(float64(count))
+				s.metrics.carveTot.Set(float64(total))
+			}
 		}
 		return result, err
 	}
+}
+
+// MetricsHandler returns the Prometheus scrape handler, ready to be
+// mounted at /mcp/metrics (or any operator-chosen path). Does NOT
+// include auth — callers that want the standard /mcp admin-token
+// posture should use AuthedMetricsHandler.
+func (s *Server) MetricsHandler() http.Handler {
+	if s.metrics == nil {
+		return http.NotFoundHandler()
+	}
+	return s.metrics.Handler()
+}
+
+// AuthedMetricsHandler wraps MetricsHandler in the same admin-token
+// middleware as the /mcp endpoint. This is what operators want for
+// production: scrapers inside the trust boundary include the token,
+// random internet doesn't get to read tool-call latencies.
+func (s *Server) AuthedMetricsHandler() http.Handler {
+	return s.adminAuth(s.MetricsHandler())
 }
 
 func contentSize(r *mcplib.CallToolResult) int {
