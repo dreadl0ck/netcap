@@ -95,12 +95,30 @@ func doRPC(t *testing.T, url, token, body string) string {
 // extractJSON peels off any SSE framing ("event: message\ndata: <json>\n\n")
 // and returns the inner JSON payload. If the body is already plain JSON,
 // it's returned unchanged.
+//
+// We anchor the match on a line-prefix ("\ndata: " or a leading "data: ")
+// so a tool description that happens to contain the literal substring
+// "data: " doesn't trip the parser.
 func extractJSON(body string) string {
-	if i := strings.Index(body, "data: "); i >= 0 {
-		body = body[i+len("data: "):]
-		if j := strings.Index(body, "\n"); j >= 0 {
-			body = body[:j]
+	trimmed := strings.TrimLeft(body, " \r\n")
+	switch {
+	case strings.HasPrefix(trimmed, "{"), strings.HasPrefix(trimmed, "["):
+		return strings.TrimSpace(trimmed)
+	}
+	prefix := "\ndata: "
+	i := strings.Index(body, prefix)
+	if i < 0 {
+		// Try leading "data: " at the start of the body.
+		if strings.HasPrefix(trimmed, "data: ") {
+			body = strings.TrimPrefix(trimmed, "data: ")
+		} else {
+			return strings.TrimSpace(body)
 		}
+	} else {
+		body = body[i+len(prefix):]
+	}
+	if j := strings.Index(body, "\n"); j >= 0 {
+		body = body[:j]
 	}
 	return strings.TrimSpace(body)
 }

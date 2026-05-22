@@ -337,6 +337,7 @@ func (s *Server) registerAll() error {
 		s.registerThreatTools,
 		s.registerActionTools,
 		s.registerCarveTools,
+		s.registerChartTool,
 	} {
 		if err := fn(); err != nil {
 			return err

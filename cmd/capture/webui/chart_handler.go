@@ -25,6 +25,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -345,6 +346,29 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// format=json: skip HTML rendering and return the raw time-series
+	// data directly. Used by the MCP chart_data tool and any non-browser
+	// caller that wants the numbers (not the chart). Default interval is
+	// 1s when omitted, mirroring the HTML path's go-echarts default.
+	if r.URL.Query().Get("format") == "json" {
+		intervalForJSON := interval
+		if intervalForJSON == "" {
+			intervalForJSON = "1s"
+		}
+		merged, err := s.aggregateChartDataAcrossDirs(dirs, auditType, field, intervalForJSON, maxDataPoints)
+		if err != nil {
+			log.Printf("[WebUI] chart json: aggregate failed (type=%s field=%s scope=%s): %v",
+				auditType, field, scope, err)
+			http.Error(w, fmt.Sprintf("Failed to aggregate chart data: %v", err), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(merged); err != nil {
+			log.Printf("[WebUI] chart json: encode failed: %v", err)
+		}
+		return
+	}
+
 	// Generate chart using go-echarts
 	start := time.Now()
 	generator := NewChartGenerator(auditType, field, chartType, interval, showLegend, maxDataPoints)
@@ -363,6 +387,81 @@ func (s *Server) handleChartData(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(w, chartHTML); err != nil {
 		log.Printf("[WebUI] Failed to write chart HTML: %v", err)
 	}
+}
+
+// aggregateChartDataAcrossDirs runs the existing per-file chart-data
+// extractor across every directory selected by the scope resolver and
+// merges the time-series. The result is the raw ChartDataResponse the
+// React frontend would otherwise compute client-side from the HTML.
+//
+// When dirs is empty or no usable data is found we return an empty
+// (zero-record) response rather than an error so callers can distinguish
+// "no data" from "couldn't open file".
+func (s *Server) aggregateChartDataAcrossDirs(dirs []string, auditType, field, interval string, maxDataPoints int) (*ChartDataResponse, error) {
+	merged := &ChartDataResponse{
+		Type:     auditType,
+		Field:    field,
+		Interval: interval,
+		Data:     []ChartDataPoint{},
+	}
+	if len(dirs) == 0 {
+		return merged, nil
+	}
+	buckets := map[int64]float64{} // timestamp -> sum of values
+	var minVal, maxVal, total float64
+	first := true
+
+	for _, dir := range dirs {
+		filePath := filepath.Join(dir, auditType+".ncap.gz")
+		if _, statErr := os.Stat(filePath); statErr != nil {
+			continue // tolerate missing per-type files
+		}
+		resp, err := s.extractChartData(filePath, auditType, field, interval)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range resp.Data {
+			buckets[p.Timestamp] += p.Value
+		}
+		merged.Count += resp.Count
+		total += resp.AvgValue * float64(resp.Count)
+		if first || resp.MinValue < minVal {
+			minVal = resp.MinValue
+		}
+		if first || resp.MaxValue > maxVal {
+			maxVal = resp.MaxValue
+		}
+		first = false
+	}
+
+	// Materialise + sort the merged buckets.
+	keys := make([]int64, 0, len(buckets))
+	for k := range buckets {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+
+	// Down-sample uniformly when over the cap (matches the HTML path's
+	// max-data-points contract).
+	if maxDataPoints > 0 && len(keys) > maxDataPoints {
+		step := float64(len(keys)) / float64(maxDataPoints)
+		out := make([]int64, 0, maxDataPoints)
+		for i := 0; i < maxDataPoints; i++ {
+			out = append(out, keys[int(float64(i)*step)])
+		}
+		keys = out
+	}
+
+	merged.Data = make([]ChartDataPoint, 0, len(keys))
+	for _, k := range keys {
+		merged.Data = append(merged.Data, ChartDataPoint{Timestamp: k, Value: buckets[k]})
+	}
+	merged.MinValue = minVal
+	merged.MaxValue = maxVal
+	if merged.Count > 0 {
+		merged.AvgValue = total / float64(merged.Count)
+	}
+	return merged, nil
 }
 
 // extractChartData reads audit records and extracts time-series data for the specified field

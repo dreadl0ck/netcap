@@ -33,7 +33,7 @@ Each tool exposes the standard MCP hint annotations (read-only,
 destructive, idempotent, open-world). Treat them as advisory: a
 `destructive` tool should prompt the user before invocation.
 
-## Tool catalogue (39 tools)
+## Tool catalogue (40 tools)
 
 Auto-generated from the live tool registry. Do not edit by hand; run `go test ./internal/mcp/ -run TestToolDocsUpToDate -update` to regenerate.
 
@@ -164,6 +164,25 @@ For one audit record type in a session, return the distinct observed values per 
 | --- | --- | --- | --- |
 | `session_id` | string | yes | Session identifier. |
 | `type` | string | yes | Audit record type name without the NC_ prefix. |
+
+
+### `get_chart_data`
+
+Aggregate one audit-record field as a time series. Useful for beacon detection (regular interval connections), DGA hunts, or any per-field-over-time analytics. Returns JSON: {type, field, interval, data: [{timestamp, value}], count, min_value, max_value, avg_value}.
+
+Use get_audit_record_fields to discover available fields.
+
+**Hints:** read-only, idempotent
+
+**Arguments:**
+
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `field` | string | yes | Field to aggregate (numeric or boolean). Use dot notation for nested fields, e.g. "Questions[0].Name". |
+| `interval` | string |  | Bucket size as a Go duration string (1s, 100ms, 1m, 1h). Default 1s. |
+| `max_data_points` | number |  | Down-sample to this many points. Default 1000, max 10000. |
+| `session_id` | string | yes | Session identifier. |
+| `type` | string | yes | Audit record type name (no NC_ prefix), e.g. "Connection". |
 
 
 ### `get_conversation`
