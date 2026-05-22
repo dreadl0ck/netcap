@@ -33,7 +33,7 @@ Each tool exposes the standard MCP hint annotations (read-only,
 destructive, idempotent, open-world). Treat them as advisory: a
 `destructive` tool should prompt the user before invocation.
 
-## Tool catalogue (42 tools)
+## Tool catalogue (44 tools)
 
 Auto-generated from the live tool registry. Do not edit by hand; run `go test ./internal/mcp/ -run TestToolDocsUpToDate -update` to regenerate.
 
@@ -618,6 +618,20 @@ Fetch the NVD record for a CVE id: description, CVSS v3 score and vector, CWE cl
 | `cve_id` | string | yes | CVE identifier, e.g. "CVE-2021-44228". |
 
 
+### `lookup_dhcp_fingerprint`
+
+Resolve a DHCPv4 fingerprint (option list) to a device class via netcap's local fingerprint database. With AllowNetwork=true and INIT_DHCPFINGERPRINT_API_KEY set, falls through to Fingerbank for unknown fingerprints; otherwise returns the local-DB match only (or an empty result).
+
+**Hints:** read-only, idempotent, open-world
+
+**Arguments:**
+
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `fingerprint` | string | yes | DHCP option list, comma-separated (e.g. "1,3,6,15,33,43"). |
+| `vendor` | string |  | Optional Vendor Class Identifier hint. |
+
+
 ### `query_audit_records`
 
 Query one audit-record type from a session (works for ALL ~124 netcap record types, not just the ones with dedicated list_* tools). Use list_audit_records to discover what's available in the session, and get_audit_record_fields to enumerate the queryable fields of a type.
@@ -649,5 +663,20 @@ Re-decode an existing session's PCAP. Server-wide BPF/DPI/decoder settings apply
 | name | type | required | description |
 | --- | --- | --- | --- |
 | `session_id` | string | yes | Session identifier. |
+
+
+### `resolve`
+
+Run one of netcap's local resolvers against a value: reverse DNS, GeoIP lookup, MAC vendor (OUI), IANA service-by-port, or JA4 fingerprint product mapping. All lookups are LOCAL — no outbound HTTP. Requires the netcap databases (loaded by `net dbs` or on webui startup) to be present on disk.
+
+**Hints:** read-only, idempotent
+
+**Arguments:**
+
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `kind` | string | yes | One of: dns, geoip, mac_vendor, iana_service, ja4, ja4s, ja4h, ja4x, ja4t, ja4ts, ja4tscan. |
+| `protocol` | string |  | For iana_service only: "tcp" or "udp" (default tcp). |
+| `value` | string | yes | Lookup key: an IP for dns/geoip, MAC for mac_vendor, port for iana_service, fingerprint hash for ja4*. |
 
 
