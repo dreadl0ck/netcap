@@ -194,3 +194,9 @@ func truncate(s string, n int) string {
 	}
 	return s[:n] + "...[truncated]"
 }
+
+// readAllLimited reads up to max bytes from r. Used by callers that want
+// bounded memory even if the server misbehaves.
+func readAllLimited(r io.Reader, max int) ([]byte, error) {
+	return io.ReadAll(io.LimitReader(r, int64(max)))
+}

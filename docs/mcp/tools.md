@@ -33,7 +33,7 @@ Each tool exposes the standard MCP hint annotations (read-only,
 destructive, idempotent, open-world). Treat them as advisory: a
 `destructive` tool should prompt the user before invocation.
 
-## Tool catalogue (46 tools)
+## Tool catalogue (48 tools)
 
 Auto-generated from the live tool registry. Do not edit by hand; run `go test ./internal/mcp/ -run TestToolDocsUpToDate -update` to regenerate.
 
@@ -98,6 +98,19 @@ Produce a sub-PCAP of all HTTP-on-TCP flows between two IPs.
 | `dst_ip` | string | yes | Destination IP. |
 | `session_id` | string | yes | Session identifier. |
 | `src_ip` | string | yes | Source IP. |
+
+
+### `delete_session`
+
+Remove a session from the netcap webui and delete its on-disk artefacts (uploads/<sid>, results/<sid>, any error log). Available in service mode only — local mode sessions are owned by the CLI process and cleaned up at exit.
+
+**Hints:** destructive, idempotent
+
+**Arguments:**
+
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `session_id` | string | yes | Session identifier (service-mode hex id). |
 
 
 ### `execute_detection_rules`
@@ -696,5 +709,20 @@ Stop an in-progress live capture on the netcap webui host. Returns immediately; 
 **Hints:** destructive, idempotent
 
 **Arguments:** none
+
+
+### `wait_for_session`
+
+Poll get_session_info server-side until the session is completed or the timeout elapses. Returns the final session_info payload verbatim (so the LLM can read it without an extra round-trip). Spares the LLM from burning conversation turns on polling loops.
+
+**Hints:** read-only, idempotent
+
+**Arguments:**
+
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `poll_interval_ms` | number |  | How frequently to poll (default 500, min 100, max 5000). |
+| `session_id` | string | yes | Session identifier. |
+| `timeout_seconds` | number |  | Maximum time to wait (default 60, max 300). |
 
 

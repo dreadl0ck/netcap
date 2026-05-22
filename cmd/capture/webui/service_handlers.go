@@ -123,14 +123,15 @@ func (s *Server) handleListSessions(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleSessionSelect allows selecting a session for viewing
+// handleSessionSelect allows selecting a session for viewing (GET) or
+// removing it from the manager and on-disk storage (DELETE).
 func (s *Server) handleSessionSelect(w http.ResponseWriter, r *http.Request) {
 	if !s.isServiceMode {
 		http.Error(w, "Not available in local mode", http.StatusNotFound)
 		return
 	}
 
-	if r.Method != http.MethodGet {
+	if r.Method != http.MethodGet && r.Method != http.MethodDelete {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -164,7 +165,31 @@ func (s *Server) handleSessionSelect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set active output directory to the session's output directory
+	if r.Method == http.MethodDelete {
+		removed := s.sessionManager.DeleteSession(sessionID)
+		if removed == nil {
+			respondJSON(w, http.StatusNotFound, map[string]string{"error": "Session not found"})
+			return
+		}
+		removedFiles, errs := s.deleteSessionArtefacts(removed)
+		// Clear the global pointer if it referenced this session.
+		s.mu.Lock()
+		if s.currentSession == sessionID {
+			s.currentSession = ""
+			s.outDir = ""
+		}
+		s.mu.Unlock()
+		log.Printf("[WebUI] Session %s deleted (%d files removed, %d errors)", sessionID, len(removedFiles), len(errs))
+		respondJSON(w, http.StatusOK, map[string]any{
+			"success":       true,
+			"session_id":    sessionID,
+			"removed_paths": removedFiles,
+			"errors":        errs,
+		})
+		return
+	}
+
+	// GET: select session as active.
 	s.mu.Lock()
 	s.currentSession = sessionID
 	s.outDir = session.OutputDir
@@ -174,6 +199,31 @@ func (s *Server) handleSessionSelect(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"session": session,
 	})
+}
+
+// deleteSessionArtefacts removes the session's on-disk uploads/, results/,
+// and any associated error log. Returns the list of paths removed plus
+// any errors encountered (don't abort on individual failures — caller
+// gets the partial cleanup result).
+func (s *Server) deleteSessionArtefacts(session *SessionInfo) ([]string, []string) {
+	var removed []string
+	var errs []string
+	tryRemove := func(p string) {
+		if p == "" {
+			return
+		}
+		if err := os.RemoveAll(p); err != nil {
+			errs = append(errs, p+": "+err.Error())
+			return
+		}
+		removed = append(removed, p)
+	}
+	tryRemove(session.OutputDir)
+	tryRemove(session.InputFile)
+	if session.ErrorLogPath != "" {
+		tryRemove(session.ErrorLogPath)
+	}
+	return removed, errs
 }
 
 // handleViewSession handles shareable session view links

@@ -379,6 +379,7 @@ func (s *Server) registerAll() error {
 		s.registerForensicsTools,
 		s.registerResolveTools,
 		s.registerLiveCaptureTools,
+		s.registerLifecycleTools,
 	} {
 		if err := fn(); err != nil {
 			return err

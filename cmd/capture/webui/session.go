@@ -277,6 +277,31 @@ func (sm *SessionManager) CleanupExpiredSessions() []string {
 	return expiredSessions
 }
 
+// DeleteSession removes one session from the manager and (optionally)
+// from the IP tracker. Returns the removed *SessionInfo or nil if the
+// id wasn't found. Caller is responsible for removing on-disk artefacts
+// (uploads/<sid>, results/<sid>); see Server.deleteSessionArtefacts.
+func (sm *SessionManager) DeleteSession(sessionID string) *SessionInfo {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	session, ok := sm.sessions[sessionID]
+	if !ok {
+		return nil
+	}
+	delete(sm.sessions, sessionID)
+	if tracker, ok := sm.ipTrackers[session.IP]; ok {
+		kept := tracker.Sessions[:0]
+		for _, sid := range tracker.Sessions {
+			if sid != sessionID {
+				kept = append(kept, sid)
+			}
+		}
+		tracker.Sessions = kept
+	}
+	return session
+}
+
 // GetAllSessions returns all sessions (for debugging/monitoring)
 func (sm *SessionManager) GetAllSessions() []*SessionInfo {
 	sm.mu.RLock()
