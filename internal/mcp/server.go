@@ -94,6 +94,11 @@ type Server struct {
 	// AllowNetwork option is false (or NETCAP_MCP_DISABLE_NETWORK is set).
 	cve *CVELookup
 
+	// carve holds previously-extracted sub-PCAPs for delivery via the
+	// netcap://carve/{id} resource URI. Capped at 32 entries / 1h TTL by
+	// default (CarveStore.gc).
+	carve *CarveStore
+
 	mcpSrv     *server.MCPServer
 	httpServer *server.StreamableHTTPServer
 }
@@ -122,6 +127,10 @@ type Options struct {
 	// NETCAP_MCP_DISABLE_NETWORK=1 to force-disable regardless of this
 	// field.
 	AllowNetwork bool
+
+	// CarveDir overrides the on-disk location for carved sub-PCAPs.
+	// Default: os.TempDir()/netcap-mcp-carve.
+	CarveDir string
 }
 
 // New constructs a Server, registers tools/resources/prompts, and returns
@@ -145,6 +154,7 @@ func New(opts Options) (*Server, error) {
 		disallowedTools: toSet(opts.DisallowedTools),
 		logger:          opts.Logger,
 		cve:             NewCVELookup(networkEnabled),
+		carve:           NewCarveStore(opts.CarveDir, 32, time.Hour),
 	}
 
 	s.mcpSrv = server.NewMCPServer(

@@ -8,6 +8,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/url"
 
@@ -15,18 +16,31 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-// registerCarveTools registers sub-PCAP carving tools. Each tool selects
-// the session (so /api/<thing>/download-pcap can look up the input file),
-// then returns the download URL. The MCP response does not contain raw
-// PCAP bytes — LLMs shouldn't carry binaries; hand the URL to another
-// tool (curl, Wireshark MCP, etc.) for downstream use.
+// MaxCarveBytes caps the per-call sub-PCAP size we'll buffer in memory.
+// Larger carves return a "too big" error and a hint to filter further;
+// shells / external tools can still hit the download_url directly.
+const MaxCarveBytes = 16 << 20 // 16 MiB
+
+// registerCarveTools registers sub-PCAP carving tools. Each handler:
+//
+//  1. Selects the session so /api/<thing>/download-pcap can find the
+//     input file (the webui resolves activeInputFile from currentSession).
+//  2. Issues GET against the download endpoint.
+//  3. Persists the carved bytes via CarveStore (on-disk + in-memory).
+//  4. Returns the on-disk path, size, sha256, an MCP resource URI
+//     (netcap://carve/<id>) and a base64 sample of the first 4 KiB.
+//
+// LLMs that share a filesystem with the MCP host can open file_path
+// directly; clients on a different host can fetch the resource URI to
+// stream the full bytes.
 func (s *Server) registerCarveTools() error {
 	tools := []server.ServerTool{
 		{
 			Tool: mcplib.NewTool("carve_subpcap_for_host",
 				mcplib.WithDescription(
 					"Produce a sub-PCAP filtered to all traffic involving one host IP. "+
-						"Returns the download URL on the netcap webui."),
+						"Returns the carved file's on-disk path, sha256, and an "+
+						"netcap://carve/{id} resource URI for direct byte access."),
 				mcplib.WithString("session_id", mcplib.Description("Session identifier."), mcplib.Required()),
 				mcplib.WithString("host", mcplib.Description("Host IP (v4 or v6)."), mcplib.Required()),
 				mcplib.WithReadOnlyHintAnnotation(true),
@@ -62,7 +76,7 @@ func (s *Server) registerCarveTools() error {
 				mcplib.WithIdempotentHintAnnotation(true),
 				mcplib.WithOpenWorldHintAnnotation(false),
 			),
-			Handler: s.makeCarveHandler("/api/http/download-pcap", "ip-pair",
+			Handler: s.makeCarveHandler("/api/http/download-pcap", "http_pair",
 				[]string{"src_ip", "dst_ip"}),
 		},
 		{
@@ -86,20 +100,46 @@ func (s *Server) registerCarveTools() error {
 			return err
 		}
 	}
+	s.registerCarveResource()
 	return nil
 }
 
-// makeCarveHandler builds a generic handler for endpoints whose only
-// inputs are simple string query params (no 4-tuple). The first element
-// of mcpArgs becomes the upstream query key; for multi-arg endpoints
-// pass each mcpArg.
-//
-// Mapping rules:
-//   - mcp arg "src_ip"   -> upstream "srcIP"
-//   - mcp arg "src_port" -> upstream "srcPort"
-//   - mcp arg "dst_ip"   -> upstream "dstIP"
-//   - mcp arg "dst_port" -> upstream "dstPort"
-//   - everything else passes through 1:1.
+// registerCarveResource wires up the netcap://carve/{id} resource so the
+// LLM can fetch carved bytes by id (within the standard MCP response cap).
+func (s *Server) registerCarveResource() {
+	s.mcpSrv.AddResourceTemplate(
+		mcplib.NewResourceTemplate(
+			"netcap://carve/{id}",
+			"Carved sub-PCAP",
+			mcplib.WithTemplateDescription(
+				"Bytes of a previously-carved sub-PCAP. Retrieve via Read with "+
+					"the URI returned from any carve_subpcap_for_* tool."),
+			mcplib.WithTemplateMIMEType("application/vnd.tcpdump.pcap"),
+		),
+		s.handleCarveResource,
+	)
+}
+
+func (s *Server) handleCarveResource(_ context.Context, req mcplib.ReadResourceRequest) ([]mcplib.ResourceContents, error) {
+	uri := req.Params.URI
+	const prefix = "netcap://carve/"
+	if len(uri) <= len(prefix) || uri[:len(prefix)] != prefix {
+		return nil, fmt.Errorf("unexpected resource URI: %s", uri)
+	}
+	id := uri[len(prefix):]
+	entry := s.carve.Get(id)
+	if entry == nil {
+		return nil, fmt.Errorf("carve %s not found (may have aged out; re-run the carve tool)", id)
+	}
+	return []mcplib.ResourceContents{
+		mcplib.BlobResourceContents{
+			URI:      uri,
+			MIMEType: "application/vnd.tcpdump.pcap",
+			Blob:     base64.StdEncoding.EncodeToString(entry.Bytes),
+		},
+	}, nil
+}
+
 func (s *Server) makeCarveHandler(endpoint, label string, mcpArgs []string) server.ToolHandlerFunc {
 	return func(_ context.Context, req mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
 		ref, err := s.requireSessionID(req)
@@ -114,22 +154,7 @@ func (s *Server) makeCarveHandler(endpoint, label string, mcpArgs []string) serv
 			}
 			q.Set(carveQueryKey(a), v)
 		}
-
-		client := s.newClient()
-		// Selecting the session populates activeInputFile in the webui,
-		// which the download-pcap handlers consult.
-		if err := s.withSession(client, ref, func() error { return nil }); err != nil {
-			return errResult(err), nil
-		}
-		dlURL := fmt.Sprintf("%s%s?%s", client.BaseURL(), endpoint, q.Encode())
-		s.logger.Printf("carve %s session=%s url=%s", label, ref.ID, dlURL)
-		return jsonResult(map[string]any{
-			"session_id":   ref.ID,
-			"kind":         label,
-			"download_url": dlURL,
-			"note": "GET the download_url (no auth in CLI/loopback mode; admin Bearer token in service mode) " +
-				"to retrieve the carved PCAP. The endpoint shells out to tcpdump on the webui host.",
-		}), nil
+		return s.doCarve(ref, endpoint, label, q)
 	}
 }
 
@@ -156,18 +181,63 @@ func (s *Server) carveFourTuple(req mcplib.CallToolRequest, endpoint, label stri
 	q.Set("srcPort", req.GetString("src_port", ""))
 	q.Set("dstIP", req.GetString("dst_ip", ""))
 	q.Set("dstPort", req.GetString("dst_port", ""))
+	return s.doCarve(ref, endpoint, label, q)
+}
 
+// doCarve performs the actual session-select + download + store cycle
+// and returns a response shaped for the LLM.
+func (s *Server) doCarve(ref SessionRef, endpoint, label string, q url.Values) (*mcplib.CallToolResult, error) {
 	client := s.newClient()
-	if err := s.withSession(client, ref, func() error { return nil }); err != nil {
+	var (
+		body []byte
+		ct   string
+	)
+	if err := s.withSession(client, ref, func() error {
+		var gErr error
+		body, ct, gErr = client.GetRaw(endpoint, q)
+		if gErr != nil {
+			return fmt.Errorf("download %s: %w", endpoint, gErr)
+		}
+		return nil
+	}); err != nil {
 		return errResult(err), nil
 	}
-	dlURL := fmt.Sprintf("%s%s?%s", client.BaseURL(), endpoint, q.Encode())
-	s.logger.Printf("carve %s session=%s url=%s", label, ref.ID, dlURL)
+
+	source := fmt.Sprintf("%s%s?%s", client.BaseURL(), endpoint, q.Encode())
+	s.logger.Printf("carve %s session=%s bytes=%d source=%s", label, ref.ID, len(body), source)
+
+	if len(body) == 0 {
+		return errResult(fmt.Errorf("carve %s: empty response (filter matched zero packets)", label)), nil
+	}
+	if len(body) > MaxCarveBytes {
+		return errResult(fmt.Errorf(
+			"carve %s: %d bytes exceeds cap of %d; narrow your filter (e.g. add a port or time range)",
+			label, len(body), MaxCarveBytes)), nil
+	}
+
+	entry, uri, sErr := s.carve.Put(ref.ID, label, source, body)
+	if sErr != nil {
+		return errResult(fmt.Errorf("store carve: %w", sErr)), nil
+	}
+
+	sampleN := len(body)
+	if sampleN > 4096 {
+		sampleN = 4096
+	}
+	count, total := s.carve.Stats()
+
 	return jsonResult(map[string]any{
 		"session_id":   ref.ID,
 		"kind":         label,
-		"four_tuple":   fmt.Sprintf("%s:%s -> %s:%s", req.GetString("src_ip", ""), req.GetString("src_port", ""), req.GetString("dst_ip", ""), req.GetString("dst_port", "")),
-		"download_url": dlURL,
+		"resource_uri": uri,
+		"file_path":    entry.Path,
+		"size_bytes":   entry.SizeBytes,
+		"sha256":       entry.SHA256,
+		"content_type": ct,
+		"sample_b64":   base64.StdEncoding.EncodeToString(body[:sampleN]),
+		"sample_size":  sampleN,
+		"download_url": source,
+		"store_stats":  map[string]any{"entries": count, "total_bytes": total},
 	}), nil
 }
 

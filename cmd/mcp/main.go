@@ -230,6 +230,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		DisallowedTools: splitCSV(c.String("deny-tools")),
 		Logger:          mcpLog,
 		AllowNetwork:    c.Bool("allow-fetch"),
+		CarveDir:        filepath.Join(dataDir, "carve"),
 	})
 	if err != nil {
 		return fmt.Errorf("constructing MCP server: %w", err)

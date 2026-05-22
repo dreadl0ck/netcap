@@ -73,7 +73,7 @@ Produce a sub-PCAP for a specific 4-tuple connection.
 
 ### `carve_subpcap_for_host`
 
-Produce a sub-PCAP filtered to all traffic involving one host IP. Returns the download URL on the netcap webui.
+Produce a sub-PCAP filtered to all traffic involving one host IP. Returns the carved file's on-disk path, sha256, and an netcap://carve/{id} resource URI for direct byte access.
 
 **Hints:** read-only, idempotent
 
