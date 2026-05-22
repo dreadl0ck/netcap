@@ -33,7 +33,7 @@ Each tool exposes the standard MCP hint annotations (read-only,
 destructive, idempotent, open-world). Treat them as advisory: a
 `destructive` tool should prompt the user before invocation.
 
-## Tool catalogue (40 tools)
+## Tool catalogue (42 tools)
 
 Auto-generated from the live tool registry. Do not edit by hand; run `go test ./internal/mcp/ -run TestToolDocsUpToDate -update` to regenerate.
 
@@ -126,6 +126,22 @@ Run all loaded YARA rules against the session's extracted files. SYNCHRONOUS: th
 | `session_id` | string | yes | Session identifier. |
 
 
+### `extract_iocs_from_file`
+
+Scan one carved file for indicators of compromise: URLs, hostnames, domains, IPv4/IPv6 addresses, and email addresses. By default all kinds are returned; restrict via `kinds` (CSV of url,domain,ip,email). File is fetched via the same path semantics as get_extracted_file_content.
+
+**Hints:** read-only, idempotent
+
+**Arguments:**
+
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `file_path` | string | yes | Relative path inside files/, as returned by list_extracted_files. |
+| `kinds` | string |  | CSV of IOC kinds to extract. Allowed: url,domain,ip,email. Default: all. |
+| `max_per_kind` | number |  | Cap distinct matches returned per kind (default 200, max 5000). |
+| `session_id` | string | yes | Session identifier. |
+
+
 ### `get_alert_stats`
 
 Summary statistics for alerts in this session.
@@ -215,6 +231,20 @@ Return a chunk of one extracted file's bytes, hex-encoded. The backing endpoint 
 | `file_path` | string | yes | Relative path of the file inside the session's files/ directory, as returned by list_extracted_files. |
 | `limit` | number |  | Number of bytes to read (default 16384, max 65536). |
 | `offset` | number |  | Byte offset to start reading from (default 0). |
+| `session_id` | string | yes | Session identifier. |
+
+
+### `get_image_exif`
+
+Parse EXIF metadata from a carved image file. Returns a flat list of {ifd_path, tag_id, tag_name, type_name, value} entries. Returns an empty list (not an error) when the file carries no EXIF segment.
+
+**Hints:** read-only, idempotent
+
+**Arguments:**
+
+| name | type | required | description |
+| --- | --- | --- | --- |
+| `file_path` | string | yes | Relative path inside files/, as returned by list_extracted_files. |
 | `session_id` | string | yes | Session identifier. |
 
 
