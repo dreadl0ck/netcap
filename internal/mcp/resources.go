@@ -53,6 +53,8 @@ func (s *Server) registerResources() {
 		),
 		s.handleSessionSummaryResource,
 	)
+
+	s.registerGraphResource()
 }
 
 func (s *Server) handleDecodersResource(_ context.Context, _ mcplib.ReadResourceRequest) ([]mcplib.ResourceContents, error) {
@@ -94,17 +96,9 @@ func (s *Server) handleSessionSummaryResource(_ context.Context, req mcplib.Read
 
 	client := s.newClient()
 	ref := newSessionRef(sessionID)
-	var raw []byte
-	err := s.withSession(client, ref, func() error {
-		body, gErr := client.Get("/api/audit-stats", nil)
-		if gErr != nil {
-			return fmt.Errorf("audit-stats: %w", gErr)
-		}
-		raw = body
-		return nil
-	})
+	raw, err := client.Get("/api/audit-stats", ref.sessionQueryParams())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("audit-stats: %w", err)
 	}
 	return []mcplib.ResourceContents{
 		mcplib.TextResourceContents{
