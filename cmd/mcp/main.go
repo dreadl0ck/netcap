@@ -88,6 +88,10 @@ func GetFlags() []cli.Flag {
 			Name:  "debug",
 			Usage: "Verbose tool-call logging on stderr",
 		},
+		&cli.BoolFlag{
+			Name:  "allow-fetch",
+			Usage: "Allow outbound HTTP from tools that talk to public services (e.g. NVD for lookup_cve)",
+		},
 	}
 }
 
@@ -225,6 +229,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		AllowedTools:    splitCSV(c.String("allow-tools")),
 		DisallowedTools: splitCSV(c.String("deny-tools")),
 		Logger:          mcpLog,
+		AllowNetwork:    c.Bool("allow-fetch"),
 	})
 	if err != nil {
 		return fmt.Errorf("constructing MCP server: %w", err)

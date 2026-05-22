@@ -15,6 +15,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -89,6 +90,10 @@ type Server struct {
 	// gate serialises session-switching tool calls. See sessionGate.
 	gate sessionGate
 
+	// cve fetches CVE details from NVD with caching. Disabled when the
+	// AllowNetwork option is false (or NETCAP_MCP_DISABLE_NETWORK is set).
+	cve *CVELookup
+
 	mcpSrv     *server.MCPServer
 	httpServer *server.StreamableHTTPServer
 }
@@ -110,6 +115,13 @@ type Options struct {
 	DisallowedTools []string
 	// Logger receives diagnostic messages. Defaults to stderr.
 	Logger *log.Logger
+
+	// AllowNetwork enables outbound HTTP for tools that talk to the
+	// public internet (e.g. lookup_cve hits NVD). Default false in
+	// air-gapped service-mode operators' environments. Set
+	// NETCAP_MCP_DISABLE_NETWORK=1 to force-disable regardless of this
+	// field.
+	AllowNetwork bool
 }
 
 // New constructs a Server, registers tools/resources/prompts, and returns
@@ -124,6 +136,7 @@ func New(opts Options) (*Server, error) {
 		opts.Logger = log.New(io.Discard, "[MCP] ", log.LstdFlags|log.Lmicroseconds)
 	}
 
+	networkEnabled := opts.AllowNetwork && os.Getenv("NETCAP_MCP_DISABLE_NETWORK") != "1"
 	s := &Server{
 		baseURL:         strings.TrimRight(opts.BaseURL, "/"),
 		adminToken:      opts.AdminToken,
@@ -131,6 +144,7 @@ func New(opts Options) (*Server, error) {
 		allowedTools:    toSet(opts.AllowedTools),
 		disallowedTools: toSet(opts.DisallowedTools),
 		logger:          opts.Logger,
+		cve:             NewCVELookup(networkEnabled),
 	}
 
 	s.mcpSrv = server.NewMCPServer(

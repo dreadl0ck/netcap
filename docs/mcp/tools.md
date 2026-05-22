@@ -558,9 +558,9 @@ List YARA rules currently loaded for scanning extracted files.
 
 ### `lookup_cve`
 
-Return canonical NVD/MITRE URLs for a CVE id. Does not perform live HTTP; the caller should fetch the URL with a separate tool.
+Fetch the NVD record for a CVE id: description, CVSS v3 score and vector, CWE classifications, references. Disabled (returns an error) when the server was constructed without AllowNetwork, or when NETCAP_MCP_DISABLE_NETWORK=1 in the environment. Results are cached in-process for 6h (positive) or 5min (negative).
 
-**Hints:** read-only, idempotent
+**Hints:** read-only, idempotent, open-world
 
 **Arguments:**
 

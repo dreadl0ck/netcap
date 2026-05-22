@@ -40,10 +40,12 @@ func (s *Server) mountMCP(mux *http.ServeMux, loopbackBase string) {
 
 	resolved := loopbackize(loopbackBase)
 	mcpLog := log.New(log.Writer(), "[MCP] ", log.LstdFlags|log.Lmicroseconds)
+	allowFetch := os.Getenv("NETCAP_MCP_ALLOW_FETCH") == "1"
 	srv, err := netcapmcp.New(netcapmcp.Options{
-		BaseURL:    resolved,
-		AdminToken: token,
-		Logger:     mcpLog,
+		BaseURL:      resolved,
+		AdminToken:   token,
+		Logger:       mcpLog,
+		AllowNetwork: allowFetch,
 	})
 	if err != nil {
 		log.Printf("[MCP] Failed to construct server: %v (endpoint not mounted)", err)
