@@ -1,7 +1,7 @@
 # Netcap Test Makefile
 # Include this from main Makefile or use directly: make -f Makefile.test test-unit
 
-.PHONY: test test-unit test-integration test-regression test-e2e test-bench test-all
+.PHONY: test test-unit test-integration test-regression test-e2e test-bench test-fuzz test-all
 .PHONY: test-coverage test-coverage-html test-race
 .PHONY: test-golden-update test-golden-verify
 .PHONY: fixtures-download fixtures-generate test-databases-generate
@@ -60,6 +60,23 @@ test-bench:
 	@echo "Running benchmarks..."
 	go test -bench=. -benchmem -cpuprofile=cpu.prof -memprofile=mem.prof ./tests/benchmarks/...
 	@echo "Profiles saved: cpu.prof, mem.prof"
+
+# Fuzzing smoke run. Each Fuzz* target is gated behind the `fuzz` build tag
+# so it never slows the default unit suite. Go's -fuzz flag only accepts a
+# single target per invocation, so we discover and loop over every target.
+# Override the per-target budget with FUZZTIME (default 10s).
+FUZZTIME ?= 10s
+FUZZ_PKGS := ./decoder/packet/... ./decoder/stream/smtp/... ./decoder/stream/pop3/...
+test-fuzz:
+	@echo "Running fuzz smoke (FUZZTIME=$(FUZZTIME) per target)..."
+	@for pkg in $(FUZZ_PKGS); do \
+		targets=$$(go test -tags fuzz -list '^Fuzz' $$pkg 2>/dev/null | grep '^Fuzz'); \
+		for t in $$targets; do \
+			echo ">> $$pkg $$t"; \
+			go test -tags fuzz -run '^$$' -fuzz="^$$t$$" -fuzztime=$(FUZZTIME) $$pkg || exit 1; \
+		done; \
+	done
+	@echo "Fuzz smoke complete."
 
 # Coverage reports
 test-coverage:
@@ -131,6 +148,7 @@ test-help:
 	@echo "  test-regression   - Run regression tests"
 	@echo "  test-e2e          - Run end-to-end tests"
 	@echo "  test-bench        - Run performance benchmarks"
+	@echo "  test-fuzz         - Run fuzz smoke over all Fuzz* targets (FUZZTIME=10s)"
 	@echo ""
 	@echo "  test-coverage     - Generate coverage report"
 	@echo "  test-coverage-html - Generate HTML coverage report"
