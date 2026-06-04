@@ -20,32 +20,12 @@
 package encoder
 
 import (
-	"fmt"
 	"strconv"
 	"testing"
 
 	"github.com/magiconair/properties/assert"
 	"gonum.org/v1/gonum/stat"
 )
-
-var timestamps = []int64{
-	1519915922831376000,
-	1519932738687905000,
-	1519932610143268000,
-	1519915409848652000,
-	1519929174958770000,
-	1519914239743558000,
-	1519914305588947000,
-	1519913538020839000,
-	1519928793139686000,
-}
-
-func TestEncodeTimeAsFloat(t *testing.T) {
-	// TODO: add support for using this format for timestamps
-	for _, r := range timestamps {
-		fmt.Println(r, "==>", strconv.FormatFloat(float64(r)/float64(10000000000000000000), 'f', 16, 64))
-	}
-}
 
 var numericTestZero = []int{0, 0, 0, 0, 0, 0}
 

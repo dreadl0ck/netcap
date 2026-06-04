@@ -1,77 +1,148 @@
 /*
-* NETCAP - Traffic Analysis Framework
-* Copyright (c) 2017-2025 Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
-*
-* THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-* WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-* MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-* ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-* WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-* ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-* OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package smtp
 
-// 220 smtp-gw11.han.skanova.net ESMTP Service ready
-// HELO passwordnedxp
-// 250 smtp-gw11.han.skanova.net
-// MAIL FROM: <ned.pwned.se@gmx.com>
-// 250 MAIL FROM:<ned.pwned.se@gmx.com> OK
-// RCPT TO: <homer.pwned.se@gmx.com>
-// 250 RCPT TO:<homer.pwned.se@gmx.com> OK
-// DATA
-// 354 Start mail input; end with <CRLF>.<CRLF>
-// Message-ID: <8501ED1263D742DFB6B601A139AA38EC@passwordnedxp>
-// From: "Password Ned" <ned.pwned.se@gmx.com>
-// To: <homer.pwned.se@gmx.com>
-// Subject: I'm on-diddly-line now!
-// Date: Mon, 9 Mar 2015 11:03:58 +0100
-// Organization: pwned.se
-// MIME-Version: 1.0
-// Content-Type: multipart/alternative;
-// boundary="----=_NextPart_000_0006_01D05A58.BE14CB00"
-// X-Priority: 3
-// X-MSMail-Priority: Normal
-// X-Mailer: Microsoft Outlook Express 6.00.2900.5512
-// X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5512
-//
-// This is a multi-part message in MIME format.
-//
-// ------=_NextPart_000_0006_01D05A58.BE14CB00
-// Content-Type: text/plain;
-// charset="iso-8859-1"
-// Content-Transfer-Encoding: quoted-printable
-//
-// Hello Neighborino,
-//
-// I've now got a e-mail addres.
-//
-// Good-diddly-bye!
-// ------=_NextPart_000_0006_01D05A58.BE14CB00
-// Content-Type: text/html;
-// charset="iso-8859-1"
-// Content-Transfer-Encoding: quoted-printable
-//
-// <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
-// <HTML><HEAD>
-// <META content=3D"text/html; charset=3Diso-8859-1" =
-// http-equiv=3DContent-Type>
-// <META name=3DGENERATOR content=3D"MSHTML 8.00.6001.18702">
-// <STYLE></STYLE>
-// </HEAD>
-// <BODY bgColor=3D#ffffff>
-// <DIV><FONT size=3D2 face=3DArial>Hello Neighborino,</FONT></DIV>
-// <DIV><FONT size=3D2 face=3DArial></FONT>&nbsp;</DIV>
-// <DIV><FONT size=3D2 face=3DArial>I've now got a e-mail =
-// addres.</FONT></DIV>
-// <DIV><FONT size=3D2 face=3DArial></FONT>&nbsp;</DIV>
-// <DIV><FONT size=3D2 =
-// face=3DArial>Good-diddly-bye!</FONT></DIV></BODY></HTML>
-//
-// ------=_NextPart_000_0006_01D05A58.BE14CB00--
-//
-// .
-// 250 <54E6F832004A05C2> Mail accepted
-// QUIT
-// 221 smtp-gw11.han.skanova.net QUIT
+import (
+	"reflect"
+	"testing"
+)
+
+// TestValidSMTPCommand pins the set of client commands recognised by the
+// reader. A regression here (e.g. a renamed constant) would silently drop
+// commands from the parsed conversation.
+func TestValidSMTPCommand(t *testing.T) {
+	tests := []struct {
+		cmd  string
+		want bool
+	}{
+		{".", true},
+		{"HELO", true},
+		{"MAIL FROM", true},
+		{"RCPT TO", true},
+		{"DATA", true},
+		{"RSET", true},
+		{"VRFY", true},
+		{"NOOP", true},
+		{"QUIT", true},
+		{"EHLO", true},
+		{"AUTH LOGIN", true},
+		{"STARTTLS", true},
+		{"SITE", true},
+		{"HELP", true},
+
+		// validSMTPCommand is case-sensitive and matches the canonical
+		// upper-case forms produced by getSMTPCommand; lower-case must miss.
+		{"helo", false},
+		{"mail from", false},
+		{"", false},
+		{"UNKNOWN", false},
+		{"MAIL", false}, // bare verb without "FROM"
+		{"RCPT", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.cmd, func(t *testing.T) {
+			if got := validSMTPCommand(tt.cmd); got != tt.want {
+				t.Errorf("validSMTPCommand(%q) = %v, want %v", tt.cmd, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestGetSMTPCommand covers the line-tokeniser, including the special
+// "MAIL FROM:"/"RCPT TO:" handling that splits on ": " and strips angle
+// brackets from the address, plus whitespace/CRLF trimming and case folding.
+func TestGetSMTPCommand(t *testing.T) {
+	tests := []struct {
+		name     string
+		line     string
+		wantCmd  string
+		wantArgs []string
+	}{
+		{
+			name:     "simple verb",
+			line:     "HELO example.com",
+			wantCmd:  "HELO",
+			wantArgs: []string{"example.com"},
+		},
+		{
+			name:     "lower case folded to upper",
+			line:     "ehlo client.local",
+			wantCmd:  "EHLO",
+			wantArgs: []string{"client.local"},
+		},
+		{
+			name:     "trailing CRLF trimmed",
+			line:     "QUIT\r\n",
+			wantCmd:  "QUIT",
+			wantArgs: []string{},
+		},
+		{
+			name:     "no args",
+			line:     "DATA",
+			wantCmd:  "DATA",
+			wantArgs: []string{},
+		},
+		{
+			// MAIL/RCPT lines are re-split on ": " so the command keeps the
+			// full "MAIL FROM" verb and the address has its <> stripped.
+			name:     "MAIL FROM strips angle brackets",
+			line:     "MAIL FROM: <ned.pwned.se@gmx.com>",
+			wantCmd:  "MAIL FROM",
+			wantArgs: []string{"ned.pwned.se@gmx.com"},
+		},
+		{
+			name:     "RCPT TO strips angle brackets",
+			line:     "RCPT TO: <homer.pwned.se@gmx.com>",
+			wantCmd:  "RCPT TO",
+			wantArgs: []string{"homer.pwned.se@gmx.com"},
+		},
+		{
+			name:     "lower case MAIL FROM still split on colon-space",
+			line:     "mail from: <a@b.c>",
+			wantCmd:  "MAIL FROM",
+			wantArgs: []string{"a@b.c"},
+		},
+		{
+			name:     "empty line yields empty command and no args",
+			line:     "",
+			wantCmd:  "",
+			wantArgs: []string{},
+		},
+		{
+			name:     "whitespace only line",
+			line:     "  \r\n",
+			wantCmd:  "",
+			wantArgs: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd, args := getSMTPCommand(tt.line)
+			if cmd != tt.wantCmd {
+				t.Errorf("getSMTPCommand(%q) cmd = %q, want %q", tt.line, cmd, tt.wantCmd)
+			}
+			if !reflect.DeepEqual(args, tt.wantArgs) {
+				t.Errorf("getSMTPCommand(%q) args = %#v, want %#v", tt.line, args, tt.wantArgs)
+			}
+		})
+	}
+}
