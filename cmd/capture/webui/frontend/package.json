@@ -25,7 +25,7 @@
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-grid-layout": "^2.2.3",
-    "react-router": "^7.14.0",
+    "react-router": "^7.15.0",
     "react-syntax-highlighter": "^16.1.0",
     "swr": "^2.3.8"
   },
@@ -43,6 +43,14 @@
     "jsdom": "^26.1.0",
     "typescript": "^5.9.3",
     "vite": "^6.3.2",
-    "vitest": "^3.1.2"
+    "vitest": "^4.1.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss@<8.5.10": ">=8.5.10",
+      "rollup@<4.59.0": ">=4.59.0",
+      "yaml@<1.10.3": ">=1.10.3",
+      "react-router@>=7.0.0 <7.15.0": ">=7.15.0"
+    }
   }
 }
