@@ -23,7 +23,6 @@ package maltego_test
 
 import (
 	"encoding/xml"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -248,7 +247,7 @@ func TestGenerateFullMaltegoConfiguration(t *testing.T) {
 	path := filepath.Join(os.Getenv("HOME"), "netcap.mtz")
 	utils.CopyFile("netcap.mtz", path)
 
-	fmt.Println("moved archive to", path)
+	t.Log("moved archive to", path)
 }
 
 // generate all transforms and pack as archive

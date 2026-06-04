@@ -2,7 +2,6 @@ package collector_test
 
 import (
 	"context"
-	"fmt"
 	"github.com/dreadl0ck/netcap/collector"
 	"os/exec"
 	"runtime"
@@ -36,16 +35,16 @@ func TestCaptureLive(t *testing.T) {
 	go func() {
 		time.Sleep(5 * time.Second)
 		cancel()
-		fmt.Println("live capture done in", time.Since(start))
+		t.Log("live capture done in", time.Since(start))
 	}()
 
 	// generate some traffic by pinging localhost (limited to 5 pings)
 	go func() {
-		fmt.Println("pinging localhost")
+		t.Log("pinging localhost")
 		out, err := exec.Command("ping", "-c", "5", "localhost").CombinedOutput()
 		if err != nil {
-			fmt.Println(string(out))
-			fmt.Println("ping error:", err)
+			t.Log(string(out))
+			t.Log("ping error:", err)
 		}
 	}()
 

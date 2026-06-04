@@ -14,7 +14,6 @@
 package manager
 
 import (
-	"fmt"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/netcap/types"
 	"log"
@@ -179,9 +178,7 @@ func TestLabeling(t *testing.T) {
 	for _, r := range records {
 		l := m.Label(r)
 		if l != r.(*testAuditRecord).expected {
-			fmt.Println("===================================")
-			spew.Dump(r)
-			fmt.Println("===================================")
+			t.Logf("unexpected label for record:\n%s", spew.Sdump(r))
 			t.Fatal("unexpected label for audit record, expected: ", r.(*testAuditRecord).expected, " but got: ", l)
 		}
 	}
@@ -191,20 +188,28 @@ func TestReadIDS2018Labels(t *testing.T) {
 	m := NewLabelManager(false, false, false, false, 5*time.Minute)
 	labelMap, labels := m.parseAttackInfosYAML("../configs/cic-ids2018-attacks.yml")
 
-	fmt.Println("=== labelMap")
-	spew.Dump(labelMap)
-
-	fmt.Println("=== labels")
-	spew.Dump(labels)
+	if len(labelMap) == 0 {
+		t.Fatal("expected non-empty labelMap parsed from cic-ids2018-attacks.yml")
+	}
+	if len(labels) == 0 {
+		t.Fatal("expected non-empty labels parsed from cic-ids2018-attacks.yml")
+	}
+	t.Logf("parsed %d labelMap entries, %d labels", len(labelMap), len(labels))
+	t.Logf("labelMap:\n%s", spew.Sdump(labelMap))
+	t.Logf("labels:\n%s", spew.Sdump(labels))
 }
 
 func TestReadSWAT2019Labels(t *testing.T) {
 	m := NewLabelManager(false, false, false, false, 5*time.Minute)
 	labelMap, labels := m.parseAttackInfosYAML("../configs/swat-2019-attacks.yml")
 
-	fmt.Println("=== labelMap")
-	spew.Dump(labelMap)
-
-	fmt.Println("=== labels")
-	spew.Dump(labels)
+	if len(labelMap) == 0 {
+		t.Fatal("expected non-empty labelMap parsed from swat-2019-attacks.yml")
+	}
+	if len(labels) == 0 {
+		t.Fatal("expected non-empty labels parsed from swat-2019-attacks.yml")
+	}
+	t.Logf("parsed %d labelMap entries, %d labels", len(labelMap), len(labels))
+	t.Logf("labelMap:\n%s", spew.Sdump(labelMap))
+	t.Logf("labels:\n%s", spew.Sdump(labels))
 }

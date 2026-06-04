@@ -2,7 +2,6 @@ package collector
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -23,7 +22,7 @@ func BenchmarkReadPcapNG(b *testing.B) {
 	defer func() {
 		errClose := f.Close()
 		if errClose != nil && !errors.Is(errClose, io.EOF) {
-			fmt.Println(errClose)
+			b.Log(errClose)
 		}
 	}()
 
@@ -45,7 +44,7 @@ func BenchmarkReadPcapNGZeroCopy(b *testing.B) {
 	defer func() {
 		errClose := f.Close()
 		if errClose != nil && !errors.Is(errClose, io.EOF) {
-			fmt.Println(errClose)
+			b.Log(errClose)
 		}
 	}()
 
@@ -83,7 +82,7 @@ func BenchmarkReadPcap(b *testing.B) {
 	defer func() {
 		errClose := f.Close()
 		if errClose != nil && !errors.Is(errClose, io.EOF) {
-			fmt.Println(errClose)
+			b.Log(errClose)
 		}
 	}()
 

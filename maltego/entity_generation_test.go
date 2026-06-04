@@ -23,7 +23,6 @@ package maltego_test
 
 import (
 	"encoding/xml"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -221,28 +220,23 @@ func TestGeneratePCAPXMLEntity(t *testing.T) {
 func compareGeneratedXML(data []byte, expected string, t *testing.T) {
 
 	if string(data) != expected {
-		fmt.Println("-------------------RESULT--------------------------")
-		fmt.Println(string(data))
-		fmt.Println("------------------------------------------------")
-
-		fmt.Println("-------------------EXPECTED--------------------------")
-		fmt.Println(expected)
-		fmt.Println("------------------------------------------------")
+		t.Logf("-------------------RESULT--------------------------\n%s\n------------------------------------------------", string(data))
+		t.Logf("-------------------EXPECTED--------------------------\n%s\n------------------------------------------------", expected)
 
 		resultArr := strings.Split(string(data), "\n")
 		expectedArr := strings.Split(expected, "\n")
 
-		fmt.Println(ansi.Red, "len(resultArr)", len(resultArr), ansi.Blue, "len(expectedArr)", len(expectedArr), ansi.Reset)
+		t.Log(ansi.Red, "len(resultArr)", len(resultArr), ansi.Blue, "len(expectedArr)", len(expectedArr), ansi.Reset)
 
 		for i, line := range expectedArr {
 			if len(resultArr) <= i {
 				break
 			}
 			if line != resultArr[i] {
-				fmt.Println(ansi.Red, resultArr[i], ansi.Reset)
-				fmt.Println(ansi.Blue, expectedArr[i], ansi.Reset)
+				t.Log(ansi.Red, resultArr[i], ansi.Reset)
+				t.Log(ansi.Blue, expectedArr[i], ansi.Reset)
 			} else {
-				fmt.Println(resultArr[i])
+				t.Log(resultArr[i])
 			}
 		}
 

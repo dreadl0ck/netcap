@@ -20,7 +20,6 @@
 package service
 
 import (
-	"fmt"
 	"path/filepath"
 	"regexp"
 	"testing"
@@ -182,7 +181,7 @@ func TestClassifyBanners(t *testing.T) {
 			r := regexp.MustCompile(b.reg)
 			m := r.FindStringSubmatch(b.banner)
 			if len(m) > 1 {
-				fmt.Println("matches for test regex", m[1:])
+				t.Log("matches for test regex", m[1:])
 			}
 		} else {
 			// invoke nmap banner probes

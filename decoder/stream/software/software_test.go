@@ -21,7 +21,6 @@ package software
 
 import (
 	"encoding/hex"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -69,10 +68,8 @@ func (r regexTest) testSoftwareHarvester(t *testing.T) {
 
 	for i, p := range parts {
 		if p != s[i].Notes {
-			fmt.Println("length expected", len(p))
-			fmt.Println(hex.Dump([]byte(p)))
-			fmt.Println("length received", len(s[i].Notes))
-			fmt.Println(hex.Dump([]byte(s[i].Notes)))
+			t.Logf("length expected %d\n%s", len(p), hex.Dump([]byte(p)))
+			t.Logf("length received %d\n%s", len(s[i].Notes), hex.Dump([]byte(s[i].Notes)))
 			t.Fatal("Expected: ", decoderconfig.DefaultConfig, " Received: ", s[i].Notes, "all:", s[i])
 		}
 	}
