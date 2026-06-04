@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -73,7 +74,7 @@ func TestSimpleSessionToolUsesQueryParam(t *testing.T) {
 				t.Fatalf("error result: %s", contentText(res))
 			}
 			body := contentText(res)
-			if !contains(body, c.want) {
+			if !strings.Contains(body, c.want) {
 				t.Errorf("body = %s\nwant substring %q", body, c.want)
 			}
 		})
@@ -123,7 +124,7 @@ func TestSimpleSessionToolParallelCallsDoNotInterleave(t *testing.T) {
 				},
 			})
 			body := contentText(res)
-			if !contains(body, sid) {
+			if !strings.Contains(body, sid) {
 				atomic.AddInt32(&mismatches, 1)
 				t.Errorf("expected body to mention %q, got %s", sid, body)
 			}
@@ -146,15 +147,4 @@ func TestSimpleSessionToolParallelCallsDoNotInterleave(t *testing.T) {
 	}
 }
 
-func contains(haystack, needle string) bool {
-	return len(needle) > 0 && len(haystack) >= len(needle) && indexOf(haystack, needle) >= 0
-}
 
-func indexOf(s, substr string) int {
-	for i := 0; i+len(substr) <= len(s); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
-}

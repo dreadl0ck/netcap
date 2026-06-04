@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -50,7 +51,7 @@ func TestDeleteSessionForwardsDELETE(t *testing.T) {
 	if !called {
 		t.Fatal("DELETE not called")
 	}
-	if !contains(contentText(res), "removed_paths") {
+	if !strings.Contains(contentText(res), "removed_paths") {
 		t.Errorf("body = %q", contentText(res))
 	}
 }
