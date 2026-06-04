@@ -51,7 +51,7 @@ func flushWriters(writers ...flushableWriter) {
 		err := w.Flush()
 		if err != nil {
 			// Log error but don't panic - writer might already be closed
-			fmt.Println("[ERROR] failed to flush writer:", err)
+			ioLog.Error("failed to flush writer", zap.Error(err))
 		}
 	}
 }
@@ -65,13 +65,13 @@ func closeGzipWriters(writers ...*pgzip.Writer) {
 		err := w.Flush()
 		if err != nil {
 			// Log error but don't panic - writer might already be closed
-			fmt.Println("[ERROR] failed to flush gzip writer:", err)
+			ioLog.Error("failed to flush gzip writer", zap.Error(err))
 		}
 
 		err = w.Close()
 		if err != nil {
 			// Log error but don't panic - writer might already be closed
-			fmt.Println("[ERROR] failed to close gzip writer:", err)
+			ioLog.Error("failed to close gzip writer", zap.Error(err))
 		}
 	}
 }
@@ -81,7 +81,7 @@ func closeGzipWriters(writers ...*pgzip.Writer) {
 func closeFile(outDir string, file *os.File, typ string, numRecords int64) (name string, size int64) {
 	i, err := file.Stat()
 	if err != nil {
-		fmt.Println("[ERROR] failed to stat file:", err, "type", typ)
+		ioLog.Error("failed to stat file", zap.Error(err), zap.String("type", typ))
 
 		return "", 0
 	}
@@ -92,7 +92,7 @@ func closeFile(outDir string, file *os.File, typ string, numRecords int64) (name
 	)
 
 	if errSync != nil || errClose != nil {
-		fmt.Println("error while closing", i.Name(), "errSync", errSync, "errClose", errClose)
+		ioLog.Error("error while closing file", zap.String("name", i.Name()), zap.NamedError("errSync", errSync), zap.NamedError("errClose", errClose))
 	}
 
 	return i.Name(), removeAuditRecordFileIfEmpty(filepath.Join(outDir, i.Name()), numRecords)
@@ -111,7 +111,7 @@ func removeAuditRecordFileIfEmpty(name string, numRecords int64) (size int64) {
 		// remove file
 		err := os.Remove(name)
 		if err != nil {
-			fmt.Println("failed to remove file", err)
+			ioLog.Error("failed to remove file", zap.String("name", name), zap.Error(err))
 		}
 		return 0
 	}
@@ -120,7 +120,7 @@ func removeAuditRecordFileIfEmpty(name string, numRecords int64) (size int64) {
 	// return final file size
 	s, err := os.Stat(name)
 	if err != nil {
-		fmt.Println("failed to stat file:", name, err)
+		ioLog.Error("failed to stat file", zap.String("name", name), zap.Error(err))
 
 		return
 	}
@@ -142,7 +142,7 @@ func removeEmptyNewlineDelimitedFile(name string) (size int64) {
 	// remove file
 	err := os.Remove(name)
 	if err != nil {
-		fmt.Println("failed to remove file", err)
+		ioLog.Error("failed to remove empty file", zap.String("name", name), zap.Error(err))
 	}
 
 	// return file size of zero
@@ -150,10 +150,15 @@ func removeEmptyNewlineDelimitedFile(name string) (size int64) {
 }
 
 // createFile is a wrapper to create new audit record file.
+//
+// It panics on failure: this runs at writer-construction (capture startup)
+// time, where an inability to create the output file (bad path, permissions,
+// full disk) is an unrecoverable configuration error rather than a per-record
+// condition. The per-record write paths return errors instead of panicking.
 func createFile(name, ext string) *os.File {
 	f, err := os.OpenFile(name+ext, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, defaults.FilePermission)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("io: failed to create audit record file %q: %w", name+ext, err))
 	}
 
 	return f

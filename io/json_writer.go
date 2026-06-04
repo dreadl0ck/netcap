@@ -33,7 +33,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gogo/protobuf/proto"
 	"github.com/klauspost/pgzip"
 
@@ -242,6 +241,5 @@ func (w *jsonProtoWriter) writeRecord(msg proto.Message) (int, error) {
 		return n, err
 	}
 
-	spew.Dump(msg)
-	panic("can not write as JSON")
+	return 0, fmt.Errorf("%w (writeRecord as JSON, type %T)", errNotAuditRecord, msg)
 }

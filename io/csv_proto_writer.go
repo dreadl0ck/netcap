@@ -1,6 +1,8 @@
 package io
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -8,12 +10,17 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/dreadl0ck/netcap/encoder"
 	"github.com/dreadl0ck/netcap/label/manager"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
+
+// errNotAuditRecord is returned when a proto.Message passed to a CSV writer
+// does not implement the types.AuditRecord interface. Previously this was a
+// panic, which would crash the whole capture on a single malformed record;
+// returning an error lets the caller decide how to handle it.
+var errNotAuditRecord = errors.New("io: protocol buffer does not implement the types.AuditRecord interface")
 
 // labeler is the minimal contract csvProtoWriter needs from a label source.
 // *manager.LabelManager satisfies this interface in production; tests can
@@ -90,8 +97,7 @@ func (w *csvProtoWriter) writeHeader(h *types.Header, msg proto.Message) (int, e
 		return w.w.Write([]byte(strings.Join(csv.CSVHeader(), ",") + "\n"))
 	}
 
-	spew.Dump(msg)
-	panic("protocol buffer does not implement the types.AuditRecord interface")
+	return 0, fmt.Errorf("%w (writeHeader, type %T)", errNotAuditRecord, msg)
 }
 
 var labelEncoder = encoder.NewValueEncoder()
@@ -154,6 +160,5 @@ func (w *csvProtoWriter) writeRecord(msg proto.Message) (int, error) {
 		return n, err
 	}
 
-	spew.Dump(msg)
-	panic("can not write as CSV")
+	return 0, fmt.Errorf("%w (writeRecord as CSV, type %T)", errNotAuditRecord, msg)
 }
