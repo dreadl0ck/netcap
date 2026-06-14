@@ -18,6 +18,10 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: 'dist',
     sourcemap: false,
+    // esbuild >=0.28 errors when lowering modern syntax (e.g. destructuring)
+    // to mixed targets like vite's default "es2020". Pin a modern target that
+    // natively supports the syntax used by React 19 output.
+    target: 'es2022',
   },
   esbuild: {
     drop: mode === 'production' ? ['console'] : [],
