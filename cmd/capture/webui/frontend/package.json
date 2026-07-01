@@ -21,7 +21,7 @@
     "@fontsource/roboto-mono": "^5.2.8",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
-    "echarts": "^6.0.0",
+    "echarts": "^6.1.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-grid-layout": "^2.2.3",
