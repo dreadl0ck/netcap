@@ -283,6 +283,7 @@ func TestExampleRulesCompilation(t *testing.T) {
 		"threshold_detections.yml",
 		"important_ports.yml",
 		"industrial_ports.yml",
+		"s7comm_hunt.yml",
 		"suricata_inspired_detections.yml",
 		"application_detections.yml",
 	}

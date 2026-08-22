@@ -144,6 +144,7 @@ var (
 	flagServiceEnforceMaxSizePreload   bool
 	flagFilter                         string
 	flagRules                          string
+	flagApprovedWorkstations           string
 	flagDev                            bool
 	flagProtoSearchPaths               []string
 	flagProtoShowAlternatives          bool
@@ -269,6 +270,7 @@ func setFlagsFromContext(c *cli.Command) {
 	flagServiceEnforceMaxSizePreload = c.Bool("service-enforce-max-size-preload")
 	flagFilter = c.String("filter")
 	flagRules = c.String("rules")
+	flagApprovedWorkstations = c.String("approved-workstations")
 	flagDev = c.Bool("dev")
 	flagProtoSearchPaths = c.StringSlice("proto-paths")
 	flagProtoShowAlternatives = c.Bool("proto-show-alternatives")

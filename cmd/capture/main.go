@@ -45,6 +45,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/alert"
 	"github.com/dreadl0ck/netcap/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/internal/env"
+	"github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 
@@ -995,6 +996,16 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		if err := coll.SetFilterExpression(flagFilter, types.Type_NC_TCP); err != nil {
 			log.Printf("Warning: failed to compile filter for TCP: %v", err)
 		}
+	}
+
+	// Load the approved engineering-workstation allowlist for the
+	// IsApprovedWorkstation() / InAllowlist() rule helpers. This is the
+	// central discriminator for the CISA AA26-231A S7 PLC hunt.
+	if flagApprovedWorkstations != "" {
+		if err := filter.LoadApprovedWorkstationsFromFile(flagApprovedWorkstations); err != nil {
+			log.Fatal("failed to load approved workstations:", err)
+		}
+		fmt.Println("Loaded approved workstations from:", flagApprovedWorkstations)
 	}
 
 	// Initialize rules engine if rules file provided

@@ -78,6 +78,18 @@ func CompileExpression(expression string, recordType types.Type) (*vm.Program, e
 			},
 			new(func(string) bool),
 		),
+		expr.Function("IsApprovedWorkstation",
+			func(params ...any) (any, error) {
+				return IsApprovedWorkstation(params[0].(string)), nil
+			},
+			new(func(string) bool),
+		),
+		expr.Function("InAllowlist",
+			func(params ...any) (any, error) {
+				return InAllowlist(params[0].(string)), nil
+			},
+			new(func(string) bool),
+		),
 		expr.Function("ParsePort",
 			func(params ...any) (any, error) {
 				return ParsePort(params[0].(string)), nil
@@ -162,6 +174,8 @@ func EvaluateExpression(program *vm.Program, record types.AuditRecord) (bool, er
 	env["InSubnet"] = InSubnet
 	env["IsPrivateIP"] = IsPrivateIP
 	env["IsPublicIP"] = IsPublicIP
+	env["IsApprovedWorkstation"] = IsApprovedWorkstation
+	env["InAllowlist"] = InAllowlist
 	env["ParsePort"] = ParsePort
 	env["PortInRange"] = PortInRange
 	env["TimeInRange"] = TimeInRange

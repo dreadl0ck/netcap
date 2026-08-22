@@ -83,7 +83,15 @@ const (
 	S7FuncEndUpload          = 0x1F // End upload
 	S7FuncPIService          = 0x28 // PI (Program Invocation) service
 	S7FuncPLCStop            = 0x29 // PLC stop
-	S7FuncPLCControl         = 0x00 // PLC control (same as CPU services)
+)
+
+// PI (Program Invocation) service names carried in the parameter string.
+// These identify CPU state-change operations (cold/warm/hot restart) which
+// are security-critical per CISA AA26-231A (Modify Controller Tasking / CPU state change).
+const (
+	S7PIServiceColdRestart = "P_PROGRAM" // Cold restart
+	S7PIServiceWarmRestart = "_INSE"     // Warm restart / insert
+	S7PIServiceHotRestart  = "_MODU"     // Hot restart / module
 )
 
 // S7comm Variable Specification Types
@@ -188,14 +196,6 @@ const (
 const (
 	S7UserDataCyclicMem      = 0x01 // Memory
 	S7UserDataCyclicUnsubscr = 0x04 // Unsubscribe
-)
-
-// PI Service names (Program Invocation)
-const (
-	S7PIServicePProgram = "_INSE"  // Insert program
-	S7PIServiceModu     = "_MODU"  // Module
-	S7PIServiceGarb     = "_GARB"  // Garbage collection
-	S7PIServiceNStop    = "P_PROGRAM" // Stop program
 )
 
 // SZL ID classes (System Status List - from packet-s7comm_szl_ids.h)

@@ -20,7 +20,9 @@
 package filter
 
 import (
+	"bufio"
 	"net"
+	"os"
 	"regexp"
 	"slices"
 	"strconv"
@@ -68,6 +70,98 @@ func init() {
 
 // regexCache caches compiled regexes to avoid recompilation on every MatchesPattern call.
 var regexCache sync.Map
+
+// approvedWorkstations holds the set of IP addresses considered approved
+// engineering workstations (or otherwise authorized sources). It backs the
+// IsApprovedWorkstation / InAllowlist expression helpers.
+//
+// This is the central discriminator for the CISA AA26-231A S7 PLC hunt:
+// almost every finding reduces to "does an authorization record exist for
+// this source?". Rules negate this set, e.g. `!IsApprovedWorkstation(SrcIP)`.
+// Following the advisory's guidance, the baseline is built out-of-band and
+// negated in the rule, rather than allowlisting by hostname pattern inside
+// the query (which would hide a compromised approved workstation).
+var (
+	approvedWorkstations   = make(map[string]struct{})
+	approvedWorkstationsMu sync.RWMutex
+)
+
+// SetApprovedWorkstations replaces the approved-workstation allowlist with the
+// provided set of IP addresses. Passing nil or an empty slice clears the set,
+// which causes IsApprovedWorkstation to always return false (every source is
+// then treated as non-approved and subject to escalation).
+func SetApprovedWorkstations(ips []string) {
+	approvedWorkstationsMu.Lock()
+	defer approvedWorkstationsMu.Unlock()
+
+	approvedWorkstations = make(map[string]struct{}, len(ips))
+	for _, ip := range ips {
+		ip = strings.TrimSpace(ip)
+		if ip == "" {
+			continue
+		}
+		approvedWorkstations[ip] = struct{}{}
+	}
+}
+
+// IsApprovedWorkstation reports whether the given IP address is in the approved
+// engineering-workstation allowlist. Returns false when the allowlist is empty.
+func IsApprovedWorkstation(ip string) bool {
+	approvedWorkstationsMu.RLock()
+	defer approvedWorkstationsMu.RUnlock()
+
+	_, ok := approvedWorkstations[ip]
+	return ok
+}
+
+// InAllowlist is an alias for IsApprovedWorkstation, provided for readability in
+// rule expressions where the semantic intent is a generic authorization check.
+func InAllowlist(ip string) bool {
+	return IsApprovedWorkstation(ip)
+}
+
+// LoadApprovedWorkstationsFromFile loads the approved-workstation allowlist from
+// a file and installs it via SetApprovedWorkstations. Two line formats are
+// accepted (and may be mixed):
+//
+//	10.0.0.5             # a bare IP address
+//	eng-ws-01,10.0.0.5   # a "name,ip" CSV row (compatible with ip-whitelist.csv)
+//
+// Blank lines and lines beginning with '#' or '*' are ignored. The last comma-
+// separated field of a CSV row is taken as the IP.
+func LoadApprovedWorkstationsFromFile(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	var ips []string
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "*") {
+			continue
+		}
+
+		// If comma-separated, take the last field as the IP (matches the
+		// existing "name,ip" ip-whitelist.csv convention).
+		if idx := strings.LastIndex(line, ","); idx >= 0 {
+			line = strings.TrimSpace(line[idx+1:])
+		}
+
+		if line != "" {
+			ips = append(ips, line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	SetApprovedWorkstations(ips)
+	return nil
+}
 
 // Network Helper Functions
 

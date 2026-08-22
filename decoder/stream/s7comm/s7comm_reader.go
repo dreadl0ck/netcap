@@ -460,6 +460,8 @@ func (s *s7commReader) parseDownloadUpload(msg *types.S7Comm, data []byte) {
 }
 
 // parsePIService parses PI (Program Invocation) Service parameters.
+// PI services carry CPU state-change operations (cold/warm/hot restart), which
+// are security-critical per CISA AA26-231A (Modify Controller Tasking / CPU state change).
 func (s *s7commReader) parsePIService(msg *types.S7Comm, data []byte) {
 	// PI Service is used for PLC control operations like start/stop/reset
 	msg.IsCriticalOperation = true
@@ -468,6 +470,51 @@ func (s *s7commReader) parsePIService(msg *types.S7Comm, data []byte) {
 	// PI service format varies, basic parsing
 	if len(data) >= 2 {
 		msg.SubFunction = int32(data[1])
+	}
+
+	// Attempt to extract the PI service name string, which identifies the
+	// specific control operation (e.g. restart type). The service name is an
+	// ASCII string embedded in the parameter block. We scan for a known token.
+	svc := extractPIServiceName(data)
+	if svc != "" {
+		msg.SubFunctionName = getPIServiceName(svc)
+	}
+}
+
+// extractPIServiceName scans the PI service parameter block for a printable
+// ASCII service token (e.g. "P_PROGRAM", "_INSE", "_MODU").
+func extractPIServiceName(data []byte) string {
+	// Collect the longest run of printable characters; PI service names are
+	// short uppercase/underscore tokens.
+	best := make([]byte, 0, 16)
+	cur := make([]byte, 0, 16)
+	for _, b := range data {
+		if b == '_' || (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9') {
+			cur = append(cur, b)
+			if len(cur) > len(best) {
+				best = append(best[:0], cur...)
+			}
+		} else {
+			cur = cur[:0]
+		}
+	}
+	if len(best) < 4 {
+		return ""
+	}
+	return string(best)
+}
+
+// getPIServiceName maps a PI service token to a human-readable restart/control name.
+func getPIServiceName(svc string) string {
+	switch svc {
+	case S7PIServiceColdRestart:
+		return "Cold Restart (P_PROGRAM)"
+	case S7PIServiceWarmRestart:
+		return "Warm Restart (_INSE)"
+	case S7PIServiceHotRestart:
+		return "Hot Restart (_MODU)"
+	default:
+		return "PI Service: " + svc
 	}
 }
 

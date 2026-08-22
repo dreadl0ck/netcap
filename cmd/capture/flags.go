@@ -687,6 +687,11 @@ func GetFlags() []cli.Flag {
 			Usage:   "path to rules file for alert generation (YAML format)",
 			Sources: cli.EnvVars("NC_RULES"),
 		},
+		&cli.StringFlag{
+			Name:    "approved-workstations",
+			Usage:   "path to a file listing approved engineering-workstation IPs (one per line, or 'name,ip' CSV) for the IsApprovedWorkstation() rule helper",
+			Sources: cli.EnvVars("NC_APPROVED_WORKSTATIONS"),
+		},
 		&cli.BoolFlag{
 			Name:    "dev",
 			Usage:   "development mode: use current binary instead of 'net' for job execution",
