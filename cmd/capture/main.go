@@ -401,6 +401,18 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	// Populate global variables from CLI context
 	setFlagsFromContext(c)
 
+	// Load the approved engineering-workstation allowlist for the
+	// IsApprovedWorkstation() / InAllowlist() rule helpers. This is the central
+	// discriminator for the CISA AA26-231A S7 PLC hunt. It must run before the
+	// service-mode branch below so the parent webui process (which performs
+	// post-hoc rule evaluation) also sees a populated allowlist.
+	if flagApprovedWorkstations != "" {
+		if err := filter.LoadApprovedWorkstationsFromFile(flagApprovedWorkstations); err != nil {
+			log.Fatal("failed to load approved workstations:", err)
+		}
+		fmt.Println("Loaded approved workstations from:", flagApprovedWorkstations)
+	}
+
 	// Load file extraction configuration if provided
 	if flagFileConfig != "" {
 		cfg, err := file.LoadConfig(flagFileConfig)
@@ -996,16 +1008,6 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		if err := coll.SetFilterExpression(flagFilter, types.Type_NC_TCP); err != nil {
 			log.Printf("Warning: failed to compile filter for TCP: %v", err)
 		}
-	}
-
-	// Load the approved engineering-workstation allowlist for the
-	// IsApprovedWorkstation() / InAllowlist() rule helpers. This is the
-	// central discriminator for the CISA AA26-231A S7 PLC hunt.
-	if flagApprovedWorkstations != "" {
-		if err := filter.LoadApprovedWorkstationsFromFile(flagApprovedWorkstations); err != nil {
-			log.Fatal("failed to load approved workstations:", err)
-		}
-		fmt.Println("Loaded approved workstations from:", flagApprovedWorkstations)
 	}
 
 	// Initialize rules engine if rules file provided

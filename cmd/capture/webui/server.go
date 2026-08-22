@@ -54,6 +54,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
+	"github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/rules"
@@ -233,6 +234,20 @@ type CollectorInterface interface {
 // NewServer creates a new web UI server
 func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debugLogging bool, dpiConfigured bool, isServiceMode bool, serviceConfig *ServiceConfig, runtimeConfig *RuntimeConfig, devMode bool) *Server {
 	log.Printf("[WebUI] NewServer called with outDir=%s, numInputFiles=%d, devMode=%v", outDir, len(inputFiles), devMode)
+
+	// Load the approved engineering-workstation allowlist (CISA AA26-231A S7
+	// PLC hunt discriminator) from NC_APPROVED_WORKSTATIONS if set. The webui
+	// server performs post-hoc rule evaluation, so the IsApprovedWorkstation()
+	// helper must be populated in whichever process runs the server. This is
+	// idempotent and complements the -approved-workstations CLI flag; it also
+	// covers entrypoints that do not go through the capture command (e.g. MCP).
+	if p := os.Getenv("NC_APPROVED_WORKSTATIONS"); p != "" {
+		if err := filter.LoadApprovedWorkstationsFromFile(p); err != nil {
+			log.Printf("[WebUI] failed to load approved workstations from %s: %v", p, err)
+		} else {
+			log.Printf("[WebUI] loaded approved workstations from %s", p)
+		}
+	}
 
 	s := &Server{
 		addr:               addr,

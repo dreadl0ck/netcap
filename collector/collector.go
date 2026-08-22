@@ -186,7 +186,12 @@ func (c *Collector) SetRulesEngine(engine *rules.Engine) {
 	if c.perfTracker != nil {
 		engine.SetPerformanceTracker(c.perfTracker)
 	}
-	c.log.Info("rules engine enabled")
+	// c.log may not be initialized yet: SetRulesEngine can be called before
+	// the collector's logger is set up during Init(). Guard against a nil
+	// logger to avoid a panic on the CLI `net capture -rules ...` path.
+	if c.log != nil {
+		c.log.Info("rules engine enabled")
+	}
 }
 
 // ReloadRulesEngine reloads the rules engine configuration from disk.
