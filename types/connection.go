@@ -59,6 +59,10 @@ const (
 	fieldJa4lClient           = "Ja4lClient"
 	fieldJa4lServer           = "Ja4lServer"
 	fieldSynTtl               = "SynTtl"
+	fieldSrcGeoLocation       = "SrcGeoLocation"
+	fieldDstGeoLocation       = "DstGeoLocation"
+	fieldSrcASN               = "SrcASN"
+	fieldDstASN               = "DstASN"
 	// fieldApplications is defined in types/ip_profile.go
 )
 
@@ -101,6 +105,11 @@ var fieldsConnection = []string{
 	fieldJa4lClient,
 	fieldJa4lServer,
 	fieldSynTtl,
+	// GeoIP enrichment
+	fieldSrcGeoLocation,
+	fieldDstGeoLocation,
+	fieldSrcASN,
+	fieldDstASN,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -149,6 +158,11 @@ func (c *Connection) CSVRecord() []string {
 		c.Ja4LClient,
 		c.Ja4LServer,
 		formatInt32(c.SynTtl),
+		// GeoIP enrichment
+		c.SrcGeoLocation,
+		c.DstGeoLocation,
+		c.SrcASN,
+		c.DstASN,
 	})
 }
 

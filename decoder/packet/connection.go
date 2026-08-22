@@ -572,6 +572,18 @@ func (d *Decoder) writeConn(conn *types.Connection, clientIP string, apps map[st
 		}
 	}
 
+	// GeoIP enrichment: attach country/ASN directly to the connection so
+	// geographic-anomaly rules (e.g. S7comm from an unexpected country) can run
+	// on Connection records. LookupGeolocation self-gates and returns empty
+	// strings when the resolver is disabled or the address is unresolvable, so
+	// this is a no-op in that case. Only public addresses are looked up.
+	if conn.SrcIP != "" && !isPrivateIP(conn.SrcIP) {
+		conn.SrcGeoLocation, conn.SrcASN = resolvers.LookupGeolocation(conn.SrcIP)
+	}
+	if conn.DstIP != "" && !isPrivateIP(conn.DstIP) {
+		conn.DstGeoLocation, conn.DstASN = resolvers.LookupGeolocation(conn.DstIP)
+	}
+
 	// Set detected protocol name from DPI or transport protocol
 	if len(conn.Applications) > 0 {
 		// Use the first DPI-detected application as the protocol name

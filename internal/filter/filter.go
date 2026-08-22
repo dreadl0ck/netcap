@@ -121,6 +121,24 @@ func CompileExpression(expression string, recordType types.Type) (*vm.Program, e
 			},
 			new(func(int64, string) string),
 		),
+		expr.Function("HourOfDay",
+			func(params ...any) (any, error) {
+				return HourOfDay(params[0].(int64)), nil
+			},
+			new(func(int64) int),
+		),
+		expr.Function("Weekday",
+			func(params ...any) (any, error) {
+				return Weekday(params[0].(int64)), nil
+			},
+			new(func(int64) int),
+		),
+		expr.Function("IsBusinessHours",
+			func(params ...any) (any, error) {
+				return IsBusinessHours(params[0].(int64), params[1].(int), params[2].(int)), nil
+			},
+			new(func(int64, int, int) bool),
+		),
 		// String helper functions with explicit type signatures
 		expr.Function("ContainsAny",
 			func(params ...any) (any, error) {
@@ -181,6 +199,9 @@ func EvaluateExpression(program *vm.Program, record types.AuditRecord) (bool, er
 	env["TimeInRange"] = TimeInRange
 	env["DurationSince"] = DurationSince
 	env["FormatTime"] = FormatTime
+	env["HourOfDay"] = HourOfDay
+	env["Weekday"] = Weekday
+	env["IsBusinessHours"] = IsBusinessHours
 	env["ContainsAny"] = ContainsAny
 	env["MatchesPattern"] = MatchesPattern
 	env["Contains"] = Contains

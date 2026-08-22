@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -116,6 +117,42 @@ func TestApprovedWorkstationHelperInExpression(t *testing.T) {
 	SetApprovedWorkstations([]string{"10.0.0.5"})
 
 	prog, err := CompileExpression("FunctionCode == 5 && !IsApprovedWorkstation(SrcIP)", types.Type_NC_S7Comm)
+	if err != nil {
+		t.Fatalf("compile failed: %v", err)
+	}
+	if prog == nil {
+		t.Fatal("expected a compiled program")
+	}
+}
+
+func TestTemporalHelpers(t *testing.T) {
+	// Wednesday 2024-01-03 14:30 local time.
+	wedAfternoon := time.Date(2024, 1, 3, 14, 30, 0, 0, time.Local).UnixNano()
+	// Wednesday 2024-01-03 22:00 local time (off-hours).
+	wedNight := time.Date(2024, 1, 3, 22, 0, 0, 0, time.Local).UnixNano()
+	// Saturday 2024-01-06 14:30 local time (weekend).
+	satAfternoon := time.Date(2024, 1, 6, 14, 30, 0, 0, time.Local).UnixNano()
+
+	if got := HourOfDay(wedAfternoon); got != 14 {
+		t.Errorf("HourOfDay = %d, want 14", got)
+	}
+	if got := Weekday(wedAfternoon); got != int(time.Wednesday) {
+		t.Errorf("Weekday = %d, want %d", got, int(time.Wednesday))
+	}
+
+	if !IsBusinessHours(wedAfternoon, 8, 18) {
+		t.Error("Wed 14:30 should be business hours")
+	}
+	if IsBusinessHours(wedNight, 8, 18) {
+		t.Error("Wed 22:00 should NOT be business hours")
+	}
+	if IsBusinessHours(satAfternoon, 8, 18) {
+		t.Error("Saturday should NOT be business hours")
+	}
+}
+
+func TestTemporalHelpersInExpression(t *testing.T) {
+	prog, err := CompileExpression("IsCriticalOperation && !IsBusinessHours(Timestamp, 8, 18)", types.Type_NC_S7Comm)
 	if err != nil {
 		t.Fatalf("compile failed: %v", err)
 	}

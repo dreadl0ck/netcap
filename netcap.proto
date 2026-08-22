@@ -310,6 +310,16 @@ message Connection {
   
   // TLS Server Name Indication
   string Sni = 51;                      // TLS SNI hostname from ClientHello (if TLS detected)
+
+  // GeoIP enrichment (populated when the geolocation resolver is enabled).
+  // Attaching country/ASN directly to the connection enables geographic-anomaly
+  // rules (e.g. S7comm from an unexpected country/ASN) that previously required
+  // correlating against Host records. Empty when the resolver is disabled or the
+  // address is private/unresolved.
+  string SrcGeoLocation = 52;           // Source country/city (GeoLite2-City)
+  string DstGeoLocation = 53;           // Destination country/city (GeoLite2-City)
+  string SrcASN = 54;                   // Source ASN (GeoLite2-ASN)
+  string DstASN = 55;                   // Destination ASN (GeoLite2-ASN)
 }
 
 //

@@ -243,6 +243,38 @@ func FormatTime(ts int64, format string) string {
 	return t.Format(format)
 }
 
+// HourOfDay returns the local hour-of-day (0-23) for a nanosecond timestamp.
+// This is a first-class helper for temporal-anomaly hunting (e.g. S7comm
+// activity during off-hours), which the AA26-231A hunt explicitly calls for.
+func HourOfDay(ts int64) int {
+	return time.Unix(0, ts).Hour()
+}
+
+// Weekday returns the local day-of-week (0=Sunday .. 6=Saturday) for a
+// nanosecond timestamp.
+func Weekday(ts int64) int {
+	return int(time.Unix(0, ts).Weekday())
+}
+
+// IsBusinessHours reports whether the local time of the given nanosecond
+// timestamp falls within [startHour, endHour) on a weekday (Mon-Fri).
+// startHour and endHour are 24-hour clock hours; the range is half-open on the
+// end hour (e.g. startHour=8, endHour=18 covers 08:00:00-17:59:59).
+//
+// This lets rules escalate activity outside the maintenance/change window, e.g.
+// `!IsBusinessHours(Timestamp, 8, 18)` for off-hours S7comm operations.
+func IsBusinessHours(ts int64, startHour, endHour int) bool {
+	t := time.Unix(0, ts)
+
+	switch t.Weekday() {
+	case time.Saturday, time.Sunday:
+		return false
+	}
+
+	h := t.Hour()
+	return h >= startHour && h < endHour
+}
+
 // String Helper Functions
 
 // ContainsAny checks if a string contains any of the provided substrings.

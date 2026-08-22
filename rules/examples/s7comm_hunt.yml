@@ -147,6 +147,34 @@ rules:
     enabled: true
 
   # ========================================
+  # TEMPORAL & GEOGRAPHIC ANOMALIES
+  # Extend the hunt to off-hours S7comm activity and connections from
+  # countries/ASNs not associated with a known vendor or integrator.
+  # ========================================
+
+  # S7comm operations outside the maintenance/change window (off-hours).
+  - name: S7comm Off-Hours Operation
+    description: A critical S7comm operation occurred outside business hours (Mon-Fri 08:00-18:00) from a non-approved source - temporal anomaly consistent with out-of-window access (AA26-231A)
+    type: S7Comm
+    expression: IsCriticalOperation && !IsBusinessHours(Timestamp, 8, 18) && !IsApprovedWorkstation(SrcIP)
+    severity: high
+    mitre: ["T0821", "T0836"]
+    tags: ["s7comm", "plc", "siemens", "off-hours", "temporal-anomaly", "aa26-231a"]
+    enabled: true
+
+  # S7comm reachable from / connecting to a public IP with GeoIP context.
+  # Requires the geolocation resolver to be enabled; SrcGeoLocation/DstGeoLocation
+  # and ASNs are attached to Connection records when available.
+  - name: S7comm External Connection With GeoIP
+    description: S7comm connection to or from a public IP, enriched with country/ASN - geographic-anomaly triage for internet-exposed controllers (AA26-231A T0885)
+    type: Connection
+    expression: DstPort == "102" && (IsPublicIP(SrcIP) || IsPublicIP(DstIP))
+    severity: critical
+    mitre: ["T0885", "T0868"]
+    tags: ["s7comm", "plc", "siemens", "external", "geoip", "aa26-231a"]
+    enabled: true
+
+  # ========================================
   # MASQUERADED / OBSCURED PAYLOAD VISIBILITY
   # Say what you couldn't see.
   # ========================================
