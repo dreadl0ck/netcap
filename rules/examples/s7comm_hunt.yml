@@ -102,6 +102,25 @@ rules:
     enabled: true
 
   # ========================================
+  # H2: IS SOMEONE ENUMERATING FROM INSIDE?
+  # The shape to look for is one source touching many distinct controllers on
+  # port 102, once each. That is reconnaissance. Repeated, frequent pairs are
+  # the operational baseline, not a finding.
+  # ========================================
+
+  - name: S7comm Horizontal Enumeration
+    description: A single source contacted many distinct controllers on TCP/102 within the window - horizontal enumeration / PLC discovery sweep, the AA26-231A internal-reconnaissance shape (T0846 Remote System Discovery)
+    type: Connection
+    expression: DstPort == "102" && !IsApprovedWorkstation(SrcIP)
+    severity: high
+    mitre: ["T0846", "T0840"]
+    tags: ["s7comm", "plc", "siemens", "enumeration", "fan-out", "aa26-231a"]
+    enabled: true
+    distinct_field: DstIP
+    distinct_threshold: 5
+    threshold_window: 300
+
+  # ========================================
   # RECONNAISSANCE READS
   # Read access IS the campaign. Nobody is stopping the PLC today - they are
   # building a map. The window to find them is while they are still reading.

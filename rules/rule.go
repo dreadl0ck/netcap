@@ -69,6 +69,24 @@ type Rule struct {
 	// Only applicable when Threshold > 1. Default is 60 seconds (1 minute)
 	ThresholdWindow int `yaml:"threshold_window,omitempty"`
 
+	// DistinctField enables cardinality-based detection: instead of counting raw
+	// matches, the engine counts the number of DISTINCT values of this field
+	// observed per source IP within ThresholdWindow. When the distinct count
+	// reaches DistinctThreshold, an alert fires.
+	//
+	// This expresses the AA26-231A "internal enumeration" hunt shape: one source
+	// touching many distinct controllers on port 102, once each. For example,
+	// DistinctField: "DstIP" with DistinctThreshold: 5 fires when a single
+	// source contacts 5+ distinct destinations within the window.
+	//
+	// The field name must be a top-level field of the record type (e.g. "DstIP").
+	DistinctField string `yaml:"distinct_field,omitempty"`
+
+	// DistinctThreshold is the number of distinct DistinctField values (per source)
+	// required within ThresholdWindow before an alert fires. Only applicable when
+	// DistinctField is set. Defaults to 2 if DistinctField is set but this is <= 1.
+	DistinctThreshold int `yaml:"distinct_threshold,omitempty"`
+
 	// Actions are response actions to execute when this rule matches and generates an alert.
 	// These are automated responses like blocking IPs via iptables.
 	Actions []*ResponseAction `yaml:"actions,omitempty"`

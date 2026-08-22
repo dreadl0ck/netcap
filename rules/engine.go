@@ -22,6 +22,7 @@ package rules
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"sync"
 	"time"
 
@@ -46,6 +47,10 @@ type Engine struct {
 
 	// Threshold tracking
 	thresholdTrackers map[string]*thresholdTracker // map[ruleName]tracker
+
+	// Distinct-cardinality tracking: map[ruleName]tracker. Each tracker keys on
+	// source IP and records the last-seen time of each distinct field value.
+	distinctTrackers map[string]*distinctTracker
 
 	// Performance tracking
 	perfTracker *performance.Tracker
@@ -77,6 +82,13 @@ type rateCounter struct {
 type thresholdTracker struct {
 	matches []int64 // timestamps of matches
 	mu      sync.Mutex
+}
+
+// distinctTracker tracks distinct field values per source IP for
+// cardinality-based (fan-out) detection. seen[srcIP][distinctValue] = lastSeenNanos.
+type distinctTracker struct {
+	seen map[string]map[string]int64
+	mu   sync.Mutex
 }
 
 // NewEngine creates a new rules engine with the given configuration and alert writer.
@@ -126,6 +138,7 @@ func NewEngineFromConfig(config *Config, alertWriter AlertWriter) (*Engine, erro
 		ruleCounters:      make(map[string]*rateCounter),
 		rateLimit:         100, // Default 100 alerts per minute per rule
 		thresholdTrackers: make(map[string]*thresholdTracker),
+		distinctTrackers:  make(map[string]*distinctTracker),
 		actionStats:       &ActionStats{},
 	}
 
@@ -202,9 +215,23 @@ func (e *Engine) Evaluate(record types.AuditRecord) (int, error) {
 		alertGenerated := false
 
 		if alert != nil {
-			// Check threshold - if rule has threshold > 1, track matches
-			if rule.Threshold > 1 {
-				thresholdReached := e.checkThreshold(rule)
+			// Check distinct-cardinality threshold first (fan-out detection):
+			// count DISTINCT values of DistinctField per source within the window.
+			if rule.DistinctField != "" {
+				reached := e.checkDistinctThreshold(rule, record)
+				if !reached {
+					matched = true
+					alertGenerated = false
+					if e.perfTracker != nil {
+						e.perfTracker.RecordRuleExecution(rule.Name, time.Since(ruleStart), matched, alertGenerated)
+					}
+					continue
+				}
+				// Cardinality reached: fall through to rate limiting and write.
+				// Skip dedup for the same reason threshold rules do.
+			} else if rule.Threshold > 1 {
+				// Check threshold - if rule has threshold > 1, track matches
+				thresholdReached := e.checkThreshold(rule, record)
 				if !thresholdReached {
 					// Threshold not reached yet, don't generate alert
 					matched = true
@@ -303,8 +330,20 @@ func (e *Engine) cleanupRecentAlerts() {
 	}
 }
 
+// recordEvalTime returns the timestamp used for windowed threshold math. It
+// prefers the record's own timestamp (so windows behave correctly on offline
+// PCAP replay) and falls back to wall-clock time when the record has no time.
+func recordEvalTime(record types.AuditRecord) int64 {
+	if record != nil {
+		if ts := record.Time(); ts > 0 {
+			return ts
+		}
+	}
+	return time.Now().UnixNano()
+}
+
 // checkThreshold tracks rule matches and returns true when threshold is reached.
-func (e *Engine) checkThreshold(rule *Rule) bool {
+func (e *Engine) checkThreshold(rule *Rule, record types.AuditRecord) bool {
 	e.mu.Lock()
 	tracker, exists := e.thresholdTrackers[rule.Name]
 	if !exists {
@@ -318,7 +357,9 @@ func (e *Engine) checkThreshold(rule *Rule) bool {
 	tracker.mu.Lock()
 	defer tracker.mu.Unlock()
 
-	now := time.Now().UnixNano()
+	// Use the record's own timestamp so time windows are correct on offline
+	// PCAP replay (not just live capture).
+	now := recordEvalTime(record)
 
 	// Handle edge case: threshold <= 0 should never trigger
 	if rule.Threshold <= 0 {
@@ -353,6 +394,105 @@ func (e *Engine) checkThreshold(rule *Rule) bool {
 
 	// Threshold not yet reached
 	return false
+}
+
+// checkDistinctThreshold implements cardinality-based (fan-out) detection. It
+// counts the number of DISTINCT values of rule.DistinctField observed for the
+// record's source IP within the threshold window, and returns true once that
+// count reaches DistinctThreshold. This detects the AA26-231A "one source
+// touching many distinct controllers" enumeration shape.
+func (e *Engine) checkDistinctThreshold(rule *Rule, record types.AuditRecord) bool {
+	e.mu.Lock()
+	tracker, exists := e.distinctTrackers[rule.Name]
+	if !exists {
+		tracker = &distinctTracker{
+			seen: make(map[string]map[string]int64),
+		}
+		e.distinctTrackers[rule.Name] = tracker
+	}
+	e.mu.Unlock()
+
+	// Distinct threshold defaults to 2 when a distinct field is configured.
+	threshold := rule.DistinctThreshold
+	if threshold <= 1 {
+		threshold = 2
+	}
+
+	windowSeconds := rule.ThresholdWindow
+	if windowSeconds <= 0 {
+		windowSeconds = 60
+	}
+	windowNanos := int64(windowSeconds) * int64(time.Second)
+
+	src := record.Src()
+	value := extractStringField(record, rule.DistinctField)
+	if value == "" {
+		// Nothing to count on this record.
+		return false
+	}
+
+	now := recordEvalTime(record)
+
+	tracker.mu.Lock()
+	defer tracker.mu.Unlock()
+
+	values, ok := tracker.seen[src]
+	if !ok {
+		values = make(map[string]int64)
+		tracker.seen[src] = values
+	}
+
+	// Record/refresh this distinct value's last-seen time.
+	values[value] = now
+
+	// Prune values outside the window and count what remains.
+	count := 0
+	for v, ts := range values {
+		if now-ts > windowNanos {
+			delete(values, v)
+			continue
+		}
+		count++
+	}
+
+	if count >= threshold {
+		// Reset this source's set so the alert re-arms for the next window.
+		delete(tracker.seen, src)
+		return true
+	}
+
+	return false
+}
+
+// extractStringField returns the string representation of a top-level field of
+// the audit record via reflection. Supports string and integer field kinds.
+func extractStringField(record types.AuditRecord, fieldName string) string {
+	v := reflect.ValueOf(record)
+	if v.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			return ""
+		}
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return ""
+	}
+
+	f := v.FieldByName(fieldName)
+	if !f.IsValid() || !f.CanInterface() {
+		return ""
+	}
+
+	switch f.Kind() {
+	case reflect.String:
+		return f.String()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return fmt.Sprintf("%d", f.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return fmt.Sprintf("%d", f.Uint())
+	default:
+		return ""
+	}
 }
 
 // isRateLimited checks if a rule has exceeded its rate limit.
@@ -412,6 +552,7 @@ func (e *Engine) GetStats() map[string]any {
 		"dedup_window":       e.dedupWindow.String(),
 		"rate_limit":         e.rateLimit,
 		"tracked_thresholds": len(e.thresholdTrackers),
+		"tracked_distinct":   len(e.distinctTrackers),
 	}
 }
 

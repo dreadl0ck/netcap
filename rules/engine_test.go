@@ -37,22 +37,22 @@ func TestCheckThreshold_BasicBehavior(t *testing.T) {
 	}
 
 	// First match - should return false
-	if engine.checkThreshold(rule) {
+	if engine.checkThreshold(rule, nil) {
 		t.Error("Expected false on first match, got true")
 	}
 
 	// Second match - should return false
-	if engine.checkThreshold(rule) {
+	if engine.checkThreshold(rule, nil) {
 		t.Error("Expected false on second match, got true")
 	}
 
 	// Third match - should return true (threshold reached)
-	if !engine.checkThreshold(rule) {
+	if !engine.checkThreshold(rule, nil) {
 		t.Error("Expected true on third match (threshold reached), got false")
 	}
 
 	// Fourth match - should return false (tracker was reset)
-	if engine.checkThreshold(rule) {
+	if engine.checkThreshold(rule, nil) {
 		t.Error("Expected false on fourth match (after reset), got true")
 	}
 }
@@ -70,7 +70,7 @@ func TestCheckThreshold_DefaultWindow(t *testing.T) {
 	}
 
 	// First match
-	engine.checkThreshold(rule)
+	engine.checkThreshold(rule, nil)
 
 	// Verify that tracker was created and has a match
 	tracker, exists := engine.thresholdTrackers[rule.Name]
@@ -96,17 +96,17 @@ func TestCheckThreshold_TimeWindow(t *testing.T) {
 	}
 
 	// Add first match
-	engine.checkThreshold(rule)
+	engine.checkThreshold(rule, nil)
 
 	// Add second match
-	engine.checkThreshold(rule)
+	engine.checkThreshold(rule, nil)
 
 	// Wait for window to expire
 	time.Sleep(1100 * time.Millisecond)
 
 	// Add third match - first two should be expired
 	// Should return false because old matches are removed
-	if engine.checkThreshold(rule) {
+	if engine.checkThreshold(rule, nil) {
 		t.Error("Expected false because old matches should be outside time window")
 	}
 
@@ -136,10 +136,10 @@ func TestCheckThreshold_MultipleRules(t *testing.T) {
 	}
 
 	// Add match to rule1
-	engine.checkThreshold(rule1)
+	engine.checkThreshold(rule1, nil)
 
 	// Add match to rule2
-	engine.checkThreshold(rule2)
+	engine.checkThreshold(rule2, nil)
 
 	// Verify independent tracking
 	tracker1 := engine.thresholdTrackers[rule1.Name]
@@ -154,7 +154,7 @@ func TestCheckThreshold_MultipleRules(t *testing.T) {
 	}
 
 	// Reach threshold for rule1
-	if !engine.checkThreshold(rule1) {
+	if !engine.checkThreshold(rule1, nil) {
 		t.Error("Rule 1: Expected threshold to be reached on second match")
 	}
 
@@ -177,10 +177,10 @@ func TestCheckThreshold_ImmediateReset(t *testing.T) {
 	}
 
 	// First match
-	engine.checkThreshold(rule)
+	engine.checkThreshold(rule, nil)
 
 	// Second match - reaches threshold
-	if !engine.checkThreshold(rule) {
+	if !engine.checkThreshold(rule, nil) {
 		t.Fatal("Expected threshold to be reached")
 	}
 
@@ -191,7 +191,7 @@ func TestCheckThreshold_ImmediateReset(t *testing.T) {
 	}
 
 	// Next match should start fresh
-	if engine.checkThreshold(rule) {
+	if engine.checkThreshold(rule, nil) {
 		t.Error("Expected false after reset (fresh start), got true")
 	}
 
@@ -216,7 +216,7 @@ func TestCheckThreshold_ConcurrentAccess(t *testing.T) {
 	done := make(chan bool, 50)
 	for range 50 {
 		go func() {
-			engine.checkThreshold(rule)
+			engine.checkThreshold(rule, nil)
 			done <- true
 		}()
 	}
@@ -292,7 +292,7 @@ func TestCheckThreshold_EdgeCases(t *testing.T) {
 
 			var triggered bool
 			for i := 0; i < tt.matches; i++ {
-				if engine.checkThreshold(rule) {
+				if engine.checkThreshold(rule, nil) {
 					triggered = true
 					break
 				}
@@ -319,13 +319,13 @@ func TestCheckThreshold_WindowBoundary(t *testing.T) {
 	}
 
 	// Add first match
-	engine.checkThreshold(rule)
+	engine.checkThreshold(rule, nil)
 
 	// Wait just under the window
 	time.Sleep(900 * time.Millisecond)
 
 	// Add second match (should still be within window)
-	engine.checkThreshold(rule)
+	engine.checkThreshold(rule, nil)
 
 	// Verify 2 matches
 	tracker := engine.thresholdTrackers[rule.Name]
@@ -337,7 +337,7 @@ func TestCheckThreshold_WindowBoundary(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	// Add third match - first should be expired, second still valid
-	engine.checkThreshold(rule)
+	engine.checkThreshold(rule, nil)
 
 	// Should have 2 matches now (second + third)
 	if len(tracker.matches) != 2 {
@@ -358,8 +358,8 @@ func TestCheckThreshold_ZeroWindow(t *testing.T) {
 	}
 
 	// Add two matches quickly
-	engine.checkThreshold(rule)
-	reached := engine.checkThreshold(rule)
+	engine.checkThreshold(rule, nil)
+	reached := engine.checkThreshold(rule, nil)
 
 	if !reached {
 		t.Error("Expected threshold to be reached with default window")
@@ -372,8 +372,8 @@ func TestCheckThreshold_ZeroWindow(t *testing.T) {
 		ThresholdWindow: -10,
 	}
 
-	engine.checkThreshold(rule2)
-	reached2 := engine.checkThreshold(rule2)
+	engine.checkThreshold(rule2, nil)
+	reached2 := engine.checkThreshold(rule2, nil)
 
 	if !reached2 {
 		t.Error("Expected threshold to be reached with negative window (defaulted)")
