@@ -50,7 +50,8 @@ See the [Gallery](docs/GALLERY.md) for screenshots.
 - **Magika AI** — Google's AI-based file type classification on extracted files
 - **Credential harvesting** — configurable protocol-aware credential capture
 - **File extraction** — extract files from HTTP, FTP, SMTP, POP3, IMAP, SMB, IRC with hashing (MD5, SHA1, SHA256) and MIME detection
-- **Detection rules** — 30+ YAML rule categories covering reconnaissance, exfiltration, web attacks, industrial ports, and more
+- **Detection rules** — 30+ YAML rule categories covering reconnaissance, exfiltration, web attacks, industrial ports, and more. The expression engine supports source→distinct-destination cardinality (fan-out) detection, an approved-workstation allowlist (`IsApprovedWorkstation`), and time-of-day helpers (`IsBusinessHours`, `HourOfDay`)
+- **OT/ICS threat hunting** — function-code level Siemens S7comm detection (write / logic download / logic theft / PLC stop / CPU restart) mapped to [CISA AA26-231A](docs/s7-threat-hunt-AA26-231A.md); ships `rules/examples/s7comm_hunt.yml`
 
 ### Output Formats
 

@@ -145,6 +145,22 @@ Check if a port is within a range (inclusive).
 PortInRange(DstPort, 1024, 65535)
 ```
 
+#### `IsApprovedWorkstation(ip string) bool` / `InAllowlist(ip string) bool`
+
+Check whether an IP is in the approved-workstation allowlist. The allowlist is
+loaded from a file via the `-approved-workstations` flag (or the
+`NC_APPROVED_WORKSTATIONS` environment variable). Returns `false` for every
+address when the allowlist is empty. `InAllowlist` is an alias for readability.
+
+This is the central discriminator for the CISA AA26-231A Siemens S7 PLC hunt:
+negate it to surface activity from non-authorized sources. See the
+[S7 Threat Hunt guide](s7-threat-hunt-AA26-231A.md).
+
+```bash
+# Show S7comm writes that did NOT come from an approved engineering workstation
+net dump -read S7Comm.ncap.gz -filter "FunctionCode == 5 && !IsApprovedWorkstation(SrcIP)"
+```
+
 ### Time Functions
 
 #### `TimeInRange(ts int64, start int64, end int64) bool`
@@ -169,6 +185,32 @@ Format a timestamp using Go's time format layout.
 
 ```bash
 FormatTime(Timestamp, "2006-01-02 15:04:05")
+```
+
+#### `HourOfDay(ts int64) int`
+
+Return the local hour-of-day (0–23) for a nanosecond timestamp.
+
+```bash
+HourOfDay(Timestamp) >= 22 || HourOfDay(Timestamp) < 6   # night-time activity
+```
+
+#### `Weekday(ts int64) int`
+
+Return the local day-of-week (0 = Sunday … 6 = Saturday) for a nanosecond timestamp.
+
+```bash
+Weekday(Timestamp) == 0 || Weekday(Timestamp) == 6       # weekend activity
+```
+
+#### `IsBusinessHours(ts int64, startHour int, endHour int) bool`
+
+Report whether the local time falls within `[startHour, endHour)` on a weekday
+(Mon–Fri). Useful for off-hours / out-of-change-window detection.
+
+```bash
+# Critical S7comm operation outside 08:00-18:00 on a weekday
+net dump -read S7Comm.ncap.gz -filter "IsCriticalOperation && !IsBusinessHours(Timestamp, 8, 18)"
 ```
 
 ### String Functions
