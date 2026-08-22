@@ -87,8 +87,9 @@ type thresholdTracker struct {
 // distinctTracker tracks distinct field values per source IP for
 // cardinality-based (fan-out) detection. seen[srcIP][distinctValue] = lastSeenNanos.
 type distinctTracker struct {
-	seen map[string]map[string]int64
-	mu   sync.Mutex
+	seen      map[string]map[string]int64
+	evalCount uint64 // number of evaluations, used to schedule periodic sweeps
+	mu        sync.Mutex
 }
 
 // NewEngine creates a new rules engine with the given configuration and alert writer.
@@ -461,7 +462,35 @@ func (e *Engine) checkDistinctThreshold(rule *Rule, record types.AuditRecord) bo
 		return true
 	}
 
+	// Periodically sweep sources whose entire value-set has aged out of the
+	// window. The just-added value is always live, so the current source is
+	// never empty here; idle/one-off sources that stop appearing are reclaimed
+	// by this sweep, bounding memory on networks with many distinct sources.
+	tracker.evalCount++
+	if tracker.evalCount%distinctSweepInterval == 0 {
+		tracker.sweep(now, windowNanos)
+	}
+
 	return false
+}
+
+// distinctSweepInterval controls how often checkDistinctThreshold performs a
+// full sweep of aged-out sources (every N evaluations).
+const distinctSweepInterval = 1024
+
+// sweep removes sources whose value-sets are entirely outside the window.
+// Callers must hold t.mu.
+func (t *distinctTracker) sweep(now, windowNanos int64) {
+	for src, values := range t.seen {
+		for v, ts := range values {
+			if now-ts > windowNanos {
+				delete(values, v)
+			}
+		}
+		if len(values) == 0 {
+			delete(t.seen, src)
+		}
+	}
 }
 
 // extractStringField returns the string representation of a top-level field of

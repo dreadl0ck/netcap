@@ -160,6 +160,91 @@ func TestThreshold_RecordTimeWindowExpiry(t *testing.T) {
 	}
 }
 
+// TestDistinctThreshold_KeepsLiveValueAfterPrune verifies that when a source's
+// old value ages out but a new value arrives in the window, the source is kept
+// with exactly the live value (stale value pruned, no growth).
+func TestDistinctThreshold_KeepsLiveValueAfterPrune(t *testing.T) {
+	engine := newDistinctEngine()
+	rule := &Rule{
+		Name:              "s7-enum",
+		DistinctField:     "DstIP",
+		DistinctThreshold: 5,
+		ThresholdWindow:   10, // 10s
+	}
+	base := time.Now().UnixNano()
+	tenSecs := int64(10) * int64(time.Second)
+
+	engine.checkDistinctThreshold(rule, tcpAt(base, "10.0.0.1", "10.0.1.1"))
+	tr := engine.distinctTrackers[rule.Name]
+	if _, ok := tr.seen["10.0.0.1"]; !ok {
+		t.Fatal("source should be tracked after first hit")
+	}
+
+	// New value 20s later: the first value is now outside the 10s window and is
+	// pruned; the source retains only the new value.
+	engine.checkDistinctThreshold(rule, tcpAt(base+2*tenSecs, "10.0.0.1", "10.0.1.2"))
+	if got := len(tr.seen["10.0.0.1"]); got != 1 {
+		t.Fatalf("expected exactly 1 live value after pruning, got %d", got)
+	}
+}
+
+// TestDistinctThreshold_Sweep verifies the periodic sweep removes sources whose
+// values are entirely outside the window.
+func TestDistinctThreshold_Sweep(t *testing.T) {
+	tr := &distinctTracker{seen: make(map[string]map[string]int64)}
+	now := time.Now().UnixNano()
+	window := int64(10) * int64(time.Second)
+
+	// Two stale sources (values older than the window) and one live source.
+	tr.seen["stale1"] = map[string]int64{"a": now - 3*window}
+	tr.seen["stale2"] = map[string]int64{"b": now - 2*window, "c": now - 5*window}
+	tr.seen["live"] = map[string]int64{"d": now}
+
+	tr.sweep(now, window)
+
+	if _, ok := tr.seen["stale1"]; ok {
+		t.Error("stale1 should have been swept")
+	}
+	if _, ok := tr.seen["stale2"]; ok {
+		t.Error("stale2 should have been swept")
+	}
+	if _, ok := tr.seen["live"]; !ok {
+		t.Error("live source should remain")
+	}
+}
+
+// TestDistinctThreshold_PeriodicSweepReclaimsIdle drives enough evaluations to
+// trigger the periodic sweep and confirms idle sources whose values have aged
+// out are reclaimed, so the tracker does not grow without bound.
+func TestDistinctThreshold_PeriodicSweepReclaimsIdle(t *testing.T) {
+	engine := newDistinctEngine()
+	rule := &Rule{
+		Name:              "s7-enum",
+		DistinctField:     "DstIP",
+		DistinctThreshold: 1000, // never fires; we only exercise tracking/sweep
+		ThresholdWindow:   1,    // 1s window
+	}
+	base := time.Now().UnixNano()
+
+	// One idle source at t=base; its value ages out after 1s.
+	engine.checkDistinctThreshold(rule, tcpAt(base, "10.0.0.1", "10.0.9.9"))
+
+	// Drive distinctSweepInterval evaluations from a live source far in the
+	// future so the sweep runs and reclaims the idle source.
+	future := base + int64(3600)*int64(time.Second)
+	for i := 0; i < distinctSweepInterval; i++ {
+		engine.checkDistinctThreshold(rule, tcpAt(future+int64(i), "10.0.0.2", "10.0.8.8"))
+	}
+
+	tr := engine.distinctTrackers[rule.Name]
+	if _, ok := tr.seen["10.0.0.1"]; ok {
+		t.Error("idle source should have been reclaimed by the periodic sweep")
+	}
+	if _, ok := tr.seen["10.0.0.2"]; !ok {
+		t.Error("live source should remain tracked")
+	}
+}
+
 func TestExtractStringField(t *testing.T) {
 	rec := &types.TCP{SrcIP: "10.0.0.1", DstIP: "10.0.0.2", DstPort: 102}
 	if got := extractStringField(rec, "DstIP"); got != "10.0.0.2" {
