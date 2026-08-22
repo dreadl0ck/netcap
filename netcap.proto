@@ -3599,6 +3599,16 @@ message S7Comm {
 
   // Payload information
   bytes Payload = 47;             // Raw S7comm payload (if enabled)
+
+  // Visibility / S7CommPlus fields.
+  // S7-1200/1500 controllers programmed through TIA Portal speak S7CommPlus
+  // (protocol id 0x72), whose payload is obscured by session-keyed integrity
+  // material. For these, netcap can prove a connection happened but often
+  // cannot determine which function code it carried (CISA AA26-231A named gap).
+  bool PayloadObscured = 48;      // true when the function code cannot be determined (e.g. S7CommPlus)
+  int32 S7PlusOpcode = 49;        // S7CommPlus opcode (0x31=Request, 0x32=Response, 0x33=Notification) when parseable
+  string S7PlusOpcodeName = 50;   // Human-readable S7CommPlus opcode name
+  int32 S7PlusFunction = 51;      // S7CommPlus function/data field when parseable
 }
 
 // S7CommItem represents a single item in an S7Comm Read/Write request.

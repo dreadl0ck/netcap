@@ -61,6 +61,13 @@ const (
 	s7commPlusProtocolID = 0x72 // S7Comm Plus (S7-1200/1500, TIA Portal)
 )
 
+// S7CommPlus opcodes (cleartext, even when the body is integrity-protected).
+const (
+	s7PlusOpcodeRequest      = 0x31 // Request
+	s7PlusOpcodeResponse     = 0x32 // Response
+	s7PlusOpcodeNotification = 0x33 // Notification
+)
+
 // S7comm Message Types (ROSCTR - Remote Operating Service Control)
 const (
 	S7CommMsgTypeJobRequest = 0x01 // Job Request (client -> PLC)

@@ -283,30 +283,76 @@ func (s *s7commReader) parseS7Comm(msg *types.S7Comm, data []byte) {
 	}
 }
 
-// parseS7CommPlus parses S7Comm Plus (TIA Portal) messages.
-// S7Comm Plus is used by S7-1200/1500 PLCs and has a different structure.
+// parseS7CommPlus parses the cleartext framing of S7Comm Plus (TIA Portal)
+// messages used by S7-1200/1500 PLCs. The S7CommPlus header itself is in the
+// clear (protocol id, version, data length, opcode) even though the request/
+// response body is protected by session-keyed integrity material. We therefore
+// extract what is observable and explicitly flag the payload as obscured so an
+// analyst can see the visibility gap (CISA AA26-231A named limitation): the
+// connection is proven, but the function code often cannot be determined.
+//
+// S7CommPlus header layout (classic framing):
+//
+//	Byte 0:    Protocol ID (0x72)
+//	Byte 1:    Protocol version (0x01, 0x02, 0x03)
+//	Bytes 2-3: Data length (big-endian)
+//	Byte 4:    Opcode (0x31 Request, 0x32 Response, 0x33 Notification)
+//	Bytes 5-6: Reserved / function (version dependent)
+//	Byte 7:    Function / sequence (version dependent)
 func (s *s7commReader) parseS7CommPlus(msg *types.S7Comm, data []byte) {
-	if len(data) < 4 {
+	if len(data) < 2 {
 		return
 	}
 
 	msg.ProtocolId = int32(data[0])
 	msg.MessageTypeName = "S7Comm Plus"
 
-	// S7Comm Plus has encrypted/different structure
-	// Mark as security-relevant since it uses newer TIA Portal features
+	// Newer TIA Portal features are always security-relevant, and the payload
+	// is integrity-obscured so we cannot determine the function code.
 	msg.IsSecurityRelevant = true
+	msg.PayloadObscured = true
 
-	// S7Comm Plus version byte
-	if len(data) > 1 {
-		msg.MessageType = int32(data[1]) // Version/type byte
+	// Protocol version byte.
+	msg.MessageType = int32(data[1])
+
+	// Data length (bytes 2-3), when present.
+	if len(data) >= 4 {
+		msg.DataLength = int32(binary.BigEndian.Uint16(data[2:4]))
 	}
 
-	// For S7Comm Plus, the protocol is more complex and partially encrypted
-	// We capture basic information but detailed parsing requires more research
+	// Opcode (byte 4) identifies request/response/notification. This is in the
+	// clear and lets us distinguish direction and message class even though the
+	// body is protected.
+	if len(data) >= 5 {
+		opcode := int32(data[4])
+		msg.S7PlusOpcode = opcode
+		msg.S7PlusOpcodeName = getS7PlusOpcodeName(int(data[4]))
+	}
+
+	// Function/data field (version dependent, byte 6 or 7). Best-effort only.
+	if len(data) >= 7 {
+		msg.S7PlusFunction = int32(data[6])
+	}
+
 	s7commLog.Debug("S7Comm Plus message detected",
 		zap.Int("length", len(data)),
+		zap.Int32("opcode", msg.S7PlusOpcode),
+		zap.String("opcodeName", msg.S7PlusOpcodeName),
 	)
+}
+
+// getS7PlusOpcodeName returns the human-readable name for an S7CommPlus opcode.
+func getS7PlusOpcodeName(opcode int) string {
+	switch opcode {
+	case s7PlusOpcodeRequest:
+		return "Request"
+	case s7PlusOpcodeResponse:
+		return "Response"
+	case s7PlusOpcodeNotification:
+		return "Notification"
+	default:
+		return "Unknown"
+	}
 }
 
 // parseS7Parameters parses the S7comm parameter section.

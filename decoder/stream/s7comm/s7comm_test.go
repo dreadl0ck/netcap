@@ -248,9 +248,9 @@ func TestParsePIServiceRestartNaming(t *testing.T) {
 }
 
 func TestParseS7CommPlusShallow(t *testing.T) {
-	// S7CommPlus (0x72) payload - only shallow parsing, flagged security relevant.
+	// S7CommPlus (0x72) v1, data length 0x0010, opcode 0x31 (Request).
 	// parseS7Comm requires at least 10 bytes before dispatching.
-	plus := []byte{0x72, 0x01, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	plus := []byte{0x72, 0x01, 0x00, 0x10, 0x31, 0x00, 0x04, 0x00, 0x00, 0x00}
 	frame := tpkt(append(cotpDT(), plus...))
 
 	msg, _ := newReader().parseTPKTMessage(frame)
@@ -262,6 +262,45 @@ func TestParseS7CommPlusShallow(t *testing.T) {
 	}
 	if !msg.IsSecurityRelevant {
 		t.Error("S7CommPlus must be flagged IsSecurityRelevant")
+	}
+	if !msg.PayloadObscured {
+		t.Error("S7CommPlus payload must be flagged obscured (function code undeterminable)")
+	}
+	if msg.S7PlusOpcode != s7PlusOpcodeRequest {
+		t.Errorf("S7PlusOpcode = %#x, want Request", msg.S7PlusOpcode)
+	}
+	if msg.S7PlusOpcodeName != "Request" {
+		t.Errorf("S7PlusOpcodeName = %q, want Request", msg.S7PlusOpcodeName)
+	}
+	if msg.DataLength != 0x10 {
+		t.Errorf("DataLength = %d, want 16", msg.DataLength)
+	}
+}
+
+func TestClassicS7CommNotObscured(t *testing.T) {
+	// Classic S7comm (0x32) must NOT be flagged as obscured.
+	param := []byte{0x04, 0x00}
+	frame := tpkt(append(cotpDT(), s7Job(param)...))
+	msg, _ := newReader().parseTPKTMessage(frame)
+	if msg == nil {
+		t.Fatal("expected a parsed message")
+	}
+	if msg.PayloadObscured {
+		t.Error("classic S7comm must not be flagged PayloadObscured")
+	}
+}
+
+func TestGetS7PlusOpcodeName(t *testing.T) {
+	cases := map[int]string{
+		s7PlusOpcodeRequest:      "Request",
+		s7PlusOpcodeResponse:     "Response",
+		s7PlusOpcodeNotification: "Notification",
+		0x99:                     "Unknown",
+	}
+	for op, want := range cases {
+		if got := getS7PlusOpcodeName(op); got != want {
+			t.Errorf("getS7PlusOpcodeName(%#x) = %q, want %q", op, got, want)
+		}
 	}
 }
 

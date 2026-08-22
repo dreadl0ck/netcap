@@ -68,6 +68,10 @@ const (
 	fieldS7CommUserDataSequenceNumber = "UserDataSequenceNumber"
 	fieldS7CommIsSecurityRelevant    = "IsSecurityRelevant"
 	fieldS7CommIsCriticalOperation   = "IsCriticalOperation"
+	fieldS7CommPayloadObscured       = "PayloadObscured"
+	fieldS7CommS7PlusOpcode          = "S7PlusOpcode"
+	fieldS7CommS7PlusOpcodeName      = "S7PlusOpcodeName"
+	fieldS7CommS7PlusFunction        = "S7PlusFunction"
 )
 
 var fieldsS7Comm = []string{
@@ -115,6 +119,10 @@ var fieldsS7Comm = []string{
 	fieldS7CommUserDataSequenceNumber,
 	fieldS7CommIsSecurityRelevant,
 	fieldS7CommIsCriticalOperation,
+	fieldS7CommPayloadObscured,
+	fieldS7CommS7PlusOpcode,
+	fieldS7CommS7PlusOpcodeName,
+	fieldS7CommS7PlusFunction,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -169,6 +177,10 @@ func (s *S7Comm) CSVRecord() []string {
 		formatInt32(s.UserDataSequenceNumber),
 		strconv.FormatBool(s.IsSecurityRelevant),
 		strconv.FormatBool(s.IsCriticalOperation),
+		strconv.FormatBool(s.PayloadObscured),
+		formatInt32(s.S7PlusOpcode),
+		s.S7PlusOpcodeName,
+		formatInt32(s.S7PlusFunction),
 	})
 }
 
@@ -265,6 +277,10 @@ func (s *S7Comm) Encode() []string {
 		s7commEncoder.Int32(fieldS7CommUserDataSequenceNumber, s.UserDataSequenceNumber),
 		s7commEncoder.Bool(s.IsSecurityRelevant),
 		s7commEncoder.Bool(s.IsCriticalOperation),
+		s7commEncoder.Bool(s.PayloadObscured),
+		s7commEncoder.Int32(fieldS7CommS7PlusOpcode, s.S7PlusOpcode),
+		s7commEncoder.String(fieldS7CommS7PlusOpcodeName, s.S7PlusOpcodeName),
+		s7commEncoder.Int32(fieldS7CommS7PlusFunction, s.S7PlusFunction),
 	})
 }
 
