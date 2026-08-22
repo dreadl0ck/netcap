@@ -110,6 +110,46 @@ Whether the rule is active. Disabled rules are not evaluated.
 
 **Valid values**: `true`, `false`
 
+#### `threshold` / `threshold_window` (optional)
+Fire only after `threshold` matches occur within `threshold_window` seconds
+(default window: 60). Time windows are measured using the **record's own
+timestamp**, so they behave correctly on offline PCAP replay, not just live
+capture.
+
+#### `distinct_field` / `distinct_threshold` (optional)
+Cardinality-based (fan-out) detection. Instead of counting raw matches, the
+engine counts the number of **distinct values** of `distinct_field` observed
+**per source IP** within `threshold_window`, and fires when the count reaches
+`distinct_threshold` (default 2). This expresses "one source touching many
+distinct destinations" — e.g. an internal host sweeping many controllers:
+
+```yaml
+- name: S7comm Horizontal Enumeration
+  type: Connection
+  expression: DstPort == "102" && !IsApprovedWorkstation(SrcIP)
+  distinct_field: DstIP
+  distinct_threshold: 5
+  threshold_window: 300
+  severity: high
+  enabled: true
+```
+
+### Additional helper functions
+
+Beyond the network/string/time helpers, the following are available in
+expressions:
+
+- `IsApprovedWorkstation(ip)` / `InAllowlist(ip)` — true if `ip` is in the
+  approved-workstation allowlist loaded via `-approved-workstations`
+  (`net capture`). Negate it (`!IsApprovedWorkstation(SrcIP)`) to escalate
+  activity from non-authorized sources. See
+  [S7 Threat Hunt](s7-threat-hunt-AA26-231A.md).
+- `HourOfDay(ts)` — local hour 0–23 of a nanosecond timestamp.
+- `Weekday(ts)` — local weekday 0 (Sun) – 6 (Sat).
+- `IsBusinessHours(ts, startHour, endHour)` — true within
+  `[startHour, endHour)` on Mon–Fri. Use `!IsBusinessHours(Timestamp, 8, 18)`
+  for off-hours detection.
+
 ## Writing Rules
 
 ### Basic Rule Structure
