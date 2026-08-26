@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="description" content="Netcap Web UI - Network Traffic Analysis" />
     <link rel="icon" href="/favicon.ico" />
+    <!--
+      Self-referencing canonical for the hosted demo at try.netcap.io.
+
+      This build is also what runs locally and on a LAN, where the tag is simply
+      ignored: a canonical only matters to a crawler, and nothing crawls a
+      developer's laptop. Declaring it unconditionally is safer than making it
+      conditional, because the deployed instance is the one that must have it.
+
+      It is here rather than in a response header so it survives the Vite build
+      as part of the served document.
+    -->
+    <link rel="canonical" href="https://try.netcap.io/" />
     <title>Netcap Web UI</title>
     <!-- Inline critical CSS for dark mode - prevents flash of white on load -->
     <style>
