@@ -21,6 +21,7 @@ RUN apt-get clean && \
     gcc \
     libpcap-dev \
     linux-headers-generic \
+    pkg-config \
     git \
     vim \
     ca-certificates && \
@@ -64,6 +65,18 @@ RUN mkdir -p /usr/local/lib/pkgconfig && \
     echo 'Version: 1.14.0' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
     echo 'Libs: -L${libdir} -lyara_x_capi' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
     echo 'Cflags: -I${includedir}' >> /usr/local/lib/pkgconfig/yara_x_capi.pc
+
+# Fail here rather than in every downstream netcap build.
+#
+# Unlike the alpine builders these steps are not masked -- curl is installed, so
+# the rustup pipeline runs, and there is no `|| true` swallowing the chain. But
+# nothing asserted the artefacts existed either, and that absence is what let the
+# equivalent alpine breakage survive unnoticed through every build. Cheap to
+# check, and it fails at the step that caused it.
+RUN test -f /usr/local/include/yara_x.h || (echo "yara_x.h missing" && exit 1) && \
+    test -f /usr/local/lib/libyara_x_capi.so || (echo "libyara_x_capi.so missing" && exit 1) && \
+    test -f /usr/local/lib/libyara_x_capi.a || (echo "libyara_x_capi.a missing" && exit 1)
+
 
 # Set working directory
 WORKDIR /workspace
