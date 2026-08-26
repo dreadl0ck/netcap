@@ -693,12 +693,23 @@ func (s *Server) Start() error {
 	// NETCAP_MCP_ADMIN_TOKEN env var is unset, this is a no-op.
 	s.mountMCP(mux, "http://"+s.addr)
 
+	// robots.txt — this is an application, never content.
+	//
+	// The hosted demo at try.netcap.io served no robots.txt at all: the SPA
+	// fallback below answered /robots.txt with index.html, which crawlers treat
+	// as "no robots.txt", i.e. permission to crawl everything. Registering it
+	// explicitly before the catch-all is what stops that.
+	mux.HandleFunc("/robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		_, _ = w.Write([]byte("User-agent: *\nDisallow: /\n"))
+	})
+
 	// Static files - frontend SPA with fallback to index.html for client-side routing
 	mux.Handle("/", s.handleStatic())
 
 	s.httpServer = &http.Server{
 		Addr:         s.addr,
-		Handler:      gzipMiddleware(s.corsMiddleware(mux)),
+		Handler:      gzipMiddleware(s.corsMiddleware(noIndexMiddleware(mux))),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  120 * time.Second,
@@ -1111,6 +1122,23 @@ func (w *gzipResponseWriter) Write(b []byte) (int, error) {
 }
 
 // gzipMiddleware compresses HTTP responses with gzip when supported by client
+// noIndexMiddleware marks every response as not for indexing.
+//
+// The web UI is an application: its pages are a live capture dashboard, not
+// content anyone should reach from a search result. robots.txt (registered in
+// Start) stops crawling, but robots.txt alone does not prevent a URL discovered
+// through an external link from being indexed without ever being fetched. The
+// X-Robots-Tag header is the half that does, and unlike a meta tag it also
+// covers the JSON and file-download responses this server returns.
+//
+// Search engines treat X-Robots-Tag and the meta robots tag as equivalent.
+func noIndexMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Robots-Tag", "noindex, nofollow")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func gzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Check if client accepts gzip encoding
