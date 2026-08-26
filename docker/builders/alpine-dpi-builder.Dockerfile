@@ -106,22 +106,79 @@ ENV LD_RUN_PATH="/usr/local/lib"
 RUN ldconfig /usr/local/lib/* 2>/dev/null || true && \
     ldconfig /go/* 2>/dev/null || true
 
-# Install Rust toolchain for yara-x
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+# Install the Rust toolchain for yara-x.
+#
+# The previous `curl https://sh.rustup.rs | sh -s -- -y` never ran at all: curl
+# is not in the package list above and is not in the golang alpine base either.
+# A pipeline reports the exit status of its LAST command, so
+# `curl-that-does-not-exist | sh` exits 0 — sh reads empty stdin and returns
+# success. The step looked fine in every build log and installed nothing.
+#
+# Downloaded with wget to a file and executed directly, so there is no pipeline
+# whose exit status can hide a missing downloader.
+#
+# Not apk's rust: Alpine ships 1.87, and yara-x 1.14 pulls in cranelift/wasmtime
+# which require 1.89. rustup tracks stable and is the only option here.
+RUN wget -O /tmp/rustup-init.sh https://sh.rustup.rs && \
+    chmod +x /tmp/rustup-init.sh && \
+    /tmp/rustup-init.sh -y --profile minimal --default-toolchain stable && \
+    rm /tmp/rustup-init.sh
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-# Build and install yara-x v1.14.0 C API library
+# Assert the toolchain exists before anything depends on it.
+RUN rustc --version && cargo --version
+
+# Tell cargo to link with gcc.
+#
+# rustup's x86_64-unknown-linux-musl target defaults to a `musl-gcc` wrapper,
+# which Alpine does not ship and does not need: its gcc is already musl-native
+# (gcc -dumpmachine reports x86_64-alpine-linux-musl). Without this every crate
+# with a build script fails at "linker `musl-gcc` not found".
+ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=gcc
+
+# Build and install yara-x v1.14.0 C API library.
+#
+# NOTE the absence of `|| true`. The previous version ended with
+# `... && cp yara_x.h && ldconfig || true && cd / && rm -rf ...`, and `||` binds
+# to the whole preceding && chain — so a failure anywhere in it, including the
+# cargo build and the header copy, was swallowed. Combined with the rustup bug
+# above that is why the published builder image has never contained yara-x, and
+# why every netcap service build has failed at `pkg-config -- yara_x_capi` or,
+# once the .pc file existed, at a missing yara_x.h.
+#
+# ldconfig is allowed to fail on its own line only, which is what was intended.
+#
+# RUSTFLAGS="-C target-feature=-crt-static" is required, not incidental. On the
+# musl target rustup's std defaults to static linking, but proc-macro crates
+# (thiserror-impl, serde_derive, …) must be built as shared objects, and the
+# static objects are not position-independent — so linking them fails with
+# "relocation R_X86_64_32 ... can not be used when making a shared object".
+# Disabling crt-static makes std dynamic and lets the proc-macros link.
+#
+# The resulting libyara_x_capi.so is then dynamically linked against musl, which
+# is what the runtime stage expects: docker/service/Dockerfile copies
+# /usr/local/lib/* into an Alpine image and runs ldconfig over it.
 RUN cd /tmp && \
     wget https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.14.0.tar.gz && \
     tar xfz v1.14.0.tar.gz && \
     cd yara-x-1.14.0 && \
-    cargo build --release -p yara-x-capi && \
+    RUSTFLAGS="-C target-feature=-crt-static" cargo build --release -p yara-x-capi && \
     cp target/release/libyara_x_capi.so /usr/local/lib/ && \
     cp target/release/libyara_x_capi.a /usr/local/lib/ && \
     mkdir -p /usr/local/include && \
     cp capi/include/yara_x.h /usr/local/include/ && \
-    ldconfig /usr/local/lib 2>/dev/null || true && \
-    cd / && rm -rf /tmp/v1.14.0.tar.gz /tmp/yara-x-1.14.0 /root/.cargo/registry
+    cd / && \
+    rm -rf /tmp/v1.14.0.tar.gz /tmp/yara-x-1.14.0
+RUN ldconfig /usr/local/lib 2>/dev/null || true
+
+# Fail the build here rather than in every downstream netcap build.
+#
+# The two bugs above were invisible for as long as they existed because nothing
+# asserted the outcome. These four checks are cheap and turn a silent gap into a
+# build error at the place that caused it.
+RUN test -f /usr/local/include/yara_x.h || (echo "yara_x.h missing" && exit 1) && \
+    test -f /usr/local/lib/libyara_x_capi.so || (echo "libyara_x_capi.so missing" && exit 1) && \
+    test -f /usr/local/lib/libyara_x_capi.a || (echo "libyara_x_capi.a missing" && exit 1)
 
 # Create pkg-config file for yara-x
 RUN mkdir -p /usr/local/lib/pkgconfig && \
