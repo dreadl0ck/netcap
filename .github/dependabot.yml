@@ -1,0 +1,107 @@
+# Dependabot configuration for the Amsterdam Technologies estate.
+#
+# The posture here is deliberate, not default:
+#
+#   - Security updates are grouped into ONE pull request per ecosystem. netcap
+#     accumulated 32 open alerts with automated fixes sitting in
+#     {enabled: true, paused: true} -- GitHub pauses Dependabot when its pull
+#     requests go unattended, so keeping volume low is what keeps the alerts
+#     actionable rather than decorative.
+#   - Routine version updates are limited to minor and patch.
+#   - Major upgrades are never opened automatically. Those are migrations and
+#     need a human choosing the moment.
+#
+# The ecosystems below were detected from manifests actually present in this
+# repo. vendor/, third_party/ and node_modules/ are excluded: upstream copies
+# are not ours to bump, and churning them buries the changes that matter.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "sec(deps)"
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
+      routine:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: npm
+    directory: "/cmd/capture/webui/frontend"
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "sec(deps)"
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
+      routine:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: docker
+    directories:
+      - "/"
+      - "/docker/alpine"
+      - "/docker/alpine-nodpi"
+      - "/docker/dbs-server"
+      - "/docker/service"
+      - "/docker/service-local-dpi"
+      - "/docker/service-local-gopacket"
+      - "/docker/ubuntu"
+      - "/docker/ubuntu-nodpi"
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "sec(deps)"
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
+      routine:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "sec(deps)"
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
+      routine:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
