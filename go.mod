@@ -35,8 +35,8 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20250917011043-9c86a9b0f8f0
 	github.com/umisama/go-cpe v0.0.0-20190323060751-cdd6c3c28a23
 	go.uber.org/zap v1.27.0
-	golang.org/x/crypto v0.50.0
-	golang.org/x/net v0.53.0
+	golang.org/x/crypto v0.52.0
+	golang.org/x/net v0.54.0
 	gonum.org/v1/gonum v0.16.0
 	gopkg.in/yaml.v2 v2.4.0
 	mvdan.cc/xurls/v2 v2.6.0
@@ -134,9 +134,9 @@ require (
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
 	golang.org/x/image v0.38.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.43.0 // indirect
-	golang.org/x/term v0.42.0 // indirect
-	golang.org/x/text v0.36.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/term v0.43.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
