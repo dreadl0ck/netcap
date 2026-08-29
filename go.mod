@@ -22,7 +22,7 @@ require (
 	github.com/go-echarts/go-echarts/v2 v2.6.5
 	github.com/go-errors/errors v1.5.1
 	github.com/gogo/protobuf v1.3.2
-	github.com/gopacket/gopacket v1.5.0
+	github.com/gopacket/gopacket v1.6.1
 	github.com/klauspost/pgzip v1.2.6
 	github.com/magiconair/properties v1.8.0
 	github.com/mcnijman/go-emailaddress v1.1.1
@@ -35,8 +35,8 @@ require (
 	github.com/ua-parser/uap-go v0.0.0-20250917011043-9c86a9b0f8f0
 	github.com/umisama/go-cpe v0.0.0-20190323060751-cdd6c3c28a23
 	go.uber.org/zap v1.27.0
-	golang.org/x/crypto v0.52.0
-	golang.org/x/net v0.54.0
+	golang.org/x/crypto v0.53.0
+	golang.org/x/net v0.56.0
 	gonum.org/v1/gonum v0.16.0
 	gopkg.in/yaml.v2 v2.4.0
 	mvdan.cc/xurls/v2 v2.6.0
@@ -85,7 +85,7 @@ require (
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.9.0 // indirect
-	github.com/go-git/go-git/v5 v5.19.1 // indirect
+	github.com/go-git/go-git/v5 v5.19.2 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/geo v0.0.0-20251020193347-f750d7aa221b // indirect
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
@@ -132,11 +132,11 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
-	golang.org/x/image v0.38.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/term v0.43.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/image v0.41.0 // indirect
+	golang.org/x/sync v0.21.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
+	golang.org/x/term v0.44.0 // indirect
+	golang.org/x/text v0.39.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
