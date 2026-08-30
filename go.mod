@@ -1,6 +1,6 @@
 module github.com/dreadl0ck/netcap
 
-go 1.25.1
+go 1.27.0
 
 require (
 	github.com/Jeffail/gabs/v2 v2.7.0

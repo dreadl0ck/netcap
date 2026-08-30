@@ -91,7 +91,20 @@ func (c *Collector) doCleanup(force bool) {
 	c.printlnStdOut("workers completed after", time.Since(workerStop))
 
 	waitForCollector := func() chan struct{} {
-		ch := make(chan struct{})
+		// Buffered so the send below always completes. The select on this
+		// channel races a timeout, and when the timeout wins there is no
+		// longer a receiver -- an unbuffered send would then park this
+		// goroutine forever, holding statMutex, which the progress ticker in
+		// collector.go also takes. The same fix is applied for the same reason
+		// in decoder/stream/tcp/tcp_connection.go.
+		//
+		// Note this bounds the damage but does not remove the underlying
+		// hazard: c.wg.Wait() itself can block indefinitely, because
+		// worker.go returns on the nil-packet sentinel before reaching its
+		// c.wg.Done(), so packets still queued when the sentinel is processed
+		// never decrement the group. Go 1.27's goroutineleak profile reports
+		// that as a goroutine blocked in sync.WaitGroup.Wait.
+		ch := make(chan struct{}, 1)
 
 		go func() {
 			c.statMutex.Lock()

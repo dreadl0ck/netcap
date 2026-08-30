@@ -452,14 +452,28 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		}()
 	}
 
-	// Start pprof HTTP server if requested
+	// Start pprof HTTP server if requested.
+	//
+	// fgprof is registered here rather than under -cpuprof, where it used to
+	// live: gating it on CPU profiling meant Off-CPU analysis was only
+	// available while CPU profiling was perturbing the very timing being
+	// measured. Both are now reachable from this one flag.
 	if flagPprof != "" {
+		// fgprof samples On-CPU and Off-CPU (e.g. blocked on I/O) time.
+		http.DefaultServeMux.Handle("/debug/fgprof", fgprof.Handler())
+
 		go func() {
 			fmt.Printf("Starting pprof HTTP server on %s\n", flagPprof)
 			fmt.Println("Access profiling endpoints:")
 			fmt.Printf("  - Goroutine profile: http://%s/debug/pprof/goroutine?debug=2\n", flagPprof)
+			// Go 1.27+. Reports goroutines blocked on a concurrency primitive
+			// that can no longer be reached, so it cannot ever be unblocked.
+			// netcap's shutdown paths are the ones worth pointing this at:
+			// several WaitGroup barriers there have no timeout.
+			fmt.Printf("  - Goroutine leaks:   http://%s/debug/pprof/goroutineleak\n", flagPprof)
 			fmt.Printf("  - Heap profile:      http://%s/debug/pprof/heap\n", flagPprof)
 			fmt.Printf("  - CPU profile:       http://%s/debug/pprof/profile\n", flagPprof)
+			fmt.Printf("  - Off-CPU (fgprof):  http://%s/debug/fgprof\n", flagPprof)
 			fmt.Printf("  - All profiles:      http://%s/debug/pprof/\n", flagPprof)
 			if err := http.ListenAndServe(flagPprof, nil); err != nil {
 				log.Printf("pprof server error: %v\n", err)
@@ -527,13 +541,6 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			}
 
 			return func() {}
-		}()
-
-		// fgprof allows to analyze On-CPU as well as Off-CPU (e.g. I/O) time
-		http.DefaultServeMux.Handle("/debug/fgprof", fgprof.Handler())
-
-		go func() {
-			log.Println(http.ListenAndServe(":6060", nil))
 		}()
 	}
 

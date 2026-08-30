@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A second push to the same branch cancels the previous run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  go:
+    name: Go build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # netcap is a workspace: go.work uses both this module and ../go-dpi,
+      # and the go.work go directive must be >= every member's. Checking the
+      # sibling out at the same relative path is what makes `go build ./...`
+      # resolve the same way it does locally.
+      - name: Check out go-dpi (workspace member)
+        uses: actions/checkout@v4
+        with:
+          repository: dreadl0ck/go-dpi
+          path: go-dpi-sibling
+
+      - name: Place go-dpi beside the module
+        run: mv go-dpi-sibling ../go-dpi
+
+      # CGO is mandatory: the capture path links libpcap.
+      - name: Install libpcap
+        run: sudo apt-get update && sudo apt-get install -y libpcap-dev
+
+      # Tracks the go directive in go.mod, so a toolchain bump is a one-line
+      # change in one file rather than a hunt across workflows.
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      # Matches Makefile.test's test-unit target.
+      - name: Unit tests with race detector
+        run: go test -short -race ./...

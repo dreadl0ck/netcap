@@ -1,7 +1,7 @@
 # Base Alpine builder image for netcap musl builds
 # This image contains all build dependencies and can be reused across builds
 ARG TARGETPLATFORM=linux/amd64
-FROM --platform=$TARGETPLATFORM golang:1.25.1-alpine
+FROM --platform=$TARGETPLATFORM golang:1.27-alpine
 
 # Install all build dependencies
 RUN apk update && \
