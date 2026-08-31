@@ -31,7 +31,7 @@ RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep
         -X github.com/dreadl0ck/netcap/dpi.GoDPIVersion=${GO_DPI_VERSION}" \
     -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
-FROM --platform=linux/amd64 ubuntu:24.04
+FROM --platform=linux/amd64 ubuntu:24.10
 ARG IPV6_SUPPORT=true
 
 RUN apt-get update
