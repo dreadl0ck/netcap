@@ -19,7 +19,7 @@ RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep
 
 #RUN ls -la /usr/lib/
 
-FROM --platform=linux/amd64 ubuntu:24.04
+FROM --platform=linux/amd64 ubuntu:24.10
 ARG IPV6_SUPPORT=true
 RUN apt-get update
 RUN apt install -y --fix-missing libpcap0.8 software-properties-common ca-certificates liblzo2-2 libkeyutils-dev tcpdump curl xz-utils
