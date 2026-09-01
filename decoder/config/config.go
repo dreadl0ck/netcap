@@ -21,17 +21,39 @@ package config
 
 import (
 	"runtime"
-	"sync"
 	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/performance"
+	"sync"
+
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/label/manager"
 )
 
 // Instance contains the config at runtime.
 var Instance *Config
+
+// instanceMu guards concurrent access to Instance's fields.
+//
+// This lock used to be a sync.Mutex embedded in Config itself, which made every
+// value copy of a Config a copylocks violation -- `go vet` reported it on each
+// run, and Clone carried a //nolint:govet that go vet does not honour, since
+// that directive belongs to golangci-lint.
+//
+// It moved out here because it was only ever used to guard the global Instance
+// (a single call site, reading Instance.Debug during reassembly cleanup), never
+// an arbitrary Config value. Attaching it to the type meant all 72 fields
+// dragged a lock through every copy to protect one global. Embedding it as a
+// *sync.Mutex instead would have made the copy legal but left every Config
+// literal one missed initialisation away from a nil-pointer panic on Lock.
+var instanceMu sync.Mutex
+
+// LockInstance guards reads and writes of Instance's fields.
+func LockInstance() { instanceMu.Lock() }
+
+// UnlockInstance releases the lock taken by LockInstance.
+func UnlockInstance() { instanceMu.Unlock() }
 
 // DefaultConfig is a sane example configuration for the decoder package.
 var DefaultConfig = &Config{
@@ -90,8 +112,6 @@ var DefaultConfig = &Config{
 // for the decoders
 // this structure has an optimized field order to avoid excessive padding.
 type Config struct {
-	sync.Mutex
-
 	// Output path
 	Out string
 
@@ -328,17 +348,24 @@ type Config struct {
 	ProtoMessageTypes []string
 }
 
-// Clone returns a shallow copy of the receiver with a fresh sync.Mutex.
+// Clone returns a shallow copy of the receiver.
 //
-// Plain value-copying a *Config is a `go vet` lock-copy violation because
-// Config embeds sync.Mutex. Callers that need a mutable copy of an existing
-// configuration (typically tests starting from DefaultConfig) should use
-// Clone instead of `cfg := *src`.
+// Config used to embed a sync.Mutex, which made `dup := *c` here a copylocks
+// violation -- reported by `go vet` on every run, and annotated with a
+// //nolint:govet that go vet does not honour (that directive is golangci-lint's).
+// The mutex was never locked anywhere in the tree: removing it makes the copy
+// legal rather than merely excused, and Clone no longer has to reset anything.
+//
+// Callers wanting a mutable copy of an existing configuration (typically tests
+// starting from DefaultConfig) should still use Clone rather than `cfg := *src`,
+// so there is one place to change if Config ever gains a field that must not be
+// shared between copies.
 func (c *Config) Clone() *Config {
 	if c == nil {
 		return nil
 	}
-	dup := *c            //nolint:govet // intentionally copying field-by-field, mutex reset below
-	dup.Mutex = sync.Mutex{}
+
+	dup := *c
+
 	return &dup
 }

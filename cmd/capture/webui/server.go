@@ -1057,11 +1057,19 @@ func (s *Server) GetFileError(inputFile string) (FileError, bool) {
 	return err, exists
 }
 
+// requestLogging turns per-request logging on or off.
+//
+// A plain `return false` at the top of shouldLogRequest left the rest of the
+// function unreachable, which `go vet` reports. Gating on a constant keeps the
+// filtering logic compiled and vet-clean, so flipping this back on is a
+// one-word change that cannot have bit-rotted in the meantime.
+const requestLogging = false
+
 // shouldLogRequest returns true if the request should be logged
 func shouldLogRequest(path string) bool {
-
-	// TODO disable logging these requests for now
-	return false
+	if !requestLogging {
+		return false
+	}
 
 	// Skip logging for static assets
 	if strings.HasPrefix(path, "/assets/") ||

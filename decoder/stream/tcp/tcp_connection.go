@@ -671,12 +671,12 @@ func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.As
 
 // CleanupReassembly will shutdown the reassembly.
 func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
-	decoderconfig.Instance.Lock()
+	decoderconfig.LockInstance()
 	if decoderconfig.Instance.Debug {
 		reassemblyLog.Info("streamPool:")
 		reassemblyLog.Sugar().Info(StreamFactory.StreamPool.DumpString())
 	}
-	decoderconfig.Instance.Unlock()
+	decoderconfig.UnlockInstance()
 
 	// wait for stream reassembly to finish
 	if decoderconfig.Instance.WaitForConnections || wait {

@@ -345,7 +345,7 @@ func (s *Server) handleProtoMappings(w http.ResponseWriter, r *http.Request) {
 		mapping := fmt.Sprintf("%d:%s", req.Port, req.MessageType)
 
 		if decoderconfig.Instance != nil {
-			decoderconfig.Instance.Lock()
+			decoderconfig.LockInstance()
 			// Remove existing mapping for this port
 			newMappings := make([]string, 0, len(decoderconfig.Instance.ProtoMessageTypes)+1)
 			prefix := fmt.Sprintf("%d:", req.Port)
@@ -356,7 +356,7 @@ func (s *Server) handleProtoMappings(w http.ResponseWriter, r *http.Request) {
 			}
 			newMappings = append(newMappings, mapping)
 			decoderconfig.Instance.ProtoMessageTypes = newMappings
-			decoderconfig.Instance.Unlock()
+			decoderconfig.UnlockInstance()
 
 			// Re-parse mappings in the protobuf decoder
 			pb.ParseMessageTypeMappings(decoderconfig.Instance.ProtoMessageTypes)
@@ -378,7 +378,7 @@ func (s *Server) handleProtoMappings(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if decoderconfig.Instance != nil {
-			decoderconfig.Instance.Lock()
+			decoderconfig.LockInstance()
 			prefix := fmt.Sprintf("%d:", req.Port)
 			newMappings := make([]string, 0, len(decoderconfig.Instance.ProtoMessageTypes))
 			for _, m := range decoderconfig.Instance.ProtoMessageTypes {
@@ -387,7 +387,7 @@ func (s *Server) handleProtoMappings(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			decoderconfig.Instance.ProtoMessageTypes = newMappings
-			decoderconfig.Instance.Unlock()
+			decoderconfig.UnlockInstance()
 
 			pb.ParseMessageTypeMappings(decoderconfig.Instance.ProtoMessageTypes)
 		}
@@ -420,9 +420,9 @@ func (s *Server) handleProtoPreferences(w http.ResponseWriter, r *http.Request) 
 
 	pb.SetShowAlternatives(req.ShowAlternatives)
 	if decoderconfig.Instance != nil {
-		decoderconfig.Instance.Lock()
+		decoderconfig.LockInstance()
 		decoderconfig.Instance.ProtoShowAlternatives = req.ShowAlternatives
-		decoderconfig.Instance.Unlock()
+		decoderconfig.UnlockInstance()
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -485,9 +485,9 @@ func recompileSchemas(paths []string) {
 
 	// Update decoder config search paths
 	if decoderconfig.Instance != nil {
-		decoderconfig.Instance.Lock()
+		decoderconfig.LockInstance()
 		decoderconfig.Instance.ProtoSearchPaths = paths
-		decoderconfig.Instance.Unlock()
+		decoderconfig.UnlockInstance()
 	}
 
 	log.Printf("[Proto] Schema registry updated: %d files, %d messages", registry.FileCount(), registry.MessageCount())

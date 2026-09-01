@@ -51,8 +51,11 @@ type dhcpFingerprintResult struct {
 }
 
 func TestDHCPRemote(t *testing.T) {
-	// TODO: fingerprint API seems to be having trouble atm
-	return
+	// A bare `return` here made the whole body unreachable, which `go vet`
+	// reports, and made the test look like it passed. t.Skip reports it as
+	// skipped, which is what it is.
+	t.Skip("fingerprint API seems to be having trouble atm")
+
 	InitDHCPFingerprintAPIKey()
 	// InitDHCPFingerprintDB()
 
