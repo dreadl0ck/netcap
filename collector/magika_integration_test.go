@@ -85,14 +85,14 @@ func TestMagikaFileClassification(t *testing.T) {
 	}
 
 	var (
-		fileRecord          types.File
-		totalFiles          int
-		filesWithMagika     int
-		foundPHP            bool
-		foundHTML           bool
-		magikaGroups        = make(map[string]int)
-		magikaLabels        = make(map[string]int)
-		magikaMimeTypes     = make(map[string]int)
+		fileRecord      types.File
+		totalFiles      int
+		filesWithMagika int
+		foundPHP        bool
+		foundHTML       bool
+		magikaGroups    = make(map[string]int)
+		magikaLabels    = make(map[string]int)
+		magikaMimeTypes = make(map[string]int)
 	)
 
 	for {

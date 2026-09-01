@@ -72,6 +72,12 @@ func TestStreamDirectionHTTP(t *testing.T) {
 	c := New(cfg)
 	inputFile := "testdata/http.pcap"
 
+	// collector/testdata is gitignored, so this fixture is absent on a clean
+	// checkout and in CI. Skip rather than fail on a missing input.
+	if _, err := os.Stat(inputFile); err != nil {
+		t.Skipf("pcap fixture %s not available (%v)", inputFile, err)
+	}
+
 	// Run
 	err = c.CollectPcap(inputFile)
 	if err != nil {

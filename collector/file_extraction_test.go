@@ -125,10 +125,10 @@ func createTestCollector(outDir string, enableDPI bool) *collector.Collector {
 			CompressionLevel:               defaults.CompressionLevel,
 		},
 		ResolverConfig: resolvers.Config{
-			ReverseDNS:    false,
-			LocalDNS:      false,
-			MACDB:         false,
-			
+			ReverseDNS: false,
+			LocalDNS:   false,
+			MACDB:      false,
+
 			ServiceDB:     false,
 			GeolocationDB: false,
 		},

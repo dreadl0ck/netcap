@@ -27,9 +27,10 @@ func TestSSHPcapDecoding(t *testing.T) {
 	projectRoot := filepath.Join(filepath.Dir(filename), "..")
 	pcapPath := filepath.Join(projectRoot, "pcaps", "ssh.pcap")
 
-	// Check if the pcap file exists
+	// Skip rather than fail: pcaps/ is gitignored, so this exists only on
+	// machines that have obtained it separately.
 	if _, err := os.Stat(pcapPath); os.IsNotExist(err) {
-		t.Fatalf("SSH pcap file does not exist at: %s", pcapPath)
+		t.Skipf("SSH pcap not available at %s", pcapPath)
 	}
 
 	t.Logf("Using SSH pcap file: %s", pcapPath)
