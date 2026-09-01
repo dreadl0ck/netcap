@@ -1085,17 +1085,78 @@ func shouldLogRequest(path string) bool {
 	return true
 }
 
-// corsMiddleware adds CORS headers
+// corsAllowedOrigins lists origins permitted to read the API cross-origin in
+// service mode, from NC_CORS_ALLOWED_ORIGINS (comma-separated). Empty means
+// same-origin only, which is what a normal deployment needs.
+func corsAllowedOrigins() map[string]bool {
+	raw := os.Getenv("NC_CORS_ALLOWED_ORIGINS")
+	if raw == "" {
+		return nil
+	}
+
+	allowed := make(map[string]bool)
+
+	for _, o := range strings.Split(raw, ",") {
+		if o = strings.TrimSpace(o); o != "" {
+			allowed[o] = true
+		}
+	}
+
+	return allowed
+}
+
+// corsMiddleware adds CORS headers.
+//
+// The policy differs by mode, because the risk does:
+//
+//   - Local mode is a single-user tool bound to the operator's own machine,
+//     analysing captures the operator already has. Permissive CORS costs
+//     nothing and keeps cross-origin dev setups working.
+//
+//   - Service mode is public and unauthenticated, and the API serves data
+//     extracted from capture files -- including secrets, DNS queries and
+//     certificates. "Access-Control-Allow-Origin: *" there let any website on
+//     the internet read it, with no credential needed since there is none.
+//     Same-origin only, unless origins are explicitly configured.
+//
+// The web UI itself never needs CORS: the same server serves the SPA and the
+// API, and the chart iframes load same-origin URLs.
 func (s *Server) corsMiddleware(next http.Handler) http.Handler {
+	s.mu.RLock()
+	isServiceMode := s.isServiceMode
+	s.mu.RUnlock()
+
+	allowed := corsAllowedOrigins()
+
+	if isServiceMode && len(allowed) > 0 {
+		log.Printf("[WebUI] CORS: allowing %d configured origin(s)", len(allowed))
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Log incoming request (skip static assets)
 		if shouldLogRequest(r.URL.Path) {
 			log.Printf("[WebUI] %s %s", r.Method, r.URL.Path)
 		}
 
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		switch {
+		case !isServiceMode:
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+		case allowed[r.Header.Get("Origin")]:
+			// Echo the specific origin rather than "*", and vary on it so a
+			// cache cannot serve one origin's response to another.
+			w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Add("Vary", "Origin")
+
+		default:
+			// No CORS headers: same-origin requests are unaffected, and a
+			// cross-origin reader cannot see the response.
+			w.Header().Add("Vary", "Origin")
+		}
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
