@@ -3,7 +3,9 @@ package collector_test
 import (
 	"context"
 	"github.com/dreadl0ck/netcap/collector"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
@@ -16,6 +18,11 @@ import (
 
 // TestCaptureLive will test capturing traffic live from the loopback interface
 func TestCaptureLive(t *testing.T) {
+	// collector.DefaultConfig embeds resolvers.DefaultConfig, which sets
+	// GeolocationDB: true, so this test needs the GeoLite2 files just as
+	// TestCapturePCAP does. See requireGeolocationDBs.
+	requireGeolocationDBs(t)
+
 	// prepare default config
 	collector.DefaultConfig.DecoderConfig.Out = "../tests/collector-test-live"
 	collector.DefaultConfig.DecoderConfig.Source = "unit tests live capture"
@@ -62,6 +69,15 @@ func TestCaptureLive(t *testing.T) {
 }
 
 func TestCapturePCAP(t *testing.T) {
+	// This is the only collector test that enables GeolocationDB, and
+	// initGeolocationDB deliberately calls log.Fatal when the GeoLite2 files are
+	// absent -- correct for the CLI, where the user asked for geolocation, but
+	// it takes the whole test binary down with it. The databases are a separate
+	// download (MaxMind requires a licence), so they are missing on any clean
+	// checkout and in CI, where this failed the entire collector package with no
+	// "--- FAIL" line to explain it.
+	requireGeolocationDBs(t)
+
 	// init collector
 	c := collector.New(collector.Config{
 		WriteUnknownPackets: false,
@@ -127,5 +143,24 @@ func TestCapturePCAP(t *testing.T) {
 
 	if err := c.CollectPcapNG("../tests/The-Ultimate-PCAP-v20200224.pcapng"); err != nil {
 		t.Fatal("failed to collect audit records from pcapng file: ", err)
+	}
+}
+
+// requireGeolocationDBs skips the calling test unless the GeoLite2 databases
+// are present.
+//
+// It checks for the files rather than trusting a build tag or an env var so it
+// is correct wherever it runs: a contributor who has never downloaded them, a
+// CI container that cannot (MaxMind requires a licence key), and a full local
+// checkout that has them all get the right behaviour with no configuration.
+func requireGeolocationDBs(t *testing.T) {
+	t.Helper()
+
+	for _, name := range []string{"GeoLite2-City.mmdb", "GeoLite2-ASN.mmdb"} {
+		path := filepath.Join(resolvers.DataBaseFolderPath, name)
+		if _, err := os.Stat(path); err != nil {
+			t.Skipf("geolocation database %s not available (%v); "+
+				"download the GeoLite2 databases to run this test", path, err)
+		}
 	}
 }
