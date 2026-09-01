@@ -106,18 +106,22 @@ func TestResolveChartScopeDirsUnknownPcap(t *testing.T) {
 func TestResolveChartScopeDirsServiceModeByPath(t *testing.T) {
 	tmp := t.TempDir()
 	sm := NewSessionManager(0, 0, 0)
+	s := &Server{
+		isServiceMode:  true,
+		sessionManager: sm,
+	}
+	r := httptest.NewRequest("GET", "/", nil)
+
+	// The session must belong to the requesting client, or the resolver
+	// correctly refuses it -- scope resolution is ownership-checked.
 	sm.sessions["sess-1"] = &SessionInfo{
 		SessionID:     "sess-1",
 		InputFile:     "/data/pcaps/bgp.pcap",
 		InputFilename: "bgp.pcap",
 		OutputDir:     filepath.Join(tmp, "out"),
 		Status:        StatusCompleted,
+		IP:            s.getUserIP(r),
 	}
-	s := &Server{
-		isServiceMode:  true,
-		sessionManager: sm,
-	}
-	r := httptest.NewRequest("GET", "/", nil)
 
 	// Match by full path (the most common case from the scope selector).
 	dirs, _, err := s.resolveChartScopeDirs("/data/pcaps/bgp.pcap", r)
@@ -145,5 +149,75 @@ func TestResolveChartScopeDirsServiceModeByPath(t *testing.T) {
 	}
 	if len(dirs) != 1 || dirs[0] != want {
 		t.Errorf("session id scope: dirs=%v want [%s]", dirs, want)
+	}
+}
+
+// Scope resolution must be ownership-checked. try.netcap.io is public and
+// unauthenticated, and netcap extracts secrets, DNS queries and certificates
+// out of uploaded captures, so one visitor being able to name another's session
+// is a data-disclosure bug rather than a cosmetic one.
+//
+// Before this was fixed, the "all" scope aggregated GetAllSessions(), and the
+// explicit-scope path resolved any session id directly and matched other
+// sessions on bare filename -- so an ordinary name like "capture.pcap" was
+// enough.
+func TestResolveChartScopeDirsEnforcesSessionOwnership(t *testing.T) {
+	tmp := t.TempDir()
+	sm := NewSessionManager(0, 0, 0)
+	s := &Server{isServiceMode: true, sessionManager: sm}
+	r := httptest.NewRequest("GET", "/", nil)
+
+	mine := filepath.Join(tmp, "mine")
+	theirs := filepath.Join(tmp, "theirs")
+	preloaded := filepath.Join(tmp, "preloaded")
+
+	sm.sessions["mine"] = &SessionInfo{
+		SessionID: "mine", InputFile: "/up/mine.pcap", InputFilename: "mine.pcap",
+		OutputDir: mine, Status: StatusCompleted, IP: s.getUserIP(r),
+	}
+	// Same basename as the victim's file, to pin the basename-matching hole.
+	sm.sessions["theirs"] = &SessionInfo{
+		SessionID: "theirs", InputFile: "/up/secret.pcap", InputFilename: "secret.pcap",
+		OutputDir: theirs, Status: StatusCompleted, IP: "203.0.113.9",
+	}
+	sm.sessions["preloaded"] = &SessionInfo{
+		SessionID: "preloaded", InputFile: "/pcaps/demo.pcap", InputFilename: "demo.pcap",
+		OutputDir: preloaded, Status: StatusCompleted, IP: "system", IsPreloaded: true,
+	}
+
+	// Another client's session must not resolve by id, path or basename.
+	for _, scope := range []string{"theirs", "/up/secret.pcap", "secret.pcap"} {
+		if dirs, _, err := s.resolveChartScopeDirs(scope, r); err == nil {
+			t.Errorf("scope %q resolved to %v, expected refusal (another client's session)", scope, dirs)
+		}
+	}
+
+	// Own session still resolves.
+	if dirs, _, err := s.resolveChartScopeDirs("mine.pcap", r); err != nil || len(dirs) != 1 || dirs[0] != mine {
+		t.Errorf("own session: dirs=%v err=%v, want [%s]", dirs, err, mine)
+	}
+
+	// Preloaded pcaps stay readable by everyone -- that is the point of them.
+	if dirs, _, err := s.resolveChartScopeDirs("demo.pcap", r); err != nil || len(dirs) != 1 || dirs[0] != preloaded {
+		t.Errorf("preloaded: dirs=%v err=%v, want [%s]", dirs, err, preloaded)
+	}
+
+	// The aggregate scope must include own + preloaded, and exclude theirs.
+	dirs, _, err := s.resolveChartScopeDirs("all", r)
+	if err != nil {
+		t.Fatalf("all scope: %v", err)
+	}
+
+	got := map[string]bool{}
+	for _, d := range dirs {
+		got[d] = true
+	}
+
+	if !got[mine] || !got[preloaded] {
+		t.Errorf("all scope %v should contain own (%s) and preloaded (%s)", dirs, mine, preloaded)
+	}
+
+	if got[theirs] {
+		t.Errorf("all scope %v leaked another client's capture (%s)", dirs, theirs)
 	}
 }

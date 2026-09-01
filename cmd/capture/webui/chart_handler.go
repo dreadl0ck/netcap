@@ -244,7 +244,9 @@ func (s *Server) resolveChartScopeDirs(scope string, r *http.Request) ([]string,
 			dirs = append(dirs, d)
 		}
 		if isServiceMode && s.sessionManager != nil {
-			for _, sess := range s.sessionManager.GetAllSessions() {
+			// Own sessions plus the preloaded demo pcaps -- never every
+			// visitor's uploads, which is what GetAllSessions would return.
+			for _, sess := range s.sessionManager.GetAccessibleSessions(s.getUserIP(r)) {
 				if sess.Status == StatusCompleted && sess.OutputDir != "" {
 					add(sess.OutputDir)
 				}
@@ -266,18 +268,28 @@ func (s *Server) resolveChartScopeDirs(scope string, r *http.Request) ([]string,
 		// frontend may send any of: session id, full input file path, or just
 		// the file's basename.
 		if isServiceMode && s.sessionManager != nil {
-			// Direct session-id lookup is the cheapest.
+			clientIP := s.getUserIP(r)
+
+			// Direct session-id lookup is the cheapest, but must still be
+			// ownership-checked: GetSession resolves any id in the manager, so
+			// without this a visitor holding another visitor's session id could
+			// chart their capture.
 			if sess, ok := s.sessionManager.GetSession(scope); ok {
+				if !sess.IsPreloaded && sess.IP != clientIP {
+					return nil, http.StatusNotFound, fmt.Errorf("unknown scope: %s", scope)
+				}
 				if sess.OutputDir == "" {
 					return nil, http.StatusNotFound, fmt.Errorf("session has no output directory yet")
 				}
 				return []string{sess.OutputDir}, http.StatusOK, nil
 			}
-			// Fall back to scanning all sessions: PcapsPage / scope selector
-			// uses InputFile (full path) as the value, so match by InputFile,
-			// InputFilename, and basename.
+			// Fall back to scanning: PcapsPage / scope selector uses InputFile
+			// (full path) as the value, so match by InputFile, InputFilename,
+			// and basename. Scoped to accessible sessions -- matching on
+			// basename across every session let one visitor read another's
+			// capture by guessing an ordinary filename.
 			scopeBase := filepath.Base(scope)
-			for _, sess := range s.sessionManager.GetAllSessions() {
+			for _, sess := range s.sessionManager.GetAccessibleSessions(clientIP) {
 				if sess.OutputDir == "" {
 					continue
 				}

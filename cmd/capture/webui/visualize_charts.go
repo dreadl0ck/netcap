@@ -1442,7 +1442,7 @@ func (s *Server) handleVisualizeGeoAll(w http.ResponseWriter, r *http.Request) {
 	showLegendStr := r.URL.Query().Get("showLegend")
 	showLegend := showLegendStr == "true"
 
-	chart := s.generateGeoChartAll(showLegend)
+	chart := s.generateGeoChartAll(showLegend, s.getUserIP(r))
 	html, err := injectFullHeightCSS(chart.Render)
 	if err != nil {
 		http.Error(w, "Failed to generate chart", http.StatusInternalServerError)
@@ -1467,8 +1467,8 @@ func HandleVisualizeGeoAll() http.HandlerFunc {
 }
 
 // generateGeoChartAll creates a geo chart showing IP geolocation distribution from all captures
-func (s *Server) generateGeoChartAll(showLegend bool) *charts.Geo {
-	geoData := s.getAllCapturesGeolocations()
+func (s *Server) generateGeoChartAll(showLegend bool, clientIP string) *charts.Geo {
+	geoData := s.getAllCapturesGeolocations(clientIP)
 
 	geo := charts.NewGeo()
 	geo.SetGlobalOptions(
@@ -1537,8 +1537,12 @@ func (s *Server) generateGeoChartAll(showLegend bool) *charts.Geo {
 	return geo
 }
 
-// getAllCapturesGeolocations aggregates geolocation data from all captures
-func (s *Server) getAllCapturesGeolocations() []opts.GeoData {
+// getAllCapturesGeolocations aggregates geolocation data from the captures the
+// caller may read: its own sessions plus the preloaded demo pcaps.
+//
+// This used to aggregate GetAllSessions(), so in service mode the chart plotted
+// every visitor's uploaded capture into one map.
+func (s *Server) getAllCapturesGeolocations(clientIP string) []opts.GeoData {
 	geoMap := make(map[string]int) // country code -> count
 	locationCoords := getLocationCoordinates()
 
@@ -1552,8 +1556,8 @@ func (s *Server) getAllCapturesGeolocations() []opts.GeoData {
 	var outputDirs []string
 
 	if isServiceMode && sessionManager != nil {
-		// In service mode, get all sessions
-		allSessions := sessionManager.GetAllSessions()
+		// In service mode, only the caller's own sessions plus preloaded pcaps
+		allSessions := sessionManager.GetAccessibleSessions(clientIP)
 		for _, session := range allSessions {
 			// Only include completed sessions with output directories
 			if session.Status == StatusCompleted && session.OutputDir != "" {

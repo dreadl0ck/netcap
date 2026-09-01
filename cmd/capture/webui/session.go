@@ -328,6 +328,33 @@ func (sm *SessionManager) GetSessionsForIP(ip string) []*SessionInfo {
 	return sessions
 }
 
+// GetAccessibleSessions returns the sessions a given client may read: its own,
+// plus the preloaded system pcaps that are published to everyone.
+//
+// Use this, not GetAllSessions, for anything that serves data derived from
+// capture files. GetAllSessions ignores ownership, and in service mode the
+// uploads it exposes belong to other visitors -- netcap extracts credentials,
+// DNS queries, certificates and files out of them. Two aggregation paths (the
+// dashboard's "All PCAPs" chart scope and the global geolocation chart) used
+// GetAllSessions and so mixed every visitor's capture into one view.
+//
+// The ownership test is the same one handleListInputFiles applies: match on IP,
+// or accept the session if it is flagged preloaded.
+func (sm *SessionManager) GetAccessibleSessions(ip string) []*SessionInfo {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+
+	sessions := make([]*SessionInfo, 0)
+
+	for _, session := range sm.sessions {
+		if session.IsPreloaded || session.IP == ip {
+			sessions = append(sessions, session)
+		}
+	}
+
+	return sessions
+}
+
 // CheckIssueReportLimit checks if an IP has exceeded the issue report rate limit (3 per hour)
 func (sm *SessionManager) CheckIssueReportLimit(ip string) (allowed bool, remaining int) {
 	sm.mu.RLock()

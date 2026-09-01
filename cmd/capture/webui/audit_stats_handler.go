@@ -91,8 +91,10 @@ func (s *Server) handleServiceModeAuditStats(w http.ResponseWriter, r *http.Requ
 		SoftwareCount:      0,
 	}
 
-	// Get all sessions
-	allSessions := s.sessionManager.GetAllSessions()
+	// Only the caller's own sessions plus the preloaded demo pcaps. Using
+	// GetAllSessions here summed secret, vulnerability and software counts out
+	// of every visitor's uploaded capture into one figure.
+	allSessions := s.sessionManager.GetAccessibleSessions(s.getUserIP(r))
 
 	// Iterate through all completed sessions and aggregate audit records
 	for _, session := range allSessions {
