@@ -45,7 +45,11 @@ pub.key
 dist/
 vulnDBs
 FlameGraph
-Dockerfile
+# Generated docker build contexts (zeus copies vendored deps in here).
+# NOTE: do not ignore a bare "Dockerfile" -- that pattern matches at any
+# depth and untracked every docker/*/Dockerfile, including the one that
+# builds the public netcap-service image.
+.docker-build-context/
 bin/
 cover.out
 coverage.html
