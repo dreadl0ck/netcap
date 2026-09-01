@@ -1,6 +1,45 @@
 # Netcap Try Service - Alpine Linux
 # Container for running the try service with file upload capabilities (with DPI support)
 
+# Frontend stage - build the web UI from source.
+#
+# cmd/capture/webui/embed.go does `//go:embed all:frontend/dist`, so the Go build
+# below cannot even compile without this directory. It used to be supplied by
+# whatever dist/ happened to exist on the machine running the build, which is
+# gitignored -- so the published image was not reproducible from this repo, and a
+# rebuild silently shipped a different bundle than the one it replaced. That is
+# how a getBackendUrl() default of http://localhost:8080 reached production and
+# hung the app on "connecting to backend": the deployed bundle had been built by
+# hand months earlier with VITE_BACKEND_URL set, and nothing else ever exercised
+# the fallback.
+#
+# Building it here makes git the single source of truth. .dockerignore excludes
+# cmd/capture/webui/frontend/dist so a stale local bundle cannot enter the
+# context and win over this stage.
+#
+# $BUILDPLATFORM rather than linux/amd64: the output is platform-independent
+# JavaScript, so this runs natively on the builder instead of under emulation.
+FROM --platform=$BUILDPLATFORM node:22-alpine AS frontend
+
+WORKDIR /frontend
+
+# pnpm 9.15.0 is what package.json declares and what wrote pnpm-lock.yaml
+# (lockfileVersion 9.0). Pinning it keeps --frozen-lockfile meaningful.
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+
+# Manifests first, so the dependency layer is reused when only source changes.
+COPY cmd/capture/webui/frontend/package.json \
+     cmd/capture/webui/frontend/pnpm-lock.yaml \
+     cmd/capture/webui/frontend/pnpm-workspace.yaml ./
+COPY cmd/capture/webui/frontend/packages/netcap-ui/package.json packages/netcap-ui/
+
+RUN pnpm install --frozen-lockfile
+
+COPY cmd/capture/webui/frontend/ ./
+
+# Builds packages/netcap-ui with tsup, then the app with vite.
+RUN pnpm build && test -f dist/index.html
+
 # Build stage - Use official netcap builder with DPI support
 FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-dpi-latest AS builder
 
@@ -19,6 +58,10 @@ ENV GOTOOLCHAIN=auto
 # Copy netcap source
 WORKDIR /netcap
 COPY . .
+
+# The web UI built above, placed where go:embed expects it. Must come after
+# COPY . . so it cannot be overwritten by anything from the build context.
+COPY --from=frontend /frontend/dist ./cmd/capture/webui/frontend/dist
 
 # Accept VERSION as a build argument (defaults to 0.7.7 if not provided)
 ARG VERSION=0.7.7

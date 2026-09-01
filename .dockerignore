@@ -111,5 +111,17 @@ test-output/
 cmd/capture/webui/frontend/node_modules/
 cmd/capture/webui/frontend/.next/
 
+# The web UI bundle is built inside the image by the "frontend" stage in
+# docker/service/Dockerfile, so a locally built copy must not enter the context.
+# Excluding it is what makes the image reproducible rather than dependent on the
+# state of the machine doing the build: without this line a stale dist/ is
+# copied in by `COPY . .` and only overwritten if the COPY --from ordering is
+# right, which is too subtle to rely on.
+#
+# Note these patterns are anchored at the context root -- the bare "dist/" above
+# does NOT match this path, which is why it needs spelling out in full (the same
+# reason node_modules is listed with its full path).
+cmd/capture/webui/frontend/dist/
+
 # Cursor history
 .cursor/

@@ -2,7 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # The default branch is master. This said "main", so no push to this repo
+    # ever triggered CI -- only pull_request did, which is why the workflow had
+    # exactly one run in its history.
+    branches: [master]
   pull_request:
   workflow_dispatch:
 
@@ -42,6 +45,36 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      # The web UI bundle is gitignored and embedded with
+      # `//go:embed all:frontend/dist`, so without the three steps below every
+      # `go build ./...` fails with
+      # "pattern all:frontend/dist: no matching files found" -- which is exactly
+      # what the single run in this workflow's history failed on.
+      #
+      # Building it for real, rather than committing a bundle or a placeholder,
+      # means CI validates the artifact the image actually ships.
+
+      # pnpm must be on PATH before setup-node, or its `cache: pnpm` cannot find
+      # it. The version is pinned to match package.json's packageManager and the
+      # Dockerfile, which keeps --frozen-lockfile honest against a
+      # lockfileVersion 9.0 file.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: cmd/capture/webui/frontend/pnpm-lock.yaml
+
+      - name: Build the web UI (required by go:embed)
+        working-directory: cmd/capture/webui/frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          test -f dist/index.html
 
       - name: Build
         run: go build ./...
