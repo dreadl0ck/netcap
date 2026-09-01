@@ -119,27 +119,8 @@ jobs:
 
           # Mirrors the test-unit target in Makefile.test. The race detector
           # works under musl here; verified against this image before relying on
-          # it.
-          #
-          # collector runs WITHOUT -race, and collector alone. The first run of
-          # this suite found a genuine pre-existing data race in TCP reassembly,
-          # reported during TestSMTPFileExtraction:
-          #
-          #   write decoder/stream/tcp/tcp_stream_reader.go:83  (*tcpStreamReader).Read
-          #   read  decoder/core/data_fragments.go:33           DataFragments.Size
-          #         via decoder/stream/utils.SaveConversation
-          #         via (*tcpConnection).ReassemblyComplete
-          #
-          # ReassemblyComplete measures the fragments while the stream reader
-          # goroutine is still appending to them. It is timing dependent: it
-          # reproduces in this container and not on an arm64 macOS host, and
-          # fixing it means reasoning about the reassembly lifecycle rather than
-          # adding a lock at the call site.
-          #
-          # Narrowing the exclusion to one package keeps the detector on the
-          # other ninety-odd, and keeps collector's functional coverage, instead
-          # of dropping -race everywhere and losing the signal that found this.
-          # Remove the split once the race is fixed.
-          go test -short -race $(go list ./... | grep -v "/collector$")
-          go test -short ./collector/...
+          # it. collector was temporarily excluded after this suite found a TCP
+          # reassembly race; it is back under the detector now that the fragment
+          # ownership and completion lifecycle are fixed.
+          go test -short -race ./...
           SCRIPT

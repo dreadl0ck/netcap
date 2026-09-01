@@ -80,7 +80,6 @@ func (t *tcpStreamReader) Read(p []byte) (int, error) {
 	l := copy(p, data.RawData)
 
 	t.parent.Lock()
-	t.data = append(t.data, data)
 	t.numBytes += l
 	t.parent.Unlock()
 
@@ -90,6 +89,21 @@ func (t *tcpStreamReader) Read(p []byte) (int, error) {
 // DataChan returns a channel for sending stream data.
 func (t *tcpStreamReader) DataChan() chan *core.StreamData {
 	return t.dataChan
+}
+
+// StoreData records an immutable stream fragment synchronously with the
+// assembler's delivery path.
+//
+// This used to happen in Read, on the asynchronous reader goroutine. Since
+// dataChan is buffered, ReassemblyComplete could run after feedData returned
+// but before Read drained the channel, merge an incomplete conversation, set
+// wasMerged, and permanently omit the queued fragments. Moving the append here
+// means every fragment is visible before feedData returns; the reader goroutine
+// now parses and counts bytes but does not mutate the fragment slice.
+func (t *tcpStreamReader) StoreData(data *core.StreamData) {
+	t.parent.Lock()
+	t.data = append(t.data, data)
+	t.parent.Unlock()
 }
 
 // Cleanup will tear down the stream processing.
@@ -284,7 +298,12 @@ func (t *tcpStreamReader) readStream(b io.ByteReader) error {
 // Merged returns all stream fragments
 func (t *tcpStreamReader) Merged() core.DataFragments {
 	t.parent.sortAndMergeFragments()
-	return t.parent.merged
+
+	// via the accessor rather than reading t.parent.merged directly: the slice
+	// header is written under the connection lock, and this is called from
+	// tcp_stream_processor while the connection's reader goroutines may still
+	// be running.
+	return t.parent.mergedFragments()
 }
 
 // DecodeConversation invokes decode on the parent TCP connection.

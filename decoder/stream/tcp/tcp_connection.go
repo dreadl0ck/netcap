@@ -224,19 +224,26 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 
 	ti := time.Now()
 
-	// pass data either to client or server
+	// Record the fragment synchronously before queueing it for the reader
+	// goroutine. The channel is buffered, so queueing alone does not establish
+	// that Read has appended the fragment before ReassemblyComplete snapshots the
+	// conversation.
 	if dir == reassembly.TCPDirClientToServer {
-		t.client.DataChan() <- &core.StreamData{
+		streamData := &core.StreamData{
 			RawData:          dataCpy,
 			AssemblerContext: ac,
 			Dir:              dir,
 		}
+		t.client.StoreData(streamData)
+		t.client.DataChan() <- streamData
 	} else {
-		t.server.DataChan() <- &core.StreamData{
+		streamData := &core.StreamData{
 			RawData:          dataCpy,
 			AssemblerContext: ac,
 			Dir:              dir,
 		}
+		t.server.StoreData(streamData)
+		t.server.DataChan() <- streamData
 	}
 
 	tcpStreamFeedDataTime.WithLabelValues(dir.String()).Set(float64(time.Since(ti).Nanoseconds()))
@@ -339,7 +346,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 		zap.Bool("clientSaved", clientSaved),
 		zap.Bool("serverIsNil", t.server == nil),
 		zap.Bool("serverSaved", serverSaved),
-		zap.Int("mergedFragments", len(t.merged)),
+		zap.Int("mergedFragments", len(t.mergedFragments())),
 	)
 
 	ti := time.Now()
@@ -350,9 +357,11 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 
 		t.sortAndMergeFragments()
 
+		merged := t.mergedFragments()
+
 		reassemblyLog.Info("Processing client stream - will call decode()",
 			zap.String("ident", t.ident),
-			zap.Int("mergedFragments", len(t.merged)),
+			zap.Int("mergedFragments", len(merged)),
 		)
 
 		// cache endpoint strings to avoid repeated conversions
@@ -369,7 +378,7 @@ func (t *tcpConnection) ReassemblyComplete(ac reassembly.AssemblerContext, first
 			uint16(clientPort),
 			uint16(serverPort),
 		)
-		err := streamutils.SaveConversation("TCP", t.merged, t.client.Ident(), t.client.FirstPacket(), t.client.Transport(), communityID)
+		err := streamutils.SaveConversation("TCP", merged, t.client.Ident(), t.client.FirstPacket(), t.client.Transport(), communityID)
 		if err != nil {
 			reassemblyLog.Error("failed to save stream", zap.Error(err), zap.String("ident", t.client.Ident()))
 		}
@@ -835,6 +844,21 @@ func waitForConns() chan struct{} {
 }
 
 // sort the conversation fragments and fill the conversation buffers.
+// mergedFragments returns the merged fragment slice under the connection lock.
+//
+// The slice header is written by sortAndMergeFragments while a connection's
+// reader goroutines may still be running, so reading t.merged directly from
+// ReassemblyComplete was a race on the header itself even after the merged slice
+// stopped sharing the readers' backing array. The returned slice is safe to use
+// unlocked: sortAndMergeFragments allocates it, nothing appends to it
+// afterwards, and the fragments it points at are immutable once fed.
+func (t *tcpConnection) mergedFragments() core.DataFragments {
+	t.Lock()
+	defer t.Unlock()
+
+	return t.merged
+}
+
 func (t *tcpConnection) sortAndMergeFragments() {
 	t.Lock()
 	if !t.wasMerged {
@@ -842,8 +866,38 @@ func (t *tcpConnection) sortAndMergeFragments() {
 		// only do this once per connection
 		t.wasMerged = true
 
-		// concatenate both client and server data fragments
-		t.merged = append(t.client.DataSlice(), t.server.DataSlice()...)
+		client, server := t.client.DataSlice(), t.server.DataSlice()
+
+		// Concatenate both client and server data fragments into a slice that
+		// owns its memory.
+		//
+		// This was written as append(client, server...), which appends in place
+		// whenever the client slice has spare capacity -- and it does, because
+		// the fragment store grows it by repeated append, so cap > len is the
+		// normal case. The merged slice then shared the client reader's backing
+		// array, with two consequences:
+		//
+		//   - sort.Sort below permutes that array, and its first len(client)
+		//     entries ARE the client's live fragments, so sorting interleaved
+		//     server fragments into t.client.data. decode() picks a decoder from
+		//     t.client.DataSlice(), so on a server-first protocol such as SMTP
+		//     the decoder was chosen from the server's greeting. That is a
+		//     correctness bug independent of any concurrency.
+		//
+		//   - It raced with the former asynchronous fragment append in
+		//     tcpStreamReader.Read. feedData sends into a buffered dataChan and
+		//     returns, so when ReassemblyComplete runs there can still be
+		//     fragments queued that the reader goroutine is appending. The
+		//     detector reported the write in Read and the read in
+		//     DataFragments.Size at the same address, which is only possible
+		//     because the two slices were one array.
+		//
+		// Allocating up front keeps the merge independent of the readers. The
+		// fragments themselves are shared, but a *core.StreamData's RawData is
+		// written once in feedData and never mutated, so reading them is safe.
+		t.merged = make(core.DataFragments, 0, len(client)+len(server))
+		t.merged = append(t.merged, client...)
+		t.merged = append(t.merged, server...)
 
 		// sort based on their timestamps
 		sort.Sort(t.merged)
