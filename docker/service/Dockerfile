@@ -43,18 +43,6 @@ RUN pnpm build && test -f dist/index.html
 # Build stage - Use official netcap builder with DPI support
 FROM --platform=linux/amd64 dreadl0ck/netcap-builder:alpine-dpi-latest AS builder
 
-# The builder image ships Go 1.25.1 with GOTOOLCHAIN=local baked in, while
-# go.mod requires go >= 1.27.0. That combination cannot build this repo at all:
-# every go invocation below, including the cache clean, fails with
-#
-#   go: go.mod requires go >= 1.27.0 (running go 1.25.1; GOTOOLCHAIN=local)
-#
-# Allowing the toolchain to be fetched keeps the published builder image usable
-# without rebuilding it (it compiles nDPI, libprotoident and yara-x from source,
-# so a rebuild is hours). Revert this once the builder ships a Go that satisfies
-# go.mod on its own.
-ENV GOTOOLCHAIN=auto
-
 # Copy netcap source
 WORKDIR /netcap
 COPY . .
