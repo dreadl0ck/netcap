@@ -21,6 +21,7 @@ package webui
 
 import (
 	"io"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -350,6 +351,80 @@ func TestSanitizeGraphLayout(t *testing.T) {
 	} {
 		if got := sanitizeGraphLayout(tt.in); got != tt.want {
 			t.Errorf("sanitizeGraphLayout(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestSanitizePcapFilename(t *testing.T) {
+	for _, tt := range []struct {
+		in   string
+		want string
+	}{
+		// Ordinary names survive intact, extension included -- the whole point
+		// of not reusing sanitizeFilename, which would give "bgp_pcap".
+		{"bgp.pcap", "bgp.pcap"},
+		{"Hancitor-malspam-1st-run.pcap", "Hancitor-malspam-1st-run.pcap"},
+		{"ultimate-PCAP-v20250325.pcapng", "ultimate-PCAP-v20250325.pcapng"},
+
+		// HTML metacharacters cannot reach a rendering context.
+		{`</script><img src=x onerror=alert(1)>.pcap`, "script__img_src_x_onerror_alert_1__.pcap"},
+		{`a"b'c.pcap`, "a_b_c.pcap"},
+
+		// Path traversal, on either OS's separator.
+		{"../../etc/passwd.pcap", "passwd.pcap"},
+		{`..\..\windows\system32.pcap`, "system32.pcap"},
+		{`C:\Users\bob\capture.pcap`, "capture.pcap"},
+		{"/absolute/path.pcap", "path.pcap"},
+
+		// Hidden files and bare dots.
+		{".hidden.pcap", "hidden.pcap"},
+		{"..", "upload.pcap"},
+		{".", "upload.pcap"},
+		{"", "upload.pcap"},
+
+		// Whitespace and control bytes.
+		{"my capture.pcap", "my_capture.pcap"},
+		{"line\nbreak.pcap", "line_break.pcap"},
+		{"tab\there.pcap", "tab_here.pcap"},
+	} {
+		if got := sanitizePcapFilename(tt.in); got != tt.want {
+			t.Errorf("sanitizePcapFilename(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
+func TestSanitizePcapFilenameIsBounded(t *testing.T) {
+	got := sanitizePcapFilename(strings.Repeat("a", 400) + ".pcap")
+
+	if len(got) > 128 {
+		t.Errorf("length %d exceeds the 128-byte bound", len(got))
+	}
+
+	if !strings.HasSuffix(got, ".pcap") {
+		t.Errorf("truncation dropped the extension: %q", got)
+	}
+}
+
+// The sanitiser must never emit something that walks out of the uploads
+// directory once joined onto a path.
+func TestSanitizePcapFilenameCannotEscape(t *testing.T) {
+	for _, in := range []string{
+		"../../../etc/shadow.pcap", "....//....//x.pcap", "/etc/passwd",
+		`..\..\..\x.pcap`, "..", "../", "./../x.pcap",
+	} {
+		got := sanitizePcapFilename(in)
+
+		if strings.ContainsAny(got, `/\`) {
+			t.Errorf("sanitizePcapFilename(%q) = %q still contains a separator", in, got)
+		}
+
+		if got == ".." || strings.HasPrefix(got, "..") {
+			t.Errorf("sanitizePcapFilename(%q) = %q can traverse upward", in, got)
+		}
+
+		joined := filepath.Join("/data/uploads", got)
+		if !strings.HasPrefix(joined, "/data/uploads/") {
+			t.Errorf("sanitizePcapFilename(%q) = %q escaped the uploads dir: %s", in, got, joined)
 		}
 	}
 }

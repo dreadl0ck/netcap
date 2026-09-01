@@ -308,8 +308,10 @@ func (s *Server) handleUploadServiceMode(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Validate file extension
-	filename := header.Filename
+	// Validate file extension. Sanitise first: the extension check is not the
+	// only thing that matters about a client-supplied filename, and this value
+	// is stored, served over the API and shown in the UI.
+	filename := sanitizePcapFilename(header.Filename)
 	ext := strings.ToLower(filepath.Ext(filename))
 	if ext != ".pcap" && ext != ".pcapng" {
 		respondJSON(w, http.StatusBadRequest, map[string]string{

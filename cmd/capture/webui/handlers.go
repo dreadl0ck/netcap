@@ -1917,8 +1917,8 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Validate file extension
-	filename := header.Filename
+	// Validate file extension. Sanitise first -- see sanitizePcapFilename.
+	filename := sanitizePcapFilename(header.Filename)
 	ext := strings.ToLower(filepath.Ext(filename))
 	if ext != ".pcap" && ext != ".pcapng" {
 		w.Header().Set("Content-Type", "application/json")

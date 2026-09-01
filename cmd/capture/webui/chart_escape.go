@@ -25,6 +25,7 @@ import (
 	"encoding/base64"
 	"io"
 	"log"
+	"path/filepath"
 	"strings"
 )
 
@@ -298,6 +299,75 @@ func finalizeChartHTML(html []byte) []byte {
 	// No <head> to anchor to. Prepending still applies the policy to the
 	// document, so prefer that over silently shipping none.
 	return append([]byte(meta), html...)
+}
+
+// sanitizePcapFilename reduces an uploaded capture's filename to a safe,
+// still-readable form.
+//
+// Uploads were previously validated on extension only, then passed through
+// filepath.Base -- which strips path separators and nothing else, so '<', '>',
+// quotes, control characters and newlines all survived into a name that is
+// stored, listed over the API and displayed in the UI.
+//
+// That is currently latent rather than exploitable: the name is delivered as
+// JSON and rendered by React, which escapes it, and no chart title interpolates
+// it. It is one refactor away from mattering, and a filename is the most
+// obviously attacker-controlled string in the whole service, so it is cheaper
+// to constrain it than to keep verifying every consumer.
+//
+// Unlike sanitizeFilename in rules_handlers.go this keeps '.' -- a capture
+// called "traffic.pcap" must not become "traffic_pcap", since the extension is
+// what identifies it downstream.
+func sanitizePcapFilename(name string) string {
+	// Cut at a backslash as well as filepath.Base's separator: on Unix, Base
+	// does not treat '\' as one, so a client sending a Windows path would
+	// otherwise keep the whole thing as a single mangled component.
+	if i := strings.LastIndexByte(name, '\\'); i >= 0 {
+		name = name[i+1:]
+	}
+
+	name = filepath.Base(name)
+
+	// filepath.Base returns "." or "/" for degenerate input.
+	if name == "." || name == string(filepath.Separator) {
+		name = ""
+	}
+
+	safe := strings.Map(func(r rune) rune {
+		switch {
+		case r >= 'a' && r <= 'z',
+			r >= 'A' && r <= 'Z',
+			r >= '0' && r <= '9',
+			r == '.', r == '-', r == '_':
+			return r
+		default:
+			// Covers HTML metacharacters, quotes, path separators that survived
+			// Base on the other OS's convention, whitespace and control bytes.
+			return '_'
+		}
+	}, name)
+
+	// Leading dots would hide the file or, as "..", walk a directory up once a
+	// name is joined onto a path.
+	safe = strings.TrimLeft(safe, ".")
+
+	if safe == "" {
+		safe = "upload.pcap"
+	}
+
+	// Bound it: this ends up in a filesystem path, and some filesystems cap a
+	// single component at 255 bytes.
+	const maxLen = 128
+	if len(safe) > maxLen {
+		ext := filepath.Ext(safe)
+		if len(ext) > 16 {
+			ext = ""
+		}
+
+		safe = safe[:maxLen-len(ext)] + ext
+	}
+
+	return safe
 }
 
 // graphLayouts is the set of layouts the echarts graph series accepts.
