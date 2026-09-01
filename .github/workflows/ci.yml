@@ -100,48 +100,46 @@ jobs:
       # uid inside the container and Go otherwise refuses to stamp VCS info.
       - name: Build, vet and test in the builder image
         run: |
-          docker run --rm \
+          docker run --rm -i \
             -v "${{ github.workspace }}:/netcap" \
             -v "$(cd .. && pwd)/go-dpi:/go-dpi" \
             -w /netcap \
             -e GOFLAGS=-buildvcs=false \
             "$BUILDER_IMAGE" \
-            sh -eux -c '
-              # types/netcap.pb.go is generated from netcap.proto and gitignored,
-              # so a clean checkout has no types package and every build fails
-              # with "undefined: Alert". protoc and the gogofaster plugin ship in
-              # the builder image for exactly this.
-              protoc --gogofaster_out=types/. netcap.proto
-              test -s types/netcap.pb.go
+            sh -eux <<'SCRIPT'
+          # types/netcap.pb.go is generated from netcap.proto and gitignored, so
+          # a clean checkout has no types package and every build fails with
+          # "undefined: Alert". protoc and the gogofaster plugin ship in the
+          # builder image for exactly this.
+          protoc --gogofaster_out=types/. netcap.proto
+          test -s types/netcap.pb.go
 
-              go build ./...
-              go vet ./...
+          go build ./...
+          go vet ./...
 
-              # Matches Makefile.test's test-unit target. The race detector
-              # works under musl here; verified against this image before
-              # relying on it.
-              #
-              # collector is run WITHOUT -race, and only collector. The first
-              # run of this suite found a genuine pre-existing data race in TCP
-              # reassembly, which the detector reports during
-              # TestSMTPFileExtraction:
-              #
-              #   write decoder/stream/tcp/tcp_stream_reader.go:83   (*tcpStreamReader).Read
-              #   read  decoder/core/data_fragments.go:33            DataFragments.Size
-              #         via decoder/stream/utils.SaveConversation
-              #         via (*tcpConnection).ReassemblyComplete
-              #
-              # ReassemblyComplete measures the fragments while the stream
-              # reader goroutine is still appending to them. It is timing
-              # dependent -- it reproduces in this container and not on an
-              # arm64 macOS host -- and fixing it means reasoning about the
-              # reassembly lifecycle, not adding a lock at the call site.
-              #
-              # Narrowing the exclusion to one package keeps the detector on the
-              # other thirty-odd, and keeps collector's functional coverage,
-              # rather than dropping -race everywhere and losing the signal that
-              # found this in the first place. Remove the split once the race is
-              # fixed.
-              go test -short -race $(go list ./... | grep -v "/collector$")
-              go test -short ./collector/...
-            '
+          # Mirrors the test-unit target in Makefile.test. The race detector
+          # works under musl here; verified against this image before relying on
+          # it.
+          #
+          # collector runs WITHOUT -race, and collector alone. The first run of
+          # this suite found a genuine pre-existing data race in TCP reassembly,
+          # reported during TestSMTPFileExtraction:
+          #
+          #   write decoder/stream/tcp/tcp_stream_reader.go:83  (*tcpStreamReader).Read
+          #   read  decoder/core/data_fragments.go:33           DataFragments.Size
+          #         via decoder/stream/utils.SaveConversation
+          #         via (*tcpConnection).ReassemblyComplete
+          #
+          # ReassemblyComplete measures the fragments while the stream reader
+          # goroutine is still appending to them. It is timing dependent: it
+          # reproduces in this container and not on an arm64 macOS host, and
+          # fixing it means reasoning about the reassembly lifecycle rather than
+          # adding a lock at the call site.
+          #
+          # Narrowing the exclusion to one package keeps the detector on the
+          # other ninety-odd, and keeps collector's functional coverage, instead
+          # of dropping -race everywhere and losing the signal that found this.
+          # Remove the split once the race is fixed.
+          go test -short -race $(go list ./... | grep -v "/collector$")
+          go test -short ./collector/...
+          SCRIPT
