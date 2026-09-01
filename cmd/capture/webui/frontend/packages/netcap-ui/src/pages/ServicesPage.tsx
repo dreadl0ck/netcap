@@ -65,6 +65,7 @@ import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 
+import { ChartFrame } from '../components/ChartFrame';
 export interface ServiceSummary {
   timestamp: number;
   ip: string;
@@ -355,7 +356,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Top Services Chart: Bar chart showing the services with the most traffic."
                   key={`top-by-traffic-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/services/top-by-traffic`}
@@ -373,7 +374,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Protocol Distribution: Pie chart showing the distribution of protocols across services."
                   key={`protocols-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/services/protocols?showLegend=false`}
@@ -391,7 +392,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Top Ports Chart: Bar chart showing the most commonly used service ports."
                   key={`top-ports-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/services/top-ports`}
@@ -409,7 +410,7 @@ export default function ServicesPage({ rowActions }: ServicesPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Top Products Chart: Bar chart showing the most common software products and vendors detected on services."
                   key={`top-products-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/services/top-products`}

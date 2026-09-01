@@ -21,6 +21,7 @@ import useSWR from 'swr';
 import { useNetcapApi } from '../hooks';
 import { ALL_PCAPS_SCOPE } from './DashboardPcapScopeSelector';
 
+import { ChartFrame } from './ChartFrame';
 interface Props {
   scope: string;
 }
@@ -197,7 +198,7 @@ export default function OverviewView({ scope }: Props) {
                 <Typography variant="h6">Global IP Geolocation Distribution</Typography>
               </Box>
               <Box sx={{ width: '100%', height: { xs: 300, sm: 450, md: 600 }, borderRadius: 1, overflow: 'hidden', backgroundColor: '#1e1e1e' }}>
-                <iframe
+                <ChartFrame
                   key={scope}
                   src={geoSrc}
                   style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}

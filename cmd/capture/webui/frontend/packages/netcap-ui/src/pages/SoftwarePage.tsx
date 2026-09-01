@@ -64,6 +64,7 @@ import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
+import { ChartFrame } from '../components/ChartFrame';
 interface SoftwareSummary {
   product: string;
   version: string;
@@ -342,7 +343,7 @@ export default function SoftwarePage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Top Products: Bar chart showing the most frequently detected software products and versions."
                   key={`top-products-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/software/top-products`}
@@ -360,7 +361,7 @@ export default function SoftwarePage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Vendor Distribution: Pie chart showing the distribution of software by vendor/manufacturer."
                   key={`vendors-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/software/vendors?showLegend=false`}
@@ -378,7 +379,7 @@ export default function SoftwarePage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Operating Systems: Bar chart showing detected operating systems from software analysis."
                   key={`operating-systems-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/software/operating-systems`}
@@ -396,7 +397,7 @@ export default function SoftwarePage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Version Hierarchy: Sunburst chart showing the relationship between products and their versions."
                   key={`versions-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/software/versions`}

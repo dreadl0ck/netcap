@@ -67,6 +67,7 @@ import { useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks'
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
+import { ChartFrame } from '../components/ChartFrame';
 export interface DomainSummary {
   domain: string;
   queryCount: number;
@@ -360,7 +361,7 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Top Domains Chart: Bar chart showing the most frequently queried domain names."
                   key={`top-by-queries-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/domains/top-by-queries`}
@@ -378,7 +379,7 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="TLD Distribution: Pie chart showing the distribution of top-level domains (.com, .org, etc.)."
                   key={`tlds-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/domains/tlds?showLegend=false`}
@@ -396,7 +397,7 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Record Types: Bar chart showing DNS query types (A, AAAA, CNAME, MX, etc.)."
                   key={`record-types-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/domains/record-types`}
@@ -414,7 +415,7 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Subdomain Distribution: Pie chart comparing root domain queries vs subdomain queries."
                   key={`subdomain-distribution-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/domains/subdomain-distribution`}

@@ -72,6 +72,7 @@ import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+import { ChartFrame } from '../components/ChartFrame';
 interface SoftwareInfo {
   product: string;
   vendor: string;
@@ -441,7 +442,7 @@ export default function VulnerabilitiesPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 280, md: 'calc(50vh - 80px)' }, minHeight: 230, maxHeight: 400 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`severity-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/vulnerabilities/severity?showLegend=false`}
                   style={{ width: '100%', height: '100%', border: 'none' }}
@@ -453,7 +454,7 @@ export default function VulnerabilitiesPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 280, md: 'calc(50vh - 80px)' }, minHeight: 230, maxHeight: 400 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`top-software-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/vulnerabilities/top-vulnerable-software?showLegend=false`}
                   style={{ width: '100%', height: '100%', border: 'none' }}
@@ -465,7 +466,7 @@ export default function VulnerabilitiesPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 280, md: 'calc(50vh - 80px)' }, minHeight: 230, maxHeight: 400 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`access-vectors-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/vulnerabilities/access-vectors?showLegend=false`}
                   style={{ width: '100%', height: '100%', border: 'none' }}
@@ -477,7 +478,7 @@ export default function VulnerabilitiesPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 280, md: 'calc(50vh - 80px)' }, minHeight: 230, maxHeight: 400 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`exploit-types-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/vulnerabilities/exploit-types?showLegend=false`}
                   style={{ width: '100%', height: '100%', border: 'none' }}
@@ -489,7 +490,7 @@ export default function VulnerabilitiesPage() {
           <Grid item xs={12}>
             <Card sx={{ height: { xs: 280, md: 'calc(50vh - 80px)' }, minHeight: 230, maxHeight: 400 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`top-affected-hosts-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/vulnerabilities/top-affected-hosts?showLegend=false`}
                   style={{ width: '100%', height: '100%', border: 'none' }}

@@ -64,6 +64,7 @@ import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
+import { ChartFrame } from '../components/ChartFrame';
 export interface CertificateSummary {
   timestamp: number;
   srcIP: string;
@@ -475,7 +476,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Top Issuers Chart: Bar chart showing the most common certificate issuers."
                   key={`top-issuers-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/certificates/top-issuers`}
@@ -493,7 +494,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Certificate Status: Pie chart showing the distribution of certificate statuses (valid, expired, self-signed, weak)."
                   key={`status-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/certificates/status-distribution?showLegend=false`}
@@ -511,7 +512,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Key Algorithms: Bar chart showing the distribution of public key algorithms used."
                   key={`algorithms-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/certificates/key-algorithms`}
@@ -529,7 +530,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Expiration Timeline: Timeline showing when certificates will expire."
                   key={`expiration-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/certificates/expiration-timeline`}

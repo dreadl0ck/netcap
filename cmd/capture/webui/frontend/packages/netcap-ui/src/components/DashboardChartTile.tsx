@@ -20,6 +20,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { getBackendUrl } from '../lib/api';
 import type { DashboardChart } from '../lib/api';
 
+import { ChartFrame } from './ChartFrame';
 interface Props {
   chart: DashboardChart;
   editing: boolean;
@@ -203,7 +204,7 @@ const DashboardChartTile = forwardRef<HTMLDivElement, Props>(function DashboardC
               </Typography>
             </Box>
           ) : (
-            <iframe
+            <ChartFrame
               key={refreshKey}
               src={iframeSrc}
               title={chart.title}

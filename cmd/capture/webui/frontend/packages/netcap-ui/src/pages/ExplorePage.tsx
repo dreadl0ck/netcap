@@ -59,6 +59,7 @@ import { type ChartFieldsResponse, getBackendUrl } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi } from '../hooks';
 
+import { ChartFrame } from '../components/ChartFrame';
 const CHART_TYPES = [
   // Numeric field charts
   { value: 'line', label: 'Line Chart', icon: <ShowChartIcon />, description: 'Time series with smooth lines', forNumeric: true },
@@ -871,7 +872,7 @@ export default function Explore() {
             ) : (
               <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <Box sx={{ flex: 1, position: 'relative', pb: 2 }}>
-                  <iframe
+                  <ChartFrame
                     key={chartUrl}
                     src={chartUrl}
                     style={{

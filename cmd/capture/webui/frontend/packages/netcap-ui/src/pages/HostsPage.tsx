@@ -71,6 +71,7 @@ import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode, useIsMobile } from '../hooks';
 
+import { ChartFrame } from '../components/ChartFrame';
 interface ProtocolInfo {
   name: string;
   packets: number;
@@ -427,7 +428,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`top-talkers-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/hosts/top-talkers`}
                   style={{
@@ -444,7 +445,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`traffic-dist-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/hosts/traffic-distribution?showLegend=false`}
                   style={{
@@ -461,7 +462,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`applications-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/hosts/applications`}
                   style={{
@@ -478,7 +479,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`protocols-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/hosts/protocols?showLegend=false`}
                   style={{

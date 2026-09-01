@@ -69,6 +69,7 @@ import { useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks'
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 import useSWR, { mutate as globalMutate } from 'swr';
 
+import { ChartFrame } from '../components/ChartFrame';
 type FingerprintSortField = 'fingerprint' | 'type' | 'count' | 'hosts';
 type SortOrder = 'asc' | 'desc';
 type FingerprintTypeFilter = 'all' | 'JA4' | 'JA4S' | 'JA4H' | 'JA4X' | 'JA4T' | 'JA4TS' | 'JA4SSH' | 'DHCP';
@@ -528,7 +529,7 @@ export default function FingerprintsPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Type Distribution: Pie chart showing distribution of JA4, JA4S, JA4SSH, and DHCP fingerprints."
                   key={`type-distribution-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/fingerprints/type-distribution?showLegend=false`}
@@ -546,7 +547,7 @@ export default function FingerprintsPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Top JA4: Bar chart showing the most common TLS client fingerprints."
                   key={`top-ja4-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/fingerprints/top-ja4`}
@@ -564,7 +565,7 @@ export default function FingerprintsPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Top JA4SSH: Bar chart showing the most common SSH client/server fingerprints."
                   key={`top-ja4ssh-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/fingerprints/top-ja4ssh`}
@@ -582,7 +583,7 @@ export default function FingerprintsPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Usage Patterns: Scatter plot showing relationship between fingerprint occurrences and unique hosts."
                   key={`hosts-per-fingerprint-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/fingerprints/hosts-per-fingerprint`}

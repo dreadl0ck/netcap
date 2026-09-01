@@ -64,6 +64,7 @@ import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 
+import { ChartFrame } from '../components/ChartFrame';
 interface DeviceProfileSummary {
   macAddr: string;
   deviceManufacturer: string;
@@ -329,7 +330,7 @@ export default function DevicesPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`mac-vendors-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/devices/mac-vendors`}
                   style={{
@@ -346,7 +347,7 @@ export default function DevicesPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`traffic-dist-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/devices/traffic-distribution?showLegend=false`}
                   style={{
@@ -363,7 +364,7 @@ export default function DevicesPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`hardware-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/devices/hardware`}
                   style={{
@@ -380,7 +381,7 @@ export default function DevicesPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`operating-systems-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/devices/operating-systems?showLegend=false`}
                   style={{
@@ -397,7 +398,7 @@ export default function DevicesPage() {
           <Grid item xs={12}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   key={`applications-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/devices/applications`}
                   style={{

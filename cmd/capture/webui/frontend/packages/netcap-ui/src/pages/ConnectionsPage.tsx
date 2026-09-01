@@ -72,6 +72,7 @@ import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
+import { ChartFrame } from '../components/ChartFrame';
 export interface ConnectionSummary {
   timestampFirst: number;
   timestampLast: number;
@@ -741,7 +742,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Top Connections Chart: Bar chart showing the connections with the most traffic."
                   key={`top-by-traffic-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/connections/top-by-traffic`}
@@ -759,7 +760,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Protocol Distribution: Pie chart showing the distribution of protocols across connections."
                   key={`protocols-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/connections/protocols?showLegend=false`}
@@ -777,7 +778,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Applications Chart: Bar chart showing the top detected applications in the connections."
                   key={`applications-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/connections/applications`}
@@ -795,7 +796,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Duration vs Size: Scatter plot showing the relationship between connection duration and data size."
                   key={`duration-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/connections/duration`}

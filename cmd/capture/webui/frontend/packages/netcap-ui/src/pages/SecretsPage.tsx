@@ -68,6 +68,7 @@ import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
+import { ChartFrame } from '../components/ChartFrame';
 export interface SecretSummary {
   timestamp: number;
   service: string;
@@ -594,7 +595,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Credentials by Service: Bar chart showing which services/protocols had the most credentials captured."
                   key={`by-service-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/secrets/by-service`}
@@ -612,7 +613,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Credentials Timeline: Line chart showing when credentials were captured over time."
                   key={`timeline-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/secrets/timeline`}
@@ -630,7 +631,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Top Usernames: Bar chart showing the most common usernames in captured credentials."
                   key={`usernames-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/secrets/usernames`}
@@ -648,7 +649,7 @@ export default function SecretsPage({ rowActions }: SecretsPageProps = {}) {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Credentials by Flow: Pie chart showing the distribution of credentials across network flows."
                   key={`flows-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/secrets/flows?showLegend=false`}

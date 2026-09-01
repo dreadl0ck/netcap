@@ -66,6 +66,7 @@ import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
+import { ChartFrame } from '../components/ChartFrame';
 interface HTTPSummary {
   timestamp: number;
   proto: string;
@@ -537,7 +538,7 @@ export default function HTTPPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Top Hosts Chart: Bar chart showing the hosts with the most HTTP requests."
                   key={`top-hosts-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/http/top-hosts?showLegend=false`}
@@ -555,7 +556,7 @@ export default function HTTPPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Status Codes: Pie chart showing the distribution of HTTP status codes."
                   key={`status-codes-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/http/status-codes?showLegend=false`}
@@ -573,7 +574,7 @@ export default function HTTPPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Request Methods: Bar chart showing the distribution of HTTP request methods."
                   key={`methods-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/http/methods?showLegend=false`}
@@ -591,7 +592,7 @@ export default function HTTPPage() {
           <Grid item xs={12} md={6}>
             <Card sx={{ height: { xs: 300, md: 'calc(50vh - 80px)' }, minHeight: 250, maxHeight: 500 }}>
               <CardContent sx={{ height: '100%', p: 1 }}>
-                <iframe
+                <ChartFrame
                   data-learn="Content Types: Pie chart showing the distribution of response content types."
                   key={`content-types-${chartRefreshKey}`}
                   src={`${getBackendUrl()}/api/http/content-types?showLegend=false`}

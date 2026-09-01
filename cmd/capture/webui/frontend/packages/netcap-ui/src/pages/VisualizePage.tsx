@@ -54,6 +54,7 @@ import { getBackendUrl, type ProtocolHierarchyResponse } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi } from '../hooks';
 
+import { ChartFrame } from '../components/ChartFrame';
 const CHART_TYPES = [
   { value: 'sankey', label: 'Sankey Diagram', icon: <AccountTreeIcon /> },
   { value: 'treemap', label: 'Treemap', icon: <GridViewIcon /> },
@@ -602,7 +603,7 @@ export default function Visualize() {
             {chartUrl && (
               <Box sx={{ width: '100%', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <Box sx={{ flex: 1, position: 'relative', minHeight: 400 }}>
-                  <iframe
+                  <ChartFrame
                     key={chartRefreshKey}
                     src={chartUrl}
                     style={{
