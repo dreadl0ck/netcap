@@ -17,6 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { escapeHTML } from './html';
+
 /**
  * Syntax highlighting for Regular Expression patterns
  * 
@@ -208,12 +210,4 @@ export function regexTokensToHTML(tokens: RegexToken[]): string {
     .join('');
 }
 
-function escapeHTML(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
 

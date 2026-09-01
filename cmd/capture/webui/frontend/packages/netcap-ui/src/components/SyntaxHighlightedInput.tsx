@@ -25,6 +25,7 @@ import { highlightRegexPattern } from '../lib/regexSyntaxHighlight';
 import type { RegexToken } from '../lib/regexSyntaxHighlight';
 import type { BPFToken } from '../lib/bpfSyntaxHighlight';
 import type { FilterToken } from '../lib/filterSyntaxHighlight';
+import { escapeHTMLPreservingLineBreaks, safeCSSColor } from '../lib/html';
 
 type SyntaxType = 'filter' | 'bpf' | 'regex';
 type Token = RegexToken | BPFToken | FilterToken;
@@ -231,18 +232,16 @@ export default function SyntaxHighlightedInput({
       editableRef.current.innerHTML = tokens
         .map((token) => {
           const color = token.type === 'text' && token.color === 'inherit' ? textColor : token.color;
-          const escapedValue = escapeHTML(token.value);
-          return `<span style="color: ${color}">${escapedValue}</span>`;
+          // safeCSSColor because this is interpolated into a style attribute,
+          // not a text node: escaping the value alone would not stop a colour
+          // from closing the attribute and adding an event handler.
+          const escapedValue = escapeHTMLPreservingLineBreaks(token.value);
+          return `<span style="color: ${safeCSSColor(color)}">${escapedValue}</span>`;
         })
         .join('');
     } else {
       // Render as plain text but preserve line breaks
-      const escapedValue = value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/\n/g, '<br>');
-      editableRef.current.innerHTML = escapedValue;
+      editableRef.current.innerHTML = escapeHTMLPreservingLineBreaks(value);
     }
 
     // Show placeholder if empty
@@ -251,16 +250,6 @@ export default function SyntaxHighlightedInput({
     } else {
       editableRef.current.removeAttribute('data-placeholder');
     }
-  }
-
-  function escapeHTML(str: string): string {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;')
-      .replace(/\n/g, '<br>');
   }
 
   // Handle input changes

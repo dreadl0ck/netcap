@@ -69,6 +69,7 @@ import { useNetcapApi, useIsMobile } from '../hooks';
 import useSWR, { mutate, mutate as globalMutate } from 'swr';
 import { FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 
+import { syntaxHighlightJSON } from '../lib/html';
 // Helper function to convert unix timestamps to human-readable format
 // fieldName parameter helps identify if we should convert this number
 function convertTimestamps(obj: any, fieldName?: string): any {
@@ -130,24 +131,6 @@ function convertTimestamps(obj: any, fieldName?: string): any {
 }
 
 // Syntax highlighting for JSON
-function syntaxHighlight(json: string) {
-  json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
-    let cls = 'number';
-    if (/^"/.test(match)) {
-      if (/:$/.test(match)) {
-        cls = 'key';
-      } else {
-        cls = 'string';
-      }
-    } else if (/true|false/.test(match)) {
-      cls = 'boolean';
-    } else if (/null/.test(match)) {
-      cls = 'null';
-    }
-    return '<span class="json-' + cls + '">' + match + '</span>';
-  });
-}
 
 export default function AlertsPage() {
   const api = useNetcapApi();
@@ -1217,7 +1200,7 @@ export default function AlertsPage() {
                           wordBreak: 'break-word',
                         }}
                         dangerouslySetInnerHTML={{
-                          __html: syntaxHighlight(JSON.stringify(convertTimestamps(JSON.parse(selectedAlert.matchedRecord)), null, 2))
+                          __html: syntaxHighlightJSON(JSON.stringify(convertTimestamps(JSON.parse(selectedAlert.matchedRecord)), null, 2))
                         }}
                       />
                     </Paper>

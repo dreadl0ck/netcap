@@ -28,6 +28,13 @@ export {
 
 export type { NetcapApiClient } from './api';
 
+export {
+  escapeHTML,
+  escapeHTMLPreservingLineBreaks,
+  safeCSSColor,
+  syntaxHighlightJSON,
+} from './html';
+
 export { highlightFilterExpression } from './filterSyntaxHighlight';
 export type { FilterToken } from './filterSyntaxHighlight';
 
