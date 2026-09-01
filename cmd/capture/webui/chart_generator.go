@@ -22,6 +22,7 @@ package webui
 import (
 	"bytes"
 	"fmt"
+	stdhtml "html"
 	"io"
 	"path/filepath"
 	"reflect"
@@ -1455,12 +1456,21 @@ func renderChartWithFullHeight(render func(io.Writer) error) io.Reader {
 		return bytes.NewReader(html)
 	}
 
-	var buf bytes.Buffer
-	if err := render(&buf); err == nil {
-		return bytes.NewReader(buf.Bytes())
+	// Fall back to the chart without the full-height CSS, but still routed
+	// through renderChartSafe: this path also emits the option object into an
+	// inline <script>, so skipping the escaping here would leave a hole behind
+	// nothing more than a CSS-injection failure.
+	if raw, rawErr := renderChartSafe(render); rawErr == nil {
+		return bytes.NewReader(finalizeChartHTML(raw))
 	}
 
-	fallback := fmt.Sprintf("<html><body><pre>Failed to render chart: %v</pre></body></html>", err)
+	// err is the injectFullHeightCSS failure. Escape it: it originates in
+	// template execution and can carry fragments of the data being rendered.
+	fallback := fmt.Sprintf(
+		"<html><body><pre>Failed to render chart: %s</pre></body></html>",
+		stdhtml.EscapeString(err.Error()),
+	)
+
 	return bytes.NewReader([]byte(fallback))
 }
 

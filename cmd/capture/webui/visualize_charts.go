@@ -20,7 +20,6 @@
 package webui
 
 import (
-	"bytes"
 	"encoding/json"
 	"io"
 	"log"
@@ -42,12 +41,12 @@ import (
 
 // injectFullHeightCSS intercepts the chart HTML and injects CSS to make it fill 100% height
 func injectFullHeightCSS(renderFunc func(w io.Writer) error) ([]byte, error) {
-	var buf bytes.Buffer
-	if err := renderFunc(&buf); err != nil {
+	rendered, err := renderChartSafe(renderFunc)
+	if err != nil {
 		return nil, err
 	}
 
-	html := buf.String()
+	html := string(rendered)
 
 	// Inject CSS right after <head> tag to make html, body, and chart container 100% height
 	// Target all possible containers including the .item div and echarts canvas
@@ -118,17 +117,19 @@ window.addEventListener('resize', function() {
 </script>`
 
 	html = strings.Replace(html, "<head>", cssInjection, 1)
-	return []byte(html), nil
+
+	// Must be last: the injection above adds a <script> that needs the nonce.
+	return finalizeChartHTML([]byte(html)), nil
 }
 
 // inject3DChartControls intercepts the chart HTML and injects CSS, rotation toggle button for 3D charts
 func inject3DChartControls(renderFunc func(w io.Writer) error) ([]byte, error) {
-	var buf bytes.Buffer
-	if err := renderFunc(&buf); err != nil {
+	rendered, err := renderChartSafe(renderFunc)
+	if err != nil {
 		return nil, err
 	}
 
-	html := buf.String()
+	html := string(rendered)
 
 	// Inject CSS and rotation toggle button
 	cssInjection := `<head>
@@ -265,7 +266,9 @@ function toggleRotation() {
 </script>`
 
 	html = strings.Replace(html, "<head>", cssInjection, 1)
-	return []byte(html), nil
+
+	// Must be last: the injection above adds a <script> that needs the nonce.
+	return finalizeChartHTML([]byte(html)), nil
 }
 
 // handleVisualizeTreemap returns HTML for treemap chart of audit record types
@@ -430,10 +433,7 @@ func (s *Server) handleVisualizeGraph(w http.ResponseWriter, r *http.Request) {
 	showLegend := showLegendStr == "true"
 
 	// Parse layout parameter (default to "circular")
-	layout := r.URL.Query().Get("layout")
-	if layout == "" {
-		layout = "circular"
-	}
+	layout := sanitizeGraphLayout(r.URL.Query().Get("layout"))
 
 	chart := generateGraphChart(outDir, showLegend, layout)
 	html, err := injectFullHeightCSS(chart.Render)
@@ -464,10 +464,7 @@ func HandleVisualizeGraph(outDir string) http.HandlerFunc {
 		showLegend := showLegendStr == "true"
 
 		// Parse layout parameter (default to "circular")
-		layout := r.URL.Query().Get("layout")
-		if layout == "" {
-			layout = "circular"
-		}
+		layout := sanitizeGraphLayout(r.URL.Query().Get("layout"))
 
 		chart := generateGraphChart(outDir, showLegend, layout)
 		html, err := injectFullHeightCSS(chart.Render)
@@ -668,10 +665,7 @@ func (s *Server) handleVisualizeHostsGraph(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Parse layout parameter (default to "circular")
-	layout := r.URL.Query().Get("layout")
-	if layout == "" {
-		layout = "circular"
-	}
+	layout := sanitizeGraphLayout(r.URL.Query().Get("layout"))
 
 	chart := generateHostsGraph(outDir, showLegend, maxNodes, layout)
 	html, err := injectFullHeightCSS(chart.Render)
@@ -711,10 +705,7 @@ func HandleVisualizeHostsGraph(outDir string) http.HandlerFunc {
 		}
 
 		// Parse layout parameter (default to "circular")
-		layout := r.URL.Query().Get("layout")
-		if layout == "" {
-			layout = "circular"
-		}
+		layout := sanitizeGraphLayout(r.URL.Query().Get("layout"))
 
 		chart := generateHostsGraph(outDir, showLegend, maxNodes, layout)
 		html, err := injectFullHeightCSS(chart.Render)
