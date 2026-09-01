@@ -192,6 +192,28 @@ RUN mkdir -p /usr/local/lib/pkgconfig && \
     echo 'Libs: -L${libdir} -lyara_x_capi' >> /usr/local/lib/pkgconfig/yara_x_capi.pc && \
     echo 'Cflags: -I${includedir}' >> /usr/local/lib/pkgconfig/yara_x_capi.pc
 
+# Protocol buffer compiler and the gogofaster plugin.
+#
+# types/netcap.pb.go is generated from netcap.proto and is gitignored, so a
+# clean checkout has no types package at all -- every build fails with
+# "undefined: Alert", "undefined: PacketContext" and so on. Carrying protoc here
+# lets both CI and the service image regenerate it rather than depending on a
+# copy that happens to exist on a developer's disk, which is the same class of
+# problem that frontend/dist caused.
+#
+# The plugin version is pinned to the gogo/protobuf release in go.mod (v1.3.2)
+# so the generated code matches the runtime it is compiled against.
+# The final check is `command -v`, not `test -x` against a guessed path: the
+# invariant protoc actually needs is that the plugin is resolvable on PATH, and
+# GOPATH here is /go (set by the golang base image), not ~/go. Note there is no
+# `|| (echo ... && exit 1)` tail -- as the yara-x notes above record, `||` binds
+# to the whole && chain and replaces the real error with a generic message,
+# which is exactly what hid this mistake on the first attempt.
+RUN apk add --no-cache protobuf protobuf-dev && \
+    go install github.com/gogo/protobuf/protoc-gen-gogofaster@v1.3.2 && \
+    protoc --version && \
+    command -v protoc-gen-gogofaster
+
 # Set working directory
 WORKDIR /workspace
 

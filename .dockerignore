@@ -123,5 +123,10 @@ cmd/capture/webui/frontend/.next/
 # reason node_modules is listed with its full path).
 cmd/capture/webui/frontend/dist/
 
+# Same reasoning for the generated protobuf types: gitignored, regenerated from
+# netcap.proto inside the builder stage, and excluded here so a local copy
+# cannot be embedded into the image instead.
+types/netcap.pb.go
+
 # Cursor history
 .cursor/
