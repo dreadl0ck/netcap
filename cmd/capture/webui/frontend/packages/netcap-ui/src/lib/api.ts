@@ -20,20 +20,47 @@
 // API client for Netcap Web UI backend
 // This is a copy of the original api.ts file for the netcap-ui package
 
-// Get backend URL - defaults to localhost:8080
-// In production builds, this can be overridden via VITE_BACKEND_URL
+// Get backend URL - defaults to the origin serving the page.
+//
+// Resolution order: window.__BACKEND_URL__, then VITE_BACKEND_URL, then the
+// current origin.
+//
+// The default used to be a hardcoded http://localhost:8080, which is wrong for
+// every deployment: the same Go server serves this SPA and /api, so a build
+// without VITE_BACKEND_URL set produced a bundle that asked localhost:8080 for
+// its data. On https://try.netcap.io that surfaced as the app hanging on
+// "connecting to backend" with the requests failing mixed-content and CORS
+// checks. It went unnoticed because dist/ is gitignored and the deployed bundle
+// had been built by hand with the variable set, so the default was never
+// exercised until dist was rebuilt.
+//
+// window.location.origin is correct in all three topologies:
+//   - production / container: the Go server serves the SPA and the API
+//   - vite dev: the origin is the dev server, whose /api proxy forwards to the
+//     backend (see vite.config.ts)
+//   - embedded elsewhere: set window.__BACKEND_URL__ or VITE_BACKEND_URL
 export function getBackendUrl(): string {
+  // No origin during SSR/static generation. Returning empty makes createApi()
+  // hand back its no-op client instead of throwing on window.
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
   // Allow override via window object (for embedded scenarios)
   const windowWithBackend = window as { __BACKEND_URL__?: string };
   if (windowWithBackend.__BACKEND_URL__) {
     return windowWithBackend.__BACKEND_URL__;
   }
 
-  // Use Vite environment variable if set, otherwise default to localhost:8080.
+  // Use Vite environment variable if set.
   // import.meta.env is statically replaced by Vite at build time.
   // The cast is needed because this library is built by tsup (no vite/client types).
   const env = (import.meta as unknown as { env?: Record<string, string> }).env;
-  return env?.VITE_BACKEND_URL || 'http://localhost:8080';
+  if (env?.VITE_BACKEND_URL) {
+    return env.VITE_BACKEND_URL;
+  }
+
+  return window.location.origin;
 }
 
 // Default API_BASE for backwards compatibility (computed once at module load)
