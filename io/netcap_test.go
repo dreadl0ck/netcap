@@ -11,6 +11,8 @@ import (
 
 // Test if the count function works as expected
 func TestCountRecords(t *testing.T) {
+	requireTestAuditRecord(t)
+
 	num, errCount := Count("../tests/testdata/TCP.ncap.gz")
 	if errCount != nil {
 		t.Fatal(errCount)

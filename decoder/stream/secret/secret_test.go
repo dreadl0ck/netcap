@@ -3,6 +3,7 @@ package secret
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -11,17 +12,28 @@ import (
 	"github.com/dreadl0ck/netcap/internal/logger"
 )
 
+// testLogDir is where these tests write their zap log files. InitZapLogger
+// requires it to exist in advance, and it is untracked (tests/* is gitignored),
+// so each package creates it rather than assuming a previous run did.
+const testLogDir = "../../tests"
+
 // init functions in the unit tests do not seem to be called for the compiled program,
 // even if this file is not in a *_test package scope.
 // So we abuse it here to guarantee the logfile handles are initialized for all tests.
 func init() {
+	// InitZapLogger requires outpath to exist in advance; testLogDir is
+	// untracked, so create it rather than assuming a previous run did.
+	if err := os.MkdirAll(testLogDir, 0o755); err != nil {
+		panic(err)
+	}
+
 	var err error
-	credLog, _, err = logger.InitZapLogger("../../tests", "decoder", true)
+	credLog, _, err = logger.InitZapLogger(testLogDir, "decoder", true)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	dbLog, _, err := logger.InitZapLogger("../../tests", "db", false)
+	dbLog, _, err := logger.InitZapLogger(testLogDir, "db", false)
 	if err != nil {
 		panic(err)
 	}

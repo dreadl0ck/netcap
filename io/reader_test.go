@@ -29,6 +29,8 @@ import (
 )
 
 func TestReader(t *testing.T) {
+	requireTestAuditRecord(t)
+
 	r, err := Open("../tests/testdata/TCP.ncap.gz", defaults.BufferSize)
 	if err != nil {
 		t.Fatal(err)

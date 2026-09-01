@@ -20,6 +20,7 @@
 package service
 
 import (
+	"os"
 	"path/filepath"
 	"regexp"
 	"testing"
@@ -34,8 +35,21 @@ import (
 	"github.com/dreadl0ck/netcap/resolvers"
 )
 
+// testLogDir is where these tests write their zap log files. InitZapLogger
+// requires it to exist in advance, and it is untracked (tests/* is gitignored),
+// so each package creates it rather than assuming a previous run did.
+const testLogDir = "../../tests"
+
 func init() {
-	dbLog, _, err := logger.InitZapLogger("../../tests", "db", false)
+	// InitZapLogger documents that outpath must exist in advance, and here it
+	// resolves to decoder/tests, which is untracked -- it exists only on
+	// machines where a previous test run happened to create it. On a clean
+	// checkout the panic below took the whole package down before any test ran.
+	if err := os.MkdirAll(testLogDir, 0o755); err != nil {
+		panic(err)
+	}
+
+	dbLog, _, err := logger.InitZapLogger(testLogDir, "db", false)
 	if err != nil {
 		panic(err)
 	}

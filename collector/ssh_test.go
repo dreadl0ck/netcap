@@ -155,9 +155,12 @@ func TestSSHUnidirectionalPcap(t *testing.T) {
 	projectRoot := filepath.Join(filepath.Dir(filename), "..")
 	pcapPath := filepath.Join(projectRoot, "tests", "testdata", "ssh_unidirectional.pcap")
 
-	// Check if the pcap file exists
+	// Skip rather than fail when the fixture is absent: tests/ is almost
+	// entirely gitignored, so this pcap exists only on machines that have
+	// obtained it separately. Failing here turned a missing optional fixture
+	// into a red build on every clean checkout.
 	if _, err := os.Stat(pcapPath); os.IsNotExist(err) {
-		t.Fatalf("SSH unidirectional pcap file does not exist at: %s", pcapPath)
+		t.Skipf("SSH unidirectional pcap not available at %s", pcapPath)
 	}
 
 	t.Logf("Using SSH unidirectional pcap file: %s", pcapPath)

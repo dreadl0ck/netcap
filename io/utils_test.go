@@ -27,6 +27,8 @@ import (
 )
 
 func TestDumpCSV(t *testing.T) {
+	requireTestAuditRecord(t)
+
 	f, err := os.Create("../tests/testdump.csv")
 	if err != nil {
 		t.Fatal(err)
@@ -50,6 +52,8 @@ func TestDumpCSV(t *testing.T) {
 }
 
 func TestDumpJSON(t *testing.T) {
+	requireTestAuditRecord(t)
+
 	f, err := os.Create("../tests/testdump.json")
 	if err != nil {
 		t.Fatal(err)
@@ -71,6 +75,8 @@ func TestDumpJSON(t *testing.T) {
 }
 
 func TestDumpStruc(t *testing.T) {
+	requireTestAuditRecord(t)
+
 	f, err := os.Create("../tests/testdump.log")
 	if err != nil {
 		t.Fatal(err)
