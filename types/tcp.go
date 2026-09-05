@@ -68,7 +68,7 @@ var fieldsTCP = []string{
 	fieldWindow,
 	fieldChecksum,
 	fieldUrgent,
-	//fieldOptions,
+	fieldOptions,
 	fieldPayloadEntropy,
 	fieldPayloadSize,
 	fieldSrcIP,
@@ -76,6 +76,7 @@ var fieldsTCP = []string{
 	fieldJa4t,
 	fieldJa4ts,
 	fieldCommunityID,
+	"Multipath",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -112,6 +113,7 @@ func (t *TCP) CSVRecord() []string {
 		t.Ja4T,        // JA4T TCP fingerprint
 		t.Ja4Ts,       // JA4TS TCP server fingerprint
 		t.CommunityID, // Community ID v1
+		strconv.FormatBool(t.Multipath),
 	})
 }
 
@@ -124,6 +126,11 @@ func (t *TCP) getOptionString() string {
 		b.WriteString(strconv.Itoa(int(o.OptionLength)))
 		b.WriteString(FieldSeparator)
 		b.WriteString(hex.EncodeToString(o.OptionData))
+		if o.MPTCP != nil {
+			b.WriteString(FieldSeparator)
+			value, _ := jsonMarshaler.MarshalToString(o.MPTCP)
+			b.WriteString(value)
+		}
 		b.WriteString(StructureEnd)
 	}
 	return b.String()
@@ -261,14 +268,15 @@ func (t *TCP) Encode() []string {
 		tcpEncoder.Int32(fieldWindow, t.Window),         // int32
 		tcpEncoder.Int32(fieldChecksum, t.Checksum),     // int32
 		tcpEncoder.Int32(fieldUrgent, t.Urgent),         // int32
-		//tcpEncoder.String(fieldOptions, t.getOptionString()),      // []*TCPOption
+		tcpEncoder.String(fieldOptions, t.getOptionString()),
 		tcpEncoder.Float64(fieldPayloadEntropy, t.PayloadEntropy), // float64
 		tcpEncoder.Int32(fieldPayloadSize, t.PayloadSize),         // int32
 		tcpEncoder.Int64(fieldSrcIP, ipToInt64(t.SrcIP)),
 		tcpEncoder.Int64(fieldDstIP, ipToInt64(t.DstIP)),
-		tcpEncoder.String(fieldJa4t, t.Ja4T),              // JA4T fingerprint
-		tcpEncoder.String(fieldJa4ts, t.Ja4Ts),            // JA4TS fingerprint
+		tcpEncoder.String(fieldJa4t, t.Ja4T),               // JA4T fingerprint
+		tcpEncoder.String(fieldJa4ts, t.Ja4Ts),             // JA4TS fingerprint
 		tcpEncoder.String(fieldCommunityID, t.CommunityID), // Community ID v1
+		tcpEncoder.Bool(t.Multipath),
 	})
 }
 

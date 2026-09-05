@@ -70,12 +70,23 @@ var tcpDecoder = newGoPacketDecoder(
 				optionTypes    []uint8 // For JA4T/JA4TS
 			)
 
+			rawOptions := tcpRawOptions(tcp)
 			for i, o := range tcp.Options {
-				opts = append(opts, &types.TCPOption{
+				option := &types.TCPOption{
 					OptionData:   o.OptionData,
 					OptionLength: int32(o.OptionLength),
 					OptionType:   int32(o.OptionType),
-				})
+				}
+				if o.OptionType == layers.TCPOptionKindMultipathTCP {
+					if i < len(rawOptions) {
+						option.Raw = rawOptions[i]
+						if len(option.Raw) >= 2 {
+							option.OptionData = option.Raw[2:]
+						}
+					}
+					option.MPTCP = tcpMPTCPOption(o, option.OptionData)
+				}
+				opts = append(opts, option)
 
 				// Build options fingerprint
 				if i > 0 {
@@ -158,6 +169,7 @@ var tcpDecoder = newGoPacketDecoder(
 
 			return &types.TCP{
 				Timestamp:          timestamp,
+				Multipath:          tcp.Multipath,
 				SrcPort:            int32(tcp.SrcPort),
 				DstPort:            int32(tcp.DstPort),
 				SeqNum:             tcp.Seq,

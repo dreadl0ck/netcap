@@ -818,12 +818,84 @@ message TCP {
   string Ja4tDescription = 37;          // JA4T database lookup description (OS/device)
   string Ja4tsDescription = 38;         // JA4TS database lookup description (OS/device)
   string CommunityID = 39;              // Corelight Community ID v1 for cross-tool correlation
+  bool Multipath = 40;
 }
 
 message TCPOption {
   int32 OptionType = 1;
   int32 OptionLength = 2;
   bytes OptionData = 3;
+  TCPMPTCPOption MPTCP = 4;
+  bytes Raw = 5; // Original option including kind and length, never reserialized
+}
+
+message TCPMPTCPOption {
+  uint32 Subtype = 1;
+  MPTCPCapable Capable = 2;
+  MPTCPJoin Join = 3;
+  MPTCPDSS DSS = 4;
+  MPTCPAddAddr AddAddr = 5;
+  MPTCPRemoveAddr RemoveAddr = 6;
+  MPTCPPriority Priority = 7;
+  MPTCPFail Fail = 8;
+  MPTCPFastClose FastClose = 9;
+  MPTCPReset TCPReset = 10;
+}
+
+message MPTCPCapable {
+  uint32 Version = 1;
+  uint32 Flags = 2; // A through H, most to least significant bit
+  bytes SenderKey = 3;
+  bytes ReceiverKey = 4;
+  uint32 DataLength = 5;
+  uint32 Checksum = 6;
+}
+
+message MPTCPJoin {
+  bool Backup = 1;
+  uint32 AddressID = 2;
+  uint32 ReceiverToken = 3;
+  uint32 SenderRandom = 4;
+  bytes SenderHMAC = 5;
+}
+
+message MPTCPDSS {
+  bool DataFIN = 1;
+  bool ACKPresent = 2;
+  bool ACK64 = 3;
+  bool MappingPresent = 4;
+  bool DSN64 = 5;
+  bytes DataACK = 6;
+  bytes DSN = 7;
+  uint32 SubflowSequence = 8;
+  uint32 DataLength = 9;
+  uint32 Checksum = 10;
+  bool ChecksumPresent = 11;
+}
+
+message MPTCPAddAddr {
+  uint32 IPVersion = 1;
+  bool Echo = 2;
+  uint32 AddressID = 3;
+  string Address = 4;
+  uint32 Port = 5;
+  bytes SenderHMAC = 6;
+}
+
+message MPTCPRemoveAddr { repeated uint32 AddressIDs = 1; }
+message MPTCPPriority {
+  bool Backup = 1;
+  uint32 AddressID = 2;
+  bool AddressIDPresent = 3;
+}
+message MPTCPFail { uint64 DSN = 1; }
+message MPTCPFastClose { bytes ReceiverKey = 1; }
+message MPTCPReset {
+  bool U = 1;
+  bool V = 2;
+  bool W = 3;
+  bool Transient = 4;
+  uint32 Reason = 5;
 }
 
 message SCTP {
