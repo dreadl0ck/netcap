@@ -255,6 +255,17 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 
 	// update stats
 	t.updateStats(sg, skip, length, saved, startTime, end, dir)
+	if skip != 0 {
+		gap := &core.StreamData{AssemblerContext: ac, Dir: dir, SkippedBytes: skip}
+		if skip > 0 {
+			gap.SkippedBytes += length
+		} // This delivery is discarded below.
+		if dir == reassembly.TCPDirClientToServer {
+			t.client.StoreData(gap)
+		} else {
+			t.server.StoreData(gap)
+		}
+	}
 
 	if skip == -1 && decoderconfig.Instance.AllowMissingInit {
 		// this is allowed
@@ -430,6 +441,8 @@ func (t *tcpConnection) decode() {
 
 	conv := &core.ConversationInfo{
 		Data:              t.merged,
+		ClientData:        t.client.DataSlice(),
+		ServerData:        t.server.DataSlice(),
 		Ident:             t.ident,
 		FirstClientPacket: t.client.FirstPacket(),
 		FirstServerPacket: t.server.FirstPacket(),

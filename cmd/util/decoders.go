@@ -225,6 +225,7 @@ func addAbstractDecoders(decodersByLayer map[string][]DecoderInfo, seenDecoders 
 		{"Alert", "Alert", "Security alerts and events"},
 		{"TLSClientHello", "TLSClientHello", "TLS client hello analysis"},
 		{"TLSServerHello", "TLSServerHello", "TLS server hello analysis"},
+		{"TLSRecord", "TLSRecord", "Stream-framed TLS record headers and known-plaintext alerts"},
 	}
 
 	for _, ad := range abstractDecoders {
@@ -337,6 +338,7 @@ func getTypeForName(name string) types.Type {
 		"ENIP":                         types.Type_NC_ENIP,
 		"Geneve":                       types.Type_NC_Geneve,
 		"PKTAP":                        types.Type_NC_PKTAP,
+		"TLSRecord":                    types.Type_NC_TLSRecord,
 		"VXLAN":                        types.Type_NC_VXLAN,
 		"VRRPv2":                       types.Type_NC_VRRPv2,
 		"LLC":                          types.Type_NC_LLC,

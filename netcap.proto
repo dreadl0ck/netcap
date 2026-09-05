@@ -194,6 +194,33 @@ enum Type {
   NC_RARP = 144;
   NC_Protobuf = 145;
   NC_PKTAP = 146;
+  NC_TLSRecord = 147;
+}
+
+message TLSRecord {
+  int64 Timestamp = 1; // Capture timestamp on reassembly delivery of the first header fragment
+  string SrcIP = 2;
+  string DstIP = 3;
+  int32 SrcPort = 4;
+  int32 DstPort = 5;
+  string CommunityID = 6;
+  string Flow = 7;
+  string Direction = 8;
+  uint64 Index = 9; // Zero-based record/event index in this direction
+  uint64 Offset = 10; // Byte offset from first observed stream byte, including known gaps
+  uint32 ContentType = 11;
+  uint32 RecordVersion = 12; // Record header version, NOT negotiated TLS version
+  uint32 Length = 13; // Declared body length
+  uint32 ObservedLength = 14;
+  bool HeaderComplete = 15;
+  bool Incomplete = 16;
+  bool Loss = 17;
+  int64 SkippedBytes = 18; // -1 when loss size is unknown
+  string Status = 19; // complete, eof, gap, invalid_header, unknown_type
+  bool PlaintextAlert = 20;
+  uint32 AlertLevel = 21;
+  uint32 AlertDescription = 22;
+  string AlertState = 23; // plaintext, encrypted_or_unknown, malformed; empty for non-alert records
 }
 
 message PKTAP {

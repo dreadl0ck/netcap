@@ -57,6 +57,13 @@ var Decoder = &decoder.StreamDecoder{
 		return err
 	},
 	CanDecode: func(client, server []byte) bool {
+		if RecordDecoder.Writer != nil {
+			for _, data := range [][]byte{client, server} {
+				if len(data) >= 3 && data[0] >= 20 && data[0] <= 24 && data[1] == 3 && data[2] <= 3 {
+					return true
+				}
+			}
+		}
 		// Check for TLS handshake in client data (ClientHello)
 		if len(client) >= 6 {
 			// TLS record: [ContentType(1)][Version(2)][Length(2)][HandshakeType(1)]

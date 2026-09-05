@@ -888,6 +888,7 @@ export default function RulesPage() {
                   <MenuItem value="FTP">FTP</MenuItem>
                   <MenuItem value="Geneve">Geneve</MenuItem>
                   <MenuItem value="PKTAP">PKTAP</MenuItem>
+                  <MenuItem value="TLSRecord">TLSRecord</MenuItem>
                   <MenuItem value="GRE">GRE</MenuItem>
                   <MenuItem value="GTP">GTP</MenuItem>
                   <MenuItem value="HTTP">HTTP</MenuItem>

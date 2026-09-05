@@ -27,8 +27,8 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/mqttsn"
 	"github.com/dreadl0ck/netcap/decoder/stream/opcua"
 	"github.com/dreadl0ck/netcap/decoder/stream/pop3"
-	"github.com/dreadl0ck/netcap/decoder/stream/protobuf"
 	"github.com/dreadl0ck/netcap/decoder/stream/profinet"
+	"github.com/dreadl0ck/netcap/decoder/stream/protobuf"
 	"github.com/dreadl0ck/netcap/decoder/stream/quic"
 	"github.com/dreadl0ck/netcap/decoder/stream/rdp"
 	"github.com/dreadl0ck/netcap/decoder/stream/s7comm"
@@ -104,8 +104,8 @@ var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
 // This is particularly useful for protocols that share port numbers with TCP protocols
 // (e.g., QUIC uses UDP port 443 while TLS uses TCP port 443).
 var UDPStreamDecoders = []core.StreamDecoderAPI{
-	quic.Decoder,            // QUIC/HTTP3 (UDP port 443)
-	kerberosaudit.Decoder,   // Kerberos v5 (UDP port 88)
+	quic.Decoder,          // QUIC/HTTP3 (UDP port 443)
+	kerberosaudit.Decoder, // Kerberos v5 (UDP port 88)
 }
 
 // SortedDecoderPorts provides a deterministic iteration order for DefaultStreamDecoders.
@@ -163,6 +163,7 @@ func ApplyActionToStreamDecodersAsync(action func(api core.StreamDecoderAPI)) {
 
 // InitDecoders initializes all stream decoders.
 func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error) {
+	tls.Decoder.Writer = nil
 	var (
 		// values from command-line flags
 		in = strings.Split(c.IncludeDecoders, ",")
@@ -214,8 +215,6 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 				if name == dec.GetName() {
 					// remove decoder
 					delete(activeDecoders, port)
-
-					break
 				}
 			}
 		}

@@ -10,12 +10,13 @@ import (
 	"github.com/dreadl0ck/netcap/decoder"
 
 	"github.com/dreadl0ck/netcap/decoder/stream/alert"
-	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	"github.com/dreadl0ck/netcap/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/decoder/stream/mail"
+	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/service"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
+	"github.com/dreadl0ck/netcap/decoder/stream/tls"
 	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
 
 	"github.com/mgutz/ansi"
@@ -44,6 +45,7 @@ var DefaultAbstractDecoders = []core.DecoderAPI{
 	vulnerability.Decoder,
 	secret.Decoder,
 	alert.Decoder,
+	tls.RecordDecoder,
 } // contains all available abstract decoders
 
 // package level init.
@@ -83,6 +85,7 @@ func ApplyActionToAbstractDecodersAsync(action func(api core.DecoderAPI)) {
 
 // InitAbstractDecoders initializes all stream decoders.
 func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err error) {
+	tls.RecordDecoder.Writer = nil
 	var (
 		// values from command-line flags
 		in = strings.Split(c.IncludeDecoders, ",")

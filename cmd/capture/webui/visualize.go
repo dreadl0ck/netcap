@@ -185,6 +185,7 @@ func buildProtocolHierarchy(outDir string) (*ProtocolHierarchyResponse, error) {
 		"VXLAN":          "Application Layer",
 		"Geneve":         "Application Layer",
 		"PKTAP":          "Link Layer",
+		"TLSRecord":      "Transport Layer",
 		// Industrial protocols
 		"BACnetIP": "Application Layer",
 		"OPCUA":    "Application Layer",

@@ -47,7 +47,7 @@ var (
 	}
 
 	transportLayerProtocols = []string{
-		"QUIC", "QUICClientHello", "SCTP", "TCP", "TCPOption", "TLSClientHello", "TLSServerHello", "UDP",
+		"QUIC", "QUICClientHello", "SCTP", "TCP", "TCPOption", "TLSClientHello", "TLSServerHello", "TLSRecord", "UDP",
 	}
 
 	applicationLayerProtocols = []string{

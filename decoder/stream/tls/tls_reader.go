@@ -37,7 +37,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/decoder/core"
-	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/internal/ja4"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
@@ -69,30 +68,10 @@ func (h *tlsReader) Decode() {
 		zap.Int("serverPort", int(h.conversation.ServerPort)),
 	)
 
-	// Prevent nil pointer access if decoder is not initialized
-	if Decoder.Writer == nil {
-		tlsLog.Error("TLS Decoder.Writer is nil - cannot write TLS audit records!")
+	if Decoder.Writer == nil && RecordDecoder.Writer == nil {
 		return
 	}
-
-	// Reassemble the server data (where certificates are sent)
-	var serverBuf bytes.Buffer
-	for _, d := range h.conversation.Data {
-		// Only process server-to-client data
-		if d.Direction() == reassembly.TCPDirServerToClient {
-			// Limit buffer size to avoid memory issues (certificates usually arrive early in handshake)
-			if serverBuf.Len() < 64*1024 { // 64KB should be enough for most certificate chains
-				serverBuf.Write(d.Raw())
-			}
-		}
-	}
-
-	tlsLog.Debug("Processing TLS handshake data",
-		zap.Int("serverDataSize", serverBuf.Len()),
-	)
-
-	// Parse TLS records looking for Certificate handshake messages
-	h.parseTLSRecords(serverBuf.Bytes())
+	h.frameConversation()
 
 	tlsLog.Info("TLS decode complete",
 		zap.String("ident", h.conversation.Ident),

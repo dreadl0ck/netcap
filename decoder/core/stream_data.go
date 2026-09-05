@@ -34,6 +34,7 @@ type StreamData struct {
 	// tcp specific fields
 	AssemblerContext reassembly.AssemblerContext
 	Dir              reassembly.TCPFlowDirection
+	SkippedBytes     int // Gap before this fragment; -1 means unknown initial loss.
 
 	// udp specific fields
 	CaptureInformation gopacket.CaptureInfo

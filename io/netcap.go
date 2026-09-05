@@ -109,6 +109,8 @@ func InitRecord(typ types.Type) (record proto.Message) {
 		record = new(types.Geneve)
 	case types.Type_NC_PKTAP:
 		record = new(types.PKTAP)
+	case types.Type_NC_TLSRecord:
+		record = new(types.TLSRecord)
 	case types.Type_NC_VXLAN:
 		record = new(types.VXLAN)
 	case types.Type_NC_USB:
