@@ -20,11 +20,8 @@
 package tcp
 
 import (
-	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
-	"io"
 	"path/filepath"
 	"sync"
 	"time"
@@ -69,37 +66,13 @@ func (t *tcpConnection) newTCPStreamReader(client bool) *tcpStreamReader {
 	}
 }
 
-// Read data from stream.
-func (t *tcpStreamReader) Read(p []byte) (int, error) {
-	data, ok := <-t.dataChan
-	if data == nil || !ok {
-		return 0, io.EOF
-	}
-
-	// copy received data into the passed in buffer
-	l := copy(p, data.RawData)
-
-	t.parent.Lock()
-	t.numBytes += l
-	t.parent.Unlock()
-
-	return l, nil
-}
-
 // DataChan returns a channel for sending stream data.
 func (t *tcpStreamReader) DataChan() chan *core.StreamData {
 	return t.dataChan
 }
 
 // StoreData records an immutable stream fragment synchronously with the
-// assembler's delivery path.
-//
-// This used to happen in Read, on the asynchronous reader goroutine. Since
-// dataChan is buffered, ReassemblyComplete could run after feedData returned
-// but before Read drained the channel, merge an incomplete conversation, set
-// wasMerged, and permanently omit the queued fragments. Moving the append here
-// means every fragment is visible before feedData returns; the reader goroutine
-// now parses and counts bytes but does not mutate the fragment slice.
+// assembler's delivery path so completion sees fragments still queued for counting.
 func (t *tcpStreamReader) StoreData(data *core.StreamData) {
 	t.parent.Lock()
 	t.data = append(t.data, data)
@@ -255,43 +228,16 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 
 // Run starts reading TCP traffic in a single direction.
 func (t *tcpStreamReader) Run(f *connectionFactory) {
-	// defer a cleanup func to flush the requests and responses once the stream encounters an EOF
 	defer t.Cleanup(f)
 
-	var (
-		err error
-		b   = bufio.NewReader(t)
-	)
-
-	for {
-		err = t.readStream(b)
-		if err != nil {
-			// exit on EOF
-			if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-				return
-			}
-
-			reassemblyLog.Error("TCP stream encountered an error",
-				zap.String("ident", t.parent.ident),
-				zap.Error(err),
-			)
-
-			// stop processing the stream and trigger cleanup
+	for data := range t.dataChan {
+		if data == nil {
 			return
 		}
-	}
-}
 
-func (t *tcpStreamReader) readStream(b io.ByteReader) error {
-	var err error
-
-	for {
-		_, err = b.ReadByte()
-		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
-			return err
-		} else if err != nil {
-			return err
-		}
+		t.parent.Lock()
+		t.numBytes += len(data.RawData)
+		t.parent.Unlock()
 	}
 }
 

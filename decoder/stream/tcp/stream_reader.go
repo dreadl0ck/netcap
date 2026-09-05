@@ -32,19 +32,13 @@ import (
 // and process the remaining data when the engine is stopped.
 type streamReader interface {
 
-	// Read data from stream.
-	Read(p []byte) (int, error)
-
 	// Run starts processing the stream.
 	Run(f *connectionFactory)
 
 	// DataChan returns a channel for sending stream data.
 	DataChan() chan *core.StreamData
 
-	// StoreData records a fragment before it is queued for asynchronous stream
-	// parsing. Recording synchronously guarantees ReassemblyComplete sees every
-	// fragment that ReassembledSG delivered, even while the reader goroutine is
-	// still draining its buffered channel.
+	// StoreData records a fragment synchronously so completion sees queued data.
 	StoreData(*core.StreamData)
 
 	// DataSlice will return all gathered data fragments.

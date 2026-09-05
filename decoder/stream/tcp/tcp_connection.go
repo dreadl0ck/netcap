@@ -224,10 +224,7 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 
 	ti := time.Now()
 
-	// Record the fragment synchronously before queueing it for the reader
-	// goroutine. The channel is buffered, so queueing alone does not establish
-	// that Read has appended the fragment before ReassemblyComplete snapshots the
-	// conversation.
+	// Store before queueing so ReassemblyComplete sees every delivered fragment.
 	if dir == reassembly.TCPDirClientToServer {
 		streamData := &core.StreamData{
 			RawData:          dataCpy,
