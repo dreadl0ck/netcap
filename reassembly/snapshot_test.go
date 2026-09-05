@@ -22,8 +22,8 @@ func checkSnapshotCleared(t *testing.T, a *Assembler) {
 		t.Fatalf("retained length = %d, want 0", len(a.flushSnapshot))
 	}
 	for i, c := range a.flushSnapshot[:cap(a.flushSnapshot)] {
-		if c != nil {
-			t.Fatalf("retained pointer at index %d", i)
+		if c != (connectionRef{}) {
+			t.Fatalf("retained reference at index %d", i)
 		}
 	}
 }
@@ -33,10 +33,10 @@ func TestPoolSnapshotMembership(t *testing.T) {
 	now := time.Unix(1700000000, 0)
 	add := func(i int) *connection {
 		k := snapshotKey(i)
-		c, _, _ := p.getConnection(&k, false, now, nil)
-		return c
+		ref, _ := p.getConnection(&k, false, now, nil)
+		return ref.conn
 	}
-	var dst []*connection
+	var dst []connectionRef
 	check := func(want ...*connection) {
 		t.Helper()
 		dst = p.connections(dst)
@@ -44,7 +44,8 @@ func TestPoolSnapshotMembership(t *testing.T) {
 			t.Fatalf("snapshot length = %d, want %d", len(dst), len(want))
 		}
 		seen := make(map[*connection]bool)
-		for _, c := range dst {
+		for _, ref := range dst {
+			c := ref.conn
 			if seen[c] {
 				t.Fatal("duplicate connection in snapshot")
 			}
@@ -66,7 +67,9 @@ func TestPoolSnapshotMembership(t *testing.T) {
 		t.Fatal("growth must allocate exactly the pool size")
 	}
 	old = &dst[0]
+	c2.mu.Lock()
 	p.remove(c2)
+	c2.mu.Unlock()
 	check(c1, c3)
 	if &dst[0] != old {
 		t.Fatal("shrink did not reuse storage")
@@ -91,7 +94,7 @@ func TestPoolSnapshotMembership(t *testing.T) {
 func TestFlushSnapshotReuseAndClear(t *testing.T) {
 	p := &StreamPool{conns: make(map[key]*connection)}
 	for i := 0; i < 8; i++ {
-		p.conns[snapshotKey(i)] = &connection{}
+		p.conns[snapshotKey(i)] = &connection{live: true}
 	}
 	a := &Assembler{connPool: p}
 	flush := func() {
@@ -121,14 +124,17 @@ func TestFlushSnapshotReuseAndClear(t *testing.T) {
 }
 
 func TestFlushSnapshotRetentionLimit(t *testing.T) {
+	if maxFlushSnapshotConnections != 64*1024 {
+		t.Fatalf("snapshot limit = %d, want 64k 16-byte references (1 MiB)", maxFlushSnapshotConnections)
+	}
 	for _, size := range []int{maxFlushSnapshotConnections, maxFlushSnapshotConnections + 1} {
 		for _, warm := range []bool{false, true} {
 			t.Run(strconv.Itoa(size)+"/warm="+strconv.FormatBool(warm), func(t *testing.T) {
 				p := &StreamPool{conns: make(map[key]*connection, size)}
 				a := &Assembler{connPool: p}
 				// Synthetic aliases to one OPEN connection test retention without
-				// allocating 131k large connections; this flush cannot remove entries.
-				shared := &connection{}
+				// allocating 64k large connections; this flush cannot remove entries.
+				shared := &connection{live: true}
 				p.conns[snapshotKey(0)] = shared
 				if warm {
 					a.FlushWithOptions(FlushOptions{})
@@ -204,7 +210,7 @@ func TestFlushSnapshotTimestampBoundary(t *testing.T) {
 func TestFlushSnapshotSeparateAssemblers(t *testing.T) {
 	p := &StreamPool{conns: make(map[key]*connection)}
 	for i := 0; i < 16; i++ {
-		p.conns[snapshotKey(i)] = &connection{}
+		p.conns[snapshotKey(i)] = &connection{live: true}
 	}
 	assemblers := []*Assembler{{connPool: p}, {connPool: p}}
 	start := make(chan struct{})

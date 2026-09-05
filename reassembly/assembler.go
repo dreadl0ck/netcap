@@ -14,8 +14,8 @@ import (
 
 const assemblerReturnValueInitialSize = 16
 
-// At most 1 MiB of snapshot pointers per assembler on 64-bit systems.
-const maxFlushSnapshotConnections = 128 * 1024
+// At most 1 MiB of snapshot handles per assembler on 64-bit systems.
+const maxFlushSnapshotConnections = 64 * 1024
 
 /*
  * Assembler
@@ -117,7 +117,7 @@ type Assembler struct {
 	ret           []byteContainer
 	pc            *pageCache
 	connPool      *StreamPool
-	flushSnapshot []*connection
+	flushSnapshot []connectionRef
 	cacheLP       livePacket
 	cacheSG       reassemblyObject
 	start         bool
@@ -200,16 +200,21 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 	a.ret = a.ret[:0]
 	a.Unlock()
 
-	conn, half, rev = a.connPool.getConnection(flowKey, false, ac.GetCaptureInfo().Timestamp, ac)
-	if conn == nil {
-		if Debug {
-			log.Printf("%v got empty packet on otherwise empty connection", flowKey)
+	for {
+		ref, reverse := a.connPool.getConnection(flowKey, false, ac.GetCaptureInfo().Timestamp, ac)
+		if ref.conn == nil {
+			return
 		}
-
-		return
+		if !ref.lock() {
+			continue
+		}
+		conn = ref.conn
+		half, rev = &conn.c2s, &conn.s2c
+		if reverse {
+			half, rev = rev, half
+		}
+		break
 	}
-
-	conn.mu.Lock()
 	defer conn.mu.Unlock()
 
 	if half.lastSeen.Before(ac.GetCaptureInfo().Timestamp) {
@@ -1021,10 +1026,11 @@ func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
 		flushes = 0
 	)
 
-	for _, conn := range conns {
-		remove := false
-
-		conn.mu.Lock()
+	for _, ref := range conns {
+		if !ref.lock() {
+			continue
+		}
+		conn := ref.conn
 
 		for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
 			isFlushed, isClosed := a.flushClose(conn, half, opt.T, opt.TC)
@@ -1038,13 +1044,9 @@ func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
 		}
 
 		if conn.s2c.closed && conn.c2s.closed && conn.s2c.lastSeen.Before(opt.TC) && conn.c2s.lastSeen.Before(opt.TC) {
-			remove = true
-		}
-		conn.mu.Unlock()
-
-		if remove {
 			a.connPool.remove(conn)
 		}
+		conn.mu.Unlock()
 	}
 
 	clear(conns)
@@ -1094,7 +1096,6 @@ func (a *Assembler) flushClose(conn *connection, half *halfconnection, t time.Ti
 // by the call.
 func (a *Assembler) FlushAll() (closed int) {
 	conns := a.connPool.connections(nil)
-	closed = len(conns)
 
 	// TODO: doing this in parallel would be nice for performance, but causes a crash in the reassembly pkg for some pcaps... debug
 	//wg := sync.WaitGroup{}
@@ -1102,7 +1103,9 @@ func (a *Assembler) FlushAll() (closed int) {
 
 		//wg.Add(1)
 		//go func(conn *connection) {
-		a.closeConn(conn)
+		if a.closeConn(conn) {
+			closed++
+		}
 		//wg.Done()
 		//}(conn)
 	}
@@ -1115,35 +1118,27 @@ func (a *Assembler) FlushAll() (closed int) {
 // FlushAllProgress behaves like FlushAll, but displays a progress bar additionally.
 func (a *Assembler) FlushAllProgress() (closed int) {
 	conns := a.connPool.connections(nil)
-	closed = len(conns)
 
 	// create and start new bar
-	bar := pb.StartNew(closed)
-
-	// TODO: doing this in parallel would be nice for performance, but causes a crash in the reassembly pkg for some pcaps... debug
-	wg := sync.WaitGroup{}
-
-	//fmt.Println("processing", len(conns))
+	bar := pb.StartNew(len(conns))
 
 	for _, conn := range conns {
-
-		wg.Add(1)
-
-		go func(co *connection) {
-			a.closeConn(co)
-			bar.Increment()
-			wg.Done()
-		}(conn)
+		if a.closeConn(conn) {
+			closed++
+		}
+		bar.Increment()
 	}
 
-	wg.Wait()
 	bar.Finish()
 
 	return
 }
 
-func (a *Assembler) closeConn(conn *connection) {
-	conn.mu.Lock()
+func (a *Assembler) closeConn(ref connectionRef) bool {
+	if !ref.lock() {
+		return false
+	}
+	conn := ref.conn
 	for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
 		for !half.closed {
 			a.skipFlush(conn, half)
@@ -1154,4 +1149,5 @@ func (a *Assembler) closeConn(conn *connection) {
 		}
 	}
 	conn.mu.Unlock()
+	return true
 }
