@@ -31,11 +31,14 @@ type StreamPool struct {
 	conns              map[key]*connection
 	users              int
 	mu                 sync.RWMutex
+	createMu           sync.Mutex
 	factory            streamFactory
 	free               []*connection
 	all                [][]connection
 	nextAlloc          int
 	newConnectionCount int64
+	pendingDue         deadlineHeap
+	closedDue          deadlineHeap
 }
 
 func (p *StreamPool) grow() {
@@ -52,31 +55,37 @@ func (p *StreamPool) grow() {
 
 // dump logs all connections.
 func (p *StreamPool) dump() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	log.Printf("Remaining %d connections: ", len(p.conns))
-	for _, conn := range p.conns {
-		log.Printf("%v %s", conn.key, conn)
+	conns := p.connections(nil)
+	log.Printf("Remaining %d connections: ", len(conns))
+	for _, ref := range conns {
+		log.Print(ref)
 	}
 }
 
 // DumpString logs all connections and returns a string.
 func (p *StreamPool) DumpString() string {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	conns := p.connections(nil)
 	var b bytes.Buffer
 
-	b.WriteString(fmt.Sprintf("Remaining %d connections: \n", len(p.conns)))
-	for _, conn := range p.conns {
-		b.WriteString(fmt.Sprintf("%v %s\n", conn.key, conn))
+	b.WriteString(fmt.Sprintf("Remaining %d connections: \n", len(conns)))
+	for _, ref := range conns {
+		b.WriteString(ref.String())
+		b.WriteByte('\n')
 	}
 
 	return b.String()
 }
 
+// remove requires conn.mu. Reuse waits for that lock without holding p.mu.
 func (p *StreamPool) remove(conn *connection) {
 	p.mu.Lock()
-	if _, ok := p.conns[*conn.key]; ok {
+	if conn.live && p.conns[*conn.key] == conn {
+		if conn.connectionDue != nil {
+			p.pendingDue.remove(&conn.pendingEntry)
+			p.closedDue.remove(&conn.closedEntry)
+			conn.dueClaimed = false
+		}
+		conn.live = false
 		delete(p.conns, *conn.key)
 		p.free = append(p.free, conn)
 	}
@@ -84,15 +93,25 @@ func (p *StreamPool) remove(conn *connection) {
 }
 
 // Reset clears all internal state and releases backing arrays.
+// All assembler operations must have stopped before calling Reset.
 // This should be called when the pool is no longer needed to allow
 // garbage collection of the underlying connection arrays.
 // CRITICAL for preventing memory leaks in multi-file processing.
 func (p *StreamPool) Reset() {
+	p.createMu.Lock()
+	defer p.createMu.Unlock()
+	for _, ref := range p.connections(nil) {
+		if ref.lock() {
+			ref.conn.live = false
+			ref.conn.mu.Unlock()
+		}
+	}
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	// Clear connections map
 	p.conns = make(map[key]*connection, initialAllocSize)
+	p.pendingDue, p.closedDue = nil, nil
 
 	// Clear free list
 	p.free = make([]*connection, 0, initialAllocSize)
@@ -125,16 +144,16 @@ func NewStreamPool(factory streamFactory) *StreamPool {
 	}
 }
 
-func (p *StreamPool) connections(dst []*connection) []*connection {
+func (p *StreamPool) connections(dst []connectionRef) []connectionRef {
 	p.mu.RLock()
 
 	conns := dst[:0]
 	if cap(conns) < len(p.conns) {
-		conns = make([]*connection, 0, len(p.conns))
+		conns = make([]connectionRef, 0, len(p.conns))
 	}
 
 	for _, conn := range p.conns {
-		conns = append(conns, conn)
+		conns = append(conns, connectionRef{conn: conn, generation: conn.generation})
 	}
 
 	p.mu.RUnlock()
@@ -142,7 +161,9 @@ func (p *StreamPool) connections(dst []*connection) []*connection {
 	return conns
 }
 
-func (p *StreamPool) newConnection(k *key, s Stream, ts time.Time) (c *connection, h *halfconnection, r *halfconnection) {
+// newConnection is called with createMu held, but never p.mu.
+func (p *StreamPool) newConnection(k *key, s Stream, ts time.Time) *connection {
+	p.mu.Lock()
 	if Debug {
 		p.newConnectionCount++
 		if p.newConnectionCount&0x7FFF == 0 {
@@ -155,57 +176,58 @@ func (p *StreamPool) newConnection(k *key, s Stream, ts time.Time) (c *connectio
 	}
 
 	index := len(p.free) - 1
-	c, p.free = p.free[index], p.free[:index]
+	c := p.free[index]
+	p.free[index] = nil
+	p.free = p.free[:index]
+	p.mu.Unlock()
 	c.reset(k, s, ts)
 
-	return c, &c.c2s, &c.s2c
+	return c
 }
 
-func (p *StreamPool) getHalf(k *key) (*connection, *halfconnection, *halfconnection) {
+// lookup requires p.mu. Direction is usable only after validating the reference.
+func (p *StreamPool) lookup(k *key) (connectionRef, bool) {
 	conn := p.conns[*k]
 	if conn != nil {
-		return conn, &conn.c2s, &conn.s2c
+		return connectionRef{conn: conn, generation: conn.generation}, false
 	}
 
 	rk := k.reverse()
 	conn = p.conns[rk]
 
 	if conn != nil {
-		return conn, &conn.s2c, &conn.c2s
+		return connectionRef{conn: conn, generation: conn.generation}, true
 	}
 
-	return nil, nil, nil
+	return connectionRef{}, false
 }
 
-// getConnection returns a connection.  If end is true and a connection
-// does not already exist, returns nil.  This allows us to check for a
-// connection without actually creating one if it doesn't already exist.
-func (p *StreamPool) getConnection(k *key, end bool, ts time.Time, ac AssemblerContext) (*connection, *halfconnection, *halfconnection) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
+// getConnection returns a generation reference and its reverse-direction flag.
+// With end set, a missing connection returns a zero reference without creation.
+func (p *StreamPool) getConnection(k *key, end bool, ts time.Time, ac AssemblerContext) (connectionRef, bool) {
+	p.mu.RLock()
+	ref, reverse := p.lookup(k)
+	p.mu.RUnlock()
+	if end || ref.conn != nil {
+		return ref, reverse
+	}
 
-	conn, half, rev := p.getHalf(k)
-
-	if end || conn != nil {
-		return conn, half, rev
+	// Preserve single factory creation per flow without blocking pool lookups
+	// or removals while a retired slot waits for its previous holder to exit.
+	p.createMu.Lock()
+	defer p.createMu.Unlock()
+	p.mu.RLock()
+	ref, reverse = p.lookup(k)
+	p.mu.RUnlock()
+	if ref.conn != nil {
+		return ref, reverse
 	}
 
 	s := p.factory.New(k[0], k[1], ac)
-
-	conn, half, rev = p.newConnection(k, s, ts)
-
-	conn2, half2, rev2 := p.getHalf(k)
-	if conn2 != nil {
-		if conn2.key != k {
-			fmt.Println(conn.key, conn.c2s)
-			panic("FIXME: other dir added in the meantime...")
-		}
-
-		// FIXME: delete s ?
-		return conn2, half2, rev2
-	}
-
+	conn := p.newConnection(k, s, ts)
+	p.mu.Lock()
 	p.conns[*k] = conn
-
-	return conn, half, rev
+	ref = connectionRef{conn: conn, generation: conn.generation}
+	p.mu.Unlock()
+	return ref, false
 }
