@@ -126,19 +126,18 @@ func (w *protoWriter) Write(msg proto.Message) error {
 	// Track disk I/O performance
 	if w.wc.PerfTracker != nil {
 		start := time.Now()
-		err := w.pWriter.putProto(msg)
+		size, err := w.pWriter.putProto(msg)
 		duration := time.Since(start)
 
-		// Estimate bytes written (proto size + varint length)
 		if err == nil {
-			size := proto.Size(msg)
 			w.wc.PerfTracker.RecordDiskWrite(w.wc.Name, duration, int64(size))
 		}
 
 		return err
 	}
 
-	return w.pWriter.putProto(msg)
+	_, err := w.pWriter.putProto(msg)
+	return err
 }
 
 // WriteHeader writes a netcap file header for protobuf encoded audit record files.
@@ -151,7 +150,8 @@ func (w *protoWriter) WriteHeader(t types.Type) error {
 		return nil // Silently ignore writes to closed writer
 	}
 
-	return w.pWriter.putProto(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
+	_, err := w.pWriter.putProto(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
+	return err
 }
 
 // Flush flushes any buffered data to disk without closing the writer.

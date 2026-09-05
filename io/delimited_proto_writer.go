@@ -21,6 +21,7 @@
 package io
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
@@ -36,16 +37,47 @@ import (
 // delimitedProtoWriter writes length delimited protobuf messages synchronized.
 type delimitedProtoWriter struct {
 	sync.Mutex
-	w delimited.Writer
+	w      delimited.Writer
+	buffer []byte
 }
 
-// putProto writes a protocol buffer into the writer and returns an error.
-func (a *delimitedProtoWriter) putProto(pb proto.Message) error {
-	a.Lock()
-	err := a.w.PutProto(pb)
-	a.Unlock()
+const maxProtoBufferSize = 1 << 20
 
-	return err
+// putProto returns the encoded message size, excluding the length prefix.
+func (a *delimitedProtoWriter) putProto(pb proto.Message) (int, error) {
+	a.Lock()
+	defer a.Unlock()
+
+	var record []byte
+	var err error
+	if msg, ok := pb.(interface {
+		Size() int
+		MarshalToSizedBuffer([]byte) (int, error)
+	}); ok {
+		size := msg.Size()
+		buffer := a.buffer
+		if cap(buffer) < size {
+			buffer = make([]byte, size)
+			if size <= maxProtoBufferSize {
+				a.buffer = buffer
+			}
+		}
+		// Generated marshalers write backwards from the end of the slice.
+		record = buffer[:size]
+		var n int
+		n, err = msg.MarshalToSizedBuffer(record)
+		if err == nil {
+			record = record[size-n:]
+		}
+	} else {
+		// Preserve support for messages without generated sized-buffer marshaling.
+		record, err = proto.Marshal(pb)
+	}
+	if err != nil {
+		return 0, fmt.Errorf("error encoding proto: %w", err)
+	}
+
+	return len(record), a.w.Put(record)
 }
 
 // newDelimitedProtoWriter takes a delimited.WriterAtomic and returns an atomic version.
