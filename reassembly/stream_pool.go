@@ -125,11 +125,13 @@ func NewStreamPool(factory streamFactory) *StreamPool {
 	}
 }
 
-func (p *StreamPool) connections() []*connection {
+func (p *StreamPool) connections(dst []*connection) []*connection {
 	p.mu.RLock()
 
-	// TODO: avoid this allocation?
-	conns := make([]*connection, 0, len(p.conns))
+	conns := dst[:0]
+	if cap(conns) < len(p.conns) {
+		conns = make([]*connection, 0, len(p.conns))
+	}
 
 	for _, conn := range p.conns {
 		conns = append(conns, conn)

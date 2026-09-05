@@ -14,6 +14,9 @@ import (
 
 const assemblerReturnValueInitialSize = 16
 
+// At most 1 MiB of snapshot pointers per assembler on 64-bit systems.
+const maxFlushSnapshotConnections = 128 * 1024
+
 /*
  * Assembler
  */
@@ -111,12 +114,13 @@ type assemblerOptions struct {
 type Assembler struct {
 	sync.Mutex
 	assemblerOptions
-	ret      []byteContainer
-	pc       *pageCache
-	connPool *StreamPool
-	cacheLP  livePacket
-	cacheSG  reassemblyObject
-	start    bool
+	ret           []byteContainer
+	pc            *pageCache
+	connPool      *StreamPool
+	flushSnapshot []*connection
+	cacheLP       livePacket
+	cacheSG       reassemblyObject
+	start         bool
 }
 
 // NewAssembler creates a new assembler.  Pass in the StreamPool
@@ -1012,7 +1016,7 @@ type FlushOptions struct {
 // because of the flush.
 func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
 	var (
-		conns   = a.connPool.connections()
+		conns   = a.connPool.connections(a.flushSnapshot)
 		closes  = 0
 		flushes = 0
 	)
@@ -1043,6 +1047,10 @@ func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
 		}
 	}
 
+	clear(conns)
+	if cap(conns) <= maxFlushSnapshotConnections {
+		a.flushSnapshot = conns[:0]
+	}
 	return flushes, closes
 }
 
@@ -1085,7 +1093,7 @@ func (a *Assembler) flushClose(conn *connection, half *halfconnection, t time.Ti
 // those connections. It returns the total number of connections flushed/closed
 // by the call.
 func (a *Assembler) FlushAll() (closed int) {
-	conns := a.connPool.connections()
+	conns := a.connPool.connections(nil)
 	closed = len(conns)
 
 	// TODO: doing this in parallel would be nice for performance, but causes a crash in the reassembly pkg for some pcaps... debug
@@ -1106,7 +1114,7 @@ func (a *Assembler) FlushAll() (closed int) {
 
 // FlushAllProgress behaves like FlushAll, but displays a progress bar additionally.
 func (a *Assembler) FlushAllProgress() (closed int) {
-	conns := a.connPool.connections()
+	conns := a.connPool.connections(nil)
 	closed = len(conns)
 
 	// create and start new bar
