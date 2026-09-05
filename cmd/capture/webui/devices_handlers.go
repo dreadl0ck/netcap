@@ -21,6 +21,7 @@ package webui
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -122,18 +123,15 @@ func readDeviceProfiles(outDir string) ([]DeviceProfileSummary, error) {
 
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		deviceProfile, err := reader.NextAs[*types.DeviceProfile]()
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
+			if errors.Is(err, ErrAuditRecordTypeMismatch) {
+				continue
+			}
 			log.Printf("[WebUI] Error reading DeviceProfile record: %v", err)
-			continue
-		}
-
-		// Type assert to DeviceProfile
-		deviceProfile, ok := record.(*types.DeviceProfile)
-		if !ok {
 			continue
 		}
 

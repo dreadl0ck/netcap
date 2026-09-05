@@ -23,6 +23,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	stdio "io"
@@ -231,18 +232,15 @@ func readConnections(outDir string) ([]ConnectionSummary, error) {
 
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		conn, err := reader.NextAs[*types.Connection]()
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
+			if errors.Is(err, ErrAuditRecordTypeMismatch) {
+				continue
+			}
 			log.Printf("[WebUI] Error reading Connection record: %v", err)
-			continue
-		}
-
-		// Type assert to Connection
-		conn, ok := record.(*types.Connection)
-		if !ok {
 			continue
 		}
 

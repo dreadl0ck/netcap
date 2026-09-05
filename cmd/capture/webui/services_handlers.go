@@ -21,6 +21,7 @@ package webui
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"net/http"
@@ -117,18 +118,15 @@ func readServices(outDir string) ([]ServiceSummary, error) {
 
 	// Read all records
 	for {
-		record, err := reader.NextRecord()
+		svc, err := reader.NextAs[*types.Service]()
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
+			if errors.Is(err, ErrAuditRecordTypeMismatch) {
+				continue
+			}
 			log.Printf("[WebUI] Error reading Service record: %v", err)
-			continue
-		}
-
-		// Type assert to Service
-		svc, ok := record.(*types.Service)
-		if !ok {
 			continue
 		}
 
