@@ -22,7 +22,7 @@ require (
 	github.com/go-echarts/go-echarts/v2 v2.6.5
 	github.com/go-errors/errors v1.5.1
 	github.com/gogo/protobuf v1.3.2
-	github.com/gopacket/gopacket v1.6.1
+	github.com/gopacket/gopacket v1.7.1
 	github.com/klauspost/pgzip v1.2.6
 	github.com/magiconair/properties v1.8.0
 	github.com/mcnijman/go-emailaddress v1.1.1

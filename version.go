@@ -8,4 +8,4 @@ var Version = "v0.9.0"
 var Commit = "3ea1250ececa4bd82a04d5bfd592a808e6f6518d"
 
 // GopacketVersion is the version of gopacket library used.
-var GopacketVersion = "v1.5.0"
+var GopacketVersion = "v1.7.1"
