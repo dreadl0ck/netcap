@@ -118,15 +118,9 @@ var sipDecoder = newGoPacketDecoder(
 				cseqMethod = matches[2]
 			}
 
-			// Extract Request-URI from the request line (stored in gopacket as RequestURI)
-			// For SIP requests, this is the target of the request
 			var requestURI string
 			if !sip.IsResponse {
-				// gopacket stores the Request-URI in the layer
-				// We need to reconstruct it or get it from the raw data
-				// The layers.SIP type doesn't expose RequestURI directly,
-				// so we extract it from headers if available or leave empty
-				requestURI = getFirstSIPHeader(sip.Headers, "Request-URI")
+				requestURI = sip.RequestURI
 			}
 
 			// Capture body if configured (for SDP analysis and VoIP security)
