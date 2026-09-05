@@ -33,6 +33,7 @@ import (
 	"golang.org/x/net/bpf"
 )
 
+// handleRawPacketData takes ownership of data; callers must not modify or reuse it.
 func (c *Collector) handleRawPacketData(data []byte, ci *gopacket.CaptureInfo) {
 	// Determine the correct base layer for this packet.
 	// For pcapng files with mixed link types, the per-packet link type
@@ -51,7 +52,11 @@ func (c *Collector) handleRawPacketData(data []byte, ci *gopacket.CaptureInfo) {
 	}
 
 	// when not using lazy here, the packet will be decoded on the main thread!
-	p := gopacket.NewPacket(data, baseLayer, c.config.DecodeOptions)
+	opts := c.config.DecodeOptions
+	if opts == (gopacket.DecodeOptions{}) {
+		opts.NoCopy = true
+	}
+	p := gopacket.NewPacket(data, baseLayer, opts)
 	p.Metadata().CaptureInfo = *ci
 
 	// pass packet to a worker routine
