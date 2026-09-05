@@ -23,7 +23,6 @@ package collector
 import (
 	"bufio"
 	"context"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -43,6 +42,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 
 	"github.com/dreadl0ck/netcap/internal/table"
 	"github.com/mgutz/ansi"
@@ -570,48 +570,28 @@ func (c *Collector) getSymmetricWorkerIndex(p gopacket.Packet) int {
 	}
 
 	var hash uint64
-
-	// Helper to hash flow endpoints symmetrically
-	hashFlow := func(src, dst []byte) uint64 {
-		var h uint64
-		// XOR is symmetric: A ^ B == B ^ A
-		if len(src) == 4 && len(dst) == 4 { // IPv4
-			h = uint64(binary.BigEndian.Uint32(src)) ^ uint64(binary.BigEndian.Uint32(dst))
-		} else if len(src) == 16 && len(dst) == 16 { // IPv6
-			// Fold IPv6 into 64 bits and XOR
-			h = (binary.BigEndian.Uint64(src[0:8]) ^ binary.BigEndian.Uint64(src[8:16])) ^
-				(binary.BigEndian.Uint64(dst[0:8]) ^ binary.BigEndian.Uint64(dst[8:16]))
-		} else {
-			// Generic byte slice sum for other types
-			for _, b := range src {
-				h += uint64(b)
-			}
-			for _, b := range dst {
-				h += uint64(b)
-			}
-		}
-		return h
-	}
+	hasFlow := false
 
 	// Network Layer
 	if nl := p.NetworkLayer(); nl != nil {
-		hash ^= hashFlow(nl.NetworkFlow().Src().Raw(), nl.NetworkFlow().Dst().Raw())
+		hash = nl.NetworkFlow().FastHash()
+		hasFlow = true
 	}
 
-	// Transport Layer
-	if tl := p.TransportLayer(); tl != nil {
-		src := tl.TransportFlow().Src().Raw()
-		dst := tl.TransportFlow().Dst().Raw()
-		if len(src) >= 2 && len(dst) >= 2 {
-			hash ^= uint64(binary.BigEndian.Uint16(src)) ^ uint64(binary.BigEndian.Uint16(dst))
-		}
+	// Match ReassemblePacket's TCP selection, including encapsulated TCP.
+	if tcpLayer := p.Layer(layers.LayerTypeTCP); tcpLayer != nil {
+		hash ^= tcpLayer.(*layers.TCP).TransportFlow().FastHash()
+		hasFlow = true
+	} else if tl := p.TransportLayer(); tl != nil {
+		hash ^= tl.TransportFlow().FastHash()
+		hasFlow = true
 	}
 
-	// Fallback for non-IP/Transport
-	if hash == 0 {
+	// A zero hash is valid; fall back only when no flow was identified.
+	if !hasFlow {
 		// Use Link Layer if available
 		if ll := p.LinkLayer(); ll != nil {
-			hash = hashFlow(ll.LinkFlow().Src().Raw(), ll.LinkFlow().Dst().Raw())
+			hash = ll.LinkFlow().FastHash()
 		} else {
 			// Round robin fallback (atomic to avoid races)
 			idx := c.next.Add(1) - 1
