@@ -20,12 +20,10 @@
 package packet
 
 import (
-	"bytes"
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"math"
 	"net"
 	"os"
 	"reflect"
@@ -45,6 +43,7 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 
 	"github.com/dreadl0ck/netcap"
+	byteentropy "github.com/dreadl0ck/netcap/internal/entropy"
 	"github.com/dreadl0ck/netcap/internal/table"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
@@ -404,19 +403,9 @@ func ShowDecoders(verbose bool) {
 	}
 }
 
-// entropy returns the shannon entropy value
-// https://rosettacode.org/wiki/Entropy#Go
-func entropy(data []byte) (entropy float64) {
-	if len(data) == 0 {
-		return 0
-	}
-	for i := range 256 {
-		px := float64(bytes.Count(data, []byte{byte(i)})) / float64(len(data))
-		if px > 0 {
-			entropy += -px * math.Log2(px)
-		}
-	}
-	return entropy
+// entropy returns the Shannon entropy in bits per byte.
+func entropy(data []byte) float64 {
+	return byteentropy.Bytes(data)
 }
 
 const dot = byte('.')

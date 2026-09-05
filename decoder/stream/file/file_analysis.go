@@ -21,9 +21,10 @@ package file
 
 import (
 	"bytes"
-	"math"
 	"path/filepath"
 	"strings"
+
+	"github.com/dreadl0ck/netcap/internal/entropy"
 )
 
 // FileAnalysis contains security analysis results for a file
@@ -142,28 +143,7 @@ func AnalyzeFile(content []byte, filename string) *FileAnalysis {
 // Returns a value between 0 (uniform) and 8 (random)
 // Values > 7.0 typically indicate encrypted or compressed content
 func calculateEntropy(data []byte) float64 {
-	if len(data) == 0 {
-		return 0
-	}
-
-	// Count byte frequencies
-	freq := make([]int, 256)
-	for _, b := range data {
-		freq[b]++
-	}
-
-	// Calculate entropy
-	var entropy float64
-	dataLen := float64(len(data))
-
-	for _, count := range freq {
-		if count > 0 {
-			p := float64(count) / dataLen
-			entropy -= p * math.Log2(p)
-		}
-	}
-
-	return entropy
+	return entropy.Bytes(data)
 }
 
 // detectFileTypeFromMagic detects file type from magic bytes
