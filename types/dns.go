@@ -178,6 +178,11 @@ func (q *DNSResourceRecord) toString() string {
 	b.WriteString(q.MX.toString())
 	b.WriteString(FieldSeparator)
 	b.WriteString(join(txts...))
+	if q.SVCB != nil {
+		b.WriteString(FieldSeparator)
+		value, _ := jsonMarshaler.MarshalToString(q.SVCB)
+		b.WriteString(value)
+	}
 	b.WriteString(StructureEnd)
 	return b.String()
 }

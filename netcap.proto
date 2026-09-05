@@ -919,6 +919,29 @@ message DNSResourceRecord {
   DNSSRV SRV = 12;
   DNSMX MX = 13;
   repeated bytes TXTs = 14;
+  DNSSVCB SVCB = 15;
+}
+
+message DNSSVCB {
+  uint32 Priority = 1;
+  string Target = 2;
+  repeated DNSSVCBParam Params = 3; // Wire order, including unknown and invalid values
+  bool Invalid = 4;
+}
+
+message DNSSVCBParam {
+  uint32 Key = 1;
+  bytes Value = 2;
+  bool Decoded = 3; // Convenience fields passed wire-format validation
+  string Error = 4;
+  repeated uint32 Mandatory = 5;
+  repeated bytes ALPN = 6; // Protocol IDs are opaque bytes, not necessarily UTF-8
+  bool NoDefaultALPN = 7;
+  uint32 Port = 8;
+  repeated string IPv4Hints = 9;
+  repeated string IPv6Hints = 10;
+  bytes ECH = 11; // Framing-validated ECHConfigList, not decrypted or interpreted
+  string DoHPath = 12;
 }
 
 // DNSSOA is a Start of Authority record.

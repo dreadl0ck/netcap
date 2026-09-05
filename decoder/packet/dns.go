@@ -132,6 +132,7 @@ var dnsDecoder = newGoPacketDecoder(
 						Name:       string(a.MX.Name),
 					},
 					TXTs: a.TXTs,
+					SVCB: dnsSVCB(a),
 				}
 			}
 			answers := make([]*types.DNSResourceRecord, 0, len(dns.Answers))
