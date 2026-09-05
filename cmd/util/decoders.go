@@ -137,6 +137,7 @@ func addGoPacketDecoders(decodersByLayer map[string][]DecoderInfo, seenDecoders 
 		layers.LayerTypeNTP:    {typeName: "NTP", layer: "Application Layer"},
 		layers.LayerTypeSIP:    {typeName: "SIP", layer: "Application Layer"},
 		layers.LayerTypeGeneve: {typeName: "Geneve", layer: "Application Layer"},
+		layers.LayerTypePktap:  {typeName: "PKTAP", layer: "Link Layer"},
 		layers.LayerTypeVXLAN:  {typeName: "VXLAN", layer: "Application Layer"},
 		layers.LayerTypeRMCP:   {typeName: "RMCP", layer: "Application Layer"},
 	}
@@ -335,6 +336,7 @@ func getTypeForName(name string) types.Type {
 		"CIP":                          types.Type_NC_CIP,
 		"ENIP":                         types.Type_NC_ENIP,
 		"Geneve":                       types.Type_NC_Geneve,
+		"PKTAP":                        types.Type_NC_PKTAP,
 		"VXLAN":                        types.Type_NC_VXLAN,
 		"VRRPv2":                       types.Type_NC_VRRPv2,
 		"LLC":                          types.Type_NC_LLC,

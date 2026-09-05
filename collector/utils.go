@@ -22,6 +22,7 @@ package collector
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -67,6 +68,13 @@ func (c *Collector) handleRawPacketData(data []byte, ci *gopacket.CaptureInfo) {
 // Returns 0 if the link type is not recognized.
 func linkTypeToLayerType(lt layers.LinkType) gopacket.LayerType {
 	switch lt {
+	case 258: // LINKTYPE_PKTAP is portable; DLT 149 is USER2 outside Darwin.
+		return layers.LayerTypePktap
+	case 149:
+		if runtime.GOOS == "darwin" {
+			return layers.LayerTypePktap
+		}
+		return gopacket.LayerTypePayload
 	case layers.LinkTypeEthernet:
 		return layers.LayerTypeEthernet
 	case layers.LinkTypeRaw, layers.LinkTypeIPv4:

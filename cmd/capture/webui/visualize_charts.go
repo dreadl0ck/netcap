@@ -1241,6 +1241,7 @@ func getLayerMap() map[string]string {
 		"Diameter":       "Application Layer",
 		"VXLAN":          "Application Layer",
 		"Geneve":         "Application Layer",
+		"PKTAP":          "Link Layer",
 		"IRC":            "Application Layer",
 		"SMB":            "Application Layer",
 		"IMAP":           "Application Layer",

@@ -369,6 +369,10 @@ func (c *Collector) handleLinkType(lt layers.LinkType) error {
 	case layers.LinkTypeLinuxSLL:
 		c.config.BaseLayer = layers.LayerTypeLinuxSLL
 	default:
+		if linkTypeToLayerType(lt) == layers.LayerTypePktap {
+			c.config.BaseLayer = layers.LayerTypePktap
+			break
+		}
 		linkTypeValue := int(lt)
 		errMsg := fmt.Sprintf("unhandled link type: %s (raw value: %d, hex: 0x%02X)", lt, linkTypeValue, linkTypeValue)
 

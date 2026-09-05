@@ -887,6 +887,7 @@ export default function RulesPage() {
                   <MenuItem value="File">File</MenuItem>
                   <MenuItem value="FTP">FTP</MenuItem>
                   <MenuItem value="Geneve">Geneve</MenuItem>
+                  <MenuItem value="PKTAP">PKTAP</MenuItem>
                   <MenuItem value="GRE">GRE</MenuItem>
                   <MenuItem value="GTP">GTP</MenuItem>
                   <MenuItem value="HTTP">HTTP</MenuItem>
@@ -1383,4 +1384,3 @@ export default function RulesPage() {
     </Layout>
   );
 }
-

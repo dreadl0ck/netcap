@@ -32,7 +32,7 @@ var (
 		"LinkLayerDiscovery", "LinkLayerDiscoveryInfo", "LinkLayerDiscoveryValue",
 		"LLDPChassisID", "LLDPPortID", "LLDPSysCapabilities", "LLDPCapabilities",
 		"LLDPMgmtAddress", "LLDPOrgSpecificTLV",
-		"NortelDiscovery", "PPP", "PPPoE", "SNAP", "STP", "USB", "USBRequestBlockSetup",
+		"NortelDiscovery", "PKTAP", "PPP", "PPPoE", "SNAP", "STP", "USB", "USBRequestBlockSetup",
 	}
 
 	networkLayerProtocols = []string{

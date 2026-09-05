@@ -193,6 +193,33 @@ enum Type {
   NC_ISIS = 143;
   NC_RARP = 144;
   NC_Protobuf = 145;
+  NC_PKTAP = 146;
+}
+
+message PKTAP {
+  int64 Timestamp = 1;
+  uint32 HeaderLength = 2;
+  uint32 RecordType = 3;
+  uint32 DLT = 4;
+  string InterfaceName = 5;
+  uint32 Flags = 6;
+  uint32 ProtocolFamily = 7;
+  uint32 LinkLayerHeaderLength = 8;
+  uint32 LinkLayerTrailerLength = 9;
+  uint32 PID = 10;
+  string CommandName = 11;
+  uint32 ServiceClass = 12;
+  uint32 InterfaceType = 13;
+  uint32 InterfaceUnit = 14;
+  uint32 EffectivePID = 15;
+  string EffectiveCommandName = 16;
+  string Direction = 17;
+  string ServiceClassName = 18;
+  string SrcIP = 19;
+  string DstIP = 20;
+  int32 SrcPort = 21;
+  int32 DstPort = 22;
+  string CommunityID = 23;
 }
 
 //
