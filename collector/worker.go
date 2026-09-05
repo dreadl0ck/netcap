@@ -58,6 +58,9 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 		layer          gopacket.Layer
 	)
 
+	allProtos := c.allProtosAtomic.NewShard()
+	unknownProtos := c.unknownProtosAtomic.NewShard()
+
 	// start worker
 	go func() {
 		for pkt = range in {
@@ -112,7 +115,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				layerTypeStr := layer.LayerType().String()
 
 				// increment counter for layer type
-				c.allProtosAtomic.Inc(layerTypeStr)
+				allProtos.Inc(layerTypeStr)
 
 				if c.config.DecoderConfig.ExportMetrics {
 					allProtosTotal.WithLabelValues(layerTypeStr).Inc()
@@ -122,7 +125,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				switch layer.LayerType() {
 				case gopacket.LayerTypeZero: // not known to gopacket
 					// increase counter
-					c.unknownProtosAtomic.Inc(layerTypeStr)
+					unknownProtos.Inc(layerTypeStr)
 
 					if c.config.DecoderConfig.ExportMetrics {
 						unknownProtosTotal.WithLabelValues(layerTypeStr).Inc()
@@ -163,7 +166,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				} else { // no netcap decoder implemented
 
 					// increment unknown layer type counter
-					c.unknownProtosAtomic.Inc(layerTypeStr)
+					unknownProtos.Inc(layerTypeStr)
 					if c.config.DecoderConfig.ExportMetrics {
 						unknownProtosTotal.WithLabelValues(layerTypeStr).Inc()
 					}

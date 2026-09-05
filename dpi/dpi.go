@@ -41,6 +41,9 @@ import (
 
 var disableDPI atomic.Bool
 
+// Serialize flow tracking, classification, and native engine lifecycle.
+var dpiMu sync.Mutex
+
 // Cache for module protocols to avoid re-initializing wrappers
 var (
 	moduleProtocolsCache     map[string][]string
@@ -66,6 +69,11 @@ func IsEnabled() bool {
 // If empty, all modules will be enabled.
 // This function is thread-safe and will only execute once if called concurrently.
 func Init(modules string) {
+	dpiMu.Lock()
+	defer dpiMu.Unlock()
+	if !disableDPI.Load() {
+		return
+	}
 
 	log.Println(ansi.Yellow + "[DPI] Init() called" + ansi.Reset)
 
@@ -167,8 +175,13 @@ func parseModules(modules string) map[string]bool {
 // Destroy tears down godpi and frees the memory allocated for cgo.
 // It also explicitly resets the internal flow tracker to release all tracked flows.
 // Returned errors are logged to stdout.
-// This function is NOT thread-safe!
+// Concurrent calls are safe; already disabled engines are left untouched.
 func Destroy() {
+	dpiMu.Lock()
+	defer dpiMu.Unlock()
+	if disableDPI.Swap(true) {
+		return
+	}
 
 	log.Println(ansi.Red + "[DPI] Destroy() called" + ansi.Reset)
 
@@ -182,13 +195,7 @@ func Destroy() {
 	}
 }
 
-// Reset destroys the current DPI state and reinitializes it.
-// This should be called when resetting state between processing different files.
-// It performs the following cleanup:
-//  1. Destroys all DPI modules (nDPI, LPI, go-dpi)
-//  2. Flushes and nils the FlowTrackerInstance (releases all tracked flows)
-//  3. Waits for C libraries to release memory
-//  4. Reinitializes with the same modules
+// Reset tears down the current DPI state without reinitializing it.
 func Reset(modules string) {
 
 	disabled := disableDPI.Load()
@@ -215,6 +222,11 @@ func Reset(modules string) {
 // manages when to actually perform classification based on MinPacketsForClassification.
 func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 
+	if disableDPI.Load() {
+		return nil
+	}
+	dpiMu.Lock()
+	defer dpiMu.Unlock()
 	if disableDPI.Load() {
 		return nil
 	}

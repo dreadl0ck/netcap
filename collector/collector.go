@@ -344,13 +344,11 @@ func (c *Collector) GetTotalAuditRecords() int64 {
 	var total int64
 
 	// Count GoPacket decoder records
-	c.unknownProtosAtomic.Lock()
-	for k, v := range c.allProtosAtomic.Items {
+	for k, v := range c.allProtosAtomic.Snapshot() {
 		if k != "Payload" {
 			total += v
 		}
 	}
-	c.unknownProtosAtomic.Unlock()
 
 	// Count packet decoder records
 	for _, d := range c.packetDecoders {
@@ -748,9 +746,10 @@ func (c *Collector) stats() {
 
 	var rows [][]string
 
-	c.unknownProtosAtomic.Lock()
+	allProtos := c.allProtosAtomic.Snapshot()
+	unknownProtos := c.unknownProtosAtomic.Snapshot()
 
-	for k, v := range c.allProtosAtomic.Items {
+	for k, v := range allProtos {
 		// Skip records with 0 count
 		if v == 0 {
 			continue
@@ -762,16 +761,15 @@ func (c *Collector) stats() {
 			continue
 		}
 
-		if _, ok := c.unknownProtosAtomic.Items[k]; ok {
+		if _, ok := unknownProtos[k]; ok {
 			rows = append(rows, []string{"*" + k, fmt.Sprint(v), share(v, c.numPackets)})
 		} else {
 			rows = append(rows, []string{k, fmt.Sprint(v), share(v, c.numPackets)})
 		}
 	}
 
-	numUnknown := len(c.unknownProtosAtomic.Items)
+	numUnknown := len(unknownProtos)
 
-	c.unknownProtosAtomic.Unlock()
 	table.Render(target, []string{"GoPacketDecoder", "NumRecords", "Share"}, rows)
 
 	// print legend if there are unknown protos
@@ -869,14 +867,12 @@ func (c *Collector) printTreeView(target io.Writer) {
 	decodersByLayer := make(map[string][]string)
 
 	// Collect GoPacket decoders with count > 0
-	c.unknownProtosAtomic.Lock()
-	for k, v := range c.allProtosAtomic.Items {
+	for k, v := range c.allProtosAtomic.Snapshot() {
 		if v > 0 && k != "Payload" {
 			layer := determineLayerForDecoder(k)
 			decodersByLayer[layer] = append(decodersByLayer[layer], k)
 		}
 	}
-	c.unknownProtosAtomic.Unlock()
 
 	// Collect PacketDecoders with count > 0
 	for _, d := range c.packetDecoders {

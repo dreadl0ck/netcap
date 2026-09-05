@@ -24,7 +24,8 @@ import "sync"
 // AtomicCounterMap maps strings to integers.
 type AtomicCounterMap struct {
 	sync.Mutex
-	Items map[string]int64
+	Items  map[string]int64
+	shards []*AtomicCounterMap
 }
 
 // NewAtomicCounterMap returns a new AtomicCounterMap.
@@ -32,6 +33,35 @@ func NewAtomicCounterMap() *AtomicCounterMap {
 	return &AtomicCounterMap{
 		Items: map[string]int64{},
 	}
+}
+
+// NewShard registers a worker-local counter on the root. Call only on the root.
+func (a *AtomicCounterMap) NewShard() *AtomicCounterMap {
+	shard := NewAtomicCounterMap()
+	a.Lock()
+	a.shards = append(a.shards, shard)
+	a.Unlock()
+	return shard
+}
+
+// Snapshot copies root and shard counts. Each map is read under its own lock;
+// the result is not a global cross-shard transaction.
+func (a *AtomicCounterMap) Snapshot() map[string]int64 {
+	a.Lock()
+	defer a.Unlock()
+
+	items := make(map[string]int64, len(a.Items))
+	for k, v := range a.Items {
+		items[k] = v
+	}
+	for _, shard := range a.shards {
+		shard.Lock()
+		for k, v := range shard.Items {
+			items[k] += v
+		}
+		shard.Unlock()
+	}
+	return items
 }
 
 // Inc increments a value.

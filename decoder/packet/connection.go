@@ -113,7 +113,8 @@ type connection struct {
 // atomicConnMap contains all connections and provides synchronized access.
 type atomicConnMap struct {
 	sync.Mutex
-	Items map[string]*connection
+	operations sync.RWMutex
+	Items      map[string]*connection
 }
 
 // Size returns the number of elements in the Items map.
@@ -131,6 +132,8 @@ var conns = &atomicConnMap{
 // ResetConnections clears all connections from memory
 // This should be called when resetting state between processing different files
 func ResetConnections() {
+	conns.operations.Lock()
+	defer conns.operations.Unlock()
 	conns.Lock()
 	conns.Items = make(map[string]*connection)
 	conns.Unlock()
@@ -145,6 +148,8 @@ var connectionDecoder = newAccumulatingPacketDecoder(
 		return handlePacket(p)
 	},
 	func(decoder *Decoder) error {
+		conns.operations.Lock()
+		defer conns.operations.Unlock()
 
 		cp := connectionProcessor{}
 		cp.initWorkers(decoderconfig.Instance.StreamBufferSize, decoderconfig.Instance.NumStreamWorkers)
@@ -169,6 +174,8 @@ var connectionDecoder = newAccumulatingPacketDecoder(
 	},
 	// FlushState: Write current state without clearing in-memory data
 	func(decoder *Decoder) int64 {
+		conns.operations.RLock()
+		defer conns.operations.RUnlock()
 		var numFlushed int64
 
 		// Take a snapshot of items under lock to avoid race conditions
@@ -193,6 +200,10 @@ var connectionDecoder = newAccumulatingPacketDecoder(
 )
 
 func handlePacket(p gopacket.Packet) proto.Message {
+	// Reset and final flushing must wait for admitted updates to finish.
+	conns.operations.RLock()
+	defer conns.operations.RUnlock()
+
 	// assemble connectionID
 	connID := connectionID{}
 	ll := p.LinkLayer()
@@ -211,9 +222,11 @@ func handlePacket(p gopacket.Packet) proto.Message {
 	}
 
 	// lookup connection
+	key := connID.String()
 	conns.Lock()
 
-	if conn, ok := conns.Items[connID.String()]; ok {
+	if conn, ok := conns.Items[key]; ok {
+		conns.Unlock()
 
 		conn.Lock()
 
@@ -371,7 +384,8 @@ func handlePacket(p gopacket.Packet) proto.Message {
 		}
 		// Track JA4L timing for the first packet
 		trackJA4LTiming(newConn, p)
-		conns.Items[connID.String()] = newConn
+		conns.Items[key] = newConn
+		conns.Unlock()
 
 		// TODO: add dedicated stats structure for decoder pkg
 		// conns := atomic.AddInt64(&stream.stats.numConns, 1)
@@ -381,7 +395,6 @@ func handlePacket(p gopacket.Packet) proto.Message {
 		//	cd.flushConns(p)
 		//}
 	}
-	conns.Unlock()
 
 	return nil
 }

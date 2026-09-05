@@ -418,8 +418,7 @@ func (c *Collector) CloseFileHandleOnShutdown(f *os.File) {
 // updatePerformanceTrackerWithDecoderStats updates the performance tracker with final decoder statistics
 func (c *Collector) updatePerformanceTrackerWithDecoderStats() {
 	// Update GoPacket decoder stats
-	c.unknownProtosAtomic.Lock()
-	for k, v := range c.allProtosAtomic.Items {
+	for k, v := range c.allProtosAtomic.Snapshot() {
 		if k != "Payload" {
 			// Find the file size for this decoder
 			var fileSize int64
@@ -433,7 +432,6 @@ func (c *Collector) updatePerformanceTrackerWithDecoderStats() {
 			c.perfTracker.UpdateDecoderRecords("gopacket", k, v, fileSize)
 		}
 	}
-	c.unknownProtosAtomic.Unlock()
 
 	// Update packet decoder stats
 	for _, d := range c.packetDecoders {
