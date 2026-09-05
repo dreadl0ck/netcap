@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"reflect"
 	"strings"
@@ -117,6 +118,39 @@ func (r *AuditRecordReader) NextAs[T proto.Message]() (T, error) {
 		return zero, fmt.Errorf("%w: got %T, want %v", ErrAuditRecordTypeMismatch, msg, reflect.TypeFor[T]())
 	}
 	return record, nil
+}
+
+func visitAuditRecords[T proto.Message](path, label string, visit func(T)) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		log.Printf("[WebUI] %s file not found: %s", label, path)
+		return nil
+	}
+
+	reader, err := NewAuditRecordReader(path)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+	if _, err := reader.ReadHeader(); err != nil {
+		return err
+	}
+
+	for {
+		record, err := reader.NextAs[T]()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			if errors.Is(err, ErrAuditRecordTypeMismatch) {
+				continue
+			}
+			// Preserve skip-on-error behavior; persistent I/O errors can repeat indefinitely.
+			log.Printf("[WebUI] Error reading %s record: %v", label, err)
+			continue
+		}
+		visit(record)
+	}
+	return nil
 }
 
 // NextAsJSON reads the next audit record and returns it as JSON

@@ -23,7 +23,6 @@ package packet
 import (
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -99,61 +98,11 @@ func (dec *GoPacketDecoder) NumRecords() int64 {
 func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*GoPacketDecoder, err error) {
 	decoders = map[gopacket.LayerType][]*GoPacketDecoder{}
 
-	var (
-		// values from command-line flags
-		in = strings.Split(c.IncludeDecoders, ",")
-		ex = strings.Split(c.ExcludeDecoders, ",")
-
-		// include map
-		inMap = make(map[string]bool)
-	)
-
-	// Work with a copy of the gopacket decoders slice to avoid mutating
-	// package-level state. Prior implementations reassigned
-	// defaultGoPacketDecoders so a single test using IncludeDecoders
-	// permanently shrunk the global slice for the rest of the run, killing
-	// TCP/Ethernet/IPv4 record output for every later test.
-	active := append([]*GoPacketDecoder(nil), defaultGoPacketDecoders...)
-
-	// if there are includes and the first item is not an empty string
-	if len(in) > 0 && in[0] != "" { // iterate over includes
-		for _, name := range in {
-			if name != "" { // check if proto exists
-				if _, ok := decoderutils.AllDecoderNames[name]; !ok {
-					return nil, errors.Wrap(ErrInvalidDecoder, name)
-				}
-
-				// add to include map
-				inMap[name] = true
-			}
-		}
-
-		// iterate over gopacket decoders and collect those that are named in the includeMap
-		var selection []*GoPacketDecoder
-		for _, e := range active {
-			if _, ok := inMap[e.Layer.String()]; ok {
-				selection = append(selection, e)
-			}
-		}
-		active = selection
-	}
-
-	// iterate over excluded decoders
-	for _, name := range ex {
-		if name != "" { // check if proto exists
-			if _, ok := decoderutils.AllDecoderNames[name]; !ok {
-				return nil, errors.Wrap(ErrInvalidDecoder, name)
-			}
-
-			// remove named decoder from the active slice
-			for i, e := range active {
-				if name == e.Layer.String() {
-					// remove decoder
-					active = append(active[:i], active[i+1:]...)
-					break
-				}
-			}
-		}
+	active, err := decoderutils.SelectDecoders(defaultGoPacketDecoders, c.IncludeDecoders, c.ExcludeDecoders, func(d *GoPacketDecoder) string {
+		return d.Layer.String()
+	}, ErrInvalidDecoder)
+	if err != nil {
+		return nil, err
 	}
 
 	var (

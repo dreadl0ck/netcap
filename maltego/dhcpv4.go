@@ -43,7 +43,7 @@ type DHCPCountFunc func()
 // DHCPV4TransformationFunc is a transformation over DHCPv4 audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type DHCPV4TransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv4, min, max uint64, path string, ip string)
+type DHCPV4TransformationFunc = transformationFunc[types.DHCPv4]
 
 // DHCPV4Transform applies a maltego transformation over DHCP audit records.
 func DHCPV4Transform(count DHCPCountFunc, transform DHCPV4TransformationFunc, continueTransform bool) {

@@ -43,7 +43,7 @@ type UDPCountFunc func()
 // UDPTransformationFunc is a transformation over UDP audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type UDPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, udp *types.UDP, min, max uint64, path string, ip string)
+type UDPTransformationFunc = transformationFunc[types.UDP]
 
 // UDPTransform applies a maltego transformation over UDP audit records.
 func UDPTransform(count UDPCountFunc, transform UDPTransformationFunc, continueTransform bool) {

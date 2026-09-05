@@ -39,7 +39,7 @@ import (
 // IPv6HopByHopTransformationFunc is a transformation over IPv6HopByHop audit records
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type IPv6HopByHopTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, ipv6 *types.IPv6HopByHop, min, max uint64, path string, mac string, ip string)
+type IPv6HopByHopTransformationFunc = transformationWithMACFunc[types.IPv6HopByHop]
 
 // IPv6HopByHopTransform applies a maltego transformation over IP profiles
 func IPv6HopByHopTransform(count ipv6CountFunc, transform IPv6HopByHopTransformationFunc) {

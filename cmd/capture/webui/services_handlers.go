@@ -21,11 +21,8 @@ package webui
 
 import (
 	"encoding/json"
-	"errors"
-	"io"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"sort"
 
@@ -95,41 +92,8 @@ func (s *Server) handleServices(w http.ResponseWriter, r *http.Request) {
 func readServices(outDir string) ([]ServiceSummary, error) {
 	filePath := filepath.Join(outDir, "Service.ncap.gz")
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] Service file not found: %s", filePath)
-		return []ServiceSummary{}, nil
-	}
-
-	// Read Service records
-	reader, err := NewAuditRecordReader(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer reader.Close()
-
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return nil, err
-	}
-
 	services := make([]ServiceSummary, 0)
-
-	// Read all records
-	for {
-		svc, err := reader.NextAs[*types.Service]()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			if errors.Is(err, ErrAuditRecordTypeMismatch) {
-				continue
-			}
-			log.Printf("[WebUI] Error reading Service record: %v", err)
-			continue
-		}
-
+	err := visitAuditRecords(filePath, "Service", func(svc *types.Service) {
 		services = append(services, ServiceSummary{
 			Timestamp:            svc.Timestamp,
 			IP:                   svc.IP,
@@ -151,6 +115,9 @@ func readServices(outDir string) ([]ServiceSummary, error) {
 			DetectedProtocolName: svc.DetectedProtocolName,
 			MatchedProbeID:       svc.MatchedProbeID,
 		})
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	// Sort by bytes (server + client) descending

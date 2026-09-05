@@ -37,10 +37,10 @@ import (
 )
 
 // softwareTransformationFunc is a transformation over Software profiles for a selected Software.
-type softwareTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Software, min, max uint64, path string, mac string, ip string)
+type softwareTransformationFunc = transformationWithMACFunc[types.Software]
 
 // deviceProfileCountFunc is a function that counts something over DeviceProfiles.
-type softwareCountFunc = func(software *types.Software, mac string, min, max *uint64)
+type softwareCountFunc = countFunc[types.Software]
 
 // SoftwareTransform applies a maltego transformation over Software profiles seen for a target Software.
 func SoftwareTransform(count softwareCountFunc, transform softwareTransformationFunc) {

@@ -27,10 +27,11 @@ RUN apt-get clean && \
     ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# Install Go 1.25.1 manually
-RUN wget https://go.dev/dl/go1.25.1.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go1.25.1.linux-amd64.tar.gz && \
-    rm go1.25.1.linux-amd64.tar.gz
+# Install Go 1.27.0, verified against the go.dev release checksum.
+RUN wget https://go.dev/dl/go1.27.0.linux-amd64.tar.gz && \
+    echo '675c26c449cbb18fc24b74650de1eabbae6e16f64326fd85a283fb3b58280685  go1.27.0.linux-amd64.tar.gz' | sha256sum -c - && \
+    tar -C /usr/local -xzf go1.27.0.linux-amd64.tar.gz && \
+    rm go1.27.0.linux-amd64.tar.gz
 
 # Set Go environment
 ENV PATH="/usr/local/go/bin:${PATH}"
@@ -82,7 +83,7 @@ RUN test -f /usr/local/include/yara_x.h || (echo "yara_x.h missing" && exit 1) &
 WORKDIR /workspace
 
 # Verify Go installation
-RUN go version
+RUN go version && test "$(go env GOVERSION)" = go1.27.0
 
 # This image is ready to accept source code and build
 CMD ["/bin/bash"]

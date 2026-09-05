@@ -3,7 +3,6 @@ package stream
 import (
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 	"time"
 
@@ -86,62 +85,9 @@ func ApplyActionToAbstractDecodersAsync(action func(api core.DecoderAPI)) {
 // InitAbstractDecoders initializes all stream decoders.
 func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err error) {
 	tls.RecordDecoder.Writer = nil
-	var (
-		// values from command-line flags
-		in = strings.Split(c.IncludeDecoders, ",")
-		ex = strings.Split(c.ExcludeDecoders, ",")
-
-		// include map
-		inMap = make(map[string]bool)
-	)
-
-	// Work with a copy of the decoders slice to avoid mutating package-level
-	// state. Prior implementations reassigned DefaultAbstractDecoders so a
-	// single test using IncludeDecoders permanently emptied the global slice
-	// for the remainder of the run, breaking File/Service/Mail/etc. output
-	// for every later test.
-	active := append([]core.DecoderAPI(nil), DefaultAbstractDecoders...)
-
-	// if there are includes and the first item is not an empty string
-	if len(in) > 0 && in[0] != "" { // iterate over includes
-		for _, name := range in {
-			if name != "" { // check if proto exists
-				if _, ok := decoderutils.AllDecoderNames[name]; !ok {
-					return nil, errors.Wrap(errInvalidAbstractDecoder, name)
-				}
-
-				// add to include map
-				inMap[name] = true
-			}
-		}
-
-		// iterate over packet decoders and collect those that are named in the includeMap
-		var selection []core.DecoderAPI
-		for _, dec := range active {
-			if _, ok := inMap[dec.GetName()]; ok {
-				selection = append(selection, dec)
-			}
-		}
-		active = selection
-	}
-
-	// iterate over excluded decoders
-	for _, name := range ex {
-		if name != "" { // check if proto exists
-			if _, ok := decoderutils.AllDecoderNames[name]; !ok {
-				return nil, errors.Wrap(errInvalidAbstractDecoder, name)
-			}
-
-			// remove named decoder from the active slice
-			for i, dec := range active {
-				if name == dec.GetName() {
-					// remove decoder
-					active = append(active[:i], active[i+1:]...)
-
-					break
-				}
-			}
-		}
+	active, err := decoderutils.SelectDecoders(DefaultAbstractDecoders, c.IncludeDecoders, c.ExcludeDecoders, core.DecoderAPI.GetName, errInvalidAbstractDecoder)
+	if err != nil {
+		return nil, err
 	}
 
 	var (

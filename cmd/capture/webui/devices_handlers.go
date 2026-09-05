@@ -21,11 +21,8 @@ package webui
 
 import (
 	"encoding/json"
-	"errors"
-	"io"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"sort"
 
@@ -100,41 +97,8 @@ func (s *Server) handleDevices(w http.ResponseWriter, r *http.Request) {
 func readDeviceProfiles(outDir string) ([]DeviceProfileSummary, error) {
 	filePath := filepath.Join(outDir, "DeviceProfile.ncap.gz")
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] DeviceProfile file not found: %s", filePath)
-		return []DeviceProfileSummary{}, nil
-	}
-
-	// Read DeviceProfile records
-	reader, err := NewAuditRecordReader(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer reader.Close()
-
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return nil, err
-	}
-
 	devices := make([]DeviceProfileSummary, 0)
-
-	// Read all records
-	for {
-		deviceProfile, err := reader.NextAs[*types.DeviceProfile]()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			if errors.Is(err, ErrAuditRecordTypeMismatch) {
-				continue
-			}
-			log.Printf("[WebUI] Error reading DeviceProfile record: %v", err)
-			continue
-		}
-
+	err := visitAuditRecords(filePath, "DeviceProfile", func(deviceProfile *types.DeviceProfile) {
 		devices = append(devices, DeviceProfileSummary{
 			MacAddr:            deviceProfile.MacAddr,
 			DeviceManufacturer: deviceProfile.DeviceManufacturer,
@@ -152,6 +116,9 @@ func readDeviceProfiles(outDir string) ([]DeviceProfileSummary, error) {
 			OS:                 deviceProfile.OS,
 			Roles:              deviceProfile.Roles,
 		})
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	// Sort by packet count descending

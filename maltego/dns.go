@@ -43,7 +43,7 @@ type DNSCountFunc func()
 // DNSTransformationFunc is a transformation over DNS audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type DNSTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, dns *types.DNS, min, max uint64, path string, ip string)
+type DNSTransformationFunc = transformationFunc[types.DNS]
 
 // DNSTransform applies a maltego transformation over DNS audit records.
 func DNSTransform(count DNSCountFunc, transform DNSTransformationFunc, continueTransform bool) {

@@ -43,7 +43,7 @@ type EthernetCountFunc func()
 // EthernetTransformationFunc is a transformation over Ethernet audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type EthernetTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, ethernet *types.Ethernet, min, max uint64, path string, ip string)
+type EthernetTransformationFunc = transformationFunc[types.Ethernet]
 
 // EthernetTransform applies a maltego transformation over Ethernet audit records.
 func EthernetTransform(count EthernetCountFunc, transform EthernetTransformationFunc, continueTransform bool) {
