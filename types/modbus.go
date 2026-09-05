@@ -44,13 +44,14 @@ var fieldsModbus = []string{
 	fieldProtocolID,    // int32
 	fieldLength,        // int32
 	fieldUnitID,        // int32
-	//fieldPayload,       // []byte
-	fieldException,    // bool
-	fieldFunctionCode, // int32
+	fieldPayload,       // []byte
+	fieldException,     // bool
+	fieldFunctionCode,  // int32
 	fieldSrcIP,
 	fieldDstIP,
 	fieldSrcPort,
 	fieldDstPort,
+	fieldCommunityID,
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -60,7 +61,12 @@ func (a *Modbus) CSVHeader() []string {
 
 // CSVRecord returns the CSV record for the audit record.
 func (a *Modbus) CSVRecord() []string {
-	return filter([]string{
+	return filter(a.csvRecord())
+}
+
+// csvRecord returns all values so metric labels are independent of field selection.
+func (a *Modbus) csvRecord() []string {
+	return []string{
 		formatTimestamp(a.Timestamp),
 		formatInt32(a.TransactionID), // int32
 		formatInt32(a.ProtocolID),    // int32
@@ -73,7 +79,8 @@ func (a *Modbus) CSVRecord() []string {
 		a.DstIP,
 		formatInt32(a.SrcPort),
 		formatInt32(a.DstPort),
-	})
+		a.CommunityID,
+	}
 }
 
 // Time returns the timestamp associated with the audit record.
@@ -84,9 +91,10 @@ func (a *Modbus) Time() int64 {
 // JSON returns the JSON representation of the audit record.
 func (a *Modbus) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
-	a.Timestamp /= int64(time.Millisecond)
+	copy := *a
+	copy.Timestamp /= int64(time.Millisecond)
 
-	return jsonMarshaler.MarshalToString(a)
+	return jsonMarshaler.MarshalToString(&copy)
 }
 
 var modbusTCPMetric = prometheus.NewCounterVec(
@@ -99,7 +107,7 @@ var modbusTCPMetric = prometheus.NewCounterVec(
 
 // Inc increments the metrics for the audit record.
 func (a *Modbus) Inc() {
-	modbusTCPMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+	modbusTCPMetric.WithLabelValues(a.csvRecord()[1:]...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
@@ -108,6 +116,7 @@ func (a *Modbus) SetPacketContext(ctx *PacketContext) {
 	a.DstIP = ctx.DstIP
 	a.SrcPort = ctx.SrcPort
 	a.DstPort = ctx.DstPort
+	a.CommunityID = ctx.CommunityID
 }
 
 // Src returns the source address of the audit record.
@@ -130,13 +139,14 @@ func (a *Modbus) Encode() []string {
 		modbusEncoder.Int32(fieldProtocolID, a.ProtocolID),       // int32
 		modbusEncoder.Int32(fieldLength, a.Length),               // int32
 		modbusEncoder.Int32(fieldUnitID, a.UnitID),               // int32
-		//hex.EncodeToString(a.Payload),
+		modbusEncoder.String(fieldPayload, hex.EncodeToString(a.Payload)),
 		modbusEncoder.Bool(a.Exception),
 		modbusEncoder.Int32(fieldFunctionCode, a.FunctionCode),
 		modbusEncoder.String(fieldSrcIP, a.SrcIP),
 		modbusEncoder.String(fieldDstIP, a.DstIP),
 		modbusEncoder.Int32(fieldSrcPort, a.SrcPort),
 		modbusEncoder.Int32(fieldDstPort, a.DstPort),
+		modbusEncoder.String(fieldCommunityID, a.CommunityID),
 	})
 }
 

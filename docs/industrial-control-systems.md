@@ -63,9 +63,14 @@ S7CommPlus visibility fields `PayloadObscured` / `S7PlusOpcode` /
 
 ## Modbus
 
+See [Modbus Threat Hunting](modbus-threat-hunting.md) for a passive Modbus TCP
+workflow, scoped function-code triage, manual payload evidence and RTU limitations.
+Detection also supports nonstandard TCP ports; function codes do not distinguish
+requests from replies, and register ranges/values are not structured fields.
+
 ```erlang
 message Modbus {
-    string Timestamp     = 1;
+    int64  Timestamp     = 1;
     int32  TransactionID = 2; // Identification of a MODBUS Request/Response transaction
     int32  ProtocolID    = 3; // It is used for intra-system multiplexing
     int32  Length        = 4; // Number of following bytes (includes 1 byte for UnitIdentifier + Modbus data length
@@ -74,7 +79,11 @@ message Modbus {
     bool   Exception     = 7;
     int32  FunctionCode  = 8;
 
-    PacketContext Context = 9;
+    string SrcIP         = 9;
+    string DstIP         = 10;
+    int32  SrcPort       = 11;
+    int32  DstPort       = 12;
+    string CommunityID   = 13;
 }
 ```
 

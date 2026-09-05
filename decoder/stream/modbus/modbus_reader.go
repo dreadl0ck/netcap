@@ -20,13 +20,13 @@
 package modbus
 
 import (
-	"bytes"
 	"sync/atomic"
 
 	"go.uber.org/zap"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
+	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -56,11 +56,11 @@ const (
 	FuncWriteFileRecord = 0x15 // Write File Record
 
 	// Diagnostics
-	FuncReadExceptionStatus  = 0x07 // Read Exception Status
-	FuncDiagnostic           = 0x08 // Diagnostic
-	FuncGetCommEventCounter  = 0x0B // Get Comm Event Counter
-	FuncGetCommEventLog      = 0x0C // Get Comm Event Log
-	FuncReportSlaveID        = 0x11 // Report Slave ID
+	FuncReadExceptionStatus   = 0x07 // Read Exception Status
+	FuncDiagnostic            = 0x08 // Diagnostic
+	FuncGetCommEventCounter   = 0x0B // Get Comm Event Counter
+	FuncGetCommEventLog       = 0x0C // Get Comm Event Log
+	FuncReportSlaveID         = 0x11 // Report Slave ID
 	FuncEncapsulatedInterface = 0x2B // Encapsulated Interface Transport (includes Read Device Identification)
 
 	// User-defined function codes (65-72, 100-110)
@@ -138,42 +138,97 @@ func (m *modbusReader) Decode() {
 		return
 	}
 
-	var buf bytes.Buffer
-
-	for _, data := range m.conversation.Data {
-		buf.Write(data.Raw())
-	}
-
-	frameData := buf.Bytes()
-	offset := 0
-
-	for offset < len(frameData)-mbapHeaderSize {
-		// Validate MBAP header
-		if !m.isModbusHeader(frameData[offset:]) {
-			offset++
-			continue
+	m.frameConversation(func(msg *types.Modbus) {
+		if err := Decoder.Writer.Write(msg); err != nil {
+			modbusLog.Error("failed to write Modbus record", zap.Error(err))
+		} else {
+			atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 		}
+	})
+}
 
-		msg, consumed := m.parseModbusMessage(frameData[offset:])
-		if msg != nil {
-			msg.SrcIP = m.conversation.ClientIP
-			msg.DstIP = m.conversation.ServerIP
-			msg.SrcPort = int32(m.conversation.ClientPort)
-			msg.DstPort = int32(m.conversation.ServerPort)
-			msg.CommunityID = m.conversation.CommunityID
-
-			err := Decoder.Writer.Write(msg)
-			if err != nil {
-				modbusLog.Error("failed to write Modbus record", zap.Error(err))
-			} else {
-				atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+func (m *modbusReader) frameConversation(emit func(*types.Modbus)) {
+	type directionState struct {
+		data      [mbapHeaderSize + maxPDUSize]byte
+		n         int
+		timestamp int64
+		stopped   bool
+	}
+	var client, server directionState
+	feed := func(input interface {
+		Direction() reassembly.TCPFlowDirection
+	}) { f := &client; if input.Direction() == reassembly.TCPDirServerToClient {
+		f = &server
+	};
+	// Without loss/status schema fields, emit only complete, contiguous ADUs.
+	// The fragment interface has no gap accessor; unknown metadata is unsafe.
+	fragment, ok := input.(*core.StreamData); if !ok || fragment.SkippedBytes != 0 {
+		f.stopped = true
+		f.n = 0
+		return
+	}; data := fragment.Raw(); for len(data) > 0 && !f.stopped {
+		if f.n == 0 {
+			f.timestamp = fragment.CaptureInfo().Timestamp.UnixNano()
+			if fragment.Context() != nil {
+				f.timestamp = fragment.Context().GetCaptureInfo().Timestamp.UnixNano()
 			}
 		}
-
-		if consumed > 0 {
-			offset += consumed
+		target := mbapHeaderSize + minPDUSize
+		if f.n >= target {
+			target = 6 + (int(f.data[4]) << 8) + int(f.data[5])
+		}
+		n := copy(f.data[f.n:target], data)
+		f.n += n
+		data = data[n:]
+		if f.n < mbapHeaderSize+minPDUSize {
+			continue
+		}
+		if !m.isModbusHeader(f.data[:f.n]) {
+			// MBAP has no reliable sync marker; never scan a body for headers.
+			f.stopped = true
+			continue
+		}
+		msg, consumed := m.parseModbusMessage(f.data[:f.n])
+		if consumed == 0 {
+			continue
+		}
+		msg.Timestamp = f.timestamp
+		msg.SrcIP, msg.DstIP = m.conversation.ClientIP, m.conversation.ServerIP
+		msg.SrcPort, msg.DstPort = int32(m.conversation.ClientPort), int32(m.conversation.ServerPort)
+		if f == &server {
+			msg.SrcIP, msg.DstIP = msg.DstIP, msg.SrcIP
+			msg.SrcPort, msg.DstPort = msg.DstPort, msg.SrcPort
+		}
+		msg.CommunityID = m.conversation.CommunityID
+		emit(msg)
+		f.n = 0
+	} }
+	c, s := m.conversation.ClientData, m.conversation.ServerData
+	if c == nil && s == nil {
+		for _, fragment := range m.conversation.Data {
+			feed(fragment)
+		}
+		return
+	}
+	// Like TLS, merge heads without sorting either TCP sequence by capture time.
+	for len(c) > 0 || len(s) > 0 {
+		useClient := len(s) == 0
+		if len(c) > 0 && len(s) > 0 {
+			ct, st := c[0].CaptureInfo().Timestamp, s[0].CaptureInfo().Timestamp
+			if c[0].Context() != nil {
+				ct = c[0].Context().GetCaptureInfo().Timestamp
+			}
+			if s[0].Context() != nil {
+				st = s[0].Context().GetCaptureInfo().Timestamp
+			}
+			useClient = !st.Before(ct)
+		}
+		if useClient {
+			feed(c[0])
+			c = c[1:]
 		} else {
-			offset++
+			feed(s[0])
+			s = s[1:]
 		}
 	}
 }
@@ -201,7 +256,7 @@ func (m *modbusReader) isModbusHeader(data []byte) bool {
 
 // parseModbusMessage parses a Modbus TCP message and returns the record and bytes consumed.
 func (m *modbusReader) parseModbusMessage(data []byte) (*types.Modbus, int) {
-	if len(data) < mbapHeaderSize+minPDUSize {
+	if !m.isModbusHeader(data) {
 		return nil, 0
 	}
 
@@ -223,7 +278,6 @@ func (m *modbusReader) parseModbusMessage(data []byte) (*types.Modbus, int) {
 	actualFuncCode := funcCode & 0x7F
 
 	msg := &types.Modbus{
-		Timestamp:     m.conversation.FirstClientPacket.UnixNano(),
 		TransactionID: int32(transactionID),
 		ProtocolID:    int32(protocolID),
 		Length:        int32(length),
@@ -333,4 +387,3 @@ func IsCriticalFunction(code uint8) bool {
 func IsDiagnosticFunction(code uint8) bool {
 	return diagnosticFunctions[code]
 }
-
