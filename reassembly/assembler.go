@@ -14,8 +14,8 @@ import (
 
 const assemblerReturnValueInitialSize = 16
 
-// At most 1 MiB of snapshot handles per assembler on 64-bit systems.
-const maxFlushSnapshotConnections = 64 * 1024
+// At most 1 MiB of due-work handles per assembler on 64-bit systems.
+const maxDueBatchConnections = 64 * 1024
 
 /*
  * Assembler
@@ -114,13 +114,13 @@ type assemblerOptions struct {
 type Assembler struct {
 	sync.Mutex
 	assemblerOptions
-	ret           []byteContainer
-	pc            *pageCache
-	connPool      *StreamPool
-	flushSnapshot []connectionRef
-	cacheLP       livePacket
-	cacheSG       reassemblyObject
-	start         bool
+	ret      []byteContainer
+	pc       *pageCache
+	connPool *StreamPool
+	dueBatch []connectionRef
+	cacheLP  livePacket
+	cacheSG  reassemblyObject
+	start    bool
 }
 
 // NewAssembler creates a new assembler.  Pass in the StreamPool
@@ -215,7 +215,10 @@ func (a *Assembler) AssembleWithContext(netFlow gopacket.Flow, t *layers.TCP, ac
 		}
 		break
 	}
-	defer conn.mu.Unlock()
+	defer func() {
+		a.connPool.refreshDueLocked(conn, false)
+		conn.mu.Unlock()
+	}()
 
 	if half.lastSeen.Before(ac.GetCaptureInfo().Timestamp) {
 		half.lastSeen = ac.GetCaptureInfo().Timestamp
@@ -994,16 +997,16 @@ func (a *Assembler) addNextFromConn(conn *halfconnection) {
 
 // FlushOptions provide options for flushing connections.
 type FlushOptions struct {
-	T  time.Time // If nonzero, only connections with data older than T are flushed
-	TC time.Time // If nonzero, only connections with data older than TC are closed (if no FIN/RST received)
+	T  time.Time // Pending sequence heads strictly older than T are flushed.
+	TC time.Time // Fully closed connections with both lastSeen times before TC are removed.
 }
 
 // FlushWithOptions finds any streams waiting for packets older than
 // the given time T, and pushes through the data they have (IE: tells
 // them to stop waiting and skip the data they're waiting for).
 //
-// It also closes streams older than TC (that can be set to zero, to keep
-// long-lived stream alive, but to flush data anyway).
+// TC removes retained, fully closed connections; it does not close idle open
+// streams. Both cutoffs use literal strict time comparisons, including zero time.
 //
 // Each Stream maintains a list of zero or more sets of bytes it has received
 // out-of-order.  For example, if it has processed up through sequence number
@@ -1017,43 +1020,23 @@ type FlushOptions struct {
 // otherwise it will wait until the next flushCloseOlderThan to see if bytes
 // [25-30) come in.
 //
-// Returns the number of connections flushed, and of those, the number closed
-// because of the flush.
+// Returns the number of halves flushed and closed. Concurrent maintenance may
+// claim disjoint batches; newly published deadlines are considered on the next call.
 func (a *Assembler) FlushWithOptions(opt FlushOptions) (flushed, closed int) {
-	var (
-		conns   = a.connPool.connections(a.flushSnapshot)
-		closes  = 0
-		flushes = 0
-	)
-
-	for _, ref := range conns {
-		if !ref.lock() {
-			continue
-		}
-		conn := ref.conn
-
-		for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
-			isFlushed, isClosed := a.flushClose(conn, half, opt.T, opt.TC)
-			if isFlushed {
-				flushes++
-			}
-
-			if isClosed {
-				closes++
-			}
-		}
-
-		if conn.s2c.closed && conn.c2s.closed && conn.s2c.lastSeen.Before(opt.TC) && conn.c2s.lastSeen.Before(opt.TC) {
-			a.connPool.remove(conn)
-		}
-		conn.mu.Unlock()
+	// Hand over the scratch array: if the batch outgrows it, cleanup sees only
+	// the replacement, and the old array must not retain connection references.
+	batch := a.dueBatch
+	a.dueBatch = nil
+	refs := a.connPool.claimDue(batch, opt)
+	defer a.releaseDue(refs)
+	for i, ref := range refs {
+		// Transfer this claim to flushDue, including its panic cleanup.
+		refs[i] = connectionRef{}
+		f, c := a.flushDue(ref, opt)
+		flushed += f
+		closed += c
 	}
-
-	clear(conns)
-	if cap(conns) <= maxFlushSnapshotConnections {
-		a.flushSnapshot = conns[:0]
-	}
-	return flushes, closes
+	return flushed, closed
 }
 
 // flushCloseOlderThan flushes and closes streams older than given time.
@@ -1139,6 +1122,10 @@ func (a *Assembler) closeConn(ref connectionRef) bool {
 		return false
 	}
 	conn := ref.conn
+	defer func() {
+		a.connPool.refreshDueLocked(conn, false)
+		conn.mu.Unlock()
+	}()
 	for _, half := range []*halfconnection{&conn.s2c, &conn.c2s} {
 		for !half.closed {
 			a.skipFlush(conn, half)
@@ -1148,6 +1135,5 @@ func (a *Assembler) closeConn(ref connectionRef) bool {
 			a.closeHalfConnection(conn, half, "force-flushed")
 		}
 	}
-	conn.mu.Unlock()
 	return true
 }

@@ -18,6 +18,9 @@ type connection struct {
 
 	ac        assemblerSimpleContext
 	firstFlow gopacket.Flow
+
+	// Most connections never queue pages or remain closed in the pool.
+	*connectionDue
 }
 
 func (c *connection) reset(k *key, s Stream, ts time.Time) {
@@ -28,6 +31,7 @@ func (c *connection) reset(k *key, s Stream, ts time.Time) {
 	}
 	c.generation++
 	c.live = true
+	c.connectionDue = nil
 	c.key = k
 	base := halfconnection{
 		nextSeq:   invalidSequence,

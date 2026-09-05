@@ -37,6 +37,8 @@ type StreamPool struct {
 	all                [][]connection
 	nextAlloc          int
 	newConnectionCount int64
+	pendingDue         deadlineHeap
+	closedDue          deadlineHeap
 }
 
 func (p *StreamPool) grow() {
@@ -78,6 +80,11 @@ func (p *StreamPool) DumpString() string {
 func (p *StreamPool) remove(conn *connection) {
 	p.mu.Lock()
 	if conn.live && p.conns[*conn.key] == conn {
+		if conn.connectionDue != nil {
+			p.pendingDue.remove(&conn.pendingEntry)
+			p.closedDue.remove(&conn.closedEntry)
+			conn.dueClaimed = false
+		}
 		conn.live = false
 		delete(p.conns, *conn.key)
 		p.free = append(p.free, conn)
@@ -104,6 +111,7 @@ func (p *StreamPool) Reset() {
 
 	// Clear connections map
 	p.conns = make(map[key]*connection, initialAllocSize)
+	p.pendingDue, p.closedDue = nil, nil
 
 	// Clear free list
 	p.free = make([]*connection, 0, initialAllocSize)
