@@ -78,7 +78,7 @@ func dnsSVCB(rr layers.DNSResourceRecord) *types.DNSSVCB {
 				}
 			}
 		case layers.DNSSvcParamKeyECH:
-			valid = len(v) >= 2 && int(binary.BigEndian.Uint16(v)) == len(v)-2
+			valid = len(v) >= 6 && int(binary.BigEndian.Uint16(v)) == len(v)-2
 			if valid {
 				v = v[2:]
 				for len(v) > 0 && valid {

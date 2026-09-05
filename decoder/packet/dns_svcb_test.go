@@ -73,6 +73,7 @@ func TestDNSSVCBInvalid(t *testing.T) {
 		{Key: 1, Value: []byte{0}}, {Key: 1, Value: []byte{2, 'h'}}, {Key: 2, Value: []byte{1}}, {Key: 2},
 		{Key: 3, Value: []byte{1}}, {Key: 4, Value: []byte{1, 2, 3}}, {Key: 6, Value: make([]byte, 15)},
 		{Key: 5, Value: []byte{0, 4, 0, 1, 0, 2}}, {Key: 5, Value: []byte{0, 1, 0}},
+		{Key: 5, Value: []byte{0, 0}},
 		{Key: 7, Value: []byte("/dns-query")}, {Key: 7, Value: []byte("/dns{?dns}{")}, {Key: 65535},
 	} {
 		s := dnsSVCB(layers.DNSResourceRecord{Type: layers.DNSTypeHTTPS, SVCB: layers.DNSSVCB{Params: []layers.DNSSvcParam{p}}})
