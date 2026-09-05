@@ -38,6 +38,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
+	"github.com/dreadl0ck/netcap/internal/entropy"
 	logging "github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -697,28 +698,7 @@ func IsPrintable(data []byte) bool {
 
 // CalculateEntropy computes Shannon entropy of the data in bits.
 func CalculateEntropy(data []byte) float64 {
-	if len(data) == 0 {
-		return 0
-	}
-
-	// A fixed array rather than a map: summing in map order varied the
-	// floating point rounding between runs.
-	var freq [256]int
-	for _, b := range data {
-		freq[b]++
-	}
-
-	entropy := 0.0
-	length := float64(len(data))
-
-	for _, count := range freq {
-		if count > 0 {
-			p := float64(count) / length
-			entropy -= p * math.Log2(p)
-		}
-	}
-
-	return entropy
+	return entropy.Bytes(data)
 }
 
 // DetectMessageType classifies a decoded message based on field patterns.
