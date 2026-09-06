@@ -65,11 +65,14 @@ func init() {
 }
 
 func flushTCPStreams(numTotal int) {
+	if numTotal == 0 {
+		return
+	}
 	sp := new(tcpStreamProcessor)
 	if numTotal < decoderconfig.Instance.NumStreamWorkers {
 		sp.initWorkers(decoderconfig.Instance.StreamBufferSize, numTotal)
 	} else {
-		sp.initWorkers(decoderconfig.Instance.StreamBufferSize, decoderconfig.Instance.NumStreamWorkers)
+		sp.initWorkers(decoderconfig.Instance.StreamBufferSize, max(1, decoderconfig.Instance.NumStreamWorkers))
 	}
 	sp.numTotal = numTotal
 
@@ -89,6 +92,7 @@ func flushTCPStreams(numTotal int) {
 		close(w)            // Close the channel
 		sp.workers[i] = nil // Nil out reference to help GC
 	}
+	sp.workerWG.Wait()
 }
 
 // internal data structure to parallelize processing of tcp streams
@@ -99,6 +103,7 @@ type tcpStreamProcessor struct {
 	numWorkers       int
 	next             int
 	wg               sync.WaitGroup
+	workerWG         sync.WaitGroup
 	numDone          int
 	numTotal         int
 	streamBufferSize int
@@ -136,7 +141,9 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 	chanInput := make(chan streamReader, tsp.streamBufferSize)
 
 	// start worker
+	tsp.workerWG.Add(1)
 	go func() {
+		defer tsp.workerWG.Done()
 		for s := range chanInput {
 			// nil packet is used to exit the loop,
 			// the processing logic will never send a streamReader in here that is nil
@@ -183,6 +190,7 @@ func (tsp *tcpStreamProcessor) streamWorker(wg *sync.WaitGroup) chan streamReade
 				tcpStreamProcessingTime.WithLabelValues(reassembly.TCPDirServerToClient.String()).Set(float64(time.Since(t).Nanoseconds()))
 			}
 
+			s.MarkSaved()
 			tsp.Lock()
 			tsp.numDone++
 

@@ -1120,23 +1120,12 @@ func (a *Assembler) FlushAllProgress() (closed int) {
 	// create and start new bar
 	bar := pb.StartNew(closed)
 
-	// TODO: doing this in parallel would be nice for performance, but causes a crash in the reassembly pkg for some pcaps... debug
-	wg := sync.WaitGroup{}
-
-	//fmt.Println("processing", len(conns))
-
+	// Connections share the assembler's scratch buffers and page cache.
 	for _, conn := range conns {
-
-		wg.Add(1)
-
-		go func(co *connection) {
-			a.closeConn(co)
-			bar.Increment()
-			wg.Done()
-		}(conn)
+		a.closeConn(conn)
+		bar.Increment()
 	}
 
-	wg.Wait()
 	bar.Finish()
 
 	return

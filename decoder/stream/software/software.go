@@ -29,6 +29,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 
 	"github.com/ua-parser/uap-go/uaparser"
@@ -646,7 +647,7 @@ func cmsCandidateProducts(headers []header, cookies []cookie) map[string]struct{
 
 // WriteSoftware can be used to write software to the software audit record writer.
 func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
-	var newSoftwareProducts []*types.Software
+	var newSoftwareProducts []*AtomicSoftware
 
 	// add new audit records or update existing
 	Store.Lock()
@@ -677,7 +678,7 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 			// fmt.Println(SoftwareStore.Items, s.Product, s.Version)
 			Store.Items[ident] = s
 
-			newSoftwareProducts = append(newSoftwareProducts, s.Software)
+			newSoftwareProducts = append(newSoftwareProducts, s)
 		}
 	}
 	Store.Unlock()
@@ -686,9 +687,18 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 		// lookup known issues with identified software
 		// NOTE: Do NOT spawn goroutine here - causes goroutine leak!
 		// These lookups are fast enough to do synchronously
-		for _, s := range newSoftwareProducts {
+		for _, item := range newSoftwareProducts {
+			item.Lock()
+			// Lookups retain slices in audit records while HTTP updates the live item.
+			s := proto.Clone(item.Software).(*types.Software)
+			item.Unlock()
 			vulnerability.VulnerabilitiesLookup(s)
 			exploit.ExploitsLookup(s)
+			if s.HasKnownVulnerabilities {
+				item.Lock()
+				item.HasKnownVulnerabilities = true
+				item.Unlock()
+			}
 		}
 	}
 }

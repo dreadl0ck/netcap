@@ -80,7 +80,8 @@ func addOrUpdateCertificate(cert *types.TLSCertificate) bool {
 	if entry, exists := certificates.Items[fingerprint]; exists {
 		// Update existing certificate
 		entry.Lock()
-		entry.LastSeen = cert.Timestamp
+		entry.FirstSeen = min(entry.FirstSeen, cert.Timestamp)
+		entry.LastSeen = max(entry.LastSeen, cert.Timestamp)
 		entry.SeenCount++
 		entry.Unlock()
 

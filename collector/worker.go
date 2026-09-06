@@ -38,6 +38,14 @@ var packetContextPool = sync.Pool{
 	New: func() any { return &types.PacketContext{} },
 }
 
+// Controls share the packet queue so maintenance cannot overtake admitted data.
+type workerControl struct {
+	gopacket.Packet
+	ref  time.Time
+	all  bool
+	done chan struct{}
+}
+
 // worker spawns a new worker goroutine
 // and returns a channel for receiving input packets.
 func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet {
@@ -62,11 +70,29 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 	unknownProtos := c.unknownProtosAtomic.NewShard()
 
 	// start worker
+	c.workersWG.Add(1)
 	go func() {
+		defer c.workersWG.Done()
 		for pkt = range in {
 			// nil packet is used to exit goroutine
 			if pkt == nil {
 				return
+			}
+			if control, ok := pkt.(*workerControl); ok {
+				if assembler != nil {
+					if control.all {
+						assembler.FlushAll()
+					} else {
+						assembler.FlushWithOptions(reassembly.FlushOptions{
+							T:  control.ref.Add(-c.config.DecoderConfig.ClosePendingTimeOut),
+							TC: control.ref.Add(-c.config.DecoderConfig.CloseInactiveTimeOut),
+						})
+					}
+				}
+				if control.done != nil {
+					close(control.done)
+				}
+				continue
 			}
 
 			pkt.Metadata().Timestamp = pkt.Metadata().CaptureInfo.Timestamp
@@ -213,8 +239,6 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 				}
 			}
 
-			c.wg.Done()
-
 			// Return PacketContext to pool for reuse
 			packetContextPool.Put(ctx)
 
@@ -223,6 +247,7 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 			if pooledPkt, ok := pkt.(gopacket.PooledPacket); ok {
 				pooledPkt.Dispose()
 			}
+			c.wg.Done()
 
 			continue
 		}
@@ -234,13 +259,21 @@ func (c *Collector) worker(assembler *reassembly.Assembler) chan gopacket.Packet
 
 // spawn the configured number of workers.
 func (c *Collector) initWorkers() []chan gopacket.Packet {
+	c.dispatchMu.Lock()
+	defer c.dispatchMu.Unlock()
+	if c.workersStopped {
+		return nil
+	}
+	if len(c.workers) != 0 {
+		return c.workers
+	}
 
 	// init worker slice
 	workers := make([]chan gopacket.Packet, c.config.Workers)
 
 	// create assemblers
 	for i := range workers {
-		a := reassembly.NewAssembler(tcp.GetStreamPool())
+		a := reassembly.NewAssembler(reassembly.NewStreamPool(tcp.StreamFactory))
 
 		// Configure stream reassembly limits from config
 		if c.config.DecoderConfig.MaxStreamBytes > 0 {
@@ -259,6 +292,7 @@ func (c *Collector) initWorkers() []chan gopacket.Packet {
 
 	// update num worker count
 	c.numWorkers = len(workers)
+	c.workers = workers
 
 	return workers
 }

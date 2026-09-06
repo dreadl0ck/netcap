@@ -65,9 +65,7 @@ func saveTCPServiceBanner(s streamReader) {
 
 		return
 	}
-	service.Store.Unlock()
-
-	// nope. lets create a new one
+	// Keep the store locked through insertion so concurrent pools cannot replace this service.
 	// Safely extract network destination
 	var networkDst string
 	if len(s.Network().Dst().Raw()) > 0 {
@@ -95,7 +93,6 @@ func saveTCPServiceBanner(s streamReader) {
 	service.MatchServiceProbes(serv, banner, s.Ident())
 
 	// add new service
-	service.Store.Lock()
 	service.Store.Items[s.ServiceIdent()] = serv
 	service.Store.Unlock()
 

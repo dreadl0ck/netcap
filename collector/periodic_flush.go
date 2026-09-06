@@ -20,6 +20,7 @@
 package collector
 
 import (
+	"context"
 	"time"
 
 	"go.uber.org/zap"
@@ -36,23 +37,25 @@ func (c *Collector) startPeriodicFlush() chan struct{} {
 		return stopChan
 	}
 
-	c.log.Info("starting periodic flush",
-		zap.Duration("interval", c.config.LiveFlushInterval),
-	)
+	c.startBackground(func(ctx context.Context) {
+		c.log.Info("starting periodic flush",
+			zap.Duration("interval", c.config.LiveFlushInterval),
+		)
 
-	ticker := time.NewTicker(c.config.LiveFlushInterval)
+		ticker := time.NewTicker(c.config.LiveFlushInterval)
 
-	go func() {
+		defer ticker.Stop()
 		for {
 			select {
+			case <-ctx.Done():
+				return
 			case <-stopChan:
-				ticker.Stop()
 				return
 			case <-ticker.C:
 				c.flushAllDecoders()
 			}
 		}
-	}()
+	})
 
 	return stopChan
 }
