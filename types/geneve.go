@@ -77,7 +77,11 @@ func (i *Geneve) Time() int64 {
 	return i.Timestamp
 }
 
-func (i GeneveOption) toString() string {
+func (i *GeneveOption) toString() string {
+	if i == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(i.Class))

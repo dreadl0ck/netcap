@@ -70,7 +70,11 @@ func (cd *CiscoDiscovery) Time() int64 {
 	return cd.Timestamp
 }
 
-func (v CiscoDiscoveryValue) toString() string {
+func (v *CiscoDiscoveryValue) toString() string {
+	if v == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)

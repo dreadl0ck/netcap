@@ -64,11 +64,19 @@ func (l *LinkLayerDiscovery) Time() int64 {
 	return l.Timestamp
 }
 
-func (l LLDPChassisID) toString() string {
+func (l *LLDPChassisID) toString() string {
+	if l == nil {
+		return ""
+	}
+
 	return join(formatInt32(l.Subtype), hex.EncodeToString(l.ID))
 }
 
-func (l LLDPPortID) toString() string {
+func (l *LLDPPortID) toString() string {
+	if l == nil {
+		return ""
+	}
+
 	return join(formatInt32(l.Subtype), hex.EncodeToString(l.ID))
 }
 

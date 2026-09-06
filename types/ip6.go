@@ -79,7 +79,11 @@ func (i *IPv6) Time() int64 {
 	return i.Timestamp
 }
 
-func (h IPv6HopByHop) toString() string {
+func (h *IPv6HopByHop) toString() string {
+	if h == nil {
+		return ""
+	}
+
 	opts := make([]string, 0, len(h.Options))
 	for _, o := range h.Options {
 		opts = append(opts, o.toString())

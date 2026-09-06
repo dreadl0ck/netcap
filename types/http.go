@@ -113,6 +113,10 @@ func (h *HTTP) CSVRecord() []string {
 }
 
 func (c *HTTPCookie) toString() string {
+	if c == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
