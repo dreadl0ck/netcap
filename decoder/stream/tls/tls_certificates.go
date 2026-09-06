@@ -21,6 +21,7 @@ package tls
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"sync/atomic"
 
@@ -200,7 +201,16 @@ func flushCertificates(d *decoder.StreamDecoder) error {
 
 	certificates.Lock()
 	cp.numTotal = len(certificates.Items)
-	for _, cert := range certificates.Items {
+
+	// stable output order: Items is a map
+	fingerprints := make([]string, 0, len(certificates.Items))
+	for fingerprint := range certificates.Items {
+		fingerprints = append(fingerprints, fingerprint)
+	}
+	sort.Strings(fingerprints)
+
+	for _, fingerprint := range fingerprints {
+		cert := certificates.Items[fingerprint]
 		cert.decoder = d
 		cp.handleCertificate(cert)
 	}

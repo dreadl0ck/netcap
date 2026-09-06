@@ -22,6 +22,7 @@ package packet
 import (
 	"log"
 	"slices"
+	"sort"
 	"sync"
 	"sync/atomic"
 
@@ -450,9 +451,16 @@ var deviceProfileDecoder = newAccumulatingPacketDecoder(
 	func(d *Decoder) error {
 		// Take a snapshot of items under lock to avoid race conditions
 		DeviceProfiles.Lock()
-		items := make([]*deviceProfile, 0, len(DeviceProfiles.Items))
-		for _, item := range DeviceProfiles.Items {
-			items = append(items, item)
+		macs := make([]string, 0, len(DeviceProfiles.Items))
+		for mac := range DeviceProfiles.Items {
+			macs = append(macs, mac)
+		}
+		// stable output order: Items is a map
+		sort.Strings(macs)
+
+		items := make([]*deviceProfile, 0, len(macs))
+		for _, mac := range macs {
+			items = append(items, DeviceProfiles.Items[mac])
 		}
 		DeviceProfiles.Unlock()
 
@@ -472,9 +480,16 @@ var deviceProfileDecoder = newAccumulatingPacketDecoder(
 
 		// Take a snapshot of items under lock to avoid race conditions
 		DeviceProfiles.Lock()
-		items := make([]*deviceProfile, 0, len(DeviceProfiles.Items))
-		for _, item := range DeviceProfiles.Items {
-			items = append(items, item)
+		macs := make([]string, 0, len(DeviceProfiles.Items))
+		for mac := range DeviceProfiles.Items {
+			macs = append(macs, mac)
+		}
+		// stable output order: Items is a map
+		sort.Strings(macs)
+
+		items := make([]*deviceProfile, 0, len(macs))
+		for _, mac := range macs {
+			items = append(items, DeviceProfiles.Items[mac])
 		}
 		DeviceProfiles.Unlock()
 

@@ -1095,6 +1095,7 @@ func (a *Assembler) flushClose(conn *connection, half *halfconnection, t time.Ti
 func (a *Assembler) FlushAll() (closed int) {
 	conns := a.connPool.connections(nil)
 	closed = len(conns)
+	sortConnections(conns)
 
 	// TODO: doing this in parallel would be nice for performance, but causes a crash in the reassembly pkg for some pcaps... debug
 	//wg := sync.WaitGroup{}
@@ -1116,27 +1117,19 @@ func (a *Assembler) FlushAll() (closed int) {
 func (a *Assembler) FlushAllProgress() (closed int) {
 	conns := a.connPool.connections(nil)
 	closed = len(conns)
+	sortConnections(conns)
 
 	// create and start new bar
 	bar := pb.StartNew(closed)
 
-	// TODO: doing this in parallel would be nice for performance, but causes a crash in the reassembly pkg for some pcaps... debug
-	wg := sync.WaitGroup{}
-
-	//fmt.Println("processing", len(conns))
-
+	// Sequential like FlushAll: an Assembler is not safe for concurrent use,
+	// closing connections from several goroutines corrupts the shared page
+	// cache and scatter-gather state, which silently dropped payload.
 	for _, conn := range conns {
-
-		wg.Add(1)
-
-		go func(co *connection) {
-			a.closeConn(co)
-			bar.Increment()
-			wg.Done()
-		}(conn)
+		a.closeConn(conn)
+		bar.Increment()
 	}
 
-	wg.Wait()
 	bar.Finish()
 
 	return

@@ -22,6 +22,7 @@ package mail
 import (
 	"math"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -71,9 +72,9 @@ var (
 	reURL = regexp.MustCompile(`https?://[^\s<>"]+`)
 
 	// Email address pattern
-	reEmailAddr       = regexp.MustCompile(`<([^>]+)>`)
-	reEmailDomain     = regexp.MustCompile(`@([^\s>]+)`)
-	reDKIMSigDomain   = regexp.MustCompile(`d=([^\s;]+)`)
+	reEmailAddr     = regexp.MustCompile(`<([^>]+)>`)
+	reEmailDomain   = regexp.MustCompile(`@([^\s>]+)`)
+	reDKIMSigDomain = regexp.MustCompile(`d=([^\s;]+)`)
 
 	// Urgency keywords
 	urgencyKeywords = []string{
@@ -306,11 +307,18 @@ func calculateStringEntropy(s string) float64 {
 		freq[r]++
 	}
 
+	// Summing in map order would vary the floating point rounding per run.
+	runes := make([]rune, 0, len(freq))
+	for r := range freq {
+		runes = append(runes, r)
+	}
+	sort.Slice(runes, func(i, j int) bool { return runes[i] < runes[j] })
+
 	var entropy float64
 	length := float64(len(s))
 
-	for _, count := range freq {
-		if count > 0 {
+	for _, r := range runes {
+		if count := freq[r]; count > 0 {
 			p := float64(count) / length
 			entropy -= p * math.Log2(p)
 		}

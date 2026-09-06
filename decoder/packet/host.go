@@ -22,6 +22,7 @@ package packet
 import (
 	"log"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -415,8 +416,16 @@ var hostDecoder = newAccumulatingPacketDecoder(
 	func(d *Decoder) error {
 		// Take a snapshot of items under lock to avoid race conditions
 		hosts.Lock()
-		items := make([]*hostEntry, 0, len(hosts.Items))
-		for _, item := range hosts.Items {
+		addrs := make([]string, 0, len(hosts.Items))
+		for addr := range hosts.Items {
+			addrs = append(addrs, addr)
+		}
+		// stable output order: Items is a map
+		sort.Strings(addrs)
+
+		items := make([]*hostEntry, 0, len(addrs))
+		for _, addr := range addrs {
+			item := hosts.Items[addr]
 			items = append(items, item)
 		}
 		hosts.Unlock()
@@ -437,8 +446,16 @@ var hostDecoder = newAccumulatingPacketDecoder(
 
 		// Take a snapshot of items under lock to avoid race conditions
 		hosts.Lock()
-		items := make([]*hostEntry, 0, len(hosts.Items))
-		for _, item := range hosts.Items {
+		addrs := make([]string, 0, len(hosts.Items))
+		for addr := range hosts.Items {
+			addrs = append(addrs, addr)
+		}
+		// stable output order: Items is a map
+		sort.Strings(addrs)
+
+		items := make([]*hostEntry, 0, len(addrs))
+		for _, addr := range addrs {
+			item := hosts.Items[addr]
 			items = append(items, item)
 		}
 		hosts.Unlock()
@@ -610,6 +627,8 @@ func (d *Decoder) writeHost(i *types.Host) {
 		for protocol := range i.Protocols {
 			i.Applications = append(i.Applications, protocol)
 		}
+		// Protocols is a map: sort so the record is reproducible
+		sort.Strings(i.Applications)
 	}
 
 	if conf.ExportMetrics {

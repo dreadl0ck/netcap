@@ -72,9 +72,16 @@ func FlushUDPStreams() {
 
 	Streams.Lock()
 
-	// flush the remaining streams to disk
-	for _, s := range Streams.streams {
-		if s != nil { // never feed a nil stream
+	// flush the remaining streams to disk, in a stable order so that the
+	// resulting audit records do not get shuffled between runs
+	keys := make([]uint64, 0, len(Streams.streams))
+	for key := range Streams.streams {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+
+	for _, key := range keys {
+		if s := Streams.streams[key]; s != nil { // never feed a nil stream
 			sp.handleStream(s)
 		}
 	}

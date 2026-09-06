@@ -21,6 +21,7 @@ package packet
 
 import (
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -73,6 +74,8 @@ var sipDecoder = newGoPacketDecoder(
 			for k, v := range sip.Headers {
 				headers = append(headers, k+":"+strings.Join(v, ","))
 			}
+			// sip.Headers is a map: sort so the record is reproducible
+			sort.Strings(headers)
 
 			// Get method name
 			methodName := sipMethodNames[sip.Method]
