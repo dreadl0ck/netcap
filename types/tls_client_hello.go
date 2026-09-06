@@ -34,6 +34,7 @@ const (
 	fieldHandshakeType    = "HandshakeType"
 	fieldHandshakeLen     = "HandshakeLen"
 	fieldHandshakeVersion = "HandshakeVersion"
+	fieldRandom           = "Random"
 	fieldSessionIDLen     = "SessionIDLen"
 	fieldSessionID        = "SessionID"
 	fieldCipherSuiteLen   = "CipherSuiteLen"
@@ -57,7 +58,9 @@ var fieldsTLSClientHello = []string{
 	fieldHandshakeType,
 	fieldHandshakeLen,
 	fieldHandshakeVersion,
+	fieldRandom,
 	fieldSessionIDLen,
+	fieldSessionID,
 	fieldCipherSuiteLen,
 	fieldExtensionLen,
 	fieldSNI,
@@ -128,17 +131,75 @@ func (t *TLSClientHello) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(t)
 }
 
+// Random and SessionID are unique per handshake and must stay out of the
+// metric labels, otherwise every ClientHello creates its own time series.
+var fieldsTLSClientHelloMetrics = []string{
+	fieldType,
+	fieldVersion,
+	fieldMessageLen,
+	fieldHandshakeType,
+	fieldHandshakeLen,
+	fieldHandshakeVersion,
+	fieldSessionIDLen,
+	fieldCipherSuiteLen,
+	fieldExtensionLen,
+	fieldSNI,
+	fieldOSCP,
+	fieldCipherSuites,
+	fieldCompressMethods,
+	fieldSignatureAlgs,
+	fieldSupportedGroups,
+	fieldSupportedPoints,
+	fieldALPNs,
+	fieldJa4,
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcMAC,
+	fieldDstMAC,
+	fieldSrcPort,
+	fieldDstPort,
+}
+
+func (t *TLSClientHello) metricValues() []string {
+	return []string{
+		formatInt32(t.Type),
+		formatInt32(t.Version),
+		formatInt32(t.MessageLen),
+		formatInt32(t.HandshakeType),
+		strconv.FormatUint(uint64(t.HandshakeLen), 10),
+		formatInt32(t.HandshakeVersion),
+		strconv.FormatUint(uint64(t.SessionIDLen), 10),
+		formatInt32(t.CipherSuiteLen),
+		formatInt32(t.ExtensionLen),
+		t.SNI,
+		strconv.FormatBool(t.OSCP),
+		joinInts(t.CipherSuites),
+		joinInts(t.CompressMethods),
+		joinInts(t.SignatureAlgs),
+		joinInts(t.SupportedGroups),
+		joinInts(t.SupportedPoints),
+		join(t.ALPNs...),
+		t.Ja4,
+		t.SrcIP,
+		t.DstIP,
+		t.SrcMAC,
+		t.DstMAC,
+		formatInt32(t.SrcPort),
+		formatInt32(t.DstPort),
+	}
+}
+
 var tlsClientMetric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_TLSClientHello.String()),
 		Help: Type_NC_TLSClientHello.String() + " audit records",
 	},
-	fieldsTLSClientHello[1:],
+	fieldsTLSClientHelloMetrics,
 )
 
 // Inc increments the metrics for the audit record.
 func (t *TLSClientHello) Inc() {
-	tlsClientMetric.WithLabelValues(t.CSVRecord()[1:]...).Inc()
+	tlsClientMetric.WithLabelValues(t.metricValues()...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
@@ -168,7 +229,9 @@ func (t *TLSClientHello) Encode() []string {
 		tlsClientHelloEncoder.Int32(fieldHandshakeType, t.HandshakeType),
 		tlsClientHelloEncoder.Uint32(fieldHandshakeLen, t.HandshakeLen),
 		tlsClientHelloEncoder.Int32(fieldHandshakeVersion, t.HandshakeVersion),
+		tlsClientHelloEncoder.String(fieldRandom, hex.EncodeToString(t.Random)),
 		tlsClientHelloEncoder.Uint32(fieldSessionIDLen, t.SessionIDLen),
+		tlsClientHelloEncoder.String(fieldSessionID, hex.EncodeToString(t.SessionID)),
 		tlsClientHelloEncoder.Int32(fieldCipherSuiteLen, t.CipherSuiteLen),
 		tlsClientHelloEncoder.Int32(fieldExtensionLen, t.ExtensionLen),
 		tlsClientHelloEncoder.String(fieldSNI, t.SNI),

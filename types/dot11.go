@@ -89,7 +89,11 @@ func (d *Dot11) Time() int64 {
 	return d.Timestamp
 }
 
-func (d Dot11QOS) toString() string {
+func (d *Dot11QOS) toString() string {
+	if d == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(d.TID))
@@ -103,7 +107,11 @@ func (d Dot11QOS) toString() string {
 	return b.String()
 }
 
-func (d Dot11HTControl) toString() string {
+func (d *Dot11HTControl) toString() string {
+	if d == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(strconv.FormatBool(d.ACConstraint))
@@ -118,6 +126,10 @@ func (d Dot11HTControl) toString() string {
 }
 
 func (d *Dot11HTControlVHT) toString() string {
+	if d == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(strconv.FormatBool(d.MRQ))
@@ -144,6 +156,10 @@ func (d *Dot11HTControlVHT) toString() string {
 }
 
 func (d *Dot11HTControlMFB) toString() string {
+	if d == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(d.NumSTS))
@@ -158,6 +174,10 @@ func (d *Dot11HTControlMFB) toString() string {
 }
 
 func (d *Dot11HTControlHT) toString() string {
+	if d == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(d.LinkAdapationControl.toString())
@@ -176,6 +196,10 @@ func (d *Dot11HTControlHT) toString() string {
 }
 
 func (d *Dot11LinkAdapationControl) toString() string {
+	if d == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(strconv.FormatBool(d.TRQ))
@@ -194,6 +218,10 @@ func (d *Dot11LinkAdapationControl) toString() string {
 }
 
 func (d *Dot11ASEL) toString() string {
+	if d == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(d.Command))

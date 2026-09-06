@@ -61,7 +61,11 @@ func (i *ICMPv6RouterSolicitation) Time() int64 {
 	return i.Timestamp
 }
 
-func (o ICMPv6Option) toString() string {
+func (o *ICMPv6Option) toString() string {
+	if o == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(o.Type))

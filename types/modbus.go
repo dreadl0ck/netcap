@@ -44,9 +44,9 @@ var fieldsModbus = []string{
 	fieldProtocolID,    // int32
 	fieldLength,        // int32
 	fieldUnitID,        // int32
-	//fieldPayload,       // []byte
-	fieldException,    // bool
-	fieldFunctionCode, // int32
+	fieldPayload,       // []byte
+	fieldException,     // bool
+	fieldFunctionCode,  // int32
 	fieldSrcIP,
 	fieldDstIP,
 	fieldSrcPort,
@@ -89,17 +89,46 @@ func (a *Modbus) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(a)
 }
 
+// Payload is unique per packet and must stay out of the metric labels.
+var fieldsModbusMetrics = []string{
+	fieldTransactionID,
+	fieldProtocolID,
+	fieldLength,
+	fieldUnitID,
+	fieldException,
+	fieldFunctionCode,
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
+}
+
+func (a *Modbus) metricValues() []string {
+	return []string{
+		formatInt32(a.TransactionID),
+		formatInt32(a.ProtocolID),
+		formatInt32(a.Length),
+		formatInt32(a.UnitID),
+		strconv.FormatBool(a.Exception),
+		formatInt32(a.FunctionCode),
+		a.SrcIP,
+		a.DstIP,
+		formatInt32(a.SrcPort),
+		formatInt32(a.DstPort),
+	}
+}
+
 var modbusTCPMetric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_Modbus.String()),
 		Help: Type_NC_Modbus.String() + " audit records",
 	},
-	fieldsModbus[1:],
+	fieldsModbusMetrics,
 )
 
 // Inc increments the metrics for the audit record.
 func (a *Modbus) Inc() {
-	modbusTCPMetric.WithLabelValues(a.CSVRecord()[1:]...).Inc()
+	modbusTCPMetric.WithLabelValues(a.metricValues()...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
@@ -126,11 +155,11 @@ var modbusEncoder = encoder.NewValueEncoder()
 func (a *Modbus) Encode() []string {
 	return filter([]string{
 		modbusEncoder.Int64(fieldTimestamp, a.Timestamp),
-		modbusEncoder.Int32(fieldTransactionID, a.TransactionID), // int32
-		modbusEncoder.Int32(fieldProtocolID, a.ProtocolID),       // int32
-		modbusEncoder.Int32(fieldLength, a.Length),               // int32
-		modbusEncoder.Int32(fieldUnitID, a.UnitID),               // int32
-		//hex.EncodeToString(a.Payload),
+		modbusEncoder.Int32(fieldTransactionID, a.TransactionID),          // int32
+		modbusEncoder.Int32(fieldProtocolID, a.ProtocolID),                // int32
+		modbusEncoder.Int32(fieldLength, a.Length),                        // int32
+		modbusEncoder.Int32(fieldUnitID, a.UnitID),                        // int32
+		modbusEncoder.String(fieldPayload, hex.EncodeToString(a.Payload)), // []byte
 		modbusEncoder.Bool(a.Exception),
 		modbusEncoder.Int32(fieldFunctionCode, a.FunctionCode),
 		modbusEncoder.String(fieldSrcIP, a.SrcIP),

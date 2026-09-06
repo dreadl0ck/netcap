@@ -110,7 +110,11 @@ func (d *DHCPv4) Time() int64 {
 	return d.Timestamp
 }
 
-func (d DHCPOption) toString() string {
+func (d *DHCPOption) toString() string {
+	if d == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(d.Type))

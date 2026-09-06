@@ -102,7 +102,12 @@ func (b *BFD) Time() int64 {
 	return b.Timestamp
 }
 
-func (bah BFDAuthHeader) getString() string {
+func (bah *BFDAuthHeader) getString() string {
+	// BFD packets without authentication carry no auth header.
+	if bah == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)

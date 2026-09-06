@@ -104,7 +104,11 @@ func (a *OSPFv2) Time() int64 {
 	return a.Timestamp
 }
 
-func (l LSReq) toString() string {
+func (l *LSReq) toString() string {
+	if l == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -119,6 +123,10 @@ func (l LSReq) toString() string {
 }
 
 func (r *RouterLSAV2) toString() string {
+	if r == nil {
+		return ""
+	}
+
 	routers := make([]string, 0, len(r.Routers))
 	for _, e := range r.Routers {
 		routers = append(routers, toString(e))
@@ -138,6 +146,10 @@ func (r *RouterLSAV2) toString() string {
 }
 
 func (r *ASExternalLSAV2) toString() string {
+	if r == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -156,6 +168,10 @@ func (r *ASExternalLSAV2) toString() string {
 }
 
 func (r *RouterLSA) toString() string {
+	if r == nil {
+		return ""
+	}
+
 	routers := make([]string, 0, len(r.Routers))
 	for _, e := range r.Routers {
 		routers = append(routers, toString(e))
@@ -175,6 +191,10 @@ func (r *RouterLSA) toString() string {
 }
 
 func (r *NetworkLSA) toString() string {
+	if r == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -187,6 +207,10 @@ func (r *NetworkLSA) toString() string {
 }
 
 func (r *InterAreaPrefixLSA) toString() string {
+	if r == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -203,6 +227,10 @@ func (r *InterAreaPrefixLSA) toString() string {
 }
 
 func (r *InterAreaRouterLSA) toString() string {
+	if r == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -217,6 +245,10 @@ func (r *InterAreaRouterLSA) toString() string {
 }
 
 func (r *ASExternalLSA) toString() string {
+	if r == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -243,6 +275,10 @@ func (r *ASExternalLSA) toString() string {
 }
 
 func (r *LinkLSA) toString() string {
+	if r == nil {
+		return ""
+	}
+
 	prefixes := make([]string, 0, len(r.Prefixes))
 	for _, p := range r.Prefixes {
 		prefixes = append(prefixes, toString(p))
@@ -266,6 +302,10 @@ func (r *LinkLSA) toString() string {
 }
 
 func (r *IntraAreaPrefixLSA) toString() string {
+	if r == nil {
+		return ""
+	}
+
 	prefixes := make([]string, 0, len(r.Prefixes))
 	for _, p := range r.Prefixes {
 		prefixes = append(prefixes, toString(p))
@@ -289,6 +329,10 @@ func (r *IntraAreaPrefixLSA) toString() string {
 }
 
 func (r *Router) toString() string {
+	if r == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -309,6 +353,10 @@ func (r *Router) toString() string {
 }
 
 func (r *RouterV2) toString() string {
+	if r == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -325,6 +373,10 @@ func (r *RouterV2) toString() string {
 }
 
 func (l *LSA) toString() string {
+	if l == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -354,7 +406,11 @@ func (l *LSA) toString() string {
 	return b.String()
 }
 
-func (l LSUpdate) toString() string {
+func (l *LSUpdate) toString() string {
+	if l == nil {
+		return ""
+	}
+
 	lsas := make([]string, 0, len(l.LSAs))
 	for _, lsa := range l.LSAs {
 		lsas = append(lsas, toString(lsa))
@@ -371,7 +427,11 @@ func (l LSUpdate) toString() string {
 	return b.String()
 }
 
-func (l DbDescPkg) toString() string {
+func (l *DbDescPkg) toString() string {
+	if l == nil {
+		return ""
+	}
+
 	headers := make([]string, 0, len(l.LSAinfo))
 	for _, lsa := range l.LSAinfo {
 		headers = append(headers, toString(lsa))
@@ -394,7 +454,11 @@ func (l DbDescPkg) toString() string {
 	return b.String()
 }
 
-func (l HelloPkgV2) toString() string {
+func (l *HelloPkgV2) toString() string {
+	if l == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -420,7 +484,11 @@ func (l HelloPkgV2) toString() string {
 	return b.String()
 }
 
-func (l LSAPrefix) toString() string {
+func (l *LSAPrefix) toString() string {
+	if l == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -436,7 +504,11 @@ func (l LSAPrefix) toString() string {
 	return b.String()
 }
 
-func (l LSAheader) toString() string {
+func (l *LSAheader) toString() string {
+	if l == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
