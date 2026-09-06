@@ -1746,6 +1746,46 @@ message Modbus {
   
   // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
   string CommunityID = 13;
+  string Transport = 14;
+  string MessageRole = 15;
+  string ParseStatus = 16;
+  string ParseError = 17;
+  string Bank = 18;
+  bool HasAddress = 19;
+  uint32 Address = 20;
+  uint32 Quantity = 21;
+  repeated uint32 Values = 22;
+  bool HasReadAddress = 23;
+  uint32 ReadAddress = 24;
+  uint32 ReadQuantity = 25;
+  bool HasWriteAddress = 26;
+  uint32 WriteAddress = 27;
+  uint32 WriteQuantity = 28;
+  repeated uint32 WriteValues = 29;
+  uint32 ExceptionCode = 30;
+  bool HasDiagnostic = 31;
+  uint32 DiagnosticSubfunction = 32;
+  bytes DiagnosticData = 33;
+  uint32 MEIType = 34;
+  uint32 ReadDeviceIDCode = 35;
+  repeated ModbusDeviceIDObject DeviceIDObjects = 36;
+  repeated ModbusFileRecord FileRecords = 37;
+  uint32 AndMask = 38;
+  uint32 OrMask = 39;
+  string CorrelationStatus = 40;
+  int64 RequestTimestamp = 41;
+  int64 ResponseLatency = 42; // Nanoseconds; set only on matched responses.
+  uint32 DeviceIDObjectID = 43; // Requested object ID.
+  uint32 DeviceIDConformityLevel = 44;
+  bool DeviceIDMoreFollows = 45;
+  uint32 DeviceIDNextObjectID = 46;
+  bool HasMBAP = 47;                   // TransactionID, ProtocolID and Length are present
+  bool HasChecksum = 48;               // RTU CRC16 is present; absent for MBAP TCP
+  bool ChecksumValid = 49;
+  bool Broadcast = 50;                 // RTU unit zero write, no response expected
+  // Set only on ParseStatus "lost" markers: bytes reassembly reported missing,
+  // -1 when the amount is unknown and 0 when framing itself became unusable.
+  int64 LostBytes = 51;
 }
 
 // Open Shortest Path First (OSPF) is a routing protocol for Internet Protocol (IP) networks.
@@ -4478,4 +4518,17 @@ message Protobuf {
   map<string, string> SchemaFields = 19;            // named fields from schema (e.g. "name" -> "Lily")
   map<string, string> FieldAlternatives = 20;       // alternative type interpretations (e.g. "varint_1.as_sint64" -> "-75")
   bool SchemaResolved = 21;                         // true if message was decoded using a .proto schema
+}
+
+message ModbusDeviceIDObject {
+  uint32 ID = 1;
+  bytes Value = 2;
+}
+
+message ModbusFileRecord {
+  uint32 ReferenceType = 1;
+  uint32 FileNumber = 2;
+  uint32 RecordNumber = 3;
+  uint32 RecordLength = 4;
+  repeated uint32 Values = 5;
 }

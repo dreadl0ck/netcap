@@ -42,10 +42,10 @@ import (
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/packet"
-	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	httpstream "github.com/dreadl0ck/netcap/decoder/stream/http"
 	"github.com/dreadl0ck/netcap/decoder/stream/network"
+	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/service"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
@@ -130,6 +130,7 @@ type RuntimeConfig struct {
 	NoOptCheck            bool
 	IgnoreFSMErr          bool
 	AllowMissingInit      bool
+	ModbusRTUEndpoints    string
 	ClosePendingTimeout   time.Duration
 	CloseInactiveTimeout  time.Duration
 
@@ -1964,10 +1965,16 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			NoOptCheck:       defaults.NoOptCheck,
 			IgnoreFSMerr:     true, // Ignore FSM errors for better reliability
 			AllowMissingInit: true, // Allow streams without handshake
-			Debug:            false,
-			HexDump:          false,
-			WriteIncomplete:  true, // Write incomplete streams immediately
-			MemProfile:       "",
+			ModbusRTUEndpoints: func() string {
+				if s.runtimeConfig != nil {
+					return s.runtimeConfig.ModbusRTUEndpoints
+				}
+				return ""
+			}(),
+			Debug:           false,
+			HexDump:         false,
+			WriteIncomplete: true, // Write incomplete streams immediately
+			MemProfile:      "",
 			// NOTE: Use default timeout values - aggressive timeouts cause streams to close prematurely!
 			// For offline pcap analysis, timeouts are based on packet timestamps, not wall time.
 			// Default values (24 hours for timeouts) work correctly for both online and offline captures.

@@ -55,6 +55,10 @@ type ScatterGather interface {
 	// Fetch returns the bytes up to length (shall be <= available bytes)
 	Fetch(length int) []byte
 
+	// ForEach calls fn for each non-empty capture container in stream order.
+	// The bytes are borrowed and must not be retained after ReassembledSG returns.
+	ForEach(fn func([]byte, AssemblerContext))
+
 	// KeepFrom tell to keep from offset
 	KeepFrom(offset int)
 

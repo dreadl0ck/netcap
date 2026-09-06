@@ -50,6 +50,15 @@ func (rl *reassemblyObject) Fetch(l int) []byte {
 	return bytes[:l]
 }
 
+// ForEach visits capture containers without flattening or copying their bytes.
+func (rl *reassemblyObject) ForEach(fn func([]byte, AssemblerContext)) {
+	for _, r := range rl.all {
+		if r.length() > 0 {
+			fn(r.getBytes(), r.assemblerContext())
+		}
+	}
+}
+
 // KeepFrom will update the toKeep fields value to the supplied offset.
 func (rl *reassemblyObject) KeepFrom(offset int) {
 	rl.toKeep = offset
