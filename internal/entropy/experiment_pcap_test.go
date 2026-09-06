@@ -14,29 +14,29 @@ import (
 )
 
 // BenchmarkCapturePayloads replays the entropy inputs of four packet decoders.
-// Set NETCAP_ENTROPY_PCAP to an Ethernet pcapng. Reading/decoding is not timed.
+// Set NETCAP_ENTROPY_PCAP to a pcapng; mixed per-packet link types are handled.
+// Reading and packet decoding are not timed.
 func BenchmarkCapturePayloads(b *testing.B) {
 	path := os.Getenv("NETCAP_ENTROPY_PCAP")
 	if path == "" {
-		b.Skip("set NETCAP_ENTROPY_PCAP to an Ethernet pcapng")
+		b.Skip("set NETCAP_ENTROPY_PCAP to a pcapng")
 	}
 	f, err := os.Open(path)
 	if err != nil {
 		b.Fatal(err)
 	}
 	defer f.Close()
-	r, err := pcapgo.NewNgReader(f, pcapgo.DefaultNgReaderOptions)
+	opts := pcapgo.DefaultNgReaderOptions
+	opts.WantMixedLinkType = true
+	r, err := pcapgo.NewNgReader(f, opts)
 	if err != nil {
 		b.Fatal(err)
-	}
-	if r.LinkType() != layers.LinkTypeEthernet {
-		b.Fatal("expected Ethernet pcapng")
 	}
 	var payloads [][]byte
 	var total int64
 	var large, packets int
 	for {
-		data, _, err := r.ReadPacketData()
+		data, ci, err := r.ReadPacketData()
 		if err == io.EOF {
 			break
 		}
@@ -44,7 +44,11 @@ func BenchmarkCapturePayloads(b *testing.B) {
 			b.Fatal(err)
 		}
 		packets++
-		packet := gopacket.NewPacket(data, r.LinkType(), gopacket.Default)
+		iface, err := r.Interface(ci.InterfaceIndex)
+		if err != nil {
+			b.Fatal(err)
+		}
+		packet := gopacket.NewPacket(data, iface.LinkType, gopacket.Default)
 		for _, layer := range packet.Layers() {
 			switch layer.LayerType() {
 			case layers.LayerTypeEthernet, layers.LayerTypeIPv4, layers.LayerTypeTCP, layers.LayerTypeUDP:
@@ -64,7 +68,13 @@ func BenchmarkCapturePayloads(b *testing.B) {
 	for _, impl := range []struct {
 		name string
 		fn   func([]byte) float64
-	}{{"Bytes", Bytes}, {"Go4", BytesGo4}, {experimentASMName, BytesARM64}} {
+	}{
+		{"Bytes", Bytes},
+		{"OldPacketRepeatedCount", repeatedCountEntropy},
+		{"OldProtobufMap", protobufMapEntropy},
+		{"Go4", BytesGo4},
+		{experimentASMName, BytesARM64},
+	} {
 		b.Run(impl.name, func(b *testing.B) {
 			b.SetBytes(total)
 			b.ReportAllocs()
