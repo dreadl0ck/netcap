@@ -107,6 +107,8 @@ jobs:
             -e GOFLAGS=-buildvcs=false \
             "$BUILDER_IMAGE" \
             sh -eux <<'SCRIPT'
+          go version
+
           # types/netcap.pb.go is generated from netcap.proto and gitignored, so
           # a clean checkout has no types package and every build fails with
           # "undefined: Alert". protoc and the gogofaster plugin ship in the

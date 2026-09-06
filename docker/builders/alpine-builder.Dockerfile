@@ -1,6 +1,7 @@
 # Base Alpine builder image for netcap musl builds
 # This image contains all build dependencies and can be reused across builds
 ARG TARGETPLATFORM=linux/amd64
+# Floating minor tag: rebuilds pick up 1.27.x patch releases automatically.
 FROM --platform=$TARGETPLATFORM golang:1.27-alpine
 
 # Install all build dependencies

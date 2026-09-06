@@ -43,7 +43,7 @@ type SMTPCountFunc func()
 // SMTPTransformationFunc is a transformation over SMTP audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type SMTPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, smtp *types.SMTP, min, max uint64, path string, ip string)
+type SMTPTransformationFunc = transformationFunc[types.SMTP]
 
 // SMTPTransform applies a maltego transformation over SMTP audit records.
 func SMTPTransform(count SMTPCountFunc, transform SMTPTransformationFunc, continueTransform bool) {

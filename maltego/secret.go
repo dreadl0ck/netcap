@@ -36,10 +36,10 @@ import (
 )
 
 // secretTransformationFunc is a transformation over Secret records for a selected Secret.
-type secretTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Secret, min, max uint64, path string, mac string, ip string)
+type secretTransformationFunc = transformationWithMACFunc[types.Secret]
 
 // secretCountFunc is a function that counts something over Secret records.
-type secretCountFunc = func(credentials *types.Secret, mac string, min, max *uint64)
+type secretCountFunc = countFunc[types.Secret]
 
 // SecretTransform applies a maltego transformation over Secret records seen for a target Secret.
 func SecretTransform(count secretCountFunc, transform secretTransformationFunc) {

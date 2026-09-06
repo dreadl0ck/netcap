@@ -43,7 +43,7 @@ type NTPCountFunc func()
 // NTPTransformationFunc is a transformation over NTP audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type NTPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, ntp *types.NTP, min, max uint64, path string, ip string)
+type NTPTransformationFunc = transformationFunc[types.NTP]
 
 // NTPTransform applies a maltego transformation over NTP audit records.
 func NTPTransform(count NTPCountFunc, transform NTPTransformationFunc, continueTransform bool) {

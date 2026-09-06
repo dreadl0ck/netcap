@@ -39,7 +39,7 @@ import (
 type filesCountFunc func()
 
 // filesTransformationFunc is a transformation over File audit records.
-type filesTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, file *types.File, min, max uint64, path string, ip string)
+type filesTransformationFunc = transformationFunc[types.File]
 
 // FilesTransform applies a maltego transformation over File audit records.
 func FilesTransform(count filesCountFunc, transform filesTransformationFunc) {

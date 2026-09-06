@@ -43,7 +43,7 @@ type HTTPCountFunc = func(http *types.HTTP, min, max *uint64)
 // HTTPTransformationFunc is a transformation over HTTP audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type HTTPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, http *types.HTTP, min, max uint64, path string, ip string)
+type HTTPTransformationFunc = transformationFunc[types.HTTP]
 
 // HTTPTransform applies a maltego transformation over HTTP audit records.
 func HTTPTransform(count HTTPCountFunc, transform HTTPTransformationFunc, continueTransform bool) {

@@ -24,7 +24,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	stdio "io"
 	"log"
 	"net/http"
@@ -208,44 +207,8 @@ func filterConnectionsByIPVersion(connections []ConnectionSummary, ipVersionFilt
 func readConnections(outDir string) ([]ConnectionSummary, error) {
 	filePath := filepath.Join(outDir, "Connection.ncap.gz")
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] Connection file not found: %s", filePath)
-		return []ConnectionSummary{}, nil
-	}
-
-	// Read Connection records
-	reader, err := NewAuditRecordReader(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer reader.Close()
-
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return nil, err
-	}
-
 	connections := make([]ConnectionSummary, 0)
-
-	// Read all records
-	for {
-		record, err := reader.NextRecord()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			log.Printf("[WebUI] Error reading Connection record: %v", err)
-			continue
-		}
-
-		// Type assert to Connection
-		conn, ok := record.(*types.Connection)
-		if !ok {
-			continue
-		}
-
+	err := visitAuditRecords(filePath, "Connection", func(conn *types.Connection) {
 		connections = append(connections, ConnectionSummary{
 			TimestampFirst:       conn.TimestampFirst,
 			TimestampLast:        conn.TimestampLast,
@@ -299,6 +262,9 @@ func readConnections(outDir string) ([]ConnectionSummary, error) {
 			// Community ID for cross-tool correlation
 			CommunityID: conn.CommunityID,
 		})
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	// Sort by total size descending (or by timestamp - could be configurable)
