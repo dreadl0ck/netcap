@@ -78,6 +78,13 @@ var (
 // Collector provides an interface to collect data from PCAP or a network interface.
 // this structure has an optimized field order to avoid excessive padding.
 type Collector struct {
+	lifecycleMu       sync.Mutex // full initialization and task registration
+	lifecycleStopped  bool
+	initialized       bool
+	runCtx            context.Context
+	runCancel         context.CancelFunc
+	producersWG       sync.WaitGroup
+	backgroundWG      sync.WaitGroup
 	mu                sync.Mutex
 	statMutex         sync.Mutex
 	current           int64
@@ -86,6 +93,10 @@ type Collector struct {
 	numPackets        int64
 	numWorkers        int
 	workers           []chan gopacket.Packet
+	dispatchMu        sync.Mutex // admission, controls, and assembler lifecycle
+	workersWG         sync.WaitGroup
+	workersStopped    bool
+	admittedPackets   uint64
 	start             time.Time
 
 	// when running multiple epochs, the timestamp of the first run can be preserved.
@@ -113,11 +124,10 @@ type Collector struct {
 	wg                       sync.WaitGroup
 	shutdown                 bool
 	isLive                   bool
-	cleanupOnce              sync.Once          // ensure cleanup only runs once
-	logFilesClosed           atomic.Bool        // track if log files have been closed
-	freeOSMemCancel          context.CancelFunc // cancel function for freeOSMemory goroutine
-	signalChan               chan os.Signal     // signal channel for cleanup
-	signalStop               func()             // function to stop signal handling and cleanup goroutines
+	cleanupOnce              sync.Once      // ensure cleanup only runs once
+	logFilesClosed           atomic.Bool    // track if log files have been closed
+	signalChan               chan os.Signal // signal channel for cleanup
+	signalStop               func()         // function to stop signal handling and cleanup goroutines
 
 	// logging
 	log           *zap.Logger // collector.log
@@ -436,15 +446,15 @@ func (c *Collector) recoverFromPanic() {
 
 // stopWorkers halts all workers.
 func (c *Collector) stopWorkers() {
-	// wait until all packets have been decoded
-	c.mu.Lock()
-	for i, w := range c.workers {
-		select {
-		case w <- nil:
-			c.log.Info("worker done", zap.Int("num", i))
+	c.dispatchMu.Lock()
+	if !c.workersStopped {
+		c.workersStopped = true
+		for _, w := range c.workers {
+			w <- nil
 		}
 	}
-	c.mu.Unlock()
+	c.dispatchMu.Unlock()
+	c.workersWG.Wait()
 }
 
 // handleSignals catches signals and runs the cleanup
@@ -460,11 +470,18 @@ func (c *Collector) handleSignals() {
 	}
 
 	// start signal handler and cleanup routine
+	c.backgroundWG.Add(1)
 	go func() {
-		sig, ok := <-c.signalChan
-		if !ok {
-			// Channel closed, exit goroutine
+		defer c.backgroundWG.Done()
+		var sig os.Signal
+		select {
+		case <-c.runCtx.Done():
 			return
+		case received, ok := <-c.signalChan:
+			if !ok {
+				return
+			}
+			sig = received
 		}
 
 		c.printlnStdOut("\nreceived signal:", sig)
@@ -477,12 +494,15 @@ func (c *Collector) handleSignals() {
 				// Channel closed, exit goroutine
 				return
 			}
-			c.printlnStdOut("force quitting, signal:", sign)
+			fmt.Println("force quitting, signal:", sign)
 			os.Exit(0)
 		}()
 
-		c.cleanup(true)
-		os.Exit(0)
+		// Cleanup joins this handler, so it must run in a separate goroutine.
+		go func() {
+			c.cleanup(true)
+			os.Exit(0)
+		}()
 	}()
 
 	if c.config.HTTPShutdownEndpoint {
@@ -604,49 +624,58 @@ func (c *Collector) getSymmetricWorkerIndex(p gopacket.Packet) int {
 
 // to decode incoming packets in parallel
 // they are passed to several worker goroutines using flow sharding.
-func (c *Collector) handlePacket(p gopacket.Packet) {
-	// make it work for 1 worker only, can be used for debugging
-	if c.numWorkers == 1 {
-		c.workers[0] <- p
-
-		return
-	}
-
-	idx := c.getSymmetricWorkerIndex(p)
-	c.workers[idx] <- p
+func (c *Collector) handlePacket(p gopacket.Packet) bool {
+	return c.submitPacket(p, false)
 }
 
 // to decode incoming packets in parallel
 // they are passed to several worker goroutines using flow sharding.
 func (c *Collector) handlePacketTimeout(p gopacket.Packet) {
+	c.submitPacket(p, true)
+}
+
+// submitPacket takes ownership even when admission is stopped or times out.
+func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
+	c.dispatchMu.Lock()
+	defer c.dispatchMu.Unlock()
+	accepted := false
+	defer func() {
+		if !accepted {
+			if pooled, ok := p.(gopacket.PooledPacket); ok {
+				pooled.Dispose()
+			}
+		}
+	}()
+	if p == nil || c.workersStopped || len(c.workers) == 0 {
+		return false
+	}
 	idx := c.getSymmetricWorkerIndex(p)
-
+	var deadline <-chan time.Time
+	if timeout {
+		timer := time.NewTimer(3 * time.Second)
+		defer timer.Stop()
+		deadline = timer.C
+	}
+	// Capture metadata before transferring ownership to the worker.
+	ref := p.Metadata().CaptureInfo.Timestamp
+	c.wg.Add(1)
 	select {
-	// send the packetInfo to the decoder routine
 	case c.workers[idx] <- p:
-	case <-time.After(3 * time.Second):
-		pkt := gopacket.NewPacket(p.Data(), c.config.BaseLayer, gopacket.Default)
-
-		var (
-			nf gopacket.Flow
-			tf gopacket.Flow
-		)
-
-		if nl := pkt.NetworkLayer(); nl != nil {
-			nf = nl.NetworkFlow()
-		}
-
-		if tl := pkt.TransportLayer(); tl != nil {
-			tf = tl.TransportFlow()
-		}
-
-		fmt.Println("handle packet timeout", nf, tf)
-
-		// Dispose of the temporary packet if it's pooled
-		if pooledPkt, ok := pkt.(gopacket.PooledPacket); ok {
-			pooledPkt.Dispose()
+		accepted = true
+	case <-deadline:
+		c.wg.Done()
+		return false
+	}
+	c.admittedPackets++
+	atomic.AddInt64(&c.current, 1)
+	if c.config != nil && c.config.ReassembleConnections && c.config.DecoderConfig.FlushEvery > 0 {
+		if c.admittedPackets%uint64(c.config.DecoderConfig.FlushEvery) == 0 {
+			for _, w := range c.workers {
+				w <- &workerControl{ref: ref}
+			}
 		}
 	}
+	return true
 }
 
 // print errors to stdout in red.
@@ -1033,14 +1062,11 @@ func printDecoderList(target io.Writer, decoders []string, indent string, isLast
 // updates the progress indicator and writes to stdout periodically.
 func (c *Collector) printProgressInterval() chan struct{} {
 	stop := make(chan struct{})
-
-	// Create separate ticker for quiet mode netcap.log progress updates
-	var quietProgressTicker *time.Ticker
-	if c.config.DecoderConfig.Quiet && !c.config.DecoderConfig.PrintProgress {
-		quietProgressTicker = time.NewTicker(5 * time.Second)
-	}
-
-	go func() {
+	c.startBackground(func(ctx context.Context) {
+		var quietProgressTicker *time.Ticker
+		if c.config.DecoderConfig.Quiet && !c.config.DecoderConfig.PrintProgress {
+			quietProgressTicker = time.NewTicker(5 * time.Second)
+		}
 		// Clean up ticker on exit
 		defer func() {
 			if quietProgressTicker != nil {
@@ -1053,6 +1079,8 @@ func (c *Collector) printProgressInterval() chan struct{} {
 
 		for {
 			select {
+			case <-ctx.Done():
+				return
 			case <-stop:
 				return
 			case <-statsTicker.C:
@@ -1071,7 +1099,7 @@ func (c *Collector) printProgressInterval() chan struct{} {
 					curr = atomic.LoadInt64(&c.current)
 					num  = atomic.LoadInt64(&c.numPackets)
 					last = atomic.LoadInt64(&c.numPacketsLast)
-					pps  = (curr - last) / int64(c.statsInterval.Seconds())
+					pps  = int64(float64(curr-last) / c.statsInterval.Seconds())
 				)
 
 				// update prometheus metric
@@ -1130,7 +1158,7 @@ func (c *Collector) printProgressInterval() chan struct{} {
 				}
 			}
 		}
-	}()
+	})
 
 	return stop
 }

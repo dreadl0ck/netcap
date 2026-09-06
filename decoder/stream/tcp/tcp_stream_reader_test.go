@@ -35,6 +35,9 @@ func TestTCPStreamReaderRun(t *testing.T) {
 				wantBytes += size
 			}
 			if tc.nilEOF {
+				if got := reader.NumBytes(); got != wantBytes {
+					t.Fatalf("bytes before reader starts = %d, want %d", got, wantBytes)
+				}
 				reader.DataChan() <- nil
 				defer close(reader.DataChan())
 			} else {

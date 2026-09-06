@@ -23,7 +23,6 @@ import (
 	"sync"
 
 	"github.com/gopacket/gopacket"
-	"github.com/gopacket/gopacket/ip4defrag"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/reassembly"
@@ -34,16 +33,13 @@ import (
 var StreamFactory = newStreamFactory()
 
 func newStreamFactory() *connectionFactory {
-	f := &connectionFactory{
-		defragger:  ip4defrag.NewIPv4Defragmenter(),
+	return &connectionFactory{
 		FSMOptions: reassembly.TCPSimpleFSMOptions{},
 	}
-	f.StreamPool = reassembly.NewStreamPool(f)
-
-	return f
 }
 
 // CloseStreamReaderChannelsAndWait closes all TCP stream reader channels and waits for goroutines to finish.
+// Call only after packet workers join and every assembler has been flushed.
 // This MUST be called BEFORE closing log files to avoid write errors.
 // CRITICAL: Each TCP connection spawns 2 goroutines (client + server) that run tcpStreamReader.Run()
 // These goroutines must be properly shut down before log files are closed.
@@ -65,22 +61,13 @@ func closeStreamReaderChannelsAndWaitInternal(doLog bool) {
 
 	// Close all dataChan channels to signal EOF and let goroutines exit
 	StreamFactory.Lock()
-	for _, reader := range StreamFactory.streamReaders {
-		if reader != nil && reader.DataChan() != nil {
-			// Close the dataChan to send EOF to the reading goroutine
-			// Use defer/recover to handle potential double-close panics safely
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						// Channel already closed or closing caused panic - that's OK
-						if doLog {
-							reassemblyLog.Debug("dataChan close panic (expected if already closed)", zap.Any("recover", r))
-						}
-					}
-				}()
+	if !StreamFactory.channelsClosed {
+		for _, reader := range StreamFactory.streamReaders {
+			if reader != nil && reader.DataChan() != nil {
 				close(reader.DataChan())
-			}()
+			}
 		}
+		StreamFactory.channelsClosed = true
 	}
 	StreamFactory.Unlock()
 
@@ -95,15 +82,9 @@ func closeStreamReaderChannelsAndWaitInternal(doLog bool) {
 	StreamFactory.wg.Wait()
 }
 
-// ResetStreamFactory creates a new stream factory to clear all stream state.
-// This should be called when resetting state between processing different files.
-// CRITICAL: This explicitly resets the old StreamPool to release backing arrays
-// before creating a new factory, preventing memory leaks.
+// ResetStreamFactory clears state between captures, after all workers and readers join.
 func ResetStreamFactory() {
 	if StreamFactory != nil {
-		// Explicitly reset the old pool to clear its backing arrays
-		// This is CRITICAL to prevent the StreamPool.all slice from accumulating
-		// across multiple file processing runs
 		if StreamFactory.StreamPool != nil {
 			StreamFactory.StreamPool.Reset()
 			StreamFactory.StreamPool = nil
@@ -111,12 +92,17 @@ func ResetStreamFactory() {
 		StreamFactory = nil
 	}
 
-	// Create completely fresh factory with new pool
 	StreamFactory = newStreamFactory()
 }
 
 // GetStreamPool returns the stream pool.
 func GetStreamPool() *reassembly.StreamPool {
+	StreamFactory.Lock()
+	defer StreamFactory.Unlock()
+	// Legacy callers share a pool; worker-owned pools do not retain this cache.
+	if StreamFactory.StreamPool == nil {
+		StreamFactory.StreamPool = reassembly.NewStreamPool(StreamFactory)
+	}
 	return StreamFactory.StreamPool
 }
 
@@ -128,12 +114,12 @@ func GetStreamPool() *reassembly.StreamPool {
 // and spawn the stream decoder routines for processing the data.
 type connectionFactory struct {
 	sync.Mutex
-	streamReaders []streamReader
-	numActive     int64
-	defragger     *ip4defrag.IPv4Defragmenter
-	StreamPool    *reassembly.StreamPool
-	wg            sync.WaitGroup
-	FSMOptions    reassembly.TCPSimpleFSMOptions
+	streamReaders  []streamReader
+	numActive      int64
+	StreamPool     *reassembly.StreamPool
+	wg             sync.WaitGroup
+	FSMOptions     reassembly.TCPSimpleFSMOptions
+	channelsClosed bool
 }
 
 // New handles a new stream received from the assembler
@@ -177,16 +163,6 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 	go str.server.Run(factory)
 
 	return str
-}
-
-// waitGoRoutines waits until the goroutines launched to process TCP streams are done
-// this will block forever if there are streams that are never shutdown (via RST or FIN flags).
-func (factory *connectionFactory) waitGoRoutines() {
-	factory.Lock()
-	reassemblyLog.Info("waiting for last TCP streams to process", zap.Int64("num", factory.numActive))
-	factory.Unlock()
-
-	factory.wg.Wait()
 }
 
 // context is the assembler context.

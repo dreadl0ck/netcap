@@ -1,7 +1,6 @@
 package collector
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -43,6 +42,15 @@ var errAborted = errors.New("operation aborted by user")
 // Init sets up the collector and starts the configured number of workers
 // must be called prior to usage of the collector instance.
 func (c *Collector) Init() (err error) {
+	c.lifecycleMu.Lock()
+	defer c.lifecycleMu.Unlock()
+	if c.lifecycleStopped {
+		return ErrStopped
+	}
+	if c.initialized {
+		return nil
+	}
+	c.contextLocked()
 	// Catch attempts to set the timeout to 0, this is explicitly not recommended.
 	// From the gopacket docs:
 	//   This means that if you only capture one packet,
@@ -78,11 +86,6 @@ func (c *Collector) Init() (err error) {
 		SupportMissingEstablishment: c.config.DecoderConfig.AllowMissingInit,
 	}
 
-	// handle signals for a clean exit (unless disabled for service mode)
-	if !c.config.NoSignalHandling {
-		c.handleSignals()
-	}
-
 	// init logfile if necessary
 	if c.netcapLogFile == nil {
 		err = c.initLogging()
@@ -95,10 +98,6 @@ func (c *Collector) Init() (err error) {
 	if c.config.NoSignalHandling {
 		c.log.Info("signal handling disabled (NoSignalHandling=true) - parent process will handle signals")
 	}
-
-	// start workers
-	c.workers = c.initWorkers()
-	c.log.Info("spawned workers", zap.Int("total", c.config.Workers))
 
 	// create full output directory path if set
 	if c.config.DecoderConfig.Out != "" {
@@ -249,9 +248,11 @@ func (c *Collector) Init() (err error) {
 	// this is meant for diagnostic purposes and should not be used in production
 	if c.config.FreeOSMem != 0 {
 		fmt.Println("will free the OS memory every", c.config.FreeOSMem, "minutes")
-		ctx, cancel := context.WithCancel(context.Background())
-		c.freeOSMemCancel = cancel
-		go c.freeOSMemory(ctx)
+		c.backgroundWG.Add(1)
+		go func() {
+			defer c.backgroundWG.Done()
+			c.freeOSMemory(c.runCtx)
+		}()
 	}
 
 	// wait for decoder init to finish
@@ -268,6 +269,12 @@ func (c *Collector) Init() (err error) {
 
 	c.buildProgressString()
 	c.printlnStdOut("done in", time.Since(start))
+	c.initWorkers()
+	c.log.Info("spawned workers", zap.Int("total", c.config.Workers))
+	c.initialized = true
+	if !c.config.NoSignalHandling {
+		c.handleSignals()
+	}
 
 	return nil
 }
