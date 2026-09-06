@@ -59,17 +59,19 @@ func closeStreamReaderChannelsAndWaitInternal(doLog bool) {
 		return
 	}
 
-	// Close all dataChan channels to signal EOF and let goroutines exit
+	// Close each reader's dataChan exactly once to signal EOF.
+	// A watermark rather than a flag: readers registered by a later capture
+	// still need closing, otherwise the wait below never returns.
 	StreamFactory.Lock()
-	if !StreamFactory.channelsClosed {
-		for _, reader := range StreamFactory.streamReaders {
-			if reader != nil && reader.DataChan() != nil {
-				close(reader.DataChan())
-			}
-		}
-		StreamFactory.channelsClosed = true
-	}
+	pending := StreamFactory.streamReaders[StreamFactory.closedReaders:]
+	StreamFactory.closedReaders = len(StreamFactory.streamReaders)
 	StreamFactory.Unlock()
+
+	for _, reader := range pending {
+		if reader != nil && reader.DataChan() != nil {
+			close(reader.DataChan())
+		}
+	}
 
 	// Now wait for all goroutines to finish
 	// This will block until all tcpStreamReader.Run() goroutines have exited
@@ -114,12 +116,12 @@ func GetStreamPool() *reassembly.StreamPool {
 // and spawn the stream decoder routines for processing the data.
 type connectionFactory struct {
 	sync.Mutex
-	streamReaders  []streamReader
-	numActive      int64
-	StreamPool     *reassembly.StreamPool
-	wg             sync.WaitGroup
-	FSMOptions     reassembly.TCPSimpleFSMOptions
-	channelsClosed bool
+	streamReaders []streamReader
+	numActive     int64
+	StreamPool    *reassembly.StreamPool
+	wg            sync.WaitGroup
+	FSMOptions    reassembly.TCPSimpleFSMOptions
+	closedReaders int
 }
 
 // New handles a new stream received from the assembler

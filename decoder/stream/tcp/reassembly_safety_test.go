@@ -171,8 +171,9 @@ func TestPrivatePoolCleanup(t *testing.T) {
 				}()
 			}
 			wg.Wait()
-			if !StreamFactory.channelsClosed {
-				t.Fatal("cleanup did not mark reader channels closed")
+			if StreamFactory.closedReaders != len(StreamFactory.streamReaders) {
+				t.Fatalf("cleanup closed %d of %d reader channels",
+					StreamFactory.closedReaders, len(StreamFactory.streamReaders))
 			}
 			if StreamFactory.numActive != 0 {
 				t.Fatalf("cleanup returned with %d active readers", StreamFactory.numActive)
@@ -193,6 +194,36 @@ func TestPrivatePoolCleanup(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// The capture binary and the web UI close reader channels again after cleanup
+// has already reset the factory. That call must not consume the close for the
+// readers a later capture registers, or their cleanup waits forever.
+func TestCloseStreamReadersAfterFactoryReset(t *testing.T) {
+	oldFactory, oldConfig := StreamFactory, decoderconfig.Instance
+	defer func() { StreamFactory, decoderconfig.Instance = oldFactory, oldConfig }()
+	decoderconfig.Instance.Quiet = true
+	decoderconfig.Instance.SaveConns = false
+	decoderconfig.Instance.StreamDecoderBufSize = 1
+
+	ResetStreamFactory()
+	// Post-cleanup call by an external caller, before the next capture starts.
+	CloseStreamReaderChannelsAndWaitQuiet()
+
+	StreamFactory.New(gopacket.NewFlow(layers.EndpointIPv4, []byte{10, 0, 0, 1}, []byte{10, 0, 0, 2}),
+		gopacket.NewFlow(layers.EndpointTCPPort, []byte{48, 57}, []byte{0, 80}),
+		&context{CaptureInfo: gopacket.CaptureInfo{Timestamp: time.Now()}})
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		CloseStreamReaderChannelsAndWaitQuiet()
+	}()
+	select {
+	case <-done:
+	case <-time.After(30 * time.Second):
+		t.Fatal("readers registered after a reset were never closed")
 	}
 }
 
