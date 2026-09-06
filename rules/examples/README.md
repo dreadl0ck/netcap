@@ -90,6 +90,27 @@ The detection rules are organized by security domain and detection objective. Ea
 
 **Best for**: Monitoring critical infrastructure, detecting unauthorized ICS protocol access, and identifying OT network anomalies.
 
+### `modbus_hunt.yml`
+**Focus**: Parsed Modbus requests, discovery cardinality, and visibility triage.
+**Maturity**: Hunt templates; site-dependent rules and baseline collection are disabled. No automatic blocking or other response actions.
+
+- Write coverage: FC5/15 coils and FC6/16/22/23 holding registers use `HasWriteAddress`, `WriteAddress`, and `WriteQuantity`. FC23 is checked on its write span, not its read span. `WriteValues` and FC22 `AndMask`/`OrMask` remain evidence for process-specific review, not universal malicious-value signatures.
+- The example approved tuple is source `192.0.2.10`, destination `192.0.2.20`, unit 1, coils 100..199 for FC5/15 or holding registers 1000..1099 for FC6/16/22/23. These are documentation IPs and zero-based wire addresses, not deployment defaults or human-readable 4xxxx register labels.
+- Approval requires the entire interval inside one tuple: `WriteAddress >= 1000 && WriteAddress <= 1099 && WriteQuantity > 0 && WriteQuantity <= 1100 - WriteAddress`. Guarded subtraction avoids end-address overflow. Add approved tuples with OR inside the negation; never exempt an approved source independently of its destination, unit, bank, function, and range.
+- FC21 is separate: every `FileRecords` entry must match reference type 6, file 1, and complete record interval 100..199 for the example tuple. Do not treat file records as holding registers or approve only the first subrecord.
+- Enabled observation rules cover FC43/MEI14 identification and FC8 diagnostics 4 (listen only), 10 (clear counters), and 1 (restart communications). They indicate requests, not successful changes, PLC stop, or malicious intent. Unknown-role and malformed/unsupported traffic has separate triage rules; matched responses never count as write requests.
+- Cardinality uses record-time windows and per-source grouping: distinct destinations, distinct units pinned to one destination, and distinct read starts pinned to one destination/unit/bank. Clone scoped rules with unique names; adapt read functions for each bank (FC1 coils, FC2 discrete inputs, FC3/23 holding registers, FC4 input registers). Thresholds are examples. Repeated polls do not add distinct values. These rules do not detect ordered sweeps, read-then-write sequences, or count the full read span.
+- Exception 2 requires a valid matched response. The initiating master is response `DstIP`, while `SrcIP` and the alert source are the responding controller. The template pins both endpoints and unit and emits individual observations. Engine thresholds group by `SrcIP`, so do not describe an unscoped response threshold as per-attacker activity. Unmatched, ambiguous, expired, or missing capture correlation cannot support this attribution; a matched exception proves rejection, not successful manipulation.
+
+**Baseline Missing Checklist** (complete before enabling site-dependent rules):
+1. Inventory approved masters, controllers/gateways, unit IDs, banks, exact function codes, and full allowed address intervals; verify wire-address conversion with the asset owner.
+2. Obtain file-number/record-range permissions for FC21 and process-specific value/mask limits for FC5/6/15/16/22/23. The templates enforce addresses, not safe process values.
+3. Record normal polling/inventory fan-out, distinct units/read starts, cadence, maintenance windows, and authorized diagnostic/device-ID use; set thresholds from representative captures.
+4. Verify capture direction, both-way visibility, parser/correlation status, asset ownership, change tickets, and a human triage contact. Test approved and out-of-range traffic before enabling alerts; do not attach automatic blocking in OT.
+
+Validate all templates, including disabled ones, with `go test ./rules -run TestModbus -count=1`.
+In an isolated worktree without the `../go-dpi` workspace sibling, use `GOWORK=off go test -tags nodpi ./rules -run TestModbus -count=1`.
+
 ### `suspicious_traffic.yml`
 **Focus**: Suspicious traffic patterns and attack behaviors  
 **Maturity**: Mixed (Production-ready to Baseline)  
@@ -585,4 +606,3 @@ When contributing new rules:
 - [ ] Threat intelligence feed integration
 - [ ] Machine learning model integration for anomaly detection
 - [ ] Behavioral baseline establishment
-

@@ -139,6 +139,9 @@ func (m *modbusReader) Decode() {
 	}
 
 	m.frameConversation(func(msg *types.Modbus) {
+		if decoderconfig.Instance.ExportMetrics {
+			msg.Inc()
+		}
 		if err := Decoder.Writer.Write(msg); err != nil {
 			modbusLog.Error("failed to write Modbus record", zap.Error(err))
 		} else {
@@ -148,61 +151,100 @@ func (m *modbusReader) Decode() {
 }
 
 func (m *modbusReader) frameConversation(emit func(*types.Modbus)) {
+	if IsRTUConversation(m.conversation) {
+		m.frameRTU(emit)
+		return
+	}
+	correlation := tcpCorrelation{pending: make(map[int32]pendingRequest)}
+	// Client and server are only known when the handshake was observed; a
+	// midstream capture may have the assignment flipped. Reassembly additionally
+	// inserts an initial-loss marker when no SYN was observed, so inspect both
+	// directions before emitting anything, including the legacy view.
+	oriented := m.conversation.TCPHandshakeComplete
+	for _, fragments := range []core.DataFragments{m.conversation.Data, m.conversation.ClientData, m.conversation.ServerData} {
+		for _, fragment := range fragments {
+			data, ok := fragment.(*core.StreamData)
+			if !ok || data.SkippedBytes == -1 {
+				oriented = false
+			}
+		}
+	}
 	type directionState struct {
 		data      [mbapHeaderSize + maxPDUSize]byte
 		n         int
 		timestamp int64
+		started   bool
 		stopped   bool
 	}
 	var client, server directionState
 	feed := func(input interface {
 		Direction() reassembly.TCPFlowDirection
-	}) { f := &client; if input.Direction() == reassembly.TCPDirServerToClient {
-		f = &server
-	};
-	// Without loss/status schema fields, emit only complete, contiguous ADUs.
-	// The fragment interface has no gap accessor; unknown metadata is unsafe.
-	fragment, ok := input.(*core.StreamData); if !ok || fragment.SkippedBytes != 0 {
-		f.stopped = true
-		f.n = 0
-		return
-	}; data := fragment.Raw(); for len(data) > 0 && !f.stopped {
-		if f.n == 0 {
-			f.timestamp = fragment.CaptureInfo().Timestamp.UnixNano()
-			if fragment.Context() != nil {
-				f.timestamp = fragment.Context().GetCaptureInfo().Timestamp.UnixNano()
-			}
+	}) {
+		f := &client
+		if input.Direction() == reassembly.TCPDirServerToClient {
+			f = &server
 		}
-		target := mbapHeaderSize + minPDUSize
-		if f.n >= target {
-			target = 6 + (int(f.data[4]) << 8) + int(f.data[5])
-		}
-		n := copy(f.data[f.n:target], data)
-		f.n += n
-		data = data[n:]
-		if f.n < mbapHeaderSize+minPDUSize {
-			continue
-		}
-		if !m.isModbusHeader(f.data[:f.n]) {
-			// MBAP has no reliable sync marker; never scan a body for headers.
+		// Without loss/status schema fields, emit only complete, contiguous ADUs.
+		// The fragment interface has no gap accessor; unknown metadata is unsafe.
+		fragment, ok := input.(*core.StreamData)
+		if !ok || (fragment.SkippedBytes != 0 && !(fragment.SkippedBytes == -1 && !f.started && decoderconfig.Instance.AllowMissingInit)) {
 			f.stopped = true
-			continue
+			f.n = 0
+			// Lost requests may reuse a pending transaction ID.
+			clear(correlation.pending)
+			correlation.blocked = true
+			return
 		}
-		msg, consumed := m.parseModbusMessage(f.data[:f.n])
-		if consumed == 0 {
-			continue
+		data := fragment.Raw()
+		for len(data) > 0 && !f.stopped {
+			f.started = true
+			if f.n == 0 {
+				f.timestamp = fragment.CaptureInfo().Timestamp.UnixNano()
+				if fragment.Context() != nil {
+					f.timestamp = fragment.Context().GetCaptureInfo().Timestamp.UnixNano()
+				}
+			}
+			target := mbapHeaderSize + minPDUSize
+			if f.n >= target {
+				target = 6 + (int(f.data[4]) << 8) + int(f.data[5])
+			}
+			n := copy(f.data[f.n:target], data)
+			f.n += n
+			data = data[n:]
+			if f.n < mbapHeaderSize+minPDUSize {
+				continue
+			}
+			if !m.isModbusHeader(f.data[:f.n]) {
+				// MBAP has no reliable sync marker; never scan a body for headers.
+				f.stopped = true
+				clear(correlation.pending)
+				correlation.blocked = true
+				continue
+			}
+			role := "unknown"
+			if oriented {
+				role = "request"
+				if f == &server {
+					role = "response"
+				}
+			}
+			msg, consumed := m.parseTCP(f.data[:f.n], role)
+			if consumed == 0 {
+				continue
+			}
+			msg.Timestamp = f.timestamp
+			msg.SrcIP, msg.DstIP = m.conversation.ClientIP, m.conversation.ServerIP
+			msg.SrcPort, msg.DstPort = int32(m.conversation.ClientPort), int32(m.conversation.ServerPort)
+			if f == &server {
+				msg.SrcIP, msg.DstIP = msg.DstIP, msg.SrcIP
+				msg.SrcPort, msg.DstPort = msg.DstPort, msg.SrcPort
+			}
+			msg.CommunityID = m.conversation.CommunityID
+			correlation.observe(msg, f == &server)
+			emit(msg)
+			f.n = 0
 		}
-		msg.Timestamp = f.timestamp
-		msg.SrcIP, msg.DstIP = m.conversation.ClientIP, m.conversation.ServerIP
-		msg.SrcPort, msg.DstPort = int32(m.conversation.ClientPort), int32(m.conversation.ServerPort)
-		if f == &server {
-			msg.SrcIP, msg.DstIP = msg.DstIP, msg.SrcIP
-			msg.SrcPort, msg.DstPort = msg.DstPort, msg.SrcPort
-		}
-		msg.CommunityID = m.conversation.CommunityID
-		emit(msg)
-		f.n = 0
-	} }
+	}
 	c, s := m.conversation.ClientData, m.conversation.ServerData
 	if c == nil && s == nil {
 		for _, fragment := range m.conversation.Data {
@@ -256,6 +298,10 @@ func (m *modbusReader) isModbusHeader(data []byte) bool {
 
 // parseModbusMessage parses a Modbus TCP message and returns the record and bytes consumed.
 func (m *modbusReader) parseModbusMessage(data []byte) (*types.Modbus, int) {
+	return m.parseTCP(data, "unknown")
+}
+
+func (m *modbusReader) parseTCP(data []byte, role string) (*types.Modbus, int) {
 	if !m.isModbusHeader(data) {
 		return nil, 0
 	}
@@ -272,19 +318,11 @@ func (m *modbusReader) parseModbusMessage(data []byte) (*types.Modbus, int) {
 		return nil, 0
 	}
 
-	// Parse PDU (starts at byte 7)
-	funcCode := data[7]
-	isException := (funcCode & 0x80) != 0
-	actualFuncCode := funcCode & 0x7F
-
-	msg := &types.Modbus{
-		TransactionID: int32(transactionID),
-		ProtocolID:    int32(protocolID),
-		Length:        int32(length),
-		UnitID:        int32(unitID),
-		FunctionCode:  int32(actualFuncCode),
-		Exception:     isException,
-	}
+	msg := parsePDU(data[mbapHeaderSize:totalLength], role)
+	msg.Transport = "tcp"
+	msg.HasMBAP = true
+	msg.TransactionID, msg.ProtocolID = int32(transactionID), int32(protocolID)
+	msg.Length, msg.UnitID = int32(length), int32(unitID)
 
 	// Include payload if configured
 	if decoderconfig.Instance.IncludePayloads && totalLength > mbapHeaderSize {

@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
+	"github.com/prometheus/client_golang/prometheus"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
@@ -254,6 +256,65 @@ func TestMalformedAndPayloadLimits(t *testing.T) {
 	}
 }
 
+func TestAllowMissingInit(t *testing.T) {
+	for _, allow := range []bool{false, true} {
+		for _, server := range []bool{false, true} {
+			for _, fallback := range []bool{false, true} {
+				for _, scenario := range []string{"empty initial", "payload initial", "invalid boundary", "positive initial", "partial midstream", "complete midstream"} {
+					t.Run(fmt.Sprintf("allow=%t/server=%t/fallback=%t/%s", allow, server, fallback, scenario), func(t *testing.T) {
+						m := reader(t)
+						decoderconfig.Instance.AllowMissingInit = allow
+						a := wire(1, 3, 0, 1, 0, 2)
+						gap := fragment(nil, 2, server)
+						gap.SkippedBytes = -1
+						affected := core.DataFragments{gap}
+						want := 1 // The other direction always survives.
+						switch scenario {
+						case "empty initial":
+							if allow {
+								want++
+							}
+						case "payload initial":
+							gap.RawData = a[:4]
+							a = a[4:]
+							if allow {
+								want++
+							}
+						case "invalid boundary":
+							bad := wire(9, 7)
+							bad[3] = 1
+							a = append(bad, a...)
+						case "positive initial":
+							gap.SkippedBytes = 1
+						case "partial midstream":
+							affected = core.DataFragments{fragment(a[:4], 1, server), gap}
+							a = a[4:]
+						case "complete midstream":
+							affected = core.DataFragments{fragment(a, 1, server), gap}
+							want++
+						}
+						affected = append(affected, fragment(a, 3, server))
+						other := fragment(wire(2, 7), 4, !server)
+						if fallback {
+							m.conversation.Data = append(affected, other)
+						} else if server {
+							m.conversation.ServerData = affected
+							m.conversation.ClientData = core.DataFragments{other}
+						} else {
+							m.conversation.ClientData = affected
+							m.conversation.ServerData = core.DataFragments{other}
+						}
+						got := records(m)
+						if len(got) != want || got[len(got)-1].TransactionID != 2 {
+							t.Fatalf("want %d records ending with opposite direction: %v", want, got)
+						}
+					})
+				}
+			}
+		}
+	}
+}
+
 type testWriter struct {
 	netio.AuditRecordWriter
 	calls int
@@ -279,6 +340,50 @@ func TestDecodeWriter(t *testing.T) {
 		}
 		if w.calls != 1 || Decoder.NumRecordsWritten != want {
 			t.Fatalf("calls=%d count=%d", w.calls, Decoder.NumRecordsWritten)
+		}
+	}
+}
+
+func TestDecodeMetrics(t *testing.T) {
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(types.Metrics...)
+	count := func() float64 {
+		t.Helper()
+		families, err := registry.Gather()
+		if err != nil {
+			t.Fatal(err)
+		}
+		var total float64
+		for _, family := range families {
+			if family.GetName() == strings.ToLower(types.Type_NC_Modbus.String()) {
+				for _, metric := range family.Metric {
+					total += metric.GetCounter().GetValue()
+				}
+			}
+		}
+		return total
+	}
+	for _, enabled := range []bool{false, true} {
+		for _, writeErr := range []error{nil, errors.New("write failed")} {
+			t.Run(fmt.Sprintf("enabled=%t/error=%v", enabled, writeErr), func(t *testing.T) {
+				m := reader(t)
+				decoderconfig.Instance.ExportMetrics = enabled
+				m.conversation.ClientData = core.DataFragments{fragment(append(wire(1, 3), wire(2, 3)...), 1, false)}
+				m.conversation.ServerData = core.DataFragments{fragment(wire(3, 0x83, 2), 2, true)}
+				oldWriter, oldCount := Decoder.Writer, Decoder.NumRecordsWritten
+				t.Cleanup(func() { Decoder.Writer, Decoder.NumRecordsWritten = oldWriter, oldCount })
+				w := &testWriter{err: writeErr}
+				Decoder.Writer = w
+				before := count()
+				m.Decode()
+				want := float64(0)
+				if enabled {
+					want = 3
+				}
+				if delta := count() - before; delta != want || w.calls != 3 {
+					t.Fatalf("metric delta=%v want=%v writes=%d", delta, want, w.calls)
+				}
+			})
 		}
 	}
 }

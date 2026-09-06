@@ -1,0 +1,144 @@
+# Modbus hunt templates. Documentation IPs and ranges MUST be replaced before
+# enabling site-dependent rules. No automatic response actions are configured.
+description: "Modbus request-level hunts, scoped baseline templates, and separate visibility triage. Matches indicate attempts or observations, not process effects."
+rules:
+  # FC5/6/15/16/22 carry the written span in Address/Quantity; only FC23 uses
+  # WriteAddress/WriteQuantity, so both forms must be authorized separately.
+  - name: Modbus Write Outside Baseline
+    description: Valid write request outside an approved source/destination/unit/bank/function and complete address interval; approved masters are not exempt outside their ranges.
+    type: Modbus
+    expression: >-
+      MessageRole == "request" && ParseStatus == "valid" && !Exception &&
+      FunctionCode in [5, 6, 15, 16, 22, 23] &&
+      !(SrcIP == "192.0.2.10" && DstIP == "192.0.2.20" && UnitID == 1 &&
+        ((Bank == "coils" && FunctionCode in [5, 15] &&
+          HasAddress && Quantity > 0 &&
+          Address >= 100 && Address <= 199 && Quantity <= 200 - Address) ||
+         (Bank == "holding_registers" && FunctionCode in [6, 16, 22] &&
+          HasAddress && Quantity > 0 &&
+          Address >= 1000 && Address <= 1099 && Quantity <= 1100 - Address) ||
+         (Bank == "holding_registers" && FunctionCode == 23 &&
+          HasWriteAddress && WriteQuantity > 0 &&
+          WriteAddress >= 1000 && WriteAddress <= 1099 && WriteQuantity <= 1100 - WriteAddress)))
+    severity: high
+    tags: [modbus, write, baseline, site-dependent]
+    enabled: false
+
+  - name: Modbus File Write Outside Baseline
+    description: FC21 file write outside the approved tuple or any file-record interval; file numbers and record offsets are not holding-register addresses.
+    type: Modbus
+    expression: >-
+      MessageRole == "request" && ParseStatus == "valid" && !Exception && FunctionCode == 21 &&
+      !(SrcIP == "192.0.2.10" && DstIP == "192.0.2.20" && UnitID == 1 && Bank == "file_records" &&
+        len(FileRecords) > 0 && all(FileRecords, {
+          .ReferenceType == 6 && .FileNumber == 1 && .RecordNumber >= 100 &&
+          .RecordNumber <= 199 && .RecordLength > 0 && .RecordLength <= 200 - .RecordNumber
+        }))
+    severity: high
+    tags: [modbus, write, file-records, baseline, site-dependent]
+    enabled: false
+
+  - name: Modbus Device Identification Request
+    description: FC43 MEI14 device identification request; legitimate inventory tools also perform this discovery.
+    type: Modbus
+    expression: MessageRole == "request" && ParseStatus == "valid" && !Exception && FunctionCode == 43 && MEIType == 14
+    severity: low
+    tags: [modbus, discovery]
+    enabled: true
+
+  - name: Modbus Disruptive Diagnostic Request
+    description: FC8 force-listen-only (4), clear counters (10), or restart communications (1) request; verify maintenance authorization and device behavior, not a PLC-stop claim.
+    type: Modbus
+    expression: MessageRole == "request" && ParseStatus == "valid" && !Exception && FunctionCode == 8 && HasDiagnostic && DiagnosticSubfunction in [4, 10, 1]
+    severity: high
+    tags: [modbus, diagnostics]
+    enabled: true
+
+  - name: Modbus Distinct Destinations
+    description: One source sends valid requests to five distinct destinations in 300 seconds; tune for approved polling and inventory, not proof of a scan sequence.
+    type: Modbus
+    expression: MessageRole == "request" && ParseStatus == "valid" && !Exception
+    distinct_field: DstIP
+    distinct_threshold: 5
+    threshold_window: 300
+    severity: medium
+    tags: [modbus, discovery, site-dependent]
+    enabled: false
+
+  - name: Modbus Distinct Units
+    description: One source requests five distinct unit IDs on a single configured gateway in 300 seconds; clone with unique names per destination.
+    type: Modbus
+    expression: MessageRole == "request" && ParseStatus == "valid" && !Exception && DstIP == "192.0.2.20"
+    distinct_field: UnitID
+    distinct_threshold: 5
+    threshold_window: 300
+    severity: medium
+    tags: [modbus, discovery, site-dependent]
+    enabled: false
+
+  # distinct_field takes one field name, and the decoder reports FC1-4 reads in
+  # Address/Quantity but FC23 reads in ReadAddress/ReadQuantity, so the two read
+  # forms need separate rules. Each read function serves exactly one bank, so the
+  # Bank scope below already excludes FC1/2/4; clone the FC1-4 rule per bank
+  # (FC1 coils, FC2 discrete_inputs, FC4 input_registers) with a unique name.
+  - name: Modbus Distinct Holding Read Addresses
+    description: One source requests ten distinct FC3 read start addresses within a fixed destination/unit/bank in 300 seconds; counts starts, not covered addresses or sequential progression.
+    type: Modbus
+    expression: >-
+      MessageRole == "request" && ParseStatus == "valid" && !Exception &&
+      DstIP == "192.0.2.20" && UnitID == 1 && Bank == "holding_registers" &&
+      FunctionCode == 3 && HasAddress && Quantity > 0
+    distinct_field: Address
+    distinct_threshold: 10
+    threshold_window: 300
+    severity: medium
+    tags: [modbus, read, discovery, site-dependent]
+    enabled: false
+
+  - name: Modbus Distinct Read/Write Read Addresses
+    description: One source requests ten distinct FC23 read start addresses within a fixed destination/unit in 300 seconds; counts starts, not covered addresses or sequential progression, and the paired write span is judged by the write baseline rule instead.
+    type: Modbus
+    expression: >-
+      MessageRole == "request" && ParseStatus == "valid" && !Exception &&
+      DstIP == "192.0.2.20" && UnitID == 1 && Bank == "holding_registers" &&
+      FunctionCode == 23 && HasReadAddress && ReadQuantity > 0
+    distinct_field: ReadAddress
+    distinct_threshold: 10
+    threshold_window: 300
+    severity: medium
+    tags: [modbus, read, discovery, site-dependent]
+    enabled: false
+
+  - name: Modbus Correlated Illegal Address
+    description: Matched exception 2 response from a configured controller/unit to a configured initiating master (response DstIP); each event is triage, not an attacker-grouped exception burst.
+    type: Modbus
+    expression: >-
+      MessageRole == "response" && ParseStatus == "valid" && Exception && ExceptionCode == 2 &&
+      CorrelationStatus == "matched" && SrcIP == "192.0.2.20" && DstIP == "192.0.2.10" && UnitID == 1
+    severity: medium
+    tags: [modbus, exception, site-dependent]
+    enabled: false
+
+  - name: Modbus Unknown Role Triage
+    description: Valid PDU with unresolved direction; do not count as a write request or infer intent from an echoed payload.
+    type: Modbus
+    expression: ParseStatus == "valid" && MessageRole == "unknown"
+    severity: low
+    tags: [modbus, visibility, triage]
+    enabled: true
+
+  - name: Modbus Parse Triage
+    description: Malformed or unsupported PDU; review ParseError and capture quality separately from valid operation hunts.
+    type: Modbus
+    expression: ParseStatus in ["malformed", "unsupported"]
+    severity: low
+    tags: [modbus, visibility, triage]
+    enabled: true
+
+  - name: Modbus Request Baseline Collection
+    description: Optional valid request inventory for building site tuples; high volume, not an authorization decision.
+    type: Modbus
+    expression: MessageRole == "request" && ParseStatus == "valid" && !Exception
+    severity: low
+    tags: [modbus, baseline]
+    enabled: false

@@ -33,6 +33,13 @@ var modbusLog = zap.NewNop()
 
 const serviceModbus = "Modbus"
 
+// IsRTUConversation selects only explicitly configured destination endpoints.
+// A capture without initialization may have its transport directions reversed.
+func IsRTUConversation(c *core.ConversationInfo) bool {
+	return decoderconfig.Instance.IsModbusRTUEndpoint(c.ServerIP, uint16(c.ServerPort)) ||
+		!c.TCPHandshakeComplete && decoderconfig.Instance.IsModbusRTUEndpoint(c.ClientIP, uint16(c.ClientPort))
+}
+
 // MBAP Header constants
 const (
 	// MBAP (Modbus Application Protocol) header size is 7 bytes:
@@ -137,4 +144,3 @@ func isValidFunctionCode(code uint8) bool {
 	}
 	return false
 }
-

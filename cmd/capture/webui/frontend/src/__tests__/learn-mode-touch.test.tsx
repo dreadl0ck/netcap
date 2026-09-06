@@ -110,7 +110,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     const buttonA = getByTestId('button-a');
 
     // Simulate first tap
-    const clickEvent = new MouseEvent('click', {
+    const clickEvent = new TouchEvent('touchstart', {
       bubbles: true,
       cancelable: true,
     });
@@ -137,7 +137,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     const buttonA = getByTestId('button-a');
 
     // First tap - show info
-    const firstClickEvent = new MouseEvent('click', {
+    const firstClickEvent = new TouchEvent('touchstart', {
       bubbles: true,
       cancelable: true,
     });
@@ -148,7 +148,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     });
 
     // Second tap on same element - should allow action
-    const secondClickEvent = new MouseEvent('click', {
+    const secondClickEvent = new TouchEvent('touchstart', {
       bubbles: true,
       cancelable: true,
     });
@@ -162,6 +162,9 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
 
     // Default action should NOT be prevented (allow click through)
     expect(preventDefaultSpy).not.toHaveBeenCalled();
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+    fireEvent(buttonA, click);
+    expect(click.defaultPrevented).toBe(false);
   });
 
   test('Second tap on different element with data-learn shows new info', async () => {
@@ -175,7 +178,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     const buttonB = getByTestId('button-b');
 
     // First tap on button A
-    const firstClickEvent = new MouseEvent('click', {
+    const firstClickEvent = new TouchEvent('touchstart', {
       bubbles: true,
       cancelable: true,
     });
@@ -186,7 +189,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     });
 
     // Tap on button B
-    const secondClickEvent = new MouseEvent('click', {
+    const secondClickEvent = new TouchEvent('touchstart', {
       bubbles: true,
       cancelable: true,
     });
@@ -214,7 +217,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     const buttonNoLearn = getByTestId('button-no-learn');
 
     // First tap on button A (with data-learn)
-    const firstClickEvent = new MouseEvent('click', {
+    const firstClickEvent = new TouchEvent('touchstart', {
       bubbles: true,
       cancelable: true,
     });
@@ -225,7 +228,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     });
 
     // Tap on button without data-learn
-    const secondClickEvent = new MouseEvent('click', {
+    const secondClickEvent = new TouchEvent('touchstart', {
       bubbles: true,
       cancelable: true,
     });
@@ -251,10 +254,10 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     const buttonA = getByTestId('button-a');
 
     // Initial state - no highlight
-    expect(buttonA.style.outline).toBe('');
+    expect(buttonA.style.boxShadow).toBe('');
 
     // First tap - should add highlight
-    fireEvent.click(buttonA);
+    fireEvent.touchStart(buttonA);
 
     // Check that info is shown (which confirms highlighting logic ran)
     await waitFor(() => {
@@ -262,14 +265,14 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     });
 
     // The highlight should be applied (check immediately after interaction)
-    expect(buttonA.style.outline).toContain('2px solid');
+    expect(buttonA.style.boxShadow).toContain('0 0 0 2px');
 
     // Second tap - should remove highlight and clear info
-    fireEvent.click(buttonA);
+    fireEvent.touchStart(buttonA);
 
     await waitFor(() => {
       expect(screen.queryByText('This is button A')).not.toBeInTheDocument();
-      expect(buttonA.style.outline).toBe('');
+      expect(buttonA.style.boxShadow).toBe('');
     });
   });
 
@@ -284,17 +287,17 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     const buttonB = getByTestId('button-b');
 
     // Tap button A - should be highlighted and show info
-    fireEvent.click(buttonA);
+    fireEvent.touchStart(buttonA);
 
     await waitFor(() => {
       expect(screen.queryByText('This is button A')).toBeInTheDocument();
     });
 
     // Check that A is highlighted
-    expect(buttonA.style.outline).toContain('2px solid');
+    expect(buttonA.style.boxShadow).toContain('0 0 0 2px');
 
     // Tap button B - highlight should switch to B
-    fireEvent.click(buttonB);
+    fireEvent.touchStart(buttonB);
 
     await waitFor(() => {
       expect(screen.queryByText('This is button B')).toBeInTheDocument();
@@ -302,8 +305,8 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     });
 
     // Check that B is highlighted and A is not
-    expect(buttonB.style.outline).toContain('2px solid');
-    expect(buttonA.style.outline).toBe('');
+    expect(buttonB.style.boxShadow).toContain('0 0 0 2px');
+    expect(buttonA.style.boxShadow).toBe('');
   });
 
   test('Complete workflow: A -> B -> A -> click A', async () => {
@@ -317,27 +320,27 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     const buttonB = getByTestId('button-b');
 
     // Step 1: Tap A - show info for A
-    fireEvent.click(buttonA);
+    fireEvent.touchStart(buttonA);
     await waitFor(() => {
       expect(screen.queryByText('This is button A')).toBeInTheDocument();
     });
 
     // Step 2: Tap B - show info for B
-    fireEvent.click(buttonB);
+    fireEvent.touchStart(buttonB);
     await waitFor(() => {
       expect(screen.queryByText('This is button B')).toBeInTheDocument();
       expect(screen.queryByText('This is button A')).not.toBeInTheDocument();
     });
 
     // Step 3: Tap A again - show info for A
-    fireEvent.click(buttonA);
+    fireEvent.touchStart(buttonA);
     await waitFor(() => {
       expect(screen.queryByText('This is button A')).toBeInTheDocument();
       expect(screen.queryByText('This is button B')).not.toBeInTheDocument();
     });
 
     // Step 4: Tap A again (second tap on same element) - should click through
-    const finalClickEvent = new MouseEvent('click', {
+    const finalClickEvent = new TouchEvent('touchstart', {
       bubbles: true,
       cancelable: true,
     });
@@ -350,7 +353,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     expect(preventDefaultSpy).not.toHaveBeenCalled();
   });
 
-  test('TouchStart events are handled same as click events', async () => {
+  test('Click following the first touch is blocked without clearing info', async () => {
     const { getByTestId } = render(<TestComponent />);
     
     // Activate learn mode
@@ -374,6 +377,11 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
 
     // Default action should be prevented
     expect(preventDefaultSpy).toHaveBeenCalled();
+
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+    fireEvent(buttonA, click);
+    expect(click.defaultPrevented).toBe(true);
+    expect(screen.getByText('This is button A')).toBeInTheDocument();
   });
 
   test('Tapping element without data-learn when nothing is selected does not break', async () => {
@@ -407,7 +415,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     const buttonA = getByTestId('button-a');
 
     // First tap - show info
-    fireEvent.click(buttonA);
+    fireEvent.touchStart(buttonA);
     await waitFor(() => {
       expect(screen.queryByText('This is button A')).toBeInTheDocument();
     });
@@ -416,6 +424,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     const closeIcon = screen.getByTestId('CloseIcon');
     const closeButton = closeIcon.closest('button');
     expect(closeButton).not.toBeNull();
+    fireEvent.touchStart(closeButton!);
     fireEvent.click(closeButton!);
 
     await waitFor(() => {
@@ -423,7 +432,7 @@ describe('LearnModeOverlay Touch Device Behavior', () => {
     });
 
     // Next tap on same button should show info again (not click through)
-    const nextClickEvent = new MouseEvent('click', {
+    const nextClickEvent = new TouchEvent('touchstart', {
       bubbles: true,
       cancelable: true,
     });
@@ -464,4 +473,3 @@ describe('LearnModeOverlay Desktop Behavior', () => {
     expect(preventDefaultSpy).not.toHaveBeenCalled();
   });
 });
-

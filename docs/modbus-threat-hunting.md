@@ -1,141 +1,279 @@
 # Modbus Threat Hunting
 
-Use Netcap for passive Modbus TCP inventory and coarse function-code triage,
-then validate candidates against the original capture and the site's register
-map. A matching record is not proof of an unauthorized command or process change.
+Netcap decodes Modbus into structured audit records: request/response role,
+per-function addresses, quantities and values, diagnostics, device
+identification, file records, exception codes, and request/response
+correlation. Use it for passive inventory and hypothesis-driven triage, then
+validate candidates against the original capture and the site's register map.
+A matching record is not proof of an unauthorized command or a process change.
 
 ## Capture Safely
 
 1. Agree scope with OT operations: approved hosts, PLCs/gateways, maintenance windows, capture duration and evidence handling.
 2. Collect both directions from an approved TAP/SPAN point, without probing, replaying traffic or issuing test writes/diagnostics. Preserve the original PCAP, capture-point details, clock reference and packet-loss statistics.
-3. Analyze a copy offline. Retain payloads only under the site's data-handling policy; they can expose process data and settings.
-
-With `net` installed, substitute your capture path and a fresh output directory:
+3. Analyze a copy offline. Retain payloads only under the site's data-handling policy; decoded values and payloads expose process data and settings.
 
 ```bash
 net capture -read plant.pcap -out modbus-hunt -include Modbus -reassemble-connections=true -payload -compress=true
 net dump -read modbus-hunt/Modbus.ncap.gz -json
+net dump -read modbus-hunt/Modbus.ncap.gz -fields     # exact field list for this build
 ```
 
-`Modbus` is the TCP stream decoder and audit-record name. TCP/502 is conventional,
-not required: MBAP/function signatures support port-independent detection.
-Do not restrict collection to port 502 if nonstandard-port use is in scope.
-Signature detection is not a completeness guarantee; missing bytes, partial
-captures and unsupported traffic can leave gaps. No records does not prove no
-Modbus activity. These commands analyze a file, not a live controller.
+`Modbus` is the TCP stream decoder and the audit-record name. TCP/502 is
+conventional, not required: the MBAP signature (`ProtocolID == 0`, sane length,
+known function code) supports port-independent detection. Do not restrict
+collection to port 502 if nonstandard-port use is in scope. Signature detection
+is not a completeness guarantee; missing bytes, partial captures and unsupported
+traffic leave gaps. No records does not prove no Modbus activity.
 
 The decoder frames each TCP direction independently and timestamps an ADU from
-its first captured byte. A gap (including unknown initial loss), invalid MBAP
-header, or fragment without accessible loss metadata stops decoding that
-direction for the rest of the conversation; the opposite direction can continue.
-Incomplete trailing ADUs are not emitted. There is no loss-status audit field
-yet. Stream records are emitted at connection completion/flush, not immediately
-when a command arrives.
+its first captured byte. With `-allowmissinginit=true` (the default), an unknown
+initial boundary is accepted only before any payload has been consumed. A later
+gap or an invalid MBAP header stops decoding that direction for the rest of the
+conversation; the opposite direction can continue. Incomplete trailing ADUs are
+not emitted. **Stream records are written at connection completion/flush**, not
+when a command arrives — this is not a real-time alerting path.
 
-## Current Fields
+## Field Reference
 
-The current `Modbus` schema in `netcap.proto` contains:
-
-| Fields | Practical use and limit |
+| Field(s) | Meaning and limit |
 | --- | --- |
-| `Timestamp` | Integer Unix nanoseconds in the protobuf record; check capture timing before time-window comparisons. |
-| `SrcIP`, `DstIP`, `SrcPort`, `DstPort` | Network endpoints, not authenticated identities or proof of client/server roles. |
-| `CommunityID` | Flow identifier, not an application transaction or request/response classification. |
-| `TransactionID` | MBAP transaction number; reusable, not globally unique. No automatic request/response correlation is provided. |
-| `ProtocolID`, `Length`, `UnitID` | MBAP metadata. Length includes the unit byte and PDU; UnitID identifies a unit behind an endpoint, not a user. |
-| `FunctionCode`, `Exception` | Function code with the exception bit removed, plus a separate exception flag. |
-| `Payload` | Optional raw PDU, including its function byte, when captured with `-payload`; JSON represents bytes as base64. |
+| `Timestamp` | Integer Unix nanoseconds; first captured byte of the ADU. |
+| `SrcIP`, `DstIP`, `SrcPort`, `DstPort`, `CommunityID` | Endpoints and flow ID. Not authenticated identities. Rewritten per direction, so a response has the PLC as `SrcIP`. |
+| `Transport` | `tcp` (MBAP) or `rtu_tcp` (RTU frames over TCP, opt-in). |
+| `MessageRole` | `request`, `response`, or `unknown` when stream direction could not be established. |
+| `ParseStatus`, `ParseError` | `valid`, `malformed` (with a reason) or `unsupported`. Malformed records carry **no** decoded values — only function code, exception flag and framing metadata. |
+| `HasMBAP`, `TransactionID`, `ProtocolID`, `Length`, `UnitID` | MBAP metadata; `HasMBAP` is false for RTU. `Length` counts the unit byte plus PDU. `UnitID` identifies a unit behind an endpoint, not a user. |
+| `Exception`, `ExceptionCode` | Exception bit stripped from the function code, plus the nonzero exception code as sent. Only responses may carry an exception; an exception PDU seen as a request is `malformed`. |
+| `Bank` | `coils` (FC1/5/15), `discrete_inputs` (FC2), `holding_registers` (FC3/6/16/22/23), `input_registers` (FC4), `file_records` (FC20/21). Empty for FC8/FC43. |
+| `HasAddress`, `Address`, `Quantity`, `Values` | Wire (zero-based) start address, count and values for FC1-6, 15, 16, 22. `Values` holds coil bits as 0/1 and registers as 16-bit words; FC23 responses also return their read data in `Values`/`ReadQuantity`. |
+| `HasReadAddress`, `ReadAddress`, `ReadQuantity` / `HasWriteAddress`, `WriteAddress`, `WriteQuantity`, `WriteValues` | **FC23 only.** No other function populates the `Read*`/`Write*` fields; single/multiple writes use `Address`/`Quantity`/`Values`. |
+| `AndMask`, `OrMask` | FC22 mask-write operands (`Address` set, `Quantity` 1). |
+| `HasDiagnostic`, `DiagnosticSubfunction`, `DiagnosticData` | FC8 subfunction and its data words. |
+| `MEIType`, `ReadDeviceIDCode`, `DeviceIDObjectID` | FC43 request: MEI type (14 = Read Device Identification) and requested ID code/object. Other MEI types are `unsupported`. |
+| `DeviceIDObjects`, `DeviceIDConformityLevel`, `DeviceIDMoreFollows`, `DeviceIDNextObjectID` | FC43 MEI14 response: vendor/product/revision objects as `{ID, Value}` with `Value` raw bytes (base64 in JSON). |
+| `FileRecords` | FC20/21 records as `{ReferenceType, FileNumber, RecordNumber, RecordLength, Values}`. File numbers and record offsets are **not** register addresses. |
+| `CorrelationStatus`, `RequestTimestamp`, `ResponseLatency` | `matched`, `unmatched`, `ambiguous` or `not_applicable`. `RequestTimestamp`/`ResponseLatency` (nanoseconds) are set only on matched responses. |
+| `HasChecksum`, `ChecksumValid`, `Broadcast` | RTU only. Frames failing CRC are never emitted, so `ChecksumValid` is always true when `HasChecksum` is true. `Broadcast` marks a unit-0 write. |
+| `Payload` | Raw PDU only (no MBAP, no unit byte, no CRC) when captured with `-payload`; base64 in JSON, hex in CSV. |
 
-There are **no structured register/coil addresses, quantities, ranges, values,
-diagnostic subfunctions, MEI types, device-ID objects or exception codes**.
-There is also no request/response field. Classic Modbus has no protocol user
-identity or authentication: an IP allowlist expresses expected equipment, not
-which person authorized an operation. Use workstation, access and change logs
-for attribution.
+Response enrichment on `CorrelationStatus == "matched"`: read responses (FC1-4)
+inherit `Address`/`Quantity` from their request and coil bit padding is trimmed
+to the requested quantity; FC23 inherits the request's `Read*`/`Write*` fields;
+FC20 subresponses inherit `FileNumber`/`RecordNumber`. Unmatched responses lack
+all of this — an unmatched FC3 response has values but no address.
 
-## Scoped Baseline And Triage
+Classic Modbus has **no protocol user identity and no authentication**. An IP
+allowlist expresses expected equipment, not which person authorized an
+operation. Use workstation, access and change logs for attribution.
 
-Build a known-good baseline for each cell/process, endpoint pair and UnitID,
-covering routine polling, startup/shutdown and approved maintenance. Record
-expected function codes, observed message volume and operating windows; get OT
-owners to confirm exceptions. Compare like capture durations and visibility.
-Do not treat one plant-wide allowlist or threshold as a process baseline.
+## Output Semantics
 
-Example filters use current fields only. Replace `192.0.2.20` and UnitID `1`
-with the scoped PLC/gateway and unit. Include both endpoint directions:
+`net dump -json` emits integer nanosecond timestamps and base64 bytes. The
+Elasticsearch-oriented `Modbus.JSON()` method converts `Timestamp` — but not
+`RequestTimestamp` — to milliseconds. CSV renders `Values`, `WriteValues`,
+`DeviceIDObjects` and `FileRecords` as JSON cells, `Payload`/`DiagnosticData` as
+hex, and `ResponseLatency` as plain nanoseconds. `-select` is CSV/table
+projection, not JSON redaction.
+
+Numeric encoding is not an evidence export: strings, byte fields and repeated
+fields (`Values`, `FileRecords`, `DeviceIDObjects`, `Payload`, `CommunityID`,
+`Bank`, `MessageRole`, ...) are hashed to the low 16 bits of IEEE CRC32 and then
+normalized, with no dictionary. Collisions are intentional; these buckets imply
+neither ordering nor distance and are not anonymization. Use CSV, JSON or
+protobuf when exact values are required.
+
+The `nc_modbus` Prometheus counter still exposes only `FunctionCode` and
+`Exception` labels — not roles, addresses, values or endpoints. It counts
+observed ADUs, including replies and exceptions; these are not successful-write
+counts.
+
+## Scoped Baseline
+
+Build a known-good baseline per cell/process, endpoint pair and UnitID covering
+routine polling, startup/shutdown and approved maintenance. Record approved
+function codes, banks and **complete wire address intervals** — not just start
+addresses — plus operating windows, and have OT owners confirm exceptions.
+Compare like capture durations and visibility. One plant-wide allowlist is not a
+process baseline. Observed peers are baseline candidates, not authorized masters.
+
+Collect the raw request inventory first:
 
 ```bash
-# Write-related messages for one asset/unit, including replies and exceptions
-net dump -read modbus-hunt/Modbus.ncap.gz -json -filter '(SrcIP == "192.0.2.20" || DstIP == "192.0.2.20") && UnitID == 1 && FunctionCode in [5, 6, 15, 16, 21, 22, 23]'
+net dump -read modbus-hunt/Modbus.ncap.gz -json \
+  -filter 'MessageRole == "request" && ParseStatus == "valid" && !Exception'
+```
 
-# Write candidates toward that asset from outside its approved-master baseline
-net dump -read modbus-hunt/Modbus.ncap.gz -json -filter 'DstIP == "192.0.2.20" && UnitID == 1 && FunctionCode in [5, 6, 15, 16, 21, 22, 23] && !(SrcIP in ["192.0.2.10", "192.0.2.11"])'
+## Primary Hunt: Unauthorized Writes
 
-# Diagnostics and encapsulated-interface candidates across the capture
-net dump -read modbus-hunt/Modbus.ncap.gz -json -filter 'FunctionCode in [8, 43]'
+Gate every operational hunt on `MessageRole == "request" && ParseStatus ==
+"valid"`. This excludes echo replies (FC5/6/22 responses are byte-identical to
+their requests), excludes malformed PDUs whose decoded fields are deliberately
+suppressed, and excludes midstream `unknown` records.
 
-# Exception messages; inspect payload for the actual exception code
+Approval must contain the **whole written interval**, not the start address, and
+must be expressed per bank. Note the field split: FC5/6/15/16/22 use
+`Address`/`Quantity`; FC23 uses `WriteAddress`/`WriteQuantity`.
+
+```bash
+net dump -read modbus-hunt/Modbus.ncap.gz -json -filter '
+MessageRole == "request" && ParseStatus == "valid" && !Exception &&
+FunctionCode in [5, 6, 15, 16, 22, 23] &&
+!(SrcIP == "192.0.2.10" && DstIP == "192.0.2.20" && UnitID == 1 &&
+  ((FunctionCode in [5, 15] && Bank == "coils" && HasAddress && Quantity > 0 &&
+    Address >= 100 && Address <= 199 && Quantity <= 200 - Address) ||
+   (FunctionCode in [6, 16, 22] && Bank == "holding_registers" && HasAddress && Quantity > 0 &&
+    Address >= 1000 && Address <= 1099 && Quantity <= 1100 - Address) ||
+   (FunctionCode == 23 && Bank == "holding_registers" && HasWriteAddress && WriteQuantity > 0 &&
+    WriteAddress >= 1000 && WriteAddress <= 1099 && WriteQuantity <= 1100 - WriteAddress)))'
+```
+
+The upper-bound check (`Address <= 199`) must precede the span check, both to
+express containment and to keep the unsigned subtraction from wrapping. An
+approved master writing outside its ranges still matches — that is the point.
+
+FC21 file writes need their own rule; approve `FileNumber` and the full
+`RecordNumber`..`RecordNumber + RecordLength` interval of every record. `all()`
+is vacuously true on an empty list, so guard it:
+`len(FileRecords) > 0 && all(FileRecords, {.ReferenceType == 6 && .FileNumber == 1 && .RecordNumber >= 100 && .RecordNumber <= 199 && .RecordLength > 0 && .RecordLength <= 200 - .RecordNumber})`.
+
+A match is an **attempted** write. Pair it with the correlated response before
+claiming effect:
+
+```bash
+net dump -read modbus-hunt/Modbus.ncap.gz -json \
+  -filter 'MessageRole == "response" && CorrelationStatus == "matched" && FunctionCode in [5, 6, 15, 16, 21, 22, 23]'
+```
+
+## Diagnostics And Discovery
+
+```bash
+# FC8 subfunctions that can disrupt a device: restart comms (1), force listen-only (4), clear counters (10)
+net dump -read modbus-hunt/Modbus.ncap.gz -json \
+  -filter 'MessageRole == "request" && ParseStatus == "valid" && FunctionCode == 8 && HasDiagnostic && DiagnosticSubfunction in [1, 4, 10]'
+
+# FC43 MEI14 device identification
+net dump -read modbus-hunt/Modbus.ncap.gz -json \
+  -filter 'MessageRole == "request" && ParseStatus == "valid" && FunctionCode == 43 && MEIType == 14'
+
+# Harvested identity strings from the responses
+net dump -read modbus-hunt/Modbus.ncap.gz -json \
+  -filter 'MessageRole == "response" && ParseStatus == "valid" && MEIType == 14 && len(DeviceIDObjects) > 0'
+```
+
+FC8 diagnostics are serial-line-oriented; TCP gateways and devices vary in
+support, and a request is not evidence that disruption occurred. Force
+listen-only (subfunction 4) has no response, so it is never `matched`.
+Inventory tools legitimately enumerate identity data, so FC43 is triage, not a
+finding. Never issue these to validate a finding on production equipment.
+
+## Exceptions
+
+```bash
+# Illegal data address, attributable to a specific initiating master
+net dump -read modbus-hunt/Modbus.ncap.gz -json \
+  -filter 'MessageRole == "response" && Exception && ExceptionCode == 2 && CorrelationStatus == "matched"'
+
+# All exceptions including those with no recoverable request
 net dump -read modbus-hunt/Modbus.ncap.gz -json -filter 'Exception'
 ```
 
-| Decimal function codes | Triage question |
-| --- | --- |
-| 1, 2, 3, 4 | Is polling from an unexpected peer, unusually broad across assets/units, or outside the scoped baseline? Read codes alone do not reveal address coverage. |
-| 5, 6, 15, 16 | Are single/multiple coil or register writes expected for this asset and maintenance window? |
-| 21, 22, 23 | Is file-record writing, mask writing, or combined register read/write expected? FC23 is not read-only. |
-| 8 | Which diagnostic subfunction is present, and is it approved? |
-| 43 | Is the MEI type 14 device-identification operation, or something else? |
+Common codes: 1 illegal function, 2 illegal data address, 3 illegal data value,
+4 device failure, 6 device busy, 10/11 gateway path/target failure. An exception
+is not a completed write, and the absence of one does not establish execution.
+On `matched` responses `DstIP` is the initiating master and `RequestTimestamp`
+and `ResponseLatency` are populated; on `unmatched` responses neither the
+originating request nor the requested address is recoverable.
 
-Treat counts as **observed messages**, never request-only counts or successful
-writes. Normal replies share function codes; FC5/FC6 write replies echo the
-request and FC22 also echoes its fields. Function-only matches cannot distinguish
-write echoes, even with corrected source/destination endpoints, especially in
-partial captures where initiator evidence is missing. `!Exception` includes both
-requests and normal replies; it is not a success or request predicate. An unusual
-peer or burst is a review lead, not by itself an attack.
+## Enumeration
 
-The example master list applies only to this destination/unit. Confirm controller
-roles from inventory and the capture before interpreting the directional query.
-Observed peers are baseline candidates, not automatically authorized masters.
-Record approved banks, wire ranges and functions as well; the current query
-cannot enforce ranges or detect an approved master writing outside them.
+Netcap's rule engine counts distinct values in a time window; it has no
+sequence/ordering primitive, so these detect breadth, not a scan pattern.
+Use `distinct_field` with `distinct_threshold` and `threshold_window`:
+
+- `distinct_field: DstIP` — one source touching many controllers.
+- `distinct_field: UnitID` scoped to one `DstIP` — unit sweeping behind a gateway.
+- `distinct_field: Address` (or `ReadAddress` for FC23) scoped to one destination/unit/bank — register map probing. This counts distinct **start** addresses, not covered addresses.
+
+## Running The Shipped Rules
+
+`rules/examples/modbus_hunt.yml` contains request-level hunt templates,
+enumeration templates and visibility triage rules. Site-dependent rules use
+documentation IPs and ship `enabled: false`; replace the addresses, units,
+banks and intervals before enabling. Only the four site-independent rules
+(device identification, disruptive diagnostics, unknown-role triage, parse
+triage) are enabled by default, and no rule configures a response action.
+
+```bash
+net capture -read plant.pcap -out modbus-hunt -include Modbus \
+  -reassemble-connections=true -payload -rules rules/examples/modbus_hunt.yml
+net dump -read modbus-hunt/Alert.ncap.gz -json
+```
+
+The shipped write template authorizes the `Address`/`Quantity` form and the
+FC23 `WriteAddress`/`WriteQuantity` form separately, matching what the decoder
+populates per function code. Keep both clauses when you substitute your own
+tuples, or approved writes will alert.
+
+`-approved-workstations` loads an IP list for the `IsApprovedWorkstation()`
+rule helper if you prefer that to inline addresses. See
+[Rules Engine](RULES_ENGINE.md) and [Filtering](FILTERING.md).
+
+## RTU Over TCP
+
+RTU framing (unit byte, PDU, CRC16, no MBAP) is decoded only for endpoints you
+name explicitly:
+
+```bash
+net capture -read gateway.pcap -out modbus-hunt -include Modbus \
+  -reassemble-connections=true -payload \
+  -modbus-rtu-endpoints '192.0.2.30:1502,[2001:db8::1]:502'
+```
+
+`net export` accepts the same flag; both read `NC_MODBUS_RTU_ENDPOINTS`. Values
+are comma-separated `IP:port` or `[IPv6]:port` with a nonzero port; an invalid
+entry fails decoder initialization. Matching is exact on the server address and
+port (or the client side when no handshake was observed, since a midstream
+capture may have its direction reversed) — there is no CIDR, hostname or
+wildcard form, and no autodetection. Listing an endpoint takes priority over
+every other decoder and disables MBAP parsing for that conversation, so do not
+list an MBAP endpoint.
+
+RTU records set `Transport == "rtu_tcp"`, `HasChecksum`, `ChecksumValid` and
+`UnitID`; `HasMBAP` is false and `TransactionID`/`ProtocolID`/`Length` are zero.
+Correlation is a single outstanding request per conversation, matched on
+unit, function code and response shape within 30 seconds. Unit-0 frames are
+accepted only as write requests and are marked `Broadcast` with
+`CorrelationStatus == "not_applicable"`; no response is expected. Only frames
+that pass CRC **and** parse to a valid PDU are emitted, so RTU output silently
+omits vendor-specific and unmodelled functions rather than reporting them.
 
 ## Manual Payload Evidence
 
-Use the original PCAP and a protocol-aware viewer to establish direction, TCP
-stream boundaries and complete PDUs. Decode the JSON payload's base64 before
-reading bytes. PDU byte 0 is the wire function code; there is no MBAP header in
-`Payload`. Check lengths and exception status before interpreting the body.
-Missing payloads require reprocessing the retained PCAP with `-payload`.
-
-- **Address trap:** wire addresses are zero-based offsets within a function-selected table. A holding register labelled `40001` commonly means offset `0`, not wire address `40001`; vendor conventions vary. Keep coils, discrete inputs, input registers and holding registers distinct. UnitID is not a register address. Confirm offset, width, scaling, signedness and multi-register word order with the exact device map.
-- **Writes:** after identifying a request manually, inspect its address, quantity and value bytes using that function's layout. For example, FC6 PDU `06 00 00 00 01` contains offset `0` and value `1`, but identical bytes can be its normal echo reply. Payload alone does not prove initiation, authorization or physical effect; verify with process/change records.
-- **Diagnostics FC8 (`0x08`):** the next two bytes are the big-endian subfunction. Distinguish return-query-data (`0x0000`) from restart communications (`0x0001`), force listen-only (`0x0004`) and clear counters/diagnostic register (`0x000A`). Their presence warrants device-specific review, not a claim that disruption occurred. These diagnostics are serial-line-oriented; TCP gateways/devices vary in support. Never issue them to validate a finding on production equipment.
-- **Discovery FC43 (`0x2B`):** inspect the next byte for MEI type `0x0E` (decimal 14, Read Device Identification). FC43 alone does not establish device discovery. Examine the request's read-device-ID code/object ID and the response's object list manually; inventory tools can legitimately enumerate identity data. Netcap does not extract vendor/product/revision fields.
-- **Exceptions:** a wire function such as `0x86` becomes `FunctionCode == 6` with `Exception == true`; the next PDU byte is the exception code. Inspect it manually. An exception is not a completed write, and absence of an exception does not establish execution.
+- **Address trap:** `Address` is the zero-based wire offset within the bank the function selects. A holding register labelled `40001` commonly means `Address == 0`; vendor conventions vary. Keep coils, discrete inputs, input registers and holding registers distinct. `UnitID` is not an address. Confirm offset, width, scaling, signedness and multi-register word order against the exact device map before claiming a process meaning for any value.
+- **Direction:** field values alone do not prove initiation. FC5/6/22 responses echo their requests byte for byte; `MessageRole` comes from stream direction, so it is only as reliable as the capture.
+- **Payload:** byte 0 of `Payload` is the wire function code (exception bit intact); there is no MBAP header or CRC in it. Decode base64 before reading bytes. Missing payloads require reprocessing the retained PCAP with `-payload`.
 
 For escalation, preserve the PCAP/frame references, endpoint pair, UnitID,
-transaction number, raw PDU, decoded interpretation, baseline deviation and OT
-owner's assessment. Pair requests and replies manually within the same TCP
-connection and capture interval; do not join on transaction number alone.
+transaction number, decoded record, correlation status, baseline deviation and
+the OT owner's assessment.
 
-## RTU And Other Blind Spots
+## Limitations
 
-This workflow supports **Modbus TCP with MBAP framing**, not native Modbus RTU
-serial frames, CRC checking, serial timing, or RTU-over-TCP without MBAP. A
-TCP-to-RTU gateway exposes only its TCP side here; UnitID does not establish
-visibility into the serial bus or downstream execution. Use an approved passive
-serial capture method and a separate RTU decoder when serial evidence is needed.
-Encrypted transport likewise requires authorized plaintext evidence elsewhere.
+- **No user identity.** Modbus has no authentication; records attribute to endpoints and units only.
+- **`unknown` roles.** Without an observed handshake the direction is unknown. For FC1-4 and FC20, where request and response layouts are both plausible, netcap deliberately emits only `FunctionCode` and `Bank` — no address, quantity or values. Do not count these as writes.
+- **Unmatched correlation.** Correlation is per TCP connection, keyed on transaction ID with unit/function/shape checks, a 30-second window and a 1024-pending cap. Duplicate transaction IDs, saturation, or loss mark records `ambiguous`; responses whose request was not seen stay `unmatched`. Never join on transaction ID alone across connections.
+- **Gateway blind spot.** A TCP-to-RTU gateway exposes only its TCP side; `UnitID` gives no visibility into the downstream serial bus or into execution.
+- **Batch, not real time.** Stream records and their alerts appear at connection completion/flush.
+- **Encrypted transport** requires authorized plaintext evidence elsewhere.
 
-## Future Enhancements
+## Remaining Gaps
 
-Not available today:
-
-- [ ] Explicit request/response/unknown classification and transaction correlation.
-- [ ] Structured addresses, quantities, ranges and values with function-specific validation.
-- [ ] Diagnostic subfunctions, MEI/device-ID objects and exception-code fields.
-- [ ] Native RTU framing/CRC and explicit RTU-over-TCP support.
+- FC7, 11, 12, 17, 24, vendor function codes, and FC43 with an MEI type other than 14 produce `ParseStatus == "unsupported"` with no structured fields; over RTU they are dropped entirely.
+- No native serial capture and no Modbus ASCII framing — only MBAP over TCP and RTU frames carried over TCP.
+- No loss/visibility status field: a gap stops decoding for a direction but leaves no trace in the schema. Check capture-point loss statistics separately.
+- The rule engine has no ordered multi-event (sequence) primitive; sequencing must be done after export.
+- `nc_modbus` still carries only `FunctionCode` and `Exception` labels.
 
 See [Filtering](FILTERING.md) for expression syntax and
 [Industrial Control Systems](industrial-control-systems.md) for other protocols.

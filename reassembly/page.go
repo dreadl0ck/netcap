@@ -29,8 +29,7 @@ type page struct {
 	start bool
 	end   bool
 
-	// only set for the first page of a packet
-
+	packetStart bool // Only the first page contributes to packet statistics.
 }
 
 func (p *page) getBytes() []byte {
@@ -79,7 +78,7 @@ func (p *page) getSeq() Sequence {
 }
 
 func (p *page) isPacket() bool {
-	return p.ac != nil
+	return p.packetStart
 }
 
 func (p *page) String() string {

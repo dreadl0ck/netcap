@@ -26,7 +26,6 @@ import (
 	"os"
 	"reflect"
 	"runtime/pprof"
-	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -41,6 +40,7 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/decoder/stream/modbus"
 	"github.com/dreadl0ck/netcap/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/decoder/stream/udp"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
@@ -90,6 +90,9 @@ type tcpConnection struct {
 
 	wasMerged bool
 	fsmerr    bool
+	initStage uint8
+	clientISN uint32
+	serverISN uint32
 }
 
 // Accept decides whether the TCP packet should be accepted
@@ -150,6 +153,27 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 		streamutils.Stats.Unlock()
 	}
 
+	if accept && !tcp.RST && !tcp.FIN {
+		// decode() reads initStage under the same lock
+		t.Lock()
+
+		switch t.initStage {
+		case 0:
+			if dir == reassembly.TCPDirClientToServer && tcp.SYN && !tcp.ACK {
+				t.clientISN, t.initStage = tcp.Seq, 1
+			}
+		case 1:
+			if dir == reassembly.TCPDirServerToClient && tcp.SYN && tcp.ACK && tcp.Ack == t.clientISN+1 {
+				t.serverISN, t.initStage = tcp.Seq, 2
+			}
+		case 2:
+			if dir == reassembly.TCPDirClientToServer && !tcp.SYN && tcp.ACK && tcp.Seq == t.clientISN+1 && tcp.Ack == t.serverISN+1 {
+				t.initStage = 3
+			}
+		}
+
+		t.Unlock()
+	}
 	return accept
 }
 
@@ -227,17 +251,19 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 	// Store before queueing so ReassemblyComplete sees every delivered fragment.
 	if dir == reassembly.TCPDirClientToServer {
 		streamData := &core.StreamData{
-			RawData:          dataCpy,
-			AssemblerContext: ac,
-			Dir:              dir,
+			RawData:            dataCpy,
+			AssemblerContext:   ac,
+			CaptureInformation: ac.GetCaptureInfo(),
+			Dir:                dir,
 		}
 		t.client.StoreData(streamData)
 		t.client.DataChan() <- streamData
 	} else {
 		streamData := &core.StreamData{
-			RawData:          dataCpy,
-			AssemblerContext: ac,
-			Dir:              dir,
+			RawData:            dataCpy,
+			AssemblerContext:   ac,
+			CaptureInformation: ac.GetCaptureInfo(),
+			Dir:                dir,
 		}
 		t.server.StoreData(streamData)
 		t.server.DataChan() <- streamData
@@ -274,18 +300,16 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 		return
 	}
 
-	data := sg.Fetch(length)
-
-	// fmt.Println("got raw data:", len(data), ac.GetCaptureInfo().Timestamp, "\n", hex.Dump(data))
-
 	if length > 0 {
-		if decoderconfig.Instance.HexDump {
-			reassemblyLog.Debug("feeding stream reader",
-				zap.String("data", hex.Dump(data)),
-			)
-		}
+		sg.ForEach(func(data []byte, context reassembly.AssemblerContext) {
+			if decoderconfig.Instance.HexDump {
+				reassemblyLog.Debug("feeding stream reader",
+					zap.String("data", hex.Dump(data)),
+				)
+			}
 
-		t.feedData(dir, data, ac)
+			t.feedData(dir, data, context)
+		})
 	}
 }
 
@@ -440,17 +464,18 @@ func (t *tcpConnection) decode() {
 	sPort := utils.DecodePort(t.client.Transport().Dst().Raw())
 
 	conv := &core.ConversationInfo{
-		Data:              t.merged,
-		ClientData:        t.client.DataSlice(),
-		ServerData:        t.server.DataSlice(),
-		Ident:             t.ident,
-		FirstClientPacket: t.client.FirstPacket(),
-		FirstServerPacket: t.server.FirstPacket(),
-		ClientIP:          cIP,
-		ServerIP:          sIP,
-		ClientPort:        cPort,
-		ServerPort:        sPort,
-		CommunityID:       streamutils.CalcCommunityIDTCP(cIP, sIP, uint16(cPort), uint16(sPort)),
+		Data:                 t.merged,
+		ClientData:           t.client.DataSlice(),
+		ServerData:           t.server.DataSlice(),
+		Ident:                t.ident,
+		FirstClientPacket:    t.client.FirstPacket(),
+		FirstServerPacket:    t.server.FirstPacket(),
+		ClientIP:             cIP,
+		ServerIP:             sIP,
+		ClientPort:           cPort,
+		ServerPort:           sPort,
+		CommunityID:          streamutils.CalcCommunityIDTCP(cIP, sIP, uint16(cPort), uint16(sPort)),
+		TCPHandshakeComplete: t.initStage == 3,
 	}
 
 	// Use the client's destination port (= server's listening port) for decoder matching
@@ -465,7 +490,13 @@ func (t *tcpConnection) decode() {
 	)
 
 	// make a good first guess based on the destination port of the connection
-	if sd, exists := stream.DefaultStreamDecoders[serverPort]; exists {
+	if modbus.Decoder.Writer != nil && modbus.IsRTUConversation(conv) {
+		// Explicit transport selection must precede MBAP and generic signatures.
+		// Only claim the connection while the decoder is live: when Modbus is
+		// excluded, a configured RTU endpoint must still reach the other decoders.
+		t.decoder = modbus.Decoder.Factory.New(conv)
+		found = true
+	} else if sd, exists := stream.DefaultStreamDecoders[serverPort]; exists {
 		reassemblyLog.Debug("Found decoder for port",
 			zap.String("ident", t.ident),
 			zap.Int("port", int(serverPort)),
@@ -876,41 +907,26 @@ func (t *tcpConnection) sortAndMergeFragments() {
 		// only do this once per connection
 		t.wasMerged = true
 
-		client, server := t.client.DataSlice(), t.server.DataSlice()
-
-		// Concatenate both client and server data fragments into a slice that
-		// owns its memory.
+		// Stable two-way merge by capture timestamp, so the two directions
+		// interleave by time while each direction keeps its byte order.
 		//
-		// This was written as append(client, server...), which appends in place
-		// whenever the client slice has spare capacity -- and it does, because
-		// the fragment store grows it by repeated append, so cap > len is the
-		// normal case. The merged slice then shared the client reader's backing
-		// array, with two consequences:
+		// Sorting the concatenation instead corrupted the stream: a delivery
+		// carries the packet that closed a hole followed by the earlier-captured
+		// packets it had queued, so timestamps within one direction are not
+		// monotonic, and reordering them scrambles every consumer that reads
+		// conversation.Data as a byte stream.
 		//
-		//   - sort.Sort below permutes that array, and its first len(client)
-		//     entries ARE the client's live fragments, so sorting interleaved
-		//     server fragments into t.client.data. decode() picks a decoder from
-		//     t.client.DataSlice(), so on a server-first protocol such as SMTP
-		//     the decoder was chosen from the server's greeting. That is a
-		//     correctness bug independent of any concurrency.
+		// The result also has to own its memory. This was once written as
+		// append(client, server...), which appends in place whenever the client
+		// slice has spare capacity -- and it does, since StoreData grows it by
+		// repeated append. The merged slice then shared the client reader's live
+		// fragment array, so permuting it interleaved server fragments into
+		// t.client.data (decode() picks the decoder from the first client
+		// fragment) and it raced with the reader goroutine appending.
 		//
-		//   - It raced with the former asynchronous fragment append in
-		//     tcpStreamReader.Read. feedData sends into a buffered dataChan and
-		//     returns, so when ReassemblyComplete runs there can still be
-		//     fragments queued that the reader goroutine is appending. The
-		//     detector reported the write in Read and the read in
-		//     DataFragments.Size at the same address, which is only possible
-		//     because the two slices were one array.
-		//
-		// Allocating up front keeps the merge independent of the readers. The
-		// fragments themselves are shared, but a *core.StreamData's RawData is
-		// written once in feedData and never mutated, so reading them is safe.
-		t.merged = make(core.DataFragments, 0, len(client)+len(server))
-		t.merged = append(t.merged, client...)
-		t.merged = append(t.merged, server...)
-
-		// sort based on their timestamps
-		sort.Sort(t.merged)
+		// The fragments themselves are shared, but a *core.StreamData's RawData
+		// is written once in feedData and never mutated, so reading them is safe.
+		t.merged = core.MergeByTimestamp(t.client.DataSlice(), t.server.DataSlice())
 	}
 	t.Unlock()
 }
