@@ -49,8 +49,9 @@ type jsonWriter struct {
 	dWriter *delimited.Writer
 	jWriter *jsonProtoWriter
 
-	file *os.File
-	wc   *WriterConfig
+	file   *os.File
+	wc     *WriterConfig
+	closed bool
 }
 
 // newJSONWriter initializes and configures a new jsonWriter instance.
@@ -111,9 +112,14 @@ func newJSONWriter(wc *WriterConfig) *jsonWriter {
 }
 
 // Write writes a JSON record.
-// The inner jsonProtoWriter handles its own locking for the actual write,
-// so we don't hold the outer lock during JSON marshaling.
 func (w *jsonWriter) Write(msg proto.Message) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if w.closed {
+		return nil
+	}
+
 	// Track disk I/O performance
 	if w.wc.PerfTracker != nil {
 		start := time.Now()
@@ -134,6 +140,13 @@ func (w *jsonWriter) Write(msg proto.Message) error {
 
 // WriteHeader writes a JSON header.
 func (w *jsonWriter) WriteHeader(t types.Type) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if w.closed {
+		return nil
+	}
+
 	_, err := w.jWriter.writeHeader(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
 
 	return err
@@ -145,16 +158,18 @@ func (w *jsonWriter) Flush() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	// Flush the buffered writer
-	if w.wc.Buffer && w.bWriter != nil {
-		if err := w.bWriter.Flush(); err != nil {
+	if w.closed {
+		return nil
+	}
+
+	// Flush in output order: gzip -> buffer -> file.
+	if w.wc.Compress && w.gWriter != nil {
+		if err := w.gWriter.Flush(); err != nil {
 			return err
 		}
 	}
-
-	// For compressed streams, flush the gzip writer
-	if w.wc.Compress && w.gWriter != nil {
-		if err := w.gWriter.Flush(); err != nil {
+	if w.wc.Buffer && w.bWriter != nil {
+		if err := w.bWriter.Flush(); err != nil {
 			return err
 		}
 	}
@@ -174,12 +189,16 @@ func (w *jsonWriter) Close(numRecords int64) (name string, size int64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if w.wc.Buffer {
-		flushWriters(w.bWriter)
+	if w.closed {
+		return "", 0
 	}
+	w.closed = true
 
 	if w.wc.Compress {
 		closeGzipWriters(w.gWriter)
+	}
+	if w.wc.Buffer {
+		flushWriters(w.bWriter)
 	}
 
 	// Track file sync performance
