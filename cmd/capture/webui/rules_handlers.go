@@ -47,20 +47,23 @@ type ResponseActionAPI struct {
 
 // RuleResponse represents a rule for the API
 type RuleResponse struct {
-	ID                string              `json:"id"`
-	Name              string              `json:"name"`
-	Description       string              `json:"description"`
-	Type              string              `json:"type"`
-	Expression        string              `json:"expression"`
-	Severity          string              `json:"severity"`
-	MITRE             []string            `json:"mitre"`
-	Tags              []string            `json:"tags"`
-	Enabled           bool                `json:"enabled"`
-	Threshold         int                 `json:"threshold,omitempty"`
-	ThresholdWindow   int                 `json:"thresholdWindow,omitempty"`
-	DistinctField     string              `json:"distinctField,omitempty"`
-	DistinctThreshold int                 `json:"distinctThreshold,omitempty"`
-	Actions           []ResponseActionAPI `json:"actions,omitempty"`
+	ID                string   `json:"id"`
+	Name              string   `json:"name"`
+	Description       string   `json:"description"`
+	Type              string   `json:"type"`
+	Expression        string   `json:"expression"`
+	Severity          string   `json:"severity"`
+	MITRE             []string `json:"mitre"`
+	Tags              []string `json:"tags"`
+	Enabled           bool     `json:"enabled"`
+	Threshold         int      `json:"threshold,omitempty"`
+	ThresholdWindow   int      `json:"thresholdWindow,omitempty"`
+	DistinctField     string   `json:"distinctField,omitempty"`
+	DistinctThreshold int      `json:"distinctThreshold,omitempty"`
+	// Sequence is read-only here: the UI cannot author an ordered correlation
+	// gate, but a gated rule must not be displayed as an ungated one.
+	Sequence *rules.Sequence     `json:"sequence,omitempty"`
+	Actions  []ResponseActionAPI `json:"actions,omitempty"`
 }
 
 // RulesConfigResponse represents the full rules configuration
@@ -334,6 +337,7 @@ func (s *Server) saveRulesConfig(config *rules.Config) error {
 				ThresholdWindow:   rule.ThresholdWindow,
 				DistinctField:     rule.DistinctField,
 				DistinctThreshold: rule.DistinctThreshold,
+				Sequence:          rule.Sequence,
 				Actions:           rule.Actions,
 			}
 			// Filter out the ruleset tag
@@ -383,6 +387,7 @@ func (s *Server) saveRulesConfig(config *rules.Config) error {
 			ThresholdWindow:   rule.ThresholdWindow,
 			DistinctField:     rule.DistinctField,
 			DistinctThreshold: rule.DistinctThreshold,
+			Sequence:          rule.Sequence,
 			Actions:           rule.Actions,
 		}
 
@@ -496,6 +501,7 @@ func (s *Server) handleGetRules(w http.ResponseWriter, r *http.Request) {
 			ThresholdWindow:   rule.ThresholdWindow,
 			DistinctField:     rule.DistinctField,
 			DistinctThreshold: rule.DistinctThreshold,
+			Sequence:          rule.Sequence,
 			Actions:           convertActionsToAPI(rule.Actions),
 		})
 	}
@@ -618,6 +624,7 @@ func (s *Server) handleCreateRule(w http.ResponseWriter, r *http.Request) {
 			ThresholdWindow:   newRule.ThresholdWindow,
 			DistinctField:     newRule.DistinctField,
 			DistinctThreshold: newRule.DistinctThreshold,
+			Sequence:          newRule.Sequence,
 			Actions:           convertActionsToAPI(newRule.Actions),
 		},
 	})
@@ -689,6 +696,7 @@ func (s *Server) handleGetRule(w http.ResponseWriter, r *http.Request, ruleID st
 				ThresholdWindow:   rule.ThresholdWindow,
 				DistinctField:     rule.DistinctField,
 				DistinctThreshold: rule.DistinctThreshold,
+				Sequence:          rule.Sequence,
 				Actions:           convertActionsToAPI(rule.Actions),
 			})
 			return

@@ -37,13 +37,54 @@ func modbusHuntRules(t *testing.T) map[string]*Rule {
 		rule.Enabled = true // Compile and evaluate disabled templates too.
 		rules[rule.Name] = rule
 	}
-	if len(rules) != 14 {
-		t.Fatalf("got %d rules, want 14", len(rules))
+	if len(rules) != 15 {
+		t.Fatalf("got %d rules, want 15", len(rules))
 	}
 	if err := CompileRules(config); err != nil {
 		t.Fatal(err)
 	}
 	return rules
+}
+
+// The shipped sequence rule must gate on a real preceding read, not fire on
+// every write, and must not pair reads and writes of different registers.
+func TestModbusWriteAfterReadSequence(t *testing.T) {
+	rule := modbusHuntRules(t)["Modbus Write After Read Same Register"]
+	if rule.Sequence == nil || rule.Sequence.Within != 900 {
+		t.Fatalf("sequence configuration missing: %+v", rule)
+	}
+	read := func(second int64, address uint32) *types.Modbus {
+		return modbusAt(second, "request", 3, address)
+	}
+	write := func(second int64, address uint32) *types.Modbus {
+		m := modbusAt(second, "request", 6, address)
+		m.Values = []uint32{1}
+		return m
+	}
+	for _, tt := range []struct {
+		name    string
+		records []*types.Modbus
+		alerts  int
+	}{
+		{"write after reading the same register", []*types.Modbus{read(0, 40), write(60, 40)}, 1},
+		{"write with no preceding read", []*types.Modbus{write(60, 40)}, 0},
+		{"read only", []*types.Modbus{read(0, 40)}, 0},
+		{"different register", []*types.Modbus{read(0, 40), write(60, 41)}, 0},
+		{"outside the window", []*types.Modbus{read(0, 40), write(901, 40)}, 0},
+		{"write before the read", []*types.Modbus{write(0, 40), read(60, 40)}, 0},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			engine, written := sequenceEngine(t, rule.Sequence, rule.Expression)
+			for _, record := range tt.records {
+				if _, err := engine.Evaluate(record); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if len(*written) != tt.alerts {
+				t.Fatalf("got %d alerts, want %d", len(*written), tt.alerts)
+			}
+		})
+	}
 }
 
 func modbusMatch(t *testing.T, rule *Rule, record *types.Modbus) bool {

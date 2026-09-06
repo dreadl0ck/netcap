@@ -296,6 +296,7 @@ func (s *Server) saveRuleSetOverride(ruleSetName string, rulesToSave []*rules.Ru
 			ThresholdWindow:   rule.ThresholdWindow,
 			DistinctField:     rule.DistinctField,
 			DistinctThreshold: rule.DistinctThreshold,
+			Sequence:          rule.Sequence,
 			Actions:           rule.Actions,
 		}
 		// Filter out internal tags (ruleset: and embedded)

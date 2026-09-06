@@ -153,6 +153,9 @@ func TestRuleSetToggleKeepsDistinctConfig(t *testing.T) {
 				Name: "fan-out", Type: "TCP", Expression: "true", Severity: "medium",
 				Enabled: !enabled, Threshold: 1, ThresholdWindow: 300,
 				DistinctField: "DstIP", DistinctThreshold: 5,
+				Sequence: &rules.Sequence{
+					After: "true", GroupBy: []string{"SrcIP", "DstIP"}, Within: 900,
+				},
 				Tags: []string{"scan", "ruleset:cardinality"},
 			}}}
 
@@ -177,6 +180,12 @@ func TestRuleSetToggleKeepsDistinctConfig(t *testing.T) {
 			rule := saved.Rules[0]
 			if rule.DistinctField != "DstIP" || rule.DistinctThreshold != 5 {
 				t.Fatalf("cardinality settings lost, rule downgraded to per-match: %s", data)
+			}
+			// Losing the sequence would turn a gated rule into one that alerts
+			// on every matching record.
+			if rule.Sequence == nil || rule.Sequence.After != "true" ||
+				rule.Sequence.Within != 900 || len(rule.Sequence.GroupBy) != 2 {
+				t.Fatalf("sequence configuration lost: %s", data)
 			}
 			if rule.Enabled != enabled || rule.ThresholdWindow != 300 {
 				t.Fatalf("toggle or window lost: %s", data)

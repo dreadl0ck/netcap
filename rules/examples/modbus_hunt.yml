@@ -38,6 +38,26 @@ rules:
     tags: [modbus, write, file-records, baseline, site-dependent]
     enabled: false
 
+  # Grouping is exact equality, so this pairs a read and a write of the SAME
+  # start address. A write whose span merely overlaps an earlier read is not
+  # matched; widen the hunt by dropping Address from group_by and accepting the
+  # extra volume.
+  - name: Modbus Write After Read Same Register
+    description: A source wrote a holding register it read within the last 15 minutes, on the same destination and unit. Normal for read-modify-write masters, so confirm against the polling baseline before treating it as staged tampering.
+    type: Modbus
+    expression: >-
+      MessageRole == "request" && ParseStatus == "valid" && !Exception &&
+      FunctionCode in [6, 16, 22] && Bank == "holding_registers" && HasAddress
+    sequence:
+      after: >-
+        MessageRole == "request" && ParseStatus == "valid" && !Exception &&
+        FunctionCode == 3 && Bank == "holding_registers" && HasAddress
+      group_by: [SrcIP, DstIP, UnitID, Bank, Address]
+      within: 900
+    severity: medium
+    tags: [modbus, write, sequence]
+    enabled: false
+
   - name: Modbus Device Identification Request
     description: FC43 MEI14 device identification request; legitimate inventory tools also perform this discovery.
     type: Modbus

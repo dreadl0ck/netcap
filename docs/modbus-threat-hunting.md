@@ -231,24 +231,72 @@ originating request nor the requested address is recoverable.
 
 ## Enumeration
 
-Netcap's rule engine counts distinct values in a time window; it has no
-sequence/ordering primitive, so these detect breadth, not a scan pattern.
+Netcap's rule engine counts distinct values in a time window. Cardinality
+carries no ordering, so these detect breadth, not a scan pattern; for ordered
+pairing see [Read-Then-Write Pairing](#read-then-write-pairing) below.
 Use `distinct_field` with `distinct_threshold` and `threshold_window`:
 
 - `distinct_field: DstIP` — one source touching many controllers.
 - `distinct_field: UnitID` scoped to one `DstIP` — unit sweeping behind a gateway.
 - `distinct_field: Address` (or `ReadAddress` for FC23) scoped to one destination/unit/bank — register map probing. This counts distinct **start** addresses, not covered addresses.
 
+## Read-Then-Write Pairing
+
+A rule can require an earlier related record before it alerts, so pairing a read
+with a later write of the same register is a rule, not a post-export step.
+`rules/examples/modbus_hunt.yml` ships this as `Modbus Write After Read Same
+Register`, **disabled**:
+
+```yaml
+expression: >-
+  MessageRole == "request" && ParseStatus == "valid" && !Exception &&
+  FunctionCode in [6, 16, 22] && Bank == "holding_registers" && HasAddress
+sequence:
+  after: >-
+    MessageRole == "request" && ParseStatus == "valid" && !Exception &&
+    FunctionCode == 3 && Bank == "holding_registers" && HasAddress
+  group_by: [SrcIP, DstIP, UnitID, Bank, Address]
+  within: 900
+```
+
+What it asserts is narrow: the same `SrcIP`/`DstIP`/`UnitID`/`Bank` issued an
+FC3 read of a start address and then, within 900 seconds, a write to **the same
+start address**. `group_by` is exact equality, so a write whose span merely
+overlaps an earlier read is not matched — widen the hunt by dropping `Address`
+from `group_by` and accept the extra volume. A record missing a group field is
+not correlated at all, and the write must be timestamped at or after the read;
+records reaching the engine out of order do not pair. Because records are
+emitted at connection completion/flush, both halves must have decoded before a
+pair can form, and a `lost` marker between them means the read may never have
+been observed.
+
+Read-modify-write masters produce exactly this pattern legitimately and
+constantly: HMI setpoint edits, controller retuning, and any client that reads a
+register before writing it back. A match is a candidate for baseline comparison,
+**not** proof of reconnaissance preceding a change or of staged tampering.
+Confirm it against the polling baseline and the register map. The alert
+describes the write only — the earlier read is not attached, so retrieve it from
+`Modbus.ncap.gz` with the same tuple and window:
+
+```bash
+net dump -read modbus-hunt/Modbus.ncap.gz -json -filter '
+MessageRole == "request" && ParseStatus == "valid" && FunctionCode == 3 &&
+SrcIP == "192.0.2.10" && DstIP == "192.0.2.20" && UnitID == 1 &&
+Bank == "holding_registers" && Address == 1000'
+```
+
 ## Running The Shipped Rules
 
-`rules/examples/modbus_hunt.yml` contains 14 rules: request-level hunt
-templates, enumeration templates, and visibility/coverage triage. Site-dependent
-rules use documentation IPs and ship `enabled: false`; replace the addresses,
-units, banks and intervals before enabling. Six site-independent rules are
-enabled by default — device identification (FC43 MEI14), server identification
-(FC17), disruptive diagnostics (FC8 subfunctions 1/4/10), unknown-role triage,
-parse triage (`malformed`/`unsupported`), and capture loss (`lost`). No rule
-configures a response action.
+`rules/examples/modbus_hunt.yml` contains 15 rules: request-level hunt
+templates, one read-then-write pairing template, enumeration templates, and
+visibility/coverage triage. Site-dependent rules use documentation IPs and ship
+`enabled: false`; replace the addresses, units, banks and intervals before
+enabling. `Modbus Write After Read Same Register` needs no site values but also
+ships disabled, because read-modify-write masters match it routinely. Six
+site-independent rules are enabled by default — device identification (FC43
+MEI14), server identification (FC17), disruptive diagnostics (FC8 subfunctions
+1/4/10), unknown-role triage, parse triage (`malformed`/`unsupported`), and
+capture loss (`lost`). No rule configures a response action.
 
 ```bash
 net capture -read plant.pcap -out modbus-hunt -include Modbus \
@@ -329,7 +377,7 @@ the OT owner's assessment.
 - No native serial capture and no Modbus ASCII framing — only MBAP over TCP and RTU frames carried over TCP.
 - Vendor/user-defined function codes (65-72 and 100-110), any other unmodelled code, and FC43 with an MEI type other than 14 produce `ParseStatus == "unsupported"` with no structured fields; over RTU they never frame at all and surface only as loss markers.
 - FC17's vendor-defined content is framed but not interpreted, and FC12 event bytes are reported as raw codes rather than decoded events.
-- The rule engine has no ordered multi-event (sequence) primitive and no grouping operator beyond per-source distinct counting; sequencing and cross-record grouping must be done after export.
+- The rule engine's ordered correlation is one precondition grouped by exact field equality. There are no multi-step chains beyond a single earlier record, and no range-overlap join — pairing a write with a read whose span merely covers it still has to be done after export.
 - Records are emitted at connection completion/flush, so hunts run on completed conversations.
 - `nc_modbus` still carries only `FunctionCode` and `Exception` labels.
 

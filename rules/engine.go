@@ -52,6 +52,10 @@ type Engine struct {
 	// source IP and records the last-seen time of each distinct field value.
 	distinctTrackers map[string]*distinctTracker
 
+	// Sequence tracking: map[ruleName]tracker. Each tracker records when a
+	// group last produced a record matching the rule's precondition.
+	sequenceTrackers map[string]*sequenceTracker
+
 	// Performance tracking
 	perfTracker *performance.Tracker
 
@@ -140,6 +144,7 @@ func NewEngineFromConfig(config *Config, alertWriter AlertWriter) (*Engine, erro
 		rateLimit:         100, // Default 100 alerts per minute per rule
 		thresholdTrackers: make(map[string]*thresholdTracker),
 		distinctTrackers:  make(map[string]*distinctTracker),
+		sequenceTrackers:  make(map[string]*sequenceTracker),
 		actionStats:       &ActionStats{},
 	}
 
@@ -215,7 +220,29 @@ func (e *Engine) Evaluate(record types.AuditRecord) (int, error) {
 		matched := alert != nil
 		alertGenerated := false
 
+		// Ordered correlation gate. This runs for every record of the rule's
+		// type, not only matching ones: the earlier record of a sequence
+		// usually does not match the rule's own expression.
+		sequenceSatisfied := true
+		if rule.Sequence != nil {
+			sequenceSatisfied, err = e.checkSequence(rule, record)
+			if err != nil {
+				return alertCount, err
+			}
+		}
+
 		if alert != nil {
+			// Applied before threshold and distinct counting so those only
+			// ever see completed sequences.
+			if !sequenceSatisfied {
+				matched = true
+				alertGenerated = false
+				if e.perfTracker != nil {
+					e.perfTracker.RecordRuleExecution(rule.Name, time.Since(ruleStart), matched, alertGenerated)
+				}
+				continue
+			}
+
 			// Check distinct-cardinality threshold first (fan-out detection):
 			// count DISTINCT values of DistinctField per source within the window.
 			if rule.DistinctField != "" {
@@ -582,6 +609,7 @@ func (e *Engine) GetStats() map[string]any {
 		"rate_limit":         e.rateLimit,
 		"tracked_thresholds": len(e.thresholdTrackers),
 		"tracked_distinct":   len(e.distinctTrackers),
+		"tracked_sequences":  len(e.sequenceTrackers),
 	}
 }
 

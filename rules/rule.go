@@ -91,8 +91,71 @@ type Rule struct {
 	// These are automated responses like blocking IPs via iptables.
 	Actions []*ResponseAction `yaml:"actions,omitempty"`
 
+	// Sequence requires an earlier record to have been observed before this
+	// rule's own expression can raise an alert. It expresses "B after A within
+	// a window, for the same group", such as a write to a register that the
+	// same source read minutes earlier.
+	//
+	// When set, the sequence gate is applied first; Threshold and DistinctField
+	// then behave exactly as they do for an ungated rule.
+	Sequence *Sequence `yaml:"sequence,omitempty"`
+
 	// compiled is the compiled expression program (not serialized)
 	compiled *vm.Program
+}
+
+// Sequence configures ordered, grouped correlation for a rule.
+type Sequence struct {
+	// After is the expression identifying the earlier record. It is evaluated
+	// against the same record type as the rule.
+	After string `yaml:"after"`
+
+	// GroupBy lists top-level record fields whose values must be equal for the
+	// earlier and triggering records to be considered related. Grouping is
+	// exact equality: it cannot express range overlap.
+	GroupBy []string `yaml:"group_by"`
+
+	// Within is how many seconds the earlier record stays eligible. Default 60.
+	Within int `yaml:"within,omitempty"`
+
+	// compiledAfter is the compiled After program (not serialized)
+	compiledAfter *vm.Program
+}
+
+// Validate checks that a sequence is usable before rules are compiled.
+func (s *Sequence) Validate() error {
+	if s.After == "" {
+		return fmt.Errorf("sequence requires an after expression")
+	}
+	if len(s.GroupBy) == 0 {
+		// Without a group key the gate would correlate unrelated hosts.
+		return fmt.Errorf("sequence requires at least one group_by field")
+	}
+	for _, field := range s.GroupBy {
+		if field == "" {
+			return fmt.Errorf("sequence group_by contains an empty field name")
+		}
+	}
+	if s.Within < 0 {
+		return fmt.Errorf("sequence within cannot be negative")
+	}
+	// Guard against seconds/nanoseconds confusion overflowing the window into a
+	// negative duration, which would silently stop the rule from ever firing.
+	if s.Within > maxSequenceWithinSeconds {
+		return fmt.Errorf("sequence within %d exceeds the %d second maximum", s.Within, maxSequenceWithinSeconds)
+	}
+	return nil
+}
+
+// maxSequenceWithinSeconds caps the eligibility window at 30 days.
+const maxSequenceWithinSeconds = 30 * 24 * 60 * 60
+
+// window returns the configured eligibility window.
+func (s *Sequence) window() time.Duration {
+	if s.Within <= 0 {
+		return time.Minute
+	}
+	return time.Duration(s.Within) * time.Second
 }
 
 // ResponseAction defines an automated response to a rule match.
@@ -178,6 +241,14 @@ func LoadRulesFromDirectory(dirPath string) (*Config, error) {
 // CompileRules compiles all rule expressions in the configuration.
 func CompileRules(config *Config) error {
 	for i, rule := range config.Rules {
+		// Validate sequences even when disabled: hunt templates ship disabled,
+		// and a broken one must not surface only when an operator enables it.
+		if rule.Sequence != nil {
+			if err := rule.Sequence.Validate(); err != nil {
+				return fmt.Errorf("rule %s: %w", rule.Name, err)
+			}
+		}
+
 		if !rule.Enabled {
 			continue
 		}
@@ -199,6 +270,17 @@ func CompileRules(config *Config) error {
 		}
 
 		config.Rules[i].compiled = program
+
+		if seq := rule.Sequence; seq != nil {
+			if err = validateGroupFields(seq.GroupBy, recordType); err != nil {
+				return fmt.Errorf("rule %s: %w", rule.Name, err)
+			}
+			after, err := filter.CompileExpression(seq.After, recordType)
+			if err != nil {
+				return fmt.Errorf("failed to compile sequence for rule %s: %w", rule.Name, err)
+			}
+			config.Rules[i].Sequence.compiledAfter = after
+		}
 	}
 
 	return nil
