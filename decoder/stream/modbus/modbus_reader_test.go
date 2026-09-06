@@ -48,6 +48,24 @@ func records(m *modbusReader) (result []*types.Modbus) {
 	return
 }
 
+// isLoss checks the full shape of a capture-loss marker: no decoded message,
+// but transport, endpoints and the reported gap size.
+func isLoss(r *types.Modbus, lost int64, transport string) bool {
+	return r.ParseStatus == "lost" && r.LostBytes == lost && r.Transport == transport &&
+		r.MessageRole == "unknown" && r.CorrelationStatus == "not_applicable" &&
+		r.ParseError != "" && r.CommunityID == "community" &&
+		!r.HasMBAP && r.FunctionCode == 0 && r.Payload == nil
+}
+
+func countLoss(records []*types.Modbus) (n int) {
+	for _, r := range records {
+		if r.ParseStatus == "lost" {
+			n++
+		}
+	}
+	return
+}
+
 func TestFramingBoundaries(t *testing.T) {
 	m := reader(t)
 	a, b, c := wire(1, 3, 0, 1, 0, 2), wire(2, 0x83, 2), wire(3, 7)
@@ -154,8 +172,16 @@ func TestWrappedFragmentStopsDirection(t *testing.T) {
 							m.conversation.ServerData = core.DataFragments{other}
 						}
 						got := records(m)
-						if len(got) != 2 || got[0].TransactionID != 2 || got[1].TransactionID != 4 {
+						if len(got) != 3 || got[0].TransactionID != 2 || got[2].TransactionID != 4 {
 							t.Fatalf("must retain prior ADU and opposite direction only: %v", got)
+						}
+						// A fragment of unknown type has neither a gap size nor a
+						// known frame start, so the direction cannot resume.
+						if !isLoss(got[1], -1, "tcp") || got[1].Timestamp != 3 {
+							t.Fatalf("loss marker: %v", got[1])
+						}
+						if (got[1].SrcIP == "192.0.2.2") != server {
+							t.Fatalf("loss marker direction: %v", got[1])
 						}
 					})
 				}
@@ -164,39 +190,151 @@ func TestWrappedFragmentStopsDirection(t *testing.T) {
 	}
 }
 
+// TestGapsAndTruncation pins the resume rule: after a gap the framer makes
+// exactly one attempt at the first byte that follows it, and never slides
+// forward through a body hunting for a plausible MBAP header.
 func TestGapsAndTruncation(t *testing.T) {
 	a := wire(1, 3, 0, 1, 0, 2)
 	for _, server := range []bool{false, true} {
 		for cut := 0; cut <= len(a); cut++ {
-			for _, gap := range []int{0, 1, -1} {
+			for _, gap := range []int{12, -1} {
 				t.Run(fmt.Sprintf("server=%t/cut=%d/gap=%d", server, cut, gap), func(t *testing.T) {
 					m := reader(t)
-					m.conversation.Data = core.DataFragments{fragment(a[:cut], 1, server)}
-					if gap != 0 {
-						loss := fragment(nil, 2, server)
-						loss.SkippedBytes = gap
-						m.conversation.Data = append(m.conversation.Data, loss, fragment(a[cut:], 3, server), fragment(a, 4, server))
+					loss := fragment(nil, 2, server)
+					loss.SkippedBytes = gap
+					m.conversation.Data = core.DataFragments{
+						fragment(a[:cut], 1, server), loss,
+						fragment(a[cut:], 3, server), fragment(a, 4, server),
+						fragment(wire(2, 7), 5, !server),
 					}
-					m.conversation.Data = append(m.conversation.Data, fragment(wire(2, 7), 5, !server))
 					got := records(m)
-					want := 1
-					if cut == len(a) {
-						want++
+					// Zero marks the expected loss record, any other value the
+					// timestamp of a decoded ADU. Resumption happens only where
+					// the data after the gap starts on an ADU boundary; a
+					// truncated ADU is never emitted.
+					want := []int64{0}
+					switch {
+					case gap > 0 && cut == 0:
+						want = []int64{0, 3, 4}
+					case gap > 0 && cut == len(a):
+						want = []int64{1, 0, 4}
+					case cut == len(a):
+						want = []int64{1, 0}
 					}
-					if len(got) != want || got[len(got)-1].TransactionID != 2 {
+					if len(got) != len(want)+1 || countLoss(got) != 1 {
 						t.Fatalf("got %v", got)
+					}
+					if got[len(got)-1].TransactionID != 2 {
+						t.Fatalf("opposite direction: %v", got)
+					}
+					for i, timestamp := range want {
+						r := got[i]
+						if timestamp != 0 {
+							if r.ParseStatus == "lost" || r.TransactionID != 1 || r.Timestamp != timestamp {
+								t.Fatalf("record %d: %v", i, r)
+							}
+							continue
+						}
+						if !isLoss(r, int64(gap), "tcp") || r.Timestamp != 2 {
+							t.Fatalf("loss marker %d: %v", i, r)
+						}
+						if (r.SrcIP == "192.0.2.2") != server {
+							t.Fatalf("loss marker direction: %v", r)
+						}
 					}
 				})
 			}
 		}
 	}
-	// Initial loss also suppresses an otherwise complete ADU in the same fragment.
+	// Initial loss suppresses an otherwise complete ADU in the same fragment,
+	// but the direction now says so.
 	m := reader(t)
 	d := fragment(a, 1, false)
 	d.SkippedBytes = -1
 	m.conversation.ClientData = core.DataFragments{d}
-	if got := records(m); len(got) != 0 {
+	got := records(m)
+	if len(got) != 1 || !isLoss(got[0], -1, "tcp") || got[0].Timestamp != 1 {
 		t.Fatalf("initial loss: %v", got)
+	}
+	// A direction ending on an ADU boundary stays silent; one ending inside an
+	// ADU reports that parsing stopped.
+	for _, tail := range []int{0, 4} {
+		m = reader(t)
+		m.conversation.ClientData = core.DataFragments{fragment(append(bytes.Clone(a), a[:tail]...), 7, false)}
+		got = records(m)
+		if len(got) != 1+min(tail, 1) {
+			t.Fatalf("tail %d: %v", tail, got)
+		}
+		if tail > 0 && (!isLoss(got[1], 0, "tcp") || got[1].Timestamp != 7) {
+			t.Fatalf("truncated tail: %v", got)
+		}
+	}
+}
+
+func TestLossMarkersAreBoundedAndDirectional(t *testing.T) {
+	m := reader(t)
+	a := wire(1, 3, 0, 1, 0, 2)
+	first, second := fragment(nil, 20, false), fragment(nil, 30, false)
+	first.SkippedBytes, second.SkippedBytes = 5, 7
+	m.conversation.ClientData = core.DataFragments{
+		fragment(a[:5], 10, false), first, second, fragment(a, 40, false),
+	}
+	m.conversation.ServerData = core.DataFragments{
+		fragment(wire(2, 3, 2, 0, 1), 15, true), fragment(wire(3, 3, 2, 0, 1), 50, true),
+	}
+	got := records(m)
+	// Back to back gaps are one loss event reporting the extent of the whole
+	// run, and the server direction decodes across it untouched.
+	if len(got) != 4 || countLoss(got) != 1 {
+		t.Fatalf("got %v", got)
+	}
+	if !isLoss(got[1], 12, "tcp") || got[1].Timestamp != 20 || got[1].SrcIP != "192.0.2.1" {
+		t.Fatalf("loss marker: %v", got[1])
+	}
+	if got[0].TransactionID != 2 || got[2].TransactionID != 1 || got[2].Timestamp != 40 || got[3].TransactionID != 3 {
+		t.Fatalf("resumed and unaffected directions: %v", got)
+	}
+	// A contributing gap of unknown extent makes the whole event unknown.
+	m = reader(t)
+	known, unknown := fragment(nil, 20, false), fragment(nil, 30, false)
+	known.SkippedBytes, unknown.SkippedBytes = 5, -1
+	m.conversation.ClientData = core.DataFragments{fragment(a, 10, false), known, unknown, fragment(a, 40, false)}
+	got = records(m)
+	if len(got) != 2 || got[0].TransactionID != 1 || !isLoss(got[1], -1, "tcp") || got[1].Timestamp != 20 {
+		t.Fatalf("unknown extent: %v", got)
+	}
+}
+
+// A gap does not end on an ADU boundary just because the bytes after it pass
+// the MBAP header check: protocol ID zero and a plausible length occur all over
+// ordinary register data.
+func TestResumeRejectsUnparsableADU(t *testing.T) {
+	m := reader(t)
+	gap := fragment(nil, 2, false)
+	gap.SkippedBytes = 8
+	// Registers 0000 0000 0005 0003 000a read as transaction 0, protocol 0,
+	// length 5, unit 0 and a four byte PDU that is not a Modbus message.
+	body := []byte{0, 0, 0, 0, 0, 5, 0, 3, 0, 0x0a, 0, 0, 0, 0}
+	m.conversation.ClientData = core.DataFragments{
+		fragment(wire(1, 3, 0, 1, 0, 2), 1, false), gap, fragment(body, 3, false),
+	}
+	got := records(m)
+	if len(got) != 2 || got[0].TransactionID != 1 || !isLoss(got[1], 8, "tcp") || got[1].Timestamp != 2 {
+		t.Fatalf("fabricated ADU after resume: %v", got)
+	}
+}
+
+// A direction that accepted an initial-loss marker has started, so a later
+// marker interrupts it rather than starting it again, as RTU already had it.
+func TestSecondInitialLossStopsDirection(t *testing.T) {
+	m := reader(t)
+	decoderconfig.Instance.AllowMissingInit = true
+	first, second := fragment(nil, 1, false), fragment(nil, 2, false)
+	first.SkippedBytes, second.SkippedBytes = -1, -1
+	m.conversation.ClientData = core.DataFragments{first, second, fragment(wire(1, 3, 0, 1, 0, 2), 3, false)}
+	got := records(m)
+	if len(got) != 1 || !isLoss(got[0], -1, "tcp") || got[0].Timestamp != 2 {
+		t.Fatalf("second initial marker: %v", got)
 	}
 }
 
@@ -209,7 +347,10 @@ func TestMalformedAndPayloadLimits(t *testing.T) {
 			t.Fatalf("invalid length %d: %v %d", length, r, n)
 		}
 		m.conversation.ClientData = core.DataFragments{fragment(append(bad, wire(2, 7)...), 1, false), fragment(wire(3, 7), 2, false)}
-		if got := records(m); len(got) != 0 {
+		// An unusable header is reported once, and no later fragment boundary
+		// is treated as a resume point.
+		got := records(m)
+		if len(got) != 1 || !isLoss(got[0], 0, "tcp") || got[0].Timestamp != 1 {
 			t.Fatalf("resynchronized after invalid length %d: %v", length, got)
 		}
 	}
@@ -220,7 +361,8 @@ func TestMalformedAndPayloadLimits(t *testing.T) {
 	}
 	m.conversation.ClientData = core.DataFragments{fragment(append(bad, wire(2, 7)...), 1, false)}
 	m.conversation.ServerData = core.DataFragments{fragment(wire(3, 7), 2, true)}
-	if got := records(m); len(got) != 1 || got[0].TransactionID != 3 {
+	got := records(m)
+	if len(got) != 2 || !isLoss(got[0], 0, "tcp") || got[0].SrcIP != "192.0.2.1" || got[1].TransactionID != 3 {
 		t.Fatalf("invalid header direction isolation: %v", got)
 	}
 	// An incomplete outer ADU must not expose a plausible nested MBAP header.
@@ -228,7 +370,7 @@ func TestMalformedAndPayloadLimits(t *testing.T) {
 	copy(outer[8:], wire(2, 7))
 	m.conversation.ServerData = nil
 	m.conversation.ClientData = core.DataFragments{fragment(outer[:20], 1, false)}
-	if got := records(m); len(got) != 0 {
+	if got := records(m); len(got) != 1 || !isLoss(got[0], 0, "tcp") {
 		t.Fatalf("scanned incomplete body: %v", got)
 	}
 	for n := 0; n < len(outer); n++ {
@@ -268,24 +410,28 @@ func TestAllowMissingInit(t *testing.T) {
 						gap := fragment(nil, 2, server)
 						gap.SkippedBytes = -1
 						affected := core.DataFragments{gap}
-						want := 1 // The other direction always survives.
+						// Counts hold the decoded ADUs plus the loss markers;
+						// the other direction always contributes one record.
+						want, loss := 1, 1
 						switch scenario {
 						case "empty initial":
 							if allow {
-								want++
+								want, loss = want+1, 0
 							}
 						case "payload initial":
 							gap.RawData = a[:4]
 							a = a[4:]
 							if allow {
-								want++
+								want, loss = want+1, 0
 							}
 						case "invalid boundary":
 							bad := wire(9, 7)
 							bad[3] = 1
 							a = append(bad, a...)
 						case "positive initial":
+							// A known gap resumes at the first byte after it.
 							gap.SkippedBytes = 1
+							want++
 						case "partial midstream":
 							affected = core.DataFragments{fragment(a[:4], 1, server), gap}
 							a = a[4:]
@@ -293,6 +439,7 @@ func TestAllowMissingInit(t *testing.T) {
 							affected = core.DataFragments{fragment(a, 1, server), gap}
 							want++
 						}
+						want += loss
 						affected = append(affected, fragment(a, 3, server))
 						other := fragment(wire(2, 7), 4, !server)
 						if fallback {
@@ -307,6 +454,9 @@ func TestAllowMissingInit(t *testing.T) {
 						got := records(m)
 						if len(got) != want || got[len(got)-1].TransactionID != 2 {
 							t.Fatalf("want %d records ending with opposite direction: %v", want, got)
+						}
+						if countLoss(got) != loss {
+							t.Fatalf("want %d loss markers: %v", loss, got)
 						}
 					})
 				}

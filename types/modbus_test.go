@@ -39,7 +39,7 @@ func TestModbusCSVAndEncode(t *testing.T) {
 		FileRecords:     []*ModbusFileRecord{{ReferenceType: 6, FileNumber: 7, RecordNumber: 8, RecordLength: 2, Values: []uint32{0, 65535}}},
 		AndMask:         65535, OrMask: 32768, CorrelationStatus: "matched", RequestTimestamp: 1700000000123000000, ResponseLatency: 456789,
 		DeviceIDObjectID: 5, DeviceIDConformityLevel: 131, DeviceIDMoreFollows: true, DeviceIDNextObjectID: 6,
-		HasMBAP: true, HasChecksum: true, ChecksumValid: true, Broadcast: true,
+		HasMBAP: true, HasChecksum: true, ChecksumValid: true, Broadcast: true, LostBytes: 400,
 	}
 	ctx := &PacketContext{
 		SrcIP: "192.0.2.1", DstIP: "198.51.100.2", SrcPort: 12345, DstPort: 502,
@@ -58,7 +58,7 @@ func TestModbusCSVAndEncode(t *testing.T) {
 		"ExceptionCode", "HasDiagnostic", "DiagnosticSubfunction", "DiagnosticData", "MEIType", "ReadDeviceIDCode",
 		"DeviceIDObjects", "FileRecords", "AndMask", "OrMask", "CorrelationStatus", "RequestTimestamp", "ResponseLatency",
 		"DeviceIDObjectID", "DeviceIDConformityLevel", "DeviceIDMoreFollows", "DeviceIDNextObjectID",
-		"HasMBAP", "HasChecksum", "ChecksumValid", "Broadcast",
+		"HasMBAP", "HasChecksum", "ChecksumValid", "Broadcast", "LostBytes",
 	}
 	wantCSV := []string{
 		formatTimestamp(a.Timestamp), "17", "2", "6", "4", "00abff", "true", "3",
@@ -68,7 +68,7 @@ func TestModbusCSVAndEncode(t *testing.T) {
 		`[{"ID":1,"Value":"AP8="},{}]`,
 		`[{"ReferenceType":6,"FileNumber":7,"RecordNumber":8,"RecordLength":2,"Values":[0,65535]}]`,
 		"65535", "32768", "matched", formatTimestamp(a.RequestTimestamp), "456789", "5", "131", "true", "6",
-		"true", "true", "true", "true",
+		"true", "true", "true", "true", "400",
 	}
 	if got := a.CSVHeader(); !reflect.DeepEqual(got, wantHeader) {
 		t.Fatalf("header = %v, want %v", got, wantHeader)
@@ -187,6 +187,16 @@ func TestModbusCSVAndEncode(t *testing.T) {
 			}
 		}
 	}
+	// A loss marker reports an unknown gap as -1 and keeps the column count.
+	selection = nil
+	marker := &Modbus{ParseStatus: "lost", Transport: "tcp", LostBytes: -1}
+	header, csv, enc := marker.CSVHeader(), marker.CSVRecord(), marker.Encode()
+	if len(header) != len(wantHeader) || len(csv) != len(wantHeader) || len(enc) != len(wantHeader) {
+		t.Fatalf("loss marker columns: %d/%d/%d", len(header), len(csv), len(enc))
+	}
+	if csv[len(csv)-1] != "-1" || header[len(header)-1] != "LostBytes" {
+		t.Fatalf("loss marker LostBytes column: %q/%q", header[len(header)-1], csv[len(csv)-1])
+	}
 }
 
 func TestModbusJSONDoesNotMutate(t *testing.T) {
@@ -300,6 +310,27 @@ func TestModbusMetricsIgnoreProjection(t *testing.T) {
 				}
 			}
 		}
+	}
+	// Loss markers carry no function code and must not look like FC0.
+	marker := &Modbus{ParseStatus: "lost", LostBytes: -1}
+	marker.Inc()
+	families, err = registry.Gather()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var found bool
+	for _, metric := range families[0].Metric {
+		for _, label := range metric.Label {
+			if label.GetName() == fieldFunctionCode && label.GetValue() == "lost" {
+				found = true
+			}
+			if label.GetName() == fieldFunctionCode && label.GetValue() == "0" {
+				t.Fatal("loss marker counted as function code 0")
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("loss marker series missing: %v", families[0].Metric)
 	}
 }
 

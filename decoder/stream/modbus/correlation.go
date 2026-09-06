@@ -57,18 +57,37 @@ func newPendingRequest(m *types.Modbus, server bool) pendingRequest {
 type tcpCorrelation struct {
 	pending   map[int32]pendingRequest
 	watermark int64
-	blocked   bool
 	// After saturation, suppress matches for a timeout rather than evicting
 	// evidence that could distinguish a duplicate from a new transaction.
 	saturated   bool
 	saturatedAt int64
+	// A capture gap suppresses matches the same way, because a request the gap
+	// destroyed left no entry to mark.
+	lost   bool
+	lostAt int64
+}
+
+// lose marks every outstanding request after a capture gap: its response may
+// have passed unseen, so a later response reusing the transaction ID is not
+// evidence of a match. A request destroyed inside the gap was never observed at
+// all, so its transaction ID cannot be marked and a response to it would
+// otherwise be credited to a post-gap request reusing that ID. Responses are
+// therefore ambiguous until such a request would have timed out. Only a gap in
+// the response direction leaves post-gap requests immediately safe, and roles
+// are known here only when the handshake was observed, so the distinction is
+// not made.
+func (c *tcpCorrelation) lose(timestamp int64) {
+	if timestamp > c.watermark {
+		c.watermark = timestamp
+	}
+	c.lost, c.lostAt = true, c.watermark
+	for id, p := range c.pending {
+		p.ambiguous = true
+		c.pending[id] = p
+	}
 }
 
 func (c *tcpCorrelation) observe(m *types.Modbus, server bool) {
-	if c.blocked {
-		m.CorrelationStatus = "ambiguous"
-		return
-	}
 	if m.Timestamp > c.watermark {
 		c.watermark = m.Timestamp
 	}
@@ -79,6 +98,9 @@ func (c *tcpCorrelation) observe(m *types.Modbus, server bool) {
 	}
 	if c.saturated && c.watermark >= c.saturatedAt && uint64(c.watermark)-uint64(c.saturatedAt) > uint64(requestTimeout) {
 		c.saturated = false
+	}
+	if c.lost && c.watermark >= c.lostAt && uint64(c.watermark)-uint64(c.lostAt) > uint64(requestTimeout) {
+		c.lost = false
 	}
 	if m.MessageRole == "unknown" {
 		m.CorrelationStatus = "ambiguous"
@@ -121,7 +143,7 @@ func (c *tcpCorrelation) observe(m *types.Modbus, server bool) {
 		c.pending[m.TransactionID] = newPendingRequest(m, server)
 		return
 	}
-	if c.saturated {
+	if c.saturated || c.lost {
 		m.CorrelationStatus = "ambiguous"
 		return
 	}
@@ -165,6 +187,9 @@ func enrichResponse(r *pendingRequest, m *types.Modbus) {
 		for i, record := range m.FileRecords {
 			record.FileNumber, record.RecordNumber = r.fileRecords[i].FileNumber, r.fileRecords[i].RecordNumber
 		}
+	case 24:
+		// The response carries the queue contents, the request the pointer.
+		m.HasAddress, m.Address = r.hasAddress, r.address
 	}
 }
 
@@ -217,6 +242,10 @@ func compatibleResponse(r *pendingRequest, m *types.Modbus) bool {
 				return false
 			}
 		}
+		return true
+	case 7, 11, 12, 17, 24:
+		// These responses echo nothing from the request, so the transaction,
+		// unit and function code already matched are the only evidence.
 		return true
 	case 43:
 		if m.MEIType != r.meiType || m.ReadDeviceIDCode != r.readDeviceIDCode {

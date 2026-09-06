@@ -22,15 +22,23 @@ func modbusHuntRules(t *testing.T) map[string]*Rule {
 		if len(rule.Actions) != 0 {
 			t.Fatalf("hunt must not automate responses: %s", rule.Name)
 		}
-		wantEnabled := rule.Name == "Modbus Device Identification Request" || rule.Name == "Modbus Disruptive Diagnostic Request" || rule.Name == "Modbus Unknown Role Triage" || rule.Name == "Modbus Parse Triage"
-		if rule.Enabled != wantEnabled {
-			t.Fatalf("unsafe default for %s: enabled=%v", rule.Name, rule.Enabled)
+		switch rule.Name {
+		case "Modbus Device Identification Request", "Modbus Server Identification Request",
+			"Modbus Disruptive Diagnostic Request", "Modbus Unknown Role Triage",
+			"Modbus Parse Triage", "Modbus Capture Loss":
+			if !rule.Enabled {
+				t.Fatalf("site-independent rule disabled: %s", rule.Name)
+			}
+		default:
+			if rule.Enabled {
+				t.Fatalf("unsafe default for %s: enabled=%v", rule.Name, rule.Enabled)
+			}
 		}
 		rule.Enabled = true // Compile and evaluate disabled templates too.
 		rules[rule.Name] = rule
 	}
-	if len(rules) != 12 {
-		t.Fatalf("got %d rules, want 12", len(rules))
+	if len(rules) != 14 {
+		t.Fatalf("got %d rules, want 14", len(rules))
 	}
 	if err := CompileRules(config); err != nil {
 		t.Fatal(err)
@@ -189,6 +197,7 @@ func TestModbusObservations(t *testing.T) {
 		m    types.Modbus
 	}{
 		{"Modbus Device Identification Request", types.Modbus{FunctionCode: 43, MEIType: 14}},
+		{"Modbus Server Identification Request", types.Modbus{FunctionCode: 17}},
 		{"Modbus Disruptive Diagnostic Request", types.Modbus{FunctionCode: 8, HasDiagnostic: true, DiagnosticSubfunction: 4}},
 		{"Modbus Disruptive Diagnostic Request", types.Modbus{FunctionCode: 8, HasDiagnostic: true, DiagnosticSubfunction: 10}},
 		{"Modbus Disruptive Diagnostic Request", types.Modbus{FunctionCode: 8, HasDiagnostic: true, DiagnosticSubfunction: 1}},
@@ -212,17 +221,33 @@ func TestModbusObservations(t *testing.T) {
 					t.Fatalf("non-valid status %q matched", status)
 				}
 			}
-			tt.m.MEIType, tt.m.DiagnosticSubfunction = 13, 0
+			// FC17 is identified by its function code alone; the others must
+			// not fire on an ordinary diagnostic or a different MEI type.
+			if tt.m.FunctionCode == 17 {
+				tt.m.FunctionCode = 3
+			} else {
+				tt.m.MEIType, tt.m.DiagnosticSubfunction = 13, 0
+			}
 			if modbusMatch(t, rules[tt.rule], &tt.m) {
-				t.Fatal("ordinary diagnostic or other MEI matched")
+				t.Fatal("unrelated function, ordinary diagnostic or other MEI matched")
 			}
 		})
 	}
-	for _, status := range []string{"valid", "malformed", "unsupported", ""} {
+	for _, status := range []string{"valid", "malformed", "unsupported", "lost", ""} {
 		m := &types.Modbus{MessageRole: "unknown", ParseStatus: status, FunctionCode: 6}
 		if modbusMatch(t, rules["Modbus Unknown Role Triage"], m) != (status == "valid") ||
-			modbusMatch(t, rules["Modbus Parse Triage"], m) != (status == "malformed" || status == "unsupported") {
+			modbusMatch(t, rules["Modbus Parse Triage"], m) != (status == "malformed" || status == "unsupported") ||
+			modbusMatch(t, rules["Modbus Capture Loss"], m) != (status == "lost") {
 			t.Fatalf("incorrect triage for %q", status)
+		}
+	}
+	// A loss marker carries no function code, so coverage rules must not depend on one.
+	for _, m := range []*types.Modbus{
+		{ParseStatus: "lost", MessageRole: "unknown", LostBytes: -1},
+		{ParseStatus: "lost", MessageRole: "unknown", LostBytes: 512},
+	} {
+		if !modbusMatch(t, rules["Modbus Capture Loss"], m) {
+			t.Fatalf("loss marker not reported: %+v", m)
 		}
 	}
 	for _, role := range []string{"request", "response", "unknown", ""} {

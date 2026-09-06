@@ -62,7 +62,7 @@ var fieldsModbus = []string{
 	"MEIType", "ReadDeviceIDCode", "DeviceIDObjects", "FileRecords",
 	"AndMask", "OrMask", "CorrelationStatus", "RequestTimestamp", "ResponseLatency",
 	"DeviceIDObjectID", "DeviceIDConformityLevel", "DeviceIDMoreFollows", "DeviceIDNextObjectID",
-	"HasMBAP", "HasChecksum", "ChecksumValid", "Broadcast",
+	"HasMBAP", "HasChecksum", "ChecksumValid", "Broadcast", "LostBytes",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -100,6 +100,7 @@ func (a *Modbus) csvRecord() []string {
 		formatUint32(a.AndMask), formatUint32(a.OrMask), a.CorrelationStatus, formatTimestamp(a.RequestTimestamp), strconv.FormatInt(a.ResponseLatency, 10),
 		formatUint32(a.DeviceIDObjectID), formatUint32(a.DeviceIDConformityLevel), strconv.FormatBool(a.DeviceIDMoreFollows), formatUint32(a.DeviceIDNextObjectID),
 		strconv.FormatBool(a.HasMBAP), strconv.FormatBool(a.HasChecksum), strconv.FormatBool(a.ChecksumValid), strconv.FormatBool(a.Broadcast),
+		strconv.FormatInt(a.LostBytes, 10),
 	}
 }
 
@@ -134,7 +135,12 @@ var modbusTCPMetric = prometheus.NewCounterVec(
 // Inc increments the metrics for the audit record.
 func (a *Modbus) Inc() {
 	functionCode := "unknown"
-	if a.FunctionCode >= 0 && a.FunctionCode <= 255 {
+	switch {
+	case a.ParseStatus == "lost":
+		// Loss markers carry no function code; counting them as 0 would be
+		// indistinguishable from a decoded record.
+		functionCode = "lost"
+	case a.FunctionCode >= 0 && a.FunctionCode <= 255:
 		functionCode = formatInt32(a.FunctionCode)
 	}
 	modbusTCPMetric.WithLabelValues(functionCode, strconv.FormatBool(a.Exception)).Inc()
@@ -251,6 +257,8 @@ func (a *Modbus) Encode() []string {
 			value = modbusEncoder.Int64(field, a.RequestTimestamp)
 		case "ResponseLatency":
 			value = modbusEncoder.Int64(field, a.ResponseLatency)
+		case "LostBytes":
+			value = modbusEncoder.Int64(field, a.LostBytes)
 		case "DeviceIDObjectID":
 			value = modbusEncoder.Uint32(field, a.DeviceIDObjectID)
 		case "DeviceIDConformityLevel":

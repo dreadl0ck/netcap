@@ -68,6 +68,30 @@ func rtuLength(b []byte, request bool) int {
 			return -1
 		}
 		return 8
+	case 7, 11, 12, 17:
+		if request {
+			return 4 // Unit, function and CRC only.
+		}
+		switch f {
+		case 7:
+			return 5
+		case 11:
+			return 8
+		}
+		return count(2, 5)
+	case 24:
+		if request {
+			return 6
+		}
+		if len(b) < 4 {
+			return 0
+		}
+		// The FIFO byte count is two bytes and covers the count word and values.
+		n := int(binary.BigEndian.Uint16(b[2:4]))
+		if n < 2 || n > 64 || n%2 != 0 {
+			return -1
+		}
+		return n + 6
 	case 15, 16:
 		if request {
 			return count(6, 9)
@@ -141,7 +165,8 @@ func (d *rtuDirection) feed(data []byte, timestamp int64, role string, final boo
 			d.data[d.n], d.times[d.n] = data[index], timestamp
 			d.n++
 		}
-		for offset := d.scanned; offset+5 <= d.n; offset++ {
+		// Empty-request functions frame in four bytes: unit, function and CRC.
+		for offset := d.scanned; offset+4 <= d.n; offset++ {
 			buf := d.data[offset:d.n]
 			var msg *types.Modbus
 			length := 0
@@ -154,7 +179,7 @@ func (d *rtuDirection) feed(data []byte, timestamp int64, role string, final boo
 				if n == 0 || n > len(buf) {
 					incomplete = true
 				}
-				if n < 5 || n > len(buf) || crc16RTU(buf[:n-2]) != binary.LittleEndian.Uint16(buf[n-2:n]) {
+				if n < 4 || n > len(buf) || crc16RTU(buf[:n-2]) != binary.LittleEndian.Uint16(buf[n-2:n]) {
 					continue
 				}
 				p := parsePDU(buf[1:n-2], r)
@@ -217,13 +242,23 @@ func (m *modbusReader) frameRTU(emit func(*types.Modbus)) {
 		}
 	}
 	var dirs [2]rtuDirection
-	var stopped [2]bool
+	var stopped, started [2]bool
+	// loss holds the marker until the direction frames again, so one contiguous
+	// loss event yields exactly one record covering its whole extent.
+	var loss [2]lossEvent
+	var last [2]int64
 	var pending *pendingRequest
 	blocked := !oriented
 	lost := func() { pending = nil; blocked = true }
-	feed := func(f interface {
-		Direction() reassembly.TCPFlowDirection
-	}, final bool) {
+	recordLoss := func(i int, skipped int64, reason string) {
+		loss[i].add(skipped, last[i], reason)
+	}
+	flushLoss := func(i int) {
+		loss[i].flush(func(n, timestamp int64, reason string) {
+			emit(m.lostRecord("rtu_tcp", i == 1, timestamp, n, reason))
+		})
+	}
+	feed := func(f streamFragment, final bool) {
 		i := 0
 		if f.Direction() == reassembly.TCPDirServerToClient {
 			i = 1
@@ -232,19 +267,31 @@ func (m *modbusReader) frameRTU(emit func(*types.Modbus)) {
 		if stopped[i] {
 			return
 		}
+		if !final {
+			last[i] = fragmentTimestamp(f)
+		}
 		if !ok {
 			dirs[i].reset()
+			recordLoss(i, -1, "unusable fragment")
 			lost()
 			return
 		}
 		if s.SkippedBytes != 0 {
 			dirs[i].reset()
+			// An accepted initial-loss marker is the configured midstream start,
+			// not an interruption of an established direction.
+			if !(s.SkippedBytes == -1 && !started[i] && decoderconfig.Instance.AllowMissingInit) {
+				recordLoss(i, int64(s.SkippedBytes), "capture gap")
+			}
 			lost()
 			if s.SkippedBytes == -1 && !decoderconfig.Instance.AllowMissingInit {
+				// A stopped direction contributes no further gaps.
 				stopped[i] = true
+				flushLoss(i)
 				return
 			}
 		}
+		started[i] = true
 		role := "unknown"
 		if oriented {
 			role = "request"
@@ -252,18 +299,9 @@ func (m *modbusReader) frameRTU(emit func(*types.Modbus)) {
 				role = "response"
 			}
 		}
-		ts := s.CaptureInfo().Timestamp.UnixNano()
-		if s.Context() != nil {
-			ts = s.Context().GetCaptureInfo().Timestamp.UnixNano()
-		}
+		ts := last[i]
 		dirs[i].feed(s.Raw(), ts, role, final, func(msg *types.Modbus) {
-			msg.SrcIP, msg.DstIP = m.conversation.ClientIP, m.conversation.ServerIP
-			msg.SrcPort, msg.DstPort = int32(m.conversation.ClientPort), int32(m.conversation.ServerPort)
-			if i == 1 {
-				msg.SrcIP, msg.DstIP = msg.DstIP, msg.SrcIP
-				msg.SrcPort, msg.DstPort = msg.DstPort, msg.SrcPort
-			}
-			msg.CommunityID = m.conversation.CommunityID
+			m.attribute(msg, i == 1, msg.Timestamp)
 			if msg.Broadcast || msg.FunctionCode == 8 && msg.DiagnosticSubfunction == 4 {
 				msg.CorrelationStatus = "not_applicable"
 			} else if blocked || msg.MessageRole == "unknown" {
@@ -283,35 +321,25 @@ func (m *modbusReader) frameRTU(emit func(*types.Modbus)) {
 					pending = nil
 				}
 			}
+			flushLoss(i)
 			emit(msg)
-		}, lost)
+		}, func() {
+			// Bytes were dropped or skipped before a frame start; the CRC keeps
+			// the resumed framing honest, but the skipped bytes are lost.
+			recordLoss(i, 0, "unframed bytes discarded")
+			lost()
+		})
 	}
-	c, s := m.conversation.ClientData, m.conversation.ServerData
-	if c == nil && s == nil {
-		for _, f := range m.conversation.Data {
-			feed(f, false)
-		}
-	}
-	for len(c) > 0 || len(s) > 0 {
-		useClient := len(s) == 0
-		if len(c) > 0 && len(s) > 0 {
-			ct, st := c[0].CaptureInfo().Timestamp, s[0].CaptureInfo().Timestamp
-			if c[0].Context() != nil {
-				ct = c[0].Context().GetCaptureInfo().Timestamp
-			}
-			if s[0].Context() != nil {
-				st = s[0].Context().GetCaptureInfo().Timestamp
-			}
-			useClient = !st.Before(ct)
-		}
-		if useClient {
-			feed(c[0], false)
-			c = c[1:]
-		} else {
-			feed(s[0], false)
-			s = s[1:]
-		}
+	for _, f := range m.orderedFragments() {
+		feed(f, false)
 	}
 	feed(&core.StreamData{}, true)
 	feed(&core.StreamData{Dir: reassembly.TCPDirServerToClient}, true)
+	// Bytes the final scan could not frame are evidence that was not decoded.
+	for i := range dirs {
+		if dirs[i].n > 0 && !stopped[i] {
+			recordLoss(i, 0, "unframed trailing bytes")
+		}
+		flushLoss(i)
+	}
 }

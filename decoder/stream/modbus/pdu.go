@@ -185,6 +185,64 @@ func parsePDU(pdu []byte, role string) *types.Modbus {
 			m.Values = words(b[1:])
 			m.ReadQuantity = uint32(len(m.Values))
 		}
+	case 7, 11, 12, 17:
+		if request {
+			if len(b) != 0 {
+				return bad("request carries no data")
+			}
+			break
+		}
+		switch f {
+		case 7:
+			if len(b) != 1 {
+				return bad("exception status requires one status byte")
+			}
+			m.Values = []uint32{uint32(b[0])}
+		case 11:
+			if len(b) != 4 {
+				return bad("comm event counter requires status and event count")
+			}
+			if s := word(b); s != 0 && s != 0xffff {
+				return bad("comm event status must be 0000 or FFFF")
+			}
+			m.Values = words(b)
+		case 12:
+			// The byte count spans status, event count, message count and the events.
+			if len(b) < 7 || int(b[0]) != len(b)-1 {
+				return bad("invalid comm event log byte count")
+			}
+			if s := word(b[1:]); s != 0 && s != 0xffff {
+				return bad("comm event status must be 0000 or FFFF")
+			}
+			// Three header words, then Quantity single-byte events kept as raw codes.
+			m.Values, m.Quantity = words(b[1:7]), uint32(len(b)-7)
+			for _, e := range b[7:] {
+				m.Values = append(m.Values, uint32(e))
+			}
+		case 17:
+			// Content after the byte count is vendor defined: frame it, do not read it.
+			if len(b) < 2 || int(b[0]) != len(b)-1 {
+				return bad("invalid server ID byte count")
+			}
+			m.Quantity = uint32(b[0])
+		}
+	case 24:
+		if request {
+			if len(b) != 2 {
+				return bad("FIFO request requires a pointer address")
+			}
+			m.HasAddress, m.Address = true, word(b)
+			break
+		}
+		if len(b) < 4 {
+			return bad("short FIFO response")
+		}
+		// The byte count covers the FIFO count word and the queued registers.
+		count := word(b[2:])
+		if count > 31 || word(b) != 2*count+2 || len(b) != 4+2*int(count) {
+			return bad("invalid FIFO byte count")
+		}
+		m.Quantity, m.Values = count, words(b[4:])
 	case 8:
 		if len(b) < 4 || len(b)%2 != 0 {
 			return bad("diagnostic requires subfunction and word data")

@@ -66,11 +66,13 @@ S7CommPlus visibility fields `PayloadObscured` / `S7PlusOpcode` /
 
 The decoder parses the full PDU per function: request/response role, bank,
 zero-based wire addresses, quantities and values, FC8 diagnostics, FC43 MEI14
-device identification, FC20/21 file records, FC22 masks and exception codes. It
-correlates requests with responses inside a TCP connection and backfills a
-matched response's address range from its request. MBAP detection is
-port-independent; RTU framing over TCP is decoded only for endpoints named with
-`-modbus-rtu-endpoints`.
+device identification, FC20/21 file records, FC22 masks, the serial-oriented
+FC7/11/12/17 and FC24 replies, and exception codes. It correlates requests with
+responses inside a TCP connection and backfills a matched response's address
+range from its request. Data the decoder could not frame is reported as a
+`ParseStatus == "lost"` marker record carrying `LostBytes`, so coverage gaps are
+visible instead of silent. MBAP detection is port-independent; RTU framing over
+TCP is decoded only for endpoints named with `-modbus-rtu-endpoints`.
 
 See [Modbus Threat Hunting](modbus-threat-hunting.md) for the capture workflow,
 the write/diagnostic/enumeration hunts, `rules/examples/modbus_hunt.yml`, RTU
@@ -92,12 +94,13 @@ message Modbus {
 
     string Transport   = 14;    // "tcp" | "rtu_tcp"
     string MessageRole = 15;    // "request" | "response" | "unknown"
-    string ParseStatus = 16;    // "valid" | "malformed" | "unsupported"
+    string ParseStatus = 16;    // "valid" | "malformed" | "unsupported" | "lost"
     string ParseError  = 17;
     string Bank        = 18;    // coils | discrete_inputs | holding_registers | input_registers | file_records
 
     bool   HasAddress = 19; uint32 Address = 20; uint32 Quantity = 21;
-    repeated uint32 Values = 22;                          // FC1-6, 15, 16, 22; FC23 response reads
+    repeated uint32 Values = 22;                          // FC1-6, 15, 16, 22; FC23 response reads;
+                                                          // FC7/11/12 status words and FC24 queue
     bool   HasReadAddress  = 23; uint32 ReadAddress  = 24; uint32 ReadQuantity  = 25;
     bool   HasWriteAddress = 26; uint32 WriteAddress = 27; uint32 WriteQuantity = 28;
     repeated uint32 WriteValues = 29;                     // FC23 only
@@ -119,6 +122,9 @@ message Modbus {
     bool   HasMBAP = 47;            // MBAP header present
     bool   HasChecksum = 48; bool ChecksumValid = 49;     // RTU CRC16
     bool   Broadcast = 50;          // RTU unit-zero write, no response expected
+
+    int64  LostBytes = 51;          // ParseStatus "lost" markers only: gap size,
+                                    // -1 unknown extent, 0 framing became unusable
 }
 
 message ModbusDeviceIDObject { uint32 ID = 1; bytes Value = 2; }

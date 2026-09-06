@@ -22,6 +22,7 @@ package modbus
 import (
 	"sync/atomic"
 
+	"github.com/gopacket/gopacket"
 	"go.uber.org/zap"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
@@ -150,6 +151,88 @@ func (m *modbusReader) Decode() {
 	})
 }
 
+// streamFragment is the subset of the unexported core fragment interface the
+// framers need; it is restated here because core does not export it.
+type streamFragment interface {
+	Direction() reassembly.TCPFlowDirection
+	CaptureInfo() gopacket.CaptureInfo
+	Context() reassembly.AssemblerContext
+	Raw() []byte
+}
+
+// fragmentTimestamp prefers the assembler context, which carries the capture
+// time of the packet that closed a hole rather than of the fragment page.
+func fragmentTimestamp(f streamFragment) int64 {
+	if f.Context() != nil {
+		return f.Context().GetCaptureInfo().Timestamp.UnixNano()
+	}
+	return f.CaptureInfo().Timestamp.UnixNano()
+}
+
+// attribute stamps a record with the endpoints of the direction it came from.
+func (m *modbusReader) attribute(msg *types.Modbus, server bool, timestamp int64) {
+	msg.Timestamp, msg.CommunityID = timestamp, m.conversation.CommunityID
+	msg.SrcIP, msg.DstIP = m.conversation.ClientIP, m.conversation.ServerIP
+	msg.SrcPort, msg.DstPort = int32(m.conversation.ClientPort), int32(m.conversation.ServerPort)
+	if server {
+		msg.SrcIP, msg.DstIP = msg.DstIP, msg.SrcIP
+		msg.SrcPort, msg.DstPort = msg.DstPort, msg.SrcPort
+	}
+}
+
+// lossEvent buffers a capture-loss marker for as long as the loss stays open,
+// so that back to back gaps are reported once with the extent of the whole run
+// rather than of its first gap. A contributing gap of unknown extent makes the
+// total unknown.
+type lossEvent struct {
+	open      bool
+	unknown   bool
+	bytes     int64
+	timestamp int64
+	reason    string
+}
+
+// add opens the event on the first gap, keeping its timestamp and reason;
+// later gaps only extend it.
+func (l *lossEvent) add(skipped, timestamp int64, reason string) {
+	if !l.open {
+		*l = lossEvent{open: true, timestamp: timestamp, reason: reason}
+	}
+	if skipped < 0 {
+		l.unknown = true
+		return
+	}
+	l.bytes += skipped
+}
+
+// flush reports an open event and closes it. Callers flush when the direction
+// decodes again, when it stops and at the end of the stream, so that a marker
+// stays ordered ahead of the record that ended the loss.
+func (l *lossEvent) flush(emit func(lost, timestamp int64, reason string)) {
+	if !l.open {
+		return
+	}
+	lost, timestamp, reason := l.bytes, l.timestamp, l.reason
+	if l.unknown {
+		lost = -1
+	}
+	*l = lossEvent{}
+	emit(lost, timestamp, reason)
+}
+
+// lostRecord marks a direction that stopped producing evidence, so that an
+// empty result can be told apart from a truncated one. lost carries the bytes
+// reassembly reported missing over the whole loss event, -1 when that amount is
+// unknown and 0 when the framing rather than the capture became unusable.
+func (m *modbusReader) lostRecord(transport string, server bool, timestamp, lost int64, reason string) *types.Modbus {
+	msg := &types.Modbus{
+		Transport: transport, MessageRole: "unknown", ParseStatus: "lost", ParseError: reason,
+		CorrelationStatus: "not_applicable", LostBytes: lost,
+	}
+	m.attribute(msg, server, timestamp)
+	return msg
+}
+
 func (m *modbusReader) frameConversation(emit func(*types.Modbus)) {
 	if IsRTUConversation(m.conversation) {
 		m.frameRTU(emit)
@@ -173,36 +256,72 @@ func (m *modbusReader) frameConversation(emit func(*types.Modbus)) {
 		data      [mbapHeaderSize + maxPDUSize]byte
 		n         int
 		timestamp int64
+		last      int64
 		started   bool
 		stopped   bool
+		// resuming marks the first ADU after a gap as provisional: the resume
+		// point is an ADU boundary only if the gap happened to end on one, and
+		// an MBAP header is far too weak a signature to establish that alone.
+		resuming bool
+		// loss holds the marker until the loss ends, so one contiguous loss
+		// event yields exactly one record covering its whole extent.
+		loss lossEvent
 	}
-	var client, server directionState
-	feed := func(input interface {
-		Direction() reassembly.TCPFlowDirection
-	}) {
-		f := &client
+	var dirs [2]directionState
+	lose := func(i int, skipped int64, reason string) {
+		dirs[i].loss.add(skipped, dirs[i].last, reason)
+	}
+	flush := func(i int) {
+		dirs[i].loss.flush(func(lost, timestamp int64, reason string) {
+			emit(m.lostRecord("tcp", i == 1, timestamp, lost, reason))
+		})
+	}
+	// A stopped direction can contribute no further gaps, so its event is over.
+	stop := func(i int) {
+		dirs[i].stopped = true
+		flush(i)
+	}
+	feed := func(input streamFragment) {
+		i := 0
 		if input.Direction() == reassembly.TCPDirServerToClient {
-			f = &server
+			i = 1
 		}
-		// Without loss/status schema fields, emit only complete, contiguous ADUs.
-		// The fragment interface has no gap accessor; unknown metadata is unsafe.
-		fragment, ok := input.(*core.StreamData)
-		if !ok || (fragment.SkippedBytes != 0 && !(fragment.SkippedBytes == -1 && !f.started && decoderconfig.Instance.AllowMissingInit)) {
-			f.stopped = true
-			f.n = 0
-			// Lost requests may reuse a pending transaction ID.
-			clear(correlation.pending)
-			correlation.blocked = true
+		f := &dirs[i]
+		if f.stopped {
 			return
 		}
+		f.last = fragmentTimestamp(input)
+		fragment, ok := input.(*core.StreamData)
+		if !ok {
+			// Neither the missing byte count nor a frame start is known here.
+			f.n = 0
+			lose(i, -1, "unusable fragment")
+			correlation.lose(f.last)
+			stop(i)
+			return
+		}
+		if fragment.SkippedBytes == -1 && !f.started && decoderconfig.Instance.AllowMissingInit {
+			// A midstream start is as arbitrary as a post-gap resume point.
+			f.resuming = true
+		} else if fragment.SkippedBytes != 0 {
+			f.n = 0
+			lose(i, int64(fragment.SkippedBytes), "capture gap")
+			correlation.lose(f.last)
+			if fragment.SkippedBytes < 0 {
+				// An unknown amount of loss leaves no known frame start.
+				stop(i)
+				return
+			}
+			// Bounded resynchronisation: the first byte after the gap is the
+			// only resume point, and the ADU there stays provisional until it
+			// parses.
+			f.resuming = true
+		}
+		f.started = true
 		data := fragment.Raw()
 		for len(data) > 0 && !f.stopped {
-			f.started = true
 			if f.n == 0 {
-				f.timestamp = fragment.CaptureInfo().Timestamp.UnixNano()
-				if fragment.Context() != nil {
-					f.timestamp = fragment.Context().GetCaptureInfo().Timestamp.UnixNano()
-				}
+				f.timestamp = f.last
 			}
 			target := mbapHeaderSize + minPDUSize
 			if f.n >= target {
@@ -216,15 +335,16 @@ func (m *modbusReader) frameConversation(emit func(*types.Modbus)) {
 			}
 			if !m.isModbusHeader(f.data[:f.n]) {
 				// MBAP has no reliable sync marker; never scan a body for headers.
-				f.stopped = true
-				clear(correlation.pending)
-				correlation.blocked = true
+				f.n = 0
+				lose(i, 0, "invalid MBAP header")
+				correlation.lose(f.last)
+				stop(i)
 				continue
 			}
 			role := "unknown"
 			if oriented {
 				role = "request"
-				if f == &server {
+				if i == 1 {
 					role = "response"
 				}
 			}
@@ -232,47 +352,60 @@ func (m *modbusReader) frameConversation(emit func(*types.Modbus)) {
 			if consumed == 0 {
 				continue
 			}
-			msg.Timestamp = f.timestamp
-			msg.SrcIP, msg.DstIP = m.conversation.ClientIP, m.conversation.ServerIP
-			msg.SrcPort, msg.DstPort = int32(m.conversation.ClientPort), int32(m.conversation.ServerPort)
-			if f == &server {
-				msg.SrcIP, msg.DstIP = msg.DstIP, msg.SrcIP
-				msg.SrcPort, msg.DstPort = msg.DstPort, msg.SrcPort
+			if f.resuming {
+				// Protocol ID zero and a plausible length occur throughout
+				// ordinary register data, so only a parsable ADU shows the gap
+				// ended on a boundary. Anything else is fabricated evidence and
+				// must reach neither the output nor correlation.
+				if msg.ParseStatus != "valid" {
+					f.n = 0
+					lose(i, 0, "unparsable ADU after capture gap")
+					stop(i)
+					continue
+				}
+				f.resuming = false
 			}
-			msg.CommunityID = m.conversation.CommunityID
-			correlation.observe(msg, f == &server)
+			m.attribute(msg, i == 1, f.timestamp)
+			correlation.observe(msg, i == 1)
+			flush(i)
 			emit(msg)
 			f.n = 0
 		}
 	}
+	for _, fragment := range m.orderedFragments() {
+		feed(fragment)
+	}
+	// A direction ending inside an ADU stopped parsing; one ending on a frame
+	// boundary did not, and must stay silent.
+	for i := range dirs {
+		if dirs[i].n > 0 && !dirs[i].stopped {
+			lose(i, 0, "truncated ADU")
+		}
+		flush(i)
+	}
+}
+
+// orderedFragments interleaves the per-direction views, falling back to the
+// combined one. Like TLS, it merges heads without sorting either TCP sequence
+// by capture time, which would reorder bytes within a direction.
+func (m *modbusReader) orderedFragments() core.DataFragments {
 	c, s := m.conversation.ClientData, m.conversation.ServerData
 	if c == nil && s == nil {
-		for _, fragment := range m.conversation.Data {
-			feed(fragment)
-		}
-		return
+		return m.conversation.Data
 	}
-	// Like TLS, merge heads without sorting either TCP sequence by capture time.
+	ordered := make(core.DataFragments, 0, len(c)+len(s))
 	for len(c) > 0 || len(s) > 0 {
 		useClient := len(s) == 0
 		if len(c) > 0 && len(s) > 0 {
-			ct, st := c[0].CaptureInfo().Timestamp, s[0].CaptureInfo().Timestamp
-			if c[0].Context() != nil {
-				ct = c[0].Context().GetCaptureInfo().Timestamp
-			}
-			if s[0].Context() != nil {
-				st = s[0].Context().GetCaptureInfo().Timestamp
-			}
-			useClient = !st.Before(ct)
+			useClient = fragmentTimestamp(s[0]) >= fragmentTimestamp(c[0])
 		}
 		if useClient {
-			feed(c[0])
-			c = c[1:]
-		} else {
-			feed(s[0])
-			s = s[1:]
+			ordered, c = append(ordered, c[0]), c[1:]
+			continue
 		}
+		ordered, s = append(ordered, s[0]), s[1:]
 	}
+	return ordered
 }
 
 // isModbusHeader checks if the data starts with a valid Modbus MBAP header.

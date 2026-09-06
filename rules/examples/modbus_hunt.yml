@@ -46,6 +46,14 @@ rules:
     tags: [modbus, discovery]
     enabled: true
 
+  - name: Modbus Server Identification Request
+    description: FC17 Report Server ID request; the reply carries vendor-defined content that stays opaque in Payload. Asset inventory does this legitimately, so treat it as reconnaissance only against the baseline.
+    type: Modbus
+    expression: MessageRole == "request" && ParseStatus == "valid" && !Exception && FunctionCode == 17
+    severity: low
+    tags: [modbus, discovery]
+    enabled: true
+
   - name: Modbus Disruptive Diagnostic Request
     description: FC8 force-listen-only (4), clear counters (10), or restart communications (1) request; verify maintenance authorization and device behavior, not a PLC-stop claim.
     type: Modbus
@@ -133,6 +141,16 @@ rules:
     expression: ParseStatus in ["malformed", "unsupported"]
     severity: low
     tags: [modbus, visibility, triage]
+    enabled: true
+
+  # Coverage evidence, not an attack signal: without these markers an empty
+  # result cannot be distinguished from a direction that stopped decoding.
+  - name: Modbus Capture Loss
+    description: Decoding stopped or resumed after lost or unusable data; LostBytes reports the gap size, -1 when unknown. Treat every hunt over the affected conversation as incomplete.
+    type: Modbus
+    expression: ParseStatus == "lost"
+    severity: low
+    tags: [modbus, visibility, coverage]
     enabled: true
 
   - name: Modbus Request Baseline Collection

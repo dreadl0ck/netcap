@@ -1783,6 +1783,9 @@ message Modbus {
   bool HasChecksum = 48;               // RTU CRC16 is present; absent for MBAP TCP
   bool ChecksumValid = 49;
   bool Broadcast = 50;                 // RTU unit zero write, no response expected
+  // Set only on ParseStatus "lost" markers: bytes reassembly reported missing,
+  // -1 when the amount is unknown and 0 when framing itself became unusable.
+  int64 LostBytes = 51;
 }
 
 // Open Shortest Path First (OSPF) is a routing protocol for Internet Protocol (IP) networks.

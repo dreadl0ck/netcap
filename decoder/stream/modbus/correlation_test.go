@@ -87,6 +87,7 @@ func TestCorrelationContents(t *testing.T) {
 		{"1509060001000200011234", "1509060001000200011235", false},
 		{"2b0e0400", "2b0e0481000001000141", true},
 		{"2b0e0400", "2b0e0481000001010141", false},
+		{"180010", "18000600021234ffff", true},
 	} {
 		t.Run(tt.request+"/"+tt.response, func(t *testing.T) {
 			c := tcpCorrelation{pending: make(map[int32]pendingRequest)}
@@ -112,6 +113,12 @@ func TestCorrelationContents(t *testing.T) {
 					}
 				case 20:
 					if m.FileRecords[0].FileNumber != 1 || m.FileRecords[0].RecordNumber != 2 {
+						t.Fatal(m)
+					}
+				case 24:
+					// The FIFO pointer comes from the request, the queue from
+					// the response.
+					if !m.HasAddress || m.Address != 16 || m.Quantity != 2 || len(m.Values) != 2 {
 						t.Fatal(m)
 					}
 				}
@@ -209,12 +216,39 @@ func TestPendingRequestDropsBulkValues(t *testing.T) {
 
 func TestGapPreventsCorrelation(t *testing.T) {
 	m := reader(t)
+	request, response := wire(1, 3, 0, 10, 0, 1), wire(1, 3, 2, 0, 42)
 	gap := fragment(nil, 150, false)
 	gap.SkippedBytes = 12
-	m.conversation.ClientData = core.DataFragments{fragment(wire(1, 3, 0, 10, 0, 1), 100, false), gap}
-	m.conversation.ServerData = core.DataFragments{fragment(wire(1, 3, 2, 0, 42), 200, true)}
+	m.conversation.ClientData = core.DataFragments{fragment(request, 100, false), gap}
+	m.conversation.ServerData = core.DataFragments{fragment(response, 200, true)}
 	got := records(m)
-	if len(got) != 2 || got[1].CorrelationStatus != "ambiguous" || got[1].HasAddress || got[1].RequestTimestamp != 0 {
+	// The gap may hide the real response, so the request is no longer evidence.
+	// The client direction never resumed, so its marker reports at the end of
+	// the conversation, carrying the timestamp of the gap.
+	if len(got) != 3 || !isLoss(got[2], 12, "tcp") || got[2].Timestamp != 150 ||
+		got[1].CorrelationStatus != "ambiguous" || got[1].HasAddress || got[1].RequestTimestamp != 0 {
+		t.Fatal(got)
+	}
+	// A request destroyed inside the gap was never observed, so its transaction
+	// ID is unmarked and a response to it would be credited to the post-gap
+	// request reusing that ID.
+	m = reader(t)
+	m.conversation.TCPHandshakeComplete = true
+	m.conversation.ClientData = core.DataFragments{gap, fragment(request, 300, false)}
+	m.conversation.ServerData = core.DataFragments{fragment(response, 400, true)}
+	got = records(m)
+	if len(got) != 3 || !isLoss(got[0], 12, "tcp") || got[1].MessageRole != "request" ||
+		got[2].CorrelationStatus != "ambiguous" || got[2].HasAddress || got[2].RequestTimestamp != 0 {
+		t.Fatal(got)
+	}
+	// Once such a request would have timed out, correlation resumes.
+	m = reader(t)
+	m.conversation.TCPHandshakeComplete = true
+	late := requestTimeout + 200
+	m.conversation.ClientData = core.DataFragments{gap, fragment(request, late, false)}
+	m.conversation.ServerData = core.DataFragments{fragment(response, late+100, true)}
+	got = records(m)
+	if len(got) != 3 || !isLoss(got[0], 12, "tcp") || got[2].CorrelationStatus != "matched" || got[2].Address != 10 {
 		t.Fatal(got)
 	}
 }

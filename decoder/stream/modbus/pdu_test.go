@@ -3,6 +3,7 @@ package modbus
 import (
 	"encoding/hex"
 	"slices"
+	"strings"
 	"testing"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
@@ -67,8 +68,59 @@ func TestPDUSemantics(t *testing.T) {
 		{"device response", "2b0e0181ff0302000141010142", "response", "", func(m *types.Modbus) bool {
 			return m.DeviceIDConformityLevel == 129 && m.DeviceIDMoreFollows && m.DeviceIDNextObjectID == 3 && len(m.DeviceIDObjects) == 2 && string(m.DeviceIDObjects[1].Value) == "B"
 		}},
+		{"exception status request", "07", "request", "", func(m *types.Modbus) bool {
+			return !m.HasAddress && m.Quantity == 0 && len(m.Values) == 0
+		}},
+		{"exception status response", "0755", "response", "", func(m *types.Modbus) bool {
+			return !m.HasAddress && slices.Equal(m.Values, []uint32{0x55})
+		}},
+		{"event counter request", "0b", "request", "", func(m *types.Modbus) bool { return len(m.Values) == 0 }},
+		{"event counter response", "0b0000ffff", "response", "", func(m *types.Modbus) bool {
+			return slices.Equal(m.Values, []uint32{0, 65535})
+		}},
+		{"event counter busy response", "0bffff0108", "response", "", func(m *types.Modbus) bool {
+			return slices.Equal(m.Values, []uint32{65535, 0x0108})
+		}},
+		{"event log request", "0c", "request", "", func(m *types.Modbus) bool { return m.Quantity == 0 && len(m.Values) == 0 }},
+		{"event log response", "0c08000001080121ff00", "response", "", func(m *types.Modbus) bool {
+			return m.Quantity == 2 && slices.Equal(m.Values, []uint32{0, 0x0108, 0x0121, 0xff, 0})
+		}},
+		{"event log response without events", "0c06ffff00000000", "response", "", func(m *types.Modbus) bool {
+			return m.Quantity == 0 && slices.Equal(m.Values, []uint32{65535, 0, 0})
+		}},
+		{"server id response", "1103ff00aa", "response", "", func(m *types.Modbus) bool {
+			return m.Quantity == 3 && len(m.Values) == 0 && !m.HasAddress
+		}},
+		{"server id minimal response", "110111", "response", "", func(m *types.Modbus) bool { return m.Quantity == 1 }},
+		{"fifo request", "180010", "request", "", func(m *types.Modbus) bool {
+			return m.HasAddress && m.Address == 16 && m.Quantity == 0 && len(m.Values) == 0
+		}},
+		{"fifo response", "18000600021234ffff", "response", "", func(m *types.Modbus) bool {
+			return !m.HasAddress && m.Quantity == 2 && slices.Equal(m.Values, []uint32{0x1234, 65535})
+		}},
+		{"fifo empty response", "1800020000", "response", "", func(m *types.Modbus) bool {
+			return m.Quantity == 0 && len(m.Values) == 0
+		}},
+		{"fifo full response", "18" + "0040" + "001f" + strings.Repeat("0001", 31), "response", "", func(m *types.Modbus) bool {
+			return m.Quantity == 31 && len(m.Values) == 31 && m.Values[30] == 1
+		}},
 		{"exception", "8302", "unknown", "holding_registers", func(m *types.Modbus) bool {
 			return m.MessageRole == "response" && m.Exception && m.ExceptionCode == 2 && m.FunctionCode == 3
+		}},
+		{"exception status exception", "8704", "unknown", "", func(m *types.Modbus) bool {
+			return m.MessageRole == "response" && m.Exception && m.FunctionCode == 7 && m.ExceptionCode == 4
+		}},
+		{"event counter exception", "8b01", "response", "", func(m *types.Modbus) bool {
+			return m.Exception && m.FunctionCode == 11 && m.ExceptionCode == 1
+		}},
+		{"event log exception", "8c01", "response", "", func(m *types.Modbus) bool {
+			return m.Exception && m.FunctionCode == 12 && m.ExceptionCode == 1
+		}},
+		{"server id exception", "9101", "unknown", "", func(m *types.Modbus) bool {
+			return m.MessageRole == "response" && m.Exception && m.FunctionCode == 17 && m.ExceptionCode == 1
+		}},
+		{"fifo exception", "9802", "unknown", "", func(m *types.Modbus) bool {
+			return m.MessageRole == "response" && m.Exception && m.FunctionCode == 24 && m.ExceptionCode == 2
 		}},
 		{"ambiguous read shape", "0103000001", "unknown", "coils", func(m *types.Modbus) bool { return m.MessageRole == "unknown" && !m.HasAddress && len(m.Values) == 0 }},
 	} {
@@ -100,6 +152,18 @@ func TestPDUMalformed(t *testing.T) {
 		{"2b0e0100000000", "response"}, {"2b0e0101010000", "response"},
 		{"2b0e0101000001000241", "response"}, {"2b0e010100000000", "response"},
 		{"2b0e0401000000", "response"}, {"8300", "response"}, {"830200", "response"}, {"8302", "request"},
+		{"0700", "request"}, {"07", "response"}, {"075500", "response"},
+		{"0b00", "request"}, {"0b000000", "response"}, {"0b0000000000", "response"},
+		{"0b00010000", "response"}, {"0bfffe0000", "response"},
+		{"0c00", "request"}, {"0c060000000000", "response"}, {"0c0800000000000020", "response"},
+		{"0c06000100000000", "response"}, {"0c07ffff000000002000", "response"},
+		{"1100", "request"}, {"11", "response"}, {"1100", "response"},
+		{"1102ff", "response"}, {"1101ffaa", "response"},
+		{"18", "request"}, {"1800", "request"}, {"18001000", "request"},
+		{"180006", "response"}, {"18000400021234ffff", "response"},
+		{"18000600021234", "response"}, {"180006000212340000ffff", "response"},
+		{"18" + "0042" + "0020" + strings.Repeat("0001", 32), "response"},
+		{"87", "response"}, {"8b", "response"}, {"9800", "response"}, {"9801", "request"},
 	} {
 		t.Run(tt.pdu+tt.role, func(t *testing.T) {
 			m := parsePDU(pduBytes(t, tt.pdu), tt.role)
@@ -108,9 +172,34 @@ func TestPDUMalformed(t *testing.T) {
 			}
 		})
 	}
-	for _, pdu := range []string{"07", "180001", "410102", "2b0d0102"} {
+	for _, pdu := range []string{"09", "0a01", "0d0102", "410102", "2b0d0102"} {
 		if m := parsePDU(pduBytes(t, pdu), "unknown"); m.ParseStatus != "unsupported" {
 			t.Fatalf("unsupported: %+v", m)
+		}
+	}
+}
+
+// TestPDURoleInference pins the orientation of the function codes whose request
+// and response layouts never share a length, in contrast to FC1-4/20.
+func TestPDURoleInference(t *testing.T) {
+	for _, tt := range []struct{ pdu, role string }{
+		{"07", "request"}, {"0755", "response"},
+		{"0b", "request"}, {"0b0000ffff", "response"},
+		{"0c", "request"}, {"0c06ffff00000000", "response"},
+		{"11", "request"}, {"1102ff00", "response"},
+		{"180010", "request"}, {"1800020000", "response"}, {"18000600021234ffff", "response"},
+	} {
+		t.Run(tt.pdu, func(t *testing.T) {
+			m := parsePDU(pduBytes(t, tt.pdu), "unknown")
+			if m.ParseStatus != "valid" || m.MessageRole != tt.role {
+				t.Fatalf("unexpected role: %+v", m)
+			}
+		})
+	}
+	// Both layouts fit these bytes, so the orientation stays unresolved.
+	for _, pdu := range []string{"0103000001", "0203000001", "150b060001000200021234ffff"} {
+		if m := parsePDU(pduBytes(t, pdu), "unknown"); m.ParseStatus != "valid" || m.MessageRole != "unknown" {
+			t.Fatalf("expected ambiguity: %+v", m)
 		}
 	}
 }
@@ -146,7 +235,8 @@ func TestStructuredPayloadDisabledAndRoles(t *testing.T) {
 }
 
 func FuzzParsePDU(f *testing.F) {
-	for _, b := range [][]byte{{3, 0, 0, 0, 1}, {0x83, 2}, {20, 7, 6, 0, 1, 0, 0, 0, 1}, {43, 14, 1, 1, 0, 0, 0}} {
+	for _, b := range [][]byte{{3, 0, 0, 0, 1}, {0x83, 2}, {20, 7, 6, 0, 1, 0, 0, 0, 1}, {43, 14, 1, 1, 0, 0, 0},
+		{7, 0x55}, {11, 0, 0, 1, 8}, {12, 8, 0, 0, 1, 8, 1, 33, 32, 0}, {17, 3, 255, 0, 170}, {24, 0, 6, 0, 2, 18, 52, 255, 255}} {
 		f.Add(b)
 	}
 	f.Fuzz(func(t *testing.T, b []byte) {

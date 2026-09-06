@@ -38,6 +38,11 @@ func TestRTULayoutsAndSplits(t *testing.T) {
 		{"160010ff0000ff", "request"}, {"160010ff0000ff", "response"},
 		{"170010000200200001021234", "request"}, {"17040001ffff", "response"},
 		{"2b0e0400", "request"}, {"2b0e0181ff0302000141010142", "response"}, {"8302", "response"},
+		{"07", "request"}, {"07ff", "response"},
+		{"0b", "request"}, {"0bffff0009", "response"},
+		{"0c", "request"}, {"0c07ffff0009000420", "response"},
+		{"11", "request"}, {"1103fe0102", "response"},
+		{"180010", "request"}, {"18000600021234ffff", "response"},
 	} {
 		t.Run(tt.pdu+tt.role, func(t *testing.T) {
 			m := reader(t)
@@ -72,7 +77,9 @@ func TestRTURecovery(t *testing.T) {
 	for _, prefix := range [][]byte{bad, bytes.Repeat([]byte{255}, 10000), {1, 3, 250}, rtuWire(248, 3, 0, 0, 0, 10), rtuWire(1, 43, 13, 1, 1), rtuWire(1, 8, 0, 0, 1, 2, 3, 4)} {
 		m.conversation.Data = core.DataFragments{fragment(append(bytes.Clone(prefix), a...), 1, false)}
 		got := records(m)
-		if len(got) != 1 || got[0].CorrelationStatus != "ambiguous" {
+		// However many bytes the scan discards, one contiguous loss event is
+		// reported once, ahead of the frame it recovered.
+		if len(got) != 2 || !isLoss(got[0], 0, "rtu_tcp") || got[1].CorrelationStatus != "ambiguous" {
 			t.Fatalf("prefix %x: %v", prefix[:min(12, len(prefix))], got)
 		}
 	}
@@ -80,8 +87,60 @@ func TestRTURecovery(t *testing.T) {
 	second.SkippedBytes = 3
 	m.conversation.Data = core.DataFragments{first, second, fragment(a, 3, false)}
 	got := records(m)
-	if len(got) != 1 || got[0].Timestamp != 3 {
+	if len(got) != 2 || !isLoss(got[0], 3, "rtu_tcp") || got[0].Timestamp != 2 || got[1].Timestamp != 3 {
 		t.Fatalf("crossed gap: %v", got)
+	}
+}
+
+func TestRTUGapLossAndResume(t *testing.T) {
+	m := reader(t)
+	m.conversation.TCPHandshakeComplete = true
+	decoderconfig.Instance.ModbusRTUEndpoints = "192.0.2.2:502"
+	request, response := rtuWire(1, 3, 0, 0, 0, 2), rtuWire(1, 3, 4, 0, 1, 0, 2)
+	gap := fragment(nil, 20, false)
+	gap.SkippedBytes = 9
+	m.conversation.ClientData = core.DataFragments{fragment(request[:4], 10, false), gap, fragment(request, 30, false)}
+	m.conversation.ServerData = core.DataFragments{fragment(response, 40, true)}
+	got := records(m)
+	if len(got) != 3 || countLoss(got) != 1 {
+		t.Fatalf("got %v", got)
+	}
+	if !isLoss(got[0], 9, "rtu_tcp") || got[0].Timestamp != 20 || got[0].SrcIP != "192.0.2.1" {
+		t.Fatalf("gap marker: %v", got[0])
+	}
+	// The truncated frame is dropped, the frame after the gap decodes, and the
+	// opposite direction is unaffected.
+	if got[1].MessageRole != "request" || got[1].Timestamp != 30 || got[2].MessageRole != "response" {
+		t.Fatalf("resumed frames: %v", got)
+	}
+	// RTU pairs requests and responses positionally rather than by transaction
+	// ID, so a loss leaves every later pairing ambiguous.
+	if got[2].CorrelationStatus != "ambiguous" {
+		t.Fatalf("correlation across loss: %v", got)
+	}
+}
+
+// Back to back gaps are one loss event reporting the extent of the whole run.
+func TestRTUSummedLossExtent(t *testing.T) {
+	m := reader(t)
+	m.conversation.TCPHandshakeComplete = true
+	decoderconfig.Instance.ModbusRTUEndpoints = "192.0.2.2:502"
+	a := rtuWire(1, 3, 0, 0, 0, 10)
+	first, second := fragment(nil, 10, false), fragment(nil, 20, false)
+	first.SkippedBytes, second.SkippedBytes = 5, 7
+	m.conversation.ClientData = core.DataFragments{first, second, fragment(a, 30, false)}
+	got := records(m)
+	if len(got) != 2 || !isLoss(got[0], 12, "rtu_tcp") || got[0].Timestamp != 10 || got[1].Timestamp != 30 {
+		t.Fatalf("summed extent: %v", got)
+	}
+	// A contributing gap of unknown extent makes the whole event unknown.
+	decoderconfig.Instance.AllowMissingInit = true
+	unknown := fragment(nil, 15, false)
+	unknown.SkippedBytes = -1
+	m.conversation.ClientData = core.DataFragments{first, unknown, second, fragment(a, 30, false)}
+	got = records(m)
+	if len(got) != 2 || !isLoss(got[0], -1, "rtu_tcp") || got[0].Timestamp != 10 {
+		t.Fatalf("unknown extent: %v", got)
 	}
 }
 
@@ -97,8 +156,11 @@ func TestRTUBroadcastAndCorrelation(t *testing.T) {
 	if len(got) != 3 || !got[0].Broadcast || got[0].MessageRole != "request" || got[0].CorrelationStatus != "not_applicable" || got[2].CorrelationStatus != "matched" || got[2].RequestTimestamp != 2 || got[2].ResponseLatency != 1 {
 		t.Fatalf("correlation: %v", got)
 	}
+	// Neither direction frames unit zero here, so both report unusable bytes.
 	m.conversation.Data = core.DataFragments{fragment(rtuWire(0, 3, 0, 1, 0, 1), 1, false), fragment(b, 2, true)}
-	if got := records(m); len(got) != 0 {
+	got = records(m)
+	if len(got) != 2 || !isLoss(got[0], 0, "rtu_tcp") || !isLoss(got[1], 0, "rtu_tcp") ||
+		got[0].SrcIP != "192.0.2.1" || got[1].SrcIP != "192.0.2.2" {
 		t.Fatalf("invalid unit zero: %v", got)
 	}
 	m.conversation.Data = core.DataFragments{fragment(a, 1, false), fragment(a, 2, false), fragment(r, 3, true)}
@@ -114,7 +176,8 @@ func TestRTUBroadcastAndCorrelation(t *testing.T) {
 		t.Fatalf("midstream echo: %v", got)
 	}
 	decoderconfig.Instance.AllowMissingInit = false
-	if got := records(m); len(got) != 0 {
+	// A rejected initial-loss marker now says why the direction stays silent.
+	if got := records(m); len(got) != 1 || !isLoss(got[0], -1, "rtu_tcp") || got[0].Timestamp != 1 {
 		t.Fatalf("missing init disabled: %v", got)
 	}
 }
@@ -133,9 +196,10 @@ func TestRTUBroadcastDiagnostics(t *testing.T) {
 			t.Fatalf("subfunction %d: %v", sub, got)
 		}
 	}
-	// Return Query Data has no determined length and is not a broadcast.
+	// Return Query Data has no determined length and is not a broadcast, so the
+	// bytes are reported as unframed rather than guessed at.
 	m.conversation.Data = core.DataFragments{fragment(rtuWire(0, 8, 0, 0, 0, 0), 1, false)}
-	if got := records(m); len(got) != 0 {
+	if got := records(m); len(got) != 1 || !isLoss(got[0], 0, "rtu_tcp") {
 		t.Fatalf("broadcast query data: %v", got)
 	}
 }
