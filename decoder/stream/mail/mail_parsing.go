@@ -22,9 +22,10 @@ package mail
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"io"
-	"log"
 	"net/textproto"
 	"strconv"
 	"strings"
@@ -32,8 +33,6 @@ import (
 
 	"github.com/araddon/dateparse"
 	"go.uber.org/zap"
-
-	"github.com/dreadl0ck/netcap/internal/cryptoutils"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
@@ -95,13 +94,16 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 	}
 }
 
-func newMailID() string {
-	s, err := cryptoutils.RandomString(20)
-	if err != nil {
-		log.Fatal(err)
-	}
+// newMailID derives a stable identifier from the conversation and the mail
+// itself. A random value would be unique too, but it made every capture of
+// the same input produce different Mail.ID and SMTP/POP3 MailIDs values.
+func newMailID(ident string, buf []byte) string {
+	h := sha256.New()
+	h.Write([]byte(ident))
+	h.Write([]byte{0})
+	h.Write(buf)
 
-	return s
+	return hex.EncodeToString(h.Sum(nil))[:20]
 }
 
 // Parse attempts to read a mail from the conversation.
@@ -148,7 +150,7 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 		ContentType:     hdr["Content-Type"],
 		EnvelopeTo:      hdr["Envelope-To"],
 		Body:            parseMailParts(conv, body, logger),
-		ID:              newMailID(),
+		ID:              newMailID(conv.Ident, buf),
 		Origin:          origin,
 		CommunityID:     conv.CommunityID,
 	}

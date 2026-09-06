@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"sort"
 	"sync"
 	"time"
 )
@@ -140,6 +141,21 @@ func (p *StreamPool) connections(dst []*connection) []*connection {
 	p.mu.RUnlock()
 
 	return conns
+}
+
+// sortConnections orders a snapshot so that flushing it produces the audit
+// records in a reproducible order. The pool is a map, so the snapshot order
+// would otherwise vary between runs. Only used on teardown paths, where the
+// allocations are irrelevant, unlike connections itself.
+func sortConnections(conns []*connection) {
+	sort.Slice(conns, func(i, j int) bool {
+		a, b := conns[i], conns[j]
+		if a.key == nil || b.key == nil {
+			return b.key != nil
+		}
+
+		return a.key.String() < b.key.String()
+	})
 }
 
 func (p *StreamPool) newConnection(k *key, s Stream, ts time.Time) (c *connection, h *halfconnection, r *halfconnection) {

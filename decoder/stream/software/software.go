@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -129,7 +130,16 @@ var Decoder = &decoder.AbstractDecoder{
 
 		// flush writer
 		var err error
-		for _, item := range Store.Items {
+
+		// stable output order: Store.Items is a map
+		idents := make([]string, 0, len(Store.Items))
+		for ident := range Store.Items {
+			idents = append(idents, ident)
+		}
+		sort.Strings(idents)
+
+		for _, ident := range idents {
+			item := Store.Items[ident]
 			item.Lock()
 
 			// Enhance software record with detection context and behavioral fields
@@ -492,6 +502,9 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 				productOrder = append(productOrder, product)
 			}
 		}
+		// Both sources are maps and the first match can end the scan, so the
+		// reported product would otherwise change between runs.
+		sort.Strings(productOrder)
 
 		// for all items in the CMS db (or the prefiltered subset)
 		for _, product := range productOrder {
@@ -500,8 +513,15 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 				continue
 			}
 
-			// compare the known headers
-			for headerName, re := range info.Headers {
+			// compare the known headers, in a stable order
+			headerNames := make([]string, 0, len(info.Headers))
+			for headerName := range info.Headers {
+				headerNames = append(headerNames, headerName)
+			}
+			sort.Strings(headerNames)
+
+			for _, headerName := range headerNames {
+				re := info.Headers[headerName]
 
 				matchesHeader := func() bool {
 					// to each of the headers from the current response
@@ -543,8 +563,15 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 				}
 			}
 
-			// compare known cookies
-			for cookieName, re := range info.Cookies {
+			// compare known cookies, in a stable order
+			cookieNames := make([]string, 0, len(info.Cookies))
+			for cookieName := range info.Cookies {
+				cookieNames = append(cookieNames, cookieName)
+			}
+			sort.Strings(cookieNames)
+
+			for _, cookieName := range cookieNames {
+				re := info.Cookies[cookieName]
 				matchesCookie := func() bool {
 					// to each of the cookies from the current response
 					for _, receivedCookie := range serverCookies {
