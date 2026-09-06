@@ -115,7 +115,16 @@ func canDecodeModbus(data []byte) bool {
 		return false
 	}
 
-	return true
+	// A plausible MBAP header is not enough on its own: other protocols carry
+	// bytes that satisfy it, and claiming their traffic as Modbus produces
+	// records an analyst has to disprove. Require one complete ADU whose PDU
+	// actually decodes before adopting the conversation.
+	total := 6 + int(length)
+	if len(data) < total {
+		return false
+	}
+
+	return parsePDU(data[mbapHeaderSize:total], "unknown").ParseStatus == "valid"
 }
 
 // isValidFunctionCode checks if the function code is a known Modbus function.

@@ -21,11 +21,13 @@ net dump -read modbus-hunt/Modbus.ncap.gz -fields     # exact field list for thi
 ```
 
 `Modbus` is the TCP stream decoder and the audit-record name. TCP/502 is
-conventional, not required: the MBAP signature (`ProtocolID == 0`, sane length,
-known function code) supports port-independent detection. Do not restrict
-collection to port 502 if nonstandard-port use is in scope. Signature detection
-is not a completeness guarantee; missing bytes, partial captures and unsupported
-traffic leave gaps. No records does not prove no Modbus activity.
+conventional, not required: detection is content based, so nonstandard ports are
+covered. A conversation is only adopted once one complete ADU decodes, because
+an MBAP header alone is a weak signature — LDAP's BER framing satisfies every
+field of it. The cost is that a conversation whose first complete ADU never
+arrives is not claimed. Detection is not a completeness guarantee; missing bytes,
+partial captures and unsupported traffic leave gaps. No records does not prove
+no Modbus activity.
 
 The decoder frames each TCP direction independently and timestamps an ADU from
 its first captured byte. With `-allowmissinginit=true` (the default), an unknown
