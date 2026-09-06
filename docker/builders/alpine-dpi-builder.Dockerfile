@@ -1,7 +1,8 @@
 # Base Alpine builder image for netcap musl builds with DPI support
 # This image contains all build dependencies including nDPI and libprotoident
 ARG TARGETPLATFORM=linux/amd64
-FROM --platform=$TARGETPLATFORM golang:1.27.0-alpine
+# Floating minor tag: rebuilds pick up 1.27.x patch releases automatically.
+FROM --platform=$TARGETPLATFORM golang:1.27-alpine
 
 # Install all build dependencies
 RUN apk update && \

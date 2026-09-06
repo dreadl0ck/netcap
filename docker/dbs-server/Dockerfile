@@ -2,7 +2,8 @@
 # Lightweight container for running the database rebuild service
 
 # Build stage
-FROM golang:1.27.0-alpine AS builder
+# Floating minor tag: rebuilds pick up 1.27.x patch releases automatically.
+FROM golang:1.27-alpine AS builder
 
 # Install build dependencies (minimal set for nodpi build)
 # protobuf/protobuf-dev are required because types/netcap.pb.go is no longer
