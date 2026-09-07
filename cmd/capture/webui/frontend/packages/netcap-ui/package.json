@@ -83,7 +83,7 @@
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
+    "@types/react-dom": "^19.2.7",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "react-router": "^7.18.3"
