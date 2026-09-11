@@ -73,7 +73,7 @@ import useSWR from 'swr';
 
 import { useNetcapRouter } from '../hooks/useNetcapRouter';
 import { useNetcapApi } from '../hooks/useNetcapApi';
-import { useNetcapLink } from '../providers/NetcapProvider';
+import { useNetcapConfig, useNetcapLink, type NavigationItem } from '../providers/NetcapProvider';
 import LearnModeToggle from './LearnModeToggle';
 import LearnModeOverlay from './LearnModeOverlay';
 import CommunityIDFilterBar from './CommunityIDFilterBar';
@@ -151,6 +151,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const Link = useNetcapLink();
+  const { navigationItems = [] } = useNetcapConfig();
   
   // Get community ID filter state
   const { selectedCommunityIDs, isFilterActive } = useCommunityIDFilter();
@@ -275,6 +276,21 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
     md: '88px',
   };
 
+  const renderNavigationItems = (placement: NavigationItem['placement']) => navigationItems
+    .filter(item => (item.placement ?? 'main') === placement)
+    .map(item => (
+      <Link key={item.path} href={item.path} passHref style={LINK_STYLE}>
+        <ListItemButton
+          selected={router.isActive(item.path)}
+          data-learn={item.description}
+          sx={SELECTED_MENU_ITEM_SX}
+        >
+          <ListItemIcon>{item.icon}</ListItemIcon>
+          <ListItemText primary={item.label} />
+        </ListItemButton>
+      </Link>
+    ));
+
   const drawer = (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Toolbar
@@ -339,6 +355,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             <ListItemText primary="PCAPs" />
           </ListItemButton>
         </Link>
+        {renderNavigationItems('main')}
         <ListItemButton
           onClick={() => setDataMenuOpen(!dataMenuOpen)}
           data-learn="Data: Access network traffic data including audit records, visualizations, hosts, devices, connections, and more."
@@ -745,6 +762,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             <ListItemText primary="Config" />
           </ListItemButton>
         </Link>
+        {renderNavigationItems('settings')}
       </List>
       {version && (
         <Box sx={VERSION_BOX_SX}>
@@ -902,5 +920,4 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
 }
 
 export default Layout;
-
 

@@ -66,6 +66,14 @@ export type LinkComponent = React.ComponentType<LinkProps>;
  */
 export type PartialApi = Partial<typeof import('../lib/api').api>;
 
+export interface NavigationItem {
+  path: string;
+  label: string;
+  icon: ReactNode;
+  description?: string;
+  placement?: 'main' | 'settings';
+}
+
 /**
  * Main configuration for NetcapProvider
  */
@@ -87,6 +95,9 @@ export interface NetcapConfig {
   
   /** Optional: Enable debug logging */
   debug?: boolean;
+
+  /** Optional: Application-specific sidebar entries */
+  navigationItems?: NavigationItem[];
 }
 
 /**
@@ -285,4 +296,3 @@ export function useIsSSR(): boolean {
 }
 
 export default NetcapProvider;
-
