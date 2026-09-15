@@ -636,6 +636,11 @@ func GetFlags() []cli.Flag {
 			Usage:   "directory for service mode uploads and results (default: auto-detect)",
 			Sources: cli.EnvVars("NC_SERVICE_DATA_DIR"),
 		},
+		&cli.StringFlag{
+			Name:    "service-preload-dir",
+			Usage:   "directory containing PCAPs to preload (default: <service-data-dir>/pcaps)",
+			Sources: cli.EnvVars("NC_SERVICE_PRELOAD_DIR"),
+		},
 		&cli.Int64Flag{
 			Name:    "service-max-file-size",
 			Value:   100 * 1024 * 1024,

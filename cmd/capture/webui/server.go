@@ -327,7 +327,10 @@ func (s *Server) loadPreloadedPcaps() {
 		return
 	}
 
-	pcapsDir := filepath.Join(s.serviceConfig.DataDir, "pcaps")
+	pcapsDir := s.serviceConfig.PreloadDir
+	if pcapsDir == "" {
+		pcapsDir = filepath.Join(s.serviceConfig.DataDir, "pcaps")
+	}
 
 	// Check if pcaps directory exists
 	if _, err := os.Stat(pcapsDir); os.IsNotExist(err) {

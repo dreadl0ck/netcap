@@ -24,14 +24,28 @@ import (
 	echartstypes "github.com/go-echarts/go-echarts/v2/types"
 )
 
+var netcapChartColors = []string{
+	"#3b82f6",
+	"#8b5cf6",
+	"#38bdf8",
+	"#a78bfa",
+	"#34d399",
+	"#fbbf24",
+}
+
+const netcapWordCloudColor = `function () {
+	var colors = ['#3b82f6', '#8b5cf6', '#38bdf8', '#a78bfa', '#34d399', '#fbbf24'];
+	return colors[Math.floor(Math.random() * colors.length)];
+}`
+
 // getDefaultChartInit returns default initialization options for all charts
 // with local assets host configuration to avoid loading from external CDN
 func getDefaultChartInit() opts.Initialization {
 	return opts.Initialization{
 		Width:           "100%",
 		Height:          "100%",
-		Theme:           echartstypes.ThemeMacarons,
-		BackgroundColor: "#1e1e1e",
+		Theme:           echartstypes.ThemeWesteros,
+		BackgroundColor: "#050508",
 		AssetsHost:      "/static/echarts/", // Serve from local backend
 	}
 }
@@ -42,7 +56,7 @@ func getDefaultChartInitWithTheme(theme string) opts.Initialization {
 		Width:           "100%",
 		Height:          "100%",
 		Theme:           theme,
-		BackgroundColor: "#1e1e1e",
+		BackgroundColor: "#050508",
 		AssetsHost:      "/static/echarts/", // Serve from local backend
 	}
 }

@@ -25,11 +25,11 @@ importers:
       '@emotion/styled':
         specifier: ^11.14.1
         version: 11.14.1(@emotion/react@11.14.0(@types/react@19.2.18)(react@19.2.8))(@types/react@19.2.18)(react@19.2.8)
-      '@fontsource/roboto':
-        specifier: ^5.3.0
+      '@fontsource/jetbrains-mono':
+        specifier: ^5.2.8
         version: 5.3.0
-      '@fontsource/roboto-mono':
-        specifier: ^5.3.0
+      '@fontsource/space-grotesk':
+        specifier: ^5.2.8
         version: 5.3.0
       '@mui/icons-material':
         specifier: ^7.3.11
@@ -478,11 +478,11 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@fontsource/roboto-mono@5.3.0':
-    resolution: {integrity: sha512-yhwplHMHW9dCk+1pZuERfcJe+K3rosGVZEoK0XktkxRSqQ9qsipSwwiuW2/8Qmtp9lzu3Ixa/ie4BMH3i8CkZQ==}
+  '@fontsource/jetbrains-mono@5.3.0':
+    resolution: {integrity: sha512-fqDfB5I9f1p1TV486aUgB9t8zP84P0O1FtQR5Ol9vjwPy+S+EIGlVYm1cvj2W5shcZMTg2nZFdVMoH5wFu8a1A==}
 
-  '@fontsource/roboto@5.3.0':
-    resolution: {integrity: sha512-BapRJOWYP+LZ21zp+wBQjfpPYKRoxc4LspJ/RLuI+HSMBD5u/X4O+ESDrSvEqDSy0rAl7GwBJ+09mdc16cVQ1Q==}
+  '@fontsource/space-grotesk@5.3.0':
+    resolution: {integrity: sha512-ksnGizDPXIDuvqcTYTSrmZ+evx9sDlS8rp7+42BQ7wU+spt3twEoXfbJz672C+5CLg6VeUQwRy5RXshWb67LcQ==}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -2266,9 +2266,9 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@fontsource/roboto-mono@5.3.0': {}
+  '@fontsource/jetbrains-mono@5.3.0': {}
 
-  '@fontsource/roboto@5.3.0': {}
+  '@fontsource/space-grotesk@5.3.0': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

@@ -32,7 +32,7 @@ func TestEmbeddedEchartsFiles(t *testing.T) {
 		"static/echarts/echarts.min.js",
 		"static/echarts/echarts@4.min.js",
 		"static/echarts/echarts-gl.min.js",
-		"static/echarts/themes/macarons.js",
+		"static/echarts/themes/westeros.js",
 	}
 
 	fsSub, err := fs.Sub(EmbeddedAssets, "frontend/dist")

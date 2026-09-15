@@ -1789,13 +1789,13 @@ export default function AuditRecords() {
 // Helper function to assign colors to layers
 function getLayerColor(layerName: string): string {
   const colorMap: Record<string, string> = {
-    'Link Layer': '#2196F3',        // Blue
-    'Network Layer': '#4CAF50',     // Green
-    'Transport Layer': '#FF9800',   // Orange
-    'Application Layer': '#9C27B0', // Purple
-    'Stream Decoders': '#00BCD4',   // Cyan
-    'Abstract Decoders': '#F44336', // Red
-    'Other': '#9E9E9E',            // Grey
+    'Link Layer': '#3b82f6',
+    'Network Layer': '#8b5cf6',
+    'Transport Layer': '#38bdf8',
+    'Application Layer': '#a78bfa',
+    'Stream Decoders': '#34d399',
+    'Abstract Decoders': '#fbbf24',
+    'Other': '#9199ad',
   };
-  return colorMap[layerName] || '#9E9E9E';
+  return colorMap[layerName] || '#9199ad';
 }

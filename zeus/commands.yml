@@ -32,6 +32,11 @@ commands:
             # Extract gopacket version from go.mod
             GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
 
+            if [[ "$OSTYPE" == "darwin"* ]] && ! xcrun --find clang &>/dev/null; then
+                echo "[ERROR] Xcode command-line tools are unavailable. Accept the license with: sudo xcodebuild -license"
+                exit 1
+            fi
+
             # Determine version and commit from git
             VERSION=$(git describe --tags --always 2>/dev/null || echo "dev")
             COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
@@ -421,18 +426,14 @@ commands:
         exec: zeus/scripts/run-service-container.sh
 
     run-ui:
-        description: start the netcap service locally for testing
+        description: start the netcap service locally with repository pcaps preloaded
         dependencies:
             - build-frontend
             - install
         exec: |
-            cd pcaps
-            #sleep 6 && open http://localhost:8080 &
-            #sudo net capture -iface en0 -out livecapture/
-
-            # lsof -ti:8080 | xargs kill -9
+            mkdir -p data/service-local
             sleep 2 && open http://localhost:8080 &
-            net capture -y -debug
+            net capture --service --service-data-dir "$(pwd)/data/service-local" --service-preload-dir "$(pwd)/pcaps" --service-preload-largest-n 20 --dev -y -debug
 
 
     pack-dbs-tarball:
@@ -713,7 +714,7 @@ commands:
             if [[ "$DRY_RUN" == "true" ]]; then
                 echo "[INFO] Dry run - skipping publish"
                 echo "[INFO] Would publish: @dreadl0ck/netcap-ui@$PKG_VERSION with tag '$NPM_TAG'"
-                pnpm pack --dry-run
+                pnpm publish --dry-run --registry="$GITHUB_REGISTRY" --access public --tag "$NPM_TAG"
             else
                 echo "[INFO] Publishing to GitHub Packages..."
                 pnpm publish --registry="$GITHUB_REGISTRY" --access public --tag "$NPM_TAG"
