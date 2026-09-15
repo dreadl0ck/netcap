@@ -649,7 +649,7 @@ commands:
                   (use GitHub username and a Personal Access Token with write:packages scope)
             
             Environment Variables:
-              VERSION                 - Package version (default: from globals, e.g., "latest" -> "0.0.0-latest")
+              NETCAP_UI_VERSION       - Package version (default: core VERSION)
               NPM_TAG                 - npm dist-tag (default: "latest", use "next" for pre-releases)
               DRY_RUN                 - Set to "true" to build without publishing
             
@@ -658,10 +658,10 @@ commands:
               zeus publish-npm-packages
               
               # Publish specific version
-              VERSION=0.7.7 zeus publish-npm-packages
+              NETCAP_UI_VERSION=0.7.7 zeus publish-npm-packages
               
               # Publish as pre-release
-              VERSION=0.7.8-beta.1 NPM_TAG=next zeus publish-npm-packages
+              NETCAP_UI_VERSION=0.7.8-beta.1 NPM_TAG=next zeus publish-npm-packages
               
               # Dry run (build only, no publish)
               DRY_RUN=true zeus publish-npm-packages
@@ -669,12 +669,15 @@ commands:
             PACKAGES_DIR="cmd/capture/webui/frontend/packages"
             GITHUB_REGISTRY="https://npm.pkg.github.com"
             
-            # Determine version - if VERSION looks like a semver, use it directly
+            # Allow the UI package to release independently from the Netcap core version.
+            RELEASE_VERSION="${NETCAP_UI_VERSION:-$VERSION}"
+
+            # Determine version - if RELEASE_VERSION looks like a semver, use it directly
             # Otherwise prefix with 0.0.0- (e.g., "latest" -> "0.0.0-latest")
-            if [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-                PKG_VERSION="$VERSION"
+            if [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+                PKG_VERSION="$RELEASE_VERSION"
             else
-                PKG_VERSION="0.0.0-$VERSION"
+                PKG_VERSION="0.0.0-$RELEASE_VERSION"
             fi
             
             # Remove 'v' prefix if present
