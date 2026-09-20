@@ -31,7 +31,7 @@ RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep
         -X github.com/dreadl0ck/netcap/dpi.GoDPIVersion=${GO_DPI_VERSION}" \
     -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
-FROM --platform=linux/amd64 ubuntu:24.04
+FROM --platform=linux/amd64 ubuntu:26.04
 ARG IPV6_SUPPORT=true
 
 RUN apt-get update
@@ -54,8 +54,6 @@ RUN ARCH=$(uname -m) && \
 WORKDIR /netcap
 
 COPY --from=builder /netcap/bin/* /usr/bin/
-COPY --from=builder /usr/lib/libflow* /usr/lib/
-COPY --from=builder /usr/lib/libproto* /usr/lib/
 COPY --from=builder /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
 COPY --from=builder /usr/local/lib/* /usr/lib/
 COPY --from=builder /usr/lib/libndpi* /usr/lib/

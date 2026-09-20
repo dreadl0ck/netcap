@@ -23,13 +23,13 @@ This directory contains base builder Docker images that are used to accelerate t
 
 ### 3. ubuntu-builder
 - **Image**: `dreadl0ck/netcap-builder:ubuntu-latest`
-- **Base**: `ubuntu:18.04`
+- **Base**: `ubuntu:26.04`
 - **Purpose**: Builds glibc-based Linux binaries without DPI support
 - **Contains**: Go 1.25.1, gcc, libpcap, and basic build tools
 
 ### 4. ubuntu-dpi-builder
 - **Image**: `dreadl0ck/netcap-builder:ubuntu-dpi-latest`
-- **Base**: `ubuntu:18.04`
+- **Base**: `ubuntu:26.04`
 - **Purpose**: Builds glibc-based Linux binaries with DPI support
 - **Contains**: All from ubuntu-builder plus:
   - nDPI (4.14)
@@ -200,4 +200,3 @@ Example CI step:
     docker pull dreadl0ck/netcap-builder:ubuntu-latest
     docker pull dreadl0ck/netcap-builder:ubuntu-dpi-latest
 ```
-

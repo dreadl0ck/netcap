@@ -1,7 +1,7 @@
 # Base Ubuntu builder image for netcap glibc builds (without DPI support)
 # This image contains all build dependencies and can be reused across builds
 ARG TARGETPLATFORM=linux/amd64
-FROM --platform=$TARGETPLATFORM ubuntu:18.04
+FROM --platform=$TARGETPLATFORM ubuntu:26.04
 
 # Prevent interactive prompts during package installation
 ENV DEBIAN_FRONTEND=noninteractive
@@ -11,6 +11,7 @@ RUN apt-get clean && \
     apt-get update && \
     apt-get install -y \
     software-properties-common \
+    busybox-static \
     wget \
     curl \
     apt-transport-https \
@@ -32,7 +33,7 @@ RUN apt-get clean && \
 # pins one archive: bump the version, checksum and the check below together.
 RUN wget https://go.dev/dl/go1.27.1.linux-amd64.tar.gz && \
     echo '63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445  go1.27.1.linux-amd64.tar.gz' | sha256sum -c - && \
-    tar -C /usr/local -xzf go1.27.1.linux-amd64.tar.gz && \
+    busybox tar -C /usr/local -xzf go1.27.1.linux-amd64.tar.gz && \
     rm go1.27.1.linux-amd64.tar.gz
 
 # Set Go environment
@@ -47,7 +48,7 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 # Build and install yara-x v1.14.0 C API library
 RUN cd /tmp && \
     wget https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.14.0.tar.gz && \
-    tar xfz v1.14.0.tar.gz && \
+    busybox tar xfz v1.14.0.tar.gz && \
     cd yara-x-1.14.0 && \
     cargo build --release -p yara-x-capi && \
     cp target/release/libyara_x_capi.so /usr/local/lib/ && \
@@ -89,4 +90,3 @@ RUN go version && test "$(go env GOVERSION)" = go1.27.1
 
 # This image is ready to accept source code and build
 CMD ["/bin/bash"]
-
