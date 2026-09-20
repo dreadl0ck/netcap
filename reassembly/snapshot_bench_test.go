@@ -4,27 +4,17 @@ import (
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/gopacket/gopacket"
-	"github.com/gopacket/gopacket/layers"
 )
 
 func BenchmarkFlushWithOptions(b *testing.B) {
 	for _, size := range []int{0, 100, 1000, 10000, 100000} {
 		b.Run(strconv.Itoa(size), func(b *testing.B) {
-			pool := &StreamPool{conns: make(map[key]*connection, size)}
-			conns := make([]connection, size)
+			pool := &StreamPool{conns: make(map[key]*connection, size), nextAlloc: 128, factory: &testFactoryBench{}}
 			now := time.Unix(1700000000, 0)
 			opt := FlushOptions{T: now.Add(-time.Minute), TC: now.Add(-time.Minute)}
-			for i := range conns {
-				// Vary addresses, not just 16-bit ports, to keep large pools unique.
-				src := []byte{10, byte(i >> 16), byte(i >> 8), byte(i)}
-				k := key{
-					gopacket.NewFlow(layers.EndpointIPv4, src, []byte{192, 0, 2, 1}),
-					gopacket.NewFlow(layers.EndpointTCPPort, []byte{0x30, 0x39}, []byte{0, 80}),
-				}
-				conns[i].reset(&k, nil, now)
-				pool.conns[k] = &conns[i]
+			for i := 0; i < size; i++ {
+				k := snapshotKey(i)
+				pool.getConnection(&k, false, now, nil)
 			}
 			if got := len(pool.conns); got != size {
 				b.Fatalf("pool cardinality = %d, want %d", got, size)
