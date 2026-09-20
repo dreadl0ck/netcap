@@ -1,0 +1,2 @@
+This file keeps the embedded frontend directory in Go module archives.
+Release builds replace it with the generated frontend bundle.
