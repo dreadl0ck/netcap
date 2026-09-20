@@ -1,10 +1,10 @@
 # **NETCAP Individual Contributor License Agreement (CLA)**  
-*Version 1.0 - Effective Date: 27.12.25*
+*Version 1.1 - Effective Date: 20.09.26*
 
 Thank you for your interest in contributing to NETCAP ("**Project**").  
 This Individual Contributor License Agreement ("**Agreement**") ensures that the Project maintainers can continue to offer the Project under both open-source and commercial terms.
 
-By submitting a Contribution, you ("**You**" or "**Contributor**") agree to the following terms:
+By accepting this Agreement through one of the methods in Section 13, you ("**You**" or "**Contributor**") agree that it applies to each Contribution you submit after acceptance.
 
 **Important:** If you are contributing on behalf of your employer or another entity, please use the Entity Contributor License Agreement instead.
 
@@ -41,7 +41,7 @@ You grant the Maintainers and downstream recipients a **perpetual, worldwide, no
 
 ## **4. Moral Rights / Attribution**
 
-To the maximum extent permitted by applicable law, you irrevocably waive and agree not to assert any moral rights (such as rights of attribution or integrity) in your Contributions, except as required by the open-source license (GPL-3.0). Where waiver is not permitted by law, you agree not to exercise such rights against the Maintainers or their licensees.
+To the maximum extent permitted by applicable law, you irrevocably waive and agree not to assert any moral rights (such as rights of attribution or integrity) in your Contributions against the Maintainers or their licensees, except as required by the open-source license (GPL-3.0). Where applicable law does not permit waiver or non-assertion, this Section applies only to the maximum extent permitted by that law.
 
 ---
 
@@ -75,6 +75,8 @@ You agree to **indemnify, defend, and hold harmless** the Maintainers and their 
 1. Any breach of the representations and warranties in this Agreement.
 2. Any claim that your Contribution infringes third-party intellectual property rights.
 
+This obligation applies provided that the indemnified party promptly gives you written notice of the claim, permits you to control its defense and settlement, and provides reasonable cooperation at your expense. You may not settle a claim in a manner that admits fault by or imposes an obligation on an indemnified party without that party's prior written consent, which shall not be unreasonably withheld.
+
 ---
 
 ## **8. No Obligation to Use**
@@ -85,7 +87,7 @@ The Maintainers are not required to accept or use your Contribution.
 
 ## **9. No Warranty**
 
-Your Contribution is provided **"as is"**, without warranties or conditions of any kind, express or implied.
+Except for the representations and warranties expressly stated in this Agreement, your Contribution is provided **"as is"**, without warranties or conditions of any kind, express or implied.
 
 ---
 
@@ -99,9 +101,9 @@ Any disputes arising from or relating to this Agreement shall be subject to the 
 
 ## **11. Term and Amendments**
 
-1. This Agreement is effective upon acceptance and applies to all Contributions submitted thereafter.
+1. This Agreement is effective upon acceptance under Section 13 and applies to all Contributions submitted thereafter.
 2. This Agreement does not apply retroactively to Contributions made before your acceptance, unless you explicitly agree to extend it to prior Contributions.
-3. The Maintainers may update this Agreement for future Contributions. The updated Agreement will be posted to the Project repository, and continued submission of Contributions after notice of an updated Agreement constitutes acceptance of the updated terms.
+3. The Maintainers may update this Agreement for future Contributions. An updated Agreement applies to you only after you expressly accept it through one of the methods in Section 13. Licenses granted for earlier Contributions remain in effect.
 
 ---
 
@@ -113,15 +115,13 @@ This Agreement constitutes the entire agreement between you and the Maintainers 
 
 ## **13. Acceptance**
 
-By submitting a Contribution, you agree to be bound by the terms of this Agreement.
-
-Acceptance is confirmed by **one of the following methods**:
+You agree to be bound by this Agreement when you accept it through **one of the following methods**:
 
 1. **CLA-Assistant signature**: Signing electronically via the CLA-Assistant bot or similar automated CLA tool integrated with the Project repository.
-2. **Pull request acknowledgment**: Including the text "I have read and agree to the NETCAP CLA" in a pull request or issue comment.
-3. **Email confirmation**: Sending written confirmation to the Project maintainers.
+2. **Pull request acknowledgment**: Including the text "I have read and agree to the NETCAP Individual CLA Version 1.1" in a pull request or issue comment.
+3. **Email confirmation**: Sending written confirmation to the Project maintainers that expressly identifies this Agreement and version.
 
-Once you have accepted this Agreement, it applies to all your future Contributions until you provide written notice of withdrawal (which will not affect prior Contributions).
+Once accepted, this Agreement applies to all Contributions you submit until you provide written notice of withdrawal. Withdrawal does not affect rights granted for Contributions submitted before it takes effect.
 
 ---
 
@@ -148,4 +148,3 @@ _______________________________________________
 ---
 
 *For contributions on behalf of a company or other entity, please complete the Entity Contributor License Agreement instead.*
-
