@@ -200,26 +200,22 @@ func ultimateRecordHashes(tb testing.TB, path string) []string {
 	return hashes
 }
 
-// ultimateOrderDependent are audit types whose content depends on processing
-// order rather than on the packets. Capturing this file on master (e33ac5f7) at
-// 1, 2, 4 and 8 workers already yields a different digest for the first eleven.
-//
-// The underlying cause is decoders that merge distinct flows under a colliding
-// key, so which flow supplies the metadata depends on who runs first:
-// udp_stream.go keys streams by the transport flow alone, ignoring addresses,
-// so two syslog senders sharing a source port become one stream. Any change to
-// dispatch order therefore moves these records around; that is a property of
-// those decoders, not of pool ownership. Everything else must match exactly.
+// These types still vary by worker count on current master (2429883e). The
+// merged branch reduces master's 13 varying types to these five; excluding only
+// this overlap prevents pre-existing aggregation order from masking any new
+// worker-owned-pool differences.
 var ultimateOrderDependent = map[string]bool{
-	"DeviceProfile": true, "Host": true, "Kerberos": true, "MQTTSN": true,
-	"Mail": true, "Protobuf": true, "SIP": true, "SMB": true, "SMTP": true,
-	"Service": true, "TLSCertificate": true, "Syslog": true,
+	"DeviceProfile":  true,
+	"Host":           true,
+	"Protobuf":       true,
+	"Service":        true,
+	"TLSCertificate": true,
 }
 
 // TestUltimatePCAPWorkerInvariance is the core guarantee of worker-owned pools:
 // flow sharding and per-worker pools must not change what a capture produces.
-// Beyond the known set above, the baseline is captured twice so any decoder
-// that disagrees with itself is also excluded rather than blamed on sharding.
+// The baseline is captured twice so a decoder that disagrees with itself is
+// identified separately rather than blamed on sharding.
 func TestUltimatePCAPWorkerInvariance(t *testing.T) {
 	if testing.Short() {
 		t.Skip("processes a 49k packet capture several times")
