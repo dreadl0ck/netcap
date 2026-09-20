@@ -71,3 +71,13 @@ func TestTCPStreamReaderRun(t *testing.T) {
 		})
 	}
 }
+
+func TestTCPStreamReaderStoreDataCountsSynchronously(t *testing.T) {
+	reader := &tcpStreamReader{parent: &tcpConnection{}}
+
+	reader.StoreData(&core.StreamData{RawData: []byte("final fragment")})
+
+	if got, want := reader.NumBytes(), len("final fragment"); got != want {
+		t.Fatalf("NumBytes() = %d, want %d before reader runs", got, want)
+	}
+}

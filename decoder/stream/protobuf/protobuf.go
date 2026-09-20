@@ -606,7 +606,9 @@ func CalculateEntropy(data []byte) float64 {
 		return 0
 	}
 
-	freq := make(map[byte]int)
+	// A fixed array rather than a map: summing in map order varied the
+	// floating point rounding between runs.
+	var freq [256]int
 	for _, b := range data {
 		freq[b]++
 	}
@@ -615,8 +617,10 @@ func CalculateEntropy(data []byte) float64 {
 	length := float64(len(data))
 
 	for _, count := range freq {
-		p := float64(count) / length
-		entropy -= p * math.Log2(p)
+		if count > 0 {
+			p := float64(count) / length
+			entropy -= p * math.Log2(p)
+		}
 	}
 
 	return entropy

@@ -31,6 +31,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -50,6 +51,9 @@ import (
 var (
 	// all initialized service probes at runtime.
 	serviceProbes map[string][]*serviceProbe
+
+	// serviceProbes keys in sorted order, for reproducible probe matching.
+	serviceProbeCategories []string
 
 	// ignored probes for RE2 engine (RE2 does not support backtracking
 	// groups in regexes with backtracking will be replaced by wildcard groups).
@@ -200,8 +204,12 @@ func MatchServiceProbes(serv *service, banner []byte, ident string) {
 
 	// if no match was found OR stopping after a match is disabled
 	if !found || !decoderconfig.Instance.StopAfterServiceProbeMatch {
-		// match banner against ALL nmap service probes
-		for category, probes := range serviceProbes {
+		// match banner against ALL nmap service probes.
+		// serviceProbes is a map and the first match can end the scan, so the
+		// reported product would otherwise change between runs.
+		for _, category := range serviceProbeCategories {
+			probes := serviceProbes[category]
+
 			// exclude the category that was already searched
 			if category == expectedCategory {
 				continue
@@ -928,6 +936,12 @@ func initServiceProbes() error {
 			}
 		}
 	}
+
+	serviceProbeCategories = make([]string, 0, len(serviceProbes))
+	for category := range serviceProbes {
+		serviceProbeCategories = append(serviceProbeCategories, category)
+	}
+	sort.Strings(serviceProbeCategories)
 
 	serviceLog.Info("loaded nmap service probes", zap.Int("total", len(serviceProbes)))
 

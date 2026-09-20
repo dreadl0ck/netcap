@@ -76,6 +76,7 @@ func (t *tcpStreamReader) DataChan() chan *core.StreamData {
 func (t *tcpStreamReader) StoreData(data *core.StreamData) {
 	t.parent.Lock()
 	t.data = append(t.data, data)
+	t.numBytes += len(data.RawData)
 	t.parent.Unlock()
 }
 
@@ -234,10 +235,6 @@ func (t *tcpStreamReader) Run(f *connectionFactory) {
 		if data == nil {
 			return
 		}
-
-		t.parent.Lock()
-		t.numBytes += len(data.RawData)
-		t.parent.Unlock()
 	}
 }
 

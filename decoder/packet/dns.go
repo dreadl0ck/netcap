@@ -21,6 +21,7 @@ package packet
 
 import (
 	"math"
+	"sort"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
@@ -54,10 +55,18 @@ func dnsQueryNameEntropy(name string) float64 {
 	for _, c := range name {
 		freq[c]++
 	}
+
+	// Summing in map order would vary the floating point rounding per run.
+	runes := make([]rune, 0, len(freq))
+	for c := range freq {
+		runes = append(runes, c)
+	}
+	sort.Slice(runes, func(i, j int) bool { return runes[i] < runes[j] })
+
 	var ent float64
 	length := float64(len(name))
-	for _, count := range freq {
-		p := count / length
+	for _, c := range runes {
+		p := freq[c] / length
 		if p > 0 {
 			ent -= p * math.Log2(p)
 		}
