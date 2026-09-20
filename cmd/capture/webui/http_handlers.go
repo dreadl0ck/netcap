@@ -20,7 +20,6 @@
 package webui
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -28,7 +27,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -69,14 +67,14 @@ type HTTPSummary struct {
 	ResponseHeader         map[string]string `json:"responseHeader"`
 	Parameters             map[string]string `json:"parameters"`
 	// Security headers
-	StrictTransportSecurity  string   `json:"strictTransportSecurity"`
-	ContentSecurityPolicy    string   `json:"contentSecurityPolicy"`
-	XContentTypeOptions      string   `json:"xContentTypeOptions"`
-	XFrameOptions            string   `json:"xFrameOptions"`
-	XXSSProtection           string   `json:"xXSSProtection"`
-	ReferrerPolicy           string   `json:"referrerPolicy"`
-	AccessControlAllowOrigin string   `json:"accessControlAllowOrigin"`
-	HasServerTiming          bool     `json:"hasServerTiming"`
+	StrictTransportSecurity  string `json:"strictTransportSecurity"`
+	ContentSecurityPolicy    string `json:"contentSecurityPolicy"`
+	XContentTypeOptions      string `json:"xContentTypeOptions"`
+	XFrameOptions            string `json:"xFrameOptions"`
+	XXSSProtection           string `json:"xXSSProtection"`
+	ReferrerPolicy           string `json:"referrerPolicy"`
+	AccessControlAllowOrigin string `json:"accessControlAllowOrigin"`
+	HasServerTiming          bool   `json:"hasServerTiming"`
 	// Authentication and server info
 	AuthorizationType string `json:"authorizationType"`
 	XForwardedFor     string `json:"xForwardedFor"`
@@ -87,7 +85,7 @@ type HTTPSummary struct {
 	Ja4h            string `json:"ja4h"`
 	Ja4hDescription string `json:"ja4hDescription"`
 	// Community ID for cross-tool correlation
-	CommunityID     string `json:"communityId"`
+	CommunityID string `json:"communityId"`
 }
 
 // HTTPResponse contains the list of HTTP records
@@ -217,7 +215,7 @@ func readHTTP(outDir string) ([]HTTPSummary, error) {
 			Ja4h:            httpRec.Ja4H,
 			Ja4hDescription: httpRec.Ja4HDescription,
 			// Community ID for cross-tool correlation
-			CommunityID:     httpRec.CommunityID,
+			CommunityID: httpRec.CommunityID,
 		})
 	}
 
@@ -269,47 +267,30 @@ func (s *Server) handleHTTPDownloadPCAP(w http.ResponseWriter, r *http.Request) 
 		strings.ReplaceAll(srcIP, ".", "_"),
 		strings.ReplaceAll(dstIP, ".", "_")))
 
-	// Use tcpdump to filter the PCAP with a timeout
-	tcpdumpCmd := "tcpdump"
-	args := []string{"-r", activeInputFile, "-w", outputFile, bpf}
+	// Filter the PCAP entirely in-process (no external tcpdump).
+	log.Printf("[WebUI] Filtering HTTP PCAP in-process: %s -> %s (bpf: %s)", activeInputFile, outputFile, bpf)
 
-	log.Printf("[WebUI] Filtering HTTP PCAP: %s %v", tcpdumpCmd, args)
-
-	// Create context with 30 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, tcpdumpCmd, args...)
-	output, err := cmd.CombinedOutput()
-
-	log.Printf("[WebUI] tcpdump completed, err=%v, output=%s", err, string(output))
-
+	written, err := filterPCAPToFileWithTimeout(r.Context(), activeInputFile, bpf, outputFile, 30*time.Second)
 	if err != nil {
-		log.Printf("[WebUI] tcpdump error: %v, output: %s", err, string(output))
-
-		// Check for timeout
-		if ctx.Err() == context.DeadlineExceeded {
+		log.Printf("[WebUI] PCAP filter error: %v", err)
+		os.Remove(outputFile)
+		if isPCAPFilterTimeout(err) {
 			http.Error(w, "PCAP filtering timed out. The file may be too large or the filter too complex.", http.StatusRequestTimeout)
 			return
 		}
-
-		// Check if tcpdump is not found
-		if strings.Contains(err.Error(), "executable file not found") || strings.Contains(err.Error(), "not found") {
-			http.Error(w, "tcpdump is not installed or not available in PATH. Please install tcpdump to use this feature.", http.StatusServiceUnavailable)
-			return
-		}
-
-		// Check for permission errors
-		if strings.Contains(string(output), "permission denied") || strings.Contains(string(output), "Operation not permitted") {
-			http.Error(w, "Permission denied: tcpdump requires special capabilities. Please ensure the container has CAP_NET_RAW and CAP_NET_ADMIN capabilities.", http.StatusForbidden)
-			return
-		}
-
-		http.Error(w, fmt.Sprintf("Failed to filter PCAP: %v - Output: %s", err, string(output)), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Failed to filter PCAP: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Check if output file was created
+	// No packets matched the filter.
+	if written == 0 {
+		log.Printf("[WebUI] No packets matched filter, removing empty file")
+		os.Remove(outputFile)
+		http.Error(w, "No packets found for this HTTP traffic", http.StatusNotFound)
+		return
+	}
+
+	// Confirm the output file exists before reading it back.
 	fileInfo, err := os.Stat(outputFile)
 	if err != nil {
 		log.Printf("[WebUI] Output file not found: %v", err)
@@ -317,23 +298,7 @@ func (s *Server) handleHTTPDownloadPCAP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	log.Printf("[WebUI] Filtered PCAP created: %s, size: %d bytes", outputFile, fileInfo.Size())
-
-	// Check if file is empty (no packets matched)
-	if fileInfo.Size() == 0 {
-		log.Printf("[WebUI] No packets matched filter, removing empty file")
-		os.Remove(outputFile)
-		http.Error(w, "No packets found for this HTTP traffic", http.StatusNotFound)
-		return
-	}
-
-	// PCAP files need at least 24 bytes for the header
-	if fileInfo.Size() < 24 {
-		log.Printf("[WebUI] File too small to be a valid PCAP (size: %d bytes)", fileInfo.Size())
-		os.Remove(outputFile)
-		http.Error(w, "Generated PCAP file is invalid", http.StatusInternalServerError)
-		return
-	}
+	log.Printf("[WebUI] Filtered PCAP created: %s, %d packets, size: %d bytes", outputFile, written, fileInfo.Size())
 
 	// Open the filtered PCAP file BEFORE defer cleanup
 	file, err := os.Open(outputFile)

@@ -38,12 +38,10 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import FolderIcon from '@mui/icons-material/Folder';
 import StorageIcon from '@mui/icons-material/Storage';
 import DescriptionIcon from '@mui/icons-material/Description';
-import DataObjectIcon from '@mui/icons-material/DataObject';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
-import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import DevicesIcon from '@mui/icons-material/Devices';
 import RouterIcon from '@mui/icons-material/Router';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
@@ -61,13 +59,9 @@ import RuleIcon from '@mui/icons-material/Rule';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
-import SearchIcon from '@mui/icons-material/Search';
 import HttpIcon from '@mui/icons-material/Http';
 import BadgeIcon from '@mui/icons-material/Badge';
-import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
-import BoltIcon from '@mui/icons-material/Bolt';
-import ShieldIcon from '@mui/icons-material/Shield';
 import CodeIcon from '@mui/icons-material/Code';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
@@ -321,14 +315,14 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
     md: '88px',
   };
 
-  const renderNavigationItems = (placement: NavigationItem['placement']) => navigationItems
+  const renderNavigationItems = (placement: NavigationItem['placement'], nested = false) => navigationItems
     .filter(item => (item.placement ?? 'main') === placement)
     .map(item => (
       <Link key={item.path} href={item.path} passHref style={LINK_STYLE}>
         <ListItemButton
           selected={router.isActive(item.path)}
           data-learn={item.description}
-          sx={SELECTED_MENU_ITEM_SX}
+          sx={nested ? { ...SELECTED_MENU_ITEM_SX, pl: 4 } : SELECTED_MENU_ITEM_SX}
         >
           <ListItemIcon>{item.icon}</ListItemIcon>
           <ListItemText primary={item.label} />
@@ -422,18 +416,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             <ListItemText primary="Analyze" />
           </ListItemButton>
         </Link>
-        <Link href="/interfaces" passHref style={LINK_STYLE}>
-          <ListItemButton
-            selected={router.isActive('/interfaces')}
-            data-learn="View available network interfaces for live packet capture and monitoring."
-            sx={SELECTED_MENU_ITEM_SX}
-          >
-            <ListItemIcon>
-              <NetworkCheckIcon />
-            </ListItemIcon>
-            <ListItemText primary="Interfaces" />
-          </ListItemButton>
-        </Link>
+        {renderNavigationItems('workspace-before-pcaps')}
         <Link href="/pcaps" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/pcaps')}
@@ -689,18 +672,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                 <ListItemText primary="Files" />
               </ListItemButton>
             </Link>
-            <Link href="/yara" passHref style={LINK_STYLE}>
-              <ListItemButton
-                selected={router.isActive('/yara')}
-                data-learn="YARA Rules: Upload and manage YARA rules, scan extracted files for malware signatures."
-                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
-              >
-                <ListItemIcon>
-                  <ShieldIcon />
-                </ListItemIcon>
-                <ListItemText primary="YARA Rules" />
-              </ListItemButton>
-            </Link>
+            {renderNavigationItems('data-before-logs', true)}
             <Link href="/logs" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/logs')}
@@ -742,43 +714,9 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             <ListItemText primary="Rule Sets" />
           </ListItemButton>
         </Link>
-        <Link href="/inject" passHref style={LINK_STYLE}>
-          <ListItemButton
-            selected={router.isActive('/inject')}
-            data-learn="Configure packet injection and manipulation rules."
-            sx={SELECTED_MENU_ITEM_SX}
-          >
-            <ListItemIcon>
-              <BoltIcon />
-            </ListItemIcon>
-            <ListItemText primary="Inject" />
-          </ListItemButton>
-        </Link>
+        {renderNavigationItems('detection-end')}
         <Typography component="li" sx={SECTION_LABEL_SX}>System</Typography>
-        <Link href="/dbs" passHref style={LINK_STYLE}>
-          <ListItemButton
-            selected={router.isActive('/dbs')}
-            data-learn="Manage GeoIP, vulnerability, and MAC vendor databases."
-            sx={SELECTED_MENU_ITEM_SX}
-          >
-            <ListItemIcon>
-              <DataObjectIcon />
-            </ListItemIcon>
-            <ListItemText primary="Databases" />
-          </ListItemButton>
-        </Link>
-        <Link href="/dpi" passHref style={LINK_STYLE}>
-          <ListItemButton
-            selected={router.isActive('/dpi')}
-            data-learn="Configure Deep Packet Inspection modules."
-            sx={SELECTED_MENU_ITEM_SX}
-          >
-            <ListItemIcon>
-              <ManageSearchIcon />
-            </ListItemIcon>
-            <ListItemText primary="DPI" />
-          </ListItemButton>
-        </Link>
+        {renderNavigationItems('system-start')}
         <Link href="/decoders" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/decoders')}
@@ -815,18 +753,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             <ListItemText primary="Harvesters" />
           </ListItemButton>
         </Link>
-        <Link href="/probes" passHref style={LINK_STYLE}>
-          <ListItemButton
-            selected={router.isActive('/probes')}
-            data-learn="Manage nmap service probes for service fingerprinting."
-            sx={SELECTED_MENU_ITEM_SX}
-          >
-            <ListItemIcon>
-              <SearchIcon />
-            </ListItemIcon>
-            <ListItemText primary="Service Probes" />
-          </ListItemButton>
-        </Link>
+        {renderNavigationItems('system-before-bpf')}
         <Link href="/bpf" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/bpf')}

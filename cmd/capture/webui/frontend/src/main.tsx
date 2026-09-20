@@ -26,6 +26,12 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import BoltIcon from '@mui/icons-material/Bolt';
+import DataObjectIcon from '@mui/icons-material/DataObject';
+import ManageSearchIcon from '@mui/icons-material/ManageSearch';
+import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
+import SearchIcon from '@mui/icons-material/Search';
+import ShieldIcon from '@mui/icons-material/Shield';
 import { ReactRouterNetcapProvider } from '@dreadl0ck/netcap-ui/adapters/react-router';
 import { api, getBackendUrl } from '@dreadl0ck/netcap-ui/lib';
 import { ConnectionOverlay } from '@dreadl0ck/netcap-ui/components';
@@ -39,6 +45,51 @@ import '@fontsource/space-grotesk/600.css';
 import '@fontsource/space-grotesk/700.css';
 import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/600.css';
+
+const DIRECT_NAVIGATION_ITEMS = [
+  {
+    path: '/interfaces',
+    label: 'Interfaces',
+    icon: <NetworkCheckIcon />,
+    placement: 'workspace-before-pcaps' as const,
+    description: 'View available network interfaces for live packet capture and monitoring.',
+  },
+  {
+    path: '/yara',
+    label: 'YARA Rules',
+    icon: <ShieldIcon />,
+    placement: 'data-before-logs' as const,
+    description: 'YARA Rules: Upload and manage YARA rules, scan extracted files for malware signatures.',
+  },
+  {
+    path: '/inject',
+    label: 'Inject',
+    icon: <BoltIcon />,
+    placement: 'detection-end' as const,
+    description: 'Configure packet injection and manipulation rules.',
+  },
+  {
+    path: '/dbs',
+    label: 'Databases',
+    icon: <DataObjectIcon />,
+    placement: 'system-start' as const,
+    description: 'Manage GeoIP, vulnerability, and MAC vendor databases.',
+  },
+  {
+    path: '/dpi',
+    label: 'DPI',
+    icon: <ManageSearchIcon />,
+    placement: 'system-start' as const,
+    description: 'Configure Deep Packet Inspection modules.',
+  },
+  {
+    path: '/probes',
+    label: 'Service Probes',
+    icon: <SearchIcon />,
+    placement: 'system-before-bpf' as const,
+    description: 'Manage nmap service probes for service fingerprinting.',
+  },
+];
 
 // Valid PCAP file extensions
 const VALID_PCAP_EXTENSIONS = ['.pcap', '.pcapng', '.cap'];
@@ -316,7 +367,7 @@ function App() {
     <BrowserRouter>
       <ThemeProvider theme={netcapTheme}>
         <CssBaseline />
-        <ReactRouterNetcapProvider backendUrl={getBackendUrl()}>
+        <ReactRouterNetcapProvider backendUrl={getBackendUrl()} navigationItems={DIRECT_NAVIGATION_ITEMS}>
           <AppContent />
         </ReactRouterNetcapProvider>
       </ThemeProvider>

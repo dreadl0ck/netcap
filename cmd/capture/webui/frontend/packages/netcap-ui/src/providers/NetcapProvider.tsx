@@ -71,7 +71,7 @@ export interface NavigationItem {
   label: string;
   icon: ReactNode;
   description?: string;
-  placement?: 'main' | 'settings';
+  placement?: 'main' | 'workspace-before-pcaps' | 'data-before-logs' | 'detection-end' | 'system-start' | 'system-before-bpf' | 'settings';
 }
 
 /**
