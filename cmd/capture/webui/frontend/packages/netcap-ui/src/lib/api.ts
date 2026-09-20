@@ -889,6 +889,8 @@ export interface Rule {
   enabled: boolean;
   threshold?: number;
   thresholdWindow?: number;
+  distinctField?: string;
+  distinctThreshold?: number;
   executionTimeMs?: number;
   lastExecuted?: number;
   actions?: ResponseAction[];
@@ -909,6 +911,8 @@ export interface CreateRuleRequest {
   enabled: boolean;
   threshold?: number;
   thresholdWindow?: number;
+  distinctField?: string;
+  distinctThreshold?: number;
   actions?: ResponseAction[];
 }
 
@@ -923,6 +927,8 @@ export interface UpdateRuleRequest {
   enabled: boolean;
   threshold?: number;
   thresholdWindow?: number;
+  distinctField?: string;
+  distinctThreshold?: number;
   actions?: ResponseAction[];
 }
 

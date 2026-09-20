@@ -249,6 +249,9 @@ type Config struct {
 	// TCP state machine allow missing init in three way handshake
 	AllowMissingInit bool
 
+	// Comma-separated IP-literal destination endpoints selected as RTU-over-TCP.
+	ModbusRTUEndpoints string
+
 	// Ignore TCP state machine errors
 	IgnoreFSMerr bool
 

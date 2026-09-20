@@ -54,6 +54,13 @@ var Decoder = &decoder.AbstractDecoder{
 
 // WriteMail writes an email audit record to disk.
 func WriteMail(d *types.Mail) {
+	// Mail records are produced by the SMTP, POP3 and IMAP decoders, so this is
+	// reached whenever mail traffic is seen even if the Mail decoder itself was
+	// not selected and has no writer.
+	if Decoder.Writer == nil {
+		return
+	}
+
 	if decoderconfig.Instance.ExportMetrics {
 		d.Inc()
 	}
@@ -62,6 +69,6 @@ func WriteMail(d *types.Mail) {
 
 	err := Decoder.Writer.Write(d)
 	if err != nil {
-		log.Fatal("failed to write proto: ", err)
+		log.Println("failed to write Mail audit record:", err)
 	}
 }
