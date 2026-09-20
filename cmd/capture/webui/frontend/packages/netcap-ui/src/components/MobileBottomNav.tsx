@@ -54,8 +54,11 @@ export default function MobileBottomNav({ onMoreClick }: MobileBottomNavProps) {
         right: 0,
         zIndex: 1100,
         display: { xs: 'block', md: 'none' },
+        border: 0,
+        borderRadius: 0,
+        backgroundColor: 'transparent',
       }}
-      elevation={8}
+      elevation={0}
     >
       <BottomNavigation
         value={value}
@@ -67,9 +70,18 @@ export default function MobileBottomNav({ onMoreClick }: MobileBottomNavProps) {
         }}
         showLabels
         sx={{
+          height: 64,
+          pb: 'env(safe-area-inset-bottom)',
+          backdropFilter: 'blur(18px)',
           '& .MuiBottomNavigationAction-root': {
             minWidth: 0,
             px: 0.5,
+            color: 'text.disabled',
+            transition: 'color 150ms ease',
+            '&.Mui-selected': { color: 'primary.main' },
+          },
+          '& .MuiSvgIcon-root': {
+            fontSize: 20,
           },
           '& .MuiBottomNavigationAction-label': {
             fontSize: '0.65rem',

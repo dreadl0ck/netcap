@@ -63,7 +63,7 @@ export default defineConfig({
   // All entries including lib - with "use client" directive for React components
   // The lib/index entry is pure utilities but including here ensures types are generated
   entry: entries,
-  format: ['cjs', 'esm'],
+  format: ['esm'],
   dts: true,
   splitting: true,  // Enable code splitting to share context instances
   sourcemap: true,
@@ -75,4 +75,3 @@ export default defineConfig({
     };
   },
 });
-

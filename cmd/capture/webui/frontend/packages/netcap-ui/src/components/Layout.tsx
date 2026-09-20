@@ -38,12 +38,10 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import FolderIcon from '@mui/icons-material/Folder';
 import StorageIcon from '@mui/icons-material/Storage';
 import DescriptionIcon from '@mui/icons-material/Description';
-import DataObjectIcon from '@mui/icons-material/DataObject';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
-import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
 import DevicesIcon from '@mui/icons-material/Devices';
 import RouterIcon from '@mui/icons-material/Router';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
@@ -61,37 +59,58 @@ import RuleIcon from '@mui/icons-material/Rule';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
-import SearchIcon from '@mui/icons-material/Search';
 import HttpIcon from '@mui/icons-material/Http';
 import BadgeIcon from '@mui/icons-material/Badge';
-import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
-import BoltIcon from '@mui/icons-material/Bolt';
-import ShieldIcon from '@mui/icons-material/Shield';
 import CodeIcon from '@mui/icons-material/Code';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
+import { keyframes } from '@mui/material/styles';
 import useSWR from 'swr';
 
 import { useNetcapRouter } from '../hooks/useNetcapRouter';
 import { useNetcapApi } from '../hooks/useNetcapApi';
-import { useNetcapLink } from '../providers/NetcapProvider';
+import { useNetcapConfig, useNetcapLink, type NavigationItem } from '../providers/NetcapProvider';
 import LearnModeToggle from './LearnModeToggle';
 import LearnModeOverlay from './LearnModeOverlay';
 import CommunityIDFilterBar from './CommunityIDFilterBar';
 import MobileBottomNav from './MobileBottomNav';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
-const drawerWidth = 240;
+const drawerWidth = 264;
+
+const logoGlowPulse = keyframes`
+  0%, 100% { opacity: 0.42; transform: scale(0.9); }
+  50% { opacity: 0.9; transform: scale(1.08); }
+`;
 
 // Extracted sx styles to prevent object recreation on every render
 const SELECTED_MENU_ITEM_SX = {
+  mx: 1.25,
+  mb: 0.25,
+  minHeight: 38,
+  borderRadius: '9px',
+  color: 'text.secondary',
+  transition: 'background-color 150ms ease, color 150ms ease',
+  '& .MuiListItemIcon-root': {
+    color: 'text.secondary',
+    minWidth: 34,
+    transition: 'color 150ms ease',
+  },
+  '& .MuiSvgIcon-root': { fontSize: 19 },
+  '&:hover': {
+    backgroundColor: 'rgba(59, 130, 246, 0.07)',
+    color: 'text.primary',
+  },
   '&.Mui-selected': {
-    backgroundColor: 'primary.main',
-    color: 'primary.contrastText',
+    backgroundColor: 'rgba(59, 130, 246, 0.13)',
+    color: 'primary.light',
+    boxShadow: 'inset 2px 0 #3b82f6',
     '&:hover': {
-      backgroundColor: 'primary.dark',
+      backgroundColor: 'rgba(59, 130, 246, 0.18)',
     },
     '& .MuiListItemIcon-root': {
-      color: 'primary.contrastText',
+      color: 'primary.main',
     },
   },
 };
@@ -106,17 +125,24 @@ const BADGE_SX = {
 const LINK_STYLE = { textDecoration: 'none', color: 'inherit' };
 
 const TOOLBAR_LOGO_IMG_STYLE: React.CSSProperties = {
-  width: '100%',
-  cursor: 'pointer',
+  width: '320px',
+  maxWidth: 'none',
+  height: 'auto',
   display: 'block',
+  position: 'relative',
+  zIndex: 2,
   userSelect: 'none',
   WebkitUserDrag: 'none',
   pointerEvents: 'none',
+  transformOrigin: 'center',
+  transition: 'filter 220ms ease, transform 220ms ease',
+  willChange: 'filter, transform',
 } as React.CSSProperties;
 
 
 const VERSION_BOX_SX = {
-  p: 2,
+  px: 2,
+  py: 1.5,
   borderTop: '1px solid',
   borderColor: 'divider',
   mt: 'auto',
@@ -136,6 +162,19 @@ const ICON_BUTTON_SX = {
   },
 };
 
+const SECTION_LABEL_SX = {
+  display: 'block',
+  px: 2.5,
+  pt: 2,
+  pb: 0.75,
+  color: 'text.disabled',
+  fontFamily: 'var(--netcap-mono)',
+  fontSize: '0.61rem',
+  fontWeight: 600,
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+};
+
 export interface LayoutProps {
   children: React.ReactNode;
   title: string;
@@ -151,6 +190,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const Link = useNetcapLink();
+  const { navigationItems = [] } = useNetcapConfig();
   
   // Get community ID filter state
   const { selectedCommunityIDs, isFilterActive } = useCommunityIDFilter();
@@ -275,15 +315,83 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
     md: '88px',
   };
 
+  const renderNavigationItems = (placement: NavigationItem['placement'], nested = false) => navigationItems
+    .filter(item => (item.placement ?? 'main') === placement)
+    .map(item => (
+      <Link key={item.path} href={item.path} passHref style={LINK_STYLE}>
+        <ListItemButton
+          selected={router.isActive(item.path)}
+          data-learn={item.description}
+          sx={nested ? { ...SELECTED_MENU_ITEM_SX, pl: 4 } : SELECTED_MENU_ITEM_SX}
+        >
+          <ListItemIcon>{item.icon}</ListItemIcon>
+          <ListItemText primary={item.label} />
+        </ListItemButton>
+      </Link>
+    ));
+
   const drawer = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Toolbar
-        onClick={toggleFullscreen}
-        sx={{ px: '0 !important', minHeight: { xs: 'auto', sm: 64 }, cursor: 'pointer', justifyContent: 'center' }}
+        sx={{
+          px: '0 !important',
+          minHeight: { xs: 92, sm: 104 },
+          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          backgroundImage: 'radial-gradient(circle at 50% 120%, rgba(59,130,246,.22), transparent 52%), linear-gradient(rgba(59,130,246,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(139,92,246,.04) 1px, transparent 1px)',
+          backgroundSize: 'auto, 20px 20px, 20px 20px',
+        }}
       >
-        <img src="/logo.png" alt="Netcap" style={TOOLBAR_LOGO_IMG_STYLE} />
+        <Link href="/" passHref style={{ ...LINK_STYLE, width: '100%', height: '100%' }}>
+          <Box
+            sx={{
+              position: 'relative',
+              isolation: 'isolate',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              height: '100%',
+              cursor: 'pointer',
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                zIndex: 0,
+                inset: '-24px 16px',
+                background: 'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.42) 0%, rgba(59, 130, 246, 0.14) 42%, transparent 72%)',
+                filter: 'blur(7px)',
+                animation: `${logoGlowPulse} 6s ease-in-out infinite`,
+              },
+              '&::after': {
+                content: '""',
+                position: 'absolute',
+                zIndex: 1,
+                inset: 0,
+                opacity: 0,
+                background: 'radial-gradient(circle at 50% 55%, rgba(96,165,250,.24), rgba(139,92,246,.09) 34%, transparent 66%)',
+                transition: 'opacity 220ms ease',
+              },
+              '&:hover::after': { opacity: 1 },
+              '&:hover img': {
+                transform: 'scale(1.08)',
+                filter: 'drop-shadow(0 0 10px rgba(59,130,246,.58)) drop-shadow(0 0 22px rgba(139,92,246,.28))',
+              },
+              '@media (prefers-reduced-motion: reduce)': {
+                '&::before': { animation: 'none', opacity: 0.58 },
+                '& img': { transition: 'filter 220ms ease' },
+                '&:hover img': { transform: 'none' },
+              },
+            }}
+          >
+            <img src="/logo.png" alt="Netcap" style={TOOLBAR_LOGO_IMG_STYLE} />
+          </Box>
+        </Link>
       </Toolbar>
-      <List sx={{ flexGrow: 1, pt: 0 }}>
+      <List sx={{ flexGrow: 1, pt: 0, pb: 2, overflowY: 'auto', overflowX: 'hidden' }}>
+        <Typography component="li" sx={SECTION_LABEL_SX}>Workspace</Typography>
         <Link href="/" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/')}
@@ -308,18 +416,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             <ListItemText primary="Analyze" />
           </ListItemButton>
         </Link>
-        <Link href="/interfaces" passHref style={LINK_STYLE}>
-          <ListItemButton
-            selected={router.isActive('/interfaces')}
-            data-learn="View available network interfaces for live packet capture and monitoring."
-            sx={SELECTED_MENU_ITEM_SX}
-          >
-            <ListItemIcon>
-              <NetworkCheckIcon />
-            </ListItemIcon>
-            <ListItemText primary="Interfaces" />
-          </ListItemButton>
-        </Link>
+        {renderNavigationItems('workspace-before-pcaps')}
         <Link href="/pcaps" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/pcaps')}
@@ -339,6 +436,8 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             <ListItemText primary="PCAPs" />
           </ListItemButton>
         </Link>
+        {renderNavigationItems('main')}
+        <Typography component="li" sx={SECTION_LABEL_SX}>Investigation</Typography>
         <ListItemButton
           onClick={() => setDataMenuOpen(!dataMenuOpen)}
           data-learn="Data: Access network traffic data including audit records, visualizations, hosts, devices, connections, and more."
@@ -573,18 +672,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                 <ListItemText primary="Files" />
               </ListItemButton>
             </Link>
-            <Link href="/yara" passHref style={LINK_STYLE}>
-              <ListItemButton
-                selected={router.isActive('/yara')}
-                data-learn="YARA Rules: Upload and manage YARA rules, scan extracted files for malware signatures."
-                sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}
-              >
-                <ListItemIcon>
-                  <ShieldIcon />
-                </ListItemIcon>
-                <ListItemText primary="YARA Rules" />
-              </ListItemButton>
-            </Link>
+            {renderNavigationItems('data-before-logs', true)}
             <Link href="/logs" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/logs')}
@@ -601,6 +689,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             </Link>
           </List>
         </Collapse>
+        <Typography component="li" sx={SECTION_LABEL_SX}>Detection</Typography>
         <Link href="/rules" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/rules')}
@@ -625,42 +714,9 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             <ListItemText primary="Rule Sets" />
           </ListItemButton>
         </Link>
-        <Link href="/inject" passHref style={LINK_STYLE}>
-          <ListItemButton
-            selected={router.isActive('/inject')}
-            data-learn="Configure packet injection and manipulation rules."
-            sx={SELECTED_MENU_ITEM_SX}
-          >
-            <ListItemIcon>
-              <BoltIcon />
-            </ListItemIcon>
-            <ListItemText primary="Inject" />
-          </ListItemButton>
-        </Link>
-        <Link href="/dbs" passHref style={LINK_STYLE}>
-          <ListItemButton
-            selected={router.isActive('/dbs')}
-            data-learn="Manage GeoIP, vulnerability, and MAC vendor databases."
-            sx={SELECTED_MENU_ITEM_SX}
-          >
-            <ListItemIcon>
-              <DataObjectIcon />
-            </ListItemIcon>
-            <ListItemText primary="Databases" />
-          </ListItemButton>
-        </Link>
-        <Link href="/dpi" passHref style={LINK_STYLE}>
-          <ListItemButton
-            selected={router.isActive('/dpi')}
-            data-learn="Configure Deep Packet Inspection modules."
-            sx={SELECTED_MENU_ITEM_SX}
-          >
-            <ListItemIcon>
-              <ManageSearchIcon />
-            </ListItemIcon>
-            <ListItemText primary="DPI" />
-          </ListItemButton>
-        </Link>
+        {renderNavigationItems('detection-end')}
+        <Typography component="li" sx={SECTION_LABEL_SX}>System</Typography>
+        {renderNavigationItems('system-start')}
         <Link href="/decoders" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/decoders')}
@@ -697,18 +753,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             <ListItemText primary="Harvesters" />
           </ListItemButton>
         </Link>
-        <Link href="/probes" passHref style={LINK_STYLE}>
-          <ListItemButton
-            selected={router.isActive('/probes')}
-            data-learn="Manage nmap service probes for service fingerprinting."
-            sx={SELECTED_MENU_ITEM_SX}
-          >
-            <ListItemIcon>
-              <SearchIcon />
-            </ListItemIcon>
-            <ListItemText primary="Service Probes" />
-          </ListItemButton>
-        </Link>
+        {renderNavigationItems('system-before-bpf')}
         <Link href="/bpf" passHref style={LINK_STYLE}>
           <ListItemButton
             selected={router.isActive('/bpf')}
@@ -745,6 +790,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             <ListItemText primary="Config" />
           </ListItemButton>
         </Link>
+        {renderNavigationItems('settings')}
       </List>
       {version && (
         <Box sx={VERSION_BOX_SX}>
@@ -808,11 +854,22 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
       >
         <Toolbar
           sx={{
-            minHeight: { xs: 'auto', sm: 64 },
-            py: { xs: 0.5, sm: 0 },
-            flexDirection: 'row',
+            minHeight: { xs: 'auto', sm: 72 },
+            py: { xs: 0.5, sm: 1 },
+            display: { xs: 'flex', sm: 'grid' },
+            gridTemplateColumns: {
+              sm: headerAction
+                ? 'auto minmax(0, 1fr) minmax(180px, 300px) auto'
+                : 'auto minmax(0, 1fr) auto',
+              md: headerAction
+                ? 'auto minmax(0, 1fr) minmax(260px, 400px) auto'
+                : 'auto minmax(0, 1fr) auto',
+              lg: headerAction
+                ? 'minmax(180px, 1fr) minmax(300px, 400px) auto'
+                : 'minmax(180px, 1fr) auto',
+            },
             alignItems: 'center',
-            gap: { xs: 0.5, md: 0 },
+            gap: { xs: 0.5, sm: 2 },
           }}
         >
           <IconButton
@@ -824,18 +881,34 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: headerAction ? 0 : 1, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-            {title}
-          </Typography>
+          <Box sx={{ flexGrow: { xs: 1, sm: 0 }, minWidth: 0 }}>
+            <Typography variant="h5" noWrap component="h1" sx={{ fontSize: { xs: '1rem', sm: '1.05rem' } }}>
+              {title}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' }, fontFamily: 'var(--netcap-mono)' }}>
+              Network traffic intelligence
+            </Typography>
+          </Box>
           {headerAction && !isMobile && (
             <Box sx={{
-              ml: 'auto',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'flex-end',
+              minWidth: 0,
+              width: '100%',
+              '& > *': { width: '100%', maxWidth: '400px' },
             }}>
               {headerAction}
             </Box>
           )}
+          <IconButton
+            onClick={toggleFullscreen}
+            aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            sx={{ color: 'text.secondary', justifySelf: 'end', flexShrink: 0 }}
+          >
+            {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+          </IconButton>
         </Toolbar>
         {headerAction && isMobile && (
           <Box sx={{
@@ -884,12 +957,14 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 2, sm: 3 },
+          p: { xs: 2, sm: 3, xl: 4 },
           pb: { xs: '72px', sm: '72px', md: 3 },
           width: { lg: `calc(100% - ${drawerWidth}px)` },
           minWidth: 0,
           overflowX: 'hidden',
           pt: defaultTopPadding,
+          maxWidth: '1800px',
+          mx: 'auto',
         }}
       >
         <CommunityIDFilterBar />
@@ -902,5 +977,3 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
 }
 
 export default Layout;
-
-

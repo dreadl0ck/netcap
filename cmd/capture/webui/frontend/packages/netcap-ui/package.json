@@ -1,51 +1,43 @@
 {
   "name": "@dreadl0ck/netcap-ui",
-  "version": "0.9.1",
+  "version": "0.9.4",
   "description": "Netcap UI components and pages as a reusable React library",
   "type": "module",
-  "main": "dist/index.cjs",
+  "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     },
     "./components": {
       "types": "./dist/components/index.d.ts",
-      "import": "./dist/components/index.js",
-      "require": "./dist/components/index.cjs"
+      "import": "./dist/components/index.js"
     },
     "./pages": {
       "types": "./dist/pages/index.d.ts",
-      "import": "./dist/pages/index.js",
-      "require": "./dist/pages/index.cjs"
+      "import": "./dist/pages/index.js"
     },
     "./providers": {
       "types": "./dist/providers/index.d.ts",
-      "import": "./dist/providers/index.js",
-      "require": "./dist/providers/index.cjs"
+      "import": "./dist/providers/index.js"
     },
     "./hooks": {
       "types": "./dist/hooks/index.d.ts",
-      "import": "./dist/hooks/index.js",
-      "require": "./dist/hooks/index.cjs"
+      "import": "./dist/hooks/index.js"
     },
     "./adapters/react-router": {
       "types": "./dist/adapters/react-router.d.ts",
-      "import": "./dist/adapters/react-router.js",
-      "require": "./dist/adapters/react-router.cjs"
+      "import": "./dist/adapters/react-router.js"
     },
     "./lib": {
       "types": "./dist/lib/index.d.ts",
-      "import": "./dist/lib/index.js",
-      "require": "./dist/lib/index.cjs"
+      "import": "./dist/lib/index.js"
     },
     "./contexts": {
       "types": "./dist/contexts/index.d.ts",
-      "import": "./dist/contexts/index.js",
-      "require": "./dist/contexts/index.cjs"
+      "import": "./dist/contexts/index.js"
     }
   },
   "publishConfig": {
@@ -67,6 +59,7 @@
     "@emotion/styled": "^11.0.0",
     "@mui/icons-material": "^5.0.0",
     "@mui/material": "^5.0.0",
+    "echarts": "^6.0.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
     "react-grid-layout": "^2.0.0",

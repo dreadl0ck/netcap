@@ -66,7 +66,15 @@ export default function DashboardViewTabs({
   };
 
   return (
-    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+    <Box sx={{
+      border: '1px solid',
+      borderColor: 'divider',
+      borderRadius: 2.5,
+      mb: 3,
+      px: 1,
+      backgroundColor: 'rgba(11, 12, 20, .72)',
+      overflow: 'hidden',
+    }}>
       <Tabs
         value={activeId}
         onChange={handleTabChange}
@@ -79,7 +87,7 @@ export default function DashboardViewTabs({
           label="Overview"
           icon={<DashboardIcon fontSize="small" />}
           iconPosition="start"
-          sx={{ minHeight: 48 }}
+          sx={{ minHeight: 46 }}
         />
         {dashboards.map((d) => (
           <Tab
@@ -101,7 +109,7 @@ export default function DashboardViewTabs({
                 )}
               </Box>
             }
-            sx={{ minHeight: 48, textTransform: 'none' }}
+            sx={{ minHeight: 46, textTransform: 'none' }}
           />
         ))}
         <Tab
@@ -109,7 +117,7 @@ export default function DashboardViewTabs({
           label="New"
           icon={<AddIcon fontSize="small" />}
           iconPosition="start"
-          sx={{ minHeight: 48, textTransform: 'none', opacity: 0.85 }}
+          sx={{ minHeight: 46, textTransform: 'none', opacity: 0.85 }}
         />
       </Tabs>
 

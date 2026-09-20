@@ -56,26 +56,39 @@ export default function StatBox({
   const cardSx = onClick
     ? {
         cursor: 'pointer',
-        border: isActive ? 2 : 0,
+        border: '1px solid',
         borderColor: `${activeColor}.main`,
-        transition: 'all 0.2s',
+        boxShadow: isActive ? `0 0 0 1px var(--netcap-blue)` : undefined,
         '&:hover': {
-          boxShadow: 3,
-          transform: 'translateY(-2px)',
+          borderColor: `${activeColor}.light`,
+          transform: 'translateY(-1px)',
         },
       }
-    : {};
+    : { border: '1px solid', borderColor: 'divider' };
 
   return (
     <Card sx={cardSx} onClick={onClick} data-learn={learnHint}>
-      <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {icon}
+      <CardContent sx={{ py: 1.75, px: 2, '&:last-child': { pb: 1.75 } }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{
+            width: 36,
+            height: 36,
+            borderRadius: 2,
+            display: 'grid',
+            placeItems: 'center',
+            color: `${activeColor}.main`,
+            backgroundColor: `${activeColor}.main`,
+            backgroundImage: 'linear-gradient(rgba(5,5,8,.86), rgba(5,5,8,.86))',
+            flexShrink: 0,
+            '& .MuiSvgIcon-root': { fontSize: 19 },
+          }}>
+            {icon}
+          </Box>
           <Box sx={{ minWidth: 0 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem', lineHeight: 1.2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.68rem', lineHeight: 1.2, letterSpacing: '0.055em', textTransform: 'uppercase' }}>
               {label}
             </Typography>
-            <Typography variant="h6" sx={{ fontSize: '1.1rem', fontWeight: 600, lineHeight: 1.3 }}>
+            <Typography variant="h6" sx={{ mt: 0.25, fontFamily: 'var(--netcap-mono)', fontSize: '1.05rem', fontWeight: 600, lineHeight: 1.3 }}>
               {typeof value === 'number' ? value.toLocaleString() : value}
             </Typography>
           </Box>
@@ -101,7 +114,7 @@ export interface StatBoxGridProps {
  */
 export function StatBoxGrid({ children }: StatBoxGridProps) {
   return (
-    <Grid container spacing={2} sx={{ mb: 2 }}>
+    <Grid container spacing={2} sx={{ mb: 3 }}>
       {React.Children.map(children, (child) => (
         <Grid item xs={12} sm={6} md={3}>
           {child}
@@ -110,4 +123,3 @@ export function StatBoxGrid({ children }: StatBoxGridProps) {
     </Grid>
   );
 }
-

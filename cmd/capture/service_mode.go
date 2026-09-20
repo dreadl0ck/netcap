@@ -38,6 +38,7 @@ func runServiceMode() {
 
 	// Create service configuration
 	serviceConfig := &webui.ServiceConfig{
+		PreloadDir:            flagServicePreloadDir,
 		MaxFileSize:           flagServiceMaxFileSize,
 		MaxAnalysisHour:       flagServiceMaxPerHour,
 		SessionExpiry:         flagServiceExpiry,
@@ -55,6 +56,9 @@ func runServiceMode() {
 	}
 
 	fmt.Printf("Data directory: %s\n", serviceConfig.DataDir)
+	if serviceConfig.PreloadDir != "" {
+		fmt.Printf("Preload directory: %s\n", serviceConfig.PreloadDir)
+	}
 	fmt.Printf("Max file size: %d bytes\n", serviceConfig.MaxFileSize)
 	fmt.Printf("Max analyses per hour per IP: %d\n", serviceConfig.MaxAnalysisHour)
 	fmt.Printf("Session expiry: %d minutes\n", serviceConfig.SessionExpiry)
@@ -72,20 +76,20 @@ func runServiceMode() {
 
 	// Create runtime config with actual flag values
 	runtimeConfig := &webui.RuntimeConfig{
-		Compress:              flagCompress,
-		Buffer:                flagBuffer,
-		Workers:               flagWorkers,
-		PacketBuffer:          flagPacketBuffer,
-		MemBufSize:            flagMemBufferSize,
-		Interface:             flagInterface,
-		PromiscMode:           flagPromiscMode,
-		SnapLen:               flagSnapLen,
-		BaseLayer:             flagBaseLayer,
-		DecodeOptions:         flagDecodeOptions,
-		Payload:               flagPayload,
-		Context:               flagContext,
-		MacDB:                 flagMACDB,
-		
+		Compress:      flagCompress,
+		Buffer:        flagBuffer,
+		Workers:       flagWorkers,
+		PacketBuffer:  flagPacketBuffer,
+		MemBufSize:    flagMemBufferSize,
+		Interface:     flagInterface,
+		PromiscMode:   flagPromiscMode,
+		SnapLen:       flagSnapLen,
+		BaseLayer:     flagBaseLayer,
+		DecodeOptions: flagDecodeOptions,
+		Payload:       flagPayload,
+		Context:       flagContext,
+		MacDB:         flagMACDB,
+
 		ServiceDB:             flagServiceDB,
 		GeoDB:                 flagGeolocationDB,
 		ReverseDNS:            flagReverseDNS,

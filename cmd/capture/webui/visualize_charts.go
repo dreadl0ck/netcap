@@ -58,27 +58,33 @@ html, body {
 	padding: 0 !important;
 	overflow: hidden !important;
 	width: 100% !important;
+	background: #050508 !important;
 }
 #main, .item, .container, div[_echarts_instance_] {
 	height: 100% !important;
 	width: 100% !important;
 	min-height: 100% !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	background: #050508 !important;
 }
 body > div {
 	height: 100% !important;
 	width: 100% !important;
+	margin: 0 !important;
+	background: #050508 !important;
 }
 canvas {
 	display: block !important;
 }
 </style>
 <script>
-// Force resize chart to fill viewport after load (95% height to prevent bottom cutoff)
+// Force resize chart to fill viewport after load.
 window.addEventListener('load', function() {
 	var charts = document.querySelectorAll('[_echarts_instance_]');
 	charts.forEach(function(el) {
 		if (el && el.style) {
-			el.style.height = (window.innerHeight * 0.95) + 'px';
+			el.style.height = window.innerHeight + 'px';
 			el.style.width = window.innerWidth + 'px';
 		}
 		// Trigger echarts resize
@@ -88,7 +94,7 @@ window.addEventListener('load', function() {
 				setTimeout(function() {
 					chart.resize({
 						width: window.innerWidth,
-						height: window.innerHeight * 0.95
+						height: window.innerHeight
 					});
 				}, 100);
 			}
@@ -100,7 +106,7 @@ window.addEventListener('resize', function() {
 	var charts = document.querySelectorAll('[_echarts_instance_]');
 	charts.forEach(function(el) {
 		if (el && el.style) {
-			el.style.height = (window.innerHeight * 0.95) + 'px';
+			el.style.height = window.innerHeight + 'px';
 			el.style.width = window.innerWidth + 'px';
 		}
 		if (window.echarts) {
@@ -108,7 +114,7 @@ window.addEventListener('resize', function() {
 			if (chart) {
 				chart.resize({
 					width: window.innerWidth,
-					height: window.innerHeight * 0.95
+					height: window.innerHeight
 				});
 			}
 		}
@@ -140,15 +146,21 @@ html, body {
 	padding: 0 !important;
 	overflow: hidden !important;
 	width: 100% !important;
+	background: #050508 !important;
 }
 #main, .item, .container, div[_echarts_instance_] {
 	height: 100% !important;
 	width: 100% !important;
 	min-height: 100% !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	background: #050508 !important;
 }
 body > div {
 	height: 100% !important;
 	width: 100% !important;
+	margin: 0 !important;
+	background: #050508 !important;
 }
 canvas {
 	display: block !important;
@@ -159,7 +171,7 @@ canvas {
 	right: 10px;
 	z-index: 1000;
 	padding: 10px 20px;
-	background: #4CAF50;
+	background: #3b82f6;
 	color: white;
 	border: none;
 	border-radius: 5px;
@@ -170,28 +182,28 @@ canvas {
 	transition: background 0.3s, transform 0.1s;
 }
 #rotationToggle:hover {
-	background: #45a049;
+	background: #2563eb;
 	transform: scale(1.05);
 }
 #rotationToggle:active {
 	transform: scale(0.95);
 }
 #rotationToggle.paused {
-	background: #f44336;
+	background: #8b5cf6;
 }
 #rotationToggle.paused:hover {
-	background: #da190b;
+	background: #7c3aed;
 }
 </style>
 <script>
 var rotationEnabled = true;
 
-// Force resize chart to fill viewport after load (95% height to prevent bottom cutoff)
+// Force resize chart to fill viewport after load.
 window.addEventListener('load', function() {
 	var charts = document.querySelectorAll('[_echarts_instance_]');
 	charts.forEach(function(el) {
 		if (el && el.style) {
-			el.style.height = (window.innerHeight * 0.95) + 'px';
+			el.style.height = window.innerHeight + 'px';
 			el.style.width = window.innerWidth + 'px';
 		}
 		// Trigger echarts resize
@@ -201,7 +213,7 @@ window.addEventListener('load', function() {
 				setTimeout(function() {
 					chart.resize({
 						width: window.innerWidth,
-						height: window.innerHeight * 0.95
+						height: window.innerHeight
 					});
 				}, 100);
 			}
@@ -221,7 +233,7 @@ window.addEventListener('resize', function() {
 	var charts = document.querySelectorAll('[_echarts_instance_]');
 	charts.forEach(function(el) {
 		if (el && el.style) {
-			el.style.height = (window.innerHeight * 0.95) + 'px';
+			el.style.height = window.innerHeight + 'px';
 			el.style.width = window.innerWidth + 'px';
 		}
 		if (window.echarts) {
@@ -229,7 +241,7 @@ window.addEventListener('resize', function() {
 			if (chart) {
 				chart.resize({
 					width: window.innerWidth,
-					height: window.innerHeight * 0.95
+					height: window.innerHeight
 				});
 			}
 		}
@@ -833,11 +845,11 @@ func generateBar3DChart(outDir string, showLegend bool) *charts.Bar3D {
 	// Define layer order and colors
 	layers := []string{"Link Layer", "Network Layer", "Transport Layer", "Application Layer", "Abstract Decoders"}
 	layerColors := map[string]string{
-		"Link Layer":        "#4CAF50", // Green
-		"Network Layer":     "#2196F3", // Blue
-		"Transport Layer":   "#FF9800", // Orange
-		"Application Layer": "#9C27B0", // Purple
-		"Abstract Decoders": "#607D8B", // Blue Grey
+		"Link Layer":        netcapChartColors[0],
+		"Network Layer":     netcapChartColors[1],
+		"Transport Layer":   netcapChartColors[2],
+		"Application Layer": netcapChartColors[3],
+		"Abstract Decoders": netcapChartColors[4],
 	}
 
 	// Organize protocols by layer and sort them
@@ -1081,8 +1093,15 @@ func generateGraphChart(outDir string, showLegend bool, layout string) *charts.G
 
 	// Add categories
 	graphCategories := make([]*opts.GraphCategory, 0)
-	for _, cat := range categories {
-		graphCategories = append(graphCategories, &opts.GraphCategory{Name: cat})
+	for i, cat := range categories {
+		graphCategories = append(graphCategories, &opts.GraphCategory{
+			Name: cat,
+			ItemStyle: &opts.ItemStyle{
+				Color:       netcapChartColors[i%len(netcapChartColors)],
+				BorderColor: "#38bdf8",
+				BorderWidth: 2,
+			},
+		})
 	}
 
 	// Configure graph options based on layout
@@ -1297,15 +1316,11 @@ func generateGeoChart(outDir string, showLegend bool) *charts.Geo {
 		}),
 		charts.WithGeoComponentOpts(opts.GeoComponent{
 			Map: "world",
-			ItemStyle: &opts.ItemStyle{
-				Color:       "#404040",
-				BorderColor: "#666666",
-			},
 		}),
 		charts.WithVisualMapOpts(opts.VisualMap{
 			Calculable: opts.Bool(true),
 			InRange: &opts.VisualMapInRange{
-				Color: []string{"#50a3ba", "#eac736", "#d94e5d"},
+				Color: []string{netcapChartColors[1], netcapChartColors[0], netcapChartColors[2]},
 			},
 			Min:    0,
 			Max:    float32(getMaxGeoCount(geoData)),
@@ -1501,15 +1516,11 @@ func (s *Server) generateGeoChartAll(showLegend bool, clientIP string) *charts.G
 		}),
 		charts.WithGeoComponentOpts(opts.GeoComponent{
 			Map: "world",
-			ItemStyle: &opts.ItemStyle{
-				Color:       "#404040",
-				BorderColor: "#666666",
-			},
 		}),
 		charts.WithVisualMapOpts(opts.VisualMap{
 			Calculable: opts.Bool(true),
 			InRange: &opts.VisualMapInRange{
-				Color: []string{"#50a3ba", "#eac736", "#d94e5d"},
+				Color: []string{netcapChartColors[1], netcapChartColors[0], netcapChartColors[2]},
 			},
 			Min:    0,
 			Max:    float32(getMaxGeoCount(geoData)),
@@ -1755,7 +1766,7 @@ func generateScatter3DChart(outDir string, showLegend bool, maxConnections int) 
 			Calculable: opts.Bool(true),
 			Max:        100,
 			InRange: &opts.VisualMapInRange{
-				Color: []string{"#313695", "#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#fee090", "#fdae61", "#f46d43", "#d73027", "#a50026"},
+				Color: netcapChartColors,
 			},
 			Orient: "vertical",
 			Right:  "5%",
@@ -1977,13 +1988,13 @@ func generateHostsGraph(outDir string, showLegend bool, maxNodes int, layout str
 		{
 			Name: "Internal Network",
 			ItemStyle: &opts.ItemStyle{
-				Color: "#4CAF50", // Green for internal networks
+				Color: netcapChartColors[0],
 			},
 		},
 		{
 			Name: "External Network",
 			ItemStyle: &opts.ItemStyle{
-				Color: "#FF9800", // Orange for external networks
+				Color: netcapChartColors[1],
 			},
 		},
 	}
@@ -2409,12 +2420,7 @@ func generateSankeyChart(outDir string) *charts.Sankey {
 
 	sankey := charts.NewSankey()
 	sankey.SetGlobalOptions(
-		charts.WithInitializationOpts(opts.Initialization{
-			Theme:      echartstypes.ThemeWesteros,
-			Width:      "100%",
-			Height:     "100%",
-			AssetsHost: "/static/echarts/",
-		}),
+		charts.WithInitializationOpts(getDefaultChartInitWithTheme(echartstypes.ThemeWesteros)),
 		charts.WithTitleOpts(opts.Title{
 			Title:    "Protocol Hierarchy",
 			Subtitle: "",

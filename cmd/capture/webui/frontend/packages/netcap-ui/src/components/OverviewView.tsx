@@ -15,6 +15,9 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import MemoryIcon from '@mui/icons-material/Memory';
 import PublicIcon from '@mui/icons-material/Public';
+import StorageIcon from '@mui/icons-material/Storage';
+import DatasetIcon from '@mui/icons-material/Dataset';
+import TerminalIcon from '@mui/icons-material/Terminal';
 
 import { formatBytes, getBackendUrl } from '../lib/api';
 import useSWR from 'swr';
@@ -69,12 +72,15 @@ export default function OverviewView({ scope }: Props) {
   return (
     <Box>
       {status?.isProcessing && stats?.processingStats && (
-        <Box mb={4}>
-          <Card data-learn="Live Processing: Real-time statistics showing current PCAP analysis progress, packet counts, and processing speed.">
+        <Box mb={3}>
+          <Card data-learn="Live Processing: Real-time statistics showing current PCAP analysis progress, packet counts, and processing speed." sx={{ borderColor: 'rgba(59,130,246,.42)', boxShadow: '0 16px 50px rgba(59,130,246,.08)' }}>
             <CardContent>
               <Box display="flex" alignItems="center" gap={1} mb={2}>
                 <SpeedIcon color="primary" />
-                <Typography variant="h6">Live Processing Statistics</Typography>
+                <Typography variant="h6">Live processing</Typography>
+                <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.75, color: 'success.main', fontFamily: 'var(--netcap-mono)', fontSize: '0.68rem' }}>
+                  <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: 'success.main', boxShadow: '0 0 12px currentColor' }} /> ACTIVE
+                </Box>
               </Box>
               {status.isServiceMode ? (
                 <Grid container spacing={3}>
@@ -130,21 +136,24 @@ export default function OverviewView({ scope }: Props) {
       )}
 
       {auditStats && (auditStats.exploitCount > 0 || auditStats.vulnerabilityCount > 0 || auditStats.secretCount > 0 || auditStats.softwareCount > 0) && (
-        <Box mb={4}>
+        <Box mb={3}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom sx={{ mb: 3 }}>Security Audit Records</Typography>
-              <Grid container spacing={3}>
+              <Box display="flex" alignItems="center" justifyContent="space-between" mb={2.5}>
+                <Typography variant="h6">Security signals</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'var(--netcap-mono)' }}>AUDIT RECORDS</Typography>
+              </Box>
+              <Grid container spacing={2}>
                 {[
-                  { label: 'Exploits', count: auditStats.exploitCount, bg: 'error.dark' },
-                  { label: 'Vulnerabilities', count: auditStats.vulnerabilityCount, bg: 'warning.dark' },
-                  { label: 'Secrets', count: auditStats.secretCount, bg: 'info.dark' },
-                  { label: 'Software', count: auditStats.softwareCount, bg: 'success.dark' },
+                  { label: 'Exploits', count: auditStats.exploitCount, bg: 'rgba(251,113,133,.08)', border: 'rgba(251,113,133,.25)' },
+                  { label: 'Vulnerabilities', count: auditStats.vulnerabilityCount, bg: 'rgba(251,191,36,.08)', border: 'rgba(251,191,36,.25)' },
+                  { label: 'Secrets', count: auditStats.secretCount, bg: 'rgba(56,189,248,.08)', border: 'rgba(56,189,248,.25)' },
+                  { label: 'Software', count: auditStats.softwareCount, bg: 'rgba(52,211,153,.08)', border: 'rgba(52,211,153,.25)' },
                 ].map((m) => (
                   <Grid key={m.label} item xs={12} sm={6} md={3}>
-                    <Box sx={{ p: 2, borderRadius: 2, backgroundColor: m.bg, color: 'white', textAlign: 'center' }}>
-                      <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>{m.label}</Typography>
-                      <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{m.count.toLocaleString()}</Typography>
+                    <Box sx={{ p: 2, borderRadius: 2, border: '1px solid', borderColor: m.border, backgroundColor: m.bg, color: 'text.primary' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>{m.label}</Typography>
+                      <Typography variant="h3" sx={{ mt: 1, fontFamily: 'var(--netcap-mono)', fontWeight: 600, fontSize: { xs: '1.6rem', md: '2rem' } }}>{m.count.toLocaleString()}</Typography>
                     </Box>
                   </Grid>
                 ))}
@@ -154,50 +163,61 @@ export default function OverviewView({ scope }: Props) {
         </Box>
       )}
 
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
-              <Typography color="text.secondary" gutterBottom>Data Sources</Typography>
-              <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{inputFilesCount}</Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                <Box><Typography color="text.secondary" variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Data Sources</Typography><Typography variant="h3" sx={{ mt: 1, fontFamily: 'var(--netcap-mono)', fontSize: '2rem' }}>{inputFilesCount}</Typography></Box>
+                <Box sx={{ p: 1, borderRadius: 2, color: 'primary.main', bgcolor: 'rgba(59,130,246,.1)' }}><StorageIcon /></Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
-              <Typography color="text.secondary" gutterBottom>Audit Record Types</Typography>
-              <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{auditFiles?.length || 0}</Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                <Box><Typography color="text.secondary" variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Record Types</Typography><Typography variant="h3" sx={{ mt: 1, fontFamily: 'var(--netcap-mono)', fontSize: '2rem' }}>{auditFiles?.length || 0}</Typography></Box>
+                <Box sx={{ p: 1, borderRadius: 2, color: 'secondary.main', bgcolor: 'rgba(139,92,246,.1)' }}><DatasetIcon /></Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
-              <Typography color="text.secondary" gutterBottom>Total Records</Typography>
-              <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{totalAuditRecords.toLocaleString()}</Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                <Box><Typography color="text.secondary" variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Total Records</Typography><Typography variant="h3" sx={{ mt: 1, fontFamily: 'var(--netcap-mono)', fontSize: '2rem' }}>{totalAuditRecords.toLocaleString()}</Typography></Box>
+                <Box sx={{ p: 1, borderRadius: 2, color: 'info.main', bgcolor: 'rgba(56,189,248,.1)' }}><PublicIcon /></Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
-              <Typography color="text.secondary" gutterBottom>Log Files</Typography>
-              <Typography variant="h3" sx={{ fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{logFiles?.length || 0}</Typography>
+              <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                <Box><Typography color="text.secondary" variant="caption" sx={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>Log Files</Typography><Typography variant="h3" sx={{ mt: 1, fontFamily: 'var(--netcap-mono)', fontSize: '2rem' }}>{logFiles?.length || 0}</Typography></Box>
+                <Box sx={{ p: 1, borderRadius: 2, color: 'success.main', bgcolor: 'rgba(52,211,153,.1)' }}><TerminalIcon /></Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
       {totalAuditRecords > 0 && (
-        <Box mt={4}>
+        <Box mt={3}>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" gap={1} mb={2}>
                 <PublicIcon color="primary" />
-                <Typography variant="h6">Global IP Geolocation Distribution</Typography>
+                <Box>
+                  <Typography variant="h6">Global IP distribution</Typography>
+                  <Typography variant="caption" color="text.secondary">Geolocation observed across the selected capture scope</Typography>
+                </Box>
               </Box>
-              <Box sx={{ width: '100%', height: { xs: 300, sm: 450, md: 600 }, borderRadius: 1, overflow: 'hidden', backgroundColor: '#1e1e1e' }}>
+              <Box sx={{ width: '100%', height: { xs: 300, sm: 450, md: 560 }, borderRadius: 2, overflow: 'hidden', backgroundColor: 'background.default', border: '1px solid', borderColor: 'divider' }}>
                 <ChartFrame
                   key={scope}
                   src={geoSrc}
@@ -216,39 +236,39 @@ export default function OverviewView({ scope }: Props) {
       )}
 
       {systemInfo && (
-        <Box mt={4}>
+        <Box mt={3}>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" gap={1} mb={2}>
                 <MemoryIcon color="primary" />
                 <Typography variant="h6">System Information</Typography>
               </Box>
-              <Grid container spacing={3}>
+              <Grid container spacing={2}>
                 <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ p: 2, borderRadius: 2, backgroundColor: 'primary.dark', color: 'white', textAlign: 'center', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(59,130,246,.08)', border: '1px solid rgba(59,130,246,.2)', minHeight: 116, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>CPU Cores</Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{systemInfo.numCPU}</Typography>
+                    <Typography variant="h3" sx={{ fontFamily: 'var(--netcap-mono)', fontSize: '1.75rem' }}>{systemInfo.numCPU}</Typography>
                   </Box>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ p: 2, borderRadius: 2, backgroundColor: 'success.dark', color: 'white', textAlign: 'center', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(52,211,153,.07)', border: '1px solid rgba(52,211,153,.18)', minHeight: 116, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>Total Memory</Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{formatBytes(systemInfo.totalMemory)}</Typography>
+                    <Typography variant="h3" sx={{ fontFamily: 'var(--netcap-mono)', fontSize: '1.75rem' }}>{formatBytes(systemInfo.totalMemory)}</Typography>
                   </Box>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ p: 2, borderRadius: 2, backgroundColor: 'info.dark', color: 'white', textAlign: 'center', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(56,189,248,.07)', border: '1px solid rgba(56,189,248,.18)', minHeight: 116, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>Free Memory</Typography>
-                    <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: { xs: '1.75rem', sm: '2.5rem', md: '3rem' } }}>{formatBytes(systemInfo.freeMemory)}</Typography>
+                    <Typography variant="h3" sx={{ fontFamily: 'var(--netcap-mono)', fontSize: '1.75rem' }}>{formatBytes(systemInfo.freeMemory)}</Typography>
                     <Typography variant="caption" sx={{ opacity: 0.8, display: 'block', mt: 0.5 }}>
                       {((systemInfo.freeMemory / systemInfo.totalMemory) * 100).toFixed(1)}% free
                     </Typography>
                   </Box>
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ p: 2, borderRadius: 2, backgroundColor: 'secondary.dark', color: 'white', textAlign: 'center', minHeight: 140, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'rgba(139,92,246,.08)', border: '1px solid rgba(139,92,246,.2)', minHeight: 116, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>Platform</Typography>
-                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>{systemInfo.goos}/{systemInfo.goarch}</Typography>
+                    <Typography variant="h6" sx={{ fontFamily: 'var(--netcap-mono)' }}>{systemInfo.goos}/{systemInfo.goarch}</Typography>
                     <Typography variant="caption" sx={{ opacity: 0.8, display: 'block', mt: 0.5 }}>{systemInfo.numGoroutine} goroutines</Typography>
                   </Box>
                 </Grid>

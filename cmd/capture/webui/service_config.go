@@ -27,6 +27,7 @@ import (
 // ServiceConfig holds the service mode configuration
 type ServiceConfig struct {
 	DataDir               string
+	PreloadDir            string
 	MaxFileSize           int64
 	MaxAnalysisHour       int
 	SessionExpiry         int

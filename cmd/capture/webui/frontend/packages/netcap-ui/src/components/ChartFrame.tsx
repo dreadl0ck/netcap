@@ -39,6 +39,12 @@ export type ChartFrameProps = Omit<IframeHTMLAttributes<HTMLIFrameElement>, 'san
  *
  * `sandbox` is applied after the prop spread so it always wins.
  */
-export function ChartFrame(props: ChartFrameProps) {
-  return <iframe {...props} sandbox={CHART_SANDBOX} />;
+export function ChartFrame({ style, ...props }: ChartFrameProps) {
+  return (
+    <iframe
+      {...props}
+      style={{ backgroundColor: '#050508', colorScheme: 'dark', ...style }}
+      sandbox={CHART_SANDBOX}
+    />
+  );
 }

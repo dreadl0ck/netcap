@@ -33,6 +33,6 @@ export type {
   RouterAdapter,
   LinkProps,
   LinkComponent,
+  NavigationItem,
 } from './NetcapProvider';
-
 

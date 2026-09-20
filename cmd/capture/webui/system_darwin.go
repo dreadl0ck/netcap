@@ -1,4 +1,4 @@
-//go:build darwin
+//go:build darwin && !appstore
 
 /*
  * NETCAP - Traffic Analysis Framework
@@ -27,18 +27,10 @@ import (
 	"strings"
 )
 
-// getTotalMemoryOS returns the total system memory in bytes for macOS
+// getTotalMemoryOS returns the total system memory in bytes for macOS.
+// Direct edition: shells out to sysctl. The App Store edition uses a cgo
+// sysctlbyname instead (system_darwin_appstore.go), so it spawns nothing.
 func getTotalMemoryOS() uint64 {
-	return getTotalMemoryDarwin()
-}
-
-// getFreeMemoryOS returns the free system memory in bytes for macOS
-func getFreeMemoryOS() uint64 {
-	return getFreeMemoryDarwin()
-}
-
-// getTotalMemoryDarwin uses sysctl to get total memory on macOS
-func getTotalMemoryDarwin() uint64 {
 	cmd := exec.Command("sysctl", "-n", "hw.memsize")
 	output, err := cmd.Output()
 	if err != nil {
@@ -53,8 +45,9 @@ func getTotalMemoryDarwin() uint64 {
 	return mem
 }
 
-// getFreeMemoryDarwin uses vm_stat to get free memory on macOS
-func getFreeMemoryDarwin() uint64 {
+// getFreeMemoryOS returns the free system memory in bytes for macOS by
+// shelling out to vm_stat. See getTotalMemoryOS for the App Store edition.
+func getFreeMemoryOS() uint64 {
 	cmd := exec.Command("vm_stat")
 	output, err := cmd.Output()
 	if err != nil {

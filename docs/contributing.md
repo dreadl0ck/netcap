@@ -33,7 +33,7 @@ All contributors must sign our Contributor License Agreement before their contri
 When you submit a pull request, our CLA Assistant bot will automatically check if you have signed the CLA. If not, it will ask you to sign by commenting:
 
 ```
-I have read and agree to the NETCAP CLA
+I have read and agree to the NETCAP Individual CLA Version 1.1
 ```
 
 Read the full [Individual CLA](../CLA-INDIVIDUAL.md) before signing.
@@ -52,4 +52,3 @@ Before submitting your pull request please make sure:
 ## Feature Requests
 
 You have an idea for a new feature? Create a feature draft and open an issue to discuss it.
-
