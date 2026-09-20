@@ -20,7 +20,6 @@
 package webui
 
 import (
-	"embed"
 	"io/fs"
 	"log"
 	"net/http"
@@ -29,12 +28,6 @@ import (
 	"strings"
 	"time"
 )
-
-// Embed the frontend assets (Vite build output in frontend/dist/).
-// The "all:" prefix includes dotfiles. The frontend must be built before compiling.
-//
-//go:embed all:frontend/dist
-var EmbeddedAssets embed.FS
 
 // responseWriterWrapper wraps http.ResponseWriter to intercept WriteHeader
 type responseWriterWrapper struct {
@@ -151,7 +144,7 @@ func (s *Server) handleStatic() http.Handler {
 	}
 
 	// Otherwise, serve embedded assets
-	fsSub, err := fs.Sub(EmbeddedAssets, "frontend/dist")
+	fsSub, err := fs.Sub(EmbeddedAssets, embeddedFrontendRoot)
 	if err != nil {
 		// Fallback to serving a simple message if assets aren't built
 		log.Printf("[WebUI] Warning: Failed to load embedded assets: %v", err)

@@ -43,7 +43,7 @@ type TLSServerHelloCountFunc func()
 // TLSServerHelloTransformationFunc is a transformation over TLSServerHello audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type TLSServerHelloTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, pop3 *types.TLSServerHello, min, max uint64, path string, ip string)
+type TLSServerHelloTransformationFunc = transformationFunc[types.TLSServerHello]
 
 // TLSServerHelloTransform applies a maltego transformation over TLSServerHello audit records.
 func TLSServerHelloTransform(count TLSServerHelloCountFunc, transform TLSServerHelloTransformationFunc) {

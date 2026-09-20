@@ -572,7 +572,7 @@ func (sm *SessionManager) reconstructSession(sessionID, sessionDir, pcapsDir, up
 	resultsReady := true
 
 	// Check if there's an error log
-	errorLogPath := filepath.Join(sessionDir, "analysis_error.log")
+	errorLogPath := filepath.Join(sessionDir, analysisErrorLogName)
 	errorMessage := ""
 	if _, err := os.Stat(errorLogPath); err == nil {
 		status = StatusFailed

@@ -1,11 +1,37 @@
 package stream
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/stream/tls"
+	netio "github.com/dreadl0ck/netcap/io"
 )
+
+func TestTLSRecordWriterResetBeforeValidation(t *testing.T) {
+	previous := tls.RecordDecoder.Writer
+	t.Cleanup(func() { tls.RecordDecoder.Writer = previous })
+	for _, tt := range []struct {
+		name, include, exclude string
+	}{
+		{"include", "InvalidTLSSelection", ""},
+		{"exclude", "TLSRecord", "InvalidTLSSelection"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			writer := netio.NewAuditRecordWriter(&netio.WriterConfig{Null: true})
+			defer writer.Close(0)
+			tls.RecordDecoder.Writer = writer
+			selected, err := InitAbstractDecoders(&config.Config{IncludeDecoders: tt.include, ExcludeDecoders: tt.exclude})
+			if selected != nil || !errors.Is(err, errInvalidAbstractDecoder) {
+				t.Fatalf("selection = %v, error = %v", selected, err)
+			}
+			if tls.RecordDecoder.Writer != nil {
+				t.Fatal("TLS record writer not reset before validation")
+			}
+		})
+	}
+}
 
 func TestTLSRecordWriterSelection(t *testing.T) {
 	previous := config.Instance

@@ -83,7 +83,7 @@ func countIP(ips map[string]*types.Host, ip string, min, max *uint64) {
 type deviceProfileCountFunc = func(profile *types.DeviceProfile, mac string, min, max *uint64, ips map[string]*types.Host)
 
 // deviceProfileTransformationFunc is transform over DeviceProfiles.
-type deviceProfileTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.DeviceProfile, min, max uint64, path string, mac string)
+type deviceProfileTransformationFunc = transformationFunc[types.DeviceProfile]
 
 // DeviceProfileTransform applies a maltego transformation DeviceProfile audit records.
 func DeviceProfileTransform(count deviceProfileCountFunc, transform deviceProfileTransformationFunc) {

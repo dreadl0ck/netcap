@@ -236,7 +236,8 @@ export default function CustomDashboardView({ dashboardId, scope, onForkComplete
         </Alert>
       ) : (
         <Box sx={{
-          '& .react-grid-placeholder': { backgroundColor: 'primary.main', opacity: 0.2, borderRadius: 1 },
+          '& .react-grid-placeholder': { background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)', opacity: 0.2, borderRadius: 2 },
+          '& .react-resizable-handle::after': { borderColor: 'primary.main' },
         }}>
           <ResponsiveGridLayout
             className="layout"

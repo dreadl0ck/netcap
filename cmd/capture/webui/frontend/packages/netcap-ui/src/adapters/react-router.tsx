@@ -44,7 +44,7 @@
 import React, { ReactNode, useMemo } from 'react';
 import { useNavigate, useLocation, useSearchParams, Link as RRLink } from 'react-router';
 import type { LinkProps as RRLinkProps } from 'react-router';
-import { NetcapProvider, NetcapConfig, LinkProps } from '../providers/NetcapProvider.js';
+import { NetcapProvider, NetcapConfig, LinkProps, NavigationItem } from '../providers/NetcapProvider.js';
 import { LearnModeProvider } from '../contexts/LearnModeContext.js';
 import { CommunityIDFilterProvider } from '../contexts/CommunityIDFilterContext.js';
 
@@ -56,6 +56,8 @@ export interface ReactRouterNetcapProviderProps {
   debug?: boolean;
   /** Include LearnModeProvider (default: true) */
   includeLearnMode?: boolean;
+  /** Application-specific sidebar entries */
+  navigationItems?: NavigationItem[];
 }
 
 /**
@@ -82,6 +84,7 @@ export function ReactRouterNetcapProvider({
   backendUrl,
   debug = false,
   includeLearnMode = true,
+  navigationItems,
 }: ReactRouterNetcapProviderProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -90,6 +93,7 @@ export function ReactRouterNetcapProvider({
   const config = useMemo<NetcapConfig>(() => ({
     backendUrl,
     debug,
+    navigationItems,
     router: {
       pathname: location.pathname,
       query: Object.fromEntries(searchParams),
@@ -98,7 +102,7 @@ export function ReactRouterNetcapProvider({
       replace: (path: string) => { navigate(path, { replace: true }); },
     },
     Link: ReactRouterLinkAdapter,
-  }), [backendUrl, debug, location.pathname, searchParams, navigate]);
+  }), [backendUrl, debug, navigationItems, location.pathname, searchParams, navigate]);
 
   const content = includeLearnMode ? (
     <LearnModeProvider>

@@ -38,7 +38,7 @@ import (
 // DHCPV6TransformationFunc is a transformation over DHCPv6 audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type DHCPV6TransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, dhcp *types.DHCPv6, min, max uint64, path string, ip string)
+type DHCPV6TransformationFunc = transformationFunc[types.DHCPv6]
 
 // DHCPV6Transform applies a maltego transformation over DHCP audit records.
 func DHCPV6Transform(count DHCPCountFunc, transform DHCPV6TransformationFunc, continueTransform bool) {

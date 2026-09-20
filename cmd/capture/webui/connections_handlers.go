@@ -20,16 +20,13 @@
 package webui
 
 import (
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	stdio "io"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -208,44 +205,8 @@ func filterConnectionsByIPVersion(connections []ConnectionSummary, ipVersionFilt
 func readConnections(outDir string) ([]ConnectionSummary, error) {
 	filePath := filepath.Join(outDir, "Connection.ncap.gz")
 
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		log.Printf("[WebUI] Connection file not found: %s", filePath)
-		return []ConnectionSummary{}, nil
-	}
-
-	// Read Connection records
-	reader, err := NewAuditRecordReader(filePath)
-	if err != nil {
-		return nil, err
-	}
-	defer reader.Close()
-
-	// Read header
-	_, err = reader.ReadHeader()
-	if err != nil {
-		return nil, err
-	}
-
 	connections := make([]ConnectionSummary, 0)
-
-	// Read all records
-	for {
-		record, err := reader.NextRecord()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			log.Printf("[WebUI] Error reading Connection record: %v", err)
-			continue
-		}
-
-		// Type assert to Connection
-		conn, ok := record.(*types.Connection)
-		if !ok {
-			continue
-		}
-
+	err := visitAuditRecords(filePath, "Connection", func(conn *types.Connection) {
 		connections = append(connections, ConnectionSummary{
 			TimestampFirst:       conn.TimestampFirst,
 			TimestampLast:        conn.TimestampLast,
@@ -299,6 +260,9 @@ func readConnections(outDir string) ([]ConnectionSummary, error) {
 			// Community ID for cross-tool correlation
 			CommunityID: conn.CommunityID,
 		})
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	// Sort by total size descending (or by timestamp - could be configurable)
@@ -574,48 +538,30 @@ func (s *Server) handleConnectionDownloadPCAP(w http.ResponseWriter, r *http.Req
 		strings.ReplaceAll(dstIP, ".", "_"),
 		dstPort))
 
-	// Use tcpdump to filter the PCAP with a timeout
-	// tcpdump -r input.pcap -w output.pcap "BPF_FILTER"
-	tcpdumpCmd := "tcpdump"
-	args := []string{"-r", activeInputFile, "-w", outputFile, bpf}
+	// Filter the PCAP entirely in-process (no external tcpdump).
+	log.Printf("[WebUI] Filtering PCAP in-process: %s -> %s (bpf: %s)", activeInputFile, outputFile, bpf)
 
-	log.Printf("[WebUI] Filtering PCAP: %s %v", tcpdumpCmd, args)
-
-	// Create context with 30 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, tcpdumpCmd, args...)
-	output, err := cmd.CombinedOutput()
-
-	log.Printf("[WebUI] tcpdump completed, err=%v, output=%s", err, string(output))
-
+	written, err := filterPCAPToFileWithTimeout(r.Context(), activeInputFile, bpf, outputFile, 30*time.Second)
 	if err != nil {
-		log.Printf("[WebUI] tcpdump error: %v, output: %s", err, string(output))
-
-		// Check for timeout
-		if ctx.Err() == context.DeadlineExceeded {
+		log.Printf("[WebUI] PCAP filter error: %v", err)
+		os.Remove(outputFile)
+		if isPCAPFilterTimeout(err) {
 			http.Error(w, "PCAP filtering timed out. The file may be too large or the filter too complex.", http.StatusRequestTimeout)
 			return
 		}
-
-		// Check if tcpdump is not found
-		if strings.Contains(err.Error(), "executable file not found") || strings.Contains(err.Error(), "not found") {
-			http.Error(w, "tcpdump is not installed or not available in PATH. Please install tcpdump to use this feature.", http.StatusServiceUnavailable)
-			return
-		}
-
-		// Check for permission errors
-		if strings.Contains(string(output), "permission denied") || strings.Contains(string(output), "Operation not permitted") {
-			http.Error(w, "Permission denied: tcpdump requires special capabilities. Please ensure the container has CAP_NET_RAW and CAP_NET_ADMIN capabilities.", http.StatusForbidden)
-			return
-		}
-
-		http.Error(w, fmt.Sprintf("Failed to filter PCAP: %v - Output: %s", err, string(output)), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Failed to filter PCAP: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Check if output file was created
+	// No packets matched the filter.
+	if written == 0 {
+		log.Printf("[WebUI] No packets matched filter, removing empty file")
+		os.Remove(outputFile)
+		http.Error(w, "No packets found for this connection", http.StatusNotFound)
+		return
+	}
+
+	// Confirm the output file exists before reading it back.
 	fileInfo, err := os.Stat(outputFile)
 	if err != nil {
 		log.Printf("[WebUI] Output file not found: %v", err)
@@ -623,23 +569,7 @@ func (s *Server) handleConnectionDownloadPCAP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	log.Printf("[WebUI] Filtered PCAP created: %s, size: %d bytes", outputFile, fileInfo.Size())
-
-	// Check if file is empty (no packets matched)
-	if fileInfo.Size() == 0 {
-		log.Printf("[WebUI] No packets matched filter, removing empty file")
-		os.Remove(outputFile)
-		http.Error(w, "No packets found for this connection", http.StatusNotFound)
-		return
-	}
-
-	// PCAP files need at least 24 bytes for the header
-	if fileInfo.Size() < 24 {
-		log.Printf("[WebUI] File too small to be a valid PCAP (size: %d bytes)", fileInfo.Size())
-		os.Remove(outputFile)
-		http.Error(w, "Generated PCAP file is invalid", http.StatusInternalServerError)
-		return
-	}
+	log.Printf("[WebUI] Filtered PCAP created: %s, %d packets, size: %d bytes", outputFile, written, fileInfo.Size())
 
 	// Open the filtered PCAP file BEFORE defer cleanup
 	file, err := os.Open(outputFile)

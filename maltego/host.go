@@ -39,7 +39,7 @@ import (
 // IPTransformationFunc is a transformation over IP profiles for a selected DeviceProfile.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type IPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Host, min, max uint64, path string, mac string, ip string)
+type IPTransformationFunc = transformationWithMACFunc[types.Host]
 
 // deviceProfileCountFunc is a function that counts something over DeviceProfiles.
 type hostCountFunc = func(profile *types.Host, mac string, min, max *uint64, ips map[string]*types.Host)
@@ -57,7 +57,7 @@ var CountIPPackets = func(profile *types.Host, mac string, min, max *uint64, _ m
 // HostTransformationFunc is a transformation over IP profiles
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type HostTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, profile *types.Host, min, max uint64, path string, mac string, ip string)
+type HostTransformationFunc = transformationWithMACFunc[types.Host]
 
 // HostTransform applies a maltego transformation over IP profiles
 func HostTransform(count hostCountFunc, transform HostTransformationFunc) {

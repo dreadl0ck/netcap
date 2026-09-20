@@ -135,6 +135,7 @@ var (
 	flagHTTPAssets                     string
 	flagService                        bool
 	flagServiceDataDir                 string
+	flagServicePreloadDir              string
 	flagServiceMaxFileSize             int64
 	flagServiceMaxPerHour              int
 	flagServiceExpiry                  int
@@ -261,6 +262,7 @@ func setFlagsFromContext(c *cli.Command) {
 	flagHTTPAssets = c.String("http-assets")
 	flagService = c.Bool("service")
 	flagServiceDataDir = c.String("service-data-dir")
+	flagServicePreloadDir = c.String("service-preload-dir")
 	flagServiceMaxFileSize = c.Int64("service-max-file-size")
 	flagServiceMaxPerHour = c.Int("service-max-per-hour")
 	flagServiceExpiry = c.Int("service-expiry")

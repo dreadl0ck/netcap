@@ -362,7 +362,7 @@ export default function ExtractedFilesPage() {
         avoidLabelOverlap: true,
         itemStyle: {
           borderRadius: 8,
-          borderColor: '#fff',
+          borderColor: '#050508',
           borderWidth: 2
         },
         label: {
@@ -407,7 +407,7 @@ export default function ExtractedFilesPage() {
         avoidLabelOverlap: true,
         itemStyle: {
           borderRadius: 8,
-          borderColor: '#fff',
+          borderColor: '#050508',
           borderWidth: 2
         },
         label: {
@@ -465,7 +465,7 @@ export default function ExtractedFilesPage() {
         avoidLabelOverlap: true,
         itemStyle: {
           borderRadius: 8,
-          borderColor: '#fff',
+          borderColor: '#050508',
           borderWidth: 2
         },
         label: {

@@ -196,6 +196,37 @@ func TestChartWrappersEscapeAttackerControlledLabels(t *testing.T) {
 	})
 }
 
+func TestChartWrappersUseDarkFullBleedCanvas(t *testing.T) {
+	newChart := func() *charts.WordCloud {
+		wc := charts.NewWordCloud()
+		wc.AddSeries("wordcloud", []opts.WordCloudData{{Name: "netcap", Value: 1}})
+		return wc
+	}
+
+	wrappers := map[string]func(func(io.Writer) error) ([]byte, error){
+		"2d": injectFullHeightCSS,
+		"3d": inject3DChartControls,
+	}
+	for name, wrapper := range wrappers {
+		t.Run(name, func(t *testing.T) {
+			html, err := wrapper(newChart().Render)
+			if err != nil {
+				t.Fatalf("render failed: %v", err)
+			}
+			body := string(html)
+			if !strings.Contains(body, "background: #050508 !important") {
+				t.Fatal("chart document does not set a dark background")
+			}
+			if !strings.Contains(body, ".container, div[_echarts_instance_]") || !strings.Contains(body, "margin: 0 !important") {
+				t.Fatal("chart document does not override the go-echarts container margin")
+			}
+			if strings.Contains(body, "innerHeight * 0.95") {
+				t.Fatal("chart still reserves an unpainted strip below the canvas")
+			}
+		})
+	}
+}
+
 // assertNoBreakout checks that the payload cannot terminate the inline script.
 //
 // Note what is deliberately NOT asserted: the substring "onerror=alert(...)"

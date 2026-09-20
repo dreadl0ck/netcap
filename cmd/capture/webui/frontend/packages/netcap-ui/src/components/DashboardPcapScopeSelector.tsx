@@ -40,7 +40,7 @@ export default function DashboardPcapScopeSelector({ value, onChange, inputFiles
   }, [value, completed]);
 
   return (
-    <FormControl size="small" sx={{ minWidth: 240, maxWidth: { xs: '100%', sm: 420 } }}>
+    <FormControl size="small" fullWidth sx={{ minWidth: { sm: 280 }, maxWidth: { xs: '100%', sm: 420 } }}>
       <InputLabel id="dashboard-pcap-scope-label">Scope</InputLabel>
       <Select
         labelId="dashboard-pcap-scope-label"
