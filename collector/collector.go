@@ -79,7 +79,9 @@ var (
 // this structure has an optimized field order to avoid excessive padding.
 type Collector struct {
 	mu                sync.Mutex
+	dispatchMutex     sync.RWMutex
 	statMutex         sync.Mutex
+	acceptingPackets  bool
 	current           int64
 	numPacketsLast    int64
 	totalBytesWritten int64
@@ -447,6 +449,12 @@ func (c *Collector) stopWorkers() {
 	c.mu.Unlock()
 }
 
+func (c *Collector) closePacketAdmission() {
+	c.dispatchMutex.Lock()
+	c.acceptingPackets = false
+	c.dispatchMutex.Unlock()
+}
+
 // handleSignals catches signals and runs the cleanup
 // SIGQUIT is not caught, to allow debugging by producing a stack and goroutine trace.
 func (c *Collector) handleSignals() {
@@ -624,49 +632,27 @@ func (c *Collector) getSymmetricWorkerIndex(p gopacket.Packet) int {
 
 // to decode incoming packets in parallel
 // they are passed to several worker goroutines using flow sharding.
-func (c *Collector) handlePacket(p gopacket.Packet) {
-	// make it work for 1 worker only, can be used for debugging
-	if c.numWorkers == 1 {
-		c.workers[0] <- p
+func (c *Collector) handlePacket(p gopacket.Packet) bool {
+	c.dispatchMutex.RLock()
+	defer c.dispatchMutex.RUnlock()
 
-		return
-	}
-
-	idx := c.getSymmetricWorkerIndex(p)
-	c.workers[idx] <- p
-}
-
-// to decode incoming packets in parallel
-// they are passed to several worker goroutines using flow sharding.
-func (c *Collector) handlePacketTimeout(p gopacket.Packet) {
-	idx := c.getSymmetricWorkerIndex(p)
-
-	select {
-	// send the packetInfo to the decoder routine
-	case c.workers[idx] <- p:
-	case <-time.After(3 * time.Second):
-		pkt := gopacket.NewPacket(p.Data(), c.config.BaseLayer, gopacket.Default)
-
-		var (
-			nf gopacket.Flow
-			tf gopacket.Flow
-		)
-
-		if nl := pkt.NetworkLayer(); nl != nil {
-			nf = nl.NetworkFlow()
-		}
-
-		if tl := pkt.TransportLayer(); tl != nil {
-			tf = tl.TransportFlow()
-		}
-
-		fmt.Println("handle packet timeout", nf, tf)
-
-		// Dispose of the temporary packet if it's pooled
-		if pooledPkt, ok := pkt.(gopacket.PooledPacket); ok {
+	if !c.acceptingPackets {
+		if pooledPkt, ok := p.(gopacket.PooledPacket); ok {
 			pooledPkt.Dispose()
 		}
+		return false
 	}
+
+	idx := 0
+	if c.numWorkers != 1 {
+		idx = c.getSymmetricWorkerIndex(p)
+	}
+
+	c.wg.Add(1)
+	atomic.AddInt64(&c.current, 1)
+	c.workers[idx] <- p
+
+	return true
 }
 
 // print errors to stdout in red.
