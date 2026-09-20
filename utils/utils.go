@@ -343,16 +343,6 @@ func StringToTime(val string) time.Time {
 	return time.Time{}
 }
 
-// timeToString converts a time.Time to seconds.micro string.
-func timeToString(t time.Time) string {
-	var b []byte
-	b = strconv.AppendInt(b, t.Unix(), 10)
-	b = append(b, byte(46)) // 46 dec == "." FULL_STOP
-	b = strconv.AppendInt(b, int64(t.Nanosecond()/1000), 10)
-
-	return string(b)
-}
-
 // func sortSlice(values []types.AuditRecord) {
 // 	sort.Slice(values, func(i, j int) bool {
 // 		iTime := StringToTime(values[i].Time())
