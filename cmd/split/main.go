@@ -58,14 +58,14 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	//clearLine()
 	//fmt.Println("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
-	r, f, err := collector.OpenPCAP(flagInput)
+	r, err := collector.OpenPCAPReader(flagInput)
 	if err != nil {
 		log.Fatal("failed to open pcap:", err)
 	}
 
 	defer func() {
-		errClose := f.Close()
-		if errClose != nil && !errors.Is(errClose, io.EOF) {
+		errClose := r.Close()
+		if errClose != nil {
 			fmt.Println("failed to close:", errClose)
 		}
 	}()

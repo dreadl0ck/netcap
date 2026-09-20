@@ -104,6 +104,39 @@ func TestIdentifyFileTypeByMagic(t *testing.T) {
 	}
 }
 
+func TestIdentifyPcapMagicDescription(t *testing.T) {
+	tests := []struct {
+		name        string
+		magic       []byte
+		description string
+	}{
+		{name: "microseconds big-endian", magic: []byte{0xa1, 0xb2, 0xc3, 0xd4}, description: "microsecond timestamps (big-endian)"},
+		{name: "microseconds little-endian", magic: []byte{0xd4, 0xc3, 0xb2, 0xa1}, description: "microsecond timestamps (little-endian)"},
+		{name: "nanoseconds big-endian", magic: []byte{0xa1, 0xb2, 0x3c, 0x4d}, description: "nanosecond timestamps (big-endian)"},
+		{name: "nanoseconds little-endian", magic: []byte{0x4d, 0x3c, 0xb2, 0xa1}, description: "nanosecond timestamps (little-endian)"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "test.pcap")
+			if err := os.WriteFile(path, tt.magic, 0o600); err != nil {
+				t.Fatal(err)
+			}
+
+			_, info, err := identifyFileTypeByMagic(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if info == nil {
+				t.Fatal("magic was not identified as PCAP")
+			}
+			if info.description != "Classic PCAP file, "+tt.description {
+				t.Errorf("description = %q, want %q", info.description, "Classic PCAP file, "+tt.description)
+			}
+		})
+	}
+}
+
 // TestEnhancePcapError tests the enhanced error messages
 func TestEnhancePcapError(t *testing.T) {
 	tests := []struct {

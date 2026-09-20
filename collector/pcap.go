@@ -28,7 +28,6 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
-	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/pkg/errors"
 
 	"github.com/dreadl0ck/netcap/decoder/packet"
@@ -170,63 +169,17 @@ var dltDescriptions = map[int]string{
 	288: "DLT_ATSC_ALP - ATSC Link-Layer Protocol",
 }
 
-// OpenPCAP opens a Packet Capture file.
-func OpenPCAP(file string) (*pcapgo.Reader, *os.File, error) {
-	// get file handle
-	f, err := os.Open(file)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// try to create pcap reader
-	r, err := pcapgo.NewReader(f)
-	if err != nil {
-		// Close the file before returning error
-		f.Close()
-		// Enhance the error with file type detection
-		return nil, nil, enhancePcapError(file, err)
-	}
-
-	return r, f, nil
-}
-
-// IsPcap checks whether a file is a PCAP file.
-func IsPcap(file string) (bool, error) {
-	// get file handle
-	f, err := os.Open(file)
-	if err != nil {
-		return false, err
-	}
-
-	defer func() {
-		errClose := f.Close()
-		if errClose != nil && !errors.Is(errClose, io.EOF) {
-			fmt.Println("failed to close:", errClose)
-		}
-	}()
-
-	// try to create pcap reader
-	_, err = pcapgo.NewReader(f)
-	if err != nil {
-		// file exists but is not a pcap
-		// dont return error in this case
-		return false, nil
-	}
-
-	return true, nil
-}
-
 // countPackets returns the number of packets in a PCAP file.
 func countPackets(path string) (count int64, err error) {
 	// get reader and file handle
-	r, f, err := OpenPCAP(path)
+	r, err := OpenPCAPReader(path)
 	if err != nil {
 		return
 	}
 
 	defer func() {
-		errClose := f.Close()
-		if errClose != nil && !errors.Is(errClose, io.EOF) {
+		errClose := r.Close()
+		if errClose != nil {
 			fmt.Println(errClose)
 		}
 	}()
@@ -279,14 +232,14 @@ func (c *Collector) CollectPcap(path string) error {
 	c.clearLine()
 	c.printlnStdOut("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
 
-	r, f, err := OpenPCAP(path)
+	r, err := OpenPCAPReader(path)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
-		errClose := f.Close()
-		if errClose != nil && !errors.Is(errClose, io.EOF) {
+		errClose := r.Close()
+		if errClose != nil {
 			fmt.Println(errClose)
 		}
 	}()

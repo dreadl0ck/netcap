@@ -42,28 +42,33 @@ type fileTypeInfo struct {
 	suggestion  string
 }
 
+// The magic number only identifies the container. A file can carry PCAP magic
+// and still be truncated, damaged or use an unreadable link type, so the
+// suggestion must not promise that the capture is usable.
+const pcapMagicSuggestion = "The magic number is PCAP, but the file could not be read. It may be truncated, damaged, or use an unsupported version or link type."
+
 // knownMagicNumbers maps magic numbers to file format information
 var knownMagicNumbers = map[uint32]fileTypeInfo{
 	// PCAP formats
 	0xa1b2c3d4: {
 		name:        "PCAP",
-		description: "Standard PCAP file (little-endian)",
-		suggestion:  "This appears to be a valid PCAP file. Try using CollectPcap() instead.",
+		description: "Classic PCAP file, microsecond timestamps (little-endian)",
+		suggestion:  pcapMagicSuggestion,
 	},
 	0xd4c3b2a1: {
 		name:        "PCAP",
-		description: "Standard PCAP file (big-endian)",
-		suggestion:  "This appears to be a valid PCAP file. Try using CollectPcap() instead.",
+		description: "Classic PCAP file, microsecond timestamps (big-endian)",
+		suggestion:  pcapMagicSuggestion,
 	},
 	0xa1b23c4d: {
 		name:        "PCAP",
-		description: "Modified PCAP file with nanosecond resolution (little-endian)",
-		suggestion:  "This is a PCAP file with nanosecond timestamps.",
+		description: "Classic PCAP file, nanosecond timestamps (little-endian)",
+		suggestion:  pcapMagicSuggestion,
 	},
 	0x4d3cb2a1: {
 		name:        "PCAP",
-		description: "Modified PCAP file with nanosecond resolution (big-endian)",
-		suggestion:  "This is a PCAP file with nanosecond timestamps.",
+		description: "Classic PCAP file, nanosecond timestamps (big-endian)",
+		suggestion:  pcapMagicSuggestion,
 	},
 	0x0a0d0d0a: {
 		name:        "PCAPNG",

@@ -57,20 +57,8 @@ func toAuditRecordsUsingDPI() {
 	c := collector.New(maltegoBaseConfig)
 	c.PrintConfiguration()
 
-	// if not, use native pcapgo version
-	isPcap, err := collector.IsPcap(inputFile)
-	if err != nil {
-		maltego.Die(err.Error(), "failed to open input file")
-	}
-
-	if isPcap {
-		if err = c.CollectPcap(inputFile); err != nil {
-			maltego.Die(err.Error(), "failed to collect audit records from pcap file")
-		}
-	} else {
-		if err = c.CollectPcapNG(inputFile); err != nil {
-			maltego.Die(err.Error(), "failed to collect audit records from pcapng file")
-		}
+	if err = c.CollectCapture(inputFile); err != nil {
+		maltego.Die(err.Error(), "failed to collect audit records from capture file")
 	}
 
 	writeAuditRecords(trx, outDir)

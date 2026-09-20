@@ -1801,39 +1801,10 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		}
 	}()
 
-	// Check if input is pcap or pcapng
-	isPcap, err := collector.IsPcap(job.InputFile)
-	if err != nil {
-		analysisErr = fmt.Errorf("failed to check file type: %w", err)
-		log.Printf("[WebUI] Analysis failed for session %s: %v", job.SessionID, analysisErr)
-
-		if errorLogFile != nil {
-			fmt.Fprintf(errorLogFile, "\n========================================\n")
-			fmt.Fprintf(errorLogFile, "=== File Type Check Error ===\n")
-			fmt.Fprintf(errorLogFile, "========================================\n\n")
-			fmt.Fprintf(errorLogFile, "Session ID: %s\n", job.SessionID)
-			fmt.Fprintf(errorLogFile, "Input File: %s\n", job.InputFile)
-			fmt.Fprintf(errorLogFile, "\n--- Error Details ---\n")
-			fmt.Fprintf(errorLogFile, "%s\n", analysisErr.Error())
-			fmt.Fprintf(errorLogFile, "\n========================================\n")
-			errorLogFile.Sync()
-		}
-
-		if s.sessionManager != nil {
-			s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, fmt.Sprintf("Analysis failed: %v", analysisErr), errorLogPath)
-		} else {
-			s.SetFileError(job.InputFile, fmt.Sprintf("Analysis failed: %v", analysisErr), errorLogPath)
-		}
-		return
-	}
-
-	// Execute collection based on file type
 	if job.BPFFilter != "" {
 		analysisErr = c.CollectBPF(job.InputFile, job.BPFFilter)
-	} else if isPcap {
-		analysisErr = c.CollectPcap(job.InputFile)
 	} else {
-		analysisErr = c.CollectPcapNG(job.InputFile)
+		analysisErr = c.CollectCapture(job.InputFile)
 	}
 
 	duration := time.Since(startTime)

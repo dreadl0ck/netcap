@@ -1397,18 +1397,13 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			continue
 		}
 
-		// if not, use native pcapgo version
-		isPcap, err := collector.IsPcap(inputFile)
-		if err != nil {
-			// invalid path
+		if err = coll.CollectCapture(inputFile); err != nil {
 			if len(inputFiles) > 1 {
-				fmt.Printf("Error: failed to open file: %v\n", err)
+				fmt.Printf("Error: failed to collect audit records from capture file: %v\n", err)
 
-				// Create error log
-				errorMsg := fmt.Errorf("failed to open file: %w", err)
+				errorMsg := fmt.Errorf("failed to collect audit records from capture file: %w", err)
 				errorLogPath := createErrorLog(inputFile, flagOutDir, errorMsg)
 
-				// Notify webUI server
 				if webUIServer != nil {
 					webUIServer.SetFileError(inputFile, errorMsg.Error(), errorLogPath)
 				}
@@ -1421,58 +1416,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 				fmt.Println("Skipping to next file...")
 				continue
 			}
-			fmt.Println("failed to open file:", err)
-			os.Exit(1)
-		}
-
-		if isPcap {
-			if err = coll.CollectPcap(inputFile); err != nil {
-				if len(inputFiles) > 1 {
-					fmt.Printf("Error: failed to collect audit records from pcap file: %v\n", err)
-
-					// Create error log
-					errorMsg := fmt.Errorf("failed to collect audit records from pcap file: %w", err)
-					errorLogPath := createErrorLog(inputFile, flagOutDir, errorMsg)
-
-					// Notify webUI server
-					if webUIServer != nil {
-						webUIServer.SetFileError(inputFile, errorMsg.Error(), errorLogPath)
-					}
-
-					fileErrors = append(fileErrors, fileError{
-						filename:     inputFile,
-						err:          errorMsg,
-						errorLogPath: errorLogPath,
-					})
-					fmt.Println("Skipping to next file...")
-					continue
-				}
-				log.Fatal("failed to collect audit records from pcap file: ", err)
-			}
-		} else {
-			if err = coll.CollectPcapNG(inputFile); err != nil {
-				if len(inputFiles) > 1 {
-					fmt.Printf("Error: failed to collect audit records from pcapng file: %v\n", err)
-
-					// Create error log
-					errorMsg := fmt.Errorf("failed to collect audit records from pcapng file: %w", err)
-					errorLogPath := createErrorLog(inputFile, flagOutDir, errorMsg)
-
-					// Notify webUI server
-					if webUIServer != nil {
-						webUIServer.SetFileError(inputFile, errorMsg.Error(), errorLogPath)
-					}
-
-					fileErrors = append(fileErrors, fileError{
-						filename:     inputFile,
-						err:          errorMsg,
-						errorLogPath: errorLogPath,
-					})
-					fmt.Println("Skipping to next file...")
-					continue
-				}
-				log.Fatal("failed to collect audit records from pcapng file: ", err)
-			}
+			log.Fatal("failed to collect audit records from capture file: ", err)
 		}
 
 		// Calculate processing duration for this file

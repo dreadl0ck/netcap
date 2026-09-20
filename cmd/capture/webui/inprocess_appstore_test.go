@@ -23,6 +23,7 @@ package webui
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"go/ast"
@@ -309,6 +310,43 @@ func TestPureGoPCAPFilterMatches(t *testing.T) {
 	}
 	if _, err := os.Stat(out2); !os.IsNotExist(err) {
 		t.Fatalf("expected empty output file to be removed, stat err=%v", err)
+	}
+}
+
+func TestPureGoPCAPFilterReadsLegacyVersion(t *testing.T) {
+	input := filepath.Join(t.TempDir(), "legacy.pcap")
+	header := make([]byte, 24)
+	binary.BigEndian.PutUint32(header[0:4], 0xa1b2c3d4)
+	binary.BigEndian.PutUint16(header[4:6], 2)
+	binary.BigEndian.PutUint16(header[6:8], 1)
+	binary.BigEndian.PutUint32(header[16:20], 262144)
+	binary.BigEndian.PutUint32(header[20:24], 1) // Ethernet
+
+	packet := []byte{
+		0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+		0x00, 0x11, 0x22, 0x33, 0x44, 0x55,
+		0x08, 0x00,
+	}
+	record := make([]byte, 16)
+	binary.BigEndian.PutUint32(record[0:4], 1)
+	binary.BigEndian.PutUint32(record[8:12], uint32(len(packet)))
+	binary.BigEndian.PutUint32(record[12:16], uint32(len(packet)))
+
+	contents := append(append(header, record...), packet...)
+	if err := os.WriteFile(input, contents, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	output := filepath.Join(t.TempDir(), "filtered.pcap")
+	n, err := filterPCAPToFile(input, "", output)
+	if err != nil {
+		t.Fatalf("filterPCAPToFile: %v", err)
+	}
+	if n != 1 {
+		t.Fatalf("filtered packet count = %d, want 1", n)
+	}
+	if fi, err := os.Stat(output); err != nil || fi.Size() <= 24 {
+		t.Fatalf("filtered pcap missing or empty: err=%v", err)
 	}
 }
 

@@ -22,23 +22,17 @@ package webui
 import (
 	"bufio"
 	"context"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	stdio "io"
 	"os"
 	"time"
 
-	"github.com/gopacket/gopacket"
-	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcap"
 	"github.com/gopacket/gopacket/pcapgo"
-)
 
-// pcapReader is the subset of *pcapgo.Reader / *pcapgo.NgReader this file uses.
-type pcapReader interface {
-	ReadPacketData() (data []byte, ci gopacket.CaptureInfo, err error)
-}
+	"github.com/dreadl0ck/netcap/collector"
+)
 
 // filterPCAPToFile reads inputFile (pcap or pcapng), keeps only the packets
 // matching the BPF expression, and writes them to outputFile as a standard
@@ -62,16 +56,13 @@ func filterPCAPToFileWithTimeout(parent context.Context, inputFile, bpfExpr, out
 }
 
 func filterPCAPToFileContext(ctx context.Context, inputFile, bpfExpr, outputFile string) (int, error) {
-	in, err := os.Open(inputFile)
-	if err != nil {
-		return 0, fmt.Errorf("open input: %w", err)
-	}
-	defer in.Close()
-
-	reader, linkType, err := newPacketReader(in)
+	reader, err := collector.OpenCapture(inputFile)
 	if err != nil {
 		return 0, err
 	}
+	defer reader.Close()
+
+	linkType := reader.LinkType()
 
 	// Compile the BPF against the capture's own link type so offsets match,
 	// exactly as tcpdump does when reading the file.
@@ -142,31 +133,4 @@ func filterPCAPToFileContext(ctx context.Context, inputFile, bpfExpr, outputFile
 
 func isPCAPFilterTimeout(err error) bool {
 	return errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)
-}
-
-// newPacketReader picks the pcap or pcapng reader from the file's magic bytes
-// and returns it together with the capture link type.
-func newPacketReader(f *os.File) (pcapReader, layers.LinkType, error) {
-	magic := make([]byte, 4)
-	if _, err := stdio.ReadFull(f, magic); err != nil {
-		return nil, 0, fmt.Errorf("read magic: %w", err)
-	}
-	if _, err := f.Seek(0, stdio.SeekStart); err != nil {
-		return nil, 0, fmt.Errorf("seek: %w", err)
-	}
-
-	// A PCAPNG section header block starts with 0x0A0D0D0A.
-	if binary.BigEndian.Uint32(magic) == 0x0a0d0d0a {
-		ng, err := pcapgo.NewNgReader(f, pcapgo.DefaultNgReaderOptions)
-		if err != nil {
-			return nil, 0, fmt.Errorf("open pcapng: %w", err)
-		}
-		return ng, ng.LinkType(), nil
-	}
-
-	r, err := pcapgo.NewReader(f)
-	if err != nil {
-		return nil, 0, fmt.Errorf("open pcap: %w", err)
-	}
-	return r, r.LinkType(), nil
 }

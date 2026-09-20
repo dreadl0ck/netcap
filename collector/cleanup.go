@@ -349,22 +349,8 @@ func (c *Collector) teardown() {
 			return
 		}
 
-		// if not, use native pcapgo version
-		isPcap, err := IsPcap(c.InputFile)
-		if err != nil {
-			// invalid path
-			fmt.Println("failed to open file:", err)
-			os.Exit(1)
-		}
-
-		if isPcap {
-			if err = c.CollectPcap(c.InputFile); err != nil {
-				log.Fatal("failed to collect audit records from pcap file: ", err)
-			}
-		} else {
-			if err = c.CollectPcapNG(c.InputFile); err != nil {
-				log.Fatal("failed to collect audit records from pcapng file: ", err)
-			}
+		if err = c.CollectCapture(c.InputFile); err != nil {
+			log.Fatal("failed to collect audit records from capture file: ", err)
 		}
 
 		if c.PrintTime {

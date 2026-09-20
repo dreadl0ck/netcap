@@ -36,8 +36,8 @@ import (
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/internal/metrics"
+	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -227,22 +227,8 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			return nil
 		}
 
-		// if not, use native pcapgo version
-		isPcap, errCheck := collector.IsPcap(flagInput)
-		if errCheck != nil {
-			// invalid path
-			fmt.Println("failed to open file:", errCheck)
-			os.Exit(1)
-		}
-
-		if isPcap {
-			if err := coll.CollectPcap(flagInput); err != nil {
-				log.Fatal("failed to collect audit records from pcap file: ", err)
-			}
-		} else {
-			if err := coll.CollectPcapNG(flagInput); err != nil {
-				log.Fatal("failed to collect audit records from pcapng file: ", err)
-			}
+		if err := coll.CollectCapture(flagInput); err != nil {
+			log.Fatal("failed to collect audit records from capture file: ", err)
 		}
 
 		// memory profiling
