@@ -26,8 +26,8 @@ import (
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
-	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/mail"
+	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/types"
@@ -324,9 +324,10 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 	}
 
 	var (
-		state    = stateNotAuthenticated
-		numMails int
-		next     = func() *types.POP3Request {
+		state       = stateNotAuthenticated
+		numMails    int
+		mailOrdinal uint64
+		next        = func() *types.POP3Request {
 			return h.pop3Requests[h.reqIndex]
 		}
 		mailBuf      string
@@ -401,11 +402,12 @@ func (h *pop3Reader) processPOP3Conversation() (mailIDs []string, user, pass, to
 
 				for _, reply := range h.pop3Responses[h.resIndex:] {
 					if reply.Command == pop3Dot {
-						m := mail.Parse(h.conversation, []byte(mailBuf), "", "", pop3Log, servicePOP3)
+						m := mail.Parse(h.conversation, []byte(mailBuf), "", "", pop3Log, servicePOP3, mailOrdinal)
 						mail.WriteMail(m)
 						mailIDs = append(mailIDs, m.ID)
 						mailBuf = ""
 						numMails++
+						mailOrdinal++
 						h.resIndex++
 
 						break

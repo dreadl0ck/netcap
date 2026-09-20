@@ -87,6 +87,7 @@ type Collector struct {
 	backgroundWG      sync.WaitGroup
 	mu                sync.Mutex
 	statMutex         sync.Mutex
+	acceptingPackets  bool
 	current           int64
 	numPacketsLast    int64
 	totalBytesWritten int64
@@ -447,6 +448,7 @@ func (c *Collector) recoverFromPanic() {
 // stopWorkers halts all workers.
 func (c *Collector) stopWorkers() {
 	c.dispatchMu.Lock()
+	c.acceptingPackets = false
 	if !c.workersStopped {
 		c.workersStopped = true
 		for _, w := range c.workers {
@@ -455,6 +457,12 @@ func (c *Collector) stopWorkers() {
 	}
 	c.dispatchMu.Unlock()
 	c.workersWG.Wait()
+}
+
+func (c *Collector) closePacketAdmission() {
+	c.dispatchMu.Lock()
+	c.acceptingPackets = false
+	c.dispatchMu.Unlock()
 }
 
 // handleSignals catches signals and runs the cleanup
@@ -646,7 +654,7 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 			}
 		}
 	}()
-	if p == nil || c.workersStopped || len(c.workers) == 0 {
+	if p == nil || !c.acceptingPackets || c.workersStopped || len(c.workers) == 0 {
 		return false
 	}
 	idx := c.getSymmetricWorkerIndex(p)
@@ -659,15 +667,16 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	// Capture metadata before transferring ownership to the worker.
 	ref := p.Metadata().CaptureInfo.Timestamp
 	c.wg.Add(1)
+	atomic.AddInt64(&c.current, 1)
 	select {
 	case c.workers[idx] <- p:
 		accepted = true
 	case <-deadline:
 		c.wg.Done()
+		atomic.AddInt64(&c.current, -1)
 		return false
 	}
 	c.admittedPackets++
-	atomic.AddInt64(&c.current, 1)
 	if c.config != nil && c.config.ReassembleConnections && c.config.DecoderConfig.FlushEvery > 0 {
 		if c.admittedPackets%uint64(c.config.DecoderConfig.FlushEvery) == 0 {
 			for _, w := range c.workers {

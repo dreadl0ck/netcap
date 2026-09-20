@@ -348,7 +348,7 @@ func (h *smtpReader) processSMTPConversation() (mailIDs []string) {
 
 	var (
 		// state    = stateNotAuthenticated
-		numMails int
+		numMails uint64
 		from, to string
 		next     = func() *types.SMTPRequest {
 			return h.smtpRequests[h.reqIndex]
@@ -379,7 +379,7 @@ func (h *smtpReader) processSMTPConversation() (mailIDs []string) {
 			continue
 		case smtpDATA:
 
-			m := mail.Parse(h.conversation, []byte(r.Data), from, to, smtpLog, serviceSMTP)
+			m := mail.Parse(h.conversation, []byte(r.Data), from, to, smtpLog, serviceSMTP, numMails)
 			mail.WriteMail(m)
 			mailIDs = append(mailIDs, m.ID)
 			numMails++

@@ -65,7 +65,8 @@ func saveTCPServiceBanner(s streamReader) {
 
 		return
 	}
-	// Keep the store locked through insertion so concurrent pools cannot replace this service.
+	service.Store.Unlock()
+
 	// Safely extract network destination
 	var networkDst string
 	if len(s.Network().Dst().Raw()) > 0 {
@@ -92,7 +93,30 @@ func saveTCPServiceBanner(s streamReader) {
 
 	service.MatchServiceProbes(serv, banner, s.Ident())
 
-	// add new service
+	// Probe matching is deliberately outside the store lock. Recheck before
+	// insertion because another stream may have created the service meanwhile.
+	service.Store.Lock()
+
+	// Another stream towards the same service may have created the entry while
+	// the probes above were running. Blindly overwriting it dropped the flows
+	// that entry had already collected.
+	if sv, ok := service.Store.Items[s.ServiceIdent()]; ok {
+		service.Store.Unlock()
+
+		sv.Lock()
+		defer sv.Unlock()
+
+		if !slices.Contains(sv.Flows, ident) {
+			sv.Flows = append(sv.Flows, ident)
+		}
+
+		if len(sv.Banner) < len(banner) {
+			sv.Banner = string(banner)
+			sv.Timestamp = s.FirstPacket().UnixNano()
+		}
+
+		return
+	}
 	service.Store.Items[s.ServiceIdent()] = serv
 	service.Store.Unlock()
 

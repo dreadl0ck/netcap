@@ -26,6 +26,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"unicode/utf16"
@@ -1237,9 +1238,16 @@ func parseSMB2Capabilities(caps uint32) []string {
 		0x00000020: "DIRECTORY_LEASING",
 		0x00000040: "ENCRYPTION",
 	}
-	for bit, name := range capNames {
+	// ascending bit order: ranging over the map would shuffle the result
+	bits := make([]uint32, 0, len(capNames))
+	for bit := range capNames {
+		bits = append(bits, bit)
+	}
+	sort.Slice(bits, func(i, j int) bool { return bits[i] < bits[j] })
+
+	for _, bit := range bits {
 		if caps&bit != 0 {
-			result = append(result, name)
+			result = append(result, capNames[bit])
 		}
 	}
 	return result
@@ -1251,7 +1259,16 @@ func formatAccessMask(mask uint32) string {
 	}
 
 	parts := []string{}
-	for bit, name := range accessMaskFlags {
+
+	// ascending bit order: ranging over the map would shuffle the result
+	bits := make([]uint32, 0, len(accessMaskFlags))
+	for bit := range accessMaskFlags {
+		bits = append(bits, bit)
+	}
+	sort.Slice(bits, func(i, j int) bool { return bits[i] < bits[j] })
+
+	for _, bit := range bits {
+		name := accessMaskFlags[bit]
 		if mask&bit != 0 {
 			parts = append(parts, name)
 		}

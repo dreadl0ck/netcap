@@ -267,6 +267,7 @@ func (c *Collector) initWorkers() []chan gopacket.Packet {
 	if len(c.workers) != 0 {
 		return c.workers
 	}
+	c.acceptingPackets = true
 
 	// init worker slice
 	workers := make([]chan gopacket.Packet, c.config.Workers)

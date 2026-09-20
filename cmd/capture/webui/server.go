@@ -1951,24 +1951,17 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	// we must GC everything before resetting the TCP factory
 	runtime.GC()
 
-	// Step 6: Ensure ALL TCP stream reader goroutines are stopped
-	// Even though cleanup() was called at the end of CollectPcap(), we need to
-	// ensure goroutines have fully exited before resetting the factory
-	// Use quiet version since log files for previous file are already closed
-	log.Printf("[WebUI] Ensuring TCP stream readers are stopped for session %s...", job.SessionID)
-	tcp.CloseStreamReaderChannelsAndWaitQuiet()
-
-	// Step 7: NOW reset TCP factory - old StreamPool can be GC'd
+	// Step 6: Reset TCP factory so the old StreamPool can be GC'd.
 	// Because assemblers, pageCaches, and stream readers are gone, old pool has no references
 	tcp.ResetStreamFactory()
 
-	// Step 8: Reset DPI flow tracker if DPI is enabled
+	// Step 7: Reset DPI flow tracker if DPI is enabled
 	if job.EnableDPI && dpi.HasDPISupport() {
 		log.Printf("[WebUI] Resetting DPI for session %s...", job.SessionID)
 		dpi.Reset("") // Service mode uses all modules
 	}
 
-	// Step 9: Final GC and OS memory release
+	// Step 8: Final GC and OS memory release
 	runtime.GC()
 	debug.FreeOSMemory()
 

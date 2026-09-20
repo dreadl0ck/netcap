@@ -619,11 +619,9 @@ func CleanupReassembly(_ bool, assemblers []*reassembly.Assembler) {
 		}
 	}
 	decoderconfig.UnlockInstance()
-
 	StreamFactory.Lock()
 	numTotal := len(StreamFactory.streamReaders)
 	StreamFactory.Unlock()
-
 	if !decoderconfig.Instance.Quiet && numTotal > 1 {
 		fmt.Println("\nprocessing last TCP streams")
 	}

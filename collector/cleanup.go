@@ -53,6 +53,7 @@ func (c *Collector) cleanup(force bool) {
 		c.statMutex.Lock()
 		c.shutdown = true
 		c.statMutex.Unlock()
+		c.closePacketAdmission()
 		c.stopWorkers()
 		c.producersWG.Wait()
 		c.backgroundWG.Wait()

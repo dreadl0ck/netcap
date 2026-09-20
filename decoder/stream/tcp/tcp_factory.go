@@ -73,9 +73,6 @@ func closeStreamReaderChannelsAndWaitInternal(doLog bool) {
 		}
 	}
 
-	// Now wait for all goroutines to finish
-	// This will block until all tcpStreamReader.Run() goroutines have exited
-	// and called Cleanup() which does wg.Done()
 	if doLog {
 		StreamFactory.Lock()
 		reassemblyLog.Info("waiting for last TCP streams to process", zap.Int64("num", StreamFactory.numActive))

@@ -24,6 +24,7 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -33,7 +34,8 @@ import (
 	"golang.org/x/net/bpf"
 )
 
-// handleRawPacketData takes ownership of data; callers must not modify or reuse it.
+// handleRawPacketData takes ownership of data and reports whether the packet was admitted.
+// Callers must not modify or reuse data.
 func (c *Collector) handleRawPacketData(data []byte, ci *gopacket.CaptureInfo) bool {
 	// Determine the correct base layer for this packet.
 	// For pcapng files with mixed link types, the per-packet link type
@@ -102,21 +104,11 @@ func linkTypeToLayerType(lt layers.LinkType) gopacket.LayerType {
 
 // printProgressLive prints live statistics.
 func (c *Collector) printProgressLive() {
-	// must be locked, otherwise a race occurs when sending a SIGINT and triggering wg.Wait() in another goroutine...
-	c.statMutex.Lock()
-
-	// dont print message when collector is about to shutdown
-	if c.shutdown {
-		c.statMutex.Unlock()
-
-		return
-	}
-	c.statMutex.Unlock()
-
-	if c.current%1000 == 0 {
+	current := atomic.LoadInt64(&c.current)
+	if current%1000 == 0 {
 		c.clearLine()
 		if !c.config.DecoderConfig.Quiet {
-			fmt.Print("running since ", time.Since(c.start), ", captured ", c.current, " packets...")
+			fmt.Print("running since ", time.Since(c.start), ", captured ", current, " packets...")
 		}
 	}
 }

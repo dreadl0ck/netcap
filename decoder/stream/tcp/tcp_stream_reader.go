@@ -75,7 +75,7 @@ func (t *tcpStreamReader) DataChan() chan *core.StreamData {
 }
 
 // StoreData records an immutable stream fragment synchronously with the
-// assembler's delivery path so completion sees all fragments and byte counts.
+// assembler's delivery path so completion sees fragments still queued for draining.
 func (t *tcpStreamReader) StoreData(data *core.StreamData) {
 	t.parent.Lock()
 	t.data = append(t.data, data)
@@ -171,7 +171,7 @@ func (t *tcpStreamReader) Saved() bool {
 	return t.saved
 }
 
-// NumBytes returns the number of bytes processed.
+// NumBytes returns the number of bytes recorded.
 func (t *tcpStreamReader) NumBytes() int {
 	t.parent.Lock()
 	defer t.parent.Unlock()
@@ -232,12 +232,7 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 // Run starts reading TCP traffic in a single direction.
 func (t *tcpStreamReader) Run(f *connectionFactory) {
 	defer t.Cleanup(f)
-
-	for data := range t.dataChan {
-		if data == nil {
-			return
-		}
-
+	for range t.dataChan {
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 )
 
@@ -15,7 +16,7 @@ func TestTCPStreamReaderRun(t *testing.T) {
 		nilEOF bool
 	}{
 		{name: "closed empty channel"},
-		{name: "nil EOF", sizes: []int{17, 8193}, nilEOF: true},
+		{name: "nil fragment", sizes: []int{17, 8193}, nilEOF: true},
 		{name: "buffered fragments", sizes: []int{17, 4096, 8193}},
 		{name: "empty fragments", sizes: []int{0, 0, 17, 0}},
 	} {
@@ -39,10 +40,8 @@ func TestTCPStreamReaderRun(t *testing.T) {
 					t.Fatalf("bytes before reader starts = %d, want %d", got, wantBytes)
 				}
 				reader.DataChan() <- nil
-				defer close(reader.DataChan())
-			} else {
-				close(reader.DataChan())
 			}
+			close(reader.DataChan())
 
 			factory := &connectionFactory{numActive: 1}
 			factory.wg.Add(1)
@@ -72,5 +71,99 @@ func TestTCPStreamReaderRun(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestTCPStreamReaderStoreDataCountsSynchronously(t *testing.T) {
+	reader := &tcpStreamReader{parent: &tcpConnection{}}
+
+	reader.StoreData(&core.StreamData{RawData: []byte("final fragment")})
+
+	if got, want := reader.NumBytes(), len("final fragment"); got != want {
+		t.Fatalf("NumBytes() = %d, want %d before reader runs", got, want)
+	}
+}
+
+func TestCleanupReassemblyClosesAndDrainsReadersWhenFlushDisabled(t *testing.T) {
+	conn := &tcpConnection{}
+	reader := &tcpStreamReader{
+		parent:   conn,
+		dataChan: make(chan *core.StreamData, 3),
+		saved:    true,
+	}
+	reader.DataChan() <- &core.StreamData{RawData: []byte("first")}
+	reader.DataChan() <- nil
+	reader.DataChan() <- &core.StreamData{RawData: []byte("final")}
+
+	factory := &connectionFactory{
+		streamReaders: []streamReader{reader},
+		numActive:     1,
+	}
+	factory.wg.Add(1)
+	go reader.Run(factory)
+
+	originalFactory := StreamFactory
+	originalWait := decoderconfig.Instance.WaitForConnections
+	originalQuiet := decoderconfig.Instance.Quiet
+	StreamFactory = factory
+	decoderconfig.Instance.WaitForConnections = false
+	decoderconfig.Instance.Quiet = true
+	t.Cleanup(func() {
+		StreamFactory = originalFactory
+		decoderconfig.Instance.WaitForConnections = originalWait
+		decoderconfig.Instance.Quiet = originalQuiet
+	})
+
+	CleanupReassembly(false, nil)
+
+	if got := len(reader.DataChan()); got != 0 {
+		t.Fatalf("queued fragments after close = %d, want 0", got)
+	}
+	if _, ok := <-reader.DataChan(); ok {
+		t.Fatal("reader channel remains open")
+	}
+	if factory.numActive != 0 {
+		t.Fatalf("active readers = %d, want 0", factory.numActive)
+	}
+}
+
+func TestCleanupReassemblyClosesReadersWithoutTimeout(t *testing.T) {
+	conn := &tcpConnection{}
+	reader := &tcpStreamReader{
+		parent:   conn,
+		dataChan: make(chan *core.StreamData, 1),
+		saved:    true,
+	}
+	reader.DataChan() <- &core.StreamData{RawData: []byte("final")}
+
+	factory := &connectionFactory{
+		streamReaders: []streamReader{reader},
+		numActive:     1,
+	}
+	factory.wg.Add(1)
+	go reader.Run(factory)
+
+	originalFactory := StreamFactory
+	originalWait := decoderconfig.Instance.WaitForConnections
+	originalQuiet := decoderconfig.Instance.Quiet
+	originalWorkers := decoderconfig.Instance.NumStreamWorkers
+	StreamFactory = factory
+	decoderconfig.Instance.WaitForConnections = true
+	decoderconfig.Instance.Quiet = true
+	decoderconfig.Instance.NumStreamWorkers = 1
+	t.Cleanup(func() {
+		StreamFactory = originalFactory
+		decoderconfig.Instance.WaitForConnections = originalWait
+		decoderconfig.Instance.Quiet = originalQuiet
+		decoderconfig.Instance.NumStreamWorkers = originalWorkers
+	})
+
+	started := time.Now()
+	CleanupReassembly(false, nil)
+	if elapsed := time.Since(started); elapsed >= 750*time.Millisecond {
+		t.Fatal("CleanupReassembly waited for the former teardown timeout")
+	}
+	if _, ok := <-reader.DataChan(); ok {
+		t.Fatal("reader channel remains open after cleanup")
 	}
 }

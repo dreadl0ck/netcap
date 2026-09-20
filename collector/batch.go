@@ -32,8 +32,9 @@ type BatchInfo struct {
 	Chan <-chan []byte
 }
 
-// InitBatching initializes batching mode and returns an array of Batchinfos and the pcap handle
-// closing the handle must be done by the caller.
+// InitBatching initializes batching mode and returns decoder channels and the
+// pcap handle. Closing the handle stops capture early; lifecycle cleanup also
+// closes it when capture ends.
 func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Handle, error) {
 	var chans []BatchInfo //nolint:prealloc
 	ctx, finish, err := c.beginCapture()
@@ -108,6 +109,7 @@ func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Hand
 			if err != nil || !c.handlePacket(p) {
 				return
 			}
+			c.printProgressLive()
 		}
 	}()
 	return chans, handle, nil

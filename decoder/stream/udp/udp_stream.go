@@ -75,10 +75,26 @@ func (u *udpStreamPool) size() int {
 	return len(u.streams)
 }
 
+// udpConversationKey identifies a UDP conversation by both endpoints.
+// Keying on the transport flow alone merged every conversation that happened
+// to share a port pair, e.g. all DNS traffic towards port 53, regardless of
+// the hosts involved. FastHash collides with the reverse flow by design, so
+// both directions still map to the same conversation.
+func udpConversationKey(packet gopacket.Packet) uint64 {
+	key := packet.TransportLayer().TransportFlow().FastHash()
+	if net := packet.NetworkLayer(); net != nil {
+		key ^= net.NetworkFlow().FastHash()
+	}
+
+	return key
+}
+
 // HandleUDP takes an UDP packet and tracks the data seen for the conversation.
 func (u *udpStreamPool) HandleUDP(packet gopacket.Packet, udpLayer gopacket.Layer) {
+	key := udpConversationKey(packet)
+
 	u.Lock()
-	if s, ok := u.streams[packet.TransportLayer().TransportFlow().FastHash()]; ok {
+	if s, ok := u.streams[key]; ok {
 		u.Unlock()
 
 		s.Lock()
@@ -98,7 +114,7 @@ func (u *udpStreamPool) HandleUDP(packet gopacket.Packet, udpLayer gopacket.Laye
 			Trans:              packet.TransportLayer().TransportFlow(),
 			Net:                packet.NetworkLayer().NetworkFlow(),
 		})
-		u.streams[packet.TransportLayer().TransportFlow().FastHash()] = str
+		u.streams[key] = str
 		u.Unlock()
 	}
 }
@@ -245,7 +261,10 @@ func (u *udpStream) decode() {
 	// if no stream decoder for the port was found, or the stream decoder did not match
 	// try all available decoders and use the first one that matches
 	if !found {
-		for _, sd := range stream.DefaultStreamDecoders {
+		// Iterate in sorted port order: ranging over the map would let a
+		// different decoder win between runs whenever several match.
+		for _, port := range stream.SortedDecoderPorts {
+			sd := stream.DefaultStreamDecoders[port]
 			if sd.Transport() == core.UDP || sd.Transport() == core.All {
 				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
 					u.decoder = sd.GetReaderFactory().New(conv)
