@@ -233,6 +233,12 @@ func TestAppStoreInProcessAnalysisNeedsNoExternalDatabases(t *testing.T) {
 	if config.ServiceDB || config.GeolocationDB {
 		t.Fatalf("App Store resolver config requires external databases: %+v", config)
 	}
+	excluded := getExcludeDecoders(&AnalysisJob{EnableDPI: false})
+	for _, decoder := range []string{"Exploit", "Service", "Software"} {
+		if !strings.Contains(excluded, decoder) {
+			t.Fatalf("App Store analysis initializes database-dependent decoder %s: excludes=%q", decoder, excluded)
+		}
+	}
 }
 
 func TestInProcessAnalysisFailureTerminatesLocalProgress(t *testing.T) {

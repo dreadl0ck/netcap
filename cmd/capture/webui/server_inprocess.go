@@ -33,6 +33,8 @@ func inProcessResolverConfig() resolvers.Config {
 	return resolvers.Config{ReverseDNS: false, LocalDNS: false, MACDB: true}
 }
 
+func inProcessRequiredExcludes() string { return "Exploit,Service,Software" }
+
 // runAnalysis runs the capture analysis fully in-process for the App Store
 // edition. This build spawns no external "net" CLI: the whole collector runs
 // inside this binary. The memory leak the in-process path once had lived in

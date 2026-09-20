@@ -1420,6 +1420,13 @@ func (s *Server) processJobs() {
 // regardless of which decoders a given build carries.
 func getExcludeDecoders(job *AnalysisJob) string {
 	excludeDecoders := job.ExcludeDecoders
+	if required := inProcessRequiredExcludes(); required != "" {
+		if excludeDecoders != "" {
+			excludeDecoders += "," + required
+		} else {
+			excludeDecoders = required
+		}
+	}
 
 	// When DPI is disabled, exclude DPI-dependent decoders
 	// These decoders can cause nil pointer crashes if DPI is not properly initialized

@@ -45,6 +45,8 @@ func inProcessResolverConfig() resolvers.Config {
 	}
 }
 
+func inProcessRequiredExcludes() string { return "" }
+
 // runAnalysis executes a netcap capture analysis out-of-process by shelling
 // out to the "net" CLI. This is the direct-edition path; the App Store build
 // replaces it with the in-process collector (see server_inprocess.go).
