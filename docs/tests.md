@@ -102,8 +102,6 @@ pkg: github.com/dreadl0ck/netcap/types
 BenchmarkMarshal-12           9817819           110 ns/op          64 B/op           1 allocs/op
 BenchmarkUnmarshal-12         8703766           134 ns/op          40 B/op           2 allocs/op
 pkg: github.com/dreadl0ck/netcap/utils
-BenchmarkTimeToStringOld-12                5283726           229 ns/op          64 B/op           4 allocs/op
-BenchmarkTimeToString-12                   8273997           136 ns/op          80 B/op           3 allocs/op
 BenchmarkStringToTime-12                   8842005           137 ns/op          32 B/op           1 allocs/op
 BenchmarkStringToTimeFieldsFunc-12         6809409           185 ns/op          32 B/op           1 allocs/op
 BenchmarkProgressOld-12                   54425902            21.0 ns/op           0 B/op           0 allocs/op
@@ -117,4 +115,3 @@ Run the tests with race detection enabled:
 ```text
 $ go test -race -v ./...
 ```
-

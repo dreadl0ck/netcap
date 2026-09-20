@@ -20,6 +20,7 @@
 package service
 
 import (
+	"sort"
 	"sync/atomic"
 
 	"github.com/dreadl0ck/netcap/decoder"
@@ -54,7 +55,16 @@ var Decoder = &decoder.AbstractDecoder{
 	DeInit: func(e *decoder.AbstractDecoder) error {
 		// flush writer
 		var err error
-		for _, item := range Store.Items {
+
+		// stable output order: Store.Items is a map
+		idents := make([]string, 0, len(Store.Items))
+		for ident := range Store.Items {
+			idents = append(idents, ident)
+		}
+		sort.Strings(idents)
+
+		for _, ident := range idents {
+			item := Store.Items[ident]
 			item.Lock()
 
 			// populate Applications from DPI results
@@ -63,6 +73,9 @@ var Decoder = &decoder.AbstractDecoder{
 				for app := range item.applications {
 					item.Service.Applications = append(item.Service.Applications, app)
 				}
+				// DetectedProtocolName below takes the first entry, so the map
+				// order would otherwise decide which protocol gets reported.
+				sort.Strings(item.Service.Applications)
 			}
 
 			// Set DetectedProtocolName based on available information

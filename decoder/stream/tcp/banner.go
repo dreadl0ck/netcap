@@ -96,6 +96,28 @@ func saveTCPServiceBanner(s streamReader) {
 
 	// add new service
 	service.Store.Lock()
+
+	// Another stream towards the same service may have created the entry while
+	// the probes above were running. Blindly overwriting it dropped the flows
+	// that entry had already collected.
+	if sv, ok := service.Store.Items[s.ServiceIdent()]; ok {
+		service.Store.Unlock()
+
+		sv.Lock()
+		defer sv.Unlock()
+
+		if !slices.Contains(sv.Flows, ident) {
+			sv.Flows = append(sv.Flows, ident)
+		}
+
+		if len(sv.Banner) < len(banner) {
+			sv.Banner = string(banner)
+			sv.Timestamp = s.FirstPacket().UnixNano()
+		}
+
+		return
+	}
+
 	service.Store.Items[s.ServiceIdent()] = serv
 	service.Store.Unlock()
 

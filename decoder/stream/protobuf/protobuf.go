@@ -37,11 +37,14 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	logging "github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 var pbLog = zap.NewNop()
+
+const protobufWriteError = "failed to write protobuf audit record"
 
 // Decoder for generic Protocol Buffer wire format detection and analysis.
 var Decoder = &decoder.StreamDecoder{
@@ -233,7 +236,10 @@ func (r *protobufReader) processData(b *bufio.Reader, isClient bool) error {
 
 	writeErr := Decoder.Writer.Write(pb)
 	if writeErr != nil {
-		pbLog.Debug("failed to write protobuf audit record", zap.Error(writeErr))
+		pbLog.Error(protobufWriteError, zap.Error(writeErr))
+		if decoderutils.ErrorMap != nil {
+			decoderutils.ErrorMap.Inc(protobufWriteError)
+		}
 	} else {
 		atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 	}
@@ -606,7 +612,9 @@ func CalculateEntropy(data []byte) float64 {
 		return 0
 	}
 
-	freq := make(map[byte]int)
+	// A fixed array rather than a map: summing in map order varied the
+	// floating point rounding between runs.
+	var freq [256]int
 	for _, b := range data {
 		freq[b]++
 	}
@@ -615,8 +623,10 @@ func CalculateEntropy(data []byte) float64 {
 	length := float64(len(data))
 
 	for _, count := range freq {
-		p := float64(count) / length
-		entropy -= p * math.Log2(p)
+		if count > 0 {
+			p := float64(count) / length
+			entropy -= p * math.Log2(p)
+		}
 	}
 
 	return entropy

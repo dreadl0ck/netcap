@@ -48,8 +48,10 @@ func rawPacketFixture(tb testing.TB, tcp bool, size int) []byte {
 
 func rawPacketCollector(workers, capacity int, options gopacket.DecodeOptions) *Collector {
 	c := &Collector{
-		config:     &Config{BaseLayer: layers.LayerTypeEthernet, DecodeOptions: options},
-		numWorkers: workers, workers: make([]chan gopacket.Packet, workers),
+		config:           &Config{BaseLayer: layers.LayerTypeEthernet, DecodeOptions: options},
+		numWorkers:       workers,
+		workers:          make([]chan gopacket.Packet, workers),
+		acceptingPackets: true,
 	}
 	for i := range c.workers {
 		c.workers[i] = make(chan gopacket.Packet, capacity)
@@ -105,6 +107,7 @@ func TestHandleRawPacketDataContent(t *testing.T) {
 			ci := gopacket.CaptureInfo{Timestamp: time.Unix(123, 456), CaptureLength: len(tc.data), Length: len(tc.data) + 10, InterfaceIndex: 7, AncillaryData: tc.ancillary}
 			c.handleRawPacketData(tc.data, &ci)
 			p := <-c.workers[0]
+			c.wg.Done()
 			defer releaseRawPacket(p)
 			checkRawPacket(t, p, tc.data[tc.strip:], tc.base, ci)
 			if p.Metadata().Truncated != tc.truncated || (p.ErrorLayer() != nil) != tc.decodeErr {
@@ -133,6 +136,7 @@ func TestHandleRawPacketDataOptions(t *testing.T) {
 			ci := gopacket.CaptureInfo{CaptureLength: len(data), Length: len(data)}
 			c.handleRawPacketData(data, &ci)
 			p := <-c.workers[0]
+			c.wg.Done()
 			defer releaseRawPacket(p)
 			if c.config.DecodeOptions != tc.options {
 				t.Errorf("configured options mutated: %+v", c.config.DecodeOptions)
@@ -194,6 +198,7 @@ func TestHandleRawPacketDataDelayedQueue(t *testing.T) {
 	packets := make([]gopacket.Packet, 3)
 	for i := range packets {
 		packets[i] = <-c.workers[0]
+		c.wg.Done()
 		defer releaseRawPacket(packets[i])
 		checkRawPacket(t, packets[i], want[i], layers.LayerTypeEthernet, infos[i])
 	}
@@ -228,6 +233,7 @@ func BenchmarkHandleRawPacketData(b *testing.B) {
 					for i := 0; i < b.N; i++ {
 						c.handleRawPacketData(data, &ci)
 						releaseRawPacket(<-c.workers[idx])
+						c.wg.Done()
 					}
 				})
 			}

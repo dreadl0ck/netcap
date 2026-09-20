@@ -31,7 +31,6 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/decoder/stream/udp"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
-	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/label/manager"
 
 	"github.com/dustin/go-humanize"
@@ -64,6 +63,10 @@ func (c *Collector) doCleanup(force bool) {
 		_, _ = c.netcapLogFile.WriteString(newMemStats().String())
 	}
 
+	// Close admission before queuing worker sentinels. Dispatch holds the same
+	// mutex until its packet is queued, so no packet can land behind a sentinel.
+	c.closePacketAdmission()
+
 	c.statMutex.Lock()
 	c.shutdown = true
 	c.statMutex.Unlock()
@@ -90,39 +93,8 @@ func (c *Collector) doCleanup(force bool) {
 	c.log.Info("workers completed after", zap.Duration("delta", time.Since(workerStop)))
 	c.printlnStdOut("workers completed after", time.Since(workerStop))
 
-	waitForCollector := func() chan struct{} {
-		// Buffered so the send below always completes. The select on this
-		// channel races a timeout, and when the timeout wins there is no
-		// longer a receiver -- an unbuffered send would then park this
-		// goroutine forever, holding statMutex, which the progress ticker in
-		// collector.go also takes. The same fix is applied for the same reason
-		// in decoder/stream/tcp/tcp_connection.go.
-		//
-		// Note this bounds the damage but does not remove the underlying
-		// hazard: c.wg.Wait() itself can block indefinitely, because
-		// worker.go returns on the nil-packet sentinel before reaching its
-		// c.wg.Done(), so packets still queued when the sentinel is processed
-		// never decrement the group. Go 1.27's goroutineleak profile reports
-		// that as a goroutine blocked in sync.WaitGroup.Wait.
-		ch := make(chan struct{}, 1)
-
-		go func() {
-			c.statMutex.Lock()
-			c.wg.Wait()
-			c.statMutex.Unlock()
-
-			ch <- struct{}{}
-		}()
-
-		return ch
-	}
-
 	c.log.Info("waiting for main collector wait group...")
-	select {
-	case <-waitForCollector():
-	case <-time.After(defaults.ReassemblyTimeout):
-		c.log.Info(" timeout after ", zap.Duration("reassemblyTimeout", defaults.ReassemblyTimeout))
-	}
+	c.wg.Wait()
 
 	if c.config.ReassembleConnections {
 		// Teardown TCP reassembly, including stream reader goroutines, and print stats.

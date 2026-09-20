@@ -72,8 +72,7 @@ func TestTCPStreamReaderRun(t *testing.T) {
 }
 
 func TestTCPStreamReaderStoreDataCountsSynchronously(t *testing.T) {
-	conn := &tcpConnection{}
-	reader := &tcpStreamReader{parent: conn}
+	reader := &tcpStreamReader{parent: &tcpConnection{}}
 
 	reader.StoreData(&core.StreamData{RawData: []byte("final fragment")})
 
