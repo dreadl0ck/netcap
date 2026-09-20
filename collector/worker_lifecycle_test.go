@@ -306,12 +306,22 @@ func TestCollectorCaptureParentCancellation(t *testing.T) {
 }
 
 func TestCollectorLiveReadTimeout(t *testing.T) {
-	for _, timeout := range []time.Duration{0, -time.Second, time.Hour, time.Millisecond} {
-		c := New(Config{Timeout: timeout})
-		got := c.liveReadTimeout()
-		if got <= 0 || got > 100*time.Millisecond {
-			t.Fatalf("timeout %v is not interruptible: %v", timeout, got)
-		}
+	for _, tc := range []struct {
+		name    string
+		timeout time.Duration
+		want    time.Duration
+	}{
+		{name: "zero", want: defaultLiveReadTimeout},
+		{name: "negative", timeout: -time.Second, want: defaultLiveReadTimeout},
+		{name: "short", timeout: time.Millisecond, want: time.Millisecond},
+		{name: "long", timeout: time.Hour, want: time.Hour},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := New(Config{Timeout: tc.timeout})
+			if got := c.liveReadTimeout(); got != tc.want {
+				t.Fatalf("liveReadTimeout() = %v, want %v", got, tc.want)
+			}
+		})
 	}
 }
 

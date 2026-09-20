@@ -58,12 +58,16 @@ func interruptCapture(ctx, parent context.Context, closeHandle func()) func() {
 	return func() { close(stop); <-done }
 }
 
-// Positive bounded timeouts let libpcap Close interrupt an idle read on all OSes.
+const defaultLiveReadTimeout = 100 * time.Millisecond
+
+// libpcap Close cannot interrupt an idle read until its configured timeout
+// expires. Honor explicit positive values; use a short polling interval when
+// callers request an unbounded or otherwise invalid timeout.
 func (c *Collector) liveReadTimeout() time.Duration {
 	c.lifecycleMu.Lock()
 	defer c.lifecycleMu.Unlock()
-	if c.config.Timeout <= 0 || c.config.Timeout > 100*time.Millisecond {
-		return 100 * time.Millisecond
+	if c.config.Timeout <= 0 {
+		return defaultLiveReadTimeout
 	}
 	return c.config.Timeout
 }

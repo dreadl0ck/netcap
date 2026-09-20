@@ -17,7 +17,6 @@ import (
 	"github.com/dreadl0ck/netcap/utils"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/gopacket/gopacket/pcap"
 	"github.com/mgutz/ansi"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -51,15 +50,6 @@ func (c *Collector) Init() (err error) {
 		return nil
 	}
 	c.contextLocked()
-	// Catch attempts to set the timeout to 0, this is explicitly not recommended.
-	// From the gopacket docs:
-	//   This means that if you only capture one packet,
-	//   the kernel might decide to wait 'timeout' for more packets to batch with it before returning.
-	//   A timeout of 0, then, means 'wait forever for more packets', which is... not good.
-	if c.config.Timeout == 0 {
-		c.config.Timeout = pcap.BlockForever
-	}
-
 	// set configuration for decoder pkgs
 	c.config.DecoderConfig.PerfTracker = c.perfTracker
 	packet.SetConfig(c.config.DecoderConfig)
