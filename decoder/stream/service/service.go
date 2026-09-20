@@ -66,6 +66,7 @@ var Decoder = &decoder.AbstractDecoder{
 		for _, ident := range idents {
 			item := Store.Items[ident]
 			item.Lock()
+			sort.Strings(item.Service.Flows)
 
 			// populate Applications from DPI results
 			if len(item.applications) > 0 {

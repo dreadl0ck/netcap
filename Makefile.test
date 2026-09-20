@@ -2,7 +2,7 @@
 # Include this from main Makefile or use directly: make -f Makefile.test test-unit
 
 .PHONY: test test-unit test-integration test-regression test-e2e test-bench test-fuzz test-all
-.PHONY: test-coverage test-coverage-html test-race
+.PHONY: test-coverage test-coverage-html test-race test-determinism
 .PHONY: test-golden-update test-golden-verify
 .PHONY: fixtures-download fixtures-generate test-databases-generate
 .PHONY: test-hyperscan
@@ -95,6 +95,12 @@ test-race:
 	@echo "Running tests with race detector..."
 	go test -race ./...
 
+# Full-output repeatability and worker-count invariance on the protocol corpus.
+test-determinism:
+	@echo "Checking deterministic output with the Ultimate PCAP..."
+	NETCAP_REQUIRE_ULTIMATE_PCAP=1 go test -count=1 -v -timeout=20m \
+		-run '^TestUltimatePCAP(Repeatability|WorkerInvariance)$$' ./collector/
+
 # Memory sanitizer (requires clang)
 test-msan:
 	@echo "Running tests with memory sanitizer..."
@@ -153,6 +159,7 @@ test-help:
 	@echo "  test-coverage     - Generate coverage report"
 	@echo "  test-coverage-html - Generate HTML coverage report"
 	@echo "  test-race         - Run tests with race detector"
+	@echo "  test-determinism  - Compare Ultimate PCAP output across runs and worker counts"
 	@echo ""
 	@echo "  test-golden-update - Update golden files"
 	@echo "  test-golden-verify - Verify against golden files"
@@ -163,4 +170,3 @@ test-help:
 	@echo "  fixtures-download - Download test fixtures"
 	@echo "  fixtures-generate - Generate synthetic fixtures"
 	@echo "  test-clean        - Clean test artifacts"
-

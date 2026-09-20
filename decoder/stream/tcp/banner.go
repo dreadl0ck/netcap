@@ -43,10 +43,6 @@ func saveTCPServiceBanner(s streamReader) {
 		sv.Lock()
 		defer sv.Unlock()
 
-		// invoke the service probe matching on all streams towards this service
-		// TODO: make matching more banners than the first one configurable
-		service.MatchServiceProbes(sv, banner, s.Ident())
-
 		// ensure we don't duplicate any flows
 		if slices.Contains(sv.Flows, ident) {
 			return
@@ -58,9 +54,9 @@ func saveTCPServiceBanner(s streamReader) {
 		// if this flow had a longer response from the server then what we have previously (in case we dont have c.Banner bytes yet)
 		// set this service response on the service and update the timestamp
 		// more data means more information and is therefore preferred for identification purposes
-		if len(sv.Banner) < len(banner) {
-			sv.Banner = string(banner)
-			sv.Timestamp = s.FirstPacket().UnixNano()
+		if sv.PreferObservation(banner, s.FirstPacket().UnixNano(), s.NumBytes(), s.Client().NumBytes()) {
+			sv.ResetProbeMatch()
+			service.MatchServiceProbes(sv, banner, ident)
 		}
 
 		return
@@ -110,9 +106,9 @@ func saveTCPServiceBanner(s streamReader) {
 			sv.Flows = append(sv.Flows, ident)
 		}
 
-		if len(sv.Banner) < len(banner) {
-			sv.Banner = string(banner)
-			sv.Timestamp = s.FirstPacket().UnixNano()
+		if sv.PreferObservation(banner, s.FirstPacket().UnixNano(), s.NumBytes(), s.Client().NumBytes()) {
+			sv.ResetProbeMatch()
+			service.MatchServiceProbes(sv, banner, ident)
 		}
 
 		return

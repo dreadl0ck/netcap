@@ -1,6 +1,7 @@
 package tls
 
 import (
+	"strconv"
 	"sync"
 	"testing"
 
@@ -16,7 +17,7 @@ func TestCertificateConcurrentTimestampBounds(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			AddOrUpdateCertificate(&types.TLSCertificate{SHA256Fingerprint: "shared", Timestamp: int64(i)})
+			AddOrUpdateCertificate(&types.TLSCertificate{SHA256Fingerprint: "shared", Timestamp: int64(i), SrcIP: strconv.Itoa(i)})
 		}()
 	}
 	wg.Wait()
@@ -25,5 +26,8 @@ func TestCertificateConcurrentTimestampBounds(t *testing.T) {
 	entry := certificates.Items["shared"]
 	if entry.FirstSeen != 0 || entry.LastSeen != 99 || entry.SeenCount != 102 {
 		t.Fatalf("bounds/count = %d/%d/%d", entry.FirstSeen, entry.LastSeen, entry.SeenCount)
+	}
+	if entry.Timestamp != 0 || entry.SrcIP != "0" {
+		t.Fatalf("representative observation = timestamp %d source %q, want timestamp 0 source 0", entry.Timestamp, entry.SrcIP)
 	}
 }

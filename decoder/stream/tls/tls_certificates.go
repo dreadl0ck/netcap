@@ -81,9 +81,15 @@ func addOrUpdateCertificate(cert *types.TLSCertificate) bool {
 	if entry, exists := certificates.Items[fingerprint]; exists {
 		// Update existing certificate
 		entry.Lock()
-		entry.FirstSeen = min(entry.FirstSeen, cert.Timestamp)
-		entry.LastSeen = max(entry.LastSeen, cert.Timestamp)
-		entry.SeenCount++
+		firstSeen := min(entry.FirstSeen, cert.Timestamp)
+		lastSeen := max(entry.LastSeen, cert.Timestamp)
+		seenCount := entry.SeenCount + 1
+		if cert.Timestamp < entry.Timestamp || (cert.Timestamp == entry.Timestamp && certificateObservationKey(cert) < certificateObservationKey(entry.TLSCertificate)) {
+			entry.TLSCertificate = cert
+		}
+		entry.FirstSeen = firstSeen
+		entry.LastSeen = lastSeen
+		entry.SeenCount = seenCount
 		entry.Unlock()
 
 		tlsLog.Debug("Updated existing certificate",
@@ -109,6 +115,10 @@ func addOrUpdateCertificate(cert *types.TLSCertificate) bool {
 	)
 
 	return true
+}
+
+func certificateObservationKey(cert *types.TLSCertificate) string {
+	return cert.CommunityID + "\x00" + cert.SrcIP + "\x00" + cert.DstIP + "\x00" + fmt.Sprint(cert.SrcPort, "\x00", cert.DstPort)
 }
 
 // certificateProcessor handles parallel processing of certificate audit records

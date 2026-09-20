@@ -20,6 +20,7 @@
 package service
 
 import (
+	"bytes"
 	"strings"
 	"sync"
 
@@ -103,6 +104,35 @@ func NewService(ts int64, numBytesServer, numBytesClient int, ip string) *servic
 		},
 		applications: make(map[string]struct{}),
 	}
+}
+
+// PreferObservation keeps one deterministic representative when several flows
+// target the same service. Callers must hold the service lock.
+func (s *service) PreferObservation(banner []byte, ts int64, numBytesServer, numBytesClient int) bool {
+	current := []byte(s.Banner)
+	prefer := len(banner) > len(current) ||
+		(len(banner) == len(current) && bytes.Compare(banner, current) < 0) ||
+		(bytes.Equal(banner, current) && (s.Timestamp == 0 || ts < s.Timestamp))
+	if !prefer {
+		return false
+	}
+	s.Banner = string(banner)
+	s.Timestamp = ts
+	s.BytesServer = int32(numBytesServer)
+	s.BytesClient = int32(numBytesClient)
+	return true
+}
+
+// ResetProbeMatch clears fields derived from a previously selected banner.
+// Applications and port metadata come from independent sources and remain.
+func (s *service) ResetProbeMatch() {
+	s.Product = ""
+	s.Vendor = ""
+	s.Version = ""
+	s.Notes = ""
+	s.OS = ""
+	s.MatchedProbeID = ""
+	s.DetectedProtocolName = ""
 }
 
 // AddApplications adds DPI-detected application protocols to a service.

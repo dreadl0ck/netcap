@@ -107,7 +107,12 @@ func updateHost(ipAddr string, i *decoderutils.PacketInfo, source bool) {
 	defer p.Unlock()
 
 	p.NumPackets++
-	p.TimestampLast = i.Timestamp
+	if i.Timestamp < p.TimestampFirst {
+		p.TimestampFirst = i.Timestamp
+	}
+	if i.Timestamp > p.TimestampLast {
+		p.TimestampLast = i.Timestamp
+	}
 
 	dataLen := uint64(len(i.Packet.Data()))
 	p.Bytes += dataLen
@@ -255,6 +260,7 @@ func createNewHost(ipAddr string, i *decoderutils.PacketInfo, source bool) *host
 			Geolocation:      loc,
 			DNSNames:         names,
 			TimestampFirst:   i.Timestamp,
+			TimestampLast:    i.Timestamp,
 			Protocols:        make(map[string]*types.Protocol), // Will be populated during flush
 			Bytes:            dataLen,
 			SrcPorts:         srcPorts,
@@ -620,6 +626,29 @@ func initPorts(i *decoderutils.PacketInfo, source bool) (
 
 // writeHost writes the ip profile.
 func (d *Decoder) writeHost(i *types.Host) {
+	sort.Strings(i.DNSNames)
+	sort.Strings(i.Ja4Fingerprints)
+	sort.Strings(i.Ja4SFingerprints)
+	sort.Strings(i.Devices)
+	sort.Slice(i.SrcPorts, func(a, b int) bool {
+		if i.SrcPorts[a].Protocol != i.SrcPorts[b].Protocol {
+			return i.SrcPorts[a].Protocol < i.SrcPorts[b].Protocol
+		}
+		return i.SrcPorts[a].PortNumber < i.SrcPorts[b].PortNumber
+	})
+	sort.Slice(i.DstPorts, func(a, b int) bool {
+		if i.DstPorts[a].Protocol != i.DstPorts[b].Protocol {
+			return i.DstPorts[a].Protocol < i.DstPorts[b].Protocol
+		}
+		return i.DstPorts[a].PortNumber < i.DstPorts[b].PortNumber
+	})
+	sort.Slice(i.ContactedPorts, func(a, b int) bool {
+		if i.ContactedPorts[a].Protocol != i.ContactedPorts[b].Protocol {
+			return i.ContactedPorts[a].Protocol < i.ContactedPorts[b].Protocol
+		}
+		return i.ContactedPorts[a].PortNumber < i.ContactedPorts[b].PortNumber
+	})
+
 	// Populate Applications field from Protocols map
 	// This ensures the Applications field is correctly populated before writing
 	if len(i.Protocols) > 0 {

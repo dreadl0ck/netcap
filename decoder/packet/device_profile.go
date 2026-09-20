@@ -278,6 +278,9 @@ func newDeviceProfile(i *decoderutils.PacketInfo) *deviceProfile {
 func applyDeviceProfileUpdate(p *deviceProfile, i *decoderutils.PacketInfo) {
 	p.Lock()
 	defer p.Unlock()
+	if i.Timestamp < p.Timestamp {
+		p.Timestamp = i.Timestamp
+	}
 
 	// Track deviceIPs
 	if i.SrcIP != "" {
@@ -562,12 +565,20 @@ func processDeferredDPIWithoutClear(p *deviceProfile) {
 
 // writeDeviceProfile writes the profile.
 func (d *Decoder) writeDeviceProfile(dp *types.DeviceProfile, apps map[string]struct{}) {
+	sort.Strings(dp.DeviceIPs)
+	sort.Strings(dp.Contacts)
+	sort.Strings(dp.Devices)
+	sort.Strings(dp.Hostnames)
+	sort.Strings(dp.DeviceTypes)
+	sort.Strings(dp.Roles)
+
 	// populate Applications from DPI results
 	if len(apps) > 0 {
 		dp.Applications = make([]string, 0, len(apps))
 		for app := range apps {
 			dp.Applications = append(dp.Applications, app)
 		}
+		sort.Strings(dp.Applications)
 	}
 
 	if conf.ExportMetrics {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -36,6 +37,9 @@ func ultimatePCAPPath(tb testing.TB) string {
 	// Overridable so the digest can be recorded for any real capture.
 	path := cmp(os.Getenv("NETCAP_ULTIMATE_PCAP"), ultimatePCAP)
 	if _, err := os.Stat(path); err != nil {
+		if os.Getenv("NETCAP_REQUIRE_ULTIMATE_PCAP") != "" || os.Getenv("NETCAP_ULTIMATE_PCAP") != "" {
+			tb.Fatalf("required Ultimate PCAP %s is not available: %v", path, err)
+		}
 		tb.Skipf("%s not available (%v)", path, err)
 	}
 	return path
@@ -194,28 +198,82 @@ func ultimateRecordHashes(tb testing.TB, path string) []string {
 		if err != nil {
 			tb.Fatalf("%s: %v", path, err)
 		}
-		// Text form rather than wire bytes: stable across map iteration order.
-		hashes = append(hashes, fmt.Sprintf("%x", sha256.Sum256([]byte(msg.String()))))
+		data, err := json.Marshal(msg)
+		if err != nil {
+			tb.Fatalf("%s: marshal %T: %v", path, msg, err)
+		}
+		hashes = append(hashes, fmt.Sprintf("%x", sha256.Sum256(data)))
 	}
 	return hashes
 }
 
-// These types still vary by worker count on current master (2429883e). The
-// merged branch reduces master's 13 varying types to these five; excluding only
-// this overlap prevents pre-existing aggregation order from masking any new
-// worker-owned-pool differences.
-var ultimateOrderDependent = map[string]bool{
-	"DeviceProfile":  true,
-	"Host":           true,
-	"Protobuf":       true,
-	"Service":        true,
-	"TLSCertificate": true,
+func ultimateOutputDiff(wantCounts map[string]int, wantDigests map[string]string, gotCounts map[string]int, gotDigests map[string]string) []string {
+	var differences []string
+	for _, kind := range sortedKeys(wantCounts, gotCounts) {
+		if wantCounts[kind] != gotCounts[kind] {
+			differences = append(differences, fmt.Sprintf("%s count=%d, want %d", kind, gotCounts[kind], wantCounts[kind]))
+			continue
+		}
+		if wantDigests[kind] != gotDigests[kind] {
+			differences = append(differences, fmt.Sprintf("%s content differs", kind))
+		}
+	}
+	return differences
+}
+
+func TestUltimateOutputDiff(t *testing.T) {
+	tests := []struct {
+		name        string
+		wantCounts  map[string]int
+		wantDigests map[string]string
+		gotCounts   map[string]int
+		gotDigests  map[string]string
+		want        []string
+	}{
+		{
+			name:        "equal",
+			wantCounts:  map[string]int{"DNS": 2},
+			wantDigests: map[string]string{"DNS": "same"},
+			gotCounts:   map[string]int{"DNS": 2},
+			gotDigests:  map[string]string{"DNS": "same"},
+		},
+		{
+			name:        "count",
+			wantCounts:  map[string]int{"DNS": 2},
+			wantDigests: map[string]string{"DNS": "same"},
+			gotCounts:   map[string]int{"DNS": 1},
+			gotDigests:  map[string]string{"DNS": "same"},
+			want:        []string{"DNS count=1, want 2"},
+		},
+		{
+			name:        "content",
+			wantCounts:  map[string]int{"DNS": 2},
+			wantDigests: map[string]string{"DNS": "a"},
+			gotCounts:   map[string]int{"DNS": 2},
+			gotDigests:  map[string]string{"DNS": "b"},
+			want:        []string{"DNS content differs"},
+		},
+		{
+			name:        "missing type",
+			wantCounts:  map[string]int{"DNS": 2},
+			wantDigests: map[string]string{"DNS": "a"},
+			gotCounts:   map[string]int{},
+			gotDigests:  map[string]string{},
+			want:        []string{"DNS count=0, want 2"},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := ultimateOutputDiff(test.wantCounts, test.wantDigests, test.gotCounts, test.gotDigests)
+			if !slices.Equal(got, test.want) {
+				t.Fatalf("diff = %v, want %v", got, test.want)
+			}
+		})
+	}
 }
 
 // TestUltimatePCAPWorkerInvariance is the core guarantee of worker-owned pools:
 // flow sharding and per-worker pools must not change what a capture produces.
-// The baseline is captured twice so a decoder that disagrees with itself is
-// identified separately rather than blamed on sharding.
 func TestUltimatePCAPWorkerInvariance(t *testing.T) {
 	if testing.Short() {
 		t.Skip("processes a 49k packet capture several times")
@@ -241,30 +299,7 @@ func TestUltimatePCAPWorkerInvariance(t *testing.T) {
 		}
 	}
 
-	// Calibrate: a second identical baseline capture exposes the decoders that
-	// are nondeterministic regardless of worker count.
-	baseName := "workers=1/flush=0"
-	base := results[baseName]
-	calibOut := t.TempDir()
-	ultimateRun(t, input, calibOut, 1, 0)
-	calibCounts, calibDigests := ultimateRecords(t, calibOut)
-
-	unstable := make(map[string]bool)
-	for kind := range ultimateOrderDependent {
-		unstable[kind] = true
-	}
-	for _, kind := range sortedKeys(base.counts, calibCounts) {
-		if base.counts[kind] != calibCounts[kind] || base.digests[kind] != calibDigests[kind] {
-			unstable[kind] = true
-		}
-	}
-	stable := len(base.counts) - len(unstable)
-	t.Logf("comparing %d of %d audit types exactly; excluded as order dependent: %v",
-		stable, len(base.counts), sortedKeys(toCountMap(unstable)))
-	// Guard against the comparison quietly becoming meaningless.
-	if stable < 60 {
-		t.Fatalf("only %d audit types are reproducible; comparison is too weak", stable)
-	}
+	base := results["workers=1/flush=0"]
 	// Non-vacuity: a real capture must yield substantial, varied output.
 	if base.packets < 40000 {
 		t.Fatalf("baseline processed only %d packets", base.packets)
@@ -278,61 +313,48 @@ func TestUltimatePCAPWorkerInvariance(t *testing.T) {
 		}
 	}
 
-	for name, got := range results {
-		if name == baseName {
-			continue
-		}
-		if got.packets != base.packets {
-			t.Errorf("%s: processed %d packets, want %d", name, got.packets, base.packets)
-		}
-		for _, kind := range sortedKeys(base.counts, got.counts) {
-			if unstable[kind] {
-				// Only require that the decoder still produces output at all.
-				if (base.counts[kind] == 0) != (got.counts[kind] == 0) {
-					t.Errorf("%s: %s records = %d, baseline %d",
-						name, kind, got.counts[kind], base.counts[kind])
-				}
-				continue
+	for _, flush := range []int{0, 997} {
+		baseName := fmt.Sprintf("workers=1/flush=%d", flush)
+		base = results[baseName]
+		for _, workers := range []int{2, 4, 8} {
+			name := fmt.Sprintf("workers=%d/flush=%d", workers, flush)
+			got := results[name]
+			if got.packets != base.packets {
+				t.Errorf("%s: processed %d packets, want %d", name, got.packets, base.packets)
 			}
-			if base.counts[kind] != got.counts[kind] {
-				t.Errorf("%s: %s records = %d, want %d",
-					name, kind, got.counts[kind], base.counts[kind])
-				continue
-			}
-			if base.digests[kind] != got.digests[kind] {
-				t.Errorf("%s: %s record content differs from %s", name, kind, baseName)
+			for _, difference := range ultimateOutputDiff(base.counts, base.digests, got.counts, got.digests) {
+				t.Errorf("%s differs from %s: %s", name, baseName, difference)
 			}
 		}
 	}
 }
 
 // TestUltimatePCAPRepeatability establishes the baseline property the
-// invariance test depends on: whether two identical captures agree at all.
+// invariance test depends on: identical captures must agree exactly.
 func TestUltimatePCAPRepeatability(t *testing.T) {
 	if testing.Short() {
-		t.Skip("processes a 49k packet capture twice")
+		t.Skip("processes a 49k packet capture three times")
 	}
 	input := ultimatePCAPPath(t)
 	const workers, flush = 4, 0
 
-	outA, outB := t.TempDir(), t.TempDir()
-	if a, b := ultimateRun(t, input, outA, workers, flush), ultimateRun(t, input, outB, workers, flush); a != b {
-		t.Fatalf("packet counts differ between identical runs: %d vs %d", a, b)
-	}
-	countsA, digestsA := ultimateRecords(t, outA)
-	countsB, digestsB := ultimateRecords(t, outB)
-
-	var unstable []string
-	for _, kind := range sortedKeys(countsA, countsB) {
-		if countsA[kind] != countsB[kind] || digestsA[kind] != digestsB[kind] {
-			unstable = append(unstable, fmt.Sprintf("%s(%d vs %d)", kind, countsA[kind], countsB[kind]))
+	var baselineCounts map[string]int
+	var baselineDigests map[string]string
+	var baselinePackets int64
+	for run := range 3 {
+		out := t.TempDir()
+		packets := ultimateRun(t, input, out, workers, flush)
+		counts, digests := ultimateRecords(t, out)
+		if run == 0 {
+			baselineCounts, baselineDigests, baselinePackets = counts, digests, packets
+			continue
 		}
-	}
-	if len(unstable) > 0 {
-		t.Logf("record types that differ between two identical captures: %s", strings.Join(unstable, " "))
-		t.Logf("%d of %d audit types are not reproducible run to run", len(unstable), len(countsA))
-	} else {
-		t.Log("identical captures produced identical output")
+		if packets != baselinePackets {
+			t.Errorf("run %d processed %d packets, want %d", run+1, packets, baselinePackets)
+		}
+		for _, difference := range ultimateOutputDiff(baselineCounts, baselineDigests, counts, digests) {
+			t.Errorf("run %d differs from run 1: %s", run+1, difference)
+		}
 	}
 }
 
@@ -369,14 +391,6 @@ func cmp(value, fallback string) string {
 		return fallback
 	}
 	return value
-}
-
-func toCountMap(set map[string]bool) map[string]int {
-	out := make(map[string]int, len(set))
-	for k := range set {
-		out[k] = 1
-	}
-	return out
 }
 
 func sortedKeys(maps ...map[string]int) []string {

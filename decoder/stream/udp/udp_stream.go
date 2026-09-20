@@ -136,9 +136,6 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 		serv.Lock()
 		defer serv.Unlock()
 
-		// invoke the service probe matching on all streams towards this service
-		service.MatchServiceProbes(serv, banner, flowIdent)
-
 		// ensure we don't duplicate any flows
 		if slices.Contains(serv.Flows, flowIdent) {
 			return
@@ -149,9 +146,9 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 		// if this flow had a longer response from the server then what we have previously (in case we dont have c.Banner bytes yet)
 		// set this service response on the service and update the timestamp
 		// more data means more information and is therefore preferred for identification purposes
-		if len(serv.Banner) < len(banner) {
-			serv.Banner = string(banner)
-			serv.Timestamp = firstPacket.UnixNano()
+		if serv.PreferObservation(banner, firstPacket.UnixNano(), serverBytes, clientBytes) {
+			serv.ResetProbeMatch()
+			service.MatchServiceProbes(serv, banner, flowIdent)
 		}
 
 		return
@@ -185,8 +182,22 @@ func saveUDPServiceBanner(banner []byte, flowIdent string, serviceIdent string, 
 
 	service.MatchServiceProbes(serv, banner, flowIdent)
 
-	// add new service
+	// Probe matching is outside the store lock. Recheck before insertion because
+	// another stream may have created this service in the meantime.
 	service.Store.Lock()
+	if existing, ok := service.Store.Items[serviceIdent]; ok {
+		service.Store.Unlock()
+		existing.Lock()
+		defer existing.Unlock()
+		if !slices.Contains(existing.Flows, flowIdent) {
+			existing.Flows = append(existing.Flows, flowIdent)
+		}
+		if existing.PreferObservation(banner, firstPacket.UnixNano(), serverBytes, clientBytes) {
+			existing.ResetProbeMatch()
+			service.MatchServiceProbes(existing, banner, flowIdent)
+		}
+		return
+	}
 	service.Store.Items[serviceIdent] = serv
 	service.Store.Unlock()
 
