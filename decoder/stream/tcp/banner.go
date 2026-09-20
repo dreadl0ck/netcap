@@ -67,7 +67,6 @@ func saveTCPServiceBanner(s streamReader) {
 	}
 	service.Store.Unlock()
 
-	// nope. lets create a new one
 	// Safely extract network destination
 	var networkDst string
 	if len(s.Network().Dst().Raw()) > 0 {
@@ -94,7 +93,8 @@ func saveTCPServiceBanner(s streamReader) {
 
 	service.MatchServiceProbes(serv, banner, s.Ident())
 
-	// add new service
+	// Probe matching is deliberately outside the store lock. Recheck before
+	// insertion because another stream may have created the service meanwhile.
 	service.Store.Lock()
 
 	// Another stream towards the same service may have created the entry while
@@ -117,7 +117,6 @@ func saveTCPServiceBanner(s streamReader) {
 
 		return
 	}
-
 	service.Store.Items[s.ServiceIdent()] = serv
 	service.Store.Unlock()
 

@@ -42,13 +42,24 @@ import (
 
 // cleanup before leaving. closes all buffers and displays stats.
 func (c *Collector) cleanup(force bool) {
-
-	if c.log == nil {
-		return
-	}
-
 	// Use sync.Once to ensure cleanup only runs once, preventing double-close of log files
 	c.cleanupOnce.Do(func() {
+		c.lifecycleMu.Lock()
+		c.lifecycleStopped = true
+		if c.runCancel != nil {
+			c.runCancel()
+		}
+		c.lifecycleMu.Unlock()
+		c.statMutex.Lock()
+		c.shutdown = true
+		c.statMutex.Unlock()
+		c.closePacketAdmission()
+		c.stopWorkers()
+		c.producersWG.Wait()
+		c.backgroundWG.Wait()
+		if c.log == nil {
+			return
+		}
 		c.doCleanup(force)
 	})
 }
@@ -56,25 +67,11 @@ func (c *Collector) cleanup(force bool) {
 // doCleanup is the actual cleanup implementation, called only once by cleanupOnce
 func (c *Collector) doCleanup(force bool) {
 	c.log.Info("cleanup started", zap.Bool("force", force))
-	c.printlnStdOut("\nstopping workers and waiting for collector to finish...")
+	c.printlnStdOut("\nworkers and capture tasks stopped, finalizing collector...")
 
 	// Write memory stats (check if file is still open)
 	if c.netcapLogFile != nil {
 		_, _ = c.netcapLogFile.WriteString(newMemStats().String())
-	}
-
-	// Close admission before queuing worker sentinels. Dispatch holds the same
-	// mutex until its packet is queued, so no packet can land behind a sentinel.
-	c.closePacketAdmission()
-
-	c.statMutex.Lock()
-	c.shutdown = true
-	c.statMutex.Unlock()
-
-	// Cancel freeOSMemory goroutine if running
-	if c.freeOSMemCancel != nil {
-		c.freeOSMemCancel()
-		c.freeOSMemCancel = nil
 	}
 
 	// Stop signal handler goroutines if running
@@ -84,39 +81,24 @@ func (c *Collector) doCleanup(force bool) {
 		c.signalStop = nil
 	}
 
-	// Stop all workers.
-	// this will block until all workers are stopped
-	// all packets left in the packet queues will be processed
-	workerStop := time.Now()
-	c.log.Info("stopping workers")
-	c.stopWorkers()
-	c.log.Info("workers completed after", zap.Duration("delta", time.Since(workerStop)))
-	c.printlnStdOut("workers completed after", time.Since(workerStop))
-
-	c.log.Info("waiting for main collector wait group...")
-	c.wg.Wait()
-
+	// Exclude external flushes until readers are closed and references released.
+	c.dispatchMu.Lock()
 	if c.config.ReassembleConnections {
-		// Teardown TCP reassembly, including stream reader goroutines, and print stats.
+		// Flushes every pool, then closes and joins the stream readers.
+		// Readers must finish before teardown() closes the log files.
 		tcp.CleanupReassembly(!force, c.assemblers)
-
-		// Nil out assembler references to allow GC to reclaim memory
-		for i := range c.assemblers {
-			c.assemblers[i] = nil
-		}
-		c.assemblers = nil
 	}
+	c.assemblers = nil
 
 	// CRITICAL: Close and nil worker channels to allow GC
 	// Worker goroutines have already exited (stopWorkers sent nil to each)
 	// But the channels themselves need to be closed and nil'd
-	c.mu.Lock()
 	for i := range c.workers {
 		close(c.workers[i])
 		c.workers[i] = nil
 	}
 	c.workers = nil
-	c.mu.Unlock()
+	c.dispatchMu.Unlock()
 
 	c.teardown()
 
@@ -132,23 +114,28 @@ func (c *Collector) doCleanup(force bool) {
 	tcp.ResetStreamFactory()
 }
 
-// FlushAssemblers flushes all TCP assemblers to release their pageCaches
-// This is critical for multi-file processing to prevent unbounded memory growth
-// PageCaches grow to handle traffic and NEVER SHRINK, causing memory leaks
+// FlushAssemblers synchronously flushes connections, retaining live assemblers.
+// Page caches are reclaimed only when cleanup releases the stopped assemblers.
 func (c *Collector) FlushAssemblers() {
-	if c.assemblers == nil {
+	c.dispatchMu.Lock()
+	defer c.dispatchMu.Unlock()
+	if c.workersStopped {
+		c.workersWG.Wait()
+		for _, asm := range c.assemblers {
+			if asm != nil {
+				asm.FlushAll()
+			}
+		}
 		return
 	}
-
-	for i, asm := range c.assemblers {
-		if asm != nil {
-			// FlushAll forces release of all buffered pages and connections
-			// This releases the pageCache which grows unbounded
-			asm.FlushAll()
-			c.assemblers[i] = nil
-		}
+	done := make([]chan struct{}, len(c.workers))
+	for i, w := range c.workers {
+		done[i] = make(chan struct{})
+		w <- &workerControl{all: true, done: done[i]}
 	}
-	c.assemblers = nil
+	for _, ch := range done {
+		<-ch
+	}
 }
 
 func (c *Collector) teardown() {
@@ -206,7 +193,7 @@ func (c *Collector) teardown() {
 	c.mu.Lock()
 	if c.isLive {
 		c.statMutex.Lock()
-		c.numPackets = c.current
+		atomic.StoreInt64(&c.numPackets, atomic.LoadInt64(&c.current))
 		c.statMutex.Unlock()
 	}
 	c.mu.Unlock()

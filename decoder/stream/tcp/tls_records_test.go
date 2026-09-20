@@ -38,6 +38,9 @@ func (s tlsGapSG) Info() (reassembly.TCPFlowDirection, bool, bool, int) {
 }
 func (s tlsGapSG) Stats() reassembly.TCPAssemblyStats { return reassembly.TCPAssemblyStats{} }
 func (s tlsGapSG) Fetch(n int) []byte                 { return []byte{1, 2, 3}[:n] }
+func (s tlsGapSG) ForEach(fn func([]byte, reassembly.AssemblerContext)) {
+	fn(s.Fetch(3), &mergeTestContext{ts: time.Unix(2, 0)})
+}
 
 func TestTLSRecordTCPSelectionAndGap(t *testing.T) {
 	previous := config.Instance

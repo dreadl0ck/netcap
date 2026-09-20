@@ -31,6 +31,12 @@ import (
 func (c *Collector) CollectBPF(path, bpf string) error {
 	// Recover from any panics during processing
 	defer c.recoverFromPanic()
+	ctx, finish, err := c.beginCapture()
+	if err != nil {
+		return err
+	}
+	defer c.cleanup(false)
+	defer finish()
 
 	// open pcap file at path
 	handle, err := pcap.OpenOffline(path)
@@ -43,6 +49,7 @@ func (c *Collector) CollectBPF(path, bpf string) error {
 	if err = handle.SetBPFFilter(bpf); err != nil { //nolint:gocritic
 		return err
 	}
+	defer interruptCapture(ctx, ctx, handle.Close)()
 
 	// initialize collector
 	if err = c.Init(); err != nil { //nolint:gocritic
@@ -65,7 +72,7 @@ func (c *Collector) CollectBPF(path, bpf string) error {
 		// fetch the next packet data and packet header
 		data, ci, err = handle.ReadPacketData()
 		if err != nil {
-			if errors.Is(err, io.EOF) {
+			if ctx.Err() != nil || errors.Is(err, io.EOF) {
 				break
 			}
 
@@ -78,10 +85,7 @@ func (c *Collector) CollectBPF(path, bpf string) error {
 	}
 
 	// Stop progress reporting
-	stopProgress <- struct{}{}
-
-	// run cleanup on channel exit
-	c.cleanup(false)
+	close(stopProgress)
 
 	return nil
 }

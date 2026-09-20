@@ -38,6 +38,9 @@ var reassemblyLog = zap.NewNop()
 // SetLogger sets the logger instance.
 func SetLogger(l *zap.Logger) {
 	reassemblyLog = l
+	if decoderconfig.Instance.DefragIPv4 {
+		reassemblyLog.Warn("DefragIPv4 is unsupported; IP fragments are retained only as network conversations, not reassembled TCP/UDP streams")
+	}
 }
 
 // tcpStreamReader is an internal structure that is used to read TCP data streams
@@ -229,7 +232,6 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 // Run starts reading TCP traffic in a single direction.
 func (t *tcpStreamReader) Run(f *connectionFactory) {
 	defer t.Cleanup(f)
-
 	for range t.dataChan {
 	}
 }

@@ -72,7 +72,7 @@ func GetFlags() []cli.Flag {
 		&cli.DurationFlag{
 			Name:    "timeout",
 			Value:   1 * time.Second,
-			Usage:   "set the timeout for live capture, providing a value of zero will be substituted with pcap.BlockForever.",
+			Usage:   "set the libpcap read timeout for live capture; non-positive values use a 100ms cancellation interval",
 			Sources: cli.EnvVars("NC_TIMEOUT"),
 		},
 		&cli.StringFlag{

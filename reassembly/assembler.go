@@ -1104,7 +1104,6 @@ func (a *Assembler) FlushAllProgress() (closed int) {
 	conns := a.connPool.connections(nil)
 	sortConnections(conns)
 
-	// create and start new bar
 	bar := pb.StartNew(len(conns))
 
 	// Sequential like FlushAll: an Assembler is not safe for concurrent use,

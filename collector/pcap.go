@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -252,6 +253,12 @@ func countPackets(path string) (count int64, err error) {
 func (c *Collector) CollectPcap(path string) error {
 	// Recover from any panics during processing
 	defer c.recoverFromPanic()
+	ctx, finish, err := c.beginCapture()
+	if err != nil {
+		return err
+	}
+	defer c.cleanup(false)
+	defer finish()
 
 	// stat input file
 	stat, err := os.Stat(path)
@@ -271,10 +278,11 @@ func (c *Collector) CollectPcap(path string) error {
 
 	c.printStdOut("counting packets...")
 
-	c.numPackets, err = countPackets(path)
+	numPackets, err := countPackets(path)
 	if err != nil && !(errors.Is(err, io.EOF)) {
 		return err
 	}
+	atomic.StoreInt64(&c.numPackets, numPackets)
 
 	c.clearLine()
 	c.printlnStdOut("counting packets... done.", c.numPackets, "packets found in", time.Since(start))
@@ -294,6 +302,7 @@ func (c *Collector) CollectPcap(path string) error {
 	if err = c.handleLinkType(r.LinkType()); err != nil {
 		return err
 	}
+	defer interruptCapture(ctx, ctx, func() { _ = f.Close() })()
 
 	// initialize collector
 	if err = c.Init(); err != nil {
@@ -309,7 +318,7 @@ func (c *Collector) CollectPcap(path string) error {
 	for { // fetch the next packet data and packet header
 		data, ci, err = r.ReadPacketData()
 		if err != nil {
-			if errors.Is(err, io.EOF) {
+			if ctx.Err() != nil || errors.Is(err, io.EOF) {
 				break
 			}
 
@@ -322,10 +331,7 @@ func (c *Collector) CollectPcap(path string) error {
 	}
 
 	// Stop progress reporting
-	stopProgress <- struct{}{}
-
-	// run cleanup on channel exit
-	c.cleanup(false)
+	close(stopProgress)
 
 	return nil
 }

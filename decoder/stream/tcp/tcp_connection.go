@@ -30,7 +30,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gopacket/gopacket"
 
 	"github.com/dreadl0ck/netcap/internal/table"
@@ -578,10 +577,23 @@ func (t *tcpConnection) decode() {
 	}
 }
 
-var aMu sync.Mutex
-
 // ReassemblePacket takes care of submitting a TCP / UDP packet to the reassembly.
+// The caller owns the assembler and serializes assembly and maintenance.
 func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
+	// DefragIPv4 is unsupported: retain fragments as network conversations,
+	// never as partial TCP/UDP segments. Avoid decoding ordinary TCP payloads.
+	switch ip := packet.NetworkLayer().(type) {
+	case *layers.IPv4:
+		if ip.FragOffset != 0 || ip.Flags&layers.IPv4MoreFragments != 0 {
+			handleNetworkLayerPacket(packet)
+			return
+		}
+	case *layers.IPv6:
+		if ip.NextHeader != layers.IPProtocolTCP && ip.NextHeader != layers.IPProtocolUDP && packet.Layer(layers.LayerTypeIPv6Fragment) != nil {
+			handleNetworkLayerPacket(packet)
+			return
+		}
+	}
 
 	// TODO: make transport layer reassembler configurable
 	// prevent passing any non TCP packets in here
@@ -610,41 +622,6 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	streamutils.Stats.DataBytes += int64(len(packet.Data()))
 	streamutils.Stats.Unlock()
 
-	// defrag the IPv4 packet if desired
-	ip4Layer := packet.Layer(layers.LayerTypeIPv4)
-	if ip4Layer != nil && decoderconfig.Instance.DefragIPv4 {
-
-		var (
-			ip4         = ip4Layer.(*layers.IPv4)
-			l           = ip4.Length
-			newip4, err = StreamFactory.defragger.DefragIPv4(ip4)
-		)
-
-		if err != nil {
-			log.Fatalln("error while de-fragmenting", err)
-		} else if newip4 == nil {
-			reassemblyLog.Debug("fragment received...")
-
-			return
-		}
-
-		if newip4.Length != l {
-			streamutils.Stats.IPdefrag++
-
-			reassemblyLog.Debug("decoding re-assembled packet", zap.String("layer", newip4.NextLayerType().String()))
-
-			pb, ok := packet.(gopacket.PacketBuilder)
-			if !ok {
-				panic("Not a PacketBuilder")
-			}
-
-			nextDecoder := newip4.NextLayerType()
-			if err = nextDecoder.Decode(newip4.Payload, pb); err != nil {
-				fmt.Println("failed to decode ipv4:", err)
-			}
-		}
-	}
-
 	tcp := tcpLayer.(*layers.TCP)
 
 	if decoderconfig.Instance.Checksum {
@@ -658,112 +635,50 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	streamutils.Stats.Totalsz += int64(len(tcp.Payload))
 	streamutils.Stats.Unlock()
 
-	// for debugging:
-	// assembleWithContextTimeout(packet, assembler, tcp)
-	aMu.Lock()
 	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &context{
 		CaptureInfo: packet.Metadata().CaptureInfo,
 	})
-	aMu.Unlock()
-
-	// TODO: refactor and use a ticker model in a goroutine, similar to progress reporting
-	if decoderconfig.Instance.FlushEvery > 0 {
-		streamutils.Stats.Lock()
-		doFlush := streamutils.Stats.Count%int64(decoderconfig.Instance.FlushEvery) == 0
-		streamutils.Stats.Unlock()
-
-		// flush connections in interval
-		if doFlush {
-			ref := packet.Metadata().CaptureInfo.Timestamp
-			aMu.Lock()
-			flushed, closed := assembler.FlushWithOptions(
-				reassembly.FlushOptions{
-					T:  ref.Add(-decoderconfig.Instance.ClosePendingTimeOut),
-					TC: ref.Add(-decoderconfig.Instance.CloseInactiveTimeOut),
-				},
-			)
-			aMu.Unlock()
-			reassemblyLog.Debug("forced flush",
-				zap.Int("flushed", flushed),
-				zap.Int("closed", closed),
-				zap.Time("ref", ref),
-			)
-		}
-	}
 }
 
-// assembleWithContextTimeout is a function that times out with a log message after a specified interval
-// when the stream reassembly gets stuck
-// used for debugging.
-//
-//goland:noinspection GoUnusedFunction
-func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.Assembler, tcp *layers.TCP) {
-	done := make(chan bool, 1)
-
-	go func() {
-		aMu.Lock()
-		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &context{
-			CaptureInfo: packet.Metadata().CaptureInfo,
-		})
-		aMu.Unlock()
-		done <- true
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(5 * time.Second):
-		spew.Dump(packet.Metadata().CaptureInfo)
-		fmt.Println("HTTP AssembleWithContext timeout", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
-		fmt.Println(assembler.Dump())
-	}
-}
-
-// CleanupReassembly will shutdown the reassembly.
-func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
+// CleanupReassembly finalizes all pools after packet workers have joined.
+// The wait argument is retained for callers; even forced shutdown must drain data.
+func CleanupReassembly(_ bool, assemblers []*reassembly.Assembler) {
 	decoderconfig.LockInstance()
 	if decoderconfig.Instance.Debug {
-		reassemblyLog.Info("streamPool:")
-		reassemblyLog.Sugar().Info(StreamFactory.StreamPool.DumpString())
+		for i, a := range assemblers {
+			reassemblyLog.Info("assembler", zap.Int("index", i), zap.String("state", a.Dump()))
+		}
 	}
 	decoderconfig.UnlockInstance()
-
-	flushStreams := decoderconfig.Instance.WaitForConnections || wait
 	StreamFactory.Lock()
 	numTotal := len(StreamFactory.streamReaders)
 	StreamFactory.Unlock()
+	if !decoderconfig.Instance.Quiet && numTotal > 1 {
+		fmt.Println("\nprocessing last TCP streams")
+	}
 
-	if flushStreams {
-		// flush assemblers
-		for i, a := range assemblers {
-			reassemblyLog.Info("flushing tcp assembler",
-				zap.Int("current", i+1),
-				zap.Int("numAssemblers", len(assemblers)),
-			)
+	// Flush every private pool while reader channels can still receive data.
+	for i, a := range assemblers {
+		reassemblyLog.Info("flushing tcp assembler",
+			zap.Int("current", i+1),
+			zap.Int("numAssemblers", len(assemblers)),
+		)
 
-			if i == 0 && (!decoderconfig.Instance.Quiet || decoderconfig.Instance.PrintProgress) && numTotal > 1 {
-				// only display progress bar for the first flush, since all following ones will be instant.
-				reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAllProgress()))
-			} else {
-				reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAll()))
-			}
+		if i == 0 && (!decoderconfig.Instance.Quiet || decoderconfig.Instance.PrintProgress) && numTotal > 1 {
+			reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAllProgress()))
+		} else {
+			reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAll()))
 		}
 	}
 
-	closeStreamReaderChannelsAndWait()
+	CloseStreamReaderChannelsAndWait()
+	startFlush := time.Now()
+	reassemblyLog.Info("flushTCPStreams", zap.Int("numTotal", numTotal))
+	flushTCPStreams(numTotal)
+	reassemblyLog.Info("flushTCPStreams DONE", zap.String("delta", time.Since(startFlush).String()))
 
-	if flushStreams {
-		if !decoderconfig.Instance.Quiet && numTotal > 1 {
-			fmt.Println("\nprocessing last TCP streams")
-		}
-
-		startFlush := time.Now()
-		reassemblyLog.Info("flushTCPStreams", zap.Int("numTotal", numTotal))
-		flushTCPStreams(numTotal)
-		reassemblyLog.Info("flushTCPStreams DONE", zap.String("delta", time.Since(startFlush).String()))
-
-		udp.FlushUDPStreams()
-		network.FlushNetworkStreams()
-	}
+	udp.FlushUDPStreams()
+	network.FlushNetworkStreams()
 
 	// create a memory snapshot for debugging
 	if decoderconfig.Instance.MemProfile != "" {
@@ -807,7 +722,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			{"IgnoreFsmErr", strconv.FormatBool(decoderconfig.Instance.IgnoreFSMerr)},
 			{"NoOptCheck", strconv.FormatBool(decoderconfig.Instance.NoOptCheck)},
 			{"Checksum", strconv.FormatBool(decoderconfig.Instance.Checksum)},
-			{"DefragIPv4", strconv.FormatBool(decoderconfig.Instance.DefragIPv4)},
+			{"DefragIPv4 (unsupported)", strconv.FormatBool(decoderconfig.Instance.DefragIPv4)},
 			{"WriteIncomplete", strconv.FormatBool(decoderconfig.Instance.WriteIncomplete)},
 		})
 
@@ -816,10 +731,6 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		streamutils.Stats.Lock()
 
 		var rows [][]string
-		if decoderconfig.Instance.DefragIPv4 {
-			rows = append(rows, []string{"IPv4 defragmentation", strconv.FormatInt(streamutils.Stats.IPdefrag, 10)})
-		}
-
 		rows = append(rows,
 			[]string{"missed bytes", strconv.FormatInt(streamutils.Stats.MissedBytes, 10)},
 			[]string{"total packets", strconv.FormatInt(streamutils.Stats.Pkt, 10)},

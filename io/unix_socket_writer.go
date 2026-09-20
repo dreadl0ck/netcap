@@ -25,6 +25,7 @@ import (
 	"net"
 	"path/filepath"
 	"runtime"
+	"sync"
 
 	"go.uber.org/zap"
 
@@ -37,6 +38,8 @@ import (
 
 // unixSocketWriter is a structure that supports writing CSV audit records to disk.
 type unixSocketWriter struct {
+	mu               sync.Mutex
+	closed           bool
 	bWriter          *bufio.Writer
 	gWriter          *pgzip.Writer
 	unixSocketWriter *csvProtoWriter
@@ -103,6 +106,12 @@ func newUnixSocketWriter(wc *WriterConfig) *unixSocketWriter {
 
 // WriteCSV writes a CSV record.
 func (w *unixSocketWriter) Write(msg proto.Message) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if w.closed {
+		return nil
+	}
 
 	_, err := w.unixSocketWriter.writeRecord(msg)
 
@@ -111,6 +120,12 @@ func (w *unixSocketWriter) Write(msg proto.Message) error {
 
 // WriteHeader writes a CSV header.
 func (w *unixSocketWriter) WriteHeader(t types.Type) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if w.closed {
+		return nil
+	}
 
 	_, err := w.unixSocketWriter.writeHeader(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime), InitRecord(t))
 
@@ -119,14 +134,21 @@ func (w *unixSocketWriter) WriteHeader(t types.Type) error {
 
 // Flush flushes any buffered data to the socket.
 func (w *unixSocketWriter) Flush() error {
-	if w.wc.Buffer && w.bWriter != nil {
-		if err := w.bWriter.Flush(); err != nil {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if w.closed {
+		return nil
+	}
+
+	// Flush in output order: gzip -> buffer -> socket.
+	if w.wc.Compress && w.gWriter != nil {
+		if err := w.gWriter.Flush(); err != nil {
 			return err
 		}
 	}
-
-	if w.wc.Compress && w.gWriter != nil {
-		if err := w.gWriter.Flush(); err != nil {
+	if w.wc.Buffer && w.bWriter != nil {
+		if err := w.bWriter.Flush(); err != nil {
 			return err
 		}
 	}
@@ -136,13 +158,19 @@ func (w *unixSocketWriter) Flush() error {
 
 // Close flushes and closes the writer and the associated file handles.
 func (w *unixSocketWriter) Close(numRecords int64) (name string, size int64) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
 
-	if w.wc.Buffer {
-		flushWriters(w.bWriter)
+	if w.closed {
+		return "", 0
 	}
+	w.closed = true
 
 	if w.wc.Compress {
 		closeGzipWriters(w.gWriter)
+	}
+	if w.wc.Buffer {
+		flushWriters(w.bWriter)
 	}
 
 	err := w.conn.Close()

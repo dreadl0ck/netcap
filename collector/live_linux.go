@@ -37,6 +37,12 @@ import (
 func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error {
 	// Recover from any panics during processing
 	defer c.recoverFromPanic()
+	runCtx, finish, err := c.beginCapture()
+	if err != nil {
+		return err
+	}
+	defer c.cleanup(false)
+	defer finish()
 
 	// use raw socket to fetch packet on linux live mode
 	handle, err := pcapgo.NewEthernetHandle(i)
@@ -55,6 +61,7 @@ func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error
 			return fmt.Errorf("failed to set BPF filter: %w", err)
 		}
 	}
+	defer interruptCapture(runCtx, ctx, func() { _ = handle.Close() })()
 
 	// initialize collector
 	if err := c.Init(); err != nil {
@@ -76,8 +83,9 @@ func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error
 	// read packets from channel
 	for {
 		select {
+		case <-runCtx.Done():
+			goto done
 		case <-ctx.Done():
-			fmt.Println("live capture canceled via context")
 			goto done
 		default:
 
@@ -85,7 +93,7 @@ func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error
 			data, ci, err = handle.ReadPacketData()
 			if err != nil {
 				if errors.Is(err, io.EOF) {
-					break
+					goto done
 				}
 
 				// Check if shutdown has been initiated (e.g., via signal handler)
@@ -117,21 +125,10 @@ func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error
 done:
 
 	// Stop progress reporting
-	stopProgress <- struct{}{}
+	close(stopProgress)
 
 	// Stop periodic flushing
 	close(stopPeriodicFlush)
-
-	// Check if cleanup is already in progress (e.g., triggered by signal handler)
-	c.statMutex.Lock()
-	isShutdown := c.shutdown
-	c.statMutex.Unlock()
-
-	// Only run cleanup if it hasn't been triggered yet
-	// If shutdown is already true, cleanup is being handled elsewhere (e.g., signal handler)
-	if !isShutdown {
-		c.cleanup(false)
-	}
 
 	return nil
 }
