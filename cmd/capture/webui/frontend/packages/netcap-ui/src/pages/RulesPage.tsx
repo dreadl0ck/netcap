@@ -89,6 +89,8 @@ export default function RulesPage() {
     enabled: true,
     threshold: undefined,
     thresholdWindow: undefined,
+    distinctField: '',
+    distinctThreshold: undefined,
     actions: [],
   });
   const [mitreInput, setMitreInput] = useState('');
@@ -217,6 +219,8 @@ export default function RulesPage() {
         enabled: rule.enabled,
         threshold: rule.threshold,
         thresholdWindow: rule.thresholdWindow,
+        distinctField: rule.distinctField,
+        distinctThreshold: rule.distinctThreshold,
         actions: rule.actions || [],
       });
     } else {
@@ -232,6 +236,8 @@ export default function RulesPage() {
         enabled: true,
         threshold: undefined,
         thresholdWindow: undefined,
+        distinctField: '',
+        distinctThreshold: undefined,
         actions: [],
       });
     }
@@ -654,8 +660,10 @@ export default function RulesPage() {
                           <Typography variant="body1" fontWeight="medium">
                             {rule.name}
                           </Typography>
-                          {rule.threshold && rule.threshold > 0 && (
-                            <Tooltip title={`Threshold: ${rule.threshold} matches in ${rule.thresholdWindow || 60}s`}>
+                          {(rule.distinctField || (rule.threshold && rule.threshold > 0)) && (
+                            <Tooltip title={rule.distinctField
+                              ? `Per-source distinct: ${Math.max(2, rule.distinctThreshold || 2)} values of ${rule.distinctField} in ${rule.thresholdWindow || 60}s`
+                              : `Global threshold: ${rule.threshold} matches in ${rule.thresholdWindow || 60}s`}>
                               <Chip 
                                 label="THRESHOLD" 
                                 size="small" 
@@ -984,11 +992,12 @@ export default function RulesPage() {
                   Threshold Settings (Optional)
                 </Typography>
                 <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-                  Configure threshold-based alerting to trigger only after N matches within a time window
+                  Count matches globally, or set a distinct field to count unique values per source IP instead. Both use the time window below.
                 </Typography>
-                <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mt: 1 }}>
                   <TextField
-                    label="Threshold Count"
+                    label="Global Match Count"
+                    disabled={!!formData.distinctField}
                     type="number"
                     size="small"
                     value={formData.threshold || ''}
@@ -996,7 +1005,7 @@ export default function RulesPage() {
                       const val = e.target.value ? parseInt(e.target.value) : undefined;
                       setFormData({ ...formData, threshold: val });
                     }}
-                    helperText="Number of matches required"
+                    helperText="Across all sources; ignored when a distinct field is set"
                     InputProps={{
                       inputProps: { min: 0 }
                     }}
@@ -1011,10 +1020,30 @@ export default function RulesPage() {
                       const val = e.target.value ? parseInt(e.target.value) : undefined;
                       setFormData({ ...formData, thresholdWindow: val });
                     }}
-                    helperText="Time window in seconds"
+                    helperText="Shared window; defaults to 60 seconds"
                     InputProps={{
                       inputProps: { min: 0 }
                     }}
+                    sx={{ flex: 1 }}
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mt: 2 }}>
+                  <TextField
+                    label="Distinct Field"
+                    size="small"
+                    value={formData.distinctField || ''}
+                    onChange={(e) => setFormData({ ...formData, distinctField: e.target.value })}
+                    helperText="Top-level record field, e.g. DstIP; leave blank for global match counting"
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    label="Distinct Count Per Source"
+                    type="number"
+                    size="small"
+                    value={formData.distinctThreshold ?? ''}
+                    onChange={(e) => setFormData({ ...formData, distinctThreshold: e.target.value ? parseInt(e.target.value) : undefined })}
+                    helperText="Unique values per source IP; defaults to 2 when unset or below 2"
+                    InputProps={{ inputProps: { min: 0 } }}
                     sx={{ flex: 1 }}
                   />
                 </Box>

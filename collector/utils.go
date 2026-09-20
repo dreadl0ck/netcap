@@ -34,8 +34,9 @@ import (
 	"golang.org/x/net/bpf"
 )
 
-// handleRawPacketData takes ownership of data; callers must not modify or reuse it.
-func (c *Collector) handleRawPacketData(data []byte, ci *gopacket.CaptureInfo) {
+// handleRawPacketData takes ownership of data and reports whether the packet was admitted.
+// Callers must not modify or reuse data.
+func (c *Collector) handleRawPacketData(data []byte, ci *gopacket.CaptureInfo) bool {
 	// Determine the correct base layer for this packet.
 	// For pcapng files with mixed link types, the per-packet link type
 	// is stored in ci.AncillaryData[0].
@@ -61,7 +62,7 @@ func (c *Collector) handleRawPacketData(data []byte, ci *gopacket.CaptureInfo) {
 	p.Metadata().CaptureInfo = *ci
 
 	// pass packet to a worker routine
-	c.handlePacket(p)
+	return c.handlePacket(p)
 }
 
 // linkTypeToLayerType converts a pcap link type to a gopacket layer type.
@@ -103,25 +104,11 @@ func linkTypeToLayerType(lt layers.LinkType) gopacket.LayerType {
 
 // printProgressLive prints live statistics.
 func (c *Collector) printProgressLive() {
-	atomic.AddInt64(&c.current, 1)
-
-	// must be locked, otherwise a race occurs when sending a SIGINT and triggering wg.Wait() in another goroutine...
-	c.statMutex.Lock()
-
-	c.wg.Add(1)
-
-	// dont print message when collector is about to shutdown
-	if c.shutdown {
-		c.statMutex.Unlock()
-
-		return
-	}
-	c.statMutex.Unlock()
-
-	if c.current%1000 == 0 {
+	current := atomic.LoadInt64(&c.current)
+	if current%1000 == 0 {
 		c.clearLine()
 		if !c.config.DecoderConfig.Quiet {
-			fmt.Print("running since ", time.Since(c.start), ", captured ", c.current, " packets...")
+			fmt.Print("running since ", time.Since(c.start), ", captured ", current, " packets...")
 		}
 	}
 }

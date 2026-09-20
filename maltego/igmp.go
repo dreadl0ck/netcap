@@ -43,7 +43,7 @@ type IGMPCountFunc func()
 // IGMPTransformationFunc is a transformation over IGMP audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type IGMPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, igmp *types.IGMP, min, max uint64, path string, ip string)
+type IGMPTransformationFunc = transformationFunc[types.IGMP]
 
 // IGMPTransform applies a maltego transformation over IGMP audit records.
 func IGMPTransform(count IGMPCountFunc, transform IGMPTransformationFunc, continueTransform bool) {

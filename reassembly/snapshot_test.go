@@ -16,14 +16,14 @@ func snapshotKey(i int) key {
 		gopacket.NewFlow(layers.EndpointTCPPort, []byte{0x30, 0x39}, []byte{0, 80})}
 }
 
-func checkSnapshotCleared(t *testing.T, a *Assembler) {
+func checkDueBatchCleared(t *testing.T, a *Assembler) {
 	t.Helper()
-	if len(a.flushSnapshot) != 0 {
-		t.Fatalf("retained length = %d, want 0", len(a.flushSnapshot))
+	if len(a.dueBatch) != 0 {
+		t.Fatalf("retained length = %d, want 0", len(a.dueBatch))
 	}
-	for i, c := range a.flushSnapshot[:cap(a.flushSnapshot)] {
-		if c != nil {
-			t.Fatalf("retained pointer at index %d", i)
+	for i, c := range a.dueBatch[:cap(a.dueBatch)] {
+		if c != (connectionRef{}) {
+			t.Fatalf("retained reference at index %d", i)
 		}
 	}
 }
@@ -33,10 +33,10 @@ func TestPoolSnapshotMembership(t *testing.T) {
 	now := time.Unix(1700000000, 0)
 	add := func(i int) *connection {
 		k := snapshotKey(i)
-		c, _, _ := p.getConnection(&k, false, now, nil)
-		return c
+		ref, _ := p.getConnection(&k, false, now, nil)
+		return ref.conn
 	}
-	var dst []*connection
+	var dst []connectionRef
 	check := func(want ...*connection) {
 		t.Helper()
 		dst = p.connections(dst)
@@ -44,7 +44,8 @@ func TestPoolSnapshotMembership(t *testing.T) {
 			t.Fatalf("snapshot length = %d, want %d", len(dst), len(want))
 		}
 		seen := make(map[*connection]bool)
-		for _, c := range dst {
+		for _, ref := range dst {
+			c := ref.conn
 			if seen[c] {
 				t.Fatal("duplicate connection in snapshot")
 			}
@@ -66,7 +67,9 @@ func TestPoolSnapshotMembership(t *testing.T) {
 		t.Fatal("growth must allocate exactly the pool size")
 	}
 	old = &dst[0]
+	c2.mu.Lock()
 	p.remove(c2)
+	c2.mu.Unlock()
 	check(c1, c3)
 	if &dst[0] != old {
 		t.Fatal("shrink did not reuse storage")
@@ -88,80 +91,124 @@ func TestPoolSnapshotMembership(t *testing.T) {
 	}
 }
 
-func TestFlushSnapshotReuseAndClear(t *testing.T) {
-	p := &StreamPool{conns: make(map[key]*connection)}
-	for i := 0; i < 8; i++ {
-		p.conns[snapshotKey(i)] = &connection{}
+func retainedDuePool(size int, deadline time.Time) *StreamPool {
+	p := &StreamPool{conns: make(map[key]*connection), nextAlloc: 8, factory: &testFactoryBench{}}
+	for i := 0; i < size; i++ {
+		k := snapshotKey(i)
+		ref, _ := p.getConnection(&k, false, deadline, nil)
+		c := ref.conn
+		c.mu.Lock()
+		c.c2s.closed, c.s2c.closed = true, true
+		p.refreshDueLocked(c, false)
+		c.mu.Unlock()
 	}
+	return p
+}
+
+func TestDueBatchReuseAndClear(t *testing.T) {
+	now := time.Unix(1700000000, 0)
+	p := retainedDuePool(8, now.Add(time.Hour))
 	a := &Assembler{connPool: p}
-	flush := func() {
+	if f, c := a.FlushWithOptions(FlushOptions{T: now, TC: now}); f != 0 || c != 0 || cap(a.dueBatch) != 0 {
+		t.Fatal("future deadlines allocated a batch or performed work")
+	}
+	if len(p.closedDue) != 8 || len(p.pendingDue) != 0 {
+		t.Fatal("retained connections are not indexed")
+	}
+	opt := FlushOptions{TC: now.Add(2 * time.Hour)}
+	claimRelease := func(want int) {
 		t.Helper()
-		if f, c := a.FlushWithOptions(FlushOptions{}); f != 0 || c != 0 {
-			t.Fatalf("no-op flush = (%d, %d)", f, c)
+		refs := p.claimDue(a.dueBatch, opt)
+		if len(refs) != want || len(p.closedDue) != 0 {
+			t.Fatalf("claimed %d, want %d; remaining index = %d", len(refs), want, len(p.closedDue))
 		}
-		checkSnapshotCleared(t, a)
+		a.releaseDue(refs)
+		checkDueBatchCleared(t, a)
+		if len(p.closedDue) != want {
+			t.Fatalf("released index size = %d, want %d", len(p.closedDue), want)
+		}
 	}
-	flush()
-	if cap(a.flushSnapshot) != 8 {
-		t.Fatalf("retained capacity = %d, want 8", cap(a.flushSnapshot))
-	}
-	storage := &a.flushSnapshot[:cap(a.flushSnapshot)][0]
+	claimRelease(8)
+	storage := &a.dueBatch[:cap(a.dueBatch)][0]
 	for i := 1; i < 8; i++ {
-		delete(p.conns, snapshotKey(i))
+		c := p.conns[snapshotKey(i)]
+		c.mu.Lock()
+		p.remove(c)
+		c.mu.Unlock()
 	}
-	flush()
-	if allocs := testing.AllocsPerRun(100, func() { a.FlushWithOptions(FlushOptions{}) }); allocs != 0 {
-		t.Fatalf("warmed flush allocations = %g, want 0", allocs)
+	claimRelease(1)
+	if allocs := testing.AllocsPerRun(100, func() {
+		a.releaseDue(p.claimDue(a.dueBatch, opt))
+	}); allocs != 0 {
+		t.Fatalf("warmed claim/release allocations = %g, want 0", allocs)
 	}
 	p.Reset()
-	flush()
-	if cap(a.flushSnapshot) != 8 || &a.flushSnapshot[:8][0] != storage {
+	claimRelease(0)
+	if &a.dueBatch[:cap(a.dueBatch)][0] != storage {
 		t.Fatal("shrinking/empty pool discarded reusable storage")
 	}
 }
 
-func TestFlushSnapshotRetentionLimit(t *testing.T) {
-	for _, size := range []int{maxFlushSnapshotConnections, maxFlushSnapshotConnections + 1} {
+func TestDueBatchRetentionLimit(t *testing.T) {
+	if maxDueBatchConnections != 64*1024 {
+		t.Fatalf("due batch limit = %d, want 64k references", maxDueBatchConnections)
+	}
+	for _, capacity := range []int{maxDueBatchConnections, maxDueBatchConnections + 1} {
 		for _, warm := range []bool{false, true} {
-			t.Run(strconv.Itoa(size)+"/warm="+strconv.FormatBool(warm), func(t *testing.T) {
-				p := &StreamPool{conns: make(map[key]*connection, size)}
+			t.Run(strconv.Itoa(capacity)+"/warm="+strconv.FormatBool(warm), func(t *testing.T) {
+				now := time.Unix(1700000000, 0)
+				p := retainedDuePool(8, now.Add(time.Hour))
 				a := &Assembler{connPool: p}
-				// Synthetic aliases to one OPEN connection test retention without
-				// allocating 131k large connections; this flush cannot remove entries.
-				shared := &connection{}
-				p.conns[snapshotKey(0)] = shared
+				opt := FlushOptions{TC: now.Add(2 * time.Hour)}
 				if warm {
-					a.FlushWithOptions(FlushOptions{})
+					a.releaseDue(p.claimDue(nil, opt))
 				}
-				old := a.flushSnapshot
-				for i := 1; i < size; i++ {
-					p.conns[snapshotKey(i)] = shared
+				old := a.dueBatch
+				// Supply oversized scratch directly; every claimed reference still
+				// comes from a distinct, genuinely indexed connection.
+				scratch := make([]connectionRef, 0, capacity)
+				refs := p.claimDue(scratch, opt)
+				if len(refs) != 8 || len(p.closedDue) != 0 {
+					t.Fatalf("claim size = %d, remaining index = %d", len(refs), len(p.closedDue))
 				}
-				if len(p.conns) != size {
-					t.Fatalf("fixture cardinality = %d, want %d", len(p.conns), size)
-				}
-				if f, c := a.FlushWithOptions(FlushOptions{}); f != 0 || c != 0 || len(p.conns) != size {
-					t.Fatalf("no-op flush = (%d, %d), remaining = %d", f, c, len(p.conns))
-				}
-				checkSnapshotCleared(t, a)
-				if size == maxFlushSnapshotConnections {
-					if cap(a.flushSnapshot) != size {
-						t.Fatalf("boundary capacity = %d, want %d", cap(a.flushSnapshot), size)
+				a.releaseDue(refs)
+				checkDueBatchCleared(t, a)
+				for i, ref := range scratch[:cap(scratch)] {
+					if ref != (connectionRef{}) {
+						t.Fatalf("scratch retains reference at %d", i)
 					}
-				} else {
-					if cap(a.flushSnapshot) != cap(old) {
-						t.Fatalf("oversized flush retained capacity %d, want %d", cap(a.flushSnapshot), cap(old))
+				}
+				if len(p.closedDue) != 8 || len(p.conns) != 8 {
+					t.Fatal("release did not restore indexed membership")
+				}
+				if capacity == maxDueBatchConnections {
+					if cap(a.dueBatch) != capacity || &a.dueBatch[:capacity][0] != &scratch[:capacity][0] {
+						t.Fatal("boundary-sized scratch was not retained")
 					}
-					if warm && &a.flushSnapshot[:1][0] != &old[:1][0] {
-						t.Fatal("oversized flush replaced old small buffer")
-					}
+				} else if cap(a.dueBatch) != cap(old) {
+					t.Fatal("oversized scratch replaced retained storage")
+				} else if warm && &a.dueBatch[:1][0] != &old[:1][0] {
+					t.Fatal("oversized scratch replaced warmed storage")
 				}
 			})
 		}
 	}
 }
 
-func TestFlushSnapshotTimestampBoundary(t *testing.T) {
+func TestDueBatchFlushClearsRemovedReferences(t *testing.T) {
+	now := time.Unix(1700000000, 0)
+	p := retainedDuePool(8, now)
+	a := &Assembler{connPool: p}
+	if f, c := a.FlushWithOptions(FlushOptions{TC: now.Add(time.Second)}); f != 0 || c != 0 {
+		t.Fatalf("already-closed flush = (%d, %d)", f, c)
+	}
+	if len(p.conns) != 0 || len(p.closedDue) != 0 || cap(a.dueBatch) < 8 {
+		t.Fatal("due flush did not remove indexed connections and retain scratch")
+	}
+	checkDueBatchCleared(t, a)
+}
+
+func TestDueBatchTimestampBoundary(t *testing.T) {
 	tc := time.Unix(1700000000, 0)
 	for _, delta := range []time.Duration{-time.Nanosecond, 0, time.Nanosecond} {
 		for _, reverse := range []bool{false, true} {
@@ -176,6 +223,12 @@ func TestFlushSnapshotTimestampBoundary(t *testing.T) {
 					c.c2s.lastSeen = tc.Add(delta)
 				}
 				p := &StreamPool{conns: map[key]*connection{k: c}}
+				c.mu.Lock()
+				p.refreshDueLocked(c, false)
+				c.mu.Unlock()
+				if len(p.closedDue) != 1 {
+					t.Fatal("closed connection not indexed")
+				}
 				a := &Assembler{connPool: p}
 				if f, n := a.FlushWithOptions(FlushOptions{T: tc, TC: tc}); f != 0 || n != 0 {
 					t.Fatalf("already-closed flush = (%d, %d)", f, n)
@@ -183,7 +236,7 @@ func TestFlushSnapshotTimestampBoundary(t *testing.T) {
 				if removed := p.conns[k] == nil; removed != (delta < 0) {
 					t.Fatalf("removed = %v, want %v", removed, delta < 0)
 				}
-				checkSnapshotCleared(t, a)
+				checkDueBatchCleared(t, a)
 			})
 		}
 	}
@@ -191,6 +244,9 @@ func TestFlushSnapshotTimestampBoundary(t *testing.T) {
 	c := &connection{}
 	c.reset(&k, nil, tc.Add(-time.Hour))
 	p := &StreamPool{conns: map[key]*connection{k: c}}
+	c.mu.Lock()
+	p.refreshDueLocked(c, false)
+	c.mu.Unlock()
 	a := &Assembler{connPool: p}
 	if f, n := a.FlushWithOptions(FlushOptions{T: tc}); f != 0 || n != 0 {
 		t.Fatalf("zero-TC flush = (%d, %d)", f, n)
@@ -198,13 +254,14 @@ func TestFlushSnapshotTimestampBoundary(t *testing.T) {
 	if p.conns[k] != c || c.c2s.closed || c.s2c.closed || !c.c2s.lastSeen.Equal(tc.Add(-time.Hour)) || !c.s2c.lastSeen.Equal(tc.Add(-time.Hour)) {
 		t.Fatal("zero TC changed idle open connection")
 	}
-	checkSnapshotCleared(t, a)
+	checkDueBatchCleared(t, a)
 }
 
-func TestFlushSnapshotSeparateAssemblers(t *testing.T) {
-	p := &StreamPool{conns: make(map[key]*connection)}
+func TestDueBatchSeparateAssemblers(t *testing.T) {
+	p := &StreamPool{conns: make(map[key]*connection), nextAlloc: 16, factory: &testFactoryBench{}}
 	for i := 0; i < 16; i++ {
-		p.conns[snapshotKey(i)] = &connection{}
+		k := snapshotKey(i)
+		p.getConnection(&k, false, time.Unix(1700000000, 0), nil)
 	}
 	assemblers := []*Assembler{{connPool: p}, {connPool: p}}
 	start := make(chan struct{})
@@ -224,13 +281,13 @@ func TestFlushSnapshotSeparateAssemblers(t *testing.T) {
 	close(start)
 	wg.Wait()
 	for _, a := range assemblers {
-		checkSnapshotCleared(t, a)
-		if cap(a.flushSnapshot) != 16 {
-			t.Fatalf("retained capacity = %d, want 16", cap(a.flushSnapshot))
+		checkDueBatchCleared(t, a)
+		if cap(a.dueBatch) != 0 {
+			t.Fatalf("retained capacity = %d, want 0", cap(a.dueBatch))
 		}
 	}
-	if &assemblers[0].flushSnapshot[:16][0] == &assemblers[1].flushSnapshot[:16][0] {
-		t.Fatal("assemblers share snapshot storage")
+	if len(p.pendingDue) != 0 || len(p.closedDue) != 0 {
+		t.Fatal("idle open connections entered due indexes")
 	}
 	if len(p.conns) != 16 {
 		t.Fatal("simultaneous no-op flush changed membership")

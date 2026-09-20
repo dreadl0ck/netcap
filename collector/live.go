@@ -23,9 +23,7 @@ package collector
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"sync/atomic"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcap"
@@ -39,10 +37,16 @@ import (
 func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 	// Recover from any panics during processing
 	defer c.recoverFromPanic()
+	runCtx, finish, err := c.beginCapture()
+	if err != nil {
+		return err
+	}
+	defer c.cleanup(false)
+	defer finish()
 
 	// open interface in live mode
 	// snaplen, promiscuous mode and the timeout value can be configured over the collector instance
-	handle, err := pcap.OpenLive(iface, int32(c.config.SnapLen), c.config.Promisc, c.config.Timeout)
+	handle, err := pcap.OpenLive(iface, int32(c.config.SnapLen), c.config.Promisc, c.liveReadTimeout())
 	if err != nil {
 		return err
 	}
@@ -60,6 +64,7 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 	if err = c.handleLinkType(handle.LinkType()); err != nil {
 		return err
 	}
+	defer interruptCapture(runCtx, ctx, handle.Close)()
 
 	// initialize collector
 	if err = c.Init(); err != nil {
@@ -81,8 +86,9 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 	// read packets from channel
 	for {
 		select {
+		case <-runCtx.Done():
+			goto done
 		case <-ctx.Done():
-			fmt.Println("live capture canceled via context")
 			goto done
 		default:
 
@@ -90,7 +96,7 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 			data, ci, err = handle.ReadPacketData()
 			if err != nil {
 				if errors.Is(err, io.EOF) {
-					break
+					goto done
 				}
 
 				// Check if shutdown has been initiated (e.g., via signal handler)
@@ -113,40 +119,19 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 				goto done
 			}
 
-			// increment atomic packet counter
-			atomic.AddInt64(&c.current, 1)
-
-			// must be locked, otherwise a race occurs when sending a SIGINT
-			//  and triggering wg.Wait() in another goroutine...
-			c.statMutex.Lock()
-
-			// increment wait group for packet processing
-			c.wg.Add(1)
-
-			c.statMutex.Unlock()
-
-			c.handleRawPacketData(data, &ci)
+			if !c.handleRawPacketData(data, &ci) {
+				goto done
+			}
 		}
 	}
 
 done:
 
 	// Stop progress reporting
-	stopProgress <- struct{}{}
+	close(stopProgress)
 
 	// Stop periodic flushing
 	close(stopPeriodicFlush)
-
-	// Check if cleanup is already in progress (e.g., triggered by signal handler)
-	c.statMutex.Lock()
-	isShutdown := c.shutdown
-	c.statMutex.Unlock()
-
-	// Only run cleanup if it hasn't been triggered yet
-	// If shutdown is already true, cleanup is being handled elsewhere (e.g., signal handler)
-	if !isShutdown {
-		c.cleanup(false)
-	}
 
 	return nil
 }

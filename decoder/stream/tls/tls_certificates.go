@@ -21,6 +21,7 @@ package tls
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 	"sync/atomic"
 
@@ -80,7 +81,8 @@ func addOrUpdateCertificate(cert *types.TLSCertificate) bool {
 	if entry, exists := certificates.Items[fingerprint]; exists {
 		// Update existing certificate
 		entry.Lock()
-		entry.LastSeen = cert.Timestamp
+		entry.FirstSeen = min(entry.FirstSeen, cert.Timestamp)
+		entry.LastSeen = max(entry.LastSeen, cert.Timestamp)
 		entry.SeenCount++
 		entry.Unlock()
 
@@ -200,7 +202,16 @@ func flushCertificates(d *decoder.StreamDecoder) error {
 
 	certificates.Lock()
 	cp.numTotal = len(certificates.Items)
-	for _, cert := range certificates.Items {
+
+	// stable output order: Items is a map
+	fingerprints := make([]string, 0, len(certificates.Items))
+	for fingerprint := range certificates.Items {
+		fingerprints = append(fingerprints, fingerprint)
+	}
+	sort.Strings(fingerprints)
+
+	for _, fingerprint := range fingerprints {
+		cert := certificates.Items[fingerprint]
 		cert.decoder = d
 		cp.handleCertificate(cert)
 	}

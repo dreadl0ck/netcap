@@ -61,10 +61,10 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/capture/webui"
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/packet"
-	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	httpstream "github.com/dreadl0ck/netcap/decoder/stream/http"
 	"github.com/dreadl0ck/netcap/decoder/stream/network"
+	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/service"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
@@ -73,9 +73,9 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
-	"github.com/dreadl0ck/netcap/magika"
 	"github.com/dreadl0ck/netcap/internal/metrics"
 	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/magika"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/rules"
 	"github.com/dreadl0ck/netcap/utils"
@@ -716,6 +716,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			NoOptCheck:            flagNooptcheck,
 			IgnoreFSMErr:          flagIgnorefsmerr,
 			AllowMissingInit:      flagAllowmissinginit,
+			ModbusRTUEndpoints:    flagModbusRTUEndpoints,
 			ClosePendingTimeout:   flagClosePendingTimeout,
 			CloseInactiveTimeout:  flagCloseInactiveTimeout,
 			Proto:                 flagProto,
@@ -943,6 +944,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			NoOptCheck:                     flagNooptcheck,
 			IgnoreFSMerr:                   flagIgnorefsmerr,
 			AllowMissingInit:               flagAllowmissinginit,
+			ModbusRTUEndpoints:             flagModbusRTUEndpoints,
 			Debug:                          flagDebug,
 			HexDump:                        flagHexdump,
 			WaitForConnections:             flagWaitForConnections,
@@ -1188,23 +1190,16 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 				// This is CRITICAL - we must GC everything before resetting the TCP factory
 				runtime.GC()
 
-				// Step 6: CRITICAL - Ensure ALL TCP stream reader goroutines are stopped
-				// Even though cleanup() was called at the end of CollectPcap(), we need to
-				// ensure goroutines have fully exited before resetting the factory
-				// Use quiet version since log files for previous file are already closed
-				fmt.Println("Ensuring TCP stream readers are stopped...")
-				tcp.CloseStreamReaderChannelsAndWaitQuiet()
-
-				// Step 7: NOW reset TCP factory - old StreamPool can be GC'd
+				// Step 6: Reset TCP factory so the old StreamPool can be GC'd.
 				// Because assemblers, pageCaches, and stream readers are gone, old pool has no references
 				tcp.ResetStreamFactory()
 
-				// Step 8: Reset DPI flow tracker if DPI is enabled
+				// Step 7: Reset DPI flow tracker if DPI is enabled
 				if flagDPI {
 					dpi.Reset(flagDPIModules)
 				}
 
-				// Step 9: Final GC and OS memory release
+				// Step 8: Final GC and OS memory release
 				runtime.GC()
 				debug.FreeOSMemory()
 
@@ -1287,6 +1282,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 					NoOptCheck:                     flagNooptcheck,
 					IgnoreFSMerr:                   flagIgnorefsmerr,
 					AllowMissingInit:               flagAllowmissinginit,
+					ModbusRTUEndpoints:             flagModbusRTUEndpoints,
 					Debug:                          flagDebug,
 					HexDump:                        flagHexdump,
 					WaitForConnections:             flagWaitForConnections,

@@ -25,9 +25,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
@@ -155,29 +153,9 @@ func identifyFileTypeByMagic(filePath string) (uint32, *fileTypeInfo, error) {
 	return magicLE, nil, nil
 }
 
-// invokeFileCommand runs the system 'file' command on the given file path
-// Returns the output string and any error. Returns empty string if file command not available.
-func invokeFileCommand(filePath string) string {
-	// Check if file command exists
-	_, err := exec.LookPath("file")
-	if err != nil {
-		// file command not available
-		return ""
-	}
-
-	// Run file command
-	cmd := exec.Command("file", "-b", filePath)
-	output, err := cmd.Output()
-	if err != nil {
-		// Command failed, return empty
-		return ""
-	}
-
-	// Clean up output (remove trailing newline/whitespace)
-	result := strings.TrimSpace(string(output))
-
-	return result
-}
+// invokeFileCommand is defined per edition: pcap_file_exec.go shells out to the
+// system `file` binary (direct edition); pcap_file_appstore.go is a no-op, so
+// the App Sandbox build carries no os/exec dependency in this package.
 
 // enhancePcapError wraps PCAP/PCAPNG opening errors with helpful information
 func enhancePcapError(filePath string, originalErr error) error {

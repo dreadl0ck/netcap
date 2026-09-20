@@ -26,12 +26,10 @@ import (
 	"os"
 	"reflect"
 	"runtime/pprof"
-	"sort"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gopacket/gopacket"
 
 	"github.com/dreadl0ck/netcap/internal/table"
@@ -41,10 +39,10 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream"
+	"github.com/dreadl0ck/netcap/decoder/stream/modbus"
 	"github.com/dreadl0ck/netcap/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/decoder/stream/udp"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
-	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -90,6 +88,9 @@ type tcpConnection struct {
 
 	wasMerged bool
 	fsmerr    bool
+	initStage uint8
+	clientISN uint32
+	serverISN uint32
 }
 
 // Accept decides whether the TCP packet should be accepted
@@ -150,6 +151,27 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 		streamutils.Stats.Unlock()
 	}
 
+	if accept && !tcp.RST && !tcp.FIN {
+		// decode() reads initStage under the same lock
+		t.Lock()
+
+		switch t.initStage {
+		case 0:
+			if dir == reassembly.TCPDirClientToServer && tcp.SYN && !tcp.ACK {
+				t.clientISN, t.initStage = tcp.Seq, 1
+			}
+		case 1:
+			if dir == reassembly.TCPDirServerToClient && tcp.SYN && tcp.ACK && tcp.Ack == t.clientISN+1 {
+				t.serverISN, t.initStage = tcp.Seq, 2
+			}
+		case 2:
+			if dir == reassembly.TCPDirClientToServer && !tcp.SYN && tcp.ACK && tcp.Seq == t.clientISN+1 && tcp.Ack == t.serverISN+1 {
+				t.initStage = 3
+			}
+		}
+
+		t.Unlock()
+	}
 	return accept
 }
 
@@ -227,17 +249,19 @@ func (t *tcpConnection) feedData(dir reassembly.TCPFlowDirection, data []byte, a
 	// Store before queueing so ReassemblyComplete sees every delivered fragment.
 	if dir == reassembly.TCPDirClientToServer {
 		streamData := &core.StreamData{
-			RawData:          dataCpy,
-			AssemblerContext: ac,
-			Dir:              dir,
+			RawData:            dataCpy,
+			AssemblerContext:   ac,
+			CaptureInformation: ac.GetCaptureInfo(),
+			Dir:                dir,
 		}
 		t.client.StoreData(streamData)
 		t.client.DataChan() <- streamData
 	} else {
 		streamData := &core.StreamData{
-			RawData:          dataCpy,
-			AssemblerContext: ac,
-			Dir:              dir,
+			RawData:            dataCpy,
+			AssemblerContext:   ac,
+			CaptureInformation: ac.GetCaptureInfo(),
+			Dir:                dir,
 		}
 		t.server.StoreData(streamData)
 		t.server.DataChan() <- streamData
@@ -274,18 +298,16 @@ func (t *tcpConnection) ReassembledSG(sg reassembly.ScatterGather, ac reassembly
 		return
 	}
 
-	data := sg.Fetch(length)
-
-	// fmt.Println("got raw data:", len(data), ac.GetCaptureInfo().Timestamp, "\n", hex.Dump(data))
-
 	if length > 0 {
-		if decoderconfig.Instance.HexDump {
-			reassemblyLog.Debug("feeding stream reader",
-				zap.String("data", hex.Dump(data)),
-			)
-		}
+		sg.ForEach(func(data []byte, context reassembly.AssemblerContext) {
+			if decoderconfig.Instance.HexDump {
+				reassemblyLog.Debug("feeding stream reader",
+					zap.String("data", hex.Dump(data)),
+				)
+			}
 
-		t.feedData(dir, data, ac)
+			t.feedData(dir, data, context)
+		})
 	}
 }
 
@@ -440,17 +462,18 @@ func (t *tcpConnection) decode() {
 	sPort := utils.DecodePort(t.client.Transport().Dst().Raw())
 
 	conv := &core.ConversationInfo{
-		Data:              t.merged,
-		ClientData:        t.client.DataSlice(),
-		ServerData:        t.server.DataSlice(),
-		Ident:             t.ident,
-		FirstClientPacket: t.client.FirstPacket(),
-		FirstServerPacket: t.server.FirstPacket(),
-		ClientIP:          cIP,
-		ServerIP:          sIP,
-		ClientPort:        cPort,
-		ServerPort:        sPort,
-		CommunityID:       streamutils.CalcCommunityIDTCP(cIP, sIP, uint16(cPort), uint16(sPort)),
+		Data:                 t.merged,
+		ClientData:           t.client.DataSlice(),
+		ServerData:           t.server.DataSlice(),
+		Ident:                t.ident,
+		FirstClientPacket:    t.client.FirstPacket(),
+		FirstServerPacket:    t.server.FirstPacket(),
+		ClientIP:             cIP,
+		ServerIP:             sIP,
+		ClientPort:           cPort,
+		ServerPort:           sPort,
+		CommunityID:          streamutils.CalcCommunityIDTCP(cIP, sIP, uint16(cPort), uint16(sPort)),
+		TCPHandshakeComplete: t.initStage == 3,
 	}
 
 	// Use the client's destination port (= server's listening port) for decoder matching
@@ -465,7 +488,13 @@ func (t *tcpConnection) decode() {
 	)
 
 	// make a good first guess based on the destination port of the connection
-	if sd, exists := stream.DefaultStreamDecoders[serverPort]; exists {
+	if modbus.Decoder.Writer != nil && modbus.IsRTUConversation(conv) {
+		// Explicit transport selection must precede MBAP and generic signatures.
+		// Only claim the connection while the decoder is live: when Modbus is
+		// excluded, a configured RTU endpoint must still reach the other decoders.
+		t.decoder = modbus.Decoder.Factory.New(conv)
+		found = true
+	} else if sd, exists := stream.DefaultStreamDecoders[serverPort]; exists {
 		reassemblyLog.Debug("Found decoder for port",
 			zap.String("ident", t.ident),
 			zap.Int("port", int(serverPort)),
@@ -548,10 +577,23 @@ func (t *tcpConnection) decode() {
 	}
 }
 
-var aMu sync.Mutex
-
 // ReassemblePacket takes care of submitting a TCP / UDP packet to the reassembly.
+// The caller owns the assembler and serializes assembly and maintenance.
 func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
+	// DefragIPv4 is unsupported: retain fragments as network conversations,
+	// never as partial TCP/UDP segments. Avoid decoding ordinary TCP payloads.
+	switch ip := packet.NetworkLayer().(type) {
+	case *layers.IPv4:
+		if ip.FragOffset != 0 || ip.Flags&layers.IPv4MoreFragments != 0 {
+			handleNetworkLayerPacket(packet)
+			return
+		}
+	case *layers.IPv6:
+		if ip.NextHeader != layers.IPProtocolTCP && ip.NextHeader != layers.IPProtocolUDP && packet.Layer(layers.LayerTypeIPv6Fragment) != nil {
+			handleNetworkLayerPacket(packet)
+			return
+		}
+	}
 
 	// TODO: make transport layer reassembler configurable
 	// prevent passing any non TCP packets in here
@@ -580,41 +622,6 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	streamutils.Stats.DataBytes += int64(len(packet.Data()))
 	streamutils.Stats.Unlock()
 
-	// defrag the IPv4 packet if desired
-	ip4Layer := packet.Layer(layers.LayerTypeIPv4)
-	if ip4Layer != nil && decoderconfig.Instance.DefragIPv4 {
-
-		var (
-			ip4         = ip4Layer.(*layers.IPv4)
-			l           = ip4.Length
-			newip4, err = StreamFactory.defragger.DefragIPv4(ip4)
-		)
-
-		if err != nil {
-			log.Fatalln("error while de-fragmenting", err)
-		} else if newip4 == nil {
-			reassemblyLog.Debug("fragment received...")
-
-			return
-		}
-
-		if newip4.Length != l {
-			streamutils.Stats.IPdefrag++
-
-			reassemblyLog.Debug("decoding re-assembled packet", zap.String("layer", newip4.NextLayerType().String()))
-
-			pb, ok := packet.(gopacket.PacketBuilder)
-			if !ok {
-				panic("Not a PacketBuilder")
-			}
-
-			nextDecoder := newip4.NextLayerType()
-			if err = nextDecoder.Decode(newip4.Payload, pb); err != nil {
-				fmt.Println("failed to decode ipv4:", err)
-			}
-		}
-	}
-
 	tcp := tcpLayer.(*layers.TCP)
 
 	if decoderconfig.Instance.Checksum {
@@ -628,122 +635,50 @@ func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
 	streamutils.Stats.Totalsz += int64(len(tcp.Payload))
 	streamutils.Stats.Unlock()
 
-	// for debugging:
-	// assembleWithContextTimeout(packet, assembler, tcp)
-	aMu.Lock()
 	assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &context{
 		CaptureInfo: packet.Metadata().CaptureInfo,
 	})
-	aMu.Unlock()
-
-	// TODO: refactor and use a ticker model in a goroutine, similar to progress reporting
-	if decoderconfig.Instance.FlushEvery > 0 {
-		streamutils.Stats.Lock()
-		doFlush := streamutils.Stats.Count%int64(decoderconfig.Instance.FlushEvery) == 0
-		streamutils.Stats.Unlock()
-
-		// flush connections in interval
-		if doFlush {
-			ref := packet.Metadata().CaptureInfo.Timestamp
-			aMu.Lock()
-			flushed, closed := assembler.FlushWithOptions(
-				reassembly.FlushOptions{
-					T:  ref.Add(-decoderconfig.Instance.ClosePendingTimeOut),
-					TC: ref.Add(-decoderconfig.Instance.CloseInactiveTimeOut),
-				},
-			)
-			aMu.Unlock()
-			reassemblyLog.Debug("forced flush",
-				zap.Int("flushed", flushed),
-				zap.Int("closed", closed),
-				zap.Time("ref", ref),
-			)
-		}
-	}
 }
 
-// assembleWithContextTimeout is a function that times out with a log message after a specified interval
-// when the stream reassembly gets stuck
-// used for debugging.
-//
-//goland:noinspection GoUnusedFunction
-func assembleWithContextTimeout(packet gopacket.Packet, assembler *reassembly.Assembler, tcp *layers.TCP) {
-	done := make(chan bool, 1)
-
-	go func() {
-		aMu.Lock()
-		assembler.AssembleWithContext(packet.NetworkLayer().NetworkFlow(), tcp, &context{
-			CaptureInfo: packet.Metadata().CaptureInfo,
-		})
-		aMu.Unlock()
-		done <- true
-	}()
-
-	select {
-	case <-done:
-	case <-time.After(5 * time.Second):
-		spew.Dump(packet.Metadata().CaptureInfo)
-		fmt.Println("HTTP AssembleWithContext timeout", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
-		fmt.Println(assembler.Dump())
-	}
-}
-
-// CleanupReassembly will shutdown the reassembly.
-func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
+// CleanupReassembly finalizes all pools after packet workers have joined.
+// The wait argument is retained for callers; even forced shutdown must drain data.
+func CleanupReassembly(_ bool, assemblers []*reassembly.Assembler) {
 	decoderconfig.LockInstance()
 	if decoderconfig.Instance.Debug {
-		reassemblyLog.Info("streamPool:")
-		reassemblyLog.Sugar().Info(StreamFactory.StreamPool.DumpString())
+		for i, a := range assemblers {
+			reassemblyLog.Info("assembler", zap.Int("index", i), zap.String("state", a.Dump()))
+		}
 	}
 	decoderconfig.UnlockInstance()
-
-	// wait for stream reassembly to finish
-	if decoderconfig.Instance.WaitForConnections || wait {
-
-		reassemblyLog.Info("waiting for last streams to finish processing...")
-
-		// wait for remaining connections to finish processing
-		// will wait forever if there are streams that are never shutdown via FIN/RST
-		select {
-		case <-waitForConns():
-		case <-time.After(defaults.ReassemblyTimeout):
-			if !decoderconfig.Instance.Quiet {
-				reassemblyLog.Info(" timeout after", zap.Duration("reassembly_timeout", defaults.ReassemblyTimeout))
-			}
-		}
-
-		StreamFactory.Lock()
-		numTotal := len(StreamFactory.streamReaders)
-		StreamFactory.Unlock()
-
-		if !decoderconfig.Instance.Quiet && numTotal > 1 {
-			fmt.Println("\nprocessing last TCP streams")
-		}
-
-		// flush assemblers
-		// must be done after waiting for connections or there might be data loss
-		for i, a := range assemblers {
-			reassemblyLog.Info("flushing tcp assembler",
-				zap.Int("current", i+1),
-				zap.Int("numAssemblers", len(assemblers)),
-			)
-
-			if i == 0 && (!decoderconfig.Instance.Quiet || decoderconfig.Instance.PrintProgress) && numTotal > 1 {
-				// only display progress bar for the first flush, since all following ones will be instant.
-				reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAllProgress()))
-			} else {
-				reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAll()))
-			}
-		}
-
-		startFlush := time.Now()
-		reassemblyLog.Info("flushTCPStreams", zap.Int("numTotal", numTotal))
-		flushTCPStreams(numTotal)
-		reassemblyLog.Info("flushTCPStreams DONE", zap.String("delta", time.Since(startFlush).String()))
-
-		udp.FlushUDPStreams()
-		network.FlushNetworkStreams()
+	StreamFactory.Lock()
+	numTotal := len(StreamFactory.streamReaders)
+	StreamFactory.Unlock()
+	if !decoderconfig.Instance.Quiet && numTotal > 1 {
+		fmt.Println("\nprocessing last TCP streams")
 	}
+
+	// Flush every private pool while reader channels can still receive data.
+	for i, a := range assemblers {
+		reassemblyLog.Info("flushing tcp assembler",
+			zap.Int("current", i+1),
+			zap.Int("numAssemblers", len(assemblers)),
+		)
+
+		if i == 0 && (!decoderconfig.Instance.Quiet || decoderconfig.Instance.PrintProgress) && numTotal > 1 {
+			reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAllProgress()))
+		} else {
+			reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAll()))
+		}
+	}
+
+	CloseStreamReaderChannelsAndWait()
+	startFlush := time.Now()
+	reassemblyLog.Info("flushTCPStreams", zap.Int("numTotal", numTotal))
+	flushTCPStreams(numTotal)
+	reassemblyLog.Info("flushTCPStreams DONE", zap.String("delta", time.Since(startFlush).String()))
+
+	udp.FlushUDPStreams()
+	network.FlushNetworkStreams()
 
 	// create a memory snapshot for debugging
 	if decoderconfig.Instance.MemProfile != "" {
@@ -787,7 +722,7 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			{"IgnoreFsmErr", strconv.FormatBool(decoderconfig.Instance.IgnoreFSMerr)},
 			{"NoOptCheck", strconv.FormatBool(decoderconfig.Instance.NoOptCheck)},
 			{"Checksum", strconv.FormatBool(decoderconfig.Instance.Checksum)},
-			{"DefragIPv4", strconv.FormatBool(decoderconfig.Instance.DefragIPv4)},
+			{"DefragIPv4 (unsupported)", strconv.FormatBool(decoderconfig.Instance.DefragIPv4)},
 			{"WriteIncomplete", strconv.FormatBool(decoderconfig.Instance.WriteIncomplete)},
 		})
 
@@ -796,10 +731,6 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		streamutils.Stats.Lock()
 
 		var rows [][]string
-		if decoderconfig.Instance.DefragIPv4 {
-			rows = append(rows, []string{"IPv4 defragmentation", strconv.FormatInt(streamutils.Stats.IPdefrag, 10)})
-		}
-
 		rows = append(rows,
 			[]string{"missed bytes", strconv.FormatInt(streamutils.Stats.MissedBytes, 10)},
 			[]string{"total packets", strconv.FormatInt(streamutils.Stats.Pkt, 10)},
@@ -840,19 +771,6 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 	}
 }
 
-func waitForConns() chan struct{} {
-	out := make(chan struct{}, 1) // Buffered channel to prevent goroutine leak when timeout occurs
-
-	go func() {
-		// WaitGoRoutines waits until the goroutines launched to process TCP streams are done
-		// this will block forever if there are streams that are never shutdown (via RST or FIN flags)
-		StreamFactory.waitGoRoutines()
-		out <- struct{}{}
-	}()
-
-	return out
-}
-
 // sort the conversation fragments and fill the conversation buffers.
 // mergedFragments returns the merged fragment slice under the connection lock.
 //
@@ -876,41 +794,26 @@ func (t *tcpConnection) sortAndMergeFragments() {
 		// only do this once per connection
 		t.wasMerged = true
 
-		client, server := t.client.DataSlice(), t.server.DataSlice()
-
-		// Concatenate both client and server data fragments into a slice that
-		// owns its memory.
+		// Stable two-way merge by capture timestamp, so the two directions
+		// interleave by time while each direction keeps its byte order.
 		//
-		// This was written as append(client, server...), which appends in place
-		// whenever the client slice has spare capacity -- and it does, because
-		// the fragment store grows it by repeated append, so cap > len is the
-		// normal case. The merged slice then shared the client reader's backing
-		// array, with two consequences:
+		// Sorting the concatenation instead corrupted the stream: a delivery
+		// carries the packet that closed a hole followed by the earlier-captured
+		// packets it had queued, so timestamps within one direction are not
+		// monotonic, and reordering them scrambles every consumer that reads
+		// conversation.Data as a byte stream.
 		//
-		//   - sort.Sort below permutes that array, and its first len(client)
-		//     entries ARE the client's live fragments, so sorting interleaved
-		//     server fragments into t.client.data. decode() picks a decoder from
-		//     t.client.DataSlice(), so on a server-first protocol such as SMTP
-		//     the decoder was chosen from the server's greeting. That is a
-		//     correctness bug independent of any concurrency.
+		// The result also has to own its memory. This was once written as
+		// append(client, server...), which appends in place whenever the client
+		// slice has spare capacity -- and it does, since StoreData grows it by
+		// repeated append. The merged slice then shared the client reader's live
+		// fragment array, so permuting it interleaved server fragments into
+		// t.client.data (decode() picks the decoder from the first client
+		// fragment) and it raced with the reader goroutine appending.
 		//
-		//   - It raced with the former asynchronous fragment append in
-		//     tcpStreamReader.Read. feedData sends into a buffered dataChan and
-		//     returns, so when ReassemblyComplete runs there can still be
-		//     fragments queued that the reader goroutine is appending. The
-		//     detector reported the write in Read and the read in
-		//     DataFragments.Size at the same address, which is only possible
-		//     because the two slices were one array.
-		//
-		// Allocating up front keeps the merge independent of the readers. The
-		// fragments themselves are shared, but a *core.StreamData's RawData is
-		// written once in feedData and never mutated, so reading them is safe.
-		t.merged = make(core.DataFragments, 0, len(client)+len(server))
-		t.merged = append(t.merged, client...)
-		t.merged = append(t.merged, server...)
-
-		// sort based on their timestamps
-		sort.Sort(t.merged)
+		// The fragments themselves are shared, but a *core.StreamData's RawData
+		// is written once in feedData and never mutated, so reading them is safe.
+		t.merged = core.MergeByTimestamp(t.client.DataSlice(), t.server.DataSlice())
 	}
 	t.Unlock()
 }

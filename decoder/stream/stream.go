@@ -163,6 +163,9 @@ func ApplyActionToStreamDecodersAsync(action func(api core.StreamDecoderAPI)) {
 
 // InitDecoders initializes all stream decoders.
 func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error) {
+	if err = c.ValidateModbusRTUEndpoints(); err != nil {
+		return nil, err
+	}
 	tls.Decoder.Writer = nil
 	var (
 		// values from command-line flags

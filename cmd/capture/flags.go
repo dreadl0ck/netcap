@@ -72,7 +72,7 @@ func GetFlags() []cli.Flag {
 		&cli.DurationFlag{
 			Name:    "timeout",
 			Value:   1 * time.Second,
-			Usage:   "set the timeout for live capture, providing a value of zero will be substituted with pcap.BlockForever.",
+			Usage:   "set the libpcap read timeout for live capture; non-positive values use a 100ms cancellation interval",
 			Sources: cli.EnvVars("NC_TIMEOUT"),
 		},
 		&cli.StringFlag{
@@ -424,6 +424,7 @@ func GetFlags() []cli.Flag {
 			Usage:   "support streams without SYN/SYN+ACK/ACK sequence",
 			Sources: cli.EnvVars("NC_ALLOWMISSINGINIT"),
 		},
+		&cli.StringFlag{Name: "modbus-rtu-endpoints", Usage: "RTU-over-TCP destination allowlist (comma-separated IP:port or [IPv6]:port)", Sources: cli.EnvVars("NC_MODBUS_RTU_ENDPOINTS")},
 		&cli.BoolFlag{
 			Name:    "hexdump",
 			Usage:   "dump packets used in stream reassembly as hex to the reassembly.log file",
@@ -635,6 +636,11 @@ func GetFlags() []cli.Flag {
 			Name:    "service-data-dir",
 			Usage:   "directory for service mode uploads and results (default: auto-detect)",
 			Sources: cli.EnvVars("NC_SERVICE_DATA_DIR"),
+		},
+		&cli.StringFlag{
+			Name:    "service-preload-dir",
+			Usage:   "directory containing PCAPs to preload (default: <service-data-dir>/pcaps)",
+			Sources: cli.EnvVars("NC_SERVICE_PRELOAD_DIR"),
 		},
 		&cli.Int64Flag{
 			Name:    "service-max-file-size",

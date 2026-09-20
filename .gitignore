@@ -16,6 +16,8 @@ zeus/data.yml
 # negations near the bottom of this file (after the broad *.pcap /
 # *.pcapng patterns, otherwise they cannot win).
 tests/*
+!tests/e2e/
+!tests/e2e/**
 .idea
 types/python
 types/java
@@ -43,6 +45,9 @@ zeus/dumps
 priv.key
 pub.key
 dist/
+!cmd/capture/webui/frontend/dist/
+cmd/capture/webui/frontend/dist/*
+!cmd/capture/webui/frontend/dist/MODULE_PLACEHOLDER.txt
 vulnDBs
 FlameGraph
 # Generated docker build contexts (zeus copies vendored deps in here).
@@ -78,4 +83,3 @@ cmd/capture/webui/frontend/packages/netcap-ui/tsup.config.bundled*
 
 # Build artifacts
 cmd/transform/transform
-types/netcap.pb.go

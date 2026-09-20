@@ -32,16 +32,33 @@ type BatchInfo struct {
 	Chan <-chan []byte
 }
 
-// InitBatching initializes batching mode and returns an array of Batchinfos and the pcap handle
-// closing the handle must be done by the caller.
+// InitBatching initializes batching mode and returns decoder channels and the
+// pcap handle. Closing the handle stops capture early; lifecycle cleanup also
+// closes it when capture ends.
 func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Handle, error) {
 	var chans []BatchInfo //nolint:prealloc
+	ctx, finish, err := c.beginCapture()
+	if err != nil {
+		return nil, nil, err
+	}
+	started := false
+	defer func() {
+		if !started {
+			finish()
+			c.cleanup(false)
+		}
+	}()
 
 	// open live handle
-	handle, err := pcap.OpenLive(in, int32(c.config.SnapLen), c.config.Promisc, c.config.Timeout)
+	handle, err := pcap.OpenLive(in, int32(c.config.SnapLen), c.config.Promisc, c.liveReadTimeout())
 	if err != nil {
 		return chans, nil, err
 	}
+	defer func() {
+		if !started {
+			handle.Close()
+		}
+	}()
 
 	// set BPF if requested
 	if bpf != "" {
@@ -59,16 +76,6 @@ func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Hand
 	if err != nil {
 		return chans, nil, err
 	}
-
-	// read packets in background routine
-	go func() {
-		for p := range ps.Packets() {
-			c.printProgressLive()
-
-			// TODO: avoid duplicate alloc
-			c.handlePacket(p)
-		}
-	}()
 
 	// get channels for all gopacket decoders
 	for _, decoders := range c.goPacketDecoders {
@@ -88,5 +95,22 @@ func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Hand
 		})
 	}
 
+	started = true
+	go func() {
+		defer c.cleanup(false)
+		defer finish()
+		defer handle.Close()
+		defer interruptCapture(ctx, ctx, handle.Close)()
+		for ctx.Err() == nil {
+			p, err := ps.NextPacket()
+			if err == pcap.NextErrorTimeoutExpired {
+				continue
+			}
+			if err != nil || !c.handlePacket(p) {
+				return
+			}
+			c.printProgressLive()
+		}
+	}()
 	return chans, handle, nil
 }

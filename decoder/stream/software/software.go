@@ -24,11 +24,13 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 
 	"github.com/ua-parser/uap-go/uaparser"
@@ -129,7 +131,16 @@ var Decoder = &decoder.AbstractDecoder{
 
 		// flush writer
 		var err error
-		for _, item := range Store.Items {
+
+		// stable output order: Store.Items is a map
+		idents := make([]string, 0, len(Store.Items))
+		for ident := range Store.Items {
+			idents = append(idents, ident)
+		}
+		sort.Strings(idents)
+
+		for _, ident := range idents {
+			item := Store.Items[ident]
 			item.Lock()
 
 			// Enhance software record with detection context and behavioral fields
@@ -492,6 +503,9 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 				productOrder = append(productOrder, product)
 			}
 		}
+		// Both sources are maps and the first match can end the scan, so the
+		// reported product would otherwise change between runs.
+		sort.Strings(productOrder)
 
 		// for all items in the CMS db (or the prefiltered subset)
 		for _, product := range productOrder {
@@ -500,8 +514,15 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 				continue
 			}
 
-			// compare the known headers
-			for headerName, re := range info.Headers {
+			// compare the known headers, in a stable order
+			headerNames := make([]string, 0, len(info.Headers))
+			for headerName := range info.Headers {
+				headerNames = append(headerNames, headerName)
+			}
+			sort.Strings(headerNames)
+
+			for _, headerName := range headerNames {
+				re := info.Headers[headerName]
 
 				matchesHeader := func() bool {
 					// to each of the headers from the current response
@@ -543,8 +564,15 @@ func WhatSoftwareHTTP(flowIdent string, h *types.HTTP) (s []*AtomicSoftware) {
 				}
 			}
 
-			// compare known cookies
-			for cookieName, re := range info.Cookies {
+			// compare known cookies, in a stable order
+			cookieNames := make([]string, 0, len(info.Cookies))
+			for cookieName := range info.Cookies {
+				cookieNames = append(cookieNames, cookieName)
+			}
+			sort.Strings(cookieNames)
+
+			for _, cookieName := range cookieNames {
+				re := info.Cookies[cookieName]
 				matchesCookie := func() bool {
 					// to each of the cookies from the current response
 					for _, receivedCookie := range serverCookies {
@@ -646,7 +674,7 @@ func cmsCandidateProducts(headers []header, cookies []cookie) map[string]struct{
 
 // WriteSoftware can be used to write software to the software audit record writer.
 func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
-	var newSoftwareProducts []*types.Software
+	var newSoftwareProducts []*AtomicSoftware
 
 	// add new audit records or update existing
 	Store.Lock()
@@ -677,7 +705,7 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 			// fmt.Println(SoftwareStore.Items, s.Product, s.Version)
 			Store.Items[ident] = s
 
-			newSoftwareProducts = append(newSoftwareProducts, s.Software)
+			newSoftwareProducts = append(newSoftwareProducts, s)
 		}
 	}
 	Store.Unlock()
@@ -686,9 +714,18 @@ func WriteSoftware(software []*AtomicSoftware, update func(s *AtomicSoftware)) {
 		// lookup known issues with identified software
 		// NOTE: Do NOT spawn goroutine here - causes goroutine leak!
 		// These lookups are fast enough to do synchronously
-		for _, s := range newSoftwareProducts {
+		for _, item := range newSoftwareProducts {
+			item.Lock()
+			// Lookups retain slices in audit records while HTTP updates the live item.
+			s := proto.Clone(item.Software).(*types.Software)
+			item.Unlock()
 			vulnerability.VulnerabilitiesLookup(s)
 			exploit.ExploitsLookup(s)
+			if s.HasKnownVulnerabilities {
+				item.Lock()
+				item.HasKnownVulnerabilities = true
+				item.Unlock()
+			}
 		}
 	}
 }

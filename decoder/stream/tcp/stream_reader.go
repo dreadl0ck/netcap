@@ -77,7 +77,7 @@ type streamReader interface {
 	// Saved indicates whether the stream has already been persisted on disk.
 	Saved() bool
 
-	// NumBytes returns the number of bytes processed.
+	// NumBytes returns the number of bytes recorded.
 	NumBytes() int
 
 	// Client returns the client streamReader.

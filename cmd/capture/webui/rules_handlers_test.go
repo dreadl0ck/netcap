@@ -20,9 +20,182 @@
 package webui
 
 import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/dreadl0ck/netcap/rules"
+	"gopkg.in/yaml.v2"
 )
+
+func TestRuleDistinctConfigRoundTrip(t *testing.T) {
+	for _, tagged := range []bool{false, true} {
+		name := "orphan"
+		if tagged {
+			name = "ruleset"
+		}
+		t.Run(name, func(t *testing.T) {
+			s := &Server{outDir: filepath.Join(t.TempDir(), "capture"), rulesConfig: &rules.Config{}}
+			payload := map[string]any{
+				"name": "cardinality", "type": "TCP", "expression": "true", "severity": "medium",
+				"enabled": true, "threshold": 9, "thresholdWindow": 120,
+				"distinctField": "DstIP", "distinctThreshold": 5,
+			}
+			filename := "cardinality.yml"
+			if tagged {
+				payload["tags"] = []string{"ruleset:custom"}
+				filename = "custom.yml"
+			}
+			for _, stage := range []string{"create", "update", "clear"} {
+				t.Run(stage, func(t *testing.T) {
+					if stage == "update" {
+						payload["distinctField"] = "DstPort"
+						payload["distinctThreshold"] = 7
+					} else if stage == "clear" {
+						payload["distinctField"] = ""
+						payload["distinctThreshold"] = 0
+					}
+					field := payload["distinctField"].(string)
+					count := payload["distinctThreshold"].(int)
+					assertRule := func(rule RuleResponse) {
+						t.Helper()
+						if rule.DistinctField != field || rule.DistinctThreshold != count || rule.Threshold != 9 || rule.ThresholdWindow != 120 {
+							t.Fatalf("threshold settings lost: %+v", rule)
+						}
+					}
+					body, err := json.Marshal(payload)
+					if err != nil {
+						t.Fatal(err)
+					}
+					w := httptest.NewRecorder()
+					if stage == "create" {
+						s.handleRules(w, httptest.NewRequest(http.MethodPost, "/api/rules", strings.NewReader(string(body))))
+						if w.Code != http.StatusCreated {
+							t.Fatalf("create: %d %s", w.Code, w.Body.String())
+						}
+						var response struct {
+							Rule RuleResponse `json:"rule"`
+						}
+						if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+							t.Fatal(err)
+						}
+						assertRule(response.Rule)
+					} else {
+						s.handleRule(w, httptest.NewRequest(http.MethodPut, "/api/rules/cardinality", strings.NewReader(string(body))))
+						if w.Code != http.StatusOK {
+							t.Fatalf("update: %d %s", w.Code, w.Body.String())
+						}
+					}
+					data, err := os.ReadFile(filepath.Join(s.getRulesFolderPath(), filename))
+					if err != nil {
+						t.Fatal(err)
+					}
+					var saved rules.Config
+					if err := yaml.Unmarshal(data, &saved); err != nil {
+						t.Fatal(err)
+					}
+					if len(saved.Rules) != 1 || saved.Rules[0].DistinctField != field || saved.Rules[0].DistinctThreshold != count {
+						t.Fatalf("saved settings lost: %s", data)
+					}
+					s.invalidateRulesCache()
+					w = httptest.NewRecorder()
+					s.handleRules(w, httptest.NewRequest(http.MethodGet, "/api/rules", nil))
+					var listed RulesConfigResponse
+					if err := json.Unmarshal(w.Body.Bytes(), &listed); err != nil || w.Code != http.StatusOK {
+						t.Fatalf("list: %d %s (%v)", w.Code, w.Body.String(), err)
+					}
+					found := false
+					for _, rule := range listed.Rules {
+						if rule.Name == "cardinality" {
+							assertRule(rule)
+							found = true
+						}
+					}
+					if !found {
+						t.Fatal("rule missing after reload")
+					}
+					w = httptest.NewRecorder()
+					s.handleRule(w, httptest.NewRequest(http.MethodGet, "/api/rules/cardinality", nil))
+					var fetched RuleResponse
+					if err := json.Unmarshal(w.Body.Bytes(), &fetched); err != nil || w.Code != http.StatusOK {
+						t.Fatalf("get: %d %s (%v)", w.Code, w.Body.String(), err)
+					}
+					assertRule(fetched)
+					// Keep subsequent saves scoped to the test rule, not embedded defaults.
+					s.rulesConfig = &saved
+					if tagged {
+						saved.Rules[0].Tags = []string{"ruleset:custom"}
+					}
+				})
+			}
+		})
+	}
+}
+
+// TestRuleSetToggleKeepsDistinctConfig guards the rule set override writer:
+// toggling a set must not silently downgrade a cardinality rule into a plain
+// per-match rule, which would flood alerts and lose the operator's config.
+func TestRuleSetToggleKeepsDistinctConfig(t *testing.T) {
+	for _, enabled := range []bool{false, true} {
+		name := "disable"
+		if enabled {
+			name = "enable"
+		}
+		t.Run(name, func(t *testing.T) {
+			s := &Server{outDir: filepath.Join(t.TempDir(), "capture")}
+			s.rulesConfig = &rules.Config{Rules: []*rules.Rule{{
+				Name: "fan-out", Type: "TCP", Expression: "true", Severity: "medium",
+				Enabled: !enabled, Threshold: 1, ThresholdWindow: 300,
+				DistinctField: "DstIP", DistinctThreshold: 5,
+				Sequence: &rules.Sequence{
+					After: "true", GroupBy: []string{"SrcIP", "DstIP"}, Within: 900,
+				},
+				Tags: []string{"scan", "ruleset:cardinality"},
+			}}}
+
+			body := strings.NewReader(fmt.Sprintf(`{"enabled":%v}`, enabled))
+			w := httptest.NewRecorder()
+			s.handleRuleSet(w, httptest.NewRequest(http.MethodPut, "/api/rule-sets/cardinality", body))
+			if w.Code != http.StatusOK {
+				t.Fatalf("toggle: %d %s", w.Code, w.Body.String())
+			}
+
+			data, err := os.ReadFile(filepath.Join(s.getRulesFolderPath(), "cardinality.yml"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var saved rules.Config
+			if err := yaml.Unmarshal(data, &saved); err != nil {
+				t.Fatal(err)
+			}
+			if len(saved.Rules) != 1 {
+				t.Fatalf("got %d rules, want 1: %s", len(saved.Rules), data)
+			}
+			rule := saved.Rules[0]
+			if rule.DistinctField != "DstIP" || rule.DistinctThreshold != 5 {
+				t.Fatalf("cardinality settings lost, rule downgraded to per-match: %s", data)
+			}
+			// Losing the sequence would turn a gated rule into one that alerts
+			// on every matching record.
+			if rule.Sequence == nil || rule.Sequence.After != "true" ||
+				rule.Sequence.Within != 900 || len(rule.Sequence.GroupBy) != 2 {
+				t.Fatalf("sequence configuration lost: %s", data)
+			}
+			if rule.Enabled != enabled || rule.ThresholdWindow != 300 {
+				t.Fatalf("toggle or window lost: %s", data)
+			}
+			if slices.Contains(rule.Tags, "ruleset:cardinality") || !slices.Contains(rule.Tags, "scan") {
+				t.Fatalf("internal tags mishandled: %v", rule.Tags)
+			}
+		})
+	}
+}
 
 // TestSanitizeFilename tests the sanitization of rule names for use as filenames.
 // This is critical for preventing path traversal issues and filesystem errors when

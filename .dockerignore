@@ -122,6 +122,8 @@ cmd/capture/webui/frontend/.next/
 # does NOT match this path, which is why it needs spelling out in full (the same
 # reason node_modules is listed with its full path).
 cmd/capture/webui/frontend/dist/
+!cmd/capture/webui/frontend/dist/
+!cmd/capture/webui/frontend/dist/MODULE_PLACEHOLDER.txt
 
 # Same reasoning for the generated protobuf types: gitignored, regenerated from
 # netcap.proto inside the builder stage, and excluded here so a local copy

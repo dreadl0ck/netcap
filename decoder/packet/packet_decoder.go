@@ -150,61 +150,9 @@ func newAccumulatingPacketDecoder(t types.Type, name, description string, postin
 
 // InitPacketDecoders initializes all packet decoders.
 func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
-	var (
-		// values from command-line flags
-		in = strings.Split(c.IncludeDecoders, ",")
-		ex = strings.Split(c.ExcludeDecoders, ",")
-
-		// include map
-		inMap = make(map[string]bool)
-	)
-
-	// Work with a copy of the decoders slice to avoid mutating package-level
-	// state. This is critical for test isolation: prior implementations
-	// reassigned defaultPacketDecoders, so a single test using IncludeDecoders
-	// would permanently shrink the global slice for the rest of the run.
-	active := append([]DecoderAPI(nil), defaultPacketDecoders...)
-
-	// if there are includes and the first item is not an empty string
-	if len(in) > 0 && in[0] != "" { // iterate over includes
-		for _, name := range in {
-			if name != "" { // check if proto exists
-				if _, ok := decoderutils.AllDecoderNames[name]; !ok {
-					return nil, errors.Wrap(ErrInvalidDecoder, name)
-				}
-
-				// add to include map
-				inMap[name] = true
-			}
-		}
-
-		// iterate over packet decoders and collect those that are named in the includeMap
-		var selection []DecoderAPI
-		for _, e := range active {
-			if _, ok := inMap[e.GetName()]; ok {
-				selection = append(selection, e)
-			}
-		}
-		active = selection
-	}
-
-	// iterate over excluded decoders
-	for _, name := range ex {
-		if name != "" { // check if proto exists
-			if _, ok := decoderutils.AllDecoderNames[name]; !ok {
-				return nil, errors.Wrap(ErrInvalidDecoder, name)
-			}
-
-			// remove named decoder from the active slice
-			for i, e := range active {
-				if name == e.GetName() {
-					// remove decoder
-					active = append(active[:i], active[i+1:]...)
-
-					break
-				}
-			}
-		}
+	active, err := decoderutils.SelectDecoders(defaultPacketDecoders, c.IncludeDecoders, c.ExcludeDecoders, DecoderAPI.GetName, ErrInvalidDecoder)
+	if err != nil {
+		return nil, err
 	}
 
 	var (

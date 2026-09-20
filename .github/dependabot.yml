@@ -83,6 +83,9 @@ updates:
         update-types: [minor, patch]
         patterns: ["*"]
     ignore:
+      # Production images track LTS releases; October releases are interim.
+      - dependency-name: "ubuntu"
+        versions: ["*.10"]
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions

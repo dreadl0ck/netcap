@@ -22,9 +22,11 @@ package mail
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"io"
-	"log"
 	"net/textproto"
 	"strconv"
 	"strings"
@@ -32,8 +34,6 @@ import (
 
 	"github.com/araddon/dateparse"
 	"go.uber.org/zap"
-
-	"github.com/dreadl0ck/netcap/internal/cryptoutils"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
@@ -95,17 +95,29 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 	}
 }
 
-func newMailID() string {
-	s, err := cryptoutils.RandomString(20)
-	if err != nil {
-		log.Fatal(err)
+// newMailID derives a stable identifier for a mail occurrence.
+func newMailID(conv *core.ConversationInfo, buf []byte, origin string, ordinal uint64) string {
+	h := sha256.New()
+	var encoded [8]byte
+	writeField := func(value []byte) {
+		binary.BigEndian.PutUint64(encoded[:], uint64(len(value)))
+		_, _ = h.Write(encoded[:])
+		_, _ = h.Write(value)
 	}
 
-	return s
+	writeField([]byte(origin))
+	writeField([]byte(conv.Ident))
+	binary.BigEndian.PutUint64(encoded[:], uint64(conv.FirstClientPacket.UnixNano()))
+	_, _ = h.Write(encoded[:])
+	binary.BigEndian.PutUint64(encoded[:], ordinal)
+	_, _ = h.Write(encoded[:])
+	writeField(buf)
+
+	return hex.EncodeToString(h.Sum(nil))[:20]
 }
 
 // Parse attempts to read a mail from the conversation.
-func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap.Logger, origin string) *types.Mail {
+func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap.Logger, origin string, ordinal uint64) *types.Mail {
 	logger.Info("parsing mail",
 		zap.String("from", from),
 		zap.String("to", to),
@@ -148,7 +160,7 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 		ContentType:     hdr["Content-Type"],
 		EnvelopeTo:      hdr["Envelope-To"],
 		Body:            parseMailParts(conv, body, logger),
-		ID:              newMailID(),
+		ID:              newMailID(conv, buf, origin, ordinal),
 		Origin:          origin,
 		CommunityID:     conv.CommunityID,
 	}

@@ -22,10 +22,54 @@ package core
 import (
 	"bytes"
 	"io"
+	"time"
 )
 
 // DataFragments implements sort.Interface to sort data fragments based on their timestamps.
 type DataFragments []dataFragment
+
+// MergeByTimestamp interleaves two per-direction fragment slices by capture
+// timestamp into a newly allocated slice.
+//
+// The merge is stable: a fragment never moves relative to the other fragments
+// of the same input. Both inputs are in stream (byte) order by construction,
+// but their timestamps are not monotonic, because reassembly delivers the
+// packet that closed a hole together with the earlier-captured packets it had
+// queued. Sorting the concatenation instead reorders bytes within a direction
+// and corrupts every consumer that reads the result as a byte stream.
+//
+// Fragments with equal timestamps - such as the pages a single large segment
+// is split into - keep their input order, with a taking precedence over b.
+func MergeByTimestamp(a, b DataFragments) DataFragments {
+	merged := make(DataFragments, 0, len(a)+len(b))
+
+	var i, j int
+	for i < len(a) && j < len(b) {
+		if fragmentTimestamp(a[i]).After(fragmentTimestamp(b[j])) {
+			merged = append(merged, b[j])
+			j++
+
+			continue
+		}
+
+		merged = append(merged, a[i])
+		i++
+	}
+
+	merged = append(merged, a[i:]...)
+
+	return append(merged, b[j:]...)
+}
+
+// fragmentTimestamp returns the capture timestamp of a fragment,
+// or the zero time if it carries no assembler context.
+func fragmentTimestamp(d dataFragment) time.Time {
+	if ctx := d.Context(); ctx != nil {
+		return ctx.GetCaptureInfo().Timestamp
+	}
+
+	return time.Time{}
+}
 
 // Size returns the fragments total data size.
 func (d DataFragments) Size() int {

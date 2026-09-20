@@ -21,158 +21,75 @@ import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, useNavigate } from 'react-router';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import BoltIcon from '@mui/icons-material/Bolt';
+import DataObjectIcon from '@mui/icons-material/DataObject';
+import ManageSearchIcon from '@mui/icons-material/ManageSearch';
+import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
+import SearchIcon from '@mui/icons-material/Search';
+import ShieldIcon from '@mui/icons-material/Shield';
 import { ReactRouterNetcapProvider } from '@dreadl0ck/netcap-ui/adapters/react-router';
 import { api, getBackendUrl } from '@dreadl0ck/netcap-ui/lib';
 import { ConnectionOverlay } from '@dreadl0ck/netcap-ui/components';
 import { mutate as globalMutate } from 'swr';
 import { AppRoutes } from './routes';
+import { netcapTheme } from './theme';
 
-// Import self-hosted Roboto fonts (only the weights needed by MUI)
-import '@fontsource/roboto/300.css'; // Light
-import '@fontsource/roboto/400.css'; // Regular
-import '@fontsource/roboto/500.css'; // Medium
-import '@fontsource/roboto/700.css'; // Bold
-// Import Roboto Mono for code/monospace content
-import '@fontsource/roboto-mono/400.css';
-import '@fontsource/roboto-mono/700.css';
+import '@fontsource/space-grotesk/400.css';
+import '@fontsource/space-grotesk/500.css';
+import '@fontsource/space-grotesk/600.css';
+import '@fontsource/space-grotesk/700.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/600.css';
 
-// Create theme once outside component to prevent recreation on every render
-const theme = createTheme({
-  palette: {
-    mode: 'dark',
-    primary: {
-      main: '#00bcd4',
-    },
-    secondary: {
-      main: '#ff4081',
-    },
+const DIRECT_NAVIGATION_ITEMS = [
+  {
+    path: '/interfaces',
+    label: 'Interfaces',
+    icon: <NetworkCheckIcon />,
+    placement: 'workspace-before-pcaps' as const,
+    description: 'View available network interfaces for live packet capture and monitoring.',
   },
-  typography: {
-    fontFamily: [
-      'Roboto',
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      '"Helvetica Neue"',
-      'Arial',
-      'sans-serif',
-    ].join(','),
-    fontSize: 14,
-    fontWeightLight: 300,
-    fontWeightRegular: 400,
-    fontWeightMedium: 500,
-    fontWeightBold: 700,
-    h1: {
-      fontSize: '2rem',
-      '@media (min-width:600px)': {
-        fontSize: '2.5rem',
-      },
-    },
-    h2: {
-      fontSize: '1.5rem',
-      '@media (min-width:600px)': {
-        fontSize: '2rem',
-      },
-    },
-    h3: {
-      fontSize: '1.25rem',
-      '@media (min-width:600px)': {
-        fontSize: '1.5rem',
-      },
-    },
-    h4: {
-      fontSize: '1.1rem',
-      '@media (min-width:600px)': {
-        fontSize: '1.25rem',
-      },
-    },
-    h5: {
-      fontSize: '1rem',
-      '@media (min-width:600px)': {
-        fontSize: '1.1rem',
-      },
-    },
-    h6: {
-      fontSize: '0.9rem',
-      '@media (min-width:600px)': {
-        fontSize: '1rem',
-      },
-    },
-    body1: {
-      fontSize: '0.875rem',
-      '@media (min-width:600px)': {
-        fontSize: '1rem',
-      },
-    },
-    body2: {
-      fontSize: '0.8125rem',
-      '@media (min-width:600px)': {
-        fontSize: '0.875rem',
-      },
-    },
-    button: {
-      fontSize: '0.8125rem',
-      '@media (min-width:600px)': {
-        fontSize: '0.875rem',
-      },
-    },
-    caption: {
-      fontSize: '0.7rem',
-      '@media (min-width:600px)': {
-        fontSize: '0.75rem',
-      },
-    },
+  {
+    path: '/yara',
+    label: 'YARA Rules',
+    icon: <ShieldIcon />,
+    placement: 'data-before-logs' as const,
+    description: 'YARA Rules: Upload and manage YARA rules, scan extracted files for malware signatures.',
   },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: {
-        html: {
-          WebkitFontSmoothing: 'antialiased',
-          MozOsxFontSmoothing: 'grayscale',
-          WebkitTextSizeAdjust: '100%',
-          height: '100%',
-          width: '100%',
-          overflow: 'hidden',
-        },
-        body: {
-          WebkitFontSmoothing: 'antialiased',
-          MozOsxFontSmoothing: 'grayscale',
-          textRendering: 'optimizeLegibility',
-          WebkitTextSizeAdjust: '100%',
-          backgroundColor: '#121212',
-          color: '#fff',
-          height: '100%',
-          width: '100%',
-          margin: 0,
-          padding: 0,
-          overflow: 'hidden',
-          position: 'fixed',
-          overscrollBehavior: 'none',
-          touchAction: 'pan-x pan-y',
-        },
-        '#root': {
-          height: '100%',
-          width: '100%',
-          overflow: 'auto',
-          position: 'relative',
-          WebkitOverflowScrolling: 'touch',
-          overscrollBehavior: 'none',
-        },
-        '@font-face': [
-          {
-            fontFamily: 'Roboto',
-            fontDisplay: 'swap',
-          },
-        ],
-      },
-    },
+  {
+    path: '/inject',
+    label: 'Inject',
+    icon: <BoltIcon />,
+    placement: 'detection-end' as const,
+    description: 'Configure packet injection and manipulation rules.',
   },
-});
+  {
+    path: '/dbs',
+    label: 'Databases',
+    icon: <DataObjectIcon />,
+    placement: 'system-start' as const,
+    description: 'Manage GeoIP, vulnerability, and MAC vendor databases.',
+  },
+  {
+    path: '/dpi',
+    label: 'DPI',
+    icon: <ManageSearchIcon />,
+    placement: 'system-start' as const,
+    description: 'Configure Deep Packet Inspection modules.',
+  },
+  {
+    path: '/probes',
+    label: 'Service Probes',
+    icon: <SearchIcon />,
+    placement: 'system-before-bpf' as const,
+    description: 'Manage nmap service probes for service fingerprinting.',
+  },
+];
 
 // Valid PCAP file extensions
 const VALID_PCAP_EXTENSIONS = ['.pcap', '.pcapng', '.cap'];
@@ -448,9 +365,9 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
-      <ThemeProvider theme={theme}>
+      <ThemeProvider theme={netcapTheme}>
         <CssBaseline />
-        <ReactRouterNetcapProvider backendUrl={getBackendUrl()}>
+        <ReactRouterNetcapProvider backendUrl={getBackendUrl()} navigationItems={DIRECT_NAVIGATION_ITEMS}>
           <AppContent />
         </ReactRouterNetcapProvider>
       </ThemeProvider>

@@ -27,6 +27,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"go.uber.org/zap"
 
@@ -48,6 +49,9 @@ func sanitizeStringFields(source, host, contentType, cTypeDetected, flowDirectio
 }
 
 var saveFileLog = zap.NewNop()
+
+// Protect dedup lookup through publication, and filename allocation across contents.
+var saveFileMu sync.Mutex
 
 // SetSaveFileLogger sets the logger for file saving operations
 func SetSaveFileLogger(logger *zap.Logger) {
@@ -204,6 +208,9 @@ func SaveFileEnhanced(
 	}
 
 	// Check for duplicate content using deduplication cache
+	saveFileMu.Lock()
+	defer saveFileMu.Unlock()
+
 	var target string
 	var length int64
 	var hashes FileHashes
@@ -270,13 +277,13 @@ func SaveFileEnhanced(
 
 		// Use streaming hash writer for efficiency
 		hashWriter := NewStreamingHashWriter(f)
-		defer hashWriter.Close()
 
 		// Always use the fully decoded content (gzip/deflate/base64 already decoded by ComputeContentHash)
 		r := bytes.NewBuffer(contentInfo.DecodedContent)
 
 		// Copy data while computing hashes
 		w, errCopy := io.Copy(hashWriter, r)
+		errClose := hashWriter.Close()
 		if errCopy != nil {
 			saveFileLog.Error("failed to save file",
 				zap.String("ident", conv.Ident),
@@ -284,6 +291,8 @@ func SaveFileEnhanced(
 				zap.Int64("bytesWritten", w),
 				zap.Error(errCopy),
 			)
+			_ = os.Remove(target)
+			return errCopy
 		} else {
 			length = w
 			saveFileLog.Debug("saved file",
@@ -291,6 +300,10 @@ func SaveFileEnhanced(
 				zap.String("target", target),
 				zap.Int64("bytesWritten", w),
 			)
+		}
+		if errClose != nil {
+			_ = os.Remove(target)
+			return errClose
 		}
 
 		// Register in dedup cache AFTER successful write with final path

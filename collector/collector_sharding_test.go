@@ -173,8 +173,9 @@ func TestPacketDispatch(t *testing.T) {
 	}
 
 	c := &Collector{
-		numWorkers: 4,
-		workers:    workers,
+		numWorkers:       4,
+		workers:          workers,
+		acceptingPackets: true,
 	}
 
 	src := net.ParseIP("10.0.0.1")
@@ -196,6 +197,7 @@ func TestPacketDispatch(t *testing.T) {
 	// Verify both went to the same worker
 	select {
 	case <-workers[expectedIdx]:
+		c.wg.Done()
 		// Good, got p1
 	default:
 		t.Errorf("Packet 1 did not arrive at expected worker %d", expectedIdx)
@@ -203,6 +205,7 @@ func TestPacketDispatch(t *testing.T) {
 
 	select {
 	case <-workers[expectedIdx]:
+		c.wg.Done()
 		// Good, got p2
 	default:
 		t.Errorf("Packet 2 did not arrive at expected worker %d", expectedIdx)

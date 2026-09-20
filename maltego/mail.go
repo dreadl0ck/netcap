@@ -44,7 +44,7 @@ type MailCountFunc func()
 // MailTransformationFunc is a transformation over Mail audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type MailTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, mail *types.Mail, min, max uint64, path string, ip string)
+type MailTransformationFunc = transformationFunc[types.Mail]
 
 // MailTransform applies a maltego transformation over Mail audit records.
 func MailTransform(count MailCountFunc, transform MailTransformationFunc) {

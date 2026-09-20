@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -156,7 +157,16 @@ var connectionDecoder = newAccumulatingPacketDecoder(
 
 		conns.Lock()
 		cp.numTotal = len(conns.Items)
-		for _, conn := range conns.Items {
+
+		// stable output order: Items is a map
+		idents := make([]string, 0, len(conns.Items))
+		for ident := range conns.Items {
+			idents = append(idents, ident)
+		}
+		sort.Strings(idents)
+
+		for _, ident := range idents {
+			conn := conns.Items[ident]
 			conn.decoder = decoder
 			cp.handleConnection(conn)
 		}
@@ -180,9 +190,16 @@ var connectionDecoder = newAccumulatingPacketDecoder(
 
 		// Take a snapshot of items under lock to avoid race conditions
 		conns.Lock()
-		items := make([]*connection, 0, len(conns.Items))
-		for _, conn := range conns.Items {
-			items = append(items, conn)
+		idents := make([]string, 0, len(conns.Items))
+		for ident := range conns.Items {
+			idents = append(idents, ident)
+		}
+		// stable output order: Items is a map
+		sort.Strings(idents)
+
+		items := make([]*connection, 0, len(idents))
+		for _, ident := range idents {
+			items = append(items, conns.Items[ident])
 		}
 		conns.Unlock()
 
@@ -566,6 +583,9 @@ func (d *Decoder) writeConn(conn *types.Connection, clientIP string, apps map[st
 		for app := range apps {
 			conn.Applications = append(conn.Applications, app)
 		}
+		// DetectedProtocolName is derived from the first entry below, so the
+		// map order would otherwise decide which protocol gets reported.
+		sort.Strings(conn.Applications)
 	}
 
 	// Lookup service name for the destination (server) port

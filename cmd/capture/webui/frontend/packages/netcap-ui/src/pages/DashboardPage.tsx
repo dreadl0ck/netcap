@@ -27,6 +27,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
 
 import Layout from '../components/Layout';
 import OverviewView from '../components/OverviewView';
@@ -182,9 +184,24 @@ export default function DashboardPage() {
   return (
     <Layout title="Dashboard">
       <Stack spacing={2}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-          <DashboardPcapScopeSelector value={scope} onChange={setScope} inputFiles={inputFiles} />
-          <Box sx={{ flex: 1 }} />
+        <Box sx={{
+          display: 'flex',
+          alignItems: { xs: 'stretch', md: 'center' },
+          justifyContent: 'space-between',
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: 2.5,
+          py: { xs: 1, md: 2 },
+        }}>
+          <Box>
+            <Chip label="LIVE TELEMETRY" color="primary" variant="outlined" size="small" sx={{ mb: 1.5, height: 24 }} />
+            <Typography component="h2" variant="h2">Traffic overview</Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.75, maxWidth: 620 }}>
+              Inspect captures, extracted intelligence, and host activity from one workspace.
+            </Typography>
+          </Box>
+          <Box sx={{ minWidth: { md: 300 } }}>
+            <DashboardPcapScopeSelector value={scope} onChange={setScope} inputFiles={inputFiles} />
+          </Box>
         </Box>
 
         <DashboardViewTabs

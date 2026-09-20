@@ -20,6 +20,7 @@
 package tcp
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -229,6 +230,79 @@ func TestSortAndMergeFragmentsSortsByTimestamp(t *testing.T) {
 	for i := range want {
 		if got[i] != want[i] {
 			t.Errorf("merged fragment %d = %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
+// TestSortAndMergeFragmentsKeepsPerDirectionByteOrder covers the delivery shape
+// reassembly produces once a hole is closed: the packet that closed it comes
+// first, followed by the packets it had queued, which were captured earlier.
+// The fragments of one direction are therefore not in timestamp order, and
+// ordering the merged slice by timestamp rewrites the byte stream that
+// conversation.Data is parsed as.
+func TestSortAndMergeFragmentsKeepsPerDirectionByteOrder(t *testing.T) {
+	base := time.Now()
+	conn := &tcpConnection{ident: "stream-order-test"}
+	conn.client = conn.newTCPStreamReader(true)
+	conn.server = conn.newTCPStreamReader(false)
+
+	frag := func(payload string, offset time.Duration, dir reassembly.TCPFlowDirection) *core.StreamData {
+		return &core.StreamData{
+			RawData:          []byte(payload),
+			AssemblerContext: &mergeTestContext{ts: base.Add(offset * time.Millisecond)},
+			Dir:              dir,
+		}
+	}
+
+	client, _ := conn.client.(*tcpStreamReader)
+	server, _ := conn.server.(*tcpStreamReader)
+
+	// c2 closed the hole that c3, captured earlier, was queued behind.
+	client.data = core.DataFragments{
+		frag("c1", 10, reassembly.TCPDirClientToServer),
+		frag("c2", 50, reassembly.TCPDirClientToServer),
+		frag("c3", 30, reassembly.TCPDirClientToServer),
+	}
+	server.data = core.DataFragments{
+		frag("s1", 20, reassembly.TCPDirServerToClient),
+		frag("s2", 40, reassembly.TCPDirServerToClient),
+	}
+
+	conn.sortAndMergeFragments()
+
+	// Directions still interleave by time, but neither is reordered. Sorting by
+	// timestamp would have produced c1 s1 c3 s2 c2, swapping c2 and c3.
+	want := []string{"c1", "s1", "s2", "c2", "c3"}
+	got := payloads(conn.merged)
+
+	if len(got) != len(want) {
+		t.Fatalf("merged = %v, want %v", got, want)
+	}
+
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("merged = %v, want %v", got, want)
+		}
+	}
+
+	// The invariant behind that expectation: each direction read out of the
+	// conversation buffer must be byte-identical to the direction's own stream.
+	for _, dir := range []reassembly.TCPFlowDirection{reassembly.TCPDirClientToServer, reassembly.TCPDirServerToClient} {
+		var side core.DataFragments
+
+		for _, f := range conn.merged {
+			if f.Direction() == dir {
+				side = append(side, f)
+			}
+		}
+
+		wantSide := conn.client.DataSlice()
+		if dir == reassembly.TCPDirServerToClient {
+			wantSide = conn.server.DataSlice()
+		}
+
+		if !bytes.Equal(side.Bytes(), wantSide.Bytes()) {
+			t.Errorf("%s bytes in merged = %q, want %q", dir, side.Bytes(), wantSide.Bytes())
 		}
 	}
 }

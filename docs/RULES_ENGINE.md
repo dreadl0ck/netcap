@@ -17,6 +17,7 @@ The NETCAP Rules Engine allows you to define detection rules that automatically 
 ### Features
 
 - **Expression-based matching**: Use powerful expr-lang expressions to define detection logic
+- **Ordered correlation**: Require an earlier related record before a rule alerts
 - **MITRE ATT&CK mapping**: Associate rules with MITRE ATT&CK techniques
 - **Alert deduplication**: Automatic deduplication within configurable time windows
 - **Rate limiting**: Prevent alert flooding with per-rule rate limits
@@ -133,6 +134,98 @@ distinct destinations" — e.g. an internal host sweeping many controllers:
   severity: high
   enabled: true
 ```
+
+#### `sequence` (optional)
+Require an earlier **related** record before the rule may alert. This expresses
+"B after A within a window, for the same group" — for example a write to a
+register that the same source read minutes earlier.
+
+```yaml
+sequence:
+  after: <expression identifying the earlier record>
+  group_by: [SrcIP, DstIP, UnitID, Bank, Address]
+  within: 900   # seconds, default 60
+```
+
+- `after` (required) — expression identifying the **earlier** record. It is
+  compiled against the same record type as the rule, so both expressions see
+  the same fields. The rule's own `expression` stays the **trigger**.
+- `group_by` (required, at least one field) — top-level record fields whose
+  values must be equal on the earlier and the triggering record.
+- `within` (optional) — how many seconds the earlier record stays eligible.
+  Defaults to 60; a negative value is rejected at load time.
+
+Semantics:
+
+- **Gate placement.** The gate runs before `threshold` and `distinct_field`
+  counting, so those only ever see completed sequences and otherwise behave
+  exactly as they do for an ungated rule. Rules without a `sequence` block are
+  completely unaffected and allocate no sequence state.
+- **`after` is evaluated on every record of the rule's type**, not only on
+  records that match the trigger expression — the earlier record of a sequence
+  usually does not match the rule's own `expression`.
+- **Exact equality only.** `group_by` compares field values for equality
+  (string and integer fields). It cannot express range overlap: grouping on a
+  start address pairs a write with an earlier read of the *same* start address,
+  never with a read whose span merely overlaps the write.
+- **No self-satisfaction.** The lookup happens before the current record is
+  recorded, so a record matching both `expression` and `after` can never
+  satisfy its own precondition; it can only gate later records.
+- **Complete group keys are required.** If any `group_by` field is empty, or of
+  a kind other than string or integer, the record is not correlated at all —
+  neither as a trigger nor as a precondition.
+- **Record-time ordering.** Windows use the record's own timestamp (wall clock
+  only for records that report no time), so offline replay behaves like live
+  capture. A trigger timestamped before its precondition does not match, and a
+  gap of exactly `within` still matches while one second more does not.
+- **Evaluation order matters too.** The precondition must have been *seen* by
+  the engine before the trigger. For record types written at stream
+  completion/flush rather than per packet, records from different connections
+  can reach the engine out of timestamp order; such pairs are not matched.
+- **Observations are not consumed.** One earlier record can gate every trigger
+  in its group until the window expires, and a newer `after` match refreshes
+  the group's timestamp.
+- **State is bounded.** Tracking is per rule and keyed by group. Aged-out
+  groups are reclaimed by periodic sweeps and the number of tracked groups is
+  capped; hitting the cap costs missed correlations, not unbounded memory.
+- **Alerts describe the triggering record only.** The earlier record is not
+  attached to the alert — retrieve it from the audit records using the group
+  fields and the window.
+
+The web UI cannot author sequences yet, but it preserves them when saving rules
+or toggling rule sets.
+
+**Worked example** (shipped disabled in
+[`rules/examples/modbus_hunt.yml`](../rules/examples/modbus_hunt.yml)):
+
+```yaml
+- name: Modbus Write After Read Same Register
+  description: A source wrote a holding register it read within the last 15 minutes, on the same destination and unit.
+  type: Modbus
+  expression: >-
+    MessageRole == "request" && ParseStatus == "valid" && !Exception &&
+    FunctionCode in [6, 16, 22] && Bank == "holding_registers" && HasAddress
+  sequence:
+    after: >-
+      MessageRole == "request" && ParseStatus == "valid" && !Exception &&
+      FunctionCode == 3 && Bank == "holding_registers" && HasAddress
+    group_by: [SrcIP, DstIP, UnitID, Bank, Address]
+    within: 900
+  severity: medium
+  tags: [modbus, write, sequence]
+  enabled: false
+```
+
+Given reads and writes between `192.0.2.10` and `192.0.2.20`, unit 1, bank
+`holding_registers`:
+
+| Earlier record | Trigger | Alert? |
+| --- | --- | --- |
+| FC3 read of address 40 at `t` | FC6 write of address 40 at `t+600` | yes |
+| FC3 read of address 40 at `t` | FC6 write of address 40 at `t+901` | no — outside `within` |
+| FC3 read of address 40 at `t` | FC6 write of address 41 at `t+600` | no — grouping is equality, even if the read covered 40..45 |
+| FC3 read of address 40 at `t` | FC6 write of address 40 by another source | no — `SrcIP` is in `group_by` |
+| none | FC6 write of address 40 | no |
 
 ### Additional helper functions
 

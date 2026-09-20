@@ -28,7 +28,6 @@ import (
 	"maps"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
@@ -42,21 +41,21 @@ import (
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/packet"
-	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	httpstream "github.com/dreadl0ck/netcap/decoder/stream/http"
 	"github.com/dreadl0ck/netcap/decoder/stream/network"
+	"github.com/dreadl0ck/netcap/decoder/stream/secret"
 	"github.com/dreadl0ck/netcap/decoder/stream/service"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
 	"github.com/dreadl0ck/netcap/decoder/stream/udp"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/rules"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -130,6 +129,7 @@ type RuntimeConfig struct {
 	NoOptCheck            bool
 	IgnoreFSMErr          bool
 	AllowMissingInit      bool
+	ModbusRTUEndpoints    string
 	ClosePendingTimeout   time.Duration
 	CloseInactiveTimeout  time.Duration
 
@@ -212,8 +212,8 @@ type Server struct {
 	jobsProcessed     int64             // Total number of jobs processed (atomic counter)
 	currentJobMutex   sync.RWMutex      // Mutex for currentProcessingJob
 	currentProcessing *AnalysisJob      // Currently processing job (service mode only)
-	currentCmd        *exec.Cmd         // Currently running net capture command (for cleanup)
-	currentCmdMutex   sync.RWMutex      // Mutex for currentCmd
+	currentProc       *os.Process       // Currently running out-of-process net capture (for cleanup; nil in the in-process/appstore build)
+	currentCmdMutex   sync.RWMutex      // Mutex for currentProc
 }
 
 // UploadCallbackFunc is called when files are uploaded via the web UI
@@ -327,7 +327,10 @@ func (s *Server) loadPreloadedPcaps() {
 		return
 	}
 
-	pcapsDir := filepath.Join(s.serviceConfig.DataDir, "pcaps")
+	pcapsDir := s.serviceConfig.PreloadDir
+	if pcapsDir == "" {
+		pcapsDir = filepath.Join(s.serviceConfig.DataDir, "pcaps")
+	}
 
 	// Check if pcaps directory exists
 	if _, err := os.Stat(pcapsDir); os.IsNotExist(err) {
@@ -512,15 +515,15 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/files/logs", s.handleLogFiles)
 	mux.HandleFunc("/api/download/", s.handleDownloadAllAuditRecords)
 	mux.HandleFunc("/api/audit/", s.handleAuditRecords)
+	mux.HandleFunc("/api/timeline/meta", s.handleTimelineMeta)
+	mux.HandleFunc("/api/timeline/events", s.handleTimelineEvents)
+	mux.HandleFunc("/api/timeline/buckets", s.handleTimelineBuckets)
+	mux.HandleFunc("/api/timeline/record", s.handleTimelineRecord)
 	mux.HandleFunc("/api/logs/", s.handleLogContent)
 	mux.HandleFunc("/api/error-log/", s.handleErrorLogContent)
 	mux.HandleFunc("/api/set-directory", s.handleSetDirectory)
 	mux.HandleFunc("/api/reanalyze", s.handleReanalyze)
-	mux.HandleFunc("/api/dbs", s.handleDatabaseInfo)
-	mux.HandleFunc("/api/dbs/update", s.handleUpdateDatabases)
 	mux.HandleFunc("/api/version", s.handleVersion)
-	mux.HandleFunc("/api/dpi", s.handleDPIInfo)
-	mux.HandleFunc("/api/dpi/preferences", s.handleDPIPreferences)
 	mux.HandleFunc("/api/hyperscan", s.handleHyperscanInfo)
 	mux.HandleFunc("/api/config", s.handleConfig)
 	mux.HandleFunc("/api/config/debug", s.handleDebugToggle)
@@ -532,24 +535,12 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/rules/", s.handleRule)
 	mux.HandleFunc("/api/rule-sets", s.handleRuleSets)
 	mux.HandleFunc("/api/rule-sets/", s.handleRuleSet)
-	mux.HandleFunc("/api/injection-rules", s.handleInjectionRules)
-	mux.HandleFunc("/api/injection-rules/", s.handleInjectionRule)
-	mux.HandleFunc("/api/injection-events", s.handleInjectionEvents)
-	mux.HandleFunc("/api/injection-events/clear", s.handleInjectionEventsManage)
-	mux.HandleFunc("/api/injection-stats", s.handleInjectionStats)
-	mux.HandleFunc("/api/injection-actions", s.handleInjectionActions)
 	mux.HandleFunc("/api/alerts", s.handleAlerts)
 	mux.HandleFunc("/api/alerts/grouped", s.handleGroupedAlerts)
 	mux.HandleFunc("/api/alerts/stats", s.handleAlertStats)
 	mux.HandleFunc("/api/alerts/clear", s.handleClearAlerts)
 	mux.HandleFunc("/api/alerts/resolve", s.handleResolveAlert)
 	mux.HandleFunc("/api/alerts/unresolve", s.handleUnresolveAlert)
-	mux.HandleFunc("/api/yara/status", s.handleYaraStatus)
-	mux.HandleFunc("/api/yara/rules", s.handleYaraRules)
-	mux.HandleFunc("/api/yara/rules/upload", s.handleUploadYaraRule)
-	mux.HandleFunc("/api/yara/rules/", s.handleYaraRuleRouter) // GET, PUT, DELETE by name
-	mux.HandleFunc("/api/yara/scan", s.handleYaraScan)
-	mux.HandleFunc("/api/yara/scan-file", s.handleYaraScanFile)
 	mux.HandleFunc("/api/extracted-files", s.handleExtractedFiles)
 	mux.HandleFunc("/api/extracted-files/download-all", s.handleDownloadAllExtractedFiles)
 	mux.HandleFunc("/api/extracted-files/download/", s.handleDownloadExtractedFile)
@@ -579,14 +570,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/harvesters/presets/delete", s.handleDeleteHarvesterPreset)
 	mux.HandleFunc("/api/harvesters/presets/upload", s.handleUploadHarvesterPreset)
 	mux.HandleFunc("/api/harvesters/presets/download", s.handleDownloadHarvesterPreset)
-	mux.HandleFunc("/api/service-probes", s.handleServiceProbes)
-	mux.HandleFunc("/api/service-probes/", s.handleServiceProbeRouter)
-	mux.HandleFunc("/api/service-probes/test", s.handleTestServiceProbe)
-	mux.HandleFunc("/api/service-probes/export", s.handleExportServiceProbes)
-	mux.HandleFunc("/api/service-probes/import", s.handleImportServiceProbes)
 	mux.HandleFunc("/api/system-info", s.handleSystemInfo)
-	mux.HandleFunc("/api/network-interfaces", s.handleNetworkInterfaces)
-	mux.HandleFunc("/api/stop-capture", s.handleStopCapture)
+	registerEditionRoutes(mux, s)
 
 	// Upload handler: service mode vs local mode
 	if s.isServiceMode {
@@ -715,7 +700,7 @@ func (s *Server) Start() error {
 		Addr:         s.addr,
 		Handler:      gzipMiddleware(s.corsMiddleware(mux)),
 		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		WriteTimeout: 5 * time.Minute,
 		IdleTimeout:  120 * time.Second,
 	}
 
@@ -785,16 +770,17 @@ func (s *Server) handleDecodersRouter(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Stop(ctx context.Context) error {
 	log.Println("[WebUI] Shutting down server...")
 
-	// Kill any running net capture process (both service and local mode)
+	// Kill any running out-of-process net capture (non-appstore builds only;
+	// the in-process analysis path never sets currentProc).
 	s.currentCmdMutex.Lock()
-	if s.currentCmd != nil && s.currentCmd.Process != nil {
-		log.Printf("[WebUI] Killing running net capture process (PID: %d)", s.currentCmd.Process.Pid)
-		if err := s.currentCmd.Process.Kill(); err != nil {
+	if s.currentProc != nil {
+		log.Printf("[WebUI] Killing running net capture process (PID: %d)", s.currentProc.Pid)
+		if err := s.currentProc.Kill(); err != nil {
 			log.Printf("[WebUI] Error killing process: %v", err)
 		} else {
 			log.Println("[WebUI] Net capture process killed successfully")
 		}
-		s.currentCmd = nil
+		s.currentProc = nil
 	}
 	s.currentCmdMutex.Unlock()
 
@@ -1182,6 +1168,10 @@ type gzipResponseWriter struct {
 	wroteHeader bool
 }
 
+func (w *gzipResponseWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
 func (w *gzipResponseWriter) WriteHeader(status int) {
 	w.wroteHeader = true
 	w.ResponseWriter.WriteHeader(status)
@@ -1421,10 +1411,23 @@ func (s *Server) processJobs() {
 	}
 }
 
-// getExcludeDecoders returns the list of decoders to exclude for this job
-// When DPI is disabled, automatically excludes DPI-dependent decoders to prevent crashes
+// getExcludeDecoders returns the list of decoders to exclude for this job.
+// When DPI is disabled, DPI-dependent decoders are excluded to prevent crashes.
+//
+// The list is filtered against the decoders actually registered in this build:
+// the collector rejects an exclude naming a decoder it does not have
+// (ErrInvalidDecoder), and the App Store build compiles several decoders out
+// via nodpi/noyara/nomagika. Filtering here keeps the in-process path working
+// regardless of which decoders a given build carries.
 func getExcludeDecoders(job *AnalysisJob) string {
 	excludeDecoders := job.ExcludeDecoders
+	if required := inProcessRequiredExcludes(); required != "" {
+		if excludeDecoders != "" {
+			excludeDecoders += "," + required
+		} else {
+			excludeDecoders = required
+		}
+	}
 
 	// When DPI is disabled, exclude DPI-dependent decoders
 	// These decoders can cause nil pointer crashes if DPI is not properly initialized
@@ -1437,265 +1440,27 @@ func getExcludeDecoders(job *AnalysisJob) string {
 		}
 	}
 
-	return excludeDecoders
+	return filterRegisteredDecoders(excludeDecoders)
 }
 
-// runAnalysis executes a netcap capture analysis
-func (s *Server) runAnalysis(job *AnalysisJob) {
-	if s.isServiceMode {
-		log.Printf("[Service] Starting analysis for session %s", job.SessionID)
-	} else {
-		log.Printf("[WebUI] Starting analysis for uploaded file: %s", job.InputFile)
+// filterRegisteredDecoders drops any comma-separated decoder name that is not
+// present in the runtime decoder registry, so an exclude list never names a
+// decoder this build lacks. Order and duplicates of the surviving names are
+// preserved. An empty input returns an empty string.
+func filterRegisteredDecoders(csv string) string {
+	if csv == "" {
+		return ""
 	}
-
-	// Update status to processing (service mode only)
-	if s.sessionManager != nil {
-		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusProcessing, "", "")
-	}
-
-	// Enable file extraction - create files directory within the output directory
-	// Note: FileStorage must be a RELATIVE path since it gets joined with Out directory
-	fileStorageRelPath := "files"
-	filesDir := filepath.Join(job.OutputDir, fileStorageRelPath)
-	if err := os.MkdirAll(filesDir, 0755); err != nil {
-		log.Printf("[Service] Warning: Failed to create files directory: %v", err)
-		fileStorageRelPath = "" // Disable file storage if we can't create the directory
-	} else {
-		log.Printf("[Service] File extraction enabled for session %s: %s", job.SessionID, filesDir)
-	}
-
-	// Build netcap capture command
-	args := []string{
-		"capture",
-		"-read", job.InputFile,
-		"-out", job.OutputDir,
-		"-quiet",
-		"-y",        // Force overwrite without prompting (required for non-interactive mode)
-		"-http", "", // Disable web UI server
-	}
-
-	// Add critical stream processing flags to ensure SSH records are created
-	args = append(args,
-		"-reassemble-connections=true", // REQUIRED for SSH and all stream-based decoders
-		"-writeincomplete=true",        // Write incomplete streams immediately
-		"-ignorefsmerr=true",           // Ignore FSM errors for better reliability
-		"-allowmissinginit=true",       // Allow streams without handshake
-		"-conns",                       // Save raw conversation data to tcp/udp folders (corresponds to SaveConns config)
-	)
-
-	// Add file extraction flag if directory was created successfully (use relative path!)
-	if fileStorageRelPath != "" {
-		args = append(args, "-fileStorage", fileStorageRelPath)
-	}
-
-	if job.EnableDPI {
-		args = append(args, "-dpi")
-	}
-
-	// Add payload capture flag if enabled
-	if s.GetPayloadCapture() {
-		args = append(args, "-payload")
-		log.Printf("[Service] Payload capture enabled for session %s", job.SessionID)
-	}
-
-	// Apply BPF filter if set
-	if job.BPFFilter != "" {
-		args = append(args, "-bpf", job.BPFFilter)
-		log.Printf("[Service] Applying BPF filter for session %s: %s", job.SessionID, job.BPFFilter)
-	}
-
-	// Apply decoder config if set
-	if job.IncludeDecoders != "" {
-		args = append(args, "-include", job.IncludeDecoders)
-		log.Printf("[Service] Including decoders for session %s: %s", job.SessionID, job.IncludeDecoders)
-	}
-
-	// Build exclude decoders list
-	excludeDecoders := job.ExcludeDecoders
-
-	// When DPI is disabled or to prevent crashes, exclude DPI-dependent decoders
-	// These decoders can cause nil pointer crashes if DPI is not properly initialized
-	if !job.EnableDPI {
-		dpiDependentDecoders := "DeviceProfile,IPProfile,Connection"
-		if excludeDecoders != "" {
-			excludeDecoders += "," + dpiDependentDecoders
-		} else {
-			excludeDecoders = dpiDependentDecoders
+	kept := make([]string, 0)
+	for _, name := range strings.Split(csv, ",") {
+		if name == "" {
+			continue
 		}
-		log.Printf("[Service] DPI disabled - excluding DPI-dependent decoders for session %s", job.SessionID)
-	}
-
-	if excludeDecoders != "" {
-		args = append(args, "-exclude", excludeDecoders)
-		log.Printf("[Service] Excluding decoders for session %s: %s", job.SessionID, excludeDecoders)
-	}
-
-	// Determine executable for job execution
-	// In dev mode, use the current binary; otherwise use the system "net" binary
-	var executable string
-	if s.devMode {
-		// Dev mode: use the current executable (e.g., ./tmp/main when running with air)
-		execPath, err := os.Executable()
-		if err != nil {
-			log.Printf("[Service] Failed to get current executable path: %v, falling back to 'net'", err)
-			executable = "net"
-		} else {
-			executable = execPath
-			log.Printf("[Service] Dev mode: using current executable: %s", executable)
-		}
-	} else {
-		// Production mode: use the system "net" binary
-		executable = "net"
-	}
-
-	// Create error log file for capturing stdout/stderr
-	errorLogPath := filepath.Join(job.OutputDir, "analysis_error.log")
-	errorLogFile, err := os.Create(errorLogPath)
-	if err != nil {
-		log.Printf("[Service] Failed to create error log file: %v", err)
-		// Continue without error log file
-		errorLogPath = ""
-	}
-
-	// Log the exact command being executed for debugging
-	log.Printf("[Service] Executing command: %s %s", executable, strings.Join(args, " "))
-
-	// Run the capture command
-	cmd := exec.Command(executable, args...)
-
-	// If we have an error log file, capture output there; otherwise use standard output
-	if errorLogFile != nil {
-		cmd.Stdout = errorLogFile
-		cmd.Stderr = errorLogFile
-		defer errorLogFile.Close()
-	} else {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-	}
-
-	// Store the command for potential cleanup during shutdown
-	s.currentCmdMutex.Lock()
-	s.currentCmd = cmd
-	s.currentCmdMutex.Unlock()
-
-	// Ensure command reference is cleared when done
-	defer func() {
-		s.currentCmdMutex.Lock()
-		s.currentCmd = nil
-		s.currentCmdMutex.Unlock()
-	}()
-
-	// Start the command
-	startTime := time.Now()
-	err = cmd.Start()
-	if err != nil {
-		log.Printf("[Service] Failed to start command for session %s: %v", job.SessionID, err)
-		if s.sessionManager != nil {
-			s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, fmt.Sprintf("Failed to start analysis: %v", err), "")
-		} else {
-			s.SetFileError(job.InputFile, fmt.Sprintf("Failed to start analysis: %v", err), "")
-		}
-		return
-	}
-
-	// Wait for command to complete
-	err = cmd.Wait()
-	duration := time.Since(startTime)
-
-	if err != nil {
-		if s.isServiceMode {
-			log.Printf("[Service] Analysis failed for session %s: %v (duration: %v)", job.SessionID, err, duration)
-		} else {
-			log.Printf("[WebUI] Analysis failed for uploaded file %s: %v (duration: %v)", job.InputFile, err, duration)
-		}
-
-		// Write additional error context to log file
-		if errorLogFile != nil {
-			fmt.Fprintf(errorLogFile, "\n\n=== Analysis Error Summary ===\n")
-			if s.isServiceMode {
-				fmt.Fprintf(errorLogFile, "Session ID: %s\n", job.SessionID)
-			}
-			fmt.Fprintf(errorLogFile, "Input File: %s\n", job.InputFile)
-			fmt.Fprintf(errorLogFile, "Output Directory: %s\n", job.OutputDir)
-			fmt.Fprintf(errorLogFile, "Duration: %v\n", duration)
-			fmt.Fprintf(errorLogFile, "Error: %v\n", err)
-			fmt.Fprintf(errorLogFile, "Command: %s %s\n", executable, strings.Join(args, " "))
-			errorLogFile.Close()
-		}
-
-		if s.sessionManager != nil {
-			log.Printf("[Service] Setting error log path for session %s: %s", job.SessionID, errorLogPath)
-			s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, fmt.Sprintf("Analysis failed: %v", err), errorLogPath)
-		} else {
-			// Local mode: track error in fileErrors map
-			s.SetFileError(job.InputFile, fmt.Sprintf("Analysis failed: %v", err), errorLogPath)
-		}
-		return
-	}
-
-	// Close and remove error log file if analysis succeeded (it would be empty or just normal output)
-	if errorLogFile != nil {
-		errorLogFile.Close()
-		os.Remove(errorLogPath)
-	}
-
-	if s.isServiceMode {
-		log.Printf("[Service] Analysis completed for session %s (duration: %v)", job.SessionID, duration)
-	} else {
-		log.Printf("[WebUI] Analysis completed for uploaded file %s (duration: %v)", job.InputFile, duration)
-	}
-
-	// List audit record files created
-	files, err := os.ReadDir(job.OutputDir)
-	if err == nil {
-		log.Printf("[Service] Files created in %s:", job.OutputDir)
-		for _, file := range files {
-			if strings.HasSuffix(file.Name(), ".ncap") || strings.HasSuffix(file.Name(), ".ncap.gz") {
-				info, _ := file.Info()
-				log.Printf("[Service]   - %s (size: %d bytes)", file.Name(), info.Size())
-			}
+		if _, ok := decoderutils.AllDecoderNames[name]; ok {
+			kept = append(kept, name)
 		}
 	}
-
-	// Count and log extracted files
-	fileCount := s.countExtractedFiles(filesDir)
-	if fileCount > 0 {
-		if s.isServiceMode {
-			log.Printf("[Service] Extracted %d file(s) for session %s", fileCount, job.SessionID)
-		} else {
-			log.Printf("[WebUI] Extracted %d file(s) from %s", fileCount, job.InputFile)
-		}
-	}
-
-	if s.sessionManager != nil {
-		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusCompleted, "", "")
-		// Store the processing time
-		s.sessionManager.UpdateSessionProcessingTime(job.SessionID, duration.Seconds())
-
-		// Auto-select this file if no active file is currently set (service mode only)
-		// This makes the first completed capture immediately available for viewing
-		s.mu.Lock()
-		if s.activeInputFile == "" {
-			// Get session info to set as active
-			if session, ok := s.sessionManager.GetSession(job.SessionID); ok {
-				s.currentSession = job.SessionID
-				s.outDir = job.OutputDir
-				s.activeInputFile = session.InputFile
-				log.Printf("[Service] Auto-selected first completed capture: session=%s, file=%s",
-					job.SessionID, session.InputFilename)
-			}
-		}
-		s.mu.Unlock()
-	} else {
-		// Local mode: track completion
-		s.MarkFileCompleted(job.InputFile)
-		s.SetFileProcessingTime(job.InputFile, duration.Seconds())
-		s.SetFileOutputDir(job.InputFile, job.OutputDir)
-		s.SetFileBPFFilter(job.InputFile, job.BPFFilter)
-	}
-
-	// Execute rules automatically after successful analysis (async to not block next job)
-	go s.executeRulesForJob(job)
+	return strings.Join(kept, ",")
 }
 
 // countExtractedFiles counts the number of files in the files directory
@@ -1879,10 +1644,11 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			log.Printf("[WebUI] PANIC recovered in runAnalysisInProcess for session %s: %v", job.SessionID, r)
 			log.Printf("[WebUI] Stack trace:\n%s", debug.Stack())
 
-			// Mark session as failed
+			errorMsg := fmt.Sprintf("Analysis crashed during execution: %v", r)
 			if s.sessionManager != nil {
-				errorMsg := fmt.Sprintf("Analysis crashed during execution: %v", r)
 				s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, errorMsg, "")
+			} else {
+				s.SetFileError(job.InputFile, errorMsg, "")
 			}
 		}
 	}()
@@ -1964,10 +1730,16 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			NoOptCheck:       defaults.NoOptCheck,
 			IgnoreFSMerr:     true, // Ignore FSM errors for better reliability
 			AllowMissingInit: true, // Allow streams without handshake
-			Debug:            false,
-			HexDump:          false,
-			WriteIncomplete:  true, // Write incomplete streams immediately
-			MemProfile:       "",
+			ModbusRTUEndpoints: func() string {
+				if s.runtimeConfig != nil {
+					return s.runtimeConfig.ModbusRTUEndpoints
+				}
+				return ""
+			}(),
+			Debug:           false,
+			HexDump:         false,
+			WriteIncomplete: true, // Write incomplete streams immediately
+			MemProfile:      "",
 			// NOTE: Use default timeout values - aggressive timeouts cause streams to close prematurely!
 			// For offline pcap analysis, timeouts are based on packet timestamps, not wall time.
 			// Default values (24 hours for timeouts) work correctly for both online and offline captures.
@@ -1994,21 +1766,14 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			CompressionBlockSize:           defaults.CompressionBlockSize,
 			CompressionLevel:               defaults.CompressionLevel,
 		},
-		ResolverConfig: resolvers.Config{
-			ReverseDNS: false,
-			LocalDNS:   false,
-			MACDB:      true,
-
-			ServiceDB:     true,
-			GeolocationDB: true,
-		},
+		ResolverConfig: inProcessResolverConfig(),
 	})
 
 	c.Bpf = job.BPFFilter
 	c.InputFile = job.InputFile
 
 	// Create error log file for capturing errors
-	errorLogPath := filepath.Join(job.OutputDir, "analysis_error.log")
+	errorLogPath := filepath.Join(job.OutputDir, analysisErrorLogName)
 	errorLogFile, err := os.Create(errorLogPath)
 	if err != nil {
 		log.Printf("[WebUI] Failed to create error log file: %v", err)
@@ -2063,6 +1828,8 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 
 		if s.sessionManager != nil {
 			s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, fmt.Sprintf("Analysis failed: %v", analysisErr), errorLogPath)
+		} else {
+			s.SetFileError(job.InputFile, fmt.Sprintf("Analysis failed: %v", analysisErr), errorLogPath)
 		}
 		return
 	}
@@ -2100,6 +1867,8 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 
 		if s.sessionManager != nil {
 			s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, fmt.Sprintf("Analysis failed: %v", analysisErr), errorLogPath)
+		} else {
+			s.SetFileError(job.InputFile, fmt.Sprintf("Analysis failed: %v", analysisErr), errorLogPath)
 		}
 		return
 	}
@@ -2131,6 +1900,11 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			}
 		}
 		s.mu.Unlock()
+	} else {
+		s.MarkFileCompleted(job.InputFile)
+		s.SetFileProcessingTime(job.InputFile, duration.Seconds())
+		s.SetFileOutputDir(job.InputFile, job.OutputDir)
+		s.SetFileBPFFilter(job.InputFile, job.BPFFilter)
 	}
 
 	// Execute rules automatically after successful analysis
@@ -2184,24 +1958,17 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	// we must GC everything before resetting the TCP factory
 	runtime.GC()
 
-	// Step 6: Ensure ALL TCP stream reader goroutines are stopped
-	// Even though cleanup() was called at the end of CollectPcap(), we need to
-	// ensure goroutines have fully exited before resetting the factory
-	// Use quiet version since log files for previous file are already closed
-	log.Printf("[WebUI] Ensuring TCP stream readers are stopped for session %s...", job.SessionID)
-	tcp.CloseStreamReaderChannelsAndWaitQuiet()
-
-	// Step 7: NOW reset TCP factory - old StreamPool can be GC'd
+	// Step 6: Reset TCP factory so the old StreamPool can be GC'd.
 	// Because assemblers, pageCaches, and stream readers are gone, old pool has no references
 	tcp.ResetStreamFactory()
 
-	// Step 8: Reset DPI flow tracker if DPI is enabled
+	// Step 7: Reset DPI flow tracker if DPI is enabled
 	if job.EnableDPI && dpi.HasDPISupport() {
 		log.Printf("[WebUI] Resetting DPI for session %s...", job.SessionID)
 		dpi.Reset("") // Service mode uses all modules
 	}
 
-	// Step 9: Final GC and OS memory release
+	// Step 8: Final GC and OS memory release
 	runtime.GC()
 	debug.FreeOSMemory()
 

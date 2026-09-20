@@ -141,8 +141,9 @@ type Config struct {
 	// This is useful when running in service mode where the parent process handles signals
 	NoSignalHandling bool
 
-	// Timeout for live capture
-	// if you set this to 0, the pcap.BlockForever option will be used
+	// Timeout controls libpcap batching for live and batch capture. Positive
+	// values are honored exactly. Zero and negative values use a 100ms polling
+	// interval so cancellation can interrupt an idle read.
 	// From the macOS docs on libpcap:
 	//   The read timeout is used to arrange that the read not necessarily return
 	//   immediately when a packet is seen, but that it wait for some amount of time
