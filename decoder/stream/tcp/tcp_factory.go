@@ -43,22 +43,8 @@ func newStreamFactory() *connectionFactory {
 	return f
 }
 
-// CloseStreamReaderChannelsAndWait closes all TCP stream reader channels and waits for goroutines to finish.
-// This MUST be called BEFORE closing log files to avoid write errors.
-// CRITICAL: Each TCP connection spawns 2 goroutines (client + server) that run tcpStreamReader.Run()
-// These goroutines must be properly shut down before log files are closed.
-func CloseStreamReaderChannelsAndWait() {
-	closeStreamReaderChannelsAndWaitInternal(true)
-}
-
-// CloseStreamReaderChannelsAndWaitQuiet is like CloseStreamReaderChannelsAndWait but doesn't log.
-// Use this when log files may already be closed (e.g., between multi-file processing).
-func CloseStreamReaderChannelsAndWaitQuiet() {
-	closeStreamReaderChannelsAndWaitInternal(false)
-}
-
-// closeStreamReaderChannelsAndWaitInternal implements the actual cleanup logic.
-func closeStreamReaderChannelsAndWaitInternal(doLog bool) {
+// closeStreamReaderChannelsAndWait closes all TCP stream reader channels and waits for them to drain.
+func closeStreamReaderChannelsAndWait() {
 	if StreamFactory == nil {
 		return
 	}
@@ -67,31 +53,14 @@ func closeStreamReaderChannelsAndWaitInternal(doLog bool) {
 	StreamFactory.Lock()
 	for _, reader := range StreamFactory.streamReaders {
 		if reader != nil && reader.DataChan() != nil {
-			// Close the dataChan to send EOF to the reading goroutine
-			// Use defer/recover to handle potential double-close panics safely
-			func() {
-				defer func() {
-					if r := recover(); r != nil {
-						// Channel already closed or closing caused panic - that's OK
-						if doLog {
-							reassemblyLog.Debug("dataChan close panic (expected if already closed)", zap.Any("recover", r))
-						}
-					}
-				}()
-				close(reader.DataChan())
-			}()
+			close(reader.DataChan())
 		}
 	}
 	StreamFactory.Unlock()
 
-	// Now wait for all goroutines to finish
-	// This will block until all tcpStreamReader.Run() goroutines have exited
-	// and called Cleanup() which does wg.Done()
-	if doLog {
-		StreamFactory.Lock()
-		reassemblyLog.Info("waiting for last TCP streams to process", zap.Int64("num", StreamFactory.numActive))
-		StreamFactory.Unlock()
-	}
+	StreamFactory.Lock()
+	reassemblyLog.Info("waiting for last TCP streams to process", zap.Int64("num", StreamFactory.numActive))
+	StreamFactory.Unlock()
 	StreamFactory.wg.Wait()
 }
 
@@ -177,16 +146,6 @@ func (factory *connectionFactory) New(net, transport gopacket.Flow, ac reassembl
 	go str.server.Run(factory)
 
 	return str
-}
-
-// waitGoRoutines waits until the goroutines launched to process TCP streams are done
-// this will block forever if there are streams that are never shutdown (via RST or FIN flags).
-func (factory *connectionFactory) waitGoRoutines() {
-	factory.Lock()
-	reassemblyLog.Info("waiting for last TCP streams to process", zap.Int64("num", factory.numActive))
-	factory.Unlock()
-
-	factory.wg.Wait()
 }
 
 // context is the assembler context.

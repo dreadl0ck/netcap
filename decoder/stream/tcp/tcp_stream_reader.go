@@ -72,7 +72,7 @@ func (t *tcpStreamReader) DataChan() chan *core.StreamData {
 }
 
 // StoreData records an immutable stream fragment synchronously with the
-// assembler's delivery path so completion sees fragments still queued for counting.
+// assembler's delivery path so completion sees fragments still queued for draining.
 func (t *tcpStreamReader) StoreData(data *core.StreamData) {
 	t.parent.Lock()
 	t.data = append(t.data, data)
@@ -82,11 +82,10 @@ func (t *tcpStreamReader) StoreData(data *core.StreamData) {
 
 // Cleanup will tear down the stream processing.
 func (t *tcpStreamReader) Cleanup(f *connectionFactory) {
-	// signal wait group
-	f.wg.Done()
 	f.Lock()
 	f.numActive--
 	f.Unlock()
+	f.wg.Done()
 }
 
 // DataSlice will return all gathered data fragments.
@@ -169,7 +168,7 @@ func (t *tcpStreamReader) Saved() bool {
 	return t.saved
 }
 
-// NumBytes returns the number of bytes processed.
+// NumBytes returns the number of bytes recorded.
 func (t *tcpStreamReader) NumBytes() int {
 	t.parent.Lock()
 	defer t.parent.Unlock()
@@ -231,10 +230,7 @@ func (t *tcpStreamReader) ServiceBanner() []byte {
 func (t *tcpStreamReader) Run(f *connectionFactory) {
 	defer t.Cleanup(f)
 
-	for data := range t.dataChan {
-		if data == nil {
-			return
-		}
+	for range t.dataChan {
 	}
 }
 

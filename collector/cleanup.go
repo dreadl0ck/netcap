@@ -97,15 +97,8 @@ func (c *Collector) doCleanup(force bool) {
 	c.wg.Wait()
 
 	if c.config.ReassembleConnections {
-		// teardown the TCP stream reassembly and print stats
+		// Teardown TCP reassembly, including stream reader goroutines, and print stats.
 		tcp.CleanupReassembly(!force, c.assemblers)
-
-		// CRITICAL: Close stream reader channels and wait for goroutines to finish
-		// This MUST happen BEFORE teardown() closes log files
-		// Otherwise stream readers will try to write to closed files
-		c.log.Info("Closing TCP stream reader channels and waiting for goroutines...")
-		tcp.CloseStreamReaderChannelsAndWait()
-		c.log.Info("TCP stream reader goroutines finished")
 
 		// Nil out assembler references to allow GC to reclaim memory
 		for i := range c.assemblers {
