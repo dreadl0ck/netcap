@@ -44,7 +44,7 @@ type ARPCountFunc func()
 // ARPTransformationFunc is a transformation over ARP audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type ARPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, arp *types.ARP, min, max uint64, path string, ip string)
+type ARPTransformationFunc = transformationFunc[types.ARP]
 
 // ARPTransform applies a maltego transformation over ARP audit records.
 func ARPTransform(count ARPCountFunc, transform ARPTransformationFunc, continueTransform bool) {

@@ -38,12 +38,12 @@ import (
 // SSHTransformationFunc is a transformation over SSH sshs for a selected SSH.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type SSHTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, ssh *types.SSH, min, max uint64, sshsFile string, mac string, ip string)
+type SSHTransformationFunc = transformationWithMACFunc[types.SSH]
 
 // SSHCountFunc deviceProfileCountFunc is a function that counts something over DeviceProfiles.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type SSHCountFunc = func(ssh *types.SSH, mac string, min, max *uint64)
+type SSHCountFunc = countFunc[types.SSH]
 
 // SSHTransform applies a maltego transformation over SSH sshs seen for a target SSH.
 func SSHTransform(count SSHCountFunc, transform SSHTransformationFunc) {

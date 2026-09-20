@@ -41,7 +41,7 @@ type ipCountFunc = func(ip string, min, max *uint64)
 // IPv4TransformationFunc is a transformation over IPv4 audit records
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type IPv4TransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, ipv4 *types.IPv4, min, max uint64, path string, mac string, ip string)
+type IPv4TransformationFunc = transformationWithMACFunc[types.IPv4]
 
 // IPv4Transform applies a maltego transformation over IP profiles
 func IPv4Transform(count ipCountFunc, transform IPv4TransformationFunc, continueTransform bool) {

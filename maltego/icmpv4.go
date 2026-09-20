@@ -37,7 +37,7 @@ type ICMPv4CountFunc func()
 // ICMPv4TransformationFunc is a transformation over ICMPv4 audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type ICMPv4TransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, icmp *types.ICMPv4, min, max uint64, path string, ip string)
+type ICMPv4TransformationFunc = transformationFunc[types.ICMPv4]
 
 // ICMPv4Transform applies a maltego transformation over ICMPv4 audit records.
 func ICMPv4Transform(count ICMPv4CountFunc, transform ICMPv4TransformationFunc) {

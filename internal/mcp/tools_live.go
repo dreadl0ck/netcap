@@ -8,7 +8,6 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
@@ -65,20 +64,16 @@ func (s *Server) registerLiveCaptureTools() error {
 }
 
 func (s *Server) handleLiveStatus(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	raw, err := s.newClient().Get("/api/status", nil)
+	st, err := s.newClient().GetAs[map[string]any]("/api/status", nil)
 	if err != nil {
 		return errResult(fmt.Errorf("status: %w", err)), nil
 	}
-	var st map[string]any
-	if jErr := json.Unmarshal(raw, &st); jErr != nil {
-		return errResult(fmt.Errorf("decode status: %w", jErr)), nil
-	}
 	out := map[string]any{
-		"is_live_mode":   st["isLiveMode"],
-		"is_processing":  st["isProcessing"],
+		"is_live_mode":    st["isLiveMode"],
+		"is_processing":   st["isProcessing"],
 		"current_session": st["sessionId"],
-		"active_input":   st["activeInputFile"],
-		"server_started": st["serverStarted"],
+		"active_input":    st["activeInputFile"],
+		"server_started":  st["serverStarted"],
 	}
 	return jsonResult(out), nil
 }

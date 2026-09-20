@@ -41,7 +41,7 @@ type ipv6CountFunc = func(ip string, min, max *uint64)
 // IPv6TransformationFunc is a transformation over IPv6 audit records
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type IPv6TransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, ipv6 *types.IPv6, min, max uint64, path string, mac string, ip string)
+type IPv6TransformationFunc = transformationWithMACFunc[types.IPv6]
 
 // IPv6Transform applies a maltego transformation over IP profiles
 func IPv6Transform(count ipv6CountFunc, transform IPv6TransformationFunc, continueTransform bool) {
