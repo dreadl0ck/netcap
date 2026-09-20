@@ -497,6 +497,7 @@ func TestWorkerMaintenanceFlushesIdlePools(t *testing.T) {
 		c.workers = append(c.workers, c.worker(a))
 	}
 	c.numWorkers = len(c.workers)
+	c.acceptingPackets = true
 	p := lifecyclePayload()
 	p.Metadata().CaptureInfo.Timestamp = ref.Add(time.Hour)
 	c.handlePacket(p)
