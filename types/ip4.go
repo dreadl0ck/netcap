@@ -51,6 +51,7 @@ var fieldsIPv4 = []string{
 	fieldChecksum,   // int32
 	fieldSrcIP,      // string
 	fieldDstIP,      // string
+	fieldPadding,    // []byte
 	//fieldOptions,        // []*IPv4Option
 	fieldPayloadEntropy, // float64
 	fieldPayloadSize,    // int32
@@ -93,7 +94,11 @@ func (i *IPv4) Time() int64 {
 	return i.Timestamp
 }
 
-func (i IPv4Option) toString() string {
+func (i *IPv4Option) toString() string {
+	if i == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(i.OptionType))
@@ -205,18 +210,19 @@ func (i *IPv4) Encode() []string {
 	// }
 	return filter([]string{
 		ipv4Encoder.Int64(fieldTimestamp, i.Timestamp),
-		ipv4Encoder.Int32(fieldVersion, i.Version),        // int32
-		ipv4Encoder.Int32(fieldIHL, i.IHL),                // int32
-		ipv4Encoder.Int32(fieldTOS, i.TOS),                // int32
-		ipv4Encoder.Int32(fieldLength, i.Length),          // int32
-		ipv4Encoder.Int32(fieldId, i.Id),                  // int32
-		ipv4Encoder.Int32(fieldFlags, i.Flags),            // int32
-		ipv4Encoder.Int32(fieldFragOffset, i.FragOffset),  // int32
-		ipv4Encoder.Int32(fieldTTL, i.TTL),                // int32
-		ipv4Encoder.Int32(fieldProtocol, i.Protocol),      // int32
-		ipv4Encoder.Int32(fieldChecksum, i.Checksum),      // int32
-		ipv4Encoder.Int64(fieldSrcIP, ipToInt64(i.SrcIP)), // string
-		ipv4Encoder.Int64(fieldDstIP, ipToInt64(i.DstIP)), // string
+		ipv4Encoder.Int32(fieldVersion, i.Version),                      // int32
+		ipv4Encoder.Int32(fieldIHL, i.IHL),                              // int32
+		ipv4Encoder.Int32(fieldTOS, i.TOS),                              // int32
+		ipv4Encoder.Int32(fieldLength, i.Length),                        // int32
+		ipv4Encoder.Int32(fieldId, i.Id),                                // int32
+		ipv4Encoder.Int32(fieldFlags, i.Flags),                          // int32
+		ipv4Encoder.Int32(fieldFragOffset, i.FragOffset),                // int32
+		ipv4Encoder.Int32(fieldTTL, i.TTL),                              // int32
+		ipv4Encoder.Int32(fieldProtocol, i.Protocol),                    // int32
+		ipv4Encoder.Int32(fieldChecksum, i.Checksum),                    // int32
+		ipv4Encoder.Int64(fieldSrcIP, ipToInt64(i.SrcIP)),               // string
+		ipv4Encoder.Int64(fieldDstIP, ipToInt64(i.DstIP)),               // string
+		ipv4Encoder.String(fieldPadding, hex.EncodeToString(i.Padding)), // []byte
 		//ipv4Encoder.String(fieldOptions, strings.Join(opts, "")),   // []*IPv4Option
 		ipv4Encoder.Float64(fieldPayloadEntropy, i.PayloadEntropy), // float64
 		ipv4Encoder.Int32(fieldPayloadSize, i.PayloadSize),         // int32

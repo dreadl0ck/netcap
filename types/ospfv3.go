@@ -95,7 +95,11 @@ func (a *OSPFv3) Time() int64 {
 	return a.Timestamp
 }
 
-func (l HelloPkg) toString() string {
+func (l *HelloPkg) toString() string {
+	if l == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)

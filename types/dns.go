@@ -133,6 +133,10 @@ func (d *DNS) Time() int64 {
 }
 
 func (q *DNSQuestion) toString() string {
+	if q == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(q.Name)
@@ -145,6 +149,10 @@ func (q *DNSQuestion) toString() string {
 }
 
 func (q *DNSResourceRecord) toString() string {
+	if q == nil {
+		return ""
+	}
+
 	txts := make([]string, 0, len(q.TXTs))
 	for _, t := range q.TXTs {
 		txts = append(txts, string(t))
@@ -188,6 +196,10 @@ func (q *DNSResourceRecord) toString() string {
 }
 
 func (q *DNSSOA) toString() string {
+	if q == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(string(q.MName))
@@ -208,6 +220,10 @@ func (q *DNSSOA) toString() string {
 }
 
 func (q *DNSSRV) toString() string {
+	if q == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(q.Priority))
@@ -222,6 +238,10 @@ func (q *DNSSRV) toString() string {
 }
 
 func (q *DNSMX) toString() string {
+	if q == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(q.Preference))

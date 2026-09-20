@@ -72,7 +72,11 @@ func (a *SMTP) Time() int64 {
 	return a.Timestamp
 }
 
-func (a SMTPCommand) getString() string {
+func (a *SMTPCommand) getString() string {
+	if a == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(a.Command))
@@ -82,7 +86,11 @@ func (a SMTPCommand) getString() string {
 	return b.String()
 }
 
-func (a SMTPResponse) getString() string {
+func (a *SMTPResponse) getString() string {
+	if a == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(a.ResponseCode))

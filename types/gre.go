@@ -65,8 +65,6 @@ var fieldsGRE = []string{
 	fieldRouting,           // *GRERouting
 	fieldSrcIP,
 	fieldDstIP,
-	fieldSrcPort,
-	fieldDstPort,
 }
 
 // CSVHeader returns the CSV header for the audit record.

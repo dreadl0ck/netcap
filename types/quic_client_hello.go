@@ -21,6 +21,7 @@ package types
 
 import (
 	"encoding/hex"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -30,30 +31,30 @@ import (
 )
 
 const (
-	fieldQUICClientHelloQUICVersion                  = "QUICVersion"
-	fieldQUICClientHelloIsIETFQUIC                   = "IsIETFQUIC"
-	fieldQUICClientHelloDCID                         = "DCID"
-	fieldQUICClientHelloSCID                         = "SCID"
-	fieldQUICClientHelloSNI                          = "SNI"
-	fieldQUICClientHelloALPNs                        = "ALPNs"
-	fieldQUICClientHelloCipherSuites                 = "CipherSuites"
-	fieldQUICClientHelloExtensions                   = "Extensions"
-	fieldQUICClientHelloSupportedGroups              = "SupportedGroups"
-	fieldQUICClientHelloSignatureAlgs                = "SignatureAlgs"
-	fieldQUICClientHelloSupportedVersion             = "SupportedVersion"
-	fieldQUICClientHelloUAID                         = "UAID"
-	fieldQUICClientHelloCHLOTags                     = "CHLOTags"
-	fieldQUICClientHelloTagValues                    = "TagValues"
-	fieldQUICClientHelloJa4                          = "Ja4"
-	fieldQUICClientHelloJa4Description               = "Ja4Description"
-	fieldQUICClientHelloMaxIdleTimeout               = "MaxIdleTimeout"
-	fieldQUICClientHelloInitialMaxData               = "InitialMaxData"
+	fieldQUICClientHelloQUICVersion                   = "QUICVersion"
+	fieldQUICClientHelloIsIETFQUIC                    = "IsIETFQUIC"
+	fieldQUICClientHelloDCID                          = "DCID"
+	fieldQUICClientHelloSCID                          = "SCID"
+	fieldQUICClientHelloSNI                           = "SNI"
+	fieldQUICClientHelloALPNs                         = "ALPNs"
+	fieldQUICClientHelloCipherSuites                  = "CipherSuites"
+	fieldQUICClientHelloExtensions                    = "Extensions"
+	fieldQUICClientHelloSupportedGroups               = "SupportedGroups"
+	fieldQUICClientHelloSignatureAlgs                 = "SignatureAlgs"
+	fieldQUICClientHelloSupportedVersion              = "SupportedVersion"
+	fieldQUICClientHelloUAID                          = "UAID"
+	fieldQUICClientHelloCHLOTags                      = "CHLOTags"
+	fieldQUICClientHelloTagValues                     = "TagValues"
+	fieldQUICClientHelloJa4                           = "Ja4"
+	fieldQUICClientHelloJa4Description                = "Ja4Description"
+	fieldQUICClientHelloMaxIdleTimeout                = "MaxIdleTimeout"
+	fieldQUICClientHelloInitialMaxData                = "InitialMaxData"
 	fieldQUICClientHelloInitialMaxStreamDataBidiLocal = "InitialMaxStreamDataBidiLocal"
-	fieldQUICClientHelloMaxUdpPayloadSize            = "MaxUdpPayloadSize"
-	fieldQUICClientHelloRandom                       = "Random"
-	fieldQUICClientHelloSessionID                    = "SessionID"
-	fieldQUICClientHelloSupportedPoints              = "SupportedPoints"
-	fieldQUICClientHelloCompressMethods              = "CompressMethods"
+	fieldQUICClientHelloMaxUdpPayloadSize             = "MaxUdpPayloadSize"
+	fieldQUICClientHelloRandom                        = "Random"
+	fieldQUICClientHelloSessionID                     = "SessionID"
+	fieldQUICClientHelloSupportedPoints               = "SupportedPoints"
+	fieldQUICClientHelloCompressMethods               = "CompressMethods"
 )
 
 var fieldsQUICClientHello = []string{
@@ -75,6 +76,7 @@ var fieldsQUICClientHello = []string{
 	fieldQUICClientHelloSupportedVersion,
 	fieldQUICClientHelloUAID,
 	fieldQUICClientHelloCHLOTags,
+	fieldQUICClientHelloTagValues,
 	fieldQUICClientHelloJa4,
 	fieldQUICClientHelloJa4Description,
 	fieldQUICClientHelloMaxIdleTimeout,
@@ -88,18 +90,24 @@ func (q *QUICClientHello) CSVHeader() []string {
 	return filter(fieldsQUICClientHello)
 }
 
-// CSVRecord returns the CSV record for the audit record.
-func (q *QUICClientHello) CSVRecord() []string {
-	// Convert TagValues map to string representation
-	tagValuesStr := ""
-	if q.TagValues != nil {
-		pairs := make([]string, 0, len(q.TagValues))
-		for k, v := range q.TagValues {
-			pairs = append(pairs, k+"="+v)
-		}
-		tagValuesStr = strings.Join(pairs, ";")
+// tagValuesString renders the gQUIC CHLO tag map as key=value pairs.
+func (q *QUICClientHello) tagValuesString() string {
+	if q.TagValues == nil {
+		return ""
 	}
 
+	pairs := make([]string, 0, len(q.TagValues))
+	for k, v := range q.TagValues {
+		pairs = append(pairs, k+"="+v)
+	}
+	// Map iteration order is randomized: sort so the column is reproducible.
+	sort.Strings(pairs)
+
+	return strings.Join(pairs, ";")
+}
+
+// CSVRecord returns the CSV record for the audit record.
+func (q *QUICClientHello) CSVRecord() []string {
 	return filter([]string{
 		formatTimestamp(q.Timestamp),
 		q.SrcIP,
@@ -119,7 +127,7 @@ func (q *QUICClientHello) CSVRecord() []string {
 		formatInt32(q.SupportedVersion),
 		q.UAID,
 		strings.Join(q.CHLOTags, "|"),
-		tagValuesStr,
+		q.tagValuesString(),
 		q.Ja4,
 		q.Ja4Description,
 		strconv.FormatInt(q.MaxIdleTimeout, 10),
@@ -142,17 +150,61 @@ func (q *QUICClientHello) JSON() (string, error) {
 	return jsonMarshaler.MarshalToString(q)
 }
 
+// Connection IDs and CHLO tag values are unique per connection and must stay
+// out of the metric labels.
+var fieldsQUICClientHelloMetrics = []string{
+	fieldSrcIP,
+	fieldDstIP,
+	fieldSrcPort,
+	fieldDstPort,
+	fieldQUICClientHelloQUICVersion,
+	fieldQUICClientHelloIsIETFQUIC,
+	fieldQUICClientHelloSNI,
+	fieldQUICClientHelloALPNs,
+	fieldQUICClientHelloCipherSuites,
+	fieldQUICClientHelloExtensions,
+	fieldQUICClientHelloSupportedGroups,
+	fieldQUICClientHelloSignatureAlgs,
+	fieldQUICClientHelloSupportedVersion,
+	fieldQUICClientHelloUAID,
+	fieldQUICClientHelloCHLOTags,
+	fieldQUICClientHelloJa4,
+	fieldQUICClientHelloJa4Description,
+}
+
+func (q *QUICClientHello) metricValues() []string {
+	return []string{
+		q.SrcIP,
+		q.DstIP,
+		formatInt32(q.SrcPort),
+		formatInt32(q.DstPort),
+		q.QUICVersion,
+		strconv.FormatBool(q.IsIETFQUIC),
+		q.SNI,
+		strings.Join(q.ALPNs, "|"),
+		joinInts(q.CipherSuites),
+		joinInts(q.Extensions),
+		joinInts(q.SupportedGroups),
+		joinInts(q.SignatureAlgs),
+		formatInt32(q.SupportedVersion),
+		q.UAID,
+		strings.Join(q.CHLOTags, "|"),
+		q.Ja4,
+		q.Ja4Description,
+	}
+}
+
 var quicClientHelloMetric = prometheus.NewCounterVec(
 	prometheus.CounterOpts{
 		Name: strings.ToLower(Type_NC_QUICClientHello.String()),
 		Help: Type_NC_QUICClientHello.String() + " audit records",
 	},
-	fieldsQUICClientHello[1:],
+	fieldsQUICClientHelloMetrics,
 )
 
 // Inc increments the metrics for the audit record.
 func (q *QUICClientHello) Inc() {
-	quicClientHelloMetric.WithLabelValues(q.CSVRecord()[1:]...).Inc()
+	quicClientHelloMetric.WithLabelValues(q.metricValues()...).Inc()
 }
 
 // SetPacketContext sets the associated packet context for the audit record.
@@ -196,6 +248,7 @@ func (q *QUICClientHello) Encode() []string {
 		quicClientHelloEncoder.Int32(fieldQUICClientHelloSupportedVersion, q.SupportedVersion),
 		quicClientHelloEncoder.String(fieldQUICClientHelloUAID, q.UAID),
 		quicClientHelloEncoder.String(fieldQUICClientHelloCHLOTags, strings.Join(q.CHLOTags, "|")),
+		quicClientHelloEncoder.String(fieldQUICClientHelloTagValues, q.tagValuesString()),
 		quicClientHelloEncoder.String(fieldQUICClientHelloJa4, q.Ja4),
 		quicClientHelloEncoder.String(fieldQUICClientHelloJa4Description, q.Ja4Description),
 		quicClientHelloEncoder.Int64(fieldQUICClientHelloMaxIdleTimeout, q.MaxIdleTimeout),
@@ -244,4 +297,3 @@ func (q *QUICClientHello) SessionIDHex() string {
 	}
 	return hex.EncodeToString(q.SessionID)
 }
-

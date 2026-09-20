@@ -83,6 +83,7 @@ func (a *Service) CSVRecord() []string {
 		a.Product,                           // string
 		a.Vendor,                            // string
 		a.Version,                           // string
+		a.Notes,                             // string
 		formatInt32(a.BytesServer),          // int32
 		formatInt32(a.BytesClient),          // int32
 		a.Hostname,                          // string
@@ -180,6 +181,7 @@ func (a *Service) Encode() []string {
 		serviceEncoder.String(fieldProduct, a.Product),                        // string
 		serviceEncoder.String(fieldVendor, a.Vendor),                          // string
 		serviceEncoder.String(fieldVersion, a.Version),                        // string
+		serviceEncoder.String(fieldNotes, a.Notes),                            // string
 		serviceEncoder.Int32(fieldBytesServer, a.BytesServer),                 // int32
 		serviceEncoder.Int32(fieldBytesClient, a.BytesClient),                 // int32
 		serviceEncoder.String(fieldHostname, a.Hostname),                      // string

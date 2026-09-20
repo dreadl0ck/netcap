@@ -84,10 +84,18 @@ func (l *LinkLayerDiscoveryInfo) Time() int64 {
 }
 
 func (lldsc *LLDPSysCapabilities) toString() string {
+	if lldsc == nil {
+		return ""
+	}
+
 	return lldsc.SystemCap.toString() + lldsc.EnabledCap.toString()
 }
 
 func (lldma *LLDPMgmtAddress) toString() string {
+	if lldma == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(lldma.Subtype)) // int32   // byte
@@ -104,6 +112,10 @@ func (lldma *LLDPMgmtAddress) toString() string {
 }
 
 func (lldst *LLDPOrgSpecificTLV) toString() string {
+	if lldst == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(strconv.FormatUint(uint64(lldst.OUI), 10))
@@ -116,6 +128,10 @@ func (lldst *LLDPOrgSpecificTLV) toString() string {
 }
 
 func (lldv *LinkLayerDiscoveryValue) toString() string {
+	if lldv == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(lldv.Type))
@@ -128,6 +144,10 @@ func (lldv *LinkLayerDiscoveryValue) toString() string {
 }
 
 func (c *LLDPCapabilities) toString() string {
+	if c == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(strconv.FormatBool(c.Other))

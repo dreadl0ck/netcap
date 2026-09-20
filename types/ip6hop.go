@@ -62,6 +62,10 @@ func (l *IPv6HopByHop) Time() int64 {
 }
 
 func (o *IPv6HopByHopOption) toString() string {
+	if o == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(o.OptionType))        // int32
@@ -74,6 +78,10 @@ func (o *IPv6HopByHopOption) toString() string {
 }
 
 func (a *IPv6HopByHopOptionAlignment) toString() string {
+	if a == nil {
+		return ""
+	}
+
 	return join(formatInt32(a.One), formatInt32(a.Two))
 }
 

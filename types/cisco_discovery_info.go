@@ -145,6 +145,10 @@ func (a *CiscoDiscoveryInfo) Time() int64 {
 }
 
 func (c *CDPHello) toString() string {
+	if c == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -177,6 +181,10 @@ func (c *CDPHello) toString() string {
 }
 
 func (c *CDPCapabilities) toString() string {
+	if c == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -204,6 +212,10 @@ func (c *CDPCapabilities) toString() string {
 }
 
 func (i *IPNet) toString() string {
+	if i == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -216,6 +228,10 @@ func (i *IPNet) toString() string {
 }
 
 func (c *CDPVLANDialogue) toString() string {
+	if c == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -228,6 +244,10 @@ func (c *CDPVLANDialogue) toString() string {
 }
 
 func (c *CDPPowerDialogue) toString() string {
+	if c == nil {
+		return ""
+	}
+
 	vals := make([]string, 0, len(c.Values))
 
 	for _, v := range c.Values {
@@ -248,6 +268,10 @@ func (c *CDPPowerDialogue) toString() string {
 }
 
 func (c *CDPSparePairPoE) toString() string {
+	if c == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -264,6 +288,10 @@ func (c *CDPSparePairPoE) toString() string {
 }
 
 func (c *CDPEnergyWise) toString() string {
+	if c == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)
@@ -304,6 +332,10 @@ func (c *CDPEnergyWise) toString() string {
 }
 
 func (c *CDPLocation) toString() string {
+	if c == nil {
+		return ""
+	}
+
 	var b strings.Builder
 
 	b.WriteString(StructureBegin)

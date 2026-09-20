@@ -83,7 +83,11 @@ func (d *DHCPv6) Time() int64 {
 	return d.Timestamp
 }
 
-func (d DHCPv6Option) toString() string {
+func (d *DHCPv6Option) toString() string {
+	if d == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(d.Code))

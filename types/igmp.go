@@ -95,7 +95,11 @@ func (i *IGMP) Time() int64 {
 	return i.Timestamp
 }
 
-func (i IGMPv3GroupRecord) toString() string {
+func (i *IGMPv3GroupRecord) toString() string {
+	if i == nil {
+		return ""
+	}
+
 	var b strings.Builder
 	b.WriteString(StructureBegin)
 	b.WriteString(formatInt32(i.Type))
