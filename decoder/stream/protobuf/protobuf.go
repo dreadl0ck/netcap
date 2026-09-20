@@ -37,11 +37,14 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
+	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	logging "github.com/dreadl0ck/netcap/internal/logger"
 	"github.com/dreadl0ck/netcap/types"
 )
 
 var pbLog = zap.NewNop()
+
+const protobufWriteError = "failed to write protobuf audit record"
 
 // Decoder for generic Protocol Buffer wire format detection and analysis.
 var Decoder = &decoder.StreamDecoder{
@@ -233,7 +236,10 @@ func (r *protobufReader) processData(b *bufio.Reader, isClient bool) error {
 
 	writeErr := Decoder.Writer.Write(pb)
 	if writeErr != nil {
-		pbLog.Debug("failed to write protobuf audit record", zap.Error(writeErr))
+		pbLog.Error(protobufWriteError, zap.Error(writeErr))
+		if decoderutils.ErrorMap != nil {
+			decoderutils.ErrorMap.Inc(protobufWriteError)
+		}
 	} else {
 		atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
 	}
