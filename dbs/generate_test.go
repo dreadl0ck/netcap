@@ -125,20 +125,20 @@ func TestSkippedSourceNames(t *testing.T) {
 // requested datasource from the default list. Uses a real source name from
 // the package-level `sources` slice to keep the test honest.
 func TestActiveSources_FiltersByEnv(t *testing.T) {
-	// Sanity: ja4db.json is one of the defaults; this test is meaningless
+	// Sanity: hasshdb.json is one of the defaults; this test is meaningless
 	// otherwise. Loud failure is preferable to a silent skip.
-	var foundJA4 bool
+	var foundSource bool
 	for _, s := range sources {
-		if s.name == "ja4db.json" {
-			foundJA4 = true
+		if s.name == "hasshdb.json" {
+			foundSource = true
 			break
 		}
 	}
-	if !foundJA4 {
-		t.Fatal("default sources list no longer contains ja4db.json; update this test or the skip target")
+	if !foundSource {
+		t.Fatal("default sources list no longer contains hasshdb.json; update this test or the skip target")
 	}
 
-	t.Setenv("NC_DBS_SKIP_SOURCES", "ja4db.json")
+	t.Setenv("NC_DBS_SKIP_SOURCES", "hasshdb.json")
 	// Force a fresh log-once for this test scope so subsequent runs in the
 	// same `go test` invocation aren't quieted. activeSources uses
 	// sync.Once at package scope; we don't assert on the log line itself,
@@ -148,8 +148,8 @@ func TestActiveSources_FiltersByEnv(t *testing.T) {
 		t.Fatalf("activeSources returned %d entries, want %d", len(got), len(sources)-1)
 	}
 	for _, s := range got {
-		if s.name == "ja4db.json" {
-			t.Errorf("activeSources did not skip ja4db.json")
+		if s.name == "hasshdb.json" {
+			t.Errorf("activeSources did not skip hasshdb.json")
 		}
 	}
 }
@@ -162,4 +162,3 @@ func TestActiveSources_NoEnvReturnsAll(t *testing.T) {
 		t.Errorf("activeSources returned %d entries, want %d (no skip env)", len(got), len(sources))
 	}
 }
-

@@ -45,7 +45,7 @@ See the [Gallery](docs/GALLERY.md) for screenshots.
 
 ### Security Analysis
 
-- **JA4 fingerprinting** — JA4, JA4S, JA4H, JA4SSH, JA4X for TLS, HTTP, SSH, and X.509 classification
+- **JA4 fingerprinting** — BSD-licensed JA4 TLS client fingerprinting; JA4+ is available only in opt-in local source builds subject to the FoxIO License
 - **YARA rules** — file scanning with compiled yara-x rules for malware detection
 - **Magika AI** — Google's AI-based file type classification on extracted files
 - **Credential harvesting** — configurable protocol-aware credential capture

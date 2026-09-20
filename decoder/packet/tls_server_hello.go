@@ -26,7 +26,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
 
-	"github.com/dreadl0ck/netcap/internal/ja4"
+	ja4 "github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -78,21 +78,22 @@ var tlsServerHelloDecoder = newPacketDecoder(
 				}
 			}
 
-			// Compute JA4S fingerprint
-			ja4sExtensions := make([]uint16, len(hello.Extensions))
-			for i, ext := range hello.Extensions {
-				ja4sExtensions[i] = uint16(ext)
+			var ja4sFingerprint string
+			if ja4.Enabled {
+				ja4sExtensions := make([]uint16, len(hello.Extensions))
+				for i, ext := range hello.Extensions {
+					ja4sExtensions[i] = uint16(ext)
+				}
+				ja4sFingerprint = ja4.ComputeJA4S(&ja4.ServerHelloData{
+					Version:       uint16(hello.Vers),
+					CipherSuite:   uint16(hello.CipherSuite),
+					Extensions:    ja4sExtensions,
+					SupportedVers: hello.SupportedVersion,
+					IsQUIC:        false,
+					ALPN:          hello.AlpnProtocol,
+				})
 			}
-			ja4sFingerprint := ja4.ComputeJA4S(&ja4.ServerHelloData{
-				Version:       uint16(hello.Vers),
-				CipherSuite:   uint16(hello.CipherSuite),
-				Extensions:    ja4sExtensions,
-				SupportedVers: hello.SupportedVersion,
-				IsQUIC:        false, // TCP/TLS connection
-				ALPN:          hello.AlpnProtocol,
-			})
 
-			// Lookup JA4S fingerprint in database for enrichment
 			ja4sDescription := resolvers.LookupJA4S(ja4sFingerprint)
 
 			return &types.TLSServerHello{

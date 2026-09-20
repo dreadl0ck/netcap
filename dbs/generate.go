@@ -43,9 +43,9 @@ import (
 )
 
 // defaultSourceTimeout caps the total wall-clock time spent fetching a single
-// data source (including retries and backoff). It exists so a blackholed
-// upstream like ja4db.com cannot keep the rebuild stalled for minutes per
-// run. The default mirrors the slowest known good source on a healthy network
+// data source (including retries and backoff). It prevents a blackholed
+// upstream from keeping the rebuild stalled for minutes per run. The default
+// mirrors the slowest known good source on a healthy network
 // with headroom. Overridable via the NC_DBS_SOURCE_TIMEOUT environment
 // variable (Go duration syntax, e.g. "90s" or "2m").
 const defaultSourceTimeout = 60 * time.Second
@@ -66,7 +66,7 @@ func sourceTimeout() time.Duration {
 // asked to skip via the NC_DBS_SKIP_SOURCES env variable (comma-separated,
 // values matched against datasource.name). Used to bypass upstreams that
 // are known-bad from this network without rebuilding the image, e.g.
-// NC_DBS_SKIP_SOURCES=ja4db.json when the host can't reach ja4db.com.
+// NC_DBS_SKIP_SOURCES=hasshdb.json.
 func skippedSourceNames() map[string]struct{} {
 	raw := os.Getenv("NC_DBS_SKIP_SOURCES")
 	if raw == "" {
@@ -162,9 +162,6 @@ var sources = []*datasource{
 	makeSource("https://svn.nmap.org/nmap/nmap-service-probes", "", moveToDbs),
 	makeSource("https://macaddress.io/database/macaddress.io-db.json", "", moveToDbs),
 
-	// JA4+ fingerprint database from FoxIO
-	makeSource("https://ja4db.com/api/download/", "ja4db.json", moveToDbs),
-
 	makeSource("https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv", "", moveToDbs),
 	makeSource("https://web.archive.org/web/20191227182527if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
 	makeSource("https://web.archive.org/web/20191227182209if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
@@ -196,17 +193,17 @@ func unzipAndMoveToDbs(in string, d *datasource, base string) error {
 }
 
 func downloadAndIndexNVD(_ string, _ *datasource, base string) error {
-	
+
 	for _, year := range yearRange(nvdStartYear, time.Now().Year()) {
 
 		s := makeSource(fmt.Sprintf("https://nvd.nist.gov/feeds/json/cve/2.0/nvdcve-2.0-%s.json.gz", year), "", nil)
-    err := fetchResource(s, filepath.Join(base, "build", s.name))
-    if err != nil {
+		err := fetchResource(s, filepath.Join(base, "build", s.name))
+		if err != nil {
 			log.Printf("ERROR: failed to fetch NVD data for year %s: %v", year, err)
 			continue
 		}
 	}
-	
+
 	return nil
 }
 
@@ -352,15 +349,15 @@ var (
 func GenerateDBs(nvdIndexStartYear int) {
 
 	var (
-		base  = "netcap-dbs-generated"
-		_     = os.MkdirAll(filepath.Join(base, "build"), defaults.DirectoryPermission)
-		_     = os.MkdirAll(filepath.Join(base, "dbs"), defaults.DirectoryPermission)
-		wg    sync.WaitGroup
-		start = time.Now()
-		total int
+		base         = "netcap-dbs-generated"
+		_            = os.MkdirAll(filepath.Join(base, "build"), defaults.DirectoryPermission)
+		_            = os.MkdirAll(filepath.Join(base, "dbs"), defaults.DirectoryPermission)
+		wg           sync.WaitGroup
+		start        = time.Now()
+		total        int
 		successCount int
 		failureCount int
-		mu    sync.Mutex // protect counters
+		mu           sync.Mutex // protect counters
 	)
 
 	if nvdIndexStartYear != 0 {
@@ -372,7 +369,7 @@ func GenerateDBs(nvdIndexStartYear int) {
 		wg.Add(1)
 		go func(source *datasource) {
 			defer wg.Done()
-			
+
 			success := processSource(source, base)
 			mu.Lock()
 			if success {
@@ -413,8 +410,8 @@ func GenerateDBs(nvdIndexStartYear int) {
 	// prior to cloning the repo via the netcap toolchain
 	saveTotalDatabaseSize(base)
 
-  fmt.Printf("Operation completed: fetched %d sources successfully ("+humanize.Bytes(numBytesFetched)+") in %v\n", successCount, time.Since(start))
-  
+	fmt.Printf("Operation completed: fetched %d sources successfully ("+humanize.Bytes(numBytesFetched)+") in %v\n", successCount, time.Since(start))
+
 	// Verify exploitdb folder is present
 	exploitdbPath := filepath.Join(base, "dbs", "exploitdb")
 	if stat, err := os.Stat(exploitdbPath); err == nil && stat.IsDir() {

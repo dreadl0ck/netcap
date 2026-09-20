@@ -1,10 +1,12 @@
+//go:build ja4plus
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
  * License: GNU General Public License v3.0
  */
 
-package ja4
+package ja4plus
 
 import (
 	"testing"
@@ -82,7 +84,7 @@ func TestValidateJA4X(t *testing.T) {
 		{"000000000000_000000000000_000000000000", true},
 		{"2166164053c1_2166164053c1_30d204a01551", true},
 		{"invalid", false},
-		{"abc_def_ghi", false},          // Too short
+		{"abc_def_ghi", false},               // Too short
 		{"aae71e8db6d7_aae71e8db6d7", false}, // Missing part
 		{"", false},
 	}
@@ -102,10 +104,10 @@ func TestIsSelfSignedByJA4X(t *testing.T) {
 		fingerprint string
 		selfSigned  bool
 	}{
-		{"aae71e8db6d7_aae71e8db6d7_aae71e8db6d7", true},   // Issuer == Subject
-		{"000000000000_000000000000_000000000000", true},   // Empty (technically self-signed)
-		{"2166164053c1_2166164053c1_30d204a01551", true},   // Known self-signed pattern
-		{"aae71e8db6d7_bbb71e8db6d7_aae71e8db6d7", false},  // Different issuer/subject
+		{"aae71e8db6d7_aae71e8db6d7_aae71e8db6d7", true},  // Issuer == Subject
+		{"000000000000_000000000000_000000000000", true},  // Empty (technically self-signed)
+		{"2166164053c1_2166164053c1_30d204a01551", true},  // Known self-signed pattern
+		{"aae71e8db6d7_bbb71e8db6d7_aae71e8db6d7", false}, // Different issuer/subject
 		{"invalid", false},
 	}
 
@@ -135,4 +137,3 @@ func TestTruncatedSHA256ForJA4X(t *testing.T) {
 		t.Errorf("truncatedSHA256(%q) = %q, want %q", extensionOIDs, result, expected)
 	}
 }
-

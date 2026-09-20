@@ -37,6 +37,7 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/export"
 	"github.com/dreadl0ck/netcap/cmd/inject"
 	"github.com/dreadl0ck/netcap/cmd/label"
+	"github.com/dreadl0ck/netcap/cmd/licenses"
 	"github.com/dreadl0ck/netcap/cmd/mcp"
 	"github.com/dreadl0ck/netcap/cmd/proxy"
 	"github.com/dreadl0ck/netcap/cmd/transform"
@@ -58,6 +59,7 @@ const (
 	cmdAgent     = "agent"
 	cmdInject    = "inject"
 	cmdMCP       = "mcp"
+	cmdLicenses  = "licenses"
 	cmdVersion   = "version"
 
 	nameReadFlag   = "-read"
@@ -188,6 +190,13 @@ func main() {
 					return mcp.RunWithContext(ctx, cmd)
 				},
 			},
+			{
+				Name:      cmdLicenses,
+				Usage:     "list or print bundled license documents",
+				ArgsUsage: "[document]",
+				Flags:     licenses.GetFlags(),
+				Action:    licenses.RunWithContext,
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			io.PrintLogo()
@@ -204,6 +213,7 @@ available subcommands:
   > agent         agent for distributed capture
   > inject        inline packet manipulation (MITM mode, Linux only)
   > mcp           MCP server (stdio) for LLM-driven PCAP analysis
+  > licenses      list or print bundled license documents
 
 usage: ./net <subcommand> [flags]
 or: ./net <subcommand> [-h] to get help for the subcommand`)
@@ -266,6 +276,7 @@ func printCompletions(previous, current, full string) {
 		cmdAgent,
 		cmdInject,
 		cmdMCP,
+		cmdLicenses,
 	}
 
 	if os.Getenv(env.CompletionDebug) == "1" {
@@ -301,6 +312,8 @@ func printCompletions(previous, current, full string) {
 		printFlags(inject.Flags())
 	case cmdMCP:
 		printFlags(mcp.Flags())
+	case cmdLicenses:
+		return
 	case cmdTransform:
 		return
 	}

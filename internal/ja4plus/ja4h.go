@@ -1,3 +1,5 @@
+//go:build ja4plus
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -7,7 +9,7 @@
  * Based on FoxIO-LLC JA4+ specification
  */
 
-package ja4
+package ja4plus
 
 import (
 	"bufio"

@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 
 	"github.com/dreadl0ck/netcap/internal/env"
+	"github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 	"github.com/dreadl0ck/netcap/internal/performance"
 	"go.uber.org/zap"
 )
@@ -113,7 +114,7 @@ func Init(c Config, quietMode bool) {
 	if c.DHCPDB {
 		InitDHCPFingerprintDB()
 	}
-	if c.JA4DB {
+	if c.JA4DB && ja4plusadapter.Enabled {
 		initJA4Resolver()
 	}
 

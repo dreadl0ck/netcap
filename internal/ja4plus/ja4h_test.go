@@ -1,10 +1,12 @@
+//go:build ja4plus
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
  * License: GNU General Public License v3.0
  */
 
-package ja4
+package ja4plus
 
 import (
 	"strings"
@@ -104,10 +106,10 @@ func TestComputeJA4H(t *testing.T) {
 			ja4h := ComputeJA4H(tt.data)
 			t.Logf("JA4H = %s", ja4h)
 
-		// Check the first part matches expectations
-		if !strings.HasPrefix(ja4h, tt.wantA) {
-			t.Errorf("JA4H_a mismatch: want prefix %q, got %q", tt.wantA, ja4h[:7])
-		}
+			// Check the first part matches expectations
+			if !strings.HasPrefix(ja4h, tt.wantA) {
+				t.Errorf("JA4H_a mismatch: want prefix %q, got %q", tt.wantA, ja4h[:7])
+			}
 
 			// Validate format
 			if tt.validate && !ValidateJA4H(ja4h) {
@@ -322,8 +324,8 @@ func TestValidateJA4H(t *testing.T) {
 		{"po11n10_000000000000_000000000000_000000000000", true},
 		{"ge20n03_abcdef123456_123456abcdef_fedcba654321", true},
 		{"invalid", false},
-		{"ge11c05_d6a4a8d71109_e0a89e3e939d", false},             // Missing 4th part
-		{"ge11c0_d6a4a8d71109_e0a89e3e939d_a82c9fccc4f7", false}, // JA4H_a too short (6 chars)
+		{"ge11c05_d6a4a8d71109_e0a89e3e939d", false},               // Missing 4th part
+		{"ge11c0_d6a4a8d71109_e0a89e3e939d_a82c9fccc4f7", false},   // JA4H_a too short (6 chars)
 		{"ge11c055_d6a4a8d71109_e0a89e3e939d_a82c9fccc4f7", false}, // JA4H_a too long (8 chars)
 		{"", false},
 	}
@@ -394,4 +396,3 @@ func equalStringSlices(a, b []string) bool {
 	}
 	return true
 }
-

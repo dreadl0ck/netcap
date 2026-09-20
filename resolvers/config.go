@@ -20,6 +20,8 @@
 // Package resolvers implements primitives to resolve various identifiers against external data
 package resolvers
 
+import "github.com/dreadl0ck/netcap/internal/ja4plusadapter"
+
 // Config contains settings for the resolvers package.
 type Config struct {
 
@@ -53,5 +55,5 @@ var DefaultConfig = Config{
 	ServiceDB:     true,
 	GeolocationDB: true,
 	DHCPDB:        true,
-	JA4DB:         true,
+	JA4DB:         ja4plusadapter.Enabled,
 }

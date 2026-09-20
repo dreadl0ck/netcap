@@ -34,6 +34,7 @@ fetch "https://crates.io/api/v1/crates/colored/3.0.0/download" "colored-3.0.0.cr
 
 cp LICENSE "$bundle/GPL-3.0.txt"
 cp legal/licenses/LGPL-3.0.txt "$bundle/LGPL-3.0.txt"
+cp legal/licenses/JA4-BSD-3-Clause.txt "$bundle/JA4-BSD-3-Clause.txt"
 cp legal/THIRD_PARTY_LICENSES.txt "$bundle/"
 cp legal/THIRD_PARTY_RUST_LICENSES.txt "$bundle/"
 cp legal/THIRD_PARTY_NOTICES.txt "$bundle/"

@@ -1,3 +1,5 @@
+//go:build ja4plus
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -17,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ja4
+package ja4plus
 
 import "fmt"
 
@@ -60,4 +62,3 @@ func ComputeJA4LMicro(latencyNanos int64, ttl uint8) string {
 	latencyUs := latencyNanos / 1_000
 	return fmt.Sprintf("%d_%d", latencyUs, ttl)
 }
-

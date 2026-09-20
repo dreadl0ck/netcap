@@ -27,7 +27,7 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 
-	"github.com/dreadl0ck/netcap/internal/ja4"
+	ja4 "github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -80,7 +80,9 @@ var dhcpv4Decoder = newGoPacketDecoder(
 					Length: int32(o.Length),
 					Type:   int32(o.Type),
 				})
-				optTypes = append(optTypes, uint8(o.Type))
+				if ja4.Enabled {
+					optTypes = append(optTypes, uint8(o.Type))
+				}
 				fp.WriteString(strconv.Itoa(int(o.Type)))
 				if i != length {
 					fp.WriteString(",")
@@ -110,22 +112,25 @@ var dhcpv4Decoder = newGoPacketDecoder(
 				case dhcpOptVendorClass:
 					vendorClass = string(o.Data)
 				case dhcpOptParamRequestList:
-					// Extract Parameter Request List for JA4D fingerprinting
-					paramRequestList = make([]uint8, len(o.Data))
-					copy(paramRequestList, o.Data)
+					if ja4.Enabled {
+						paramRequestList = make([]uint8, len(o.Data))
+						copy(paramRequestList, o.Data)
+					}
 				}
 			}
 
-			// Compute JA4D fingerprint
-			ja4dData := ja4.BuildDHCPv4DataFromOptions(
-				uint8(messageTypeCode),
-				uint8(dhcp4.HardwareType),
-				optTypes,
-				paramRequestList,
-				vendorClass,
-				hostname,
-			)
-			ja4dFingerprint := ja4.ComputeJA4D(ja4dData)
+			var ja4dFingerprint string
+			if ja4.Enabled {
+				ja4dData := ja4.BuildDHCPv4DataFromOptions(
+					uint8(messageTypeCode),
+					uint8(dhcp4.HardwareType),
+					optTypes,
+					paramRequestList,
+					vendorClass,
+					hostname,
+				)
+				ja4dFingerprint = ja4.ComputeJA4D(ja4dData)
+			}
 
 			return &types.DHCPv4{
 				Timestamp:        timestamp,

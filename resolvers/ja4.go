@@ -1,3 +1,5 @@
+//go:build ja4plus
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -400,4 +402,3 @@ func GetJA4TSDBSize() int {
 func GetJA4TScanDBSize() int {
 	return len(ja4tscanDB)
 }
-

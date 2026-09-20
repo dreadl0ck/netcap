@@ -30,14 +30,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dreadl0ck/tlsx"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/dpi"
-	"github.com/dreadl0ck/netcap/internal/ja4"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -457,51 +455,6 @@ func movingAverage(current int32, newValue int32, n int32) int32 {
 	return (current + (newValue - current)) / n
 }
 
-// trackJA4LTiming tracks TCP handshake and TLS handshake timing for JA4L fingerprinting.
-// This captures:
-// - SYN timestamp and TTL for JA4L-C (TCP latency)
-// - SYN-ACK timestamp for JA4L-C
-// - ClientHello timestamp for JA4L-S (TLS latency)
-// - ServerHello timestamp for JA4L-S
-func trackJA4LTiming(conn *connection, p gopacket.Packet) {
-	timestamp := p.Metadata().Timestamp.UnixNano()
-
-	// Track TCP handshake timing (SYN / SYN-ACK)
-	if tcp, ok := p.TransportLayer().(*layers.TCP); ok {
-		// SYN packet (no ACK) - client initiating connection
-		if tcp.SYN && !tcp.ACK && conn.synTimestamp == 0 {
-			conn.synTimestamp = timestamp
-			// Capture TTL from IP layer for hop count estimation
-			if ipv4, ok := p.NetworkLayer().(*layers.IPv4); ok {
-				conn.synTTL = ipv4.TTL
-			} else if ipv6, ok := p.NetworkLayer().(*layers.IPv6); ok {
-				conn.synTTL = ipv6.HopLimit
-			}
-		}
-
-		// SYN-ACK packet - server responding
-		if tcp.SYN && tcp.ACK && conn.synAckTimestamp == 0 {
-			conn.synAckTimestamp = timestamp
-		}
-	}
-
-	// Track TLS handshake timing (ClientHello / ServerHello) and extract SNI
-	if conn.clientHelloTimestamp == 0 {
-		if ch := tlsx.GetClientHello(p); ch != nil {
-			conn.clientHelloTimestamp = timestamp
-			// Extract SNI from TLS ClientHello if present
-			if ch.SNI != "" && conn.sni == "" {
-				conn.sni = ch.SNI
-			}
-		}
-	}
-	if conn.serverHelloTimestamp == 0 {
-		if sh := tlsx.GetServerHello(p); sh != nil {
-			conn.serverHelloTimestamp = timestamp
-		}
-	}
-}
-
 /*func flushConns(p gopacket.Packet) {
 	selectConns := make([]*types.Connection, 0)
 
@@ -729,28 +682,4 @@ func writeConnectionRecord(decoder *Decoder, conn *connection) {
 	// Calculate JA4L fingerprints before writing
 	calculateJA4L(conn)
 	decoder.writeConn(conn.Connection, conn.clientIP, conn.applications, conn.packetsClientToServer, conn.packetsServerToClient, conn.sni)
-}
-
-// calculateJA4L calculates and populates JA4L fingerprint fields on the connection.
-// JA4L-C: TCP latency (SYN → SYN-ACK)
-// JA4L-S: TLS latency (ClientHello → ServerHello)
-func calculateJA4L(conn *connection) {
-	// Populate timing timestamps
-	conn.Connection.SynTimestamp = conn.synTimestamp
-	conn.Connection.SynAckTimestamp = conn.synAckTimestamp
-	conn.Connection.ClientHelloTimestamp = conn.clientHelloTimestamp
-	conn.Connection.ServerHelloTimestamp = conn.serverHelloTimestamp
-	conn.Connection.SynTtl = int32(conn.synTTL)
-
-	// Calculate JA4L-C (TCP RTT: SYN → SYN-ACK)
-	if conn.synTimestamp > 0 && conn.synAckTimestamp > 0 {
-		conn.Connection.TcpRttNanos = conn.synAckTimestamp - conn.synTimestamp
-		conn.Connection.Ja4LClient = ja4.ComputeJA4L(conn.Connection.TcpRttNanos, conn.synTTL)
-	}
-
-	// Calculate JA4L-S (TLS latency: ClientHello → ServerHello)
-	if conn.clientHelloTimestamp > 0 && conn.serverHelloTimestamp > 0 {
-		conn.Connection.TlsHandshakeNanos = conn.serverHelloTimestamp - conn.clientHelloTimestamp
-		conn.Connection.Ja4LServer = ja4.ComputeJA4L(conn.Connection.TlsHandshakeNanos, conn.synTTL)
-	}
 }

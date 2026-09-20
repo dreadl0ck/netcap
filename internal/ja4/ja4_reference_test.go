@@ -1,3 +1,5 @@
+//go:build ja4plus
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -17,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/ja4"
+	"github.com/dreadl0ck/netcap/internal/ja4plus"
 	"github.com/dreadl0ck/tlsx"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcap"
@@ -250,7 +253,7 @@ func TestJA4AlgorithmCompliance(t *testing.T) {
 func TestJA4SAlgorithmCompliance(t *testing.T) {
 	t.Run("BasicJA4SFormat", func(t *testing.T) {
 		// JA4S format: {protocol}{version}{ext_count:2d}{alpn}_{cipher_hex}_{ext_hash}
-		data := &ja4.ServerHelloData{
+		data := &ja4plus.ServerHelloData{
 			Version:     0x0303,
 			CipherSuite: 0x1301,
 			Extensions:  []uint16{0x002b, 0x0033},
@@ -258,10 +261,10 @@ func TestJA4SAlgorithmCompliance(t *testing.T) {
 			IsQUIC:      false,
 		}
 
-		result := ja4.ComputeJA4S(data)
+		result := ja4plus.ComputeJA4S(data)
 		t.Logf("JA4S: %s", result)
 
-		if !ja4.ValidateJA4S(result) {
+		if !ja4plus.ValidateJA4S(result) {
 			t.Errorf("Invalid JA4S format: %s", result)
 		}
 
@@ -279,22 +282,22 @@ func TestJA4SAlgorithmCompliance(t *testing.T) {
 	// Test extensions are NOT sorted in JA4S (per spec)
 	t.Run("ExtensionsNotSorted", func(t *testing.T) {
 		// JA4S extensions should NOT be sorted (unlike JA4)
-		data1 := &ja4.ServerHelloData{
+		data1 := &ja4plus.ServerHelloData{
 			Version:     0x0303,
 			CipherSuite: 0x1301,
 			Extensions:  []uint16{0x002b, 0x0033, 0x0005},
 			IsQUIC:      false,
 		}
 
-		data2 := &ja4.ServerHelloData{
+		data2 := &ja4plus.ServerHelloData{
 			Version:     0x0303,
 			CipherSuite: 0x1301,
 			Extensions:  []uint16{0x0005, 0x002b, 0x0033}, // Different order
 			IsQUIC:      false,
 		}
 
-		result1 := ja4.ComputeJA4S(data1)
-		result2 := ja4.ComputeJA4S(data2)
+		result1 := ja4plus.ComputeJA4S(data1)
+		result2 := ja4plus.ComputeJA4S(data2)
 
 		t.Logf("JA4S (order 1): %s", result1)
 		t.Logf("JA4S (order 2): %s", result2)
@@ -313,7 +316,7 @@ func TestJA4WithFoxIOPCAP(t *testing.T) {
 	if !ok {
 		t.Fatal("failed to get current file path")
 	}
-	testdataDir := filepath.Join(filepath.Dir(filename), "testdata", "foxio")
+	testdataDir := filepath.Join(filepath.Dir(filename), "..", "ja4plus", "testdata", "foxio")
 
 	testCases := []struct {
 		pcapFile      string
@@ -408,7 +411,7 @@ func TestJA4WithFoxIOPCAP(t *testing.T) {
 						extensions[i] = uint16(ext)
 					}
 
-					fp := ja4.ComputeJA4S(&ja4.ServerHelloData{
+					fp := ja4plus.ComputeJA4S(&ja4plus.ServerHelloData{
 						Version:       uint16(sh.Vers),
 						CipherSuite:   uint16(sh.CipherSuite),
 						Extensions:    extensions,
@@ -417,7 +420,7 @@ func TestJA4WithFoxIOPCAP(t *testing.T) {
 						IsQUIC:        false,
 					})
 
-					if fp != "" && ja4.ValidateJA4S(fp) {
+					if fp != "" && ja4plus.ValidateJA4S(fp) {
 						ja4sFingerprints = append(ja4sFingerprints, fp)
 						t.Logf("JA4S: %s", fp)
 					}
@@ -442,7 +445,7 @@ func TestJA4WithFoxIOPCAP(t *testing.T) {
 func TestJA4HReferenceCompliance(t *testing.T) {
 	t.Run("BasicHTTPRequest", func(t *testing.T) {
 		// HTTP/1.1 GET request with Accept-Language header
-		data := &ja4.HTTPData{
+		data := &ja4plus.HTTPData{
 			Method:  "GET",
 			Version: "1.1",
 			HeaderOrder: []string{
@@ -457,10 +460,10 @@ func TestJA4HReferenceCompliance(t *testing.T) {
 			CookieFields:   nil,
 		}
 
-		result := ja4.ComputeJA4H(data)
+		result := ja4plus.ComputeJA4H(data)
 		t.Logf("JA4H: %s", result)
 
-		if !ja4.ValidateJA4H(result) {
+		if !ja4plus.ValidateJA4H(result) {
 			t.Errorf("Invalid JA4H format: %s", result)
 		}
 
@@ -508,11 +511,11 @@ func TestJA4TReferenceCompliance(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if !ja4.ValidateJA4T(tc.fingerprint) {
+			if !ja4plus.ValidateJA4T(tc.fingerprint) {
 				t.Errorf("Invalid JA4T format: %s", tc.fingerprint)
 			}
 
-			windowSize, mss, windowScale, options, ok := ja4.ParseJA4T(tc.fingerprint)
+			windowSize, mss, windowScale, options, ok := ja4plus.ParseJA4T(tc.fingerprint)
 			if !ok {
 				t.Fatalf("Failed to parse JA4T: %s", tc.fingerprint)
 			}
@@ -527,7 +530,7 @@ func TestJA4TReferenceCompliance(t *testing.T) {
 			}
 
 			// Verify OS hint detection works
-			osHint := ja4.GetOSHint(&ja4.TCPFingerprintData{
+			osHint := ja4plus.GetOSHint(&ja4plus.TCPFingerprintData{
 				WindowSize:  uint16(windowSize),
 				Options:     optionsUint8,
 				MSS:         uint16(mss),
@@ -560,14 +563,13 @@ func TestJA4XReferenceCompliance(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if !ja4.ValidateJA4X(tc.fingerprint) {
+			if !ja4plus.ValidateJA4X(tc.fingerprint) {
 				t.Errorf("Invalid JA4X format: %s", tc.fingerprint)
 			}
 
 			// Check for self-signed certificate detection
-			isSelfSigned := ja4.IsSelfSignedByJA4X(tc.fingerprint)
+			isSelfSigned := ja4plus.IsSelfSignedByJA4X(tc.fingerprint)
 			t.Logf("JA4X %s: %s (self-signed: %v)", tc.name, tc.fingerprint, isSelfSigned)
 		})
 	}
 }
-

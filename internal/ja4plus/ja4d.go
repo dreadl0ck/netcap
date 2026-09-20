@@ -1,3 +1,5 @@
+//go:build ja4plus
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -16,7 +18,7 @@
  * Reference: https://github.com/FoxIO-LLC/ja4
  */
 
-package ja4
+package ja4plus
 
 import (
 	"fmt"

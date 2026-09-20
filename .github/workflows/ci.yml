@@ -124,6 +124,21 @@ jobs:
           go build ./...
           go vet ./...
 
+          # JA4+ is source-only and opt-in. Compile and test it so the optional
+          # path cannot rot while official builds continue to exclude the tag.
+          go build -tags ja4plus ./...
+          go vet -tags ja4plus ./...
+          go test -short -tags ja4plus \
+            ./internal/ja4/... \
+            ./internal/ja4plus/... \
+            ./internal/ja4plusadapter/... \
+            ./decoder/packet \
+            ./decoder/stream/http \
+            ./decoder/stream/ssh \
+            ./decoder/stream/tls \
+            ./resolvers \
+            ./collector
+
           # Mirrors the test-unit target in Makefile.test. The race detector
           # works under musl here; verified against this image before relying on
           # it. collector was temporarily excluded after this suite found a TCP

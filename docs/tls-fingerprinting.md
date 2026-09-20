@@ -50,7 +50,7 @@ This fingerprint indicates:
 
 ### JA4S Format (Server Hello)
 
-JA4S fingerprints the server's response:
+JA4S fingerprints the server's response. JA4S is part of JA4+ and is not included in official Netcap binaries. A user may opt into a local source build with `go build -tags ja4plus -o net ./cmd/`, subject to the FoxIO License 1.1.
 
 ```text
 {ja4s_a}_{ja4s_b}_{ja4s_c}
@@ -81,8 +81,8 @@ JA4S fingerprints the server's response:
 ### License
 
 JA4 (TLS Client Fingerprinting) is licensed under BSD 3-Clause.
-JA4S, JA4H, JA4X, JA4T, JA4SSH and other JA4+ methods are licensed under FoxIO License 1.1.
-See `internal/ja4/LICENSE-JA4` for full license text.
+JA4S, JA4H, JA4L, JA4X, JA4T, JA4TS, JA4SSH, JA4D and other JA4+ methods are licensed under FoxIO License 1.1 and are disabled in official Netcap and Netcap Pro builds. The opt-in source implementation is isolated in `internal/ja4plus` and is compiled only with the `ja4plus` build tag. Users enabling it are responsible for complying with FoxIO's license, including its monetization restrictions.
+See `internal/ja4/LICENSE-JA4` and `internal/ja4plus/LICENSE` for the applicable terms.
 
 ---
 

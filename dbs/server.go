@@ -129,7 +129,7 @@ func (s *DBServer) Start() error {
 		}
 		// Start nightly rebuild scheduler only after the initial attempt
 		// finishes (success or failure). Subsequent nightly rebuilds will
-		// retry transient sources like ja4db.
+		// retry transient sources.
 		go s.scheduleDailyRebuild()
 	}()
 
@@ -210,7 +210,7 @@ func (s *DBServer) rebuildDatabases() error {
 
 	// Process each source (exploitdb will be cloned fresh to get latest exploits).
 	// activeSources honours NC_DBS_SKIP_SOURCES so operators can bypass
-	// known-bad upstreams (e.g. ja4db.json) without rebuilding the image.
+	// known-bad upstreams without rebuilding the image.
 	var wg sync.WaitGroup
 	for _, source := range activeSources() {
 		wg.Add(1)

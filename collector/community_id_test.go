@@ -12,6 +12,7 @@ import (
 	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
@@ -93,6 +94,9 @@ func TestCommunityIDOnFingerprints(t *testing.T) {
 
 	// Verify TCP records have CommunityID (covers JA4T fingerprints)
 	t.Run("TCP", func(t *testing.T) {
+		if !ja4plusadapter.Enabled {
+			t.Skip("JA4T is disabled in the default build")
+		}
 		records := readTCPRecords(t, outputDir)
 		if len(records) == 0 {
 			t.Fatal("no TCP records found")

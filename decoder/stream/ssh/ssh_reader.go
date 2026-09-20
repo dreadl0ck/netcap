@@ -31,7 +31,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/decoder/stream/software"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
-	"github.com/dreadl0ck/netcap/internal/ja4"
+	ja4 "github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -56,10 +56,11 @@ type sshReader struct {
 
 // New returns a new SSH reader.
 func (h *sshReader) New(conversation *core.ConversationInfo) core.StreamDecoderInterface {
-	return &sshReader{
-		conversation: conversation,
-		ja4sshData:   ja4.NewSSHStreamData(),
+	reader := &sshReader{conversation: conversation}
+	if ja4.Enabled {
+		reader.ja4sshData = ja4.NewSSHStreamData()
 	}
+	return reader
 }
 
 // Decode parses the stream according to the SSH protocol.
@@ -92,9 +93,9 @@ func (h *sshReader) Decode() {
 				clientBuf.Write(d.Raw())
 			}
 			// Track for JA4SSH
-			if payloadLen > 0 {
+			if ja4.Enabled && payloadLen > 0 {
 				h.ja4sshData.AddClientPacket(payloadLen)
-			} else {
+			} else if ja4.Enabled {
 				h.ja4sshData.AddClientACK()
 			}
 		} else {
@@ -103,17 +104,19 @@ func (h *sshReader) Decode() {
 				serverBuf.Write(d.Raw())
 			}
 			// Track for JA4SSH
-			if payloadLen > 0 {
+			if ja4.Enabled && payloadLen > 0 {
 				h.ja4sshData.AddServerPacket(payloadLen)
-			} else {
+			} else if ja4.Enabled {
 				h.ja4sshData.AddServerACK()
 			}
 		}
 	}
 
 	// Compute JA4SSH fingerprint from all collected packet data
-	h.ja4sshFingerprint = ja4.ComputeJA4SSH(h.ja4sshData)
-	h.ja4sshSessionType = ja4.DetectSessionType(h.ja4sshFingerprint)
+	if ja4.Enabled {
+		h.ja4sshFingerprint = ja4.ComputeJA4SSH(h.ja4sshData)
+		h.ja4sshSessionType = ja4.DetectSessionType(h.ja4sshFingerprint)
+	}
 
 	h.searchKexInit(bufio.NewReader(&clientBuf), reassembly.TCPDirClientToServer)
 	h.searchKexInit(bufio.NewReader(&serverBuf), reassembly.TCPDirServerToClient)

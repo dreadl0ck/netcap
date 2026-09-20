@@ -23,6 +23,13 @@ decoder/stream/ssh contain code from golang.org/x/crypto, copyright The Go
 Authors, under BSD-3-Clause. Their complete license texts and notices are
 included in THIRD_PARTY_LICENSES.txt through the production dependency scan.
 
+JA4 TLS client fingerprinting
+-----------------------------
+Official Netcap binaries include plain JA4 TLS client fingerprinting under the
+BSD 3-Clause License, copyright FoxIO. The required license and disclaimer are
+reproduced in licenses/JA4-BSD-3-Clause.txt. JA4+ implementations are not
+compiled into official Netcap or Netcap Pro binaries.
+
 Embedded web application
 ------------------------
 The service-mode binary embeds its web application. Its runtime dependencies

@@ -7,3 +7,4 @@ pnpm --dir "$frontend_dir" install --frozen-lockfile
 
 go run ./tools/licenses -check
 zeus/scripts/rust-licenses.sh -check
+zeus/scripts/check-ja4-build.sh

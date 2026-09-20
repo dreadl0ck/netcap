@@ -1,3 +1,5 @@
+//go:build ja4plus
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -283,4 +285,3 @@ func TestJA4EntryJSONParsing(t *testing.T) {
 		t.Errorf("Expected description %q, got %q", expected, desc)
 	}
 }
-

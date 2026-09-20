@@ -27,7 +27,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/internal/ja4"
+	ja4 "github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -87,7 +87,7 @@ func setRequest(h *types.HTTP, req *httpRequest) {
 
 	// JA4H HTTP client fingerprinting
 	// Compute JA4H fingerprint if we have header order
-	if len(req.headerOrder) > 0 {
+	if ja4.Enabled && len(req.headerOrder) > 0 {
 		ja4hData := &ja4.HTTPData{
 			Method:         req.request.Method,
 			Version:        req.request.Proto,

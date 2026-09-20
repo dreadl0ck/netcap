@@ -36,6 +36,7 @@ import (
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/internal/ja4"
+	"github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -211,12 +212,12 @@ func createNewHost(ipAddr string, i *decoderutils.PacketInfo, source bool) *host
 
 	// JA4S Server Hello fingerprint
 	sh := tlsx.GetServerHello(i.Packet)
-	if sh != nil {
+	if sh != nil && ja4plusadapter.Enabled {
 		ja4sExtensions := make([]uint16, len(sh.Extensions))
 		for idx, ext := range sh.Extensions {
 			ja4sExtensions[idx] = uint16(ext)
 		}
-		ja4sfp := ja4.ComputeJA4S(&ja4.ServerHelloData{
+		ja4sfp := ja4plusadapter.ComputeJA4S(&ja4plusadapter.ServerHelloData{
 			Version:       uint16(sh.Vers),
 			CipherSuite:   uint16(sh.CipherSuite),
 			Extensions:    ja4sExtensions,
@@ -224,7 +225,9 @@ func createNewHost(ipAddr string, i *decoderutils.PacketInfo, source bool) *host
 			IsQUIC:        false,
 			ALPN:          sh.AlpnProtocol,
 		})
-		ja4sFingerprints = append(ja4sFingerprints, ja4sfp)
+		if ja4sfp != "" {
+			ja4sFingerprints = append(ja4sFingerprints, ja4sfp)
+		}
 	}
 
 	// Application Layer: DHCP fingerprinting
@@ -313,12 +316,12 @@ func handleTLSFingerprinting(p *hostEntry, i *decoderutils.PacketInfo) {
 
 	// Handle JA4S (TLS Server Hello) fingerprinting
 	sh := tlsx.GetServerHello(i.Packet)
-	if sh != nil {
+	if sh != nil && ja4plusadapter.Enabled {
 		ja4sExtensions := make([]uint16, len(sh.Extensions))
 		for idx, ext := range sh.Extensions {
 			ja4sExtensions[idx] = uint16(ext)
 		}
-		ja4sfp := ja4.ComputeJA4S(&ja4.ServerHelloData{
+		ja4sfp := ja4plusadapter.ComputeJA4S(&ja4plusadapter.ServerHelloData{
 			Version:       uint16(sh.Vers),
 			CipherSuite:   uint16(sh.CipherSuite),
 			Extensions:    ja4sExtensions,
@@ -326,7 +329,9 @@ func handleTLSFingerprinting(p *hostEntry, i *decoderutils.PacketInfo) {
 			IsQUIC:        false,
 			ALPN:          sh.AlpnProtocol,
 		})
-		p.Ja4SFingerprints = addUniqueString(p.Ja4SFingerprints, ja4sfp)
+		if ja4sfp != "" {
+			p.Ja4SFingerprints = addUniqueString(p.Ja4SFingerprints, ja4sfp)
+		}
 	}
 }
 

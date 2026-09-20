@@ -1,0 +1,8 @@
+The implementation code in this directory is copyright its Netcap contributors
+and remains covered by the repository's GPL-3.0 terms. The JA4+ methods and
+associated patent rights are separately governed by the FoxIO License 1.1 in
+LICENSE. Both sets of terms apply.
+
+This package is provided only for opt-in local source builds. It is not compiled
+into official Netcap or Netcap Pro artifacts. Enabling it does not authorize
+commercial, hosted, managed-service, or other monetized use.

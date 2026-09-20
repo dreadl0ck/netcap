@@ -1,3 +1,5 @@
+//go:build ja4plus
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -11,6 +13,8 @@ package ja4
 import (
 	"encoding/binary"
 	"testing"
+
+	"github.com/dreadl0ck/netcap/internal/ja4plus"
 )
 
 // parseTLSClientHello parses a raw TLS ClientHello packet and extracts JA4 data
@@ -178,7 +182,7 @@ func parseTLSClientHello(payload []byte, protocol byte) (*ClientHelloData, error
 }
 
 // parseTLSServerHello parses a raw TLS ServerHello packet and extracts JA4S data
-func parseTLSServerHello(payload []byte, protocol byte) (*ServerHelloData, error) {
+func parseTLSServerHello(payload []byte, protocol byte) (*ja4plus.ServerHelloData, error) {
 	if len(payload) < 5 {
 		return nil, nil
 	}
@@ -279,7 +283,7 @@ func parseTLSServerHello(payload []byte, protocol byte) (*ServerHelloData, error
 		}
 	}
 
-	return &ServerHelloData{
+	return &ja4plus.ServerHelloData{
 		Version:       version,
 		CipherSuite:   cipherSuite,
 		Extensions:    extensions,
@@ -384,7 +388,7 @@ func TestJA4SFromRawPayload(t *testing.T) {
 
 			var ja4sStr string
 			if data != nil {
-				ja4sStr = ComputeJA4S(data)
+				ja4sStr = ja4plus.ComputeJA4S(data)
 			}
 
 			if ja4sStr != tt.expectedJA4S {

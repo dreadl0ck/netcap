@@ -7,7 +7,6 @@
 package ja4
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -99,67 +98,18 @@ func TestComputeJA4(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := ComputeJA4(tt.data)
-			
+
 			// Check JA4_a prefix
 			if len(result) < 4 || result[:4] != tt.wantA {
 				t.Errorf("ComputeJA4() JA4_a = %s, want prefix %s", result, tt.wantA)
 			}
-			
+
 			// Check format validation
 			if tt.validate && !ValidateJA4(result) {
 				t.Errorf("ComputeJA4() result %s failed validation", result)
 			}
-			
+
 			t.Logf("JA4 = %s", result)
-		})
-	}
-}
-
-func TestComputeJA4S(t *testing.T) {
-	tests := []struct {
-		name     string
-		data     *ServerHelloData
-		wantA    string // Full JA4S_a part (7 chars)
-		validate bool
-	}{
-		{
-			name: "TLS 1.3 server",
-			data: &ServerHelloData{
-				Version:       0x0303,
-				CipherSuite:   0x1301,
-				Extensions:    []uint16{0x002b, 0x0033},
-				SupportedVers: 0x0304,
-			},
-			wantA:    "t130200", // protocol(t) + version(13) + ext_count(02) + alpn(00)
-			validate: true,
-		},
-		{
-			name: "TLS 1.2 server",
-			data: &ServerHelloData{
-				Version:     0x0303,
-				CipherSuite: 0xc02f,
-				Extensions:  []uint16{0x0000, 0xff01},
-			},
-			wantA:    "t120200", // protocol(t) + version(12) + ext_count(02) + alpn(00)
-			validate: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := ComputeJA4S(tt.data)
-			parts := strings.Split(result, "_")
-			
-			// Check JA4S_a part
-			if len(parts) < 1 || parts[0] != tt.wantA {
-				t.Errorf("ComputeJA4S() JA4S_a = %s, want %s", parts[0], tt.wantA)
-			}
-			
-			if tt.validate && !ValidateJA4S(result) {
-				t.Errorf("ComputeJA4S() result %s failed validation", result)
-			}
-			
-			t.Logf("JA4S = %s", result)
 		})
 	}
 }
@@ -167,13 +117,13 @@ func TestComputeJA4S(t *testing.T) {
 func TestIsGrease(t *testing.T) {
 	greaseVals := []uint16{0x0a0a, 0x1a1a, 0x2a2a, 0xfafa}
 	nonGreaseVals := []uint16{0x0000, 0x1301, 0xc02f, 0xffff}
-	
+
 	for _, v := range greaseVals {
 		if !isGrease(v) {
 			t.Errorf("isGrease(0x%04x) = false, want true", v)
 		}
 	}
-	
+
 	for _, v := range nonGreaseVals {
 		if isGrease(v) {
 			t.Errorf("isGrease(0x%04x) = true, want false", v)
@@ -194,7 +144,7 @@ func TestGetTLSVersionString(t *testing.T) {
 		{0x0301, 0, "10"},
 		{0x0300, 0, "s3"},
 	}
-	
+
 	for _, tt := range tests {
 		got := getTLSVersionString(tt.version, tt.supportedVers)
 		if got != tt.want {
@@ -210,7 +160,7 @@ func TestTruncatedSHA256(t *testing.T) {
 	if result != "000000000000" {
 		t.Errorf("truncatedSHA256(\"\") = %s, want 000000000000", result)
 	}
-	
+
 	// Non-empty should return 12 char hex
 	result = truncatedSHA256("test")
 	if len(result) != 12 {
@@ -230,7 +180,7 @@ func TestIsIPAddress(t *testing.T) {
 		{"www.example.com", false},
 		{"", false},
 	}
-	
+
 	for _, tt := range tests {
 		got := isIPAddress(tt.input)
 		if got != tt.want {
@@ -250,7 +200,7 @@ func TestValidateJA4(t *testing.T) {
 		{"t13d1516h2_short_e5627efa2ab1", false},
 		{"t13d1516h2_8daaf6152771", false}, // Missing part
 	}
-	
+
 	for _, tt := range tests {
 		got := ValidateJA4(tt.input)
 		if got != tt.want {
@@ -262,19 +212,18 @@ func TestValidateJA4(t *testing.T) {
 func TestParseHelpers(t *testing.T) {
 	ciphers := []int32{0x1301, 0x1302, 0xc02f}
 	parsed := ParseCipherSuites(ciphers)
-	
+
 	if len(parsed) != 3 {
 		t.Errorf("ParseCipherSuites length = %d, want 3", len(parsed))
 	}
 	if parsed[0] != 0x1301 {
 		t.Errorf("ParseCipherSuites[0] = 0x%04x, want 0x1301", parsed[0])
 	}
-	
+
 	exts := []int32{0x0000, 0x0017, 0x000d}
 	parsedExts := ParseExtensions(exts)
-	
+
 	if len(parsedExts) != 3 {
 		t.Errorf("ParseExtensions length = %d, want 3", len(parsedExts))
 	}
 }
-

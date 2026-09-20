@@ -987,6 +987,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			ReverseDNS: flagReverseDNS,
 			LocalDNS:   flagLocalDNS,
 			MACDB:      flagMACDB,
+			JA4DB:      flagJA4DB,
 
 			ServiceDB:     flagServiceDB,
 			GeolocationDB: flagGeolocationDB,
@@ -1325,6 +1326,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 					ReverseDNS: flagReverseDNS,
 					LocalDNS:   flagLocalDNS,
 					MACDB:      flagMACDB,
+					JA4DB:      flagJA4DB,
 
 					ServiceDB:     flagServiceDB,
 					GeolocationDB: flagGeolocationDB,

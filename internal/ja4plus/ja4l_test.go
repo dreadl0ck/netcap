@@ -1,3 +1,5 @@
+//go:build ja4plus
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -17,7 +19,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package ja4
+package ja4plus
 
 import "testing"
 
@@ -130,4 +132,3 @@ func TestComputeJA4LMicro(t *testing.T) {
 		})
 	}
 }
-

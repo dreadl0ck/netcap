@@ -1,3 +1,5 @@
+//go:build ja4plus
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -7,7 +9,7 @@
  * Reference: https://github.com/FoxIO-LLC/ja4
  */
 
-package ja4
+package ja4plus
 
 import (
 	"crypto/x509"
@@ -124,20 +126,20 @@ func ValidateJA4X(fingerprint string) bool {
 
 // Common X.509 OID hex representations for reference
 var CommonOIDs = map[string]string{
-	"550403": "commonName",
-	"550406": "countryName",
-	"550407": "localityName",
-	"550408": "stateOrProvinceName",
-	"55040a": "organizationName",
-	"55040b": "organizationalUnitName",
-	"551d0e": "subjectKeyIdentifier",
-	"551d0f": "keyUsage",
-	"551d11": "subjectAltName",
-	"551d13": "basicConstraints",
-	"551d1f": "cRLDistributionPoints",
-	"551d20": "certificatePolicies",
-	"551d23": "authorityKeyIdentifier",
-	"551d25": "extKeyUsage",
+	"550403":           "commonName",
+	"550406":           "countryName",
+	"550407":           "localityName",
+	"550408":           "stateOrProvinceName",
+	"55040a":           "organizationName",
+	"55040b":           "organizationalUnitName",
+	"551d0e":           "subjectKeyIdentifier",
+	"551d0f":           "keyUsage",
+	"551d11":           "subjectAltName",
+	"551d13":           "basicConstraints",
+	"551d1f":           "cRLDistributionPoints",
+	"551d20":           "certificatePolicies",
+	"551d23":           "authorityKeyIdentifier",
+	"551d25":           "extKeyUsage",
 	"2b0601050507010e": "authorityInfoAccess",
 }
 
@@ -150,4 +152,3 @@ func IsSelfSignedByJA4X(fingerprint string) bool {
 	}
 	return parts[0] == parts[1]
 }
-

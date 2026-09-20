@@ -1,3 +1,5 @@
+//go:build ja4plus
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
@@ -13,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/ja4"
+	"github.com/dreadl0ck/netcap/internal/ja4plus"
 	"github.com/dreadl0ck/tlsx"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcap"
@@ -129,7 +132,7 @@ func TestJA4FromPCAP(t *testing.T) {
 						extensions[i] = uint16(ext)
 					}
 
-					fp := ja4.ComputeJA4S(&ja4.ServerHelloData{
+					fp := ja4plus.ComputeJA4S(&ja4plus.ServerHelloData{
 						Version:       uint16(sh.Vers),
 						CipherSuite:   uint16(sh.CipherSuite),
 						Extensions:    extensions,
@@ -143,7 +146,7 @@ func TestJA4FromPCAP(t *testing.T) {
 						t.Logf("JA4S fingerprint: %s", fp)
 
 						// Validate format
-						if !ja4.ValidateJA4S(fp) {
+						if !ja4plus.ValidateJA4S(fp) {
 							t.Errorf("Invalid JA4S format: %s", fp)
 						}
 					}
@@ -285,7 +288,7 @@ func splitJA4(fp string) []string {
 
 // TestJA4SDeterminism tests that JA4S produces consistent results
 func TestJA4SDeterminism(t *testing.T) {
-	data := &ja4.ServerHelloData{
+	data := &ja4plus.ServerHelloData{
 		Version:     0x0303,
 		CipherSuite: 0x1301,
 		Extensions:  []uint16{0, 5, 11, 43, 51},
@@ -295,7 +298,7 @@ func TestJA4SDeterminism(t *testing.T) {
 	// Compute multiple times
 	results := make(map[string]int)
 	for range 100 {
-		fp := ja4.ComputeJA4S(data)
+		fp := ja4plus.ComputeJA4S(data)
 		results[fp]++
 	}
 
@@ -332,7 +335,7 @@ func BenchmarkJA4(b *testing.B) {
 
 // BenchmarkJA4S benchmarks JA4S computation performance
 func BenchmarkJA4S(b *testing.B) {
-	data := &ja4.ServerHelloData{
+	data := &ja4plus.ServerHelloData{
 		Version:     0x0303,
 		CipherSuite: 0x1301,
 		Extensions:  []uint16{0, 5, 11, 43, 51},
@@ -340,6 +343,6 @@ func BenchmarkJA4S(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		ja4.ComputeJA4S(data)
+		ja4plus.ComputeJA4S(data)
 	}
 }

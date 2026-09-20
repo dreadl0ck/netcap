@@ -17,20 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Package ja4 implements the JA4+ fingerprinting suite.
-//
-// JA4+ is the successor to JA3, developed by FoxIO-LLC:
-//   - JA4: TLS Client Fingerprinting (BSD 3-Clause License)
-//   - JA4S: TLS Server Fingerprinting (FoxIO License 1.1)
-//   - JA4H: HTTP Client Fingerprinting (FoxIO License 1.1)
-//   - JA4X: X.509 Certificate Fingerprinting (FoxIO License 1.1)
-//   - JA4T: TCP Client Fingerprinting (FoxIO License 1.1)
-//   - JA4SSH: SSH Session Fingerprinting (FoxIO License 1.1)
-//
-// JA4 addresses JA3's weakness to TLS extension randomization and adds QUIC support.
-//
-// Reference: https://github.com/FoxIO-LLC/ja4
-// License: See LICENSE-JA4 file in this directory.
+// Package ja4 implements BSD-3-Clause-licensed JA4 TLS client fingerprinting.
+// JA4+ methods are intentionally isolated from this package and official builds.
 package ja4
 
 import (
@@ -75,16 +63,6 @@ type ClientHelloData struct {
 	SignatureAlgorithms []uint16 // Signature algorithms from extension 13 (signature_algorithms)
 }
 
-// ServerHelloData contains the data needed to compute a JA4S fingerprint
-type ServerHelloData struct {
-	Version       uint16   // TLS version
-	CipherSuite   uint16   // Selected cipher suite
-	Extensions    []uint16 // Extensions present
-	SupportedVers uint16   // Supported versions extension value (for TLS 1.3)
-	IsQUIC        bool     // Whether this is QUIC
-	ALPN          string   // Selected ALPN protocol
-}
-
 // ComputeJA4 computes the JA4 fingerprint for a TLS ClientHello
 // Format: {ja4_a}_{ja4_b}_{ja4_c}
 // Example: t13d1516h2_8daaf6152771_e5627efa2ab1
@@ -94,17 +72,6 @@ func ComputeJA4(data *ClientHelloData) string {
 	ja4c := computeJA4c(data.Extensions, data.SignatureAlgorithms)
 
 	return fmt.Sprintf("%s_%s_%s", ja4a, ja4b, ja4c)
-}
-
-// ComputeJA4S computes the JA4S fingerprint for a TLS ServerHello
-// Format: {ja4s_a}_{ja4s_b}_{ja4s_c}
-// Where ja4s_a = protocol+version+extcount+alpn, ja4s_b = cipher hex, ja4s_c = hash of extensions
-func ComputeJA4S(data *ServerHelloData) string {
-	ja4sa := computeJA4Sa(data)
-	ja4sb := fmt.Sprintf("%04x", data.CipherSuite) // Cipher in hex
-	ja4sc := computeJA4Sc(data.Extensions)
-
-	return fmt.Sprintf("%s_%s_%s", ja4sa, ja4sb, ja4sc)
 }
 
 // computeJA4a computes the first part of JA4 (10 characters)
@@ -204,64 +171,6 @@ func computeJA4c(extensions []uint16, signatureAlgorithms []uint16) string {
 
 	// Hash and truncate
 	return truncatedSHA256(extStr)
-}
-
-// computeJA4Sa computes the first part of JA4S
-// Format: {protocol}{version}{ext_count:2d}{alpn_first}{alpn_last}
-func computeJA4Sa(data *ServerHelloData) string {
-	// Protocol: t for TCP/TLS, q for QUIC
-	protocol := "t"
-	if data.IsQUIC {
-		protocol = "q"
-	}
-
-	// TLS Version
-	version := getTLSVersionString(data.Version, data.SupportedVers)
-
-	// Extension count (without GREASE), capped at 99
-	extCount := min(countNonGreaseExtensions(data.Extensions), 99)
-
-	// ALPN first and last characters, or "00" if none/non-alphanumeric
-	alpnFirst := "0"
-	alpnLast := "0"
-	if data.ALPN != "" {
-		// Check if first character is alphanumeric
-		first := data.ALPN[0]
-		if (first >= 'a' && first <= 'z') || (first >= 'A' && first <= 'Z') || (first >= '0' && first <= '9') {
-			alpnFirst = string(first)
-			last := data.ALPN[len(data.ALPN)-1]
-			alpnLast = string(last)
-		} else {
-			alpnFirst = "9"
-			alpnLast = "9"
-		}
-	}
-
-	return fmt.Sprintf("%s%s%02d%s%s", protocol, version, extCount, alpnFirst, alpnLast)
-}
-
-// computeJA4Sc computes the third part of JA4S
-// Truncated SHA256 hash of extensions (SNI and ALPN filtered, NOT sorted per spec)
-func computeJA4Sc(extensions []uint16) string {
-	// Filter SNI (0x0000) and ALPN (0x0010) - but NOT GREASE per go-ja4 implementation
-	var filtered []uint16
-	for _, ext := range extensions {
-		if ext != ExtensionSNI && ext != ExtensionALPN {
-			filtered = append(filtered, ext)
-		}
-	}
-
-	// Convert to hex strings (NOT sorted for JA4S)
-	var hexStrs []string
-	for _, ext := range filtered {
-		hexStrs = append(hexStrs, fmt.Sprintf("%04x", ext))
-	}
-
-	if len(hexStrs) == 0 {
-		return "000000000000"
-	}
-
-	return truncatedSHA256(strings.Join(hexStrs, ","))
 }
 
 // getTLSVersionString returns the JA4 version string
@@ -367,19 +276,6 @@ func ValidateJA4(fingerprint string) bool {
 	}
 	// JA4_a should be 10 chars, JA4_b and JA4_c should be 12 chars each
 	return len(parts[0]) == 10 && len(parts[1]) == 12 && len(parts[2]) == 12
-}
-
-// ValidateJA4S checks if a JA4S fingerprint has the correct format
-// Format: {ja4s_a}_{ja4s_b}_{ja4s_c}
-func ValidateJA4S(fingerprint string) bool {
-	parts := strings.Split(fingerprint, "_")
-	if len(parts) != 3 {
-		return false
-	}
-	// JA4S_a: 7 chars (protocol + version + ext_count + alpn)
-	// JA4S_b: 4 chars (cipher hex)
-	// JA4S_c: 12 chars (truncated hash)
-	return len(parts[0]) == 7 && len(parts[1]) == 4 && len(parts[2]) == 12
 }
 
 // JA4Raw returns the raw (unhashed) JA4 fingerprint for debugging

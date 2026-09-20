@@ -37,7 +37,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/decoder/core"
-	"github.com/dreadl0ck/netcap/internal/ja4"
+	ja4 "github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -348,13 +348,13 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32) {
 		maxPathLen = 0
 	}
 
-	// Compute JA4X fingerprint
-	certFPData := ja4.ExtractCertificateData(cert)
-	ja4xFingerprint := ja4.ComputeJA4X(certFPData)
-	ja4xRaw := ja4.ComputeJA4XRaw(certFPData)
-
-	// Lookup JA4X fingerprint in database for enrichment
-	ja4xDescription := resolvers.LookupJA4X(ja4xFingerprint)
+	var ja4xFingerprint, ja4xRaw, ja4xDescription string
+	if ja4.Enabled {
+		certFPData := ja4.ExtractCertificateData(cert)
+		ja4xFingerprint = ja4.ComputeJA4X(certFPData)
+		ja4xRaw = ja4.ComputeJA4XRaw(certFPData)
+		ja4xDescription = resolvers.LookupJA4X(ja4xFingerprint)
+	}
 
 	tlsCert := &types.TLSCertificate{
 		Timestamp:           h.conversation.FirstClientPacket.UnixNano(),

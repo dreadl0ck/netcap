@@ -330,8 +330,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.BoolFlag{
 			Name:    "ja4DB",
-			Value:   true,
-			Usage:   "use JA4+ database for TLS fingerprint lookups",
+			Usage:   "use a locally supplied JA4+ database (requires a ja4plus build)",
 			Sources: cli.EnvVars("NC_JA4DB"),
 		},
 		&cli.BoolFlag{
