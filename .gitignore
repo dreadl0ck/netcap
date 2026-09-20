@@ -16,6 +16,8 @@ zeus/data.yml
 # negations near the bottom of this file (after the broad *.pcap /
 # *.pcapng patterns, otherwise they cannot win).
 tests/*
+!tests/e2e/
+!tests/e2e/**
 .idea
 types/python
 types/java
