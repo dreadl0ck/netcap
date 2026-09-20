@@ -70,8 +70,10 @@ WORKDIR /home/netcap
 
 # Copy binary and DPI libraries from builder
 COPY --from=builder /netcap/bin/netcap /usr/local/bin/net
-COPY --from=builder /usr/lib/* /usr/lib/
+COPY --from=builder /netcap/LICENSE /usr/share/licenses/netcap/LICENSE
+COPY --from=builder /netcap/legal /usr/share/licenses/netcap/
 COPY --from=builder /usr/local/lib/* /usr/local/lib/
+COPY --from=builder /usr/lib/libndpi.so* /usr/lib/
 
 # Run ldconfig to register the shared libraries and set up the dynamic linker cache
 RUN ldconfig /usr/lib /usr/local/lib || true
@@ -107,4 +109,3 @@ VOLUME ["/data"]
 
 # Use entrypoint script to bootstrap databases
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-

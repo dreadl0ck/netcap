@@ -27,7 +27,7 @@ RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep
         -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
         -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
         -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
-        -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1 \
+        -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-2 \
         -X github.com/dreadl0ck/netcap/dpi.GoDPIVersion=${GO_DPI_VERSION}" \
     -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
 
@@ -51,7 +51,8 @@ RUN ARCH=$(uname -m) && \
 WORKDIR /netcap
 
 COPY --from=builder /netcap/bin/* /usr/bin/
-COPY --from=builder /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
+COPY --from=builder /netcap/LICENSE /usr/share/licenses/netcap/LICENSE
+COPY --from=builder /netcap/legal /usr/share/licenses/netcap/
 COPY --from=builder /usr/local/lib/* /usr/lib/
 COPY --from=builder /usr/lib/libndpi* /usr/lib/
 

@@ -1,0 +1,109 @@
+NETCAP THIRD-PARTY NOTICES
+
+This distribution includes software and data under the licenses described here,
+in THIRD_PARTY_LICENSES.txt, and in THIRD_PARTY_RUST_LICENSES.txt. Netcap itself
+is licensed under GPL-3.0; see ../LICENSE.
+
+Corresponding source for Netcap
+-------------------------------
+The complete corresponding source for a release is available at no charge from
+the matching tag at:
+
+  https://github.com/dreadl0ck/netcap/releases
+  https://github.com/dreadl0ck/netcap/tags
+
+The release tag and `net --version` identify the distributed version. Build and
+installation scripts are included in that source tree.
+
+Copied Go source
+----------------
+Files in reassembly/ contain code from github.com/gopacket/gopacket, copyright
+Google, Inc. and Andreas Krennmair, under BSD-3-Clause. Files in
+decoder/stream/ssh contain code from golang.org/x/crypto, copyright The Go
+Authors, under BSD-3-Clause. Their complete license texts and notices are
+included in THIRD_PARTY_LICENSES.txt through the production dependency scan.
+
+Embedded web application
+------------------------
+The service-mode binary embeds its web application. Its runtime dependencies
+and exact license texts are listed in THIRD_PARTY_LICENSES.txt. This includes
+MIT, BSD-3-Clause, Apache-2.0, ISC, 0BSD, CC0-1.0, and OFL-1.1 components.
+JetBrains Mono and Space Grotesk font files are redistributed under OFL-1.1.
+
+MPL-covered Go dependency
+-------------------------
+All Netcap binary variants include the unmodified github.com/hashicorp/go-uuid
+v1.0.3 package under MPL-2.0. Its full license is reproduced in
+THIRD_PARTY_LICENSES.txt. The exact covered source files are available at no
+charge in source-code form from:
+
+  https://github.com/hashicorp/go-uuid/tree/v1.0.3
+  https://proxy.golang.org/github.com/hashicorp/go-uuid/@v/v1.0.3.zip
+
+Google Magika CLI 1.0.2
+-----------------------
+The Alpine and Ubuntu command-line container images include the unmodified
+Magika executable under Apache-2.0. Its statically linked Rust dependencies,
+including colored 3.0.0 under MPL-2.0, are listed with license texts in
+THIRD_PARTY_RUST_LICENSES.txt. The covered colored source is included in the
+release third-party source archive and is also available from crates.io.
+
+  Source: https://github.com/google/magika/archive/refs/tags/cli/v1.0.2.tar.gz
+  License: Apache-2.0, reproduced in THIRD_PARTY_LICENSES.txt
+
+YARA-X native library 1.14.0
+---------------------------
+DPI builder images and service images include the unmodified YARA-X C API
+library under BSD-3-Clause. Its statically linked Rust dependencies and license
+texts are listed in THIRD_PARTY_RUST_LICENSES.txt. The YARA-X license is also
+reproduced in THIRD_PARTY_LICENSES.txt under github.com/VirusTotal/yara-x/go
+v1.14.0.
+
+  Source: https://github.com/VirusTotal/yara-x/archive/refs/tags/v1.14.0.tar.gz
+
+Native DPI libraries
+--------------------
+DPI-enabled Linux images dynamically link and redistribute the following
+LGPL-3.0-or-later shared libraries. Users may replace them with compatible
+modified versions. Reverse engineering for debugging such modifications is not
+restricted. GPL-3.0 is in ../LICENSE and LGPL-3.0 is in
+licenses/LGPL-3.0.txt.
+
+Alpine DPI builds:
+
+  nDPI 4.14
+  https://github.com/ntop/nDPI/archive/refs/tags/4.14.tar.gz
+
+  libprotoident 2.0.15-1
+  https://github.com/LibtraceTeam/libprotoident/archive/refs/tags/2.0.15-1.tar.gz
+
+  libtrace 4.0.17-1
+  https://github.com/LibtraceTeam/libtrace/archive/refs/tags/4.0.17-1.tar.gz
+
+  libflowmanager 3.0.0
+  https://github.com/LibtraceTeam/libflowmanager/archive/refs/tags/3.0.0.tar.gz
+
+  wandio 4.2.3-1
+  https://github.com/LibtraceTeam/wandio/archive/refs/tags/4.2.3-1.tar.gz
+
+Ubuntu DPI builds:
+
+  nDPI 4.14
+  https://github.com/ntop/nDPI/archive/refs/tags/4.14.tar.gz
+
+  libprotoident 2.0.15-2
+  https://github.com/LibtraceTeam/libprotoident/archive/refs/tags/2.0.15-2.tar.gz
+
+  libtrace 4.0.34-1
+  https://github.com/LibtraceTeam/libtrace/archive/refs/tags/4.0.34-1.tar.gz
+
+  libflowmanager 3.0.0-3
+  https://github.com/LibtraceTeam/libflowmanager/archive/refs/tags/3.0.0-3.tar.gz
+
+  wandio 4.2.7-1
+  https://github.com/LibtraceTeam/wandio/archive/refs/tags/4.2.7-1.tar.gz
+
+The URLs above provide the exact corresponding library source, including build
+scripts, at no charge. Netcap does not modify these libraries. Release pages
+also provide a netcap-third-party-source archive containing these exact source
+archives so corresponding source remains available with the binaries.

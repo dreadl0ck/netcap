@@ -58,6 +58,8 @@ WORKDIR /home/netcap
 
 # Copy binary from builder
 COPY --from=builder /build/netcap /usr/local/bin/net
+COPY --from=builder /build/LICENSE /usr/share/licenses/netcap/LICENSE
+COPY --from=builder /build/legal /usr/share/licenses/netcap/
 
 # Create data directories
 RUN mkdir -p /data/netcap-dbs-server && \
@@ -82,4 +84,3 @@ VOLUME ["/data"]
 
 # Run the database server
 CMD ["net", "util", "-serve-dbs", "-serve-addr", ":8080", "-verbose"]
-

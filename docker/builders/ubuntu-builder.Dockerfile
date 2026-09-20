@@ -81,6 +81,9 @@ RUN test -f /usr/local/include/yara_x.h || (echo "yara_x.h missing" && exit 1) &
     test -f /usr/local/lib/libyara_x_capi.so || (echo "libyara_x_capi.so missing" && exit 1) && \
     test -f /usr/local/lib/libyara_x_capi.a || (echo "libyara_x_capi.a missing" && exit 1)
 
+COPY LICENSE /usr/share/licenses/netcap/LICENSE
+COPY legal /usr/share/licenses/netcap/
+
 
 # Set working directory
 WORKDIR /workspace

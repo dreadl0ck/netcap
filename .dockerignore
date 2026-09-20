@@ -44,6 +44,7 @@ __pycache__
 bin/
 dist/
 dist-linux/
+dist-license-sources/
 *.net
 cover.out
 
@@ -54,6 +55,8 @@ AUTHORS
 LICENSE
 CLAUDE.md
 *.md
+!LICENSE
+!legal/**
 
 # Profiling and debugging
 FlameGraph/

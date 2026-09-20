@@ -1,0 +1,13 @@
+{{#each licenses}}
+================================================================================
+License: {{{name}}} ({{id}})
+Used by:
+{{#each used_by}}
+  {{crate.name}} {{crate.version}}
+  Source: {{#if crate.repository}}{{crate.repository}}{{else}}https://crates.io/crates/{{crate.name}}/{{crate.version}}{{/if}}
+{{/each}}
+
+--- License text ---
+{{{text}}}
+
+{{/each}}

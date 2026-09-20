@@ -93,6 +93,9 @@ RUN test -f /usr/local/include/yara_x.h || (echo "yara_x.h missing" && exit 1) &
     test -f /usr/local/lib/libyara_x_capi.so || (echo "libyara_x_capi.so missing" && exit 1) && \
     test -f /usr/local/lib/libyara_x_capi.a || (echo "libyara_x_capi.a missing" && exit 1)
 
+COPY LICENSE /usr/share/licenses/netcap/LICENSE
+COPY legal /usr/share/licenses/netcap/
+
 # Create pkg-config file for yara-x
 RUN mkdir -p /usr/local/lib/pkgconfig && \
     echo 'prefix=/usr/local' > /usr/local/lib/pkgconfig/yara_x_capi.pc && \
@@ -113,4 +116,3 @@ RUN go version
 
 # This image is ready to accept source code and build
 CMD ["/bin/sh"]
-

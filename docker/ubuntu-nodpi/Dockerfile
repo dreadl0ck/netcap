@@ -5,7 +5,7 @@ WORKDIR /netcap
 COPY . .
 
 ENV VERSION XXX
-ARG TAGS="-tags noyara"
+ARG TAGS="-tags nodpi,noyara"
 RUN echo "tags: $TAGS"
 
 # Extract gopacket version from go.mod
@@ -37,6 +37,6 @@ RUN ARCH=$(uname -m) && \
 
 WORKDIR /netcap
 COPY --from=builder /netcap/bin/* /usr/bin/
-#COPY --from=builder /usr/lib/* /usr/lib/
-COPY --from=builder /usr/local/lib/* /usr/lib/
+COPY --from=builder /netcap/LICENSE /usr/share/licenses/netcap/LICENSE
+COPY --from=builder /netcap/legal /usr/share/licenses/netcap/
 CMD ["/bin/sh"]

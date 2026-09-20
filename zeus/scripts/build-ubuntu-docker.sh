@@ -65,6 +65,7 @@ docker cp $CONTAINER_ID:/usr/bin/net dist-linux/${ARCHIVE}/net
 docker rm $CONTAINER_ID
 
 cp LICENSE dist-linux/${ARCHIVE}
+cp -R legal dist-linux/${ARCHIVE}/
 cp README.md dist-linux/${ARCHIVE}
 mkdir -p dist-linux/${ARCHIVE}/docs
 cp "docs/NETCAP Software Report.pdf" dist-linux/${ARCHIVE}/docs/
@@ -80,6 +81,7 @@ shasum -a 256 ${ARCHIVE}.tar.gz >> checksums.txt
 
 # remove license, readme and docs from binary folder
 rm ${ARCHIVE}/LICENSE
+rm -rf ${ARCHIVE}/legal
 rm ${ARCHIVE}/README.md
 rm -rf ${ARCHIVE}/docs
 

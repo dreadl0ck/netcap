@@ -44,6 +44,7 @@ RUN ARCH=$(uname -m) && \
 WORKDIR /
 
 COPY --from=builder /netcap/bin/* /usr/bin/
-COPY --from=builder /usr/lib/* /usr/lib/
+COPY --from=builder /netcap/LICENSE /usr/share/licenses/netcap/LICENSE
+COPY --from=builder /netcap/legal /usr/share/licenses/netcap/
 COPY --from=builder /usr/local/lib/* /usr/local/lib/
-
+COPY --from=builder /usr/lib/libndpi.so* /usr/lib/

@@ -32,10 +32,13 @@ COPY cmd/capture/webui/frontend/package.json \
      cmd/capture/webui/frontend/pnpm-lock.yaml \
      cmd/capture/webui/frontend/pnpm-workspace.yaml ./
 COPY cmd/capture/webui/frontend/packages/netcap-ui/package.json packages/netcap-ui/
+COPY LICENSE /netcap-legal/LICENSE
+COPY legal/ /netcap-legal/legal/
 
 RUN pnpm install --frozen-lockfile
 
 COPY cmd/capture/webui/frontend/ ./
+ENV NETCAP_ROOT=/netcap-legal
 
 # Builds packages/netcap-ui with tsup, then the app with vite.
 RUN pnpm build && test -f dist/index.html
@@ -116,14 +119,16 @@ WORKDIR /home/netcap
 
 # Copy binary and DPI libraries from builder
 COPY --from=builder /netcap/bin/netcap /usr/local/bin/net
-COPY --from=builder /usr/lib/* /usr/lib/
+COPY --from=builder /netcap/LICENSE /usr/share/licenses/netcap/LICENSE
+COPY --from=builder /netcap/legal /usr/share/licenses/netcap/
 COPY --from=builder /usr/local/lib/* /usr/local/lib/
+COPY --from=builder /usr/lib/libndpi.so* /usr/lib/
 
 # Run ldconfig to register the shared libraries and set up the dynamic linker cache
 RUN ldconfig /usr/lib /usr/local/lib || true
 
 # Set LD_LIBRARY_PATH to ensure runtime linker finds nDPI and other DPI libraries
-ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/lib
 
 # Copy entrypoint script
 COPY docker/service/entrypoint.sh /usr/local/bin/entrypoint.sh
@@ -153,4 +158,3 @@ VOLUME ["/data"]
 
 # Use entrypoint script to bootstrap databases
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-

@@ -488,8 +488,10 @@ commands:
             - version-bump
             - check-version
             - gen-proto-release
+            - licenses
             - build-linux
             - build-linux-nodpi
+            - package-license-sources
             - run-goreleaser
             - update-release-assets
         exec: echo "release v$VERSION done"
@@ -503,18 +505,12 @@ commands:
             for f in dist-linux/*.tar.gz; do
                 gh release upload --clobber v$VERSION $f
             done
+            for f in dist-license-sources/*.tar.gz; do
+                gh release upload --clobber v$VERSION $f
+                shasum -a 256 "$f" >> dist-linux/checksums.txt
+            done
 
             cd dist
-            # add nodpi darwin build - the build with dpi libs will be used untouched
-            # Note: goreleaser builds for darwin/arm64 only
-            if [ -d "netcap_macOS_nodpi_darwin_arm64" ]; then
-                tar -czvf netcap-nodpi-v${VERSION}-darwin-arm64.tar.gz netcap_macOS_nodpi_darwin_arm64
-                # upload nodpi darwin build to release
-                gh release upload --clobber v$VERSION netcap-nodpi-v${VERSION}-darwin-arm64.tar.gz
-                # update checksums file with hashes for darwin build
-                shasum -a 256 netcap-nodpi-v${VERSION}-darwin-arm64.tar.gz >> ../dist-linux/checksums.txt
-            fi
-            
             # Add checksums for the regular darwin build if it exists
             if [ -f "netcap-v${VERSION}-darwin-arm64.tar.gz" ]; then
                 shasum -a 256 netcap-v${VERSION}-darwin-arm64.tar.gz >> ../dist-linux/checksums.txt
@@ -534,6 +530,7 @@ commands:
             - gen-version
             - version-bump-test
             - gen-proto-release
+            - licenses
         exec: goreleaser check && goreleaser release --clean --skip-publish --skip-validate; zeus version-bump-test-undo
 
     # run a test release
@@ -543,6 +540,7 @@ commands:
             - gen-version
             - version-bump-test
             - gen-proto-release
+            - licenses
         exec: goreleaser check && goreleaser release --clean --skip-publish --skip-validate --debug; zeus version-bump-test-undo
 
     release-test-full:
@@ -1026,30 +1024,19 @@ commands:
         exec: gosec ./...
 
     licenses:
-        description: analyze frontend and backend dependencies for licenses
+        description: verify licenses for all distributed build variants
         help: |
-            Runs license analysis tools on both frontend (npm) and backend (Go) dependencies.
-            
-            Frontend analysis uses license-checker (npm package).
-            Backend analysis uses go-licenses (Google's license checker for Go).
-            
-            The command will:
-              - Install missing tools automatically (go-licenses, license-checker)
-              - Show a summary of all licenses in use
-              - Highlight potentially problematic licenses (GPL, LGPL, AGPL, MPL, etc.)
-            
-            Requirements:
-              - Node.js and pnpm (for frontend analysis)
-              - Go (for backend analysis)
-            
-            Examples:
-              # Run full license analysis
-              zeus licenses
+            Verifies the checked-in third-party license bundle against each
+            release Go package graph, the pnpm production dependency graph,
+            and the locked Rust graphs embedded by Magika and YARA-X. Unknown
+            licenses, missing license texts, and stale output fail.
         exec: zeus/scripts/licenses.sh
 
+    package-license-sources:
+        description: bundle exact LGPL native library sources for release
+        exec: zeus/scripts/package-license-sources.sh
+
     test:
-        dependencies:
-            - make-icons
         exec: |
             go clean -testcache && go test -v --timeout=0 ./... -coverprofile cover.out
             go tool cover -html=cover.out -o coverage.html
@@ -1057,18 +1044,12 @@ commands:
             open coverage.html
 
     test-race:
-        dependencies:
-            - make-icons
         exec: GORACE="history_size=7" go test -race ./...
 
     test-verbose:
-        dependencies:
-            - make-icons
         exec: go test -v ./...
 
     bench:
-        dependencies:
-            - make-icons
         exec: go test -v -bench=. ./...
 
     test-params:
@@ -1094,14 +1075,7 @@ commands:
         exec: |
             prototool format -w -f netcap.proto
 
-    make-icons:
-        description: generate icons for maltego integration
-        exec: |
-            go clean -testcache && go test -v -run="GenerateAuditRecordIconsSVG" -tags="icons" github.com/dreadl0ck/netcap/maltego
-
     gen-maltego-config:
-        dependencies:
-          - make-icons
         exec: go test -v -run="TestGenerateFullMaltegoConfiguration" -tags="icons" github.com/dreadl0ck/netcap/maltego
 
     open-maltego-logs:

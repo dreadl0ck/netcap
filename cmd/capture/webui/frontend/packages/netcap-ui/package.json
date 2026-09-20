@@ -45,10 +45,15 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE",
+    "licenses",
+    "THIRD_PARTY_LICENSES.txt",
+    "THIRD_PARTY_RUST_LICENSES.txt",
+    "THIRD_PARTY_NOTICES.txt"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "node ../../scripts/prepare-legal.mjs && tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"

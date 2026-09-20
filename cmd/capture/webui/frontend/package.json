@@ -6,7 +6,8 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dev": "concurrently -n ui,vite -c blue,green \"pnpm --filter @dreadl0ck/netcap-ui dev\" \"vite\"",
-    "build": "pnpm --filter @dreadl0ck/netcap-ui build && vite build",
+    "legal": "node scripts/prepare-legal.mjs",
+    "build": "pnpm legal && pnpm --filter @dreadl0ck/netcap-ui build && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
     "test": "vitest run",

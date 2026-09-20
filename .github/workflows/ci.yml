@@ -27,6 +27,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.0'
+          cache: true
+
       # netcap is a workspace: go.work uses both this module and ../go-dpi,
       # and the go.work go directive must be >= every member's. Checking the
       # sibling out at the same relative path is what makes `go build ./...`
@@ -126,3 +131,6 @@ jobs:
           # ownership and completion lifecycle are fixed.
           go test -short -race ./...
           SCRIPT
+
+      - name: Verify distributable license bundle
+        run: ./zeus/scripts/licenses.sh
