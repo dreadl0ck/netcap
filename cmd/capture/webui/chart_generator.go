@@ -228,7 +228,7 @@ func (cg *ChartGenerator) collectNumericDataMulti(outDirs []string) ([]dataPoint
 			continue
 		}
 
-		for (bucketing || len(all) < cg.maxDataPoints) {
+		for bucketing || len(all) < cg.maxDataPoints {
 			msg, err := reader.NextRecord()
 			if err == io.EOF {
 				break
@@ -1185,6 +1185,7 @@ func (cg *ChartGenerator) generateWordCloudChart(data []kvPair) io.Reader {
 				Shape:     "circle",
 			}),
 		)
+	wc.MultiSeries[0].TextStyle.Normal.Color = string(opts.FuncOpts(netcapWordCloudColor))
 
 	return renderChartWithFullHeight(wc.Render)
 }
@@ -1425,7 +1426,14 @@ func (cg *ChartGenerator) generateGraphChart(data []kvPair) io.Reader {
 	// Create categories
 	categories := make([]*opts.GraphCategory, 5)
 	for i := range 5 {
-		categories[i] = &opts.GraphCategory{Name: fmt.Sprintf("Group %d", i+1)}
+		categories[i] = &opts.GraphCategory{
+			Name: fmt.Sprintf("Group %d", i+1),
+			ItemStyle: &opts.ItemStyle{
+				Color:       netcapChartColors[i%len(netcapChartColors)],
+				BorderColor: "#38bdf8",
+				BorderWidth: 2,
+			},
+		}
 	}
 
 	// Always show labels for graph charts (they're designed to show relationships)

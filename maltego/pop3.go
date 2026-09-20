@@ -43,7 +43,7 @@ type POP3CountFunc func()
 // POP3TransformationFunc is a transformation over POP3 audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type POP3TransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, pop3 *types.POP3, min, max uint64, path string, ip string)
+type POP3TransformationFunc = transformationFunc[types.POP3]
 
 // POP3Transform applies a maltego transformation over POP3 audit records.
 func POP3Transform(count POP3CountFunc, transform POP3TransformationFunc, continueTransform bool) {

@@ -22,8 +22,12 @@ package webui
 import (
 	"compress/gzip"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
+	"log"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
@@ -97,6 +101,56 @@ func (r *AuditRecordReader) NextRecord() (proto.Message, error) {
 	}
 
 	return msg, nil
+}
+
+// ErrAuditRecordTypeMismatch indicates that a decoded record is not the requested type.
+var ErrAuditRecordTypeMismatch = errors.New("audit record type mismatch")
+
+// NextAs reads a header-selected record and asserts its type, consuming it even on mismatch.
+func (r *AuditRecordReader) NextAs[T proto.Message]() (T, error) {
+	var zero T
+	msg, err := r.NextRecord()
+	if err != nil {
+		return zero, err
+	}
+	record, ok := msg.(T)
+	if !ok {
+		return zero, fmt.Errorf("%w: got %T, want %v", ErrAuditRecordTypeMismatch, msg, reflect.TypeFor[T]())
+	}
+	return record, nil
+}
+
+func visitAuditRecords[T proto.Message](path, label string, visit func(T)) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		log.Printf("[WebUI] %s file not found: %s", label, path)
+		return nil
+	}
+
+	reader, err := NewAuditRecordReader(path)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+	if _, err := reader.ReadHeader(); err != nil {
+		return err
+	}
+
+	for {
+		record, err := reader.NextAs[T]()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			if errors.Is(err, ErrAuditRecordTypeMismatch) {
+				continue
+			}
+			// Preserve skip-on-error behavior; persistent I/O errors can repeat indefinitely.
+			log.Printf("[WebUI] Error reading %s record: %v", label, err)
+			continue
+		}
+		visit(record)
+	}
+	return nil
 }
 
 // NextAsJSON reads the next audit record and returns it as JSON

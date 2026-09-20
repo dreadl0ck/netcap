@@ -4,7 +4,7 @@
  * License: GNU General Public License v3.0
  */
 
-import { forwardRef, useEffect, useRef, useState, useMemo, type CSSProperties, type ReactNode } from 'react';
+import { forwardRef, useEffect, useState, useMemo, type CSSProperties, type ReactNode } from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -44,24 +44,6 @@ const DashboardChartTile = forwardRef<HTMLDivElement, Props>(function DashboardC
 ) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  // Debounced re-mount of iframe when the tile resizes so that go-echarts
-  // re-renders at the new dimensions.
-  useEffect(() => {
-    const node = containerRef.current;
-    if (!node) return;
-    let timer: number | undefined;
-    const ro = new ResizeObserver(() => {
-      if (timer) window.clearTimeout(timer);
-      timer = window.setTimeout(() => setRefreshKey((k) => k + 1), 250);
-    });
-    ro.observe(node);
-    return () => {
-      ro.disconnect();
-      if (timer) window.clearTimeout(timer);
-    };
-  }, []);
 
   const iframeSrc = useMemo(() => {
     const params = new URLSearchParams({
@@ -111,11 +93,7 @@ const DashboardChartTile = forwardRef<HTMLDivElement, Props>(function DashboardC
 
   return (
     <Box
-      ref={(node: HTMLDivElement | null) => {
-        containerRef.current = node;
-        if (typeof ref === 'function') ref(node);
-        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
-      }}
+      ref={ref}
       className={className}
       // Tile must fill its react-grid-layout cell entirely; Box defaults
       // collapse to content height otherwise.
@@ -134,19 +112,19 @@ const DashboardChartTile = forwardRef<HTMLDivElement, Props>(function DashboardC
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            px: 1.5,
-            py: 0.5,
+            px: 1.75,
+            py: 0.85,
             borderBottom: 1,
             borderColor: 'divider',
             cursor: editing ? 'move' : 'default',
-            backgroundColor: 'background.paper',
+            background: 'linear-gradient(90deg, rgba(59,130,246,.07), rgba(139,92,246,.025))',
           }}
         >
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Typography variant="subtitle2" noWrap title={chart.title}>
               {chart.title}
             </Typography>
-            <Typography variant="caption" color="text.secondary" noWrap>
+            <Typography variant="caption" color="text.secondary" noWrap sx={{ fontFamily: 'var(--netcap-mono)', fontSize: '.65rem' }}>
               {chart.auditType} · {chart.field} · {chart.chartType}
             </Typography>
           </Box>
@@ -199,7 +177,7 @@ const DashboardChartTile = forwardRef<HTMLDivElement, Props>(function DashboardC
               <Alert severity="error" sx={{ mb: 1 }}>
                 Failed to render chart
               </Alert>
-              <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', m: 0 }}>
+              <Typography variant="caption" component="pre" sx={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--netcap-mono)', m: 0 }}>
                 {loadError}
               </Typography>
             </Box>

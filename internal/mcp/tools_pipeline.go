@@ -284,26 +284,19 @@ func (s *Server) handleListSessions(_ context.Context, req mcplib.CallToolReques
 // collectSessions probes service mode first, falling back to local-mode
 // file enumeration. Always returns sessions in the unified shape.
 func (s *Server) collectSessions(client *NetcapClient) ([]map[string]any, string, error) {
-	if raw, err := client.Get("/api/try/sessions", nil); err == nil {
-		var resp struct {
-			Sessions []map[string]any `json:"sessions"`
+	if resp, err := client.GetAs[struct {
+		Sessions []map[string]any `json:"sessions"`
+	}]("/api/try/sessions", nil); err == nil && resp.Sessions != nil {
+		out := make([]map[string]any, 0, len(resp.Sessions))
+		for _, sess := range resp.Sessions {
+			out = append(out, unifiedSession("service", sess))
 		}
-		if jsonErr := json.Unmarshal(raw, &resp); jsonErr == nil && resp.Sessions != nil {
-			out := make([]map[string]any, 0, len(resp.Sessions))
-			for _, sess := range resp.Sessions {
-				out = append(out, unifiedSession("service", sess))
-			}
-			return out, "service", nil
-		}
+		return out, "service", nil
 	}
 
-	raw, err := client.Get("/api/files/input", nil)
+	files, err := client.GetAs[[]map[string]any]("/api/files/input", nil)
 	if err != nil {
 		return nil, "", fmt.Errorf("listing input files: %w", err)
-	}
-	var files []map[string]any
-	if jsonErr := json.Unmarshal(raw, &files); jsonErr != nil {
-		return nil, "", fmt.Errorf("decoding file list: %w", jsonErr)
 	}
 	out := make([]map[string]any, 0, len(files)+1)
 	for _, f := range files {
@@ -313,9 +306,9 @@ func (s *Server) collectSessions(client *NetcapClient) ([]map[string]any, string
 		// CLI preload not yet visible in /api/files/input — synthesise a
 		// minimal row so the LLM can still call analytical tools.
 		out = append(out, unifiedSession("local", map[string]any{
-			"path":              s.activeSession,
-			"name":              s.activeSession,
-			"isCompleted":       false,
+			"path":               s.activeSession,
+			"name":               s.activeSession,
+			"isCompleted":        false,
 			"cli_preloaded_flag": true,
 		}))
 	}

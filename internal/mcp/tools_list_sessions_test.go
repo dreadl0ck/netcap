@@ -127,6 +127,25 @@ func TestListSessionsLocalMode(t *testing.T) {
 	}
 }
 
+func TestCollectSessionsDecodeFallback(t *testing.T) {
+	for _, body := range []string{`{"sessions":`, `null`, `{}`, `{"sessions":null}`, `{"sessions":[]}`} {
+		t.Run(body, func(t *testing.T) {
+			f := &fakeWebui{tryResp: body, filesResp: `[]`}
+			ts := httptest.NewServer(f.handler(t))
+			defer ts.Close()
+			srv := mustNewServer(t, ts.URL)
+			sessions, mode, err := srv.collectSessions(NewNetcapClient(ts.URL))
+			wantMode := "local"
+			if body == `{"sessions":[]}` {
+				wantMode = "service"
+			}
+			if err != nil || mode != wantMode || sessions == nil || len(sessions) != 0 {
+				t.Fatalf("got %v, %q, %v; want non-nil empty sessions in %s mode", sessions, mode, err, wantMode)
+			}
+		})
+	}
+}
+
 func mustNewServer(t *testing.T, baseURL string) *Server {
 	t.Helper()
 	srv, err := New(Options{BaseURL: baseURL})

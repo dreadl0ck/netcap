@@ -60,6 +60,20 @@ func (c *NetcapClient) Get(path string, query url.Values) (json.RawMessage, erro
 	return c.do(req)
 }
 
+// GetAs performs Get and decodes the response, returning the zero value on error.
+func (c *NetcapClient) GetAs[T any](path string, query url.Values) (T, error) {
+	var zero T
+	raw, err := c.Get(path, query)
+	if err != nil {
+		return zero, err
+	}
+	var result T
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return zero, fmt.Errorf("decoding GET %s response: %w", path, err)
+	}
+	return result, nil
+}
+
 // PostJSON sends a JSON-encoded POST request and returns the raw response.
 func (c *NetcapClient) PostJSON(path string, body any) (json.RawMessage, error) {
 	var buf bytes.Buffer

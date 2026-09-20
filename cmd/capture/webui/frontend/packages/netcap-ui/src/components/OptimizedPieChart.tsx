@@ -48,6 +48,8 @@ interface OptimizedPieChartProps {
   onItemClick?: (params: PieChartClickParams) => void;
 }
 
+const netcapChartColors = ['#3b82f6', '#8b5cf6', '#38bdf8', '#a78bfa', '#34d399', '#fbbf24'];
+
 export default function OptimizedPieChart({ option, style, onItemClick }: OptimizedPieChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<echarts.ECharts | null>(null);
@@ -63,10 +65,15 @@ export default function OptimizedPieChart({ option, style, onItemClick }: Optimi
 
     // Initialize chart if not exists
     if (!chartInstanceRef.current) {
-      chartInstanceRef.current = echarts.init(chartRef.current);
+      chartInstanceRef.current = echarts.init(chartRef.current, 'dark');
     }
 
-    // Set option
+    chartInstanceRef.current.setOption({
+      color: netcapChartColors,
+      backgroundColor: '#050508',
+      textStyle: { color: '#f4f7fb' },
+      legend: { textStyle: { color: '#9199ad' } },
+    });
     chartInstanceRef.current.setOption(option);
 
     // Add click handler
@@ -100,6 +107,5 @@ export default function OptimizedPieChart({ option, style, onItemClick }: Optimi
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  return <div ref={chartRef} style={{ cursor: onItemClick ? 'pointer' : 'default', ...style }} />;
+  return <div ref={chartRef} style={{ backgroundColor: '#050508', cursor: onItemClick ? 'pointer' : 'default', ...style }} />;
 }
-

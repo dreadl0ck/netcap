@@ -42,7 +42,6 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/dbs"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/dpi"
 	netio "github.com/dreadl0ck/netcap/io"
@@ -453,41 +452,6 @@ func (s *Server) handleDatabaseInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("[WebUI] handleDatabaseInfo: response sent successfully")
-}
-
-// handleUpdateDatabases handles database update requests
-func (s *Server) handleUpdateDatabases(w http.ResponseWriter, r *http.Request) {
-	log.Printf("[WebUI] handleUpdateDatabases called: method=%s", r.Method)
-
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Start database download in background
-	go func() {
-		log.Printf("[WebUI] Starting database download...")
-		// Download with force=true to update even if we have the current version
-		if err := dbs.DownloadDBs("", true); err != nil {
-			log.Printf("[WebUI] Database download failed: %v", err)
-		} else {
-			log.Printf("[WebUI] Database download completed successfully")
-		}
-	}()
-
-	response := map[string]any{
-		"success": true,
-		"message": "Database update started in background. Check logs for progress.",
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("[WebUI] handleUpdateDatabases: failed to encode response: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("[WebUI] handleUpdateDatabases: response sent successfully")
 }
 
 // getConfigRootPath returns the netcap config root path
@@ -2468,21 +2432,21 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 
 	// Read File audit records to get hash and protocol information
 	type fileAuditInfo struct {
-		Name              string  // Original filename from network traffic
-		Hash              string
-		Protocol          string
-		Entropy           float64
-		TypeMismatch      bool
-		IsPEExecutable    bool
-		IsELFExecutable   bool
-		IsMachO           bool
-		HasEmbeddedScript bool
+		Name                string // Original filename from network traffic
+		Hash                string
+		Protocol            string
+		Entropy             float64
+		TypeMismatch        bool
+		IsPEExecutable      bool
+		IsELFExecutable     bool
+		IsMachO             bool
+		HasEmbeddedScript   bool
 		IsPasswordProtected bool
-		IsKnownMalware    bool
-		ThreatName        string
-		TrueFileType      string
-		ContentType       string
-		YaraMatches       []string
+		IsKnownMalware      bool
+		ThreatName          string
+		TrueFileType        string
+		ContentType         string
+		YaraMatches         []string
 		// AI-based file type classification (Magika)
 		MagikaLabel       string
 		MagikaMimeType    string
@@ -2510,26 +2474,26 @@ func (s *Server) handleExtractedFiles(w http.ResponseWriter, r *http.Request) {
 				if file.Location != "" {
 					filename := filepath.Base(file.Location)
 					fileInfoMap[filename] = fileAuditInfo{
-						Name:              file.Name,
-						Hash:              file.Hash,
-						Protocol:          file.Protocol,
-						Entropy:           file.Entropy,
-						TypeMismatch:      file.TypeMismatch,
-						IsPEExecutable:    file.IsPEExecutable,
-						IsELFExecutable:   file.IsELFExecutable,
-						IsMachO:           file.IsMachO,
-						HasEmbeddedScript: file.HasEmbeddedScript,
+						Name:                file.Name,
+						Hash:                file.Hash,
+						Protocol:            file.Protocol,
+						Entropy:             file.Entropy,
+						TypeMismatch:        file.TypeMismatch,
+						IsPEExecutable:      file.IsPEExecutable,
+						IsELFExecutable:     file.IsELFExecutable,
+						IsMachO:             file.IsMachO,
+						HasEmbeddedScript:   file.HasEmbeddedScript,
 						IsPasswordProtected: file.IsPasswordProtected,
-						IsKnownMalware:    file.IsKnownMalware,
-						ThreatName:        file.ThreatName,
-						TrueFileType:      file.TrueFileType,
-						ContentType:       file.ContentType,
-						YaraMatches:       file.YaraMatches,
-						MagikaLabel:       file.MagikaLabel,
-						MagikaMimeType:    file.MagikaMimeType,
-						MagikaGroup:       file.MagikaGroup,
-						MagikaDescription: file.MagikaDescription,
-						MagikaIsText:      file.MagikaIsText,
+						IsKnownMalware:      file.IsKnownMalware,
+						ThreatName:          file.ThreatName,
+						TrueFileType:        file.TrueFileType,
+						ContentType:         file.ContentType,
+						YaraMatches:         file.YaraMatches,
+						MagikaLabel:         file.MagikaLabel,
+						MagikaMimeType:      file.MagikaMimeType,
+						MagikaGroup:         file.MagikaGroup,
+						MagikaDescription:   file.MagikaDescription,
+						MagikaIsText:        file.MagikaIsText,
 					}
 				}
 			}
@@ -3874,7 +3838,7 @@ type MenuCountsResponse struct {
 	ConnectionsCount     int64 `json:"connectionsCount"`
 	HTTPCount            int64 `json:"httpCount"`
 	CertificatesCount    int64 `json:"certificatesCount"`
-	SecretCount     int64 `json:"secretCount"`
+	SecretCount          int64 `json:"secretCount"`
 	DomainsCount         int64 `json:"domainsCount"`
 	FingerprintsCount    int64 `json:"fingerprintsCount"`
 	SoftwareCount        int64 `json:"softwareCount"`

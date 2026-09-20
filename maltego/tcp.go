@@ -43,7 +43,7 @@ type TCPCountFunc func()
 // TCPTransformationFunc is a transformation over TCP audit records.
 //
 //goland:noinspection GoUnnecessarilyExportedIdentifiers
-type TCPTransformationFunc = func(lt maltego.LocalTransform, trx *maltego.Transform, tcp *types.TCP, min, max uint64, path string, ip string)
+type TCPTransformationFunc = transformationFunc[types.TCP]
 
 // TCPTransform applies a maltego transformation over TCP audit records.
 func TCPTransform(count TCPCountFunc, transform TCPTransformationFunc, continueTransform bool) {

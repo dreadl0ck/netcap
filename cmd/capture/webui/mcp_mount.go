@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	netcapmcp "github.com/dreadl0ck/netcap/internal/mcp"
 )
@@ -55,7 +56,13 @@ func (s *Server) mountMCP(mux *http.ServeMux, loopbackBase string) {
 	// Streamable HTTP exposes both POST and GET on /mcp (SSE for server
 	// notifications). Mount both the bare path and the trailing-slash
 	// variant so the transport's internal routing works.
-	handler := srv.HTTPHandler()
+	transport := srv.HTTPHandler()
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Capture analysis and rule operations can legitimately run longer than
+		// the web UI's default write timeout.
+		_ = http.NewResponseController(w).SetWriteDeadline(time.Time{})
+		transport.ServeHTTP(w, r)
+	})
 	mux.Handle("/mcp", handler)
 	mux.Handle("/mcp/", handler)
 
