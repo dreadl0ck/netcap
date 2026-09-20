@@ -1,155 +1,127 @@
-linters-settings:
-  #depguard:
-  #list-type: blacklist
-  #packages:
-  # logging is allowed only by logutils.Log, logrus
-  # is allowed to use only in logutils package
-  #- github.com/sirupsen/logrus
-  #packages-with-error-message:
-  #  - github.com/sirupsen/logrus: "logging is allowed only by logutils.Log"
-  dupl:
-    threshold: 150
-  exhaustive:
-    default-signifies-exhaustive: false
-  funlen:
-    lines: 125
-    statements: 60
-  goconst:
-    min-len: 2
-    min-occurrences: 2
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
-      - performance
-      - style
-    disabled-checks:
-      - dupImport # https://github.com/go-critic/go-critic/issues/845
-      - sloppyReassign
-      #- ifElseChain
-      #- octalLiteral
-      #- whyNoLint
-      #- wrapperFunc
-  gocyclo:
-    min-complexity: 20
-  goimports:
-    local-prefixes: github.com/dreadl0ck/netcap
-  golint:
-    min-confidence: 0
-  gomnd:
-    settings:
-      mnd:
-        # don't include the "operation" and "assign"
-        checks:
-          - argument
-          - case
-          - condition
-          - return
-  govet:
-    check-shadowing: true
-    settings:
-      printf:
-        funcs:
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
-          - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
-  lll:
-    line-length: 300
-  maligned:
-    suggest-new: true
-  misspell:
-    locale: US
-  nolintlint:
-    allow-leading-space: true # don't require machine-readable nolint directives (i.e. with no leading space)
-    allow-unused: false # report any unused nolint directives
-    require-explanation: false # don't require an explanation for nolint directives
-    require-specific: false # don't require nolint directives to be specific about which linter is being skipped
+version: "2"
+run:
+  issues-exit-code: 0
+  tests: false
+  allow-parallel-runners: true
 linters:
-  # please, do not use `enable-all`: it's deprecated and will be removed soon.
-  # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
   enable:
+    - asciicheck
     - bodyclose
     - depguard
     - dogsled
-    - errcheck
+    - dupl
+    - err113
+    - exhaustive
+    - funlen
     - gochecknoinits
+    - gocognit
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
-    - goimports
-    - golint
-    - goprintffuncname
-    - gosec
-    - gosimple
-    - govet
-    - ineffassign
-    - interfacer
-    - misspell
-    - nakedret
-    - nolintlint
-    - rowserrcheck
-    - scopelint
-    - staticcheck
-    - structcheck
-    - stylecheck
-    - typecheck
-    - unconvert
-    - unparam
-    - varcheck
-    - asciicheck
     - godot
     - godox
-    - goerr113
-    - maligned
-    - prealloc
-    - wsl
-    #- gochecknoglobals
-    - funlen
-    #- gomnd
-    - lll
-    - deadcode
-    - unused
-    - testpackage
-    - nestif
-    - whitespace
-    - gocognit
-    - dupl
-    - exhaustive
-    - exportloopref
-    - gci
     - goheader
-    - gofumpt
     - gomodguard
+    - goprintffuncname
+    - gosec
+    - lll
+    - misspell
+    - nakedret
+    - nestif
     - nlreturn
     - noctx
+    - nolintlint
+    - prealloc
+    - rowserrcheck
     - sqlclosecheck
-issues:
-  # Excluding configuration per-path, per-linter, per-text and per-source
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - gomnd
-    # https://github.com/go-critic/go-critic/issues/926
-    - linters:
-        - gocritic
-      text: "unnecessaryDefer:"
-run:
-  issues-exit-code: 0 # TODO: remove for production
-  tests: false # TODO: remove for production
-  timeout: 10m
-  skip-dirs-use-default: false
-  skip-dirs:
-    - (^|/)sshx($|/) # TODO
-    - (^|/)tls($|/) # TODO
-    - test/testdata_etc
-  allow-parallel-runners: true
-
-# golangci.com configuration
-# https://github.com/golangci/golangci/wiki/Configuration
-#service:
-  #golangci-lint-version: 1.23.x # use the fixed version to not introduce new linters unexpectedly
-  #prepare:
-  #  - echo "here I can run custom commands, but no preparation needed for this repo"
+    - staticcheck
+    - testpackage
+    - unconvert
+    - unparam
+    - whitespace
+    - wsl_v5
+  settings:
+    dupl:
+      threshold: 150
+    exhaustive:
+      default-signifies-exhaustive: false
+    funlen:
+      lines: 125
+      statements: 60
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+    gocritic:
+      disabled-checks:
+        - dupImport
+        - sloppyReassign
+      enabled-tags:
+        - diagnostic
+        - experimental
+        - opinionated
+        - performance
+        - style
+    gocyclo:
+      min-complexity: 20
+    govet:
+      enable:
+        - shadow
+      settings:
+        printf:
+          funcs:
+            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Infof
+            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Warnf
+            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Errorf
+            - (github.com/golangci/golangci-lint/pkg/logutils.Log).Fatalf
+    lll:
+      line-length: 300
+    misspell:
+      locale: US
+    nolintlint:
+      require-explanation: false
+      require-specific: false
+      allow-unused: false
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - mnd
+        path: _test\.go
+      - linters:
+          - gocritic
+        text: 'unnecessaryDefer:'
+    paths:
+      - (^|/)sshx($|/)
+      - (^|/)tls($|/)
+      - test/testdata_etc
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/dreadl0ck/netcap
+  exclusions:
+    generated: lax
+    paths:
+      - (^|/)sshx($|/)
+      - (^|/)tls($|/)
+      - test/testdata_etc
+      - third_party$
+      - builtin$
+      - examples$
