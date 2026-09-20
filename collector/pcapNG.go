@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sync/atomic"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -158,19 +157,9 @@ func (c *Collector) CollectPcapNG(path string) error {
 			return errors.Wrap(err, errReadingPacketData+" file: "+path)
 		}
 
-		// increment atomic packet counter
-		atomic.AddInt64(&c.current, 1)
-
-		// must be locked, otherwise a race occurs when sending a SIGINT
-		//  and triggering wg.Wait() in another goroutine...
-		c.statMutex.Lock()
-
-		// increment wait group for packet processing
-		c.wg.Add(1)
-
-		c.statMutex.Unlock()
-
-		c.handleRawPacketData(data, &ci)
+		if !c.handleRawPacketData(data, &ci) {
+			break
+		}
 	}
 
 	// Stop progress reporting

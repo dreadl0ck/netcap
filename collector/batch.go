@@ -63,10 +63,10 @@ func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Hand
 	// read packets in background routine
 	go func() {
 		for p := range ps.Packets() {
+			if !c.handlePacket(p) {
+				return
+			}
 			c.printProgressLive()
-
-			// TODO: avoid duplicate alloc
-			c.handlePacket(p)
 		}
 	}()
 

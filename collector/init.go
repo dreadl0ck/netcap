@@ -43,6 +43,10 @@ var errAborted = errors.New("operation aborted by user")
 // Init sets up the collector and starts the configured number of workers
 // must be called prior to usage of the collector instance.
 func (c *Collector) Init() (err error) {
+	c.statMutex.Lock()
+	c.shutdown = false
+	c.statMutex.Unlock()
+
 	// Catch attempts to set the timeout to 0, this is explicitly not recommended.
 	// From the gopacket docs:
 	//   This means that if you only capture one packet,
@@ -97,7 +101,10 @@ func (c *Collector) Init() (err error) {
 	}
 
 	// start workers
+	c.dispatchMutex.Lock()
 	c.workers = c.initWorkers()
+	c.acceptingPackets = true
+	c.dispatchMutex.Unlock()
 	c.log.Info("spawned workers", zap.Int("total", c.config.Workers))
 
 	// create full output directory path if set
