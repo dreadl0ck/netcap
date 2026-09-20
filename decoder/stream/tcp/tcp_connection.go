@@ -44,7 +44,6 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/decoder/stream/udp"
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
-	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/utils"
 )
@@ -697,31 +696,13 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 	}
 	decoderconfig.UnlockInstance()
 
-	// wait for stream reassembly to finish
-	if decoderconfig.Instance.WaitForConnections || wait {
+	flushStreams := decoderconfig.Instance.WaitForConnections || wait
+	StreamFactory.Lock()
+	numTotal := len(StreamFactory.streamReaders)
+	StreamFactory.Unlock()
 
-		reassemblyLog.Info("waiting for last streams to finish processing...")
-
-		// wait for remaining connections to finish processing
-		// will wait forever if there are streams that are never shutdown via FIN/RST
-		select {
-		case <-waitForConns():
-		case <-time.After(defaults.ReassemblyTimeout):
-			if !decoderconfig.Instance.Quiet {
-				reassemblyLog.Info(" timeout after", zap.Duration("reassembly_timeout", defaults.ReassemblyTimeout))
-			}
-		}
-
-		StreamFactory.Lock()
-		numTotal := len(StreamFactory.streamReaders)
-		StreamFactory.Unlock()
-
-		if !decoderconfig.Instance.Quiet && numTotal > 1 {
-			fmt.Println("\nprocessing last TCP streams")
-		}
-
+	if flushStreams {
 		// flush assemblers
-		// must be done after waiting for connections or there might be data loss
 		for i, a := range assemblers {
 			reassemblyLog.Info("flushing tcp assembler",
 				zap.Int("current", i+1),
@@ -734,6 +715,14 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 			} else {
 				reassemblyLog.Info("assembler flush", zap.Int("closed", a.FlushAll()))
 			}
+		}
+	}
+
+	closeStreamReaderChannelsAndWait()
+
+	if flushStreams {
+		if !decoderconfig.Instance.Quiet && numTotal > 1 {
+			fmt.Println("\nprocessing last TCP streams")
 		}
 
 		startFlush := time.Now()
@@ -838,19 +827,6 @@ func CleanupReassembly(wait bool, assemblers []*reassembly.Assembler) {
 		streamutils.Stats.Unlock()
 		errorsMapMutex.Unlock()
 	}
-}
-
-func waitForConns() chan struct{} {
-	out := make(chan struct{}, 1) // Buffered channel to prevent goroutine leak when timeout occurs
-
-	go func() {
-		// WaitGoRoutines waits until the goroutines launched to process TCP streams are done
-		// this will block forever if there are streams that are never shutdown (via RST or FIN flags)
-		StreamFactory.waitGoRoutines()
-		out <- struct{}{}
-	}()
-
-	return out
 }
 
 // sort the conversation fragments and fill the conversation buffers.
