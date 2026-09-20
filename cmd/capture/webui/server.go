@@ -56,7 +56,6 @@ import (
 	"github.com/dreadl0ck/netcap/dpi"
 	"github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/rules"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dreadl0ck/netcap/utils"
@@ -1753,14 +1752,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			CompressionBlockSize:           defaults.CompressionBlockSize,
 			CompressionLevel:               defaults.CompressionLevel,
 		},
-		ResolverConfig: resolvers.Config{
-			ReverseDNS: false,
-			LocalDNS:   false,
-			MACDB:      true,
-
-			ServiceDB:     true,
-			GeolocationDB: true,
-		},
+		ResolverConfig: inProcessResolverConfig(),
 	})
 
 	c.Bpf = job.BPFFilter

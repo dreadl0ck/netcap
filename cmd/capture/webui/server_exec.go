@@ -29,12 +29,21 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/dreadl0ck/netcap/resolvers"
 )
 
 // analysisErrorLogName is the per-run error log filename for the direct
 // edition. See the appstore build's copy in server_inprocess.go for why the
 // name differs there.
 const analysisErrorLogName = "analysis_error.log"
+
+func inProcessResolverConfig() resolvers.Config {
+	return resolvers.Config{
+		ReverseDNS: false, LocalDNS: false, MACDB: true,
+		ServiceDB: true, GeolocationDB: true,
+	}
+}
 
 // runAnalysis executes a netcap capture analysis out-of-process by shelling
 // out to the "net" CLI. This is the direct-edition path; the App Store build

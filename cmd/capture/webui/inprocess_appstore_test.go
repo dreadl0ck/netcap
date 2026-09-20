@@ -228,6 +228,13 @@ func TestInProcessAnalysisProducesAuditRecords(t *testing.T) {
 	t.Logf("in-process analysis produced %d audit record file(s) from %s", audit, input)
 }
 
+func TestAppStoreInProcessAnalysisNeedsNoExternalDatabases(t *testing.T) {
+	config := inProcessResolverConfig()
+	if config.ServiceDB || config.GeolocationDB {
+		t.Fatalf("App Store resolver config requires external databases: %+v", config)
+	}
+}
+
 func TestInProcessAnalysisFailureTerminatesLocalProgress(t *testing.T) {
 	input := filepath.Join(t.TempDir(), "invalid.pcap")
 	if err := os.WriteFile(input, []byte("not a capture"), 0600); err != nil {

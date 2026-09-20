@@ -21,11 +21,17 @@
 
 package webui
 
+import "github.com/dreadl0ck/netcap/resolvers"
+
 // analysisErrorLogName is the per-run error log filename. The App Store build
 // uses a name without the "analysis_error.log" token so that string — a MAS
 // audit marker for the out-of-process analysis path — is absent from the
 // shipped binary. The file's role is identical to the direct edition's.
 const analysisErrorLogName = "analysis-errors.log"
+
+func inProcessResolverConfig() resolvers.Config {
+	return resolvers.Config{ReverseDNS: false, LocalDNS: false, MACDB: true}
+}
 
 // runAnalysis runs the capture analysis fully in-process for the App Store
 // edition. This build spawns no external "net" CLI: the whole collector runs
