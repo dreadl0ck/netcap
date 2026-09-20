@@ -23,6 +23,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"io"
@@ -94,20 +95,29 @@ func splitMailHeaderAndBody(buf []byte) (map[string]string, string) {
 	}
 }
 
-// newMailID derives a stable identifier from the conversation and the mail
-// itself. A random value would be unique too, but it made every capture of
-// the same input produce different Mail.ID and SMTP/POP3 MailIDs values.
-func newMailID(ident string, buf []byte) string {
+// newMailID derives a stable identifier for a mail occurrence.
+func newMailID(conv *core.ConversationInfo, buf []byte, origin string, ordinal uint64) string {
 	h := sha256.New()
-	h.Write([]byte(ident))
-	h.Write([]byte{0})
-	h.Write(buf)
+	var encoded [8]byte
+	writeField := func(value []byte) {
+		binary.BigEndian.PutUint64(encoded[:], uint64(len(value)))
+		_, _ = h.Write(encoded[:])
+		_, _ = h.Write(value)
+	}
+
+	writeField([]byte(origin))
+	writeField([]byte(conv.Ident))
+	binary.BigEndian.PutUint64(encoded[:], uint64(conv.FirstClientPacket.UnixNano()))
+	_, _ = h.Write(encoded[:])
+	binary.BigEndian.PutUint64(encoded[:], ordinal)
+	_, _ = h.Write(encoded[:])
+	writeField(buf)
 
 	return hex.EncodeToString(h.Sum(nil))[:20]
 }
 
 // Parse attempts to read a mail from the conversation.
-func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap.Logger, origin string) *types.Mail {
+func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap.Logger, origin string, ordinal uint64) *types.Mail {
 	logger.Info("parsing mail",
 		zap.String("from", from),
 		zap.String("to", to),
@@ -150,7 +160,7 @@ func Parse(conv *core.ConversationInfo, buf []byte, from, to string, logger *zap
 		ContentType:     hdr["Content-Type"],
 		EnvelopeTo:      hdr["Envelope-To"],
 		Body:            parseMailParts(conv, body, logger),
-		ID:              newMailID(conv.Ident, buf),
+		ID:              newMailID(conv, buf, origin, ordinal),
 		Origin:          origin,
 		CommunityID:     conv.CommunityID,
 	}
