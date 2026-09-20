@@ -20,8 +20,9 @@
 package file
 
 import (
-	"log"
 	"sync/atomic"
+
+	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/decoder"
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
@@ -37,6 +38,13 @@ var Decoder = &decoder.AbstractDecoder{
 
 // WriteFile writeDeviceProfile writes the profile.
 func WriteFile(f *types.File) {
+	// File extraction is driven by the protocol decoders, so this is reached
+	// whenever a transfer is seen even if the File decoder itself was not
+	// selected and has no writer.
+	if Decoder.Writer == nil {
+		return
+	}
+
 	if decoderconfig.Instance.ExportMetrics {
 		f.Inc()
 	}
@@ -45,7 +53,7 @@ func WriteFile(f *types.File) {
 
 	err := Decoder.Writer.Write(f)
 	if err != nil {
-		log.Fatal("failed to write proto: ", err)
+		saveFileLog.Error("failed to write File audit record", zap.Error(err))
 	}
 }
 

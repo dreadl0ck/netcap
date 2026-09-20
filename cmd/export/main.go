@@ -159,6 +159,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 				NoOptCheck:           c.Bool("nooptcheck"),
 				IgnoreFSMerr:         c.Bool("ignorefsmerr"),
 				AllowMissingInit:     c.Bool("allowmissinginit"),
+				ModbusRTUEndpoints:   c.String("modbus-rtu-endpoints"),
 				Debug:                c.Bool("debug"),
 				HexDump:              c.Bool("hexdump"),
 				WaitForConnections:   c.Bool("wait-conns"),

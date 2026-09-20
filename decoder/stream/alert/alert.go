@@ -42,6 +42,12 @@ var Decoder = &decoder.AbstractDecoder{
 
 // WriteAlert writeDeviceProfile writes the profile.
 func WriteAlert(f *types.Alert) {
+	// Alerts are raised by other decoders, so this is reached even when the
+	// Alert decoder itself was not selected and has no writer.
+	if Decoder.Writer == nil {
+		return
+	}
+
 	if decoderconfig.Instance.ExportMetrics {
 		f.Inc()
 	}
@@ -50,7 +56,7 @@ func WriteAlert(f *types.Alert) {
 
 	err := Decoder.Writer.Write(f)
 	if err != nil {
-		log.Fatal("failed to write proto: ", err)
+		log.Println("failed to write Alert audit record:", err)
 	}
 }
 

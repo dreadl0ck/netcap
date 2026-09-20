@@ -45,12 +45,13 @@ func (lp *livePacket) isPacket() bool {
 
 // Creates a page (or set of pages) from a TCP packet: returns the first and last
 // page in its doubly-linked list of new pages.
-func (lp *livePacket) convertToPages(pc *pageCache, skip int, ac AssemblerContext) (*page, *page, int) {
+func (lp *livePacket) convertToPages(pc *pageCache, skip int, _ AssemblerContext) (*page, *page, int) {
 	ts := lp.captureInfo().Timestamp
 	first := pc.next(ts)
 	current := first
 	current.prev = nil
-	first.ac = ac
+	first.ac = lp.ac
+	first.packetStart = true
 	numPages := 1
 	seq, bytes := lp.seq.add(skip), lp.bytes[skip:]
 	for {
@@ -68,7 +69,9 @@ func (lp *livePacket) convertToPages(pc *pageCache, skip int, ac AssemblerContex
 		current.next = pc.next(ts)
 		current.next.prev = current
 		current = current.next
-		current.ac = nil
+		current.ac = lp.ac
+		// The page cache recycles pages without clearing these flags.
+		current.packetStart, current.end = false, false
 		numPages++
 	}
 	return first, current, numPages

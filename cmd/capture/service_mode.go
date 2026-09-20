@@ -100,6 +100,7 @@ func runServiceMode() {
 		NoOptCheck:            flagNooptcheck,
 		IgnoreFSMErr:          flagIgnorefsmerr,
 		AllowMissingInit:      flagAllowmissinginit,
+		ModbusRTUEndpoints:    flagModbusRTUEndpoints,
 		ClosePendingTimeout:   flagClosePendingTimeout,
 		CloseInactiveTimeout:  flagCloseInactiveTimeout,
 		Proto:                 flagProto,

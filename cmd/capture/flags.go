@@ -424,6 +424,7 @@ func GetFlags() []cli.Flag {
 			Usage:   "support streams without SYN/SYN+ACK/ACK sequence",
 			Sources: cli.EnvVars("NC_ALLOWMISSINGINIT"),
 		},
+		&cli.StringFlag{Name: "modbus-rtu-endpoints", Usage: "RTU-over-TCP destination allowlist (comma-separated IP:port or [IPv6]:port)", Sources: cli.EnvVars("NC_MODBUS_RTU_ENDPOINTS")},
 		&cli.BoolFlag{
 			Name:    "hexdump",
 			Usage:   "dump packets used in stream reassembly as hex to the reassembly.log file",

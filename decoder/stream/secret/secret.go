@@ -111,6 +111,12 @@ var Decoder = &decoder.AbstractDecoder{
 // WriteSecret is a util that should be used to write credential audit to disk
 // it will deduplicate the audit records to avoid repeating information on disk.
 func WriteSecret(creds *types.Secret) {
+	// Credentials are harvested by the protocol decoders, so this is reached
+	// even when the Secret decoder itself was not selected and has no writer.
+	if Decoder.Writer == nil {
+		return
+	}
+
 	// Skip credentials with empty username AND password - they provide no useful information
 	if creds.User == "" && creds.Password == "" {
 		return
@@ -137,6 +143,6 @@ func WriteSecret(creds *types.Secret) {
 
 	err := Decoder.Writer.Write(creds)
 	if err != nil {
-		log.Fatal("failed to write proto: ", err)
+		log.Println("failed to write Secret audit record:", err)
 	}
 }
