@@ -511,10 +511,8 @@ commands:
             done
 
             cd dist
-            # Add checksums for the regular darwin build if it exists
-            if [ -f "netcap-v${VERSION}-darwin-arm64.tar.gz" ]; then
-                shasum -a 256 netcap-v${VERSION}-darwin-arm64.tar.gz >> ../dist-linux/checksums.txt
-            fi
+            # Add checksums for all darwin builds.
+            grep darwin checksums.txt >> ../dist-linux/checksums.txt
             cd ..
 
             # append hash of windows build to final checksum file
