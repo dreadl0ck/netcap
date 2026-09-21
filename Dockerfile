@@ -4,7 +4,7 @@ FROM --platform=linux/amd64 dreadl0ck/netcap-builder:ubuntu-latest as builder
 WORKDIR /netcap
 COPY . .
 
-ENV VERSION 0.9.9
+ENV VERSION 0.9.10
 ARG TAGS="-tags noyara"
 RUN echo "tags: $TAGS"
 

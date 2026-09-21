@@ -26,7 +26,7 @@ RUN file /netcap/bin/net
 FROM --platform=linux/amd64 alpine:latest
 ARG IPV6_SUPPORT=true
 
-RUN apk add --no-cache ca-certificates iptables libpcap libnetfilter_queue tcpdump curl gcompat ${IPV6_SUPPORT:+ip6tables}
+RUN apk add --no-cache ca-certificates iptables libpcap libnetfilter_queue tcpdump curl gcompat libstdc++ libgcc ${IPV6_SUPPORT:+ip6tables}
 
 # Install Google Magika CLI v1.0.2 for AI-based file type classification
 ARG MAGIKA_VERSION=1.0.2

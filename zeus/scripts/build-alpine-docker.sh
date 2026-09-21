@@ -39,6 +39,9 @@ if (( $BUILD_EXIT_CODE != 0 )); then
 	exit 1
 fi
 
+echo "[INFO] smoke testing container"
+docker run --rm --entrypoint /usr/bin/net "$tag" --version >/dev/null
+
 # Create container without running it (avoids architecture issues on non-Linux hosts)
 echo "[INFO] creating container from image $tag"
 CONTAINER_ID=$(docker create "$tag")
