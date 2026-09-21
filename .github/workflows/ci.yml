@@ -1,12 +1,6 @@
 name: CI
 
 on:
-  push:
-    # The default branch is master. This said "main", so no push to this repo
-    # ever triggered CI -- only pull_request did, which is why the workflow had
-    # exactly one run in its history.
-    branches: [master]
-  pull_request:
   workflow_dispatch:
 
 # A second push to the same branch cancels the previous run.
