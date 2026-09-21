@@ -54,9 +54,14 @@ fi
 GOPACKET_ABS_PATH=$(cd "$GOPACKET_PATH" && pwd)
 echo "[INFO] Using gopacket from: ${GOPACKET_ABS_PATH}"
 
-# Check if we should build multi-platform images
-PLATFORMS="${NETCAP_PLATFORMS:-linux/amd64,linux/arm64}"
+# The DPI builder and runtime libraries are amd64-only.
+PLATFORMS="${NETCAP_PLATFORMS:-linux/amd64}"
 USE_BUILDX="${NETCAP_USE_BUILDX:-true}"
+
+if [[ "$PLATFORMS" != "linux/amd64" ]]; then
+    echo "[ERROR] Unsupported platform: $PLATFORMS (expected linux/amd64)"
+    exit 1
+fi
 
 # Check if docker/service-local-gopacket directory exists, create if needed
 if [ ! -d "$NETCAP_ROOT/docker/service-local-gopacket" ]; then
@@ -190,8 +195,8 @@ DOCKER_DIR="$NETCAP_ROOT/docker/service-local-gopacket"
 cd "$DOCKER_DIR"
 
 if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
-    # Use buildx for multi-platform builds (only when pushing)
-    echo "[INFO] Building multi-platform image for: ${PLATFORMS}"
+    # Use buildx when pushing.
+    echo "[INFO] Building image for: ${PLATFORMS}"
     
     # Ensure buildx builder exists
     if ! docker buildx inspect netcap-builder > /dev/null 2>&1; then
@@ -201,7 +206,7 @@ if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
         docker buildx use netcap-builder
     fi
     
-    # Build and push multi-platform image
+    # Build and push the amd64 image.
     # Note: We need to create a temporary context with gopacket
     BUILD_CONTEXT=$(mktemp -d)
     trap cleanup_build_context EXIT
@@ -272,7 +277,7 @@ if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
             "$BUILD_CONTEXT"
     fi
     
-    echo "[INFO] Successfully built and pushed multi-platform ${IMAGE_TAG}"
+    echo "[INFO] Successfully built and pushed ${IMAGE_TAG}"
 else
     # Standard single-platform build for local use
     echo "[INFO] Building single-platform image for current architecture"
