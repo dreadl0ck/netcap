@@ -16,11 +16,16 @@ VERSION="${VERSION:-latest}"
 # Registry from environment variable, default to Docker Hub only
 REGISTRY_USER="${NETCAP_REGISTRY_USER:-dreadl0ck}"
 
-# Local gopacket path (default to ../gopacket-community)
-GOPACKET_PATH="${GOPACKET_PATH:-../gopacket-community}"
+# Local gopacket path (defaults to the exact module selected by go.mod)
+GOPACKET_PATH="${GOPACKET_PATH:-$(cd "$NETCAP_ROOT" && GOWORK=off go list -m -f '{{.Dir}}' github.com/gopacket/gopacket)}"
 
 # Full image tag - Docker Hub only
 IMAGE_TAG="${REGISTRY_USER}/${IMAGE_NAME}:${VERSION}"
+
+cleanup_build_context() {
+    chmod -R u+w "$BUILD_CONTEXT" 2>/dev/null || true
+    rm -rf "$BUILD_CONTEXT"
+}
 
 echo "[INFO] Building netcap service mode container with local gopacket"
 echo "[INFO] Image: ${IMAGE_TAG}"
@@ -85,17 +90,17 @@ RUN echo "replace github.com/gopacket/gopacket => /gopacket" >> go.mod
 RUN GOWORK=off go mod download
 
 # Clear Go build cache (but not modcache) to ensure fresh build
-RUN go clean -cache -i -r
+RUN GOWORK=off go clean -cache -i -r
 
 # Remove any existing binary
 RUN rm -rf /netcap/bin
 
 # Build the binary WITH DPI support (disable workspace mode)
 # Extract library versions
-RUN GOPACKET_VERSION=$(cd /gopacket && git describe --tags --always 2>/dev/null || echo "local-dev") && \
+RUN GOPACKET_VERSION=$(cd /gopacket && git describe --tags --always 2>/dev/null || awk '$1 == "github.com/gopacket/gopacket" { print $2; exit }' /netcap/go.mod) && \
     GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
     mkdir -p /netcap/bin && \
-    GOWORK=off GOOS=linux GOARCH=amd64 go build -a \
+    GOWORK=off GOOS=linux GOARCH=amd64 go build -a -trimpath \
     -ldflags "-r /usr/local/lib -s -w \
         -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
         -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
@@ -116,26 +121,16 @@ RUN apk add --no-cache \
     tzdata \
     curl \
     libpcap \
+    tcpdump \
+    libcap \
     iptables \
     libnetfilter_queue \
     libstdc++ \
     libgcc \
-    json-c \
-    gcompat
+    json-c
 
-# Install Google Magika CLI v1.0.2 for AI-based file type classification
-ARG MAGIKA_VERSION=1.0.2
-RUN ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ]; then MAGIKA_ARCH="x86_64-unknown-linux-gnu"; \
-    elif [ "$ARCH" = "aarch64" ]; then MAGIKA_ARCH="aarch64-unknown-linux-gnu"; \
-    else echo "Unsupported arch: $ARCH" && exit 1; fi && \
-    mkdir -p /tmp/magika && \
-    curl -LsSf "https://github.com/google/magika/releases/download/cli%2Fv${MAGIKA_VERSION}/magika-${MAGIKA_ARCH}.tar.xz" \
-    | tar -xJ -C /tmp/magika && \
-    cp /tmp/magika/*/magika /usr/local/bin/magika && \
-    chmod +x /usr/local/bin/magika && \
-    rm -rf /tmp/magika && \
-    magika --version
+# Give tcpdump the necessary capabilities to read pcap files without root
+RUN setcap cap_net_raw,cap_net_admin=eip /usr/bin/tcpdump
 
 # Create netcap user and group (non-root)
 RUN addgroup -g 1000 netcap && \
@@ -145,15 +140,17 @@ RUN addgroup -g 1000 netcap && \
 WORKDIR /home/netcap
 
 # Copy binary and DPI libraries from builder
-COPY --from=builder /netcap/bin/netcap /usr/local/bin/netcap
-COPY --from=builder /usr/lib/* /usr/lib/
+COPY --from=builder /netcap/bin/netcap /usr/local/bin/net
+COPY --from=builder /netcap/LICENSE /usr/share/licenses/netcap/LICENSE
+COPY --from=builder /netcap/legal /usr/share/licenses/netcap/
 COPY --from=builder /usr/local/lib/* /usr/local/lib/
+COPY --from=builder /usr/lib/libndpi.so* /usr/lib/
 
 # Run ldconfig to register the shared libraries and set up the dynamic linker cache
 RUN ldconfig /usr/lib /usr/local/lib || true
 
 # Set LD_LIBRARY_PATH to ensure runtime linker finds nDPI and other DPI libraries
-ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/lib
 
 # Copy entrypoint script
 COPY docker/service/entrypoint.sh /usr/local/bin/entrypoint.sh
@@ -207,7 +204,7 @@ if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
     # Build and push multi-platform image
     # Note: We need to create a temporary context with gopacket
     BUILD_CONTEXT=$(mktemp -d)
-    trap "rm -rf $BUILD_CONTEXT" EXIT
+    trap cleanup_build_context EXIT
     
     echo "[INFO] Preparing build context..."
     echo "[INFO] Copying only necessary files for build..."
@@ -220,6 +217,14 @@ if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
     cp go.mod go.sum "$BUILD_CONTEXT/"
     [ -f go.work ] && cp go.work "$BUILD_CONTEXT/"
     [ -f go.work.sum ] && cp go.work.sum "$BUILD_CONTEXT/"
+
+    # Copy assets required by go:embed declarations.
+    cp LICENSE "$BUILD_CONTEXT/"
+    cp -r legal "$BUILD_CONTEXT/legal"
+    mkdir -p "$BUILD_CONTEXT/rules" "$BUILD_CONTEXT/injection" "$BUILD_CONTEXT/cmd/capture/webui"
+    cp -r rules/examples "$BUILD_CONTEXT/rules/examples"
+    cp -r injection/rules "$BUILD_CONTEXT/injection/rules"
+    cp -r cmd/capture/webui/dashboards_builtin "$BUILD_CONTEXT/cmd/capture/webui/dashboards_builtin"
     
     # Copy proto files if any
     find . -name "*.proto" -type f -exec sh -c 'mkdir -p "'$BUILD_CONTEXT'/$(dirname {})" && cp {} "'$BUILD_CONTEXT'/{}"' \;
@@ -240,6 +245,7 @@ if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
     echo "[INFO] Building container..."
     docker buildx build \
         --platform "${PLATFORMS}" \
+        --provenance=false \
         --build-arg VERSION="${VERSION}" \
         -t "${IMAGE_TAG}" \
         -f "$NETCAP_ROOT/docker/service-local-gopacket/Dockerfile" \
@@ -258,6 +264,7 @@ if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
         echo "[INFO] Building and pushing latest tag for: ${PLATFORMS}"
         docker buildx build \
             --platform "${PLATFORMS}" \
+            --provenance=false \
             --build-arg VERSION="${VERSION}" \
             -t "${LATEST_TAG}" \
             -f "$NETCAP_ROOT/docker/service-local-gopacket/Dockerfile" \
@@ -272,7 +279,7 @@ else
     
     # Create a temporary build context
     BUILD_CONTEXT=$(mktemp -d)
-    trap "rm -rf $BUILD_CONTEXT" EXIT
+    trap cleanup_build_context EXIT
     
     echo "[INFO] Preparing build context..."
     echo "[INFO] Copying only necessary files for build..."
@@ -285,6 +292,14 @@ else
     cp go.mod go.sum "$BUILD_CONTEXT/"
     [ -f go.work ] && cp go.work "$BUILD_CONTEXT/"
     [ -f go.work.sum ] && cp go.work.sum "$BUILD_CONTEXT/"
+
+    # Copy assets required by go:embed declarations.
+    cp LICENSE "$BUILD_CONTEXT/"
+    cp -r legal "$BUILD_CONTEXT/legal"
+    mkdir -p "$BUILD_CONTEXT/rules" "$BUILD_CONTEXT/injection" "$BUILD_CONTEXT/cmd/capture/webui"
+    cp -r rules/examples "$BUILD_CONTEXT/rules/examples"
+    cp -r injection/rules "$BUILD_CONTEXT/injection/rules"
+    cp -r cmd/capture/webui/dashboards_builtin "$BUILD_CONTEXT/cmd/capture/webui/dashboards_builtin"
     
     # Copy proto files if any
     find . -name "*.proto" -type f -exec sh -c 'mkdir -p "'$BUILD_CONTEXT'/$(dirname {})" && cp {} "'$BUILD_CONTEXT'/{}"' \;
@@ -303,6 +318,7 @@ else
     cp -r "$GOPACKET_ABS_PATH" "$BUILD_CONTEXT/gopacket"
     
     docker build \
+        --provenance=false \
         --build-arg VERSION="${VERSION}" \
         -t "${IMAGE_TAG}" \
         -f "$NETCAP_ROOT/docker/service-local-gopacket/Dockerfile" \

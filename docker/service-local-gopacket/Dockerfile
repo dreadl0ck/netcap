@@ -22,14 +22,14 @@ RUN echo "replace github.com/gopacket/gopacket => /gopacket" >> go.mod
 RUN GOWORK=off go mod download
 
 # Clear Go build cache (but not modcache) to ensure fresh build
-RUN go clean -cache -i -r
+RUN GOWORK=off go clean -cache -i -r
 
 # Remove any existing binary
 RUN rm -rf /netcap/bin
 
 # Build the binary WITH DPI support (disable workspace mode)
 # Extract library versions
-RUN GOPACKET_VERSION=$(cd /gopacket && git describe --tags --always 2>/dev/null || echo "local-dev") && \
+RUN GOPACKET_VERSION=$(cd /gopacket && git describe --tags --always 2>/dev/null || awk '$1 == "github.com/gopacket/gopacket" { print $2; exit }' /netcap/go.mod) && \
     GO_DPI_VERSION=$(grep "github.com/dreadl0ck/go-dpi" /netcap/go.mod | grep -v indirect | awk '{print $2}') && \
     mkdir -p /netcap/bin && \
     GOWORK=off GOOS=linux GOARCH=amd64 go build -a -trimpath \
@@ -82,7 +82,7 @@ COPY --from=builder /usr/lib/libndpi.so* /usr/lib/
 RUN ldconfig /usr/lib /usr/local/lib || true
 
 # Set LD_LIBRARY_PATH to ensure runtime linker finds nDPI and other DPI libraries
-ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/lib:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/lib
 
 # Copy entrypoint script
 COPY docker/service/entrypoint.sh /usr/local/bin/entrypoint.sh
@@ -112,3 +112,4 @@ VOLUME ["/data"]
 
 # Use entrypoint script to bootstrap databases
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
