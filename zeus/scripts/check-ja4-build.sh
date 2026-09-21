@@ -2,7 +2,7 @@
 
 set -eu
 
-implementation="github.com/dreadl0ck/netcap/internal/ja4plus"
+implementation="github.com/dreadl0ck/ja4plus"
 
 check_excluded() {
     tags="$1"

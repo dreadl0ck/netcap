@@ -130,7 +130,6 @@ jobs:
           go vet -tags ja4plus ./...
           go test -short -tags ja4plus \
             ./internal/ja4/... \
-            ./internal/ja4plus/... \
             ./internal/ja4plusadapter/... \
             ./decoder/packet \
             ./decoder/stream/http \

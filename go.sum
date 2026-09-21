@@ -80,6 +80,8 @@ github.com/dlclark/regexp2 v1.11.5 h1:Q/sSnsKerHeCkc/jSTNq1oCm7KiVgUMZRDUoRu0JQZ
 github.com/dlclark/regexp2 v1.11.5/go.mod h1:DHkYz0B9wPfa6wondMfaivmHpzrQ3v9q8cnmRbL6yW8=
 github.com/dreadl0ck/go-dpi v1.4.1 h1:n+T/6fq7EOtd1sRix0edxSxrBecyYTYKWcWts5aPjvI=
 github.com/dreadl0ck/go-dpi v1.4.1/go.mod h1:HqEJeAzmr5+1I8dQQtb/FK/5tSVNxlROz9dMZFMk5NU=
+github.com/dreadl0ck/ja4plus v0.1.0 h1:iQbDUTwfESCYcMj0vJmn/Q69XwCdOqJhK353NkfU6Ck=
+github.com/dreadl0ck/ja4plus v0.1.0/go.mod h1:BLVnv+9uNktZihwghNAXwYOLVPRjt5eP4xfVtnfXimk=
 github.com/dreadl0ck/maltego v0.0.3 h1:wRh3u1Sc0rciX80rZE+ncInMpoTLCm78vT9Tns8s25s=
 github.com/dreadl0ck/maltego v0.0.3/go.mod h1:NQT8NKjOTN1p6EYzZj0BFydAY1t7FiYQXoBOem1gyIQ=
 github.com/dreadl0ck/tlsx v1.2.0 h1:Jq9fGzMF9A4OlW4BeTKDRPh0K+y0FkudxNhP81CDMwY=

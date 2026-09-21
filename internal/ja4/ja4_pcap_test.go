@@ -14,8 +14,8 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/dreadl0ck/ja4plus"
 	"github.com/dreadl0ck/netcap/internal/ja4"
-	"github.com/dreadl0ck/netcap/internal/ja4plus"
 	"github.com/dreadl0ck/tlsx"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcap"

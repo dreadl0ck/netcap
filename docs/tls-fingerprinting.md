@@ -81,8 +81,8 @@ JA4S fingerprints the server's response. JA4S is part of JA4+ and is not include
 ### License
 
 JA4 (TLS Client Fingerprinting) is licensed under BSD 3-Clause.
-JA4S, JA4H, JA4L, JA4X, JA4T, JA4TS, JA4SSH, JA4D and other JA4+ methods are licensed under FoxIO License 1.1 and are disabled in official Netcap and Netcap Pro builds. The opt-in source implementation is isolated in `internal/ja4plus` and is compiled only with the `ja4plus` build tag. Users enabling it are responsible for complying with FoxIO's license, including its monetization restrictions.
-See `internal/ja4/LICENSE-JA4` and `internal/ja4plus/LICENSE` for the applicable terms.
+JA4S, JA4H, JA4L, JA4X, JA4T, JA4TS, JA4SSH, JA4D and other JA4+ methods are provided by [`github.com/dreadl0ck/ja4plus`](https://github.com/dreadl0ck/ja4plus) under FoxIO License 1.1 and are disabled in official Netcap and Netcap Pro builds. Netcap imports the package only with the `ja4plus` build tag. Users enabling it are responsible for complying with FoxIO's license, including its monetization restrictions.
+See `internal/ja4/LICENSE-JA4` and the external package's `LICENSE` for the applicable terms.
 
 ---
 

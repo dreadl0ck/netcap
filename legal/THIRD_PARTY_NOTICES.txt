@@ -28,7 +28,8 @@ JA4 TLS client fingerprinting
 Official Netcap binaries include plain JA4 TLS client fingerprinting under the
 BSD 3-Clause License, copyright FoxIO. The required license and disclaimer are
 reproduced in licenses/JA4-BSD-3-Clause.txt. JA4+ implementations are not
-compiled into official Netcap or Netcap Pro binaries.
+compiled into official Netcap or Netcap Pro binaries. Opt-in source builds use
+github.com/dreadl0ck/ja4plus under the FoxIO License 1.1.
 
 Embedded web application
 ------------------------

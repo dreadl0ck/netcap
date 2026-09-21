@@ -14,7 +14,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/dreadl0ck/netcap/internal/ja4plus"
+	"github.com/dreadl0ck/ja4plus"
 )
 
 // parseTLSClientHello parses a raw TLS ClientHello packet and extracts JA4 data

@@ -15,6 +15,7 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dlclark/regexp2 v1.11.5
 	github.com/dreadl0ck/go-dpi v1.4.1 // Pinned: v1.3.1+ has crash in commit 5376956f (protocol mapping changes)
+	github.com/dreadl0ck/ja4plus v0.1.0
 	github.com/dreadl0ck/maltego v0.0.3
 	github.com/dreadl0ck/tlsx v1.2.0
 	github.com/dsoprea/go-exif/v2 v2.0.0-20230826092837-6579e82b732d
@@ -116,3 +117,5 @@ require (
 )
 
 //replace github.com/dreadl0ck/maltego => ../maltego
+
+retract [v0.8.7, v0.9.9] // JA4+ implementation source was included before v0.9.10.

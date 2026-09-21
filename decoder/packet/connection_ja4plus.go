@@ -7,7 +7,7 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 
-	"github.com/dreadl0ck/netcap/internal/ja4plus"
+	"github.com/dreadl0ck/netcap/internal/ja4plusadapter"
 )
 
 func trackJA4LTiming(conn *connection, packet gopacket.Packet) {
@@ -50,10 +50,10 @@ func calculateJA4L(conn *connection) {
 
 	if conn.synTimestamp > 0 && conn.synAckTimestamp > 0 {
 		conn.Connection.TcpRttNanos = conn.synAckTimestamp - conn.synTimestamp
-		conn.Connection.Ja4LClient = ja4plus.ComputeJA4L(conn.Connection.TcpRttNanos, conn.synTTL)
+		conn.Connection.Ja4LClient = ja4plusadapter.ComputeJA4L(conn.Connection.TcpRttNanos, conn.synTTL)
 	}
 	if conn.clientHelloTimestamp > 0 && conn.serverHelloTimestamp > 0 {
 		conn.Connection.TlsHandshakeNanos = conn.serverHelloTimestamp - conn.clientHelloTimestamp
-		conn.Connection.Ja4LServer = ja4plus.ComputeJA4L(conn.Connection.TlsHandshakeNanos, conn.synTTL)
+		conn.Connection.Ja4LServer = ja4plusadapter.ComputeJA4L(conn.Connection.TlsHandshakeNanos, conn.synTTL)
 	}
 }

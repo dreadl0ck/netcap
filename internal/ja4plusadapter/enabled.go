@@ -5,7 +5,7 @@ package ja4plusadapter
 import (
 	"crypto/x509"
 
-	"github.com/dreadl0ck/netcap/internal/ja4plus"
+	"github.com/dreadl0ck/ja4plus"
 )
 
 const Enabled = true
