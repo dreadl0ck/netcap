@@ -6,7 +6,7 @@
 
 //go:build integration
 
-package integration_tests
+package integration
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-const quicTestdataDir = "../decoder/stream/quic/testdata"
+const quicTestdataDir = "../../decoder/stream/quic/testdata"
 
 // TestQUICIntegration is a full integration test that processes QUIC pcap files
 // through the netcap collector and verifies QUICClientHello audit records are produced.

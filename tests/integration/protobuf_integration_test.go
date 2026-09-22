@@ -6,7 +6,7 @@
 
 //go:build integration
 
-package integration_tests
+package integration
 
 import (
 	"encoding/binary"
@@ -269,9 +269,9 @@ func TestProtobufNoFalsePositivesCollector(t *testing.T) {
 		// is a regression.
 		maxHeuristicHits int
 	}{
-		{"HTTP_traffic", "../testdata/test.pcap", 2},
-		{"CIP_industrial", "../testdata/cip.pcap", 18},
-		{"S7Comm_industrial", "../testdata/s7comm_reading_plc_status.pcap", 0},
+		{"HTTP_traffic", "../../testdata/test.pcap", 2},
+		{"CIP_industrial", "../../testdata/cip.pcap", 18},
+		{"S7Comm_industrial", "../../testdata/s7comm_reading_plc_status.pcap", 0},
 	}
 
 	for _, tc := range testCases {
@@ -435,7 +435,7 @@ func BenchmarkFullPipeline(b *testing.B) {
 
 // --- PCAP integration tests ---
 
-const protobufTestdataDir = "../decoder/stream/protobuf/testdata"
+const protobufTestdataDir = "../../decoder/stream/protobuf/testdata"
 
 // TestProtobufPCAPExtraction processes real protobuf PCAP files through the
 // collector pipeline and verifies Protobuf audit records are extracted.

@@ -19,6 +19,12 @@ zeus/data.yml
 tests/*
 !tests/e2e/
 !tests/e2e/**
+# Both halves are required: tests/* excludes the directory itself, and git
+# cannot re-include a file whose parent directory is excluded. The *.pcap /
+# *.pcapng rules below still win over these, so captures dropped in here stay
+# ignored while the Go sources do not.
+!tests/integration/
+!tests/integration/**
 .idea
 types/python
 types/java
