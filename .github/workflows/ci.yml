@@ -108,11 +108,17 @@ jobs:
             sh -eux <<'SCRIPT'
           go version
 
-          # types/netcap.pb.go is generated from netcap.proto and gitignored, so
-          # a clean checkout has no types package and every build fails with
-          # "undefined: Alert". protoc and the gogofaster plugin ship in the
-          # builder image for exactly this.
-          protoc --gogofaster_out=types/. netcap.proto
+          # Regenerate types/netcap.pb.go so it provably matches
+          # proto/netcap.proto. The file is tracked again since 3dbcc508
+          # (it ships in the release archives), so this no longer rescues a
+          # clean checkout -- it catches a proto edit committed without the
+          # regenerated output. protoc and the gogofaster plugin ship in the
+          # builder image for this.
+          #
+          # --proto_path=proto is required, not decoration: without it the
+          # output lands in types/proto/ and the descriptor registers as
+          # "proto/netcap.proto" instead of "netcap.proto".
+          protoc --proto_path=proto --gogofaster_out=types/. proto/netcap.proto
           test -s types/netcap.pb.go
 
           go build ./...

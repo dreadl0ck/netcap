@@ -81,7 +81,7 @@ Netcap converts network traffic (live capture or PCAP files) into structured Pro
    - `decoder/packet/` — 75+ individual protocol decoders (one per protocol layer)
    - `decoder/stream/` — 40+ TCP stream-based decoders (TLS, SSH, QUIC, SMB, etc.)
    - `decoder/config/` — decoder selection via `-include`/`-exclude` flags
-3. **Types** (`types/`) — all 58 audit record types defined in `netcap.proto`, generated with `protoc-gen-gogo`
+3. **Types** (`types/`) — all 58 audit record types defined in `proto/netcap.proto`, generated with `protoc-gen-gogo`
 4. **IO** (`io/`) — output writers: Protocol Buffers (default), CSV, JSON, Elasticsearch
 5. **Reassembly** (`reassembly/`) — TCP stream reconstruction
 6. **Resolvers** (`resolvers/`) — enrichment: DNS, GeoIP, MAC vendor lookup
@@ -106,7 +106,7 @@ Client-side routing uses `react-router` v7; data fetching uses `swr`; UI is MUI 
 
 ### Proto Code Generation
 
-All types are defined in `netcap.proto` and generated to `types/netcap.pb.go` using `protoc-gen-gogo`. There are no `go:generate` directives — proto compilation is manual.
+All types are defined in `proto/netcap.proto` and generated to `types/netcap.pb.go` using `protoc-gen-gogo`. There are no `go:generate` directives — proto compilation is manual.
 
 ### Key Directories
 

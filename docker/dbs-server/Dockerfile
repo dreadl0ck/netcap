@@ -20,11 +20,14 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Regenerate protobuf code: types/netcap.pb.go is no longer tracked in git
-# (see commit 8ba92384). Use gogofaster to match zeus/commands.yml.
+# Regenerate protobuf code so it matches proto/netcap.proto. types/netcap.pb.go
+# was untracked from 8ba92384 until 3dbcc508 re-added it for the release
+# archives; it is tracked today, so this overwrites rather than supplies it.
+# Use gogofaster to match zeus/commands.yml, and keep --proto_path=proto or the
+# output lands in types/proto/ and the real file is never updated.
 RUN go install github.com/gogo/protobuf/protoc-gen-gogofaster@v1.3.2 \
     && PATH="$PATH:$(go env GOPATH)/bin" \
-       protoc --gogofaster_out=types/. netcap.proto
+       protoc --proto_path=proto --gogofaster_out=types/. proto/netcap.proto
 
 # Build the binary with nodpi + noyara tags. The dbs-server does not need
 # DPI or YARA scanning; without `noyara` the build fails because

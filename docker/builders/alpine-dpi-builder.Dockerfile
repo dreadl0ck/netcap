@@ -198,12 +198,12 @@ RUN mkdir -p /usr/local/lib/pkgconfig && \
 
 # Protocol buffer compiler and the gogofaster plugin.
 #
-# types/netcap.pb.go is generated from netcap.proto and is gitignored, so a
-# clean checkout has no types package at all -- every build fails with
-# "undefined: Alert", "undefined: PacketContext" and so on. Carrying protoc here
-# lets both CI and the service image regenerate it rather than depending on a
-# copy that happens to exist on a developer's disk, which is the same class of
-# problem that frontend/dist caused.
+# types/netcap.pb.go is generated from proto/netcap.proto. It was untracked
+# between 8ba92384 and 3dbcc508, when a clean checkout genuinely had no types
+# package and every build failed with "undefined: Alert"; it is tracked again
+# now because the release archives ship it. Carrying protoc here still lets CI
+# and the service image regenerate it, so a proto edit committed without its
+# output is caught rather than silently compiled against stale types.
 #
 # The plugin version is pinned to the gogo/protobuf release in go.mod (v1.3.2)
 # so the generated code matches the runtime it is compiled against.

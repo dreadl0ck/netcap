@@ -54,15 +54,18 @@ COPY . .
 # COPY . . so it cannot be overwritten by anything from the build context.
 COPY --from=frontend /frontend/dist ./cmd/capture/webui/frontend/dist
 
-# types/netcap.pb.go is generated from netcap.proto and is gitignored, so it is
-# excluded from the build context as well (see .dockerignore) and regenerated
-# here. Without this the image would embed whichever copy happened to sit on the
-# machine running the build -- the same way the web UI bundle used to, which is
-# what shipped a broken frontend to production.
+# Regenerate types/netcap.pb.go from proto/netcap.proto so the image cannot
+# embed types that disagree with the schema. The file is tracked since 3dbcc508
+# and no .dockerignore excludes it, so it does reach the build context -- this
+# step overwrites it deterministically rather than rescuing its absence.
+#
+# --proto_path=proto is load-bearing: without it protoc writes
+# types/proto/netcap.pb.go, leaving the real types/netcap.pb.go untouched, and
+# the `test -s` below would still pass.
 #
 # protoc and protoc-gen-gogofaster come from the builder image, pinned to the
 # gogo/protobuf release in go.mod so the generated code matches its runtime.
-RUN protoc --gogofaster_out=types/. netcap.proto && test -s types/netcap.pb.go
+RUN protoc --proto_path=proto --gogofaster_out=types/. proto/netcap.proto && test -s types/netcap.pb.go
 
 # Accept VERSION as a build argument (defaults to 0.7.7 if not provided)
 ARG VERSION=0.7.7
