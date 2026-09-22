@@ -91,8 +91,8 @@ Netcap converts network traffic (live capture or PCAP files) into structured Pro
 ### Package Layout
 
 Library code lives under `internal/`. Only three import paths are public, because
-only those are consumed from outside the module (by `netcap-pro` and
-`netcap-app-oss`): the root package `github.com/dreadl0ck/netcap` for `Version`
+only those are consumed from outside the module — by `netcap-pro`, the sole
+external consumer: the root package `github.com/dreadl0ck/netcap` for `Version`
 and the licence embed, `defaults/`, and `cmd/capture/webui/`. `types/` also stays
 at the root — nothing external imports it, but it ships as source in all three
 `.goreleaser` archives.
