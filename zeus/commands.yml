@@ -519,7 +519,18 @@ commands:
         exec: echo "release v$VERSION done"
 
     run-goreleaser:
-        exec: goreleaser check && goreleaser release --skip-validate
+        help: |
+            GOWORK=off is mandatory, not defensive. go.work is an untracked
+            developer overlay (see `zeus setup-workspace`), and when present it
+            makes the build resolve go-dpi from a sibling checkout -- including
+            any uncommitted changes in it. Measured: the same source produced
+            two different binaries, 63718242 vs 63718194 bytes, purely from the
+            overlay being active.
+
+            `goreleaser check` is given an explicit config path because without
+            one it validates 0 files and still exits 0, so the guard in front of
+            the release would pass no matter what was in .goreleaser.yml.
+        exec: goreleaser check .goreleaser.yml && GOWORK=off goreleaser release --skip-validate
 
     update-release-assets:
         exec: |
@@ -551,7 +562,7 @@ commands:
             - version-bump-test
             - gen-proto-release
             - licenses
-        exec: goreleaser check && goreleaser release --clean --skip-publish --skip-validate; zeus version-bump-test-undo
+        exec: goreleaser check .goreleaser.yml && GOWORK=off goreleaser release --clean --skip-publish --skip-validate; zeus version-bump-test-undo
 
     # run a test release
     release-test-debug:
@@ -561,7 +572,7 @@ commands:
             - version-bump-test
             - gen-proto-release
             - licenses
-        exec: goreleaser check && goreleaser release --clean --skip-publish --skip-validate --debug; zeus version-bump-test-undo
+        exec: goreleaser check .goreleaser.yml && GOWORK=off goreleaser release --clean --skip-publish --skip-validate --debug; zeus version-bump-test-undo
 
     release-test-full:
          dependencies:
