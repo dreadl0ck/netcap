@@ -60,6 +60,27 @@ import SearchInput from '../components/SearchInput';
 type SortField = 'name' | 'size' | 'modifiedTime';
 type SortOrder = 'asc' | 'desc';
 
+/** One polled observation of a file's analysis progress. */
+interface ProgressEntry {
+  percent: number;
+  message: string;
+  status: string;
+  errorMessage?: string;
+}
+
+/** Pulsing red halo marking the button that explains a failed analysis. */
+const errorGlowSx = {
+  animation: 'glow-red 2s ease-in-out infinite',
+  '@keyframes glow-red': {
+    '0%, 100%': {
+      boxShadow: '0 0 5px rgba(244, 67, 54, 0.5)',
+    },
+    '50%': {
+      boxShadow: '0 0 20px rgba(244, 67, 54, 1), 0 0 30px rgba(244, 67, 54, 0.8)',
+    },
+  },
+} as const;
+
 export default function PCAPs() {
   const isMobile = useIsMobile();
   const router = useNetcapRouter();
@@ -69,26 +90,8 @@ export default function PCAPs() {
   });
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const [activating, setActivating] = useState<string | null>(null);
-  const [progressData, setProgressData] = useState<Record<string, { percent: number; message: string }>>({});
+  const [progressData, setProgressData] = useState<Record<string, ProgressEntry>>({});
 
-  // Debug: Log files when they change
-  useEffect(() => {
-    if (files) {
-      console.log('[PCAPs] Loaded files:', files.length);
-      const filesWithErrors = files.filter(f => f.error);
-      const filesWithErrorLogs = files.filter(f => f.errorLogPath);
-      console.log('[PCAPs] Files with errors:', filesWithErrors.length);
-      console.log('[PCAPs] Files with errorLogPath:', filesWithErrorLogs.length);
-      if (filesWithErrorLogs.length > 0) {
-        console.log('[PCAPs] Files with errorLogPath:', filesWithErrorLogs.map(f => ({
-          name: f.name,
-          error: f.error,
-          errorLogPath: f.errorLogPath,
-          sessionId: f.sessionId,
-        })));
-      }
-    }
-  }, [files]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [copiedFileId, setCopiedFileId] = useState<string | null>(null);
@@ -129,30 +132,55 @@ export default function PCAPs() {
 
     console.log('[PCAPs] Polling progress for', processingFiles.length, 'file(s)');
 
+    let cancelled = false;
+
     const interval = setInterval(async () => {
-      const newProgressData: Record<string, { percent: number; message: string }> = {};
-      
+      const newProgressData: Record<string, ProgressEntry> = {};
+      let sawTerminalStatus = false;
+
       for (const file of processingFiles) {
         try {
           // Use file ID for progress tracking
-          console.log(`[PCAPs] Fetching progress for file: ${file.name}, ID: ${file.id}`);
           const progress = await api.getProgress(file.id);
-          
+
           newProgressData[file.path] = {
             percent: progress.progressPercent,
             message: progress.message,
+            status: progress.status,
+            errorMessage: progress.errorMessage,
           };
-          console.log(`[PCAPs] Progress received for ${file.name}: ${progress.progressPercent}%`);
+
+          // The status and errorMessage fields were fetched and thrown away,
+          // so a job that failed between two list refreshes kept rendering as
+          // "processing...". Re-fetch the list as soon as one settles.
+          if (progress.status === 'failed' || progress.status === 'completed') {
+            sawTerminalStatus = true;
+          }
         } catch (error) {
           console.error(`[PCAPs] Failed to get progress for ${file.name}:`, error);
+          newProgressData[file.path] = {
+            percent: 0,
+            message: 'Progress unavailable',
+            status: 'unknown',
+            errorMessage: error instanceof Error ? error.message : String(error),
+          };
         }
       }
-      
+
+      if (cancelled) return;
+
       setProgressData(prev => ({ ...prev, ...newProgressData }));
+
+      if (sawTerminalStatus) {
+        mutate();
+      }
     }, 2000); // Poll every 2 seconds
 
-    return () => clearInterval(interval);
-  }, [files]);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [files, mutate]);
 
   const handleSelectFile = async (file: string) => {
     setActivating(file);
@@ -272,28 +300,39 @@ export default function PCAPs() {
     mutate();
   };
 
-  const handleViewErrorLog = async (file: { path: string; name: string; sessionId?: string; errorLogPath?: string }) => {
-    console.log('[PCAPs] View error log clicked for:', file.name, 'errorLogPath:', file.errorLogPath);
-    
-    if (!file.errorLogPath) {
-      console.log('[PCAPs] No errorLogPath available for this file');
-      alert('Error log not available for this file');
+  /**
+   * Identifier to pass to /api/error-log for a file.
+   *
+   * errorLogId is set by both modes; sessionId only by service mode, and
+   * requiring it is what hid every failure from the desktop app. id is the
+   * same hash the backend resolves errorLogId to, so it is a safe last resort
+   * for a backend older than this field.
+   */
+  const errorLogIdFor = (file: { errorLogId?: string; sessionId?: string; id?: string }) =>
+    file.errorLogId || file.sessionId || file.id || '';
+
+  const handleViewErrorLog = async (file: {
+    path: string;
+    name: string;
+    id?: string;
+    sessionId?: string;
+    errorLogId?: string;
+    errorLogPath?: string;
+  }) => {
+    const logId = errorLogIdFor(file);
+    console.log('[PCAPs] View error log clicked for:', file.name, 'logId:', logId);
+
+    if (!logId) {
+      alert('No identifier available to look up the analysis log for this file');
       return;
     }
 
-    if (!file.sessionId) {
-      console.log('[PCAPs] No sessionId available for this file');
-      alert('Session ID not available');
-      return;
-    }
-
-    setSelectedErrorLog({ sessionId: file.sessionId, filename: file.name });
+    setSelectedErrorLog({ sessionId: logId, filename: file.name });
     setLoadingErrorLog(true);
     setErrorLogContent('');
-    
+
     try {
-      console.log('[PCAPs] Fetching error log for session:', file.sessionId);
-      const content = await api.getErrorLogContent(file.sessionId);
+      const content = await api.getErrorLogContent(logId);
       console.log('[PCAPs] Error log content received, length:', content.length);
       setErrorLogContent(content);
     } catch (error) {
@@ -536,16 +575,6 @@ export default function PCAPs() {
                   </TableHead>
                   <TableBody>
                     {paginatedFiles.map((file) => {
-                      // Debug log for each file
-                      console.log('[PCAPs] File:', file.name, {
-                        error: file.error,
-                        errorLogPath: file.errorLogPath,
-                        sessionId: file.sessionId,
-                        hasError: !!file.error,
-                        hasErrorLogPath: !!file.errorLogPath,
-                        hasSessionId: !!file.sessionId,
-                      });
-
                       return (
                       <TableRow
                         key={file.path}
@@ -592,14 +621,27 @@ export default function PCAPs() {
                                 </Typography>
                               )}
                             </Typography>
-                            {/* Progress bar for processing files */}
-                            {!file.isCompleted && !file.error && progressData[file.path]?.percent > 0 && (
+                            {/*
+                              * Progress bar for processing files.
+                              *
+                              * Indeterminate until the first percentage
+                              * arrives: the helper only writes one every five
+                              * seconds, so a determinate bar pinned at 0 was
+                              * the whole feedback a short capture ever gave,
+                              * and it is indistinguishable from a stall.
+                              */}
+                            {!file.isCompleted && !file.error && (
                               <Box sx={{ mt: 0.5, width: '100%', maxWidth: 300 }}>
                                 <LinearProgress
-                                  variant="determinate"
-                                  value={progressData[file.path].percent}
+                                  variant={progressData[file.path]?.percent > 0 ? 'determinate' : 'indeterminate'}
+                                  value={progressData[file.path]?.percent ?? 0}
                                   sx={{ height: 4, borderRadius: 1 }}
                                 />
+                                {progressData[file.path]?.message && (
+                                  <Typography variant="caption" color="text.secondary" display="block">
+                                    {progressData[file.path].message}
+                                  </Typography>
+                                )}
                               </Box>
                             )}
                             {file.bpfFilter && (
@@ -725,24 +767,47 @@ export default function PCAPs() {
                                 </Tooltip>
                               </>
                             )}
-                            {/* Retry button for local mode files with errors */}
+                            {/*
+                              * Local mode error actions.
+                              *
+                              * The crash-log button used to live only in the
+                              * service-mode block below, so the desktop app —
+                              * which is always local mode — offered a retry
+                              * and nothing else. Retrying a deterministic
+                              * failure just fails again, which is exactly what
+                              * users reported.
+                              */}
                             {!status?.isServiceMode && file.error && (
-                              <Tooltip title="Retry analysis with current configuration">
-                                <span>
+                              <>
+                                <Tooltip title="View analysis log">
                                   <IconButton
                                     size="small"
-                                    onClick={() => handleReanalyzeClick({ path: file.path, name: file.name })}
-                                    disabled={reanalyzing === file.path}
-                                    color="secondary"
+                                    color="error"
+                                    aria-label={`View analysis log for ${file.name}`}
+                                    onClick={() => handleViewErrorLog(file)}
+                                    sx={errorGlowSx}
                                   >
-                                    {reanalyzing === file.path ? (
-                                      <CircularProgress size={20} />
-                                    ) : (
-                                      <RefreshIcon />
-                                    )}
+                                    <BugReportIcon />
                                   </IconButton>
-                                </span>
-                              </Tooltip>
+                                </Tooltip>
+                                <Tooltip title="Retry analysis with current configuration">
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      aria-label={`Retry analysis for ${file.name}`}
+                                      onClick={() => handleReanalyzeClick({ path: file.path, name: file.name })}
+                                      disabled={reanalyzing === file.path}
+                                      color="secondary"
+                                    >
+                                      {reanalyzing === file.path ? (
+                                        <CircularProgress size={20} />
+                                      ) : (
+                                        <RefreshIcon />
+                                      )}
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
+                              </>
                             )}
                             {status?.isServiceMode && file.sessionId && (
                                 <>
@@ -769,26 +834,24 @@ export default function PCAPs() {
                                       </span>
                                     </Tooltip>
                                   )}
-                                  {file.error && file.errorLogPath && file.sessionId && (
+                                  {/*
+                                    * Not gated on errorLogPath: the backend
+                                    * also serves the decoder's errors.log, and
+                                    * a failure with no log at all is better
+                                    * answered by the dialog saying so than by
+                                    * a button that is not there.
+                                    */}
+                                  {file.error && (
                                     <Tooltip title="View Crash Log">
                                       <IconButton
                                         size="small"
                                         color="error"
+                                        aria-label={`View analysis log for ${file.name}`}
                                         onClick={() => {
                                           console.log('[PCAPs] Crash log button clicked for:', file.name);
                                           handleViewErrorLog(file);
                                         }}
-                                        sx={{
-                                          animation: 'glow-red 2s ease-in-out infinite',
-                                          '@keyframes glow-red': {
-                                            '0%, 100%': {
-                                              boxShadow: '0 0 5px rgba(244, 67, 54, 0.5)',
-                                            },
-                                            '50%': {
-                                              boxShadow: '0 0 20px rgba(244, 67, 54, 1), 0 0 30px rgba(244, 67, 54, 0.8)',
-                                            },
-                                          },
-                                        }}
+                                        sx={errorGlowSx}
                                       >
                                         <BugReportIcon />
                                       </IconButton>
@@ -858,6 +921,43 @@ export default function PCAPs() {
                       value={progressData[file.path].percent}
                       sx={{ mt: 0.5, height: 4, borderRadius: 1 }}
                     />
+                  )}
+                  {/*
+                    * The card used to show an "Error" chip and stop there, so
+                    * on a narrow window the failure was unreadable and
+                    * unactionable no matter which mode was running.
+                    */}
+                  {file.error && (
+                    <>
+                      <Typography variant="caption" color="error" display="block" sx={{ mt: 0.5 }}>
+                        {file.error}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                        <Button
+                          size="small"
+                          color="error"
+                          variant="outlined"
+                          startIcon={<BugReportIcon />}
+                          onClick={() => handleViewErrorLog(file)}
+                        >
+                          View log
+                        </Button>
+                        <Button
+                          size="small"
+                          color="secondary"
+                          variant="outlined"
+                          startIcon={reanalyzing === file.path ? <CircularProgress size={16} /> : <RefreshIcon />}
+                          disabled={reanalyzing === file.path}
+                          onClick={() => handleReanalyzeClick({
+                            path: file.path,
+                            name: file.name,
+                            sessionId: file.sessionId,
+                          })}
+                        >
+                          Retry
+                        </Button>
+                      </Box>
+                    </>
                   )}
                 </CardContent>
               </Card>

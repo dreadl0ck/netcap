@@ -129,6 +129,8 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			// Add error if failed
 			if session.Status == StatusFailed && session.ErrorMessage != "" {
 				fileInfo.Error = &session.ErrorMessage
+				fileInfo.ErrorLogID = session.SessionID
+
 				if session.ErrorLogPath != "" {
 					fileInfo.ErrorLogPath = &session.ErrorLogPath
 				}
@@ -159,6 +161,8 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 			// Add error if failed
 			if session.Status == StatusFailed && session.ErrorMessage != "" {
 				fileInfo.Error = &session.ErrorMessage
+				fileInfo.ErrorLogID = session.SessionID
+
 				if session.ErrorLogPath != "" {
 					fileInfo.ErrorLogPath = &session.ErrorLogPath
 				}
@@ -225,6 +229,14 @@ func (s *Server) handleInputFiles(w http.ResponseWriter, r *http.Request) {
 		// Add error information if available
 		if ferr, hasError := fileErrors[path]; hasError {
 			fileInfo.Error = &ferr.Error
+			// Local mode has no session, so the error log is addressed by the
+			// file ID. Not by the path: an absolute path percent-encoded into
+			// a URL segment decodes back to leading and embedded slashes,
+			// which ServeMux then cleans, so the handler would receive a
+			// mangled identifier. The ID is a hash and survives the round
+			// trip unchanged.
+			fileInfo.ErrorLogID = fileID
+
 			if ferr.ErrorLogPath != "" {
 				fileInfo.ErrorLogPath = &ferr.ErrorLogPath
 			}
@@ -3347,13 +3359,19 @@ func (s *Server) handleErrorLogContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Local mode: sessionID is the file path or error log path
+	// Local mode: sessionID is a file ID, a file path, or a base name.
 	s.mu.RLock()
 	fileErrors := s.fileErrors
 	inputFiles := s.inputFiles
 	fileOutputDirs := make(map[string]string)
 	maps.Copy(fileOutputDirs, s.fileOutputDirs)
 	baseOutDir := s.baseOutDir
+
+	// FileInfo.ErrorLogID carries the hashed file ID, so resolve that to a
+	// path before the path and base-name matching below.
+	if path, ok := s.fileIDToPath[sessionID]; ok {
+		sessionID = path
+	}
 	s.mu.RUnlock()
 
 	// Try to find the error log for this file

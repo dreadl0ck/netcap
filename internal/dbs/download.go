@@ -50,8 +50,51 @@ type DBMetadata struct {
 	NVDStartYear int    `json:"nvd_start_year"`
 }
 
-// DownloadDBs downloads the latest databases from the configured server
+// DownloadStage names the phase a download is in. The UI distinguishes these
+// because extraction of a 91 MB tarball is slow enough that a bar frozen at
+// 100% reads as a hang.
+type DownloadStage string
+
+// Download stages, in the order they occur.
+const (
+	StageMetadata  DownloadStage = "metadata"
+	StageDownload  DownloadStage = "download"
+	StageExtract   DownloadStage = "extract"
+	StageCompleted DownloadStage = "completed"
+)
+
+// DownloadProgress is one observation of an in-flight database download.
+type DownloadProgress struct {
+	Stage      DownloadStage `json:"stage"`
+	Version    string        `json:"version,omitempty"`
+	Downloaded int64         `json:"downloaded"`
+	Total      int64         `json:"total"`
+	Percent    float64       `json:"percent"`
+	Message    string        `json:"message,omitempty"`
+}
+
+// ProgressFunc receives download progress observations. It is called from the
+// downloading goroutine and must not block.
+type ProgressFunc func(DownloadProgress)
+
+// DownloadDBs downloads the latest databases from the configured server.
 func DownloadDBs(serverURL string, force bool) error {
+	return DownloadDBsWithProgress(serverURL, force, nil)
+}
+
+// DownloadDBsWithProgress is DownloadDBs with progress reporting.
+//
+// onProgress may be nil, in which case this behaves exactly like DownloadDBs.
+// Progress exists because this download is the first thing a new install must
+// do and it moves ~91 MB: without it the GUI can only show a spinner that
+// cannot be distinguished from a stall.
+func DownloadDBsWithProgress(serverURL string, force bool, onProgress ProgressFunc) error {
+	report := func(p DownloadProgress) {
+		if onProgress != nil {
+			onProgress(p)
+		}
+	}
+
 	// Get server URL from environment or use default
 	if serverURL == "" {
 		serverURL = os.Getenv(env.NetcapDBsURL)
@@ -61,6 +104,7 @@ func DownloadDBs(serverURL string, force bool) error {
 	}
 
 	log.Printf("Downloading databases from %s", serverURL)
+	report(DownloadProgress{Stage: StageMetadata, Message: "Checking for the latest database version"})
 
 	// Fetch metadata about the latest version
 	metadata, err := fetchMetadata(serverURL)
@@ -77,6 +121,13 @@ func DownloadDBs(serverURL string, force bool) error {
 			currentVersion := string(data)
 			if currentVersion == metadata.Version {
 				log.Printf("Already have the latest version (%s), skipping download", metadata.Version)
+				report(DownloadProgress{
+					Stage:   StageCompleted,
+					Version: metadata.Version,
+					Percent: 100,
+					Message: "Databases are already up to date",
+				})
+
 				return nil
 			}
 		}
@@ -97,7 +148,22 @@ func DownloadDBs(serverURL string, force bool) error {
 	log.Printf("Downloading database tarball to: %s", tempTarball)
 	start := time.Now()
 
-	if err := downloadFile(tarballURL, tempTarball); err != nil {
+	err = downloadFileWithProgress(tarballURL, tempTarball, func(downloaded, total int64) {
+		var percent float64
+		if total > 0 {
+			percent = float64(downloaded) / float64(total) * 100
+		}
+
+		report(DownloadProgress{
+			Stage:      StageDownload,
+			Version:    metadata.Version,
+			Downloaded: downloaded,
+			Total:      total,
+			Percent:    percent,
+			Message:    downloadMessage(downloaded, total),
+		})
+	})
+	if err != nil {
 		return fmt.Errorf("failed to download database tarball: %w", err)
 	}
 
@@ -107,6 +173,13 @@ func DownloadDBs(serverURL string, force bool) error {
 
 	// Extract the tarball
 	log.Printf("Extracting databases to: %s", resolvers.DataBaseFolderPath)
+	report(DownloadProgress{
+		Stage:   StageExtract,
+		Version: metadata.Version,
+		Percent: 100,
+		Message: "Extracting databases",
+	})
+
 	if err := extractTarball(tempTarball, resolvers.DataBaseFolderPath); err != nil {
 		return fmt.Errorf("failed to extract database tarball: %w", err)
 	}
@@ -120,7 +193,23 @@ func DownloadDBs(serverURL string, force bool) error {
 	}
 
 	log.Printf("Successfully downloaded and installed databases to: %s (version: %s)", resolvers.DataBaseFolderPath, metadata.Version)
+	report(DownloadProgress{
+		Stage:   StageCompleted,
+		Version: metadata.Version,
+		Percent: 100,
+		Message: "Databases installed",
+	})
+
 	return nil
+}
+
+func downloadMessage(downloaded, total int64) string {
+	if total > 0 {
+		return fmt.Sprintf("Downloading %s of %s",
+			humanize.Bytes(uint64(downloaded)), humanize.Bytes(uint64(total)))
+	}
+
+	return "Downloading " + humanize.Bytes(uint64(downloaded))
 }
 
 // fetchMetadata retrieves metadata about the latest database version
@@ -153,6 +242,10 @@ func fetchMetadata(serverURL string) (*DBMetadata, error) {
 
 // downloadFile downloads a file from a URL to a local path with progress reporting
 func downloadFile(url, filepath string) error {
+	return downloadFileWithProgress(url, filepath, nil)
+}
+
+func downloadFileWithProgress(url, filepath string, onProgress func(downloaded, total int64)) error {
 	// Create the file
 	out, err := os.Create(filepath)
 	if err != nil {
@@ -185,6 +278,7 @@ func downloadFile(url, filepath string) error {
 		total:      resp.ContentLength,
 		downloaded: 0,
 		lastReport: time.Now(),
+		onProgress: onProgress,
 	}
 
 	// Writer that writes to file and tracks progress
@@ -196,7 +290,10 @@ func downloadFile(url, filepath string) error {
 		return fmt.Errorf("failed to write downloaded data: %w", err)
 	}
 
-	// Final progress report
+	// Final progress report. Emit one last observation so a consumer that
+	// samples on the ticker cannot be left showing a stale figure below 100%
+	// on a transfer that has already finished.
+	progressWriter.reportNow()
 	fmt.Println()
 
 	return nil
@@ -207,6 +304,7 @@ type progressWriter struct {
 	total      int64
 	downloaded int64
 	lastReport time.Time
+	onProgress func(downloaded, total int64)
 }
 
 func (pw *progressWriter) Write(p []byte) (int, error) {
@@ -215,19 +313,28 @@ func (pw *progressWriter) Write(p []byte) (int, error) {
 
 	// Report progress every second
 	if time.Since(pw.lastReport) > time.Second {
-		if pw.total > 0 {
-			percent := float64(pw.downloaded) / float64(pw.total) * 100
-			fmt.Printf("\rProgress: %.1f%% (%s / %s)",
-				percent,
-				humanize.Bytes(uint64(pw.downloaded)),
-				humanize.Bytes(uint64(pw.total)))
-		} else {
-			fmt.Printf("\rDownloaded: %s", humanize.Bytes(uint64(pw.downloaded)))
-		}
-		pw.lastReport = time.Now()
+		pw.reportNow()
 	}
 
 	return n, nil
+}
+
+func (pw *progressWriter) reportNow() {
+	if pw.total > 0 {
+		percent := float64(pw.downloaded) / float64(pw.total) * 100
+		fmt.Printf("\rProgress: %.1f%% (%s / %s)",
+			percent,
+			humanize.Bytes(uint64(pw.downloaded)),
+			humanize.Bytes(uint64(pw.total)))
+	} else {
+		fmt.Printf("\rDownloaded: %s", humanize.Bytes(uint64(pw.downloaded)))
+	}
+
+	pw.lastReport = time.Now()
+
+	if pw.onProgress != nil {
+		pw.onProgress(pw.downloaded, pw.total)
+	}
 }
 
 // extractTarball extracts a gzipped tarball to the target directory

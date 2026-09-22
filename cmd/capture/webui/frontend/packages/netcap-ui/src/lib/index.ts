@@ -142,4 +142,10 @@ export type {
   SessionStatus,
   ProgressInfo,
   TrySession,
+  DatabaseStatus,
+  DatabaseDownloadStatus,
+  DatabaseDownloadState,
+  DatabaseDownloadStage,
+  DatabaseUpdateResult,
+  MissingDatabase,
 } from './api';

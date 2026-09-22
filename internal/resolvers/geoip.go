@@ -20,7 +20,8 @@
 package resolvers
 
 import (
-	"log"
+	"errors"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -34,6 +35,11 @@ import (
 )
 
 const maxGeoCacheSize = 100000
+
+// ErrGeolocationDBMissing reports an absent GeoLite2 database. Callers match
+// on it to tell "not downloaded yet", which is actionable, from "corrupt",
+// which is not the same remedy.
+var ErrGeolocationDBMissing = errors.New("geolocation database not found")
 
 var (
 	geolocations   = make(map[string]geoRecord)
@@ -58,9 +64,15 @@ type geoRecord struct {
 }
 
 // initGeolocationDB opens handles to the geolocation databases.
-// This function is called when the GeolocationDB flag is enabled, so it will
-// fail fatally if the databases cannot be found or loaded.
-func initGeolocationDB() {
+//
+// It reports a problem instead of terminating the process. This used to be
+// four log.Fatalf calls, which made a missing 61 MB database indistinguishable
+// from a crash: the GUI spawns this binary and saw only "exit status 1" before
+// the first packet was read, on every clean install of every platform, because
+// no installer ships these databases. LookupGeolocation already nil-checks
+// both readers, so a failure here costs geolocation enrichment and nothing
+// else.
+func initGeolocationDB() error {
 	cityPath := filepath.Join(DataBaseFolderPath, "GeoLite2-City.mmdb")
 	asnPath := filepath.Join(DataBaseFolderPath, "GeoLite2-ASN.mmdb")
 
@@ -71,17 +83,17 @@ func initGeolocationDB() {
 
 	// Check if City database file exists
 	if _, err := os.Stat(cityPath); os.IsNotExist(err) {
-		log.Fatalf("geolocation database not found: %s\nPlease download the GeoLite2 databases or disable geolocation with -geoDB=false", cityPath)
+		return fmt.Errorf("%w: %s", ErrGeolocationDBMissing, cityPath)
 	}
 
 	// Check if ASN database file exists
 	if _, err := os.Stat(asnPath); os.IsNotExist(err) {
-		log.Fatalf("geolocation database not found: %s\nPlease download the GeoLite2 databases or disable geolocation with -geoDB=false", asnPath)
+		return fmt.Errorf("%w: %s", ErrGeolocationDBMissing, asnPath)
 	}
 
 	// Initialize City reader
 	if err := initCityReader(); err != nil {
-		log.Fatalf("failed to open city geolocation database at %s: %v\nPlease ensure the database file is valid or disable geolocation with -geoDB=false", cityPath, err)
+		return fmt.Errorf("failed to open city geolocation database at %s: %w", cityPath, err)
 	}
 	resolverLog.Info("successfully loaded city geolocation database",
 		zap.String("path", cityPath),
@@ -89,13 +101,15 @@ func initGeolocationDB() {
 
 	// Initialize ASN reader
 	if err := initAsnReader(); err != nil {
-		log.Fatalf("failed to open ASN geolocation database at %s: %v\nPlease ensure the database file is valid or disable geolocation with -geoDB=false", asnPath, err)
+		return fmt.Errorf("failed to open ASN geolocation database at %s: %w", asnPath, err)
 	}
 	resolverLog.Info("successfully loaded ASN geolocation database",
 		zap.String("path", asnPath),
 	)
 
 	resolverLog.Info("geolocation databases initialized successfully")
+
+	return nil
 }
 
 func initCityReader() (err error) {

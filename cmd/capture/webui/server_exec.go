@@ -30,6 +30,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/dbs"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 )
 
@@ -101,6 +102,20 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		args = append(args, "-dpi")
 	}
 
+	// Disable every enrichment whose database is absent.
+	//
+	// Without this the helper inherits -geoDB=true, the geolocation resolver
+	// cannot find GeoLite2-City.mmdb, and the run aborts before the first
+	// packet. No installer on any platform ships these databases, so that was
+	// every capture on every clean install, reported to the GUI as nothing
+	// more than "exit status 1". Analysis now proceeds with reduced
+	// enrichment while the UI offers the download.
+	if disableFlags := dbs.DisableFlagsForMissingDBs(); len(disableFlags) > 0 {
+		args = append(args, disableFlags...)
+		log.Printf("[Service] Missing databases, disabling enrichment for session %s: %s",
+			job.SessionID, strings.Join(disableFlags, " "))
+	}
+
 	// Add payload capture flag if enabled
 	if s.GetPayloadCapture() {
 		args = append(args, "-payload")
@@ -140,7 +155,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	}
 
 	// Determine executable for job execution
-	// In dev mode, use the current binary; otherwise use the system "net" binary
+	// In dev mode, use the current binary; otherwise locate the bundled helper
 	var executable string
 	if s.devMode {
 		// Dev mode: use the current executable (e.g., ./tmp/main when running with air)
@@ -153,8 +168,21 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 			log.Printf("[Service] Dev mode: using current executable: %s", executable)
 		}
 	} else {
-		// Production mode: use the system "net" binary
-		executable = "net"
+		executable = resolveHelperExecutable()
+		if executable == "" {
+			// Say which binary is missing. Falling through to exec.Command("net")
+			// here would run Windows' own net.exe or Samba's, and report the
+			// resulting usage error as a netcap failure.
+			msg := fmt.Sprintf(
+				"capture helper %q not found next to the application or on PATH; reinstall Netcap Pro",
+				helperName())
+			log.Printf("[Service] %s", msg)
+			s.recordAnalysisFailure(job, msg, "")
+
+			return
+		}
+
+		log.Printf("[Service] Using capture helper: %s", executable)
 	}
 
 	// Create error log file for capturing stdout/stderr
@@ -194,11 +222,8 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	err = cmd.Start()
 	if err != nil {
 		log.Printf("[Service] Failed to start command for session %s: %v", job.SessionID, err)
-		if s.sessionManager != nil {
-			s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, fmt.Sprintf("Failed to start analysis: %v", err), "")
-		} else {
-			s.SetFileError(job.InputFile, fmt.Sprintf("Failed to start analysis: %v", err), "")
-		}
+		s.recordAnalysisFailure(job, fmt.Sprintf("Failed to start analysis: %v", err), "")
+
 		return
 	}
 
@@ -232,13 +257,11 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 			errorLogFile.Close()
 		}
 
-		if s.sessionManager != nil {
-			log.Printf("[Service] Setting error log path for session %s: %s", job.SessionID, errorLogPath)
-			s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, fmt.Sprintf("Analysis failed: %v", err), errorLogPath)
-		} else {
-			// Local mode: track error in fileErrors map
-			s.SetFileError(job.InputFile, fmt.Sprintf("Analysis failed: %v", err), errorLogPath)
-		}
+		// Put the helper's own last words in the summary line. "Analysis
+		// failed: exit status 1" is true and tells nobody anything, and it
+		// was all the UI ever showed.
+		s.recordAnalysisFailure(job, summariseAnalysisFailure(err, errorLogPath), errorLogPath)
+
 		return
 	}
 
@@ -305,4 +328,96 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 
 	// Execute rules automatically after successful analysis (async to not block next job)
 	go s.executeRulesForJob(job)
+}
+
+// recordAnalysisFailure records a failed run against whichever bookkeeping the
+// current mode uses. Both modes always get the error log path, so the UI can
+// offer the full output in local mode too; it used to be passed only in
+// service mode, which is why the desktop app could never show one.
+func (s *Server) recordAnalysisFailure(job *AnalysisJob, message, errorLogPath string) {
+	if s.sessionManager != nil {
+		log.Printf("[Service] Setting error log path for session %s: %s", job.SessionID, errorLogPath)
+		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, message, errorLogPath)
+
+		return
+	}
+
+	s.SetFileError(job.InputFile, message, errorLogPath)
+}
+
+// analysisErrorSummaryLimit is how many trailing bytes of the helper's output
+// are scanned for a usable summary line.
+const analysisErrorSummaryLimit = 8192
+
+// summariseAnalysisFailure builds a one-line failure message that names the
+// cause rather than the exit code.
+func summariseAnalysisFailure(runErr error, errorLogPath string) string {
+	base := fmt.Sprintf("Analysis failed: %v", runErr)
+
+	detail := lastMeaningfulLogLine(errorLogPath)
+	if detail == "" {
+		return base
+	}
+
+	return base + " — " + detail
+}
+
+// lastMeaningfulLogLine returns the final substantive line of the helper's
+// output, skipping blanks and the summary block this file appends.
+func lastMeaningfulLogLine(errorLogPath string) string {
+	if errorLogPath == "" {
+		return ""
+	}
+
+	data, err := os.ReadFile(errorLogPath)
+	if err != nil {
+		return ""
+	}
+
+	if len(data) > analysisErrorSummaryLimit {
+		data = data[len(data)-analysisErrorSummaryLimit:]
+	}
+
+	lines := strings.Split(strings.ReplaceAll(string(data), "\r\n", "\n"), "\n")
+
+	for i := len(lines) - 1; i >= 0; i-- {
+		line := strings.TrimSpace(lines[i])
+		if line == "" || isErrorSummaryLine(line) {
+			continue
+		}
+
+		// Truncate by rune, not by byte: a path or a decoder message can
+		// carry non-ASCII, and cutting mid-rune emits U+FFFD into the UI.
+		const maxDetail = 300
+		if runes := []rune(line); len(runes) > maxDetail {
+			line = string(runes[:maxDetail]) + "…"
+		}
+
+		return line
+	}
+
+	return ""
+}
+
+// errorSummaryPrefixes are the labels written by the summary block above. They
+// restate what the caller already knows, so they are skipped when looking for
+// the helper's own message.
+var errorSummaryPrefixes = []string{
+	"=== Analysis Error Summary ===",
+	"Session ID:",
+	"Input File:",
+	"Output Directory:",
+	"Duration:",
+	"Error:",
+	"Command:",
+}
+
+func isErrorSummaryLine(line string) bool {
+	for _, prefix := range errorSummaryPrefixes {
+		if strings.HasPrefix(line, prefix) {
+			return true
+		}
+	}
+
+	return false
 }

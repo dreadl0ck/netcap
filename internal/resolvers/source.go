@@ -20,6 +20,7 @@
 package resolvers
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 
@@ -109,7 +110,20 @@ func Init(c Config, quietMode bool) {
 		InitServiceDB()
 	}
 	if c.GeolocationDB {
-		initGeolocationDB()
+		if err := initGeolocationDB(); err != nil {
+			// Degrade rather than abort. Terminating here meant a clean
+			// install could not open a single capture, and the caller saw
+			// only an exit code.
+			//
+			// This goes to stderr as well as the structured log because the
+			// GUI captures the child's stderr and shows it: that is the path
+			// by which a user finally learns what went wrong.
+			resolverLog.Warn("geolocation enrichment disabled", zap.Error(err))
+			log.Printf("warning: %v\n"+
+				"geolocation enrichment is disabled for this run. "+
+				"Download the databases from the Databases screen, "+
+				"or pass -geoDB=false to silence this.", err)
+		}
 	}
 	if c.DHCPDB {
 		InitDHCPFingerprintDB()

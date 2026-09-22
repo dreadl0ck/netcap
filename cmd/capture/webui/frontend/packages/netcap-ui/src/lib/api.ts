@@ -105,7 +105,14 @@ function createNoOpApi(): NetcapApiClient {
     getAllSessions: noOpReturn([]),
     selectSession: noOpReturn(undefined),
     getDatabaseInfo: noOpReturn({ version: '', dbPath: '', configRootPath: '', files: [], totalSize: 0, fileCount: 0 }),
-    updateDatabases: noOpReturn({ success: false, message: '' }),
+    updateDatabases: noOpReturn({
+      success: false,
+      started: false,
+      message: '',
+      download: { state: 'idle' as const, downloaded: 0, total: 0, percent: 0 },
+    }),
+    getDatabaseStatus: noOpReturn(null),
+    getDatabaseDownloadProgress: noOpReturn(null),
     getVersion: noOpReturn({ version: '', commit: '', gopacketVersion: '' }),
     getDPIInfo: noOpReturn({ enabled: false, hasSupport: false, ndpiVersion: '', libprotoidentVersion: '', goDpiVersion: '', activeModules: [], availableModules: [], moduleProtocols: {}, ndpiProtocolsUrl: '', libprotoidentProtocolsUrl: '' }),
     getDPIPreferences: noOpReturn({ enabledModules: [], lastUpdated: '' }),
@@ -326,6 +333,73 @@ export interface ProgressInfo {
   errorMessage?: string;
 }
 
+/** Lifecycle of the database download, as opposed to the phase within one. */
+export type DatabaseDownloadState = 'idle' | 'running' | 'completed' | 'failed';
+
+/** Phase within a running download. */
+export type DatabaseDownloadStage = 'metadata' | 'download' | 'extract' | 'completed';
+
+export interface DatabaseDownloadStatus {
+  state: DatabaseDownloadState;
+  stage?: DatabaseDownloadStage;
+  version?: string;
+  downloaded: number;
+  total: number;
+  percent: number;
+  message?: string;
+  error?: string;
+  startedAt?: number;
+  finishedAt?: number;
+}
+
+export interface MissingDatabase {
+  file: string;
+  feature: string;
+}
+
+export interface DatabaseStatus {
+  satisfied: boolean;
+  missing: MissingDatabase[];
+  databaseDir: string;
+  download: DatabaseDownloadStatus;
+}
+
+export interface DatabaseUpdateResult {
+  success: boolean;
+  started: boolean;
+  message: string;
+  download: DatabaseDownloadStatus;
+}
+
+/**
+ * Builds a message from a failed response.
+ *
+ * Reads the body once and tolerates it not being JSON. `await res.json()` on
+ * an error path throws a SyntaxError for any handler that answered with
+ * http.Error, which emits text/plain — and that replaces the real status with
+ * "Unexpected token E in JSON".
+ */
+async function describeFailure(res: Response, fallback: string): Promise<string> {
+  let body = '';
+  try {
+    body = (await res.text()).trim();
+  } catch {
+    body = '';
+  }
+
+  if (body) {
+    try {
+      const parsed = JSON.parse(body);
+      const detail = parsed?.error || parsed?.message;
+      if (detail) return `${fallback}: ${detail}`;
+    } catch {
+      return `${fallback}: ${body.slice(0, 300)}`;
+    }
+  }
+
+  return `${fallback} (HTTP ${res.status})`;
+}
+
 export interface TrySession {
   sessionId: string;
   ip: string;
@@ -354,6 +428,10 @@ export interface FileInfo {
   error?: string;
   errorLogPath?: string;  // Path to detailed error log file
   sessionId?: string;  // Optional, only present in try service mode
+  // Identifier to pass to getErrorLogContent. Present in both service mode
+  // (the session id) and local mode (the file id). Use this rather than
+  // sessionId, which local mode never sets.
+  errorLogId?: string;
   bpfFilter?: string;  // Optional, BPF filter applied during capture
   processingTime?: number;  // Optional, processing duration in seconds
   hash?: string;  // Optional, SHA256 hash of the file
@@ -1325,13 +1403,36 @@ function createApiWithBase(apiBase: string) {
     return res.json();
   },
 
-  async updateDatabases(): Promise<{success: boolean; message: string; error?: string}> {
+  async updateDatabases(): Promise<DatabaseUpdateResult> {
     const res = await fetch(`${apiBase}/dbs/update`, {
       method: 'POST',
     });
     if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'Failed to update databases');
+      throw new Error(await describeFailure(res, 'Failed to start database download'));
+    }
+    return res.json();
+  },
+
+  // getDatabaseStatus reports which required databases are missing.
+  //
+  // The endpoint only exists in the direct edition; the App Store build runs
+  // the collector in-process with geolocation off and needs no download. A 404
+  // is therefore "nothing is required here", not a failure, and must not
+  // surface a banner asking for a download that build cannot perform.
+  async getDatabaseStatus(): Promise<DatabaseStatus | null> {
+    const res = await fetch(`${apiBase}/dbs/status`);
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      throw new Error(await describeFailure(res, 'Failed to fetch database status'));
+    }
+    return res.json();
+  },
+
+  async getDatabaseDownloadProgress(): Promise<DatabaseDownloadStatus | null> {
+    const res = await fetch(`${apiBase}/dbs/update/progress`);
+    if (res.status === 404) return null;
+    if (!res.ok) {
+      throw new Error(await describeFailure(res, 'Failed to fetch download progress'));
     }
     return res.json();
   },

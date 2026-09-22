@@ -34,7 +34,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ShieldIcon from '@mui/icons-material/Shield';
 import { ReactRouterNetcapProvider } from '@dreadl0ck/netcap-ui/adapters/react-router';
 import { api, getBackendUrl } from '@dreadl0ck/netcap-ui/lib';
-import { ConnectionOverlay } from '@dreadl0ck/netcap-ui/components';
+import { ConnectionOverlay, DatabaseBootstrap } from '@dreadl0ck/netcap-ui/components';
 import { mutate as globalMutate } from 'swr';
 import { AppRoutes } from './routes';
 import { netcapTheme } from './theme';
@@ -358,6 +358,8 @@ function AppContent() {
         message={connectionStatus.message}
         subMessage={connectionStatus.subMessage}
       />
+      {/* Offers the one-time database download when a required DB is absent. */}
+      <DatabaseBootstrap />
     </>
   );
 }

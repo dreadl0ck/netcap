@@ -36,6 +36,15 @@ type FileInfo struct {
 	Hash             string  `json:"hash,omitempty"`           // SHA256 hash of the file
 	HasReportedIssue bool    `json:"hasReportedIssue"`         // Whether an issue report has been submitted for this file
 	SessionID        string  `json:"sessionId,omitempty"`      // Session ID (service mode only)
+
+	// ErrorLogID is the identifier to pass to /api/error-log/{id}: the session
+	// ID in service mode, the hashed file ID in local mode.
+	//
+	// It exists because the UI used to key the crash-log button on SessionID,
+	// a field local mode never sets — so the desktop app, which is always
+	// local mode, rendered no way to read a failure and offered only a retry
+	// that failed identically.
+	ErrorLogID string `json:"errorLogId,omitempty"`
 }
 
 // AuditFileInfo extends FileInfo with audit record specific metadata

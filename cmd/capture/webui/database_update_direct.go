@@ -3,43 +3,38 @@
 package webui
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
-
-	"github.com/dreadl0ck/netcap/internal/dbs"
 )
 
-// handleUpdateDatabases handles database update requests.
+// handleUpdateDatabases starts a database download and reports the resulting
+// state.
+//
+// It used to fire a goroutine and answer "Database update started
+// successfully" unconditionally, so a download that failed — no network, a
+// 404 from the database host — was indistinguishable from one that worked.
+// The response now carries the tracker, and the caller polls
+// /api/dbs/update/progress for the outcome.
 func (s *Server) handleUpdateDatabases(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[WebUI] handleUpdateDatabases called: method=%s", r.Method)
 
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+
 		return
 	}
 
-	go func() {
-		log.Printf("[WebUI] Starting database download...")
-		if err := dbs.DownloadDBs("", true); err != nil {
-			log.Printf("[WebUI] Database download failed: %v", err)
-		} else {
-			log.Printf("[WebUI] Database download completed successfully")
-		}
-	}()
+	started := startDatabaseDownload(true)
 
-	response := map[string]any{
-		"success": true,
-		"message": "Database update started in background. Check logs for progress.",
+	message := "Database download started"
+	if !started {
+		message = "A database download is already running"
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("[WebUI] handleUpdateDatabases: failed to encode response: %v", err)
-		http.Error(w, fmt.Sprintf("Failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	log.Printf("[WebUI] handleUpdateDatabases: response sent successfully")
+	respondDatabaseJSON(w, map[string]any{
+		"success":  true,
+		"started":  started,
+		"message":  message,
+		"download": databaseDownloadStatus(),
+	})
 }

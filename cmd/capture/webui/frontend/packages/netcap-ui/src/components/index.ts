@@ -59,3 +59,7 @@ export { default as SearchInput } from './SearchInput';
 // Stat display components
 export { default as StatBox, StatBoxGrid } from './StatBox';
 export type { StatBoxProps, StatBoxGridProps } from './StatBox';
+
+// One-time database download prompt
+export { default as DatabaseBootstrap } from './DatabaseBootstrap';
+export type { DatabaseBootstrapProps } from './DatabaseBootstrap';
