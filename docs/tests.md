@@ -69,7 +69,7 @@ ok      github.com/dreadl0ck/netcap/collector    3.242s
 --- PASS: TestRoundTrip (0.00s)
 PASS
 ok      github.com/dreadl0ck/netcap/delimited    0.526s
-?       github.com/dreadl0ck/netcap/dpi    [no test files]
+?       github.com/dreadl0ck/netcap/internal/dpi    [no test files]
 ?       github.com/dreadl0ck/netcap/decoder    [no test files]
 ?       github.com/dreadl0ck/netcap/io    [no test files]
 ?       github.com/dreadl0ck/netcap/label    [no test files]
@@ -85,7 +85,7 @@ ok      github.com/dreadl0ck/netcap/types    0.668s
 === RUN   TestStringToTime
 --- PASS: TestStringToTime (0.00s)
 PASS
-ok      github.com/dreadl0ck/netcap/utils    0.932s
+ok      github.com/dreadl0ck/netcap/internal/utils    0.932s
 ```
 
 ## Benchmarks
@@ -101,7 +101,7 @@ BenchmarkReadPcap-12                   7557667           137 ns/op         106 B
 pkg: github.com/dreadl0ck/netcap/types
 BenchmarkMarshal-12           9817819           110 ns/op          64 B/op           1 allocs/op
 BenchmarkUnmarshal-12         8703766           134 ns/op          40 B/op           2 allocs/op
-pkg: github.com/dreadl0ck/netcap/utils
+pkg: github.com/dreadl0ck/netcap/internal/utils
 BenchmarkStringToTime-12                   8842005           137 ns/op          32 B/op           1 allocs/op
 BenchmarkStringToTimeFieldsFunc-12         6809409           185 ns/op          32 B/op           1 allocs/op
 BenchmarkProgressOld-12                   54425902            21.0 ns/op           0 B/op           0 allocs/op

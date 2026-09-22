@@ -25,8 +25,8 @@ import (
 	"github.com/gopacket/gopacket"
 	"go.uber.org/zap"
 
+	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // StreamFactory is a structure that manages TCP stream reassembly

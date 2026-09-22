@@ -29,7 +29,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dreadl0ck/netcap/internal/utils"
 )
 
 var (

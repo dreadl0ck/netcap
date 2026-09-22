@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/internal/encoder"
 	"github.com/dreadl0ck/netcap/label/manager"
 
-	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dreadl0ck/netcap/internal/utils"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/mgutz/ansi"
@@ -29,8 +29,8 @@ import (
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/dpi"
-	"github.com/dreadl0ck/netcap/magika"
+	"github.com/dreadl0ck/netcap/internal/dpi"
+	"github.com/dreadl0ck/netcap/internal/magika"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"

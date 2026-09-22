@@ -37,7 +37,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/discovery"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dreadl0ck/netcap/internal/utils"
 )
 
 // DeviceEnricher is a callback function to enrich a device profile by IP.

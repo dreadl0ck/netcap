@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/netcap/firewall"
+	"github.com/dreadl0ck/netcap/internal/firewall"
 	"github.com/dreadl0ck/netcap/internal/performance"
 	"github.com/dreadl0ck/netcap/types"
 )

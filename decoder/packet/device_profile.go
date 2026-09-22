@@ -31,7 +31,7 @@ import (
 	"github.com/gopacket/gopacket/layers"
 
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
-	"github.com/dreadl0ck/netcap/dpi"
+	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )

@@ -26,9 +26,9 @@ RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep
     -ldflags "-s -w \
         -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
         -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
-        -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
-        -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-2 \
-        -X github.com/dreadl0ck/netcap/dpi.GoDPIVersion=${GO_DPI_VERSION}" \
+        -X github.com/dreadl0ck/netcap/internal/dpi.NDPIVersion=4.14.0 \
+        -X github.com/dreadl0ck/netcap/internal/dpi.LibprotoidentVersion=2.0.15-2 \
+        -X github.com/dreadl0ck/netcap/internal/dpi.GoDPIVersion=${GO_DPI_VERSION}" \
     -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd/net
 
 FROM --platform=linux/amd64 ubuntu:26.04

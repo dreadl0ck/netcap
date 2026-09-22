@@ -31,7 +31,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/internal/encoder"
 )
 
 // TODO: integrate core functionality into NETCAP and add this tool as cmd/analyze

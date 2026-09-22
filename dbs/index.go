@@ -40,7 +40,7 @@ import (
 	"github.com/blevesearch/bleve"
 	"github.com/dustin/go-humanize"
 
-	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dreadl0ck/netcap/internal/utils"
 )
 
 // exploit models information about a software exploit.

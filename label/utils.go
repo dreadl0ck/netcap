@@ -30,8 +30,8 @@ import (
 	"sync"
 
 	"github.com/cheggaaa/pb"
+	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 var (

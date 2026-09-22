@@ -336,7 +336,7 @@ actions:
 ### Creating a Manager
 
 ```go
-import "github.com/dreadl0ck/netcap/firewall"
+import "github.com/dreadl0ck/netcap/internal/firewall"
 
 // Create with default config
 manager, err := firewall.NewManager(nil)
@@ -424,7 +424,7 @@ err := manager.Close()
 
 ```go
 import (
-    "github.com/dreadl0ck/netcap/firewall"
+    "github.com/dreadl0ck/netcap/internal/firewall"
     "github.com/dreadl0ck/netcap/rules"
 )
 

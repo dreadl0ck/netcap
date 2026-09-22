@@ -27,7 +27,7 @@ import (
 	"testing"
 
 	"github.com/dreadl0ck/netcap/decoder/config"
-	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dreadl0ck/netcap/internal/utils"
 )
 
 func TestStreamDirectionHTTP(t *testing.T) {

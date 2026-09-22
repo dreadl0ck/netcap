@@ -20,8 +20,8 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/maltego"
+	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toFiles() {

@@ -37,7 +37,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/table"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dreadl0ck/netcap/internal/utils"
 )
 
 // eg: 04/15/2014-11:53:20.462091

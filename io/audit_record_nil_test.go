@@ -4,7 +4,7 @@ import (
 	"runtime/debug"
 	"testing"
 
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/internal/encoder"
 	"github.com/dreadl0ck/netcap/types"
 )
 

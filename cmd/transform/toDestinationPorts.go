@@ -24,9 +24,9 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/dreadl0ck/maltego"
+	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 func toDestinationPorts() {

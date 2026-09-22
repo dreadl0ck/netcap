@@ -30,9 +30,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // SoftwareInfo contains software details including flows and community IDs

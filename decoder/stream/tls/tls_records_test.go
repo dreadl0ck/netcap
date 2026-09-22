@@ -16,7 +16,7 @@ import (
 	"github.com/gopacket/gopacket"
 
 	"github.com/dreadl0ck/netcap/decoder/core"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/internal/encoder"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/types"

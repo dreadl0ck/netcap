@@ -43,7 +43,7 @@ import (
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/dpi"
+	"github.com/dreadl0ck/netcap/internal/dpi"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )

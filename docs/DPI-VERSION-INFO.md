@@ -140,8 +140,8 @@ RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep
     -ldflags "-s -w \
         -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
         -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
-        -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
-        -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1" \
+        -X github.com/dreadl0ck/netcap/internal/dpi.NDPIVersion=4.14.0 \
+        -X github.com/dreadl0ck/netcap/internal/dpi.LibprotoidentVersion=2.0.15-1" \
     -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd/net
 ```
 
@@ -154,8 +154,8 @@ For local builds, you can optionally set DPI version information:
 GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" go.mod | grep -v indirect | awk '{print $2}')
 go build -ldflags "-s -w \
   -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
-  -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
-  -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1" \
+  -X github.com/dreadl0ck/netcap/internal/dpi.NDPIVersion=4.14.0 \
+  -X github.com/dreadl0ck/netcap/internal/dpi.LibprotoidentVersion=2.0.15-1" \
   -o bin/net github.com/dreadl0ck/netcap/cmd/net
 ```
 

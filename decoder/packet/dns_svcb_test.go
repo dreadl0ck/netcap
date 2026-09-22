@@ -10,7 +10,7 @@ import (
 	"github.com/gopacket/gopacket/layers"
 
 	"github.com/dreadl0ck/netcap/decoder/config"
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/internal/encoder"
 	"github.com/dreadl0ck/netcap/types"
 )
 

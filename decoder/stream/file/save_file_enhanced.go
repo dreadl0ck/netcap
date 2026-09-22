@@ -34,9 +34,9 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/core"
 	"github.com/dreadl0ck/netcap/defaults"
-	magikapkg "github.com/dreadl0ck/netcap/magika"
+	magikapkg "github.com/dreadl0ck/netcap/internal/magika"
+	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // sanitizeStringFields sanitizes string fields to ensure valid UTF-8 for protobuf encoding.

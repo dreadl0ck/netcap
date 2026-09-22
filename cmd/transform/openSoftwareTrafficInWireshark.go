@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/maltego"
-	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dreadl0ck/netcap/internal/utils"
 )
 
 func openSoftwareTrafficInWireshark() {

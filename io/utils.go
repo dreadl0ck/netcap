@@ -44,9 +44,9 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/dpi"
+	"github.com/dreadl0ck/netcap/internal/dpi"
+	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 const newline = "\n"

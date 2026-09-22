@@ -23,7 +23,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/internal/encoder"
 
 	"github.com/prometheus/client_golang/prometheus"
 )

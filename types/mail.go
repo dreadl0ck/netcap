@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/internal/encoder"
 )
 
 const (

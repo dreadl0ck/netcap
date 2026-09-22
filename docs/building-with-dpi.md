@@ -106,8 +106,8 @@ Docker builds automatically include specific DPI library versions in the build m
 
 ```dockerfile
 # These versions are set in the Dockerfile
--X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0
--X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1
+-X github.com/dreadl0ck/netcap/internal/dpi.NDPIVersion=4.14.0
+-X github.com/dreadl0ck/netcap/internal/dpi.LibprotoidentVersion=2.0.15-1
 ```
 
 ### Local Builds with Version Info
@@ -125,8 +125,8 @@ rpm -qa | grep -E '(ndpi|protoident)'  # RedHat/CentOS
 
 # Build with version information
 go build -ldflags "-s -w \
-  -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
-  -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1" \
+  -X github.com/dreadl0ck/netcap/internal/dpi.NDPIVersion=4.14.0 \
+  -X github.com/dreadl0ck/netcap/internal/dpi.LibprotoidentVersion=2.0.15-1" \
   -o bin/net github.com/dreadl0ck/netcap/cmd/net
 ```
 

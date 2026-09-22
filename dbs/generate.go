@@ -33,7 +33,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dreadl0ck/netcap/internal/utils"
 
 	"github.com/dustin/go-humanize"
 

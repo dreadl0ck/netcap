@@ -32,7 +32,7 @@ import (
 
 	"github.com/cheggaaa/pb"
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/utils"
+	"github.com/dreadl0ck/netcap/internal/utils"
 )
 
 // CustomMap uses info from a csv file to label the data

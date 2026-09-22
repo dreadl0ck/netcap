@@ -26,7 +26,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dreadl0ck/netcap/encoder"
+	"github.com/dreadl0ck/netcap/internal/encoder"
 
 	"github.com/mgutz/ansi"
 	"gonum.org/v1/gonum/stat"

@@ -72,13 +72,13 @@ import (
 	streamutils "github.com/dreadl0ck/netcap/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/dpi"
+	"github.com/dreadl0ck/netcap/internal/dpi"
+	"github.com/dreadl0ck/netcap/internal/magika"
 	"github.com/dreadl0ck/netcap/internal/metrics"
+	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/magika"
 	"github.com/dreadl0ck/netcap/reassembly"
 	"github.com/dreadl0ck/netcap/rules"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // fileError tracks errors that occurred during file processing

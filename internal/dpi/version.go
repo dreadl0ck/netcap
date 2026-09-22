@@ -22,7 +22,7 @@
 package dpi
 
 // These variables can be set at build time using ldflags
-// Example: -ldflags "-X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0"
+// Example: -ldflags "-X github.com/dreadl0ck/netcap/internal/dpi.NDPIVersion=4.14.0"
 var (
 	// NDPIVersion is the version of nDPI library linked against
 	NDPIVersion = "unknown"

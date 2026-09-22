@@ -33,8 +33,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/dreadl0ck/netcap/utils"
 )
 
 // ConnectionSummary represents aggregated information for a single connection

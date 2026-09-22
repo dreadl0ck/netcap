@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/netcap/firewall"
+	"github.com/dreadl0ck/netcap/internal/firewall"
 )
 
 // Global firewall manager instance for injection handlers.
