@@ -204,7 +204,7 @@ func (cp *certificateProcessor) initWorkers(bufferSize int, numWorkers int) {
 }
 
 // flushCertificates writes all cached certificates to disk
-func flushCertificates(d *decoder.StreamDecoder) error {
+func flushCertificates(d *decoder.StreamDecoder) {
 	tlsLog.Info("Flushing certificates", zap.Int("count", certificates.Size()))
 
 	cp := certificateProcessor{}
@@ -240,8 +240,6 @@ func flushCertificates(d *decoder.StreamDecoder) error {
 		utils.ClearLine()
 		fmt.Println("Flushed", cp.numDone, "TLSCertificate audit records")
 	}
-
-	return nil
 }
 
 // GetCertificateCount returns the number of certificates in the cache

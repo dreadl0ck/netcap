@@ -24,7 +24,6 @@ import (
 	"math/big"
 	"slices"
 	"testing"
-	"time"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 )
@@ -192,100 +191,6 @@ func TestFormatSerialNumber(t *testing.T) {
 			if result != tt.expected {
 				t.Errorf("Expected %q, got %q", tt.expected, result)
 			}
-		})
-	}
-}
-
-// TestParseTLSRecords tests TLS record parsing logic
-func TestParseTLSRecords(t *testing.T) {
-	tests := []struct {
-		name        string
-		data        []byte
-		description string
-	}{
-		{
-			name:        "Empty data",
-			data:        []byte{},
-			description: "Should handle empty input gracefully",
-		},
-		{
-			name: "Single TLS record - ClientHello",
-			data: []byte{
-				0x16,       // Content Type: Handshake
-				0x03, 0x03, // TLS Version 1.2
-				0x00, 0x05, // Length: 5 bytes
-				0x01,             // Handshake Type: ClientHello
-				0x00, 0x00, 0x01, // Handshake Length: 1 byte
-				0x00, // Handshake data
-			},
-			description: "Should parse a valid ClientHello record",
-		},
-		{
-			name: "Multiple TLS records",
-			data: []byte{
-				// First record - ClientHello
-				0x16,       // Content Type: Handshake
-				0x03, 0x03, // TLS Version 1.2
-				0x00, 0x05, // Length: 5 bytes
-				0x01,             // Handshake Type: ClientHello
-				0x00, 0x00, 0x01, // Handshake Length: 1 byte
-				0x00, // Handshake data
-				// Second record - ServerHello
-				0x16,       // Content Type: Handshake
-				0x03, 0x03, // TLS Version 1.2
-				0x00, 0x05, // Length: 5 bytes
-				0x02,             // Handshake Type: ServerHello
-				0x00, 0x00, 0x01, // Handshake Length: 1 byte
-				0x00, // Handshake data
-			},
-			description: "Should parse multiple TLS records",
-		},
-		{
-			name: "Non-handshake record",
-			data: []byte{
-				0x17,       // Content Type: Application Data
-				0x03, 0x03, // TLS Version 1.2
-				0x00, 0x05, // Length: 5 bytes
-				0x01, 0x02, 0x03, 0x04, 0x05, // Application data
-			},
-			description: "Should skip non-handshake records",
-		},
-		{
-			name: "Truncated record",
-			data: []byte{
-				0x16,       // Content Type: Handshake
-				0x03, 0x03, // TLS Version 1.2
-				0x00, 0xFF, // Length: 255 bytes (but data is truncated)
-				0x01, // Handshake Type
-			},
-			description: "Should handle truncated records gracefully",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Create a mock TLS reader
-			reader := &tlsReader{
-				conversation: &core.ConversationInfo{
-					Ident:             "test-conv",
-					ClientIP:          "192.168.1.1",
-					ServerIP:          "192.168.1.2",
-					ClientPort:        54321,
-					ServerPort:        443,
-					FirstClientPacket: time.Now(),
-					Data:              core.DataFragments{},
-				},
-			}
-
-			// This should not panic
-			defer func() {
-				if r := recover(); r != nil {
-					t.Errorf("parseTLSRecords panicked: %v", r)
-				}
-			}()
-
-			reader.parseTLSRecords(tt.data)
-			t.Logf("Test completed: %s", tt.description)
 		})
 	}
 }

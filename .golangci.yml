@@ -21,7 +21,7 @@ linters:
     - godot
     - godox
     - goheader
-    - gomodguard
+    - gomodguard_v2
     - goprintffuncname
     - gosec
     - lll
@@ -100,7 +100,6 @@ linters:
           - gocritic
         text: 'unnecessaryDefer:'
     paths:
-      - (^|/)tls($|/)
       - test/testdata_etc
       - third_party$
       - builtin$
@@ -118,7 +117,6 @@ formatters:
   exclusions:
     generated: lax
     paths:
-      - (^|/)tls($|/)
       - test/testdata_etc
       - third_party$
       - builtin$

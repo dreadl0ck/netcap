@@ -1,0 +1,17 @@
+# Repo-level tool pins.
+#
+# golangci-lint must be built with a Go toolchain at least as new as the go
+# directive in go.mod, or it refuses to start at all:
+#
+#   can't load config: the Go language version (go1.26) used to build
+#   golangci-lint is lower than the targeted Go version (1.27.0)
+#
+# That is not a warning and not a degraded run -- the linter lints nothing. It
+# is why `zeus lint` had been silently doing nothing on this module: the
+# unpinned shim resolved to 2.11.3, built with go1.26.1, against go.mod's
+# go 1.27.0. 2.13.2 is built with go1.27.0.
+#
+# Bump this together with the go directive in go.mod, and check the pairing with
+#   golangci-lint --version
+[tools]
+golangci-lint = "2.13.2"

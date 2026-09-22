@@ -116,7 +116,9 @@ func (f *tlsRecordFramer) feed(data []byte, timestamp int64) {
 		if f.headerBytes < 5 {
 			n := copy(f.header[f.headerBytes:], data)
 			f.headerBytes += n
-			f.offset += uint64(n)
+			// n comes from copy(), so it is non-negative and bounded by the
+			// destination length. G115 cannot see that.
+			f.offset += uint64(n) //nolint:gosec
 			data = data[n:]
 			f.record.ContentType = uint32(f.header[0])
 			if f.headerBytes >= 3 {
@@ -145,8 +147,10 @@ func (f *tlsRecordFramer) feed(data []byte, timestamp int64) {
 				f.certificateLimit = true
 			}
 		}
-		f.record.ObservedLength += uint32(n)
-		f.offset += uint64(n)
+		// Both conversions take n from copy(): non-negative, bounded by the
+		// slice length, so neither can wrap. G115 cannot see that.
+		f.record.ObservedLength += uint32(n) //nolint:gosec
+		f.offset += uint64(n)                //nolint:gosec
 		data = data[n:]
 		if f.record.ObservedLength != f.record.Length {
 			continue

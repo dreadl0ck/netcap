@@ -63,9 +63,28 @@ Key settings in `.golangci.yml`:
 - Function limits: 20 cyclomatic complexity, 125 lines, 60 statements
 - Imports: `goimports` with local prefix `github.com/dreadl0ck/netcap`
 - Test files excluded from linting (TODO to enable)
-- `tls/` directories skipped, which silently excludes `internal/decoder/stream/tls/` (10 files) from both linting and formatting. The `sshx/` exclusion beside it matched no directory in the repo and was removed
-- `golangci-lint` is not wired into CI or the Makefile; it runs only via `zeus lint`. 285 files are not `goimports -local`-clean and 81 are not `gofmt`-clean, so a full run is not currently green
 - `issues-exit-code: 0` (not yet enforced)
+
+**The version is pinned in `mise.toml`, and it has to be.** golangci-lint refuses
+to start when built with a Go toolchain older than the `go` directive in
+`go.mod` — *"can't load config: the Go language version (go1.26) used to build
+golangci-lint is lower than the targeted Go version (1.27.0)"*. That is not a
+degraded run, it lints nothing. Bump the pin whenever the `go` directive moves.
+
+**A full run is not green: 16,063 issues.** Overwhelmingly style — `wsl_v5`
+3,861, `depguard` 2,465, `nlreturn` 2,181, `godot` 1,985, `goconst` 1,502. The
+substantive tail is `unused` 527, `gosec` 523, `errcheck` 169, `staticcheck` 138.
+Separately, 285 files are not `goimports -local`-clean and 81 not `gofmt`-clean,
+so never run either formatter repo-wide: it rewrites ~250 unrelated files and the
+generated `types/netcap.pb.go`. Format only what you touched.
+
+`golangci-lint` runs via `zeus lint` / `zeus static-analyze` only; it is in
+neither CI nor the Makefile.
+
+Two path exclusions were removed in 2026-09. `sshx/` matched no directory in the
+repo. `tls/` was hiding `internal/decoder/stream/tls/` from linting *and*
+formatting; its 13 substantive findings are fixed and the package is now clean
+of `gosec`, `staticcheck`, `unused` and `unparam`.
 
 ## Go Workspace
 

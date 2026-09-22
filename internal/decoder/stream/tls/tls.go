@@ -101,10 +101,8 @@ var Decoder = &decoder.StreamDecoder{
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {
 		// Flush all certificates before shutdown
-		err := flushCertificates(sd)
-		if err != nil {
-			tlsLog.Error("Failed to flush certificates", zap.Error(err))
-		}
+		flushCertificates(sd)
+
 		return tlsLog.Sync()
 	},
 	Factory: &tlsReader{},
@@ -114,19 +112,3 @@ var Decoder = &decoder.StreamDecoder{
 var (
 	serviceTLS = "TLSCertificate"
 )
-
-// isTLSHandshake checks if the data starts with a TLS handshake record
-func isTLSHandshake(data []byte) bool {
-	if len(data) < 6 {
-		return false
-	}
-
-	// Check for TLS record header
-	// Byte 0: Content Type (0x16 = Handshake)
-	// Bytes 1-2: TLS Version (0x03, 0x00-0x04 for TLS 1.0-1.3)
-	// Bytes 3-4: Length
-	// Byte 5: Handshake Type
-	return data[0] == recordTypeHandshake &&
-		data[1] == 0x03 &&
-		data[2] <= 0x04
-}

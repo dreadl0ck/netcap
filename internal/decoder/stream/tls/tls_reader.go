@@ -20,17 +20,21 @@
 package tls
 
 import (
-	"bytes"
-	"crypto/dsa"
+	// crypto/dsa is deprecated, and is imported to RECOGNISE DSA public keys in
+	// certificates observed on the wire, not to perform DSA. An analyser that
+	// cannot name a legacy algorithm cannot report it.
+	"crypto/dsa" //nolint:staticcheck
 	"crypto/ecdsa"
 	"crypto/rsa"
-	"crypto/sha1"
+	// SHA-1 here is a certificate fingerprint, the identifier every X.509 tool
+	// and UI displays, not a security primitive. Omitting it would make records
+	// uncorrelatable with other tooling.
+	"crypto/sha1" //nolint:gosec
 	"crypto/sha256"
 	"crypto/x509"
-	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"io"
+	"math"
 	"math/big"
 	"time"
 
@@ -76,92 +80,6 @@ func (h *tlsReader) Decode() {
 	tlsLog.Info("TLS decode complete",
 		zap.String("ident", h.conversation.Ident),
 	)
-}
-
-// parseTLSRecords parses TLS records from the byte stream
-func (h *tlsReader) parseTLSRecords(data []byte) {
-	reader := bytes.NewReader(data)
-
-	for {
-		// Read TLS record header (5 bytes)
-		var recordHeader [5]byte
-		n, err := reader.Read(recordHeader[:])
-		if err == io.EOF || n < 5 {
-			break
-		}
-		if err != nil {
-			tlsLog.Debug("Error reading TLS record header", zap.Error(err))
-			break
-		}
-
-		contentType := recordHeader[0]
-		// version := binary.BigEndian.Uint16(recordHeader[1:3])
-		length := binary.BigEndian.Uint16(recordHeader[3:5])
-
-		tlsLog.Debug("TLS record",
-			zap.Uint8("contentType", contentType),
-			zap.Uint16("length", length),
-		)
-
-		// Check if it's a handshake record
-		if contentType != recordTypeHandshake {
-			// Skip this record
-			_, err = reader.Seek(int64(length), io.SeekCurrent)
-			if err != nil {
-				break
-			}
-			continue
-		}
-
-		// Read the handshake data
-		handshakeData := make([]byte, length)
-		n, err = reader.Read(handshakeData)
-		if err != nil || n < int(length) {
-			tlsLog.Debug("Error reading handshake data", zap.Error(err))
-			break
-		}
-
-		// Parse handshake messages within this record
-		h.parseHandshakeMessages(handshakeData)
-	}
-}
-
-// parseHandshakeMessages parses handshake messages from the data
-func (h *tlsReader) parseHandshakeMessages(data []byte) {
-	offset := 0
-
-	for offset < len(data) {
-		if offset+4 > len(data) {
-			break
-		}
-
-		// Read handshake message header
-		handshakeType := data[offset]
-		msgLength := int(data[offset+1])<<16 | int(data[offset+2])<<8 | int(data[offset+3])
-		offset += 4
-
-		tlsLog.Debug("Handshake message",
-			zap.Uint8("type", handshakeType),
-			zap.Int("length", msgLength),
-		)
-
-		if offset+msgLength > len(data) {
-			tlsLog.Debug("Handshake message length exceeds available data")
-			break
-		}
-
-		msgData := data[offset : offset+msgLength]
-
-		// Check if it's a Certificate message (0x0b)
-		if handshakeType == handshakeTypeCertificate {
-			tlsLog.Info("Found Certificate handshake message",
-				zap.Int("length", msgLength),
-			)
-			h.parseCertificateMessage(msgData)
-		}
-
-		offset += msgLength
-	}
 }
 
 // parseCertificateMessage parses a TLS Certificate handshake message
@@ -235,7 +153,7 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32) {
 
 	// Calculate fingerprints
 	sha256Hash := sha256.Sum256(certData)
-	sha1Hash := sha1.Sum(certData)
+	sha1Hash := sha1.Sum(certData) //nolint:gosec // fingerprint, not a security primitive
 
 	sha256Fingerprint := hex.EncodeToString(sha256Hash[:])
 	sha1Fingerprint := hex.EncodeToString(sha1Hash[:])
@@ -343,7 +261,7 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32) {
 	// Extract MaxPathLen for CA certificates
 	maxPathLen := int32(-1)
 	if cert.IsCA && cert.MaxPathLen > 0 {
-		maxPathLen = int32(cert.MaxPathLen)
+		maxPathLen = clampInt32(cert.MaxPathLen)
 	} else if cert.IsCA && cert.MaxPathLenZero {
 		maxPathLen = 0
 	}
@@ -386,7 +304,7 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32) {
 		PublicKeyAlgorithm:  cert.PublicKeyAlgorithm.String(),
 		PublicKeySize:       pubKeySize,
 		SerialNumber:        formatSerialNumber(cert.SerialNumber),
-		Version:             int32(cert.Version),
+		Version:             clampInt32(cert.Version),
 		SHA256Fingerprint:   sha256Fingerprint,
 		SHA1Fingerprint:     sha1Fingerprint,
 		KeyUsage:            keyUsage,
@@ -496,11 +414,11 @@ func extractExtKeyUsage(extUsages []x509.ExtKeyUsage) []string {
 func getPublicKeySize(cert *x509.Certificate) int32 {
 	switch pub := cert.PublicKey.(type) {
 	case *rsa.PublicKey:
-		return int32(pub.N.BitLen())
+		return clampInt32(pub.N.BitLen())
 	case *dsa.PublicKey:
-		return int32(pub.P.BitLen())
+		return clampInt32(pub.P.BitLen())
 	case *ecdsa.PublicKey:
-		return int32(pub.Curve.Params().BitSize)
+		return clampInt32(pub.Curve.Params().BitSize)
 	default:
 		return 0
 	}
@@ -541,4 +459,24 @@ func isShortKeySize(alg x509.PublicKeyAlgorithm, keySize int32) bool {
 	default:
 		return false
 	}
+}
+
+// clampInt32 narrows an int to an int32, saturating rather than wrapping.
+//
+// Every caller converts a field parsed out of an X.509 certificate, and netcap
+// parses certificates supplied by whatever was on the wire. On a 64-bit build
+// an unchecked conversion wraps silently, so a hostile certificate claiming a
+// path length or key size above 2^31 would land a negative value in the audit
+// record. Saturating keeps the record monotonic in the input and keeps the
+// value recognisably wrong rather than plausibly small.
+func clampInt32(v int) int32 {
+	if v > math.MaxInt32 {
+		return math.MaxInt32
+	}
+
+	if v < math.MinInt32 {
+		return math.MinInt32
+	}
+
+	return int32(v)
 }
