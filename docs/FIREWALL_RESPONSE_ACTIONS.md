@@ -425,7 +425,7 @@ err := manager.Close()
 ```go
 import (
     "github.com/dreadl0ck/netcap/internal/firewall"
-    "github.com/dreadl0ck/netcap/rules"
+    "github.com/dreadl0ck/netcap/internal/rules"
 )
 
 // Create firewall manager

@@ -55,7 +55,7 @@ test-hyperscan:
 		./internal/filter/... \
 		./decoder/stream/service/... \
 		./decoder/stream/software/... \
-		./rules/...
+		./internal/rules/...
 
 # Performance benchmarks. Scoped to ./... because the 235 Benchmark functions
 # live beside the code they measure (collector/, reassembly/, io/, decoder/...);

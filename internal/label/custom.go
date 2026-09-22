@@ -15,8 +15,8 @@ package label
 
 import (
 	"fmt"
+	"github.com/dreadl0ck/netcap/internal/label/manager"
 	netio "github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/label/manager"
 	"github.com/dreadl0ck/netcap/types"
 	gzip "github.com/klauspost/pgzip"
 	"github.com/pkg/errors"

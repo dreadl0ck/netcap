@@ -135,7 +135,7 @@ jobs:
             ./decoder/stream/http \
             ./decoder/stream/ssh \
             ./decoder/stream/tls \
-            ./resolvers \
+            ./internal/resolvers \
             ./collector
 
           # Mirrors the test-unit target in Makefile. The race detector

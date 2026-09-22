@@ -56,12 +56,12 @@ import (
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/filter"
+	"github.com/dreadl0ck/netcap/internal/label/manager"
 	"github.com/dreadl0ck/netcap/internal/performance"
+	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/internal/utils"
 	netio "github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/label/manager"
 	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/rules"
 	"github.com/dreadl0ck/netcap/types"
 )
 

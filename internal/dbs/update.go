@@ -29,8 +29,8 @@ import (
 	"path/filepath"
 
 	"github.com/dreadl0ck/netcap/internal/cryptoutils"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	"github.com/dreadl0ck/netcap/resolvers"
 )
 
 // UpdateDBs will update the databases on disk by pulling from the public github repository

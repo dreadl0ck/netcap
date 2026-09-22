@@ -55,9 +55,9 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/filter"
+	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/rules"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dustin/go-humanize"
 )

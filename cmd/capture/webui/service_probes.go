@@ -36,7 +36,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 )
 
 // ServiceProbeInfo represents a parsed service probe entry

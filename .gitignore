@@ -7,7 +7,7 @@ dist-license-sources
 analyze/dnn/models/
 analyze/dnn/checkpoints/
 test-params/
-resolvers/resolver-dbs.zip
+internal/resolvers/resolver-dbs.zip
 maltego/netcap
 maltego/transforms
 maltego/entities/

@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/dreadl0ck/netcap/dbs"
+	"github.com/dreadl0ck/netcap/internal/dbs"
 )
 
 // handleUpdateDatabases handles database update requests.

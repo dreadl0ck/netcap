@@ -22,8 +22,8 @@ package io
 import (
 	"time"
 
+	"github.com/dreadl0ck/netcap/internal/label/manager"
 	"github.com/dreadl0ck/netcap/internal/performance"
-	"github.com/dreadl0ck/netcap/label/manager"
 	"github.com/dreadl0ck/netcap/types"
 )
 

@@ -35,7 +35,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/env"
-	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 )
 
 // DBServer represents the database server

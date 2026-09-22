@@ -26,7 +26,7 @@ import (
 	"regexp"
 
 	"github.com/Jeffail/gabs/v2"
-	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"go.uber.org/zap"
 )
 

@@ -21,7 +21,7 @@
 
 package webui
 
-import "github.com/dreadl0ck/netcap/resolvers"
+import "github.com/dreadl0ck/netcap/internal/resolvers"
 
 // analysisErrorLogName is the per-run error log filename. The App Store build
 // uses a name without the "analysis_error.log" token so that string — a MAS

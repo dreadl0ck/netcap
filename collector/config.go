@@ -30,8 +30,8 @@ import (
 
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	"github.com/dreadl0ck/netcap/resolvers"
 )
 
 // defaultWorkers returns a CPU-proportional worker count.

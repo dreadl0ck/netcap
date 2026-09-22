@@ -11,9 +11,9 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/internal/utils"
 	netio "github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/rules"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -64,7 +64,7 @@ func TestModbusHuntRulesAgainstDecodedRecords(t *testing.T) {
 
 	// The synthetic capture writes holding register 0, so narrow the shipped
 	// site placeholders to that span instead of rewriting the rule logic.
-	source, err := os.ReadFile(filepath.Join("..", "rules", "examples", "modbus_hunt.yml"))
+	source, err := os.ReadFile(filepath.Join("..", "internal", "rules", "examples", "modbus_hunt.yml"))
 	if err != nil {
 		t.Fatal(err)
 	}

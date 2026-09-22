@@ -32,7 +32,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/decoder/db"
 	"github.com/dreadl0ck/netcap/internal/logger"
-	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 )
 
 // testLogDir is where these tests write their zap log files. InitZapLogger

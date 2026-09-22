@@ -29,10 +29,10 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/dreadl0ck/netcap/dbs"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/dbs"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	"github.com/dreadl0ck/netcap/resolvers"
 )
 
 // Global context for helper functions

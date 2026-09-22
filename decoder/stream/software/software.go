@@ -42,7 +42,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/exploit"
 	"github.com/dreadl0ck/netcap/decoder/stream/vulnerability"
 	"github.com/dreadl0ck/netcap/internal/logger"
-	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 

@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/encoder"
-	"github.com/dreadl0ck/netcap/label/manager"
+	"github.com/dreadl0ck/netcap/internal/label/manager"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )

@@ -32,7 +32,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/dreadl0ck/netcap/rules"
+	"github.com/dreadl0ck/netcap/internal/rules"
 )
 
 // handleRuleSets handles GET request to list all rule sets

@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
-	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 	"go.uber.org/zap"
 )

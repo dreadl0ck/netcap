@@ -46,7 +46,7 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/file"
 	"github.com/dreadl0ck/netcap/internal/env"
 	"github.com/dreadl0ck/netcap/internal/filter"
-	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 
 	"github.com/dustin/go-humanize"
@@ -75,10 +75,10 @@ import (
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/magika"
 	"github.com/dreadl0ck/netcap/internal/metrics"
+	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/rules"
 )
 
 // fileError tracks errors that occurred during file processing

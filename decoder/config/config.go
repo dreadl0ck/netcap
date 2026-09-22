@@ -27,8 +27,8 @@ import (
 	"github.com/dreadl0ck/netcap/internal/performance"
 	"sync"
 
+	"github.com/dreadl0ck/netcap/internal/label/manager"
 	"github.com/dreadl0ck/netcap/io"
-	"github.com/dreadl0ck/netcap/label/manager"
 )
 
 // Instance contains the config at runtime.

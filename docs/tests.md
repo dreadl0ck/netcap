@@ -72,10 +72,10 @@ ok      github.com/dreadl0ck/netcap/delimited    0.526s
 ?       github.com/dreadl0ck/netcap/internal/dpi    [no test files]
 ?       github.com/dreadl0ck/netcap/decoder    [no test files]
 ?       github.com/dreadl0ck/netcap/io    [no test files]
-?       github.com/dreadl0ck/netcap/label    [no test files]
+?       github.com/dreadl0ck/netcap/internal/label    [no test files]
 ?       github.com/dreadl0ck/netcap/maltego    [no test files]
 ?       github.com/dreadl0ck/netcap/metrics    [no test files]
-?       github.com/dreadl0ck/netcap/resolvers    [no test files]
+?       github.com/dreadl0ck/netcap/internal/resolvers    [no test files]
 === RUN   TestMarshal
 --- PASS: TestMarshal (0.00s)
 PASS

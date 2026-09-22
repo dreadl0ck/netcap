@@ -30,7 +30,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 )
 
 // analysisErrorLogName is the per-run error log filename for the direct

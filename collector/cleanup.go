@@ -31,13 +31,13 @@ import (
 	"github.com/dreadl0ck/netcap/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/decoder/stream/udp"
 	decoderutils "github.com/dreadl0ck/netcap/decoder/utils"
-	"github.com/dreadl0ck/netcap/label/manager"
+	"github.com/dreadl0ck/netcap/internal/label/manager"
 
 	"github.com/dustin/go-humanize"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/decoder/stream/tcp"
-	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 )
 
 // cleanup before leaving. closes all buffers and displays stats.

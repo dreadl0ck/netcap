@@ -31,7 +31,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/dreadl0ck/netcap/injection"
+	"github.com/dreadl0ck/netcap/internal/injection"
 	"github.com/dreadl0ck/netcap/io"
 )
 

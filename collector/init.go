@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/encoder"
-	"github.com/dreadl0ck/netcap/label/manager"
+	"github.com/dreadl0ck/netcap/internal/label/manager"
 
 	"github.com/dreadl0ck/netcap/internal/utils"
 
@@ -31,8 +31,8 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/magika"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/reassembly"
-	"github.com/dreadl0ck/netcap/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 

@@ -25,7 +25,7 @@ import (
 	"path/filepath"
 
 	"github.com/dreadl0ck/netcap/internal/env"
-	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 )
 
 // DownloadGeoLite will download the GeoLite Database if the API key is set in the environment

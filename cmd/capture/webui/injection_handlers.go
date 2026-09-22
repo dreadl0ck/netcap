@@ -33,7 +33,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/dreadl0ck/netcap/injection"
+	"github.com/dreadl0ck/netcap/internal/injection"
 )
 
 // InjectionRuleResponse represents an injection rule for the API

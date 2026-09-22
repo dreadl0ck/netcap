@@ -14,5 +14,5 @@ Show output of external analyzer and filter only for records labeled as not norm
 
 new analyzer api:
 
-    net capture -read traffic.pcapng -reassemble-connections=false -labels /root/go/src/github.com/dreadl0ck/netcap/label/configs/cic-ids2018-attacks.yml -include Connection -csv
+    net capture -read traffic.pcapng -reassemble-connections=false -labels /root/go/src/github.com/dreadl0ck/netcap/internal/label/configs/cic-ids2018-attacks.yml -include Connection -csv
 

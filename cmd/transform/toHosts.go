@@ -22,7 +22,7 @@ import (
 	"github.com/dustin/go-humanize"
 
 	"github.com/dreadl0ck/maltego"
-	"github.com/dreadl0ck/netcap/resolvers"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 

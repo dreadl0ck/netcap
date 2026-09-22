@@ -94,7 +94,7 @@ func TestAppStoreDependencyGraphExcludesDBs(t *testing.T) {
 		visited[pkg.ImportPath] = true
 
 		for _, imported := range pkg.Imports {
-			if imported == "github.com/dreadl0ck/netcap/dbs" || imported == "os/exec" {
+			if imported == "github.com/dreadl0ck/netcap/internal/dbs" || imported == "os/exec" {
 				t.Fatalf("appstore dependency %s imports forbidden package %s", pkg.ImportPath, imported)
 			}
 			const module = "github.com/dreadl0ck/netcap"

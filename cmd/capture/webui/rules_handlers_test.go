@@ -30,7 +30,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dreadl0ck/netcap/rules"
+	"github.com/dreadl0ck/netcap/internal/rules"
 	"gopkg.in/yaml.v2"
 )
 
