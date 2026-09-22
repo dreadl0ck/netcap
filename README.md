@@ -141,7 +141,7 @@ See the [`docker/`](docker/) directory for all Dockerfiles and build variants.
 - [Documentation](https://docs.netcap.io) — full usage guide
 - [Homepage](https://netcap.io) — project homepage
 - [DeepWiki](https://deepwiki.com/dreadl0ck/netcap) — AI-powered codebase exploration
-- [Thesis](https://github.com/dreadl0ck/netcap/blob/master/mied18.pdf) — original research paper
+- [Thesis](https://github.com/dreadl0ck/netcap/blob/master/docs/mied18.pdf) — original research paper
 
 ## Contributing
 

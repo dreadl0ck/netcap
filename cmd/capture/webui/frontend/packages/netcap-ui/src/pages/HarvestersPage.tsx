@@ -80,7 +80,7 @@ const toSnakeCase = (str: string): string => {
 
 // Helper function to get GitHub URL for harvester implementation
 const getHarvesterGitHubUrl = (harvesterName: string): string => {
-  const baseUrl = 'https://github.com/dreadl0ck/netcap/blob/master/decoder/stream/credentials';
+  const baseUrl = 'https://github.com/dreadl0ck/netcap/blob/master/internal/decoder/stream/secret';
   
   // Map harvester names to their actual filenames
   const harvesterFilenames: Record<string, string> = {

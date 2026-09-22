@@ -108,7 +108,7 @@ const toSnakeCase = (str: string): string => {
 };
 
 const getDecoderGitHubUrl = (categoryKey: string, decoderName: string): string => {
-  const baseUrl = 'https://github.com/dreadl0ck/netcap/blob/master/decoder';
+  const baseUrl = 'https://github.com/dreadl0ck/netcap/blob/master/internal/decoder';
   
   // Special case mappings for abbreviated decoder filenames
   const specialCases: Record<string, string> = {
