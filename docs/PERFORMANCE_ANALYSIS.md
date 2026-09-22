@@ -871,7 +871,7 @@ go tool pprof -diff_base cpu.prof.baseline cpu.prof
 make test-integration
 
 # Memory profiling under load
-go build -o net ./cmd/
+go build -o net ./cmd/net/
 ./net capture -read large-test.pcap -memprofile mem.prof
 go tool pprof mem.prof
 

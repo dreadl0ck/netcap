@@ -6,18 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Build main binary (CGO required for libpcap)
-go build -o net ./cmd/
+go build -o net ./cmd/net/
 
 # Build with version info
-go build -ldflags "-X github.com/dreadl0ck/netcap.Version=$(git describe --tags --always)" -o net ./cmd/
+go build -ldflags "-X github.com/dreadl0ck/netcap.Version=$(git describe --tags --always)" -o net ./cmd/net/
 
 # Build without DPI support (fewer C dependencies)
-go build -tags=nodpi -o net ./cmd/
+go build -tags=nodpi -o net ./cmd/net/
 
 # Build with Hyperscan/Vectorscan acceleration (multi-pattern regex prefilter
 # for nmap service probes). Requires libhs via pkg-config — install
 # `vectorscan` (macOS/ARM) or `libhyperscan-dev` (Linux x86_64).
-CGO_ENABLED=1 go build -tags hyperscan -o net ./cmd/
+CGO_ENABLED=1 go build -tags hyperscan -o net ./cmd/net/
 
 # Service mode with hot reload (requires air: go install github.com/air-verse/air@latest)
 air

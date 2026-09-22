@@ -138,7 +138,7 @@ func collectGoDependencies(root string) ([]dependency, error) {
 		if v.tags != "" {
 			args = append(args, "-tags="+v.tags)
 		}
-		args = append(args, "./cmd")
+		args = append(args, "./cmd/net")
 		cmd := exec.Command("go", args...)
 		cmd.Dir = root
 		cmd.Env = append(os.Environ(), "GOWORK=off", "CGO_ENABLED=1", "GOOS="+v.goos, "GOARCH="+v.goarch)

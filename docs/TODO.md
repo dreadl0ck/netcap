@@ -613,8 +613,8 @@ entities:
 
 ## Linux cross compilation
 
-- CC=x86_64-pc-linux-gcc GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux github.com/dreadl0ck/netcap/cmd
-- GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux -ldflags="-L /usr/local/opt/libpcap/lib" github.com/dreadl0ck/netcap/cmd
+- CC=x86_64-pc-linux-gcc GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux github.com/dreadl0ck/netcap/cmd/net
+- GOOS=linux GOARCH=amd64 CGO_ENABLED=1 go build -o nc-linux -ldflags="-L /usr/local/opt/libpcap/lib" github.com/dreadl0ck/netcap/cmd/net
 
 ## Benchmarks
 

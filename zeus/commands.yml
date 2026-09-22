@@ -59,17 +59,17 @@ commands:
                         -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=${NDPI_VERSION} \
                         -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=${LPI_VERSION} \
                         -X github.com/dreadl0ck/netcap/dpi.GoDPIVersion=${GO_DPI_VERSION}" \
-                        -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+                        -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd/net
                 else
                     echo "[INFO] Building ${VERSION} (${COMMIT}) without DPI support (install with: brew install ndpi libprotoident)"
                     go build -trimpath -tags nodpi,noyara -ldflags "-s -w ${VERSION_FLAGS}" \
-                        -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+                        -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd/net
                 fi
             else
                 # Linux or other - use default build
                 echo "[INFO] Building ${VERSION} (${COMMIT})"
                 go build -trimpath -tags noyara -ldflags "-s -w ${VERSION_FLAGS}" \
-                    -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+                    -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd/net
             fi
 
     install-linux:
@@ -106,7 +106,7 @@ commands:
                 fi
                 echo "[INFO] Building with DPI support"
             fi
-            go build -trimpath -ldflags "$LDFLAGS" -o bin/net github.com/dreadl0ck/netcap/cmd
+            go build -trimpath -ldflags "$LDFLAGS" -o bin/net github.com/dreadl0ck/netcap/cmd/net
             echo "setting capabilities for attaching to a network interface and moving binary to /usr/local/bin (requires root)..."
             sudo mv bin/net /usr/local/bin
             sudo setcap cap_net_raw,cap_net_admin=eip $(which net)
@@ -125,7 +125,7 @@ commands:
             if [ -n "$GOPACKET_VERSION" ]; then
                 LDFLAGS="$LDFLAGS -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}"
             fi
-            go build -trimpath -tags nodpi,noyara -ldflags "$LDFLAGS" -o bin/net github.com/dreadl0ck/netcap/cmd
+            go build -trimpath -tags nodpi,noyara -ldflags "$LDFLAGS" -o bin/net github.com/dreadl0ck/netcap/cmd/net
             echo "setting capabilities for attaching to a network interface and moving binary to /usr/local/bin (requires root)..."
             sudo mv bin/net /usr/local/bin
             sudo setcap cap_net_raw,cap_net_admin=eip $(which net)
@@ -141,7 +141,7 @@ commands:
             if [ -n "$GOPACKET_VERSION" ]; then
                 LDFLAGS="$LDFLAGS -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION}"
             fi
-            go build -trimpath -tags nodpi,noyara -ldflags "$LDFLAGS" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+            go build -trimpath -tags nodpi,noyara -ldflags "$LDFLAGS" -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd/net
 
     ## Debug Builds
     ##
@@ -150,7 +150,7 @@ commands:
         description: install a netcap build with race detection enabled
         buildNumber: true
         help: Install the race build to the default system location
-        exec: GO111MODULE=on go build -trimpath -tags nodpi,noyara -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}-race" -race -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+        exec: GO111MODULE=on go build -trimpath -tags nodpi,noyara -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}-race" -race -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd/net
 
     ## Containers
     ##
@@ -835,7 +835,7 @@ commands:
     # build windows
     build-windows:
         description: builds the windows executables
-        exec: GOOS=windows GOARCH=amd64 go build -trimpath -tags="nodpi" -o bin/net.exe github.com/dreadl0ck/netcap/cmd
+        exec: GOOS=windows GOARCH=amd64 go build -trimpath -tags="nodpi" -o bin/net.exe github.com/dreadl0ck/netcap/cmd/net
 
     # check git version
     check-version:

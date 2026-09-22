@@ -140,7 +140,7 @@ zeus install
 Or build manually:
 
 ```bash
-go build -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd
+go build -o /usr/local/bin/net github.com/dreadl0ck/netcap/cmd/net
 ```
 
 ## Generate Protocol Buffers

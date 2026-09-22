@@ -9,7 +9,7 @@
 #   - netcap_nodpi: No-DPI version (windows/amd64)
 
 builds:
-  - main: ./cmd
+  - main: ./cmd/net
     binary: net
     env:
       - CGO_ENABLED=1
@@ -22,7 +22,7 @@ builds:
       - -trimpath
     goarch:
       - arm64
-  - main: ./cmd
+  - main: ./cmd/net
     binary: macOS_nodpi/net
     id: netcap_macOS_nodpi
     env:
@@ -36,7 +36,7 @@ builds:
     flags:
       - -trimpath
       - -tags=nodpi
-  - main: ./cmd
+  - main: ./cmd/net
     id: netcap_nodpi
     binary: net
     env:

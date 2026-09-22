@@ -95,7 +95,7 @@ zeus install-nodpi
 Or manually:
 
 ```bash
-go build -tags nodpi -ldflags "-s -w" -o bin/net github.com/dreadl0ck/netcap/cmd
+go build -tags nodpi -ldflags "-s -w" -o bin/net github.com/dreadl0ck/netcap/cmd/net
 ```
 
 ## Setting DPI Version Information
@@ -127,7 +127,7 @@ rpm -qa | grep -E '(ndpi|protoident)'  # RedHat/CentOS
 go build -ldflags "-s -w \
   -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
   -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1" \
-  -o bin/net github.com/dreadl0ck/netcap/cmd
+  -o bin/net github.com/dreadl0ck/netcap/cmd/net
 ```
 
 ## Compatibility

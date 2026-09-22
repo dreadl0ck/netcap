@@ -30,7 +30,7 @@ func TestServiceCaptureLifecycle(t *testing.T) {
 	}
 	temp := t.TempDir()
 	binary := filepath.Join(temp, "net")
-	build := exec.Command("go", "build", "-tags=nodpi", "-o", binary, "./cmd/")
+	build := exec.Command("go", "build", "-tags=nodpi", "-o", binary, "./cmd/net/")
 	build.Dir = root
 	build.Env = append(os.Environ(), "GOWORK=off")
 	if output, err := build.CombinedOutput(); err != nil {

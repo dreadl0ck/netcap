@@ -88,7 +88,7 @@ RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep
         -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
         -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1 \
         -X github.com/dreadl0ck/netcap/dpi.GoDPIVersion=${GO_DPI_VERSION}" \
-    -o /netcap/bin/netcap github.com/dreadl0ck/netcap/cmd
+    -o /netcap/bin/netcap github.com/dreadl0ck/netcap/cmd/net
 
 # Runtime stage
 FROM --platform=linux/amd64 alpine:latest

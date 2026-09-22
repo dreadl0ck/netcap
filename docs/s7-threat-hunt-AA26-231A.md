@@ -35,7 +35,7 @@ zeus gen-proto-dev
 protoc --proto_path=proto --gogofaster_out=types/. proto/netcap.proto
 
 # then build as usual
-go build -o net ./cmd/
+go build -o net ./cmd/net/
 ```
 
 The function-code hunt rules, cardinality detection, approved-workstation

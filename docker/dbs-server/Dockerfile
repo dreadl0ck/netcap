@@ -34,7 +34,7 @@ RUN go install github.com/gogo/protobuf/protoc-gen-gogofaster@v1.3.2 \
 # yara_x_capi.pc / libyara_x_capi are not installed in this image.
 # CGO still needed for some dependencies like bleve.
 RUN apk add --no-cache libpcap-dev linux-headers
-RUN CGO_ENABLED=1 GOOS=linux go build -tags "nodpi noyara" -a -installsuffix cgo -ldflags="-s -w" -o netcap ./cmd
+RUN CGO_ENABLED=1 GOOS=linux go build -tags "nodpi noyara" -a -installsuffix cgo -ldflags="-s -w" -o netcap ./cmd/net
 
 # Runtime stage
 FROM alpine:latest

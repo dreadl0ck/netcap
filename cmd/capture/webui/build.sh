@@ -51,7 +51,7 @@ if [ "$1" = "--with-go" ]; then
     echo ""
     echo "==> Building Go binary with embedded frontend..."
     cd "$SCRIPT_DIR/../../.."
-    go build -o bin/net ./cmd
+    go build -o bin/net ./cmd/net
     if [ $? -eq 0 ]; then
         echo "==> Go binary built successfully!"
         echo "    Binary: bin/net"

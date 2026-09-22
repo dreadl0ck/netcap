@@ -161,7 +161,7 @@ This runs two steps:
 
 ```bash
 # From the repo root:
-go build -o net ./cmd/
+go build -o net ./cmd/net/
 ```
 
 The Go binary embeds everything in `frontend/dist/` via `//go:embed all:frontend/dist`. The frontend must be built before compiling Go. No Node.js needed at runtime.

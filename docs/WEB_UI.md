@@ -309,7 +309,7 @@ If you see "Frontend assets not built" in the browser:
 
 1. Build the frontend: `cd cmd/capture/webui/frontend && pnpm run build`
 2. Verify `out/` directory exists with `index.html`
-3. Rebuild Go binary: `go build ./cmd`
+3. Rebuild Go binary: `go build ./cmd/net`
 
 ### Port Already in Use
 

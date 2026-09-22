@@ -146,7 +146,7 @@ Hyperscan/Vectorscan must be installed and discoverable through
 brew install vectorscan pkg-config
 PKG_CONFIG_PATH=$(brew --prefix vectorscan)/lib/pkgconfig \
   CGO_ENABLED=1 \
-  go build -tags hyperscan -o net ./cmd/
+  go build -tags hyperscan -o net ./cmd/net/
 ```
 
 Apple Silicon ships only Vectorscan (the ARM-compatible fork). The library
@@ -158,7 +158,7 @@ exposes the same `libhs` ABI as Intel Hyperscan, so `-lhs` resolves either.
 sudo apt install libhyperscan-dev pkg-config   # Debian/Ubuntu
 # or
 sudo dnf install hyperscan-devel pkgconf-pkg-config   # Fedora/RHEL
-CGO_ENABLED=1 go build -tags hyperscan -o net ./cmd/
+CGO_ENABLED=1 go build -tags hyperscan -o net ./cmd/net/
 ```
 
 ### Linux arm64 / RISC-V / Power
@@ -173,7 +173,7 @@ cd vectorscan && mkdir build && cd build
 cmake .. -DBUILD_STATIC_LIBS=on -DBUILD_SHARED_LIBS=on
 make -j$(nproc) && sudo make install
 sudo ldconfig
-CGO_ENABLED=1 go build -tags hyperscan -o net ./cmd/
+CGO_ENABLED=1 go build -tags hyperscan -o net ./cmd/net/
 ```
 
 ### Combining with other build tags
@@ -183,10 +183,10 @@ combinations:
 
 ```bash
 # Hyperscan + DPI (default)
-CGO_ENABLED=1 go build -tags hyperscan -o net ./cmd/
+CGO_ENABLED=1 go build -tags hyperscan -o net ./cmd/net/
 
 # Hyperscan but no DPI
-CGO_ENABLED=1 go build -tags "hyperscan nodpi" -o net ./cmd/
+CGO_ENABLED=1 go build -tags "hyperscan nodpi" -o net ./cmd/net/
 ```
 
 ### Verify the binary picked up libhs

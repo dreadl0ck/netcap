@@ -61,7 +61,7 @@ sudo find / -iname libprotoident.h
 sudo find / -iname libtrace.h
 
 mkdir -p bin
-go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o bin/net github.com/dreadl0ck/netcap/cmd
+go build -mod=readonly -ldflags "-s -w -X github.com/dreadl0ck/netcap.Version=v${VERSION}" -o bin/net github.com/dreadl0ck/netcap/cmd/net
 
 echo "moving binary to /usr/local/bin"
 sudo mv bin/net /usr/local/bin

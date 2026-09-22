@@ -6,7 +6,7 @@ VERSION="0.5.14"
 
 
 mkdir -p bin
-go build -ldflags "-s -w" -o bin/net github.com/dreadl0ck/netcap/cmd
+go build -ldflags "-s -w" -o bin/net github.com/dreadl0ck/netcap/cmd/net
 echo "setting capabilities for attaching to a network interface and moving binary to /usr/local/bin (requires root)..."
 sudo mv bin/net /usr/local/bin
 sudo setcap cap_net_raw,cap_net_admin=eip $(which net)

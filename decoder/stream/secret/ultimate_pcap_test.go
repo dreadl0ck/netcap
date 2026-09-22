@@ -42,7 +42,7 @@ func TestUltimatePCAPFalsePositives(t *testing.T) {
 
 	// Build the netcap binary from the repo root
 	binaryPath := filepath.Join(t.TempDir(), "netcap-test")
-	buildCmd := exec.Command("go", "build", "-tags=nodpi", "-o", binaryPath, "./cmd/")
+	buildCmd := exec.Command("go", "build", "-tags=nodpi", "-o", binaryPath, "./cmd/net/")
 	buildCmd.Dir = repoRoot
 	if out, err := buildCmd.CombinedOutput(); err != nil {
 		t.Fatalf("Failed to build netcap binary: %v\n%s", err, out)

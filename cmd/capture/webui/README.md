@@ -27,7 +27,7 @@ pnpm install
 pnpm build
 
 # Then build the Go binary (from repo root)
-go build -o net ./cmd/
+go build -o net ./cmd/net/
 ```
 
 The frontend is built with Vite and output to `frontend/dist/`, which is embedded into the Go binary via `//go:embed`.

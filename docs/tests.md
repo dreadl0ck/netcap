@@ -38,7 +38,7 @@ $ go test -v ./...
 --- PASS: TestWriter (0.06s)
 PASS
 ok      github.com/dreadl0ck/netcap    0.862s
-?       github.com/dreadl0ck/netcap/cmd    [no test files]
+?       github.com/dreadl0ck/netcap/cmd/net    [no test files]
 ?       github.com/dreadl0ck/netcap/cmd/agent    [no test files]
 ?       github.com/dreadl0ck/netcap/cmd/capture    [no test files]
 ?       github.com/dreadl0ck/netcap/cmd/collect    [no test files]

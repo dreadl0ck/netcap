@@ -50,7 +50,7 @@ This fingerprint indicates:
 
 ### JA4S Format (Server Hello)
 
-JA4S fingerprints the server's response. JA4S is part of JA4+ and is not included in official Netcap binaries. A user may opt into a local source build with `go build -tags ja4plus -o net ./cmd/`, subject to the FoxIO License 1.1.
+JA4S fingerprints the server's response. JA4S is part of JA4+ and is not included in official Netcap binaries. A user may opt into a local source build with `go build -tags ja4plus -o net ./cmd/net/`, subject to the FoxIO License 1.1.
 
 ```text
 {ja4s_a}_{ja4s_b}_{ja4s_c}

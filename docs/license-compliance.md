@@ -23,7 +23,7 @@ data and are empty for newly decoded records in official builds.
 Local source users may opt in with:
 
 ```bash
-go build -tags ja4plus -o net ./cmd/
+go build -tags ja4plus -o net ./cmd/net/
 ```
 
 The external package is governed by the FoxIO License 1.1. Enabling the tag does

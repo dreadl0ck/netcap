@@ -35,7 +35,7 @@ RUN apk add --no-cache git gcc musl-dev
 
 # Build with nodpi tag
 RUN apk add --no-cache libpcap-dev linux-headers
-RUN CGO_ENABLED=1 GOOS=linux go build -tags nodpi -a -installsuffix cgo -ldflags="-s -w" -o netcap ./cmd
+RUN CGO_ENABLED=1 GOOS=linux go build -tags nodpi -a -installsuffix cgo -ldflags="-s -w" -o netcap ./cmd/net
 ```
 
 **Runtime Stage:**

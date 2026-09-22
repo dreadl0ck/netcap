@@ -142,7 +142,7 @@ RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep
         -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
         -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
         -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1" \
-    -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd
+    -o /netcap/bin/net github.com/dreadl0ck/netcap/cmd/net
 ```
 
 ### Local Builds
@@ -156,7 +156,7 @@ go build -ldflags "-s -w \
   -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
   -X github.com/dreadl0ck/netcap/dpi.NDPIVersion=4.14.0 \
   -X github.com/dreadl0ck/netcap/dpi.LibprotoidentVersion=2.0.15-1" \
-  -o bin/net github.com/dreadl0ck/netcap/cmd
+  -o bin/net github.com/dreadl0ck/netcap/cmd/net
 ```
 
 ## Version Detection
