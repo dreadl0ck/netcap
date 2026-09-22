@@ -38,7 +38,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/dreadl0ck/netcap/analyze"
+	"github.com/dreadl0ck/netcap/internal/analyze"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream"

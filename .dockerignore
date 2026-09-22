@@ -98,9 +98,9 @@ overlay2
 deploy.sh
 
 # Python analysis tools (not needed for Go build)
-analyze/examples/
-analyze/dnn/
-analyze/README.md
+scripts/analyze-dnn/examples/
+scripts/analyze-dnn/dnn/
+scripts/analyze-dnn/README.md
 
 # Test artifacts in collector
 internal/collector/*.log

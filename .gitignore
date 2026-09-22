@@ -4,8 +4,8 @@ dist-linux
 dist-license-sources
 .docker-build-timestamp
 .docker-build-context
-analyze/dnn/models/
-analyze/dnn/checkpoints/
+scripts/analyze-dnn/dnn/models/
+scripts/analyze-dnn/dnn/checkpoints/
 test-params/
 internal/resolvers/resolver-dbs.zip
 internal/maltego/netcap

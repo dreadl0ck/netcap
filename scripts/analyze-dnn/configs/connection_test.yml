@@ -1,4 +1,4 @@
-workDir: ~/go/src/github.com/dreadl0ck/netcap/analyze/examples
+workDir: ~/go/src/github.com/dreadl0ck/netcap/scripts/analyze-dnn/examples
 
 command: python3
 args:
