@@ -60,13 +60,13 @@ Netcap uses classical BPF (cBPF) filters applied via:
 ### Flow Tracking
 
 Connection tracking happens entirely in userspace:
-- `collector/worker.go` - Symmetric flow hashing for worker distribution
-- `reassembly/` - TCP stream reassembly
+- `internal/collector/worker.go` - Symmetric flow hashing for worker distribution
+- `internal/reassembly/` - TCP stream reassembly
 - DPI flow tracking via go-dpi's `FlowTrackerInstance`
 
 ### Firewall Integration
 
-The `firewall/` package uses `coreos/go-iptables` for:
+The `internal/firewall/` package uses `coreos/go-iptables` for:
 - Creating custom iptables chains
 - Adding/removing block rules
 - IPv4 and IPv6 support
@@ -74,7 +74,7 @@ The `firewall/` package uses `coreos/go-iptables` for:
 
 ### Metrics Collection
 
-Prometheus metrics in `collector/metrics.go`:
+Prometheus metrics in `internal/collector/metrics.go`:
 - Protocol counters (atomic operations)
 - Decoder timing gauges
 - Packets per second
@@ -139,7 +139,7 @@ import (
 Linux live capture uses AF_PACKET sockets via `pcapgo.NewEthernetHandle()`:
 
 ```go
-// collector/live_linux.go
+// internal/collector/live_linux.go
 handle, err := pcapgo.NewEthernetHandle(i)
 data, ci, err = handle.ReadPacketData()
 ```
@@ -244,7 +244,7 @@ int xdp_capture(struct xdp_md *ctx)
 char LICENSE[] SEC("license") = "GPL";
 ```
 
-**Go Integration (`collector/live_linux_xdp.go`)**:
+**Go Integration (`internal/collector/live_linux_xdp.go`)**:
 
 ```go
 //go:build linux
@@ -393,8 +393,8 @@ func parsePacketEvent(data []byte) *packetEvent {
 #### Current State
 
 Flow tracking happens in userspace with:
-- `collector/worker.go` - Symmetric flow hashing
-- `reassembly/connection.go` - TCP connection tracking
+- `internal/collector/worker.go` - Symmetric flow hashing
+- `internal/reassembly/connection.go` - TCP connection tracking
 - DPI's internal flow tracker
 
 #### eBPF Solution
@@ -568,7 +568,7 @@ int track_flows(struct __sk_buff *skb)
 char LICENSE[] SEC("license") = "GPL";
 ```
 
-**Go Integration (`collector/flow_tracker_ebpf.go`)**:
+**Go Integration (`internal/collector/flow_tracker_ebpf.go`)**:
 
 ```go
 //go:build linux
@@ -691,7 +691,7 @@ func intToIP(i uint32) net.IP {
 
 #### Current State
 
-The `firewall/manager.go` uses iptables:
+The `internal/firewall/manager.go` uses iptables:
 
 ```go
 // Current implementation
@@ -856,7 +856,7 @@ int xdp_firewall(struct xdp_md *ctx)
 char LICENSE[] SEC("license") = "GPL";
 ```
 
-**Go Integration (`firewall/ebpf_manager.go`)**:
+**Go Integration (`internal/firewall/ebpf_manager.go`)**:
 
 ```go
 //go:build linux
@@ -1085,7 +1085,7 @@ func (m *EBPFManager) Close() error {
 
 #### Current State
 
-Deep Packet Inspection in `dpi/dpi.go`:
+Deep Packet Inspection in `internal/dpi/dpi.go`:
 - nDPI (C library)
 - libprotoident (C library)
 - go-dpi classifiers (Go)
@@ -1319,7 +1319,7 @@ char LICENSE[] SEC("license") = "GPL";
 
 #### Current State
 
-Prometheus metrics in `collector/metrics.go`:
+Prometheus metrics in `internal/collector/metrics.go`:
 
 ```go
 var allProtosTotal = prometheus.NewCounterVec(...)
@@ -1461,7 +1461,7 @@ int collect_metrics(struct xdp_md *ctx)
 char LICENSE[] SEC("license") = "GPL";
 ```
 
-**Go Integration (`collector/metrics_ebpf.go`)**:
+**Go Integration (`internal/collector/metrics_ebpf.go`)**:
 
 ```go
 //go:build linux
@@ -1554,7 +1554,7 @@ func (c *ebpfPrometheusCollector) Collect(ch chan<- prometheus.Metric) {
 
 #### Current State
 
-All TCP segments go through full reassembly in `reassembly/`.
+All TCP segments go through full reassembly in `internal/reassembly/`.
 
 #### eBPF Solution
 
@@ -1705,7 +1705,7 @@ char LICENSE[] SEC("license") = "GPL";
 **Tasks**:
 1. Create `bpf/` directory with C source files
 2. Add `bpf2go` generation to build process
-3. Implement `collector/live_linux_xdp.go`
+3. Implement `internal/collector/live_linux_xdp.go`
 4. Add CLI flag `--capture-mode=xdp|afpacket|pcap`
 5. Benchmark against existing capture methods
 
@@ -1713,8 +1713,8 @@ char LICENSE[] SEC("license") = "GPL";
 
 **Files to create/modify**:
 - `bpf/xdp_capture.c` (new)
-- `collector/live_linux_xdp.go` (new)
-- `collector/config.go` (add CaptureMode option)
+- `internal/collector/live_linux_xdp.go` (new)
+- `internal/collector/config.go` (add CaptureMode option)
 - `go.mod` (add cilium/ebpf)
 
 ### Phase 2: eBPF Firewall Module (High Priority)
@@ -1723,7 +1723,7 @@ char LICENSE[] SEC("license") = "GPL";
 
 **Tasks**:
 1. Implement XDP firewall program with LPM trie
-2. Create `firewall/ebpf_manager.go`
+2. Create `internal/firewall/ebpf_manager.go`
 3. Add fallback to iptables for non-Linux/older kernels
 4. Integrate with existing rules engine for automated blocking
 
@@ -1731,8 +1731,8 @@ char LICENSE[] SEC("license") = "GPL";
 
 **Files to create/modify**:
 - `bpf/firewall.c` (new)
-- `firewall/ebpf_manager.go` (new)
-- `firewall/manager.go` (add interface abstraction)
+- `internal/firewall/ebpf_manager.go` (new)
+- `internal/firewall/manager.go` (add interface abstraction)
 
 ### Phase 3: Kernel Flow Tracking (Medium Priority)
 

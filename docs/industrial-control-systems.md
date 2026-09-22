@@ -31,11 +31,11 @@ honest accounting of what netcap cannot see — see the dedicated guide:
 
 * [Siemens S7 Series PLC Threat Hunt (AA26-231A)](s7-threat-hunt-AA26-231A.md)
 
-Shipped detection rules live in `rules/examples/`:
+Shipped detection rules live in `internal/rules/examples/`:
 
-* `rules/examples/s7comm_hunt.yml` — S7comm function-code level hunt (AA26-231A)
-* `rules/examples/modbus_hunt.yml` — Modbus request-level write/diagnostic/enumeration hunts
-* `rules/examples/industrial_ports.yml` — port-based ICS exposure and scan rules
+* `internal/rules/examples/s7comm_hunt.yml` — S7comm function-code level hunt (AA26-231A)
+* `internal/rules/examples/modbus_hunt.yml` — Modbus request-level write/diagnostic/enumeration hunts
+* `internal/rules/examples/industrial_ports.yml` — port-based ICS exposure and scan rules
 
 See the [Rules Engine](RULES_ENGINE.md) and [Filtering](FILTERING.md) guides for
 the expression language and the ICS-relevant helper functions
@@ -75,7 +75,7 @@ visible instead of silent. MBAP detection is port-independent; RTU framing over
 TCP is decoded only for endpoints named with `-modbus-rtu-endpoints`.
 
 See [Modbus Threat Hunting](modbus-threat-hunting.md) for the capture workflow,
-the write/diagnostic/enumeration hunts, `rules/examples/modbus_hunt.yml`, RTU
+the write/diagnostic/enumeration hunts, `internal/rules/examples/modbus_hunt.yml`, RTU
 configuration and the limitations.
 
 ```erlang

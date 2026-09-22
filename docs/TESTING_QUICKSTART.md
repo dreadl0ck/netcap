@@ -79,10 +79,10 @@ make test-bench
 
 ```bash
 # Copy the template
-cp tests/TEMPLATE_test.go decoder/packet/myprotocol_test.go
+cp tests/TEMPLATE_test.go internal/decoder/packet/myprotocol_test.go
 
 # Edit and implement your test
-vim decoder/packet/myprotocol_test.go
+vim internal/decoder/packet/myprotocol_test.go
 
 # Run your test
 go test -v ./decoder/packet/ -run TestMyProtocol
@@ -120,7 +120,7 @@ func TestMyFeature(t *testing.T) {
 | reassembly | 68.9% | ⚠️ 4 failing tests |
 | encoder | 64.0% | ✅ Good |
 | credentials | 52.8% | ⚠️ Medium |
-| label/manager | 49.3% | ⚠️ Medium |
+| internal/label/manager | 49.3% | ⚠️ Medium |
 | io | 19.7% | ❌ Low |
 | **Most packages** | 0-5% | ❌ Critical |
 
@@ -144,7 +144,7 @@ func TestMyFeature(t *testing.T) {
 
 ```bash
 # 1. Create test file
-cat > decoder/packet/mynewprotocol_test.go << 'EOF'
+cat > internal/decoder/packet/mynewprotocol_test.go << 'EOF'
 package packet_test
 
 import (

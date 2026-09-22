@@ -32,7 +32,7 @@ buffer must be tested against many patterns at once. Netcap uses it as a
 
 ### 1. Service probe matcher
 
-`decoder/stream/service/service_probe.go`
+`internal/decoder/stream/service/service_probe.go`
 
 1. At startup all RE2-compatible service-probe expressions are compiled
    into per-category Hyperscan block-mode databases.
@@ -49,7 +49,7 @@ Hyperscan does not implement.
 
 ### 2. CMS / web framework detection
 
-`decoder/stream/software/software.go` + `cms_hs.go`
+`internal/decoder/stream/software/software.go` + `cms_hs.go`
 
 The `cmsdb.json` database (1100+ frameworks, ~600 header/cookie regexes)
 is compiled into two per-source HS databases (one for headers, one for
@@ -63,8 +63,8 @@ in the candidate set so behaviour is identical.
 
 `internal/filter/helpers.go` + `matches_pattern_hs.go`
 
-`MatchesPattern(field, pattern)` — used pervasively in `rules/` and
-`firewall/` YAML expressions — gains a per-pattern HS cache. The first
+`MatchesPattern(field, pattern)` — used pervasively in `internal/rules/` and
+`internal/firewall/` YAML expressions — gains a per-pattern HS cache. The first
 call with a given pattern compiles it into a tiny single-pattern HS
 database; subsequent calls take the boolean answer directly from HS,
 which is several times faster than RE2 for typical alternation-heavy
@@ -123,9 +123,9 @@ Code map:
 - `internal/hsmatch/` — thin gohs wrapper exposing `Compile`, `Match`,
   `Stats`, `Close`. Two files: `hs.go` (built with `hyperscan` tag,
   imports gohs / libhs) and `hs_stub.go` (default, returns `ErrDisabled`).
-- `decoder/stream/service/service_probe_hs.go` — service-probe specific
+- `internal/decoder/stream/service/service_probe_hs.go` — service-probe specific
   glue: per-category index, status accessor, build/scan stats.
-- `decoder/stream/service/service_probe_hs_stub.go` — twin stub.
+- `internal/decoder/stream/service/service_probe_hs_stub.go` — twin stub.
 - `cmd/capture/webui/hyperscan_handlers.go` — `GET /api/hyperscan` JSON
   endpoint for the web UI.
 
@@ -262,7 +262,7 @@ PKG_CONFIG_PATH=$(brew --prefix vectorscan)/lib/pkgconfig \
     ./internal/hsmatch/
 ```
 
-### End-to-end (`decoder/stream/service`)
+### End-to-end (`internal/decoder/stream/service`)
 
 The `service_probe_bench_test.go` benchmarks load the **real**
 `nmap-service-probes` file from a system path
@@ -476,8 +476,8 @@ keeps logs aggregate and quiet.
   reassembled buffers; only the block-mode DB is used.
 - **One target migrated so far.** The wrapper package
   (`internal/hsmatch`) is reusable; further migrations (e.g.
-  `decoder/stream/secret` custom regex harvesters,
-  `decoder/stream/software/load.go`, `internal/filter` helpers) are
+  `internal/decoder/stream/secret` custom regex harvesters,
+  `internal/decoder/stream/software/load.go`, `internal/filter` helpers) are
   straightforward follow-ups but intentionally out of scope for the
   initial integration.
 - **macOS Chimera unavailable.** Homebrew's `vectorscan` formula does not

@@ -51,12 +51,12 @@ The helper lives in a dedicated package because `internal/helpers` imports
 
 | File | Function | Severity | Issue |
 |---|---|---|---|
-| `io/elastic.go` | `CreateElasticIndex` (index pattern create) | MED | Success path closed body without draining |
-| `io/elastic.go` | `configureIndex` (PutMapping) | MED | Success path closed body without draining |
-| `io/elastic.go` | `configureIndex` (PutSettings) | MED | Success path closed body without draining |
-| `io/elastic.go` | `sendBulk` | **HIGH** | Two early-return paths never called `Close()` at all (FD leak); happy path used `json.NewDecoder` + bare `Close` (no drain) |
-| `io/elastic.go` | `deleteElasticIndexPattern` | **HIGH** | `resp.Body.Close()` was never called, on any path |
-| `dbs/generate.go` | `fetchResource` retry loop | MED | Non-200 branch closed the body without draining before retrying |
+| `internal/netio/elastic.go` | `CreateElasticIndex` (index pattern create) | MED | Success path closed body without draining |
+| `internal/netio/elastic.go` | `configureIndex` (PutMapping) | MED | Success path closed body without draining |
+| `internal/netio/elastic.go` | `configureIndex` (PutSettings) | MED | Success path closed body without draining |
+| `internal/netio/elastic.go` | `sendBulk` | **HIGH** | Two early-return paths never called `Close()` at all (FD leak); happy path used `json.NewDecoder` + bare `Close` (no drain) |
+| `internal/netio/elastic.go` | `deleteElasticIndexPattern` | **HIGH** | `resp.Body.Close()` was never called, on any path |
+| `internal/dbs/generate.go` | `fetchResource` retry loop | MED | Non-200 branch closed the body without draining before retrying |
 | `cmd/proxy/netcap_transport.go` | `RoundTrip` — redirect path | **HIGH** | `goto makeHTTPRequest` discarded the 302 response without closing its body, leaking a connection on every redirect |
 | `cmd/proxy/netcap_transport.go` | `RoundTrip` — `ReadAll` error path | **HIGH** | `ioutil.ReadAll(resp.Body)` failure returned `nil, err` without closing the body; caller (`httputil.ReverseProxy`) never sees the response and cannot recover |
 | `cmd/proxy/netcap_transport.go` | `RoundTrip` — body replacement | MED | Original body was replaced by a `NopCloser` without explicitly closing the underlying `ReadCloser`; relied on EOF alone to return the conn to the pool |
@@ -94,7 +94,7 @@ The helper lives in a dedicated package because `internal/helpers` imports
   errors trigger a retry; response-level errors return immediately) while
   guaranteeing drain + close.
 
-- For the `fetchResource` retry loop in `dbs/generate.go`, no closure was
+- For the `fetchResource` retry loop in `internal/dbs/generate.go`, no closure was
   needed because the loop body already had a single drain point per
   iteration; the single `resp.Body.Close()` on the non-200 branch was
   replaced with `httputil.DrainAndClose(resp.Body)`.
@@ -194,7 +194,7 @@ idiomatic pattern.
 `internal/helpers` in this repo imports `testing` in `fixtures.go` and is
 therefore test-only from the perspective of production code. A separate
 `internal/httputil` package was created to avoid pulling `testing` into the
-import graph of `io/` and `dbs/`. When adding new HTTP helpers, put them in
+import graph of `internal/netio/` and `internal/dbs/`. When adding new HTTP helpers, put them in
 `internal/httputil`, not `internal/helpers`.
 
 ### 9. Custom RoundTrippers own the response body until they return it
@@ -265,9 +265,9 @@ The following subtrees were audited for outbound HTTP client calls:
 
 | Subtree | HTTP client calls found | Status |
 |---|---|---|
-| `io/` | 5 | all fixed |
-| `dbs/` | 3 | 1 fixed, 2 already safe |
-| `resolvers/` | 1 | already safe |
+| `internal/netio/` | 5 | all fixed |
+| `internal/dbs/` | 3 | 1 fixed, 2 already safe |
+| `internal/resolvers/` | 1 | already safe |
 | `cmd/util/` | 1 | already safe |
 | `cmd/transform/` | 1 | LOW severity, left alone |
 | `cmd/proxy/` | 1 (RoundTripper) | fixed (3 bugs in one site) |
@@ -280,9 +280,9 @@ The following subtrees were audited for outbound HTTP client calls:
 | `cmd/label/` | 0 | — |
 | `cmd/split/` | 0 | — |
 | `cmd/analyze/` | 0 | — |
-| `maltego/` | 0 | transforms operate on local files; no outbound calls |
+| `internal/maltego/` | 0 | transforms operate on local files; no outbound calls |
 | `analyze/` | 0 | — |
-| `dpi/source_links_test.go` | several | test-only, not in scope |
+| `internal/dpi/source_links_test.go` | several | test-only, not in scope |
 
 Net: every production outbound HTTP call site in the repo has been either
 verified safe or fixed.

@@ -45,7 +45,7 @@ This document summarizes the complete implementation of configurable stream reas
 ## Files Modified
 
 ### Configuration
-1. **`decoder/config/config.go`**
+1. **`internal/decoder/config/config.go`**
    - Added `MaxBufferedPagesPerConnection` field
    - Added `MaxBufferedPagesTotal` field
    - Updated `DefaultConfig` with default values
@@ -65,24 +65,24 @@ This document summarizes the complete implementation of configurable stream reas
    - Documented defaults and units
 
 ### Implementation
-5. **`collector/worker.go`**
+5. **`internal/collector/worker.go`**
    - Applies all three limits from config to assemblers
    - Checks if limits are > 0 before applying
 
-6. **`reassembly/assembler.go`**
+6. **`internal/reassembly/assembler.go`**
    - Updated `defaultAssemblerOptions` with MaxStreamBytes default
    - Added totalBytes tracking in queued path (was already there)
    - **CRITICAL FIX**: Added totalBytes tracking in non-queued path
    - Added limit checks in both paths
 
-7. **`reassembly/halfconnection.go`**
+7. **`internal/reassembly/halfconnection.go`**
    - Added `totalBytes` field for tracking
 
 8. **`cmd/transform/ToAuditRecords.go`**
    - Updated hardcoded config with all three options
 
 ### Testing
-9. **`reassembly/max_stream_bytes_test.go`**
+9. **`internal/reassembly/max_stream_bytes_test.go`**
    - Added `TestMaxStreamBytesLimit`
    - Added `TestMaxStreamBytesUnlimited`
    - Added `TestMaxStreamBytesInOrder` (critical test)

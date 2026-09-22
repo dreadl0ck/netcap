@@ -4,7 +4,7 @@
 The TCP reassembly implementation is missing several features required by TCP RFC 9293 (and RFC 793), including proper urgent pointer handling, Maximum Segment Lifetime (MSL) validation, and complete TCP state machine implementation.
 
 ## Location
-- **Files**: Throughout `reassembly/` directory
+- **Files**: Throughout `internal/reassembly/` directory
 - **Key Issues**: Missing TCP features, incomplete state machine, sequence number violations
 
 ## Problem Description
@@ -346,13 +346,13 @@ func TestMSLCompliance(t *testing.T) {
 - Test memory usage with enhanced features
 
 ## Files to Modify
-- `reassembly/tcpassembly.go` - Add TCP options and state machine
-- `reassembly/connection.go` - Enhance with full state tracking
-- `reassembly/assembler.go` - Add urgent data and duplicate handling
+- `internal/reassembly/tcpassembly.go` - Add TCP options and state machine
+- `internal/reassembly/connection.go` - Enhance with full state tracking
+- `internal/reassembly/assembler.go` - Add urgent data and duplicate handling
 - Add new files:
-  - `reassembly/tcp_state.go` - State machine implementation
-  - `reassembly/tcp_options.go` - Options parsing
-  - `reassembly/rfc_compliance.go` - RFC validation utilities
+  - `internal/reassembly/tcp_state.go` - State machine implementation
+  - `internal/reassembly/tcp_options.go` - Options parsing
+  - `internal/reassembly/rfc_compliance.go` - RFC validation utilities
 
 ## Documentation Requirements
 - Document which RFC features are supported

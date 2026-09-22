@@ -18,7 +18,7 @@ The packet processing happens in distinct phases:
 
 #### Phase 1: gopacket Decoding (Independent of Netcap Decoders)
 ```
-collector/utils.go:32
+internal/collector/utils.go:32
 p := gopacket.NewPacket(data, c.config.BaseLayer, c.config.DecodeOptions)
 ```
 
@@ -44,7 +44,7 @@ The worker iterates through ALL decoded layers (provided by gopacket) and checks
 
 When decoders are excluded, they are removed during initialization:
 
-#### decoder/packet/gopacket_decoder.go:128-144
+#### internal/decoder/packet/gopacket_decoder.go:128-144
 ```go
 // iterate over excluded decoders
 for _, name := range ex {
@@ -73,7 +73,7 @@ This means:
 
 TCP/UDP stream reassembly also works independently of decoder registration:
 
-#### decoder/stream/tcp/tcp_connection.go:426
+#### internal/decoder/stream/tcp/tcp_connection.go:426
 ```go
 func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
     // prevent passing any non TCP packets in here
@@ -99,7 +99,7 @@ The reassembly uses `packet.Layer(layers.LayerTypeTCP)` to access already-decode
 
 Stream decoders (HTTP, TLS, DNS, etc.) are initialized separately and are not affected by packet-level decoder exclusions:
 
-#### decoder/stream/stream.go:82-130
+#### internal/decoder/stream/stream.go:82-130
 ```go
 // iterate over excluded decoders
 for _, name := range ex {
@@ -231,9 +231,9 @@ net capture -read test.pcap -exclude TCP -out /tmp/test3 -printProgress
 
 ## References
 
-- `collector/worker.go`: Main packet processing loop
-- `collector/utils.go`: Packet decoding with gopacket
-- `decoder/packet/gopacket_decoder.go`: GoPacket decoder initialization and exclusion
-- `decoder/stream/tcp/tcp_connection.go`: TCP reassembly logic
-- `decoder/stream/stream.go`: Stream decoder initialization
+- `internal/collector/worker.go`: Main packet processing loop
+- `internal/collector/utils.go`: Packet decoding with gopacket
+- `internal/decoder/packet/gopacket_decoder.go`: GoPacket decoder initialization and exclusion
+- `internal/decoder/stream/tcp/tcp_connection.go`: TCP reassembly logic
+- `internal/decoder/stream/stream.go`: Stream decoder initialization
 

@@ -162,11 +162,11 @@ The performance tracking system consists of:
    - Report generation
 
 2. **Integration Points**
-   - `collector/collector.go`: Tracker initialization
-   - `collector/worker.go`: Per-packet timing
-   - `collector/cleanup.go`: Report generation
-   - `io/*.go`: Disk I/O timing
-   - `decoder/config/config.go`: Config propagation
+   - `internal/collector/collector.go`: Tracker initialization
+   - `internal/collector/worker.go`: Per-packet timing
+   - `internal/collector/cleanup.go`: Report generation
+   - `internal/netio/*.go`: Disk I/O timing
+   - `internal/decoder/config/config.go`: Config propagation
 
 3. **Minimal Overhead**
    - Uses `time.Now()` and `time.Since()` for timing

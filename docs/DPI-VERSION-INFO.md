@@ -8,12 +8,12 @@ NETCAP now displays DPI (Deep Packet Inspection) build information in the header
 
 ### New Files
 
-1. **`dpi/version.go`** - Contains version variables and functions for DPI-enabled builds
-2. **`dpi/version_nodpi.go`** - Contains stub functions for no-DPI builds
+1. **`internal/dpi/version.go`** - Contains version variables and functions for DPI-enabled builds
+2. **`internal/dpi/version_nodpi.go`** - Contains stub functions for no-DPI builds
 
 ### Modified Files
 
-1. **`io/utils.go`** - Updated `FPrintBuildInfo()` to display DPI version information
+1. **`internal/netio/utils.go`** - Updated `FPrintBuildInfo()` to display DPI version information
 2. **`docker/alpine/Dockerfile`** - Added DPI version ldflags
 3. **`docker/ubuntu/Dockerfile`** - Added DPI version ldflags
 4. **`docs/building-with-dpi.md`** - Added documentation on version information
@@ -108,7 +108,7 @@ zeus gen-version
 This command will:
 1. Update the main `version.go` file with the project version and commit hash
 2. Extract the gopacket version from `go.mod` and add it to `version.go`
-3. Extract the go-dpi version from `go.mod` and update `dpi/version.go`
+3. Extract the go-dpi version from `go.mod` and update `internal/dpi/version.go`
 
 This ensures that the displayed versions always match the dependencies specified in `go.mod`.
 
@@ -204,8 +204,8 @@ The build information (including DPI version) is displayed when running these co
 
 The DPI version information uses Go build tags to compile different versions:
 
-- **Without `nodpi` tag**: Includes `dpi/version.go` with actual DPI support
-- **With `nodpi` tag**: Includes `dpi/version_nodpi.go` with stub functions
+- **Without `nodpi` tag**: Includes `internal/dpi/version.go` with actual DPI support
+- **With `nodpi` tag**: Includes `internal/dpi/version_nodpi.go` with stub functions
 
 ### API
 
@@ -224,7 +224,7 @@ info := dpi.GetVersionInfo()
 ### Variables
 
 ```go
-// In dpi/version.go (DPI-enabled builds)
+// In internal/dpi/version.go (DPI-enabled builds)
 var (
     NDPIVersion = "unknown"              // Set via ldflags
     LibprotoidentVersion = "unknown"     // Set via ldflags

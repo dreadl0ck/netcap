@@ -353,7 +353,7 @@ The following files were imported from the CredSLayer project to expand protocol
 
 ### Run All Validation Tests
 ```bash
-cd decoder/stream/credentials
+cd internal/decoder/stream/credentials
 go test -v -run TestAllPCAPFilesExist
 go test -v -run TestPCAPFileReadability
 ```

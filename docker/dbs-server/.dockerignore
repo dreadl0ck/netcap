@@ -36,7 +36,7 @@ cover.out
 
 # Data
 data/
-dbs/
+internal/dbs/
 collector.log
 decoder.log
 io.log
@@ -75,10 +75,10 @@ scripts/
 deploy.sh
 
 # Maltego
-maltego/
+internal/maltego/
 
 # Analysis
-analyze/
+scripts/analyze-dnn/
 
 # Configs
 configs/

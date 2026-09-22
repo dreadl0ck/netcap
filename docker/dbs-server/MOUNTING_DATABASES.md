@@ -8,7 +8,7 @@ The dbs-server stores databases in the following directory structure:
 
 ```
 /data/netcap-dbs-server/          # Root directory (NC_CONFIG_ROOT)
-├── dbs/                           # Database storage directory
+├── internal/dbs/                           # Database storage directory
 │   ├── 2024-01-15.tar.gz         # Versioned database tarball
 │   ├── 2024-01-15.json           # Metadata for version
 │   ├── latest.tar.gz             # Symlink to latest version
@@ -65,7 +65,7 @@ If your host already has a `netcap` user with a different UID, either:
 ### Pre-flight Writability Check
 
 The server now performs a writability probe at startup against both the
-`build/` and `dbs/` directories. If either is not writable, startup **fails
+`build/` and `internal/dbs/` directories. If either is not writable, startup **fails
 fast** with a message including the running uid/gid and a hint:
 
 ```
@@ -289,7 +289,7 @@ curl http://localhost:8080/dbs/list
 
 ## Technical Implementation
 
-The server includes these new functions (in `dbs/server.go`):
+The server includes these new functions (in `internal/dbs/server.go`):
 
 - `checkExistingDatabases()`: Scans for and validates existing database files
 - `ensureLatestLinks()`: Creates symlinks/copies for `latest` version

@@ -679,7 +679,7 @@ netcap/
 ├── configs/
 │   └── file-extraction.yml              # Configuration template
 │
-├── decoder/stream/file/
+├── internal/decoder/stream/file/
 │   ├── framework.go                     # Core framework
 │   ├── config.go                        # Configuration loader
 │   ├── hashing.go                       # Multi-hash support
@@ -697,11 +697,11 @@ netcap/
 │       ├── ../irc/irc_file_extractor.go
 │       └── ../smb/smb_file_extractor.go
 │
-├── decoder/stream/{http,ftp,irc,smb,mail}/
+├── internal/decoder/stream/{http,ftp,irc,smb,mail}/
 │   ├── *_reader.go                      # Protocol decoders
 │   └── *.go                             # Protocol-specific logic
 │
-├── collector/
+├── internal/collector/
 │   └── file_extraction_test.go          # Integration tests (6 tests)
 │
 ├── proto/netcap.proto                         # Updated with FTP, IRC, SMB messages
@@ -923,11 +923,11 @@ file.SaveFileEnhanced(conv, source, name, err, body, encoding, host, contentType
 
 ### Adding Protocol Support
 
-1. **Create extractor** in `decoder/stream/<protocol>/<protocol>_file_extractor.go`
+1. **Create extractor** in `internal/decoder/stream/<protocol>/<protocol>_file_extractor.go`
 2. **Implement interface** (GetFileHandle, DescribeFile, ExtractFile, ProtocolName)
 3. **Register in init()** - `file.RegisterExtractor(&MyExtractor{})`
 4. **Add to config** in `file/config.go`
-5. **Write tests** in `collector/*_test.go`
+5. **Write tests** in `internal/collector/*_test.go`
 6. **Update docs** (this file)
 
 ### Running Tests

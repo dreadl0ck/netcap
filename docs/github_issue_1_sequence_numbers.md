@@ -4,7 +4,7 @@
 The TCP reassembly implementation uses `int64` for sequence numbers instead of the RFC-mandated `uint32`, causing wraparound vulnerabilities and RFC non-compliance.
 
 ## Location
-- **File**: `reassembly/sequence.go:12`
+- **File**: `internal/reassembly/sequence.go:12`
 - **Code**: `type Sequence int64`
 
 ## Problem Description
@@ -64,9 +64,9 @@ func (s Sequence) difference(t Sequence) int32 {
 - [ ] Test with real network captures containing wraparound
 
 ## Files to Modify
-- `reassembly/sequence.go` - Core sequence type definition
-- `reassembly/halfconnection.go` - Sequence tracking logic
-- `reassembly/assembler.go` - Overlap detection using sequences
+- `internal/reassembly/sequence.go` - Core sequence type definition
+- `internal/reassembly/halfconnection.go` - Sequence tracking logic
+- `internal/reassembly/assembler.go` - Overlap detection using sequences
 - Any other files using Sequence type
 
 ## Priority

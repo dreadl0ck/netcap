@@ -110,7 +110,7 @@ A Software audit record is also generated with:
 
 ### Function: `matchHTTPHeaders`
 
-Located in `decoder/stream/service/service_probe.go`, this function:
+Located in `internal/decoder/stream/service/service_probe.go`, this function:
 1. Attempts to parse the banner as an HTTP response
 2. Checks headers in priority order
 3. Calls `parseHeaderValue` to extract information
@@ -141,7 +141,7 @@ Comprehensive tests are available in `http_header_test.go`:
 
 Run tests:
 ```bash
-cd decoder/stream/service
+cd internal/decoder/stream/service
 go test -v -run "TestParse|TestMatchHTTP"
 ```
 

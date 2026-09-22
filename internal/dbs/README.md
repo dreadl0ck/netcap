@@ -66,7 +66,7 @@ The database server stores files in the following structure:
 
 ```
 netcap-dbs-server/          # Root directory (configurable via NC_CONFIG_ROOT)
-├── dbs/                    # Database storage directory
+├── internal/dbs/                    # Database storage directory
 │   ├── 2024-01-15.tar.gz  # Versioned database tarball
 │   ├── 2024-01-15.json    # Metadata for version
 │   ├── latest.tar.gz      # Symlink/copy of latest version
@@ -81,7 +81,7 @@ netcap-dbs-server/          # Root directory (configurable via NC_CONFIG_ROOT)
 
 **Using Pre-existing Databases:**
 
-The server can use pre-existing databases instead of rebuilding on startup. Simply mount or copy database files into the `dbs/` directory before starting the server. The server will:
+The server can use pre-existing databases instead of rebuilding on startup. Simply mount or copy database files into the `internal/dbs/` directory before starting the server. The server will:
 
 1. Detect existing database tarballs (YYYY-MM-DD.tar.gz format)
 2. Use the most recent version as the initial revision

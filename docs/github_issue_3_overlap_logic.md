@@ -4,7 +4,7 @@
 The TCP overlap detection algorithm in `checkOverlap()` is overly complex with 6 different cases, making it difficult to maintain, debug, and verify correctness.
 
 ## Location
-- **File**: `reassembly/assembler.go`
+- **File**: `internal/reassembly/assembler.go`
 - **Function**: `checkOverlap()` (lines 321-460)
 
 ## Problem Description
@@ -181,7 +181,7 @@ func TestDetectOverlapType(t *testing.T) {
 - [ ] Documentation updates
 
 ## Files to Modify
-- `reassembly/assembler.go` - Main overlap detection logic
+- `internal/reassembly/assembler.go` - Main overlap detection logic
 - Add new test files for overlap detection
 - Update documentation and comments
 

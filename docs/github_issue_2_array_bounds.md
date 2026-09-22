@@ -4,7 +4,7 @@
 The TCP overlap detection code contains multiple slice operations with potential negative indices that can cause runtime panics and memory corruption.
 
 ## Location
-- **File**: `reassembly/assembler.go`
+- **File**: `internal/reassembly/assembler.go`
 - **Lines**: 398, 403, 410 (in checkOverlap function)
 
 ## Problem Description
@@ -93,7 +93,7 @@ func handleOverlapCase2(cur *page, start, end Sequence, bytes []byte) error {
 - [ ] Integration tests with real network packet sequences
 
 ## Files to Modify
-- `reassembly/assembler.go` - Main overlap detection logic
+- `internal/reassembly/assembler.go` - Main overlap detection logic
 - Add new utility functions for safe slice operations
 - Update all slice operations in overlap handling
 

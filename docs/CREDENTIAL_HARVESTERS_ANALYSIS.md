@@ -225,7 +225,7 @@ testdata/HTTP - Digest-MD5.pcap
 ### Phase 2: NTLMSSP (Week 2-3)
 **Goal**: Implement NTLMSSP hash extraction
 
-- [ ] Create `decoder/stream/credentials/ntlmssp.go`
+- [ ] Create `internal/decoder/stream/credentials/ntlmssp.go`
 - [ ] Implement state machine
 - [ ] Support NTLMv1 and NTLMv2
 - [ ] Add Hashcat formatting
@@ -233,36 +233,36 @@ testdata/HTTP - Digest-MD5.pcap
 - [ ] Validate with all test PCAPs
 
 **New Files**:
-- `decoder/stream/credentials/ntlmssp.go`
+- `internal/decoder/stream/credentials/ntlmssp.go`
 - Tests in `harvesters_new_test.go`
 
 ### Phase 3: Kerberos (Week 4-6)
 **Goal**: Complete Kerberos support
 
 #### Week 4: AS-REQ
-- [ ] Create `decoder/stream/credentials/kerberos_asreq.go`
+- [ ] Create `internal/decoder/stream/credentials/kerberos_asreq.go`
 - [ ] Implement UDP packet processing
 - [ ] Add pattern matching logic
 - [ ] Test with UDP PCAPs
 
 #### Week 5: AS-REP
-- [ ] Create `decoder/stream/credentials/kerberos_asrep.go`
+- [ ] Create `internal/decoder/stream/credentials/kerberos_asrep.go`
 - [ ] Implement ASN.1 parsing
 - [ ] Support UDP and TCP
 - [ ] Handle multiple etypes
 - [ ] Test thoroughly
 
 #### Week 6: TGS-REP
-- [ ] Create `decoder/stream/credentials/kerberos_tgsrep.go`
+- [ ] Create `internal/decoder/stream/credentials/kerberos_tgsrep.go`
 - [ ] Leverage AS-REP code
 - [ ] Add SPN extraction
 - [ ] Complete testing
 
 **New Files**:
-- `decoder/stream/credentials/kerberos_asreq.go`
-- `decoder/stream/credentials/kerberos_asrep.go`
-- `decoder/stream/credentials/kerberos_tgsrep.go`
-- `decoder/stream/credentials/kerberos_common.go` (shared code)
+- `internal/decoder/stream/credentials/kerberos_asreq.go`
+- `internal/decoder/stream/credentials/kerberos_asrep.go`
+- `internal/decoder/stream/credentials/kerberos_tgsrep.go`
+- `internal/decoder/stream/credentials/kerberos_common.go` (shared code)
 
 ### Phase 4: Enhancements (Week 7)
 **Goal**: Polish and additional features
@@ -344,7 +344,7 @@ func harvester(packet gopacket.Packet, ts time.Time) *types.Credentials {
 ## Testing Strategy
 
 ### Unit Tests
-Located in: `decoder/stream/credentials/harvesters_new_test.go`
+Located in: `internal/decoder/stream/credentials/harvesters_new_test.go`
 
 Current status:
 - ✅ Test file existence validation

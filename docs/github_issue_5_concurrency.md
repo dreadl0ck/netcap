@@ -4,7 +4,7 @@
 The TCP reassembly implementation has several concurrency issues including race conditions, potential deadlocks, and inconsistent locking patterns that can lead to data corruption and crashes.
 
 ## Location
-- **Files**: `reassembly/assembler.go`, `reassembly/stream_pool.go`, `reassembly/connection.go`
+- **Files**: `internal/reassembly/assembler.go`, `internal/reassembly/stream_pool.go`, `internal/reassembly/connection.go`
 - **Key Issues**: Shared state access, multiple mutex usage, race conditions in buildSG()
 
 ## Problem Description
@@ -12,7 +12,7 @@ The TCP reassembly implementation has several concurrency issues including race 
 ### Current Issues:
 
 #### 1. Known Race Condition in Assembler
-**Location**: `reassembly/assembler.go:181`
+**Location**: `internal/reassembly/assembler.go:181`
 ```go
 // RACE comment indicates known race condition
 a.Lock()
@@ -24,7 +24,7 @@ a.Unlock()
 - **Data Corruption**: Concurrent modifications can corrupt the return slice
 
 #### 2. Complex Locking in buildSG()
-**Location**: `reassembly/assembler.go:763`
+**Location**: `internal/reassembly/assembler.go:763`
 ```go
 func (a *Assembler) buildSG(/* ... */) {
     // Complex nested locking pattern
@@ -44,7 +44,7 @@ func (a *Assembler) buildSG(/* ... */) {
 - **Lock Contention**: Fine-grained locking causes performance issues
 
 #### 3. StreamPool Concurrency Issues
-**Location**: `reassembly/stream_pool.go`
+**Location**: `internal/reassembly/stream_pool.go`
 ```go
 type StreamPool struct {
     // Multiple concurrent data structures without consistent protection
@@ -58,7 +58,7 @@ type StreamPool struct {
 - **Connection Lifecycle**: Race conditions in connection creation/deletion
 
 #### 4. Connection State Management
-**Location**: `reassembly/connection.go`
+**Location**: `internal/reassembly/connection.go`
 ```go
 type connection struct {
     // Multiple fields accessed concurrently
@@ -330,10 +330,10 @@ type ConcurrencyConfig struct {
 ```
 
 ## Files to Modify
-- `reassembly/assembler.go` - Fix ret slice race and locking
-- `reassembly/stream_pool.go` - Improve connection pool concurrency
-- `reassembly/connection.go` - Add atomic operations for state
-- `reassembly/page.go` - Implement reference counting
+- `internal/reassembly/assembler.go` - Fix ret slice race and locking
+- `internal/reassembly/stream_pool.go` - Improve connection pool concurrency
+- `internal/reassembly/connection.go` - Add atomic operations for state
+- `internal/reassembly/page.go` - Implement reference counting
 - Add new test files for concurrency testing
 
 ## Backward Compatibility

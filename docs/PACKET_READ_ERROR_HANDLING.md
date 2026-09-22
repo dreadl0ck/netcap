@@ -6,7 +6,7 @@ When processing multiple PCAP files, packet reading errors (such as "capture len
 
 ## Changes Made
 
-### collector/pcap.go
+### internal/collector/pcap.go
 
 **Problem**: The `countPackets` function used `log.Fatal()` when encountering packet reading errors during the packet counting phase. This caused immediate program termination, even when processing multiple files in batch mode.
 
@@ -67,8 +67,8 @@ Instead of:
 
 ## Related Files
 
-- `collector/pcap.go` - PCAP file reading and packet counting
-- `collector/pcapNG.go` - PCAPNG file reading (already had proper error handling)
+- `internal/collector/pcap.go` - PCAP file reading and packet counting
+- `internal/collector/pcapNG.go` - PCAPNG file reading (already had proper error handling)
 - `cmd/capture/main.go` - Batch processing orchestration and error tracking
 
 ## Testing

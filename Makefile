@@ -58,7 +58,7 @@ test-hyperscan:
 		./internal/rules/...
 
 # Performance benchmarks. Scoped to ./... because the 235 Benchmark functions
-# live beside the code they measure (collector/, reassembly/, io/, decoder/...);
+# live beside the code they measure (internal/collector/, internal/netio/, ...);
 # tests/benchmarks/ is empty and matches no packages.
 test-bench:
 	@echo "Running benchmarks..."

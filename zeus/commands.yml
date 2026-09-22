@@ -550,14 +550,14 @@ commands:
 
     pack-dist:
         exec: |
-            cp maltego/netcap.mtz dist/
-            cp resolvers/resolver-dbs.zip dist/
+            cp internal/maltego/netcap.mtz dist/
+            cp internal/resolvers/resolver-dbs.zip dist/
             cp /usr/local/etc/netcap/livecapture.conf dist/
 
     pack-dist-dev:
         exec: |
-            cp maltego/netcap.mtz dist/
-            cp resolvers/resolver-dbs.zip dist/
+            cp internal/maltego/netcap.mtz dist/
+            cp internal/resolvers/resolver-dbs.zip dist/
             cp /usr/local/etc/netcap/livecapture.conf dist/
             #cp -r /usr/local/etc/netcap/exploits dist/
             cp /usr/local/etc/netcap/dbs/hosts dist/
@@ -802,12 +802,12 @@ commands:
             sed "s/.*ENV VERSION.*/ENV VERSION ${VERSION}/" Dockerfile > Dockerfile-cp
             mv Dockerfile-cp Dockerfile
             
-            # Update go-dpi version in dpi/version.go
-            echo "[INFO] updating go-dpi version in dpi/version.go"
+            # Update go-dpi version in internal/dpi/version.go
+            echo "[INFO] updating go-dpi version in internal/dpi/version.go"
             if [ -n "$GO_DPI_VERSION" ]; then
                 echo "[INFO] found go-dpi version: $GO_DPI_VERSION"
-                sed -i.bak "s/GoDPIVersion = \".*\"/GoDPIVersion = \"$GO_DPI_VERSION\"/" dpi/version.go
-                rm -f dpi/version.go.bak
+                sed -i.bak "s/GoDPIVersion = \".*\"/GoDPIVersion = \"$GO_DPI_VERSION\"/" internal/dpi/version.go
+                rm -f internal/dpi/version.go.bak
             else
                 echo "[WARNING] could not extract go-dpi version from go.mod"
             fi
@@ -1159,6 +1159,6 @@ commands:
     copy-rules:
         description: copy the rules to the rules folder
         exec: |
-            cp rules/examples/* data/service-local/rules
-            cp rules/examples/* ~/.local/share/netcap-service/rules
-            scp rules/examples/* $DEPLOY_USER@$DEPLOY_HOST:/mnt/storage/netcap-try-server/data/netcap-service/rules
+            cp internal/rules/examples/* data/service-local/rules
+            cp internal/rules/examples/* ~/.local/share/netcap-service/rules
+            scp internal/rules/examples/* $DEPLOY_USER@$DEPLOY_HOST:/mnt/storage/netcap-try-server/data/netcap-service/rules

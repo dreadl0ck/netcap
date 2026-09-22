@@ -8,7 +8,7 @@ This document describes the panic recovery mechanism implemented for NETCAP's pc
 
 ### Core Panic Recovery Function
 
-A new method `recoverFromPanic()` has been added to the `Collector` struct in `collector/collector.go`. This function:
+A new method `recoverFromPanic()` has been added to the `Collector` struct in `internal/collector/collector.go`. This function:
 
 1. **Catches panics** using Go's `recover()` mechanism
 2. **Captures the stack trace** using `runtime/debug.Stack()`
@@ -24,19 +24,19 @@ A new method `recoverFromPanic()` has been added to the `Collector` struct in `c
 
 The panic recovery has been added to all pcap processing entry points:
 
-1. **`CollectPcap()`** in `collector/pcap.go`
+1. **`CollectPcap()`** in `internal/collector/pcap.go`
    - Processes standard PCAP files
    
-2. **`CollectPcapNG()`** in `collector/pcapNG.go`
+2. **`CollectPcapNG()`** in `internal/collector/pcapNG.go`
    - Processes PCAP-NG files
    
-3. **`CollectBPF()`** in `collector/bpf.go`
+3. **`CollectBPF()`** in `internal/collector/bpf.go`
    - Processes PCAP files with BPF filters
    
-4. **`CollectLive()`** in `collector/live.go` (macOS)
+4. **`CollectLive()`** in `internal/collector/live.go` (macOS)
    - Handles live packet capture on macOS
    
-5. **`CollectLive()`** in `collector/live_linux.go` (Linux)
+5. **`CollectLive()`** in `internal/collector/live_linux.go` (Linux)
    - Handles live packet capture on Linux
 
 Each function now starts with:
@@ -84,7 +84,7 @@ When a panic is caught, the following cleanup steps are performed (via `c.cleanu
 
 ## Testing
 
-A unit test has been added in `collector/panic_recovery_test.go` that verifies:
+A unit test has been added in `internal/collector/panic_recovery_test.go` that verifies:
 - The panic recovery mechanism is properly initialized
 - The function can be called without side effects when no panic occurs
 - The logging infrastructure is properly set up
@@ -99,13 +99,13 @@ A unit test has been added in `collector/panic_recovery_test.go` that verifies:
 
 ## Files Modified
 
-- `collector/collector.go` - Added `recoverFromPanic()` method
-- `collector/pcap.go` - Added panic recovery to `CollectPcap()`
-- `collector/pcapNG.go` - Added panic recovery to `CollectPcapNG()`
-- `collector/bpf.go` - Added panic recovery to `CollectBPF()`
-- `collector/live.go` - Added panic recovery to `CollectLive()` (macOS version)
-- `collector/live_linux.go` - Added panic recovery to `CollectLive()` (Linux version)
-- `collector/panic_recovery_test.go` - Added unit test for panic recovery mechanism
+- `internal/collector/collector.go` - Added `recoverFromPanic()` method
+- `internal/collector/pcap.go` - Added panic recovery to `CollectPcap()`
+- `internal/collector/pcapNG.go` - Added panic recovery to `CollectPcapNG()`
+- `internal/collector/bpf.go` - Added panic recovery to `CollectBPF()`
+- `internal/collector/live.go` - Added panic recovery to `CollectLive()` (macOS version)
+- `internal/collector/live_linux.go` - Added panic recovery to `CollectLive()` (Linux version)
+- `internal/collector/panic_recovery_test.go` - Added unit test for panic recovery mechanism
 
 ## Usage
 

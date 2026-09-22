@@ -214,7 +214,7 @@ All 372 test cases pass successfully:
 When adding new IP ranges or modifying detection logic:
 
 1. Update all 4 implementations:
-   - `resolvers/dns.go`
+   - `internal/resolvers/dns.go`
    - `filter/helpers.go`
    - `cmd/proxy/utils.go`
    - `cmd/capture/webui/visualize_charts.go`

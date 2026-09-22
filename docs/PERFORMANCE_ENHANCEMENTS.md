@@ -19,17 +19,17 @@ Comprehensive performance tracking has been added to netcap that measures and re
   - Disk I/O operations
 
 ### 2. Packet Processing Metrics
-- **Location**: `collector/worker.go`
+- **Location**: `internal/collector/worker.go`
 - **Tracks**: Time spent in each worker processing packets
 - **Metrics**: Decoding time, reassembly time, per-decoder timing
 
 ### 3. TCP Reassembly Performance
-- **Location**: `collector/worker.go`
+- **Location**: `internal/collector/worker.go`
 - **Tracks**: Time spent reassembling TCP streams
 - **Reports**: Total time, average per packet, reassembly rate
 
 ### 4. Deep Packet Inspection (DPI) Tracking
-- **Location**: `decoder/packet/connection.go`
+- **Location**: `internal/decoder/packet/connection.go`
 - **Tracks**: DPI.GetProtocols() calls
 - **Reports**: Number of calls, average time, call rate
 - **Note**: Only appears when DPI is enabled with `-dpi` flag
@@ -38,11 +38,11 @@ Comprehensive performance tracking has been added to netcap that measures and re
 Added timing to all resolver lookups with cache hit tracking:
 
 **Resolvers Tracked**:
-- **DNS** (`resolvers/dns.go`): Reverse DNS lookups
-- **Geolocation** (`resolvers/geoip.go`): IP to location/ASN
-- **MAC** (`resolvers/mac.go`): MAC to manufacturer
-- **Service** (`resolvers/service.go`): Port to service name
-- **Ja3** (`resolvers/ja3.go`): TLS fingerprint lookups
+- **DNS** (`internal/resolvers/dns.go`): Reverse DNS lookups
+- **Geolocation** (`internal/resolvers/geoip.go`): IP to location/ASN
+- **MAC** (`internal/resolvers/mac.go`): MAC to manufacturer
+- **Service** (`internal/resolvers/service.go`): Port to service name
+- **Ja3** (`internal/resolvers/ja3.go`): TLS fingerprint lookups
 
 **Metrics Per Resolver**:
 - Total lookups performed
@@ -65,31 +65,31 @@ Added timing to all resolver lookups with cache hit tracking:
 - Total processing time
 
 ### 7. Disk I/O Performance
-- **Location**: `io/protobuf.go`, `io/csv_writer.go`, `io/json_writer.go`
+- **Location**: `internal/netio/protobuf.go`, `internal/netio/csv_writer.go`, `internal/netio/json_writer.go`
 - **Tracks**: Write and sync operations for all file types
 - **Reports**: Write count, bytes written, total time, throughput (MB/s)
 
 ## Integration Points
 
-1. **Collector Initialization** (`collector/init.go`)
+1. **Collector Initialization** (`internal/collector/init.go`)
    - Creates performance tracker
    - Passes to decoder config
    - Passes to resolvers
 
-2. **Worker Processing** (`collector/worker.go`)
+2. **Worker Processing** (`internal/collector/worker.go`)
    - Times packet decoding
    - Times TCP reassembly
    - Times each decoder invocation
 
-3. **Cleanup/Stats** (`collector/cleanup.go`)
+3. **Cleanup/Stats** (`internal/collector/cleanup.go`)
    - Aggregates final statistics
    - Writes performance report to `performance.log`
 
-4. **All Resolvers** (`resolvers/*.go`)
+4. **All Resolvers** (`internal/resolvers/*.go`)
    - DNS, Geolocation, MAC, Service, Ja3
    - Track lookup timing and cache hits
 
-5. **All Writers** (`io/*.go`)
+5. **All Writers** (`internal/netio/*.go`)
    - Protobuf, CSV, JSON writers
    - Track write operations and sync calls
 
@@ -193,26 +193,26 @@ Quickly identify:
 - `performance/tracker.go` - Core tracking implementation
 
 ### Modified Files
-- `collector/collector.go` - Added perfTracker field
-- `collector/init.go` - Initialize and pass tracker
-- `collector/worker.go` - Added timing for all operations
-- `collector/cleanup.go` - Report generation
-- `decoder/config/config.go` - Added PerfTracker to config
-- `decoder/packet/connection.go` - DPI timing
-- `decoder/packet/packet_decoder.go` - Pass tracker to writers
-- `decoder/packet/gopacket_decoder.go` - Pass tracker to writers
-- `decoder/stream/stream.go` - Pass tracker to writers
-- `decoder/stream/abstract.go` - Pass tracker to writers
-- `io/writers.go` - Added PerfTracker field
-- `io/protobuf.go` - Write timing
-- `io/csv_writer.go` - Write timing
-- `io/json_writer.go` - Write timing
-- `resolvers/source.go` - Added SetPerfTracker
-- `resolvers/dns.go` - Lookup timing
-- `resolvers/geoip.go` - Lookup timing
-- `resolvers/mac.go` - Lookup timing
-- `resolvers/service.go` - Lookup timing
-- `resolvers/ja3.go` - Lookup timing
+- `internal/collector/collector.go` - Added perfTracker field
+- `internal/collector/init.go` - Initialize and pass tracker
+- `internal/collector/worker.go` - Added timing for all operations
+- `internal/collector/cleanup.go` - Report generation
+- `internal/decoder/config/config.go` - Added PerfTracker to config
+- `internal/decoder/packet/connection.go` - DPI timing
+- `internal/decoder/packet/packet_decoder.go` - Pass tracker to writers
+- `internal/decoder/packet/gopacket_decoder.go` - Pass tracker to writers
+- `internal/decoder/stream/stream.go` - Pass tracker to writers
+- `internal/decoder/stream/abstract.go` - Pass tracker to writers
+- `internal/netio/writers.go` - Added PerfTracker field
+- `internal/netio/protobuf.go` - Write timing
+- `internal/netio/csv_writer.go` - Write timing
+- `internal/netio/json_writer.go` - Write timing
+- `internal/resolvers/source.go` - Added SetPerfTracker
+- `internal/resolvers/dns.go` - Lookup timing
+- `internal/resolvers/geoip.go` - Lookup timing
+- `internal/resolvers/mac.go` - Lookup timing
+- `internal/resolvers/service.go` - Lookup timing
+- `internal/resolvers/ja3.go` - Lookup timing
 
 ### Documentation
 - `docs/PERFORMANCE_TRACKING.md` - Complete usage guide

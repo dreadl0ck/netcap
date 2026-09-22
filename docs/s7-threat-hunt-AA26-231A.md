@@ -78,10 +78,10 @@ on-wire traffic tool and does not query third-party scan indices. Use netcap for
 the complementary question "is S7comm actually crossing a boundary on my wire?":
 
 - Port-based external exposure: `ICS S7comm External Connection`
-  (`rules/examples/industrial_ports.yml`) fires on `DstPort == 102 &&
+  (`internal/rules/examples/industrial_ports.yml`) fires on `DstPort == 102 &&
   IsPublicIP(DstIP)`.
 - GeoIP-enriched triage: `S7comm External Connection With GeoIP`
-  (`rules/examples/s7comm_hunt.yml`) fires on a public src/dst and attaches
+  (`internal/rules/examples/s7comm_hunt.yml`) fires on a public src/dst and attaches
   `SrcGeoLocation`/`DstGeoLocation`/`SrcASN`/`DstASN` (requires the geolocation
   resolver).
 
@@ -122,7 +122,7 @@ observe "snap7 imported" or "a Python process." What it can do:
   an approved engineering workstation (see the approved-workstation baseline
   below). Any S7comm from a non-approved source is a lead for host-side triage.
 - Surface the DPI application label (`S7COMM`, `S7COMM_PLUS`) on `Connection`
-  records via nDPI (`rules/examples/application_detections.yml`).
+  records via nDPI (`internal/rules/examples/application_detections.yml`).
 
 > **Gap to write down:** the snap7/Python/process-name discriminators require
 > host telemetry (EDR/endpoint), not netcap. netcap narrows the host set; it
@@ -136,7 +136,7 @@ attempt; a job acknowledged with **error class `0x00`** is a completed
 operation.
 
 netcap parses all of these at the function-code level into `S7Comm` records.
-The shipped rules (`rules/examples/s7comm_hunt.yml`):
+The shipped rules (`internal/rules/examples/s7comm_hunt.yml`):
 
 | Rule | Function code(s) | Meaning |
 |---|---|---|
@@ -168,7 +168,7 @@ engineering-workstation IPs in a file (bare IP per line, or `name,ip` CSV):
 
 ```bash
 net capture -read plant.pcap -include S7Comm,Connection \
-  -rules rules/examples/s7comm_hunt.yml \
+  -rules internal/rules/examples/s7comm_hunt.yml \
   -approved-workstations approved-ews.txt \
   -out out/
 ```
@@ -235,7 +235,7 @@ covered half the estate. Name the gaps:
 through the standard writers:
 
 - **Protobuf** (default), **CSV**, **JSON** for offline analysis.
-- **Elasticsearch** (`net export ... ` / `io/elastic.go`) for Kibana dashboards
+- **Elasticsearch** (`net export ... ` / `internal/netio/elastic.go`) for Kibana dashboards
   and geographic maps.
 - **Alerts** are written to `Alert.ncap.gz` and carry the matched record,
   MITRE IDs, severity and rule expression for triage.

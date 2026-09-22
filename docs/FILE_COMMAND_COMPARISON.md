@@ -253,7 +253,7 @@ Error: File format error: Unknown or unsupported format
 
 ## Extending Format Detection
 
-To add new format detection to NETCAP, update `collector/pcap_utils.go`:
+To add new format detection to NETCAP, update `internal/collector/pcap_utils.go`:
 
 ```go
 var knownMagicNumbers = map[uint32]fileTypeInfo{

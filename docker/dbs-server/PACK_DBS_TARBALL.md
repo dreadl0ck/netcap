@@ -65,11 +65,11 @@ output-directory/
 
 ### Tarball Structure
 
-The tarball preserves the `dbs/` directory structure:
+The tarball preserves the `internal/dbs/` directory structure:
 
 ```
 YYYY-MM-DD.tar.gz
-└── dbs/
+└── internal/dbs/
     ├── service-names-port-numbers.csv
     ├── domain-whitelist.csv
     ├── ja3_fingerprints.json

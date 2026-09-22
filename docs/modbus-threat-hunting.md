@@ -246,7 +246,7 @@ Use `distinct_field` with `distinct_threshold` and `threshold_window`:
 
 A rule can require an earlier related record before it alerts, so pairing a read
 with a later write of the same register is a rule, not a post-export step.
-`rules/examples/modbus_hunt.yml` ships this as `Modbus Write After Read Same
+`internal/rules/examples/modbus_hunt.yml` ships this as `Modbus Write After Read Same
 Register`, **disabled**:
 
 ```yaml
@@ -289,7 +289,7 @@ Bank == "holding_registers" && Address == 1000'
 
 ## Running The Shipped Rules
 
-`rules/examples/modbus_hunt.yml` contains 15 rules: request-level hunt
+`internal/rules/examples/modbus_hunt.yml` contains 15 rules: request-level hunt
 templates, one read-then-write pairing template, enumeration templates, and
 visibility/coverage triage. Site-dependent rules use documentation IPs and ship
 `enabled: false`; replace the addresses, units, banks and intervals before
@@ -302,7 +302,7 @@ capture loss (`lost`). No rule configures a response action.
 
 ```bash
 net capture -read plant.pcap -out modbus-hunt -include Modbus \
-  -reassemble-connections=true -payload -rules rules/examples/modbus_hunt.yml
+  -reassemble-connections=true -payload -rules internal/rules/examples/modbus_hunt.yml
 net dump -read modbus-hunt/Alert.ncap.gz -json
 ```
 

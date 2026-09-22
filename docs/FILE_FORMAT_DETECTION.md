@@ -91,7 +91,7 @@ The system reads the first 4 bytes of a file and interprets them as a 32-bit int
 
 ### File Type Identification
 
-Located in `collector/pcap_utils.go`:
+Located in `internal/collector/pcap_utils.go`:
 
 - `identifyFileTypeByMagic(filePath string)` - Reads file magic number and identifies format
 - `invokeFileCommand(filePath string)` - Executes system `file` command and returns output
@@ -101,8 +101,8 @@ Located in `collector/pcap_utils.go`:
 
 The enhanced error handling is automatically applied when opening PCAP/PCAPNG files through:
 
-- `openPcapNG()` in `collector/pcapNG.go`
-- `OpenPCAP()` in `collector/pcap.go`
+- `openPcapNG()` in `internal/collector/pcapNG.go`
+- `OpenPCAP()` in `internal/collector/pcap.go`
 
 ## Troubleshooting Common Issues
 
@@ -145,7 +145,7 @@ tcpdump -r input.cap -w output.pcap
 
 ## Extending Format Detection
 
-To add support for detecting additional file formats, update the `knownMagicNumbers` map in `collector/pcap_utils.go`:
+To add support for detecting additional file formats, update the `knownMagicNumbers` map in `internal/collector/pcap_utils.go`:
 
 ```go
 var knownMagicNumbers = map[uint32]fileTypeInfo{

@@ -48,7 +48,7 @@ With automatic cleanup enabled:
 
 ### Code Location
 
-The cleanup logic is implemented in `dbs/server.go`:
+The cleanup logic is implemented in `internal/dbs/server.go`:
 - Function: `cleanupOldVersions()`
 - Called by: `rebuildDatabases()` after successful generation
 - Thread-safe: Uses mutex to prevent race conditions

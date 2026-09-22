@@ -120,7 +120,7 @@ This comprehensive fix ensures consistency by using the same sanitization approa
 ## Verification
 
 To verify the fix works with the example rule:
-1. Edit `rules/examples/streaming_protocols.yml`
+1. Edit `internal/rules/examples/streaming_protocols.yml`
 2. Change line 137 from:
    ```yaml
    - name: RTP Audio Video Stream Detected

@@ -226,9 +226,9 @@ if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
     # Copy assets required by go:embed declarations.
     cp LICENSE "$BUILD_CONTEXT/"
     cp -r legal "$BUILD_CONTEXT/legal"
-    mkdir -p "$BUILD_CONTEXT/rules" "$BUILD_CONTEXT/injection" "$BUILD_CONTEXT/cmd/capture/webui"
-    cp -r rules/examples "$BUILD_CONTEXT/rules/examples"
-    cp -r injection/rules "$BUILD_CONTEXT/injection/rules"
+    mkdir -p "$BUILD_CONTEXT/internal/rules" "$BUILD_CONTEXT/internal/injection" "$BUILD_CONTEXT/cmd/capture/webui"
+    cp -r internal/rules/examples "$BUILD_CONTEXT/internal/rules/examples"
+    cp -r internal/injection/rules "$BUILD_CONTEXT/internal/injection/rules"
     cp -r cmd/capture/webui/dashboards_builtin "$BUILD_CONTEXT/cmd/capture/webui/dashboards_builtin"
     
     # Copy proto files if any
@@ -301,9 +301,9 @@ else
     # Copy assets required by go:embed declarations.
     cp LICENSE "$BUILD_CONTEXT/"
     cp -r legal "$BUILD_CONTEXT/legal"
-    mkdir -p "$BUILD_CONTEXT/rules" "$BUILD_CONTEXT/injection" "$BUILD_CONTEXT/cmd/capture/webui"
-    cp -r rules/examples "$BUILD_CONTEXT/rules/examples"
-    cp -r injection/rules "$BUILD_CONTEXT/injection/rules"
+    mkdir -p "$BUILD_CONTEXT/internal/rules" "$BUILD_CONTEXT/internal/injection" "$BUILD_CONTEXT/cmd/capture/webui"
+    cp -r internal/rules/examples "$BUILD_CONTEXT/internal/rules/examples"
+    cp -r internal/injection/rules "$BUILD_CONTEXT/internal/injection/rules"
     cp -r cmd/capture/webui/dashboards_builtin "$BUILD_CONTEXT/cmd/capture/webui/dashboards_builtin"
     
     # Copy proto files if any

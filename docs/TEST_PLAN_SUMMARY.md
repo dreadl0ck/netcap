@@ -76,7 +76,7 @@
 Priority fixes that unblock testing:
 
 1. **Fix DBS Build Error** (~30 min)
-   - Remove unused variables in `dbs/server.go:180-181`
+   - Remove unused variables in `internal/dbs/server.go:180-181`
 
 2. **Fix Reassembly Tests** (~2 hours)
    - Debug and fix 4 failing KeepSimple tests

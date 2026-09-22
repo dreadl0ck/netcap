@@ -173,7 +173,7 @@ Credentials are stored in `Secret.ncap.gz` with:
 ## Building
 
 ```bash
-cd decoder/stream/credentials
+cd internal/decoder/stream/credentials
 go build
 go test
 ```

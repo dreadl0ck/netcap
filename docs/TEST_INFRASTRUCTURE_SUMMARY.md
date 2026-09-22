@@ -188,7 +188,7 @@ go test ./...
 ### 3. Fix Critical Issues (Week 1)
 ```bash
 # Fix DBS build error
-vim dbs/server.go  # Remove unused variables at lines 180-181
+vim internal/dbs/server.go  # Remove unused variables at lines 180-181
 
 # Fix reassembly tests
 cd reassembly
@@ -198,10 +198,10 @@ go test -v -run TestKeepSimple
 ### 4. Start Adding Tests
 ```bash
 # Copy template
-cp tests/TEMPLATE_test.go decoder/packet/mynew_test.go
+cp tests/TEMPLATE_test.go internal/decoder/packet/mynew_test.go
 
 # Implement test
-vim decoder/packet/mynew_test.go
+vim internal/decoder/packet/mynew_test.go
 
 # Run test
 go test -v ./decoder/packet/ -run TestMyNew
@@ -214,7 +214,7 @@ go test -v ./decoder/packet/ -run TestMyNew
 ### Phase 1: Foundation (Weeks 1-4)
 
 #### Week 1: Fix Critical Issues ✅ Infrastructure Ready
-- [ ] Fix DBS unused variables (`dbs/server.go:180-181`)
+- [ ] Fix DBS unused variables (`internal/dbs/server.go:180-181`)
 - [ ] Fix 4 failing reassembly tests
 - [ ] Resolve DPI build issues (or make optional)
 - [ ] Fix resolver tests (provide test data)

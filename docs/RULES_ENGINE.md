@@ -196,7 +196,7 @@ The web UI cannot author sequences yet, but it preserves them when saving rules
 or toggling rule sets.
 
 **Worked example** (shipped disabled in
-[`rules/examples/modbus_hunt.yml`](../rules/examples/modbus_hunt.yml)):
+[`internal/rules/examples/modbus_hunt.yml`](../rules/examples/modbus_hunt.yml)):
 
 ```yaml
 - name: Modbus Write After Read Same Register
@@ -509,7 +509,7 @@ rules:
 
 1. **Group Related Rules**: Create separate files for different categories
    ```
-   rules/
+   internal/rules/
    ├── reconnaissance.yml
    ├── exfiltration.yml
    ├── malware.yml

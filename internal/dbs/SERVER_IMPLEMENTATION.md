@@ -13,7 +13,7 @@ The database server feature allows users to:
 
 ## Components
 
-### 1. Server Implementation (`dbs/server.go`)
+### 1. Server Implementation (`internal/dbs/server.go`)
 
 **Key Features:**
 - HTTP server with versioned database serving
@@ -36,7 +36,7 @@ The database server feature allows users to:
 - Generates new database version if date has changed
 - Uses mutex for thread-safe version tracking
 
-### 2. Download Client (`dbs/download.go`)
+### 2. Download Client (`internal/dbs/download.go`)
 
 **Key Features:**
 - Downloads databases from configured server
@@ -336,7 +336,7 @@ Downloads a specific database version.
 
 ## References
 
-- Main documentation: `dbs/README.md`
+- Main documentation: `internal/dbs/README.md`
 - Docker documentation: `docker/dbs-server/README.md`
 - Command help: `net util -h`
 

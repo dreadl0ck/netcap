@@ -38,7 +38,7 @@ NETCAP can automatically execute firewall actions (like blocking IPs) when detec
 │                                                                     │
 │  ┌──────────────────┐         ┌──────────────────────────────────┐  │
 │  │   Rules Engine   │─────────│      Detection Rules             │  │
-│  │    (rules/)      │         │  (YAML with expressions)         │  │
+│  │    (internal/rules/)      │         │  (YAML with expressions)         │  │
 │  └────────┬─────────┘         └──────────────────────────────────┘  │
 │           │                                                         │
 │           │ on match + alert generated                              │
@@ -51,7 +51,7 @@ NETCAP can automatically execute firewall actions (like blocking IPs) when detec
 │           ▼                   │  - iptables_log                  │  │
 │  ┌──────────────────┐         └──────────────────────────────────┘  │
 │  │ Firewall Manager │◄──── github.com/coreos/go-iptables           │
-│  │   (firewall/)    │                                               │
+│  │   (internal/firewall/)    │                                               │
 │  └────────┬─────────┘                                               │
 │           │                                                         │
 │           ▼                                                         │
@@ -436,7 +436,7 @@ if err != nil {
 defer fwManager.Close()
 
 // Create rules engine
-engine, err := rules.NewEngine("rules/", alertWriter)
+engine, err := rules.NewEngine("internal/rules/", alertWriter)
 if err != nil {
     log.Fatal(err)
 }

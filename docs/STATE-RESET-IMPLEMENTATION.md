@@ -17,8 +17,8 @@ Extended the wildcard support to include comprehensive state reset between proce
 ### 2. DPI State Reset
 
 **Files:**
-- `dpi/dpi.go` - Added `Reset()` function
-- `dpi/nodpi.go` - Added stub `Reset()` function
+- `internal/dpi/dpi.go` - Added `Reset()` function
+- `internal/dpi/nodpi.go` - Added stub `Reset()` function
 
 **Implementation:**
 ```go
@@ -34,7 +34,7 @@ func Reset(modules string) {
 
 ### 3. Service Store Reset
 
-**File:** `decoder/stream/service/utils.go`
+**File:** `internal/decoder/stream/service/utils.go`
 
 **Implementation:**
 ```go
@@ -49,7 +49,7 @@ func ResetStore() {
 
 ### 4. TCP Stream Factory Reset
 
-**File:** `decoder/stream/tcp/tcp_factory.go`
+**File:** `internal/decoder/stream/tcp/tcp_factory.go`
 
 **Implementation:**
 ```go
@@ -66,7 +66,7 @@ func ResetStreamFactory() {
 
 ### 5. UDP Stream Pool Reset
 
-**File:** `decoder/stream/udp/udp_stream.go`
+**File:** `internal/decoder/stream/udp/udp_stream.go`
 
 **Implementation:**
 ```go
@@ -82,9 +82,9 @@ func ResetStreams() {
 **File:** `cmd/capture/main.go`
 
 **Added Imports:**
-- `decoder/stream/service`
-- `decoder/stream/tcp`
-- `decoder/stream/udp`
+- `internal/decoder/stream/service`
+- `internal/decoder/stream/tcp`
+- `internal/decoder/stream/udp`
 - `dpi`
 
 **Reset Sequence:**

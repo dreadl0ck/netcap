@@ -9,7 +9,7 @@ Analyzes all layer types provided by gopacket and checks which ones are not impl
 ### Features
 
 - **Fetches Layer Types**: Retrieves the latest layer type definitions from gopacket's GitHub repository
-- **Scans NETCAP Decoders**: Analyzes all decoder files in `decoder/packet/` to find which layer types are used
+- **Scans NETCAP Decoders**: Analyzes all decoder files in `internal/decoder/packet/` to find which layer types are used
 - **Comprehensive Reporting**: Provides statistics, categorization, and recommendations
 - **Coverage Analysis**: Shows the percentage of gopacket layer types supported by NETCAP
 
@@ -75,7 +75,7 @@ Consider implementing decoders for these commonly used protocols:
 
 1. **Layer Type Fetching**: The tool fetches `layertypes.go` from the gopacket GitHub repository and parses it using Go's `ast` package to extract all `LayerType*` variable declarations.
 
-2. **Decoder Scanning**: It walks through all `.go` files in the `decoder/packet/` directory and uses regex patterns to find references to `layers.LayerType*`.
+2. **Decoder Scanning**: It walks through all `.go` files in the `internal/decoder/packet/` directory and uses regex patterns to find references to `layers.LayerType*`.
 
 3. **Analysis & Reporting**: The tool compares the two lists, categorizes unused layer types, and generates a report focused on protocols that need implementation.
 
@@ -90,7 +90,7 @@ Consider implementing decoders for these commonly used protocols:
 
 When the report shows missing layer types you want to implement:
 
-1. Create a new decoder file in `decoder/packet/` (e.g., `tls.go` for TLS)
+1. Create a new decoder file in `internal/decoder/packet/` (e.g., `tls.go` for TLS)
 2. Implement the decoder using the `newGoPacketDecoder()` function
 3. Reference the appropriate `layers.LayerType*` constant
 4. Run `net util -gopacket-coverage` again to verify the layer type is now marked as used
@@ -113,8 +113,8 @@ The functionality is implemented in `gopacket_coverage.go` as part of the `util`
 ### Related Files
 
 - `cmd/util/gopacket_coverage.go`: Coverage analysis implementation
-- `decoder/packet/gopacket_decoder.go`: Core decoder registration logic
-- `decoder/packet/*.go`: Individual protocol decoder implementations
+- `internal/decoder/packet/gopacket_decoder.go`: Core decoder registration logic
+- `internal/decoder/packet/*.go`: Individual protocol decoder implementations
 - `types/netcap.pb.go`: Protocol buffer definitions for audit records
 - `docs/LAYER_COVERAGE_ANALYSIS.md`: Detailed analysis document
 

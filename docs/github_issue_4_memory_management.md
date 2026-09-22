@@ -4,7 +4,7 @@
 The TCP reassembly implementation has several memory management issues including fixed page sizes, potential memory leaks, and inefficient memory usage patterns.
 
 ## Location
-- **Files**: `reassembly/page.go`, `reassembly/memory.go`, `reassembly/assembler.go`
+- **Files**: `internal/reassembly/page.go`, `internal/reassembly/memory.go`, `internal/reassembly/assembler.go`
 - **Key Issues**: Fixed 1900-byte pages, growing page caches, no bounds checking
 
 ## Problem Description
@@ -201,9 +201,9 @@ type MemoryMetrics struct {
 ```
 
 ## Files to Modify
-- `reassembly/page.go` - Add safe buffer operations
-- `reassembly/memory.go` - Implement bounded pools and monitoring
-- `reassembly/assembler.go` - Update to use new memory management
+- `internal/reassembly/page.go` - Add safe buffer operations
+- `internal/reassembly/memory.go` - Implement bounded pools and monitoring
+- `internal/reassembly/assembler.go` - Update to use new memory management
 - Add new configuration files for memory settings
 - Add new test files for memory management
 

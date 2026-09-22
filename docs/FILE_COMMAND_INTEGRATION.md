@@ -85,7 +85,7 @@ Error: File format error: Unknown or unsupported format
 
 ### Code Location
 
-`collector/pcap_utils.go`:
+`internal/collector/pcap_utils.go`:
 
 ```go
 // invokeFileCommand runs the system 'file' command on the given file path

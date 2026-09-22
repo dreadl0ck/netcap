@@ -27,7 +27,7 @@
 | Bounded GeoIP cache (100K max, RWMutex) | DONE | `go build`, `go test ./resolvers/` |
 | TCP flow .String() caching in decode() | DONE | `go build` |
 | MAC OUI: normalize at insert, direct hex parse | DONE | `go build`, `go test ./resolvers/` |
-| Replace deprecated ioutil → io/os | DONE | `go build`, `go test ./io/` |
+| Replace deprecated ioutil → stdlib `io`/`os` | DONE | `go build`, `go test ./internal/netio/` |
 | Cache reflect.TypeOf().String() in TCP decoder | DONE | `go build` |
 | Replace deprecated ioutil in HTTP decoder | DONE | `go build` |
 | GeoIP repr(): replace fmt.Sprintf with concat | DONE | `go build` |
@@ -61,26 +61,26 @@ Netcap's architecture is well-designed for parallel packet processing, but sever
 
 | Rank | Issue | Location | Category |
 |------|-------|----------|----------|
-| 1 | CSV writer missing mutex | `io/csv_writer.go:38` | Correctness |
-| 2 | Elastic `sendBulk()` race condition | `io/elastic.go:220` | Correctness |
-| 3 | Round-robin counter race | `collector/collector.go:609` | Correctness |
-| 4 | StreamPool coarse RWMutex | `reassembly/stream_pool.go:33` | Lock contention |
-| 5 | Protobuf writer mutex per write | `io/protobuf.go:117` | Lock contention |
-| 6 | No PacketContext pooling | `collector/worker.go:77` | Memory |
-| 7 | Unbounded DNS cache | `resolvers/dns.go:32` | Memory leak |
-| 8 | Reflection in SSH unmarshaling | `decoder/stream/ssh/messages.go:374` | Hot-path alloc |
-| 9 | Double data copy in streams | `decoder/core/data_fragments.go:49` | Memory |
-| 10 | 10-second blocking DNS timeout | `resolvers/dns.go:91` | Blocking I/O |
+| 1 | CSV writer missing mutex | `internal/netio/csv_writer.go:38` | Correctness |
+| 2 | Elastic `sendBulk()` race condition | `internal/netio/elastic.go:220` | Correctness |
+| 3 | Round-robin counter race | `internal/collector/collector.go:609` | Correctness |
+| 4 | StreamPool coarse RWMutex | `internal/reassembly/stream_pool.go:33` | Lock contention |
+| 5 | Protobuf writer mutex per write | `internal/netio/protobuf.go:117` | Lock contention |
+| 6 | No PacketContext pooling | `internal/collector/worker.go:77` | Memory |
+| 7 | Unbounded DNS cache | `internal/resolvers/dns.go:32` | Memory leak |
+| 8 | Reflection in SSH unmarshaling | `internal/decoder/stream/ssh/messages.go:374` | Hot-path alloc |
+| 9 | Double data copy in streams | `internal/decoder/core/data_fragments.go:49` | Memory |
+| 10 | 10-second blocking DNS timeout | `internal/resolvers/dns.go:91` | Blocking I/O |
 
 ---
 
 ## 2. Core Pipeline Performance
 
-### 2.1 Collector (`collector/`)
+### 2.1 Collector (`internal/collector/`)
 
 #### CRITICAL: No PacketContext Object Pooling
 
-**File:** `collector/worker.go:77`
+**File:** `internal/collector/worker.go:77`
 
 ```go
 ctx := &types.PacketContext{}
@@ -105,7 +105,7 @@ defer packetContextPool.Put(ctx)
 
 #### CRITICAL: Channel Send Blocking
 
-**File:** `collector/collector.go:619-629`
+**File:** `internal/collector/collector.go:619-629`
 
 ```go
 c.workers[idx] <- p  // Can block if worker buffer full
@@ -113,7 +113,7 @@ c.workers[idx] <- p  // Can block if worker buffer full
 
 When worker buffers are full, the packet reading goroutine blocks, causing packet drops at the OS level. The timeout variant (`handlePacketTimeout`, lines 633-662) uses a 3-second timeout — far too long for real-time capture.
 
-**File:** `collector/config.go:40`
+**File:** `internal/collector/config.go:40`
 
 ```go
 PacketBufferSize: 100  // Default buffer per worker
@@ -130,7 +130,7 @@ A buffer of 100 packets is insufficient for burst traffic on modern networks.
 
 #### HIGH: Race Condition on Round-Robin Counter
 
-**File:** `collector/collector.go:608-610`
+**File:** `internal/collector/collector.go:608-610`
 
 ```go
 c.next++
@@ -147,7 +147,7 @@ The `c.next` counter is read and written by the packet dispatcher without synchr
 
 #### MEDIUM: Excessive Default Worker Count
 
-**File:** `collector/config.go:40`
+**File:** `internal/collector/config.go:40`
 
 ```go
 Workers: 1000
@@ -161,7 +161,7 @@ Workers: 1000
 
 #### MEDIUM: time.Now() Called Multiple Times Per Packet
 
-**File:** `collector/worker.go:69, 136, 173`
+**File:** `internal/collector/worker.go:69, 136, 173`
 
 ```go
 t := time.Now()  // Called 2-3 times per packet
@@ -175,7 +175,7 @@ t := time.Now()  // Called 2-3 times per packet
 
 #### MEDIUM: String Conversions in Metrics Hot Path
 
-**File:** `collector/worker.go:139, 176`
+**File:** `internal/collector/worker.go:139, 176`
 
 ```go
 gopacketDecoderTime.WithLabelValues(layer.LayerType().String()).Set(...)
@@ -188,11 +188,11 @@ customDecoderTime.WithLabelValues(customDec.GetName()).Set(...)
 
 ---
 
-### 2.2 Reassembly (`reassembly/`)
+### 2.2 Reassembly (`internal/reassembly/`)
 
 #### CRITICAL: Coarse-Grained StreamPool Lock
 
-**File:** `reassembly/stream_pool.go:30-39`
+**File:** `internal/reassembly/stream_pool.go:30-39`
 
 ```go
 type StreamPool struct {
@@ -211,7 +211,7 @@ All TCP stream lookups serialize through a single `RWMutex`. The `getConnection(
 
 #### CRITICAL: Unbounded Memory Growth
 
-**File:** `reassembly/stream_pool.go:41-51`
+**File:** `internal/reassembly/stream_pool.go:41-51`
 
 ```go
 func (p *StreamPool) grow() {
@@ -227,7 +227,7 @@ The page caches grow to handle peak workload and never shrink (noted in TODO at 
 
 #### MEDIUM: Long Lock Hold in Connection Processing
 
-**File:** `reassembly/connection.go:13`
+**File:** `internal/reassembly/connection.go:13`
 
 The per-connection `sync.Mutex` is held during the entire `AssembleWithContext()` operation (lines 208-296), which includes all packet processing for that stream direction.
 
@@ -235,11 +235,11 @@ The per-connection `sync.Mutex` is held during the entire `AssembleWithContext()
 
 ---
 
-### 2.3 I/O Writers (`io/`)
+### 2.3 I/O Writers (`internal/netio/`)
 
 #### CRITICAL: Protobuf Writer Mutex Per Message
 
-**File:** `io/protobuf.go:117-141`
+**File:** `internal/netio/protobuf.go:117-141`
 
 ```go
 func (w *protoWriter) WriteProto(msg proto.Message) error {
@@ -260,7 +260,7 @@ Every protobuf message write acquires a mutex, and `proto.Size(msg)` is called i
 
 #### CRITICAL: CSV Writer Has No Mutex
 
-**File:** `io/csv_writer.go:38-46`
+**File:** `internal/netio/csv_writer.go:38-46`
 
 The `csvWriter` struct has no `sync.Mutex` field, unlike protobuf and JSON writers. Concurrent writes from multiple worker goroutines will corrupt CSV output.
 
@@ -270,7 +270,7 @@ The `csvWriter` struct has no `sync.Mutex` field, unlike protobuf and JSON write
 
 #### CRITICAL: Elastic Writer Race Condition
 
-**File:** `io/elastic.go:220`
+**File:** `internal/netio/elastic.go:220`
 
 `Close()` calls `sendBulk()` without holding the mutex, while `Write()` calls it with the mutex held. Concurrent shutdown during active writing causes a data race.
 
@@ -280,7 +280,7 @@ The `csvWriter` struct has no `sync.Mutex` field, unlike protobuf and JSON write
 
 #### HIGH: Elastic Writer Infinite Retry
 
-**File:** `io/elastic.go:459-464`
+**File:** `internal/netio/elastic.go:459-464`
 
 ```go
 if err != nil {
@@ -299,7 +299,7 @@ Failed bulk indexing retries forever with a fixed 500ms delay. If Elasticsearch 
 
 #### HIGH: JSON Writer Holds Mutex During Marshaling
 
-**File:** `io/json_writer.go:115-135`
+**File:** `internal/netio/json_writer.go:115-135`
 
 The mutex is held while JSON marshaling occurs. JSON encoding is CPU-intensive and holds the lock far longer than necessary.
 
@@ -309,7 +309,7 @@ The mutex is held while JSON marshaling occurs. JSON encoding is CPU-intensive a
 
 #### HIGH: Elastic Queue Slice Reallocation
 
-**File:** `io/elastic.go:414-447`
+**File:** `internal/netio/elastic.go:414-447`
 
 ```go
 w.queue = w.queue[w.processed:]  // Truncates, leaving dangling refs
@@ -323,7 +323,7 @@ Slice truncation doesn't release the underlying array, causing memory retention.
 
 #### HIGH: Blocking Channel Send in Chan Writer
 
-**File:** `io/chan_writer.go:181-184`
+**File:** `internal/netio/chan_writer.go:181-184`
 
 ```go
 func (w *chanProtoWriter) Write(p []byte) (int, error) {
@@ -340,7 +340,7 @@ Unbuffered channel send blocks indefinitely if the receiver is slow or dead, cau
 
 #### MEDIUM: Performance Tracking Overhead
 
-**File:** `io/protobuf.go:127-136`
+**File:** `internal/netio/protobuf.go:127-136`
 
 ```go
 start := time.Now()
@@ -361,7 +361,7 @@ When metrics are enabled, `time.Now()` and `proto.Size()` add ~15-20% overhead p
 
 #### CRITICAL: Double Data Copy in Stream Fragments
 
-**File:** `decoder/core/data_fragments.go:39-51`
+**File:** `internal/decoder/core/data_fragments.go:39-51`
 
 ```go
 func (d DataFragments) bytes() []byte {
@@ -397,7 +397,7 @@ func (d DataFragments) reader() io.Reader {
 
 #### CRITICAL: Reflection-Based SSH Unmarshaling
 
-**File:** `decoder/stream/ssh/messages.go:374-520`
+**File:** `internal/decoder/stream/ssh/messages.go:374-520`
 
 The SSH decoder uses `reflect.ValueOf()`, `reflect.Type()`, and field iteration to marshal/unmarshal every SSH message. This is called for every SSH packet.
 
@@ -416,7 +416,7 @@ for i := 0; i < v.NumField(); i++ {
 
 #### HIGH: reflect.TypeOf().String() in TCP/UDP Hot Paths
 
-**Files:** `decoder/stream/tcp/tcp_connection.go:501,507` and `decoder/stream/udp/udp_stream.go:278`
+**Files:** `internal/decoder/stream/tcp/tcp_connection.go:501,507` and `internal/decoder/stream/udp/udp_stream.go:278`
 
 ```go
 reflect.TypeOf(t.decoder).String()  // Called per-stream for metrics
@@ -428,7 +428,7 @@ reflect.TypeOf(t.decoder).String()  // Called per-stream for metrics
 
 #### HIGH: O(n) Linear Searches for Flow Tracking
 
-**File:** `decoder/stream/http/http_reader.go:265, 272`
+**File:** `internal/decoder/stream/http/http_reader.go:265, 272`
 
 ```go
 flowExists := slices.Contains(s.Flows, ident)        // O(n)
@@ -443,7 +443,7 @@ With thousands of flows per software instance, this degrades to O(n) per lookup,
 
 #### HIGH: Slice Appends Without Pre-allocation
 
-**File:** `decoder/stream/service/service_probe.go:629, 718, 830, 906-907, 1018, 1025`
+**File:** `internal/decoder/stream/service/service_probe.go:629, 718, 830, 906-907, 1018, 1025`
 
 ```go
 res = append(res, b)  // In loops without capacity hint
@@ -457,7 +457,7 @@ Repeated appends without pre-allocated capacity cause O(n) reallocations as slic
 
 #### HIGH: String Allocations in HTTP Parsing
 
-**File:** `decoder/stream/http/http_reader.go:219, 226, 376`
+**File:** `internal/decoder/stream/http/http_reader.go:219, 226, 376`
 
 ```go
 pass = strings.Join(arr, "; ")           // Allocation per request
@@ -474,7 +474,7 @@ Multiple string allocations per HTTP request/response in the highest-volume prot
 
 #### MEDIUM: Regex Compiled Inside Loop
 
-**File:** `decoder/stream/mail/mail_security.go:206`
+**File:** `internal/decoder/stream/mail/mail_security.go:206`
 
 ```go
 if matches := regexp.MustCompile(`d=([^\s;]+)`).FindStringSubmatch(dkim); len(matches) > 1 {
@@ -492,7 +492,7 @@ var dkimDomainRegex = regexp.MustCompile(`d=([^\s;]+)`)
 
 #### MEDIUM: Per-Packet Data Copy in TCP Reassembly
 
-**File:** `decoder/stream/tcp/tcp_connection.go:216-224`
+**File:** `internal/decoder/stream/tcp/tcp_connection.go:216-224`
 
 ```go
 dataCpy := make([]byte, len(data))
@@ -507,7 +507,7 @@ Every reassembled TCP segment is copied before being sent on a channel, then dec
 
 #### MEDIUM: Repeated .String() Calls on Same Values
 
-**File:** `decoder/stream/tcp/tcp_connection.go:361-364, 418-421`
+**File:** `internal/decoder/stream/tcp/tcp_connection.go:361-364, 418-421`
 
 ```go
 ClientIP: t.client.Network().Src().String(),  // Called here
@@ -521,7 +521,7 @@ ServerIP: t.client.Network().Dst().String(),
 
 #### MEDIUM: Inefficient Decoder Fallback Scan
 
-**File:** `decoder/stream/tcp/tcp_connection.go:442-493`
+**File:** `internal/decoder/stream/tcp/tcp_connection.go:442-493`
 
 When port-based lookup fails, all registered decoders are iterated with `CanDecodeStream()` checks. Some checks (e.g., HTTP) call `bytes.Contains` up to 9 times.
 
@@ -531,7 +531,7 @@ When port-based lookup fails, all registered decoders are iterated with `CanDeco
 
 #### LOW-MEDIUM: Deprecated ioutil Usage
 
-**File:** `decoder/stream/http/http_reader.go:297, 310`
+**File:** `internal/decoder/stream/http/http_reader.go:297, 310`
 
 ```go
 body, err := ioutil.ReadAll(res.Body)        // Deprecated
@@ -544,11 +544,11 @@ res.Body = ioutil.NopCloser(bytes.NewBuffer(body))  // Deprecated
 
 ## 4. Resolvers & Enrichment
 
-### 4.1 DNS Resolution (`resolvers/dns.go`)
+### 4.1 DNS Resolution (`internal/resolvers/dns.go`)
 
 #### CRITICAL: Blocking 10-Second DNS Timeout
 
-**File:** `resolvers/dns.go:91-145`
+**File:** `internal/resolvers/dns.go:91-145`
 
 ```go
 ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Second)
@@ -565,7 +565,7 @@ Failed DNS lookups block the calling goroutine for up to 10 seconds. In the wors
 
 #### CRITICAL: Unbounded DNS Cache
 
-**File:** `resolvers/dns.go:32-38`
+**File:** `internal/resolvers/dns.go:32-38`
 
 ```go
 var dnsNamesDB = make(map[string]string)  // Grows forever
@@ -579,7 +579,7 @@ The DNS cache map grows without any eviction policy. Long-running captures will 
 
 #### HIGH: Double-Locking on Cache Miss
 
-**File:** `resolvers/dns.go:115-127`
+**File:** `internal/resolvers/dns.go:115-127`
 
 The implementation acquires the lock to check the cache, releases it, performs DNS resolution, then acquires the lock again to store the result. This 2x lock acquisition pattern doubles contention on cache misses.
 
@@ -589,7 +589,7 @@ The implementation acquires the lock to check the cache, releases it, performs D
 
 #### MEDIUM: IsPrivateIP() Linear CIDR Iteration
 
-**File:** `resolvers/dns.go:82-86`
+**File:** `internal/resolvers/dns.go:82-86`
 
 ```go
 // Iterates through 17 CIDR blocks on every call
@@ -602,11 +602,11 @@ for _, cidr := range privateCIDRs {
 
 ---
 
-### 4.2 GeoIP (`resolvers/geoip.go`)
+### 4.2 GeoIP (`internal/resolvers/geoip.go`)
 
 #### HIGH: Unbounded sync.Map Cache
 
-**File:** `resolvers/geoip.go:37`
+**File:** `internal/resolvers/geoip.go:37`
 
 `sync.Map` grows without eviction, similar to the DNS cache issue.
 
@@ -616,7 +616,7 @@ for _, cidr := range privateCIDRs {
 
 #### MEDIUM: fmt.Sprintf Per Lookup
 
-**File:** `resolvers/geoip.go:110-119`
+**File:** `internal/resolvers/geoip.go:110-119`
 
 ```go
 func (g *GeoLocation) repr() string {
@@ -630,11 +630,11 @@ Called on every GeoIP lookup, `fmt.Sprintf` allocates a new string each time.
 
 ---
 
-### 4.3 MAC Vendor (`resolvers/mac.go`)
+### 4.3 MAC Vendor (`internal/resolvers/mac.go`)
 
 #### MEDIUM: strings.ToUpper() Per Packet
 
-**File:** `resolvers/mac.go:119`
+**File:** `internal/resolvers/mac.go:119`
 
 ```go
 oui := strings.ToUpper(mac[:8])  // Allocates new string
@@ -646,11 +646,11 @@ Called for every packet when MAC lookup is enabled.
 
 ---
 
-### 4.4 Service Lookup (`resolvers/service.go`)
+### 4.4 Service Lookup (`internal/resolvers/service.go`)
 
 #### MEDIUM: Port Range Expansion at Init
 
-**File:** `resolvers/service.go:148-166`
+**File:** `internal/resolvers/service.go:148-166`
 
 Port ranges like `1-65535` are fully expanded into individual map entries during initialization, creating potentially 65K+ entries.
 
@@ -658,11 +658,11 @@ Port ranges like `1-65535` are fully expanded into individual map entries during
 
 ---
 
-### 4.5 DPI (`dpi/dpi.go`)
+### 4.5 DPI (`internal/dpi/dpi.go`)
 
 #### MEDIUM: Double-Checked Locking Pattern
 
-**File:** `dpi/dpi.go:293-321`
+**File:** `internal/dpi/dpi.go:293-321`
 
 Uses `atomic.Bool` + `RWMutex` for a double-checked locking pattern that could be simplified with `sync.Once`.
 
@@ -670,7 +670,7 @@ Uses `atomic.Bool` + `RWMutex` for a double-checked locking pattern that could b
 
 #### MEDIUM: Temporary Wrapper Creation Per Query
 
-**File:** `dpi/dpi.go:327, 347, 367`
+**File:** `internal/dpi/dpi.go:327, 347, 367`
 
 New DPI wrapper instances are created just to query protocol lists, with incomplete cleanup (missing `DestroyWrapper()` calls noted in comments).
 
@@ -786,44 +786,44 @@ These are not just performance issues — they can cause data corruption or cras
 
 | # | Issue | File | Fix |
 |---|-------|------|-----|
-| 1 | CSV writer has no mutex | `io/csv_writer.go:38` | Add `sync.Mutex`, match protobuf writer pattern |
-| 2 | Elastic `sendBulk()` race in `Close()` | `io/elastic.go:220` | Acquire mutex before `sendBulk()` in `Close()` |
-| 3 | Round-robin counter race | `collector/collector.go:609` | Use `atomic.AddInt64` |
-| 4 | Chan writer blocking send | `io/chan_writer.go:182` | Add buffered channel + select/timeout |
+| 1 | CSV writer has no mutex | `internal/netio/csv_writer.go:38` | Add `sync.Mutex`, match protobuf writer pattern |
+| 2 | Elastic `sendBulk()` race in `Close()` | `internal/netio/elastic.go:220` | Acquire mutex before `sendBulk()` in `Close()` |
+| 3 | Round-robin counter race | `internal/collector/collector.go:609` | Use `atomic.AddInt64` |
+| 4 | Chan writer blocking send | `internal/netio/chan_writer.go:182` | Add buffered channel + select/timeout |
 
 ### Tier 2: High-Impact Performance (10-50% Throughput Gain)
 
 | # | Issue | File | Fix |
 |---|-------|------|-----|
-| 1 | No PacketContext pooling | `collector/worker.go:77` | `sync.Pool` |
-| 2 | Protobuf writer mutex per write | `io/protobuf.go:117` | Batch buffer, per-decoder writers |
-| 3 | StreamPool coarse lock | `reassembly/stream_pool.go:33` | Shard by flow hash |
-| 4 | SSH reflection unmarshaling | `decoder/stream/ssh/messages.go:374` | Code-gen marshaling |
-| 5 | Double data copy in fragments | `decoder/core/data_fragments.go:49` | `io.MultiReader` |
-| 6 | Unbounded DNS cache | `resolvers/dns.go:32` | Bounded LRU |
-| 7 | 10-second DNS timeout | `resolvers/dns.go:91` | Async DNS, 1-2s timeout |
-| 8 | Unbounded GeoIP cache | `resolvers/geoip.go:37` | Bounded LRU |
+| 1 | No PacketContext pooling | `internal/collector/worker.go:77` | `sync.Pool` |
+| 2 | Protobuf writer mutex per write | `internal/netio/protobuf.go:117` | Batch buffer, per-decoder writers |
+| 3 | StreamPool coarse lock | `internal/reassembly/stream_pool.go:33` | Shard by flow hash |
+| 4 | SSH reflection unmarshaling | `internal/decoder/stream/ssh/messages.go:374` | Code-gen marshaling |
+| 5 | Double data copy in fragments | `internal/decoder/core/data_fragments.go:49` | `io.MultiReader` |
+| 6 | Unbounded DNS cache | `internal/resolvers/dns.go:32` | Bounded LRU |
+| 7 | 10-second DNS timeout | `internal/resolvers/dns.go:91` | Async DNS, 1-2s timeout |
+| 8 | Unbounded GeoIP cache | `internal/resolvers/geoip.go:37` | Bounded LRU |
 | 9 | Filter reflection per record | `internal/filter/filter.go:204` | Pre-compiled accessors |
 
 ### Tier 3: Medium-Impact (5-15% Improvement)
 
 | # | Issue | File | Fix |
 |---|-------|------|-----|
-| 1 | PacketBufferSize default 100 | `collector/config.go:40` | Increase to 1000+ |
-| 2 | 1000 default workers | `collector/config.go:40` | CPU-proportional |
-| 3 | time.Now() per packet | `collector/worker.go:69` | Cache per iteration |
-| 4 | String metrics in hot path | `collector/worker.go:139` | Cache label strings |
-| 5 | Slice appends without prealloc | `decoder/stream/service/service_probe.go` | `make([]T, 0, cap)` |
-| 6 | O(n) flow lookups | `decoder/stream/http/http_reader.go:265` | Use map |
-| 7 | Repeated .String() calls | `decoder/stream/tcp/tcp_connection.go:361` | Cache in locals |
+| 1 | PacketBufferSize default 100 | `internal/collector/config.go:40` | Increase to 1000+ |
+| 2 | 1000 default workers | `internal/collector/config.go:40` | CPU-proportional |
+| 3 | time.Now() per packet | `internal/collector/worker.go:69` | Cache per iteration |
+| 4 | String metrics in hot path | `internal/collector/worker.go:139` | Cache label strings |
+| 5 | Slice appends without prealloc | `internal/decoder/stream/service/service_probe.go` | `make([]T, 0, cap)` |
+| 6 | O(n) flow lookups | `internal/decoder/stream/http/http_reader.go:265` | Use map |
+| 7 | Repeated .String() calls | `internal/decoder/stream/tcp/tcp_connection.go:361` | Cache in locals |
 | 8 | CIDR parsed every call | `internal/filter/helpers.go:56` | Parse at init |
 | 9 | Regex compiled every call | `internal/filter/helpers.go:151` | Cache compiled |
-| 10 | MAC strings.ToUpper per packet | `resolvers/mac.go:119` | Normalize at insert |
-| 11 | Regex in mail loop | `decoder/stream/mail/mail_security.go:206` | Package-level var |
-| 12 | JSON writer lock scope | `io/json_writer.go:115` | Marshal outside lock |
-| 13 | Elastic infinite retry | `io/elastic.go:459` | Exponential backoff + max retries |
-| 14 | Elastic JSON per-record | `io/elastic.go:421` | Batch JSON encoding |
-| 15 | Service port range expansion | `resolvers/service.go:148` | Store range objects |
+| 10 | MAC strings.ToUpper per packet | `internal/resolvers/mac.go:119` | Normalize at insert |
+| 11 | Regex in mail loop | `internal/decoder/stream/mail/mail_security.go:206` | Package-level var |
+| 12 | JSON writer lock scope | `internal/netio/json_writer.go:115` | Marshal outside lock |
+| 13 | Elastic infinite retry | `internal/netio/elastic.go:459` | Exponential backoff + max retries |
+| 14 | Elastic JSON per-record | `internal/netio/elastic.go:421` | Batch JSON encoding |
+| 15 | Service port range expansion | `internal/resolvers/service.go:148` | Store range objects |
 
 ### Tier 4: Schema & Long-Term
 
@@ -832,9 +832,9 @@ These are not just performance issues — they can cause data corruption or cras
 | 1 | String fields → enums | `proto/netcap.proto` | Define enums for protocols |
 | 2 | Field number ordering | `proto/netcap.proto` | Move frequent fields to 1-15 |
 | 3 | Repeated string → packed enum | `proto/netcap.proto:281` | Enum array |
-| 4 | Batch write API | `decoder/core/api.go` | Accumulate, flush in batches |
-| 5 | Per-packet TCP data copy | `decoder/stream/tcp/tcp_connection.go:218` | Reference counting |
-| 6 | Reassembly memory shrinking | `reassembly/stream_pool.go:41` | Periodic high-water shrink |
+| 4 | Batch write API | `internal/decoder/core/api.go` | Accumulate, flush in batches |
+| 5 | Per-packet TCP data copy | `internal/decoder/stream/tcp/tcp_connection.go:218` | Reference counting |
+| 6 | Reassembly memory shrinking | `internal/reassembly/stream_pool.go:41` | Periodic high-water shrink |
 
 ---
 

@@ -30,14 +30,14 @@ The following log files are subject to automatic removal if empty:
 
 ### Code Changes
 
-**`collector/cleanup.go`** (lines 210-238):
+**`internal/collector/cleanup.go`** (lines 210-238):
 - Modified the log file closing loop in `teardown()` to:
   1. Get file info (including size) before closing
   2. Store the filename for post-close removal
   3. Sync and close the file handle
   4. Remove the file if its size is 0 bytes
 
-**`collector/collector.go`** (lines 410-459):
+**`internal/collector/collector.go`** (lines 410-459):
 - Updated `closeErrorLogFile()` method to:
   1. Get file info after writing error summary
   2. Store the filename

@@ -100,7 +100,6 @@ linters:
           - gocritic
         text: 'unnecessaryDefer:'
     paths:
-      - (^|/)sshx($|/)
       - (^|/)tls($|/)
       - test/testdata_etc
       - third_party$
@@ -119,7 +118,6 @@ formatters:
   exclusions:
     generated: lax
     paths:
-      - (^|/)sshx($|/)
       - (^|/)tls($|/)
       - test/testdata_etc
       - third_party$

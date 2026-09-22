@@ -137,7 +137,7 @@ The dbs-server stores databases in the following structure:
 
 ```
 /data/netcap-dbs-server/          # Root directory (controlled by NC_CONFIG_ROOT)
-├── dbs/                           # Database storage directory
+├── internal/dbs/                           # Database storage directory
 │   ├── 2024-01-15.tar.gz         # Versioned database tarball
 │   ├── 2024-01-15.json           # Metadata for version
 │   ├── latest.tar.gz             # Symlink to latest version

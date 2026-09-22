@@ -8,7 +8,7 @@ Enhanced the service probe matching system to extract technology information fro
 
 ### 1. Modified Files
 
-#### `decoder/stream/service/service_probe.go`
+#### `internal/decoder/stream/service/service_probe.go`
 - Added `bufio` and `net/http` imports for HTTP response parsing
 - Added `matchHTTPHeaders()` function to parse HTTP responses and extract header information
 - Added `parseHeaderValue()` function to dispatch header parsing based on header name
@@ -21,7 +21,7 @@ Enhanced the service probe matching system to extract technology information fro
 
 ### 2. New Files
 
-#### `decoder/stream/service/http_header_test.go`
+#### `internal/decoder/stream/service/http_header_test.go`
 - Comprehensive test suite for all HTTP header parsing functions
 - Tests for `parseServerHeader()` with various formats (Apache, nginx, IIS, cloudflare)
 - Tests for `parseXPoweredByHeader()` (PHP, ASP.NET, Express)
@@ -30,7 +30,7 @@ Enhanced the service probe matching system to extract technology information fro
 - Integration tests for `matchHTTPHeaders()` with full HTTP responses
 - Edge case tests for invalid/non-HTTP banners
 
-#### `decoder/stream/service/HTTP_HEADER_MATCHING.md`
+#### `internal/decoder/stream/service/HTTP_HEADER_MATCHING.md`
 - Comprehensive documentation of the new feature
 - Usage examples with real-world header formats
 - Implementation details and function descriptions
@@ -73,7 +73,7 @@ Enhanced the service probe matching system to extract technology information fro
 
 All tests pass successfully:
 ```bash
-$ cd decoder/stream/service && go test -v
+$ cd internal/decoder/stream/service && go test -v
 === RUN   TestParseServerHeader
 --- PASS: TestParseServerHeader (0.00s)
 === RUN   TestParseXPoweredByHeader

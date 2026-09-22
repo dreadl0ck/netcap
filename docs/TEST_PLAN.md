@@ -48,8 +48,8 @@ Based on `go test -cover ./...` output:
 |---------|------------------|------------|--------|
 | **Core Packages** |
 | collector | Build failed | ✓ collector_test.go, pcap_test.go | ❌ Needs fix |
-| decoder/packet | Build failed | ✓ packet_decoder_test.go, utils_test.go | ❌ Needs fix |
-| decoder/stream | 0% | Few tests | ⚠️ Critical gap |
+| internal/decoder/packet | Build failed | ✓ packet_decoder_test.go, utils_test.go | ❌ Needs fix |
+| internal/decoder/stream | 0% | Few tests | ⚠️ Critical gap |
 | reassembly | 68.9% | ✓ tcpassembly_test.go | ⚠️ 4 failing tests |
 | types | 0.8% | ✓ utils_test.go, netcap.pb_test.go | ❌ Critical gap |
 | **I/O & Storage** |
@@ -61,14 +61,14 @@ Based on `go test -cover ./...` output:
 | utils | 29.3% | ✓ Multiple test files | ⚠️ Low coverage |
 | resolvers | Build failed | ✓ Multiple test files | ❌ Missing data files |
 | **Stream Decoders** |
-| decoder/stream/credentials | 52.8% | ✓ credentials_test.go | ✓ Good |
-| decoder/stream/exploit | 0% | ✓ exploit_test.go (failing) | ❌ Index missing |
-| decoder/stream/service | 24.8% | ✓ service_probe_test.go (failing) | ⚠️ Index missing |
-| decoder/stream/software | 2.1% | ✓ software_test.go | ❌ Low coverage |
-| decoder/stream/ssh | 2.3% | ✓ ssh_reader_test.go | ❌ Low coverage |
-| decoder/stream/vulnerability | 0% | ✓ vulnerability_test.go (failing) | ❌ Index missing |
+| internal/decoder/stream/credentials | 52.8% | ✓ credentials_test.go | ✓ Good |
+| internal/decoder/stream/exploit | 0% | ✓ exploit_test.go (failing) | ❌ Index missing |
+| internal/decoder/stream/service | 24.8% | ✓ service_probe_test.go (failing) | ⚠️ Index missing |
+| internal/decoder/stream/software | 2.1% | ✓ software_test.go | ❌ Low coverage |
+| internal/decoder/stream/ssh | 2.3% | ✓ ssh_reader_test.go | ❌ Low coverage |
+| internal/decoder/stream/vulnerability | 0% | ✓ vulnerability_test.go (failing) | ❌ Index missing |
 | **Label & Analysis** |
-| label/manager | 49.3% | ✓ manager_test.go, scatter_test.go | ⚠️ Medium coverage |
+| internal/label/manager | 49.3% | ✓ manager_test.go, scatter_test.go | ⚠️ Medium coverage |
 | analyze | 0% | ❌ No tests | ❌ Critical gap |
 | **Commands (All 0% or build failed)** |
 | cmd/* | 0% | ❌ No tests for any command | ❌ Critical gap |
@@ -251,30 +251,30 @@ make test-golden-verify
 #### Test Coverage Goals: 85%+
 
 **Test Files to Create/Enhance:**
-- `collector/collector_test.go` (enhance existing)
-- `collector/worker_test.go` (new)
-- `collector/pcap_test.go` (enhance existing)
-- `collector/live_test.go` (new)
-- `collector/batch_test.go` (new)
-- `collector/utils_test.go` (new)
+- `internal/collector/collector_test.go` (enhance existing)
+- `internal/collector/worker_test.go` (new)
+- `internal/collector/pcap_test.go` (enhance existing)
+- `internal/collector/live_test.go` (new)
+- `internal/collector/batch_test.go` (new)
+- `internal/collector/utils_test.go` (new)
 
 **Test Cases:**
 
 ```go
-// collector/collector_test.go
+// internal/collector/collector_test.go
 func TestCollector_New(t *testing.T)
 func TestCollector_Init(t *testing.T)
 func TestCollector_InitWithInvalidConfig(t *testing.T)
 func TestCollector_InitDecoders(t *testing.T)
 func TestCollector_SignalHandling(t *testing.T)
 
-// collector/worker_test.go
+// internal/collector/worker_test.go
 func TestWorkerPool_Creation(t *testing.T)
 func TestWorkerPool_PacketDistribution(t *testing.T)
 func TestWorkerPool_Cleanup(t *testing.T)
 func TestWorkerPool_ConcurrentSafety(t *testing.T)
 
-// collector/pcap_test.go (enhance)
+// internal/collector/pcap_test.go (enhance)
 func TestCollectPcap_ValidFile(t *testing.T)
 func TestCollectPcap_MalformedFile(t *testing.T)
 func TestCollectPcap_EmptyFile(t *testing.T)
@@ -282,17 +282,17 @@ func TestCollectPcap_LargeFile(t *testing.T)
 func TestCollectPcapNG_ValidFile(t *testing.T)
 func TestCountPackets(t *testing.T)
 
-// collector/live_test.go (new)
+// internal/collector/live_test.go (new)
 func TestCollectLive_Interface(t *testing.T)
 func TestCollectLive_WithBPF(t *testing.T)
 func TestCollectLive_ContextCancellation(t *testing.T)
 func TestCollectLive_InvalidInterface(t *testing.T)
 
-// collector/batch_test.go (new)
+// internal/collector/batch_test.go (new)
 func TestInitBatching(t *testing.T)
 func TestBatchInfo_Channels(t *testing.T)
 
-// collector/utils_test.go (new)
+// internal/collector/utils_test.go (new)
 func TestHandleLinkType(t *testing.T)
 func TestCreateOutputFiles(t *testing.T)
 func TestProgressReporting(t *testing.T)
@@ -309,7 +309,7 @@ func TestProgressReporting(t *testing.T)
 
 **Priority: Critical**
 
-#### Packet Decoders (decoder/packet/)
+#### Packet Decoders (internal/decoder/packet/)
 
 **Test Coverage Goal: 75%+ for each decoder**
 
@@ -318,7 +318,7 @@ func TestProgressReporting(t *testing.T)
 Create comprehensive test file for each protocol decoder:
 
 ```go
-// decoder/packet/eth_test.go
+// internal/decoder/packet/eth_test.go
 func TestEthernetDecoder_New(t *testing.T)
 func TestEthernetDecoder_Decode(t *testing.T)
 func TestEthernetDecoder_CSVOutput(t *testing.T)
@@ -333,7 +333,7 @@ func BenchmarkEthernetDecoder_Decode(b *testing.B)
 **Test Template for Each Decoder:**
 
 ```go
-// Template: decoder/packet/PROTOCOL_test.go
+// Template: internal/decoder/packet/PROTOCOL_test.go
 package packet_test
 
 import (
@@ -372,14 +372,14 @@ func BenchmarkPROTOCOL_Decode(b *testing.B) { /* ... */ }
 3. **Tier 3** (Medium): icmp4, icmp6, dot1q, connection, device_profile, ip_profile
 4. **Tier 4** (Lower): Industrial protocols (modbus, cip, enip), specialized protocols
 
-#### Stream Decoders (decoder/stream/)
+#### Stream Decoders (internal/decoder/stream/)
 
 **Test Coverage Goal: 70%+**
 
 **Test Files to Create/Enhance:**
 
 ```go
-// decoder/stream/http/http_test.go (new)
+// internal/decoder/stream/http/http_test.go (new)
 func TestHTTPDecoder_ParseRequest(t *testing.T)
 func TestHTTPDecoder_ParseResponse(t *testing.T)
 func TestHTTPDecoder_MultipleRequests(t *testing.T)
@@ -387,54 +387,54 @@ func TestHTTPDecoder_ChunkedEncoding(t *testing.T)
 func TestHTTPDecoder_Compression(t *testing.T)
 func TestHTTPDecoder_Malformed(t *testing.T)
 
-// decoder/stream/smtp/smtp_test.go (enhance)
+// internal/decoder/stream/smtp/smtp_test.go (enhance)
 func TestSMTPDecoder_Commands(t *testing.T)
 func TestSMTPDecoder_EmailParsing(t *testing.T)
 func TestSMTPDecoder_Attachments(t *testing.T)
 
-// decoder/stream/ssh/ssh_test.go (enhance)
+// internal/decoder/stream/ssh/ssh_test.go (enhance)
 func TestSSHDecoder_Handshake(t *testing.T)
 func TestSSHDecoder_KeyExchange(t *testing.T)
 func TestSSHDecoder_VersionNegotiation(t *testing.T)
 
-// decoder/stream/credentials/credentials_test.go (enhance existing 52.8%)
+// internal/decoder/stream/credentials/credentials_test.go (enhance existing 52.8%)
 func TestCredentialExtraction_HTTP(t *testing.T)
 func TestCredentialExtraction_FTP(t *testing.T)
 func TestCredentialExtraction_Telnet(t *testing.T)
 func TestCredentialExtraction_IMAP(t *testing.T)
 
-// decoder/stream/file/file_test.go (new)
+// internal/decoder/stream/file/file_test.go (new)
 func TestFileExtraction_HTTP(t *testing.T)
 func TestFileExtraction_FTP(t *testing.T)
 func TestFileExtraction_SMTP(t *testing.T)
 func TestFileExtraction_ContentTypes(t *testing.T)
 
-// decoder/stream/service/service_test.go (enhance, fix index issue)
+// internal/decoder/stream/service/service_test.go (enhance, fix index issue)
 func TestServiceProbe_Matching(t *testing.T)
 func TestServiceProbe_BannerGrabbing(t *testing.T)
 func TestServiceProbe_CPEExtraction(t *testing.T)
 func TestServiceProbe_WithoutIndex(t *testing.T)  // Fallback mode
 
-// decoder/stream/software/software_test.go (enhance from 2.1%)
+// internal/decoder/stream/software/software_test.go (enhance from 2.1%)
 func TestSoftwareDetection_Headers(t *testing.T)
 func TestSoftwareDetection_Cookies(t *testing.T)
 func TestSoftwareDetection_MetaTags(t *testing.T)
 func TestSoftwareDetection_JavaScript(t *testing.T)
 
-// decoder/stream/vulnerability/vulnerability_test.go (fix, enhance)
+// internal/decoder/stream/vulnerability/vulnerability_test.go (fix, enhance)
 func TestVulnerabilityLookup_CPE(t *testing.T)
 func TestVulnerabilityLookup_NVD(t *testing.T)
 func TestVulnerabilityLookup_Caching(t *testing.T)
 func TestVulnerabilityLookup_Offline(t *testing.T)  // Without index
 
-// decoder/stream/exploit/exploit_test.go (fix, enhance)
+// internal/decoder/stream/exploit/exploit_test.go (fix, enhance)
 func TestExploitDetection_Patterns(t *testing.T)
 func TestExploitDetection_Signatures(t *testing.T)
 func TestExploitDetection_SQLInjection(t *testing.T)
 func TestExploitDetection_XSS(t *testing.T)
 func TestExploitDetection_Offline(t *testing.T)  // Without index
 
-// decoder/stream/mail/mail_test.go (new)
+// internal/decoder/stream/mail/mail_test.go (new)
 func TestMailParsing_Headers(t *testing.T)
 func TestMailParsing_Multipart(t *testing.T)
 func TestMailParsing_Attachments(t *testing.T)
@@ -499,7 +499,7 @@ func TestAuditRecord_NilHandling(t *testing.T)
 **Test Files to Enhance/Create:**
 
 ```go
-// io/writer_test.go (enhance existing)
+// internal/netio/writer_test.go (enhance existing)
 func TestWriter_Protobuf(t *testing.T)
 func TestWriter_CSV(t *testing.T)
 func TestWriter_JSON(t *testing.T)
@@ -507,7 +507,7 @@ func TestWriter_Compression(t *testing.T)
 func TestWriter_Buffering(t *testing.T)
 func TestWriter_Concurrent(t *testing.T)
 
-// io/reader_test.go (enhance existing)
+// internal/netio/reader_test.go (enhance existing)
 func TestReader_Protobuf(t *testing.T)
 func TestReader_CSV(t *testing.T)
 func TestReader_JSON(t *testing.T)
@@ -515,13 +515,13 @@ func TestReader_Compression(t *testing.T)
 func TestReader_LargeFiles(t *testing.T)
 func TestReader_Corruption(t *testing.T)
 
-// io/elastic_test.go (new)
+// internal/netio/elastic_test.go (new)
 func TestElasticsearch_Connection(t *testing.T)
 func TestElasticsearch_BulkIndex(t *testing.T)
 func TestElasticsearch_ErrorHandling(t *testing.T)
 func TestElasticsearch_Retry(t *testing.T)
 
-// io/prometheus_test.go (new)
+// internal/netio/prometheus_test.go (new)
 func TestPrometheus_Metrics(t *testing.T)
 func TestPrometheus_Export(t *testing.T)
 ```
@@ -542,7 +542,7 @@ func TestPrometheus_Export(t *testing.T)
 **Test Files to Enhance:**
 
 ```go
-// reassembly/tcpassembly_test.go (fix and enhance)
+// internal/reassembly/tcpassembly_test.go (fix and enhance)
 func TestTCPReassembly_InOrder(t *testing.T)
 func TestTCPReassembly_OutOfOrder(t *testing.T)
 func TestTCPReassembly_Retransmission(t *testing.T)
@@ -551,12 +551,12 @@ func TestTCPReassembly_FragmentBoundaries(t *testing.T)
 func TestTCPReassembly_KeepBytes(t *testing.T)  // Fix existing
 func TestTCPReassembly_MemoryManagement(t *testing.T)
 
-// reassembly/connection_test.go (new)
+// internal/reassembly/connection_test.go (new)
 func TestConnection_Lifecycle(t *testing.T)
 func TestConnection_Timeout(t *testing.T)
 func TestConnection_Flush(t *testing.T)
 
-// reassembly/stream_test.go (new)
+// internal/reassembly/stream_test.go (new)
 func TestStream_Bidirectional(t *testing.T)
 func TestStream_Gaps(t *testing.T)
 func TestStream_FastRetransmit(t *testing.T)
@@ -573,26 +573,26 @@ func TestStream_FastRetransmit(t *testing.T)
 **Test Files to Create/Enhance:**
 
 ```go
-// resolvers/dns_test.go (new)
+// internal/resolvers/dns_test.go (new)
 func TestDNS_ReverseLookup(t *testing.T)
 func TestDNS_LocalLookup(t *testing.T)
 func TestDNS_Caching(t *testing.T)
 
-// resolvers/geoip_test.go (new)
+// internal/resolvers/geoip_test.go (new)
 func TestGeoIP_Lookup(t *testing.T)
 func TestGeoIP_ASN(t *testing.T)
 func TestGeoIP_City(t *testing.T)
 func TestGeoIP_MissingDB(t *testing.T)
 
-// resolvers/mac_test.go (new)
+// internal/resolvers/mac_test.go (new)
 func TestMAC_Lookup(t *testing.T)
 func TestMAC_Vendor(t *testing.T)
 
-// resolvers/ja3_test.go (enhance existing)
+// internal/resolvers/ja3_test.go (enhance existing)
 func TestJA3_Fingerprint(t *testing.T)
 func TestJA3_DatabaseLookup(t *testing.T)
 
-// resolvers/dhcp_test.go (enhance existing)
+// internal/resolvers/dhcp_test.go (enhance existing)
 func TestDHCP_Fingerprint(t *testing.T)
 func TestDHCP_WithoutDatabase(t *testing.T)  // Graceful degradation
 ```
@@ -611,21 +611,21 @@ func TestDHCP_WithoutDatabase(t *testing.T)  // Graceful degradation
 **Test Files to Enhance:**
 
 ```go
-// label/manager/manager_test.go (enhance)
+// internal/label/manager/manager_test.go (enhance)
 func TestLabelManager_Loading(t *testing.T)
 func TestLabelManager_Matching(t *testing.T)
 func TestLabelManager_Bidirectional(t *testing.T)
 func TestLabelManager_Performance(t *testing.T)
 
-// label/manager/scatter_test.go (enhance)
+// internal/label/manager/scatter_test.go (enhance)
 func TestScatter_Distribution(t *testing.T)
 func TestScatter_TimeWindows(t *testing.T)
 
-// label/suricata_test.go (new)
+// internal/label/suricata_test.go (new)
 func TestSuricata_AlertParsing(t *testing.T)
 func TestSuricata_RuleMatching(t *testing.T)
 
-// label/custom_test.go (new)
+// internal/label/custom_test.go (new)
 func TestCustom_LabelDefinition(t *testing.T)
 func TestCustom_Validation(t *testing.T)
 ```
@@ -638,13 +638,13 @@ func TestCustom_Validation(t *testing.T)
 **Current: 29.3% → Target: 85%+**
 
 ```go
-// utils/utils_test.go (enhance)
+// internal/utils/utils_test.go (enhance)
 func TestIPConversion(t *testing.T)
 func TestTimestampHandling(t *testing.T)
 func TestProtocolHelpers(t *testing.T)
 func TestStringUtilities(t *testing.T)
 
-// utils/ident_test.go (enhance)
+// internal/utils/ident_test.go (enhance)
 func TestIdentGeneration(t *testing.T)
 func TestIdentUniqueness(t *testing.T)
 ```
@@ -1292,7 +1292,7 @@ go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//' |
 5. **Week 5-6: Protocol Decoders**
    - [ ] Test Tier 1 packet decoders (ethernet, ip, tcp, udp, dns, http, tls)
    - [ ] Test Tier 2 packet decoders (dhcp, arp, icmp)
-   - [ ] Achieve 75% coverage on decoder/packet package
+   - [ ] Achieve 75% coverage on internal/decoder/packet package
    
 6. **Week 6-7: Stream Decoders**
    - [ ] Fix and enhance HTTP stream decoder tests
@@ -1385,8 +1385,8 @@ go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//' |
 | Package | Current | Target | Priority |
 |---------|---------|--------|----------|
 | collector | 0% (build fail) | 85% | Critical |
-| decoder/packet | 0% (build fail) | 75% | Critical |
-| decoder/stream | ~15% avg | 70% | Critical |
+| internal/decoder/packet | 0% (build fail) | 75% | Critical |
+| internal/decoder/stream | ~15% avg | 70% | Critical |
 | types | 0.8% | 80% | Critical |
 | io | 19.7% | 85% | High |
 | reassembly | 68.9% | 90% | High |
@@ -1578,7 +1578,7 @@ make test-regression-update
 
 1. **Create test file** (if doesn't exist):
    ```bash
-   touch decoder/packet/myprotocol_test.go
+   touch internal/decoder/packet/myprotocol_test.go
    ```
 
 2. **Use test template:**
