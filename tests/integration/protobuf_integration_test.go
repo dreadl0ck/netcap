@@ -243,34 +243,41 @@ func TestProtobufParsingPipeline(t *testing.T) {
 }
 
 // TestProtobufNoFalsePositivesCollector checks what the protobuf decoder emits
-// for PCAPs carrying no protobuf traffic at all.
+// for PCAPs carrying no protobuf traffic at all. The answer is now nothing, on
+// all three, and this test is what holds that.
 //
-// Two different assertions, because the decoder distinguishes two things.
-// decoder/stream/protobuf/protobuf.go:167-198 writes a record whenever the
-// CanDecode heuristic fires, then sets IsValid according to whether the payload
-// actually parsed. So:
+// It took two fixes on 2026-09-22 to get there. Until that date this function
+// asserted nothing whatsoever: it reported its findings with
+// t.Logf("Warning: ...") and passed regardless, so the 20 records it was
+// finding had never once failed a build. Those 20 were NetBIOS Name Service and
+// DNS conversations, adopted because IsProtobufData tested byte statistics only
+// and never looked at the wire format. It now requires a structurally valid
+// opening tag, and processData no longer writes a record when the payload fails
+// to parse.
 //
-//   - An IsValid=true record on this corpus means the parser accepted
-//     non-protobuf bytes. That is the real false positive and is never
-//     acceptable, so it fails outright with no baseline.
-//   - An IsValid=false record means only that the heuristic fired and the
-//     parser then rejected it. That is a known gap in CanDecode, measured
-//     below, and is capped at its current value so it cannot grow unnoticed.
+// Measured: the tag gate alone takes all three pcaps to 0. The discard is
+// defence in depth, for payloads whose first tag is valid by coincidence --
+// a DNS transaction ID can be one -- and it is pinned separately in
+// internal/decoder/stream/protobuf/detection_test.go.
 //
-// Until 2026-09-22 this function asserted neither: it reported both cases with
-// t.Logf("Warning: ...") and passed regardless, so the 20 records recorded here
-// had never failed a build.
+// Two assertions remain, and they are not the same check:
+//
+//   - An IsValid=true record on this corpus would mean the parser accepted
+//     non-protobuf bytes. That is the severe case and fails outright.
+//   - Any record at all is capped by maxHeuristicHits, now 0 everywhere. This
+//     is the cheap canary: it catches a detection regression even if the parser
+//     correctly rejects what detection let through.
 func TestProtobufNoFalsePositivesCollector(t *testing.T) {
 	testCases := []struct {
 		name     string
 		pcapFile string
-		// maxHeuristicHits caps IsValid=false records: the count measured on
-		// 2026-09-22, not a target. Lower it when CanDecode improves; a rise
-		// is a regression.
+		// maxHeuristicHits caps records emitted for a corpus containing no
+		// protobuf. All three measured 0 on 2026-09-22 after the detection fix;
+		// they were 2, 18 and 0 before it. Any rise is a regression.
 		maxHeuristicHits int
 	}{
-		{"HTTP_traffic", "../../testdata/test.pcap", 2},
-		{"CIP_industrial", "../../testdata/cip.pcap", 18},
+		{"HTTP_traffic", "../../testdata/test.pcap", 0},
+		{"CIP_industrial", "../../testdata/cip.pcap", 0},
 		{"S7Comm_industrial", "../../testdata/s7comm_reading_plc_status.pcap", 0},
 	}
 

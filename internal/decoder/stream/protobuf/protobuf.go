@@ -191,45 +191,60 @@ func (r *protobufReader) processData(b *bufio.Reader, isClient bool) error {
 		}
 	}
 	if parseErr != nil {
-		pb.IsValid = false
-		pb.ErrorMsg = parseErr.Error()
-		pb.MessageCount = 0
-	} else {
-		pb.IsValid = true
-		pb.MessageCount = int32(len(messages))
+		// Produce nothing when the payload does not parse, which is what every
+		// other stream decoder in this package tree does -- IsValid/ErrorMsg
+		// exist on no other audit record type.
+		//
+		// Writing a record here was how a detection miss became durable output:
+		// CanDecode firing on NetBIOS and DNS traffic put 20 unparseable
+		// Protobuf records into the corpus, and because the record carried an
+		// ErrorMsg rather than being absent, nothing downstream treated it as a
+		// fault. The tightened IsProtobufData is the first line of defence and
+		// this is the second.
+		pbLog.Debug("discarding non-protobuf payload",
+			zap.Error(parseErr),
+			zap.Int("payload_size", len(data)),
+			zap.Int32("src_port", pb.SrcPort),
+			zap.Int32("dst_port", pb.DstPort),
+		)
 
-		// Try to resolve message type from port mappings
-		var msgTypeName string
-		if mt, ok := lookupMessageTypeByPort(r.conversation.ServerPort); ok {
-			msgTypeName = mt
-		} else if mt, ok := lookupMessageTypeByPort(r.conversation.ClientPort); ok {
-			msgTypeName = mt
+		return nil
+	}
+
+	pb.IsValid = true
+	pb.MessageCount = int32(len(messages))
+
+	// Try to resolve message type from port mappings
+	var msgTypeName string
+	if mt, ok := lookupMessageTypeByPort(r.conversation.ServerPort); ok {
+		msgTypeName = mt
+	} else if mt, ok := lookupMessageTypeByPort(r.conversation.ClientPort); ok {
+		msgTypeName = mt
+	}
+
+	for i, msg := range messages {
+		if i == 0 {
+			pb.MessageType = DetectMessageType(msg)
+			pb.ServiceName = DetectServiceName(r.conversation.ClientPort, r.conversation.ServerPort)
+		}
+		PopulateFields(msg, pb.Fields, &pb.FieldOrder)
+
+		// Store alternatives in the dedicated FieldAlternatives map
+		if showAlternatives {
+			for _, f := range msg {
+				for altType, altValue := range f.Alternatives {
+					altKey := fmt.Sprintf("%s_%d.as_%s", f.Type, f.Number, altType)
+					pb.FieldAlternatives[altKey] = altValue
+				}
+			}
 		}
 
-		for i, msg := range messages {
-			if i == 0 {
-				pb.MessageType = DetectMessageType(msg)
-				pb.ServiceName = DetectServiceName(r.conversation.ClientPort, r.conversation.ServerPort)
-			}
-			PopulateFields(msg, pb.Fields, &pb.FieldOrder)
-
-			// Store alternatives in the dedicated FieldAlternatives map
-			if showAlternatives {
-				for _, f := range msg {
-					for altType, altValue := range f.Alternatives {
-						altKey := fmt.Sprintf("%s_%d.as_%s", f.Type, f.Number, altType)
-						pb.FieldAlternatives[altKey] = altValue
-					}
-				}
-			}
-
-			// Schema-aware field resolution
-			if reg := GetSchemaRegistry(); reg != nil && msgTypeName != "" {
-				if md, ok := reg.LookupMessage(msgTypeName); ok {
-					pb.SchemaResolved = true
-					pb.FullMessageName = msgTypeName
-					pb.SchemaFields = ResolveFields(msg, md)
-				}
+		// Schema-aware field resolution
+		if reg := GetSchemaRegistry(); reg != nil && msgTypeName != "" {
+			if md, ok := reg.LookupMessage(msgTypeName); ok {
+				pb.SchemaResolved = true
+				pb.FullMessageName = msgTypeName
+				pb.SchemaFields = ResolveFields(msg, md)
 			}
 		}
 	}
@@ -285,11 +300,82 @@ const (
 	maxFieldNumber      = 1<<29 - 1 // protobuf max
 )
 
+// startsWithTag reports whether data opens with a structurally valid protobuf
+// field tag, applying exactly the rules ParseMessage enforces at its first
+// iteration: a field number in [1, maxFieldNumber] and a wire type this decoder
+// understands.
+//
+// Wire types 3 and 4 (start/end group) are rejected deliberately. They are
+// deprecated in proto3 and ParseMessage does not implement them, so accepting
+// them here would only produce a record it must then fail to parse.
+func startsWithTag(data []byte) bool {
+	tag, err := ReadVarint(bytes.NewReader(data))
+	if err != nil {
+		return false
+	}
+
+	fieldNumber := tag >> 3
+	if fieldNumber == 0 || fieldNumber > maxFieldNumber {
+		return false
+	}
+
+	switch tag & 0x07 {
+	case 0, 1, 2, 5:
+		return true
+	default:
+		return false
+	}
+}
+
+// hasValidFirstTag reports whether data opens with a valid tag either directly
+// or once 4-byte big-endian length-prefix framing is stripped.
+//
+// Every protobuf message begins with a tag, so a payload failing both forms
+// cannot be protobuf whatever its byte statistics look like. That is the point:
+// the statistical tests in IsProtobufData are position-independent and cannot
+// tell a tag byte from a string byte.
+//
+// The framing fallback is not optional. gRPC and custom protobuf-over-TCP
+// prefix each message with its length, so byte 0 is the high byte of that
+// prefix -- almost always 0x00, which reads as field number 0. Checking only
+// the raw form rejected the protobuf_tcp_addressbook.pcapng corpus outright,
+// caught by TestProtobufPCAPExtraction/TCP_AddressBook. processData already
+// falls back to stripLengthPrefixedFraming for the same reason; detection has
+// to agree with it or CanDecode refuses payloads the decoder could parse.
+func hasValidFirstTag(data []byte) bool {
+	if startsWithTag(data) {
+		return true
+	}
+
+	if stripped := stripLengthPrefixedFraming(data); stripped != nil {
+		return startsWithTag(stripped)
+	}
+
+	return false
+}
+
 // IsProtobufData uses heuristics to detect if data might be protobuf encoded.
-// Checks for valid wire type distribution, varint continuation patterns,
-// and sufficient entropy to distinguish from text protocols.
+// It requires a structurally valid opening tag, then applies byte statistics:
+// varint continuation patterns, wire type spread, and sufficient entropy to
+// distinguish from text protocols.
+//
+// The statistics alone are a weak signature and were the sole test until
+// 2026-09-22. They reduce to "contains a byte >= 0x80 and has entropy above
+// 3.0", which uniform random bytes of length >= 12 satisfy essentially always,
+// so this decoder adopted any unrecognised binary conversation it was offered.
+// Because it registers as core.All it takes part in every UDP fallback scan,
+// and it was producing Protobuf audit records for NetBIOS Name Service and DNS
+// traffic -- 20 of them across the test corpus, every one unparseable.
+//
+// Raising the entropy threshold cannot fix that: the tightest payload this must
+// still accept measures 3.278 bits and the lowest observed false positive 3.521,
+// which is no margin at all. Validating the tag is what separates them.
 func IsProtobufData(data []byte) bool {
 	if len(data) < 2 {
+		return false
+	}
+
+	if !hasValidFirstTag(data) {
 		return false
 	}
 
@@ -311,14 +397,9 @@ func IsProtobufData(data []byte) bool {
 		}
 	}
 
-	totalValidBytes := 0
-	for _, count := range wireTypeCount {
-		totalValidBytes += count
-	}
-
 	entropy := CalculateEntropy(data)
 
-	return hasVarintPattern && len(wireTypeCount) >= 2 && totalValidBytes > limit/4 && entropy > 3.0
+	return hasVarintPattern && len(wireTypeCount) >= 2 && entropy > 3.0
 }
 
 // DecodeMessages attempts to decode one or more protobuf messages from raw bytes.
