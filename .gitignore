@@ -61,9 +61,11 @@ cover.out
 coverage.html
 deploy.sh
 node_modules/
-cmd/try/webui/frontend
 tmp/
-net
+# The `net` binary, at the repo root only. NOTE: must stay anchored with a
+# leading slash -- a bare "net" matches at any depth and silently untracks
+# cmd/net/, the directory holding the binary's main package.
+/net
 
 evals/
 
