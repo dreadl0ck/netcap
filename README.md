@@ -5,7 +5,7 @@
 <br>
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/dreadl0ck/netcap)](https://goreportcard.com/report/github.com/dreadl0ck/netcap)
-[![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://raw.githubusercontent.com/dreadl0ck/netcap/master/docs/LICENSE)
+[![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://raw.githubusercontent.com/dreadl0ck/netcap/master/LICENSE)
 [![Golang](https://img.shields.io/badge/Go-1.25-blue.svg)](https://golang.org)
 ![Linux](https://img.shields.io/badge/Supports-Linux-green.svg)
 ![macOS](https://img.shields.io/badge/Supports-macOS-green.svg)

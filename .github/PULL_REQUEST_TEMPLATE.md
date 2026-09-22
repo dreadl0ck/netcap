@@ -20,8 +20,8 @@
 
 By submitting this pull request, I confirm that:
 
-- [ ] I have read and agree to the [NETCAP Individual CLA Version 1.1](../CLA-INDIVIDUAL.md)
-- [ ] If contributing on behalf of an organization, we have completed the [Entity CLA](../CLA-ENTITY.md)
+- [ ] I have read and agree to the [NETCAP Individual CLA Version 1.1](CLA-INDIVIDUAL.md)
+- [ ] If contributing on behalf of an organization, we have completed the [Entity CLA](CLA-ENTITY.md)
 
 <!-- 
 If you haven't signed the CLA yet, the CLA Assistant bot will comment on this PR 

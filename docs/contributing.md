@@ -36,11 +36,11 @@ When you submit a pull request, our CLA Assistant bot will automatically check i
 I have read and agree to the NETCAP Individual CLA Version 1.1
 ```
 
-Read the full [Individual CLA](../CLA-INDIVIDUAL.md) before signing.
+Read the full [Individual CLA](../.github/CLA-INDIVIDUAL.md) before signing.
 
 ### For Corporate/Entity Contributors
 
-If you are contributing on behalf of your employer or another organization, please complete the [Entity CLA](../CLA-ENTITY.md) and send it to the project maintainers before submitting contributions.
+If you are contributing on behalf of your employer or another organization, please complete the [Entity CLA](../.github/CLA-ENTITY.md) and send it to the project maintainers before submitting contributions.
 
 ## Pull Requests
 

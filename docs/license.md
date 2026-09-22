@@ -14,6 +14,10 @@ This license type was chosen with Netcaps research purpose in mind, and in the h
 
 The license can be found here: [https://github.com/dreadl0ck/netcap/blob/master/LICENSE](https://github.com/dreadl0ck/netcap/blob/master/LICENSE)
 
+## Commercial License
+
+The GPLv3 terms above do not suit every deployment. A commercial license is available for use in closed-source or proprietary products: [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md).
+
 ## Usage Disclaimer
 
 Netcap was developed in a short timeframe as a research project and thus was neither tested nor developed to run in a production environment. The project may contain bugs, that have not yet been discovered. Error handling is not very graceful, in many cases that could have been handled otherwise, the program panics in order to assist in debugging with a stack trace. Until there are further unit tests and the error handling is more robust, using Netcap for other purposes than research is not recommended!
