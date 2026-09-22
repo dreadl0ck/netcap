@@ -735,7 +735,7 @@ A single `sync.RWMutex` protects 12+ map fields. Every resolver lookup acquires 
 
 ### 6.1 String Fields vs Enums
 
-**File:** `proto/netcap.proto:234-256, 330-398`
+**File:** `types/netcap.proto:234-256, 330-398`
 
 50+ fields use `string` type where enumerated values would be more efficient:
 
@@ -758,7 +758,7 @@ Enums encode as varints (1-2 bytes) vs strings (4-20+ bytes), reducing wire size
 
 ### 6.2 Field Number Optimization
 
-**File:** `proto/netcap.proto:304-312`
+**File:** `types/netcap.proto:304-312`
 
 Field numbers jump non-sequentially (e.g., from 30 to 48-51). Protobuf field numbers 1-15 encode in 1 byte, while 16-2047 require 2 bytes. Frequently accessed fields should use numbers 1-15.
 
@@ -768,7 +768,7 @@ Field numbers jump non-sequentially (e.g., from 30 to 48-51). Protobuf field num
 
 ### 6.3 Repeated String Collections
 
-**File:** `proto/netcap.proto:281`
+**File:** `types/netcap.proto:281`
 
 ```protobuf
 repeated string Applications = 28;  // String array
@@ -829,9 +829,9 @@ These are not just performance issues — they can cause data corruption or cras
 
 | # | Issue | File | Fix |
 |---|-------|------|-----|
-| 1 | String fields → enums | `proto/netcap.proto` | Define enums for protocols |
-| 2 | Field number ordering | `proto/netcap.proto` | Move frequent fields to 1-15 |
-| 3 | Repeated string → packed enum | `proto/netcap.proto:281` | Enum array |
+| 1 | String fields → enums | `types/netcap.proto` | Define enums for protocols |
+| 2 | Field number ordering | `types/netcap.proto` | Move frequent fields to 1-15 |
+| 3 | Repeated string → packed enum | `types/netcap.proto:281` | Enum array |
 | 4 | Batch write API | `internal/decoder/core/api.go` | Accumulate, flush in batches |
 | 5 | Per-packet TCP data copy | `internal/decoder/stream/tcp/tcp_connection.go:218` | Reference counting |
 | 6 | Reassembly memory shrinking | `internal/reassembly/stream_pool.go:41` | Periodic high-water shrink |

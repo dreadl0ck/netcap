@@ -198,7 +198,7 @@ RUN mkdir -p /usr/local/lib/pkgconfig && \
 
 # Protocol buffer compiler and the gogofaster plugin.
 #
-# types/netcap.pb.go is generated from proto/netcap.proto. It was untracked
+# types/netcap.pb.go is generated from types/netcap.proto. It was untracked
 # between 8ba92384 and 3dbcc508, when a clean checkout genuinely had no types
 # package and every build failed with "undefined: Alert"; it is tracked again
 # now because the release archives ship it. Carrying protoc here still lets CI

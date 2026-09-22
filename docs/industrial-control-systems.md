@@ -60,7 +60,7 @@ Key `S7Comm` audit-record fields for hunting: `FunctionCode` / `FunctionName`,
 `IsSecurityRelevant`, `SubFunctionName` (names cold/warm/hot restart),
 `UserDataFunctionGroup` / `UserDataSubFunction` (SZL enumeration), and the
 S7CommPlus visibility fields `PayloadObscured` / `S7PlusOpcode` /
-`S7PlusOpcodeName`. See `message S7Comm` in `proto/netcap.proto` for the full schema.
+`S7PlusOpcodeName`. See `message S7Comm` in `types/netcap.proto` for the full schema.
 
 ## Modbus
 

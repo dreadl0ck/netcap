@@ -213,13 +213,13 @@ testdata/HTTP - Digest-MD5.pcap
 ### Phase 1: Foundation (Week 1)
 **Goal**: Prepare infrastructure for hash-based credentials
 
-- [ ] Update `proto/netcap.proto` with new fields
+- [ ] Update `types/netcap.proto` with new fields
 - [ ] Regenerate protobuf code
 - [ ] Update CSV/JSON export logic
 - [ ] Test existing harvesters still work
 
 **Files Modified**:
-- `proto/netcap.proto`
+- `types/netcap.proto`
 - `types/credentials.go`
 
 ### Phase 2: NTLMSSP (Week 2-3)

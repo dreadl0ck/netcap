@@ -156,7 +156,7 @@ zeus gen-proto-dev
 Or manually:
 
 ```bash
-protoc --proto_path=proto --gogofaster_out=types/. proto/netcap.proto
+protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto
 ```
 
 ### Release Build (All languages)
@@ -171,7 +171,7 @@ Or manually:
 
 ```bash
 mkdir -p types/{python,java,swift,cpp,csharp,js}
-protoc --proto_path=proto \
+protoc --proto_path=types \
        --gogofaster_out=types/. \
        --python_out=types/python \
        --java_out=types/java \
@@ -179,7 +179,7 @@ protoc --proto_path=proto \
        --cpp_out=types/cpp \
        --csharp_out=types/csharp \
        --js_out=types/js \
-       proto/netcap.proto
+       types/netcap.proto
 ```
 
 ## Environment Variables

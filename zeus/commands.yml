@@ -361,8 +361,11 @@ commands:
             # Trap to cleanup background processes
             trap 'echo "\n[INFO] Stopping dev-service..."; kill 0' INT TERM
             
-            # Start backend with air in background
-            air &
+            # Start backend with air in background. -c is required: the config
+            # lives in configs/, not at the repo root, so a bare `air` would
+            # fall back to its defaults and try to build ".", which is the
+            # netcap library package and not a main package.
+            air -c configs/air.toml &
             AIR_PID=$!
             
             # Start frontend dev server in background with backend URL configured
@@ -771,7 +774,7 @@ commands:
     gen-proto-dev:
         description: generate protocol buffers
         help: proto compiler must be installed with gogofaster plugin
-        exec: protoc --proto_path=proto --gogofaster_out=types/. proto/netcap.proto
+        exec: protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto
 
     # generate protocol buffers for release
     gen-proto-release:
@@ -779,8 +782,8 @@ commands:
         help: proto compiler must be installed with all required plugins
         exec: |
             mkdir -p types/{python,java,swift,rust,cpp,csharp,js}
-            #protoc --proto_path=proto --gogofaster_out=types/. --python_out=types/python --java_out=types/java --swift_out=types/swift --rust_out=types/rust --cpp_out=types/cpp --csharp_out=types/csharp --js_out=types/js proto/netcap.proto
-            protoc --proto_path=proto --gogofaster_out=types/. --python_out=types/python --java_out=types/java --swift_out=types/swift --cpp_out=types/cpp --csharp_out=types/csharp --js_out=types/js proto/netcap.proto
+            #protoc --proto_path=types --gogofaster_out=types/. --python_out=types/python --java_out=types/java --swift_out=types/swift --rust_out=types/rust --cpp_out=types/cpp --csharp_out=types/csharp --js_out=types/js types/netcap.proto
+            protoc --proto_path=types --gogofaster_out=types/. --python_out=types/python --java_out=types/java --swift_out=types/swift --cpp_out=types/cpp --csharp_out=types/csharp --js_out=types/js types/netcap.proto
 
     # the version defined in the globals section will be set via ldflags on each build
     # to ensure the correct version is also set for installation via go get
@@ -1071,7 +1074,7 @@ commands:
         help: |
             https://github.com/uber/prototool#prototool-format
         exec: |
-            prototool format -w -f proto/netcap.proto
+            prototool format -w -f types/netcap.proto
 
     gen-maltego-config:
         exec: go test -v -run="TestGenerateFullMaltegoConfiguration" -tags="icons" github.com/dreadl0ck/netcap/internal/maltego

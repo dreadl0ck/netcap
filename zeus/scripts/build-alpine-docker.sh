@@ -28,9 +28,9 @@ echo "[INFO] $tag args: ${ARGS}"
 # build image directly from project root
 # dont quote ARGS or passing arguments wont work anymore
 if [ -n "${ARGS:-}" ]; then
-  docker build --platform linux/amd64 ${ARGS} -t "$tag" -f Dockerfile .
+  docker build --platform linux/amd64 ${ARGS} -t "$tag" -f docker/Dockerfile .
 else
-  docker build --platform linux/amd64 -t "$tag" -f Dockerfile .
+  docker build --platform linux/amd64 -t "$tag" -f docker/Dockerfile .
 fi
 BUILD_EXIT_CODE=$?
 

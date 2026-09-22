@@ -101,7 +101,7 @@ Netcap converts network traffic (live capture or PCAP files) into structured Pro
    - `internal/decoder/packet/` — 75+ individual protocol decoders (one per protocol layer)
    - `internal/decoder/stream/` — 40+ TCP stream-based decoders (TLS, SSH, QUIC, SMB, etc.)
    - `internal/decoder/config/` — decoder selection via `-include`/`-exclude` flags
-3. **Types** (`types/`) — all 58 audit record types defined in `proto/netcap.proto`, generated with `protoc-gen-gogo`
+3. **Types** (`types/`) — all 58 audit record types defined in `types/netcap.proto`, generated with `protoc-gen-gogo`
 4. **IO** (`internal/netio/`, package `netio`) — output writers: Protocol Buffers (default), CSV, JSON, Elasticsearch
 5. **Reassembly** (`internal/reassembly/`) — TCP stream reconstruction
 6. **Resolvers** (`internal/resolvers/`) — enrichment: DNS, GeoIP, MAC vendor lookup
@@ -137,15 +137,16 @@ Client-side routing uses `react-router` v7; data fetching uses `swr`; UI is MUI 
 
 ### Proto Code Generation
 
-All types are defined in `proto/netcap.proto` and generated to `types/netcap.pb.go` using `protoc-gen-gogo`. There are no `go:generate` directives — proto compilation is manual.
+All types are defined in `types/netcap.proto` and generated to `types/netcap.pb.go` using `protoc-gen-gogo`. There are no `go:generate` directives — proto compilation is manual.
 
 ### Key Directories
 
 - `internal/` — every library package: collector, decoder, netio, reassembly, resolvers, dpi, maltego, rules, label, dbs, encoder, utils, injection, firewall, magika, analyze, plus ja4, logger, metrics, filter, mcp, table
 - `internal/maltego/` — Maltego OSINT platform integration transforms
-- `configs/` — YAML configs for file extraction, firewall rules, harvesters
 - `internal/rules/examples/` — YAML detection rule definitions
-- `proto/` — `netcap.proto`, the schema for `types/`
-- `init/` — systemd unit
+- `internal/tools/licenses/` — the licence-catalogue generator, run by `zeus/scripts/licenses.sh`
+- `configs/` — runtime and tooling config: file extraction, firewall rules, harvesters, Prometheus/Grafana, the systemd unit (`netcap.service`) and `air.toml`
+- `types/` — generated audit record types, and `netcap.proto` beside the code it generates
+- `docker/` — every Dockerfile, including the root build (`docker/Dockerfile`)
 - `scripts/` — shell helpers, bash completion, and the Python DNN research code under `scripts/analyze-dnn/`
 - `zeus/scripts/` — build and performance testing scripts

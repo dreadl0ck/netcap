@@ -704,7 +704,7 @@ netcap/
 ├── internal/collector/
 │   └── file_extraction_test.go          # Integration tests (6 tests)
 │
-├── proto/netcap.proto                         # Updated with FTP, IRC, SMB messages
+├── types/netcap.proto                         # Updated with FTP, IRC, SMB messages
 │
 └── docs/
     └── file-extraction-framework.md     # This document
