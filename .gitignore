@@ -68,6 +68,13 @@ coverage.html
 deploy.sh
 node_modules/
 tmp/
+# The Go workspace is a per-developer overlay linking a sibling ../go-dpi
+# checkout. It is not committed: with it present every build silently
+# resolves go-dpi from that checkout instead of the version pinned in
+# go.mod. Create one with `zeus setup-workspace`.
+/go.work
+/go.work.sum
+
 # The `net` binary, at the repo root only. NOTE: must stay anchored with a
 # leading slash -- a bare "net" matches at any depth and silently untracks
 # cmd/net/, the directory holding the binary's main package.

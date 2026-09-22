@@ -26,18 +26,12 @@ jobs:
           go-version: '1.27.0'
           cache: true
 
-      # netcap is a workspace: go.work uses both this module and ../go-dpi,
-      # and the go.work go directive must be >= every member's. Checking the
-      # sibling out at the same relative path is what makes `go build ./...`
-      # resolve the same way it does locally.
-      - name: Check out go-dpi (workspace member)
-        uses: actions/checkout@v4
-        with:
-          repository: dreadl0ck/go-dpi
-          path: go-dpi-sibling
-
-      - name: Place go-dpi beside the module
-        run: mv go-dpi-sibling ../go-dpi
+      # go-dpi is an ordinary pinned dependency here -- go.mod requires
+      # v1.4.1 and the module proxy serves it. CI deliberately does NOT create
+      # a go.work overlay: that would make the build resolve go-dpi from a
+      # checkout of its default branch, so a release build would silently test
+      # something other than the pinned version. Developers who need the
+      # overlay create it locally with `zeus setup-workspace`.
 
       # The web UI bundle is gitignored and embedded with
       # `//go:embed all:frontend/dist`, so without these steps every
@@ -93,15 +87,12 @@ jobs:
       # host where they work, and still gives the Go toolchain the exact
       # release environment.
       #
-      # Both the module and its go.work sibling are mounted so that ../go-dpi
-      # resolves inside the container the same way it does on the runner.
       # GOFLAGS=-buildvcs=false because the mounted .git is owned by a different
       # uid inside the container and Go otherwise refuses to stamp VCS info.
       - name: Build, vet and test in the builder image
         run: |
           docker run --rm -i \
             -v "${{ github.workspace }}:/netcap" \
-            -v "$(cd .. && pwd)/go-dpi:/go-dpi" \
             -w /netcap \
             -e GOFLAGS=-buildvcs=false \
             "$BUILDER_IMAGE" \

@@ -3,7 +3,8 @@
 .gitignore
 .gitattributes
 
-# Go workspace (development only)
+# Go workspace. Untracked but usually present locally, and docker build
+# reads the filesystem rather than git, so it must be excluded explicitly.
 go.work
 go.work.sum
 

@@ -17,7 +17,26 @@ globals:
 
 # command data
 commands:
-    
+
+    # Developer workspace. go.work is intentionally not committed: it is a
+    # per-developer overlay that makes every build resolve go-dpi from a sibling
+    # checkout instead of the version pinned in go.mod.
+    setup-workspace:
+        description: create a local go.work linking a sibling go-dpi checkout
+        help: |
+            Writes go.work so builds use a local ../go-dpi instead of the
+            version pinned in go.mod, then runs `go work sync`.
+
+            Only needed when changing netcap and go-dpi together. A clean
+            checkout builds fine without it.
+
+              zeus setup-workspace
+              GO_DPI_PATH=/path/to/go-dpi zeus setup-workspace
+
+            Undo with `rm go.work go.work.sum`, or suppress for a single
+            command with GOWORK=off.
+        exec: zeus/scripts/setup-workspace.sh
+
     ## Install all
     ##
 

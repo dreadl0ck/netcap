@@ -218,8 +218,11 @@ if [[ "${USE_BUILDX}" == "true" && "${NETCAP_PUSH_IMAGES}" == "true" ]]; then
     
     # Copy Go module files
     cp go.mod go.sum "$BUILD_CONTEXT/"
-    [ -f go.work ] && cp go.work "$BUILD_CONTEXT/"
-    [ -f go.work.sum ] && cp go.work.sum "$BUILD_CONTEXT/"
+    # go.work is deliberately NOT copied. It is an untracked local
+    # overlay, and inside the image it would defeat the whole point of
+    # this script: Go ignores a member module's own replace directives
+    # in workspace mode, so the "replace go-dpi => /go-dpi" the
+    # Dockerfile appends to go.mod would have no effect.
     
     # Copy proto files if any
     find . -name "*.proto" -type f -exec sh -c 'mkdir -p "'$BUILD_CONTEXT'/$(dirname {})" && cp {} "'$BUILD_CONTEXT'/{}"' \;
@@ -283,8 +286,11 @@ else
     
     # Copy Go module files
     cp go.mod go.sum "$BUILD_CONTEXT/"
-    [ -f go.work ] && cp go.work "$BUILD_CONTEXT/"
-    [ -f go.work.sum ] && cp go.work.sum "$BUILD_CONTEXT/"
+    # go.work is deliberately NOT copied. It is an untracked local
+    # overlay, and inside the image it would defeat the whole point of
+    # this script: Go ignores a member module's own replace directives
+    # in workspace mode, so the "replace go-dpi => /go-dpi" the
+    # Dockerfile appends to go.mod would have no effect.
     
     # Copy proto files if any
     find . -name "*.proto" -type f -exec sh -c 'mkdir -p "'$BUILD_CONTEXT'/$(dirname {})" && cp {} "'$BUILD_CONTEXT'/{}"' \;

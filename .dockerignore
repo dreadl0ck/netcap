@@ -6,7 +6,10 @@
 .idea
 .vscode
 
-# Go workspace (not needed for Docker builds)
+# Go workspace. Untracked but usually present on a developer machine
+# (`zeus setup-workspace`), and `docker build` reads the filesystem rather
+# than git -- so without this a local overlay would follow the source into
+# the image and repoint go-dpi at a path that does not exist there.
 go.work
 go.work.sum
 

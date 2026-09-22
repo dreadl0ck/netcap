@@ -88,7 +88,31 @@ of `gosec`, `staticcheck`, `unused` and `unparam`.
 
 ## Go Workspace
 
-The project uses `go.work` referencing a local `../go-dpi` dependency. Ensure `github.com/dreadl0ck/go-dpi` is cloned as a sibling directory for DPI features.
+**`go.work` is not committed, and a clean checkout does not need one.**
+`go.mod` pins `github.com/dreadl0ck/go-dpi v1.4.1` and the module proxy serves
+it, so `go build ./...` works with no sibling checkout and no workspace. CI
+builds this way deliberately.
+
+Create the overlay only when changing netcap and go-dpi together:
+
+```bash
+git clone https://github.com/dreadl0ck/go-dpi ../go-dpi
+zeus setup-workspace                          # or GO_DPI_PATH=/path zeus setup-workspace
+```
+
+That writes `go.work`, picks a `go` directive at least as high as both modules
+require, and runs `go work sync`. Both `go.work` and `go.work.sum` are
+gitignored.
+
+Undo with `rm go.work go.work.sum`; suppress for one command with `GOWORK=off`.
+
+**While it exists, every build in this module silently resolves go-dpi from
+your sibling checkout rather than the pinned version** — which is the point
+during development and wrong for anything you intend to reproduce. That is why
+it is not committed, why CI does not create one, and why the `build-service-local-*`
+scripts refuse to copy it into a Docker build context: Go ignores a member
+module's own `replace` directives in workspace mode, so a stray `go.work` would
+defeat the `replace go-dpi => /go-dpi` those images rely on.
 
 ## High-Level Architecture
 
