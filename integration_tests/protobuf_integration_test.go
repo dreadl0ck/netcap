@@ -242,23 +242,41 @@ func TestProtobufParsingPipeline(t *testing.T) {
 	}
 }
 
-// TestProtobufNoFalsePositivesCollector verifies the protobuf decoder does NOT
-// produce records when processing PCAPs with non-protobuf traffic.
+// TestProtobufNoFalsePositivesCollector checks what the protobuf decoder emits
+// for PCAPs carrying no protobuf traffic at all.
+//
+// Two different assertions, because the decoder distinguishes two things.
+// decoder/stream/protobuf/protobuf.go:167-198 writes a record whenever the
+// CanDecode heuristic fires, then sets IsValid according to whether the payload
+// actually parsed. So:
+//
+//   - An IsValid=true record on this corpus means the parser accepted
+//     non-protobuf bytes. That is the real false positive and is never
+//     acceptable, so it fails outright with no baseline.
+//   - An IsValid=false record means only that the heuristic fired and the
+//     parser then rejected it. That is a known gap in CanDecode, measured
+//     below, and is capped at its current value so it cannot grow unnoticed.
+//
+// Until 2026-09-22 this function asserted neither: it reported both cases with
+// t.Logf("Warning: ...") and passed regardless, so the 20 records recorded here
+// had never failed a build.
 func TestProtobufNoFalsePositivesCollector(t *testing.T) {
 	testCases := []struct {
 		name     string
 		pcapFile string
+		// maxHeuristicHits caps IsValid=false records: the count measured on
+		// 2026-09-22, not a target. Lower it when CanDecode improves; a rise
+		// is a regression.
+		maxHeuristicHits int
 	}{
-		{"HTTP_traffic", "../testdata/test.pcap"},
-		{"CIP_industrial", "../testdata/cip.pcap"},
-		{"S7Comm_industrial", "../testdata/s7comm_reading_plc_status.pcap"},
+		{"HTTP_traffic", "../testdata/test.pcap", 2},
+		{"CIP_industrial", "../testdata/cip.pcap", 18},
+		{"S7Comm_industrial", "../testdata/s7comm_reading_plc_status.pcap", 0},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, err := os.Stat(tc.pcapFile); os.IsNotExist(err) {
-				t.Skipf("Test pcap not found: %s", tc.pcapFile)
-			}
+			requireFixture(t, tc.pcapFile)
 
 			outDir := t.TempDir()
 
@@ -270,20 +288,46 @@ func TestProtobufNoFalsePositivesCollector(t *testing.T) {
 			info, err := os.Stat(pbFile)
 
 			if os.IsNotExist(err) {
-				t.Logf("No Protobuf records produced (good)")
+				if tc.maxHeuristicHits > 0 {
+					t.Errorf("no Protobuf.ncap.gz produced, but %d heuristic hit(s) were expected; "+
+						"if CanDecode improved, lower maxHeuristicHits to 0", tc.maxHeuristicHits)
+				}
+
 				return
 			}
 
-			if err == nil && info.Size() > 0 {
-				records, readErr := readProtobufRecords(pbFile)
-				if readErr == nil && len(records) > 0 {
-					t.Logf("Warning: %d Protobuf record(s) from %s (potential false positives)",
-						len(records), tc.pcapFile)
-					for i, rec := range records {
-						t.Logf("  Record %d: valid=%v msgType=%s service=%s size=%d entropy=%.2f",
-							i+1, rec.IsValid, rec.MessageType, rec.ServiceName, rec.PayloadSize, rec.PayloadEntropy)
-					}
+			if err != nil {
+				t.Fatalf("stat %s: %v", pbFile, err)
+			}
+
+			if info.Size() == 0 {
+				return
+			}
+
+			records, err := readProtobufRecords(pbFile)
+			if err != nil {
+				t.Fatalf("read %s: %v", pbFile, err)
+			}
+
+			var parsed int
+
+			for i, rec := range records {
+				t.Logf("  Record %d: valid=%v msgType=%s service=%s size=%d entropy=%.2f",
+					i+1, rec.IsValid, rec.MessageType, rec.ServiceName, rec.PayloadSize, rec.PayloadEntropy)
+
+				if rec.IsValid {
+					parsed++
 				}
+			}
+
+			if parsed > 0 {
+				t.Errorf("%d record(s) from %s parsed as valid protobuf; this corpus carries none, "+
+					"so the parser accepted non-protobuf bytes", parsed, tc.pcapFile)
+			}
+
+			if len(records) > tc.maxHeuristicHits {
+				t.Errorf("%d CanDecode heuristic hit(s) from %s, baseline is %d; "+
+					"the heuristic got less specific", len(records), tc.pcapFile, tc.maxHeuristicHits)
 			}
 		})
 	}
@@ -423,9 +467,7 @@ func TestProtobufPCAPExtraction(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			pcapPath := filepath.Join(protobufTestdataDir, tc.pcapFile)
 
-			if _, err := os.Stat(pcapPath); os.IsNotExist(err) {
-				t.Skipf("Test pcap file not found: %s", pcapPath)
-			}
+			requireFixture(t, pcapPath)
 
 			outDir := t.TempDir()
 

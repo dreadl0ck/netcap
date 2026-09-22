@@ -130,9 +130,7 @@ func TestQUICIntegration(t *testing.T) {
 
 			pcapPath := filepath.Join(quicTestdataDir, tc.pcapFile)
 
-			if _, err := os.Stat(pcapPath); os.IsNotExist(err) {
-				t.Skipf("Test pcap file not found: %s", pcapPath)
-			}
+			requireFixture(t, pcapPath)
 
 			// Create a temporary output directory
 			outDir, err := os.MkdirTemp("", "quic-integration-test-*")
