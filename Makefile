@@ -1,11 +1,13 @@
-# Netcap Test Makefile
-# Include this from main Makefile or use directly: make -f Makefile.test test-unit
+# Netcap Makefile -- test and coverage entrypoints.
+#
+# Building, releasing, code generation and the Docker images are driven by
+# zeus, not by this file: see zeus/commands.yml (`zeus` with no arguments
+# lists the 81 commands). Run `make test-help` for the targets below.
 
 .PHONY: test test-unit test-integration test-regression test-e2e test-bench test-fuzz test-all
-.PHONY: test-coverage test-coverage-html test-race test-determinism
-.PHONY: test-golden-update test-golden-verify
-.PHONY: fixtures-download fixtures-generate test-databases-generate
-.PHONY: test-hyperscan
+.PHONY: test-coverage test-coverage-html test-coverage-check test-race test-determinism
+.PHONY: test-golden-update test-regression-verify
+.PHONY: test-hyperscan test-msan test-pkg test-verbose test-clean test-help
 
 # Test targets
 test: test-unit
@@ -55,10 +57,12 @@ test-hyperscan:
 		./decoder/stream/software/... \
 		./rules/...
 
-# Performance benchmarks
+# Performance benchmarks. Scoped to ./... because the 235 Benchmark functions
+# live beside the code they measure (collector/, reassembly/, io/, decoder/...);
+# tests/benchmarks/ is empty and matches no packages.
 test-bench:
 	@echo "Running benchmarks..."
-	go test -bench=. -benchmem -cpuprofile=cpu.prof -memprofile=mem.prof ./tests/benchmarks/...
+	go test -run '^$$' -bench=. -benchmem -cpuprofile=cpu.prof -memprofile=mem.prof ./...
 	@echo "Profiles saved: cpu.prof, mem.prof"
 
 # Fuzzing smoke run. Each Fuzz* target is gated behind the `fuzz` build tag
@@ -121,20 +125,6 @@ test-coverage-check: test-coverage
 	@go tool cover -func=coverage.out | grep total | awk '{print $$3}' | sed 's/%//' | \
 	  awk '{if ($$1 < 80) {print "Coverage below 80%: " $$1 "%"; exit 1} else {print "Coverage OK: " $$1 "%"}}'
 
-# Test data management
-fixtures-download:
-	@echo "Downloading test fixtures..."
-	@mkdir -p tests/fixtures/pcaps
-	@./scripts/download-test-fixtures.sh
-
-fixtures-generate:
-	@echo "Generating synthetic test fixtures..."
-	go run ./helpers/pcap_generator.go
-
-test-databases-generate:
-	@echo "Generating test databases..."
-	go run ./helpers/generate_test_dbs.go
-
 # Clean test artifacts
 test-clean:
 	@echo "Cleaning test artifacts..."
@@ -161,12 +151,12 @@ test-help:
 	@echo "  test-race         - Run tests with race detector"
 	@echo "  test-determinism  - Compare Ultimate PCAP output across runs and worker counts"
 	@echo ""
-	@echo "  test-golden-update - Update golden files"
-	@echo "  test-golden-verify - Verify against golden files"
+	@echo "  test-golden-update    - Update golden files"
+	@echo "  test-regression-verify - Verify against golden files"
 	@echo ""
+	@echo "  test-hyperscan    - Hyperscan/Vectorscan tests (needs libhs)"
 	@echo "  test-pkg PKG=./collector/ - Test specific package"
 	@echo "  test-verbose      - Run tests with verbose output"
-	@echo ""
-	@echo "  fixtures-download - Download test fixtures"
-	@echo "  fixtures-generate - Generate synthetic fixtures"
 	@echo "  test-clean        - Clean test artifacts"
+	@echo ""
+	@echo "Building and releasing is zeus, not make: see zeus/commands.yml"

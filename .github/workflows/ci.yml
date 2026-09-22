@@ -132,7 +132,7 @@ jobs:
             ./resolvers \
             ./collector
 
-          # Mirrors the test-unit target in Makefile.test. The race detector
+          # Mirrors the test-unit target in Makefile. The race detector
           # works under musl here; verified against this image before relying on
           # it. collector was temporarily excluded after this suite found a TCP
           # reassembly race; it is back under the detector now that the fragment

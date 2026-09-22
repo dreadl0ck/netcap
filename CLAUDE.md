@@ -27,29 +27,29 @@ air
 
 ```bash
 # Unit tests (default, fast)
-make -f Makefile.test test-unit
+make test-unit
 
 # All tests: unit + integration + regression
-make -f Makefile.test test-all
+make test-all
 
 # Test a specific package
-make -f Makefile.test test-pkg PKG=./collector/
+make test-pkg PKG=./collector/
 go test -v -run TestSpecificFunc ./collector/
 
 # Integration tests (require test fixtures/PCAPs)
-make -f Makefile.test test-integration
+make test-integration
 
 # Race detector
-make -f Makefile.test test-race
+make test-race
 
 # Benchmarks (outputs cpu.prof and mem.prof)
-make -f Makefile.test test-bench
+make test-bench
 
 # Coverage with 80% threshold enforcement
-make -f Makefile.test test-coverage-check
+make test-coverage-check
 
 # Update golden files after intentional output changes
-make -f Makefile.test test-golden-update
+make test-golden-update
 ```
 
 ## Linting

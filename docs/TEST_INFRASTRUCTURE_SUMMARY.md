@@ -79,7 +79,7 @@ A comprehensive test infrastructure and 16-week implementation plan for the Netc
     - Temporary file patterns
 
 ### Build & Automation (2 files)
-13. **`Makefile.test`**
+13. **`Makefile`**
     - Complete test automation
     - 20+ test targets
     - Coverage tracking
@@ -179,7 +179,7 @@ open docs/TESTING_QUICKSTART.md
 ### 2. Run Existing Tests
 ```bash
 # Using Makefile
-make -f Makefile.test test-unit
+make test-unit
 
 # Or directly with go
 go test ./...
@@ -259,12 +259,12 @@ go test -v ./decoder/packet/ -run TestMyNew
 
 ### Makefile Targets
 ```bash
-make -f Makefile.test test-help           # Show all targets
-make -f Makefile.test test-unit           # Run unit tests
-make -f Makefile.test test-integration    # Integration tests
-make -f Makefile.test test-regression     # Regression tests
-make -f Makefile.test test-coverage-html  # Coverage report
-make -f Makefile.test test-bench          # Benchmarks
+make test-help           # Show all targets
+make test-unit           # Run unit tests
+make test-integration    # Integration tests
+make test-regression     # Regression tests
+make test-coverage-html  # Coverage report
+make test-bench          # Benchmarks
 ```
 
 ### Helper Functions
@@ -296,7 +296,7 @@ make -f Makefile.test test-bench          # Benchmarks
 2. **`docs/TEST_PLAN.md`** - Detailed strategy
 
 ### For CI/CD
-1. **`Makefile.test`** - Automation targets
+1. **`Makefile`** - Automation targets
 2. **`.github/workflows/test.yml`** - CI workflow (to be created)
 
 ---
@@ -404,7 +404,7 @@ make -f Makefile.test test-bench          # Benchmarks
 - [x] Test utilities (fixtures.go, pcap_generator.go)
 - [x] Test templates (TEMPLATE_test.go)
 - [x] Example tests (integration, regression)
-- [x] Build automation (Makefile.test)
+- [x] Build automation (Makefile)
 - [x] Scripts (verify-golden-files.sh)
 - [x] Directory structure (tests/*)
 - [x] Documentation (README files)

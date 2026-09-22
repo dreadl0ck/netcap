@@ -844,7 +844,7 @@ These are not just performance issues — they can cause data corruption or cras
 
 ```bash
 # Establish baseline benchmarks
-make -f Makefile.test test-bench
+make test-bench
 # Save profiles for comparison
 cp cpu.prof cpu.prof.baseline
 cp mem.prof mem.prof.baseline
@@ -854,13 +854,13 @@ cp mem.prof mem.prof.baseline
 
 ```bash
 # Run race detector to verify correctness fixes
-make -f Makefile.test test-race
+make test-race
 
 # Run unit tests
-make -f Makefile.test test-unit
+make test-unit
 
 # Run benchmarks and compare
-make -f Makefile.test test-bench
+make test-bench
 go tool pprof -diff_base cpu.prof.baseline cpu.prof
 ```
 
@@ -868,7 +868,7 @@ go tool pprof -diff_base cpu.prof.baseline cpu.prof
 
 ```bash
 # Integration tests with real PCAPs
-make -f Makefile.test test-integration
+make test-integration
 
 # Memory profiling under load
 go build -o net ./cmd/

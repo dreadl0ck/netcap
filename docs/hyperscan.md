@@ -207,7 +207,7 @@ The Makefile target gates on `pkg-config --exists libhs` and skips with a
 helpful message if libhs is not installed:
 
 ```bash
-make -f Makefile.test test-hyperscan
+make test-hyperscan
 ```
 
 Equivalent direct invocation:
@@ -508,6 +508,6 @@ which include the libhs error message. The matcher is still correct (it
 silently falls back to linear RE2) but you are losing the speedup for
 those banners.
 
-`make -f Makefile.test test-hyperscan` says `libhs not found via
+`make test-hyperscan` says `libhs not found via
 pkg-config` — install Vectorscan/Hyperscan (see [Building](#building-with-hyperscan))
 or set `PKG_CONFIG_PATH` to the directory containing `libhs.pc`.

@@ -25,7 +25,7 @@ The test infrastructure includes:
 - `helpers/fixtures.go` - Fixture loading and golden file management
 - `helpers/pcap_generator.go` - Synthetic PCAP generation
 - `tests/TEMPLATE_test.go` - Test template with examples
-- `Makefile.test` - Test automation targets
+- `Makefile` - Test automation targets
 - `scripts/verify-golden-files.sh` - Golden file verification
 
 ### Examples
@@ -54,23 +54,23 @@ go test -race ./...
 
 ```bash
 # View all test targets
-make -f Makefile.test test-help
+make test-help
 
 # Run unit tests
-make -f Makefile.test test-unit
+make test-unit
 
 # Run with coverage report
-make -f Makefile.test test-coverage-html
+make test-coverage-html
 # Opens coverage.html in browser
 
 # Run integration tests
-make -f Makefile.test test-integration
+make test-integration
 
 # Run regression tests
-make -f Makefile.test test-regression
+make test-regression
 
 # Run benchmarks
-make -f Makefile.test test-bench
+make test-bench
 ```
 
 ### 3. Writing Your First Test
@@ -309,10 +309,7 @@ go test -v -timeout=30s ./...
 # Check if fixture exists
 ls tests/fixtures/pcaps/protocols/
 
-# Download test fixtures (if script exists)
-make -f Makefile.test fixtures-download
-
-# Or skip tests requiring fixtures
+# Skip tests requiring fixtures
 go test -short ./...
 ```
 
@@ -350,7 +347,7 @@ go tool cover -html=coverage.out
 
 ```bash
 # Ensure coverage doesn't drop below threshold
-make -f Makefile.test test-coverage-check
+make test-coverage-check
 ```
 
 ### Benchmark Performance
