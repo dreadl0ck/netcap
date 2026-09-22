@@ -68,6 +68,13 @@ coverage.html
 deploy.sh
 node_modules/
 tmp/
+# ./Dockerfile is a build artefact, not source. build-alpine-docker.sh and
+# build-ubuntu-docker.sh copy a docker/<variant>/Dockerfile here and
+# `zeus gen-version` stamps ENV VERSION into it. It used to be committed,
+# so every release carried a diff bumping that line in a generated file.
+# Anchored: a bare "Dockerfile" would match docker/*/Dockerfile too.
+/Dockerfile
+
 # The Go workspace is a per-developer overlay linking a sibling ../go-dpi
 # checkout. It is not committed: with it present every build silently
 # resolves go-dpi from that checkout instead of the version pinned in

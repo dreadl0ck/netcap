@@ -13,7 +13,7 @@ language: bash
 # globals for all commands
 globals:
     # NETCAP version
-    VERSION: 0.9.10
+    VERSION: 0.9.11
 
 # command data
 commands:
@@ -831,9 +831,19 @@ commands:
             # Generate version.go with all version info
             echo -e "// Package netcap is a framework for network traffic analysis. Learn more at https://netcap.io.\npackage netcap\n\n// Version is the current version identifier for netcap.\nvar Version = \"v${VERSION}\"\n\n// Commit is the git commit id of the current version.\nvar Commit = \"$(git rev-parse HEAD | tr -d "\n")\"\n\n// GopacketVersion is the version of gopacket library used.\nvar GopacketVersion = \"$GOPACKET_VERSION\"" > version.go
             
-            # Update Dockerfile version
-            sed "s/.*ENV VERSION.*/ENV VERSION ${VERSION}/" Dockerfile > Dockerfile-cp
-            mv Dockerfile-cp Dockerfile
+            # Stamp the version into the staged Dockerfile, if one is staged.
+            # ./Dockerfile is a scratch artefact: build-alpine-docker.sh and
+            # build-ubuntu-docker.sh copy a docker/<variant>/Dockerfile to the
+            # repo root and then call this command to substitute ENV VERSION.
+            # It is gitignored and absent during a plain release, so this must
+            # not be unconditional -- it was, and `zeus release` died here with
+            # "sed: Dockerfile: No such file or directory" the moment the
+            # committed copy of that artefact was removed.
+            if [ -f Dockerfile ]; then
+                echo "[INFO] stamping v${VERSION} into the staged ./Dockerfile"
+                sed "s/.*ENV VERSION.*/ENV VERSION ${VERSION}/" Dockerfile > Dockerfile-cp
+                mv Dockerfile-cp Dockerfile
+            fi
             
             # Update go-dpi version in internal/dpi/version.go
             echo "[INFO] updating go-dpi version in internal/dpi/version.go"
