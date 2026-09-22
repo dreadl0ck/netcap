@@ -74,6 +74,9 @@ tmp/
 # so every release carried a diff bumping that line in a generated file.
 # Anchored: a bare "Dockerfile" would match docker/*/Dockerfile too.
 /Dockerfile
+# sed scratch file from `zeus gen-version`; removed by the mv that follows it,
+# but left behind whenever that command aborts in between.
+/Dockerfile-cp
 
 # The Go workspace is a per-developer overlay linking a sibling ../go-dpi
 # checkout. It is not committed: with it present every build silently
