@@ -24,11 +24,11 @@ import (
 
 	"github.com/klauspost/pgzip"
 
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 func printHeader() {
-	io.PrintLogo()
+	netio.PrintLogo()
 	fmt.Println()
 	fmt.Println("capture tool usage examples:")
 	fmt.Println("	$ net capture -read dump.pcap")

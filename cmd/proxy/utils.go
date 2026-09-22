@@ -33,11 +33,11 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 func printHeader() {
-	io.PrintLogo()
+	netio.PrintLogo()
 	fmt.Println()
 	fmt.Println("proxy tool usage examples:")
 	fmt.Println("	$ net proxy -local 127.0.0.1:4444 -remote https://github.com")

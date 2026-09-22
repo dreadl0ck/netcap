@@ -1,4 +1,4 @@
-package io
+package netio
 
 import (
 	"reflect"
@@ -13,7 +13,7 @@ import (
 func TestCountRecords(t *testing.T) {
 	requireTestAuditRecord(t)
 
-	num, errCount := Count("../tests/testdata/TCP.ncap.gz")
+	num, errCount := Count("../../tests/testdata/TCP.ncap.gz")
 	if errCount != nil {
 		t.Fatal(errCount)
 	}

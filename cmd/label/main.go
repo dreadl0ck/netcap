@@ -28,7 +28,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/internal/label"
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 // Run parses the subcommand flags and handles the arguments.
@@ -61,7 +61,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		return nil
 	}
 
-	io.PrintBuildInfo()
+	netio.PrintBuildInfo()
 
 	flagInput := c.String("read")
 	flagCustom := c.String("custom")

@@ -31,7 +31,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -40,7 +40,7 @@ import (
 type reverseProxy struct {
 	Name   string
 	rp     *httputil.ReverseProxy
-	writer io.AuditRecordWriter
+	writer netio.AuditRecordWriter
 }
 
 // ServeHTTP implements the http.Handler interface.
@@ -116,7 +116,7 @@ func newReverseProxy(proxyName string, targetURL *url.URL) *reverseProxy {
 		},
 	}
 
-	proxy.writer = io.NewAuditRecordWriter(&io.WriterConfig{
+	proxy.writer = netio.NewAuditRecordWriter(&netio.WriterConfig{
 		CSV:              false,
 		Proto:            true,
 		JSON:             false,

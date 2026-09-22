@@ -4,7 +4,7 @@
  * License: GNU General Public License v3.0
  */
 
-package io
+package netio
 
 import (
 	"os"
@@ -12,7 +12,7 @@ import (
 )
 
 // testAuditRecord is the fixture the reader and dump tests decode.
-const testAuditRecord = "../tests/testdata/TCP.ncap.gz"
+const testAuditRecord = "../../tests/testdata/TCP.ncap.gz"
 
 // requireTestAuditRecord skips the calling test unless the fixture exists.
 //

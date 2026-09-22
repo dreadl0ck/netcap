@@ -8,7 +8,7 @@ import (
 	"github.com/blevesearch/bleve/search"
 	"github.com/dreadl0ck/netcap/internal/decoder/db"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/vulnerability"
-	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )

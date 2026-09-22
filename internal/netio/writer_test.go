@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io
+package netio
 
 import (
 	"testing"
@@ -82,7 +82,7 @@ func TestWriter(t *testing.T) {
 		Name:                 "TCP-writer-test",
 		Buffer:               true,
 		Compress:             true,
-		Out:                  "../tests",
+		Out:                  "../../tests",
 		MemBufferSize:        defaults.BufferSize,
 		Source:               "unit tests",
 		Version:              netcap.Version,
@@ -122,7 +122,7 @@ func BenchmarkWriter(b *testing.B) {
 		Name:                 "TCP-writer-test",
 		Buffer:               true,
 		Compress:             true,
-		Out:                  "../tests",
+		Out:                  "../../tests",
 		MemBufferSize:        defaults.BufferSize,
 		Source:               "unit tests",
 		Version:              netcap.Version,

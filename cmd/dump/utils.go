@@ -3,11 +3,11 @@ package dump
 import (
 	"fmt"
 
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 func printHeader() {
-	io.PrintLogo()
+	netio.PrintLogo()
 	fmt.Println()
 	fmt.Println("dump tool usage examples:")
 	fmt.Println("	$ net dump -read TCP.ncap.gz")

@@ -6,7 +6,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tls"
-	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 func TestTLSRecordWriterResetBeforeValidation(t *testing.T) {

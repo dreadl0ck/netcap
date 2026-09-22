@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
-	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"

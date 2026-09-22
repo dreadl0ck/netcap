@@ -36,7 +36,7 @@ import (
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -56,7 +56,7 @@ type (
 		Layer       gopacket.LayerType
 		Handler     goPacketDecoderHandler
 
-		writer io.AuditRecordWriter
+		writer netio.AuditRecordWriter
 		Type   types.Type
 		export bool
 	}
@@ -74,11 +74,11 @@ func (dec *GoPacketDecoder) GetName() string {
 	return dec.Type.String()
 }
 
-func (dec *GoPacketDecoder) SetWriter(writer io.AuditRecordWriter) {
+func (dec *GoPacketDecoder) SetWriter(writer netio.AuditRecordWriter) {
 	dec.writer = writer
 }
 
-func (dec *GoPacketDecoder) GetWriter() io.AuditRecordWriter {
+func (dec *GoPacketDecoder) GetWriter() netio.AuditRecordWriter {
 	return dec.writer
 }
 
@@ -134,7 +134,7 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 
 			// hookup writer - use shared writer to handle the case where
 			// the same decoder type is also registered as a stream decoder
-			dec.writer = io.GetSharedAuditRecordWriter(&io.WriterConfig{
+			dec.writer = netio.GetSharedAuditRecordWriter(&netio.WriterConfig{
 				UnixSocket: c.UnixSocket,
 				CSV:        c.CSV,
 				Encode:     c.Encode,
@@ -144,7 +144,7 @@ func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*
 				Chan:       c.Chan,
 				Null:       c.Null,
 				Elastic:    c.Elastic,
-				ElasticConfig: io.ElasticConfig{
+				ElasticConfig: netio.ElasticConfig{
 					ElasticAddrs:   c.ElasticAddrs,
 					ElasticUser:    c.ElasticUser,
 					ElasticPass:    c.ElasticPass,
@@ -253,7 +253,7 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 
 // GetChan returns a channel to receive serialized protobuf data from the decoder.
 func (cd *GoPacketDecoder) GetChan() <-chan []byte {
-	if cw, ok := cd.writer.(io.ChannelAuditRecordWriter); ok {
+	if cw, ok := cd.writer.(netio.ChannelAuditRecordWriter); ok {
 		return cw.GetChan()
 	}
 

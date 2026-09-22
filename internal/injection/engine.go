@@ -33,7 +33,7 @@ import (
 	"github.com/gopacket/gopacket"
 
 	"github.com/dreadl0ck/netcap/internal/filter"
-	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
 

@@ -20,7 +20,7 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/protobuf"
-	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
 

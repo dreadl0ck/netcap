@@ -27,7 +27,7 @@ import (
 
 	//"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
-	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 // errInvalidAbstractDecoder occurs when an abstract decoder name is unknown during initialization.

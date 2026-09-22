@@ -31,7 +31,7 @@ import (
 	"github.com/urfave/cli/v3"
 	"go.uber.org/zap"
 
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 // a list of all reverse proxies
@@ -68,7 +68,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		return nil
 	}
 
-	io.PrintBuildInfo()
+	netio.PrintBuildInfo()
 
 	// Set global variables for helper functions
 	flagDebug = c.Bool("debug")

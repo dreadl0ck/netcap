@@ -30,8 +30,8 @@ import (
 	"sync"
 
 	"github.com/cheggaaa/pb"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	"github.com/dreadl0ck/netcap/io"
 )
 
 var (
@@ -75,7 +75,7 @@ func die(err string, msg string) {
 	log.Fatal(err, msg)
 }
 
-func finish(wg *sync.WaitGroup, r *io.Reader, f *os.File, labelsTotal int, outFileName string, progress *pb.ProgressBar) {
+func finish(wg *sync.WaitGroup, r *netio.Reader, f *os.File, labelsTotal int, outFileName string, progress *pb.ProgressBar) {
 	if UseProgressBars {
 		progress.Finish()
 	}

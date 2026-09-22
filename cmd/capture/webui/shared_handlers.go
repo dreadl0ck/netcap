@@ -38,7 +38,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	netfilter "github.com/dreadl0ck/netcap/internal/filter"
-	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
 

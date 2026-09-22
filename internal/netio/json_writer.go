@@ -17,10 +17,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io
+package netio
 
 import (
 	"bufio"
+	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -28,29 +31,32 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
-	"github.com/klauspost/pgzip"
 	"go.uber.org/zap"
 
+	"github.com/gogo/protobuf/proto"
+	"github.com/klauspost/pgzip"
+
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// csvWriter is a structure that supports writing CSV audit records to disk.
-type csvWriter struct {
-	mu sync.Mutex
+// jsonWriter is a structure that supports writing JSON audit records to disk.
+type jsonWriter struct {
+	mu      sync.Mutex
+	bWriter *bufio.Writer
+	gWriter *pgzip.Writer
+	dWriter *delimited.Writer
+	jWriter *jsonProtoWriter
 
-	bWriter   *bufio.Writer
-	gWriter   *pgzip.Writer
-	csvWriter *csvProtoWriter
-
-	file *os.File
-	wc   *WriterConfig
+	file   *os.File
+	wc     *WriterConfig
+	closed bool
 }
 
-// newCSVWriter initializes and configures a new protoWriter instance.
-func newCSVWriter(wc *WriterConfig) *csvWriter {
-	w := &csvWriter{}
+// newJSONWriter initializes and configures a new jsonWriter instance.
+func newJSONWriter(wc *WriterConfig) *jsonWriter {
+	w := &jsonWriter{}
 	w.wc = wc
 
 	if wc.MemBufferSize <= 0 {
@@ -59,13 +65,11 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 
 	// create file
 	if wc.Compress {
-		w.file = createFile(filepath.Join(wc.Out, w.wc.Name), ".csv.gz")
+		w.file = createFile(filepath.Join(wc.Out, w.wc.Name), ".json.gz")
 	} else {
-		w.file = createFile(filepath.Join(wc.Out, w.wc.Name), ".csv")
+		w.file = createFile(filepath.Join(wc.Out, w.wc.Name), ".json")
 	}
-	ioLog.Info("create csvWriter", zap.String("base", filepath.Join(wc.Out, wc.Name)), zap.String("type", wc.Type.String()))
-
-	lm := labelerFromManager(wc.LabelManager)
+	ioLog.Info("create jsonWriter", zap.String("base", filepath.Join(wc.Out, wc.Name)), zap.String("type", wc.Type.String()))
 
 	if wc.Buffer {
 		w.bWriter = bufio.NewWriterSize(w.file, wc.MemBufferSize)
@@ -78,9 +82,9 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 				panic(errGzipWriter)
 			}
 
-			w.csvWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label, lm)
+			w.jWriter = newJSONProtoWriter(w.gWriter)
 		} else {
-			w.csvWriter = newCSVProtoWriter(w.bWriter, wc.Encode, wc.Label, lm)
+			w.jWriter = newJSONProtoWriter(w.bWriter)
 		}
 	} else {
 		if wc.Compress {
@@ -89,9 +93,9 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 			if errGzipWriter != nil {
 				panic(errGzipWriter)
 			}
-			w.csvWriter = newCSVProtoWriter(w.gWriter, wc.Encode, wc.Label, lm)
+			w.jWriter = newJSONProtoWriter(w.gWriter)
 		} else {
-			w.csvWriter = newCSVProtoWriter(w.file, wc.Encode, wc.Label, lm)
+			w.jWriter = newJSONProtoWriter(w.file)
 		}
 	}
 
@@ -107,15 +111,19 @@ func newCSVWriter(wc *WriterConfig) *csvWriter {
 	return w
 }
 
-// WriteCSV writes a CSV record.
-func (w *csvWriter) Write(msg proto.Message) error {
+// Write writes a JSON record.
+func (w *jsonWriter) Write(msg proto.Message) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
+
+	if w.closed {
+		return nil
+	}
 
 	// Track disk I/O performance
 	if w.wc.PerfTracker != nil {
 		start := time.Now()
-		n, err := w.csvWriter.writeRecord(msg)
+		n, err := w.jWriter.writeRecord(msg)
 		duration := time.Since(start)
 
 		if err == nil && n > 0 {
@@ -125,37 +133,43 @@ func (w *csvWriter) Write(msg proto.Message) error {
 		return err
 	}
 
-	_, err := w.csvWriter.writeRecord(msg)
+	_, err := w.jWriter.writeRecord(msg)
 
 	return err
 }
 
-// WriteHeader writes a CSV header.
-func (w *csvWriter) WriteHeader(t types.Type) error {
+// WriteHeader writes a JSON header.
+func (w *jsonWriter) WriteHeader(t types.Type) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	_, err := w.csvWriter.writeHeader(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime), InitRecord(t))
+	if w.closed {
+		return nil
+	}
+
+	_, err := w.jWriter.writeHeader(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
 
 	return err
 }
 
 // Flush flushes any buffered data to disk without closing the writer.
 // This is used during live capture to make audit records visible periodically.
-func (w *csvWriter) Flush() error {
+func (w *jsonWriter) Flush() error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	// Flush the buffered writer
-	if w.wc.Buffer && w.bWriter != nil {
-		if err := w.bWriter.Flush(); err != nil {
+	if w.closed {
+		return nil
+	}
+
+	// Flush in output order: gzip -> buffer -> file.
+	if w.wc.Compress && w.gWriter != nil {
+		if err := w.gWriter.Flush(); err != nil {
 			return err
 		}
 	}
-
-	// For compressed streams, flush the gzip writer
-	if w.wc.Compress && w.gWriter != nil {
-		if err := w.gWriter.Flush(); err != nil {
+	if w.wc.Buffer && w.bWriter != nil {
+		if err := w.bWriter.Flush(); err != nil {
 			return err
 		}
 	}
@@ -171,16 +185,20 @@ func (w *csvWriter) Flush() error {
 }
 
 // Close flushes and closes the writer and the associated file handles.
-func (w *csvWriter) Close(numRecords int64) (name string, size int64) {
+func (w *jsonWriter) Close(numRecords int64) (name string, size int64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if w.wc.Buffer {
-		flushWriters(w.bWriter)
+	if w.closed {
+		return "", 0
 	}
+	w.closed = true
 
 	if w.wc.Compress {
 		closeGzipWriters(w.gWriter)
+	}
+	if w.wc.Buffer {
+		flushWriters(w.bWriter)
 	}
 
 	// Track file sync performance
@@ -191,4 +209,56 @@ func (w *csvWriter) Close(numRecords int64) (name string, size int64) {
 	}
 
 	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)
+}
+
+// jsonProtoWriter implements writing audit records to disk in the JSON format.
+type jsonProtoWriter struct {
+	sync.Mutex
+	w io.Writer
+}
+
+// newJSONProtoWriter returns a new JSON writer instance.
+func newJSONProtoWriter(w io.Writer) *jsonProtoWriter {
+	return &jsonProtoWriter{
+		w: w,
+	}
+}
+
+// writeHeader writes the CSV header to the underlying file.
+func (w *jsonProtoWriter) writeHeader(h *types.Header) (int, error) {
+	w.Lock()
+	defer w.Unlock()
+
+	marshaled, errMarshal := json.Marshal(h)
+	if errMarshal != nil {
+		return 0, fmt.Errorf("failed to marshal json: %w", errMarshal)
+	}
+
+	n, err := w.w.Write(marshaled)
+	if err != nil {
+		return n, err
+	}
+
+	return w.w.Write([]byte("\n"))
+}
+
+// writeRecord writes a protocol buffer into the JSON writer.
+func (w *jsonProtoWriter) writeRecord(msg proto.Message) (int, error) {
+
+	if j, ok := msg.(types.AuditRecord); ok {
+		js, err := j.JSON()
+		if err != nil {
+			return 0, err
+		}
+
+		out := []byte(js + "\n")
+
+		w.Lock()
+		n, err := w.w.Write(out)
+		w.Unlock()
+
+		return n, err
+	}
+
+	return 0, fmt.Errorf("%w (writeRecord as JSON, type %T)", errNotAuditRecord, msg)
 }

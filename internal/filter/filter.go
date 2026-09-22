@@ -27,7 +27,7 @@ import (
 	"github.com/expr-lang/expr/vm"
 	"github.com/gogo/protobuf/proto"
 
-	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
 

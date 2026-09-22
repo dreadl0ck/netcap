@@ -17,39 +17,50 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io
+package netio
 
 import (
+	"errors"
+	"io"
+	"testing"
+
+	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
-	"github.com/gogo/protobuf/proto"
-	"go.uber.org/zap"
 )
 
-// nullWriter is a writer that writes nothing to disk.
-type nullWriter struct{}
+func TestReader(t *testing.T) {
+	requireTestAuditRecord(t)
 
-// newNullWriter initializes and configures a new nullWriter instance.
-func newNullWriter(wc *WriterConfig) *nullWriter {
-	ioLog.Info("create nullWriter", zap.String("type", wc.Type.String()))
-	return &nullWriter{}
-}
+	r, err := Open("../../tests/testdata/TCP.ncap.gz", defaults.BufferSize)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// WriteCSV writes a CSV record.
-func (w *nullWriter) Write(_ proto.Message) error {
-	return nil
-}
+	header, errHeader := r.ReadHeader()
+	if errHeader != nil {
+		t.Fatal("failed to read header")
+	}
 
-// WriteHeader writes a CSV header.
-func (w *nullWriter) WriteHeader(_ types.Type) error {
-	return nil
-}
+	if header.Type != types.Type_NC_TCP {
+		t.Fatal("not TCP, got: ", header.Type)
+	}
 
-// Flush is a no-op for the null writer.
-func (w *nullWriter) Flush() error {
-	return nil
-}
+	var (
+		tcp   = InitRecord(header.Type)
+		count int
+	)
 
-// Close flushes and closes the writer and the associated file handles.
-func (w *nullWriter) Close(_ int64) (name string, size int64) {
-	return "", 0
+	for {
+		err = r.Next(tcp)
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			break
+		} else if err != nil {
+			t.Fatal(err)
+		}
+		count++
+	}
+
+	if count != 3196 {
+		t.Fatal("expected 3196 audit records, got: ", count)
+	}
 }

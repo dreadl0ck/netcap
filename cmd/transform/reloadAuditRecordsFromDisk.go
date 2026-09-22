@@ -22,7 +22,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/dreadl0ck/maltego"
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 func reloadAuditRecordsFromDisk() {
@@ -35,7 +35,7 @@ func reloadAuditRecordsFromDisk() {
 		}
 	}()
 
-	io.SetLogger(ioLog)
+	netio.SetLogger(ioLog)
 
 	var (
 		lt        = maltego.ParseLocalArguments(os.Args[3:])

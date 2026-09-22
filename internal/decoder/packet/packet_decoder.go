@@ -34,7 +34,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
@@ -90,7 +90,7 @@ type (
 		FlushState func(*Decoder) int64
 
 		// Writer for audit records
-		Writer io.AuditRecordWriter
+		Writer netio.AuditRecordWriter
 
 		// Type of the audit records produced by this decoder
 		Type types.Type
@@ -170,7 +170,7 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 
 		go func(dec DecoderAPI) {
 			// Use shared writer to handle potential file sharing across decoders
-			w := io.GetSharedAuditRecordWriter(&io.WriterConfig{
+			w := netio.GetSharedAuditRecordWriter(&netio.WriterConfig{
 				UnixSocket: c.UnixSocket,
 				CSV:        c.CSV,
 				Label:      c.Label,
@@ -181,7 +181,7 @@ func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
 				Type:       dec.GetType(),
 				Null:       c.Null,
 				Elastic:    c.Elastic,
-				ElasticConfig: io.ElasticConfig{
+				ElasticConfig: netio.ElasticConfig{
 					ElasticAddrs:   c.ElasticAddrs,
 					ElasticUser:    c.ElasticUser,
 					ElasticPass:    c.ElasticPass,
@@ -262,12 +262,12 @@ func (pd *Decoder) GetName() string {
 }
 
 // SetWriter sets the netcap writer to use for the decoder.
-func (pd *Decoder) SetWriter(w io.AuditRecordWriter) {
+func (pd *Decoder) SetWriter(w netio.AuditRecordWriter) {
 	pd.Writer = w
 }
 
 // GetWriter returns the current writer.
-func (pd *Decoder) GetWriter() io.AuditRecordWriter {
+func (pd *Decoder) GetWriter() netio.AuditRecordWriter {
 	return pd.Writer
 }
 
@@ -342,7 +342,7 @@ func (pd *Decoder) Destroy() (name string, size int64) {
 
 // GetChan returns a channel to receive serialized protobuf data from the decoder.
 func (pd *Decoder) GetChan() <-chan []byte {
-	if cw, ok := pd.Writer.(io.ChannelAuditRecordWriter); ok {
+	if cw, ok := pd.Writer.(netio.ChannelAuditRecordWriter); ok {
 		return cw.GetChan()
 	}
 

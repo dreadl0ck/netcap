@@ -32,7 +32,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/internal/injection"
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 // RunWithContext executes the inject subcommand.
@@ -199,7 +199,7 @@ func listRules(engine *injection.Engine) error {
 
 // printStartupInfo prints information about the injection engine configuration.
 func printStartupInfo(engine *injection.Engine, config *injection.EngineConfig) {
-	io.PrintLogo()
+	netio.PrintLogo()
 
 	fmt.Println("Injection Engine Configuration:")
 	fmt.Println("================================")

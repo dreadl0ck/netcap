@@ -21,7 +21,7 @@ import (
 	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/collector"
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 func toAuditRecordsUsingDPI() {
@@ -36,7 +36,7 @@ func toAuditRecordsUsingDPI() {
 		maltego.Die("input file path property not set", "")
 	}
 
-	io.FPrintBuildInfo(os.Stderr)
+	netio.FPrintBuildInfo(os.Stderr)
 	log.Println("inputFile:", inputFile)
 
 	// create the output directory in the same place as the input file

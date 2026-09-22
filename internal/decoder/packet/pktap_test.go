@@ -10,7 +10,7 @@ import (
 	"github.com/gopacket/gopacket/layers"
 
 	"github.com/dreadl0ck/netcap/internal/encoder"
-	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
 

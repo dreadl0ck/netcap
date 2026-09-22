@@ -21,7 +21,7 @@ import (
 	"github.com/mgutz/ansi"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
-	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
 

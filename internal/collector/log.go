@@ -30,8 +30,8 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tcp"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	"github.com/dreadl0ck/netcap/internal/logger"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
-	netio "github.com/dreadl0ck/netcap/io"
 )
 
 // initLogging can be used to open the logfile before calling Init()

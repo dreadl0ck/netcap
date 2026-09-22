@@ -28,7 +28,7 @@ import (
 	"sync"
 
 	"github.com/dreadl0ck/netcap/internal/label/manager"
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 // Instance contains the config at runtime.
@@ -222,7 +222,7 @@ type Config struct {
 	Elastic bool
 
 	// Additional elastic configuration options
-	io.ElasticConfig
+	netio.ElasticConfig
 
 	// Elastic bulk sizes
 	BulkSizeGoPacket int
@@ -332,7 +332,7 @@ type Config struct {
 	PerfTracker *performance.Tracker
 
 	// LabelManager produces a label string per audit record when Label is true.
-	// Decoders forward this to the io.WriterConfig they construct.
+	// Decoders forward this to the netio.WriterConfig they construct.
 	// May be nil even when Label is true; in that case CSV writers will omit
 	// the Category column from both header and rows, so output stays well-formed
 	// but unlabeled.

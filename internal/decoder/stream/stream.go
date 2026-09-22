@@ -49,7 +49,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
-	netio "github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 // errInvalidStreamDecoder occurs when a decoder name is unknown during initialization.

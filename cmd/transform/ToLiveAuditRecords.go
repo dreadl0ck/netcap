@@ -28,8 +28,8 @@ import (
 	"github.com/dreadl0ck/maltego"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	"github.com/dreadl0ck/netcap/io"
 )
 
 func toLiveAuditRecords() {
@@ -42,7 +42,7 @@ func toLiveAuditRecords() {
 		}
 	}()
 
-	io.SetLogger(ioLog)
+	netio.SetLogger(ioLog)
 
 	var (
 		lt   = maltego.ParseLocalArguments(os.Args[3:])
@@ -93,7 +93,7 @@ func writeLiveAuditRecords(outDir string) {
 		// TODO: return structure from collect invocation
 		// that contains the number of records per type
 		// to avoid opening the file again
-		numRecords, errCount := io.Count(path)
+		numRecords, errCount := netio.Count(path)
 		if errCount != nil {
 			log.Println("failed to count audit records:", errCount)
 
@@ -115,7 +115,7 @@ func writeLiveAuditRecords(outDir string) {
 		//	di := "<h3>Device Profile</h3><p>Timestamp: " + time.Now().UTC().String() + "</p>"
 		//	ent.AddDisplayInformation(di, "Netcap Info")
 		//
-		//	num, errCountRecords := io.Count(path)
+		//	num, errCountRecords := netio.Count(path)
 		//	if errCountRecords != nil {
 		//		log.Println("failed to count audit records:", errCountRecords)
 		//	}

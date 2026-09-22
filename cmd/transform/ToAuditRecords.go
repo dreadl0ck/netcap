@@ -27,7 +27,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
 )
@@ -118,7 +118,7 @@ func toAuditRecords() {
 		maltego.Die("input file path property not set", "")
 	}
 
-	io.FPrintBuildInfo(os.Stderr)
+	netio.FPrintBuildInfo(os.Stderr)
 	log.Println("inputFile:", inputFile)
 
 	// create the output directory in the same place as the input file
@@ -179,7 +179,7 @@ func writeAuditRecords(trx *maltego.Transform, outDir string) {
 		// TODO: return structure from collect invocation
 		// that contains the number of records per type
 		// to avoid opening the file again
-		numRecords, errCount := io.Count(path)
+		numRecords, errCount := netio.Count(path)
 		if errCount != nil {
 			log.Fatal("failed to count audit records:", errCount)
 		}

@@ -55,9 +55,9 @@ import (
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/filter"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/dustin/go-humanize"
 )
@@ -1711,7 +1711,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			Label:            false,
 			Null:             false,
 			Elastic:          false,
-			ElasticConfig:    io.ElasticConfig{},
+			ElasticConfig:    netio.ElasticConfig{},
 			BulkSizeGoPacket: 2000,
 			BulkSizeCustom:   1000,
 			IncludeDecoders:  job.IncludeDecoders,

@@ -75,10 +75,10 @@ import (
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/magika"
 	"github.com/dreadl0ck/netcap/internal/metrics"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/rules"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	"github.com/dreadl0ck/netcap/io"
 )
 
 // fileError tracks errors that occurred during file processing
@@ -920,7 +920,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			Label:         flagLabels != "",
 			Null:          flagNull,
 			Elastic:       flagElastic,
-			ElasticConfig: io.ElasticConfig{
+			ElasticConfig: netio.ElasticConfig{
 				ElasticAddrs:   elasticAddrs,
 				ElasticUser:    flagElasticUser,
 				ElasticPass:    flagElasticPass,
@@ -1259,7 +1259,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 					Label:         flagLabels != "",
 					Null:          flagNull,
 					Elastic:       flagElastic,
-					ElasticConfig: io.ElasticConfig{
+					ElasticConfig: netio.ElasticConfig{
 						ElasticAddrs:   elasticAddrs,
 						ElasticUser:    flagElasticUser,
 						ElasticPass:    flagElasticPass,
@@ -1587,26 +1587,26 @@ func generateElasticIndices(elasticAddrs []string) {
 	start := time.Now()
 
 	packet.ApplyActionToPacketDecodersAsync(func(d packet.DecoderAPI) {
-		io.CreateElasticIndex(makeWriterConfig(d.GetName(), d.GetType(), elasticAddrs))
+		netio.CreateElasticIndex(makeWriterConfig(d.GetName(), d.GetType(), elasticAddrs))
 	})
 
 	packet.ApplyActionToGoPacketDecodersAsync(func(d *packet.GoPacketDecoder) {
-		io.CreateElasticIndex(makeWriterConfig(d.Layer.String(), d.Type, elasticAddrs))
+		netio.CreateElasticIndex(makeWriterConfig(d.Layer.String(), d.Type, elasticAddrs))
 	})
 
 	stream.ApplyActionToStreamDecodersAsync(func(d core.StreamDecoderAPI) {
-		io.CreateElasticIndex(makeWriterConfig(d.GetName(), d.GetType(), elasticAddrs))
+		netio.CreateElasticIndex(makeWriterConfig(d.GetName(), d.GetType(), elasticAddrs))
 	})
 
 	stream.ApplyActionToAbstractDecodersAsync(func(d core.DecoderAPI) {
-		io.CreateElasticIndex(makeWriterConfig(d.GetName(), d.GetType(), elasticAddrs))
+		netio.CreateElasticIndex(makeWriterConfig(d.GetName(), d.GetType(), elasticAddrs))
 	})
 
 	fmt.Println("done in", time.Since(start))
 }
 
-func makeWriterConfig(name string, typ types.Type, elasticAddrs []string) *io.WriterConfig {
-	return &io.WriterConfig{
+func makeWriterConfig(name string, typ types.Type, elasticAddrs []string) *netio.WriterConfig {
+	return &netio.WriterConfig{
 		UnixSocket: flagUNIX,
 		CSV:        flagCSV,
 		Proto:      flagProto,
@@ -1615,7 +1615,7 @@ func makeWriterConfig(name string, typ types.Type, elasticAddrs []string) *io.Wr
 		Type:       typ,
 		Null:       flagNull,
 		Elastic:    flagElastic,
-		ElasticConfig: io.ElasticConfig{
+		ElasticConfig: netio.ElasticConfig{
 			ElasticAddrs:   elasticAddrs,
 			ElasticUser:    flagElasticUser,
 			ElasticPass:    flagElasticPass,

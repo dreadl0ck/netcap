@@ -18,7 +18,7 @@
  */
 
 // Package io implements IO primitives
-package io
+package netio
 
 import (
 	"fmt"

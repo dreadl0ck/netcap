@@ -44,7 +44,7 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/util"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/env"
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 const (
@@ -89,7 +89,7 @@ func main() {
 		EnableShellCompletion: true,
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			if cmd.Bool("version") {
-				io.PrintBuildInfo()
+				netio.PrintBuildInfo()
 				os.Exit(0)
 			}
 			return ctx, nil
@@ -199,7 +199,7 @@ func main() {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			io.PrintLogo()
+			netio.PrintLogo()
 			fmt.Println(`
 available subcommands:
   > capture       capture audit records

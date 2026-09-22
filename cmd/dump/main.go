@@ -35,8 +35,8 @@ import (
 
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/filter"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -88,7 +88,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 	// read dumpfile header and exit
 	if c.Bool("header") { // open input file for reading
-		r, errOpen := io.Open(flagInput, c.Int("membuf-size"))
+		r, errOpen := netio.Open(flagInput, c.Int("membuf-size"))
 		if errOpen != nil {
 			panic(errOpen)
 		}
@@ -122,7 +122,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		flagFilter := c.String("filter")
 		if flagFilter != "" {
 			// We need to read the file header first to determine the record type
-			r, errOpen := io.Open(flagInput, c.Int("membuf-size"))
+			r, errOpen := netio.Open(flagInput, c.Int("membuf-size"))
 			if errOpen != nil {
 				log.Fatal("failed to open file for filter compilation:", errOpen)
 			}
@@ -148,9 +148,9 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			fmt.Fprintf(os.Stderr, "Using filter: %s\n", flagFilter)
 		}
 
-		err := io.Dump(
+		err := netio.Dump(
 			os.Stdout,
-			io.DumpConfig{
+			netio.DumpConfig{
 				Path:          flagInput,
 				Separator:     c.String("sep"),
 				TabSeparated:  c.Bool("tsv"),

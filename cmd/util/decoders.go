@@ -28,7 +28,7 @@ import (
 	"github.com/gopacket/gopacket/layers"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -42,7 +42,7 @@ type DecoderInfo struct {
 
 // printDecoders displays a tree view of all supported audit record types and their encapsulation levels
 func printDecoders() {
-	io.PrintLogo()
+	netio.PrintLogo()
 	fmt.Println()
 	fmt.Println("Supported Audit Record Types by Encapsulation Level")
 	fmt.Println("====================================================")

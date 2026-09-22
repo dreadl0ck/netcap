@@ -33,7 +33,7 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/delimited"
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -83,7 +83,7 @@ func newAuditRecordHandle(b *types.Batch, path string) *auditRecordHandle {
 	}
 
 	// add file header
-	err = delimited.NewWriter(gWriter).PutProto(io.NewHeader(b.MessageType, conf.Source, netcap.Version, conf.IncludePayloads, time.Now()))
+	err = delimited.NewWriter(gWriter).PutProto(netio.NewHeader(b.MessageType, conf.Source, netcap.Version, conf.IncludePayloads, time.Now()))
 	if err != nil {
 		fmt.Println("failed to write header")
 		panic(err)

@@ -22,11 +22,11 @@ package label
 import (
 	"fmt"
 
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 )
 
 func printHeader() {
-	io.PrintLogo()
+	netio.PrintLogo()
 	fmt.Println()
 	fmt.Println("label tool usage examples:")
 	fmt.Println("	$ net label -read traffic.pcap")

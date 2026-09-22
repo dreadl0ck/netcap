@@ -37,9 +37,9 @@ import (
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/metrics"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -196,7 +196,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 		metrics.ServeMetricsAt(flagMetricsAddress, coll)
 
-		io.PrintLogo()
+		netio.PrintLogo()
 
 		// print configuration as table
 		table.Render(os.Stdout, []string{"Setting", "Value"}, [][]string{

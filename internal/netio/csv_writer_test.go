@@ -4,7 +4,7 @@
  * License: GNU General Public License v3.0
  */
 
-package io
+package netio
 
 import (
 	"bytes"

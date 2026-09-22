@@ -38,9 +38,9 @@ import (
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -74,7 +74,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		return nil
 	}
 
-	io.PrintBuildInfo()
+	netio.PrintBuildInfo()
 
 	// no server public key specified - no party
 	flagServerPubKey := c.String("pubkey")

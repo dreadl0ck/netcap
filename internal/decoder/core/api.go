@@ -20,7 +20,7 @@
 package core
 
 import (
-	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -37,10 +37,10 @@ type DecoderAPI interface {
 	GetName() string
 
 	// SetWriter sets the netcap writer to use for the decoder
-	SetWriter(io.AuditRecordWriter)
+	SetWriter(netio.AuditRecordWriter)
 
 	// GetWriter returns the current writer
-	GetWriter() io.AuditRecordWriter
+	GetWriter() netio.AuditRecordWriter
 
 	// GetType returns the netcap type of the decoder
 	GetType() types.Type
