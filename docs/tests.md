@@ -53,7 +53,7 @@ ok      github.com/dreadl0ck/netcap    0.862s
 done in 2.595847118s
 --- PASS: TestCollectPCAP (2.60s)
 PASS
-ok      github.com/dreadl0ck/netcap/collector    3.242s
+ok      github.com/dreadl0ck/netcap/internal/collector    3.242s
 === RUN   TestCorruptedWriter
     TestCorruptedWriter: delimited_test.go:46: Put record returned expected error: BAD
 --- PASS: TestCorruptedWriter (0.00s)
@@ -70,10 +70,10 @@ ok      github.com/dreadl0ck/netcap/collector    3.242s
 PASS
 ok      github.com/dreadl0ck/netcap/delimited    0.526s
 ?       github.com/dreadl0ck/netcap/internal/dpi    [no test files]
-?       github.com/dreadl0ck/netcap/decoder    [no test files]
+?       github.com/dreadl0ck/netcap/internal/decoder    [no test files]
 ?       github.com/dreadl0ck/netcap/io    [no test files]
 ?       github.com/dreadl0ck/netcap/internal/label    [no test files]
-?       github.com/dreadl0ck/netcap/maltego    [no test files]
+?       github.com/dreadl0ck/netcap/internal/maltego    [no test files]
 ?       github.com/dreadl0ck/netcap/metrics    [no test files]
 ?       github.com/dreadl0ck/netcap/internal/resolvers    [no test files]
 === RUN   TestMarshal
@@ -94,7 +94,7 @@ Run the benchmarks using:
 
 ```text
 $ go test -bench=. ./... | grep -E "Bench|pkg"
-pkg: github.com/dreadl0ck/netcap/collector
+pkg: github.com/dreadl0ck/netcap/internal/collector
 BenchmarkReadPcapNG-12                 1265539           844 ns/op        1249 B/op           1 allocs/op
 BenchmarkReadPcapNGZeroCopy-12         2028283           640 ns/op           0 B/op           0 allocs/op
 BenchmarkReadPcap-12                   7557667           137 ns/op         106 B/op           1 allocs/op

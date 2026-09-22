@@ -16,10 +16,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/dreadl0ck/netcap/collector"
-	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
-	"github.com/dreadl0ck/netcap/decoder/stream"
-	"github.com/dreadl0ck/netcap/decoder/stream/protobuf"
+	"github.com/dreadl0ck/netcap/internal/collector"
+	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/protobuf"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -435,7 +435,7 @@ func BenchmarkFullPipeline(b *testing.B) {
 
 // --- PCAP integration tests ---
 
-const protobufTestdataDir = "../../decoder/stream/protobuf/testdata"
+const protobufTestdataDir = "../../internal/decoder/stream/protobuf/testdata"
 
 // TestProtobufPCAPExtraction processes real protobuf PCAP files through the
 // collector pipeline and verifies Protobuf audit records are extracted.

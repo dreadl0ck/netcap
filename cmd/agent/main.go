@@ -35,9 +35,9 @@ import (
 	"github.com/dreadl0ck/netcap/internal/cryptoutils"
 	"github.com/urfave/cli/v3"
 
-	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/decoder/config"
-	"github.com/dreadl0ck/netcap/decoder/packet"
+	"github.com/dreadl0ck/netcap/internal/collector"
+	"github.com/dreadl0ck/netcap/internal/decoder/config"
+	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/io"

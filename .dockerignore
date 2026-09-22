@@ -103,11 +103,11 @@ analyze/dnn/
 analyze/README.md
 
 # Test artifacts in collector
-collector/*.log
-collector/*.pcap
-collector/errors.log
-collector/errors.pcap
-collector/netcap.log
+internal/collector/*.log
+internal/collector/*.pcap
+internal/collector/errors.log
+internal/collector/errors.pcap
+internal/collector/netcap.log
 
 # Large test and output directories
 test-output/

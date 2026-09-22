@@ -19,8 +19,8 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/maltego"
-	"github.com/dreadl0ck/netcap/collector"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/io"
 )
 

@@ -87,7 +87,7 @@ $ cd decoder/stream/service && go test -v
 === RUN   TestMatchHTTPHeadersInvalidBanner
 --- PASS: TestMatchHTTPHeadersInvalidBanner (0.00s)
 PASS
-ok      github.com/dreadl0ck/netcap/decoder/stream/service    10.742s
+ok      github.com/dreadl0ck/netcap/internal/decoder/stream/service    10.742s
 ```
 
 ## Benefits

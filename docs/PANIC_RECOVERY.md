@@ -54,7 +54,7 @@ Stack trace:
 goroutine 1 [running]:
 runtime/debug.Stack()
 	/usr/local/go/src/runtime/debug/stack.go:24 +0x64
-github.com/dreadl0ck/netcap/collector.(*Collector).recoverFromPanic()
+github.com/dreadl0ck/netcap/internal/collector.(*Collector).recoverFromPanic()
 	/path/to/collector/collector.go:186 +0x48
 ...
 ```

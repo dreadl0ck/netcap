@@ -43,7 +43,7 @@ Enable periodic flushing by setting the `LiveFlushInterval` in the collector con
 ```go
 import (
     "time"
-    "github.com/dreadl0ck/netcap/collector"
+    "github.com/dreadl0ck/netcap/internal/collector"
 )
 
 cfg := &collector.Config{
@@ -76,8 +76,8 @@ import (
     "context"
     "time"
     
-    "github.com/dreadl0ck/netcap/collector"
-    "github.com/dreadl0ck/netcap/decoder/config"
+    "github.com/dreadl0ck/netcap/internal/collector"
+    "github.com/dreadl0ck/netcap/internal/decoder/config"
 )
 
 func main() {

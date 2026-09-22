@@ -26,7 +26,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/dreadl0ck/netcap/decoder/stream/secret"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 )
 
 // HarvesterInfo represents information about a credential harvester

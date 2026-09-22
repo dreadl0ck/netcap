@@ -16,13 +16,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dreadl0ck/netcap/collector"
-	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
+	"github.com/dreadl0ck/netcap/internal/collector"
+	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	netio "github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
 )
 
-const quicTestdataDir = "../../decoder/stream/quic/testdata"
+const quicTestdataDir = "../../internal/decoder/stream/quic/testdata"
 
 // TestQUICIntegration is a full integration test that processes QUIC pcap files
 // through the netcap collector and verifies QUICClientHello audit records are produced.

@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/maltego"
-	"github.com/dreadl0ck/netcap/collector"
-	"github.com/dreadl0ck/netcap/decoder/config"
+	"github.com/dreadl0ck/netcap/internal/collector"
+	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/internal/resolvers"

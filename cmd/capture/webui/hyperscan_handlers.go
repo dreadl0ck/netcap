@@ -26,7 +26,7 @@ import (
 
 	// Side-effect imports: each package's init() registers its
 	// HyperscanStatus producer with internal/hsmatch.
-	_ "github.com/dreadl0ck/netcap/decoder/stream/service"
+	_ "github.com/dreadl0ck/netcap/internal/decoder/stream/service"
 
 	"github.com/dreadl0ck/netcap/internal/hsmatch"
 )

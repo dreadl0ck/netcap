@@ -1074,7 +1074,7 @@ commands:
             prototool format -w -f proto/netcap.proto
 
     gen-maltego-config:
-        exec: go test -v -run="TestGenerateFullMaltegoConfiguration" -tags="icons" github.com/dreadl0ck/netcap/maltego
+        exec: go test -v -run="TestGenerateFullMaltegoConfiguration" -tags="icons" github.com/dreadl0ck/netcap/internal/maltego
 
     open-maltego-logs:
         exec: code "/Users/$USER/Library/Application Support/maltego/"

@@ -348,8 +348,8 @@ max-buffered-pages-total 0
 
 ```go
 import (
-    "github.com/dreadl0ck/netcap/collector"
-    "github.com/dreadl0ck/netcap/decoder/config"
+    "github.com/dreadl0ck/netcap/internal/collector"
+    "github.com/dreadl0ck/netcap/internal/decoder/config"
 )
 
 cfg := collector.Config{

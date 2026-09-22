@@ -338,7 +338,7 @@ package packet_test
 
 import (
     "testing"
-    "github.com/dreadl0ck/netcap/decoder/packet"
+    "github.com/dreadl0ck/netcap/internal/decoder/packet"
     "github.com/dreadl0ck/netcap/helpers"
 )
 
@@ -1587,7 +1587,7 @@ make test-regression-update
    
    import (
        "testing"
-       "github.com/dreadl0ck/netcap/decoder/packet"
+       "github.com/dreadl0ck/netcap/internal/decoder/packet"
    )
    
    func TestMyProtocol_Decode(t *testing.T) {

@@ -1,0 +1,416 @@
+/*
+ * NETCAP - Traffic Analysis Framework
+ * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
+ * License: GNU General Public License v3.0
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package packet
+
+import (
+	"fmt"
+	"log"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/internal/decoder/config"
+	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
+	"github.com/dreadl0ck/netcap/io"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/gogo/protobuf/proto"
+	"github.com/gopacket/gopacket"
+	"github.com/mgutz/ansi"
+	"github.com/pkg/errors"
+)
+
+var conf *config.Config
+
+// SetConfig can be used to set a configuration for the package.
+func SetConfig(cfg *config.Config) {
+	conf = cfg
+}
+
+var (
+	// ErrInvalidDecoder occurs when a decoder name is unknown during initialization.
+	ErrInvalidDecoder = errors.New("invalid decoder")
+
+	// contains all available custom decoders at runtime
+	defaultPacketDecoders []DecoderAPI
+)
+
+type (
+	// packetDecoderHandler takes a gopacket.Packet and returns a proto.Message.
+	packetDecoderHandler = func(p gopacket.Packet) proto.Message
+
+	// Decoder implements custom logic to decode data from a gopacket.Packet
+	// this structure has an optimized field order to avoid excessive padding.
+	Decoder struct {
+
+		// used to keep track of the number of generated audit records
+		NumRecordsWritten int64
+
+		// Name of the decoder
+		Name string
+
+		// Description of the decoder
+		Description string
+
+		// Icon name for the decoder (for Maltego)
+		Icon string
+
+		// Handler to process packets
+		Handler packetDecoderHandler
+
+		// init functions
+		PostInit func(*Decoder) error
+		DeInit   func(*Decoder) error
+
+		// FlushState is called during live capture to write current state without clearing it.
+		// This allows accumulating decoders (DeviceProfile, IPProfile, Connection) to periodically
+		// make their data visible while continuing to track state.
+		FlushState func(*Decoder) int64
+
+		// Writer for audit records
+		Writer io.AuditRecordWriter
+
+		// Type of the audit records produced by this decoder
+		Type types.Type
+	}
+
+	// DecoderAPI PacketDecoderAPI describes an interface that all custom decoders need to implement
+	// this allows to supply a custom structure and maintain state for advanced protocol analysis.
+	DecoderAPI interface {
+		core.DecoderAPI
+
+		// Decode parses a gopacket and returns an error
+		Decode(p gopacket.Packet, ctx *types.PacketContext) error
+	}
+)
+
+// package level init.
+func init() {
+	// collect all names for packet decoders on startup
+	for _, d := range defaultPacketDecoders {
+		decoderutils.AllDecoderNames[d.GetName()] = struct{}{}
+	}
+	// collect all names for gopacket decoders on startup
+	for _, d := range defaultGoPacketDecoders {
+		decoderutils.AllDecoderNames[d.GetName()] = struct{}{}
+	}
+}
+
+// newPacketDecoder returns a new Decoder instance.
+func newPacketDecoder(t types.Type, name, description string, postinit func(*Decoder) error, handler packetDecoderHandler, deinit func(*Decoder) error) *Decoder {
+	d := &Decoder{
+		Name:        strings.Title(name),
+		Handler:     handler,
+		DeInit:      deinit,
+		PostInit:    postinit,
+		Type:        t,
+		Description: description,
+	}
+	defaultPacketDecoders = append(defaultPacketDecoders, d)
+	return d
+}
+
+// newAccumulatingPacketDecoder returns a new Decoder instance for decoders that accumulate state.
+// The flushState function is called during live capture to write current state without clearing it.
+func newAccumulatingPacketDecoder(t types.Type, name, description string, postinit func(*Decoder) error, handler packetDecoderHandler, deinit func(*Decoder) error, flushState func(*Decoder) int64) *Decoder {
+	d := &Decoder{
+		Name:        strings.Title(name),
+		Handler:     handler,
+		DeInit:      deinit,
+		PostInit:    postinit,
+		FlushState:  flushState,
+		Type:        t,
+		Description: description,
+	}
+	defaultPacketDecoders = append(defaultPacketDecoders, d)
+	return d
+}
+
+// InitPacketDecoders initializes all packet decoders.
+func InitPacketDecoders(c *config.Config) (decoders []DecoderAPI, err error) {
+	active, err := decoderutils.SelectDecoders(defaultPacketDecoders, c.IncludeDecoders, c.ExcludeDecoders, DecoderAPI.GetName, ErrInvalidDecoder)
+	if err != nil {
+		return nil, err
+	}
+
+	var (
+		wg sync.WaitGroup
+		mu sync.Mutex
+	)
+
+	// initialize decoders
+	for _, d := range active {
+
+		// reset decoder stat in case it is reinitialized at runtime.
+		d.(*Decoder).NumRecordsWritten = 0
+
+		wg.Add(1)
+
+		go func(dec DecoderAPI) {
+			// Use shared writer to handle potential file sharing across decoders
+			w := io.GetSharedAuditRecordWriter(&io.WriterConfig{
+				UnixSocket: c.UnixSocket,
+				CSV:        c.CSV,
+				Label:      c.Label,
+				Encode:     c.Encode,
+				Proto:      c.Proto,
+				JSON:       c.JSON,
+				Name:       dec.GetName(),
+				Type:       dec.GetType(),
+				Null:       c.Null,
+				Elastic:    c.Elastic,
+				ElasticConfig: io.ElasticConfig{
+					ElasticAddrs:   c.ElasticAddrs,
+					ElasticUser:    c.ElasticUser,
+					ElasticPass:    c.ElasticPass,
+					KibanaEndpoint: c.KibanaEndpoint,
+					BulkSize:       c.BulkSizeCustom,
+				},
+				Buffer:               c.Buffer,
+				Compress:             c.Compression,
+				Out:                  c.Out,
+				Chan:                 c.Chan,
+				ChanSize:             c.ChanSize,
+				MemBufferSize:        c.MemBufferSize,
+				Source:               c.Source,
+				Version:              netcap.Version,
+				IncludesPayloads:     c.IncludePayloads,
+				StartTime:            time.Now(),
+				CompressionBlockSize: c.CompressionBlockSize,
+				CompressionLevel:     c.CompressionLevel,
+				PerfTracker:          c.PerfTracker,
+				LabelManager:         c.LabelManager,
+			})
+			dec.SetWriter(w)
+
+			// call postinit func if set
+			errInit := dec.PostInitFunc()
+			if errInit != nil {
+				if c.IgnoreDecoderInitErrors {
+					fmt.Println("error while initializing", dec.GetName(), "packet decoder:", ansi.Red, errInit, ansi.Reset)
+				} else {
+					log.Fatal(errors.Wrap(errInit, "postinit failed"))
+				}
+			}
+
+			// write header
+			errInit = w.WriteHeader(dec.GetType())
+			if errInit != nil {
+				log.Fatal(errors.Wrap(errInit, "failed to write header for audit record "+dec.GetName()))
+			}
+
+			// append to packet decoders slice
+			mu.Lock()
+			decoders = append(decoders, dec)
+			mu.Unlock()
+
+			wg.Done()
+		}(d)
+	}
+
+	wg.Wait()
+	decoderLog.Info("initialized packet decoders", zap.Int("total", len(decoders)))
+
+	return decoders, nil
+}
+
+// PacketDecoderAPI interface implementation
+
+// PostInitFunc is called after the decoder has been initialized.
+func (pd *Decoder) PostInitFunc() error {
+	if pd.PostInit == nil {
+		return nil
+	}
+
+	return pd.PostInit(pd)
+}
+
+// DeInitFunc is called prior to teardown.
+func (pd *Decoder) DeInitFunc() error {
+	if pd.DeInit == nil {
+		return nil
+	}
+
+	return pd.DeInit(pd)
+}
+
+// GetName returns the name of the decoder.
+func (pd *Decoder) GetName() string {
+	return strings.Title(pd.Name)
+}
+
+// SetWriter sets the netcap writer to use for the decoder.
+func (pd *Decoder) SetWriter(w io.AuditRecordWriter) {
+	pd.Writer = w
+}
+
+// GetWriter returns the current writer.
+func (pd *Decoder) GetWriter() io.AuditRecordWriter {
+	return pd.Writer
+}
+
+// GetType returns the netcap type of the decoder.
+func (pd *Decoder) GetType() types.Type {
+	return pd.Type
+}
+
+// GetDescription returns the description of the decoder.
+func (pd *Decoder) GetDescription() string {
+	return pd.Description
+}
+
+// Decode is called for each layer
+// this calls the handler function of the decoder
+// and writes the serialized protobuf into the data pipe.
+func (pd *Decoder) Decode(p gopacket.Packet, ctx *types.PacketContext) error {
+	// call the Handler function of the decoder
+	record := pd.Handler(p)
+	if record != nil {
+
+		// apply packet context (community ID, IPs, ports) if available
+		if ctx != nil {
+			if auditRecord, ok := record.(types.AuditRecord); ok {
+				auditRecord.SetPacketContext(ctx)
+			}
+		}
+
+		// increase counter
+		atomic.AddInt64(&pd.NumRecordsWritten, 1)
+
+		err := pd.Writer.Write(record)
+		if err != nil {
+			return err
+		}
+
+		// export metrics if configured
+		if conf.ExportMetrics {
+			// assert to audit record
+			if r, ok := record.(types.AuditRecord); ok {
+
+				if conf.Debug {
+					defer func() {
+						if errRecover := recover(); errRecover != nil {
+							spew.Dump(r)
+							fmt.Println("recovered from panic", errRecover)
+						}
+					}()
+				}
+
+				// export metrics
+				r.Inc()
+			} else {
+				fmt.Printf("type: %#v\n", record)
+				log.Fatal("type does not implement the types.AuditRecord interface")
+			}
+		}
+	}
+
+	return nil
+}
+
+// Destroy closes and flushes all writers and calls deinit if set.
+func (pd *Decoder) Destroy() (name string, size int64) {
+	err := pd.DeInitFunc()
+	if err != nil {
+		panic(err)
+	}
+
+	return pd.Writer.Close(pd.NumRecordsWritten)
+}
+
+// GetChan returns a channel to receive serialized protobuf data from the decoder.
+func (pd *Decoder) GetChan() <-chan []byte {
+	if cw, ok := pd.Writer.(io.ChannelAuditRecordWriter); ok {
+		return cw.GetChan()
+	}
+
+	return nil
+}
+
+// NumRecords returns the number of written records.
+func (pd *Decoder) NumRecords() int64 {
+	return atomic.LoadInt64(&pd.NumRecordsWritten)
+}
+
+// FlushCurrentState writes the current state of accumulating records to disk
+// without clearing the in-memory state. This is used during live capture
+// to periodically make data visible while continuing to track state.
+// Returns the number of records flushed.
+func (pd *Decoder) FlushCurrentState() int64 {
+	if pd.FlushState == nil {
+		// Not an accumulating decoder - just flush the writer buffer
+		if pd.Writer != nil {
+			_ = pd.Writer.Flush()
+		}
+		return 0
+	}
+
+	numFlushed := pd.FlushState(pd)
+
+	// Flush the writer buffer to make records visible on disk
+	if pd.Writer != nil {
+		_ = pd.Writer.Flush()
+	}
+
+	return numFlushed
+}
+
+// writeDeviceProfile writes the profile.
+func (pd *Decoder) write(r types.AuditRecord) {
+	if conf.ExportMetrics {
+
+		if conf.Debug {
+			defer func() {
+				if errRecover := recover(); errRecover != nil {
+					spew.Dump(r)
+					fmt.Println("recovered from panic", errRecover)
+				}
+			}()
+		}
+
+		r.Inc()
+	}
+
+	atomic.AddInt64(&pd.NumRecordsWritten, 1)
+	err := pd.Writer.Write(r.(proto.Message))
+	if err != nil {
+		log.Fatal("failed to write proto: ", err)
+	}
+}
+
+/*
+ * Utils
+ */
+
+// isPacketDecoderLoaded checks if a decoder is loaded.
+func isPacketDecoderLoaded(name string) bool {
+	for _, e := range defaultPacketDecoders {
+		if e.GetName() == name {
+			return true
+		}
+	}
+
+	return false
+}

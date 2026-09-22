@@ -8,9 +8,9 @@ analyze/dnn/models/
 analyze/dnn/checkpoints/
 test-params/
 internal/resolvers/resolver-dbs.zip
-maltego/netcap
-maltego/transforms
-maltego/entities/
+internal/maltego/netcap
+internal/maltego/transforms
+internal/maltego/entities/
 zeus/data.yml
 # Keep most of tests/ ignored (runtime artefacts, downloaded fixtures,
 # brim outputs, etc.). Specific tracked files are re-included via the
@@ -86,7 +86,7 @@ links.txt
 **/*.log
 
 # Collector artifacts
-collector/errors.pcap
+internal/collector/errors.pcap
 
 cmd/capture/webui/frontend/packages/netcap-ui/tsup.config.bundled*
 cmd/capture/webui/frontend/public/legal/

@@ -534,7 +534,7 @@ func (fr *FileReassembler) Reassemble(includeMissing bool) ([]byte, error)
 package myprotocol
 
 import (
-    "github.com/dreadl0ck/netcap/decoder/stream/file"
+    "github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 )
 
 type MyProtocolExtractor struct{}

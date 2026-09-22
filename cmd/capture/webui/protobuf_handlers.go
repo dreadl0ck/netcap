@@ -19,8 +19,8 @@ import (
 	"sync"
 	"time"
 
-	decoderconfig "github.com/dreadl0ck/netcap/decoder/config"
-	pb "github.com/dreadl0ck/netcap/decoder/stream/protobuf"
+	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
+	pb "github.com/dreadl0ck/netcap/internal/decoder/stream/protobuf"
 )
 
 // protoState tracks the runtime state of protobuf schema configuration.

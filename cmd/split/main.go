@@ -13,7 +13,7 @@ import (
 	"github.com/gopacket/gopacket/layers"
 	"github.com/urfave/cli/v3"
 
-	"github.com/dreadl0ck/netcap/collector"
+	"github.com/dreadl0ck/netcap/internal/collector"
 )
 
 // Run parses the subcommand flags and handles the arguments.

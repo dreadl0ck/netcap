@@ -53,8 +53,8 @@ test-hyperscan:
 	CGO_ENABLED=1 go test -v -tags hyperscan \
 		./internal/hsmatch/... \
 		./internal/filter/... \
-		./decoder/stream/service/... \
-		./decoder/stream/software/... \
+		./internal/decoder/stream/service/... \
+		./internal/decoder/stream/software/... \
 		./internal/rules/...
 
 # Performance benchmarks. Scoped to ./... because the 235 Benchmark functions
@@ -70,7 +70,7 @@ test-bench:
 # single target per invocation, so we discover and loop over every target.
 # Override the per-target budget with FUZZTIME (default 10s).
 FUZZTIME ?= 10s
-FUZZ_PKGS := ./decoder/packet/... ./decoder/stream/smtp/... ./decoder/stream/pop3/...
+FUZZ_PKGS := ./internal/decoder/packet/... ./internal/decoder/stream/smtp/... ./internal/decoder/stream/pop3/...
 test-fuzz:
 	@echo "Running fuzz smoke (FUZZTIME=$(FUZZTIME) per target)..."
 	@for pkg in $(FUZZ_PKGS); do \
@@ -103,7 +103,7 @@ test-race:
 test-determinism:
 	@echo "Checking deterministic output with the Ultimate PCAP..."
 	NETCAP_REQUIRE_ULTIMATE_PCAP=1 go test -count=1 -v -timeout=20m \
-		-run '^TestUltimatePCAP(Repeatability|WorkerInvariance)$$' ./collector/
+		-run '^TestUltimatePCAP(Repeatability|WorkerInvariance)$$' ./internal/collector/
 
 # Memory sanitizer (requires clang)
 test-msan:
@@ -112,7 +112,7 @@ test-msan:
 
 # Test specific package
 test-pkg:
-	@test -n "$(PKG)" || (echo "Usage: make test-pkg PKG=./collector/" && exit 1)
+	@test -n "$(PKG)" || (echo "Usage: make test-pkg PKG=./internal/collector/" && exit 1)
 	go test -v -race -cover $(PKG)
 
 # Test with verbose output
@@ -155,7 +155,7 @@ test-help:
 	@echo "  test-regression-verify - Verify against golden files"
 	@echo ""
 	@echo "  test-hyperscan    - Hyperscan/Vectorscan tests (needs libhs)"
-	@echo "  test-pkg PKG=./collector/ - Test specific package"
+	@echo "  test-pkg PKG=./internal/collector/ - Test specific package"
 	@echo "  test-verbose      - Run tests with verbose output"
 	@echo "  test-clean        - Clean test artifacts"
 	@echo ""

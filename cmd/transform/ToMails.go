@@ -17,7 +17,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
-	netmaltego "github.com/dreadl0ck/netcap/maltego"
+	netmaltego "github.com/dreadl0ck/netcap/internal/maltego"
 	"strings"
 
 	"github.com/dreadl0ck/maltego"

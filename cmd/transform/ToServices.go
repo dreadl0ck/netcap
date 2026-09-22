@@ -15,7 +15,7 @@ package transform
 
 import (
 	"fmt"
-	netmaltego "github.com/dreadl0ck/netcap/maltego"
+	netmaltego "github.com/dreadl0ck/netcap/internal/maltego"
 	"html"
 	"strconv"
 

@@ -26,8 +26,8 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/dreadl0ck/maltego"
-	"github.com/dreadl0ck/netcap/decoder/packet"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/utils"
 	"github.com/dreadl0ck/netcap/io"
 )

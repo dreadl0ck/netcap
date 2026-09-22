@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dreadl0ck/netcap/decoder/stream/secret"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/secret"
 )
 
 // handleHarvestersConfig handles GET and POST requests for harvester configuration

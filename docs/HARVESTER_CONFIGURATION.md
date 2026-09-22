@@ -405,7 +405,7 @@ Note: Custom regex harvesters run against all traffic when ports list is empty, 
 You can load and modify configurations programmatically:
 
 ```go
-import "github.com/dreadl0ck/netcap/decoder/stream/credentials"
+import "github.com/dreadl0ck/netcap/internal/decoder/stream/credentials"
 
 // Load configuration
 config, err := credentials.LoadHarvestersConfig("my-config.yml")

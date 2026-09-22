@@ -15,8 +15,8 @@ package transform
 
 import (
 	"github.com/dreadl0ck/maltego"
+	netmaltego "github.com/dreadl0ck/netcap/internal/maltego"
 	"github.com/dreadl0ck/netcap/internal/utils"
-	netmaltego "github.com/dreadl0ck/netcap/maltego"
 	"github.com/dreadl0ck/netcap/types"
 )
 

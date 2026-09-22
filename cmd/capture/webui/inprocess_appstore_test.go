@@ -167,7 +167,7 @@ func importPath(spec *ast.ImportSpec) string {
 //
 // It only compiles under the appstore tag, so runAnalysis == runAnalysisInProcess.
 func TestInProcessAnalysisProducesAuditRecords(t *testing.T) {
-	input := filepath.Join("..", "..", "..", "decoder", "stream", "protobuf", "testdata", "protobuf_tcp_addressbook.pcapng")
+	input := filepath.Join("..", "..", "..", "internal", "decoder", "stream", "protobuf", "testdata", "protobuf_tcp_addressbook.pcapng")
 	if _, err := os.Stat(input); err != nil {
 		t.Fatalf("tracked analysis fixture is missing: %v", err)
 	}
@@ -279,7 +279,7 @@ func assertProgressStatus(t *testing.T, s *Server, fileID, want string) {
 // filtering the SSH fixture for the SSH port keeps packets, and an impossible
 // filter keeps none — no external process involved.
 func TestPureGoPCAPFilterMatches(t *testing.T) {
-	input := filepath.Join("..", "..", "..", "decoder", "stream", "protobuf", "testdata", "protobuf_tcp_addressbook.pcapng")
+	input := filepath.Join("..", "..", "..", "internal", "decoder", "stream", "protobuf", "testdata", "protobuf_tcp_addressbook.pcapng")
 	if _, err := os.Stat(input); err != nil {
 		t.Fatalf("tracked filter fixture is missing: %v", err)
 	}
@@ -335,7 +335,7 @@ func TestPureGoPCAPFilterReturnsReadErrors(t *testing.T) {
 }
 
 func TestPureGoPCAPFilterHonorsCancellation(t *testing.T) {
-	input := filepath.Join("..", "..", "..", "decoder", "stream", "protobuf", "testdata", "protobuf_tcp_addressbook.pcapng")
+	input := filepath.Join("..", "..", "..", "internal", "decoder", "stream", "protobuf", "testdata", "protobuf_tcp_addressbook.pcapng")
 	output := filepath.Join(t.TempDir(), "filtered.pcap")
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

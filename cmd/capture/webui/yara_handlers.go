@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dreadl0ck/netcap/decoder/stream/file"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 )
 
 // YaraRuleInfo represents metadata about a YARA rule file.

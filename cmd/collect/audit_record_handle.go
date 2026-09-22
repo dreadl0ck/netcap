@@ -30,8 +30,8 @@ import (
 	gzip "github.com/klauspost/pgzip"
 
 	"github.com/dreadl0ck/netcap"
-	"github.com/dreadl0ck/netcap/decoder/config"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/io"
 	"github.com/dreadl0ck/netcap/types"
