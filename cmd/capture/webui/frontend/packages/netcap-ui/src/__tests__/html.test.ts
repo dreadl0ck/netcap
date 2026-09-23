@@ -74,6 +74,22 @@ describe('safeCSSColor', () => {
     expect(safeCSSColor(undefined)).toBe('inherit');
     expect(safeCSSColor(null)).toBe('inherit');
   });
+
+  it('rejects an over-long value without scanning it', () => {
+    expect(safeCSSColor('#' + 'a'.repeat(100))).toBe('inherit');
+  });
+
+  // The functional-colour pattern had a \s* next to a character class that also
+  // matched whitespace, so this input cost O(n^2). Two defences now stand in
+  // the way -- the length cap above and the pattern itself -- and this asserts
+  // only the observable result, so it fails if both are removed rather than
+  // proving either one. Quadratic here is ~10^10 steps, so the bound separates
+  // the behaviours by orders of magnitude rather than by a flakeable margin.
+  it('does not backtrack on a long unterminated rgb( prefix', () => {
+    const started = Date.now();
+    expect(safeCSSColor('rgb(' + '\t'.repeat(100_000))).toBe('inherit');
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
 });
 
 describe('syntaxHighlightJSON', () => {
@@ -111,5 +127,41 @@ describe('syntaxHighlightJSON', () => {
     const opens = out.match(/</g) ?? [];
     const spanOpens = out.match(/<span class="json-|<\/span>/g) ?? [];
     expect(opens.length).toBe(spanOpens.length);
+  });
+
+  it('emits the exact spans the regex implementation did', () => {
+    expect(syntaxHighlightJSON('{"k": "v", "n": -1.5e+3, "b": false, "z": null}')).toBe(
+      '{<span class="json-key">"k":</span> <span class="json-string">"v"</span>, ' +
+        '<span class="json-key">"n":</span> <span class="json-number">-1.5e+3</span>, ' +
+        '<span class="json-key">"b":</span> <span class="json-boolean">false</span>, ' +
+        '<span class="json-key">"z":</span> <span class="json-null">null</span>}',
+    );
+  });
+
+  it('spans a key through its colon and a value string without one', () => {
+    const out = syntaxHighlightJSON('{\n  "k" : "v"\n}');
+    expect(out).toContain('<span class="json-key">"k" :</span>');
+    expect(out).toContain('<span class="json-string">"v"</span>');
+  });
+
+  it('treats an unterminated string as text, not a token', () => {
+    const out = syntaxHighlightJSON('{"k": "unterminated');
+    expect(out).toContain('<span class="json-key">"k":</span>');
+    expect(out).not.toContain('json-string');
+    expect(out.endsWith('"unterminated')).toBe(true);
+  });
+
+  it('escapes markup inside a token that never terminates', () => {
+    expect(syntaxHighlightJSON('"<img src=x>')).toBe('"&lt;img src=x&gt;');
+  });
+
+  // The previous pattern was unanchored, so on this input the engine restarted
+  // at every quote and rescanned the run behind it: O(n^2), on JSON parsed off
+  // the wire (CodeQL js/polynomial-redos).
+  it('does not rescan a long run of escaped quotes', () => {
+    const started = Date.now();
+    const out = syntaxHighlightJSON('"' + '\\"'.repeat(100_000));
+    expect(Date.now() - started).toBeLessThan(1000);
+    expect(out).not.toContain('<span');
   });
 });

@@ -84,8 +84,18 @@ export function safeCSSColor(color: string | undefined | null): string {
 
   const value = color.trim();
 
+  // Every shape below is short, so a cap costs nothing and bounds the work
+  // before any pattern runs.
+  if (value.length > 64) {
+    return 'inherit';
+  }
+
   const isHex = /^#[0-9a-fA-F]{3,8}$/.test(value);
-  const isFunctional = /^(rgb|rgba|hsl|hsla)\(\s*[0-9a-zA-Z.,%\s/+-]+\)$/.test(value);
+  // No `\s*` before the character class: the class already matches whitespace,
+  // and the two overlapping made this quadratic on 'rgb(' + '\t'.repeat(n)
+  // with no closing paren (CodeQL js/polynomial-redos). Dropping it leaves the
+  // accepted language unchanged.
+  const isFunctional = /^(?:rgba?|hsla?)\([0-9a-zA-Z.,%\s/+-]+\)$/.test(value);
   const isKeyword = /^[a-zA-Z-]+$/.test(value);
 
   if (isHex || isFunctional || isKeyword) {
@@ -95,36 +105,183 @@ export function safeCSSColor(color: string | undefined | null): string {
   return 'inherit';
 }
 
+/** The three characters that can introduce markup in the highlighter output. */
+function escapeMarkup(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function isDigit(c: string | undefined): boolean {
+  return c !== undefined && c >= '0' && c <= '9';
+}
+
+/** The \w class, for the word boundaries around true/false/null. */
+function isWordChar(c: string | undefined): boolean {
+  return (
+    c !== undefined &&
+    (c === '_' || isDigit(c) || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+  );
+}
+
+/**
+ * Index just past the closing quote of the string literal starting at `start`,
+ * or -1 if it is unterminated.
+ *
+ * One forward pass with no backtracking: a backslash consumes the next
+ * character whatever it is. That is deliberately more permissive than JSON --
+ * `"\u12"` is an invalid escape that this treats as an escaped 'u' -- because
+ * the alternative is a pattern that can fail mid-literal, which is exactly the
+ * shape that made the previous implementation quadratic.
+ */
+function scanStringLiteral(json: string, start: number): number {
+  for (let i = start + 1; i < json.length; i++) {
+    const c = json[i];
+
+    if (c === '\\') {
+      i++;
+      continue;
+    }
+
+    if (c === '"') {
+      return i + 1;
+    }
+  }
+
+  return -1;
+}
+
+/**
+ * Index just past the number starting at `start`, or -1 if there is none.
+ *
+ * Mirrors -?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?, returning to the pre-exponent mark
+ * when an 'e' is not followed by digits.
+ */
+function scanNumber(json: string, start: number): number {
+  let i = start;
+
+  if (json[i] === '-') {
+    i++;
+  }
+
+  if (!isDigit(json[i])) {
+    return -1;
+  }
+
+  while (isDigit(json[i])) {
+    i++;
+  }
+
+  if (json[i] === '.') {
+    i++;
+    while (isDigit(json[i])) {
+      i++;
+    }
+  }
+
+  const beforeExponent = i;
+
+  if (json[i] === 'e' || json[i] === 'E') {
+    i++;
+
+    if (json[i] === '+' || json[i] === '-') {
+      i++;
+    }
+
+    if (!isDigit(json[i])) {
+      return beforeExponent;
+    }
+
+    while (isDigit(json[i])) {
+      i++;
+    }
+  }
+
+  return i;
+}
+
+const KEYWORDS: ReadonlyArray<readonly [string, string]> = [
+  ['true', 'boolean'],
+  ['false', 'boolean'],
+  ['null', 'null'],
+];
+
 /**
  * Renders a JSON string as HTML with per-token <span> classes.
  *
- * The escaping on the first line is the whole security property, and its
- * position is load-bearing: it must run BEFORE the tokenising replace, so that
- * the spans this function adds are the only tags in the output and any '<' from
- * the data is already inert. Escaping afterwards would neutralise the spans and
- * leave the payload live.
+ * The security property is that EVERY character of the output passes through
+ * escapeMarkup, so the spans this function emits are the only tags in the
+ * result and any '<' from the data is inert. Output goes to
+ * dangerouslySetInnerHTML on the alert, record and audit detail views, where
+ * the JSON is a decoded audit record -- attacker-influenced by definition,
+ * since it is parsed off the wire.
  *
- * Output goes to dangerouslySetInnerHTML on the alert, record and audit detail
- * views, where the JSON is a decoded audit record -- attacker-influenced by
- * definition, since it is parsed off the wire.
+ * This is a hand-written scanner rather than one tokenising regex because the
+ * regex was unanchored: on '"' followed by many '\"' with no terminator the
+ * engine restarted at every quote and rescanned the whole run, O(n^2) on data
+ * that arrives off the wire (CodeQL js/polynomial-redos). A single left-to-
+ * right pass with no backtracking is linear by construction.
  */
 export function syntaxHighlightJSON(json: string): string {
-  const escaped = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  let out = '';
+  let plainStart = 0;
+  let i = 0;
 
-  return escaped.replace(
-    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
-    (match) => {
-      let cls = 'number';
+  // A failed string scan reaches the end of the input, so every later quote
+  // fails identically: it was either skipped as an escaped character by the
+  // scan that failed, or the scan would have returned at it. Recording the
+  // failure is what keeps this linear -- retrying at each quote is precisely
+  // the rescanning the previous regex was flagged for.
+  let stringScanFailed = false;
 
-      if (/^"/.test(match)) {
-        cls = /:$/.test(match) ? 'key' : 'string';
-      } else if (/true|false/.test(match)) {
-        cls = 'boolean';
-      } else if (/null/.test(match)) {
-        cls = 'null';
+  while (i < json.length) {
+    const c = json[i];
+    let end = -1;
+    let cls = '';
+
+    if (c === '"' && !stringScanFailed) {
+      const close = scanStringLiteral(json, i);
+
+      if (close === -1) {
+        stringScanFailed = true;
+      } else {
+        // A literal followed by a colon is an object key, and the span covers
+        // the colon as the previous pattern's "(\s*:)? group did.
+        let k = close;
+        while (k < json.length && /\s/.test(json[k])) {
+          k++;
+        }
+
+        if (json[k] === ':') {
+          cls = 'key';
+          end = k + 1;
+        } else {
+          cls = 'string';
+          end = close;
+        }
       }
+    } else if (isDigit(c) || (c === '-' && isDigit(json[i + 1]))) {
+      cls = 'number';
+      end = scanNumber(json, i);
+    } else if (!isWordChar(json[i - 1])) {
+      for (const [word, kind] of KEYWORDS) {
+        if (json.startsWith(word, i) && !isWordChar(json[i + word.length])) {
+          cls = kind;
+          end = i + word.length;
+          break;
+        }
+      }
+    }
 
-      return '<span class="json-' + cls + '">' + match + '</span>';
-    },
-  );
+    if (end <= i) {
+      i++;
+      continue;
+    }
+
+    out += escapeMarkup(json.slice(plainStart, i));
+    out += '<span class="json-' + cls + '">' + escapeMarkup(json.slice(i, end)) + '</span>';
+
+    i = end;
+    plainStart = i;
+  }
+
+  return out + escapeMarkup(json.slice(plainStart));
 }

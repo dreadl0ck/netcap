@@ -8,6 +8,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Without an explicit block the GITHUB_TOKEN inherits the repository default,
+# which may be read-write. Nothing here writes: the job checks out, pulls a
+# public image and installs from public npm. Declared at the top level so a
+# future job inherits it rather than starting unrestricted.
+permissions:
+  contents: read
+
 env:
   # The same image the released service container is built from, so CI compiles
   # against the exact nDPI, libprotoident and yara-x it ships with.
