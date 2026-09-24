@@ -20,9 +20,12 @@
 package stream
 
 import (
+	"reflect"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/dreadl0ck/netcap/internal/decoder"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 )
 
@@ -274,4 +277,78 @@ func itoa(n int) string {
 	}
 
 	return string(b)
+}
+
+
+// Two requests on one keep-alive connection, sent at different times, must not
+// share a timestamp.
+//
+// The reader-hygiene matrix could not see this: its samples put one message in
+// each direction, so the two timestamps it observed were the request's and the
+// response's, which differed even when every request shared one. Only the
+// client direction is populated here, so the two records compared are two
+// requests.
+//
+// Every request used to carry FirstClientPacket and every response
+// FirstServerPacket, so an HTTP/1.1 connection serving dozens reported one time
+// for all of them.
+func TestKeepAliveRequestsDoNotShareATimestamp(t *testing.T) {
+	matchingEnv(t)
+
+	var sd *decoder.StreamDecoder
+
+	for _, port := range SortedDecoderPorts {
+		if api := DefaultStreamDecoders[port]; api.GetName() == "HTTP" {
+			sd, _ = api.(*decoder.StreamDecoder)
+
+			break
+		}
+	}
+
+	if sd == nil {
+		t.Fatal("HTTP decoder not registered")
+	}
+
+	writer := &captureWriter{}
+
+	previous := sd.Writer
+	sd.Writer = writer
+
+	t.Cleanup(func() { sd.Writer = previous })
+
+	const (
+		firstAt  = int64(1_000_000_000)
+		secondAt = int64(9_000_000_000)
+	)
+
+	client := core.DataFragments{
+		hygieneFragment([]byte("GET /one HTTP/1.1\r\nHost: example.com\r\n\r\n"), firstAt, false),
+		hygieneFragment([]byte("GET /two HTTP/1.1\r\nHost: example.com\r\n\r\n"), secondAt, false),
+	}
+
+	sd.Factory.New(&core.ConversationInfo{
+		Data: client, ClientData: client,
+		Ident:    "keepalive",
+		ClientIP: "192.0.2.1", ServerIP: "192.0.2.2",
+		ClientPort: 12345, ServerPort: 80,
+		TCPHandshakeComplete: true,
+		FirstClientPacket:    time.Unix(0, firstAt),
+	}).Decode()
+
+	seen := map[int64]bool{}
+
+	for _, rec := range writer.records {
+		if f, ok := field(rec, "Timestamp"); ok && f.Kind() == reflect.Int64 {
+			seen[f.Int()] = true
+		}
+	}
+
+	if len(writer.records) < 2 {
+		t.Fatalf("got %d records from two pipelined requests, want 2", len(writer.records))
+	}
+
+	if len(seen) < 2 {
+		t.Errorf("%d requests on one connection share %d timestamp(s); each should carry the packet it arrived in",
+			len(writer.records), len(seen))
+	}
 }

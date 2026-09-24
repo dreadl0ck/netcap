@@ -145,7 +145,9 @@ being multi-line responses that genuinely share a packet.
 
 * `http` and `socks` attribute every record to the client, and that is right —
   both record types model a transaction, carrying request and reply fields in
-  one record, rather than a single message.
+  one record, rather than a single message. `socks` also timestamps from the
+  conversation, which is correct for the same reason: its one record describes a
+  negotiation that begins when the connection does.
 * `iec62351`'s reader merges both directions and timestamps from the
   conversation, across all four of its protocol paths. The DNP3-SA framing
   defects are fixed; this one is a reader-wide restructure.

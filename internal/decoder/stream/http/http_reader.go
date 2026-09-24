@@ -105,14 +105,14 @@ func (h *httpReader) Decode() {
 		return
 	}
 
-	streamutils.DecodeConversation(
+	streamutils.DecodeConversationAt(
 		h.conversation.Ident,
 		h.conversation.Data,
-		func(b *bufio.Reader) error {
-			return h.readRequest(b)
+		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+			return h.readRequest(b, pos)
 		},
-		func(b *bufio.Reader) error {
-			return h.readResponse(b)
+		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+			return h.readResponse(b, pos)
 		},
 	)
 
@@ -279,7 +279,12 @@ func writeHTTP(h *types.HTTP, ident string) {
 
 // HTTP Response
 
-func (h *httpReader) readResponse(b *bufio.Reader) error {
+func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+	// Taken before the response is consumed. Every response on a connection
+	// used to carry FirstServerPacket, so a keep-alive connection serving
+	// dozens of them reported one time for all of them.
+	timestamp := pos.Timestamp()
+
 	// try to read HTTP response from the buffered reader
 	res, err := http.ReadResponse(b, nil)
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
@@ -341,7 +346,7 @@ func (h *httpReader) readResponse(b *bufio.Reader) error {
 
 	h.responses = append(h.responses, &httpResponse{
 		response:   res,
-		timestamp:  h.conversation.FirstServerPacket.UnixNano(),
+		timestamp:  timestamp,
 		clientIP:   h.conversation.ClientIP,
 		serverIP:   h.conversation.ServerIP,
 		clientPort: h.conversation.ClientPort,
@@ -420,7 +425,10 @@ func (h *httpReader) findRequest(res *http.Response) *httpRequest {
 
 // HTTP Request
 
-func (h *httpReader) readRequest(b *bufio.Reader) error {
+func (h *httpReader) readRequest(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+	// Taken before the request is consumed; see readResponse.
+	requestTimestamp := pos.Timestamp()
+
 	// Extract header order for JA4H fingerprinting before parsing
 	// We need to peek at the raw bytes to preserve header order
 	headerOrder, cookieFields, acceptLang := extractHeaderOrderFromReader(b)
@@ -464,7 +472,7 @@ func (h *httpReader) readRequest(b *bufio.Reader) error {
 		zap.Int("bodyLength", s),
 	)
 
-	t := h.conversation.FirstClientPacket.UnixNano()
+	t := requestTimestamp
 
 	request := &httpRequest{
 		request:      req,
