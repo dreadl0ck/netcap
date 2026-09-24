@@ -28,6 +28,16 @@ midstream, where no frame boundary falls inside the inspected bytes, is not
 claimed. Detection is not a completeness guarantee; no records does not prove no
 DNP3 activity.
 
+Off the standard port a second thing has to hold: no other decoder may claim the
+traffic first. Selection falls back to scanning every decoder in **ascending
+registered port order, first match wins**, and DNP3 at 20000 is asked 29th of
+33 — so a loose signature on a lower port shadows it however strong its own
+check is. Three did, until 2026-09: `kerberosaudit` (88) keyed on one byte that
+happens to be the outstation's address, `socks` (1080) on the `0x05` start byte,
+and `iec62351` (2404) on a scan for any `0x78`. `TestFallbackShadowingIsRecorded`
+in `internal/decoder/stream/` asserts that DNP3 traffic is now accepted by the
+DNP3 decoder and nothing else, across every outstation address.
+
 ## Why the protocol offers nothing to authenticate against
 
 Base DNP3 is cleartext and unauthenticated. Select-Before-Operate is an

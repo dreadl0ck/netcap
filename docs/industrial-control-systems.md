@@ -44,6 +44,46 @@ See the [Rules Engine](RULES_ENGINE.md) and [Filtering](FILTERING.md) guides for
 the expression language and the ICS-relevant helper functions
 (`IsApprovedWorkstation`, `IsBusinessHours`, `HourOfDay`, `Weekday`).
 
+## Decoder selection off the standard port
+
+A conversation on a registered port goes to that port's decoder. Everything else
+falls back to scanning every decoder in **ascending registered port order, first
+match wins** (`tcp_connection.go`, `stream.go`). Signature strength plays no part
+in the ordering, so a loose check on a low port shadows every decoder above it —
+and the ICS decoders sit high: modbus 502, cip 2222/44818, dnp3 20000, profinet
+34964.
+
+Four signatures were tightened in 2026-09 because they were claiming ICS traffic
+they could not parse. `TestFallbackShadowingIsRecorded` and
+`TestDNP3SurvivesEveryOutstationAddress` in `internal/decoder/stream/` pin the
+result.
+
+| Decoder | Port | Was | Took |
+| --- | --- | --- | --- |
+| `kerberosaudit` | 88 | one ASN.1 tag byte at two offsets, both directions | DNP3 whose outstation address low byte was 106-109 or 126; ~2% of Modbus and CIP |
+| `socks` | 1080 | `client[0]==0x05` and a method count compared against the whole direction | every DNP3 conversation of 102 bytes or more |
+| `iec62351` | 2404 | any byte equal to `0x78` from offset 11 | essentially every DNP3 conversation |
+| `irc` | 6667 | `"001"` as a bare substring anywhere in the server direction | any long binary conversation |
+
+**Known and still open**, deliberately out of scope of that change:
+
+* `tacacs` (49) matches on a single nibble, `client[0]&0xF0 == 0xC0`, and takes
+  any conversation whose first byte has high nibble `0xC` — roughly one Modbus
+  stream in sixteen.
+* `s7comm` (102) returns true for any non-DT COTP PDU type without checking for
+  an S7 payload, so it claims every RDP connection request and `rdp` (3389) is
+  unreachable through the fallback entirely.
+* `ssh` (22) matches an unanchored `SSH` anywhere in the server direction, at
+  scan position 2.
+* `iec62351`'s DNP3-SA *reader* still carries the framing defects removed from
+  the DNP3 decoder: `frameLength := int(data[2]) + 5` ignores the per-block
+  CRCs, objects are found by scanning for `0x78`, and every record takes the
+  conversation's first packet as its timestamp.
+
+The root cause is the ordering itself. Tightening individual signatures is
+whack-a-mole; preferring the most specific match over the first would make
+signature strength decide, and is unstarted.
+
 ## S7comm
 
 S7comm is the Siemens S7 Communication Protocol (S7-300/400 classic, `0x32`) and
