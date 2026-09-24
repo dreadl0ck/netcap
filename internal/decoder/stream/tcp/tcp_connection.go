@@ -39,7 +39,6 @@ import (
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream"
-	"github.com/dreadl0ck/netcap/internal/decoder/stream/modbus"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/network"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
@@ -450,10 +449,7 @@ func (t *tcpConnection) decode() {
 	defer t.Unlock()
 
 	// choose the decoder to run against the data stream
-	var (
-		cr, sr = t.client.DataSlice().FirstNonEmpty(), t.server.DataSlice().FirstNonEmpty()
-		found  bool
-	)
+	cr, sr := t.client.DataSlice().FirstNonEmpty(), t.server.DataSlice().FirstNonEmpty()
 
 	// cache endpoint strings to avoid repeated conversions
 	cIP := t.client.Network().Src().String()
@@ -487,67 +483,34 @@ func (t *tcpConnection) decode() {
 		zap.Int("mergedFragments", len(t.merged)),
 	)
 
-	// make a good first guess based on the destination port of the connection
-	if modbus.Decoder.Writer != nil && modbus.IsRTUConversation(conv) {
-		// Explicit transport selection must precede MBAP and generic signatures.
-		// Only claim the connection while the decoder is live: when Modbus is
-		// excluded, a configured RTU endpoint must still reach the other decoders.
-		t.decoder = modbus.Decoder.Factory.New(conv)
-		found = true
-	} else if sd, exists := stream.DefaultStreamDecoders[serverPort]; exists {
-		reassemblyLog.Debug("Found decoder for port",
-			zap.String("ident", t.ident),
-			zap.Int("port", int(serverPort)),
-			zap.String("decoder", sd.GetName()),
-		)
-		if sd.Transport() == core.TCP || sd.Transport() == core.All {
-			if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
-				t.decoder = sd.GetReaderFactory().New(conv)
-				found = true
-				reassemblyLog.Info("Stream decoder selected by port",
-					zap.String("ident", t.ident),
-					zap.String("decoder", sd.GetName()),
-					zap.Int("port", int(serverPort)),
-				)
-			} else {
-				reassemblyLog.Debug("Decoder rejected stream by CanDecode",
-					zap.String("ident", t.ident),
-					zap.String("decoder", sd.GetName()),
-					zap.Int("port", int(serverPort)),
-				)
-			}
-		}
-	} else {
-		reassemblyLog.Debug("No decoder registered for port",
-			zap.String("ident", t.ident),
-			zap.Int("port", int(serverPort)),
-		)
-	}
+	// The fallback scan sees a whole direction concatenated, because a
+	// length-prefixed protocol cannot be recognized from its first fragment
+	// alone. The port pass sees only that fragment.
+	sel, found := stream.SelectDecoder(&stream.SelectionInput{
+		Transport:    core.TCP,
+		ServerPort:   serverPort,
+		PortClient:   cr,
+		PortServer:   sr,
+		ScanClient:   t.client.DataSlice().Bytes(),
+		ScanServer:   t.server.DataSlice().Bytes(),
+		Conversation: conv,
+	})
 
-	// if no stream decoder for the port was found, or the stream decoder did not match
-	// try all available decoders and use the first one that matches.
-	// Use concatenated fragment data for better protocol detection when
-	// the first fragment alone is insufficient (e.g., length-prefixed framing).
-	if !found {
-		crFull, srFull := t.client.DataSlice().Bytes(), t.server.DataSlice().Bytes()
-		reassemblyLog.Debug("Trying all available decoders",
+	if found {
+		t.decoder = sel.Decoder
+
+		reassemblyLog.Info("Stream decoder selected",
 			zap.String("ident", t.ident),
+			zap.String("decoder", sel.Name),
+			zap.String("via", sel.Via),
+			zap.Int("port", int(sel.Port)),
+		)
+	} else {
+		reassemblyLog.Debug("No decoder matched",
+			zap.String("ident", t.ident),
+			zap.Int("serverPort", int(serverPort)),
 			zap.Int("availableDecoders", len(stream.DefaultStreamDecoders)),
 		)
-		for _, port := range stream.SortedDecoderPorts {
-			sd := stream.DefaultStreamDecoders[port]
-			if sd.Transport() == core.TCP || sd.Transport() == core.All {
-				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(crFull, srFull) {
-					t.decoder = sd.GetReaderFactory().New(conv)
-					reassemblyLog.Info("Stream decoder selected by fallback scan",
-						zap.String("ident", t.ident),
-						zap.String("decoder", sd.GetName()),
-						zap.Int("registeredPort", int(port)),
-					)
-					break
-				}
-			}
-		}
 	}
 
 	// call the decoder if one was found

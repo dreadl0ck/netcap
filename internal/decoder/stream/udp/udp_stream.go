@@ -213,7 +213,6 @@ func (u *udpStream) decode() {
 	var (
 		cr               = u.data[0].Raw()
 		sr               []byte
-		found            bool
 		serverFirstReply time.Time
 	)
 
@@ -259,43 +258,18 @@ func (u *udpStream) decode() {
 		),
 	}
 
-	// make a good first guess based on the destination port of the connection
-	if sd, exists := stream.DefaultStreamDecoders[utils.DecodePort(u.data[0].Transport().Dst().Raw())]; exists {
-		if sd.Transport() == core.UDP || sd.Transport() == core.All {
-			if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
-				u.decoder = sd.GetReaderFactory().New(conv)
-				found = true
-			}
-		}
-	}
-
-	// if no stream decoder for the port was found, or the stream decoder did not match
-	// try all available decoders and use the first one that matches
-	if !found {
-		// Iterate in sorted port order: ranging over the map would let a
-		// different decoder win between runs whenever several match.
-		for _, port := range stream.SortedDecoderPorts {
-			sd := stream.DefaultStreamDecoders[port]
-			if sd.Transport() == core.UDP || sd.Transport() == core.All {
-				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
-					u.decoder = sd.GetReaderFactory().New(conv)
-					found = true
-					break
-				}
-			}
-		}
-	}
-
-	// Try UDP-specific decoders (e.g., QUIC which shares port 443 with TLS)
-	if !found {
-		for _, sd := range stream.UDPStreamDecoders {
-			if sd.Transport() == core.UDP || sd.Transport() == core.All {
-				if sd.GetReaderFactory() != nil && sd.CanDecodeStream(cr, sr) {
-					u.decoder = sd.GetReaderFactory().New(conv)
-					break
-				}
-			}
-		}
+	// Unlike TCP, both passes see the first datagram: there is no reassembled
+	// direction to concatenate.
+	if sel, found := stream.SelectDecoder(&stream.SelectionInput{
+		Transport:    core.UDP,
+		ServerPort:   utils.DecodePort(u.data[0].Transport().Dst().Raw()),
+		PortClient:   cr,
+		PortServer:   sr,
+		ScanClient:   cr,
+		ScanServer:   sr,
+		Conversation: conv,
+	}); found {
+		u.decoder = sel.Decoder
 	}
 
 	// call the decoder if one was found

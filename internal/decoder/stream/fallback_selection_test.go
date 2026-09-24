@@ -26,27 +26,32 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 )
 
-// fallbackWinner reproduces the selection the TCP fallback scan performs when
-// no decoder is registered for the conversation's port: ascending port order,
-// first match wins.
+// fallbackWinner runs the production selector with a port no decoder is
+// registered for, so the port pass cannot match and the fallback scan decides.
 //
-// See tcp_connection.go decode(). The ordering means a loose signature on a low
-// port shadows every decoder above it, so a protocol is only reachable on a
-// nonstandard port if nothing below it claims its traffic first.
+// This drives SelectDecoder rather than modelling it. An earlier version was a
+// hand-copied loop, which is the shape of bug it exists to catch: a test that
+// agrees with a model while production disagrees.
 func fallbackWinner(client, server []byte) (name string, port int32) {
-	for _, p := range SortedDecoderPorts {
-		sd := DefaultStreamDecoders[p]
-		if sd.Transport() != core.TCP && sd.Transport() != core.All {
-			continue
-		}
-
-		if sd.GetReaderFactory() != nil && sd.CanDecodeStream(client, server) {
-			return sd.GetName(), p
-		}
+	sel, ok := SelectDecoder(&SelectionInput{
+		Transport:    core.TCP,
+		ServerPort:   unregisteredPort,
+		PortClient:   client,
+		PortServer:   server,
+		ScanClient:   client,
+		ScanServer:   server,
+		Conversation: &core.ConversationInfo{},
+	})
+	if !ok {
+		return "", 0
 	}
 
-	return "", 0
+	return sel.Name, sel.Port
 }
+
+// unregisteredPort is absent from DefaultStreamDecoders, so selection falls
+// through to the scan.
+const unregisteredPort = 64999
 
 func repeat(frame []byte, n int) []byte {
 	out := make([]byte, 0, len(frame)*n)
