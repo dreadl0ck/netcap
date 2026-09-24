@@ -27,7 +27,9 @@ import (
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 
+	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -176,32 +178,42 @@ func addPacketDecoders(decodersByLayer map[string][]DecoderInfo, seenDecoders ma
 	}
 }
 
-// addStreamDecoders adds TCP/UDP stream decoders
+// addStreamDecoders adds TCP/UDP stream decoders, read from the registry the
+// collector itself uses.
+//
+// This was a hand-maintained list of seven beside a registry of forty-odd, so
+// `net util -decoders` under-reported Modbus, CIP, ENIP, BACnetIP, IEC62351,
+// PROFINET, DNP3 and the rest. Deriving it means a new decoder appears here by
+// being registered, which is the only way this stays true.
+//
+// A decoder registered on several ports is one entry: the map holds the same
+// pointer under each, so dedup is by name.
 func addStreamDecoders(decodersByLayer map[string][]DecoderInfo, seenDecoders map[string]bool) {
-	streamDecoders := []struct {
-		name        string
-		typeName    string
-		description string
-	}{
-		{"HTTP", "HTTP", "HTTP protocol stream decoder"},
-		{"SSH", "SSH", "SSH protocol stream decoder"},
-		{"SMTP", "SMTP", "SMTP protocol stream decoder"},
-		{"POP3", "POP3", "POP3 protocol stream decoder"},
-		{"OPCUA", "OPCUA", "OPC UA ICS/SCADA stream decoder"},
-		{"S7Comm", "S7Comm", "S7Comm ICS/SCADA stream decoder"},
-		{"MQTTSN", "MQTTSN", "MQTT-SN IoT/sensor network stream decoder"},
+	add := func(dec core.StreamDecoderAPI) {
+		name := dec.GetName()
+		if seenDecoders[name] {
+			return
+		}
+
+		seenDecoders[name] = true
+
+		// Stream decoders run on reassembled TCP/UDP payload, so the layer is
+		// application by construction. determineLayer's name matching cannot
+		// tell you that and gets it wrong for anything not in its list.
+		decodersByLayer["Stream Decoders"] = append(decodersByLayer["Stream Decoders"], DecoderInfo{
+			Name:        name,
+			Type:        dec.GetType(),
+			Description: dec.GetDescription(),
+			Layer:       "Stream Decoders",
+		})
 	}
 
-	for _, sd := range streamDecoders {
-		if !seenDecoders[sd.name] {
-			seenDecoders[sd.name] = true
-			decodersByLayer["Stream Decoders"] = append(decodersByLayer["Stream Decoders"], DecoderInfo{
-				Name:        sd.name,
-				Type:        getTypeForName(sd.typeName),
-				Description: sd.description,
-				Layer:       "Stream Decoders",
-			})
-		}
+	for _, dec := range stream.DefaultStreamDecoders {
+		add(dec)
+	}
+
+	for _, dec := range stream.UDPStreamDecoders {
+		add(dec)
 	}
 }
 

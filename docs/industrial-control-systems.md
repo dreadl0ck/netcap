@@ -74,6 +74,15 @@ range from its request. Data the decoder could not frame is reported as a
 visible instead of silent. MBAP detection is port-independent; RTU framing over
 TCP is decoded only for endpoints named with `-modbus-rtu-endpoints`.
 
+Modbus is decoded **only** as a stream decoder, deliberately. gopacket does
+carry a Modbus layer (`layers.LayerTypeModbus`, id 153) which registers itself
+on TCP/502, so a packet-layer decoder would compile and fire on exactly the
+traffic the stream decoder already handles. It would write a second set of
+`NC_Modbus` records filling 7 of the type's 51 fields -- no role, address,
+values, correlation or loss marker -- duplicating every ADU with a record that
+looks valid and answers nothing. A commented-out decoder claiming gopacket
+lacked the layer was removed rather than enabled.
+
 See [Modbus Threat Hunting](modbus-threat-hunting.md) for the capture workflow,
 the write/diagnostic/enumeration hunts, `internal/rules/examples/modbus_hunt.yml`, RTU
 configuration and the limitations.
