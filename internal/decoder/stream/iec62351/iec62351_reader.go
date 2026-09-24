@@ -20,7 +20,6 @@
 package iec62351
 
 import (
-	"bytes"
 	"crypto/x509"
 	"encoding/binary"
 	"strconv"
@@ -106,22 +105,20 @@ func (r *iec62351Reader) Decode() {
 		return
 	}
 
-	var buf bytes.Buffer
-
-	for _, data := range r.conversation.Data {
-		buf.Write(data.Raw())
-	}
-
-	frameData := buf.Bytes()
+	// Flattened with an index, so a message spanning fragments still parses
+	// while keeping the capture time and direction of the fragment its first
+	// byte arrived in. All four protocol paths below took the conversation's
+	// first packet and the client's address for every record, so a reply was
+	// recorded as though the client had sent it and a session collapsed to one
+	// instant.
+	frameData, index := core.Flatten(r.conversation.Data)
 	offset := 0
 
 	for offset < len(frameData)-8 {
 		msg, consumed := r.parseSecurityMessage(frameData[offset:])
 		if msg != nil {
-			msg.SrcIP = r.conversation.ClientIP
-			msg.DstIP = r.conversation.ServerIP
-			msg.SrcPort = int32(r.conversation.ClientPort)
-			msg.DstPort = int32(r.conversation.ServerPort)
+			msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = r.conversation.EndpointsAt(index, offset)
+			msg.Timestamp, _ = index.At(offset)
 			msg.CommunityID = r.conversation.CommunityID
 
 			err := Decoder.Writer.Write(msg)
@@ -198,7 +195,7 @@ func (r *iec62351Reader) parseTLSSecurityMessage(data []byte) (*types.IEC62351, 
 	}
 
 	msg := &types.IEC62351{
-		Timestamp:          r.conversation.FirstClientPacket.UnixNano(),
+		// Timestamp is assigned by Decode from the fragment index.
 		UnderlyingProtocol: ProtocolTLSSecured,
 		IsSecurityRelevant: true,
 	}
@@ -276,7 +273,7 @@ func (r *iec62351Reader) parseIEC104SecurityMessage(data []byte) (*types.IEC6235
 	}
 
 	msg := &types.IEC62351{
-		Timestamp:          r.conversation.FirstClientPacket.UnixNano(),
+		// Timestamp is assigned by Decode from the fragment index.
 		UnderlyingProtocol: ProtocolIEC104,
 		IsSecurityRelevant: true,
 		SecurityVersion:    5, // IEC 62351-5
@@ -381,7 +378,7 @@ func (r *iec62351Reader) parseIEC61850SecurityMessage(data []byte) (*types.IEC62
 	}
 
 	msg := &types.IEC62351{
-		Timestamp:          r.conversation.FirstClientPacket.UnixNano(),
+		// Timestamp is assigned by Decode from the fragment index.
 		UnderlyingProtocol: ProtocolIEC61850,
 		IsSecurityRelevant: true,
 		SecurityVersion:    6, // IEC 62351-6
@@ -504,7 +501,7 @@ func (r *iec62351Reader) parseDNP3SAMessage(data []byte) (*types.IEC62351, int) 
 	}
 
 	msg := &types.IEC62351{
-		Timestamp:          r.conversation.FirstClientPacket.UnixNano(),
+		// Timestamp is assigned by Decode from the fragment index.
 		UnderlyingProtocol: ProtocolDNP3SA,
 		IsSecurityRelevant: true,
 		SecurityVersion:    5, // IEC 62351-5 / DNP3-SA

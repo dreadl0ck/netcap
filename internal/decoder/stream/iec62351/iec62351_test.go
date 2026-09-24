@@ -22,8 +22,15 @@ package iec62351
 import (
 	"encoding/hex"
 	"testing"
+	"time"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/gopacket/gopacket"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/netio"
+	"github.com/dreadl0ck/netcap/internal/reassembly"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 // dnp3Frame builds a DNP3 frame carrying an application function code.
@@ -231,5 +238,84 @@ func TestReaderIgnoresStrayObjectGroupByte(t *testing.T) {
 
 	if msg.IsAuthenticationEvent {
 		t.Errorf("a stray 0x78 was read as a group 120 object header, giving variation %d", msg.MessageType)
+	}
+}
+
+// fragment is one direction's bytes with its own capture time.
+func fragment(data []byte, ts int64, server bool) *core.StreamData {
+	d := &core.StreamData{
+		RawData:            data,
+		CaptureInformation: gopacket.CaptureInfo{Timestamp: time.Unix(0, ts)},
+	}
+	if server {
+		d.Dir = reassembly.TCPDirServerToClient
+	}
+
+	return d
+}
+
+type iecCaptureWriter struct {
+	netio.AuditRecordWriter
+
+	records []*types.IEC62351
+}
+
+func (w *iecCaptureWriter) Write(msg proto.Message) error {
+	w.records = append(w.records, proto.Clone(msg).(*types.IEC62351))
+
+	return nil
+}
+
+func (w *iecCaptureWriter) WriteHeader(types.Type) error { return nil }
+func (w *iecCaptureWriter) Flush() error                 { return nil }
+
+// Every record used to carry the conversation's first packet and the client's
+// address, on all four of this decoder's protocol paths. A reply was therefore
+// recorded as though the client had sent it, and a session held open collapsed
+// to one instant.
+func TestRecordsCarryTheirOwnTimeAndDirection(t *testing.T) {
+	const (
+		clientAt = int64(1_000_000_000)
+		serverAt = int64(7_000_000_000)
+	)
+
+	client := core.DataFragments{fragment(saFrame(t, dnp3AuthenticateReq, 1), clientAt, false)}
+	server := core.DataFragments{fragment(saFrame(t, dnp3AuthenticateResp, 2), serverAt, true)}
+
+	merged := core.DataFragments{}
+	merged = append(merged, client...)
+	merged = append(merged, server...)
+
+	writer := &iecCaptureWriter{}
+
+	previous := Decoder.Writer
+	Decoder.Writer = writer
+
+	t.Cleanup(func() { Decoder.Writer = previous })
+
+	(&iec62351Reader{conversation: &core.ConversationInfo{
+		Data: merged, ClientData: client, ServerData: server,
+		ClientIP: "192.0.2.1", ServerIP: "192.0.2.2",
+		ClientPort: 12345, ServerPort: 2404,
+		FirstClientPacket: time.Unix(0, clientAt),
+	}}).Decode()
+
+	if len(writer.records) != 2 {
+		t.Fatalf("got %d records, want one per frame", len(writer.records))
+	}
+
+	first, second := writer.records[0], writer.records[1]
+
+	if first.Timestamp != clientAt || second.Timestamp != serverAt {
+		t.Errorf("timestamps are %d and %d, want %d and %d",
+			first.Timestamp, second.Timestamp, clientAt, serverAt)
+	}
+
+	if first.SrcIP != "192.0.2.1" {
+		t.Errorf("the client's frame is attributed to %s", first.SrcIP)
+	}
+
+	if second.SrcIP != "192.0.2.2" {
+		t.Errorf("the outstation's reply is attributed to %s, so it cannot be told from a command", second.SrcIP)
 	}
 }
