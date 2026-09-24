@@ -47,22 +47,69 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
-	// a single version nibble and a length floor.
-	Specificity: core.SpecificityHeuristic,
+	// the whole 12-octet header: version, type, sequence and a body length that
+	// has to agree with the data.
+	Specificity: core.SpecificityStructural,
 
 	CanDecode: func(client, server []byte) bool {
-		// TACACS+ major version is 0xC (top nibble)
-		if len(client) >= 12 && client[0]&0xF0 == 0xC0 {
-			return true
-		}
-		if len(server) >= 12 && server[0]&0xF0 == 0xC0 {
-			return true
-		}
-		return false
+		return hasTACACSHeader(client) || hasTACACSHeader(server)
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {
 		return tacacsLog.Sync()
 	},
 	Factory: &tacacsReader{},
 	Typ:     core.TCP,
+}
+
+// TACACS+ header fields, RFC 8907 section 4.1.
+const (
+	tacacsMajorVersion = 0xC0
+
+	tacacsTypeAuthentication = 0x01
+	tacacsTypeAuthorization  = 0x02
+	tacacsTypeAccounting     = 0x03
+
+	// The body is encrypted and its length is the last header field; a real
+	// session body is not megabytes.
+	tacacsMaxBodyLen = 1 << 16
+)
+
+// hasTACACSHeader validates the whole 12-octet TACACS+ header.
+//
+// This used to be `data[0]&0xF0 == 0xC0` and a length floor: one nibble, which
+// one binary conversation in sixteen satisfies. At port 49 that is fourth in
+// the port-independent scan, and it was taking roughly that share of Modbus
+// conversations, whose first byte is an arbitrary transaction id.
+//
+// Every field in the header is checkable, so check them.
+func hasTACACSHeader(data []byte) bool {
+	if len(data) < tacacsHeaderLen {
+		return false
+	}
+
+	// Major version is the top nibble; the minor version is 0 or 1.
+	if data[0]&0xF0 != tacacsMajorVersion || data[0]&0x0F > 1 {
+		return false
+	}
+
+	switch data[1] {
+	case tacacsTypeAuthentication, tacacsTypeAuthorization, tacacsTypeAccounting:
+	default:
+		return false
+	}
+
+	// Sequence numbers start at 1; the client sends the odd ones.
+	if data[2] == 0 {
+		return false
+	}
+
+	length := int(data[8])<<24 | int(data[9])<<16 | int(data[10])<<8 | int(data[11])
+	if length <= 0 || length > tacacsMaxBodyLen {
+		return false
+	}
+
+	// The declared body has to be present, or at least be a prefix of what is:
+	// a direction may carry several packets, and a capture may be truncated
+	// mid-body.
+	return len(data) >= tacacsHeaderLen || length+tacacsHeaderLen >= len(data)
 }

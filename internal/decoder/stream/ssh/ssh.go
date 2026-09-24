@@ -47,11 +47,16 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
-	// unanchored three-byte "SSH" anywhere in the server direction.
-	Specificity: core.SpecificityWeak,
+	// the "SSH-" identification string at the start of a line, plus a version
+	// digit after it.
+	Specificity: core.SpecificityStructural,
 
 	CanDecode: func(client, server []byte) bool {
-		result := bytes.Contains(server, sshServiceName)
+		// Server-driven on purpose: the reader keys on the server's
+		// identification string and emits a record from it, so a client
+		// greeting with no server reply is not evidence of an SSH service.
+		// ssh_pcap_test.go pins that.
+		result := hasSSHIdentification(server)
 		if result {
 			sshLog.Info("SSH traffic detected - CanDecode matched",
 				zap.Int("clientLen", len(client)),
@@ -73,7 +78,56 @@ var Decoder = &decoder.StreamDecoder{
 	Typ:     core.TCP,
 }
 
-var (
-	serviceSSH     = "SSH"
-	sshServiceName = []byte(serviceSSH)
-)
+var serviceSSH = "SSH"
+
+// sshIdentPrefix opens the identification string of RFC 4253 section 4.2:
+// SSH-protoversion-softwareversion.
+var sshIdentPrefix = []byte("SSH-")
+
+// hasSSHIdentification reports whether data carries an SSH identification
+// string at the start of a line.
+//
+// This used to be Contains(server, "SSH"): three unanchored ASCII bytes
+// anywhere in a whole direction, which any payload able to contain those
+// letters satisfies -- an HTTP body, a file transfer, a TLS transcript. At port
+// 22 it is second in the port-independent scan, so it was reached before almost
+// everything.
+//
+// RFC 4253 section 4.2 gives the whole line a grammar:
+//
+//	SSH-protoversion-softwareversion SP comments CR LF
+//
+// Both hyphens are required, which is what separates a real identification from
+// prose that happens to begin "SSH-2.0". The server may send other lines first,
+// so the anchor is the line start rather than offset zero.
+func hasSSHIdentification(data []byte) bool {
+	for offset := 0; offset < len(data); {
+		idx := bytes.Index(data[offset:], sshIdentPrefix)
+		if idx < 0 {
+			return false
+		}
+
+		idx += offset
+		if idx == 0 || data[idx-1] == '\n' {
+			if hasSSHVersionField(data[idx+len(sshIdentPrefix):]) {
+				return true
+			}
+		}
+
+		offset = idx + 1
+	}
+
+	return false
+}
+
+// hasSSHVersionField reports whether b opens with a protocol version followed
+// by the hyphen that introduces the software version.
+func hasSSHVersionField(b []byte) bool {
+	i := 0
+	for ; i < len(b) && (b[i] == '.' || (b[i] >= '0' && b[i] <= '9')); i++ {
+	}
+
+	// At least one version character, then the second hyphen, then something
+	// for the software version to be.
+	return i > 0 && i < len(b) && b[i] == '-'
+}
