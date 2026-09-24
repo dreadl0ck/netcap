@@ -109,7 +109,7 @@ func CanDecodeQUIC(data []byte) bool {
 // wire type 2 -- so rating those paths above a structural check took the
 // protobuf UDP corpus away from the protobuf decoder.
 //
-// A long header carrying a recognised version, or a gQUIC "Qxxx" version
+// A long header carrying a recognized version, or a gQUIC "Qxxx" version
 // string, is a different quality of evidence and says so.
 func quicConfidence(client, server []byte) int {
 	for _, data := range [][]byte{client, server} {
@@ -128,7 +128,7 @@ func hasValidatedQUICVersion(data []byte) bool {
 		return false
 	}
 
-	// IETF long header: form bit set, then a version this decoder recognises.
+	// IETF long header: form bit set, then a version this decoder recognizes.
 	if data[0]&0x80 == 0x80 && IsIETFQUICPacket(data) {
 		return true
 	}
