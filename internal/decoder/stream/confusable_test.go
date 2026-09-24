@@ -128,6 +128,16 @@ func confusables() []confusable {
 			why:       "protobuf reads the long-header byte as a valid field tag",
 		},
 		{
+			name: "protobuf over UDP", want: "Protobuf", rival: "QUICClientHello",
+			transport: core.UDP,
+			// The committed UDP AddressBook corpus, whose first byte is 0x0a:
+			// field 1, wire type 2, the opening of almost every protobuf message.
+			client: hexBytes("0a420a054a61736f6e10e9071a114a61736f6e406578616d706c652e636f6d" +
+				"220c0a08383735363132333410012f220d0a0b31333538383838363636362a0608a18b97fc05"),
+			why: "gQUIC accepts any first byte with the connection-id bit set, the version bit " +
+				"clear and the top three clear, which 0x0a satisfies",
+		},
+		{
 			name: "DNP3 with a Kerberos-shaped address", want: "DNP3", rival: "Kerberos",
 			transport: core.TCP,
 			// Byte 4 is the outstation address low byte, and 0x6a is an ASN.1

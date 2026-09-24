@@ -50,8 +50,10 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
-	// long-header form bits, or the gQUIC tag.
-	Specificity: core.SpecificityWeak,
+	// Varies with the data: a long header naming a known version is five
+	// validated bytes, while the short-header forms are a handful of bit tests.
+	Specificity: core.SpecificityHeuristic,
+	Confidence:  quicConfidence,
 
 	CanDecode: func(client, server []byte) bool {
 		// Check if client data looks like QUIC
@@ -95,4 +97,48 @@ func CanDecodeQUIC(data []byte) bool {
 		return false
 	}
 	return IsIETFQUICPacket(data) || IsGQUICPacket(data)
+}
+
+// quicConfidence separates a validated QUIC header from the bit tests that
+// stand in for one after the handshake.
+//
+// Both short-header paths are guesses. IsIETFQUICPacket falls back to a single
+// bit, and IsGQUICPacket accepts any first byte with the connection-id bit set,
+// the version bit clear and the top three bits clear. 0x0a satisfies all three,
+// and 0x0a is the opening byte of almost every protobuf message -- field 1,
+// wire type 2 -- so rating those paths above a structural check took the
+// protobuf UDP corpus away from the protobuf decoder.
+//
+// A long header carrying a recognised version, or a gQUIC "Qxxx" version
+// string, is a different quality of evidence and says so.
+func quicConfidence(client, server []byte) int {
+	for _, data := range [][]byte{client, server} {
+		if hasValidatedQUICVersion(data) {
+			return core.SpecificityStructural
+		}
+	}
+
+	return core.SpecificityHeuristic
+}
+
+// hasValidatedQUICVersion reports whether data carries a version field that was
+// checked against the known values, rather than a header shape.
+func hasValidatedQUICVersion(data []byte) bool {
+	if len(data) < 5 {
+		return false
+	}
+
+	// IETF long header: form bit set, then a version this decoder recognises.
+	if data[0]&0x80 == 0x80 && IsIETFQUICPacket(data) {
+		return true
+	}
+
+	// gQUIC carries its version as "Q" followed by three digits.
+	for i := 1; i <= 9 && i+4 <= len(data); i++ {
+		if data[i] == 'Q' && isDigit(data[i+1]) && isDigit(data[i+2]) && isDigit(data[i+3]) {
+			return true
+		}
+	}
+
+	return false
 }
