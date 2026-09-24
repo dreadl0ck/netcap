@@ -104,12 +104,47 @@ MSRPC against PROFINET, an SMTP banner against FTP's, an X.224 connection
 request against S7comm — each naming the rival and reporting the specificity
 margin, so a contest decided by 0 is visible before it becomes a regression.
 
+## Record timing and direction
+
+A reader that concatenates `conversation.Data` into one buffer and stamps every
+record with `FirstClientPacket` loses two things: the direction, so a response
+carries the client's address and cannot be told from the command that provoked
+it, and the time, so a connection held open for days collapses to one instant.
+
+Both were fixed in `dnp3` and `modbus` and then found in eleven more readers by
+`reader_hygiene_test.go`, which drives each decoder with a two-sided
+conversation and reads `Timestamp` and `SrcIP` off whatever record type comes
+back. Measured on The Ultimate PCAP, before and after:
+
+| Decoder | Records | Timestamps | Source addresses |
+| --- | --- | --- | --- |
+| DCERPC | 368 → 368 | 27 → 368 | 3 → 4 |
+| Kerberos | 135 → 135 | 67 → 135 | 4 → 6 |
+| BGP | 283 → 283 | 20 → 209 | 8 → 14 |
+| TACACS | 18 → 18 | 6 → 18 | 1 → 2 |
+| Syslog | 12 → 12 | 4 → 12 | 4 → 4 |
+
+No record count changes — nothing is gained or lost, the records that existed
+now say when they happened and which way they went. BGP settles at 209 rather
+than 283 because several BGP messages genuinely share a TCP segment.
+
+`core.Flatten` returns a `FragmentIndex` alongside the concatenated bytes, so a
+reader that needs the whole direction in one slice can still resolve a message's
+offset back to the fragment it arrived in. That is what made converting the
+merged readers a few lines each rather than a restructure apiece.
+
 **Known and still open:**
 
-* `iec62351`'s reader merges both directions into one buffer and timestamps
-  every record with the conversation's first packet, across all four of its
-  protocol paths. The DNP3-SA framing defects are fixed; this one is a
-  reader-wide restructure.
+* `ftp`, `imap` and `irc` read each direction through a `bufio.Reader`, so there
+  is no fragment to take a capture time from and every record carries the
+  conversation's. Their direction is correct: `ftp` and `imap` swap endpoints on
+  `IsResponse`, which `TestResponseRecordsAreNotAttributedToTheClient` asserts.
+* `http` and `socks` attribute every record to the client, and that is right —
+  both record types model a transaction, carrying request and reply fields in
+  one record, rather than a single message.
+* `iec62351`'s reader merges both directions and timestamps from the
+  conversation, across all four of its protocol paths. The DNP3-SA framing
+  defects are fixed; this one is a reader-wide restructure.
 * `parseDNP3SAObject` re-assigns the message type names `getDNP3SAObjectName`
   has already produced, so the table exists twice.
 

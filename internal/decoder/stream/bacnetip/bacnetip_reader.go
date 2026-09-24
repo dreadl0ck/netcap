@@ -219,10 +219,12 @@ func (b *bacnetipReader) Decode() {
 
 		msg := b.parseBACnetIPMessage(frameData)
 		if msg != nil {
-			msg.SrcIP = b.conversation.ClientIP
-			msg.DstIP = b.conversation.ServerIP
-			msg.SrcPort = int32(b.conversation.ClientPort)
-			msg.DstPort = int32(b.conversation.ServerPort)
+			// Time and direction come from the datagram that carried the
+			// message. Every record used to take FirstClientPacket and the
+			// client's addresses, which collapses a session to one instant and
+			// records a reply as though the client had sent it.
+			msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = b.conversation.Endpoints(data)
+			msg.Timestamp = core.FragmentTime(data)
 			msg.CommunityID = b.conversation.CommunityID
 
 			err := Decoder.Writer.Write(msg)

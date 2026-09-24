@@ -66,12 +66,13 @@ func (k *kerberosReader) Decode() {
 
 		records := k.parseKerberosMessages(raw)
 		for _, rec := range records {
-			rec.SrcIP = k.conversation.ClientIP
-			rec.DstIP = k.conversation.ServerIP
-			rec.SrcPort = int32(k.conversation.ClientPort)
-			rec.DstPort = int32(k.conversation.ServerPort)
+			// Time and direction come from the fragment that carried the
+			// bytes. Every record used to take FirstClientPacket and the
+			// client's addresses, which collapses a session to one instant and
+			// records a server reply as though the client had sent it.
+			rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = k.conversation.Endpoints(d)
 			rec.Flow = k.conversation.Ident
-			rec.Timestamp = k.conversation.FirstClientPacket.UnixNano()
+			rec.Timestamp = core.FragmentTime(d)
 
 			err := Decoder.Writer.Write(rec)
 			if err != nil {

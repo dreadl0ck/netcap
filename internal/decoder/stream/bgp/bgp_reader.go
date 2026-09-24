@@ -72,13 +72,10 @@ func (b *bgpReader) Decode() {
 		return
 	}
 
-	var buf bytes.Buffer
-
-	for _, d := range b.conversation.Data {
-		buf.Write(d.Raw())
-	}
-
-	data := buf.Bytes()
+	// Flattened with an index, so a message spanning fragments still parses
+	// while keeping the capture time and direction of the fragment its first
+	// byte arrived in. Concatenating alone loses both.
+	data, index := core.Flatten(b.conversation.Data)
 	offset := 0
 
 	for offset < len(data)-19 {
@@ -101,10 +98,8 @@ func (b *bgpReader) Decode() {
 		msg := b.parseBGPMessage(msgType, msgData)
 
 		if msg != nil {
-			msg.SrcIP = b.conversation.ClientIP
-			msg.DstIP = b.conversation.ServerIP
-			msg.SrcPort = int32(b.conversation.ClientPort)
-			msg.DstPort = int32(b.conversation.ServerPort)
+			msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = b.conversation.EndpointsAt(index, offset)
+			msg.Timestamp, _ = index.At(offset)
 			msg.CommunityID = b.conversation.CommunityID
 
 			err := Decoder.Writer.Write(msg)
@@ -125,10 +120,10 @@ func (b *bgpReader) parseBGPMessage(msgType uint8, data []byte) *types.BGP {
 	}
 
 	msg := &types.BGP{
-		Timestamp: b.conversation.FirstClientPacket.UnixNano(),
-		Length:    int32(binary.BigEndian.Uint16(data[16:18])),
-		Type:      int32(msgType),
-		TypeName:  getBGPMessageTypeName(msgType),
+		// Timestamp is assigned by the caller from the fragment index.
+		Length:   int32(binary.BigEndian.Uint16(data[16:18])),
+		Type:     int32(msgType),
+		TypeName: getBGPMessageTypeName(msgType),
 	}
 
 	payload := data[19:]

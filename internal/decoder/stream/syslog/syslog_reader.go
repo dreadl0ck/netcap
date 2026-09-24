@@ -85,10 +85,12 @@ func (s *syslogReader) Decode() {
 
 		msg := s.parseSyslogMessage(raw)
 		if msg != nil {
-			msg.SrcIP = s.conversation.ClientIP
-			msg.DstIP = s.conversation.ServerIP
-			msg.SrcPort = int32(s.conversation.ClientPort)
-			msg.DstPort = int32(s.conversation.ServerPort)
+			// Time and direction come from the datagram that carried the
+			// message. Every record used to take FirstClientPacket and the
+			// client's addresses, which collapses a session to one instant and
+			// records a reply as though the client had sent it.
+			msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = s.conversation.Endpoints(d)
+			msg.Timestamp = core.FragmentTime(d)
 			msg.Protocol = "UDP"
 			msg.CommunityID = s.conversation.CommunityID
 

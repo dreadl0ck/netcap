@@ -97,12 +97,13 @@ func (d *dcerpcReader) Decode() {
 
 		records := d.parseDCERPCPDUs(raw)
 		for _, rec := range records {
-			rec.SrcIP = d.conversation.ClientIP
-			rec.DstIP = d.conversation.ServerIP
-			rec.SrcPort = int32(d.conversation.ClientPort)
-			rec.DstPort = int32(d.conversation.ServerPort)
+			// Time and direction come from the fragment that carried the
+			// bytes. Every record used to take FirstClientPacket and the
+			// client's addresses, which collapses a session to one instant and
+			// records a server reply as though the client had sent it.
+			rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = d.conversation.Endpoints(fragment)
 			rec.Flow = d.conversation.Ident
-			rec.Timestamp = d.conversation.FirstClientPacket.UnixNano()
+			rec.Timestamp = core.FragmentTime(fragment)
 
 			err := Decoder.Writer.Write(rec)
 			if err != nil {

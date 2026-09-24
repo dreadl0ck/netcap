@@ -20,7 +20,6 @@
 package opcua
 
 import (
-	"bytes"
 	"encoding/binary"
 	"strconv"
 	"sync/atomic"
@@ -139,13 +138,10 @@ func (o *opcuaReader) Decode() {
 		return
 	}
 
-	var buf bytes.Buffer
-
-	for _, data := range o.conversation.Data {
-		buf.Write(data.Raw())
-	}
-
-	frameData := buf.Bytes()
+	// Flattened with an index, so a message spanning fragments still parses
+	// while keeping the capture time and direction of the fragment its first
+	// byte arrived in. Concatenating alone loses both.
+	frameData, index := core.Flatten(o.conversation.Data)
 	offset := 0
 
 	for offset < len(frameData)-minHeaderSize {
@@ -157,10 +153,8 @@ func (o *opcuaReader) Decode() {
 
 		msg, consumed := o.parseOPCUAMessage(frameData[offset:])
 		if msg != nil {
-			msg.SrcIP = o.conversation.ClientIP
-			msg.DstIP = o.conversation.ServerIP
-			msg.SrcPort = int32(o.conversation.ClientPort)
-			msg.DstPort = int32(o.conversation.ServerPort)
+			msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = o.conversation.EndpointsAt(index, offset)
+			msg.Timestamp, _ = index.At(offset)
 
 			err := Decoder.Writer.Write(msg)
 			if err != nil {
@@ -221,7 +215,7 @@ func (o *opcuaReader) parseOPCUAMessage(data []byte) (*types.OPCUA, int) {
 	}
 
 	msg := &types.OPCUA{
-		Timestamp:   o.conversation.FirstClientPacket.UnixNano(),
+		// Timestamp is assigned by the caller from the fragment index.
 		MessageType: msgType,
 		ChunkType:   chunkType,
 		MessageSize: int32(messageSize),

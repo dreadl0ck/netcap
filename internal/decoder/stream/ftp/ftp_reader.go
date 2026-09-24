@@ -382,12 +382,26 @@ func (f *ftpReader) writeFTPRecord(isResponse bool, command, argument string, re
 		dataMode = "ACTIVE"
 	}
 
+	// A response comes from the server. Every record used to name the client as
+	// its source, so a record saying IsResponse contradicted itself and a reply
+	// could not be told from the command that provoked it.
+	srcIP, dstIP := f.conversation.ClientIP, f.conversation.ServerIP
+	srcPort, dstPort := f.conversation.ClientPort, f.conversation.ServerPort
+
+	if isResponse {
+		srcIP, dstIP = dstIP, srcIP
+		srcPort, dstPort = dstPort, srcPort
+	}
+
 	ftp := &types.FTP{
+		// The reader consumes each direction through a bufio.Reader, so there
+		// is no fragment here to take a capture time from and every record
+		// carries the conversation's. See docs/industrial-control-systems.md.
 		Timestamp:          f.conversation.FirstClientPacket.UnixNano(),
-		SrcIP:              f.conversation.ClientIP,
-		DstIP:              f.conversation.ServerIP,
-		SrcPort:            f.conversation.ClientPort,
-		DstPort:            f.conversation.ServerPort,
+		SrcIP:              srcIP,
+		DstIP:              dstIP,
+		SrcPort:            srcPort,
+		DstPort:            dstPort,
 		IsResponse:         isResponse,
 		Command:            command,
 		Argument:           argument,

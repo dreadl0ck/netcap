@@ -20,7 +20,6 @@
 package mqttsn
 
 import (
-	"bytes"
 	"sync/atomic"
 
 	"go.uber.org/zap"
@@ -47,22 +46,17 @@ func (m *mqttsnReader) Decode() {
 		return
 	}
 
-	var buf bytes.Buffer
-
-	for _, data := range m.conversation.Data {
-		buf.Write(data.Raw())
-	}
-
-	frameData := buf.Bytes()
+	// Flattened with an index, so a message spanning fragments still parses
+	// while keeping the capture time and direction of the fragment its first
+	// byte arrived in. Concatenating alone loses both.
+	frameData, index := core.Flatten(m.conversation.Data)
 	offset := 0
 
 	for offset < len(frameData) {
 		msg, consumed := m.parseMQTTSNMessage(frameData[offset:])
 		if msg != nil {
-			msg.SrcIP = m.conversation.ClientIP
-			msg.DstIP = m.conversation.ServerIP
-			msg.SrcPort = int32(m.conversation.ClientPort)
-			msg.DstPort = int32(m.conversation.ServerPort)
+			msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = m.conversation.EndpointsAt(index, offset)
+			msg.Timestamp, _ = index.At(offset)
 			msg.CommunityID = m.conversation.CommunityID
 
 			err := Decoder.Writer.Write(msg)
@@ -122,7 +116,7 @@ func (m *mqttsnReader) parseMQTTSNMessage(data []byte) (*types.MQTTSN, int) {
 	}
 
 	msg := &types.MQTTSN{
-		Timestamp:       m.conversation.FirstClientPacket.UnixNano(),
+		// Timestamp is assigned by the caller from the fragment index.
 		Length:          int32(msgLen),
 		MessageType:     msgType,
 		MessageTypeName: getMessageTypeName(msgType),

@@ -20,7 +20,6 @@
 package s7comm
 
 import (
-	"bytes"
 	"encoding/binary"
 	"sync/atomic"
 
@@ -48,13 +47,10 @@ func (s *s7commReader) Decode() {
 		return
 	}
 
-	var buf bytes.Buffer
-
-	for _, data := range s.conversation.Data {
-		buf.Write(data.Raw())
-	}
-
-	frameData := buf.Bytes()
+	// Flattened with an index, so a message spanning fragments still parses
+	// while keeping the capture time and direction of the fragment its first
+	// byte arrived in. Concatenating alone loses both.
+	frameData, index := core.Flatten(s.conversation.Data)
 	offset := 0
 
 	for offset < len(frameData)-minTPKTSize {
@@ -66,10 +62,8 @@ func (s *s7commReader) Decode() {
 
 		msg, consumed := s.parseTPKTMessage(frameData[offset:])
 		if msg != nil {
-			msg.SrcIP = s.conversation.ClientIP
-			msg.DstIP = s.conversation.ServerIP
-			msg.SrcPort = int32(s.conversation.ClientPort)
-			msg.DstPort = int32(s.conversation.ServerPort)
+			msg.SrcIP, msg.DstIP, msg.SrcPort, msg.DstPort = s.conversation.EndpointsAt(index, offset)
+			msg.Timestamp, _ = index.At(offset)
 
 			err := Decoder.Writer.Write(msg)
 			if err != nil {
@@ -128,7 +122,7 @@ func (s *s7commReader) parseTPKTMessage(data []byte) (*types.S7Comm, int) {
 	}
 
 	msg := &types.S7Comm{
-		Timestamp:   s.conversation.FirstClientPacket.UnixNano(),
+		// Timestamp is assigned by the caller from the fragment index.
 		TPKTVersion: tpktVersion,
 		TPKTLength:  int32(tpktLength),
 	}

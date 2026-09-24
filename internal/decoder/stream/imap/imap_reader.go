@@ -210,12 +210,26 @@ func (i *imapReader) writeIMAPRecord(isResponse bool, tag, command string, argum
 		return
 	}
 
+	// A response comes from the server. Every record used to name the client as
+	// its source, so a record saying IsResponse contradicted itself and a reply
+	// could not be told from the command that provoked it.
+	srcIP, dstIP := i.conversation.ClientIP, i.conversation.ServerIP
+	srcPort, dstPort := i.conversation.ClientPort, i.conversation.ServerPort
+
+	if isResponse {
+		srcIP, dstIP = dstIP, srcIP
+		srcPort, dstPort = dstPort, srcPort
+	}
+
 	imap := &types.IMAP{
+		// The reader consumes each direction through a bufio.Reader, so there
+		// is no fragment here to take a capture time from and every record
+		// carries the conversation's. See docs/industrial-control-systems.md.
 		Timestamp:         i.conversation.FirstClientPacket.UnixNano(),
-		SrcIP:             i.conversation.ClientIP,
-		DstIP:             i.conversation.ServerIP,
-		SrcPort:           i.conversation.ClientPort,
-		DstPort:           i.conversation.ServerPort,
+		SrcIP:             srcIP,
+		DstIP:             dstIP,
+		SrcPort:           srcPort,
+		DstPort:           dstPort,
 		IsResponse:        isResponse,
 		Tag:               tag,
 		Command:           command,

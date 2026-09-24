@@ -90,6 +90,13 @@ type readerReport struct {
 	records    int
 	timestamps int
 	srcIPs     []string
+
+	// contradictions counts records that say IsResponse and then name the
+	// client as their source. A record type carrying that field models one
+	// message rather than a transaction, so the decoder already knows which
+	// way the message went.
+	contradictions int
+	hasIsResponse  bool
 }
 
 // driveReader runs one decoder over a conversation whose two directions carry
@@ -183,8 +190,20 @@ func driveReader(t *testing.T, s sample) (readerReport, bool) {
 			seenTS[f.Int()] = true
 		}
 
+		src := ""
 		if f, ok := field(rec, "SrcIP"); ok && f.Kind() == reflect.String {
-			seenIP[f.String()] = true
+			src = f.String()
+			seenIP[src] = true
+		}
+
+		// A record that says it is a response and names the client as its
+		// source contradicts itself.
+		if f, ok := field(rec, "IsResponse"); ok && f.Kind() == reflect.Bool {
+			report.hasIsResponse = true
+
+			if f.Bool() && src == conv.ClientIP {
+				report.contradictions++
+			}
 		}
 	}
 
@@ -261,6 +280,30 @@ func TestReaderTimestampAndDirectionHygiene(t *testing.T) {
 
 	if len(clientOnly) > 0 {
 		t.Logf("client-attributed only: %v", clientOnly)
+	}
+}
+
+// A record that carries IsResponse describes one message, and the decoder set
+// that field, so it knows the direction. Naming the client as the source of a
+// response contradicts the record's own contents.
+//
+// This asserts rather than reports: it is not a judgement about how a reader
+// should model a conversation, it is a record disagreeing with itself.
+func TestResponseRecordsAreNotAttributedToTheClient(t *testing.T) {
+	matchingEnv(t)
+
+	for _, s := range samples() {
+		report, ok := driveReader(t, s)
+		if !ok || !report.hasIsResponse || report.records == 0 {
+			continue
+		}
+
+		t.Run(s.decoder, func(t *testing.T) {
+			if report.contradictions > 0 {
+				t.Errorf("%d of %d records say IsResponse and name the client as their source",
+					report.contradictions, report.records)
+			}
+		})
 	}
 }
 

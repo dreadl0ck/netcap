@@ -87,14 +87,21 @@ func (t *tacacsReader) Decode() {
 			continue
 		}
 
+		// Time and direction come from the fragment that carried the bytes.
+		// Every record used to take FirstClientPacket and the client's
+		// addresses, which collapses a session to one instant and records a
+		// server reply as though the client had sent it.
+		timestamp := core.FragmentTime(d)
+		srcIP, dstIP, srcPort, dstPort := t.conversation.Endpoints(d)
+
 		records := t.parseTACACSPackets(raw)
 		for _, rec := range records {
-			rec.SrcIP = t.conversation.ClientIP
-			rec.DstIP = t.conversation.ServerIP
-			rec.SrcPort = int32(t.conversation.ClientPort)
-			rec.DstPort = int32(t.conversation.ServerPort)
+			rec.SrcIP = srcIP
+			rec.DstIP = dstIP
+			rec.SrcPort = srcPort
+			rec.DstPort = dstPort
 			rec.Flow = t.conversation.Ident
-			rec.Timestamp = t.conversation.FirstClientPacket.UnixNano()
+			rec.Timestamp = timestamp
 
 			err := Decoder.Writer.Write(rec)
 			if err != nil {
