@@ -99,16 +99,19 @@ dnp3 parses SA correctly — it flags functions 32/33/131 and names object group
 120 — and on port 2404 iec62351 still wins, so traffic genuinely on the IEC
 62351 port is unaffected.
 
+`confusable_test.go` holds the cases where two decoders both have a claim —
+MSRPC against PROFINET, an SMTP banner against FTP's, an X.224 connection
+request against S7comm — each naming the rival and reporting the specificity
+margin, so a contest decided by 0 is visible before it becomes a regression.
+
 **Known and still open:**
 
-* `tacacs` (49) matches on a single nibble, `client[0]&0xF0 == 0xC0`. Ranking
-  demotes it to heuristic, so it no longer wins against a real signature, but the
-  check itself is unchanged.
-* `ssh` (22) matches an unanchored `SSH` anywhere in the server direction.
-* `iec62351`'s DNP3-SA *reader* still carries the framing defects removed from
-  the DNP3 decoder: `frameLength := int(data[2]) + 5` ignores the per-block
-  CRCs, objects are found by scanning for `0x78`, and every record takes the
-  conversation's first packet as its timestamp.
+* `iec62351`'s reader merges both directions into one buffer and timestamps
+  every record with the conversation's first packet, across all four of its
+  protocol paths. The DNP3-SA framing defects are fixed; this one is a
+  reader-wide restructure.
+* `parseDNP3SAObject` re-assigns the message type names `getDNP3SAObjectName`
+  has already produced, so the table exists twice.
 
 Four signatures were tightened separately in 2026-09 because they were claiming
 ICS traffic they could not parse. `TestFallbackShadowingIsRecorded` and

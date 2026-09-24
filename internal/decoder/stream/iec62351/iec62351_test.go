@@ -22,6 +22,8 @@ package iec62351
 import (
 	"encoding/hex"
 	"testing"
+
+	"github.com/dreadl0ck/netcap/internal/decoder/core"
 )
 
 // dnp3Frame builds a DNP3 frame carrying an application function code.
@@ -114,5 +116,120 @@ func TestRejectsShortAndNonDNP3(t *testing.T) {
 				t.Error("accepted")
 			}
 		})
+	}
+}
+
+// saFrame builds a DNP3 frame carrying a group 120 object, with correct block
+// CRCs, so the reader has to strip them the way a device's frame requires.
+func saFrame(t *testing.T, function, variation byte) []byte {
+	t.Helper()
+
+	// transport, application control, function code, group 120, variation,
+	// qualifier, then object content.
+	user := []byte{0xC1, 0xC1, function, dnp3SAObjectGroup, variation, 0x5B}
+	user = append(user, make([]byte, 14)...)
+
+	return frameFromUserData(t, user)
+}
+
+// frameFromUserData wraps application bytes in a link header and per-block
+// CRCs, so every frame a test builds is one a device would accept.
+func frameFromUserData(t *testing.T, user []byte) []byte {
+	t.Helper()
+
+	frame := []byte{0x05, 0x64, byte(len(user) + 5), 0xC4, 0x03, 0x00, 0x04, 0x00}
+	frame = append(frame, crcLE(crc16DNP(frame))...)
+
+	// One data block: up to 16 octets followed by their CRC.
+	for off := 0; off < len(user); off += 16 {
+		end := min(off+16, len(user))
+		frame = append(frame, user[off:end]...)
+		frame = append(frame, crcLE(crc16DNP(user[off:end]))...)
+	}
+
+	return frame
+}
+
+func crcLE(v uint16) []byte { return []byte{byte(v), byte(v >> 8)} }
+
+// crc16DNP is CRC-16/DNP, restated here so the test builds frames a device
+// would accept rather than frames the decoder happens to tolerate.
+func crc16DNP(b []byte) uint16 {
+	var crc uint16
+
+	for _, v := range b {
+		crc ^= uint16(v)
+
+		for range 8 {
+			if crc&1 != 0 {
+				crc = crc>>1 ^ 0xA6BC
+			} else {
+				crc >>= 1
+			}
+		}
+	}
+
+	return ^crc
+}
+
+// The reader must read the variation from the object header's real position.
+// It used to scan for any byte equal to 0x78 from offset 10, which finds one in
+// an address, a block CRC or a measurement just as readily.
+func TestReaderFindsSecureAuthenticationObject(t *testing.T) {
+	for variation, name := range map[byte]string{
+		1: "AuthenticationChallenge",
+		2: "AuthenticationReply",
+		3: "AggressiveModeRequest",
+		7: "AuthenticationError",
+	} {
+		frame := saFrame(t, dnp3AuthenticateReq, variation)
+
+		r := &iec62351Reader{conversation: &core.ConversationInfo{}}
+
+		msg, consumed := r.parseDNP3SAMessage(frame)
+		if msg == nil {
+			t.Fatalf("variation %d: no record", variation)
+		}
+
+		if consumed != len(frame) {
+			t.Errorf("variation %d: consumed %d of %d bytes; the frame length must include the block CRCs",
+				variation, consumed, len(frame))
+		}
+
+		if !msg.IsAuthenticationEvent {
+			t.Errorf("variation %d: not flagged as an authentication event", variation)
+		}
+
+		if msg.MessageType != int32(variation) || msg.MessageTypeName != name {
+			t.Errorf("variation %d: decoded as %d %q, want %q", variation, msg.MessageType, msg.MessageTypeName, name)
+		}
+	}
+}
+
+// A 0x78 in the payload is not an object header. The frame is rebuilt so its
+// block CRCs are correct, or the reader would refuse it for that reason instead
+// and the test would pass without proving anything.
+func TestReaderIgnoresStrayObjectGroupByte(t *testing.T) {
+	// Object group 1, not 120, and a stray 0x78 further into the payload where
+	// the old byte scan would have found it.
+	user := []byte{0xC1, 0xC1, dnp3AuthenticateReq, 0x01, 0x02, 0x5B, 0x00, 0x00, 0x78, 0x01}
+	user = append(user, make([]byte, 10)...)
+
+	frame := frameFromUserData(t, user)
+
+	r := &iec62351Reader{conversation: &core.ConversationInfo{}}
+
+	msg, consumed := r.parseDNP3SAMessage(frame)
+	if msg == nil {
+		t.Fatal("no record")
+	}
+
+	if consumed != len(frame) {
+		t.Fatalf("consumed %d of %d bytes: the frame is malformed, so this test proves nothing",
+			consumed, len(frame))
+	}
+
+	if msg.IsAuthenticationEvent {
+		t.Errorf("a stray 0x78 was read as a group 120 object header, giving variation %d", msg.MessageType)
 	}
 }

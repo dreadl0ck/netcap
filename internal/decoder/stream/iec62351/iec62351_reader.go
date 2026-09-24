@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/dnp3"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -485,16 +486,20 @@ func (r *iec62351Reader) extractSecurityOIDs(msg *types.IEC62351, data []byte) {
 	}
 }
 
-// parseDNP3SAMessage parses DNP3 Secure Authentication messages
+// parseDNP3SAMessage parses DNP3 Secure Authentication messages.
+//
+// Framing comes from the dnp3 package rather than being recomputed here. The
+// version that lived in this function was `int(data[2]) + 5`, which ignores the
+// CRC after every sixteen user octets: a frame declaring length 26 occupies 35
+// bytes, not 31. That is the same arithmetic the DNP3 decoder was fixed from,
+// and a second copy of it is how it survived.
 func (r *iec62351Reader) parseDNP3SAMessage(data []byte) (*types.IEC62351, int) {
-	if len(data) < 12 {
+	if len(data) < dnp3.LinkHeaderLen {
 		return nil, 0
 	}
 
-	// DNP3 data link layer: start (2), length (1), control (1), dst (2), src (2), crc (2)
-	frameLength := int(data[2]) + 5 // Length + header overhead
-
-	if len(data) < frameLength {
+	frameLength := dnp3.FrameLen(data[2])
+	if frameLength < 0 || len(data) < frameLength {
 		return nil, 0
 	}
 
@@ -509,24 +514,53 @@ func (r *iec62351Reader) parseDNP3SAMessage(data []byte) (*types.IEC62351, int) 
 	control := data[3]
 	msg.IsRequest = (control & 0x40) != 0 // PRM bit
 
-	// Look for authentication objects (group 120)
-	offset := 10 // After data link header
-	for offset < len(data)-3 {
-		if data[offset] == 0x78 { // Object group 120 = Authentication
-			variation := data[offset+1]
-			msg.MessageType = int32(variation)
-			msg.MessageTypeName = getDNP3SAObjectName(variation)
-			msg.IsAuthenticationEvent = true
-			msg.AuditEventType = AuditEventAuthentication
-
-			r.parseDNP3SAObject(msg, data[offset:], variation)
-			break
-		}
-		offset++
-	}
+	r.parseDNP3SAApplicationLayer(msg, data[:frameLength])
 
 	return msg, frameLength
 }
+
+// parseDNP3SAApplicationLayer locates the group 120 object header.
+//
+// This used to scan every byte from offset 10 for one equal to 0x78 and treat
+// whatever followed as an object header. 0x78 occurs constantly in addresses,
+// block CRCs and measurement data, so the variation was routinely read out of
+// the middle of something else. The object header has a known position, so read
+// it from there.
+func (r *iec62351Reader) parseDNP3SAApplicationLayer(msg *types.IEC62351, frame []byte) {
+	user := dnp3.UserDataLen(frame[2])
+	if user <= 0 {
+		return
+	}
+
+	body, ok := dnp3.UserData(frame[dnp3.LinkHeaderLen:], user)
+	if !ok {
+		// A failed block CRC means the user data is corrupt; decoding it would
+		// publish values that were not sent.
+		return
+	}
+
+	// Transport header, application control, function code, then objects.
+	const objectOffset = 3
+
+	if len(body) < objectOffset+2 {
+		return
+	}
+
+	group, variation := body[objectOffset], body[objectOffset+1]
+	if group != dnp3SAObjectGroup {
+		return
+	}
+
+	msg.MessageType = int32(variation)
+	msg.MessageTypeName = getDNP3SAObjectName(variation)
+	msg.IsAuthenticationEvent = true
+	msg.AuditEventType = AuditEventAuthentication
+
+	r.parseDNP3SAObject(msg, body[objectOffset:], variation)
+}
+
+// dnp3SAObjectGroup is object group 120, DNP3 Secure Authentication.
+const dnp3SAObjectGroup = 0x78
 
 // parseDNP3SAObject parses DNP3 Secure Authentication objects
 func (r *iec62351Reader) parseDNP3SAObject(msg *types.IEC62351, data []byte, variation uint8) {

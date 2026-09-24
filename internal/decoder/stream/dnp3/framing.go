@@ -83,6 +83,20 @@ func userDataLen(length byte) int {
 	return int(length) - linkMinLength
 }
 
+// FrameLen is the exported form of frameLen, for the IEC 62351 decoder's
+// DNP3 Secure Authentication path. One implementation of this arithmetic is
+// enough: the duplicate in that decoder was the version this one was fixed from.
+func FrameLen(length byte) int { return frameLen(length) }
+
+// UserData is the exported form of extractUserData.
+func UserData(body []byte, user int) (data []byte, ok bool) { return extractUserData(body, user) }
+
+// UserDataLen is the exported form of userDataLen.
+func UserDataLen(length byte) int { return userDataLen(length) }
+
+// LinkHeaderLen is the size of the IEEE 1815 data link header.
+const LinkHeaderLen = linkHeaderLen
+
 // frameLen returns the on-wire size of a frame, including the link header and
 // every per-block CRC.
 //
