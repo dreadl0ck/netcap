@@ -130,6 +130,7 @@ type RuntimeConfig struct {
 	IgnoreFSMErr          bool
 	AllowMissingInit      bool
 	ModbusRTUEndpoints    string
+	DNP3PointMap          string
 	ClosePendingTimeout   time.Duration
 	CloseInactiveTimeout  time.Duration
 
@@ -1733,6 +1734,12 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 			ModbusRTUEndpoints: func() string {
 				if s.runtimeConfig != nil {
 					return s.runtimeConfig.ModbusRTUEndpoints
+				}
+				return ""
+			}(),
+			DNP3PointMap: func() string {
+				if s.runtimeConfig != nil {
+					return s.runtimeConfig.DNP3PointMap
 				}
 				return ""
 			}(),

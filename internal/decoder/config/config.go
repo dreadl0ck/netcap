@@ -252,6 +252,9 @@ type Config struct {
 	// Comma-separated IP-literal destination endpoints selected as RTU-over-TCP.
 	ModbusRTUEndpoints string
 
+	// Path to a CSV of outstation,group,index,name resolving DNP3 point indexes.
+	DNP3PointMap string
+
 	// Ignore TCP state machine errors
 	IgnoreFSMerr bool
 

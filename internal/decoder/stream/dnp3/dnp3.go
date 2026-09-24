@@ -33,11 +33,32 @@ var dnp3Log = zap.NewNop()
 
 const serviceDNP3 = "DNP3"
 
-// DNP3 start bytes
-const (
-	dnp3StartByte1 = 0x05
-	dnp3StartByte2 = 0x64
-)
+// hasFrame reports whether b contains a link header whose CRC passes.
+//
+// The start bytes alone are a two-byte signature and match constantly inside
+// binary payloads. Requiring the header CRC makes the claim a 16-bit check over
+// 8 bytes instead, which is what allows the port-independent fallback scan to
+// run without inventing conversations.
+//
+// The cost is that a capture beginning midstream, where no frame boundary falls
+// inside the inspected bytes, is not claimed.
+func hasFrame(b []byte) bool {
+	for off := 0; off+linkHeaderLen <= len(b); {
+		start := frameStart(b, off)
+		if start < 0 || start+linkHeaderLen > len(b) {
+			return false
+		}
+
+		header := b[start : start+linkHeaderLen]
+		if crcValid(header[:linkHeaderLen-2], header[linkHeaderLen-2:]) {
+			return true
+		}
+
+		off = start + 1
+	}
+
+	return false
+}
 
 // Decoder for protocol analysis and writing audit records to disk.
 var Decoder = &decoder.StreamDecoder{
@@ -46,17 +67,17 @@ var Decoder = &decoder.StreamDecoder{
 	Description: "Distributed Network Protocol 3 (DNP3) is used for ICS/SCADA communications",
 	PostInit: func(d *decoder.StreamDecoder) error {
 		var err error
+
 		dnp3Log, _, err = logging.InitZapLogger(
 			decoderconfig.Instance.Out,
 			"dnp3",
 			decoderconfig.Instance.Debug,
 		)
+
 		return err
 	},
 	CanDecode: func(client, server []byte) bool {
-		// DNP3 frames start with 0x05 0x64 (start bytes)
-		return (len(client) >= 10 && client[0] == dnp3StartByte1 && client[1] == dnp3StartByte2) ||
-			(len(server) >= 10 && server[0] == dnp3StartByte1 && server[1] == dnp3StartByte2)
+		return hasFrame(client) || hasFrame(server)
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {
 		return dnp3Log.Sync()

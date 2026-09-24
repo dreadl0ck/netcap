@@ -98,6 +98,7 @@ var (
 	flagIgnorefsmerr                   bool
 	flagAllowmissinginit               bool
 	flagModbusRTUEndpoints             string
+	flagDNP3PointMap                   string
 	flagHexdump                        bool
 	flagWaitForConnections             bool
 	flagWriteincomplete                bool
@@ -226,6 +227,7 @@ func setFlagsFromContext(c *cli.Command) {
 	flagIgnorefsmerr = c.Bool("ignorefsmerr")
 	flagAllowmissinginit = c.Bool("allowmissinginit")
 	flagModbusRTUEndpoints = c.String("modbus-rtu-endpoints")
+	flagDNP3PointMap = c.String("dnp3-point-map")
 	flagHexdump = c.Bool("hexdump")
 	flagWaitForConnections = c.Bool("wait-conns")
 	flagWriteincomplete = c.Bool("writeincomplete")

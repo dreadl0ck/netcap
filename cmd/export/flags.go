@@ -278,6 +278,7 @@ func GetFlags() []cli.Flag {
 			Sources: cli.EnvVars("NC_ALLOWMISSINGINIT"),
 		},
 		&cli.StringFlag{Name: "modbus-rtu-endpoints", Usage: "RTU-over-TCP destination allowlist (comma-separated IP:port or [IPv6]:port)", Sources: cli.EnvVars("NC_MODBUS_RTU_ENDPOINTS")},
+		&cli.StringFlag{Name: "dnp3-point-map", Usage: "CSV of outstation,group,index,name resolving DNP3 point indexes", Sources: cli.EnvVars("NC_DNP3_POINT_MAP")},
 		&cli.BoolFlag{
 			Name:    "debug",
 			Usage:   "display debug information",

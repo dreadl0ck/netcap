@@ -20,78 +20,24 @@
 package dnp3
 
 import (
-	"bytes"
 	"encoding/binary"
 	"sync/atomic"
 
+	"github.com/gopacket/gopacket"
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// DNP3 Function Codes
+// Parse status values, matching the Modbus decoder.
 const (
-	FuncConfirm              = 0x00
-	FuncRead                 = 0x01
-	FuncWrite                = 0x02
-	FuncSelect               = 0x03
-	FuncOperate              = 0x04
-	FuncDirectOperate        = 0x05
-	FuncDirectOperateNoAck   = 0x06
-	FuncImmediateFreeze      = 0x07
-	FuncImmediateFreezeNoAck = 0x08
-	FuncFreezeAndClear       = 0x09
-	FuncFreezeAndClearNoAck  = 0x0A
-	FuncFreezeAtTime         = 0x0B
-	FuncFreezeAtTimeNoAck    = 0x0C
-	FuncColdRestart          = 0x0D
-	FuncWarmRestart          = 0x0E
-	FuncInitData             = 0x0F
-	FuncInitApplication      = 0x10
-	FuncStartApplication     = 0x11
-	FuncStopApplication      = 0x12
-	FuncSaveConfiguration    = 0x13
-	FuncEnableUnsolicited    = 0x14
-	FuncDisableUnsolicited   = 0x15
-	FuncAssignClass          = 0x16
-	FuncDelayMeasurement     = 0x17
-	FuncRecordCurrentTime    = 0x18
-	FuncOpenFile             = 0x19
-	FuncCloseFile            = 0x1A
-	FuncDeleteFile           = 0x1B
-	FuncGetFileInfo          = 0x1C
-	FuncAuthenticate         = 0x1D
-	FuncAbortFile            = 0x1E
-	FuncResponse             = 0x81
-	FuncUnsolicitedResponse  = 0x82
+	statusValid       = "valid"
+	statusMalformed   = "malformed"
+	statusUnsupported = "unsupported"
+	statusLost        = "lost"
 )
-
-// Critical function codes that could affect physical processes
-var criticalFunctions = map[uint8]bool{
-	FuncOperate:              true,
-	FuncDirectOperate:        true,
-	FuncDirectOperateNoAck:   true,
-	FuncColdRestart:          true,
-	FuncWarmRestart:          true,
-	FuncInitData:             true,
-	FuncInitApplication:      true,
-	FuncStartApplication:     true,
-	FuncStopApplication:      true,
-	FuncImmediateFreeze:      true,
-	FuncImmediateFreezeNoAck: true,
-	FuncFreezeAndClear:       true,
-	FuncFreezeAndClearNoAck:  true,
-}
-
-// Config change functions
-var configChangeFunctions = map[uint8]bool{
-	FuncWrite:              true,
-	FuncSaveConfiguration:  true,
-	FuncAssignClass:        true,
-	FuncEnableUnsolicited:  true,
-	FuncDisableUnsolicited: true,
-}
 
 type dnp3Reader struct {
 	conversation *core.ConversationInfo
@@ -99,354 +45,519 @@ type dnp3Reader struct {
 
 // New returns a new DNP3 reader.
 func (d *dnp3Reader) New(conversation *core.ConversationInfo) core.StreamDecoderInterface {
-	return &dnp3Reader{
-		conversation: conversation,
-	}
+	return &dnp3Reader{conversation: conversation}
 }
 
-// Decode parses DNP3 messages from the stream.
+// Decode parses DNP3 frames from the stream.
 func (d *dnp3Reader) Decode() {
 	if Decoder.Writer == nil {
 		dnp3Log.Error("DNP3 Decoder.Writer is nil")
+
 		return
 	}
 
-	var buf bytes.Buffer
+	d.frameConversation(func(msg *types.DNP3) {
+		if err := Decoder.Writer.Write(msg); err != nil {
+			dnp3Log.Error("failed to write DNP3 record", zap.Error(err))
 
-	for _, data := range d.conversation.Data {
-		buf.Write(data.Raw())
-	}
-
-	frameData := buf.Bytes()
-	offset := 0
-
-	for offset < len(frameData)-10 {
-		// Look for DNP3 start bytes
-		if frameData[offset] != dnp3StartByte1 || frameData[offset+1] != dnp3StartByte2 {
-			offset++
-			continue
+			return
 		}
 
-		msg := d.parseDNP3Frame(frameData[offset:])
-		if msg != nil {
-			msg.SrcIP = d.conversation.ClientIP
-			msg.DstIP = d.conversation.ServerIP
-			msg.SrcPort = int32(d.conversation.ClientPort)
-			msg.DstPort = int32(d.conversation.ServerPort)
-			msg.CommunityID = d.conversation.CommunityID
+		atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+	})
+}
 
-			err := Decoder.Writer.Write(msg)
-			if err != nil {
-				dnp3Log.Error("failed to write DNP3 record", zap.Error(err))
-			} else {
-				atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
+// frameConversation frames each direction independently.
+//
+// Both directions share a TCP connection but not a frame boundary, so decoding
+// them from one merged buffer interleaves them and destroys the framing. It
+// also loses the direction itself: an outstation's response recorded with the
+// master's address cannot be told from a command.
+func (d *dnp3Reader) frameConversation(emit func(*types.DNP3)) {
+	// Client and server are only known when the handshake was observed; a
+	// midstream capture may have the assignment reversed. Without that, the
+	// DIR bit cannot be checked against the network direction.
+	oriented := d.conversation.TCPHandshakeComplete
+
+	for _, fragments := range []core.DataFragments{d.conversation.ClientData, d.conversation.ServerData} {
+		for _, fragment := range fragments {
+			if data, ok := fragment.(*core.StreamData); !ok || data.SkippedBytes == -1 {
+				oriented = false
 			}
 		}
+	}
 
-		// Move to next frame (minimum frame is 10 bytes)
-		frameLen := 10
-		if offset+2 < len(frameData) {
-			frameLen = int(frameData[offset+2]) + 5 // Length field + header overhead
-		}
-		offset += frameLen
+	clientData, serverData := d.conversation.ClientData, d.conversation.ServerData
+	if len(clientData) == 0 && len(serverData) == 0 {
+		// Callers that supply only the merged view still get framed output, but
+		// the direction is unknown so the DIR bit is not cross-checked.
+		clientData = d.conversation.Data
+		oriented = false
+	}
+
+	// Correlation needs both directions in hand, so records are collected and
+	// released together. The fragments they were decoded from are already held
+	// for the whole conversation, so this does not change what is retained.
+	var client, server []*types.DNP3
+
+	d.frameDirection(clientData, false, oriented, func(r *types.DNP3) { client = append(client, r) })
+	d.frameDirection(serverData, true, oriented, func(r *types.DNP3) { server = append(server, r) })
+
+	correlate(client, server)
+
+	for _, r := range client {
+		emit(r)
+	}
+
+	for _, r := range server {
+		emit(r)
 	}
 }
 
-func (d *dnp3Reader) parseDNP3Frame(data []byte) *types.DNP3 {
-	if len(data) < 10 {
-		return nil
+// timeMark records where a fragment's bytes begin in the working buffer, so a
+// frame is timestamped from the packet that carried its first byte rather than
+// from the start of the conversation.
+//
+// DNP3 masters hold a connection open for days. Stamping every frame with the
+// conversation's first packet collapses a whole polling session to one instant,
+// which makes a maintenance window unanswerable.
+type timeMark struct {
+	offset int
+	ts     int64
+}
+
+type directionState struct {
+	buf    []byte
+	marks  []timeMark
+	server bool
+	loss   lossEvent
+}
+
+// append adds a fragment's bytes and records their capture time.
+func (s *directionState) append(b []byte, ts int64) {
+	s.marks = append(s.marks, timeMark{offset: len(s.buf), ts: ts})
+	s.buf = append(s.buf, b...)
+}
+
+// discard drops n bytes from the front and rebases the time marks.
+func (s *directionState) discard(n int) {
+	if n <= 0 {
+		return
 	}
 
-	// Validate start bytes
-	if data[0] != dnp3StartByte1 || data[1] != dnp3StartByte2 {
-		return nil
+	if n >= len(s.buf) {
+		s.buf, s.marks = s.buf[:0], s.marks[:0]
+
+		return
 	}
 
-	msg := &types.DNP3{
-		Timestamp: d.conversation.FirstClientPacket.UnixNano(),
-	}
+	s.buf = s.buf[n:]
 
-	// Data Link Layer Header (IEEE 1815)
-	// Byte 0-1: Start bytes (0x0564)
-	// Byte 2: Length (number of user data octets including CRCs)
-	// Byte 3: Control
-	// Byte 4-5: Destination (little-endian)
-	// Byte 6-7: Source (little-endian)
-	// Byte 8-9: CRC of header
-	msg.Length = int32(data[2])
-	msg.Control = int32(data[3])
+	kept := s.marks[:0]
 
-	// Parse control byte per IEEE 1815
-	msg.IsMaster = (data[3] & 0x80) != 0  // DIR bit: 1=Master, 0=Outstation
-	msg.IsRequest = (data[3] & 0x40) != 0 // PRM bit: 1=Primary (request), 0=Secondary (response)
+	for _, m := range s.marks {
+		m.offset -= n
+		if m.offset <= 0 {
+			m.offset = 0
 
-	// Destination and Source addresses (little-endian, 16-bit)
-	msg.Destination = int32(binary.LittleEndian.Uint16(data[4:6]))
-	msg.Source = int32(binary.LittleEndian.Uint16(data[6:8]))
-
-	// CRC is at bytes 8-9 - validate if possible
-	// Header CRC covers bytes 0-7
-	headerCRC := binary.LittleEndian.Uint16(data[8:10])
-	if headerCRC == 0 && msg.Length > 0 {
-		// Suspicious: zero CRC with data usually indicates corruption
-		dnp3Log.Debug("DNP3 header CRC is zero, potentially corrupted frame")
-	}
-
-	// If there's application layer data (length > 5 means user data present)
-	// Length field counts bytes after the header, minus 5 for the header fields
-	if msg.Length > 5 && len(data) > 10 {
-		// Extract user data, removing per-block CRCs
-		// DNP3 data is in 16-byte blocks, each followed by 2-byte CRC
-		userData := d.extractUserData(data[10:], int(msg.Length)-5)
-		if len(userData) > 0 {
-			d.parseApplicationLayer(msg, userData)
+			if len(kept) > 0 {
+				kept = kept[:len(kept)-1]
+			}
 		}
+
+		kept = append(kept, m)
 	}
+
+	s.marks = kept
+}
+
+// timestampAt returns the capture time of the fragment covering offset.
+func (s *directionState) timestamp(offset int) int64 {
+	ts := int64(0)
+
+	for _, m := range s.marks {
+		if m.offset > offset {
+			break
+		}
+
+		ts = m.ts
+	}
+
+	return ts
+}
+
+// lossEvent accumulates one coverage gap so that a direction which stopped
+// producing evidence emits exactly one marker, not one per fragment.
+type lossEvent struct {
+	open      bool
+	unknown   bool
+	bytes     int64
+	timestamp int64
+	reason    string
+}
+
+func (l *lossEvent) note(bytes, timestamp int64, reason string) {
+	if !l.open {
+		l.open, l.timestamp, l.reason = true, timestamp, reason
+	}
+
+	if bytes < 0 {
+		l.unknown = true
+
+		return
+	}
+
+	l.bytes += bytes
+}
+
+func (l *lossEvent) flush(emit func(bytes, timestamp int64, reason string)) {
+	if !l.open {
+		return
+	}
+
+	bytes, timestamp, reason := l.bytes, l.timestamp, l.reason
+	if l.unknown {
+		bytes = -1
+	}
+
+	*l = lossEvent{}
+
+	emit(bytes, timestamp, reason)
+}
+
+// frameDirection walks one direction of the conversation.
+func (d *dnp3Reader) frameDirection(fragments core.DataFragments, server, oriented bool, emit func(*types.DNP3)) {
+	if len(fragments) == 0 {
+		return
+	}
+
+	state := &directionState{server: server, buf: make([]byte, 0, maxFrameLen)}
+
+	emitLoss := func(bytes, timestamp int64, reason string) {
+		emit(d.lostRecord(server, timestamp, bytes, reason))
+	}
+
+	for _, fragment := range fragments {
+		data, ok := fragment.(*core.StreamData)
+		if !ok {
+			continue
+		}
+
+		if data.SkippedBytes != 0 {
+			// Framing cannot survive a gap: the bytes buffered before it belong
+			// to a frame whose remainder was destroyed.
+			if len(state.buf) > 0 {
+				state.loss.note(int64(len(state.buf)), state.timestamp(0), "unusable fragment")
+				state.discard(len(state.buf))
+			}
+
+			state.loss.note(int64(data.SkippedBytes), fragmentTimestamp(data), "capture gap")
+		}
+
+		raw := data.Raw()
+		if len(raw) == 0 {
+			continue
+		}
+
+		state.append(raw, fragmentTimestamp(data))
+		d.consume(state, oriented, emit, emitLoss)
+	}
+
+	// Trailing bytes that never completed a frame are unobserved, not absent.
+	if len(state.buf) > 0 {
+		state.loss.note(int64(len(state.buf)), state.timestamp(0), "truncated frame")
+	}
+
+	state.loss.flush(emitLoss)
+}
+
+// consume extracts every complete frame currently buffered.
+func (d *dnp3Reader) consume(state *directionState, oriented bool, emit func(*types.DNP3), emitLoss func(bytes, timestamp int64, reason string)) {
+	scan := 0
+
+	for {
+		start := frameStart(state.buf, scan)
+		if start < 0 {
+			// Keep a trailing 0x05 in case the pair straddles two fragments.
+			keep := 0
+			if n := len(state.buf); n > 0 && state.buf[n-1] == startByte1 {
+				keep = 1
+			}
+
+			if drop := len(state.buf) - keep; drop > 0 {
+				state.loss.note(int64(drop), state.timestamp(0), "unframed bytes discarded")
+				state.discard(drop)
+			}
+
+			return
+		}
+
+		if len(state.buf)-start < linkHeaderLen {
+			// Need more bytes before the header can be checked.
+			if start > 0 {
+				state.loss.note(int64(start), state.timestamp(0), "unframed bytes discarded")
+				state.discard(start)
+			}
+
+			return
+		}
+
+		header := state.buf[start : start+linkHeaderLen]
+		if !crcValid(header[:linkHeaderLen-2], header[linkHeaderLen-2:]) {
+			// Two matching bytes inside a payload, not a frame.
+			scan = start + 1
+
+			continue
+		}
+
+		size := frameLen(header[2])
+		if size < 0 {
+			// Header authenticates but LENGTH is below the protocol minimum.
+			// Report it: a master parsing this is the input the outstation is
+			// trusted to supply.
+			ts := state.timestamp(start)
+			state.loss.flush(emitLoss)
+			emit(d.malformedRecord(header, ts, state.server, oriented, "length below minimum"))
+			state.discard(start + linkHeaderLen)
+
+			scan = 0
+
+			continue
+		}
+
+		if len(state.buf)-start < size {
+			if start > 0 {
+				state.loss.note(int64(start), state.timestamp(0), "unframed bytes discarded")
+				state.discard(start)
+			}
+
+			return
+		}
+
+		if start > 0 {
+			state.loss.note(int64(start), state.timestamp(0), "unframed bytes discarded")
+		}
+
+		ts := state.timestamp(start)
+		frame := state.buf[start : start+size]
+
+		// A marker stays ordered ahead of the record that ended the loss.
+		state.loss.flush(emitLoss)
+		emit(d.parseFrame(frame, ts, state.server, oriented))
+		state.discard(start + size)
+
+		scan = 0
+	}
+}
+
+// streamFragment is the subset of the unexported core fragment interface the
+// framer needs; it is restated here because core does not export it.
+type streamFragment interface {
+	CaptureInfo() gopacket.CaptureInfo
+	Context() reassembly.AssemblerContext
+	Raw() []byte
+}
+
+// fragmentTimestamp prefers the assembler context, which carries the capture
+// time of the packet that closed a hole rather than of the fragment page.
+func fragmentTimestamp(f streamFragment) int64 {
+	if f.Context() != nil {
+		return f.Context().GetCaptureInfo().Timestamp.UnixNano()
+	}
+
+	return f.CaptureInfo().Timestamp.UnixNano()
+}
+
+// attribute fills in the endpoints for a direction. A response carries the
+// outstation as SrcIP.
+func (d *dnp3Reader) attribute(msg *types.DNP3, server bool, timestamp int64) {
+	msg.Timestamp = timestamp
+	msg.CommunityID = d.conversation.CommunityID
+
+	if server {
+		msg.SrcIP, msg.DstIP = d.conversation.ServerIP, d.conversation.ClientIP
+		msg.SrcPort, msg.DstPort = d.conversation.ServerPort, d.conversation.ClientPort
+
+		return
+	}
+
+	msg.SrcIP, msg.DstIP = d.conversation.ClientIP, d.conversation.ServerIP
+	msg.SrcPort, msg.DstPort = d.conversation.ClientPort, d.conversation.ServerPort
+}
+
+// lostRecord marks a direction that stopped producing evidence, so an empty
+// hunt result can be told apart from a truncated capture.
+func (d *dnp3Reader) lostRecord(server bool, timestamp, lost int64, reason string) *types.DNP3 {
+	msg := &types.DNP3{
+		ParseStatus:       statusLost,
+		ParseError:        reason,
+		LostBytes:         lost,
+		CorrelationStatus: corrNotApplicable,
+	}
+	d.attribute(msg, server, timestamp)
 
 	return msg
 }
 
-// extractUserData removes the CRC bytes from DNP3 data blocks
-// DNP3 uses 16-byte blocks, each followed by a 2-byte CRC
-func (d *dnp3Reader) extractUserData(data []byte, expectedLen int) []byte {
-	if len(data) == 0 {
-		return nil
+// linkHeader fills in the data link layer fields shared by every frame.
+func (d *dnp3Reader) linkHeader(msg *types.DNP3, header []byte, server, oriented bool) {
+	control := header[3]
+
+	msg.Length = int32(header[2])
+	msg.Control = int32(control)
+	msg.IsMaster = control&0x80 != 0
+	msg.IsRequest = control&0x40 != 0
+	msg.LinkFCB = control&0x20 != 0
+	msg.HeaderCRCValid = true
+
+	if msg.IsRequest {
+		msg.LinkFCV = control&0x10 != 0
+	} else {
+		msg.LinkDFC = control&0x10 != 0
 	}
 
-	var result []byte
-	offset := 0
-	remaining := expectedLen
+	msg.LinkFunctionCode = int32(control & 0x0F)
+	msg.LinkFunctionCodeName = linkFunctionName(control&0x0F, msg.IsRequest)
 
-	for offset < len(data) && remaining > 0 {
-		// Each block is max 16 bytes of data + 2 bytes CRC
-		blockDataLen := min(remaining, 16)
+	msg.Destination = int32(binary.LittleEndian.Uint16(header[4:6]))
+	msg.Source = int32(binary.LittleEndian.Uint16(header[6:8]))
 
-		if offset+blockDataLen+2 > len(data) {
-			// Not enough data for block + CRC, take what we can
-			if offset+blockDataLen <= len(data) {
-				result = append(result, data[offset:offset+blockDataLen]...)
-			}
-			break
-		}
+	msg.IsBroadcast = msg.Destination >= broadcastNoConfirm
+	msg.IsSelfAddress = msg.Destination == selfAddress
 
-		result = append(result, data[offset:offset+blockDataLen]...)
-		offset += blockDataLen + 2 // Skip the 2-byte CRC
-		remaining -= blockDataLen
+	// The outstation listens, so the server side is the outstation and the DIR
+	// bit should say so. A disagreement means the link address and the IP are
+	// telling different stories.
+	if oriented {
+		msg.DirectionMismatch = msg.IsMaster == server
+	}
+}
+
+func (d *dnp3Reader) malformedRecord(header []byte, ts int64, server, oriented bool, reason string) *types.DNP3 {
+	msg := &types.DNP3{
+		ParseStatus:       statusMalformed,
+		ParseError:        reason,
+		CorrelationStatus: corrNotApplicable,
+	}
+	d.attribute(msg, server, ts)
+	d.linkHeader(msg, header, server, oriented)
+
+	return msg
+}
+
+// parseFrame decodes one CRC-validated frame.
+func (d *dnp3Reader) parseFrame(frame []byte, ts int64, server, oriented bool) *types.DNP3 {
+	msg := &types.DNP3{ParseStatus: statusValid, CorrelationStatus: corrNotApplicable}
+	d.attribute(msg, server, ts)
+	d.linkHeader(msg, frame[:linkHeaderLen], server, oriented)
+
+	user := userDataLen(frame[2])
+	if user <= 0 {
+		return msg
 	}
 
-	return result
+	data, ok := extractUserData(frame[linkHeaderLen:], user)
+	msg.BlockCRCValid = ok
+
+	if !ok {
+		// Corrupt user data. Report the framing and stop; decoding it would
+		// publish values that were not sent.
+		msg.ParseStatus, msg.ParseError = statusMalformed, "block CRC failed"
+
+		return msg
+	}
+
+	if !carriesAPDU(frame[3]&0x0F, msg.IsRequest) {
+		// Link control frames carry link state, not an application PDU.
+		// Parsing one reads that state as a function code.
+		msg.ParseStatus = statusUnsupported
+		msg.ParseError = "link frame carries no application data"
+
+		return msg
+	}
+
+	d.parseApplicationLayer(msg, data)
+
+	return msg
 }
 
 func (d *dnp3Reader) parseApplicationLayer(msg *types.DNP3, data []byte) {
 	if len(data) < 2 {
+		msg.ParseStatus, msg.ParseError = statusMalformed, "truncated transport header"
+
 		return
 	}
 
-	// Transport Layer (1 byte)
-	transportByte := data[0]
-	msg.TransportSeq = int32(transportByte & 0x3F)
-	msg.TransportFIN = (transportByte & 0x80) != 0
-	msg.TransportFIR = (transportByte & 0x40) != 0
+	transport := data[0]
+	msg.TransportSeq = int32(transport & 0x3F)
+	msg.TransportFIN = transport&0x80 != 0
+	msg.TransportFIR = transport&0x40 != 0
 
 	if len(data) < 3 {
+		msg.ParseStatus, msg.ParseError = statusMalformed, "truncated application header"
+
 		return
 	}
 
-	// Application Layer Control (1 byte)
 	appControl := data[1]
 	msg.ApplicationControl = int32(appControl)
 	msg.ApplicationSeq = int32(appControl & 0x0F)
-	msg.ConfirmRequired = (appControl & 0x20) != 0
-	msg.Unsolicited = (appControl & 0x10) != 0
+	msg.ConfirmRequired = appControl&0x20 != 0
+	msg.Unsolicited = appControl&0x10 != 0
 
-	// Function Code (1 byte)
-	funcCode := data[2]
-	msg.FunctionCode = int32(funcCode)
-	msg.FunctionCodeName = getFunctionCodeName(funcCode)
+	funcCode := int32(data[2])
+	msg.FunctionCode = funcCode
+	msg.FunctionCodeName = functionCodeName(funcCode)
 
-	// Set security-relevant flags
 	msg.IsCriticalFunction = criticalFunctions[funcCode]
 	msg.IsConfigChange = configChangeFunctions[funcCode]
-	msg.IsAuthentication = funcCode == FuncAuthenticate
+	msg.IsAuthentication = authenticationFunctions[funcCode]
 
-	// Parse Internal Indications for response messages
-	if funcCode == FuncResponse || funcCode == FuncUnsolicitedResponse {
-		if len(data) >= 5 {
-			iin := binary.LittleEndian.Uint16(data[3:5])
-			msg.InternalIndications = int32(iin)
-			d.parseIIN(msg, iin)
-		}
+	if _, known := functionCodeNames[funcCode]; !known {
+		msg.ParseStatus, msg.ParseError = statusUnsupported, "unknown function code"
+
+		return
 	}
 
-	// Parse objects if present
 	objOffset := 3
+
 	if funcCode == FuncResponse || funcCode == FuncUnsolicitedResponse {
-		objOffset = 5 // Skip IIN bytes
-	}
+		if len(data) < 5 {
+			msg.ParseStatus, msg.ParseError = statusMalformed, "truncated internal indications"
 
-	if len(data) > objOffset {
-		d.parseObjects(msg, data[objOffset:])
-	}
-}
-
-func (d *dnp3Reader) parseIIN(msg *types.DNP3, iin uint16) {
-	// First byte (IIN1)
-	msg.IINBroadcast = (iin & 0x0001) != 0
-	msg.IINClass1 = (iin & 0x0002) != 0
-	msg.IINClass2 = (iin & 0x0004) != 0
-	msg.IINClass3 = (iin & 0x0008) != 0
-	msg.IINNeedTime = (iin & 0x0010) != 0
-	msg.IINLocalControl = (iin & 0x0020) != 0
-	msg.IINDeviceTrouble = (iin & 0x0040) != 0
-	msg.IINDeviceRestart = (iin & 0x0080) != 0
-
-	// Second byte (IIN2)
-	msg.IINNoFuncCodeSupport = (iin & 0x0100) != 0
-	msg.IINObjectUnknown = (iin & 0x0200) != 0
-	msg.IINParameterError = (iin & 0x0400) != 0
-	msg.IINEventBufferOverflow = (iin & 0x0800) != 0
-	msg.IINAlreadyExecuting = (iin & 0x1000) != 0
-	msg.IINConfigCorrupt = (iin & 0x2000) != 0
-}
-
-func (d *dnp3Reader) parseObjects(msg *types.DNP3, data []byte) {
-	offset := 0
-
-	for offset < len(data)-3 {
-		obj := &types.DNP3Object{
-			ObjectGroup: int32(data[offset]),
-			Variation:   int32(data[offset+1]),
-			ObjectName:  getObjectName(data[offset], data[offset+1]),
+			return
 		}
 
-		qualifier := data[offset+2]
-		obj.Qualifier = int32(qualifier)
+		iin := binary.LittleEndian.Uint16(data[3:5])
+		msg.InternalIndications = int32(iin)
+		parseIIN(msg, iin)
 
-		offset += 3
+		objOffset = 5
+	}
 
-		// Parse range based on qualifier
-		switch qualifier & 0x0F {
-		case 0x00, 0x01: // Start-Stop (1 or 2 bytes)
-			if offset+2 <= len(data) {
-				obj.StartIndex = int32(data[offset])
-				obj.StopIndex = int32(data[offset+1])
-				obj.Count = obj.StopIndex - obj.StartIndex + 1
-				offset += 2
-			}
-		case 0x06: // All objects
-			obj.Count = -1 // Indicates all
-		case 0x07, 0x08: // Count (1 or 2 bytes)
-			if offset+1 <= len(data) {
-				obj.Count = int32(data[offset])
-				offset++
-			}
-		}
+	if len(data) <= objOffset {
+		return
+	}
 
-		msg.Objects = append(msg.Objects, obj)
-
-		// Safety break to prevent infinite loops
-		if offset <= 0 {
-			break
-		}
+	if !parseObjects(msg, data[objOffset:], carriesObjectData(funcCode)) {
+		msg.ObjectsTruncated = true
 	}
 }
 
-func getFunctionCodeName(code uint8) string {
-	switch code {
-	case FuncConfirm:
-		return "CONFIRM"
-	case FuncRead:
-		return "READ"
-	case FuncWrite:
-		return "WRITE"
-	case FuncSelect:
-		return "SELECT"
-	case FuncOperate:
-		return "OPERATE"
-	case FuncDirectOperate:
-		return "DIRECT_OPERATE"
-	case FuncDirectOperateNoAck:
-		return "DIRECT_OPERATE_NO_ACK"
-	case FuncImmediateFreeze:
-		return "IMMEDIATE_FREEZE"
-	case FuncImmediateFreezeNoAck:
-		return "IMMEDIATE_FREEZE_NO_ACK"
-	case FuncFreezeAndClear:
-		return "FREEZE_AND_CLEAR"
-	case FuncFreezeAndClearNoAck:
-		return "FREEZE_AND_CLEAR_NO_ACK"
-	case FuncColdRestart:
-		return "COLD_RESTART"
-	case FuncWarmRestart:
-		return "WARM_RESTART"
-	case FuncInitData:
-		return "INITIALIZE_DATA"
-	case FuncInitApplication:
-		return "INITIALIZE_APPLICATION"
-	case FuncStartApplication:
-		return "START_APPLICATION"
-	case FuncStopApplication:
-		return "STOP_APPLICATION"
-	case FuncSaveConfiguration:
-		return "SAVE_CONFIGURATION"
-	case FuncEnableUnsolicited:
-		return "ENABLE_UNSOLICITED"
-	case FuncDisableUnsolicited:
-		return "DISABLE_UNSOLICITED"
-	case FuncAssignClass:
-		return "ASSIGN_CLASS"
-	case FuncDelayMeasurement:
-		return "DELAY_MEASUREMENT"
-	case FuncRecordCurrentTime:
-		return "RECORD_CURRENT_TIME"
-	case FuncAuthenticate:
-		return "AUTHENTICATE"
-	case FuncResponse:
-		return "RESPONSE"
-	case FuncUnsolicitedResponse:
-		return "UNSOLICITED_RESPONSE"
-	default:
-		return "UNKNOWN"
-	}
-}
+func parseIIN(msg *types.DNP3, iin uint16) {
+	msg.IINBroadcast = iin&0x0001 != 0
+	msg.IINClass1 = iin&0x0002 != 0
+	msg.IINClass2 = iin&0x0004 != 0
+	msg.IINClass3 = iin&0x0008 != 0
+	msg.IINNeedTime = iin&0x0010 != 0
+	msg.IINLocalControl = iin&0x0020 != 0
+	msg.IINDeviceTrouble = iin&0x0040 != 0
+	msg.IINDeviceRestart = iin&0x0080 != 0
 
-func getObjectName(group, variation uint8) string {
-	switch group {
-	case 1:
-		return "Binary Input"
-	case 2:
-		return "Binary Input Event"
-	case 3:
-		return "Double-bit Binary Input"
-	case 10:
-		return "Binary Output"
-	case 12:
-		return "Control Relay Output Block (CROB)"
-	case 20:
-		return "Counter"
-	case 21:
-		return "Frozen Counter"
-	case 30:
-		return "Analog Input"
-	case 32:
-		return "Analog Input Event"
-	case 40:
-		return "Analog Output Status"
-	case 41:
-		return "Analog Output Block"
-	case 50:
-		return "Time and Date"
-	case 60:
-		return "Class Data"
-	case 70:
-		return "File Control"
-	case 80:
-		return "Internal Indications"
-	case 110:
-		return "Octet String"
-	case 120:
-		return "Authentication"
-	default:
-		return "Unknown"
-	}
+	msg.IINNoFuncCodeSupport = iin&0x0100 != 0
+	msg.IINObjectUnknown = iin&0x0200 != 0
+	msg.IINParameterError = iin&0x0400 != 0
+	msg.IINEventBufferOverflow = iin&0x0800 != 0
+	msg.IINAlreadyExecuting = iin&0x1000 != 0
+	msg.IINConfigCorrupt = iin&0x2000 != 0
 }

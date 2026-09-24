@@ -28,6 +28,7 @@
 * [Packet Contexts](packet-contexts.md)
 * [Industrial Control Systems](industrial-control-systems.md)
 * [Modbus Threat Hunting](modbus-threat-hunting.md)
+* [DNP3 Threat Hunting](dnp3-threat-hunting.md)
 * [Siemens S7 Threat Hunt (AA26-231A)](s7-threat-hunt-AA26-231A.md)
 * [File Extraction](file-extraction.md)
 * [Email Extraction](mail-extraction.md)

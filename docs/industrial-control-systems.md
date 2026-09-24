@@ -30,11 +30,14 @@ destination enumeration detection, off-hours and geographic anomalies, and an
 honest accounting of what netcap cannot see — see the dedicated guide:
 
 * [Siemens S7 Series PLC Threat Hunt (AA26-231A)](s7-threat-hunt-AA26-231A.md)
+* [Modbus Threat Hunting](modbus-threat-hunting.md)
+* [DNP3 Threat Hunting](dnp3-threat-hunting.md)
 
 Shipped detection rules live in `internal/rules/examples/`:
 
 * `internal/rules/examples/s7comm_hunt.yml` — S7comm function-code level hunt (AA26-231A)
 * `internal/rules/examples/modbus_hunt.yml` — Modbus request-level write/diagnostic/enumeration hunts
+* `internal/rules/examples/dnp3_hunt.yml` — DNP3 control-plane, Select-Before-Operate and visibility hunts
 * `internal/rules/examples/industrial_ports.yml` — port-based ICS exposure and scan rules
 
 See the [Rules Engine](RULES_ENGINE.md) and [Filtering](FILTERING.md) guides for
@@ -142,6 +145,40 @@ message ModbusFileRecord {
     uint32 RecordLength  = 4; repeated uint32 Values = 5;
 }
 ```
+
+## DNP3
+
+The decoder frames each direction independently and validates the IEEE 1815
+link header CRC and every data-block CRC, so a conversation is claimed on a
+16-bit check rather than on the two start bytes, and `0x05 0x64` inside a
+payload is not reported as a frame. Each frame is timestamped from the packet
+carrying its first byte, which matters because a master holds a connection open
+for days.
+
+It decodes the link layer (function code, FCB/FCV/DFC, broadcast and
+self-address detection), the transport and application headers, all fourteen
+internal indications, and object headers with full qualifier handling —
+per-object index or size prefixes and every range form. Object values are
+stepped over using the group and variation's encoded size, so a header is never
+read out of the previous object's data. Group 12 Control Relay Output Blocks are
+parsed in full, including the trip/close code that distinguishes opening a
+breaker from closing it.
+
+Selects are correlated with Operates per outstation (`SBOStatus`), and responses
+with requests on the application sequence number (`CorrelationStatus`). Frames
+that framed but did not parse are reported as `ParseStatus == "malformed"` with
+a reason and a passing header CRC, which is what makes a malformed frame *from
+an outstation* a queryable event. Data that could not be framed becomes a
+`ParseStatus == "lost"` marker carrying `LostBytes`.
+
+`-dnp3-point-map` resolves point indexes against a device profile
+(`outstation,group,index,name`), keyed on the DNP3 link address rather than the
+IP. Without it a capture shows that a control was issued but not which plant
+item it addressed.
+
+See [DNP3 Threat Hunting](dnp3-threat-hunting.md) for the capture workflow, the
+control-plane and Select-Before-Operate hunts,
+`internal/rules/examples/dnp3_hunt.yml`, the point map and the limitations.
 
 ## CIP
 

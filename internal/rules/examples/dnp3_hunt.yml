@@ -1,0 +1,295 @@
+# DNP3 hunt templates. Documentation IPs and link addresses MUST be replaced
+# before enabling site-dependent rules. No automatic response actions are
+# configured.
+#
+# Base DNP3 has no authentication. A match identifies a frame on the wire, not a
+# person, and an accepted command is not proof of a process change. Confirm
+# every candidate against the original capture, the device profile and the
+# site's work orders.
+description: "DNP3 control-plane hunts, Select-Before-Operate correlation, and visibility triage. Matches indicate attempts or observations, not process effects."
+rules:
+  # The whole premise: telemetry is polling, and polling is boring. READ,
+  # RESPONSE and UNSOLICITED_RESPONSE are almost all of a healthy network, so
+  # what is left over is the control plane and short enough to read by hand.
+  # CONFIRM is excluded with them because it is application-layer housekeeping
+  # for those same responses; drop the 0 to see it.
+  - name: DNP3 Control Plane Activity
+    description: Any function code that is not CONFIRM, READ, RESPONSE or UNSOLICITED_RESPONSE. Everything matched is control, configuration, file transfer or restart. If the result set is too large to review, that volume is itself the finding.
+    type: DNP3
+    expression: ParseStatus == "valid" && !(FunctionCode in [0, 1, 129, 130])
+    severity: medium
+    mitre: ["T0855"]
+    tags: [dnp3, control-plane, triage]
+    enabled: true
+
+  # Direct Operate skips the interlock entirely. It is specified behaviour, so
+  # this is a finding only where the engineering standard requires SBO.
+  - name: DNP3 Direct Operate
+    description: DIRECT_OPERATE or DIRECT_OPERATE_NO_ACK observed. Both skip Select-Before-Operate by design, so this is a finding wherever the site engineering standard mandates SBO.
+    type: DNP3
+    expression: ParseStatus == "valid" && FunctionCode in [5, 6]
+    severity: high
+    mitre: ["T0855", "T0831"]
+    tags: [dnp3, control, direct-operate]
+    enabled: true
+
+  # Correlated within the master's own direction, per outstation link address.
+  - name: DNP3 Operate Without Select
+    description: An OPERATE with no matching SELECT in front of it on the same outstation. Under a Select-Before-Operate standard this is a control that arrived without its interlock.
+    type: DNP3
+    expression: ParseStatus == "valid" && SBOStatus == "operate_without_select"
+    severity: high
+    mitre: ["T0855", "T0831"]
+    tags: [dnp3, control, sbo]
+    enabled: true
+
+  - name: DNP3 Select Operate Mismatch
+    description: An OPERATE paired with a SELECT that armed different points or control codes, carried the wrong application sequence number, or had already expired. The pair looks routine in a capture read by function code alone.
+    type: DNP3
+    expression: ParseStatus == "valid" && SBOStatus in ["sbo_object_mismatch", "sbo_sequence_mismatch", "select_expired"]
+    severity: high
+    mitre: ["T0855", "T0831"]
+    tags: [dnp3, control, sbo]
+    enabled: true
+
+  - name: DNP3 Select Never Operated
+    description: A SELECT that no OPERATE followed. Routine when an operator cancels, and also what an aborted or probing control sequence looks like.
+    type: DNP3
+    expression: ParseStatus == "valid" && SBOStatus == "select_never_operated"
+    severity: low
+    tags: [dnp3, control, sbo]
+    enabled: true
+
+  # Breaker operations, split by intent. The trip/close code is two bits of one
+  # octet, and it is the difference between energising and de-energising.
+  - name: DNP3 Breaker Trip Command
+    description: A control relay output block carrying a TRIP code. Resolve the point index against the outstation's device profile before naming a breaker; the index alone does not identify one.
+    type: DNP3
+    expression: ParseStatus == "valid" && any(Objects, {any(.ControlBlocks, {.TripCloseCode == 2})})
+    severity: critical
+    mitre: ["T0855", "T0831", "T0879"]
+    tags: [dnp3, control, breaker, trip]
+    enabled: true
+
+  - name: DNP3 Breaker Close Command
+    description: A control relay output block carrying a CLOSE code. Resolve the point index against the outstation's device profile before naming a breaker.
+    type: DNP3
+    expression: ParseStatus == "valid" && any(Objects, {any(.ControlBlocks, {.TripCloseCode == 1})})
+    severity: critical
+    mitre: ["T0855", "T0831"]
+    tags: [dnp3, control, breaker, close]
+    enabled: true
+
+  # A broadcast control reaches every outstation on the link at once.
+  - name: DNP3 Broadcast Control
+    description: A critical function addressed to a broadcast link address (0xFFFD-0xFFFF), so every outstation on the link acts on it. No confirmation identifies which devices did.
+    type: DNP3
+    expression: ParseStatus == "valid" && IsBroadcast && IsCriticalFunction
+    severity: critical
+    mitre: ["T0855", "T0831"]
+    tags: [dnp3, control, broadcast]
+    enabled: true
+
+  - name: DNP3 Restart Or Stop Application
+    description: COLD_RESTART, WARM_RESTART or STOP_APPLICATION. Each removes an outstation from service, and a restart clears event buffers along with it.
+    type: DNP3
+    expression: ParseStatus == "valid" && FunctionCode in [13, 14, 18]
+    severity: critical
+    mitre: ["T0814", "T0816"]
+    tags: [dnp3, availability, restart]
+    enabled: true
+
+  - name: DNP3 Configuration Change
+    description: WRITE, SAVE_CONFIGURATION, ASSIGN_CLASS, ENABLE/DISABLE_UNSOLICITED or any of the file transfer and ACTIVATE_CONFIG functions. These alter what the outstation is rather than what it is doing.
+    type: DNP3
+    expression: ParseStatus == "valid" && IsConfigChange
+    severity: high
+    mitre: ["T0857", "T0839"]
+    tags: [dnp3, config]
+    enabled: true
+
+  # A config downloaded over the file functions and then activated replaces the
+  # device's behaviour wholesale.
+  - name: DNP3 File Transfer Or Config Activation
+    description: OPEN_FILE through ACTIVATE_CONFIG. A configuration written over this path and then activated replaces the outstation's behaviour, with no control command appearing anywhere in the capture.
+    type: DNP3
+    expression: ParseStatus == "valid" && FunctionCode in [25, 26, 27, 28, 29, 30, 31]
+    severity: critical
+    mitre: ["T0857", "T0839", "T0873"]
+    tags: [dnp3, config, file-transfer]
+    enabled: true
+
+  # Disabling unsolicited reporting silences the outstation's own event stream.
+  - name: DNP3 Disable Unsolicited Reporting
+    description: DISABLE_UNSOLICITED stops the outstation pushing events to the master, so a subsequent change is only visible to whatever still polls. Expected during maintenance; the timestamp is what separates the two.
+    type: DNP3
+    expression: ParseStatus == "valid" && FunctionCode == 21
+    severity: high
+    mitre: ["T0814", "T0856"]
+    tags: [dnp3, config, unsolicited]
+    enabled: true
+
+  # Site-dependent: replace the hours with the site's maintenance window.
+  - name: DNP3 Control Outside Maintenance Window
+    description: A critical control or configuration change outside 08:00-18:00 local. Replace the window with the site's own before enabling; the hours below are a placeholder, not a recommendation.
+    type: DNP3
+    expression: >-
+      ParseStatus == "valid" && (IsCriticalFunction || IsConfigChange) &&
+      !IsBusinessHours(Timestamp, 8, 18)
+    severity: high
+    mitre: ["T0855"]
+    tags: [dnp3, control, schedule, site-dependent]
+    enabled: false
+
+  # Site-dependent: a master is an IP AND a link address, and nothing on the
+  # wire binds them. A rule written on IP alone is watching half of it.
+  - name: DNP3 Control From Unapproved Master
+    description: A critical control whose source IP and DNP3 link address are not a named master pair. Both halves are checked because the link address is an identity independent of the IP and nothing in the frame binds them.
+    type: DNP3
+    expression: >-
+      ParseStatus == "valid" && IsCriticalFunction &&
+      !((SrcIP == "192.0.2.10" && Source == 4) ||
+        (SrcIP == "192.0.2.11" && Source == 5))
+    severity: critical
+    mitre: ["T0855", "T0859"]
+    tags: [dnp3, control, identity, site-dependent]
+    enabled: false
+
+  - name: DNP3 Link Address Direction Mismatch
+    description: The Control field's DIR bit disagrees with the observed network direction, so the link address and the IP tell different stories. Reported only when a TCP handshake fixed which end is the outstation.
+    type: DNP3
+    expression: ParseStatus == "valid" && DirectionMismatch
+    severity: high
+    mitre: ["T0856"]
+    tags: [dnp3, identity, spoofing]
+    enabled: true
+
+  # Recon: a Class 0 poll returns the outstation's entire static point map, and
+  # is byte-identical to what a real master sends. Breadth across outstations is
+  # the signal, not the poll itself.
+  - name: DNP3 Class 0 Integrity Poll Sweep
+    description: One source requesting the Class 0 static point map from five or more outstations within five minutes. A single Class 0 poll is routine master behaviour; polling the whole estate in one window is an inventory.
+    type: DNP3
+    expression: >-
+      ParseStatus == "valid" && FunctionCode == 1 &&
+      any(Objects, {.ObjectGroup == 60 && .Variation == 0})
+    distinct_field: Destination
+    distinct_threshold: 5
+    threshold_window: 300
+    severity: medium
+    mitre: ["T0846", "T0888"]
+    tags: [dnp3, recon, enumeration]
+    enabled: true
+
+  - name: DNP3 Outstation Sweep
+    description: One source addressing five or more DNP3 link addresses within five minutes, whatever the function. Cardinality carries no ordering, so this detects breadth rather than a scan pattern.
+    type: DNP3
+    expression: ParseStatus == "valid"
+    distinct_field: Destination
+    distinct_threshold: 5
+    threshold_window: 300
+    severity: medium
+    mitre: ["T0846"]
+    tags: [dnp3, recon, enumeration]
+    enabled: true
+
+  # The trust that runs upward: the outstation is a trusted input to the
+  # master's parser, and it sits at the least supervised point on the network.
+  - name: DNP3 Malformed Frame From Outstation
+    description: A frame whose link header CRC passed, so it came from something speaking DNP3, but whose contents did not parse. The master is a parser accepting this from the least defensible device on the estate.
+    type: DNP3
+    expression: ParseStatus == "malformed" && !IsMaster
+    severity: high
+    mitre: ["T0814", "T0836"]
+    tags: [dnp3, malformed, outstation]
+    enabled: true
+
+  - name: DNP3 Malformed Frame
+    description: Any frame with a valid link header CRC that failed to parse, in either direction. Includes block CRC failures and lengths below the protocol minimum.
+    type: DNP3
+    expression: ParseStatus == "malformed"
+    severity: medium
+    tags: [dnp3, malformed, triage]
+    enabled: true
+
+  # The outstation rejecting a request is the DNP3 analogue of a Modbus
+  # exception, and the response signature of a scan or a fuzz attempt.
+  - name: DNP3 Outstation Rejected Request
+    description: A response reporting an unsupported function code, an unknown object or a parameter error. Routine in small numbers during commissioning; in volume it is a client asking for things the device does not have.
+    type: DNP3
+    expression: >-
+      ParseStatus == "valid" &&
+      (IINNoFuncCodeSupport || IINObjectUnknown || IINParameterError)
+    severity: medium
+    mitre: ["T0846"]
+    tags: [dnp3, rejection, recon]
+    enabled: true
+
+  - name: DNP3 Outstation Restarted
+    description: A response with the device restart indication set. Expected after maintenance, and also what an outstation reports after a COLD_RESTART it was told to perform.
+    type: DNP3
+    expression: ParseStatus == "valid" && IINDeviceRestart
+    severity: medium
+    mitre: ["T0816"]
+    tags: [dnp3, availability]
+    enabled: true
+
+  - name: DNP3 Event Buffer Overflow
+    description: The outstation reports its event buffer overflowed, so events were discarded before the master read them. A gap in the process record that no network capture can recover.
+    type: DNP3
+    expression: ParseStatus == "valid" && IINEventBufferOverflow
+    severity: medium
+    mitre: ["T0814"]
+    tags: [dnp3, availability, data-loss]
+    enabled: true
+
+  - name: DNP3 Points In Local Control
+    description: The outstation reports one or more outputs switched to local control, so the master can no longer operate them. Normal during field work; unexplained, it means someone is at the device.
+    type: DNP3
+    expression: ParseStatus == "valid" && IINLocalControl
+    severity: medium
+    tags: [dnp3, availability]
+    enabled: true
+
+  - name: DNP3 Configuration Corrupt
+    description: The outstation reports its configuration is corrupt.
+    type: DNP3
+    expression: ParseStatus == "valid" && IINConfigCorrupt
+    severity: high
+    mitre: ["T0839"]
+    tags: [dnp3, config, integrity]
+    enabled: true
+
+  - name: DNP3 Secure Authentication Observed
+    description: A Secure Authentication v5 exchange (function 32, 33 or 131). Informational, and worth recording because most of this estate's outstations are expected to support none.
+    type: DNP3
+    expression: ParseStatus == "valid" && IsAuthentication
+    severity: info
+    tags: [dnp3, authentication, sav5]
+    enabled: true
+
+  # Coverage evidence. Keep this enabled so a quiet result set can be told apart
+  # from a direction that stopped decoding.
+  - name: DNP3 Capture Loss
+    description: A direction stopped producing decodable frames. Everything between this marker and the next decoded record is unobserved, so an empty hunt result over the same endpoints and window is not evidence of absence.
+    type: DNP3
+    expression: ParseStatus == "lost"
+    severity: info
+    tags: [dnp3, visibility, coverage]
+    enabled: true
+
+  - name: DNP3 Objects Truncated
+    description: Object parsing stopped before the end of a fragment, so the recorded objects are a prefix of what was sent. Usually an unmodelled group or variation; in volume against one outstation it is also what a qualifier fuzzer produces.
+    type: DNP3
+    expression: ParseStatus == "valid" && ObjectsTruncated
+    severity: low
+    tags: [dnp3, visibility, triage]
+    enabled: true
+
+  - name: DNP3 Unsupported Frame
+    description: A frame that framed correctly but carries something the decoder does not model, including link control frames and unassigned function codes.
+    type: DNP3
+    expression: ParseStatus == "unsupported"
+    severity: info
+    tags: [dnp3, visibility, triage]
+    enabled: true

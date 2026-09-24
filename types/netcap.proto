@@ -3381,14 +3381,53 @@ message DNP3 {
   // Security monitoring
   bool IsCriticalFunction = 37;  // Critical control function (operate, direct operate, etc.)
   bool IsConfigChange = 38;      // Configuration change attempt
-  bool IsAuthentication = 39;    // Secure authentication message
+  bool IsAuthentication = 39;    // Secure Authentication v5 message
   string SecurityContext = 40;   // Additional security context
   
   // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
   string CommunityID = 41;
+
+  // Decode status. "valid", "malformed", "unsupported", or "lost" on a capture
+  // loss marker. A malformed record carries framing metadata only.
+  string ParseStatus = 42;
+  string ParseError = 43;
+  // Set only on "lost" markers: bytes reassembly reported missing, -1 when the
+  // amount is unknown, 0 when framing rather than the capture became unusable.
+  int64 LostBytes = 44;
+
+  // Data Link Layer control field breakdown
+  int32 LinkFunctionCode = 45;      // Low nibble of Control
+  string LinkFunctionCodeName = 46; // Depends on the PRM bit
+  bool LinkFCB = 47;                // Frame count bit
+  bool LinkFCV = 48;                // Frame count valid (primary frames)
+  bool LinkDFC = 49;                // Data flow control: outstation buffer full
+  bool IsBroadcast = 50;            // Destination 0xFFFD-0xFFFF
+  bool IsSelfAddress = 51;          // Destination 0xFFFC
+
+  // True when the Control field's DIR bit disagrees with the observed network
+  // direction. The link address is an identity independent of the IP; this
+  // reports the two disagreeing.
+  bool DirectionMismatch = 52;
+
+  bool HeaderCRCValid = 53;
+  bool BlockCRCValid = 54;
+  // Object parsing stopped before the end of the fragment, so Objects is a
+  // prefix of what was sent rather than the whole set.
+  bool ObjectsTruncated = 55;
+
+  // Request/response correlation, keyed on the application sequence number
+  string CorrelationStatus = 56;  // matched, unmatched, ambiguous, not_applicable
+  int64 RequestTimestamp = 60;    // Set on a matched response
+  int64 ResponseLatency = 61;     // Nanoseconds between request and response
+
+  // Select-Before-Operate correlation
+  string SBOStatus = 57;          // matched, operate_without_select, select_never_operated,
+                                  // sbo_object_mismatch, sbo_sequence_mismatch, select_expired
+  int64 SelectTimestamp = 58;     // Set on a matched Operate
+  int64 OperateLatency = 59;      // Nanoseconds between Select and Operate
 }
 
-// DNP3Object represents a DNP3 object
+// DNP3Object represents a DNP3 object header and the objects it describes
 message DNP3Object {
   int32 ObjectGroup = 1;         // Object group (e.g., 1=Binary Input, 12=CROB)
   int32 Variation = 2;           // Object variation
@@ -3396,8 +3435,28 @@ message DNP3Object {
   int32 Qualifier = 4;           // Range qualifier
   int32 StartIndex = 5;          // Start index
   int32 StopIndex = 6;           // Stop index
-  int32 Count = 7;               // Object count
+  int32 Count = 7;               // Object count, -1 for "all objects"
   bytes Data = 8;                // Raw object data
+  int32 PrefixCode = 9;          // Qualifier bits 6-4: per-object index/size prefix
+  int32 RangeSpecifier = 10;     // Qualifier bits 3-0: range field form
+  repeated DNP3CROB ControlBlocks = 11; // Decoded group 12 control blocks
+}
+
+// DNP3CROB is a Control Relay Output Block (group 12 variation 1/2), the
+// object that operates a breaker.
+message DNP3CROB {
+  int64 Index = 1;             // Point index (32-bit unsigned on the wire). Not an address: meaning comes from the device profile
+  string PointName = 2;        // Resolved from -dnp3-point-map, empty when unmapped
+  int32 ControlCode = 3;       // Raw control octet
+  string ControlCodeName = 4;  // e.g. LATCH_ON, PULSE_ON/TRIP
+  int32 TripCloseCode = 5;     // 0=NUL, 1=CLOSE, 2=TRIP
+  int32 OperationType = 6;     // 0=NUL, 1=PULSE_ON, 2=PULSE_OFF, 3=LATCH_ON, 4=LATCH_OFF
+  bool Clear = 7;              // Cancel a queued or executing operation
+  bool Queue = 8;              // Obsolete in IEEE 1815-2012, still seen on older devices
+  int32 Count = 9;             // Repetitions
+  int64 OnTime = 10;           // Milliseconds (32-bit unsigned on the wire)
+  int64 OffTime = 11;          // Milliseconds (32-bit unsigned on the wire)
+  int32 StatusCode = 12;       // Echoed in responses: 0=SUCCESS
 }
 
 // SOCKS is a protocol for routing packets between a client and server

@@ -160,6 +160,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 				IgnoreFSMerr:         c.Bool("ignorefsmerr"),
 				AllowMissingInit:     c.Bool("allowmissinginit"),
 				ModbusRTUEndpoints:   c.String("modbus-rtu-endpoints"),
+				DNP3PointMap:         c.String("dnp3-point-map"),
 				Debug:                c.Bool("debug"),
 				HexDump:              c.Bool("hexdump"),
 				WaitForConnections:   c.Bool("wait-conns"),
