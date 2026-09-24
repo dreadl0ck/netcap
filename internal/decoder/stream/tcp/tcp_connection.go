@@ -451,7 +451,7 @@ func (t *tcpConnection) decode() {
 
 	// choose the decoder to run against the data stream
 	var (
-		cr, sr = t.client.DataSlice().First(), t.server.DataSlice().First()
+		cr, sr = t.client.DataSlice().FirstNonEmpty(), t.server.DataSlice().FirstNonEmpty()
 		found  bool
 	)
 

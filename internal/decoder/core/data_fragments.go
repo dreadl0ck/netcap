@@ -108,6 +108,22 @@ func (d DataFragments) First() []byte {
 	return nil
 }
 
+// FirstNonEmpty returns the first fragment that carries bytes.
+//
+// Reassembly prepends a zero-length marker when a direction begins midstream
+// with no observed SYN, so First returns no bytes for every such conversation.
+// Protocol detection run on that marker rejects the real protocol and then
+// admits whichever decoder accepts an empty stream.
+func (d DataFragments) FirstNonEmpty() []byte {
+	for _, dt := range d {
+		if raw := dt.Raw(); len(raw) > 0 {
+			return raw
+		}
+	}
+
+	return nil
+}
+
 // SourceIP returns the source IP address from the first fragment's network layer.
 // Returns empty string if no fragments are available.
 func (d DataFragments) SourceIP() string {
