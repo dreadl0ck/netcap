@@ -246,9 +246,16 @@ func hasTLSSecurityHandshake(data []byte) bool {
 }
 
 // hasDNP3SecureAuth checks for DNP3 Secure Authentication (DNP3-SA) headers
+// DNP3 Secure Authentication v5 application function codes (IEEE 1815 Table 4-1).
+const (
+	dnp3AuthenticateReq      = 0x20
+	dnp3AuthenticateReqNoAck = 0x21
+	dnp3AuthenticateResp     = 0x83
+)
+
 func hasDNP3SecureAuth(data []byte) bool {
-	// DNP3 start bytes: 0x05 0x64
-	if len(data) < 12 {
+	// Link header (10) + transport (1) + application control (1) + function code.
+	if len(data) < 13 {
 		return false
 	}
 
@@ -256,14 +263,22 @@ func hasDNP3SecureAuth(data []byte) bool {
 		return false
 	}
 
-	// DNP3-SA uses object group 120 for authentication
-	// Look for authentication object group in the application layer
-	// After data link layer (10 bytes min) and transport layer (1 byte)
-	for i := 11; i < len(data)-2; i++ {
-		// Object group 120 (0x78) = Authentication
-		if data[i] == 0x78 {
-			return true
-		}
+	// The function code is the third user octet, and DNP3 interleaves a CRC
+	// only after every 16 user octets, so offsets 10 to 12 are always readable
+	// without stripping one.
+	//
+	// This used to scan from offset 11 for any byte equal to 0x78, on the
+	// grounds that object group 120 is authentication. 0x78 occurs constantly
+	// in addresses, CRCs and measurement data, so it claimed essentially every
+	// DNP3 conversation -- and at port 2404 it sits ahead of the DNP3 decoder
+	// at 20000, which meant plain telemetry was recorded as a security protocol
+	// and never reached a decoder that could parse it.
+	//
+	// Group 120 objects carried inside an ordinary response are left to the
+	// DNP3 decoder, which names them and parses object headers properly.
+	switch data[12] {
+	case dnp3AuthenticateReq, dnp3AuthenticateReqNoAck, dnp3AuthenticateResp:
+		return true
 	}
 
 	return false

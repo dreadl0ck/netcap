@@ -33,6 +33,12 @@ var socksLog = zap.NewNop()
 
 const serviceSOCKS = "SOCKS"
 
+// maxSocks5Methods bounds the authentication method count in a greeting.
+// RFC 1928 allows up to 255, but only four are assigned and real clients offer
+// one to four; a generous ceiling still excludes any binary payload whose
+// second byte happens to be large.
+const maxSocks5Methods = 16
+
 // Decoder for protocol analysis and writing audit records to disk.
 var Decoder = &decoder.StreamDecoder{
 	Type:        types.Type_NC_SOCKS,
@@ -48,14 +54,28 @@ var Decoder = &decoder.StreamDecoder{
 		return err
 	},
 	CanDecode: func(client, server []byte) bool {
-		// SOCKS5 handshake starts with version byte (0x05) and number of auth methods
-		if len(client) >= 3 && client[0] == 0x05 && int(client[1])+2 <= len(client) {
-			return true
+		// SOCKS5 greeting: version 0x05, a method count, then that many method
+		// bytes.
+		//
+		// The count used to be compared against the length of the entire
+		// concatenated direction, which makes the test easier the longer the
+		// stream gets rather than harder. Every DNP3 conversation of 102 bytes
+		// or more satisfied it: DNP3 frames begin 0x05 0x64, so the version
+		// byte matched and 0x64 was read as "100 authentication methods".
+		//
+		// No client offers 100 methods -- the registry has four assigned values
+		// -- so bounding the count is what separates the two protocols.
+		if len(client) >= 3 && client[0] == 0x05 {
+			methods := int(client[1])
+			if methods >= 1 && methods <= maxSocks5Methods && len(client) >= 2+methods {
+				return true
+			}
 		}
 		// SOCKS4 request starts with version byte (0x04) and command byte
 		if len(client) >= 9 && client[0] == 0x04 && (client[1] == 0x01 || client[1] == 0x02) {
 			return true
 		}
+
 		return false
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {

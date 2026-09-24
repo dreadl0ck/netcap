@@ -70,7 +70,7 @@ test-bench:
 # single target per invocation, so we discover and loop over every target.
 # Override the per-target budget with FUZZTIME (default 10s).
 FUZZTIME ?= 10s
-FUZZ_PKGS := ./internal/decoder/packet/... ./internal/decoder/stream/smtp/... ./internal/decoder/stream/pop3/...
+FUZZ_PKGS := ./internal/decoder/packet/... ./internal/decoder/stream/smtp/... ./internal/decoder/stream/pop3/... ./internal/decoder/stream/kerberosaudit/...
 test-fuzz:
 	@echo "Running fuzz smoke (FUZZTIME=$(FUZZTIME) per target)..."
 	@for pkg in $(FUZZ_PKGS); do \
