@@ -103,20 +103,24 @@ func (i *ircReader) New(conversation *core.ConversationInfo) core.StreamDecoderI
 
 // Decode parses the IRC conversation
 func (i *ircReader) Decode() {
-	streamutils.DecodeConversation(
+	streamutils.DecodeConversationAt(
 		i.conversation.Ident,
 		i.conversation.Data,
-		func(b *bufio.Reader) error {
-			return i.readMessage(b, true)
+		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+			return i.readMessage(b, pos, true)
 		},
-		func(b *bufio.Reader) error {
-			return i.readMessage(b, false)
+		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+			return i.readMessage(b, pos, false)
 		},
 	)
 }
 
 // readMessage parses IRC messages (both client and server)
-func (i *ircReader) readMessage(b *bufio.Reader, isClient bool) error {
+func (i *ircReader) readMessage(b *bufio.Reader, pos *streamutils.ReadPosition, isClient bool) error {
+	// Taken before the line is consumed, so the record carries the time of the
+	// packet the message started in rather than the one after it.
+	timestamp, fromServer := pos.Timestamp(), pos.FromServer()
+
 	line, err := b.ReadString('\n')
 	if err != nil {
 		return err
@@ -128,7 +132,7 @@ func (i *ircReader) readMessage(b *bufio.Reader, isClient bool) error {
 	prefix, command, params := i.parseIRCMessage(line)
 
 	// Write IRC audit record
-	i.writeIRCRecord(prefix, command, params, line)
+	i.writeIRCRecord(prefix, command, params, line, timestamp, fromServer)
 
 	// Handle specific commands
 	switch strings.ToUpper(command) {
@@ -267,7 +271,7 @@ func (i *ircReader) trackDCCConnection() {
 }
 
 // writeIRCRecord writes an IRC audit record
-func (i *ircReader) writeIRCRecord(prefix, command string, params []string, rawLine string) {
+func (i *ircReader) writeIRCRecord(prefix, command string, params []string, rawLine string, timestamp int64, fromServer bool) {
 	if Decoder.Writer == nil {
 		return
 	}
@@ -278,12 +282,22 @@ func (i *ircReader) writeIRCRecord(prefix, command string, params []string, rawL
 		message = params[1]
 	}
 
+	// An IRC record describes one message, so a line the server sent belongs to
+	// the server. Every record used to name the client.
+	srcIP, dstIP := i.conversation.ClientIP, i.conversation.ServerIP
+	srcPort, dstPort := i.conversation.ClientPort, i.conversation.ServerPort
+
+	if fromServer {
+		srcIP, dstIP = dstIP, srcIP
+		srcPort, dstPort = dstPort, srcPort
+	}
+
 	irc := &types.IRC{
-		Timestamp:     i.conversation.FirstClientPacket.UnixNano(),
-		SrcIP:         i.conversation.ClientIP,
-		DstIP:         i.conversation.ServerIP,
-		SrcPort:       i.conversation.ClientPort,
-		DstPort:       i.conversation.ServerPort,
+		Timestamp:     timestamp,
+		SrcIP:         srcIP,
+		DstIP:         dstIP,
+		SrcPort:       srcPort,
+		DstPort:       dstPort,
 		Prefix:        prefix,
 		Command:       command,
 		Parameters:    params,

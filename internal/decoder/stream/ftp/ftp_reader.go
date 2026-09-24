@@ -97,6 +97,11 @@ func CleanupExpiredConnections() {
 // ftpReader implements the stream decoder interface for FTP
 type ftpReader struct {
 	conversation *core.ConversationInfo
+
+	// timestamp of the message currently being read, from the packet that
+	// carried its first byte.
+	timestamp int64
+
 	lastCommand  string
 	lastFilename string
 	lastArg      string
@@ -117,20 +122,24 @@ func (f *ftpReader) New(conversation *core.ConversationInfo) core.StreamDecoderI
 
 // Decode parses the FTP control channel conversation
 func (f *ftpReader) Decode() {
-	streamutils.DecodeConversation(
+	streamutils.DecodeConversationAt(
 		f.conversation.Ident,
 		f.conversation.Data,
-		func(b *bufio.Reader) error {
-			return f.readClient(b)
+		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+			return f.readClient(b, pos)
 		},
-		func(b *bufio.Reader) error {
-			return f.readServer(b)
+		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+			return f.readServer(b, pos)
 		},
 	)
 }
 
 // readClient parses FTP commands from client
-func (f *ftpReader) readClient(b *bufio.Reader) error {
+func (f *ftpReader) readClient(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+	// Taken before the line is consumed, so the record carries the time of the
+	// packet the command started in.
+	f.timestamp = pos.Timestamp()
+
 	line, err := b.ReadString('\n')
 	if err != nil {
 		return err
@@ -278,7 +287,9 @@ func (f *ftpReader) trackDataConnection() {
 }
 
 // readServer parses FTP responses from server
-func (f *ftpReader) readServer(b *bufio.Reader) error {
+func (f *ftpReader) readServer(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+	f.timestamp = pos.Timestamp()
+
 	line, err := b.ReadString('\n')
 	if err != nil {
 		return err
@@ -394,10 +405,7 @@ func (f *ftpReader) writeFTPRecord(isResponse bool, command, argument string, re
 	}
 
 	ftp := &types.FTP{
-		// The reader consumes each direction through a bufio.Reader, so there
-		// is no fragment here to take a capture time from and every record
-		// carries the conversation's. See docs/industrial-control-systems.md.
-		Timestamp:          f.conversation.FirstClientPacket.UnixNano(),
+		Timestamp:          f.timestamp,
 		SrcIP:              srcIP,
 		DstIP:              dstIP,
 		SrcPort:            srcPort,

@@ -33,7 +33,12 @@ import (
 
 // imapReader implements the stream decoder interface for IMAP
 type imapReader struct {
-	conversation    *core.ConversationInfo
+	conversation *core.ConversationInfo
+
+	// timestamp of the message currently being read, from the packet that
+	// carried its first byte.
+	timestamp int64
+
 	currentMailbox  string
 	username        string
 	authMethod      string
@@ -54,20 +59,23 @@ func (i *imapReader) New(conversation *core.ConversationInfo) core.StreamDecoder
 
 // Decode parses the IMAP conversation
 func (i *imapReader) Decode() {
-	streamutils.DecodeConversation(
+	streamutils.DecodeConversationAt(
 		i.conversation.Ident,
 		i.conversation.Data,
-		func(b *bufio.Reader) error {
-			return i.readClient(b)
+		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+			return i.readClient(b, pos)
 		},
-		func(b *bufio.Reader) error {
-			return i.readServer(b)
+		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+			return i.readServer(b, pos)
 		},
 	)
 }
 
 // readClient parses IMAP commands from client
-func (i *imapReader) readClient(b *bufio.Reader) error {
+func (i *imapReader) readClient(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+	// Taken before the line is consumed.
+	i.timestamp = pos.Timestamp()
+
 	line, err := b.ReadString('\n')
 	if err != nil {
 		return err
@@ -130,7 +138,9 @@ func (i *imapReader) readClient(b *bufio.Reader) error {
 }
 
 // readServer parses IMAP responses from server
-func (i *imapReader) readServer(b *bufio.Reader) error {
+func (i *imapReader) readServer(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+	i.timestamp = pos.Timestamp()
+
 	line, err := b.ReadString('\n')
 	if err != nil {
 		return err
@@ -222,10 +232,7 @@ func (i *imapReader) writeIMAPRecord(isResponse bool, tag, command string, argum
 	}
 
 	imap := &types.IMAP{
-		// The reader consumes each direction through a bufio.Reader, so there
-		// is no fragment here to take a capture time from and every record
-		// carries the conversation's. See docs/industrial-control-systems.md.
-		Timestamp:         i.conversation.FirstClientPacket.UnixNano(),
+		Timestamp:         i.timestamp,
 		SrcIP:             srcIP,
 		DstIP:             dstIP,
 		SrcPort:           srcPort,

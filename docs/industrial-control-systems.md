@@ -133,12 +133,16 @@ reader that needs the whole direction in one slice can still resolve a message's
 offset back to the fragment it arrived in. That is what made converting the
 merged readers a few lines each rather than a restructure apiece.
 
+The line-oriented readers — `ftp`, `imap`, `irc` — go through
+`streamutils.DecodeConversationAt`, which exposes a `ReadPosition` alongside the
+`bufio.Reader`. The offset is exact rather than estimated: bytes handed to the
+buffer, minus what the buffer still holds, minus what `bufio` has read ahead and
+not yet returned. On the same capture, FTP goes from 7 distinct timestamps
+across 142 records to 136, and IMAP from 5 across 163 to 59 — the remainder
+being multi-line responses that genuinely share a packet.
+
 **Known and still open:**
 
-* `ftp`, `imap` and `irc` read each direction through a `bufio.Reader`, so there
-  is no fragment to take a capture time from and every record carries the
-  conversation's. Their direction is correct: `ftp` and `imap` swap endpoints on
-  `IsResponse`, which `TestResponseRecordsAreNotAttributedToTheClient` asserts.
 * `http` and `socks` attribute every record to the client, and that is right —
   both record types model a transaction, carrying request and reply fields in
   one record, rather than a single message.
