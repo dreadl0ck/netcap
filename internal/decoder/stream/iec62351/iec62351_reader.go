@@ -559,42 +559,40 @@ func (r *iec62351Reader) parseDNP3SAApplicationLayer(msg *types.IEC62351, frame 
 // dnp3SAObjectGroup is object group 120, DNP3 Secure Authentication.
 const dnp3SAObjectGroup = 0x78
 
-// parseDNP3SAObject parses DNP3 Secure Authentication objects
+// parseDNP3SAObject applies the semantics of a Secure Authentication object.
+//
+// The message type name is not set here. This switch used to assign it for all
+// ten variations, repeating getDNP3SAObjectName which the caller has already
+// applied -- two copies of one table, verified identical, with nothing to keep
+// them that way.
 func (r *iec62351Reader) parseDNP3SAObject(msg *types.IEC62351, data []byte, variation uint8) {
 	switch variation {
 	case 1: // Authentication Challenge
 		msg.IsRequest = true
-		msg.MessageTypeName = "AuthenticationChallenge"
 		if len(data) >= 10 {
 			msg.ChallengeSequence = int32(binary.LittleEndian.Uint32(data[4:8]))
 		}
 
 	case 2: // Authentication Reply
 		msg.IsRequest = false
-		msg.MessageTypeName = "AuthenticationReply"
 
 	case 3: // Aggressive Mode Request
 		msg.IsRequest = true
-		msg.MessageTypeName = "AggressiveModeRequest"
 
 	case 4: // Session Key Status Request
 		msg.IsKeyManagementEvent = true
 		msg.AuditEventType = AuditEventKeyManagement
-		msg.MessageTypeName = "SessionKeyStatusRequest"
 
 	case 5: // Session Key Status
 		msg.IsKeyManagementEvent = true
-		msg.MessageTypeName = "SessionKeyStatus"
 
 	case 6: // Session Key Change
 		msg.IsKeyManagementEvent = true
 		msg.IsCriticalOperation = true
-		msg.MessageTypeName = "SessionKeyChange"
 
 	case 7: // Error
 		msg.IsSecurityAlert = true
 		msg.AuditEventOutcome = OutcomeFailure
-		msg.MessageTypeName = "AuthenticationError"
 		if len(data) >= 6 {
 			msg.ErrorCode = int32(binary.LittleEndian.Uint16(data[4:6]))
 			msg.ErrorMessage = getDNP3SAErrorMessage(msg.ErrorCode)
@@ -602,17 +600,14 @@ func (r *iec62351Reader) parseDNP3SAObject(msg *types.IEC62351, data []byte, var
 
 	case 8: // User Certificate
 		msg.AuthenticationMechanism = AuthMechanismX509
-		msg.MessageTypeName = "UserCertificate"
 
 	case 9: // MAC Value
 		msg.AuthenticationMechanism = AuthMechanismHMAC
-		msg.MessageTypeName = "MACValue"
 
 	case 10: // User Status Change
 		msg.IsAuthorizationEvent = true
 		msg.IsCriticalOperation = true
 		msg.AuditEventType = AuditEventConfigChange
-		msg.MessageTypeName = "UserStatusChange"
 	}
 }
 

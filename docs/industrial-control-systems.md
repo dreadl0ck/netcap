@@ -148,11 +148,10 @@ being multi-line responses that genuinely share a packet.
   one record, rather than a single message. `socks` also timestamps from the
   conversation, which is correct for the same reason: its one record describes a
   negotiation that begins when the connection does.
-* `iec62351`'s reader merges both directions and timestamps from the
-  conversation, across all four of its protocol paths. The DNP3-SA framing
-  defects are fixed; this one is a reader-wide restructure.
-* `parseDNP3SAObject` re-assigns the message type names `getDNP3SAObjectName`
-  has already produced, so the table exists twice.
+Nothing in this area is currently known-open. `reader_hygiene_test.go` reports
+0 of 21 readers collapsing a conversation to one timestamp, and the two that
+attribute every record to the client are the two whose record type models a
+transaction.
 
 Four signatures were tightened separately in 2026-09 because they were claiming
 ICS traffic they could not parse. `TestFallbackShadowingIsRecorded` and
