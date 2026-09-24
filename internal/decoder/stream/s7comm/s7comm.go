@@ -271,6 +271,10 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// Varies with the data: a data-transfer PDU carrying a validated S7
+	// protocol id is strong, a bare TPKT/COTP header is not.
+	Specificity: core.SpecificityWeak,
+	Confidence:  s7CommConfidence,
 	CanDecode: func(client, server []byte) bool {
 		// S7comm is encapsulated in TPKT (RFC 1006) on TCP port 102
 		// Check for TPKT header signature
@@ -281,6 +285,44 @@ var Decoder = &decoder.StreamDecoder{
 	},
 	Factory: &s7commReader{},
 	Typ:     core.TCP, // S7comm uses TCP port 102
+}
+
+// s7CommConfidence reports how much of an S7 message was actually recognized.
+//
+// canDecodeS7Comm accepts connection requests, confirms and the other non-DT
+// COTP PDU types without ever looking for an S7 payload, because at that point
+// in a session there is none to look for. That is correct for S7, and it also
+// means every X.224 connection request matches -- including RDP's, which is why
+// rdp at port 3389 was unreachable through the port-independent scan while
+// s7comm sat at 102.
+//
+// So the claim is only strong when an S7 protocol id was validated.
+func s7CommConfidence(client, server []byte) int {
+	if hasValidatedS7Payload(client) || hasValidatedS7Payload(server) {
+		return core.SpecificityStructural
+	}
+
+	return core.SpecificityWeak
+}
+
+// hasValidatedS7Payload reports whether data is a COTP data transfer whose
+// payload carries a recognized S7 protocol id.
+func hasValidatedS7Payload(data []byte) bool {
+	if !canDecodeS7Comm(data) {
+		return false
+	}
+
+	cotpOffset := minTPKTSize
+	if data[cotpOffset+1]&0xF0 != COTPTypeDT {
+		return false
+	}
+
+	s7commOffset := cotpOffset + 1 + int(data[cotpOffset])
+	if s7commOffset >= len(data) {
+		return false
+	}
+
+	return data[s7commOffset] == s7commProtocolID || data[s7commOffset] == s7commPlusProtocolID
 }
 
 // canDecodeS7Comm checks if the data looks like a TPKT/COTP/S7comm message.

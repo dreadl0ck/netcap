@@ -103,6 +103,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// a declared length that must agree with the datagram, plus a type enum.
+	Specificity: core.SpecificityStructural,
+
 	CanDecode: func(client, server []byte) bool {
 		// MQTT-SN uses UDP, check both client and server data for valid messages
 		return canDecodeMQTTSN(client) || canDecodeMQTTSN(server)

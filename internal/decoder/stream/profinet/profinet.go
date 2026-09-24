@@ -122,6 +122,11 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// Varies with the data: PROFINET CM is DCE/RPC version 4, and accepting
+	// version 5 as well makes every Windows MSRPC conversation a candidate.
+	Specificity: core.SpecificityWeak,
+	Confidence:  profinetConfidence,
+
 	CanDecode: func(client, server []byte) bool {
 		// Check both directions for PROFINET traffic over DCE/RPC
 		return canDecodePROFINET(client) || canDecodePROFINET(server)
@@ -136,6 +141,35 @@ var Decoder = &decoder.StreamDecoder{
 // canDecodePROFINET checks if the data looks like a PROFINET message.
 // PROFINET uses DCE/RPC as transport, so we look for DCE/RPC headers
 // with PROFINET-specific interface UUIDs.
+// profinetConfidence separates real PROFINET from the DCE/RPC it tolerates.
+//
+// PROFINET CM runs over DCE/RPC version 4, the connectionless form.
+// canDecodePROFINET also accepts version 5 to stay usable mid-session, but
+// version 5 is the connection-oriented form Windows RPC uses, so on a dynamic
+// port a v5 conversation is far more likely to be MSRPC. Measured on The
+// Ultimate PCAP, ranking PROFINET above dcerpc without this took 15 genuine
+// MSRPC conversations on ports 49667 and 61737.
+func profinetConfidence(client, server []byte) int {
+	best := core.SpecificityWeak
+
+	for _, data := range [][]byte{client, server} {
+		if !canDecodePROFINET(data) {
+			continue
+		}
+
+		// A Bind carrying the PROFINET interface UUID is conclusive.
+		if packetType := data[2]; packetType == dceRPCBind || packetType == dceRPCAlterContext {
+			return core.SpecificityMagic
+		}
+
+		if data[0] == dceRPCVersion {
+			best = max(best, core.SpecificityStructural)
+		}
+	}
+
+	return best
+}
+
 func canDecodePROFINET(data []byte) bool {
 	if len(data) < dceRPCHeaderSize {
 		return false

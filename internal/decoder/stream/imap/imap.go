@@ -56,6 +56,9 @@ var Decoder = &decoder.StreamDecoder{
 		}
 		return nil
 	},
+	// unanchored four-byte "* OK".
+	Specificity: core.SpecificityWeak,
+
 	CanDecode: func(client, server []byte) bool {
 		// IMAP server starts with "* OK" greeting
 		if bytes.Contains(server, imapGreeting) {

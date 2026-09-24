@@ -77,6 +77,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// the BVLC type byte, a function enum and a bounded length.
+	Specificity: core.SpecificityStructural,
+
 	CanDecode: func(client, server []byte) bool {
 		// BACnet/IP runs over UDP, check both directions
 		return canDecodeBACnetIP(client) || canDecodeBACnetIP(server)

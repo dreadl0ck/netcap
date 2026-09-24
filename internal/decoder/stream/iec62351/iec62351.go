@@ -101,6 +101,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// a union of security-extension shapes over several carriers.
+	Specificity: core.SpecificityStructural,
+
 	CanDecode: func(client, server []byte) bool {
 		// IEC 62351 security extensions can appear in various underlying protocols
 		// We check for security-related patterns in:

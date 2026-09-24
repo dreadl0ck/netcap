@@ -53,6 +53,10 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// Varies with the data: a greeting the server answered with a method
+	// selection is corroborated, a client-side greeting alone is three bytes.
+	Specificity: core.SpecificityWeak,
+	Confidence:  socksConfidence,
 	CanDecode: func(client, server []byte) bool {
 		// SOCKS5 greeting: version 0x05, a method count, then that many method
 		// bytes.
@@ -83,4 +87,29 @@ var Decoder = &decoder.StreamDecoder{
 	},
 	Factory: &socksReader{},
 	Typ:     core.TCP, // SOCKS uses TCP port 1080
+}
+
+// socksConfidence reports whether the server corroborated a SOCKS5 greeting.
+//
+// A greeting alone is one fixed byte and a bounded count, which a DCE/RPC
+// header also satisfies -- version 5, minor 0 or 1, packet type under 20 -- and
+// dcerpc sits at port 135 against socks at 1080. A server that replied with a
+// method selection settles it.
+func socksConfidence(client, server []byte) int {
+	if len(server) >= 2 && server[0] == 0x05 && isSocks5Method(server[1]) {
+		return core.SpecificityStructural
+	}
+
+	return core.SpecificityWeak
+}
+
+// isSocks5Method reports whether b is a method a server would select: no
+// authentication, GSSAPI, username/password, or "none acceptable".
+func isSocks5Method(b byte) bool {
+	switch b {
+	case 0x00, 0x01, 0x02, 0xFF:
+		return true
+	}
+
+	return false
 }

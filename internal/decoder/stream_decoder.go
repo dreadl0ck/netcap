@@ -58,6 +58,16 @@ type (
 		// canDecode checks whether the decoder can parse the protocol
 		CanDecode func(client []byte, server []byte) bool
 
+		// Specificity declares how much evidence CanDecode requires, using the
+		// core.Specificity* scale. It ranks decoders in the port-independent
+		// scan, which would otherwise be decided by port number alone.
+		Specificity int
+
+		// Confidence optionally reports the specificity of one match, for
+		// decoders whose evidence varies with the input. When nil, Specificity
+		// is used for every match.
+		Confidence func(client []byte, server []byte) int
+
 		// factory for stream readers
 		Factory core.StreamDecoderFactory
 
@@ -143,6 +153,16 @@ func (sd *StreamDecoder) NumRecords() int64 {
 // to determine whether the decoder can understand the protocol.
 func (sd *StreamDecoder) CanDecodeStream(client []byte, server []byte) bool {
 	return sd.CanDecode(client, server)
+}
+
+// MatchSpecificity reports how much evidence this decoder required to accept
+// these bytes, preferring a per-match answer when the decoder supplies one.
+func (sd *StreamDecoder) MatchSpecificity(client, server []byte) int {
+	if sd.Confidence != nil {
+		return sd.Confidence(client, server)
+	}
+
+	return sd.Specificity
 }
 
 // Transport returns the transport protocol (Layer 4 in the OSI model)

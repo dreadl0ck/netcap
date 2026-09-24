@@ -68,6 +68,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// a three-byte message type, a chunk type and a size that must be sane.
+	Specificity: core.SpecificityStructural,
+
 	CanDecode: func(client, server []byte) bool {
 		// OPC UA Binary Protocol messages start with a 3-byte ASCII message type
 		// followed by a 1-byte chunk type, then a 4-byte little-endian message size

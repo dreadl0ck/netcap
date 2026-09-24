@@ -98,11 +98,7 @@ func SelectDecoder(in *SelectionInput) (Selection, bool) {
 		return sel, true
 	}
 
-	if sel, ok := selectByScan(in); ok {
-		return sel, true
-	}
-
-	return selectUDPList(in)
+	return selectByScan(in)
 }
 
 // eligible reports whether a decoder can serve this transport and can produce a
@@ -158,58 +154,63 @@ func selectByPort(in *SelectionInput) (Selection, bool) {
 	}, true
 }
 
-// selectByScan tries every registered decoder in ascending port order.
+// selectByScan asks every eligible decoder and keeps the one that required the
+// most evidence.
 //
-// SortedDecoderPorts exists because ranging over the map let a different
-// decoder win between runs whenever several matched.
+// It used to keep the first that said yes, walking ports in ascending order.
+// Port number is not a measure of anything, so that let a one-byte check on a
+// low port outrank a checksum on a high one: measured over one sample per
+// decoder, 5 of 29 protocols went to the wrong decoder off their own port. The
+// plainest case was SMTP, whose signature requires everything FTP's does and
+// more, losing because 25 > 21.
+//
+// Ties keep ascending port order, which is what SortedDecoderPorts is for:
+// ranging over the map let a different decoder win between runs whenever
+// several matched equally.
 func selectByScan(in *SelectionInput) (Selection, bool) {
-	for _, port := range SortedDecoderPorts {
-		sd := DefaultStreamDecoders[port]
-		if !eligible(sd, in.Transport) {
-			continue
+	var (
+		best  core.StreamDecoderAPI
+		port  int32
+		via   string
+		score int
+	)
+
+	consider := func(sd core.StreamDecoderAPI, p int32, v string) {
+		if sd == best || !eligible(sd, in.Transport) {
+			return
 		}
 
 		if !sd.CanDecodeStream(in.ScanClient, in.ScanServer) {
-			continue
+			return
 		}
 
-		return Selection{
-			API:     sd,
-			Decoder: sd.GetReaderFactory().New(in.Conversation),
-			Name:    sd.GetName(),
-			Port:    port,
-			Via:     ViaFallback,
-		}, true
+		if s := sd.MatchSpecificity(in.ScanClient, in.ScanServer); best == nil || s > score {
+			best, port, via, score = sd, p, v, s
+		}
 	}
 
-	return Selection{}, false
-}
+	for _, p := range SortedDecoderPorts {
+		consider(DefaultStreamDecoders[p], p, ViaFallback)
+	}
 
-// selectUDPList tries the decoders that are not in the port map at all, for
-// protocols sharing a port with a TCP decoder. QUIC shares 443 with TLS and is
-// reachable only through this pass.
-func selectUDPList(in *SelectionInput) (Selection, bool) {
-	if in.Transport != core.UDP {
+	// The UDP-only decoders compete here rather than in a pass of their own
+	// after this one. They are absent from the port map because they share a
+	// port with a TCP decoder, which says nothing about how good their
+	// signature is -- and running them last meant QUIC, whose Initial packet
+	// protobuf accepts, was never reached at all.
+	for _, sd := range UDPStreamDecoders {
+		consider(sd, in.ServerPort, ViaUDPList)
+	}
+
+	if best == nil {
 		return Selection{}, false
 	}
 
-	for _, sd := range UDPStreamDecoders {
-		if !eligible(sd, in.Transport) {
-			continue
-		}
-
-		if !sd.CanDecodeStream(in.ScanClient, in.ScanServer) {
-			continue
-		}
-
-		return Selection{
-			API:     sd,
-			Decoder: sd.GetReaderFactory().New(in.Conversation),
-			Name:    sd.GetName(),
-			Port:    in.ServerPort,
-			Via:     ViaUDPList,
-		}, true
-	}
-
-	return Selection{}, false
+	return Selection{
+		API:     best,
+		Decoder: best.GetReaderFactory().New(in.Conversation),
+		Name:    best.GetName(),
+		Port:    port,
+		Via:     via,
+	}, true
 }

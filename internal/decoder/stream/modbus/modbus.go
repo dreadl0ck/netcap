@@ -73,6 +73,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// a complete ADU that parses to a valid PDU.
+	Specificity: core.SpecificityValidated,
+
 	CanDecode: func(client, server []byte) bool {
 		// Check both directions for Modbus TCP traffic
 		return canDecodeModbus(client) || canDecodeModbus(server)

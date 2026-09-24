@@ -47,6 +47,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// three bytes, one fixed, one two-valued, one a range.
+	Specificity: core.SpecificityWeak,
+
 	CanDecode: func(client, server []byte) bool {
 		return isDCERPC(client) || isDCERPC(server)
 	},

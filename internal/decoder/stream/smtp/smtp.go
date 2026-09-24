@@ -57,6 +57,9 @@ var Decoder = &decoder.StreamDecoder{
 
 		return nil
 	},
+	// anchored "220" plus "SMTP" in the banner: strictly more than FTP.
+	Specificity: core.SpecificityStructural,
+
 	CanDecode: func(client, server []byte) bool {
 		return bytes.HasPrefix(server, smtpServiceReadyBytes) && bytes.Contains(server, smtpName)
 	},

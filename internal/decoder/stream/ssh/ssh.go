@@ -47,6 +47,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// unanchored three-byte "SSH" anywhere in the server direction.
+	Specificity: core.SpecificityWeak,
+
 	CanDecode: func(client, server []byte) bool {
 		result := bytes.Contains(server, sshServiceName)
 		if result {

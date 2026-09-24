@@ -47,6 +47,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// one fixed byte and a digit run.
+	Specificity: core.SpecificityWeak,
+
 	CanDecode: func(client, server []byte) bool {
 		// Syslog messages start with <PRI> where PRI is 1-3 digits
 		// Check for '<' followed by digits and '>'

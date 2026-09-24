@@ -49,6 +49,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// HTTP request-line and content-type literals.
+	Specificity: core.SpecificityStructural,
+
 	CanDecode: func(client, server []byte) bool {
 		// Check for IPP indicators in client or server data
 		if len(client) > 0 {

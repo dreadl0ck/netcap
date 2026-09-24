@@ -50,6 +50,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// long-header form bits, or the gQUIC tag.
+	Specificity: core.SpecificityWeak,
+
 	CanDecode: func(client, server []byte) bool {
 		// Check if client data looks like QUIC
 		if len(client) >= 5 {

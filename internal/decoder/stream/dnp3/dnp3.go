@@ -76,6 +76,9 @@ var Decoder = &decoder.StreamDecoder{
 
 		return err
 	},
+	// CRC-16/DNP over the eight header octets.
+	Specificity: core.SpecificityValidated,
+
 	CanDecode: func(client, server []byte) bool {
 		return hasFrame(client) || hasFrame(server)
 	},

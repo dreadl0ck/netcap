@@ -47,16 +47,72 @@ the expression language and the ICS-relevant helper functions
 ## Decoder selection off the standard port
 
 A conversation on a registered port goes to that port's decoder. Everything else
-falls back to scanning every decoder in **ascending registered port order, first
-match wins** (`tcp_connection.go`, `stream.go`). Signature strength plays no part
-in the ordering, so a loose check on a low port shadows every decoder above it —
-and the ICS decoders sit high: modbus 502, cip 2222/44818, dnp3 20000, profinet
-34964.
+falls back to a scan of every decoder, and since 2026-09 that scan **asks them
+all and keeps the one that required the most evidence**, with ascending port
+order only as a tie-break. `SelectDecoder` in `internal/decoder/stream/selection.go`
+is the single implementation for TCP and UDP; it previously existed twice, and
+the copies had drifted.
 
-Four signatures were tightened in 2026-09 because they were claiming ICS traffic
-they could not parse. `TestFallbackShadowingIsRecorded` and
-`TestDNP3SurvivesEveryOutstationAddress` in `internal/decoder/stream/` pin the
-result.
+It used to take the first decoder that said yes, walking ports upward. Port
+number measures nothing, so a one-byte check on port 21 outranked a checksum on
+port 20000 — and the ICS decoders sit high: modbus 502, cip 2222/44818, dnp3
+20000, profinet 34964.
+
+Each decoder declares a `Specificity` on the `core.Specificity*` scale —
+heuristic, weak, structural, magic, validated — and four whose evidence varies
+with the input supply a per-match `Confidence` instead. `decoder_matching_test.go`
+runs one traffic sample per registered decoder through the real selector and
+prints the result as a matrix.
+
+| Decoder | Confidence varies because |
+| --- | --- |
+| `s7comm` | a data-transfer PDU with a validated S7 protocol id is structural; a bare TPKT/COTP header is weak, and every X.224 connection request matches it |
+| `cip` | an ENIP command that encapsulates CIP is validated; List Services and the other header-only commands are weak, and a DCE/RPC header satisfies them |
+| `socks` | a greeting the server answered with a method selection is structural; a client-side greeting alone is three bytes, which a DCE/RPC header also satisfies |
+| `profinet` | PROFINET CM is DCE/RPC **version 4**; the decoder tolerates version 5 to stay usable mid-session, but version 5 on a dynamic port is far more likely to be Windows MSRPC |
+
+Measured over one sample per decoder, this took the protocols that do not reach
+their own decoder off their own port from **5 of 29 to 1**:
+
+| Protocol | Was taken by | Now |
+| --- | --- | --- |
+| `SMTP` | `FTP` (21) — both match `"220 "`, and SMTP also requires `"SMTP"` | fixed by ranking |
+| `SOCKS` | `DCERPC` (135) — `05 01 00` is a valid v5 header | fixed by confidence |
+| `RDP` | `S7Comm` (102) | fixed by confidence |
+| `PROFINET` | `CIP` (2222) | fixed by confidence |
+| `QUICClientHello` | `Protobuf` — unreachable on any path | fixed by pass order |
+
+QUIC was a different fault. It is in no port map, because UDP/443 belongs to TLS
+over TCP, so it was reachable only through a `UDPStreamDecoders` pass that ran
+*after* the whole scan — and protobuf accepts a QUIC Initial packet. Those
+decoders now compete in the scan rather than following it.
+
+On real traffic the change is small and checkable: replaying The Ultimate PCAP
+moves exactly **one** of 359 conversations, an IPv6 session to port 587 that was
+recorded as FTP and is SMTP submission, and makes 10 QUIC records visible that
+were not produced at all.
+
+**The one remaining, and it is accepted rather than open.** A DNP3 Secure
+Authentication frame is claimed by `dnp3` (20000) rather than `iec62351` (2404)
+off-port, because dnp3 validates a CRC-16 where iec62351 checks a function code.
+dnp3 parses SA correctly — it flags functions 32/33/131 and names object group
+120 — and on port 2404 iec62351 still wins, so traffic genuinely on the IEC
+62351 port is unaffected.
+
+**Known and still open:**
+
+* `tacacs` (49) matches on a single nibble, `client[0]&0xF0 == 0xC0`. Ranking
+  demotes it to heuristic, so it no longer wins against a real signature, but the
+  check itself is unchanged.
+* `ssh` (22) matches an unanchored `SSH` anywhere in the server direction.
+* `iec62351`'s DNP3-SA *reader* still carries the framing defects removed from
+  the DNP3 decoder: `frameLength := int(data[2]) + 5` ignores the per-block
+  CRCs, objects are found by scanning for `0x78`, and every record takes the
+  conversation's first packet as its timestamp.
+
+Four signatures were tightened separately in 2026-09 because they were claiming
+ICS traffic they could not parse. `TestFallbackShadowingIsRecorded` and
+`TestDNP3SurvivesEveryOutstationAddress` pin that result.
 
 | Decoder | Port | Was | Took |
 | --- | --- | --- | --- |
@@ -64,25 +120,6 @@ result.
 | `socks` | 1080 | `client[0]==0x05` and a method count compared against the whole direction | every DNP3 conversation of 102 bytes or more |
 | `iec62351` | 2404 | any byte equal to `0x78` from offset 11 | essentially every DNP3 conversation |
 | `irc` | 6667 | `"001"` as a bare substring anywhere in the server direction | any long binary conversation |
-
-**Known and still open**, deliberately out of scope of that change:
-
-* `tacacs` (49) matches on a single nibble, `client[0]&0xF0 == 0xC0`, and takes
-  any conversation whose first byte has high nibble `0xC` — roughly one Modbus
-  stream in sixteen.
-* `s7comm` (102) returns true for any non-DT COTP PDU type without checking for
-  an S7 payload, so it claims every RDP connection request and `rdp` (3389) is
-  unreachable through the fallback entirely.
-* `ssh` (22) matches an unanchored `SSH` anywhere in the server direction, at
-  scan position 2.
-* `iec62351`'s DNP3-SA *reader* still carries the framing defects removed from
-  the DNP3 decoder: `frameLength := int(data[2]) + 5` ignores the per-block
-  CRCs, objects are found by scanning for `0x78`, and every record takes the
-  conversation's first packet as its timestamp.
-
-The root cause is the ordering itself. Tightening individual signatures is
-whack-a-mole; preferring the most specific match over the first would make
-signature strength decide, and is unstarted.
 
 ## S7comm
 

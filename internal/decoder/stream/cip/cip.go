@@ -126,6 +126,10 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// Varies with the data: an ENIP command that actually encapsulates CIP is
+	// strong, a header-only command such as List Services is not.
+	Specificity: core.SpecificityStructural,
+	Confidence:  cipConfidence,
 	CanDecode: func(client, server []byte) bool {
 		// CIP messages can be identified by checking for valid CIP structure
 		// CIP requests: service byte (bit 7 = 0), path size, path data
@@ -138,6 +142,44 @@ var Decoder = &decoder.StreamDecoder{
 	Factory: &cipReader{},
 	Typ:     core.TCP, // CIP typically uses TCP port 44818 (EtherNet/IP) or 2222
 }
+
+// cipConfidence reports whether an ENIP message carried CIP at all.
+//
+// canDecodeENIP accepts seven commands, and four of them -- List Services,
+// List Identity, List Interfaces and the session commands -- are header-only
+// discovery messages with no encapsulated payload to validate. On those the
+// claim rests on a two-byte command and a length of zero, which a DCE/RPC
+// header satisfies: that is why profinet at port 34964 was unreachable through
+// the port-independent scan while cip sat at 2222.
+func cipConfidence(client, server []byte) int {
+	if carriesCIPPayload(client) || carriesCIPPayload(server) {
+		return core.SpecificityValidated
+	}
+
+	return core.SpecificityWeak
+}
+
+// carriesCIPPayload reports whether an ENIP message encapsulates CIP data.
+func carriesCIPPayload(data []byte) bool {
+	if !canDecodeENIP(data) {
+		return false
+	}
+
+	command := uint16(data[0]) | uint16(data[1])<<8
+	if command != enipSendRRData && command != enipSendUnitData {
+		return false
+	}
+
+	// A declared payload length is what separates an encapsulated CIP message
+	// from a bare header.
+	return uint16(data[2])|uint16(data[3])<<8 > 0
+}
+
+// ENIP commands that encapsulate CIP.
+const (
+	enipSendRRData   = 0x006F
+	enipSendUnitData = 0x0070
+)
 
 // canDecodeCIP checks if the data looks like a CIP or ENIP message
 // This function is intentionally strict to avoid false positives

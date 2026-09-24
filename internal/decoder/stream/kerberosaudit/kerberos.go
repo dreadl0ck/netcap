@@ -47,6 +47,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// ASN.1 tag plus a DER length that has to account for the data.
+	Specificity: core.SpecificityStructural,
+
 	CanDecode: func(client, server []byte) bool {
 		return hasKerberosTag(client) || hasKerberosTag(server)
 	},

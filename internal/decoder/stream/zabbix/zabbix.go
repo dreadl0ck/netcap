@@ -52,6 +52,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// the anchored five-byte ZBXD magic.
+	Specificity: core.SpecificityMagic,
+
 	CanDecode: func(client, server []byte) bool {
 		if len(client) >= 5 && bytes.Equal(client[:5], zabbixMagic) {
 			return true

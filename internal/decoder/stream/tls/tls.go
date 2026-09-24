@@ -56,6 +56,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// record type, version and a handshake byte at a fixed offset.
+	Specificity: core.SpecificityStructural,
+
 	CanDecode: func(client, server []byte) bool {
 		if RecordDecoder.Writer != nil {
 			for _, data := range [][]byte{client, server} {

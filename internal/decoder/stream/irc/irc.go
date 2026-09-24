@@ -51,6 +51,9 @@ var Decoder = &decoder.StreamDecoder{
 		initIRCConnectionTracker()
 		return nil
 	},
+	// a reply keyword on a prefixed line.
+	Specificity: core.SpecificityWeak,
+
 	CanDecode: func(client, server []byte) bool {
 		// IRC typically has server responses starting with ":"
 		// or client commands like NICK, USER, etc.

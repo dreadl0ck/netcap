@@ -260,26 +260,13 @@ func TestDecoderMatchingMatrix(t *testing.T) {
 // because fixing them is a separate change; see
 // docs/industrial-control-systems.md.
 var knownOffPortShadowing = map[string]string{
-	// FTP tests server[0:3] == "220"; an SMTP greeting opens "220 " too. SMTP's
-	// own check is strictly stronger -- it also requires "SMTP" in the banner --
-	// and loses only because 25 > 21. The clearest case of ordering, not
-	// signature, deciding.
-	"SMTP": "FTP",
-
-	// A SOCKS5 greeting is 05 01 00, which satisfies DCE/RPC's version 5,
-	// minor 0 or 1, packet type <= 19.
-	"SOCKS": "DCERPC",
-
-	// s7comm accepts any non-DT COTP PDU type without checking for an S7
-	// payload, so every X.224 connection request is claimed at port 102.
-	"RDP": "S7Comm",
-
-	// CIP's ENIP check accepts a DCE/RPC header.
-	"PROFINET": "CIP",
-
-	// Not shadowing in the same sense: QUIC is in no port map, and protobuf
-	// accepts a QUIC Initial before the UDP list pass is reached.
-	"QUICClientHello": "Protobuf",
+	// Accepted, not a defect. A DNP3 Secure Authentication frame is a DNP3
+	// frame: dnp3 validates its CRC-16 where iec62351 checks a function code at
+	// a fixed offset, so dnp3 required the more evidence and wins. It also
+	// parses SA properly, flagging functions 32/33/131 and naming object group
+	// 120. On port 2404 iec62351 still wins, so traffic that really is on the
+	// IEC 62351 port is unaffected.
+	"IEC62351": "DNP3",
 }
 
 func TestKnownShadowingIsUnchanged(t *testing.T) {

@@ -56,6 +56,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// TPKT version and the X.224 connection-request byte at fixed offsets.
+	Specificity: core.SpecificityStructural,
+
 	CanDecode: func(client, server []byte) bool {
 		// RDP uses TPKT (starts with 0x03) over TCP
 		// Client sends X.224 Connection Request (0xE0)

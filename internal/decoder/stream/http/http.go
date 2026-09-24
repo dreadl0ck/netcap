@@ -47,6 +47,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// a method in one direction and "HTTP" in the other.
+	Specificity: core.SpecificityStructural,
+
 	CanDecode: func(client, server []byte) bool {
 		return containsHTTPProtocolName(server) && containsHTTPMethod(client)
 	},

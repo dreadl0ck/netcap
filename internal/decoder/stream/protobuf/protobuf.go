@@ -88,6 +88,9 @@ var Decoder = &decoder.StreamDecoder{
 
 		return nil
 	},
+	// a valid opening tag plus wire-type statistics; no fixed bytes.
+	Specificity: core.SpecificityHeuristic,
+
 	CanDecode: func(client, server []byte) bool {
 		return IsProtobufData(client) || IsProtobufData(server)
 	},

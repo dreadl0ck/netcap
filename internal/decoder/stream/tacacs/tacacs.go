@@ -47,6 +47,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// a single version nibble and a length floor.
+	Specificity: core.SpecificityHeuristic,
+
 	CanDecode: func(client, server []byte) bool {
 		// TACACS+ major version is 0xC (top nibble)
 		if len(client) >= 12 && client[0]&0xF0 == 0xC0 {

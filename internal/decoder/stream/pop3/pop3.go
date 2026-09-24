@@ -47,6 +47,9 @@ var Decoder = &decoder.StreamDecoder{
 		}
 		return nil
 	},
+	// a sixteen-byte literal.
+	Specificity: core.SpecificityMagic,
+
 	CanDecode: func(client, server []byte) bool {
 		return bytes.Contains(server, pop3Ident)
 	},

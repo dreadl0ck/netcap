@@ -325,10 +325,9 @@ func samples() []sample {
 			decoder: "QUICClientHello", port: 443, transport: core.UDP,
 			client:   hexBytes("c000000001" + "0805" + "0102030405060708" + "00" + "4000"),
 			captured: true,
-			wantVia:     ViaUDPList,
-			takenOnPort: "Protobuf",
-			note: "not in the port map at all: 443 is TLS/TCP, so QUIC is only ever reached by the UDP " +
-				"list pass -- which runs after the scan, where protobuf accepts the Initial packet first",
+			wantVia: ViaUDPList,
+			note: "not in the port map at all: 443 is TLS over TCP. Reached through the UDP-only list, " +
+				"which now competes in the scan rather than running after it",
 		},
 	}
 }

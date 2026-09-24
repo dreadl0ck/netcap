@@ -59,6 +59,9 @@ var Decoder = &decoder.StreamDecoder{
 		startSMBCleanup()
 		return nil
 	},
+	// a four-byte signature containing a non-ASCII anchor.
+	Specificity: core.SpecificityMagic,
+
 	CanDecode: func(client, server []byte) bool {
 		// Check for SMB1 or SMB2/3 signature
 		return bytes.Contains(server, []byte(SMB1Signature)) ||

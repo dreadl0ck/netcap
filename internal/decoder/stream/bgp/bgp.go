@@ -52,6 +52,9 @@ var Decoder = &decoder.StreamDecoder{
 		)
 		return err
 	},
+	// the sixteen-octet all-ones marker, anchored.
+	Specificity: core.SpecificityMagic,
+
 	CanDecode: func(client, server []byte) bool {
 		// BGP messages start with 16 bytes of 0xFF marker
 		return (len(server) >= 19 && bytes.HasPrefix(server, bgpMarker)) ||

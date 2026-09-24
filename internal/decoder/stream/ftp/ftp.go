@@ -49,6 +49,9 @@ var Decoder = &decoder.StreamDecoder{
 		initConnectionTracker()
 		return nil
 	},
+	// three anchored ASCII bytes of the "220" greeting, server only.
+	Specificity: core.SpecificityWeak,
+
 	CanDecode: func(client, server []byte) bool {
 		// FTP server starts with 220
 		if len(server) > 3 && server[0] == '2' && server[1] == '2' && server[2] == '0' {
