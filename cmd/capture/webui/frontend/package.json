@@ -39,7 +39,7 @@
     "@types/react-dom": "^19.3.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "^4.7.0",
-    "baseline-browser-mapping": "^2.11.24",
+    "baseline-browser-mapping": "^2.11.25",
     "concurrently": "^9.2.4",
     "jsdom": "^26.1.0",
     "typescript": "^5.9.3",
