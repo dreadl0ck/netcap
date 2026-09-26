@@ -6918,10 +6918,10 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ================================================================================
-github.com/gopacket/gopacket v1.7.1
+github.com/gopacket/gopacket v1.7.2
 License: BSD-3-Clause
 Used by: darwin-dpi, darwin-nodpi, linux-dpi, linux-dpi-noyara, linux-hyperscan, linux-nodpi, windows-nodpi
-Source: https://pkg.go.dev/github.com/gopacket/gopacket@v1.7.1
+Source: https://pkg.go.dev/github.com/gopacket/gopacket@v1.7.2
 
 --- LICENSE ---
 Copyright (c) 2012 Google, Inc. All rights reserved.
