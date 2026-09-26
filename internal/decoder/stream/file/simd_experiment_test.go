@@ -87,3 +87,22 @@ func BenchmarkTextClassification(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkTextClassificationCorpus(b *testing.B) {
+	for _, file := range benchmarkFiles(b) {
+		if isTextFile(file.data) != isTextFileScalar(file.data) {
+			b.Fatalf("text classification differs for %s", file.name)
+		}
+		for _, impl := range []struct {
+			name string
+			fn   func([]byte) bool
+		}{{"scalar", isTextFileScalar}, {"simd", isTextFile}} {
+			b.Run(file.name+"/"+impl.name, func(b *testing.B) {
+				b.ReportAllocs()
+				for b.Loop() {
+					textResult = impl.fn(file.data)
+				}
+			})
+		}
+	}
+}
