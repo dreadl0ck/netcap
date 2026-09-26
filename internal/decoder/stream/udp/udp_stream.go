@@ -258,8 +258,15 @@ func (u *udpStream) decode() {
 		),
 	}
 
-	// Unlike TCP, both passes see the first datagram: there is no reassembled
-	// direction to concatenate.
+	// A later datagram can identify a conversation whose first one was noise.
+	// Evaluate each UDP message separately; concatenating them would fabricate
+	// a payload that was never sent.
+	datagrams := make([]stream.Datagram, 0, len(u.data))
+	for _, d := range u.data {
+		datagrams = append(datagrams, stream.Datagram{
+			Data: d.Raw(), Client: d.Direction() == reassembly.TCPDirClientToServer,
+		})
+	}
 	if sel, found := stream.SelectDecoder(&stream.SelectionInput{
 		Transport:    core.UDP,
 		ServerPort:   utils.DecodePort(u.data[0].Transport().Dst().Raw()),
@@ -267,6 +274,7 @@ func (u *udpStream) decode() {
 		PortServer:   sr,
 		ScanClient:   cr,
 		ScanServer:   sr,
+		Datagrams:    datagrams,
 		Conversation: conv,
 	}); found {
 		u.decoder = sel.Decoder

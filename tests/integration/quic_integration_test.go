@@ -1,10 +1,10 @@
+//go:build integration
+
 /*
  * NETCAP - Traffic Analysis Framework
  * Copyright (c) Philipp Mieden <dreadl0ck [at] protonmail [dot] ch>
  * License: GNU General Public License v3.0
  */
-
-//go:build integration
 
 package integration
 
@@ -34,8 +34,8 @@ func TestQUICIntegration(t *testing.T) {
 		expectedALPN    string
 		expectJA4Start  string
 		minRecords      int
-		isGQUIC         bool // gQUIC uses different ClientHello format
-		expectNoRecords bool // Some pcaps may not produce QUIC records (e.g., encrypted or TCP)
+		isGQUIC         bool   // gQUIC uses different ClientHello format
+		expectNoRecords bool   // Some pcaps may not produce QUIC records (e.g., encrypted or TCP)
 		skipReason      string // when set, skip the subtest with this reason
 		description     string
 	}{
@@ -86,10 +86,10 @@ func TestQUICIntegration(t *testing.T) {
 			expectJA4Start: "q",           // JA4 starts with 'q' for all QUIC
 			// Real isolated count after collector cleanup landed: 5.
 			// Older value 10 only passed when state leaked between subtests.
-			minRecords:     5,
-			isGQUIC:        true, // Primarily gQUIC (may have mixed records)
-			skipReason:     "gQUIC CHLO parser does not extract SNI/CipherSuites for nDPI-quic.pcap; tracked separately",
-			description:    "gQUIC traffic to Google services (Q024, Q025, Q030)",
+			minRecords:  5,
+			isGQUIC:     true, // Primarily gQUIC (may have mixed records)
+			skipReason:  "gQUIC CHLO parser does not extract SNI/CipherSuites for nDPI-quic.pcap; tracked separately",
+			description: "gQUIC traffic to Google services (Q024, Q025, Q030)",
 		},
 		{
 			// TODO: gQUIC parser produces no records for this pcap when
@@ -107,16 +107,16 @@ func TestQUICIntegration(t *testing.T) {
 			description:    "gQUIC traffic to YouTube",
 		},
 		{
-			// TODO: see IETF_QUIC_Draft29 — same parser gap.
 			name:           "QUIC_With_Secrets",
 			pcapFile:       "wireshark-quic-with-secrets.pcapng",
 			expectedSNI:    "cloudflare-quic.com", // IETF QUIC traffic to Cloudflare
 			expectedALPN:   "h3",
-			expectJA4Start: "q", // JA4 starts with 'q' for all QUIC
-			minRecords:     1,   // One Initial with ClientHello (others are server responses)
+			expectJA4Start: "q",   // JA4 starts with 'q' for all QUIC
+			minRecords:     1,     // One Initial with ClientHello (others are server responses)
 			isGQUIC:        false, // IETF QUIC v1
-			skipReason:     "IETF QUIC v1 parser produces no records standalone; tracked separately",
-			description:    "IETF QUIC v1 traffic to Cloudflare with embedded TLS secrets",
+			// This capture is tracked in git. MQTT-SN must not claim its QUIC
+			// short headers before the decoder sees the complete Initial.
+			description: "IETF QUIC v1 traffic to Cloudflare with embedded TLS secrets",
 		},
 	}
 
@@ -130,7 +130,15 @@ func TestQUICIntegration(t *testing.T) {
 
 			pcapPath := filepath.Join(quicTestdataDir, tc.pcapFile)
 
-			requireFixture(t, pcapPath)
+			if tc.name == "QUIC_With_Secrets" {
+				// This fixture is committed. An absent file must fail CI rather
+				// than silently skip the only enabled QUIC reader test.
+				if _, err := os.Stat(pcapPath); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				requireFixture(t, pcapPath)
+			}
 
 			// Create a temporary output directory
 			outDir, err := os.MkdirTemp("", "quic-integration-test-*")

@@ -100,7 +100,7 @@ var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
 } // contains all available stream decoders
 
 // UDPStreamDecoders contains additional stream decoders specifically for UDP protocols.
-// These are checked by the UDP stream processor when no match is found in DefaultStreamDecoders.
+// They compete with the mapped decoders in the fallback scan.
 // This is particularly useful for protocols that share port numbers with TCP protocols
 // (e.g., QUIC uses UDP port 443 while TLS uses TCP port 443).
 var UDPStreamDecoders = []core.StreamDecoderAPI{
@@ -330,6 +330,12 @@ func InitDecoders(c *config.Config) (decoders []core.StreamDecoderAPI, err error
 	// initialised twice.
 	for _, d := range UDPStreamDecoders {
 		if seen[d] {
+			continue
+		}
+		if len(inMap) > 0 && !inMap[d.GetName()] {
+			continue
+		}
+		if decoderListed(c.ExcludeDecoders, d.GetName()) {
 			continue
 		}
 		seen[d] = true

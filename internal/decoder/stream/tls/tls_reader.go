@@ -83,7 +83,7 @@ func (h *tlsReader) Decode() {
 }
 
 // parseCertificateMessage parses a TLS Certificate handshake message
-func (h *tlsReader) parseCertificateMessage(data []byte) {
+func (h *tlsReader) parseCertificateMessage(data []byte, timestamp int64) {
 	if len(data) < 3 {
 		tlsLog.Debug("Certificate message too short")
 		return
@@ -131,7 +131,7 @@ func (h *tlsReader) parseCertificateMessage(data []byte) {
 		)
 
 		// Parse the X.509 certificate
-		h.parseCertificate(certData, chainIndex)
+		h.parseCertificate(certData, chainIndex, timestamp)
 		chainIndex++
 	}
 
@@ -141,7 +141,7 @@ func (h *tlsReader) parseCertificateMessage(data []byte) {
 }
 
 // parseCertificate parses an X.509 certificate and creates a TLSCertificate audit record
-func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32) {
+func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32, timestamp int64) {
 	cert, err := x509.ParseCertificate(certData)
 	if err != nil {
 		tlsLog.Error("Failed to parse X.509 certificate",
@@ -275,7 +275,7 @@ func (h *tlsReader) parseCertificate(certData []byte, chainIndex int32) {
 	}
 
 	tlsCert := &types.TLSCertificate{
-		Timestamp:           h.conversation.FirstClientPacket.UnixNano(),
+		Timestamp:           timestamp,
 		SrcIP:               h.conversation.ServerIP, // Server sends the certificate
 		DstIP:               h.conversation.ClientIP,
 		SrcMAC:              "", // MACs not available at stream level

@@ -32,6 +32,7 @@ import (
 
 	"github.com/dreadl0ck/netcap/internal/decoder"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/tls"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/types"
@@ -90,6 +91,7 @@ type readerReport struct {
 	records    int
 	timestamps int
 	srcIPs     []string
+	messages   []proto.Message
 
 	// contradictions counts records that say IsResponse and then name the
 	// client as their source. A record type carrying that field models one
@@ -97,6 +99,7 @@ type readerReport struct {
 	// way the message went.
 	contradictions int
 	hasIsResponse  bool
+	responses      int
 }
 
 // driveReader runs one decoder over a conversation whose two directions carry
@@ -129,7 +132,7 @@ func driveReader(t *testing.T, s sample) (readerReport, bool) {
 	}
 
 	if sd == nil || sd.Factory == nil {
-		return readerReport{}, false
+		t.Fatalf("%s: reader factory missing", s.decoder)
 	}
 
 	writer := &captureWriter{}
@@ -138,6 +141,15 @@ func driveReader(t *testing.T, s sample) (readerReport, bool) {
 	sd.Writer = writer
 
 	defer func() { sd.Writer = previous }()
+	if s.decoder == "TLSCertificate" {
+		tls.ResetCertificates()
+		defer tls.ResetCertificates()
+	}
+	if s.decoder == "SMTP" || s.decoder == "POP3" {
+		if err := sd.PostInitFunc(); err != nil {
+			t.Fatalf("%s logger initialization: %v", s.decoder, err)
+		}
+	}
 
 	// Both directions present, each carrying its own bytes twice so a reader
 	// that frames per direction has more than one record to place in time.
@@ -147,14 +159,15 @@ func driveReader(t *testing.T, s sample) (readerReport, bool) {
 		serverFirst  = int64(3_000_000_000)
 	)
 
+	clientBytes, serverBytes := readerFixture(t, s)
 	client := core.DataFragments{
-		hygieneFragment(s.client, clientFirst, false),
-		hygieneFragment(s.client, clientSecond, false),
+		hygieneFragment(clientBytes, clientFirst, false),
+		hygieneFragment(clientBytes, clientSecond, false),
 	}
 
 	server := core.DataFragments{}
-	if len(s.server) > 0 {
-		server = append(server, hygieneFragment(s.server, serverFirst, true))
+	if len(serverBytes) > 0 {
+		server = append(server, hygieneFragment(serverBytes, serverFirst, true))
 	}
 
 	merged := core.DataFragments{}
@@ -172,15 +185,17 @@ func driveReader(t *testing.T, s sample) (readerReport, bool) {
 		FirstServerPacket:    time.Unix(0, serverFirst),
 	}
 
-	func() {
-		// A reader panicking on synthetic input is itself a finding, but it
-		// must not take the suite down.
-		defer func() { _ = recover() }()
+	sd.Factory.New(conv).Decode()
+	if s.decoder == "TLSCertificate" {
+		if tls.GetCertificateCount() == 0 {
+			t.Fatal("TLS certificate handshake yielded no parsed certificate")
+		}
+		if err := sd.DeInitFunc(); err != nil {
+			t.Fatalf("flushing parsed TLS certificates: %v", err)
+		}
+	}
 
-		sd.Factory.New(conv).Decode()
-	}()
-
-	report := readerReport{decoder: s.decoder, records: len(writer.records)}
+	report := readerReport{decoder: s.decoder, records: len(writer.records), messages: writer.records}
 
 	seenTS := map[int64]bool{}
 	seenIP := map[string]bool{}
@@ -201,8 +216,11 @@ func driveReader(t *testing.T, s sample) (readerReport, bool) {
 		if f, ok := field(rec, "IsResponse"); ok && f.Kind() == reflect.Bool {
 			report.hasIsResponse = true
 
-			if f.Bool() && src == conv.ClientIP {
-				report.contradictions++
+			if f.Bool() {
+				report.responses++
+				if src == conv.ClientIP {
+					report.contradictions++
+				}
 			}
 		}
 	}
@@ -218,6 +236,24 @@ func driveReader(t *testing.T, s sample) (readerReport, bool) {
 	return report, true
 }
 
+func readerFixture(t *testing.T, s sample) (clientBytes, serverBytes []byte) {
+	t.Helper()
+	clientBytes, serverBytes = s.client, s.server
+	if s.readerClient != nil {
+		clientBytes = s.readerClient
+	}
+	if s.readerServer != nil {
+		serverBytes = s.readerServer
+	}
+	switch s.decoder {
+	case "TLSCertificate":
+		serverBytes = append(tlsHello(2), certificateHandshake(t)...)
+	case "QUICClientHello":
+		clientBytes = capturedQUICClientHello(t)
+	}
+	return clientBytes, serverBytes
+}
+
 // Reports which readers collapse a conversation to a single timestamp and which
 // attribute every record to the client.
 //
@@ -228,8 +264,9 @@ func driveReader(t *testing.T, s sample) (readerReport, bool) {
 // instant, which makes any question about ordering or a maintenance window
 // unanswerable.
 //
-// This reports rather than asserts: 17 of 29 readers are in this state, and
-// converting them is a change per reader, not a change here.
+// Coverage is asserted for all 29 readers. One timestamp in a transaction
+// summary is valid; message readers that emit multiple records are checked for
+// distinct times in TestEveryStreamReaderEmitsItsOwnAuditRecord.
 func TestReaderTimestampAndDirectionHygiene(t *testing.T) {
 	matchingEnv(t)
 
@@ -241,8 +278,9 @@ func TestReaderTimestampAndDirectionHygiene(t *testing.T) {
 	)
 
 	for _, s := range samples() {
-		report, ok := driveReader(t, s)
-		if !ok || report.records == 0 {
+		report, _ := driveReader(t, s)
+		if report.records == 0 {
+			t.Errorf("%s: matching sample selected a decoder but its reader emitted no records", s.decoder)
 			continue
 		}
 
@@ -269,6 +307,9 @@ func TestReaderTimestampAndDirectionHygiene(t *testing.T) {
 		rows = append(rows, fmt.Sprintf("%-16s records=%-4d timestamps=%-4d src=%-28v %s",
 			s.decoder, report.records, report.timestamps, report.srcIPs, verdict))
 	}
+	if droveSomething != len(registeredDecoders()) {
+		t.Errorf("exercised %d of %d registered stream readers", droveSomething, len(registeredDecoders()))
+	}
 
 	t.Log("reader timestamp and direction hygiene:\n" + strings.Join(rows, "\n"))
 	t.Logf("drove %d readers; %d collapse to one timestamp, %d attribute every record to the client",
@@ -293,12 +334,15 @@ func TestResponseRecordsAreNotAttributedToTheClient(t *testing.T) {
 	matchingEnv(t)
 
 	for _, s := range samples() {
-		report, ok := driveReader(t, s)
-		if !ok || !report.hasIsResponse || report.records == 0 {
+		report, _ := driveReader(t, s)
+		if !report.hasIsResponse || report.records == 0 {
 			continue
 		}
 
 		t.Run(s.decoder, func(t *testing.T) {
+			if (s.decoder == "SMB" || s.decoder == "FTP" || s.decoder == "IMAP") && report.responses == 0 {
+				t.Fatal("the two-direction fixture produced no response; the direction check cannot run")
+			}
 			if report.contradictions > 0 {
 				t.Errorf("%d of %d records say IsResponse and name the client as their source",
 					report.contradictions, report.records)
@@ -348,4 +392,87 @@ func TestConvertedReadersKeepPerFrameTiming(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEveryStreamReaderEmitsItsOwnAuditRecord(t *testing.T) {
+	matchingEnv(t)
+	for _, s := range samples() {
+		t.Run(s.decoder, func(t *testing.T) {
+			report, _ := driveReader(t, s)
+			if report.records == 0 {
+				t.Fatal("signature matched, but reader wrote no audit record")
+			}
+			for _, msg := range report.messages {
+				r, ok := msg.(types.AuditRecord)
+				if !ok || r.NetcapType() != DefaultRecordType(s.decoder) {
+					t.Fatalf("%s reader wrote unexpected record %T", s.decoder, msg)
+				}
+				if r.Time() <= 0 {
+					t.Errorf("%s record has no capture timestamp", s.decoder)
+				}
+			}
+			switch s.decoder {
+			case "SMTP":
+				if len(report.messages[0].(*types.SMTP).Commands) == 0 {
+					t.Fatal("SMTP summary has no parsed commands")
+				}
+			case "POP3":
+				if len(report.messages[0].(*types.POP3).Commands) == 0 {
+					t.Fatal("POP3 summary has no parsed commands")
+				}
+			case "TLSCertificate":
+				cert := report.messages[0].(*types.TLSCertificate)
+				if cert.Timestamp != 3_000_000_000 || len(cert.SubjectAltNames) == 0 || cert.SrcIP != "192.0.2.2" {
+					t.Fatalf("TLS certificate lacks server time, identity or direction: %+v", cert)
+				}
+			case "SMB":
+				response := false
+				for _, msg := range report.messages {
+					r := msg.(*types.SMB)
+					response = response || r.IsResponse && r.SrcIP == "192.0.2.2" && r.Timestamp == 3_000_000_000
+				}
+				if !response || report.timestamps < 2 {
+					t.Fatalf("SMB request/response not attributed to distinct times and peers: %+v", report)
+				}
+			case "IPP", "Zabbix":
+				if report.timestamps < 2 {
+					t.Errorf("%s emitted %d records at %d distinct times", s.decoder, report.records, report.timestamps)
+				}
+				if s.decoder == "IPP" && report.messages[0].(*types.IPP).RequestID != 1 {
+					t.Fatal("IPP reader did not parse the request ID")
+				}
+				if s.decoder == "Zabbix" && report.messages[0].(*types.Zabbix).Key != "agent.ping" {
+					t.Fatal("Zabbix reader did not parse the JSON payload")
+				}
+			case "CIP":
+				response := false
+				for _, msg := range report.messages {
+					r := msg.(*types.CIP)
+					response = response || r.Response && r.SrcIP == "192.0.2.2" && r.Timestamp == 3_000_000_000
+				}
+				if !response {
+					t.Fatal("CIP response missing or attributed to the initiating client")
+				}
+			case "QUICClientHello":
+				r := report.messages[0].(*types.QUICClientHello)
+				if r.SNI == "" && len(r.CipherSuites) == 0 {
+					t.Fatal("QUIC reader wrote a record with no decoded ClientHello")
+				}
+			}
+		})
+	}
+}
+
+func DefaultRecordType(name string) types.Type {
+	for _, port := range SortedDecoderPorts {
+		if sd := DefaultStreamDecoders[port]; sd.GetName() == name {
+			return sd.GetType()
+		}
+	}
+	for _, sd := range UDPStreamDecoders {
+		if sd.GetName() == name {
+			return sd.GetType()
+		}
+	}
+	return types.Type_NC_Header
 }

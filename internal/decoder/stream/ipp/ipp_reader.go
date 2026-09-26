@@ -106,12 +106,9 @@ func (r *ippReader) Decode() {
 			continue
 		}
 
-		rec.SrcIP = r.conversation.ClientIP
-		rec.DstIP = r.conversation.ServerIP
-		rec.SrcPort = int32(r.conversation.ClientPort)
-		rec.DstPort = int32(r.conversation.ServerPort)
+		rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = r.conversation.Endpoints(d)
 		rec.Flow = r.conversation.Ident
-		rec.Timestamp = r.conversation.FirstClientPacket.UnixNano()
+		rec.Timestamp = core.FragmentTime(d)
 
 		err := Decoder.Writer.Write(rec)
 		if err != nil {

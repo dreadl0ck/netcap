@@ -54,6 +54,9 @@ var Decoder = &decoder.StreamDecoder{
 	// validated bytes, while the short-header forms are a handful of bit tests.
 	Specificity: core.SpecificityHeuristic,
 	Confidence:  quicConfidence,
+	// A short header alone is a few bit tests and cannot yield a ClientHello.
+	// Only a versioned long header identifies an unknown UDP service.
+	FallbackMinSpecificity: core.SpecificityStructural,
 
 	CanDecode: func(client, server []byte) bool {
 		// Check if client data looks like QUIC

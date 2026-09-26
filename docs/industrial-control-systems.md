@@ -46,12 +46,13 @@ the expression language and the ICS-relevant helper functions
 
 ## Decoder selection off the standard port
 
-A conversation on a registered port goes to that port's decoder. Everything else
-falls back to a scan of every decoder, and since 2026-09 that scan **asks them
-all and keeps the one that required the most evidence**, with ascending port
-order only as a tie-break. `SelectDecoder` in `internal/decoder/stream/selection.go`
-is the single implementation for TCP and UDP; it previously existed twice, and
-the copies had drifted.
+A conversation on a registered port goes to that port's decoder if its
+signature matches. A weak port match is compared with the full conversation:
+`TestWeakPortMatchDoesNotOverrideStrongerProtocolEvidence` verifies that SMTP
+on TCP/21 beats FTP's shorter `220` check. Fallback **asks every eligible
+decoder and keeps the one that required the most evidence**, with ascending
+port order only as a tie-break. `SelectDecoder` in
+`internal/decoder/stream/selection.go` implements both TCP and UDP.
 
 It used to take the first decoder that said yes, walking ports upward. Port
 number measures nothing, so a one-byte check on port 21 outranked a checksum on
@@ -86,6 +87,15 @@ QUIC was a different fault. It is in no port map, because UDP/443 belongs to TLS
 over TCP, so it was reachable only through a `UDPStreamDecoders` pass that ran
 *after* the whole scan — and protobuf accepts a QUIC Initial packet. Those
 decoders now compete in the scan rather than following it.
+
+UDP checks each datagram separately, including later packets when the first is
+unrecognised; `TestUDPStreamSelectsLaterCompleteDatagram` exercises the actual
+UDP connection path. MQTT-SN requires its declared messages to cover the full
+datagram and is selected only on its registered UDP ports: its short length/type
+header has no reliable off-port signature. QUIC needs a recognized version to
+claim an unknown UDP service; short-header bit tests alone are insufficient.
+The tracked Wireshark QUIC capture must yield a decoded `QUICClientHello` in
+`TestQUICIntegration/QUIC_With_Secrets`.
 
 On real traffic the change is small and checkable: replaying The Ultimate PCAP
 moves exactly **one** of 359 conversations, an IPv6 session to port 587 that was
@@ -141,17 +151,20 @@ not yet returned. On the same capture, FTP goes from 7 distinct timestamps
 across 142 records to 136, and IMAP from 5 across 163 to 59 — the remainder
 being multi-line responses that genuinely share a packet.
 
-**Known and still open:**
+`reader_hygiene_test.go` now requires all 29 registered readers to emit a typed
+record; zero output or a parser panic fails the test. The eight previously
+unmeasured readers have complete fixtures. IPP, Zabbix, SMB, CIP and
+TLSCertificate now timestamp their messages from the captured fragment, and
+CIP responses carry the server as source. `http` and `socks` still attribute
+records to the client because their records describe a transaction rather than
+one message.
 
-* `http` and `socks` attribute every record to the client, and that is right —
-  both record types model a transaction, carrying request and reply fields in
-  one record, rather than a single message. `socks` also timestamps from the
-  conversation, which is correct for the same reason: its one record describes a
-  negotiation that begins when the connection does.
-Nothing in this area is currently known-open. `reader_hygiene_test.go` reports
-0 of 21 readers collapsing a conversation to one timestamp, and the two that
-attribute every record to the client are the two whose record type models a
-transaction.
+The tracked `wireshark-quic-with-secrets.pcapng` runs in
+`TestQUICIntegration/QUIC_With_Secrets` without a skip. Its first QUIC Initial
+was previously taken by MQTT-SN when later short-header datagrams happened to
+match a permissive length check. The tracked Ultimate PCAP showed 4,922 MQTT-SN
+records on one UDP/3389 RDP flow after tightening lengths alone; none can claim
+that flow once MQTT-SN is restricted to UDP/1883 and 1884.
 
 Four signatures were tightened separately in 2026-09 because they were claiming
 ICS traffic they could not parse. `TestFallbackShadowingIsRecorded` and
@@ -331,4 +344,3 @@ message ENIP {
     PacketContext           Context          = 9;
 }
 ```
-

@@ -20,6 +20,7 @@
 package stream
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"testing"
 
@@ -109,35 +110,43 @@ func TestDNP3SurvivesEveryOutstationAddress(t *testing.T) {
 	frame := mustHex(t, "05641ac403000400c9b7c1c1030c0128010001000301640000007b5e6400000000005b")
 
 	for addr := range 256 {
-		stream := repeat(frame, 8)
-		stream[4] = byte(addr)
+		mutated := append([]byte(nil), frame...)
+		mutated[4] = byte(addr)
+		binary.LittleEndian.PutUint16(mutated[8:10], dnp3TestCRC(mutated[:8]))
+		if !DefaultStreamDecoders[20000].CanDecodeStream(mutated, nil) {
+			t.Fatalf("address %#02x: frame with recomputed CRC was rejected", addr)
+		}
 
-		if name, port := fallbackWinner(stream, nil); name != "DNP3" {
+		if name, port := fallbackWinner(mutated, nil); name != "DNP3" {
 			t.Fatalf("outstation address low byte %#02x: claimed by %q on port %d", addr, name, port)
 		}
 	}
 }
 
+func dnp3TestCRC(data []byte) uint16 {
+	var crc uint16
+	for _, b := range data {
+		crc ^= uint16(b)
+		for range 8 {
+			if crc&1 != 0 {
+				crc = crc>>1 ^ 0xa6bc
+			} else {
+				crc >>= 1
+			}
+		}
+	}
+	return ^crc
+}
+
 // Modbus validates a complete ADU and parses it, but sits at 502 behind
 // tacacs (49) and kerberosaudit (88), both of which key on the transaction id.
 func TestModbusSurvivesEveryTransactionID(t *testing.T) {
-	var stolen []string
-
 	for hi := range 256 {
 		// txid, protocol id 0, length 6, unit 1, FC3 read holding registers.
 		adu := []byte{byte(hi), 0x01, 0x00, 0x00, 0x00, 0x06, 0x01, 0x03, 0x00, 0x00, 0x00, 0x0A}
 
-		if name, _ := fallbackWinner(adu, nil); name != "Modbus" {
-			stolen = append(stolen, name)
-		}
-	}
-
-	// tacacs keys on the high nibble alone, which is a known open defect
-	// recorded in docs/industrial-control-systems.md. Assert only that the
-	// decoders fixed here are no longer among the thieves.
-	for _, name := range stolen {
-		if name == "Kerberos" || name == "SOCKS" || name == "IEC62351" || name == "IRC" {
-			t.Errorf("Modbus claimed by %q, which this change was supposed to stop", name)
+		if name, port := fallbackWinner(adu, nil); name != "Modbus" {
+			t.Errorf("transaction ID high byte %#02x: claimed by %q on port %d", hi, name, port)
 		}
 	}
 }

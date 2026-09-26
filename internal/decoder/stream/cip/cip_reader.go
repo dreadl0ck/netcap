@@ -20,7 +20,6 @@
 package cip
 
 import (
-	"bytes"
 	"encoding/binary"
 	"sync/atomic"
 
@@ -81,6 +80,8 @@ const (
 
 type cipReader struct {
 	conversation *core.ConversationInfo
+	timestamp    int64
+	fromServer   bool
 }
 
 // New returns a new CIP reader.
@@ -100,18 +101,22 @@ func (c *cipReader) Decode() {
 		return
 	}
 
-	var buf bytes.Buffer
-
-	for _, d := range c.conversation.Data {
-		buf.Write(d.Raw())
+	if c.conversation.ClientData != nil || c.conversation.ServerData != nil {
+		c.frameDirection(c.conversation.ClientData)
+		c.frameDirection(c.conversation.ServerData)
+		return
 	}
+	c.frameDirection(c.conversation.Data)
+}
 
-	data := buf.Bytes()
+func (c *cipReader) frameDirection(fragments core.DataFragments) {
+	data, index := core.Flatten(fragments)
 	offset := 0
 
-	for offset < len(data)-enipHeaderSize {
+	for offset+enipHeaderSize <= len(data) {
 		// Only parse ENIP-encapsulated CIP (has strong signature)
 		if c.isENIPHeader(data[offset:]) {
+			c.timestamp, c.fromServer = index.At(offset)
 			consumed := c.parseENIPMessage(data[offset:])
 			if consumed > 0 {
 				offset += consumed
@@ -127,10 +132,13 @@ func (c *cipReader) Decode() {
 
 // writeCIPRecord writes a CIP record with connection info
 func (c *cipReader) writeCIPRecord(msg *types.CIP) {
-	msg.SrcIP = c.conversation.ClientIP
-	msg.DstIP = c.conversation.ServerIP
-	msg.SrcPort = int32(c.conversation.ClientPort)
-	msg.DstPort = int32(c.conversation.ServerPort)
+	msg.SrcIP, msg.DstIP = c.conversation.ClientIP, c.conversation.ServerIP
+	msg.SrcPort, msg.DstPort = c.conversation.ClientPort, c.conversation.ServerPort
+	if c.fromServer {
+		msg.SrcIP, msg.DstIP = msg.DstIP, msg.SrcIP
+		msg.SrcPort, msg.DstPort = msg.DstPort, msg.SrcPort
+	}
+	msg.Timestamp = c.timestamp
 	msg.CommunityID = c.conversation.CommunityID
 
 	err := Decoder.Writer.Write(msg)
@@ -427,7 +435,7 @@ func (c *cipReader) parseCIPRequest(data []byte) (*types.CIP, int) {
 
 	// Set timestamp if conversation context is available
 	if c.conversation != nil {
-		msg.Timestamp = c.conversation.FirstClientPacket.UnixNano()
+		msg.Timestamp = c.timestamp
 	}
 
 	// Parse EPATH to extract Class ID and Instance ID
@@ -501,7 +509,7 @@ func (c *cipReader) parseCIPResponse(data []byte) (*types.CIP, int) {
 
 	// Set timestamp if conversation context is available
 	if c.conversation != nil {
-		msg.Timestamp = c.conversation.FirstClientPacket.UnixNano()
+		msg.Timestamp = c.timestamp
 	}
 
 	// Parse additional status words

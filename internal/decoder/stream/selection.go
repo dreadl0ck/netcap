@@ -20,8 +20,13 @@
 package stream
 
 import (
+	"strings"
+
+	"github.com/dreadl0ck/netcap/internal/decoder"
+	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/modbus"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/tls"
 )
 
 // How a decoder came to be chosen.
@@ -63,9 +68,18 @@ type SelectionInput struct {
 
 	// ScanClient and ScanServer are the bytes offered to the fallback scan.
 	ScanClient, ScanServer []byte
+	// UDP datagrams are independent messages. If the first is incomplete or
+	// unrecognized, a later complete one may still identify the conversation;
+	// their bytes must never be concatenated as though this were TCP.
+	Datagrams []Datagram
 
 	// Conversation is handed to the winning decoder's factory.
 	Conversation *core.ConversationInfo
+}
+
+type Datagram struct {
+	Data   []byte
+	Client bool
 }
 
 // Selection is the outcome of SelectDecoder.
@@ -87,14 +101,27 @@ type Selection struct {
 //
 // Ordering is unchanged from those copies: explicit endpoint, then the
 // registered port, then an ascending-port scan, then the UDP-only list. The
-// scan takes the first match rather than the best one, so a loose signature on
-// a low port still shadows a strong one above it.
+// scan picks the most specific match. A strong registered-port match stays on
+// the fast path; weak port matches are compared against the full conversation.
 func SelectDecoder(in *SelectionInput) (Selection, bool) {
 	if sel, ok := selectModbusRTU(in); ok {
 		return sel, true
 	}
 
 	if sel, ok := selectByPort(in); ok {
+		portScore, _ := matchScore(sel.API, in, true)
+		// A short banner can match several services. Keep the usual fast port
+		// path for structural evidence; only compare weak port matches with
+		// the full conversation before committing to one decoder.
+		if portScore > core.SpecificityWeak {
+			return sel, true
+		}
+		if other, matched := selectByScan(in); matched && other.Name != sel.Name {
+			scanScore, _ := matchScore(other.API, in, false)
+			if scanScore > portScore {
+				return other, true
+			}
+		}
 		return sel, true
 	}
 
@@ -111,13 +138,72 @@ func eligible(sd core.StreamDecoderAPI, transport core.TransportProtocol) bool {
 	return sd.GetReaderFactory() != nil
 }
 
+// InitDecoders filters its writer list, but matching uses the global registry.
+// Without the same filter here an excluded decoder can win and then write no
+// records, hiding traffic that an enabled decoder could have handled.
+func configuredDecoder(name string) bool {
+	c := decoderconfig.Instance
+	if c == nil {
+		return true
+	}
+	// TLSRecord is an abstract writer fed by TLSCertificate's stream reader.
+	// Selecting only TLSRecord deliberately leaves the certificate writer nil;
+	// the stream reader must nevertheless remain eligible to frame records.
+	if name == tls.Decoder.GetName() && tls.RecordDecoder.Writer != nil &&
+		!decoderListed(c.ExcludeDecoders, tls.RecordDecoder.GetName()) &&
+		(c.IncludeDecoders == "" || decoderListed(c.IncludeDecoders, tls.RecordDecoder.GetName())) {
+		return true
+	}
+	if c.IncludeDecoders != "" && !decoderListed(c.IncludeDecoders, name) {
+		return false
+	}
+	return !decoderListed(c.ExcludeDecoders, name)
+}
+
+func decoderListed(list, name string) bool {
+	for _, item := range strings.Split(list, ",") {
+		if item == name {
+			return true
+		}
+	}
+	return false
+}
+
+func matchScore(sd core.StreamDecoderAPI, in *SelectionInput, portPass bool) (int, bool) {
+	if in.Transport == core.UDP && len(in.Datagrams) > 0 {
+		best, matched := 0, false
+		for _, datagram := range in.Datagrams {
+			client, server := datagram.Data, []byte(nil)
+			if !datagram.Client {
+				client, server = nil, datagram.Data
+			}
+			if sd.CanDecodeStream(client, server) {
+				score := sd.MatchSpecificity(client, server)
+				if !matched || score > best {
+					best = score
+				}
+				matched = true
+			}
+		}
+		return best, matched
+	}
+	client, server := in.ScanClient, in.ScanServer
+	if portPass {
+		client, server = in.PortClient, in.PortServer
+	}
+	if !sd.CanDecodeStream(client, server) {
+		return 0, false
+	}
+	return sd.MatchSpecificity(client, server), true
+}
+
 // selectModbusRTU applies the RTU-over-TCP endpoint allowlist.
 //
 // Explicit transport selection must precede MBAP and generic signatures, and it
 // only claims the connection while the decoder is live: when Modbus is
 // excluded, a configured RTU endpoint must still reach the other decoders.
 func selectModbusRTU(in *SelectionInput) (Selection, bool) {
-	if in.Transport != core.TCP || modbus.Decoder.Writer == nil {
+	if in.Transport != core.TCP || modbus.Decoder.Writer == nil || !configuredDecoder(modbus.Decoder.GetName()) {
 		return Selection{}, false
 	}
 
@@ -134,14 +220,15 @@ func selectModbusRTU(in *SelectionInput) (Selection, bool) {
 	}, true
 }
 
-// selectByPort tries the decoder registered for the server port.
+// selectByPort tries the decoder registered for the server port. For UDP it
+// checks independent datagrams without concatenating their payloads.
 func selectByPort(in *SelectionInput) (Selection, bool) {
 	sd, exists := DefaultStreamDecoders[in.ServerPort]
-	if !exists || !eligible(sd, in.Transport) {
+	if !exists || !eligible(sd, in.Transport) || !configuredDecoder(sd.GetName()) {
 		return Selection{}, false
 	}
 
-	if !sd.CanDecodeStream(in.PortClient, in.PortServer) {
+	if _, ok := matchScore(sd, in, true); !ok {
 		return Selection{}, false
 	}
 
@@ -176,15 +263,22 @@ func selectByScan(in *SelectionInput) (Selection, bool) {
 	)
 
 	consider := func(sd core.StreamDecoderAPI, p int32, v string) {
-		if sd == best || !eligible(sd, in.Transport) {
+		if sd == best || !eligible(sd, in.Transport) || !configuredDecoder(sd.GetName()) {
+			return
+		}
+		if d, ok := sd.(*decoder.StreamDecoder); ok && d.PortOnly {
 			return
 		}
 
-		if !sd.CanDecodeStream(in.ScanClient, in.ScanServer) {
+		s, ok := matchScore(sd, in, false)
+		if !ok {
+			return
+		}
+		if d, ok := sd.(*decoder.StreamDecoder); ok && s < d.FallbackMinSpecificity {
 			return
 		}
 
-		if s := sd.MatchSpecificity(in.ScanClient, in.ScanServer); best == nil || s > score {
+		if best == nil || s > score {
 			best, port, via, score = sd, p, v, s
 		}
 	}

@@ -105,6 +105,9 @@ var Decoder = &decoder.StreamDecoder{
 	},
 	// a declared length that must agree with the datagram, plus a type enum.
 	Specificity: core.SpecificityStructural,
+	// MQTT-SN's short length/type header has no unique magic. A chance match
+	// in encrypted UDP/3389 traffic claimed an entire RDP-UDP conversation.
+	PortOnly: true,
 
 	CanDecode: func(client, server []byte) bool {
 		// MQTT-SN uses UDP, check both client and server data for valid messages
@@ -123,12 +126,26 @@ func canDecodeMQTTSN(data []byte) bool {
 	if len(data) < minMessageSize {
 		return false
 	}
+	for len(data) > 0 {
+		length, ok := mqttsnMessageLength(data)
+		if !ok || !validMQTTSNMessageType(data, length) {
+			return false
+		}
+		data = data[length:]
+	}
+	return true
+}
+
+func mqttsnMessageLength(data []byte) (int, bool) {
+	if len(data) < minMessageSize {
+		return 0, false
+	}
 
 	// Reject packets that look like QUIC (which falsely match MQTT-SN patterns)
 	// QUIC long header: first byte has form bit set (bit 7) and fixed bit (bit 6)
 	// This covers IETF QUIC Initial, Handshake, 0-RTT, Retry packets (0xc0-0xff range)
 	if data[0]&0xc0 == 0xc0 {
-		return false
+		return 0, false
 	}
 
 	// QUIC short header has fixed bit set (bit 6) but form bit clear (bit 7)
@@ -142,7 +159,7 @@ func canDecodeMQTTSN(data []byte) bool {
 	if data[0] == 0x01 {
 		// 3-byte length header for messages > 255 bytes
 		if len(data) < 4 {
-			return false
+			return 0, false
 		}
 		msgLen = int(data[1])<<8 | int(data[2])
 		offset = 3
@@ -154,21 +171,21 @@ func canDecodeMQTTSN(data []byte) bool {
 
 	// Validate length - must be at least offset + 1 (for message type byte)
 	if msgLen < offset+1 || msgLen > len(data) {
-		return false
+		return 0, false
 	}
 
-	// Additional validation: for a clean detection, the message length should
-	// reasonably match the data length. Allow some tolerance for padding/fragmentation
-	// but reject if msgLen is much smaller than data length (likely a false positive)
-	// This helps reject QUIC and other UDP protocols that happen to have valid-looking bytes
-	if len(data) > 512 && msgLen < 256 {
-		// Large packet with small declared message length - suspicious
-		return false
-	}
+	return msgLen, true
+}
 
-	// Check message type
+func validMQTTSNMessageType(data []byte, length int) bool {
+	// Each declared frame must cover the datagram completely. Accept multiple
+	// complete frames, but never treat arbitrary bytes following one short
+	// header as UDP padding or as part of that frame.
+	offset := 1
+	if data[0] == 1 {
+		offset = 3
+	}
 	msgType := data[offset]
-
 	// Check for valid message types
 	switch msgType {
 	case MsgTypeAdvertise,
@@ -199,7 +216,7 @@ func canDecodeMQTTSN(data []byte) bool {
 		MsgTypeWillMsgUpd,
 		MsgTypeWillMsgResp,
 		MsgTypeForwarder:
-		return true
+		return length > offset
 	default:
 		return false
 	}

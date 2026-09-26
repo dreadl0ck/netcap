@@ -47,7 +47,9 @@ func matchingEnv(t *testing.T) {
 		decoderconfig.Instance, tls.RecordDecoder.Writer = config, writer
 	})
 
-	decoderconfig.Instance = &decoderconfig.Config{}
+	decoderconfig.Instance = &decoderconfig.Config{
+		Out: t.TempDir(), Quiet: true, NumStreamWorkers: 1, StreamBufferSize: 1,
+	}
 	tls.RecordDecoder.Writer = nil
 }
 
@@ -99,14 +101,23 @@ func registeredDecoders() []string {
 func TestEveryDecoderHasASample(t *testing.T) {
 	covered := map[string]bool{}
 	for _, s := range samples() {
+		if covered[s.decoder] {
+			t.Errorf("duplicate matching sample for %s", s.decoder)
+		}
 		covered[s.decoder] = true
 	}
 
 	var missing []string
-
+	registered := map[string]bool{}
 	for _, name := range registeredDecoders() {
+		registered[name] = true
 		if !covered[name] {
 			missing = append(missing, name)
+		}
+	}
+	for name := range covered {
+		if !registered[name] {
+			t.Errorf("matching sample %s has no registered decoder", name)
 		}
 	}
 
@@ -235,10 +246,14 @@ func TestDecoderMatchingMatrix(t *testing.T) {
 		case onPort != s.decoder:
 			verdict = "on-port taken by " + onPort
 		case offPort != s.decoder:
-			verdict = "SHADOWED off-port by " + offPort
+			if s.portOnly && offPort == "-" {
+				verdict = "port-only"
+			} else {
+				verdict = "SHADOWED off-port by " + offPort
+			}
 		}
 
-		if verdict != "ok" {
+		if verdict != "ok" && verdict != "port-only" {
 			shadowed = append(shadowed, fmt.Sprintf("%s: %s", s.decoder, verdict))
 		}
 
@@ -275,6 +290,9 @@ func TestKnownShadowingIsUnchanged(t *testing.T) {
 	actual := map[string]string{}
 
 	for _, s := range samples() {
+		if s.portOnly {
+			continue
+		}
 		if got := winner(selectFor(s, s.transport, unregisteredPort)); got != s.decoder {
 			actual[s.decoder] = got
 		}

@@ -67,12 +67,9 @@ func (z *zabbixReader) Decode() {
 
 		records := z.parseZabbixMessages(raw)
 		for _, rec := range records {
-			rec.SrcIP = z.conversation.ClientIP
-			rec.DstIP = z.conversation.ServerIP
-			rec.SrcPort = int32(z.conversation.ClientPort)
-			rec.DstPort = int32(z.conversation.ServerPort)
+			rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = z.conversation.Endpoints(d)
 			rec.Flow = z.conversation.Ident
-			rec.Timestamp = z.conversation.FirstClientPacket.UnixNano()
+			rec.Timestamp = core.FragmentTime(d)
 
 			err := Decoder.Writer.Write(rec)
 			if err != nil {

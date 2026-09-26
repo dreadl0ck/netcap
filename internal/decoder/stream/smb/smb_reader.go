@@ -305,6 +305,7 @@ type smbReader struct {
 
 	// Pending requests for request/response correlation
 	pendingRequests map[uint64]*pendingRequest
+	timestamp       int64
 }
 
 // pendingRequest tracks SMB requests awaiting responses
@@ -333,13 +334,15 @@ func (s *smbReader) Decode() {
 		zap.String("serverIP", s.conversation.ServerIP),
 	)
 
-	streamutils.DecodeConversation(
+	streamutils.DecodeConversationAt(
 		s.conversation.Ident,
 		s.conversation.Data,
-		func(b *bufio.Reader) error {
+		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+			s.timestamp = pos.Timestamp()
 			return s.readSMBMessage(b, true) // client to server (request)
 		},
-		func(b *bufio.Reader) error {
+		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
+			s.timestamp = pos.Timestamp()
 			return s.readSMBMessage(b, false) // server to client (response)
 		},
 	)
@@ -1489,7 +1492,7 @@ func (s *smbReader) writeSMBRecord(
 	}
 
 	smb := &types.SMB{
-		Timestamp:            s.conversation.FirstClientPacket.UnixNano(),
+		Timestamp:            s.timestamp,
 		SrcIP:                s.conversation.ClientIP,
 		DstIP:                s.conversation.ServerIP,
 		SrcPort:              s.conversation.ClientPort,

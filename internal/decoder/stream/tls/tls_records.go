@@ -33,6 +33,7 @@ type tlsRecordFramer struct {
 	offset, index                 uint64
 	stopped, encrypted, plaintext bool
 	handshake                     []byte
+	handshakeTS                   int64
 	certificateLimit              bool
 }
 
@@ -141,6 +142,9 @@ func (f *tlsRecordFramer) feed(data []byte, timestamp int64) {
 		f.prefixBytes += copy(f.prefix[f.prefixBytes:], data[:n])
 		if Decoder.Writer != nil && f.dir == reassembly.TCPDirServerToClient && f.record.ContentType == 22 && !f.encrypted && !f.certificateLimit {
 			if len(f.handshake)+n <= maxTLSHandshake {
+				if len(f.handshake) == 0 && n > 0 {
+					f.handshakeTS = f.record.Timestamp
+				}
 				f.handshake = append(f.handshake, data[:n]...)
 			} else {
 				f.handshake = nil
@@ -189,9 +193,12 @@ func (f *tlsRecordFramer) feed(data []byte, timestamp int64) {
 					break
 				}
 				if f.handshake[0] == handshakeTypeCertificate {
-					f.reader.parseCertificateMessage(f.handshake[4 : 4+length])
+					f.reader.parseCertificateMessage(f.handshake[4:4+length], f.handshakeTS)
 				}
 				f.handshake = f.handshake[4+length:]
+				if len(f.handshake) == 0 {
+					f.handshakeTS = 0
+				}
 			}
 		case 24:
 		default:

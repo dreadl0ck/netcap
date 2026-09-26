@@ -63,6 +63,14 @@ type (
 		// scan, which would otherwise be decided by port number alone.
 		Specificity int
 
+		// PortOnly excludes ambiguous signatures from the port-independent
+		// fallback scan. They remain available on every registered port.
+		PortOnly bool
+
+		// FallbackMinSpecificity requires this much evidence before a
+		// port-independent match can claim a conversation.
+		FallbackMinSpecificity int
+
 		// Confidence optionally reports the specificity of one match, for
 		// decoders whose evidence varies with the input. When nil, Specificity
 		// is used for every match.

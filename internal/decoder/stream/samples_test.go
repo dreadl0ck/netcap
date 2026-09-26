@@ -20,6 +20,7 @@
 package stream
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
@@ -50,6 +51,9 @@ type sample struct {
 	// client and server are the two directions. Several decoders only inspect
 	// one of them, so which side carries the bytes is part of the sample.
 	client, server []byte
+	// The wire sample used for matching need only identify a protocol. Some
+	// readers require a complete exchange before they can emit a record.
+	readerClient, readerServer []byte
 
 	// captured marks a sample lifted from a real capture rather than
 	// constructed from the protocol specification.
@@ -59,6 +63,9 @@ type sample struct {
 	// on its own port. Everything is ViaPort except the decoders that are not
 	// in the port map at all.
 	wantVia string
+	// A protocol with no distinguishing magic may need its registered port
+	// rather than guessing about unrelated UDP traffic.
+	portOnly bool
 
 	// takenOnPort records a decoder that currently claims this traffic even on
 	// the protocol's own port, making the protocol unreachable. A defect, kept
@@ -147,12 +154,12 @@ func kerberosTCP(tag byte, bodyLen int) []byte {
 
 // dnp3SA builds a DNP3 frame carrying a Secure Authentication function code.
 func dnp3SA(function byte) []byte {
-	frame := []byte{
-		0x05, 0x64, 0x1A, 0xC4, 0x03, 0x00, 0x04, 0x00, 0xC9, 0xB7,
-		0xC1, 0xC1, function,
-	}
-
-	return append(frame, make([]byte, 20)...)
+	frame := []byte{0x05, 0x64, 0, 0xc4, 0x03, 0, 0x04, 0}
+	user := []byte{0xc1, 0xc1, function, 120, 1, 0x06}
+	frame[2] = byte(5 + len(user))
+	frame = binary.LittleEndian.AppendUint16(frame, dnp3TestCRC(frame))
+	frame = append(frame, user...)
+	return binary.LittleEndian.AppendUint16(frame, dnp3TestCRC(user))
 }
 
 // enipSendRRData is the ENIP-encapsulated CIP request from cip/cip_test.go.
@@ -167,10 +174,46 @@ var enipSendRRData = []byte{
 	0x0a, 0x00, // timeout
 	0x02, 0x00, // item count
 	0x00, 0x00, 0x00, 0x00, // null address item
-	0xb2, 0x00, 0x16, 0x00, // unconnected data item, length 22
-	0x52, 0x02, 0x20, 0x06, 0x24, 0x01, 0x05, 0x9d,
-	0x10, 0x00, 0x4b, 0x02, 0x20, 0x67, 0x24, 0x01,
-	0x07, 0x3d, 0xf3, 0x45, 0xa3, 0x1b,
+	0xb2, 0x00, 0x12, 0x00, // unconnected data item, length 18
+	0x4b, 0x02, 0x20, 0x67, 0x24, 0x01,
+	0x07, 0x4d, 0x00, 0xd3, 0x23, 0xaa,
+	0x07, 0x06, 0x00, 0xd7, 0xb1, 0x03,
+}
+
+var enipSendRRDataResponse = []byte{
+	0x6f, 0x00, 0x38, 0x00,
+	0x44, 0x55, 0x8b, 0x88,
+	0x00, 0x00, 0x00, 0x00,
+	0x51, 0xc9, 0x0e, 0x00, 0x20, 0xcc, 0xd7, 0x00,
+	0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00,
+	0x00, 0x04, 0x02, 0x00,
+	0x00, 0x00, 0x00, 0x00,
+	0xb2, 0x00, 0x28, 0x00,
+	0xcb, 0x00, 0x00, 0x00,
+	0x07, 0x4d, 0x00, 0xd3, 0x23, 0xaa,
+	0x07, 0x46, 0x00, 0xd7, 0xb1, 0x00,
+	0xee, 0x4a, 0x9c, 0x23,
+	0x31, 0x37, 0x36, 0x33, 0x2d, 0x4c, 0x45, 0x43,
+	0x20, 0x20, 0x20, 0x00, 0x00, 0x26, 0x00, 0x78,
+	0x1a, 0x30, 0xfc, 0x01,
+}
+
+func smbNegotiate(response bool) []byte {
+	msg := make([]byte, 64)
+	copy(msg, "\xfeSMB")
+	binary.LittleEndian.PutUint16(msg[4:6], 64)
+	if response {
+		binary.LittleEndian.PutUint32(msg[16:20], 1) // SMB2_FLAGS_SERVER_TO_REDIR
+	}
+	return append([]byte{0, 0, 0, 64}, msg...)
+}
+
+func zabbixRequest() []byte {
+	payload := []byte(`{"request":"agent.ping","key":"agent.ping"}`)
+	msg := append([]byte("ZBXD\x01"), make([]byte, 8)...)
+	binary.LittleEndian.PutUint64(msg[5:13], uint64(len(payload)))
+	return append(msg, payload...)
 }
 
 // samples is one entry per registered decoder.
@@ -244,7 +287,8 @@ func samples() []sample {
 		{
 			decoder: "SMB", port: 445, transport: core.TCP,
 			// NetBIOS session header then the SMB2 signature.
-			client: append([]byte{0x00, 0x00, 0x00, 0x48}, append([]byte("\xFESMB"), make([]byte, 60)...)...),
+			client: smbNegotiate(false),
+			server: smbNegotiate(true),
 		},
 		{
 			decoder: "Modbus", port: 502, transport: core.TCP,
@@ -257,7 +301,8 @@ func samples() []sample {
 		},
 		{
 			decoder: "IPP", port: 631, transport: core.TCP,
-			client: []byte("POST /ipp/print HTTP/1.1\r\nContent-Type: application/ipp\r\n\r\n"),
+			client: append([]byte("POST /ipp/print HTTP/1.1\r\nContent-Type: application/ipp\r\n\r\n"),
+				[]byte{2, 0, 0, 2, 0, 0, 0, 1, 3}...),
 		},
 		{
 			decoder: "SOCKS", port: 1080, transport: core.TCP,
@@ -267,11 +312,13 @@ func samples() []sample {
 		{
 			decoder: "MQTTSN", port: 1883, transport: core.UDP,
 			// length 14, CONNECT, flags, protocol id, duration, client id.
-			client: append([]byte{0x0e, 0x04, 0x04, 0x01, 0x00, 0x1e}, []byte("clientid")...),
+			client:   append([]byte{0x0e, 0x04, 0x04, 0x01, 0x00, 0x1e}, []byte("clientid")...),
+			portOnly: true,
 		},
 		{
 			decoder: "CIP", port: 2222, transport: core.TCP,
 			client:   enipSendRRData,
+			server:   enipSendRRDataResponse,
 			captured: true,
 			note:     "from cip/cip_test.go sampleENIPCIPRequest",
 		},
@@ -303,7 +350,7 @@ func samples() []sample {
 		},
 		{
 			decoder: "Zabbix", port: 10050, transport: core.TCP,
-			client: append([]byte("ZBXD\x01"), append([]byte{0x0d, 0, 0, 0, 0, 0, 0, 0}, []byte("agent.ping")...)...),
+			client: zabbixRequest(),
 		},
 		{
 			decoder: "DNP3", port: 20000, transport: core.TCP,
@@ -323,10 +370,9 @@ func samples() []sample {
 		},
 		{
 			decoder: "QUICClientHello", port: 443, transport: core.UDP,
-			client:   hexBytes("c000000001" + "0805" + "0102030405060708" + "00" + "4000"),
-			captured: true,
+			client:  hexBytes("c000000001" + "0805" + "0102030405060708" + "00" + "4000"),
 			wantVia: ViaUDPList,
-			note: "not in the port map at all: 443 is TLS over TCP. Reached through the UDP-only list, " +
+			note: "synthetic header from quic/quic_test.go; 443 is TLS over TCP. Reached through the UDP-only list, " +
 				"which now competes in the scan rather than running after it",
 		},
 	}
