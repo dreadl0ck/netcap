@@ -5,7 +5,7 @@
 # lists the 81 commands). Run `make test-help` for the targets below.
 
 .PHONY: test test-unit test-integration test-regression test-e2e test-bench test-fuzz test-all
-.PHONY: test-coverage test-coverage-html test-coverage-check test-race test-determinism
+.PHONY: test-coverage test-coverage-html test-coverage-check test-race test-determinism test-wireshark
 .PHONY: test-golden-update test-regression-verify
 .PHONY: test-hyperscan test-msan test-pkg test-verbose test-clean test-help
 
@@ -23,6 +23,11 @@ test-unit:
 test-integration:
 	@echo "Running integration tests..."
 	go test -v -tags=integration ./tests/integration/...
+
+# Download checksum-pinned samples once. The NetMon SIP conversion needs editcap.
+test-wireshark:
+	python3 scripts/fetch-wireshark-samples.py
+	NETCAP_WIRESHARK_CORPUS=tests/wireshark-corpus go test -count=1 -v -timeout=30m -run '^TestWiresharkCorpus$$' ./internal/collector/
 
 # Regression tests (golden file comparisons)
 test-regression:
@@ -150,6 +155,7 @@ test-help:
 	@echo "  test-coverage-html - Generate HTML coverage report"
 	@echo "  test-race         - Run tests with race detector"
 	@echo "  test-determinism  - Compare Ultimate PCAP output across runs and worker counts"
+	@echo "  test-wireshark    - Fetch verified Wireshark samples and run the full corpus (needs editcap)"
 	@echo ""
 	@echo "  test-golden-update    - Update golden files"
 	@echo "  test-regression-verify - Verify against golden files"
