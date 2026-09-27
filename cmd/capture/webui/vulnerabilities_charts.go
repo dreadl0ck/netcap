@@ -188,10 +188,7 @@ func (s *Server) handleVulnerabilitiesTopAffectedHosts(w http.ResponseWriter, r 
 
 // generateAccessVectorsChart creates a pie chart showing access vector distribution
 func generateAccessVectorsChart(outDir string, showLegend bool) *charts.Pie {
-	data, err := readVulnerabilitiesAndExploits(outDir)
-	if err != nil {
-		data = &VulnerabilitiesResponse{}
-	}
+	data := cachedVulnerabilityResponse(outDir)
 
 	accessVectorCount := make(map[string]int)
 	for _, v := range data.Vulnerabilities {
@@ -225,10 +222,7 @@ func generateAccessVectorsChart(outDir string, showLegend bool) *charts.Pie {
 
 // generateExploitTypesChart creates a pie chart showing exploit type distribution
 func generateExploitTypesChart(outDir string, showLegend bool) *charts.Pie {
-	data, err := readVulnerabilitiesAndExploits(outDir)
-	if err != nil {
-		data = &VulnerabilitiesResponse{}
-	}
+	data := cachedVulnerabilityResponse(outDir)
 
 	typeCount := make(map[string]int)
 	for _, e := range data.Exploits {
@@ -262,10 +256,7 @@ func generateExploitTypesChart(outDir string, showLegend bool) *charts.Pie {
 
 // generateTopAffectedHostsChart creates a bar chart showing the most affected hosts
 func generateTopAffectedHostsChart(outDir string, showLegend bool) *charts.Bar {
-	data, err := readVulnerabilitiesAndExploits(outDir)
-	if err != nil {
-		data = &VulnerabilitiesResponse{}
-	}
+	data := cachedVulnerabilityResponse(outDir)
 
 	// Convert to arrays for sorting
 	type kv struct {
@@ -322,10 +313,7 @@ func generateTopAffectedHostsChart(outDir string, showLegend bool) *charts.Bar {
 	return bar
 }
 func generateVulnerabilitiesSeverityChart(outDir string, showLegend bool) *charts.Pie {
-	data, err := readVulnerabilitiesAndExploits(outDir)
-	if err != nil {
-		data = &VulnerabilitiesResponse{}
-	}
+	data := cachedVulnerabilityResponse(outDir)
 
 	severityCount := make(map[string]int)
 	for _, v := range data.Vulnerabilities {
@@ -359,10 +347,7 @@ func generateVulnerabilitiesSeverityChart(outDir string, showLegend bool) *chart
 
 // generateTopVulnerableSoftwareChart creates a bar chart
 func generateTopVulnerableSoftwareChart(outDir string, showLegend bool) *charts.Bar {
-	data, err := readVulnerabilitiesAndExploits(outDir)
-	if err != nil {
-		data = &VulnerabilitiesResponse{}
-	}
+	data := cachedVulnerabilityResponse(outDir)
 
 	softwareVulns := make(map[string]int)
 	for _, v := range data.Vulnerabilities {

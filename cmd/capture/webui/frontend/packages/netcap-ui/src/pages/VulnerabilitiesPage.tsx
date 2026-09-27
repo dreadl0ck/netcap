@@ -147,10 +147,19 @@ export default function VulnerabilitiesPage() {
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
 
-  // Fetch vulnerabilities data
+  const communityIds = useMemo(
+    () => isCommunityIDFilterActive ? Array.from(selectedCommunityIDs).sort() : [],
+    [isCommunityIDFilterActive, selectedCommunityIDs]
+  );
+
+  // Fetch only the matching findings when the cross-page filter is active.
   const { data: vulnerabilitiesData, error, mutate } = useSWR<VulnerabilitiesResponse>(
-    'vulnerabilities',
-    () => fetch(`${getBackendUrl()}/api/vulnerabilities`).then(res => res.json()),
+    ['vulnerabilities', communityIds],
+    () => {
+      const params = new URLSearchParams();
+      communityIds.forEach(id => params.append('communityId', id));
+      return fetch(`${getBackendUrl()}/api/vulnerabilities?${params}`).then(res => res.json());
+    },
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,
@@ -1177,4 +1186,3 @@ export default function VulnerabilitiesPage() {
     </Layout>
   );
 }
-

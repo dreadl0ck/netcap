@@ -106,19 +106,37 @@ func (s *Server) handleVulnerabilities(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data, err := readVulnerabilitiesAndExploits(outDir)
+	snapshot, err := vulnerabilitySnapshotFor(outDir)
 	if err != nil {
 		log.Printf("[WebUI] Failed to read vulnerabilities/exploits: %v", err)
 		http.Error(w, "Failed to read vulnerabilities/exploits", http.StatusInternalServerError)
 		return
 	}
 
+	filter, err := parseVulnerabilityFilter(r.URL.Query())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
+	json.NewEncoder(w).Encode(snapshot.selectRows(filter))
 }
 
 // readVulnerabilitiesAndExploits reads and aggregates Vulnerability and Exploit records
 func readVulnerabilitiesAndExploits(outDir string) (*VulnerabilitiesResponse, error) {
+	response, _, err := aggregateVulnerabilities(outDir)
+	return response, err
+}
+
+type vulnerabilityHostRelations struct {
+	vulns    map[string]map[string]struct{}
+	exploits map[string]map[string]struct{}
+}
+
+func aggregateVulnerabilities(outDir string) (*VulnerabilitiesResponse, vulnerabilityHostRelations, error) {
+	relations := vulnerabilityHostRelations{
+		vulns: make(map[string]map[string]struct{}), exploits: make(map[string]map[string]struct{}),
+	}
 	response := &VulnerabilitiesResponse{
 		Vulnerabilities: []VulnerabilitySummary{},
 		Exploits:        []ExploitSummary{},
@@ -142,7 +160,7 @@ func readVulnerabilitiesAndExploits(outDir string) (*VulnerabilitiesResponse, er
 	vulnPath := filepath.Join(outDir, "Vulnerability.ncap.gz")
 	if _, err := os.Stat(vulnPath); err == nil {
 		log.Printf("[WebUI][Vulnerabilities] Processing vulnerability records from: %s", vulnPath)
-		if err := processVulnerabilities(vulnPath, vulnMap, hostMap, macToIP, softwareToHosts); err != nil {
+		if err := processVulnerabilities(vulnPath, vulnMap, hostMap, macToIP, softwareToHosts, relations.vulns); err != nil {
 			log.Printf("[WebUI] Warning: Failed to process vulnerabilities: %v", err)
 		}
 	} else {
@@ -153,7 +171,7 @@ func readVulnerabilitiesAndExploits(outDir string) (*VulnerabilitiesResponse, er
 	exploitPath := filepath.Join(outDir, "Exploit.ncap.gz")
 	if _, err := os.Stat(exploitPath); err == nil {
 		log.Printf("[WebUI][Vulnerabilities] Processing exploit records from: %s", exploitPath)
-		if err := processExploits(exploitPath, exploitMap, hostMap, macToIP, softwareToHosts); err != nil {
+		if err := processExploits(exploitPath, exploitMap, hostMap, macToIP, softwareToHosts, relations.exploits); err != nil {
 			log.Printf("[WebUI] Warning: Failed to process exploits: %v", err)
 		}
 	} else {
@@ -188,7 +206,7 @@ func readVulnerabilitiesAndExploits(outDir string) (*VulnerabilitiesResponse, er
 	log.Printf("[WebUI][Vulnerabilities] Summary: %d unique vulnerabilities, %d unique exploits, %d affected hosts",
 		response.TotalVulns, response.TotalExploits, len(response.AffectedHosts))
 
-	return response, nil
+	return response, relations, nil
 }
 
 // buildMacToIPMap creates a mapping from MAC addresses to IP addresses
@@ -325,7 +343,7 @@ func buildSoftwareToHostsMap(outDir string) map[string][]string {
 	return softwareToHosts
 }
 
-func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummary, hostMap map[string]*HostVulnerabilitySummary, macToIP map[string][]string, softwareToHosts map[string][]string) error {
+func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummary, hostMap map[string]*HostVulnerabilitySummary, macToIP map[string][]string, softwareToHosts map[string][]string, relations map[string]map[string]struct{}) error {
 	reader, err := NewAuditRecordReader(path)
 	if err != nil {
 		return err
@@ -465,6 +483,10 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 
 			// Update host map with all affected hosts
 			for host := range hostsAffected {
+				if relations[v.ID] == nil {
+					relations[v.ID] = make(map[string]struct{})
+				}
+				relations[v.ID][host] = struct{}{}
 				if _, exists := hostMap[host]; !exists {
 					hostMap[host] = &HostVulnerabilitySummary{
 						Host: host,
@@ -496,7 +518,7 @@ func processVulnerabilities(path string, vulnMap map[string]*VulnerabilitySummar
 	return nil
 }
 
-func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap map[string]*HostVulnerabilitySummary, macToIP map[string][]string, softwareToHosts map[string][]string) error {
+func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap map[string]*HostVulnerabilitySummary, macToIP map[string][]string, softwareToHosts map[string][]string, relations map[string]map[string]struct{}) error {
 	reader, err := NewAuditRecordReader(path)
 	if err != nil {
 		return err
@@ -638,6 +660,10 @@ func processExploits(path string, exploitMap map[string]*ExploitSummary, hostMap
 
 			// Update host map with all affected hosts
 			for host := range hostsAffected {
+				if relations[e.ID] == nil {
+					relations[e.ID] = make(map[string]struct{})
+				}
+				relations[e.ID][host] = struct{}{}
 				if _, exists := hostMap[host]; !exists {
 					hostMap[host] = &HostVulnerabilitySummary{
 						Host: host,
