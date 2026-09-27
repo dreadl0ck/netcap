@@ -209,4 +209,22 @@ func BenchmarkFingerprintFilteredRequest(b *testing.B) {
 			}
 		}
 	})
+	b.Run("four-charts-scan", func(b *testing.B) {
+		for range b.N {
+			for range 4 {
+				if _, err := readFingerprints(dir); err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
+	b.Run("four-charts-snapshot", func(b *testing.B) {
+		for range b.N {
+			for range 4 {
+				if _, err := fingerprintSnapshotFor(dir); err != nil {
+					b.Fatal(err)
+				}
+			}
+		}
+	})
 }

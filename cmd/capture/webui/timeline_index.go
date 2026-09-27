@@ -36,13 +36,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/RoaringBitmap/roaring"
+
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// Timeline index sizing. The index keeps one entry per audit record in memory
-// (24 bytes plus interned endpoint strings), so the caps below bound the worst
-// case footprint for very large captures.
+// Timeline index sizing. Each event uses 24 bytes, plus 4 bytes for Community
+// ID types and interned strings. These caps bound large captures.
 const (
 	timelineMaxEventsPerType = 2_000_000
 	timelineMaxEventsTotal   = 5_000_000
@@ -77,6 +78,12 @@ type tlTypeIndex struct {
 	// validated end timestamp (TimestampFirst/TimestampLast). Nil otherwise.
 	Ends        []int64
 	MaxDuration int64
+	cids        []int32
+	extraCIDs   map[int32][]int32
+	facetsOnce  sync.Once
+	hosts       map[string]*roaring.Bitmap
+	community   map[string]*roaring.Bitmap
+	owner       *timelineIndex
 
 	Total     int64 // records present in the file
 	Invalid   int64 // records without a usable timestamp
@@ -112,6 +119,8 @@ type timelineIndex struct {
 	TotalRecords int64
 	TotalEvents  int64
 	Truncated    bool
+	facetMu      sync.Mutex
+	facetBytes   uint64
 }
 
 func (idx *timelineIndex) typeIndex(name string) *tlTypeIndex {
@@ -441,6 +450,7 @@ func assembleTimelineIndex(fingerprint string, types []*tlTypeIndex) *timelineIn
 
 	var total int64
 	for _, t := range types {
+		t.owner = idx
 		total += int64(len(t.Events))
 	}
 
@@ -465,6 +475,9 @@ func assembleTimelineIndex(fingerprint string, types []*tlTypeIndex) *timelineIn
 			t.Events = t.Events[:keep]
 			if t.Ends != nil {
 				t.Ends = t.Ends[:keep]
+			}
+			if t.cids != nil {
+				t.cids = t.cids[:keep]
 			}
 			t.Truncated = true
 			idx.Truncated = true
@@ -552,6 +565,9 @@ func indexTimelineType(path, typeName string, eventLimit int) (*tlTypeIndex, err
 		firstIdx   []int
 		lastIdx    []int
 		ends       []int64
+		cidChecked bool
+		cidField   []int
+		cidsField  []int
 	)
 
 	add := func(s string) int32 {
@@ -592,6 +608,18 @@ func indexTimelineType(path, typeName string, eventLimit int) (*tlTypeIndex, err
 			durChecked = true
 			firstIdx, lastIdx = timelineDurationFields(record)
 		}
+		if !cidChecked {
+			cidChecked = true
+			if f, ok := reflect.TypeOf(record).Elem().FieldByName("CommunityID"); ok && f.Type.Kind() == reflect.String {
+				cidField = f.Index
+			}
+			if f, ok := reflect.TypeOf(record).Elem().FieldByName("CommunityIDs"); ok && f.Type == reflect.TypeFor[[]string]() {
+				cidsField = f.Index
+			}
+			if cidField != nil || cidsField != nil {
+				ti.cids = []int32{}
+			}
+		}
 
 		ts := auditRecord.Time()
 		if ts <= 0 {
@@ -612,6 +640,27 @@ func indexTimelineType(path, typeName string, eventLimit int) (*tlTypeIndex, err
 			Src:     add(auditRecord.Src()),
 			Dst:     add(auditRecord.Dst()),
 		})
+		if ti.cids != nil {
+			id := ""
+			if cidField != nil {
+				id = reflect.ValueOf(record).Elem().FieldByIndex(cidField).String()
+			}
+			if cidsField != nil {
+				values := reflect.ValueOf(record).Elem().FieldByIndex(cidsField).Interface().([]string)
+				if len(values) > 0 {
+					id = values[0]
+					if len(values) > 1 {
+						if ti.extraCIDs == nil {
+							ti.extraCIDs = make(map[int32][]int32)
+						}
+						for _, extra := range values[1:] {
+							ti.extraCIDs[current] = append(ti.extraCIDs[current], add(extra))
+						}
+					}
+				}
+			}
+			ti.cids = append(ti.cids, add(id))
+		}
 
 		if firstIdx != nil {
 			end := timelineEndTimestamp(record, firstIdx, lastIdx, ts)
@@ -627,7 +676,7 @@ func indexTimelineType(path, typeName string, eventLimit int) (*tlTypeIndex, err
 		ti.Ends = ends
 	}
 
-	sort.Stable(tlSorter{events: ti.Events, ends: ti.Ends})
+	sort.Stable(tlSorter{events: ti.Events, ends: ti.Ends, cids: ti.cids})
 
 	return ti, nil
 }
@@ -674,6 +723,7 @@ func timelineEndTimestamp(record any, first, last []int, start int64) int64 {
 type tlSorter struct {
 	events []tlEvent
 	ends   []int64
+	cids   []int32
 }
 
 func (s tlSorter) Len() int { return len(s.events) }
@@ -691,6 +741,9 @@ func (s tlSorter) Swap(i, j int) {
 
 	if s.ends != nil {
 		s.ends[i], s.ends[j] = s.ends[j], s.ends[i]
+	}
+	if s.cids != nil {
+		s.cids[i], s.cids[j] = s.cids[j], s.cids[i]
 	}
 }
 

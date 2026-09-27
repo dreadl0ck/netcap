@@ -58,6 +58,7 @@ import Layout from '../components/Layout';
 import ResponsiveDataView from '../components/ResponsiveDataView';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
+import CommunityIDChip from '../components/CommunityIDChip';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import useSWR, { mutate as globalMutate } from 'swr';
@@ -111,6 +112,7 @@ export interface CertificateSummary {
   ja4xDescription: string;
   // Community ID for cross-tool correlation
   communityId: string;
+  communityIds: string[];
 }
 
 interface CertificatesResponse {
@@ -130,7 +132,7 @@ export interface CertificatesPageProps {
 export default function CertificatesPage({ rowActions }: CertificatesPageProps = {}) {
   const router = useNetcapRouter();
   const api = useNetcapApi();
-  const { isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
+  const { selectedCommunityIDs, isFilterActive: isCommunityIDFilterActive } = useCommunityIDFilter();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
@@ -181,10 +183,10 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
   const filteredCertificates = useMemo(() => {
     let filtered = certificates;
 
-    // Note: Certificate records don't have Community ID yet in backend - return empty when filter is active
-    // This will be enabled after protobuf regeneration
-    if (isCommunityIDFilterActive) {
-      return [];
+    if (isCommunityIDFilterActive && selectedCommunityIDs.size > 0) {
+      filtered = filtered.filter(cert =>
+        (cert.communityIds || []).some(id => selectedCommunityIDs.has(id))
+      );
     }
 
     // Apply certificate status filter
@@ -256,7 +258,7 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
     });
 
     return filtered;
-  }, [certificates, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, filterType]);
+  }, [certificates, searchQuery, sortField, sortOrder, isCommunityIDFilterActive, selectedCommunityIDs, filterType]);
 
   // Paginate certificates
   const paginatedCertificates = filteredCertificates.slice(
@@ -1003,6 +1005,11 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
                                     <Typography variant="body2" color="text.secondary" sx={{ fontFamily: 'monospace', fontSize: '0.7rem', wordBreak: 'break-all' }}>
                                       {cert.serialNumber || 'N/A'}
                                     </Typography>
+                                    {(cert.communityIds || []).length > 0 && (
+                                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                        {cert.communityIds.map(id => <CommunityIDChip key={id} communityId={id} mode="chip" />)}
+                                      </Box>
+                                    )}
                                   </Grid>
                                   
                                   {/* Subject Alternative Names */}
@@ -1196,4 +1203,3 @@ export default function CertificatesPage({ rowActions }: CertificatesPageProps =
     </Layout>
   );
 }
-

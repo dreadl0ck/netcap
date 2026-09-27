@@ -225,6 +225,14 @@ func fingerprintSnapshotFor(outDir string) (*fingerprintSnapshot, error) {
 	return newFingerprintSnapshot(rows), nil
 }
 
+func cachedFingerprintRows(outDir string) []FingerprintSummary {
+	snapshot, err := fingerprintSnapshotFor(outDir)
+	if err != nil {
+		return nil
+	}
+	return snapshot.rows
+}
+
 func fingerprintCacheEvictLocked() {
 	for len(fingerprintCache.entries) > fingerprintCacheSize || fingerprintCache.bytes > fingerprintCacheBytes {
 		var oldestKey string

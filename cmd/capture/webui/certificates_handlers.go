@@ -81,7 +81,8 @@ type CertificateSummary struct {
 	Ja4xRaw         string `json:"ja4xRaw"`
 	Ja4xDescription string `json:"ja4xDescription"`
 	// Community ID for cross-tool correlation
-	CommunityID string `json:"communityId"`
+	CommunityID  string   `json:"communityId"`
+	CommunityIDs []string `json:"communityIds"`
 }
 
 // CertificatesResponse contains the list of certificates
@@ -104,7 +105,7 @@ func (s *Server) handleCertificates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	certificates, err := readCertificates(outDir)
+	snapshot, err := certificateSnapshotFor(outDir)
 	if err != nil {
 		log.Printf("[WebUI] Failed to read certificates: %v", err)
 		http.Error(w, "Failed to read certificates", http.StatusInternalServerError)
@@ -112,8 +113,8 @@ func (s *Server) handleCertificates(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := CertificatesResponse{
-		Certificates: certificates,
-		TotalCount:   len(certificates),
+		Certificates: snapshot.rows,
+		TotalCount:   len(snapshot.rows),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -145,6 +146,7 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 
 	// Use a map to deduplicate certificates by SHA256 fingerprint
 	certMap := make(map[string]*CertificateSummary)
+	communityIDs := make(map[string]map[string]struct{})
 
 	// Read all records
 	for {
@@ -168,6 +170,12 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 		if key == "" {
 			// Fallback to serial number + issuer if no fingerprint
 			key = cert.SerialNumber + "|" + cert.IssuerCommonName
+		}
+		if cert.CommunityID != "" {
+			if communityIDs[key] == nil {
+				communityIDs[key] = make(map[string]struct{})
+			}
+			communityIDs[key][cert.CommunityID] = struct{}{}
 		}
 
 		if existing, found := certMap[key]; found {
@@ -233,7 +241,11 @@ func readCertificates(outDir string) ([]CertificateSummary, error) {
 
 	// Convert map to slice
 	certificates := make([]CertificateSummary, 0, len(certMap))
-	for _, cert := range certMap {
+	for key, cert := range certMap {
+		for id := range communityIDs[key] {
+			cert.CommunityIDs = append(cert.CommunityIDs, id)
+		}
+		sort.Strings(cert.CommunityIDs)
 		certificates = append(certificates, *cert)
 	}
 
@@ -373,11 +385,11 @@ func (s *Server) handleCertificateDownloadPCAP(w http.ResponseWriter, r *http.Re
 // CountUniqueCertificates counts deduplicated certificates by SHA256 fingerprint.
 // This matches the deduplication logic used by readCertificates / the certificates table.
 func CountUniqueCertificates(outDir string) int64 {
-	certs, err := readCertificates(outDir)
+	certs, err := certificateSnapshotFor(outDir)
 	if err != nil {
 		return 0
 	}
-	return int64(len(certs))
+	return int64(len(certs.rows))
 }
 
 // CountUniqueCertificatesWithCommunityIDFilter counts deduplicated certificates
@@ -387,16 +399,10 @@ func CountUniqueCertificatesWithCommunityIDFilter(outDir string, communityIDs ma
 		return CountUniqueCertificates(outDir)
 	}
 
-	certs, err := readCertificates(outDir)
+	certs, err := certificateSnapshotFor(outDir)
 	if err != nil {
 		return 0
 	}
 
-	var count int64
-	for _, cert := range certs {
-		if cert.CommunityID != "" && communityIDs[cert.CommunityID] {
-			count++
-		}
-	}
-	return count
+	return certs.count(communityIDs)
 }
