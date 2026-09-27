@@ -251,6 +251,12 @@ func TestWorkerReplayProcess(t *testing.T) {
 	if got := c.GetNumPackets(); got != int64(wantPackets) {
 		t.Fatalf("processed packets = %d, want %d", got, wantPackets)
 	}
+	if os.Getenv("NETCAP_WORKER_REPLAY_LEAK_CHECK") == "1" {
+		count, profile := captureGoroutineLeakProfile(t)
+		if count != 0 {
+			t.Fatalf("%d goroutines leaked after collector shutdown:\n%s", count, profile)
+		}
+	}
 }
 
 // workerReplayPhases holds the child's self-reported in-process phase timings.
@@ -415,6 +421,13 @@ func TestWorkerReplay(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestWorkerReplayLeakProfile(t *testing.T) {
+	input := filepath.Join(t.TempDir(), "replay.pcap")
+	workerReplayPCAP(t, input, 1)
+	t.Setenv("NETCAP_WORKER_REPLAY_LEAK_CHECK", "1")
+	workerReplayRun(t, input, t.TempDir(), 4, 7, 1)
 }
 
 // Includes process startup, collector initialization, PCAP ingestion, reassembly,

@@ -433,25 +433,6 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		}
 	}
 
-	// Check if running in service mode
-	if flagService {
-		runServiceMode()
-		return nil
-	}
-
-	// Initialize web UI server if requested
-	var webUIServer *webui.Server
-	if flagHTTP != "" {
-		// Will be started later after we know the input files and output directory
-		defer func() {
-			if webUIServer != nil {
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-				webUIServer.Stop(ctx)
-			}
-		}()
-	}
-
 	// Start pprof HTTP server if requested.
 	//
 	// fgprof is registered here rather than under -cpuprof, where it used to
@@ -477,6 +458,25 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			fmt.Printf("  - All profiles:      http://%s/debug/pprof/\n", flagPprof)
 			if err := http.ListenAndServe(flagPprof, nil); err != nil {
 				log.Printf("pprof server error: %v\n", err)
+			}
+		}()
+	}
+
+	// Check if running in service mode
+	if flagService {
+		runServiceMode()
+		return nil
+	}
+
+	// Initialize web UI server if requested
+	var webUIServer *webui.Server
+	if flagHTTP != "" {
+		// Will be started later after we know the input files and output directory
+		defer func() {
+			if webUIServer != nil {
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				webUIServer.Stop(ctx)
 			}
 		}()
 	}
