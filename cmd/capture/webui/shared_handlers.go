@@ -34,7 +34,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/RoaringBitmap/roaring"
 	"github.com/expr-lang/expr/vm"
+	"github.com/gogo/protobuf/proto"
 
 	"github.com/dreadl0ck/netcap/defaults"
 	netfilter "github.com/dreadl0ck/netcap/internal/filter"
@@ -586,6 +588,15 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 
 	// Get filter expression
 	filterExpr := r.URL.Query().Get("filter")
+	var communityIDs map[string]bool
+	for _, id := range r.URL.Query()["communityId"] {
+		if id = strings.TrimSpace(id); id != "" {
+			if communityIDs == nil {
+				communityIDs = make(map[string]bool)
+			}
+			communityIDs[id] = true
+		}
+	}
 
 	// Check if streaming is supported BEFORE setting headers
 	flusher, ok := w.(http.Flusher)
@@ -642,9 +653,26 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 			return
 		}
 	}
+	var candidates *roaring.Bitmap
+	var indexedTotal int64
+	if len(communityIDs) > 0 {
+		candidates, indexedTotal, err = communitySelectedBitmap(filePath, communityIDs)
+		if err != nil {
+			sendError(fmt.Sprintf("Failed to index Community IDs: %v", err))
+			return
+		}
+		if candidates != nil {
+			opened, openedErr := auditReader.file.Stat()
+			current, currentErr := os.Stat(filePath)
+			if openedErr != nil || currentErr != nil || !os.SameFile(opened, current) ||
+				opened.Size() != current.Size() || !opened.ModTime().Equal(current.ModTime()) {
+				candidates = nil
+			}
+		}
+	}
 
 	// Skip to offset (only if no filter - filtering requires scanning all records)
-	if filterExpr == "" {
+	if filterExpr == "" && len(communityIDs) == 0 {
 		if err := auditReader.Skip(offset); err != nil {
 			fmt.Fprintf(w, "event: error\ndata: {\"error\": \"Failed to skip to offset\"}\n\n")
 			flusher.Flush()
@@ -658,7 +686,13 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 	matchedCount := 0
 
 	for {
-		record, err := auditReader.NextRecord()
+		var record proto.Message
+		var raw []byte
+		if candidates != nil {
+			raw, err = auditReader.NextRaw()
+		} else {
+			record, err = auditReader.NextRecord()
+		}
 		if err == io.EOF {
 			break
 		}
@@ -669,6 +703,19 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 		}
 
 		totalScanned++
+		if candidates != nil && int64(totalScanned) <= indexedTotal && !candidates.Contains(uint32(totalScanned-1)) {
+			continue
+		}
+		if candidates != nil {
+			record, err = auditReader.DecodeRecord(raw)
+			if err != nil {
+				sendError(fmt.Sprintf("Failed to decode audit record: %v", err))
+				break
+			}
+		}
+		if len(communityIDs) > 0 && (candidates == nil || int64(totalScanned) > indexedTotal) && !auditRecordMatchesCommunityID(record, communityIDs) {
+			continue
+		}
 
 		// Apply filter if provided
 		if filterProgram != nil {
@@ -692,7 +739,7 @@ func HandleAuditStream(w http.ResponseWriter, r *http.Request, filePath, auditTy
 		}
 
 		// Skip records before offset (when filtering)
-		if filterExpr != "" && matchedCount <= offset {
+		if (filterExpr != "" || len(communityIDs) > 0) && matchedCount <= offset {
 			continue
 		}
 

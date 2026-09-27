@@ -1845,12 +1845,16 @@ function createApiWithBase(apiBase: string) {
     onProgress?: (count: number, scanned?: number) => void,
     onComplete?: (total: number, scanned?: number, executionTimeMs?: number) => void,
     onError?: (error: string) => void,
-    filter?: string
+    filter?: string,
+    communityIds?: readonly string[]
   ): EventSource {
     let url = `${apiBase}/audit/${type}/stream?offset=${offset}&limit=${limit}`;
     if (filter) {
       url += `&filter=${encodeURIComponent(filter)}`;
     }
+    communityIds?.forEach(id => {
+      url += `&communityId=${encodeURIComponent(id)}`;
+    });
     
     console.log('[API] Creating EventSource for:', url);
     const eventSource = new EventSource(url);

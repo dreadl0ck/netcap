@@ -94,16 +94,16 @@ func communityCachedTotal(path string) (int64, bool) {
 	return 0, false
 }
 
-// communityCounts uses an exact, per-file ordinal index. Oversized or changing
-// files are counted by streaming instead of publishing a partial index.
-func communityCounts(path string, ids map[string]bool) (int64, int64, error) {
+// communityIndexFor publishes only complete generations. Oversized or changing
+// files retain the streaming fallback without publishing a partial index.
+func communityIndexFor(path string) (*communityFileIndex, error) {
 	for attempt := 0; attempt < 2; attempt++ {
 		info, err := os.Stat(path)
 		if errors.Is(err, os.ErrNotExist) {
-			return 0, 0, nil
+			return nil, nil
 		}
 		if err != nil {
-			return 0, 0, err
+			return nil, err
 		}
 
 		communityIndexCache.Lock()
@@ -139,7 +139,7 @@ func communityCounts(path string, ids map[string]bool) (int64, int64, error) {
 			}
 			communityIndexCache.Unlock()
 			if buildErr != nil {
-				return 0, 0, buildErr
+				return nil, buildErr
 			}
 		} else {
 			entry.used = time.Now()
@@ -149,13 +149,62 @@ func communityCounts(path string, ids map[string]bool) (int64, int64, error) {
 
 		after, err := os.Stat(path)
 		if err == nil && after.Size() == info.Size() && after.ModTime().Equal(info.ModTime()) {
-			if entry.index != nil {
-				return entry.index.total, entry.index.count(ids), nil
-			}
-			break
+			return entry.index, nil
 		}
 	}
-	return scanCommunityCounts(path, ids)
+	return nil, nil
+}
+
+func communityCounts(path string, ids map[string]bool) (int64, int64, error) {
+	idx, err := communityIndexFor(path)
+	if err != nil {
+		return 0, 0, err
+	}
+	if idx != nil {
+		return idx.total, idx.count(ids), nil
+	}
+	total, matched, err := scanCommunityCounts(path, ids)
+	if errors.Is(err, os.ErrNotExist) {
+		return 0, 0, nil
+	}
+	return total, matched, err
+}
+
+func communitySelectedBitmap(path string, ids map[string]bool) (*roaring.Bitmap, int64, error) {
+	idx, err := communityIndexFor(path)
+	if err != nil || idx == nil {
+		return nil, 0, err
+	}
+	var selected *roaring.Bitmap
+	for id := range ids {
+		if bitmap := idx.byID[id]; bitmap != nil {
+			if selected == nil {
+				selected = bitmap.Clone()
+			} else {
+				selected.Or(bitmap)
+			}
+		}
+	}
+	if selected == nil {
+		selected = roaring.New()
+	}
+	return selected, idx.total, nil
+}
+
+func auditRecordMatchesCommunityID(record any, selected map[string]bool) bool {
+	if single, ok := record.(interface{ GetCommunityID() string }); ok {
+		if id := single.GetCommunityID(); id != "" && selected[id] {
+			return true
+		}
+	}
+	if multiple, ok := record.(interface{ GetCommunityIDs() []string }); ok {
+		for _, id := range multiple.GetCommunityIDs() {
+			if id != "" && selected[id] {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func communityIndexEvictLocked() {

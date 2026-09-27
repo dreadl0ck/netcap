@@ -88,6 +88,26 @@ func (r *AuditRecordReader) ReadHeader() (*types.Header, error) {
 // NextRecord reads the next audit record as a proto.Message
 // The caller needs to type assert to the appropriate type
 func (r *AuditRecordReader) NextRecord() (proto.Message, error) {
+	msg := netio.InitRecord(r.recordType)
+	if msg == nil {
+		return &types.Connection{}, io.EOF
+	}
+	raw, err := r.NextRaw()
+	if err != nil {
+		return nil, err
+	}
+	if err := proto.Unmarshal(raw, msg); err != nil {
+		return nil, err
+	}
+	return msg, nil
+}
+
+func (r *AuditRecordReader) NextRaw() ([]byte, error) {
+	return r.delimitedReader.Next()
+}
+
+// DecodeRecord must run before the next NextRaw call reuses the input buffer.
+func (r *AuditRecordReader) DecodeRecord(raw []byte) (proto.Message, error) {
 	// Create appropriate message type based on header
 	msg := netio.InitRecord(r.recordType)
 	if msg == nil {
@@ -95,7 +115,7 @@ func (r *AuditRecordReader) NextRecord() (proto.Message, error) {
 		return &types.Connection{}, io.EOF
 	}
 
-	err := r.delimitedReader.NextProto(msg)
+	err := proto.Unmarshal(raw, msg)
 	if err != nil {
 		return nil, err
 	}

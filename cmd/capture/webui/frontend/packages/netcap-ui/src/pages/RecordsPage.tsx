@@ -523,17 +523,6 @@ export default function AuditRecords() {
     }
   }, [selectedType]);
 
-  // Build community ID filter expression for streaming
-  const buildCommunityIDFilter = useCallback(() => {
-    if (!isCommunityIDFilterActive || communityIDsArray.length === 0) {
-      return '';
-    }
-    // Build filter: CommunityID == "id1" || CommunityID == "id2" || ...
-    return communityIDsArray
-      .map(id => `CommunityID == "${id}"`)
-      .join(' || ');
-  }, [isCommunityIDFilterActive, communityIDsArray]);
-
   const handleViewRecords = (type: string, filter?: string) => {
     setSelectedType(type);
     setRecords([]);
@@ -544,19 +533,6 @@ export default function AuditRecords() {
     setLoading(true);
     setStreamError(null);
     setActiveFilter(filter || '');
-
-    // Combine user filter with community ID filter
-    let combinedFilter = filter || '';
-    const communityIDFilter = buildCommunityIDFilter();
-    
-    if (communityIDFilter) {
-      if (combinedFilter) {
-        // Wrap community ID filter in parentheses and AND with user filter
-        combinedFilter = `(${communityIDFilter}) && (${combinedFilter})`;
-      } else {
-        combinedFilter = communityIDFilter;
-      }
-    }
 
     const eventSource = api.streamAuditRecords(
       type,
@@ -580,7 +556,8 @@ export default function AuditRecords() {
         setStreamError(error);
         setLoading(false);
       },
-      combinedFilter || undefined
+      filter || undefined,
+      isCommunityIDFilterActive ? communityIDsArray : undefined
     );
 
     return () => eventSource.close();
