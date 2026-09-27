@@ -77,6 +77,41 @@ func TestCommunityIndexInvalidatesOnRewrite(t *testing.T) {
 	}
 }
 
+func TestCommunityIndexRepeatedIDsCountEachRecordOnce(t *testing.T) {
+	dir := t.TempDir()
+	files := []struct {
+		name string
+		typ  types.Type
+		rows []proto.Message
+	}{
+		{"Software", types.Type_NC_Software, []proto.Message{
+			&types.Software{CommunityIDs: []string{"one", "two", "one"}},
+			&types.Software{CommunityIDs: []string{"two"}},
+			&types.Software{},
+		}},
+		{"Vulnerability", types.Type_NC_Vulnerability, []proto.Message{
+			&types.Vulnerability{CommunityIDs: []string{"one", "two"}},
+		}},
+		{"Exploit", types.Type_NC_Exploit, []proto.Message{
+			&types.Exploit{CommunityIDs: []string{"two"}},
+		}},
+	}
+	for _, file := range files {
+		path := writeTimelineAuditFile(t, dir, file.name, file.typ, file.rows)
+		for _, ids := range []map[string]bool{{"one": true, "two": true}, {"two": true}} {
+			total, matched, err := communityCounts(path, ids)
+			_, scanMatched, scanErr := scanCommunityCounts(path, ids)
+			want := int64(1)
+			if file.name == "Software" {
+				want = 2
+			}
+			if err != nil || scanErr != nil || total != int64(len(file.rows)) || matched != want || scanMatched != want {
+				t.Fatalf("%s %v: indexed (%d, %d, %v), scan (%d, %v), want %d", file.name, ids, total, matched, err, scanMatched, scanErr, want)
+			}
+		}
+	}
+}
+
 func TestCommunityIndexFallsBackWhenTooManyIDs(t *testing.T) {
 	dir := t.TempDir()
 	records := make([]proto.Message, communityIndexMaxIDs+1)

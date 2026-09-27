@@ -158,11 +158,14 @@ var errCommunityIndexTooLarge = errors.New("community index size limit exceeded"
 
 func buildCommunityIndex(path string) (*communityFileIndex, error) {
 	idx := &communityFileIndex{byID: make(map[string]*roaring.Bitmap)}
-	err := walkCommunityRecords(path, func(id string) error {
+	err := walkCommunityRecords(path, func(id string, ids []string) error {
 		if idx.total >= communityIndexMaxRecords {
 			return errCommunityIndexTooLarge
 		}
-		if id != "" {
+		add := func(id string) error {
+			if id == "" {
+				return nil
+			}
 			bitmap := idx.byID[id]
 			if bitmap == nil {
 				if len(idx.byID) >= communityIndexMaxIDs {
@@ -172,6 +175,15 @@ func buildCommunityIndex(path string) (*communityFileIndex, error) {
 				idx.byID[id] = bitmap
 			}
 			bitmap.Add(uint32(idx.total))
+			return nil
+		}
+		if err := add(id); err != nil {
+			return err
+		}
+		for _, id := range ids {
+			if err := add(id); err != nil {
+				return err
+			}
 		}
 		idx.total++
 		return nil
@@ -187,19 +199,26 @@ func buildCommunityIndex(path string) (*communityFileIndex, error) {
 	return idx, err
 }
 
-func scanCommunityCounts(path string, ids map[string]bool) (int64, int64, error) {
+func scanCommunityCounts(path string, selected map[string]bool) (int64, int64, error) {
 	var total, matched int64
-	err := walkCommunityRecords(path, func(id string) error {
+	err := walkCommunityRecords(path, func(id string, ids []string) error {
 		total++
-		if id != "" && ids[id] {
+		if id != "" && selected[id] {
 			matched++
+			return nil
+		}
+		for _, candidate := range ids {
+			if candidate != "" && selected[candidate] {
+				matched++
+				break
+			}
 		}
 		return nil
 	})
 	return total, matched, err
 }
 
-func walkCommunityRecords(path string, visit func(string) error) error {
+func walkCommunityRecords(path string, visit func(string, []string) error) error {
 	reader, err := netio.Open(path, defaults.BufferSize)
 	if err != nil {
 		return err
@@ -217,6 +236,8 @@ func walkCommunityRecords(path string, visit func(string) error) error {
 
 	field, hasID := reflect.TypeOf(record).Elem().FieldByName("CommunityID")
 	hasID = hasID && field.Type.Kind() == reflect.String
+	listField, hasIDs := reflect.TypeOf(record).Elem().FieldByName("CommunityIDs")
+	hasIDs = hasIDs && listField.Type == reflect.TypeFor[[]string]()
 	for {
 		if err := reader.Next(record); err != nil {
 			if errors.Is(err, io.EOF) {
@@ -228,7 +249,11 @@ func walkCommunityRecords(path string, visit func(string) error) error {
 		if hasID {
 			id = reflect.ValueOf(record).Elem().FieldByIndex(field.Index).String()
 		}
-		if err := visit(id); err != nil {
+		var ids []string
+		if hasIDs {
+			ids = reflect.ValueOf(record).Elem().FieldByIndex(listField.Index).Interface().([]string)
+		}
+		if err := visit(id, ids); err != nil {
 			return err
 		}
 	}

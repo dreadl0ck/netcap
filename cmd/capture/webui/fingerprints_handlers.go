@@ -112,7 +112,7 @@ func (s *Server) handleFingerprints(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	all, err := readFingerprints(outDir)
+	snapshot, err := fingerprintSnapshotFor(outDir)
 	if err != nil {
 		log.Printf("[WebUI] Failed to read fingerprints: %v", err)
 		http.Error(w, "Failed to read fingerprints", http.StatusInternalServerError)
@@ -124,9 +124,9 @@ func (s *Server) handleFingerprints(w http.ResponseWriter, r *http.Request) {
 
 	// Compute global stats over the full unfiltered dataset so the UI summary
 	// cards remain meaningful regardless of which slice the user is viewing.
-	stats := computeFingerprintStats(all)
+	stats := snapshot.stats
 
-	filtered := filterFingerprints(all, opts)
+	filtered := snapshot.filter(opts)
 	sortFingerprints(filtered, opts.sortField, opts.sortOrder)
 
 	totalCount := len(filtered)
