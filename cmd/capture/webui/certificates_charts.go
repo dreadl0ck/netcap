@@ -181,10 +181,7 @@ func (s *Server) handleCertificatesExpirationTimeline(w http.ResponseWriter, r *
 
 // generateCertificatesTopIssuersChart creates a bar chart showing top certificate issuers
 func generateCertificatesTopIssuersChart(outDir string, showLegend bool) *charts.Bar {
-	certificates, err := readCertificates(outDir)
-	if err != nil {
-		certificates = []CertificateSummary{}
-	}
+	certificates := cachedCertificateRows(outDir)
 
 	// Aggregate issuers
 	issuerCount := make(map[string]int)
@@ -281,10 +278,7 @@ func generateCertificatesTopIssuersChart(outDir string, showLegend bool) *charts
 
 // generateCertificatesStatusDistributionChart creates a pie chart showing certificate status distribution
 func generateCertificatesStatusDistributionChart(outDir string, showLegend bool) *charts.Pie {
-	certificates, err := readCertificates(outDir)
-	if err != nil {
-		certificates = []CertificateSummary{}
-	}
+	certificates := cachedCertificateRows(outDir)
 
 	// Count by status
 	statusCount := make(map[string]int)
@@ -356,10 +350,7 @@ func generateCertificatesStatusDistributionChart(outDir string, showLegend bool)
 
 // generateCertificatesKeyAlgorithmsChart creates a bar chart showing public key algorithm distribution
 func generateCertificatesKeyAlgorithmsChart(outDir string, showLegend bool) *charts.Bar {
-	certificates, err := readCertificates(outDir)
-	if err != nil {
-		certificates = []CertificateSummary{}
-	}
+	certificates := cachedCertificateRows(outDir)
 
 	// Aggregate algorithms with key size
 	algoCount := make(map[string]int)
@@ -457,10 +448,7 @@ func generateCertificatesKeyAlgorithmsChart(outDir string, showLegend bool) *cha
 
 // generateCertificatesExpirationTimelineChart creates a scatter chart showing certificate expiration timeline
 func generateCertificatesExpirationTimelineChart(outDir string, showLegend bool) *charts.Scatter {
-	certificates, err := readCertificates(outDir)
-	if err != nil {
-		certificates = []CertificateSummary{}
-	}
+	certificates := cachedCertificateRows(outDir)
 
 	// Filter out expired certificates and prepare data
 	// X-axis: Days until expiration, Y-axis: Seen count

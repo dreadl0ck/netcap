@@ -29,10 +29,10 @@ test-wireshark:
 	python3 scripts/fetch-wireshark-samples.py
 	NETCAP_WIRESHARK_CORPUS=tests/wireshark-corpus go test -count=1 -v -timeout=30m -run '^TestWiresharkCorpus$$' ./internal/collector/
 
-# Regression tests (golden file comparisons)
+# Regression tests compare complete captures across worker counts and runs.
 test-regression:
 	@echo "Running regression tests..."
-	go test -v -tags=regression ./tests/regression/...
+	go test ./internal/collector -run '^TestUltimatePCAP(WorkerInvariance|Repeatability)$$' -count=1
 
 test-regression-verify:
 	@echo "Verifying regression test outputs..."

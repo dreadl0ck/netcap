@@ -180,10 +180,7 @@ func (s *Server) handleFingerprintsHostsPerFingerprint(w http.ResponseWriter, r 
 
 // generateFingerprintsTypeDistributionChart creates a pie chart showing fingerprint type distribution
 func generateFingerprintsTypeDistributionChart(outDir string, showLegend bool) *charts.Pie {
-	fingerprints, err := readFingerprints(outDir)
-	if err != nil {
-		fingerprints = []FingerprintSummary{}
-	}
+	fingerprints := cachedFingerprintRows(outDir)
 
 	// Aggregate by type
 	typeCount := make(map[string]int)
@@ -243,10 +240,7 @@ func generateFingerprintsTypeDistributionChart(outDir string, showLegend bool) *
 
 // generateFingerprintsTopJA4Chart creates a bar chart showing top JA4 fingerprints
 func generateFingerprintsTopJA4Chart(outDir string, showLegend bool) *charts.Bar {
-	fingerprints, err := readFingerprints(outDir)
-	if err != nil {
-		fingerprints = []FingerprintSummary{}
-	}
+	fingerprints := cachedFingerprintRows(outDir)
 
 	// Filter JA4 fingerprints
 	ja4Fingerprints := make([]FingerprintSummary, 0)
@@ -332,10 +326,7 @@ func generateFingerprintsTopJA4Chart(outDir string, showLegend bool) *charts.Bar
 
 // generateFingerprintsTopJA4SSHChart creates a bar chart showing top JA4SSH fingerprints
 func generateFingerprintsTopJA4SSHChart(outDir string, showLegend bool) *charts.Bar {
-	fingerprints, err := readFingerprints(outDir)
-	if err != nil {
-		fingerprints = []FingerprintSummary{}
-	}
+	fingerprints := cachedFingerprintRows(outDir)
 
 	// Filter JA4SSH fingerprints
 	ja4sshFingerprints := make([]FingerprintSummary, 0)
@@ -421,10 +412,7 @@ func generateFingerprintsTopJA4SSHChart(outDir string, showLegend bool) *charts.
 
 // generateFingerprintsHostsPerFingerprintChart creates a scatter chart showing hosts per fingerprint
 func generateFingerprintsHostsPerFingerprintChart(outDir string, showLegend bool) *charts.Scatter {
-	fingerprints, err := readFingerprints(outDir)
-	if err != nil {
-		fingerprints = []FingerprintSummary{}
-	}
+	fingerprints := cachedFingerprintRows(outDir)
 
 	// Prepare scatter data: [occurrence count, unique hosts]
 	scatterData := make([]opts.ScatterData, 0, len(fingerprints))

@@ -25,6 +25,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/RoaringBitmap/roaring"
 )
 
 // tlKey is the total order used to walk audit records chronologically:
@@ -97,13 +99,15 @@ func decodeTimelineCursor(s string) (*tlKey, error) {
 
 // timelineQuery is one resolved request against a built index.
 type timelineQuery struct {
-	Start  int64
-	End    int64
-	Tracks []*tlTypeIndex
-	Search string // already lowercased
-	Limit  int
-	After  *tlKey
-	Before *tlKey
+	Start        int64
+	End          int64
+	Tracks       []*tlTypeIndex
+	Search       string // already lowercased
+	Host         string // exact source or destination IP
+	CommunityIDs map[string]bool
+	Limit        int
+	After        *tlKey
+	Before       *tlKey
 }
 
 // scanRange returns the [lo, hi) window of a track that can contain matches.
@@ -137,6 +141,23 @@ func (q *timelineQuery) match(t *tlTypeIndex, i int) bool {
 			return false
 		}
 	}
+	if q.Host != "" && t.str(e.Src) != q.Host && t.str(e.Dst) != q.Host {
+		return false
+	}
+	if len(q.CommunityIDs) > 0 {
+		matched := t.cids != nil && q.CommunityIDs[t.str(t.cids[i])]
+		if !matched {
+			for _, id := range t.extraCIDs[e.Ordinal] {
+				if q.CommunityIDs[t.str(id)] {
+					matched = true
+					break
+				}
+			}
+		}
+		if !matched {
+			return false
+		}
+	}
 
 	if q.Search == "" {
 		return true
@@ -165,11 +186,7 @@ func (q *timelineQuery) count() int64 {
 	for _, t := range q.Tracks {
 		lo, hi := q.scanRange(t)
 
-		for i := lo; i < hi; i++ {
-			if q.match(t, i) {
-				total++
-			}
-		}
+		q.eachMatch(t, lo, hi, func(int) { total++ })
 	}
 
 	return total
@@ -189,6 +206,7 @@ func (q *timelineQuery) nearest(at int64) *timelineHit {
 		}
 
 		pos := sort.Search(hi-lo, func(i int) bool { return t.Events[lo+i].Time >= at }) + lo
+		selected := q.candidates(t)
 
 		for _, direction := range []int{-1, 1} {
 			i := pos
@@ -196,21 +214,19 @@ func (q *timelineQuery) nearest(at int64) *timelineHit {
 				i--
 			}
 
-			for i >= lo && i < hi {
-				if q.match(t, i) {
-					distance := timelineDistance(t.Events[i].Time, at)
-					candidate := timelineHit{Track: t, Index: i}
-
-					if best == nil || distance < bestDistance ||
-						(distance == bestDistance && q.key(t, i).less(q.key(best.Track, best.Index))) {
-						best = &candidate
-						bestDistance = distance
-					}
-
-					break
+			if direction < 0 {
+				i = q.prevMatch(t, i, lo, selected)
+			} else {
+				i = q.nextMatch(t, i, hi, selected)
+			}
+			if i >= lo && i < hi {
+				distance := timelineDistance(t.Events[i].Time, at)
+				candidate := timelineHit{Track: t, Index: i}
+				if best == nil || distance < bestDistance ||
+					(distance == bestDistance && q.key(t, i).less(q.key(best.Track, best.Index))) {
+					best = &candidate
+					bestDistance = distance
 				}
-
-				i += direction
 			}
 		}
 	}
@@ -312,9 +328,10 @@ func (q *timelineQuery) page() []timelineHit {
 
 func (q *timelineQuery) pageForward() []timelineHit {
 	type cursor struct {
-		track *tlTypeIndex
-		pos   int
-		hi    int
+		track    *tlTypeIndex
+		pos      int
+		hi       int
+		selected *roaring.Bitmap
 	}
 
 	cursors := make([]cursor, 0, len(q.Tracks))
@@ -322,13 +339,11 @@ func (q *timelineQuery) pageForward() []timelineHit {
 	for _, t := range q.Tracks {
 		lo, hi := q.scanRange(t)
 		pos := q.forwardStart(t, lo, q.After)
-
-		for pos < hi && !q.match(t, pos) {
-			pos++
-		}
+		selected := q.candidates(t)
+		pos = q.nextMatch(t, pos, hi, selected)
 
 		if pos < hi {
-			cursors = append(cursors, cursor{track: t, pos: pos, hi: hi})
+			cursors = append(cursors, cursor{track: t, pos: pos, hi: hi, selected: selected})
 		}
 	}
 
@@ -349,10 +364,7 @@ func (q *timelineQuery) pageForward() []timelineHit {
 
 		hits = append(hits, timelineHit{Track: cursors[best].track, Index: cursors[best].pos})
 
-		pos := cursors[best].pos + 1
-		for pos < cursors[best].hi && !q.match(cursors[best].track, pos) {
-			pos++
-		}
+		pos := q.nextMatch(cursors[best].track, cursors[best].pos+1, cursors[best].hi, cursors[best].selected)
 
 		if pos >= cursors[best].hi {
 			cursors = append(cursors[:best], cursors[best+1:]...)
@@ -368,9 +380,10 @@ func (q *timelineQuery) pageForward() []timelineHit {
 
 func (q *timelineQuery) pageBackward() []timelineHit {
 	type cursor struct {
-		track *tlTypeIndex
-		pos   int
-		lo    int
+		track    *tlTypeIndex
+		pos      int
+		lo       int
+		selected *roaring.Bitmap
 	}
 
 	cursors := make([]cursor, 0, len(q.Tracks))
@@ -378,13 +391,11 @@ func (q *timelineQuery) pageBackward() []timelineHit {
 	for _, t := range q.Tracks {
 		lo, hi := q.scanRange(t)
 		pos := q.backwardEnd(t, hi, q.Before) - 1
-
-		for pos >= lo && !q.match(t, pos) {
-			pos--
-		}
+		selected := q.candidates(t)
+		pos = q.prevMatch(t, pos, lo, selected)
 
 		if pos >= lo {
-			cursors = append(cursors, cursor{track: t, pos: pos, lo: lo})
+			cursors = append(cursors, cursor{track: t, pos: pos, lo: lo, selected: selected})
 		}
 	}
 
@@ -405,10 +416,7 @@ func (q *timelineQuery) pageBackward() []timelineHit {
 
 		hits = append(hits, timelineHit{Track: cursors[best].track, Index: cursors[best].pos})
 
-		pos := cursors[best].pos - 1
-		for pos >= cursors[best].lo && !q.match(cursors[best].track, pos) {
-			pos--
-		}
+		pos := q.prevMatch(cursors[best].track, cursors[best].pos-1, cursors[best].lo, cursors[best].selected)
 
 		if pos < cursors[best].lo {
 			cursors = append(cursors[:best], cursors[best+1:]...)
@@ -443,10 +451,7 @@ func (q *timelineQuery) buckets(count int) (map[string][]int64, int64) {
 		delta := make([]int64, count+1)
 		lo, hi := q.scanRange(t)
 
-		for i := lo; i < hi; i++ {
-			if !q.match(t, i) {
-				continue
-			}
+		q.eachMatch(t, lo, hi, func(i int) {
 			matchCount++
 
 			start := t.Events[i].Time
@@ -463,7 +468,7 @@ func (q *timelineQuery) buckets(count int) (map[string][]int64, int64) {
 			if to+1 < len(delta) {
 				delta[to+1]--
 			}
-		}
+		})
 
 		var active int64
 		for i := range counts {

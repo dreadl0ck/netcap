@@ -492,7 +492,8 @@ func (s *Server) handleTimelineRecord(w http.ResponseWriter, r *http.Request) {
 }
 
 // timelineQueryFromRequest builds a query from the request parameters, falling
-// back to the full capture window.
+// back to the full capture window. host and repeatable communityId are exact
+// facets; q retains its existing case-insensitive substring semantics.
 func timelineQueryFromRequest(r *http.Request, idx *timelineIndex, defaultLimit, maxLimit int) (*timelineQuery, error) {
 	q := r.URL.Query()
 	if expected := q.Get("generation"); expected != "" && expected != idx.Generation {
@@ -503,7 +504,16 @@ func timelineQueryFromRequest(r *http.Request, idx *timelineIndex, defaultLimit,
 		Start:  idx.MinTime,
 		End:    idx.MaxTime,
 		Search: strings.ToLower(strings.TrimSpace(q.Get("q"))),
+		Host:   strings.TrimSpace(q.Get("host")),
 		Limit:  defaultLimit,
+	}
+	if len(q["communityId"]) > 0 {
+		query.CommunityIDs = make(map[string]bool)
+		for _, id := range q["communityId"] {
+			if id = strings.TrimSpace(id); id != "" {
+				query.CommunityIDs[id] = true
+			}
+		}
 	}
 
 	if raw := q.Get("start"); raw != "" {

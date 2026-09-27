@@ -3938,10 +3938,9 @@ func (s *Server) getUnfilteredMenuCounts(outDir string) MenuCountsResponse {
 	response.VulnerabilitiesCount = CountRecords(filepath.Join(outDir, "Vulnerability.ncap.gz"))
 	response.ServicesCount = CountRecords(filepath.Join(outDir, "Service.ncap.gz"))
 
-	// Count unique fingerprints using the same logic as the fingerprints page
-	// This reads and aggregates from all fingerprint sources to get the actual unique count
-	if fingerprints, err := readFingerprints(outDir); err == nil {
-		response.FingerprintsCount = int64(len(fingerprints))
+	// Count unique fingerprints from the same snapshot as the fingerprints page.
+	if fingerprints, err := fingerprintSnapshotFor(outDir); err == nil {
+		response.FingerprintsCount = int64(len(fingerprints.rows))
 	}
 
 	// Count domains from DNS
@@ -4009,17 +4008,8 @@ func (s *Server) getFilteredMenuCounts(outDir string, communityIDs map[string]bo
 	response.ServicesCount = CountRecordsWithCommunityIDFilter(filepath.Join(outDir, "Service.ncap.gz"), communityIDs)
 
 	// Count unique fingerprints filtered by community IDs
-	if fingerprints, err := readFingerprints(outDir); err == nil {
-		count := int64(0)
-		for _, fp := range fingerprints {
-			for _, cid := range fp.CommunityIDs {
-				if communityIDs[cid] {
-					count++
-					break
-				}
-			}
-		}
-		response.FingerprintsCount = count
+	if fingerprints, err := fingerprintSnapshotFor(outDir); err == nil {
+		response.FingerprintsCount = fingerprints.count(communityIDs)
 	}
 
 	// Count domains from DNS with filtering
