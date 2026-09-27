@@ -180,10 +180,7 @@ func (s *Server) handleConnectionsDuration(w http.ResponseWriter, r *http.Reques
 
 // generateConnectionsTopByTrafficChart creates a bar chart showing top connections by traffic
 func generateConnectionsTopByTrafficChart(outDir string, showLegend bool) *charts.Bar {
-	connections, err := readConnections(outDir)
-	if err != nil {
-		connections = []ConnectionSummary{}
-	}
+	connections := cachedConnectionRows(outDir)
 
 	// Take top 20 connections
 	limit := min(len(connections), 20)
@@ -256,10 +253,7 @@ func generateConnectionsTopByTrafficChart(outDir string, showLegend bool) *chart
 
 // generateConnectionsProtocolsChart creates a pie chart showing protocol distribution
 func generateConnectionsProtocolsChart(outDir string, showLegend bool) *charts.Pie {
-	connections, err := readConnections(outDir)
-	if err != nil {
-		connections = []ConnectionSummary{}
-	}
+	connections := cachedConnectionRows(outDir)
 
 	// Aggregate protocols (use TransportProto or ApplicationProto)
 	protoCount := make(map[string]int)
@@ -357,10 +351,7 @@ func generateConnectionsProtocolsChart(outDir string, showLegend bool) *charts.P
 
 // generateConnectionsApplicationsChart creates a bar chart showing top applications
 func generateConnectionsApplicationsChart(outDir string, showLegend bool) *charts.Bar {
-	connections, err := readConnections(outDir)
-	if err != nil {
-		connections = []ConnectionSummary{}
-	}
+	connections := cachedConnectionRows(outDir)
 
 	// Aggregate applications
 	appCount := make(map[string]int)
@@ -453,10 +444,7 @@ func generateConnectionsApplicationsChart(outDir string, showLegend bool) *chart
 
 // generateConnectionsDurationChart creates a scatter chart showing connection duration vs size
 func generateConnectionsDurationChart(outDir string, showLegend bool) *charts.Scatter {
-	connections, err := readConnections(outDir)
-	if err != nil {
-		connections = []ConnectionSummary{}
-	}
+	connections := cachedConnectionRows(outDir)
 
 	// Prepare scatter data: [duration (seconds), size (KB)]
 	// Limit to reasonable sample size for performance

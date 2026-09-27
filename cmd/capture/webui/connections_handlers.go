@@ -102,22 +102,18 @@ type ConnectionsResponse struct {
 // Supports query parameters:
 // - ?layer=all|transport|network to filter by layer type
 // - ?ipVersion=all|ipv4|ipv6 to filter by IP version
+// - ?communityId=... (repeatable), ?host=..., ?srcIP=..., ?dstIP=..., ?protocol=... for exact facets
+// - ?limit=1..1000&offset=... for optional server-side pagination
 func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Get layer filter parameter (all, transport, network)
-	layerFilter := r.URL.Query().Get("layer")
-	if layerFilter == "" {
-		layerFilter = "all"
-	}
-
-	// Get IP version filter parameter (all, ipv4, ipv6)
-	ipVersionFilter := r.URL.Query().Get("ipVersion")
-	if ipVersionFilter == "" {
-		ipVersionFilter = "all"
+	filter, err := parseConnectionFilter(r.URL.Query())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	outDir, _ := s.resolveOutDirFromRequest(r)
@@ -127,23 +123,14 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	connections, err := readConnections(outDir)
+	snapshot, err := connectionSnapshotFor(outDir)
 	if err != nil {
 		log.Printf("[WebUI] Failed to read connections: %v", err)
 		http.Error(w, "Failed to read connections", http.StatusInternalServerError)
 		return
 	}
 
-	// Apply layer filter
-	filteredConnections := filterConnectionsByLayer(connections, layerFilter)
-
-	// Apply IP version filter
-	filteredConnections = filterConnectionsByIPVersion(filteredConnections, ipVersionFilter)
-
-	response := ConnectionsResponse{
-		Connections: filteredConnections,
-		TotalCount:  len(filteredConnections),
-	}
+	response := snapshot.selectRows(filter)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)

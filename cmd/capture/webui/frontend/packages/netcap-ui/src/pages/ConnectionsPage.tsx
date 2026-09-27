@@ -179,10 +179,19 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
     }
   }, [router.isReady, router.query.search]);
 
-  // Fetch connections data with layer and IP version filters
+  const communityIds = useMemo(
+    () => isCommunityIDFilterActive ? Array.from(selectedCommunityIDs).sort() : [],
+    [isCommunityIDFilterActive, selectedCommunityIDs]
+  );
+
+  // Fetch only matching connections when the cross-page Community ID filter is active.
   const { data: connectionsData, error, mutate } = useSWR<ConnectionsResponse>(
-    ['connections', layerFilter, ipVersionFilter],
-    () => fetch(`${getBackendUrl()}/api/connections?layer=${layerFilter}&ipVersion=${ipVersionFilter}`).then(res => res.json()),
+    ['connections', layerFilter, ipVersionFilter, communityIds],
+    () => {
+      const params = new URLSearchParams({ layer: layerFilter, ipVersion: ipVersionFilter });
+      communityIds.forEach(id => params.append('communityId', id));
+      return fetch(`${getBackendUrl()}/api/connections?${params}`).then(res => res.json());
+    },
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
       refreshInterval: 0,
@@ -1801,4 +1810,3 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
     </Layout>
   );
 }
-
