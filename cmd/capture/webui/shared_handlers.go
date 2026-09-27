@@ -188,11 +188,10 @@ func ListAuditFilesWithCommunityIDFilter(outputDir string, communityIDs map[stri
 		auditType := strings.TrimSuffix(strings.TrimSuffix(name, ".gz"), defaults.FileExtension)
 		filePath := filepath.Join(outputDir, name)
 
-		// Count total records
-		totalCount := CountRecords(filePath)
-
-		// Count filtered records by community ID
-		filteredCount := CountRecordsWithCommunityIDFilter(filePath, communityIDs)
+		totalCount, filteredCount, err := communityCounts(filePath, communityIDs)
+		if err != nil {
+			return nil, fmt.Errorf("count %s: %w", name, err)
+		}
 
 		files = append(files, FilteredAuditFileInfo{
 			AuditFileInfo: AuditFileInfo{
@@ -226,47 +225,10 @@ func ListAuditFilesWithCommunityIDFilter(outputDir string, communityIDs map[stri
 
 // CountRecordsWithCommunityIDFilter counts records that match any of the given community IDs
 func CountRecordsWithCommunityIDFilter(filePath string, communityIDs map[string]bool) int64 {
-	reader, err := netio.Open(filePath, defaults.BufferSize)
+	_, count, err := communityCounts(filePath, communityIDs)
 	if err != nil {
 		return 0
 	}
-	defer reader.Close()
-
-	header, err := reader.ReadHeader()
-	if err != nil || header == nil {
-		return 0
-	}
-
-	record := netio.InitRecord(header.Type)
-	if record == nil {
-		return 0
-	}
-
-	count := int64(0)
-
-	for {
-		err := reader.Next(record)
-		if err != nil {
-			break
-		}
-
-		// Use reflection to get CommunityID field
-		val := reflect.ValueOf(record)
-		if val.Kind() == reflect.Pointer {
-			val = val.Elem()
-		}
-
-		if val.Kind() == reflect.Struct {
-			communityIDField := val.FieldByName("CommunityID")
-			if communityIDField.IsValid() && communityIDField.Kind() == reflect.String {
-				communityID := communityIDField.String()
-				if communityID != "" && communityIDs[communityID] {
-					count++
-				}
-			}
-		}
-	}
-
 	return count
 }
 
