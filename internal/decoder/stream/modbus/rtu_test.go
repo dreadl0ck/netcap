@@ -3,7 +3,6 @@ package modbus
 import (
 	"bytes"
 	"testing"
-	"time"
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
@@ -204,24 +203,24 @@ func TestRTUBroadcastDiagnostics(t *testing.T) {
 	}
 }
 
-func TestRTUAdversarialScanCost(t *testing.T) {
+func TestRTUAdversarialScanCursor(t *testing.T) {
 	previous := decoderconfig.Instance
 	decoderconfig.Instance = &decoderconfig.Config{}
 	t.Cleanup(func() { decoderconfig.Instance = previous })
 	// Every third offset is a plausible frame start claiming a determined
-	// length, so rescanning the whole window per byte verifies a checksum per
-	// offset. These runs took tens of seconds before the scan cursor.
+	// length. Rejected offsets must advance the scan cursor; resetting it
+	// causes a checksum per offset on every subsequent input byte.
 	for _, tt := range []struct {
-		role string
-		size int
-	}{{"request", 1 << 19}, {"unknown", 1 << 15}} {
+		role        string
+		size        int
+		wantScanned int
+	}{{"request", 1 << 19, 249}, {"unknown", 1 << 15, 154}} {
 		t.Run(tt.role, func(t *testing.T) {
 			data := bytes.Repeat([]byte{1, 3, 100}, tt.size/3)
 			var d rtuDirection
-			start := time.Now()
 			d.feed(data, 1, tt.role, true, func(msg *types.Modbus) { t.Fatalf("emitted: %+v", msg) }, func() {})
-			if elapsed := time.Since(start); elapsed > 5*time.Second {
-				t.Fatalf("%d bytes took %v", len(data), elapsed)
+			if d.n != len(d.data) || d.scanned != tt.wantScanned {
+				t.Fatalf("%d bytes left buffer/cursor at %d/%d, want %d/%d", len(data), d.n, d.scanned, len(d.data), tt.wantScanned)
 			}
 		})
 	}

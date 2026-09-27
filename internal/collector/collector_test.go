@@ -141,7 +141,7 @@ func TestCapturePCAP(t *testing.T) {
 
 	c.PrintConfiguration()
 
-	if err := c.CollectPcapNG("../../tests/The-Ultimate-PCAP-v20200224.pcapng"); err != nil {
+	if err := c.CollectPcapNG("../../tests/The Ultimate PCAP v20260316.pcapng"); err != nil {
 		t.Fatal("failed to collect audit records from pcapng file: ", err)
 	}
 }

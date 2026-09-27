@@ -24,10 +24,10 @@ test-integration:
 	@echo "Running integration tests..."
 	go test -v -tags=integration ./tests/integration/...
 
-# Regression tests (golden file comparisons)
+# Regression tests compare complete captures across worker counts and runs.
 test-regression:
 	@echo "Running regression tests..."
-	go test -v -tags=regression ./tests/regression/...
+	go test ./internal/collector -run '^TestUltimatePCAP(WorkerInvariance|Repeatability)$$' -count=1
 
 test-regression-verify:
 	@echo "Verifying regression test outputs..."
