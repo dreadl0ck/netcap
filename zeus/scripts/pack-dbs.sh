@@ -5,6 +5,8 @@
 
 set -e
 
+NOTICE_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)/internal/dbs/DATABASE_NOTICES.txt"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -153,8 +155,16 @@ METADATA_FILE="$OUTPUT_DIR/${VERSION}.json"
 LATEST_TARBALL="$OUTPUT_DIR/latest.tar.gz"
 LATEST_METADATA="$OUTPUT_DIR/latest.json"
 
-# Count database files
+# Count database files, including the notice appended below when absent.
 FILE_COUNT=$(find "$DBS_DIR" -type f | wc -l | tr -d ' ')
+if [[ -f "$DBS_DIR/DATABASE_NOTICES.txt" ]]; then
+    if ! cmp -s "$DBS_DIR/DATABASE_NOTICES.txt" "$NOTICE_FILE"; then
+        error "Database notices differ from $NOTICE_FILE"
+        exit 1
+    fi
+else
+    FILE_COUNT=$((FILE_COUNT + 1))
+fi
 info "Found $FILE_COUNT files to pack"
 
 # Create tarball
@@ -165,8 +175,17 @@ START_TIME=$(date +%s)
 PARENT_DIR=$(dirname "$DBS_DIR")
 DBS_NAME=$(basename "$DBS_DIR")
 
-cd "$PARENT_DIR"
-tar -czf "$TARBALL_FILE" "$DBS_NAME"
+if [[ -f "$DBS_DIR/DATABASE_NOTICES.txt" ]]; then
+    tar -czf "$TARBALL_FILE" -C "$PARENT_DIR" "$DBS_NAME"
+else
+    NOTICE_STAGE=$(mktemp -d)
+    trap 'rm -rf "$NOTICE_STAGE"' EXIT
+    mkdir "$NOTICE_STAGE/$DBS_NAME"
+    cp "$NOTICE_FILE" "$NOTICE_STAGE/$DBS_NAME/DATABASE_NOTICES.txt"
+    tar -czf "$TARBALL_FILE" -C "$PARENT_DIR" "$DBS_NAME" -C "$NOTICE_STAGE" "$DBS_NAME/DATABASE_NOTICES.txt"
+    rm -rf "$NOTICE_STAGE"
+    trap - EXIT
+fi
 
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
@@ -301,4 +320,3 @@ if [[ "$DEPLOYMENT_SUCCESS" != "true" ]]; then
     echo "    dreadl0ck/netcap-dbs-server:latest"
     echo ""
 fi
-
