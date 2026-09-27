@@ -381,6 +381,10 @@ func (s *DBServer) processSourceForServer(source *datasource, buildDir, dbsDir s
 
 // createTarball creates a gzipped tarball of the databases directory
 func (s *DBServer) createTarball(sourceDir, targetPath string) error {
+	if err := writeDatabaseNotices(sourceDir); err != nil {
+		return fmt.Errorf("failed to include database notices: %w", err)
+	}
+
 	file, err := os.Create(targetPath)
 	if err != nil {
 		return err

@@ -396,6 +396,9 @@ func GenerateDBs(nvdIndexStartYear int) {
 	if failureCount > 0 {
 		log.Printf("WARNING: %d out of %d data sources failed to download. Check logs above for details.", failureCount, total)
 	}
+	if err := writeDatabaseNotices(filepath.Join(base, "dbs")); err != nil {
+		log.Fatalf("failed to include database notices: %v", err)
+	}
 
 	// shell out to print a directory tree
 	out, err := exec.Command("tree", base).CombinedOutput()
