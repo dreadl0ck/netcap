@@ -37,9 +37,8 @@ func TestServiceCaptureLifecycle(t *testing.T) {
 		t.Fatalf("build service binary: %v\n%s", err, output)
 	}
 
-	pcapPath := filepath.Join(temp, "input.pcap")
-	writeTestPCAP(t, pcapPath)
 	addr := freeLoopbackAddress(t)
+	pprofAddr := freeLoopbackAddress(t)
 	dataDir := filepath.Join(temp, "service-data")
 	logFile, err := os.Create(filepath.Join(temp, "service.log"))
 	if err != nil {
@@ -50,8 +49,9 @@ func TestServiceCaptureLifecycle(t *testing.T) {
 	cmd := exec.Command(binary,
 		"capture", "--service", "--dev",
 		"--http", addr,
+		"--pprof", pprofAddr,
 		"--service-data-dir", dataDir,
-		"--service-max-per-hour", "4",
+		"--service-max-per-hour", "8",
 		"--workers", "2",
 	)
 	cmd.Dir = root
@@ -78,12 +78,24 @@ func TestServiceCaptureLifecycle(t *testing.T) {
 
 	baseURL := "http://" + addr
 	waitForService(t, baseURL+"/health", exited, logFile.Name())
+	profileURL := "http://" + pprofAddr + "/debug/pprof/goroutineleak?debug=1"
+	waitForService(t, profileURL, exited, logFile.Name())
+	baseline := serviceLeakProfile(t, profileURL)
+	t.Logf("service goroutine leak baseline: %d", baseline.count)
 
-	sessionIDs := make([]string, 0, 2)
-	for range 2 {
+	sessionIDs := make([]string, 0, 5)
+	for i := range 5 {
+		pcapPath := filepath.Join(temp, fmt.Sprintf("input-%d.pcap", i))
+		writeTestPCAP(t, pcapPath, i)
 		sessionID := uploadPCAP(t, baseURL+"/api/upload", pcapPath)
 		waitForCompletion(t, baseURL+"/api/progress/"+sessionID, sessionID, logFile.Name())
 		assertAuditOutput(t, filepath.Join(dataDir, "results", sessionID))
+		waitForRules(t, sessionID, logFile.Name())
+		profile := serviceLeakProfile(t, profileURL)
+		t.Logf("after upload %d (%s): %d goroutine leaks", i+1, sessionID, profile.count)
+		if profile.count > baseline.count {
+			t.Fatalf("upload %d (%s): goroutine leaks grew from %d to %d\n%s", i+1, sessionID, baseline.count, profile.count, profile.text)
+		}
 		sessionIDs = append(sessionIDs, sessionID)
 	}
 	if sessionIDs[0] == sessionIDs[1] {
@@ -104,7 +116,46 @@ func TestServiceCaptureLifecycle(t *testing.T) {
 	}
 }
 
-func writeTestPCAP(t *testing.T, path string) {
+type leakProfile struct {
+	count int
+	text  string
+}
+
+func serviceLeakProfile(t *testing.T, url string) leakProfile {
+	t.Helper()
+	resp, err := (&http.Client{Timeout: 30 * time.Second}).Get(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("leak profile status %s: %s", resp.Status, body)
+	}
+	var count int
+	if _, err := fmt.Sscanf(string(body), "goroutineleak profile: total %d", &count); err != nil {
+		t.Fatalf("parse leak profile: %v\n%s", err, body)
+	}
+	return leakProfile{count: count, text: string(body)}
+}
+
+func waitForRules(t *testing.T, sessionID, logPath string) {
+	t.Helper()
+	marker := "Rule execution completed for session " + sessionID
+	deadline := time.Now().Add(30 * time.Second)
+	for time.Now().Before(deadline) {
+		if strings.Contains(readLog(logPath), marker) {
+			return
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	t.Fatalf("service did not finish rules for session %s\n%s", sessionID, readLog(logPath))
+}
+
+func writeTestPCAP(t *testing.T, path string, fileIndex int) {
 	t.Helper()
 	f, err := os.Create(path)
 	if err != nil {
@@ -119,7 +170,7 @@ func writeTestPCAP(t *testing.T, path string) {
 		buf := gopacket.NewSerializeBuffer()
 		ip := &layers.IPv4{
 			Version: 4, TTL: 64, Protocol: layers.IPProtocolUDP,
-			SrcIP: net.IPv4(192, 0, 2, byte(i+1)), DstIP: net.IPv4(198, 51, 100, 1),
+			SrcIP: net.IPv4(192, 0, 2, byte(i+1)), DstIP: net.IPv4(198, 51, 100, byte(fileIndex+1)),
 		}
 		udp := &layers.UDP{SrcPort: layers.UDPPort(12000 + i), DstPort: 53}
 		if err := udp.SetNetworkLayerForChecksum(ip); err != nil {
@@ -136,7 +187,7 @@ func writeTestPCAP(t *testing.T, path string) {
 		}
 		data := buf.Bytes()
 		if err := w.WritePacket(gopacket.CaptureInfo{
-			Timestamp: time.Unix(1700000000+int64(i), 0), CaptureLength: len(data), Length: len(data),
+			Timestamp: time.Unix(1700000000+int64(fileIndex*3+i), 0), CaptureLength: len(data), Length: len(data),
 		}, data); err != nil {
 			t.Fatal(err)
 		}
