@@ -1,0 +1,28 @@
+{
+  "source": "https://wiki.wireshark.org/SampleCaptures",
+  "base_url": "https://gitlab.com/wireshark/wireshark/-/wikis/uploads/__moin_import__/attachments/SampleCaptures/",
+  "samples": [
+    {"name":"c04-wap-r1.pcap.gz","sha256":"c79f6942bd3d67dc55831e40b296a39249ffca693197513222494f998dc29c7e","capture_sha256":"b1fc563c9f20f253a850f4a9aa56b1e77b229483c967b36f8447edd7dddc24e3","quick_sha256":"08057917b32189ed4abe2d871931b3bc960f03190c20ea2cbc9345de14f811f1","group":"protos","quick":true,"sampled":true},
+    {"name":"c05-http-reply-r1.pcap.gz","sha256":"f74550eb98cf9e3141ec113d8b069a5439fea06c9158e33b2fdb2e939bfb1067","capture_sha256":"4ee9fefc85fe9324e27e2730c76df532a8e37dba1aea5bc7250b4510e58e55ff","quick_sha256":"aec0432467bd39702c09c84b7e65dc0c4adb1dfb5b8ed0219d7df9b6729a1567","group":"protos","quick":true,"sampled":true},
+    {"name":"c06-ldapv3-app-r1.pcap.gz","sha256":"d4fdd6b1795154747cb96389540d0b296230a7e9260fbc903f0bc377c261d109","capture_sha256":"85413123510c6a7e0cf4d11b78e234e168e532dc111629e654a77fd93f5c8038","group":"protos"},
+    {"name":"c06-ldapv3-enc-r1.pcap.gz","sha256":"0931977c24c8d80639cc1714ed1c625a5acb16a8192c1e8edd6f3fd78516c94e","capture_sha256":"f93b9bbd9a9c45118246062e55b60b4a05f7656e44dc83d893932832ad0254d2","group":"protos"},
+    {"name":"c06-snmpv1-req-app-r1.pcap.gz","sha256":"5c37469956ab47c72689ed571acfdf834fffd8f08c49e9a001d84d745da9ea60","capture_sha256":"3334421c7ee187cc9fe6b0b016788950108d5374affe5ab47444f41956e80305","group":"protos"},
+    {"name":"c06-snmpv1-req-enc-r1.pcap.gz","sha256":"7f93b5ba13c3d8f416b5189c7e581ed06f6be7307d8e738c31555c12dcf2572a","capture_sha256":"5c5bf0881bccd4723ad18e92ffe9d7564a9cdc9b026b2859365d264d2f061f8d","group":"protos"},
+    {"name":"c06-snmpv1-trap-app-r1.pcap.gz","sha256":"c5f4da4f2b98b56b72512a0dc52665301a398cd61b0794b543b73b3d4769c635","capture_sha256":"15e47c398dcfa8a53847853dc324bfd5a352be305f8b5006c23412def7a47a14","group":"protos"},
+    {"name":"c06-snmpv1-trap-enc-r1.pcap.gz","sha256":"e66d0998a5db6e3ed51dba36706197c0afeb59d3d9b1dd1464db0842e662d1d9","capture_sha256":"072cf946f6f9563d1e2574734cbfaf4c604a9123779c2d600c90e317c144cdb4","group":"protos"},
+    {"name":"c07-sip-r2.cap","sha256":"a347df63cbd61e942757062bb24702c89025f5a8361562db1c1bad333c817491","capture_sha256":"689b24d3994982e23fa648556730345466e86babdf19eb92e4aec42bac3a140b","group":"protos","convert":"netmon"},
+    {"name":"arp-storm.pcap","sha256":"dc101ea9bfda59f56b54bfb949195c3f169032c045b47f98e6952a86933c1b8d","capture_sha256":"dc101ea9bfda59f56b54bfb949195c3f169032c045b47f98e6952a86933c1b8d","group":"protocol"},
+    {"name":"chargen-udp.pcap","sha256":"bef90b0984feb1dee3c2396c705997ff49e30f526880c0acaf6248783413a5f8","capture_sha256":"bef90b0984feb1dee3c2396c705997ff49e30f526880c0acaf6248783413a5f8","group":"protocol"},
+    {"name":"dhcp.pcap","sha256":"2471b5420bdac826eecf8f61a2bbb4a3eb20dbfab7c02ff2be502f349f368214","capture_sha256":"2471b5420bdac826eecf8f61a2bbb4a3eb20dbfab7c02ff2be502f349f368214","group":"protocol","quick":true,"record":"DHCPv4"},
+    {"name":"dns.cap","sha256":"041eeb6f98bb398f1ee8b09651b5b5a84f6a62639f95bf226f9e7b77355d9f28","capture_sha256":"041eeb6f98bb398f1ee8b09651b5b5a84f6a62639f95bf226f9e7b77355d9f28","group":"protocol","quick":true,"record":"DNS"},
+    {"name":"hsrp.pcap","sha256":"6df352988769e63c4a16f56ea54e96ae8f4016e7a3680c291f3028d37658f07c","capture_sha256":"6df352988769e63c4a16f56ea54e96ae8f4016e7a3680c291f3028d37658f07c","group":"protocol"},
+    {"name":"iperf3-udp.pcapng.gz","sha256":"7e0288994afcd463a9c1344e6b4756e7b93f07e3109dc7690d1893ac93ac7c96","capture_sha256":"8fee06d0fb2496c1389d460bc2dfac92a14a4711464eb1d0685d733c37ecc284","group":"format","quick":true},
+    {"name":"ipv4frags.pcap","sha256":"d0b1965aa0c7f9792ee1922f18b1c4e67a45f014fbd324c18dda0dd280605ec4","capture_sha256":"d0b1965aa0c7f9792ee1922f18b1c4e67a45f014fbd324c18dda0dd280605ec4","group":"edge","quick":true,"record":"IPv4"},
+    {"name":"smtp.pcap","sha256":"17ad230db1b6fd5dd18eb311092df1cf6eb162054bdb47697b89bef5a86a47ab","capture_sha256":"17ad230db1b6fd5dd18eb311092df1cf6eb162054bdb47697b89bef5a86a47ab","group":"protocol"},
+    {"name":"teardrop.cap","sha256":"e8e4193ae426dabf549cc103c9e93e7d93c6ae049ee9259f1ce2ebdb7315a683","capture_sha256":"e8e4193ae426dabf549cc103c9e93e7d93c6ae049ee9259f1ce2ebdb7315a683","group":"edge","quick":true},
+    {"name":"v6.pcap","sha256":"8e18b4c2aa872285881f3aff39481eabc83024369a7b83d95573d846a4a091f2","capture_sha256":"8e18b4c2aa872285881f3aff39481eabc83024369a7b83d95573d846a4a091f2","group":"protocol","quick":true,"record":"IPv6"},
+    {"name":"vlan.cap.gz","sha256":"b25bd26944c1747ef962e2e8f29fc681a22a78ee429514671cf19068fe560d3d","capture_sha256":"283070d3784bbbe91fde8d0b6618e55549483afb42ebaf25ecb2d1c7c4ebf1ad","group":"protocol"},
+    {"name":"zlip-2.pcap","sha256":"551612cf05436ffde6cc64dd9fdbee416adfb00085fdc57d552d4434f389beb1","capture_sha256":"551612cf05436ffde6cc64dd9fdbee416adfb00085fdc57d552d4434f389beb1","group":"edge","quick":true},
+    {"name":"zlip-3.pcap","sha256":"3d559700f4c58738d7847a923e7b870eaa55b1cd001cb62af9d8d63775dc45da","capture_sha256":"3d559700f4c58738d7847a923e7b870eaa55b1cd001cb62af9d8d63775dc45da","group":"edge","quick":true}
+  ]
+}

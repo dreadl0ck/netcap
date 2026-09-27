@@ -69,6 +69,7 @@ func TestCaptureLive(t *testing.T) {
 }
 
 func TestCapturePCAP(t *testing.T) {
+	const capture = "../../tests/The Ultimate PCAP v20260316.pcapng"
 	// This is the only collector test that enables GeolocationDB, and
 	// initGeolocationDB deliberately calls log.Fatal when the GeoLite2 files are
 	// absent -- correct for the CLI, where the user asked for geolocation, but
@@ -141,7 +142,7 @@ func TestCapturePCAP(t *testing.T) {
 
 	c.PrintConfiguration()
 
-	if err := c.CollectPcapNG("../../tests/The Ultimate PCAP v20260316.pcapng"); err != nil {
+	if err := c.CollectPcapNG(capture); err != nil {
 		t.Fatal("failed to collect audit records from pcapng file: ", err)
 	}
 }

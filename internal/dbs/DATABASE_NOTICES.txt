@@ -1,0 +1,98 @@
+NETCAP DATABASE SOURCE NOTICES
+
+This notice accompanies the database files present in this archive. Entries
+below apply only when the named file or directory is present. The databases
+have different rightsholders and licenses; Netcap's GPLv3 license does not
+replace them. A source URL or this notice alone does not grant redistribution
+rights where the rightsholder has not supplied them.
+
+nmap-service-probes
+  Copyright: see the header of nmap-service-probes (Nmap Software LLC and
+  contributors). Source: https://svn.nmap.org/nmap/nmap-service-probes
+  License: Nmap Public Source License (NPSL), including its GPLv2 exhibit:
+  https://svn.nmap.org/nmap/LICENSE
+  The NPSL expressly discusses programs that read this data file in section 3.
+  This notice does not resolve compatibility with Netcap's GPLv3 license.
+
+GeoLite2-ASN.mmdb, GeoLite2-City.mmdb
+  This product includes GeoLite Data created by MaxMind, available from
+  https://www.maxmind.com/. Archived 2019 releases were distributed under
+  Creative Commons Attribution-ShareAlike 4.0 International:
+  https://creativecommons.org/licenses/by-sa/4.0/legalcode
+  These databases incorporate GeoNames geographical data made available under
+  Creative Commons Attribution 3.0:
+  https://creativecommons.org/licenses/by/3.0/us/legalcode
+  The provenance and license of each shipped MMDB must be checked. Newer
+  MaxMind downloads have separate terms; this notice does not license them.
+
+hasshdb.json
+  Source: https://github.com/0x4D31/hassh-utils
+  Copyright (c) 2018, Adel '0x4d31' Karimi. All rights reserved.
+  BSD 3-Clause License (full text below).
+
+regexes.yaml
+  Source: https://github.com/ua-parser/uap-core
+  Copyright 2009 Google Inc. Available under Apache License, Version 2.0:
+  https://www.apache.org/licenses/LICENSE-2.0
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+
+exploitdb/, exploit-db.bleve/
+  Source: https://gitlab.com/exploit-database/exploitdb
+  Repository license: GNU General Public License version 2:
+  https://gitlab.com/exploit-database/exploitdb/-/raw/main/LICENSE.md
+  Individual contributed exploit files may carry separate notices or terms.
+  Retain those notices when redistributing the files or an index of them.
+
+service-names-port-numbers.csv
+  Source: https://www.iana.org/assignments/service-names-port-numbers/
+  IANA/IETF protocol registry rights statement (CC0 1.0):
+  https://www.iana.org/help/licensing-terms
+
+nvd.bleve/
+  Includes data from the National Vulnerability Database (NVD), provided by
+  the National Institute of Standards and Technology (NIST):
+  https://nvd.nist.gov/vuln/data-feeds
+
+cmsdb.json, dhcp-fingerprints.json, domain-whitelist.csv,
+macaddress.io-db.json, ja3erDB.json, ja3fingerprint.json
+  Claimed source details are in https://github.com/dreadl0ck/netcap-dbs .
+  The applicable version-specific redistribution grants have not been
+  verified. Do not interpret the archive's availability as an open license.
+
+ja_3_3s.json
+  Netcap lab-generated JA3 associations; the historical netcap-dbs README
+  calls this MIT-licensed. Verify ownership before relying on that claim.
+
+BSD 3-Clause License (hasshdb.json)
+
+Copyright (c) 2018, Adel '0x4d31' Karimi
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of the copyright holder nor the names of its contributors
+  may be used to endorse or promote products derived from this software
+  without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
