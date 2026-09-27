@@ -522,6 +522,9 @@ func ListAuditFiles(outputDir string) ([]AuditFileInfo, error) {
 
 // CountRecords counts the number of records in an audit file
 func CountRecords(filePath string) int64 {
+	if total, ok := communityCachedTotal(filePath); ok {
+		return total
+	}
 	reader, err := netio.Open(filePath, defaults.BufferSize)
 	if err != nil {
 		return 0

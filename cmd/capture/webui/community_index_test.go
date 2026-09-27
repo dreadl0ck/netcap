@@ -77,6 +77,37 @@ func TestCommunityIndexInvalidatesOnRewrite(t *testing.T) {
 	}
 }
 
+func TestUnfilteredCountReusesOnlyCurrentCompletedIndex(t *testing.T) {
+	dir := t.TempDir()
+	path := writeTimelineAuditFile(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{
+		&types.DNS{CommunityID: "first"},
+	})
+	if _, ok := communityCachedTotal(path); ok {
+		t.Fatal("unfiltered count should not trigger an index build")
+	}
+	if got := CountRecords(path); got != 1 {
+		t.Fatalf("cold count = %d", got)
+	}
+	if _, ok := communityCachedTotal(path); ok {
+		t.Fatal("count-only scan unexpectedly built an index")
+	}
+	if _, _, err := communityCounts(path, map[string]bool{"first": true}); err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := communityCachedTotal(path); !ok || got != 1 {
+		t.Fatalf("cached total = %d, %v", got, ok)
+	}
+	writeTimelineAuditFile(t, dir, "DNS", types.Type_NC_DNS, []proto.Message{
+		&types.DNS{CommunityID: "second"}, &types.DNS{CommunityID: "second"},
+	})
+	if _, ok := communityCachedTotal(path); ok {
+		t.Fatal("stale count survived a file rewrite")
+	}
+	if got := CountRecords(path); got != 2 {
+		t.Fatalf("rewritten count = %d", got)
+	}
+}
+
 func TestCommunityIndexRepeatedIDsCountEachRecordOnce(t *testing.T) {
 	dir := t.TempDir()
 	files := []struct {
@@ -192,6 +223,20 @@ func BenchmarkCommunityCounts(b *testing.B) {
 		for range b.N {
 			if _, _, err := communityCounts(path, ids); err != nil {
 				b.Fatal(err)
+			}
+		}
+	})
+	b.Run("unfiltered-scan", func(b *testing.B) {
+		for range b.N {
+			if total, _, err := scanCommunityCounts(path, nil); err != nil || total != 10_000 {
+				b.Fatalf("scan count = %d, %v", total, err)
+			}
+		}
+	})
+	b.Run("unfiltered-cached", func(b *testing.B) {
+		for range b.N {
+			if got := CountRecords(path); got != 10_000 {
+				b.Fatalf("cached count = %d", got)
 			}
 		}
 	})

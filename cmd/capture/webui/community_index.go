@@ -67,6 +67,33 @@ var communityIndexCache = struct {
 	bytes uint64
 }{files: make(map[string]*communityIndexEntry)}
 
+// communityCachedTotal reuses a completed bitmap generation without building
+// one just to answer an unfiltered count.
+func communityCachedTotal(path string) (int64, bool) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return 0, false
+	}
+	communityIndexCache.Lock()
+	entry := communityIndexCache.files[path]
+	if entry == nil || entry.size != info.Size() || !entry.mtime.Equal(info.ModTime()) {
+		communityIndexCache.Unlock()
+		return 0, false
+	}
+	select {
+	case <-entry.ready:
+		if entry.index != nil {
+			entry.used = time.Now()
+			count := entry.index.total
+			communityIndexCache.Unlock()
+			return count, true
+		}
+	default:
+	}
+	communityIndexCache.Unlock()
+	return 0, false
+}
+
 // communityCounts uses an exact, per-file ordinal index. Oversized or changing
 // files are counted by streaming instead of publishing a partial index.
 func communityCounts(path string, ids map[string]bool) (int64, int64, error) {
