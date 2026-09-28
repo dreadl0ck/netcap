@@ -341,8 +341,8 @@ func isPasswordProtected(data []byte) bool {
 	return false
 }
 
-// isTextFile checks if content appears to be text
-func isTextFile(data []byte) bool {
+// isTextFileScalar checks if content appears to be text.
+func isTextFileScalar(data []byte) bool {
 	if len(data) == 0 {
 		return false
 	}
