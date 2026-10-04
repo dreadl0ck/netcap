@@ -168,7 +168,7 @@ Client-side routing uses `react-router` v7; data fetching uses `swr`; UI is MUI 
 
 ### Proto Code Generation
 
-All types are defined in `types/netcap.proto` and generated to `types/netcap.pb.go` using `protoc-gen-gogo`. There are no `go:generate` directives — proto compilation is manual.
+All types are defined in `types/netcap.proto` and generated to `types/netcap.pb.go`. There are no `go:generate` directives — proto compilation is manual: `protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto` (`zeus gen-proto-dev`). Use `gogofaster`: it reproduces the committed file byte for byte, `--gogo_out` does not.
 
 ### Key Directories
 

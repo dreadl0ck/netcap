@@ -20,41 +20,19 @@
 package collect
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
-	"path/filepath"
-	"strings"
+	"os/signal"
+	"syscall"
 
-	"github.com/gogo/protobuf/proto"
-
-	"github.com/dreadl0ck/netcap/internal/cryptoutils"
 	"github.com/urfave/cli/v3"
 
-	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/distributed"
 	"github.com/dreadl0ck/netcap/internal/netio"
-	"github.com/dreadl0ck/netcap/types"
-)
-
-// Global context variables for helper functions
-var (
-	currentPrivKey string
-	files          = make(map[string]*auditRecordHandle)
-)
-
-// maxBufferSize specifies the size of the buffers that
-// are used to temporarily hold data from the UDP packets
-// that we receive.
-const (
-	maxBufferSize = 10 * 1024
 )
 
 // Run parses the subcommand flags and handles the arguments.
@@ -64,7 +42,6 @@ func Run() {
 	// when running in Docker/systemd (which add their own timestamps)
 	log.SetFlags(0)
 
-	// Create a new CLI app just for parsing flags
 	cmd := &cli.Command{
 		Name:  "collect",
 		Usage: "collector for audit records from agents",
@@ -81,242 +58,83 @@ func Run() {
 
 // RunWithContext runs the collect command with a CLI context.
 func RunWithContext(ctx context.Context, c *cli.Command) error {
-	if c.Bool("gen-config") {
-		// TODO: Update GenerateConfig to work with urfave/cli
-		fmt.Println("gen-config not yet implemented with urfave/cli")
+	if c.Bool("gen-keypair") {
+		fp, err := distributed.GenerateIdentity(c.String("cert"), c.String("key"), "netcap-collector")
+		if err != nil {
+			return fmt.Errorf("generate keypair: %w", err)
+		}
+
+		fmt.Printf("wrote %s and %s\nserver fingerprint (pass to agents as -server-fingerprint):\n%s\n", c.String("cert"), c.String("key"), fp)
+
 		return nil
 	}
 
 	netio.PrintBuildInfo()
 
-	if c.Bool("gen-keypair") {
-		// generate a new keypair
-		pub, priv, errGenKey := cryptoutils.GenerateKeypair()
-		if errGenKey != nil {
-			panic(errGenKey)
-		}
-
-		// write public key to file on disk
-		pubFile, errCreateKey := os.Create("pub.key")
-		if errCreateKey != nil {
-			panic(errCreateKey)
-		}
-
-		if _, errWrite := pubFile.WriteString(hex.EncodeToString(pub[:])); errWrite != nil {
-			panic(errWrite)
-		}
-
-		// close file handle
-		err := pubFile.Close()
-		if err != nil {
-			panic(err)
-		}
-
-		// write private key to file on disk
-		privFile, errCreatePriv := os.Create("priv.key")
-		if errCreatePriv != nil {
-			panic(errCreatePriv)
-		}
-
-		if _, errWrite := privFile.WriteString(hex.EncodeToString(priv[:])); errWrite != nil {
-			panic(errWrite)
-		}
-
-		// close file handle
-		err = privFile.Close()
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Println("wrote keys")
-
-		return nil
+	if c.String("clients") == "" {
+		return errors.New("-clients is required: a file of \"<agent fingerprint> <name>\" lines")
 	}
 
-	flagPrivKey := c.String("privkey")
-	if flagPrivKey == "" {
-		log.Fatal("no path to private key specified")
-	}
-
-	// Set global context variables for helper functions
-	currentMemBufferSize = c.Int("membuf-size")
-	currentPrivKey = flagPrivKey
-
-	// serve
-	log.Fatal(udpServer(ctx, c.String("addr")))
-	return nil
-}
-
-// udpServer implements a simple UDP server.
-func udpServer(ctx context.Context, address string) (err error) {
-	// ListenPacket provides a wrapper around ListenUDP
-	// eliminating the need to call net.ResolveUDPAddr
-	//
-	// The returned value (PacketConn) is pretty much the same as the one
-	// from ListenUDP (UDPConn) - the only difference is that `Packet*`
-	// methods and interfaces are more broad, also covering `ip`.
-	pc, err := net.ListenPacket("udp", address)
+	id, err := distributed.LoadIdentity(c.String("cert"), c.String("key"))
 	if err != nil {
-		return
+		return fmt.Errorf("load identity (generate one with -gen-keypair): %w", err)
 	}
 
-	// `Close`ing the packet "connection" means cleaning the data structures
-	// allocated for holding information about the listening socket.
-	defer func() {
-		errClose := pc.Close()
-		if errClose != nil && !errors.Is(errClose, io.EOF) {
-			fmt.Println("failed to close:", errClose)
-		}
-	}()
-
-	var (
-		doneChan        = make(chan error, 1)
-		buffer          = make([]byte, maxBufferSize)
-		privKeyContents []byte
-	)
-
-	// run cleanup on signals
-	handleSignals()
-
-	// read private key file contents
-	privKeyContents, err = ioutil.ReadFile(currentPrivKey)
+	allow, err := distributed.LoadAllowlist(c.String("clients"))
 	if err != nil {
-		log.Fatal("failed to read private key file: ", err)
+		return fmt.Errorf("load %s: %w", c.String("clients"), err)
 	}
 
-	// hex decode private key
-	var serverPrivKey [cryptoutils.KeySize]byte
-
-	_, err = hex.Decode(serverPrivKey[:], privKeyContents)
+	sink, err := distributed.NewSink(c.String("out"))
 	if err != nil {
-		log.Fatal("failed to decode private key: ", err)
+		return err
 	}
 
-	// Given that waiting for packets to arrive is blocking by nature and we want
-	// to be able of canceling such action if desired, we do that in a separate
-	// go routine.
-	go func() {
-		for {
-			// By reading from the connection into the buffer, we block until there's
-			// new content in the socket that we're listening for new packets.
-			//
-			// Whenever new packets arrive, `buffer` gets filled and we can continue
-			// the execution.
-			//
-			// note.: `buffer` is not being reset between runs.
-			//	  It's expected that only `n` reads are read from it whenever
-			//	  inspecting its contents.
-			// IMPORTANT: do not use the err variable in this closure! Don't shadow it, don't capture it!
-			n, addr, errRead := pc.ReadFrom(buffer)
-			if errRead != nil {
-				doneChan <- errRead
+	srv, err := distributed.NewServer(distributed.ServerConfig{
+		Identity:    id,
+		Allowlist:   allow,
+		Sink:        sink,
+		MaxFrame:    c.Int("max-frame"),
+		MaxConns:    c.Int("max-conns"),
+		IdleTimeout: c.Duration("idle-timeout"),
+	})
+	if err != nil {
+		return err
+	}
 
-				return
-			}
+	ln, err := new(net.ListenConfig).Listen(ctx, "tcp", c.String("addr"))
+	if err != nil {
+		return err
+	}
 
-			fmt.Printf("packet-received: bytes=%d from=%s\n", n, addr.String())
+	fp, _ := distributed.IdentityFingerprint(id)
+	log.Printf("collect: listening on %s, %d allowed clients, writing to %s", ln.Addr(), len(allow), sink.Root())
+	log.Printf("collect: server fingerprint %s", fp)
 
-			// create a copy of the data to allow reusing the buffer for the next incoming packet
-			copyBuf := make([]byte, n)
-			copy(copyBuf, buffer[:n])
-			buf := bytes.NewBuffer(copyBuf)
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-			// spawn a new goroutine to handle packet data
-			go func() {
-				// trim off the public key of the peer
-				pubKeyClient := [32]byte{}
-
-				for i, b := range buf.Bytes() {
-					if i == 32 {
-						break
-					}
-
-					pubKeyClient[i] = b
-				}
-
-				// decrypt
-				decrypted, ok := cryptoutils.AsymmetricDecrypt(buf.Bytes()[32:], &pubKeyClient, &serverPrivKey)
-				if !ok {
-					panic("decryption failed")
-				}
-
-				decryptedBuf := bytes.NewBuffer(decrypted)
-
-				// create a new gzipped reader
-				// IMPORTANT: do not shadow or use the err variable from outside the closure!
-				gr, errProcess := gzip.NewReader(decryptedBuf)
-				if errProcess != nil {
-					fmt.Println(hex.Dump(decryptedBuf.Bytes()))
-					fmt.Println("gzip error", errProcess)
-
-					return
-				}
-
-				// read data
-				var c []byte
-				c, errProcess = ioutil.ReadAll(gr)
-
-				if errors.Is(errProcess, io.EOF) || errors.Is(errProcess, io.ErrUnexpectedEOF) {
-					fmt.Println("failed to decompress batch", errProcess)
-
-					return
-				} else if errProcess != nil {
-					fmt.Println(hex.Dump(buf.Bytes()))
-					fmt.Println("gzip error", errProcess)
-
-					return
-				}
-
-				// close reader
-				errProcess = gr.Close()
-				if errProcess != nil {
-					panic(errProcess)
-				}
-
-				// init new batch
-				b := new(types.Batch)
-
-				// unmarshal batch data
-				errProcess = proto.Unmarshal(c, b)
-				if errors.Is(errProcess, io.EOF) || errors.Is(errProcess, io.ErrUnexpectedEOF) {
-					fmt.Println("failed to unmarshal batch", errProcess)
-
-					return
-				} else if errProcess != nil {
-					panic(errProcess)
-				}
-
-				fmt.Println("decoded batch", b.MessageType, "from client", b.ClientID)
-
-				var (
-					protocol = strings.TrimPrefix(b.MessageType.String(), defaults.NetcapTypePrefix)
-					path     = filepath.Join(b.ClientID, protocol+defaults.FileExtensionCompressed)
-				)
-
-				if a, exists := files[path]; exists {
-					_, errProcess = a.gWriter.Write(b.Data)
-					if errProcess != nil {
-						panic(errProcess)
-					}
-				} else {
-					files[path] = newAuditRecordHandle(b, path)
-				}
-			}()
-		}
-	}()
+	serveErr := make(chan error, 1)
+	go func() { serveErr <- srv.Serve(ln) }()
 
 	select {
 	case <-ctx.Done():
-		fmt.Println("canceled")
-
-		err = ctx.Err()
-	case err = <-doneChan:
-		if err != nil {
-			log.Println("encountered an error while collecting audit records: ", err)
-		}
-
-		cleanup()
+		log.Println("collect: shutting down")
+	case err = <-serveErr:
+		log.Printf("collect: listener failed: %v", err)
 	}
 
-	return
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), c.Duration("shutdown-timeout"))
+	defer cancel()
+
+	infos, shutdownErr := srv.Shutdown(shutdownCtx)
+	for _, fi := range infos {
+		log.Printf("collect: %s: %d records", fi.Path, fi.Records)
+	}
+
+	if err != nil && !errors.Is(err, distributed.ErrServerClosed) {
+		return errors.Join(err, shutdownErr)
+	}
+
+	return shutdownErr
 }

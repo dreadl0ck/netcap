@@ -20,24 +20,23 @@
 package agent
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
-	"encoding/hex"
+	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
+	"os/signal"
+	"sync"
+	"sync/atomic"
+	"syscall"
 
-	"github.com/denisbrodbeck/machineid"
-	"github.com/gogo/protobuf/proto"
-
-	"github.com/dreadl0ck/netcap/internal/cryptoutils"
 	"github.com/urfave/cli/v3"
 
+	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
+	"github.com/dreadl0ck/netcap/internal/distributed"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
@@ -51,7 +50,6 @@ func Run() {
 	// when running in Docker/systemd (which add their own timestamps)
 	log.SetFlags(0)
 
-	// Create a new CLI app just for parsing flags
 	cmd := &cli.Command{
 		Name:  "agent",
 		Usage: "agent for distributed capture",
@@ -68,33 +66,15 @@ func Run() {
 
 // RunWithContext runs the agent command with a CLI context.
 func RunWithContext(ctx context.Context, c *cli.Command) error {
-	if c.Bool("gen-config") {
-		// TODO: Update GenerateConfig to work with urfave/cli
-		fmt.Println("gen-config not yet implemented with urfave/cli")
+	if c.Bool("gen-keypair") {
+		fp, err := distributed.GenerateIdentity(c.String("cert"), c.String("key"), "netcap-agent")
+		if err != nil {
+			return fmt.Errorf("generate keypair: %w", err)
+		}
+
+		fmt.Printf("wrote %s and %s\nagent fingerprint (add to the collector's -clients file):\n%s <name>\n", c.String("cert"), c.String("key"), fp)
+
 		return nil
-	}
-
-	netio.PrintBuildInfo()
-
-	// no server public key specified - no party
-	flagServerPubKey := c.String("pubkey")
-	if flagServerPubKey == "" {
-		fmt.Println("need public key of server")
-		os.Exit(1)
-	}
-
-	// read server public key contents from file
-	pubKeyContents, err := ioutil.ReadFile(flagServerPubKey)
-	if err != nil {
-		panic(err)
-	}
-
-	// decode server public key
-	var serverPubKey [cryptoutils.KeySize]byte
-
-	_, err = hex.Decode(serverPubKey[:], pubKeyContents)
-	if err != nil {
-		panic(err)
 	}
 
 	if c.Bool("decoders") {
@@ -107,11 +87,66 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		return nil
 	}
 
-	// create keypair
-	pub, priv, err := cryptoutils.GenerateKeypair()
-	if err != nil {
-		panic(err)
+	netio.PrintBuildInfo()
+
+	if c.String("server-fingerprint") == "" {
+		return errors.New("-server-fingerprint is required: the collector prints it on startup and on -gen-keypair")
 	}
+
+	id, err := distributed.LoadIdentity(c.String("cert"), c.String("key"))
+	if err != nil {
+		return fmt.Errorf("load identity (generate one with -gen-keypair): %w", err)
+	}
+
+	client, err := distributed.NewClient(distributed.ClientConfig{
+		Addr:              c.String("addr"),
+		Identity:          id,
+		ServerFingerprint: c.String("server-fingerprint"),
+		Hello: types.AgentHello{
+			Source:           c.String("iface"),
+			Version:          netcap.Version,
+			ContainsPayloads: c.Bool("payload"),
+		},
+		MaxPending: c.Int("max-pending"),
+	})
+	if err != nil {
+		return err
+	}
+
+	// Start from the decoder defaults: a bare literal leaves fields such as
+	// NumStreamWorkers at zero, which panics the connection decoder on teardown.
+	dc := config.DefaultConfig.Clone()
+	dc.Buffer = false
+	dc.Compression = false
+	dc.CSV = false
+	dc.Chan = true
+	dc.ChanSize = c.Int("chan-size")
+	dc.IncludeDecoders = c.String("include")
+	dc.ExcludeDecoders = c.String("exclude")
+	dc.Out = ""
+	dc.Source = c.String("iface")
+	dc.IncludePayloads = c.Bool("payload")
+	dc.AddContext = c.Bool("context")
+	dc.MemBufferSize = c.Int("membuf-size")
+	dc.FlushEvery = c.Int("flushevery")
+	dc.DefragIPv4 = c.Bool("ip4defrag")
+	dc.Checksum = c.Bool("checksum")
+	dc.NoOptCheck = c.Bool("nooptcheck")
+	dc.IgnoreFSMerr = c.Bool("ignorefsmerr")
+	dc.AllowMissingInit = c.Bool("allowmissinginit")
+	dc.Debug = c.Bool("debug")
+	dc.HexDump = c.Bool("hexdump")
+	dc.WaitForConnections = c.Bool("wait-conns")
+	dc.WriteIncomplete = c.Bool("writeincomplete")
+	dc.MemProfile = c.String("memprofile")
+	dc.ConnFlushInterval = c.Int("conn-flush-interval")
+	dc.ConnTimeOut = c.Duration("conn-timeout")
+	dc.FlowFlushInterval = c.Int("flow-flush-interval")
+	dc.FlowTimeOut = c.Duration("flow-timeout")
+	dc.CloseInactiveTimeOut = c.Duration("close-inactive-timeout")
+	dc.ClosePendingTimeOut = c.Duration("close-pending-timeout")
+	dc.FileStorage = c.String("fileStorage")
+	dc.CalculateEntropy = c.Bool("entropy")
 
 	// init collector
 	coll := collector.New(collector.Config{
@@ -121,39 +156,12 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		Promisc:             c.Bool("promisc"),
 		SnapLen:             c.Int("snaplen"),
 		LogErrors:           c.Bool("log-errors"),
-		DecoderConfig: &config.Config{
-			Buffer:               false,
-			Compression:          false,
-			CSV:                  false,
-			Chan:                 true,
-			ChanSize:             c.Int("chan-size"),
-			IncludeDecoders:      c.String("include"),
-			ExcludeDecoders:      c.String("exclude"),
-			Out:                  "",
-			Source:               c.String("iface"),
-			IncludePayloads:      c.Bool("payload"),
-			AddContext:           c.Bool("context"),
-			MemBufferSize:        c.Int("membuf-size"),
-			FlushEvery:           c.Int("flushevery"),
-			DefragIPv4:           c.Bool("ip4defrag"),
-			Checksum:             c.Bool("checksum"),
-			NoOptCheck:           c.Bool("nooptcheck"),
-			IgnoreFSMerr:         c.Bool("ignorefsmerr"),
-			AllowMissingInit:     c.Bool("allowmissinginit"),
-			Debug:                c.Bool("debug"),
-			HexDump:              c.Bool("hexdump"),
-			WaitForConnections:   c.Bool("wait-conns"),
-			WriteIncomplete:      c.Bool("writeincomplete"),
-			MemProfile:           c.String("memprofile"),
-			ConnFlushInterval:    c.Int("conn-flush-interval"),
-			ConnTimeOut:          c.Duration("conn-timeout"),
-			FlowFlushInterval:    c.Int("flow-flush-interval"),
-			FlowTimeOut:          c.Duration("flow-timeout"),
-			CloseInactiveTimeOut: c.Duration("close-inactive-timeout"),
-			ClosePendingTimeOut:  c.Duration("close-pending-timeout"),
-			FileStorage:          c.String("fileStorage"),
-			CalculateEntropy:     c.Bool("entropy"),
-		},
+		// Without reassembly no stream decoder (HTTP, SMTP, ...) produces records.
+		ReassembleConnections: c.Bool("reassemble-connections"),
+		DecoderConfig:         dc,
+		// The agent owns SIGINT/SIGTERM: the capture collector's handler would
+		// os.Exit before queued batches are delivered.
+		NoSignalHandling: true,
 		ResolverConfig: resolvers.Config{
 			ReverseDNS:    c.Bool("reverse-dns"),
 			LocalDNS:      c.Bool("local-dns"),
@@ -171,156 +179,71 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	// initialize batching
 	chans, handle, err := coll.InitBatching(c.String("bpf"), c.String("iface"))
 	if err != nil {
-		panic(err)
+		_, _ = client.Close(context.Background())
+
+		return err
 	}
 
-	// close handle on exit
-	defer handle.Close()
+	fp, _ := distributed.IdentityFingerprint(id)
+	log.Printf("agent: %d decoder channels, sending to %s as %s", len(chans), c.String("addr"), fp)
 
-	// get client id: $USER-$MACHINEID
-	userName := os.Getenv("USER")
-	id, err := machineid.ID()
-	if err != nil {
-		log.Fatal(err)
-	}
+	var (
+		wg        sync.WaitGroup
+		oversized atomic.Int64
+	)
 
-	fmt.Println("\n["+userName+"-"+id+"] got", len(chans), "channels")
+	for _, bi := range chans {
+		wg.Add(1)
 
-	// iterate over decoder channels
-	for _, bi := range chans { // create a copy of loop variable
-		info := collector.BatchInfo{
-			Type: bi.Type,
-			Chan: bi.Chan,
-		}
-
-		// handle channel goroutine
 		go func() {
-			var (
-				leftOverBuf []byte
-				data        []byte
-			)
+			defer wg.Done()
 
-			// send data loop
-			for {
-				var (
-					b    = &types.Batch{}
-					size []byte
-				)
-
-				// set clientID and messageType
-				b.ClientID = userName
-				b.MessageType = info.Type
-
-				// if there is buffered data left over
-				if len(leftOverBuf) > 0 {
-					// add to current batch
-					b.Data = append(b.Data, leftOverBuf...)
-					b.TotalSize = int32(len(leftOverBuf))
-
-					// reset leftover buffer
-					leftOverBuf = make([]byte, 0)
-				}
-
-				// read chan loop
-				for {
-					select {
-					case data = <-info.Chan:
-						// message complete
-						if len(size) != 0 {
-							fmt.Println("got", len(data), "bytes of type", info.Type, "expected", size)
-
-							// calculate new size
-							newSize := int32(len(size)+len(data)) + b.TotalSize
-
-							// if the new size would exceed the maximum size
-							if newSize > int32(c.Int("max")) {
-								// buffer and break from loop
-								leftOverBuf = append(size, data...) //nolint:gocritic // append to different slice is intended here!
-
-								goto send
-							}
-
-							// collect data
-							b.Data = append(b.Data, append(size, data...)...)
-
-							// update batch size
-							b.TotalSize = newSize
-
-							// reset size slice
-							size = []byte{}
-
-							continue
-						}
-
-						// received a size as varint
-						fmt.Println("got size", data, "for type", info.Type)
-
-						// set the size value
-						size = data
+			distributed.RunBatcher(bi.Chan, distributed.BatcherConfig{
+				Type:             bi.Type,
+				MaxBytes:         c.Int("max"),
+				FlushInterval:    c.Duration("flush-interval"),
+				ContainsPayloads: c.Bool("payload"),
+				Emit: func(b *types.Batch) {
+					if errEnq := client.Enqueue(b); errEnq != nil {
+						log.Printf("agent: %s batch lost: %v", bi.Type, errEnq)
 					}
-				}
-
-			send: // send batch to collection server
-
-				fmt.Println("\nBatch done!", b.TotalSize, len(b.Data), b.ClientID, b.MessageType)
-
-				// marshal batch
-				data, err = proto.Marshal(b)
-				if err != nil {
-					panic(err)
-				}
-
-				// compress data
-				var (
-					buf bytes.Buffer
-					gw  = gzip.NewWriter(&buf)
-				)
-
-				_, err = gw.Write(data)
-				if err != nil {
-					panic(err)
-				}
-
-				// flush compressed writer
-				err = gw.Flush()
-				if err != nil {
-					panic(err)
-				}
-
-				// close compressed writer
-				err = gw.Close()
-				if err != nil {
-					panic(err)
-				}
-
-				// encrypt payload
-				var encData []byte
-
-				encData, err = cryptoutils.AsymmetricEncrypt(buf.Bytes(), &serverPubKey, priv)
-				if err != nil {
-					panic(err)
-				}
-
-				// create a buffer for the encrypted bytes
-				var encB bytes.Buffer
-
-				// write public key
-				encB.Write(pub[:])
-				// write encrypted data
-				encB.Write(encData)
-
-				// send to server
-				err = sendUDP(context.Background(), c.String("addr"), &encB)
-				if err != nil {
-					panic(err)
-				}
-			}
+				},
+				OnOversize: func(size int) {
+					oversized.Add(1)
+					log.Printf("agent: dropped %s record of %d bytes, over the %d byte limit", bi.Type, size, distributed.MaxRecordSize)
+				},
+			})
 		}()
 	}
 
-	// wait until the end of time
-	wait := make(chan bool)
-	<-wait
+	batchersDone := make(chan struct{})
+	go func() { wg.Wait(); close(batchersDone) }()
+
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	select {
+	case <-ctx.Done():
+		log.Println("agent: stopping capture")
+	case <-batchersDone:
+		log.Println("agent: capture ended")
+	}
+
+	// Closing the handle ends capture; teardown destroys the decoders, which
+	// closes their channels, and each batcher sends what it holds.
+	handle.Close()
+	<-batchersDone
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), c.Duration("shutdown-timeout"))
+	defer cancel()
+
+	st, err := client.Close(shutdownCtx)
+	log.Printf("agent: %d batches delivered, %d rejected, %d dropped for backlog, %d undelivered, %d oversized records dropped",
+		st.Acked, st.Rejected, st.Dropped, st.Pending, oversized.Load())
+
+	if err != nil {
+		return fmt.Errorf("%d batches undelivered: %w", st.Pending, err)
+	}
 
 	return nil
 }

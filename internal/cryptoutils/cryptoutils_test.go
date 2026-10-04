@@ -12,115 +12,6 @@ import (
 	"testing"
 )
 
-func TestGenerateKeypair(t *testing.T) {
-	pub1, priv1, err := GenerateKeypair()
-	if err != nil {
-		t.Fatalf("GenerateKeypair failed: %v", err)
-	}
-
-	if pub1 == nil || priv1 == nil {
-		t.Fatal("GenerateKeypair returned nil keys")
-	}
-
-	if len(pub1) != KeySize || len(priv1) != KeySize {
-		t.Errorf("Key sizes incorrect: pub=%d, priv=%d, expected=%d", len(pub1), len(priv1), KeySize)
-	}
-
-	// Generate second pair and verify they differ
-	pub2, priv2, err := GenerateKeypair()
-	if err != nil {
-		t.Fatalf("Second GenerateKeypair failed: %v", err)
-	}
-
-	if bytes.Equal(pub1[:], pub2[:]) {
-		t.Error("Two generated public keys should not be identical")
-	}
-
-	if bytes.Equal(priv1[:], priv2[:]) {
-		t.Error("Two generated private keys should not be identical")
-	}
-}
-
-func TestAsymmetricEncryptDecrypt(t *testing.T) {
-	// Generate key pairs for sender and recipient
-	senderPub, senderPriv, err := GenerateKeypair()
-	if err != nil {
-		t.Fatalf("Failed to generate sender keys: %v", err)
-	}
-
-	recipientPub, recipientPriv, err := GenerateKeypair()
-	if err != nil {
-		t.Fatalf("Failed to generate recipient keys: %v", err)
-	}
-
-	testMessages := [][]byte{
-		[]byte("Hello, World!"),
-		[]byte(""),
-		[]byte("A"),
-		bytes.Repeat([]byte("X"), 10000),
-		{0x00, 0xFF, 0x01, 0xFE},
-	}
-
-	for i, original := range testMessages {
-		// Encrypt with sender's private key and recipient's public key
-		encrypted, err := AsymmetricEncrypt(original, recipientPub, senderPriv)
-		if err != nil {
-			t.Errorf("Test %d: Encryption failed: %v", i, err)
-			continue
-		}
-
-		// Encrypted data should be longer than original (nonce + auth tag)
-		if len(encrypted) < len(original)+nonceLen {
-			t.Errorf("Test %d: Encrypted data too short", i)
-		}
-
-		// Decrypt with recipient's private key and sender's public key
-		decrypted, ok := AsymmetricDecrypt(encrypted, senderPub, recipientPriv)
-		if !ok {
-			t.Errorf("Test %d: Decryption failed", i)
-			continue
-		}
-
-		if !bytes.Equal(original, decrypted) {
-			t.Errorf("Test %d: Decrypted data doesn't match original", i)
-		}
-	}
-}
-
-func TestAsymmetricDecryptInvalidInput(t *testing.T) {
-	_, priv, _ := GenerateKeypair()
-	pub, _, _ := GenerateKeypair()
-
-	// Too short to contain nonce
-	shortData := make([]byte, nonceLen-1)
-	_, ok := AsymmetricDecrypt(shortData, pub, priv)
-	if ok {
-		t.Error("Decryption should fail for data shorter than nonce")
-	}
-
-	// Invalid ciphertext (random garbage)
-	garbage := make([]byte, 100)
-	_, ok = AsymmetricDecrypt(garbage, pub, priv)
-	if ok {
-		t.Error("Decryption should fail for invalid ciphertext")
-	}
-}
-
-func TestAsymmetricDecryptWrongKey(t *testing.T) {
-	senderPub, senderPriv, _ := GenerateKeypair()
-	recipientPub, _, _ := GenerateKeypair()
-	_, wrongPriv, _ := GenerateKeypair()
-
-	original := []byte("Secret message")
-	encrypted, _ := AsymmetricEncrypt(original, recipientPub, senderPriv)
-
-	// Try to decrypt with wrong private key
-	_, ok := AsymmetricDecrypt(encrypted, senderPub, wrongPriv)
-	if ok {
-		t.Error("Decryption should fail with wrong private key")
-	}
-}
-
 func TestMD5Data(t *testing.T) {
 	testCases := []struct {
 		input    []byte
@@ -199,24 +90,6 @@ func TestRandomStringCharacters(t *testing.T) {
 	}
 }
 
-func BenchmarkGenerateKeypair(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		_, _, _ = GenerateKeypair()
-	}
-}
-
-func BenchmarkAsymmetricEncrypt(b *testing.B) {
-	senderPub, senderPriv, _ := GenerateKeypair()
-	recipientPub, _, _ := GenerateKeypair()
-	_ = senderPub // sender pub key not used in encryption
-	message := bytes.Repeat([]byte("X"), 1024)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, _ = AsymmetricEncrypt(message, recipientPub, senderPriv)
-	}
-}
-
 func BenchmarkMD5Data(b *testing.B) {
 	data := bytes.Repeat([]byte("X"), 1024)
 	b.ResetTimer()
@@ -224,4 +97,3 @@ func BenchmarkMD5Data(b *testing.B) {
 		_ = MD5Data(data)
 	}
 }
-

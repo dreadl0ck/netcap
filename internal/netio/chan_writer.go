@@ -20,120 +20,68 @@
 package netio
 
 import (
-	"bufio"
-	"log"
-	"os"
-	"runtime"
+	"encoding/binary"
+	"errors"
 	"sync"
 
 	"go.uber.org/zap"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/klauspost/pgzip"
 
-	"github.com/dreadl0ck/netcap/defaults"
-	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/types"
 )
 
-// chanWriter writes length delimited, serialized protobuf records into a channel.
+// ErrChanWriterClosed is returned when writing to a closed channel writer.
+var ErrChanWriterClosed = errors.New("channel writer closed")
+
+// chanWriter sends each audit record into a channel as one message:
+// a uvarint length prefix followed by the serialized protobuf, i.e. exactly
+// one record in the delimited format that .ncap files use. Concatenating
+// messages therefore yields a valid record stream.
+//
+// The file header is not sent: the receiver writes its own.
 type chanWriter struct {
-	mu sync.Mutex
-
-	bWriter *bufio.Writer
-	gWriter *pgzip.Writer
-	dWriter *delimited.Writer
-	cWriter *chanProtoWriter
-
-	file *os.File
-	wc   *WriterConfig
+	mu     sync.Mutex
+	ch     chan []byte
+	closed bool
+	wc     *WriterConfig
 }
 
 // newChanWriter initializes and configures a new chanWriter instance.
 func newChanWriter(wc *WriterConfig) *chanWriter {
-	w := &chanWriter{}
-	w.wc = wc
-
-	if wc.MemBufferSize <= 0 {
-		wc.MemBufferSize = defaults.BufferSize
-	}
-
 	if wc.Buffer || wc.Compress {
 		panic("buffering or compression cannot be activated when running using writeChan")
 	}
 	ioLog.Info("create chanWriter", zap.String("type", wc.Type.String()))
 
-	w.cWriter = newChanProtoWriter(wc.ChanSize)
-
-	// buffer data?
-	if wc.Buffer {
-		if wc.Compress {
-			// experiment: pgzip -> file
-			var errGzipWriter error
-			w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.file, wc.CompressionLevel)
-
-			if errGzipWriter != nil {
-				panic(errGzipWriter)
-			}
-			// experiment: buffer -> pgzip
-			w.bWriter = bufio.NewWriterSize(w.gWriter, wc.MemBufferSize)
-			// experiment: delimited -> buffer
-			w.dWriter = delimited.NewWriter(w.bWriter)
-		} else {
-			w.bWriter = bufio.NewWriterSize(w.file, wc.MemBufferSize)
-			w.dWriter = delimited.NewWriter(w.bWriter)
-		}
-	} else {
-		if wc.Compress {
-			var errGzipWriter error
-			w.gWriter, errGzipWriter = pgzip.NewWriterLevel(w.file, wc.CompressionLevel)
-			if errGzipWriter != nil {
-				panic(errGzipWriter)
-			}
-			w.dWriter = delimited.NewWriter(w.gWriter)
-		} else {
-			// write into channel writer without compression
-			w.dWriter = delimited.NewWriter(w.cWriter)
-		}
-	}
-
-	if w.gWriter != nil {
-		// To get any performance gains, you should at least be compressing more than 1 megabyte of data at the time.
-		// You should at least have a block size of 100k and at least a number of blocks that match the number of cores
-		// you would like to utilize, but about twice the number of blocks would be the best.
-		if err := w.gWriter.SetConcurrency(wc.CompressionBlockSize, runtime.GOMAXPROCS(0)*2); err != nil {
-			log.Fatal("failed to configure compression package: ", err)
-		}
-	}
-
-	return w
+	return &chanWriter{ch: make(chan []byte, wc.ChanSize), wc: wc}
 }
 
-// WriteProto writes a protobuf message.
+// Write sends one length-delimited record into the channel.
 func (w *chanWriter) Write(msg proto.Message) error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return err
 	}
 
-	_, err = w.cWriter.Write(data)
+	rec := make([]byte, 0, binary.MaxVarintLen64+len(data))
+	rec = binary.AppendUvarint(rec, uint64(len(data)))
+	rec = append(rec, data...)
 
-	return err
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if w.closed {
+		return ErrChanWriterClosed
+	}
+	w.ch <- rec
+
+	return nil
 }
 
-// WriteHeader writes a netcap file header for protobuf encoded audit record files.
-func (w *chanWriter) WriteHeader(t types.Type) error {
-	data, err := proto.Marshal(NewHeader(t, w.wc.Source, w.wc.Version, w.wc.IncludesPayloads, w.wc.StartTime))
-	if err != nil {
-		return err
-	}
-
-	_, err = w.cWriter.Write(data)
-
-	return err
+// WriteHeader is a no-op: the receiving side writes the file header.
+func (w *chanWriter) WriteHeader(_ types.Type) error {
+	return nil
 }
 
 // Flush is a no-op for the channel writer since data is immediately sent to the channel.
@@ -141,52 +89,20 @@ func (w *chanWriter) Flush() error {
 	return nil
 }
 
-// Close flushes and closes the writer and the associated file handles.
-func (w *chanWriter) Close(numRecords int64) (name string, size int64) {
+// Close closes the channel so consumers can drain and finish.
+func (w *chanWriter) Close(_ int64) (name string, size int64) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if w.wc.Buffer {
-		flushWriters(w.bWriter)
+	if !w.closed {
+		w.closed = true
+		close(w.ch)
 	}
 
-	if w.wc.Compress {
-		closeGzipWriters(w.gWriter)
-	}
-
-	return closeFile(w.wc.Out, w.file, w.wc.Name, numRecords)
+	return w.wc.Name, 0
 }
 
-// GetChan returns a channel for receiving bytes.
+// GetChan returns a channel for receiving length-delimited records.
 func (w *chanWriter) GetChan() <-chan []byte {
-	return w.cWriter.Chan()
-}
-
-// chanProtoWriter writes into a []byte chan.
-type chanProtoWriter struct {
-	ch chan []byte
-}
-
-// newChanProtoWriter returns a new channel proto writer instance.
-func newChanProtoWriter(size int) *chanProtoWriter {
-	return &chanProtoWriter{make(chan []byte, size)}
-}
-
-// Chan returns the byte channel used to receive data.
-func (w *chanProtoWriter) Chan() <-chan []byte {
 	return w.ch
-}
-
-// WriteRecord writes a protocol buffer into the channel writer.
-func (w *chanProtoWriter) Write(p []byte) (int, error) {
-	w.ch <- p
-
-	return len(p), nil
-}
-
-// Close will close the channel writer.
-func (w *chanProtoWriter) Close() error {
-	close(w.ch)
-
-	return nil
 }

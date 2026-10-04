@@ -269,11 +269,27 @@ message Header {
 //
 
 message Batch {
-  string ClientID = 1; // unique client identifier
+  // Field 1 was a client-chosen ClientID. The collector now derives identity
+  // from the authenticated TLS key, so the field must never return.
+  reserved 1;
+  reserved "ClientID";
   Type MessageType = 2; // netcap data type
-  int32 TotalSize = 3; // data size in bytes
-  bytes Data = 4; // actual data, (serialized protocol buffers)
+  int32 TotalSize = 3; // len(Data)
+  bytes Data = 4; // concatenated length-delimited audit records, no header
   bool ContainsPayloads = 5; // does the batch contain audit records with payload data?
+  uint64 Seq = 6; // per-agent sequence number, acknowledged by the collector
+}
+
+//
+// * Agent hello, the first frame an agent sends after the TLS handshake
+//
+
+message AgentHello {
+  uint32 ProtocolVersion = 1;
+  string Source = 2; // capture interface, written to the file headers
+  string Version = 3; // netcap version of the agent
+  bool ContainsPayloads = 4;
+  uint64 Session = 5; // random per agent process; scopes Batch.Seq for deduplication
 }
 
 //

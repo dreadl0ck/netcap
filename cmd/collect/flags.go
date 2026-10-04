@@ -20,13 +20,12 @@
 package collect
 
 import (
+	"time"
+
 	"github.com/urfave/cli/v3"
 
-	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/distributed"
 )
-
-// Global context for helper functions - defined in main.go
-var currentMemBufferSize int
 
 // Flags returns all flag names for the collect subcommand.
 func Flags() []string {
@@ -41,36 +40,62 @@ func Flags() []string {
 func GetFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.BoolFlag{
-			Name:    "gen-config",
-			Usage:   "generate config",
-			Sources: cli.EnvVars("NC_GEN_CONFIG"),
-		},
-		&cli.StringFlag{
-			Name:    "config",
-			Usage:   "read configuration from file at path",
-			Sources: cli.EnvVars("NC_CONFIG"),
-		},
-		&cli.BoolFlag{
 			Name:    "gen-keypair",
-			Usage:   "generate keypair",
+			Usage:   "write a new collector certificate and key to -cert and -key, print its fingerprint and exit",
 			Sources: cli.EnvVars("NC_GEN_KEYPAIR"),
 		},
 		&cli.StringFlag{
-			Name:    "privkey",
-			Usage:   "path to the hex encoded server private key",
-			Sources: cli.EnvVars("NC_PRIVKEY"),
+			Name:    "cert",
+			Value:   "collector.crt",
+			Usage:   "path to the collector certificate (PEM)",
+			Sources: cli.EnvVars("NC_CERT"),
+		},
+		&cli.StringFlag{
+			Name:    "key",
+			Value:   "collector.key",
+			Usage:   "path to the collector private key (PEM)",
+			Sources: cli.EnvVars("NC_KEY"),
+		},
+		&cli.StringFlag{
+			Name:    "clients",
+			Usage:   "allowlist file, one \"<agent fingerprint> <name>\" per line; the name becomes the output directory",
+			Sources: cli.EnvVars("NC_CLIENTS"),
 		},
 		&cli.StringFlag{
 			Name:    "addr",
 			Value:   "127.0.0.1:1335",
-			Usage:   "specify an address and port to listen for incoming traffic",
+			Usage:   "TCP address to listen on",
 			Sources: cli.EnvVars("NC_ADDR"),
 		},
+		&cli.StringFlag{
+			Name:    "out",
+			Value:   "collected",
+			Usage:   "output directory; files go to <out>/<client name>/<Type>.ncap.gz",
+			Sources: cli.EnvVars("NC_OUT"),
+		},
 		&cli.IntFlag{
-			Name:    "membuf-size",
-			Value:   defaults.BufferSize,
-			Usage:   "set size for membuf",
-			Sources: cli.EnvVars("NC_MEMBUF_SIZE"),
+			Name:    "max-frame",
+			Value:   distributed.DefaultMaxFrame,
+			Usage:   "largest accepted frame in bytes",
+			Sources: cli.EnvVars("NC_MAX_FRAME"),
+		},
+		&cli.IntFlag{
+			Name:    "max-conns",
+			Value:   256,
+			Usage:   "maximum concurrent agent connections",
+			Sources: cli.EnvVars("NC_MAX_CONNS"),
+		},
+		&cli.DurationFlag{
+			Name:    "idle-timeout",
+			Value:   5 * time.Minute,
+			Usage:   "close a connection that sends nothing for this long",
+			Sources: cli.EnvVars("NC_IDLE_TIMEOUT"),
+		},
+		&cli.DurationFlag{
+			Name:    "shutdown-timeout",
+			Value:   30 * time.Second,
+			Usage:   "how long to wait for in-flight batches on shutdown",
+			Sources: cli.EnvVars("NC_SHUTDOWN_TIMEOUT"),
 		},
 	}
 }

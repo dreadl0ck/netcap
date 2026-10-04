@@ -4,70 +4,96 @@ description: Sensors and Collection Server
 
 # Distributed Collection
 
-## Collection Server
-
-Using Netcap as a data collection mechanism, sensor agents can be deployed to export the traffic they see to a central collection server. This is especially interesting for internet of things \(IoT\) applications, since these devices are placed inside isolated networks and thus the operator does not have any information about the traffic the device sees. Although Go was not specifically designed for this application, it is an interesting language for embedded systems. Each binary contains the complete runtime, which increases the binary size but requires no installation of dependencies on the device itself. Data exporting currently takes place in batches over UDP sockets. Transferred data is compressed in transit and encrypted with the public key of the collection server. Asymmetric encryption was chosen, to avoid empowering an attacker who compromised a sensor, to decrypt traffic of all sensors communicating with the collection server. To increase the performance, in the future this could be replaced with using a symmetric cipher, together with a solid concept for key rotation and distribution. Sensor agents do not write any data to disk and instead keep it in memory before exporting it.
+Sensor agents (`net agent`) capture live traffic and stream audit records to a central collection server (`net collect`). Agents write nothing to disk; the collector writes one `.ncap.gz` per agent and record type, readable with `net dump` like any other netcap file.
 
 ![](.gitbook/assets/netcap-iot%20%282%29.svg)
 
-As described in the concept chapter, sensors and the collection server use UDP datagrams for communication. Network communication was implemented using the go standard library. This section will focus on the procedure of encrypting the communication between sensor and collector. For encryption and decryption, cryptographic primitives from the [golang.org/x/crypto/nacl/box](https://godoc.org/golang.org/x/crypto/nacl/box) package are used. The NaCl \(pronounced 'Salt'\) toolkit was developed by the reowned cryptographer Daniel J. Bernstein. The box package uses _Curve25519_, _XSalsa20_ and _Poly1305_ to encrypt and authenticate messages.
+The wire format changed in v0.9.16 and is not compatible with earlier versions. v0.9.15 and older never produced readable output: records were sent without length prefixes.
 
-It is important to note that the length of messages is not hidden. Netcap uses a thin wrapper around the functionality provided by the nacl package, the wrapper has been published here: [github.com/dreadl0ck/cryptoutils](https://www.github.com/dreadl0ck/cryptoutils).
+## Transport and authentication
 
-## Batch Encryption
+| | |
+| --- | --- |
+| transport | TCP, TLS 1.3 only |
+| authentication | mutual; both sides present a self-signed Ed25519 certificate |
+| trust | SHA-256 of the peer's public key (SPKI), pinned like SSH `known_hosts`; no CA |
+| client identity | the name in the collector's allowlist for that key. Nothing the agent sends chooses its identity or its output directory |
+| delivery | every batch is acknowledged after it is written; the agent resends unacknowledged batches after reconnecting |
 
-The collection server generates a keypair, consisting of two 32 byte \(256bit\) keys, hex encodes them and writes the keys to disk. The created files are named _pub.key_ and _priv.key_. Now, the servers public key can be shared with sensors. Each sensor also needs to generate a keypair, in order to encrypt messages to the collection server with their private key and the public key of the server. To allow the server to decrypt and authenticate the message, the sensor prepends its own public key to each message.
+After the handshake, each frame is `[1 byte type][4 byte big-endian length][payload]`, capped at 4 MiB by default (`-max-frame`). The cap is checked before anything is allocated.
 
-![NETCAP batch encryption](.gitbook/assets/netcap-sensors.svg)
+| frame | direction | payload |
+| --- | --- | --- |
+| Hello | agent → collector | `types.AgentHello`: protocol version, capture source, session id |
+| Batch | agent → collector | `types.Batch`: record type, sequence number, concatenated length-delimited records |
+| Ack | collector → agent | 8-byte sequence number |
+| Error | collector → agent | reason; the agent drops the rejected batch |
 
-## Batch Decryption
+The collector parses every record in a batch before writing it. A batch that fails is answered with an Error frame and never reaches the file. A local write failure closes the connection without an Error frame, so the agent keeps the batch and resends it.
 
-When receiving an encrypted batch from a sensor, the server needs to trim off the first 32 bytes, to get the public key of the sensor. Now the message can be decrypted, and decompressed. The resulting bytes are serialized data for a batch protocol buffer. After unmarshalling them into the batch structure, the server can append the serialized audit records carried by the batch, into the corresponding audit record file for the provided client identifier.
+## Setup
 
-![](.gitbook/assets/netcap-batch.svg)
-
-## Usage
-
-Both sensor and client can be configured by using the _-addr_ flag to specify an IP address and port. To generate a keypair for the server, the _-gen-keypair_ flag must be used:
+Generate the collector identity. It prints the fingerprint that agents pin:
 
 ```text
-$ net collect -gen-keypair 
-wrote keys
-$ ls
-priv.key pub.key
+$ net collect -gen-keypair
+wrote collector.crt and collector.key
+server fingerprint (pass to agents as -server-fingerprint):
+189b77182bb198ad6f2bf10d672eb4c6ad5b94a34b5d6b4bb861ccfde290abc1
 ```
 
-Now, the server can be started, the location of the file containing the private key must be supplied:
+On each sensor, generate an agent identity:
+
+```text
+$ net agent -gen-keypair
+wrote agent.crt and agent.key
+agent fingerprint (add to the collector's -clients file):
+b69d2c0a5cac19c3351d422d43ba2b029a91ecdab83fdf3fd2de3716a4039236 <name>
+```
+
+Add each agent to the allowlist, one `<fingerprint> <name>` per line. A name is 1-64 characters of `[A-Za-z0-9._-]`. A malformed line, a duplicate key or a duplicate name stops the collector at startup.
+
+```text
+# clients.txt
+b69d2c0a5cac19c3351d422d43ba2b029a91ecdab83fdf3fd2de3716a4039236 sensor-dmz
+```
+
+Start both:
 
 ```bash
-$ net collect -privkey priv.key -addr 127.0.0.1:4200
+net collect -clients clients.txt -addr 0.0.0.0:1335 -out collected
+net agent -server-fingerprint 189b7718...90abc1 -addr collector:1335 -iface eth0
 ```
 
-The server will now be listening for incoming messages. Next, the sensor must be configured. The keypair for the sensor will be generated on startup, but the public key of the server must be provided:
+Output goes to `<out>/<name>/<Type>.ncap.gz`, with directories `0750` and files `0640`. A file left by an earlier collector run is never truncated: the next run writes `TCP-1.ncap.gz` and so on. Key files are written `0600`, and `-gen-keypair` refuses to overwrite them.
 
-```text
-$ net agent -pubkey pub.key -addr 127.0.0.1:4200
-got 126 bytes of type NC_ICMPv6RouterAdvertisement expected [126] got size [73] for type NC_Ethernet
-got 73 bytes of type NC_Ethernet expected [73]
-got size [27] for type NC_ICMPv6
-got size [126] for type NC_ICMPv6RouterAdvertisement
-got 126 bytes of type NC_ICMPv6RouterAdvertisement expected [126] got size [75] for type NC_IPv6
-got 75 bytes of type NC_IPv6 expected [75]
-got 27 bytes of type NC_ICMPv6 expected [27]
-```
+To revoke an agent, remove its line and restart the collector.
 
-The client will now collect the traffic live from the specified interface, and send it to the configured server, once a batch for an audit record type is complete. The server will log all received messages:
+## Agent flags
 
-```text
-$ net collect -privkey priv.key -addr 127.0.0.1:4200 
-packet-received: bytes=2412 from=127.0.0.1:57368 decoded batch NC_Ethernet from client xyz
-new file xyz/Ethernet.ncap
-packet-received: bytes=2701 from=127.0.0.1:65050 decoded batch NC_IPv4 from client xyz
-new file xyz/IPv4.ncap
-...
-```
+| flag | default | |
+| --- | --- | --- |
+| `-max` | 1 MiB | target batch size; a larger single record is sent alone |
+| `-flush-interval` | 5s | send a partly filled batch at least this often, so rare record types arrive |
+| `-max-pending` | 64 MiB | unacknowledged batches kept in memory while the collector is unreachable; the oldest are dropped beyond this and the drop is logged |
+| `-shutdown-timeout` | 30s | how long SIGINT/SIGTERM keeps delivering queued batches |
+| `-reassemble-connections` | true | required for every stream decoder (HTTP, SMTP, ...) |
 
-When stopping the server with a _SIGINT_ \(Ctrl-C\), all audit record file handles will be flushed and closed properly.
+Reconnects use exponential backoff from 1s to 60s. On exit the agent logs how many batches were delivered, rejected, dropped and left undelivered.
 
-The agent uses the **$USER** environment variable to identify the workstation where the audit records are created. This will be replaced with a unique identifier in a future release.
+## Collector flags
 
+| flag | default | |
+| --- | --- | --- |
+| `-out` | `collected` | output root |
+| `-max-frame` | 4 MiB | largest accepted frame |
+| `-max-conns` | 256 | concurrent connections |
+| `-idle-timeout` | 5m | close a silent connection; the agent reconnects when it next has data |
+| `-shutdown-timeout` | 30s | wait for in-flight batches before closing files |
+
+## Limits
+
+- A record over about 4 MiB cannot be sent. The agent drops it and logs it.
+- The resend queue lives in memory. Batches still queued when the agent process dies are lost.
+- An ack means the batch has been gzip-flushed to the OS, not fsynced. Batches acknowledged before a collector host crash can be lost.
+- A file being written is an unfinished gzip stream: reading it before the collector shuts down ends with `unexpected EOF`.

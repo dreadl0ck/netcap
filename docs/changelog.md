@@ -4,6 +4,26 @@ description: Detailed Version History Information
 
 # Changelog
 
+## v0.9.16 - unreleased
+
+### Distributed collection
+
+The `net agent` / `net collect` wire format is new and incompatible with v0.9.15. Nothing working depended on the old one: **v0.9.15 never produced readable output.** It sent records without length prefixes, so every `.ncap.gz` after the header was unreadable. Setup: [distributed-collection.md](distributed-collection.md).
+
+| v0.9.15 | v0.9.16 |
+| --- | --- |
+| records sent without length prefixes | each record length-delimited, and validated before it is written |
+| first batch per file dropped | written |
+| unlocked shared file map, concurrent gzip writes | one locked writer per client and type |
+| 10 KiB UDP receive buffer; a full batch, or any short or forged datagram, panicked the collector | TCP frames up to 4 MiB; malformed input closes that connection only |
+| UDP + NaCl box, no reconnect or delivery guarantee | TLS 1.3, acknowledged batches, reconnect with backoff, in-memory resend queue |
+| any client key accepted; client-chosen `ClientID` used as a directory (`../`, absolute paths) | allowlist of pinned agent keys; the directory is the allowlist name |
+| stream and abstract decoders never drained, so they blocked once their channel filled; no stream reassembly | all decoders drained; `-reassemble-connections` on by default |
+| partial batches never sent, nothing sent on exit | `-flush-interval`, and delivery of queued batches on SIGINT/SIGTERM |
+| agent panicked on teardown (`NumStreamWorkers` 0) | agent starts from the decoder defaults |
+
+Removed flags: `-pubkey` (agent), `-privkey`, `-membuf-size` (collector), `-config` and `-gen-config` on both (they were never implemented). `types.Batch.ClientID` is reserved.
+
 ## v0.5 - April 2020
 
 ### Fixed

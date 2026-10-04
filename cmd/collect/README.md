@@ -1,55 +1,17 @@
 # NET.COLLECT
 
-*net.collect* is the collection server for receiving audit records from several *net.agent*'s exporting data.
+*net collect* receives audit records from *net agent* sensors and writes them to `<out>/<client name>/<Type>.ncap.gz`. Only agents whose key is in the `-clients` allowlist can connect, and the directory name comes from that allowlist.
 
-## Description
+Setup, protocol and limits: [docs/distributed-collection.md](../../docs/distributed-collection.md).
 
-The collection server decrypts messages that are addressed to it by the agents, and writes them to the file system.
+## Usage
 
-Read more about this tool in the documentation: https://docs.netcap.io
+    $ net collect -gen-keypair
+    wrote collector.crt and collector.key
+    server fingerprint (pass to agents as -server-fingerprint):
+    189b7718...
 
-## Usage examples
+    $ echo "b69d2c0a... sensor-dmz" > clients.txt
+    $ net collect -clients clients.txt -addr 0.0.0.0:1335 -out collected
 
-Both collector and agent can be configured by using the -addr flag to specify an IP address and port. To generate a keypair for the server, the -gen-keypair flag must be used:
-
-    $ net collect -gen-keypair 
-    wrote keys
-    $ ls
-    priv.key pub.key
-
-Start the server:
-
-    $ net collect -privkey priv.key -addr 127.0.0.1:4200 
-    packet-received: bytes=2412 from=127.0.0.1:57368 decoded batch NC_Ethernet from client xyz
-    new file xyz/Ethernet.ncap
-    packet-received: bytes=2701 from=127.0.0.1:65050 decoded batch NC_IPv4 from client xyz
-    new file xyz/IPv4.ncap
-    ...
-
-## Help
-
-    $ net collect -h
-                           / |
-     _______    ______   _10 |_     _______   ______    ______
-    /     / \  /    / \ / 01/  |   /     / | /    / \  /    / \
-    0010100 /|/011010 /|101010/   /0101010/  001010  |/100110  |
-    01 |  00 |00    00 |  10 | __ 00 |       /    10 |00 |  01 |
-    10 |  01 |01001010/   00 |/  |01 \_____ /0101000 |00 |__10/|
-    10 |  00 |00/    / |  10  00/ 00/    / |00    00 |00/   00/
-    00/   10/  0101000/    0010/   0010010/  0010100/ 1010100/
-                                                      00 |
-    Network Protocol Analysis Framework               00 |
-    created by Philipp Mieden, 2018                   00/
-    v0.5
-    
-    collect tool usage examples:
-            $ net collect -privkey priv.key -addr 127.0.0.1:4200
-            $ net collect -gen-keypair
-    
-      -addr="127.0.0.1:1335": specify the address and port for listening to incoming traffic
-      -config="": read configuration from file at path
-      -gen-config=false: generate config
-      -gen-keypair=false: generate keypair
-      -membuf-size=10485760: set size for membuf
-      -privkey="": path to the hex encoded server private key
-      -version=false: print netcap package version and exit
+SIGINT or SIGTERM waits for in-flight batches, then finalizes every file. List every flag with `net collect -h`.

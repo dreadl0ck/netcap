@@ -77,23 +77,7 @@ func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Hand
 		return chans, nil, err
 	}
 
-	// get channels for all gopacket decoders
-	for _, decoders := range c.goPacketDecoders {
-		for _, e := range decoders {
-			chans = append(chans, BatchInfo{
-				Type: e.Type,
-				Chan: e.GetChan(),
-			})
-		}
-	}
-
-	// get channels for all custom decoders
-	for _, d := range c.packetDecoders {
-		chans = append(chans, BatchInfo{
-			Type: d.GetType(),
-			Chan: d.GetChan(),
-		})
-	}
+	chans = c.batchChannels()
 
 	started = true
 	go func() {
@@ -113,4 +97,39 @@ func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Hand
 		}
 	}()
 	return chans, handle, nil
+}
+
+// batchChannels collects the record channel of every initialized decoder.
+// Every channel must be drained: an undrained one blocks its decoder once full.
+// Decoders sharing a writer (one stream decoder on several ports) share a
+// channel, which is returned once.
+func (c *Collector) batchChannels() []BatchInfo {
+	var (
+		chans []BatchInfo
+		seen  = make(map[<-chan []byte]bool)
+	)
+	add := func(t types.Type, ch <-chan []byte) {
+		if ch == nil || seen[ch] {
+			return
+		}
+		seen[ch] = true
+		chans = append(chans, BatchInfo{Type: t, Chan: ch})
+	}
+
+	for _, decoders := range c.goPacketDecoders {
+		for _, e := range decoders {
+			add(e.Type, e.GetChan())
+		}
+	}
+	for _, d := range c.packetDecoders {
+		add(d.GetType(), d.GetChan())
+	}
+	for _, d := range c.streamDecoders {
+		add(d.GetType(), d.GetChan())
+	}
+	for _, d := range c.abstractDecoders {
+		add(d.GetType(), d.GetChan())
+	}
+
+	return chans
 }

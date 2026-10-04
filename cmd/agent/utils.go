@@ -29,6 +29,7 @@ func printHeader() {
 	netio.PrintLogo()
 	fmt.Println()
 	fmt.Println("agent tool usage examples:")
-	fmt.Println("	$ net agent -pubkey pub.key -addr 127.0.0.1:4200")
+	fmt.Println("	$ net agent -gen-keypair")
+	fmt.Println("	$ net agent -server-fingerprint <hex> -addr collector:1335 -iface eth0")
 	fmt.Println()
 }

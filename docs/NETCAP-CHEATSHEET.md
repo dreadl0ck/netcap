@@ -25,6 +25,6 @@
 |net dump -read TCP.ncap.gz -sep ";"|Print audit records with Custom Separator|
 |net dump -read TCP.ncap.gz -check|Check if generated output contains the correct number of separator symbols|
 |net dump -read UDP.ncap.gz -fields|Show available fields for the audit record type|
-|net collect -gen-keypair|generate keypair for distributed collection and write to disk|
-|net collect -privkey priv.key -addr 127.0.0.1:4200|start collection server|
-|net agent -pubkey pub.key -addr 127.0.0.1:4200|start a sensor agent for exporting data|
+|net collect -gen-keypair|generate the collector TLS identity and print its fingerprint|
+|net collect -clients clients.txt -addr 0.0.0.0:1335|start collection server; clients.txt lists `<agent fingerprint> <name>`|
+|net agent -server-fingerprint <hex> -addr collector:1335 -iface eth0|start a sensor agent (generate its identity with `net agent -gen-keypair`)|

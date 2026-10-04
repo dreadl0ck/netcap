@@ -76,7 +76,7 @@ See the [Gallery](docs/GALLERY.md) for screenshots.
 
 ### Distributed Capture
 
-Agent/collector architecture for multi-sensor deployments with encrypted communication and configurable collection servers.
+Agents stream audit records to a collection server over mutually authenticated TLS 1.3, with pinned keys, acknowledged delivery and reconnects. See [docs/distributed-collection.md](docs/distributed-collection.md).
 
 ## Quick Start
 

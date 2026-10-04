@@ -666,7 +666,8 @@ func (cp *connectionProcessor) connectionWorker(wg *sync.WaitGroup) chan *connec
 // spawn the configured number of workers.
 func (cp *connectionProcessor) initWorkers(bufferSize int, numStreamWorkers int) {
 	cp.bufferSize = bufferSize
-	cp.workers = make([]chan *connection, numStreamWorkers)
+	// Zero workers would make handleConnection index an empty slice.
+	cp.workers = make([]chan *connection, max(numStreamWorkers, 1))
 
 	for i := range cp.workers {
 		cp.workers[i] = cp.connectionWorker(&cp.wg)

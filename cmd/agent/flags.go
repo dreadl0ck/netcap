@@ -21,6 +21,7 @@ package agent
 
 import (
 	"runtime"
+	"time"
 
 	"github.com/urfave/cli/v3"
 
@@ -40,14 +41,44 @@ func Flags() []string {
 func GetFlags() []cli.Flag {
 	return []cli.Flag{
 		&cli.BoolFlag{
-			Name:    "gen-config",
-			Usage:   "generate config",
-			Sources: cli.EnvVars("NC_GEN_CONFIG"),
+			Name:    "gen-keypair",
+			Usage:   "write a new agent certificate and key to -cert and -key, print its fingerprint and exit",
+			Sources: cli.EnvVars("NC_GEN_KEYPAIR"),
 		},
 		&cli.StringFlag{
-			Name:    "config",
-			Usage:   "read configuration from file at path",
-			Sources: cli.EnvVars("NC_CONFIG"),
+			Name:    "cert",
+			Value:   "agent.crt",
+			Usage:   "path to the agent certificate (PEM)",
+			Sources: cli.EnvVars("NC_CERT"),
+		},
+		&cli.StringFlag{
+			Name:    "key",
+			Value:   "agent.key",
+			Usage:   "path to the agent private key (PEM)",
+			Sources: cli.EnvVars("NC_KEY"),
+		},
+		&cli.StringFlag{
+			Name:    "server-fingerprint",
+			Usage:   "SHA-256 key fingerprint of the collector, printed by net collect -gen-keypair",
+			Sources: cli.EnvVars("NC_SERVER_FINGERPRINT"),
+		},
+		&cli.DurationFlag{
+			Name:    "flush-interval",
+			Value:   5 * time.Second,
+			Usage:   "send a partially filled batch at least this often",
+			Sources: cli.EnvVars("NC_FLUSH_INTERVAL"),
+		},
+		&cli.IntFlag{
+			Name:    "max-pending",
+			Value:   64 << 20,
+			Usage:   "bytes of unacknowledged batches kept in memory for resend; the oldest are dropped beyond this",
+			Sources: cli.EnvVars("NC_MAX_PENDING"),
+		},
+		&cli.DurationFlag{
+			Name:    "shutdown-timeout",
+			Value:   30 * time.Second,
+			Usage:   "how long to keep delivering queued batches on shutdown",
+			Sources: cli.EnvVars("NC_SHUTDOWN_TIMEOUT"),
 		},
 		&cli.StringFlag{
 			Name:    "iface",
@@ -57,9 +88,15 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.IntFlag{
 			Name:    "max",
-			Value:   10 * 1024,
-			Usage:   "max size of packet",
+			Value:   1 << 20,
+			Usage:   "target batch size in bytes; a larger single record is sent alone",
 			Sources: cli.EnvVars("NC_MAX"),
+		},
+		&cli.BoolFlag{
+			Name:    "reassemble-connections",
+			Value:   true,
+			Usage:   "reassemble TCP connections; required for every stream decoder",
+			Sources: cli.EnvVars("NC_REASSEMBLE_CONNECTIONS"),
 		},
 		&cli.IntFlag{
 			Name:    "chan-size",
@@ -127,14 +164,9 @@ func GetFlags() []cli.Flag {
 			Sources: cli.EnvVars("NC_SNAPLEN"),
 		},
 		&cli.StringFlag{
-			Name:    "pubkey",
-			Usage:   "path to the hex encoded server public key on disk",
-			Sources: cli.EnvVars("NC_PUBKEY"),
-		},
-		&cli.StringFlag{
 			Name:    "addr",
 			Value:   "127.0.0.1:1335",
-			Usage:   "specify the address and port of the collection server",
+			Usage:   "TCP address of the collector",
 			Sources: cli.EnvVars("NC_ADDR"),
 		},
 		&cli.StringFlag{

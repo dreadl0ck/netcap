@@ -17,10 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-// Package cryptoutils implements cryptographic primitives used by netcap
-// for secure communication between distributed components.
-// It wraps the NaCl box construction for authenticated public-key encryption
-// and provides utilities for hashing and random token generation.
+// Package cryptoutils provides hashing and random token helpers.
 package cryptoutils
 
 import (
@@ -28,60 +25,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"io"
-
-	"golang.org/x/crypto/nacl/box"
 )
-
-// Curve25519 key dimensions used by NaCl box.
-const (
-	// KeySize represents the byte length of Curve25519 keys.
-	KeySize = 32
-
-	// nonceLen is the byte length for XSalsa20 nonces.
-	nonceLen = 24
-)
-
-// GenerateKeypair produces a fresh Curve25519 key pair suitable for
-// use with the NaCl box authenticated encryption scheme.
-func GenerateKeypair() (pub, priv *[KeySize]byte, err error) {
-	pub, priv, err = box.GenerateKey(rand.Reader)
-	return
-}
-
-// AsymmetricEncrypt secures plaintext using NaCl box (Curve25519 + XSalsa20 + Poly1305).
-// The recipient's public key and sender's private key authenticate the message.
-// Output format: [24-byte nonce][ciphertext with 16-byte auth tag]
-func AsymmetricEncrypt(message []byte, recipientPub, senderPriv *[KeySize]byte) ([]byte, error) {
-	// Allocate space for nonce
-	var n [nonceLen]byte
-
-	// Fill nonce with cryptographically secure random bytes
-	_, err := io.ReadFull(rand.Reader, n[:])
-	if err != nil {
-		return nil, err
-	}
-
-	// box.Seal appends the encrypted, authenticated message to the nonce
-	sealed := box.Seal(n[:], message, &n, recipientPub, senderPriv)
-	return sealed, nil
-}
-
-// AsymmetricDecrypt reverses AsymmetricEncrypt, verifying authenticity
-// and recovering the original plaintext. Returns (nil, false) on failure.
-func AsymmetricDecrypt(sealed []byte, senderPub, recipientPriv *[KeySize]byte) ([]byte, bool) {
-	// Reject messages too short to contain nonce
-	if len(sealed) < nonceLen {
-		return nil, false
-	}
-
-	// Split nonce from ciphertext
-	var n [nonceLen]byte
-	copy(n[:], sealed[:nonceLen])
-	ciphertext := sealed[nonceLen:]
-
-	// Authenticate and decrypt
-	return box.Open(nil, ciphertext, &n, senderPub, recipientPriv)
-}
 
 // MD5Data computes the MD5 digest of the input bytes.
 // Note: MD5 is used here only for non-cryptographic checksums (e.g., file integrity).

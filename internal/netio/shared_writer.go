@@ -168,6 +168,23 @@ func (sw *sharedWriter) Close(numRecords int64) (name string, size int64) {
 	return "", 0
 }
 
+// GetChan returns the underlying writer's record channel, or nil if it is not a channel writer.
+// Every sharedWriter for one key returns the same channel.
+func (sw *sharedWriter) GetChan() <-chan []byte {
+	globalWriterRegistry.mu.Lock()
+	entry := globalWriterRegistry.writers[sw.key]
+	globalWriterRegistry.mu.Unlock()
+
+	if entry == nil {
+		return nil
+	}
+	if cw, ok := entry.writer.(ChannelAuditRecordWriter); ok {
+		return cw.GetChan()
+	}
+
+	return nil
+}
+
 // ResetWriterRegistry clears the global writer registry (useful for testing).
 func ResetWriterRegistry() {
 	globalWriterRegistry.mu.Lock()
