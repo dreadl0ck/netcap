@@ -68,8 +68,8 @@ func TestDatabaseStatusReportsMissingDatabases(t *testing.T) {
 	if got.Satisfied {
 		t.Error("expected satisfied=false with an empty database directory")
 	}
-	if len(got.Missing) != len(dbs.RequiredDBs()) {
-		t.Errorf("missing = %d, want %d", len(got.Missing), len(dbs.RequiredDBs()))
+	if want := len(dbs.RequiredDBs()) + len(dbs.RecommendedDBs()); len(got.Missing) != want {
+		t.Errorf("missing = %d, want %d", len(got.Missing), want)
 	}
 	if got.DatabaseDir != dir {
 		t.Errorf("databaseDir = %q, want %q", got.DatabaseDir, dir)
@@ -88,7 +88,7 @@ func TestDatabaseStatusIsSatisfiedWhenPresent(t *testing.T) {
 	dir := withEmptyDatabaseDir(t)
 	resetDownloadTracker(t)
 
-	for _, db := range dbs.RequiredDBs() {
+	for _, db := range append(dbs.RequiredDBs(), dbs.RecommendedDBs()...) {
 		if err := os.WriteFile(filepath.Join(dir, db.File), []byte{1}, 0o644); err != nil {
 			t.Fatalf("write: %v", err)
 		}
@@ -113,7 +113,7 @@ func TestDatabaseStatusMissingIsNeverNullJSON(t *testing.T) {
 	dir := withEmptyDatabaseDir(t)
 	resetDownloadTracker(t)
 
-	for _, db := range dbs.RequiredDBs() {
+	for _, db := range append(dbs.RequiredDBs(), dbs.RecommendedDBs()...) {
 		if err := os.WriteFile(filepath.Join(dir, db.File), []byte{1}, 0o644); err != nil {
 			t.Fatalf("write: %v", err)
 		}

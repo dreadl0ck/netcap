@@ -106,10 +106,11 @@ var Decoder = &decoder.AbstractDecoder{
 		indexName := db.Path(resolvers.DataBaseFolderPath)
 		db.VulnerabilitiesIndex, err = db.Open(indexName)
 		if err != nil {
-			// explicitly set to nil, otherwise it can't be determined whether the init succeeded later on
+			// Software detection does not need the index; only the CVE
+			// lookup does, and it skips a nil index. Failing here dropped
+			// all Software records on installs upgraded from the bleve layout.
 			db.VulnerabilitiesIndex = nil
-
-			return errors.Wrap(err, "failed to open vulnerability database at: "+indexName)
+			softwareLog.Warn("vulnerability lookups disabled", zap.String("path", indexName), zap.Error(err))
 		}
 
 		return nil

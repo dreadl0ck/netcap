@@ -157,7 +157,7 @@ func finishDatabaseDownload(err error) {
 
 func currentDatabaseStatus() DatabaseStatus {
 	missing := make([]MissingDB, 0)
-	for _, db := range dbs.MissingRequiredDBs() {
+	for _, db := range dbs.MissingDBs() {
 		missing = append(missing, MissingDB{File: db.File, Feature: db.Feature})
 	}
 
