@@ -8,9 +8,9 @@ description: Detailed Version History Information
 
 ### Distributed collection
 
-The `net agent` / `net collect` wire format is new and incompatible with v0.10.1 and earlier. Nothing working depended on the old one: **no earlier release produced readable output.** It sent records without length prefixes, so every `.ncap.gz` after the header was unreadable. Setup: [distributed-collection.md](distributed-collection.md).
+The `net agent` / `net collect` wire format is new and incompatible with v0.10.2 and earlier. Nothing working depended on the old one: **no earlier release produced readable output.** It sent records without length prefixes, so every `.ncap.gz` after the header was unreadable. Setup: [distributed-collection.md](distributed-collection.md).
 
-| v0.10.1 and earlier | now |
+| v0.10.2 and earlier | now |
 | --- | --- |
 | records sent without length prefixes | each record length-delimited, and validated before it is written |
 | first batch per file dropped | written |

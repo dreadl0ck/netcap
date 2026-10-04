@@ -8,7 +8,7 @@ Sensor agents (`net agent`) capture live traffic and stream audit records to a c
 
 ![](.gitbook/assets/netcap-iot%20%282%29.svg)
 
-The wire format changed after v0.10.1 and is not compatible with earlier versions, none of which produced readable output: records were sent without length prefixes.
+The wire format changed after v0.10.2 and is not compatible with earlier versions, none of which produced readable output: records were sent without length prefixes.
 
 ## Transport and authentication
 
