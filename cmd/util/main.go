@@ -145,8 +145,8 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 	flagIndex := c.String("index")
 	if flagIndex != "" {
-		dbs.IndexData(flagIndex, resolvers.DataBaseFolderPath, resolvers.DataBaseBuildPath, c.Int("nvd-start-year"), c.Bool("verbose"))
-		return nil
+		// netcap.sqlite holds NVD and exploit-db together, so any value rebuilds both.
+		return dbs.BuildVulnDB(resolvers.DataBaseBuildPath, resolvers.DataBaseFolderPath, c.Int("nvd-start-year"), c.Bool("verbose"))
 	}
 
 	if c.Bool("decoders") {

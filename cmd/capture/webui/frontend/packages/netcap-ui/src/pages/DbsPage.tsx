@@ -51,7 +51,8 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 // Map database types to friendly names and colors
 const DB_TYPE_INFO: Record<string, { label: string; color: 'primary' | 'secondary' | 'success' | 'warning' | 'info' | 'error' | 'default' }> = {
   maxmind: { label: 'MaxMind GeoIP', color: 'primary' },
-  bleve: { label: 'Bleve Index', color: 'secondary' },
+  sqlite: { label: 'SQLite', color: 'secondary' },
+  bleve: { label: 'Bleve Index (unused since v0.10)', color: 'default' },
   json: { label: 'JSON', color: 'info' },
   csv: { label: 'CSV', color: 'warning' },
   hosts: { label: 'Hosts', color: 'success' },
@@ -63,9 +64,10 @@ const DB_TYPE_INFO: Record<string, { label: string; color: 'primary' | 'secondar
 const DB_DESCRIPTIONS: Record<string, string> = {
   'GeoLite2-City.mmdb': 'MaxMind GeoLite2 City database - provides city-level geolocation data for IP addresses',
   'GeoLite2-ASN.mmdb': 'MaxMind GeoLite2 ASN database - provides autonomous system number information',
-  'exploit-db.bleve': 'Exploit database index - contains indexed exploit information from ExploitDB',
-  'nvd.bleve': 'NVD CVE database index - contains indexed vulnerability data from NIST National Vulnerability Database',
-  'mitre-cve.bleve': 'MITRE CVE database index - contains indexed CVE data from MITRE',
+  'netcap.sqlite': 'Vulnerability and exploit database - NIST NVD CVEs and ExploitDB entries with full-text search, shared by the Go and Rust engines',
+  'exploit-db.bleve': 'Legacy exploit index from netcap < v0.10 - no longer read, safe to delete',
+  'nvd.bleve': 'Legacy NVD index from netcap < v0.10 - no longer read, safe to delete',
+  'mitre-cve.bleve': 'Legacy MITRE CVE index from netcap < v0.10 - no longer read, safe to delete',
   'macaddress.io-db.json': 'MAC address vendor database - maps MAC address prefixes to manufacturers',
   'ja3.json': 'JA3 fingerprint database - TLS client fingerprints for service identification',
   'hosts': 'Local DNS hosts file - custom hostname to IP address mappings',

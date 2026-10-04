@@ -22,7 +22,10 @@ package dbs
 import (
 	"archive/tar"
 	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -34,6 +37,7 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/env"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
+	"github.com/dreadl0ck/netcap/internal/vulndb"
 	"github.com/dustin/go-humanize"
 )
 
@@ -48,6 +52,16 @@ type DBMetadata struct {
 	CreatedAt    string `json:"created_at"`
 	Tarball      string `json:"tarball"`
 	NVDStartYear int    `json:"nvd_start_year"`
+	Layout       int    `json:"layout"`
+	VulnDBSchema int    `json:"vulndb_schema"`
+	SHA256       string `json:"sha256"`
+	Size         int64  `json:"size"`
+}
+
+// installedVersion is what .db-version records, so a layout-1 revision of the
+// same date is never mistaken for an installed layout-2 one.
+func (m *DBMetadata) installedVersion() string {
+	return fmt.Sprintf("%s/%s", layoutPrefix, m.Version)
 }
 
 // DownloadStage names the phase a download is in. The UI distinguishes these
@@ -119,7 +133,7 @@ func DownloadDBsWithProgress(serverURL string, force bool, onProgress ProgressFu
 	if !force {
 		if data, err := os.ReadFile(versionFile); err == nil {
 			currentVersion := string(data)
-			if currentVersion == metadata.Version {
+			if currentVersion == metadata.installedVersion() {
 				log.Printf("Already have the latest version (%s), skipping download", metadata.Version)
 				report(DownloadProgress{
 					Stage:   StageCompleted,
@@ -142,7 +156,7 @@ func DownloadDBsWithProgress(serverURL string, force bool, onProgress ProgressFu
 	}
 
 	// Download the tarball
-	tarballURL := fmt.Sprintf("%s/dbs/%s", serverURL, metadata.Tarball)
+	tarballURL := fmt.Sprintf("%s/dbs/%s/%s", serverURL, layoutPrefix, filepath.Base(metadata.Tarball))
 	tempTarball := filepath.Join(resolvers.ConfigRootPath, "dbs-download.tar.gz")
 
 	log.Printf("Downloading database tarball to: %s", tempTarball)
@@ -171,6 +185,11 @@ func DownloadDBsWithProgress(serverURL string, force bool, onProgress ProgressFu
 	stat, _ := os.Stat(tempTarball)
 	log.Printf("Downloaded %s in %v to: %s", humanize.Bytes(uint64(stat.Size())), time.Since(start), tempTarball)
 
+	if err := verifySHA256(tempTarball, metadata.SHA256); err != nil {
+		os.Remove(tempTarball)
+		return err
+	}
+
 	// Extract the tarball
 	log.Printf("Extracting databases to: %s", resolvers.DataBaseFolderPath)
 	report(DownloadProgress{
@@ -187,8 +206,10 @@ func DownloadDBsWithProgress(serverURL string, force bool, onProgress ProgressFu
 	// Clean up temporary tarball
 	os.Remove(tempTarball)
 
+	warnLegacyIndexes(resolvers.DataBaseFolderPath)
+
 	// Save version file
-	if err := os.WriteFile(versionFile, []byte(metadata.Version), defaults.FilePermission); err != nil {
+	if err := os.WriteFile(versionFile, []byte(metadata.installedVersion()), defaults.FilePermission); err != nil {
 		log.Printf("Warning: failed to write version file: %v", err)
 	}
 
@@ -218,7 +239,7 @@ func fetchMetadata(serverURL string) (*DBMetadata, error) {
 		Timeout: httpTimeout,
 	}
 
-	url := fmt.Sprintf("%s/dbs/latest", serverURL)
+	url := fmt.Sprintf("%s/dbs/%s/latest", serverURL, layoutPrefix)
 	log.Printf("Fetching metadata from: %s", url)
 
 	resp, err := client.Get(url)
@@ -227,6 +248,9 @@ func fetchMetadata(serverURL string) (*DBMetadata, error) {
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("%s serves no layout %d databases; it predates netcap v0.10 (point NETCAP_DBS_URL at an upgraded server or use -generate-dbs)", serverURL, Layout)
+	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("server returned status %s for %s: %s", resp.Status, url, string(body))
@@ -236,8 +260,44 @@ func fetchMetadata(serverURL string) (*DBMetadata, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&metadata); err != nil {
 		return nil, fmt.Errorf("failed to decode metadata: %w", err)
 	}
+	if metadata.Layout != Layout {
+		return nil, fmt.Errorf("%s announced layout %d, this netcap reads layout %d", url, metadata.Layout, Layout)
+	}
+	if metadata.VulnDBSchema != vulndb.SchemaVersion {
+		return nil, fmt.Errorf("%s announced %s schema %d, this netcap reads schema %d", url, vulndb.FileName, metadata.VulnDBSchema, vulndb.SchemaVersion)
+	}
 
 	return &metadata, nil
+}
+
+// verifySHA256 checks path against the digest announced in the metadata.
+func verifySHA256(path, want string) error {
+	if want == "" {
+		return errors.New("metadata carries no sha256; refusing an unverifiable tarball")
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err = io.Copy(h, f); err != nil {
+		return err
+	}
+	if got := hex.EncodeToString(h.Sum(nil)); got != want {
+		return fmt.Errorf("database tarball sha256 %s does not match metadata %s", got, want)
+	}
+	return nil
+}
+
+// warnLegacyIndexes points at bleve indexes from netcap < v0.10, which are
+// no longer read but can hold several GB.
+func warnLegacyIndexes(dir string) {
+	for _, name := range []string{"nvd.bleve", "exploit-db.bleve", "mitre-cve.bleve"} {
+		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
+			log.Printf("Note: %s is a netcap < v0.10 index and is no longer used; remove it to free space", filepath.Join(dir, name))
+		}
+	}
 }
 
 // downloadFile downloads a file from a URL to a local path with progress reporting
@@ -423,7 +483,7 @@ func ListAvailableVersions(serverURL string) error {
 		Timeout: httpTimeout,
 	}
 
-	url := fmt.Sprintf("%s/dbs/list", serverURL)
+	url := fmt.Sprintf("%s/dbs/%s/list", serverURL, layoutPrefix)
 	log.Printf("Fetching version list from: %s", url)
 
 	resp, err := client.Get(url)

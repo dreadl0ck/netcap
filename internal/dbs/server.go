@@ -22,6 +22,8 @@ package dbs
 import (
 	"archive/tar"
 	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -33,16 +35,28 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/env"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
+	"github.com/dreadl0ck/netcap/internal/vulndb"
 )
+
+// Layout is the version of the database tarball layout served under
+// /dbs/v<Layout>/. Layout 1 (netcap < v0.10) carried bleve indexes and is
+// served frozen from the legacy dbs/ directory; layout 2 carries
+// netcap.sqlite.
+const Layout = 2
+
+// layoutPrefix is the URL and directory prefix of the current layout.
+var layoutPrefix = fmt.Sprintf("v%d", Layout)
 
 // DBServer represents the database server
 type DBServer struct {
 	addr         string
-	buildDir     string
-	dbsDir       string
+	buildDir     string // config root: build/, staging/, v2/ and legacy dbs/
+	dbsDir       string // published revisions of the current layout
+	legacyDir    string // frozen layout-1 revision for netcap < v0.10
 	currentDate  string // protected by mu
 	mu           sync.RWMutex
 	verbose      bool // read-only after construction
@@ -71,7 +85,8 @@ func NewDBServer(addr string, nvdStartYear int, verbose bool) *DBServer {
 	return &DBServer{
 		addr:         addr,
 		buildDir:     configRoot,
-		dbsDir:       filepath.Join(configRoot, "dbs"),
+		dbsDir:       filepath.Join(configRoot, layoutPrefix),
+		legacyDir:    filepath.Join(configRoot, "dbs"),
 		currentDate:  time.Now().Format("2006-01-02"),
 		verbose:      verbose,
 		nvdStartYear: nvdStartYear,
@@ -110,9 +125,12 @@ func (s *DBServer) Start() error {
 	// Setup HTTP handlers BEFORE doing any expensive initialization, so the
 	// healthcheck endpoint is reachable as soon as the listener binds.
 	http.HandleFunc("/", s.handleRoot)
-	http.HandleFunc("/dbs/", s.handleDownload)
-	http.HandleFunc("/dbs/latest", s.handleLatest)
-	http.HandleFunc("/dbs/list", s.handleList)
+	http.HandleFunc("/dbs/"+layoutPrefix+"/", s.handleDownload)
+	http.HandleFunc("/dbs/"+layoutPrefix+"/latest", s.handleLatest)
+	http.HandleFunc("/dbs/"+layoutPrefix+"/list", s.handleList)
+	// Layout 1 routes keep netcap < v0.10 clients working on their last
+	// bleve revision; nothing rebuilds them any more.
+	http.HandleFunc("/dbs/", s.handleLegacy)
 	http.HandleFunc("/health", s.handleHealth)
 
 	// Background initialization: discover an existing revision on the volume
@@ -171,100 +189,88 @@ func (s *DBServer) initialize() error {
 	return nil
 }
 
-// rebuildDatabases generates a new version of the databases
+// rebuildDatabases generates a new revision and publishes it only when
+// netcap.sqlite was built, so a failed upstream never replaces a good
+// revision.
 func (s *DBServer) rebuildDatabases() error {
 	log.Println("Starting database rebuild...")
 	start := time.Now()
 
-	// Set the current date for versioning (in local variable, not shared state yet)
 	newDate := time.Now().Format("2006-01-02")
 
-	// Create versioned directory
-	versionedDir := filepath.Join(s.buildDir, "dbs", newDate)
-	if err := os.MkdirAll(versionedDir, defaults.DirectoryPermission); err != nil {
-		return fmt.Errorf("failed to create versioned directory: %w", err)
-	}
-
-	// Temporarily change the global nvdStartYear if needed
 	if s.nvdStartYear != 0 {
 		nvdStartYear = s.nvdStartYear
 	}
 
-	// Generate databases into a temporary location
-	tempBuildDir := filepath.Join(s.buildDir, "build")
-	tempDBsDir := filepath.Join(s.buildDir, "temp-dbs")
+	// Hooks expect a base directory with build/ and dbs/; staging is private
+	// to the rebuild, so parallel hooks never touch a served directory.
+	stagingBase := filepath.Join(s.buildDir, "staging")
+	stagingBuild := filepath.Join(stagingBase, "build")
+	stagingDBs := filepath.Join(stagingBase, "dbs")
 
-	if err := os.RemoveAll(tempBuildDir); err != nil {
-		log.Printf("Warning: failed to clean build directory: %v", err)
+	if err := os.RemoveAll(stagingBase); err != nil {
+		return fmt.Errorf("failed to clean staging directory: %w", err)
 	}
-	if err := os.RemoveAll(tempDBsDir); err != nil {
-		log.Printf("Warning: failed to clean temp-dbs directory: %v", err)
-	}
-
-	if err := os.MkdirAll(tempBuildDir, defaults.DirectoryPermission); err != nil {
-		return fmt.Errorf("failed to create temp build directory: %w", err)
-	}
-	if err := os.MkdirAll(tempDBsDir, defaults.DirectoryPermission); err != nil {
-		return fmt.Errorf("failed to create temp dbs directory: %w", err)
+	for _, dir := range []string{stagingBuild, stagingDBs, s.dbsDir} {
+		if err := os.MkdirAll(dir, defaults.DirectoryPermission); err != nil {
+			return fmt.Errorf("failed to create %s: %w", dir, err)
+		}
 	}
 
-	// Process each source (exploitdb will be cloned fresh to get latest exploits).
 	// activeSources honours NC_DBS_SKIP_SOURCES so operators can bypass
 	// known-bad upstreams without rebuilding the image.
 	var wg sync.WaitGroup
 	for _, source := range activeSources() {
 		wg.Add(1)
-		go s.processSourceForServer(source, tempBuildDir, tempDBsDir, &wg)
+		go s.processSourceForServer(source, stagingBase, &wg)
 	}
 	wg.Wait()
 
-	// Create tarball of the databases
-	tarballPath := filepath.Join(s.buildDir, "dbs", newDate+".tar.gz")
-	if err := s.createTarball(tempDBsDir, tarballPath); err != nil {
+	if err := BuildVulnDB(stagingBuild, stagingDBs, nvdStartYear, s.verbose); err != nil {
+		return fmt.Errorf("failed to build %s, keeping previous revision: %w", vulndb.FileName, err)
+	}
+
+	tarballName := newDate + ".tar.gz"
+	tarballPath := filepath.Join(s.dbsDir, tarballName)
+
+	sum, size, err := s.createTarball(stagingDBs, tarballPath)
+	if err != nil {
 		return fmt.Errorf("failed to create tarball: %w", err)
 	}
 
-	// Create metadata file
 	metadata := map[string]any{
 		"version":        newDate,
 		"created_at":     time.Now().UTC().Format(time.RFC3339),
-		"tarball":        newDate + ".tar.gz",
-		"nvd_start_year": s.nvdStartYear,
+		"tarball":        tarballName,
+		"nvd_start_year": nvdStartYear,
+		"layout":         Layout,
+		"vulndb_schema":  vulndb.SchemaVersion,
+		"sha256":         sum,
+		"size":           size,
+		"netcap_version": netcap.Version,
 	}
-	metadataPath := filepath.Join(s.buildDir, "dbs", newDate+".json")
-	if err := s.writeMetadata(metadata, metadataPath); err != nil {
+	if err := s.writeMetadata(metadata, filepath.Join(s.dbsDir, newDate+".json")); err != nil {
 		return fmt.Errorf("failed to write metadata: %w", err)
 	}
 
-	// Update "latest" symlink
-	latestTarball := filepath.Join(s.buildDir, "dbs", "latest.tar.gz")
-	latestMetadata := filepath.Join(s.buildDir, "dbs", "latest.json")
-
-	os.Remove(latestTarball)
-	os.Remove(latestMetadata)
-
-	if err := os.Symlink(newDate+".tar.gz", latestTarball); err != nil {
-		log.Printf("Warning: failed to create latest tarball symlink: %v", err)
-	}
-	if err := os.Symlink(newDate+".json", latestMetadata); err != nil {
-		log.Printf("Warning: failed to create latest metadata symlink: %v", err)
-	}
-
-	// Now update the shared state - this is the only part that needs to be locked
 	s.mu.Lock()
 	s.currentDate = newDate
 	s.mu.Unlock()
 
-	// Mark the server as ready once a revision has been published. Idempotent.
+	if err := s.ensureLatestLinks(); err != nil {
+		log.Printf("Warning: failed to update latest links: %v", err)
+	}
+
 	s.ready.Store(true)
 
-	// Clean up old database versions to save storage space
-	// Note: This reads s.currentDate but we just updated it, so it's safe
 	if err := s.cleanupOldVersions(); err != nil {
 		log.Printf("Warning: failed to clean up old versions: %v", err)
 	}
+	if err := os.RemoveAll(stagingBase); err != nil {
+		log.Printf("Warning: failed to remove staging directory: %v", err)
+	}
 
-	log.Printf("Database rebuild completed in %v", time.Since(start))
+	log.Printf("Database rebuild completed in %v (%s, sha256 %s)", time.Since(start), tarballName, sum)
 	return nil
 }
 
@@ -275,7 +281,7 @@ func (s *DBServer) cleanupOldVersions() error {
 	currentDate := s.currentDate
 	s.mu.RUnlock()
 
-	dbsPath := filepath.Join(s.buildDir, "dbs")
+	dbsPath := s.dbsDir
 
 	entries, err := os.ReadDir(dbsPath)
 	if err != nil {
@@ -339,63 +345,43 @@ func (s *DBServer) cleanupOldVersions() error {
 	return nil
 }
 
-func (s *DBServer) processSourceForServer(source *datasource, buildDir, dbsDir string, wg *sync.WaitGroup) {
+func (s *DBServer) processSourceForServer(source *datasource, base string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	outFilePath := filepath.Join(buildDir, source.name)
+	outFilePath := filepath.Join(base, "build", source.name)
 
-	// fetch via HTTP GET from single remote source if provided
-	fetchResource(source, outFilePath)
+	if err := fetchResource(source, outFilePath); err != nil {
+		log.Printf("fetching %s failed: %v", source.name, err)
+		return
+	}
 
-	// run hook
 	if source.hook != nil {
-		// The hooks expect a base directory with "build" and "dbs" subdirectories
-		// buildDir is already pointing to base/build, so parent is the base
-		tempBase := filepath.Dir(buildDir)
-
-		// Ensure the dbs directory that hooks will write to exists
-		// and points to our temp-dbs directory
-		hooksDbsDir := filepath.Join(tempBase, "dbs")
-
-		// Remove any existing dbs directory/symlink
-		os.RemoveAll(hooksDbsDir)
-
-		// Create symlink from base/dbs to our actual temp-dbs directory
-		relPath, err := filepath.Rel(tempBase, dbsDir)
-		if err != nil {
-			relPath = dbsDir
-		}
-
-		// Try to create symlink, fall back to using dbsDir directly if it fails
-		if err := os.Symlink(relPath, hooksDbsDir); err != nil {
-			// Symlink failed (maybe Windows?), just ensure dbsDir is what hooks will use
-			// In this case, we need to rewrite the base to point to parent of dbsDir
-			tempBase = filepath.Dir(dbsDir)
-		}
-
-		if err := source.hook(outFilePath, source, tempBase); err != nil {
+		if err := source.hook(outFilePath, source, base); err != nil {
 			log.Printf("hook for %s failed with error %v", source.name, err)
 		}
 	}
 }
 
-// createTarball creates a gzipped tarball of the databases directory
-func (s *DBServer) createTarball(sourceDir, targetPath string) error {
+// createTarball writes a gzipped tarball of sourceDir to targetPath via a
+// temporary file and returns its sha256 and size. sourceDir must not contain
+// targetPath.
+func (s *DBServer) createTarball(sourceDir, targetPath string) (string, int64, error) {
 	if err := writeDatabaseNotices(sourceDir); err != nil {
-		return fmt.Errorf("failed to include database notices: %w", err)
+		return "", 0, fmt.Errorf("failed to include database notices: %w", err)
 	}
 
-	file, err := os.Create(targetPath)
+	tmpPath := targetPath + ".tmp"
+
+	file, err := os.Create(tmpPath)
 	if err != nil {
-		return err
+		return "", 0, err
 	}
+	defer os.Remove(tmpPath)
 	defer file.Close()
 
-	gzipWriter := gzip.NewWriter(file)
-	defer gzipWriter.Close()
-
+	hasher := sha256.New()
+	gzipWriter := gzip.NewWriter(io.MultiWriter(file, hasher))
 	tarWriter := tar.NewWriter(gzipWriter)
-	defer tarWriter.Close()
 
 	var fileCount, dirCount int
 	var exploitdbIncluded bool
@@ -478,7 +464,24 @@ func (s *DBServer) createTarball(sourceDir, targetPath string) error {
 	})
 
 	if err != nil {
-		return err
+		return "", 0, err
+	}
+	if err = tarWriter.Close(); err != nil {
+		return "", 0, err
+	}
+	if err = gzipWriter.Close(); err != nil {
+		return "", 0, err
+	}
+	if err = file.Sync(); err != nil {
+		return "", 0, err
+	}
+
+	stat, err := file.Stat()
+	if err != nil {
+		return "", 0, err
+	}
+	if err = os.Rename(tmpPath, targetPath); err != nil {
+		return "", 0, err
 	}
 
 	log.Printf("Tarball created: %d files, %d directories", fileCount, dirCount)
@@ -488,7 +491,7 @@ func (s *DBServer) createTarball(sourceDir, targetPath string) error {
 		log.Println("⚠ exploitdb folder was not found in source directory")
 	}
 
-	return nil
+	return hex.EncodeToString(hasher.Sum(nil)), stat.Size(), nil
 }
 
 // writeMetadata writes metadata as JSON
@@ -568,8 +571,8 @@ func (s *DBServer) checkExistingDatabases() (bool, string) {
 
 	// Also check in resolvers.DataBaseFolderPath if it's different
 	if resolvers.DataBaseFolderPath != "" && resolvers.DataBaseFolderPath != s.dbsDir {
-		// Check if databases exist in the standard location
-		if _, err := os.Stat(filepath.Join(resolvers.DataBaseFolderPath, "service-names-port-numbers.csv")); err == nil {
+		// Check if layout-2 databases exist in the standard location
+		if _, err := os.Stat(filepath.Join(resolvers.DataBaseFolderPath, vulndb.FileName)); err == nil {
 			// We have raw databases, create a tarball from them
 			log.Println("Found databases in standard location, creating initial tarball...")
 			return s.createInitialTarballFromExisting()
@@ -584,8 +587,14 @@ func (s *DBServer) createInitialTarballFromExisting() (bool, string) {
 	currentDate := time.Now().Format("2006-01-02")
 	tarballPath := filepath.Join(s.dbsDir, currentDate+".tar.gz")
 
+	if err := os.MkdirAll(s.dbsDir, defaults.DirectoryPermission); err != nil {
+		log.Printf("Failed to create %s: %v", s.dbsDir, err)
+		return false, ""
+	}
+
 	// Create tarball from existing databases
-	if err := s.createTarball(resolvers.DataBaseFolderPath, tarballPath); err != nil {
+	sum, size, err := s.createTarball(resolvers.DataBaseFolderPath, tarballPath)
+	if err != nil {
 		log.Printf("Failed to create tarball from existing databases: %v", err)
 		return false, ""
 	}
@@ -593,10 +602,15 @@ func (s *DBServer) createInitialTarballFromExisting() (bool, string) {
 	// Create metadata
 	metadata := map[string]any{
 		"version":        currentDate,
-		"created_at":     time.Now().Format(time.RFC3339),
+		"created_at":     time.Now().UTC().Format(time.RFC3339),
 		"tarball":        currentDate + ".tar.gz",
 		"source":         "imported from existing databases",
 		"nvd_start_year": s.nvdStartYear,
+		"layout":         Layout,
+		"vulndb_schema":  vulndb.SchemaVersion,
+		"sha256":         sum,
+		"size":           size,
+		"netcap_version": netcap.Version,
 	}
 
 	metadataPath := filepath.Join(s.dbsDir, currentDate+".json")
@@ -628,26 +642,30 @@ func (s *DBServer) ensureLatestLinks() error {
 		return fmt.Errorf("source metadata not found: %w", err)
 	}
 
-	// Remove existing latest links/files if they exist
-	os.Remove(latestTarball)
-	os.Remove(latestMetadata)
-
-	// Try to create symlinks, fall back to copying if symlinks fail
-	if err := os.Symlink(currentDate+".tar.gz", latestTarball); err != nil {
-		// Symlink failed, try copying
-		if err := copyFile(sourceTarball, latestTarball); err != nil {
-			return fmt.Errorf("failed to create latest tarball link/copy: %w", err)
-		}
+	if err := replaceWithLink(currentDate+".tar.gz", sourceTarball, latestTarball); err != nil {
+		return fmt.Errorf("failed to create latest tarball link/copy: %w", err)
 	}
 
-	if err := os.Symlink(currentDate+".json", latestMetadata); err != nil {
-		// Symlink failed, try copying
-		if err := copyFile(sourceMetadata, latestMetadata); err != nil {
-			return fmt.Errorf("failed to create latest metadata link/copy: %w", err)
-		}
+	if err := replaceWithLink(currentDate+".json", sourceMetadata, latestMetadata); err != nil {
+		return fmt.Errorf("failed to create latest metadata link/copy: %w", err)
 	}
 
 	return nil
+}
+
+// replaceWithLink points dst at target (relative) by renaming a fresh
+// symlink over it, so readers never see dst missing. It copies source when
+// symlinks are unavailable.
+func replaceWithLink(target, source, dst string) error {
+	tmp := dst + ".tmp"
+	_ = os.Remove(tmp)
+	if err := os.Symlink(target, tmp); err == nil {
+		return os.Rename(tmp, dst)
+	}
+	if err := copyFile(source, tmp); err != nil {
+		return err
+	}
+	return os.Rename(tmp, dst)
 }
 
 // checkWritable verifies that the given directory is writable by the current
@@ -693,11 +711,44 @@ func copyFile(src, dst string) error {
 	return err
 }
 
-// handleDownload serves database tarballs
+// handleDownload serves tarballs of the current layout
+// (e.g. /dbs/v2/2026-10-04.tar.gz or /dbs/v2/latest.tar.gz).
 func (s *DBServer) handleDownload(w http.ResponseWriter, r *http.Request) {
-	// Extract version from path (e.g., /dbs/2024-01-15.tar.gz or /dbs/latest.tar.gz)
+	serveTarball(w, r, s.dbsDir)
+}
+
+// handleLegacy serves the frozen layout-1 revision to netcap < v0.10 under
+// the original /dbs/latest, /dbs/list and /dbs/<file> routes.
+func (s *DBServer) handleLegacy(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Deprecation", "true")
+	w.Header().Set("Link", fmt.Sprintf("</dbs/%s/latest>; rel=\"successor-version\"", layoutPrefix))
+
+	switch r.URL.Path {
+	case "/dbs/latest":
+		data, err := os.ReadFile(filepath.Join(s.legacyDir, "latest.json"))
+		if err != nil {
+			http.Error(w, "no legacy database revision; upgrade netcap to v0.10 or later", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+	case "/dbs/list":
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{
+			"note": "frozen layout 1 (bleve) for netcap < v0.10; current revisions are listed at /dbs/" + layoutPrefix + "/list",
+		})
+	default:
+		serveTarball(w, r, s.legacyDir)
+	}
+}
+
+func serveTarball(w http.ResponseWriter, r *http.Request, dir string) {
 	filename := filepath.Base(r.URL.Path)
-	filePath := filepath.Join(s.buildDir, "dbs", filename)
+	if filepath.Ext(filename) != ".gz" {
+		http.Error(w, "Database version not found", http.StatusNotFound)
+		return
+	}
+	filePath := filepath.Join(dir, filename)
 
 	// Check if file exists
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -720,7 +771,7 @@ func (s *DBServer) handleLatest(w http.ResponseWriter, r *http.Request) {
 	currentDate := s.currentDate
 	s.mu.RUnlock()
 
-	metadataPath := filepath.Join(s.buildDir, "dbs", currentDate+".json")
+	metadataPath := filepath.Join(s.dbsDir, currentDate+".json")
 
 	data, err := os.ReadFile(metadataPath)
 	if err != nil {
@@ -776,9 +827,10 @@ func (s *DBServer) handleRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Available Endpoints:\n")
 	fmt.Fprintf(w, "  GET /              - This status page\n")
 	fmt.Fprintf(w, "  GET /health        - Health check (JSON)\n")
-	fmt.Fprintf(w, "  GET /dbs/latest    - Latest version metadata (JSON)\n")
-	fmt.Fprintf(w, "  GET /dbs/list      - List available versions (JSON)\n")
-	fmt.Fprintf(w, "  GET /dbs/<file>    - Download database file\n")
+	fmt.Fprintf(w, "  GET /dbs/%s/latest - Latest version metadata (JSON)\n", layoutPrefix)
+	fmt.Fprintf(w, "  GET /dbs/%s/list   - List available versions (JSON)\n", layoutPrefix)
+	fmt.Fprintf(w, "  GET /dbs/%s/<file> - Download database tarball\n", layoutPrefix)
+	fmt.Fprintf(w, "  GET /dbs/latest    - Frozen bleve revision for netcap < v0.10 (deprecated)\n")
 }
 
 // handleHealth provides a health check endpoint.
@@ -803,6 +855,7 @@ func (s *DBServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 	health := map[string]any{
 		"status":          status,
 		"current_version": currentVersion,
+		"layout":          Layout,
 		"timestamp":       time.Now().UTC().Format(time.RFC3339),
 	}
 

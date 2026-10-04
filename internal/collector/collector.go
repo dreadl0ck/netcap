@@ -585,7 +585,7 @@ func (c *Collector) serveCleanupHTTPEndpoint() {
 			"\n > or another service is blocking port 60589.",
 			"\n > Please quit all remaining NETCAP processes and try again.",
 			"\n > Running multiple processes in parallel is currently not possible,",
-			"\n > due to atomic access to the resolver bleve databases.",
+			"\n > due to the fixed shutdown endpoint port.",
 		)
 	}
 }

@@ -97,7 +97,7 @@ func GetFlags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:    "index",
-			Usage:   "index data for full text search",
+			Usage:   "build netcap.sqlite (NVD + exploit-db) from the downloaded feeds in the build folder; any value, e.g. -index all",
 			Sources: cli.EnvVars("NC_INDEX"),
 		},
 		&cli.StringFlag{

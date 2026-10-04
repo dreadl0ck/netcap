@@ -118,7 +118,14 @@ func TestNightlyDatabaseArchiveIncludesNotices(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := filepath.Join(root, "nightly.tar.gz")
-	if err := new(DBServer).createTarball(dir, path); err != nil {
+	sum, size, err := new(DBServer).createTarball(dir, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sum) != 64 || size == 0 {
+		t.Fatalf("sum %q size %d", sum, size)
+	}
+	if err := verifySHA256(path, sum); err != nil {
 		t.Fatal(err)
 	}
 	f, err := os.Open(path)

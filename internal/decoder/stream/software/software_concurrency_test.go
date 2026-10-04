@@ -3,30 +3,25 @@ package software
 import (
 	"testing"
 
-	"github.com/blevesearch/bleve"
-	"github.com/blevesearch/bleve/document"
-	"github.com/blevesearch/bleve/search"
 	"github.com/dreadl0ck/netcap/internal/decoder/db"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/vulnerability"
 	"github.com/dreadl0ck/netcap/internal/netio"
+	"github.com/dreadl0ck/netcap/internal/vulndb"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
 )
 
-type embeddedIndex = bleve.Index
-type snapshotIndex struct{ embeddedIndex }
+type snapshotIndex struct{}
 
-func (snapshotIndex) Search(*bleve.SearchRequest) (*bleve.SearchResult, error) {
-	return &bleve.SearchResult{Hits: search.DocumentMatchCollection{&search.DocumentMatch{ID: "snapshot-cve", Score: 1000000}}}, nil
+func (snapshotIndex) Vulnerabilities(_, _, _ string) ([]vulndb.Vulnerability, error) {
+	return []vulndb.Vulnerability{{ID: "snapshot-cve", Description: "description", Severity: "high"}}, nil
 }
 
-func (snapshotIndex) Document(id string) (*document.Document, error) {
-	doc := document.NewDocument(id)
-	for _, value := range []string{id, "description", "high"} {
-		doc.AddField(document.NewTextField("field", nil, []byte(value)))
-	}
-	return doc, nil
-}
+func (snapshotIndex) Exploits(_, _, _ string) ([]vulndb.Exploit, error) { return nil, nil }
+
+func (snapshotIndex) Close() error { return nil }
+
+var _ db.Index = snapshotIndex{}
 
 type snapshotWriter struct {
 	netio.AuditRecordWriter

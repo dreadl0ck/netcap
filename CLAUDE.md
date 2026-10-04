@@ -129,6 +129,13 @@ Netcap converts network traffic (live capture or PCAP files) into structured Pro
 4. **IO** (`internal/netio/`, package `netio`) — output writers: Protocol Buffers (default), CSV, JSON, Elasticsearch
 5. **Reassembly** (`internal/reassembly/`) — TCP stream reconstruction
 6. **Resolvers** (`internal/resolvers/`) — enrichment: DNS, GeoIP, MAC vendor lookup
+
+**Vulnerability and exploit lookups read `netcap.sqlite`** (`internal/vulndb`,
+format in `internal/vulndb/SCHEMA.md`), not bleve — since v0.10, so netcap-rs
+can read the same file. The spec's query rules are part of the format: change
+one and bump `SchemaVersion`. The dbs server publishes layout 2 under
+`/dbs/v2/`; `/dbs/latest` is the frozen bleve revision for older clients and
+is never rebuilt (`internal/dbs/README.md`).
 7. **DPI** (`internal/dpi/`) — optional Deep Packet Inspection via nDPI/libprotoident (requires CGO)
 
 ### Package Layout

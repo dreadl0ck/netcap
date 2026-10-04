@@ -20,16 +20,13 @@
 package dbs
 
 import (
-	"bufio"
 	"compress/gzip"
 	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
-	"net/textproto"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -37,44 +34,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blevesearch/bleve"
 	"github.com/dustin/go-humanize"
 
-	"github.com/dreadl0ck/netcap/internal/utils"
+	"github.com/dreadl0ck/netcap/internal/vulndb"
 )
-
-// exploit models information about a software exploit.
-// TODO: can we use the protobuf from types package instead?
-type exploit struct {
-	ID          string
-	File        string
-	Description string
-	Date        string
-	Author      string
-	Typ         string
-	Platform    string
-	Port        string
-}
-
-// vulnerability models information about a software Vulnerability.
-// TODO: can we use the protobuf from types package instead?
-type vulnerability struct {
-	ID                    string
-	Description           string
-	Severity              string
-	V2Score               string
-	AccessVector          string
-	AttackComplexity      string
-	PrivilegesRequired    string
-	UserInteraction       string
-	Scope                 string
-	ConfidentialityImpact string
-	IntegrityImpact       string
-	AvailabilityImpact    string
-	BaseScore             float64
-	BaseSeverity          string
-	Versions              []string
-}
 
 // used to fetch version identifier from description string from NVD item
 // if cpe url does not contain version information.
@@ -121,376 +84,280 @@ func intermediatePatchVersions(from string, until string) []string {
 	return out
 }
 
-// IndexData will index the data into a bleve database for full text search
-func IndexData(in string, out string, buildPath string, nvdIndexStart int, verbose bool) {
-	var (
-		start     = time.Now()
-		indexPath string
-		index     bleve.Index
-	)
+// BuildVulnDB builds netcap.sqlite in outDir from the NVD 2.0 yearly feeds
+// (nvdcve-2.0-<year>.json.gz) and files_exploits.csv found in buildPath.
+// Missing years and a missing exploit CSV are logged and skipped; a build
+// without a single NVD entry is an error, so a failed download never
+// replaces a good database.
+func BuildVulnDB(buildPath, outDir string, nvdStart int, verbose bool) error {
+	start := time.Now()
+	out := filepath.Join(outDir, vulndb.FileName)
 
-	switch in {
-	// nolint
-	case "mitre-cve":
-		indexPath = filepath.Join(out, "mitre-cve.bleve")
-		fmt.Println("index path", indexPath)
-
-		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
-			index, _ = bleve.Open(indexPath) // To search or update an existing index
-		} else {
-			index = makeBleveIndex(indexPath) // To create a new index
-		}
-
-		// wget https://cve.mitre.org/data/downloads/allitems.csv
-		file, err := os.Open(filepath.Join(buildPath, "mitre", "allitems.csv"))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		var (
-			// count total number of lines
-			total int
-			tr    = textproto.NewReader(bufio.NewReader(file))
-			line  string
-		)
-
-		for {
-			line, err = tr.ReadLine()
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			if !strings.HasPrefix(line, "#") {
-				total++
-			}
-		}
-		err = file.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// reopen file handle
-		file, err = os.Open(filepath.Join(buildPath, "exploitdb", "files_exploits.csv"))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		defer func() {
-			errClose := file.Close()
-			if errClose != nil && !errors.Is(errClose, io.EOF) {
-				fmt.Println("failed to close:", errClose)
-			}
-		}()
-
-		var (
-			r     = csv.NewReader(file)
-			count int
-			rec   []string
-		)
-		for {
-			rec, err = r.Read()
-			if errors.Is(err, io.EOF) {
-				break
-			} else if err != nil {
-				fmt.Println(err, rec)
-				continue
-			}
-			count++
-
-			if verbose {
-				utils.ClearLine()
-				fmt.Print("processing: ", count, " / ", total)
-			}
-
-			e := exploit{
-				ID:          rec[0],
-				Description: rec[2],
-			}
-
-			err = index.Index(e.ID, e)
-			if err != nil {
-				fmt.Println(err, r)
-			}
-		}
-
-		fmt.Println("indexed mitre DB, num entries:", count)
-
-	case "exploit-db":
-		indexPath = filepath.Join(out, "exploit-db.bleve")
-		fmt.Println("index path", indexPath)
-
-		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
-			index, err = bleve.Open(indexPath) // To search or update an existing index
-			if err != nil {
-				fmt.Println(err)
-			}
-		} else {
-			index = makeBleveIndex(indexPath) // To create a new index
-		}
-
-		// wget https://raw.githubusercontent.com/offensive-security/exploitdb/master/files_exploits.csv
-		file, err := os.Open(filepath.Join(buildPath, "files_exploits.csv"))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// count total number of lines
-		var (
-			tr    = textproto.NewReader(bufio.NewReader(file))
-			total int
-			line  string
-		)
-
-		for {
-			line, err = tr.ReadLine()
-			if errors.Is(err, io.EOF) {
-				break
-			}
-
-			if !strings.HasPrefix(line, "#") {
-				total++
-			}
-		}
-
-		err = file.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// reopen file handle
-		file, err = os.Open(filepath.Join(buildPath, "files_exploits.csv"))
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		defer func() {
-			errClose := file.Close()
-			if errClose != nil && !errors.Is(errClose, io.EOF) {
-				fmt.Println("failed to close:", errClose)
-			}
-		}()
-
-		var (
-			r     = csv.NewReader(file)
-			count int
-			rec   []string
-		)
-
-		for {
-			rec, err = r.Read()
-			if errors.Is(err, io.EOF) {
-				break
-			} else if err != nil {
-				fmt.Println(err, rec)
-
-				continue
-			}
-			count++
-
-			if verbose {
-				utils.ClearLine()
-				fmt.Print("processing: ", count, " / ", total)
-			}
-
-			e := exploit{
-				ID:          rec[0],
-				File:        rec[1],
-				Description: rec[2],
-				Date:        rec[3],
-				Author:      rec[4],
-				Typ:         rec[5],
-				Platform:    rec[6],
-				Port:        rec[7],
-			}
-
-			err = index.Index(e.ID, e)
-			if err != nil {
-				fmt.Println(err)
-			}
-		}
-
-		fmt.Println("indexed exploit DB, num entries:", count)
-
-	case "nvd":
-		indexPath = filepath.Join(out, "nvd.bleve")
-		fmt.Println("index path", indexPath)
-
-		if _, err := os.Stat(indexPath); !os.IsNotExist(err) {
-			index, _ = bleve.Open(indexPath) // To search or update an existing index
-		} else {
-			index = makeBleveIndex(indexPath) // To create a new index
-		}
-
-		defer func() {
-			errClose := index.Close()
-			if errClose != nil && !errors.Is(errClose, io.EOF) {
-				fmt.Println("failed to close:", errClose)
-			}
-		}()
-
-		var (
-			years = yearRange(nvdIndexStart, time.Now().Year())
-			total int
-		)
-
-		for _, year := range years {
-			if verbose {
-				fmt.Print("processing NVD items for year ", year)
-			} else {
-				fmt.Println("processing NVD items for year ", year)
-			}
-			file := filepath.Join(buildPath, "nvdcve-2.0-"+year+".json.gz")
-
-			f, err := os.Open(file)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			r, err := gzip.NewReader(f)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			data, err := ioutil.ReadAll(r)
-			if err != nil {
-				log.Fatal("Could not read file " + file)
-			}
-
-			items := new(NVD2)
-
-			err = json.Unmarshal(data, items)
-			if err != nil {
-				log.Fatal("failed to unmarshal CVE items for file"+file, err)
-			}
-
-			total += len(items.Vulnerabilities)
-			length := len(items.Vulnerabilities)
-
-			for i, v := range items.Vulnerabilities {
-
-				if verbose {
-					utils.ClearLine()
-					fmt.Print("processing files for year ", year, ": ", i, " / ", length)
-				}
-
-				// Find English description
-				for _, entry := range v.Cve.Descriptions {
-					if entry.Lang == "en" {
-
-						var versions []string
-						// Extract versions from configurations
-						for _, config := range v.Cve.Configurations {
-							for _, node := range config.Nodes {
-								if node.Operator == "OR" {
-									for _, cpe := range node.CpeMatch {
-										if cpe.Vulnerable {
-											if cpe.VersionStartIncluding != "" {
-												versions = append(versions, cpe.VersionStartIncluding)
-
-												// generate array of intermediate versions if end is set
-												if cpe.VersionEndExcluding != "" {
-													patchVersions := intermediatePatchVersions(cpe.VersionStartIncluding, cpe.VersionEndExcluding)
-													if patchVersions != nil {
-														versions = append(versions, patchVersions...)
-													}
-												}
-											} else {
-												// try to get version from CPE criteria
-												// CPE format: cpe:2.3:part:vendor:product:version:...
-												parts := strings.Split(cpe.Criteria, ":")
-												if len(parts) > 5 {
-													ver := parts[5]
-													if ver != "*" && ver != "-" {
-														versions = append(versions, ver)
-													}
-												}
-											}
-										}
-									}
-								}
-							}
-						}
-
-						// If no versions found, try to extract from description
-						if len(versions) == 0 {
-							genRes := reSimpleVersion.FindString(entry.Value)
-							if genRes != "" {
-								versions = append(versions, genRes)
-							}
-						}
-
-						// Extract CVSS v2 metrics if available
-						var (
-							severity              string
-							v2Score               string
-							accessVector          string
-							baseScore             float64
-							baseSeverity          string
-							attackComplexity      string
-							confidentialityImpact string
-							integrityImpact       string
-							availabilityImpact    string
-						)
-
-						if len(v.Cve.Metrics.CvssMetricV2) > 0 {
-							metric := v.Cve.Metrics.CvssMetricV2[0]
-							baseSeverity = metric.BaseSeverity
-							severity = metric.BaseSeverity
-							v2Score = strconv.FormatFloat(metric.CvssData.BaseScore, 'f', 1, 64)
-							baseScore = metric.CvssData.BaseScore
-							accessVector = metric.CvssData.AccessVector
-							attackComplexity = metric.CvssData.AccessComplexity
-							confidentialityImpact = metric.CvssData.ConfidentialityImpact
-							integrityImpact = metric.CvssData.IntegrityImpact
-							availabilityImpact = metric.CvssData.AvailabilityImpact
-						}
-
-						e := vulnerability{
-							ID:                    v.Cve.ID,
-							Description:           entry.Value,
-							Severity:              severity,
-							V2Score:               v2Score,
-							AccessVector:          accessVector,
-							AttackComplexity:      attackComplexity,
-							PrivilegesRequired:    "", // Not available in v2
-							UserInteraction:       "", // Not available in v2
-							Scope:                 "", // Not available in v2
-							ConfidentialityImpact: confidentialityImpact,
-							IntegrityImpact:       integrityImpact,
-							AvailabilityImpact:    availabilityImpact,
-							BaseScore:             baseScore,
-							BaseSeverity:          baseSeverity,
-							Versions:              versions,
-						}
-
-						err = index.Index(e.ID, e)
-						if err != nil {
-							fmt.Println(err)
-						}
-
-						break
-					}
-				}
-			}
-			if verbose {
-				// enforce a line break
-				fmt.Println()
-			} else {
-				fmt.Println("finished indexing NVD items for year", year)
-			}
-		}
-
-		fmt.Println("loaded", total, "NVD CVEs in", time.Since(start))
-	default:
-		log.Fatal("unknown keyword", in)
-	}
-
-	// retrieve size of the underlying boltdb
-	stat, err := os.Stat(filepath.Join(indexPath, "store"))
+	b, err := vulndb.Create(out)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	fmt.Println("done in", time.Since(start), "index size", humanize.Bytes(uint64(stat.Size())), "path", indexPath)
+	b.SetMeta("built_at", start.UTC().Format(time.RFC3339))
+	b.SetMeta("nvd_start_year", strconv.Itoa(nvdStart))
+
+	for _, year := range yearRange(nvdStart, time.Now().Year()) {
+		file := filepath.Join(buildPath, "nvdcve-2.0-"+year+".json.gz")
+		n, errYear := indexNVDFile(b, file)
+		if errYear != nil {
+			if errors.Is(errYear, os.ErrNotExist) {
+				log.Printf("WARNING: NVD feed for %s missing: %s", year, file)
+				continue
+			}
+			b.Abort()
+			return fmt.Errorf("NVD feed %s: %w", file, errYear)
+		}
+		if verbose {
+			fmt.Println("indexed NVD year", year, "entries:", n)
+		}
+	}
+
+	if errExploits := indexExploitCSV(b, filepath.Join(buildPath, "files_exploits.csv")); errExploits != nil {
+		if !errors.Is(errExploits, os.ErrNotExist) {
+			b.Abort()
+			return errExploits
+		}
+		log.Printf("WARNING: exploit-db CSV missing, building without exploits")
+	}
+
+	nvdCount, exploitCount := b.Counts()
+	if nvdCount == 0 {
+		b.Abort()
+		return fmt.Errorf("no NVD entries found in %s", buildPath)
+	}
+
+	if err = b.Finish(); err != nil {
+		return err
+	}
+
+	size := "?"
+	if stat, errStat := os.Stat(out); errStat == nil {
+		size = humanize.Bytes(uint64(stat.Size()))
+	}
+
+	fmt.Printf("built %s: %d NVD entries, %d exploits, %s in %v\n", out, nvdCount, exploitCount, size, time.Since(start))
+
+	return nil
+}
+
+// indexNVDFile streams one gzipped NVD 2.0 feed into b.
+func indexNVDFile(b *vulndb.Builder, file string) (int, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+
+	r, err := gzip.NewReader(f)
+	if err != nil {
+		return 0, err
+	}
+
+	dec := json.NewDecoder(r)
+	// Walk to the "vulnerabilities" array, then decode one element at a time
+	// instead of holding a whole year (up to ~1 GB of JSON) in memory.
+	if err = seekArray(dec, "vulnerabilities"); err != nil {
+		return 0, err
+	}
+
+	var count int
+
+	for dec.More() {
+		var item nvdItem
+		if err = dec.Decode(&item); err != nil {
+			return count, err
+		}
+
+		if v, ok := vulnerabilityFromNVD(&item); ok {
+			if err = b.AddVulnerability(v); err != nil {
+				return count, err
+			}
+			count++
+		}
+	}
+
+	return count, nil
+}
+
+// seekArray advances dec past the opening bracket of the top-level array
+// stored under key.
+func seekArray(dec *json.Decoder, key string) error {
+	tok, err := dec.Token()
+	if err != nil {
+		return err
+	}
+	if d, ok := tok.(json.Delim); !ok || d != '{' {
+		return errors.New("NVD feed is not a JSON object")
+	}
+
+	for dec.More() {
+		tok, err = dec.Token()
+		if err != nil {
+			return err
+		}
+		if tok == key {
+			tok, err = dec.Token()
+			if err != nil {
+				return err
+			}
+			if d, ok := tok.(json.Delim); !ok || d != '[' {
+				return fmt.Errorf("%s is not an array", key)
+			}
+			return nil
+		}
+		// skip the value of any other key
+		var skip json.RawMessage
+		if err = dec.Decode(&skip); err != nil {
+			return err
+		}
+	}
+
+	return fmt.Errorf("key %s not found", key)
+}
+
+// vulnerabilityFromNVD maps an NVD 2.0 item to a vulnerability; items
+// without an English description are skipped.
+func vulnerabilityFromNVD(item *nvdItem) (vulndb.Vulnerability, bool) {
+	cve := &item.Cve
+
+	var description string
+
+	for _, entry := range cve.Descriptions {
+		if entry.Lang == "en" {
+			description = entry.Value
+			break
+		}
+	}
+
+	if description == "" {
+		return vulndb.Vulnerability{}, false
+	}
+
+	var versions []string
+
+	for _, config := range cve.Configurations {
+		for _, node := range config.Nodes {
+			if node.Operator != "OR" {
+				continue
+			}
+
+			for _, cpe := range node.CpeMatch {
+				if !cpe.Vulnerable {
+					continue
+				}
+
+				if cpe.VersionStartIncluding != "" {
+					versions = append(versions, cpe.VersionStartIncluding)
+
+					// generate array of intermediate versions if end is set
+					if cpe.VersionEndExcluding != "" {
+						versions = append(versions, intermediatePatchVersions(cpe.VersionStartIncluding, cpe.VersionEndExcluding)...)
+					}
+
+					continue
+				}
+
+				// CPE format: cpe:2.3:part:vendor:product:version:...
+				parts := strings.Split(cpe.Criteria, ":")
+				if len(parts) > 5 && parts[5] != "*" && parts[5] != "-" {
+					versions = append(versions, parts[5])
+				}
+			}
+		}
+	}
+
+	// If no versions found, try to extract from description
+	if len(versions) == 0 {
+		if genRes := reSimpleVersion.FindString(description); genRes != "" {
+			versions = append(versions, genRes)
+		}
+	}
+
+	v := vulndb.Vulnerability{
+		ID:          cve.ID,
+		Description: description,
+		Versions:    versions,
+	}
+
+	if len(cve.Metrics.CvssMetricV2) > 0 {
+		metric := cve.Metrics.CvssMetricV2[0]
+		v.BaseSeverity = metric.BaseSeverity
+		v.Severity = metric.BaseSeverity
+		v.V2Score = strconv.FormatFloat(metric.CvssData.BaseScore, 'f', 1, 64)
+		v.BaseScore = metric.CvssData.BaseScore
+		v.AccessVector = metric.CvssData.AccessVector
+		v.AttackComplexity = metric.CvssData.AccessComplexity
+		v.ConfidentialityImpact = metric.CvssData.ConfidentialityImpact
+		v.IntegrityImpact = metric.CvssData.IntegrityImpact
+		v.AvailabilityImpact = metric.CvssData.AvailabilityImpact
+	}
+
+	return v, true
+}
+
+// indexExploitCSV adds every row of exploit-db's files_exploits.csv to b.
+func indexExploitCSV(b *vulndb.Builder, file string) error {
+	f, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	r := csv.NewReader(f)
+	r.FieldsPerRecord = -1
+
+	header, err := r.Read()
+	if err != nil {
+		return fmt.Errorf("exploit-db CSV header: %w", err)
+	}
+
+	col := map[string]int{}
+	for i, name := range header {
+		col[name] = i
+	}
+
+	for _, name := range []string{"id", "file", "description"} {
+		if _, ok := col[name]; !ok {
+			return fmt.Errorf("exploit-db CSV lacks column %q", name)
+		}
+	}
+
+	get := func(rec []string, name string) string {
+		if i, ok := col[name]; ok && i < len(rec) {
+			return rec[i]
+		}
+		return ""
+	}
+
+	for {
+		rec, errRead := r.Read()
+		if errors.Is(errRead, io.EOF) {
+			return nil
+		}
+		if errRead != nil {
+			log.Printf("WARNING: skipping malformed exploit-db row: %v", errRead)
+			continue
+		}
+
+		err = b.AddExploit(vulndb.Exploit{
+			ID:          get(rec, "id"),
+			File:        get(rec, "file"),
+			Description: get(rec, "description"),
+			Date:        get(rec, "date_published"),
+			Author:      get(rec, "author"),
+			Type:        get(rec, "type"),
+			Platform:    get(rec, "platform"),
+			Port:        get(rec, "port"),
+		})
+		if err != nil {
+			return err
+		}
+	}
 }
 
 func yearRange(start int, end int) []string {
@@ -502,15 +369,4 @@ func yearRange(start int, end int) []string {
 		out = append(out, strconv.Itoa(i))
 	}
 	return out
-}
-
-func makeBleveIndex(indexName string) bleve.Index {
-	mapping := bleve.NewIndexMapping()
-
-	index, err := bleve.New(indexName, mapping)
-	if err != nil {
-		log.Fatalln("failed to create index:", err)
-	}
-
-	return index
 }

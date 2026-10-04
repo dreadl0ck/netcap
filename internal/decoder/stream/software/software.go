@@ -103,13 +103,13 @@ var Decoder = &decoder.AbstractDecoder{
 		buildCMSHSIndex()
 
 		// Load vulnerabilities DB index
-		indexName := filepath.Join(resolvers.DataBaseFolderPath, db.VulnerabilityDBName)
-		db.VulnerabilitiesIndex, err = db.OpenBleve(indexName)
+		indexName := db.Path(resolvers.DataBaseFolderPath)
+		db.VulnerabilitiesIndex, err = db.Open(indexName)
 		if err != nil {
 			// explicitly set to nil, otherwise it can't be determined whether the init succeeded later on
 			db.VulnerabilitiesIndex = nil
 
-			return errors.Wrap(err, "failed to open vulnerability bleve index at: "+indexName)
+			return errors.Wrap(err, "failed to open vulnerability database at: "+indexName)
 		}
 
 		return nil
@@ -158,7 +158,7 @@ var Decoder = &decoder.AbstractDecoder{
 			item.Unlock()
 		}
 
-		db.CloseBleve(db.VulnerabilitiesIndex)
+		db.Close(db.VulnerabilitiesIndex)
 
 		return softwareLog.Sync()
 	},

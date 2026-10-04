@@ -21,7 +21,6 @@ package service
 
 import (
 	"os"
-	"path/filepath"
 	"regexp"
 	"testing"
 	"time"
@@ -160,23 +159,19 @@ var serviceBanners = []bannerTest{
 func TestClassifyBanners(t *testing.T) {
 	conf := config.DefaultConfig
 
-	// Load vulnerabilities DB index
-	indexName := filepath.Join(resolvers.DataBaseFolderPath, "nvd.bleve")
+	// Load the shared vulnerability and exploit database
 	var err error
-	db.VulnerabilitiesIndex, err = db.OpenBleve(indexName)
+	db.VulnerabilitiesIndex, err = db.Open(db.Path(resolvers.DataBaseFolderPath))
 	if err != nil {
-		t.Skip("skipping service probe test, bleve database not available:", err)
+		t.Skip("skipping service probe test, netcap.sqlite not available:", err)
 	}
+	defer db.Close(db.VulnerabilitiesIndex)
 
-	defer db.CloseBleve(db.VulnerabilitiesIndex)
-
-	indexName = filepath.Join(resolvers.DataBaseFolderPath, "exploit-db.bleve")
-	db.ExploitsIndex, err = db.OpenBleve(indexName)
+	db.ExploitsIndex, err = db.Open(db.Path(resolvers.DataBaseFolderPath))
 	if err != nil {
-		t.Skip("skipping service probe test, bleve database not available:", err)
+		t.Skip("skipping service probe test, netcap.sqlite not available:", err)
 	}
-
-	defer db.CloseBleve(db.ExploitsIndex)
+	defer db.Close(db.ExploitsIndex)
 
 	// conf.Debug = true
 	// important: needs to be set prior to loading probes

@@ -422,7 +422,10 @@ func (s *Server) handleDatabaseInfo(w http.ResponseWriter, r *http.Request) {
 			switch {
 			case strings.HasSuffix(name, ".mmdb"):
 				dbType = "maxmind"
+			case strings.HasSuffix(name, ".sqlite"):
+				dbType = "sqlite"
 			case strings.HasSuffix(name, ".bleve") || strings.Contains(name, ".bleve"):
+				// pre-v0.10 index, no longer read
 				dbType = "bleve"
 			case strings.HasSuffix(name, ".json"):
 				dbType = "json"

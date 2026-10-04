@@ -166,8 +166,10 @@ var sources = []*datasource{
 	makeSource("https://web.archive.org/web/20191227182527if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
 	makeSource("https://web.archive.org/web/20191227182209if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
 
-	makeSource("", "nvd.bleve", downloadAndIndexNVD),
-	makeSource("https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_exploits.csv", "", downloadAndIndexExploitDB),
+	// NVD feeds and files_exploits.csv land in build/; BuildVulnDB turns them
+	// into netcap.sqlite once every source has finished.
+	makeSource("", "nvd", downloadNVD),
+	makeSource("https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_exploits.csv", "", cloneExploitDB),
 }
 
 /*
@@ -192,7 +194,7 @@ func unzipAndMoveToDbs(in string, d *datasource, base string) error {
 	)
 }
 
-func downloadAndIndexNVD(_ string, _ *datasource, base string) error {
+func downloadNVD(_ string, _ *datasource, base string) error {
 
 	for _, year := range yearRange(nvdStartYear, time.Now().Year()) {
 
@@ -207,7 +209,7 @@ func downloadAndIndexNVD(_ string, _ *datasource, base string) error {
 	return nil
 }
 
-func downloadAndIndexExploitDB(_ string, _ *datasource, base string) error {
+func cloneExploitDB(_ string, _ *datasource, base string) error {
 	// Clone the exploitdb repository to get the actual exploit files
 	exploitdbPath := filepath.Join(base, "dbs", "exploitdb")
 
@@ -248,8 +250,6 @@ func downloadAndIndexExploitDB(_ string, _ *datasource, base string) error {
 		}
 	}
 
-	// Index the exploit metadata
-	IndexData("exploit-db", filepath.Join(base, "dbs"), filepath.Join(base, "build"), 0, false)
 	return nil
 }
 
@@ -395,6 +395,9 @@ func GenerateDBs(nvdIndexStartYear int) {
 
 	if failureCount > 0 {
 		log.Printf("WARNING: %d out of %d data sources failed to download. Check logs above for details.", failureCount, total)
+	}
+	if err := BuildVulnDB(filepath.Join(base, "build"), filepath.Join(base, "dbs"), nvdStartYear, false); err != nil {
+		log.Printf("ERROR: failed to build %s: %v", "netcap.sqlite", err)
 	}
 	if err := writeDatabaseNotices(filepath.Join(base, "dbs")); err != nil {
 		log.Fatalf("failed to include database notices: %v", err)

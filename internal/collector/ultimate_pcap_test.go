@@ -62,8 +62,7 @@ func isPCAPNG(tb testing.TB, path string) bool {
 }
 
 // ultimateCaptureConfig keeps every decoder on except those whose PostInit
-// opens a shared bleve database. Those are single-writer, so any other netcap
-// process on the machine makes them fail; a hermetic test cannot depend on them.
+// opens netcap.sqlite; a hermetic test cannot assume it is installed.
 func ultimateCaptureConfig(out string, workers, flush int) Config {
 	return Config{
 		Workers: workers, PacketBufferSize: 100,

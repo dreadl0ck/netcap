@@ -54,25 +54,32 @@ net util -download-dbs -force
 
 ### API Endpoints
 
-- `GET /health` - Health check
-- `GET /dbs/latest` - Latest version metadata (JSON)
-- `GET /dbs/list` - List all available versions (JSON)
-- `GET /dbs/latest.tar.gz` - Download latest database tarball
-- `GET /dbs/YYYY-MM-DD.tar.gz` - Download specific version
+- `GET /health` - Health check (reports `layout`)
+- `GET /dbs/v2/latest` - Latest version metadata (JSON: version, tarball, `layout`, `vulndb_schema`, `sha256`, `size`)
+- `GET /dbs/v2/list` - List all available versions (JSON)
+- `GET /dbs/v2/latest.tar.gz`, `GET /dbs/v2/YYYY-MM-DD.tar.gz` - Download a tarball
+- `GET /dbs/latest`, `GET /dbs/<file>` - Frozen layout 1 (bleve) revision for netcap < v0.10, marked `Deprecation: true`
+
+Layout 2 (netcap ≥ v0.10) replaces `nvd.bleve` and `exploit-db.bleve` with
+one `netcap.sqlite`, readable from Go and Rust (`internal/vulndb/SCHEMA.md`).
+Clients refuse a tarball whose sha256 does not match the metadata.
 
 ### Database Storage
 
-The database server stores files in the following structure:
+```
+netcap-dbs-server/          # Root directory (NC_CONFIG_ROOT)
+├── v2/                     # Published layout 2 revisions, only the latest kept
+│   ├── 2026-10-04.tar.gz
+│   ├── 2026-10-04.json
+│   ├── latest.tar.gz       # symlink, replaced atomically
+│   └── latest.json
+├── dbs/                    # Frozen layout 1 revision, never rewritten
+├── staging/                # Private to a rebuild: build/ downloads, dbs/ tarball content
+└── build/
+```
 
-```
-netcap-dbs-server/          # Root directory (configurable via NC_CONFIG_ROOT)
-├── internal/dbs/                    # Database storage directory
-│   ├── 2024-01-15.tar.gz  # Versioned database tarball
-│   ├── 2024-01-15.json    # Metadata for version
-│   ├── latest.tar.gz      # Symlink/copy of latest version
-│   └── latest.json        # Symlink/copy of latest metadata
-└── build/                  # Temporary build directory
-```
+A rebuild publishes only when `netcap.sqlite` was built, so a failed NVD
+download keeps the previous revision.
 
 **Configuration:**
 - Set `NC_CONFIG_ROOT` environment variable to change the root directory
@@ -81,7 +88,7 @@ netcap-dbs-server/          # Root directory (configurable via NC_CONFIG_ROOT)
 
 **Using Pre-existing Databases:**
 
-The server can use pre-existing databases instead of rebuilding on startup. Simply mount or copy database files into the `internal/dbs/` directory before starting the server. The server will:
+The server can use pre-existing databases instead of rebuilding on startup. Mount or copy a layout 2 tarball and its JSON into `v2/` before starting the server. The server will:
 
 1. Detect existing database tarballs (YYYY-MM-DD.tar.gz format)
 2. Use the most recent version as the initial revision
@@ -94,7 +101,7 @@ For detailed instructions on mounting databases with Docker, see `docker/dbs-ser
 ## TODOs
 
 - integrate https://github.com/malware-traffic/indicators
-- initJa3Resolver: index ja3 json dbs in bleve and bundle with dbs
+- initJa3Resolver: load ja3 json dbs into netcap.sqlite and bundle with dbs
 
 - merge PR to add fault tolerance to build process
 
@@ -146,8 +153,8 @@ Some data sources are used in original form, some are preprocessed.
 - [Nmap Service Probes](#nmap-service-probes)
 - [User Agent Parser Regexes](#user-agent-parser-regexes)
 - [IANA Service Names to Port Numbers](#iana-service-names-to-port-numbers)
-- [NVD vulnerabilities indexed in a BleveDB](#nvd-vulnerabilities-indexed-in-a-bleveDB)
-- [Exploit-db indexed in a BleveDB](#exploit-db-indexed-in-a-bleveDB)
+- [NVD vulnerabilities in netcap.sqlite](#nvd-vulnerabilities-in-netcapsqlite)
+- [Exploit-db in netcap.sqlite](#exploit-db-in-netcapsqlite)
 
 ## TODOs
  
@@ -281,11 +288,11 @@ Ports mapped to services for TCP and UDP, used to enrich the service audit recor
 
 Source: https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv
 
-### NVD vulnerabilities indexed in a BleveDB
+### NVD vulnerabilities in netcap.sqlite
 
 Used to lookup identified software products and search for known vulnerabilities.
 
-Indexed in a [bleve](https://github.com/blevesearch/bleve) database.
+Stored in `netcap.sqlite` with an FTS5 full-text index; format in `internal/vulndb/SCHEMA.md`.
 
 Source: https://nvd.nist.gov/vuln/data-feeds#JSON_FEED
 
@@ -293,11 +300,11 @@ License:
 
     The entire NVD database can be downloaded from this web page for public use. All NIST publications are available in the public domain according to Title 17 of the United States Code, however acknowledgement of the NVD when using our information is always appreciated.
 
-### Exploit-db indexed in a BleveDB
+### Exploit-db in netcap.sqlite
 
 Used to lookup identified software products and search for applicable exploit PoC code.
 
-Indexed in a [bleve](https://github.com/blevesearch/bleve) database.
+Stored in `netcap.sqlite` with an FTS5 full-text index; format in `internal/vulndb/SCHEMA.md`.
 
 Source: https://github.com/offensive-security/exploitdb
 
