@@ -234,10 +234,19 @@ func chartCSPNonce() (string, error) {
 //     which exports the canvas.
 //   - worker-src needs 'self' and blob: because echarts-gl, used by the 3D
 //     charts, spawns workers; default-src 'none' would otherwise block them.
-func chartCSP(nonce string) string {
+//   - gl adds 'unsafe-eval': echarts-gl's claygl compiles its render pipeline
+//     with new Function, and without it every 3D chart throws "Invalid
+//     expression." and stays blank. It does not let an injected inline script
+//     run; that still needs the nonce.
+func chartCSP(nonce string, gl bool) string {
+	scriptSrc := "script-src 'self' 'nonce-" + nonce + "'"
+	if gl {
+		scriptSrc += " 'unsafe-eval'"
+	}
+
 	return strings.Join([]string{
 		"default-src 'none'",
-		"script-src 'self' 'nonce-" + nonce + "'",
+		scriptSrc,
 		"style-src 'self' 'unsafe-inline'",
 		"img-src 'self' data: blob:",
 		"font-src 'self' data:",
@@ -281,7 +290,8 @@ func finalizeChartHTML(html []byte) []byte {
 	// match: the '<' there is followed by '/'.
 	html = bytes.ReplaceAll(html, []byte("<script"), []byte(`<script nonce="`+nonce+`"`))
 
-	meta := `<meta http-equiv="Content-Security-Policy" content="` + chartCSP(nonce) + `">`
+	gl := bytes.Contains(html, []byte("/echarts-gl"))
+	meta := `<meta http-equiv="Content-Security-Policy" content="` + chartCSP(nonce, gl) + `">`
 
 	if i := bytes.Index(html, []byte("<head>")); i >= 0 {
 		const headLen = len("<head>")

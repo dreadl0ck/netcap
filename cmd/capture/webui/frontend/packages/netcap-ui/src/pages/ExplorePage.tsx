@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
   CircularProgress,
@@ -60,6 +60,8 @@ import useSWR, { mutate as globalMutate } from 'swr';
 import { useNetcapRouter, useNetcapApi } from '../hooks';
 
 import { ChartFrame } from '../components/ChartFrame';
+import { pickRandomView, viewsForFields, viewsForTypes, type SecurityView } from '../lib/securityViews';
+
 const CHART_TYPES = [
   // Numeric field charts
   { value: 'line', label: 'Line Chart', icon: <ShowChartIcon />, description: 'Time series with smooth lines', forNumeric: true },
@@ -181,12 +183,12 @@ const DEFAULT_FIELD_MAP: Record<string, { field: string; chartType: string }> = 
   'MLDv2MulticastListenerReport': { field: 'HasJoinRecords', chartType: 'pie' },  // Join/leave distribution
   
   // Special Records - Security & Analysis
-  'File': { field: 'Size', chartType: 'bar' },                     // File size distribution
+  'File': { field: 'TrueFileType', chartType: 'pie' },             // File type distribution
   'Secret': { field: 'Service', chartType: 'pie' },           // Service distribution
   'Software': { field: 'Product', chartType: 'wordcloud' },        // Product popularity
   'Vulnerability': { field: 'V2Score', chartType: 'pie' },          
   'Exploit': { field: 'Platform', chartType: 'pie' },              
-  'Alert': { field: 'Classification', chartType: 'pie' },          // Alert type distribution
+  'Alert': { field: 'Name', chartType: 'pie' },                    // Alert type distribution
   'DeviceProfile': { field: 'DeviceManufacturer', chartType: 'pie' }, // Device manufacturer distribution
   'Host': { field: 'NumPackets', chartType: 'line' },         // Packet count time series
 };
@@ -215,6 +217,8 @@ export default function Explore() {
   const [autoSelectAttempted, setAutoSelectAttempted] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
   const [maxDataPoints, setMaxDataPoints] = useState<number>(1000);
+  // The view chosen on open; applied once its record type's fields have loaded.
+  const pendingViewRef = useRef<SecurityView | null>(null);
 
   // Audit type rotation: get/set the index of the last used audit type
   const getNextAuditTypeIndex = useCallback((availableTypes: string[]): number => {
@@ -342,6 +346,19 @@ export default function Explore() {
             return;
           }
           
+          // Prefer a curated security view whose field this capture populated.
+          const curated = viewsForFields(selectedAuditType, data.fields.map(f => f.name));
+          const pending = pendingViewRef.current;
+          pendingViewRef.current = null;
+          if (curated.length > 0) {
+            const view = pending?.type === selectedAuditType
+              ? curated.find(v => v.field === pending.field && v.chartType === pending.chartType) ?? pickRandomView(curated)!
+              : curated[0];
+            setSelectedField(view.field);
+            setSelectedChartType(view.chartType);
+            return;
+          }
+
           // Try to use default field and chart type from mapping
           const defaultConfig = DEFAULT_FIELD_MAP[selectedAuditType];
           if (defaultConfig) {
@@ -476,15 +493,22 @@ export default function Explore() {
     return Array.from(new Set(auditFiles.map((f) => f.type))).sort();
   }, [auditFiles]);
 
-  // Auto-select next audit type in rotation when explore tab is opened
+  // Pick what to show when the explore tab is opened
   useEffect(() => {
     // Skip if URL has a type parameter
     if (urlType && typeof urlType === 'string') {
       return;
     }
     
-    // Auto-select next audit type in rotation when auditTypes are available
     if (auditTypes.length > 0 && !selectedAuditType) {
+      // Open on a random security view this capture can answer.
+      const view = pickRandomView(viewsForTypes(auditTypes));
+      if (view) {
+        pendingViewRef.current = view;
+        setSelectedAuditType(view.type);
+        return;
+      }
+      // No curated view applies: cycle through record types as before.
       const nextIndex = getNextAuditTypeIndex(auditTypes);
       const nextType = auditTypes[nextIndex];
       setSelectedAuditType(nextType);

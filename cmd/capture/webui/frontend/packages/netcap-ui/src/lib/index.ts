@@ -149,3 +149,6 @@ export type {
   DatabaseUpdateResult,
   MissingDatabase,
 } from './api';
+
+export { SECURITY_VIEWS, pickRandomView, viewsForFields, viewsForTypes } from './securityViews';
+export type { SecurityView } from './securityViews';

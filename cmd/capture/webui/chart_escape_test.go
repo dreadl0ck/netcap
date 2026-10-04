@@ -459,3 +459,18 @@ func TestSanitizePcapFilenameCannotEscape(t *testing.T) {
 		}
 	}
 }
+
+// echarts-gl compiles with new Function, so 3D charts need 'unsafe-eval'; 2D
+// charts must not get it.
+func TestChartCSPAllowsEvalOnlyForEchartsGL(t *testing.T) {
+	plain := string(finalizeChartHTML([]byte(`<html><head></head><body><script src="/static/echarts/echarts.min.js"></script></body></html>`)))
+	if strings.Contains(between(t, plain, "script-src ", ";"), "unsafe-eval") {
+		t.Fatalf("2D chart got unsafe-eval:\n%s", plain)
+	}
+
+	gl := string(finalizeChartHTML([]byte(`<html><head></head><body><script src="/static/echarts/echarts-gl.min.js"></script></body></html>`)))
+	src := between(t, gl, "script-src ", ";")
+	if !strings.Contains(src, "'unsafe-eval'") || strings.Contains(src, "unsafe-inline") {
+		t.Fatalf("3D chart script-src = %q, want unsafe-eval and no unsafe-inline", src)
+	}
+}
