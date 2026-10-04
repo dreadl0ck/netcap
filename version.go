@@ -2,10 +2,10 @@
 package netcap
 
 // Version is the current version identifier for netcap.
-var Version = "v0.9.15"
+var Version = "v0.10.0"
 
 // Commit is the git commit id of the current version.
-var Commit = "a2c288d1415c1416bfab563da6b11b046572efd3"
+var Commit = "c4969ca8cdb975ba523c7378d99ddb393d4c852b"
 
 // GopacketVersion is the version of gopacket library used.
 var GopacketVersion = "v1.7.2"
