@@ -29,7 +29,6 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
-  Grid,
   InputLabel,
   MenuItem,
   Paper,
@@ -48,6 +47,8 @@ import {
   Snackbar,
   IconButton,
 } from '@mui/material';
+// MUI 7's Grid ignores item/xs; GridLegacy keeps the v5 API these pages use.
+import Grid from '@mui/material/GridLegacy';
 import WarningIcon from '@mui/icons-material/Warning';
 import ErrorIcon from '@mui/icons-material/Error';
 import InfoIcon from '@mui/icons-material/Info';

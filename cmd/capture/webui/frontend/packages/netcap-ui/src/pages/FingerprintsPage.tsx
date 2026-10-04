@@ -27,7 +27,6 @@ import {
   Chip,
   CircularProgress,
   FormControl,
-  Grid,
   IconButton,
   MenuItem,
   Paper,
@@ -46,6 +45,8 @@ import {
   ToggleButtonGroup,
   ToggleButton,
 } from '@mui/material';
+// MUI 7's Grid ignores item/xs; GridLegacy keeps the v5 API these pages use.
+import Grid from '@mui/material/GridLegacy';
 import {
   Refresh as RefreshIcon,
   ExpandMore as ExpandMoreIcon,

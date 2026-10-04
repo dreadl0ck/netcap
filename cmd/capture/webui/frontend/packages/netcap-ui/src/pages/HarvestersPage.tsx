@@ -36,7 +36,6 @@ import {
   FormControlLabel,
   Tabs,
   Tab,
-  Grid,
   Alert,
   Snackbar,
   Select,
@@ -53,6 +52,8 @@ import {
   Tooltip,
   IconButton,
 } from '@mui/material';
+// MUI 7's Grid ignores item/xs; GridLegacy keeps the v5 API these pages use.
+import Grid from '@mui/material/GridLegacy';
 import {
   Save as SaveIcon,
   FileUpload as FileUploadIcon,

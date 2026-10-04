@@ -18,7 +18,9 @@
  */
 
 import React, { ReactNode } from 'react';
-import { Box, Card, CardContent, Grid, Typography } from '@mui/material';
+import { Box, Card, CardContent, Typography } from '@mui/material';
+// MUI 7's Grid ignores item/xs; GridLegacy keeps the v5 API these pages use.
+import Grid from '@mui/material/GridLegacy';
 
 export interface StatBoxProps {
   /** Icon to display */

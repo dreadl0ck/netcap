@@ -25,7 +25,6 @@ import {
   CircularProgress,
   Typography,
   Chip,
-  Grid,
   Alert,
   AlertTitle,
   Link as MuiLink,
@@ -45,6 +44,8 @@ import {
   FormControlLabel,
   Tooltip,
 } from '@mui/material';
+// MUI 7's Grid ignores item/xs; GridLegacy keeps the v5 API these pages use.
+import Grid from '@mui/material/GridLegacy';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Layout from '../components/Layout';
 import ResponsiveDataView from '../components/ResponsiveDataView';

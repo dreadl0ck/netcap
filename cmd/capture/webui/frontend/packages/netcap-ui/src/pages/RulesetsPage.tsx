@@ -24,13 +24,14 @@ import {
   CardContent,
   Chip,
   FormControlLabel,
-  Grid,
   Switch,
   Tooltip,
   Typography,
   Alert,
   Snackbar,
 } from '@mui/material';
+// MUI 7's Grid ignores item/xs; GridLegacy keeps the v5 API these pages use.
+import Grid from '@mui/material/GridLegacy';
 import SecurityIcon from '@mui/icons-material/Security';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import EditIcon from '@mui/icons-material/Edit';

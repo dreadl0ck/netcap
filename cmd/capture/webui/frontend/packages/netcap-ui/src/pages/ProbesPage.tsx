@@ -41,7 +41,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Grid,
   Select,
   MenuItem,
   FormControl,
@@ -51,6 +50,8 @@ import {
   Snackbar,
   Switch,
 } from '@mui/material';
+// MUI 7's Grid ignores item/xs; GridLegacy keeps the v5 API these pages use.
+import Grid from '@mui/material/GridLegacy';
 import {
   Edit as EditIcon,
   Science as TestIcon,

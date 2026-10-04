@@ -23,7 +23,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CircularProgress from '@mui/material/CircularProgress';
 import FormControl from '@mui/material/FormControl';
-import Grid from '@mui/material/Grid';
+import Grid from '@mui/material/GridLegacy';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Select, { type SelectChangeEvent } from '@mui/material/Select';

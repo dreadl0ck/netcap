@@ -123,8 +123,18 @@ func (cg *ChartGenerator) GenerateChartFromDirs(outDirs []string) (io.Reader, er
 	// pairs; aggregating across multiple files would need a new flat
 	// reader-of-readers implementation. For v1 the sankey path falls back to
 	// the first directory that has the file when scope is multi-dir.
+	// It must not call GenerateChart, which re-enters here and recursed until
+	// the stack overflowed, killing the whole process.
 	if !isNumeric && cg.chartType == "sankey" {
-		return cg.GenerateChart(filepath.Dir(probePath))
+		sankeyReader, err := NewAuditRecordReader(probePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to reopen audit file for sankey: %w", err)
+		}
+		defer sankeyReader.Close()
+		if _, err := sankeyReader.ReadHeader(); err != nil {
+			return nil, fmt.Errorf("failed to read audit file header for sankey: %w", err)
+		}
+		return cg.generateSankeyChart(sankeyReader)
 	}
 
 	if isNumeric {
