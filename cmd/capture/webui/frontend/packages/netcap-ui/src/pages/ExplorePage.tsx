@@ -599,7 +599,6 @@ export default function Explore() {
     <Layout 
       title="Explore" 
       headerAction={headerAction}
-      topPadding={{ xs: '200px', sm: '140px', md: '100px' }}
     >
       {/* Chart type selection buttons and controls - above chart box */}
       {chartUrl && !loading && (

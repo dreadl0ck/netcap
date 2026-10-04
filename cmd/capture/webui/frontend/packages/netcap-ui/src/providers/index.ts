@@ -34,5 +34,6 @@ export type {
   LinkProps,
   LinkComponent,
   NavigationItem,
+  FullscreenAdapter,
 } from './NetcapProvider';
 

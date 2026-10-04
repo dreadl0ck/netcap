@@ -44,7 +44,7 @@
 import React, { ReactNode, useMemo } from 'react';
 import { useNavigate, useLocation, useSearchParams, Link as RRLink } from 'react-router';
 import type { LinkProps as RRLinkProps } from 'react-router';
-import { NetcapProvider, NetcapConfig, LinkProps, NavigationItem } from '../providers/NetcapProvider.js';
+import { NetcapProvider, NetcapConfig, LinkProps, NavigationItem, FullscreenAdapter } from '../providers/NetcapProvider.js';
 import { LearnModeProvider } from '../contexts/LearnModeContext.js';
 import { CommunityIDFilterProvider } from '../contexts/CommunityIDFilterContext.js';
 
@@ -58,6 +58,8 @@ export interface ReactRouterNetcapProviderProps {
   includeLearnMode?: boolean;
   /** Application-specific sidebar entries */
   navigationItems?: NavigationItem[];
+  /** Native window fullscreen (desktop shells) */
+  fullscreen?: FullscreenAdapter;
 }
 
 /**
@@ -85,6 +87,7 @@ export function ReactRouterNetcapProvider({
   debug = false,
   includeLearnMode = true,
   navigationItems,
+  fullscreen,
 }: ReactRouterNetcapProviderProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -94,6 +97,7 @@ export function ReactRouterNetcapProvider({
     backendUrl,
     debug,
     navigationItems,
+    fullscreen,
     router: {
       pathname: location.pathname,
       query: Object.fromEntries(searchParams),
@@ -102,7 +106,7 @@ export function ReactRouterNetcapProvider({
       replace: (path: string) => { navigate(path, { replace: true }); },
     },
     Link: ReactRouterLinkAdapter,
-  }), [backendUrl, debug, navigationItems, location.pathname, searchParams, navigate]);
+  }), [backendUrl, debug, navigationItems, fullscreen, location.pathname, searchParams, navigate]);
 
   const content = includeLearnMode ? (
     <LearnModeProvider>

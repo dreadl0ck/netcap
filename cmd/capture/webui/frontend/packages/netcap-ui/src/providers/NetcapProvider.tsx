@@ -75,6 +75,18 @@ export interface NavigationItem {
 }
 
 /**
+ * Window fullscreen for hosts where the Fullscreen API does not apply, such as
+ * a WKWebView desktop shell: there document.requestFullscreen is unavailable
+ * and only the native window can go fullscreen.
+ */
+export interface FullscreenAdapter {
+  toggle(): void | Promise<void>;
+  isFullscreen(): boolean | Promise<boolean>;
+  /** Notifies on changes made outside the button (menu, green traffic light). */
+  subscribe?(onChange: (fullscreen: boolean) => void): () => void;
+}
+
+/**
  * Main configuration for NetcapProvider
  */
 export interface NetcapConfig {
@@ -98,6 +110,9 @@ export interface NetcapConfig {
 
   /** Optional: Application-specific sidebar entries */
   navigationItems?: NavigationItem[];
+
+  /** Optional: native window fullscreen; defaults to the browser Fullscreen API */
+  fullscreen?: FullscreenAdapter;
 }
 
 /**

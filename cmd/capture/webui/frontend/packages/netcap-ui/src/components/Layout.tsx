@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useIsMobile } from '../hooks/useIsMobile';
 import AppBar from '@mui/material/AppBar';
 import Badge from '@mui/material/Badge';
@@ -179,7 +179,7 @@ export interface LayoutProps {
   children: React.ReactNode;
   title: string;
   headerAction?: React.ReactNode;
-  /** Optional custom top padding override */
+  /** Optional top padding override; by default content starts below the measured app bar */
   topPadding?: string | { xs?: string; sm?: string; md?: string; lg?: string };
 }
 
@@ -190,7 +190,10 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
   const router = useNetcapRouter();
   const api = useNetcapApi();
   const Link = useNetcapLink();
-  const { navigationItems = [] } = useNetcapConfig();
+  const { navigationItems = [], fullscreen } = useNetcapConfig();
+  const appBarRef = useRef<HTMLElement | null>(null);
+  const [appBarHeight, setAppBarHeight] = useState(72);
+  const fullscreenSupported = !!fullscreen || (typeof document !== 'undefined' && !!document.fullscreenEnabled);
   
   // Get community ID filter state
   const { selectedCommunityIDs, isFilterActive } = useCommunityIDFilter();
@@ -260,15 +263,18 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
     setMobileOpen(!mobileOpen);
   };
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch((err) => {
-        console.error('Failed to enter fullscreen:', err);
-      });
-    } else {
-      document.exitFullscreen().catch((err) => {
-        console.error('Failed to exit fullscreen:', err);
-      });
+  const toggleFullscreen = async () => {
+    try {
+      if (fullscreen) {
+        await fullscreen.toggle();
+        setIsFullscreen(await fullscreen.isFullscreen());
+      } else if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error('Failed to toggle fullscreen:', err);
     }
   };
 
@@ -298,21 +304,36 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
 
   // Handle fullscreen changes
   useEffect(() => {
+    if (fullscreen) {
+      let live = true;
+      Promise.resolve(fullscreen.isFullscreen()).then(v => { if (live) setIsFullscreen(v); }).catch(() => {});
+      const unsubscribe = fullscreen.subscribe?.(setIsFullscreen);
+      return () => { live = false; unsubscribe?.(); };
+    }
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
-
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
+  }, [fullscreen]);
+
+  // The bar's height varies with header actions, wrapping and breakpoints, so
+  // content padding follows its measured height instead of a guessed constant.
+  useEffect(() => {
+    const el = appBarRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const update = () => setAppBarHeight(el.getBoundingClientRect().height);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   const defaultTopPadding = topPadding || {
-    xs: headerAction ? '112px' : '72px',
-    sm: headerAction ? '120px' : '88px',
-    md: '88px',
+    xs: `${appBarHeight + 16}px`,
+    sm: `${appBarHeight + 24}px`,
   };
 
   const renderNavigationItems = (placement: NavigationItem['placement'], nested = false) => navigationItems
@@ -846,6 +867,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
   return (
     <Box sx={{ display: 'flex' }}>
       <AppBar
+        ref={appBarRef}
         position="fixed"
         sx={{
           width: { lg: `calc(100% - ${drawerWidth}px)` },
@@ -854,22 +876,11 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
       >
         <Toolbar
           sx={{
-            minHeight: { xs: 'auto', sm: 72 },
+            minHeight: { xs: 56, sm: 72 },
             py: { xs: 0.5, sm: 1 },
-            display: { xs: 'flex', sm: 'grid' },
-            gridTemplateColumns: {
-              sm: headerAction
-                ? 'auto minmax(0, 1fr) minmax(180px, 300px) auto'
-                : 'auto minmax(0, 1fr) auto',
-              md: headerAction
-                ? 'auto minmax(0, 1fr) minmax(260px, 400px) auto'
-                : 'auto minmax(0, 1fr) auto',
-              lg: headerAction
-                ? 'minmax(180px, 1fr) minmax(300px, 400px) auto'
-                : 'minmax(180px, 1fr) auto',
-            },
+            display: 'flex',
             alignItems: 'center',
-            gap: { xs: 0.5, sm: 2 },
+            gap: { xs: 1, sm: 2 },
           }}
         >
           <IconButton
@@ -877,38 +888,44 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: { xs: 1, sm: 2 }, display: { lg: 'none' } }}
+            sx={{ flexShrink: 0, display: { lg: 'none' } }}
           >
             <MenuIcon />
           </IconButton>
-          <Box sx={{ flexGrow: { xs: 1, sm: 0 }, minWidth: 0 }}>
+          <Box sx={{ flex: '1 1 auto', minWidth: 120 }}>
             <Typography variant="h5" noWrap component="h1" sx={{ fontSize: { xs: '1rem', sm: '1.05rem' } }}>
               {title}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' }, fontFamily: 'var(--netcap-mono)' }}>
+            <Typography variant="caption" noWrap color="text.secondary" sx={{ display: { xs: 'none', sm: 'block' }, fontFamily: 'var(--netcap-mono)' }}>
               Network traffic intelligence
             </Typography>
           </Box>
           {headerAction && !isMobile && (
+            // Shrinks and wraps rather than overflowing onto the fullscreen button.
             <Box sx={{
+              flex: '0 1 auto',
+              minWidth: 0,
+              maxWidth: '70%',
               display: 'flex',
+              flexWrap: 'wrap',
               alignItems: 'center',
               justifyContent: 'flex-end',
-              minWidth: 0,
-              width: '100%',
-              '& > *': { width: '100%', maxWidth: '400px' },
+              rowGap: 1,
+              '& > *': { maxWidth: '100%', minWidth: 0 },
             }}>
               {headerAction}
             </Box>
           )}
-          <IconButton
-            onClick={toggleFullscreen}
-            aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-            title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-            sx={{ color: 'text.secondary', justifySelf: 'end', flexShrink: 0 }}
-          >
-            {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
-          </IconButton>
+          {fullscreenSupported && (
+            <IconButton
+              onClick={() => { void toggleFullscreen(); }}
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+              sx={{ color: 'text.secondary', flexShrink: 0 }}
+            >
+              {isFullscreen ? <FullscreenExitIcon /> : <FullscreenIcon />}
+            </IconButton>
+          )}
         </Toolbar>
         {headerAction && isMobile && (
           <Box sx={{
@@ -957,14 +974,14 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 2, sm: 3, xl: 4 },
-          pb: { xs: '72px', sm: '72px', md: 3 },
+          // No `p` shorthand: its xl media query is emitted after `pt` and
+          // reset the top offset, putting content under the bar on wide screens.
+          px: { xs: 2, sm: 3, xl: 4 },
+          pb: { xs: '72px', sm: '72px', md: 3, xl: 4 },
           width: { lg: `calc(100% - ${drawerWidth}px)` },
           minWidth: 0,
           overflowX: 'hidden',
           pt: defaultTopPadding,
-          maxWidth: '1800px',
-          mx: 'auto',
         }}
       >
         <CommunityIDFilterBar />
