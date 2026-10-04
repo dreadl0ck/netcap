@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/dreadl0ck/netcap/internal/resolvers"
+	"github.com/dreadl0ck/netcap/internal/vulndb"
 )
 
 // withDatabaseDir points the resolver database path at a temporary directory
@@ -150,5 +151,29 @@ func TestRequiredDBsReturnsACopy(t *testing.T) {
 
 	if RequiredDBs()[0].File == "mutated" {
 		t.Fatal("RequiredDBs exposed its backing array")
+	}
+}
+
+// An install upgraded from the bleve layout has every required database but
+// no netcap.sqlite. It must be reported so the UI offers the download, and it
+// must not add a capture flag: its absence disables lookups, not the run.
+func TestMissingDBsReportsVulnDBWithoutDisablingAnything(t *testing.T) {
+	dir := withDatabaseDir(t)
+	for _, db := range RequiredDBs() {
+		writeDB(t, dir, db.File, 1)
+	}
+	writeDB(t, dir, "nvd.bleve", 1)
+
+	missing := MissingDBs()
+	if len(missing) != 1 || missing[0].File != vulndb.FileName {
+		t.Fatalf("missing = %+v, want only %s", missing, vulndb.FileName)
+	}
+	if flags := DisableFlagsForMissingDBs(); len(flags) != 0 {
+		t.Fatalf("a recommended database must not disable features, got %v", flags)
+	}
+
+	writeDB(t, dir, vulndb.FileName, 1)
+	if missing := MissingDBs(); len(missing) != 0 {
+		t.Fatalf("missing = %+v after installing %s", missing, vulndb.FileName)
 	}
 }

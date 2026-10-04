@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 
 	"github.com/dreadl0ck/netcap/internal/resolvers"
+	"github.com/dreadl0ck/netcap/internal/vulndb"
 )
 
 // RequiredDB describes a database file that a capture run depends on.
@@ -52,6 +53,36 @@ type RequiredDB struct {
 var requiredDBs = []RequiredDB{
 	{File: "GeoLite2-City.mmdb", Flag: "-geoDB=false", Feature: "geolocation enrichment"},
 	{File: "GeoLite2-ASN.mmdb", Flag: "-geoDB=false", Feature: "geolocation enrichment"},
+}
+
+// recommendedDBs lists databases whose absence costs a feature but never
+// aborts a run, so they carry no disable flag. They are still reported as
+// missing so the UI offers the download: an install upgraded from the bleve
+// layout has nvd.bleve but no netcap.sqlite, and without this it reported
+// every database present while vulnerability and exploit lookups were off.
+var recommendedDBs = []RequiredDB{
+	{File: vulndb.FileName, Feature: "vulnerability and exploit lookups"},
+}
+
+// MissingDBs returns every required and recommended database that is absent,
+// for reporting. Capture flags come from MissingRequiredDBs alone.
+func MissingDBs() []RequiredDB {
+	missing := MissingRequiredDBs()
+	for _, db := range recommendedDBs {
+		if !dbFilePresent(filepath.Join(resolvers.DataBaseFolderPath, db.File)) {
+			missing = append(missing, db)
+		}
+	}
+
+	return missing
+}
+
+// RecommendedDBs returns a copy of the recommended registry.
+func RecommendedDBs() []RequiredDB {
+	out := make([]RequiredDB, len(recommendedDBs))
+	copy(out, recommendedDBs)
+
+	return out
 }
 
 // RequiredDBs returns a copy of the registry.
