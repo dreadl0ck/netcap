@@ -23,12 +23,40 @@ package webui
 
 import (
 	"io/fs"
+	"os"
 	"path/filepath"
 	"testing"
 )
 
+func requireFrontendBuild(t *testing.T) {
+	t.Helper()
+	entries, err := fs.ReadDir(EmbeddedAssets, "frontend/dist")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) == 1 && entries[0].Name() == "MODULE_PLACEHOLDER.txt" {
+		t.Skip("frontend is not built; run pnpm build in frontend to verify the embedded bundle")
+	}
+}
+
+// The chart runtime is tracked source, so this check also runs before the
+// frontend is built. Built bundles are checked independently below.
+func TestChartRuntimeSourceFiles(t *testing.T) {
+	for _, path := range []string{
+		"echarts.min.js", "echarts@4.min.js", "echarts-gl.min.js", "themes/westeros.js",
+	} {
+		info, err := os.Stat(filepath.Join("frontend/public/static/echarts", path))
+		if err != nil {
+			t.Error(err)
+		} else if info.IsDir() || info.Size() == 0 {
+			t.Errorf("chart runtime %s is empty or a directory", path)
+		}
+	}
+}
+
 // TestEmbeddedEchartsFiles verifies that required echarts files are embedded
 func TestEmbeddedEchartsFiles(t *testing.T) {
+	requireFrontendBuild(t)
 	// Required files for 3D charts
 	requiredFiles := []string{
 		"static/echarts/echarts.min.js",
@@ -72,6 +100,7 @@ func TestEmbeddedEchartsFiles(t *testing.T) {
 
 // TestEmbedDirective verifies the embed directive is working
 func TestEmbedDirective(t *testing.T) {
+	requireFrontendBuild(t)
 	entries, err := fs.ReadDir(EmbeddedAssets, ".")
 	if err != nil {
 		t.Fatalf("Failed to read embedded root: %v", err)

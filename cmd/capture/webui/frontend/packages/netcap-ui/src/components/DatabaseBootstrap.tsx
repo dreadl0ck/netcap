@@ -223,9 +223,9 @@ export default function DatabaseBootstrap({ startupDelayMs = 1500 }: DatabaseBoo
 
         {!running && !failed && (
           <Typography variant="body2" sx={{ mb: 1 }}>
-            Captures will still be analysed, but{' '}
-            {Array.from(new Set(status.missing.map(m => m.feature))).join(', ') || 'some enrichment'}{' '}
-            is disabled until the databases are installed. This is a one-time download of about 150 MB.
+            Captures will still be analysed. Install the databases to enable{' '}
+            {Array.from(new Set(status.missing.map(m => m.feature))).join(', ') || 'some enrichment'}.
+            {' '}This is a one-time download of about 150 MB.
           </Typography>
         )}
 
