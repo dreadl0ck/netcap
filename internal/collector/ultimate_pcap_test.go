@@ -24,6 +24,7 @@ import (
 	"github.com/dreadl0ck/netcap/defaults"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/netio"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/types"
 )
 
@@ -101,6 +102,12 @@ func TestUltimatePCAPProcess(t *testing.T) {
 		t.Fatal(err)
 	}
 	input := os.Getenv("NETCAP_ULTIMATE_INPUT")
+	dbs := t.TempDir()
+	probes := "Probe TCP NULL q||\nmatch http m|^HTTP/1\\.[01] [0-9]{3}| p/Synthetic HTTP/\n"
+	if err := os.WriteFile(filepath.Join(dbs, "nmap-service-probes"), []byte(probes), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	resolvers.DataBaseFolderPath = dbs
 	c := New(ultimateCaptureConfig(out, workers, flush))
 	collect := c.CollectPcap
 	if isPCAPNG(t, input) {
