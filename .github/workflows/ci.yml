@@ -34,7 +34,7 @@ jobs:
           cache: true
 
       # go-dpi is an ordinary pinned dependency here -- go.mod requires
-      # v1.4.1 and the module proxy serves it. CI deliberately does NOT create
+      # the version in go.mod and the module proxy serves it. CI does NOT create
       # a go.work overlay: that would make the build resolve go-dpi from a
       # checkout of its default branch, so a release build would silently test
       # something other than the pinned version. Developers who need the

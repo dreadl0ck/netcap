@@ -89,7 +89,7 @@ of `gosec`, `staticcheck`, `unused` and `unparam`.
 ## Go Workspace
 
 **`go.work` is not committed, and a clean checkout does not need one.**
-`go.mod` pins `github.com/dreadl0ck/go-dpi v1.4.2-0.20261005194543-4ea71360ee07` and the module proxy serves
+`go.mod` pins `github.com/dreadl0ck/go-dpi v1.5.0` and the module proxy serves
 it, so `go build ./...` works with no sibling checkout and no workspace. CI
 builds this way deliberately.
 

@@ -4,7 +4,23 @@ description: Detailed Version History Information
 
 # Changelog
 
-## Unreleased
+## v0.10.3
+
+### Native DPI
+
+`go-dpi v1.5.0` adds worker-owned native contexts and incremental flow state. Inspection stops after 10 observations; consecutive duplicate enrichment calls share progress. `-dpi-workers` / `NC_DPI_WORKERS` selects the context count; `1` minimizes native context memory.
+
+| DPI microbenchmark | replay baseline | incremental integration |
+| --- | --- | --- |
+| LPI + nDPI, 10 unidentified packets | 98.75 µs/flow | 17.42 µs/flow |
+| LPI + nDPI, 100 unidentified packets | 1,395.57 µs/flow | 40.53 µs/flow |
+| 32,768 single-packet flows, one nDPI context | 109.1 MiB peak RSS | 64.7 MiB peak RSS |
+
+Measured on Apple M5 Max, Go 1.27.0, nDPI 4.14.0. These are DPI microbenchmarks; whole-capture throughput depends on the workload. Eight contexts used 126.2 MiB in the single-packet probe. Small unidentified first packets are replayed once when promoted to persistent native state. Samples and reproduction commands: `internal/dpi/performance-results.json` and `zeus/scripts/benchmark-c-dpi.sh`.
+
+### Geolocation
+
+`net util -download-dbs` bundles DB-IP Lite City geolocation. `-geoProviders` selects the providers; `docs/resolvers.md` records attribution and configuration. Installs upgraded from the bleve layout are prompted to download `netcap.sqlite`.
 
 ### Distributed collection
 
@@ -53,4 +69,3 @@ Removed flags: `-pubkey` (agent), `-privkey`, `-membuf-size` (collector), `-conf
 * Deep Packet Inspection via **nDPI** and **libprotoident**
 * **DeviceProfile** Audit records, to capture the behavior of a single device within a traffic dump
 * Added an integration for **bash-completion** support
-
