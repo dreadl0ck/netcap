@@ -106,6 +106,9 @@ jobs:
             sh -eux <<'SCRIPT'
           go version
 
+          # Database archive tests run pack-dbs.sh and its Python metadata validator.
+          apk add --no-cache bash python3
+
           # Regenerate types/netcap.pb.go so it provably matches
           # types/netcap.proto. The file is tracked again since 3dbcc508
           # (it ships in the release archives), so this no longer rescues a
