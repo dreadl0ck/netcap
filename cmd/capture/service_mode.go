@@ -29,10 +29,12 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/cmd/capture/webui"
+	behaviorcommand "github.com/dreadl0ck/netcap/internal/behavior/command"
+	"github.com/urfave/cli/v3"
 )
 
 // runServiceMode starts the service mode server for multi-file upload and analysis
-func runServiceMode() {
+func runServiceMode(command *cli.Command) {
 	fmt.Println("Starting Netcap in service mode...")
 	fmt.Printf("HTTP server will listen on: http://%s\n", flagHTTP)
 
@@ -124,6 +126,8 @@ func runServiceMode() {
 		HexDump:               flagHexdump,
 		BannerSize:            flagBannerSize,
 	}
+	options := behaviorcommand.ReadOptions(command)
+	runtimeConfig.Behavior = &options
 
 	// Create unified server in service mode
 	server := webui.NewServer(

@@ -14,7 +14,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-const SchemaVersion = 1
+const SchemaVersion = 2
 
 type Mode string
 
@@ -32,6 +32,8 @@ type Scope struct {
 
 // Fact is a reproducible observation identity. Port is a destination service port.
 type Fact struct {
+	Bytes      uint64 `json:"bytes,omitempty"`
+	Token      string `json:"token,omitempty"`
 	Scope      Scope  `json:"scope"`
 	Kind       string `json:"kind"`
 	SrcIP      string `json:"srcIP,omitempty"`
@@ -71,7 +73,14 @@ func (f *Fact) normalize() error {
 	if len(f.Value) > 1024 || len(f.Provenance) > 256 {
 		return fmt.Errorf("fact exceeds field limits")
 	}
+	if len(f.Token) > 128 {
+		return fmt.Errorf("flow token exceeds limit")
+	}
 	switch f.Kind {
+	case "traffic":
+		if f.SrcIP == "" || f.Bytes > 1<<20 {
+			return fmt.Errorf("traffic requires source and bounded captured bytes")
+		}
 	case "device":
 		if f.MAC == "" {
 			return fmt.Errorf("device requires MAC")
@@ -116,6 +125,12 @@ func (f *Fact) normalize() error {
 }
 
 func factID(f Fact) string {
+	if f.Kind == "geo" {
+		f.DstIP = ""
+		f.Provenance = ""
+	}
+	f.Token = ""
+	f.Bytes = 0
 	if f.Kind == "binding" {
 		f.Provenance = ""
 	}
@@ -140,6 +155,11 @@ type Decision struct {
 }
 
 type Snapshot struct {
+	Rates           map[string]RateStats   `json:"rates"`
+	ApprovedRates   map[string]RateModel   `json:"approvedRates"`
+	Policy          Policy                 `json:"policy"`
+	Activity        map[string]Activity    `json:"activity"`
+	WindowOverflow  uint64                 `json:"windowOverflow"`
 	Error           string                 `json:"error,omitempty"`
 	Schema          int                    `json:"schema"`
 	Mode            Mode                   `json:"mode"`
@@ -161,6 +181,7 @@ type Snapshot struct {
 }
 
 type Config struct {
+	Policy      *Policy
 	Path        string
 	MinLearning time.Duration
 	MinSamples  uint64
@@ -171,6 +192,9 @@ type Config struct {
 type AlertSink interface{ WriteAlert(*types.Alert) error }
 
 type Evidence struct {
+	Related    []Fact `json:"related,omitempty"`
+	Count      int    `json:"count,omitempty"`
+	WindowNS   int64  `json:"windowNS,omitempty"`
 	Schema     int    `json:"schema"`
 	Detector   string `json:"detector"`
 	FactID     string `json:"factId"`
@@ -178,4 +202,40 @@ type Evidence struct {
 	Expected   string `json:"expected"`
 	Version    uint64 `json:"baselineVersion"`
 	BaselineID string `json:"baselineId"`
+}
+
+type Policy struct {
+	DeniedCountries []string `json:"deniedCountries,omitempty"`
+	DeniedASNs      []string `json:"deniedASNs,omitempty"`
+	RateWindows     uint64   `json:"rateWindows"`
+	RateMultiplier  float64  `json:"rateMultiplier"`
+	WindowNS        int64    `json:"windowNS"`
+	Fanout          int      `json:"fanout"`
+	RDPAttempts     int      `json:"rdpAttempts"`
+	ApprovedSources []string `json:"approvedSources,omitempty"`
+}
+
+type Activity struct {
+	Fact Fact  `json:"fact"`
+	At   int64 `json:"at"`
+}
+
+func DefaultPolicy() Policy {
+	return Policy{WindowNS: int64(time.Minute), Fanout: 5, RDPAttempts: 10, RateWindows: 4, RateMultiplier: 4}
+}
+
+type RateModel struct {
+	Windows     uint64  `json:"windows"`
+	PacketsMean float64 `json:"packetsMean"`
+	PacketsM2   float64 `json:"packetsM2"`
+	BytesMean   float64 `json:"bytesMean"`
+	BytesM2     float64 `json:"bytesM2"`
+}
+
+type RateStats struct {
+	Fact    Fact      `json:"fact"`
+	Start   int64     `json:"start"`
+	Packets uint64    `json:"packets"`
+	Bytes   uint64    `json:"bytes"`
+	Model   RateModel `json:"model"`
 }

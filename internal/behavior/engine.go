@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"sort"
@@ -25,6 +26,11 @@ type Engine struct {
 	closed   bool
 	lease    *os.File
 	prefixes []Fact
+	activity *activityIndex
+	bySource map[string]map[string]Activity
+	incoming map[string]map[string]Activity
+	localIPs map[string]map[netip.Addr]bool
+	networks map[string][]netip.Prefix
 }
 
 func Open(config Config, sink AlertSink) (*Engine, error) {
@@ -75,7 +81,7 @@ func Open(config Config, sink AlertSink) (*Engine, error) {
 	state, err := ReadSnapshot(config.Path)
 	if err == nil {
 		e.state = state
-		if len(state.Observed) > config.MaxFacts || len(state.Approved) > config.MaxFacts {
+		if len(state.Observed) > config.MaxFacts || len(state.Approved) > config.MaxFacts || len(state.Activity) > config.MaxFacts || len(state.Rates) > config.MaxFacts || len(state.ApprovedRates) > config.MaxFacts {
 			return nil, errors.New("baseline exceeds configured fact limit")
 		}
 		// A restarted baseline retains its learning criteria.
@@ -84,10 +90,24 @@ func Open(config Config, sink AlertSink) (*Engine, error) {
 		e.state.MaxFacts = config.MaxFacts
 	} else if errors.Is(err, os.ErrNotExist) {
 		e.state = Snapshot{Schema: SchemaVersion, Mode: Learning, MinLearningNS: int64(config.MinLearning), MinSamples: config.MinSamples,
-			MaxFacts: config.MaxFacts, Observed: make(map[string]Observation), Approved: make(map[string]Fact), Suppressed: make(map[string]string)}
+			MaxFacts: config.MaxFacts, Observed: make(map[string]Observation), Approved: make(map[string]Fact), Suppressed: make(map[string]string), Activity: make(map[string]Activity), Policy: DefaultPolicy(), Rates: make(map[string]RateStats), ApprovedRates: make(map[string]RateModel)}
 	} else {
 		return nil, err
 	}
+	if config.Policy != nil {
+		if config.Policy.WindowNS != e.state.Policy.WindowNS && len(e.state.Rates) > 0 {
+			return nil, errors.New("reset the baseline before changing the rate window")
+		}
+		e.state.Policy = *config.Policy
+		e.state.Policy.ApprovedSources = append([]string(nil), config.Policy.ApprovedSources...)
+		e.state.Policy.DeniedCountries = append([]string(nil), config.Policy.DeniedCountries...)
+		e.state.Policy.DeniedASNs = append([]string(nil), config.Policy.DeniedASNs...)
+	}
+	if err := validatePolicy(e.state.Policy); err != nil {
+		return nil, err
+	}
+	e.activity = newActivityIndex(e.state.Activity)
+	e.rebuildIndexes()
 	success = true
 	return e, nil
 }
@@ -132,6 +152,7 @@ func (e *Engine) Observe(at time.Time, facts ...Fact) error {
 	}
 	e.state.Samples++
 	normalized = append(normalized, e.prefixes...)
+	e.expireActivity(ns)
 	for _, fact := range normalized {
 		id := factID(fact)
 		observation, exists := e.state.Observed[id]
@@ -150,6 +171,28 @@ func (e *Engine) Observe(at time.Time, facts ...Fact) error {
 		}
 		observation.Samples++
 		e.state.Observed[id] = observation
+		if fact.Kind == "geo" && e.state.Mode == Monitoring {
+			if err := e.checkGeography(ns, id, fact); err != nil {
+				e.err = err
+				return err
+			}
+		}
+		if fact.Kind == "traffic" {
+			if err := e.observeRate(ns, id, fact); err != nil {
+				e.err = err
+				return err
+			}
+			continue
+		}
+		if !exists {
+			e.indexLocal(fact)
+		}
+		if fact.Kind == "service" && fact.Token != "" {
+			if err := e.observeActivity(ns, id, fact); err != nil {
+				e.err = err
+				return err
+			}
+		}
 		if e.state.Mode != Monitoring {
 			continue
 		}
@@ -157,6 +200,9 @@ func (e *Engine) Observe(at time.Time, facts ...Fact) error {
 			continue
 		}
 		if _, suppressed := e.state.Suppressed[id]; suppressed {
+			continue
+		}
+		if (fact.Kind == "service" || fact.Kind == "resolver" || fact.Kind == "dns" || fact.Kind == "geo" || fact.Kind == "edge") && (e.approvedSource(fact.SrcIP) || (fact.Kind == "edge" && e.approvedSource(fact.DstIP))) {
 			continue
 		}
 		if previous, sent := e.recent[id]; sent && ns-previous < int64(e.config.DedupWindow) {
@@ -192,12 +238,17 @@ func (e *Engine) emit(ns int64, id string, fact Fact) error {
 	}
 	evidence := Evidence{Schema: SchemaVersion, Detector: detector, FactID: id, Observed: fact, Expected: expected,
 		Version: e.state.Version, BaselineID: e.state.BaselineID}
+	return e.writeEvidence(ns, evidence, severity, "")
+}
+
+func (e *Engine) writeEvidence(ns int64, evidence Evidence, severity, mitre string) error {
 	data, err := json.Marshal(evidence)
 	if err != nil {
 		return err
 	}
-	return e.sink.WriteAlert(&types.Alert{Timestamp: ns, Name: detector, RuleName: detector, Description: "Deviation from approved behavioral baseline",
-		SrcIP: fact.SrcIP, DstIP: fact.DstIP, Protocol: fact.Protocol, Severity: severity,
+	fact := evidence.Observed
+	return e.sink.WriteAlert(&types.Alert{Timestamp: ns, Name: evidence.Detector, RuleName: evidence.Detector, Description: evidence.Expected,
+		SrcIP: fact.SrcIP, DstIP: fact.DstIP, Protocol: fact.Protocol, Severity: severity, MITRE: mitre,
 		RecordType: "Behavior", MatchedRecord: string(data), Tags: []string{"behavior", fact.Kind}})
 }
 
@@ -269,13 +320,20 @@ func (e *Engine) change(action string, ids []string, reason string, version *uin
 	baselineChanged := false
 	switch action {
 	case "approve":
-		if next.Mode != Learning || len(next.Observed) == 0 || next.Samples < next.MinSamples || next.Watermark-next.LearningStarted < next.MinLearningNS || next.Overflow != 0 {
+		if next.Mode != Learning || len(next.Observed) == 0 || next.Samples < next.MinSamples || next.Watermark-next.LearningStarted < next.MinLearningNS || next.Overflow != 0 || next.WindowOverflow != 0 {
 			return errors.New("learning coverage is insufficient or overflowed")
 		}
+		next.Approved = make(map[string]Fact)
 		for id, observation := range next.Observed {
 			next.Approved[id] = observation.Fact
 		}
 		next.Mode = Monitoring
+		next.ApprovedRates = make(map[string]RateModel)
+		for key, rate := range next.Rates {
+			if rate.Model.Windows >= next.Policy.RateWindows {
+				next.ApprovedRates[key] = rate.Model
+			}
+		}
 		baselineChanged = true
 	case "pause":
 		if next.Mode == Paused {
@@ -288,16 +346,23 @@ func (e *Engine) change(action string, ids []string, reason string, version *uin
 		}
 		next.Mode, next.ResumeMode = next.ResumeMode, ""
 	case "relearn":
+		next.WindowOverflow = 0
 		next.Mode, next.ResumeMode = Learning, ""
 		next.LearningStarted, next.Watermark, next.Samples, next.Overflow, next.OutOfOrder = 0, 0, 0, 0, 0
 		next.Observed = make(map[string]Observation)
 		next.Suppressed = make(map[string]string)
+		next.Activity = make(map[string]Activity)
+		next.Rates = make(map[string]RateStats)
 	case "reset":
+		next.WindowOverflow = 0
 		next.Mode, next.ResumeMode = Learning, ""
 		next.LearningStarted, next.Watermark, next.Samples, next.Overflow, next.OutOfOrder = 0, 0, 0, 0, 0
 		next.Observed = make(map[string]Observation)
 		next.Approved = make(map[string]Fact)
 		next.Suppressed = make(map[string]string)
+		next.Activity = make(map[string]Activity)
+		next.Rates = make(map[string]RateStats)
+		next.ApprovedRates = make(map[string]RateModel)
 		baselineChanged = true
 	case "approve-changes", "suppress", "unsuppress":
 		if next.Mode != Monitoring || len(ids) == 0 {
@@ -327,13 +392,15 @@ func (e *Engine) change(action string, ids []string, reason string, version *uin
 	}
 	if baselineChanged {
 		next.Version++
-		next.BaselineID = baselineID(next.Approved)
+		next.BaselineID = baselineStateID(next.Approved, next.ApprovedRates)
 	}
 	next.Decisions = append(next.Decisions, Decision{At: time.Now().UnixNano(), Action: action, Reason: reason, Version: next.Version, BaselineID: next.BaselineID})
 	if err := writeSnapshot(e.config.Path, next); err != nil {
 		return err
 	}
 	e.state = next
+	e.activity = newActivityIndex(next.Activity)
+	e.rebuildIndexes()
 	clear(e.recent)
 	return nil
 }
@@ -346,6 +413,18 @@ func baselineID(approved map[string]Fact) string {
 	sort.Strings(keys)
 	canonical, _ := json.Marshal(keys)
 	hash := sha256.Sum256(canonical)
+	return hex.EncodeToString(hash[:])
+}
+
+func baselineStateID(approved map[string]Fact, rates map[string]RateModel) string {
+	if len(rates) == 0 {
+		return baselineID(approved)
+	}
+	data, _ := json.Marshal(struct {
+		Facts string
+		Rates map[string]RateModel
+	}{baselineID(approved), rates})
+	hash := sha256.Sum256(data)
 	return hex.EncodeToString(hash[:])
 }
 
@@ -384,6 +463,7 @@ func (e *Engine) AddPrefix(scope Scope, prefix, provenance string) error {
 		return errors.New("configured prefix limit reached")
 	}
 	e.prefixes = append(e.prefixes, fact)
+	e.indexLocal(fact)
 	return nil
 }
 

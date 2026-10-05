@@ -28,8 +28,46 @@ func ReadSnapshot(path string) (Snapshot, error) {
 	if err := json.Unmarshal(data, &state); err != nil {
 		return state, fmt.Errorf("invalid baseline snapshot: %w", err)
 	}
-	if state.Schema != SchemaVersion {
+	if state.Schema == 1 {
+		state.Schema = SchemaVersion
+		state.Policy = DefaultPolicy()
+		state.Activity = make(map[string]Activity)
+		state.Rates = make(map[string]RateStats)
+		state.ApprovedRates = make(map[string]RateModel)
+	} else if state.Schema != SchemaVersion {
 		return state, fmt.Errorf("unsupported baseline schema %d", state.Schema)
+	}
+	if err := validatePolicy(state.Policy); err != nil {
+		return state, err
+	}
+	if state.Rates == nil || state.ApprovedRates == nil || len(state.Rates) > state.MaxFacts || len(state.ApprovedRates) > state.MaxFacts {
+		return state, errors.New("invalid rate bounds")
+	}
+	for id, rate := range state.Rates {
+		fact := rate.Fact
+		if err := fact.normalize(); err != nil {
+			return state, err
+		}
+		if fact.Kind != "traffic" || id != factID(fact) || rate.Start <= 0 || !validRateModel(rate.Model) {
+			return state, errors.New("invalid rate state")
+		}
+	}
+	for id, model := range state.ApprovedRates {
+		if _, ok := state.Approved[id]; !ok || !validRateModel(model) {
+			return state, errors.New("invalid approved rate")
+		}
+	}
+	if state.Activity == nil || len(state.Activity) > state.MaxFacts {
+		return state, errors.New("invalid activity bounds")
+	}
+	for key, activity := range state.Activity {
+		fact := activity.Fact
+		if err := fact.normalize(); err != nil {
+			return state, err
+		}
+		if fact.Kind != "service" || fact.Token == "" || activity.At <= 0 || key != activityKey(fact) {
+			return state, errors.New("invalid activity event")
+		}
 	}
 	if state.Mode != Learning && state.Mode != Monitoring && state.Mode != Paused {
 		return state, errors.New("invalid baseline mode")
@@ -65,7 +103,7 @@ func ReadSnapshot(path string) (Snapshot, error) {
 			return state, errors.New("invalid suppression")
 		}
 	}
-	if state.Version > 0 && state.BaselineID != baselineID(state.Approved) {
+	if state.Version > 0 && state.BaselineID != baselineStateID(state.Approved, state.ApprovedRates) {
 		return state, errors.New("baseline content identity mismatch")
 	}
 	if (state.Mode == Monitoring || state.ResumeMode == Monitoring) && (state.Version == 0 || len(state.Approved) == 0) {

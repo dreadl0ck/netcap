@@ -39,6 +39,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	behaviorcommand "github.com/dreadl0ck/netcap/internal/behavior/command"
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
@@ -92,6 +93,7 @@ type FileError struct {
 // RuntimeConfig holds the actual runtime configuration values passed from the capture package
 // This allows the webUI to display the actual values the application was started with
 type RuntimeConfig struct {
+	Behavior *BehaviorOptions
 	// Branding
 	LogoSubText string // Custom label shown below NETCAP logo (overrides LOCAL/SERVICE)
 
@@ -161,6 +163,8 @@ type RuntimeConfig struct {
 	HexDump    bool
 	BannerSize int
 }
+
+type BehaviorOptions = behaviorcommand.Options
 
 // Server represents the web UI HTTP server
 type Server struct {
@@ -540,6 +544,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/rule-sets", s.handleRuleSets)
 	mux.HandleFunc("/api/rule-sets/", s.handleRuleSet)
 	mux.HandleFunc("/api/alerts", s.handleAlerts)
+	mux.HandleFunc("/api/behavior", s.handleBehavior)
+	mux.HandleFunc("/api/behavior/change", s.handleBehaviorChange)
 	mux.HandleFunc("/api/alerts/stream", s.handleAlertsStream)
 	mux.HandleFunc("/api/alerts/grouped", s.handleGroupedAlerts)
 	mux.HandleFunc("/api/alerts/stats", s.handleAlertStats)
@@ -1785,6 +1791,20 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 
 	c.Bpf = job.BPFFilter
 	c.InputFile = job.InputFile
+	behaviorOptions, err := s.behaviorOptionsForJob(job)
+	if err != nil {
+		s.recordAnalysisFailure(job, fmt.Sprintf("behavioral baseline setup: %v", err), "")
+		return
+	}
+	stopBehavior, err := behaviorcommand.StartOptions(behaviorOptions, c, job.OutputDir, "pcap", false)
+	if err != nil {
+		s.recordAnalysisFailure(job, fmt.Sprintf("behavioral monitoring setup: %v", err), "")
+		return
+	}
+	defer stopBehavior()
+	if behaviorOptions.Enabled {
+		s.SetCollector(c)
+	}
 
 	// Create error log file for capturing errors
 	errorLogPath := filepath.Join(job.OutputDir, analysisErrorLogName)
@@ -1855,6 +1875,9 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		analysisErr = c.CollectPcap(job.InputFile)
 	} else {
 		analysisErr = c.CollectPcapNG(job.InputFile)
+	}
+	if err := stopBehavior(); err != nil {
+		analysisErr = fmt.Errorf("behavioral monitoring: %w", err)
 	}
 
 	duration := time.Since(startTime)

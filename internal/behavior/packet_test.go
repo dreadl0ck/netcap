@@ -36,7 +36,7 @@ func TestPacketFactsSYNAndVLAN(t *testing.T) {
 	tcp := &layers.TCP{SrcPort: 55000, DstPort: 22, SYN: true}
 	_ = tcp.SetNetworkLayerForChecksum(ip)
 	facts := PacketFacts(serializePacket(t, eth, vlan, ip, tcp), scope)
-	if len(facts) != 2 || facts[1].Kind != "service" || facts[1].Port != 22 || len(facts[1].Scope.VLANs) != 1 || facts[1].Scope.VLANs[0] != 20 {
+	if len(facts) != 3 || facts[1].Kind != "service" || facts[1].Port != 22 || len(facts[1].Scope.VLANs) != 1 || facts[1].Scope.VLANs[0] != 20 {
 		t.Fatalf("facts = %+v", facts)
 	}
 	for _, fact := range facts {
@@ -48,7 +48,7 @@ func TestPacketFactsSYNAndVLAN(t *testing.T) {
 	tcp.SrcPort, tcp.DstPort = 22, 55000
 	ip.SrcIP, ip.DstIP = ip.DstIP, ip.SrcIP
 	reply := PacketFacts(serializePacket(t, eth, vlan, ip, tcp), scope)
-	if len(reply) != 1 || factID(reply[0]) != factID(facts[0]) {
+	if len(reply) != 2 || factID(reply[0]) != factID(facts[0]) {
 		t.Fatalf("reply creates service or new edge: %+v", reply)
 	}
 }
@@ -74,11 +74,11 @@ func TestPacketFactsDNSQueriesOnly(t *testing.T) {
 	_ = udp.SetNetworkLayerForChecksum(ip)
 	dns := &layers.DNS{ID: 1, Questions: []layers.DNSQuestion{{Name: []byte("Example.COM"), Type: layers.DNSTypeA, Class: layers.DNSClassIN}}}
 	facts := PacketFacts(serializePacket(t, ethernet(), ip, udp, dns), testFact().Scope)
-	if len(facts) != 3 || facts[1].Kind != "resolver" || facts[2].Kind != "dns" {
+	if len(facts) != 4 || facts[1].Kind != "resolver" || facts[2].Kind != "dns" {
 		t.Fatalf("facts = %+v", facts)
 	}
 	dns.QR = true
-	if got := PacketFacts(serializePacket(t, ethernet(), ip, udp, dns), testFact().Scope); len(got) != 1 {
+	if got := PacketFacts(serializePacket(t, ethernet(), ip, udp, dns), testFact().Scope); len(got) != 2 {
 		t.Fatalf("reply became a resolver/query: %+v", got)
 	}
 }
@@ -93,7 +93,7 @@ func TestPacketFactsDHCPPrefix(t *testing.T) {
 			{Type: layers.DHCPOptSubnetMask, Length: 4, Data: []byte{255, 255, 255, 128}},
 		}}
 	facts := PacketFacts(serializePacket(t, ethernet(), ip, udp, dhcp), testFact().Scope)
-	if len(facts) != 4 || facts[1].Kind != "prefix" || facts[1].Value != "192.0.2.128/25" || facts[1].Provenance != "dhcp" {
+	if len(facts) != 5 || facts[1].Kind != "prefix" || facts[1].Value != "192.0.2.128/25" || facts[1].Provenance != "dhcp" {
 		t.Fatalf("facts = %+v", facts)
 	}
 	dhcp.Options[1].Data = []byte{255, 0, 255, 0}
@@ -116,11 +116,11 @@ func TestPacketFactsIPv6RouterPrefix(t *testing.T) {
 	copy(data[14:], net.ParseIP("2001:db8:1::").To16())
 	ra := &layers.ICMPv6RouterAdvertisement{Options: layers.ICMPv6Options{{Type: layers.ICMPv6OptPrefixInfo, Data: data}}}
 	facts := PacketFacts(serializePacket(t, eth, ip, icmp, ra), testFact().Scope)
-	if len(facts) != 2 || facts[1].Value != "2001:db8:1::/64" || facts[1].Provenance != "router-advertisement" {
+	if len(facts) != 3 || facts[1].Value != "2001:db8:1::/64" || facts[1].Provenance != "router-advertisement" {
 		t.Fatalf("facts = %+v", facts)
 	}
 	ip.HopLimit = 64
-	if got := PacketFacts(serializePacket(t, eth, ip, icmp, ra), testFact().Scope); len(got) != 1 {
+	if got := PacketFacts(serializePacket(t, eth, ip, icmp, ra), testFact().Scope); len(got) != 2 {
 		t.Fatal("routed RA accepted as on-link prefix")
 	}
 }

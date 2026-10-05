@@ -97,6 +97,7 @@ export default function BehaviorPage() {
       {data && <>
         {data.error && <Alert severity="error">Monitoring failure: {data.error}</Alert>}
         {!!data.overflow && <Alert severity="warning">{data.overflow.toLocaleString()} observations exceeded the fact limit. Learning approval is disabled; archive/reset or increase the configured limit.</Alert>}
+        {!!data.windowOverflow && <Alert severity="warning">{data.windowOverflow.toLocaleString()} events exceeded rolling-state capacity. Correlation coverage is incomplete.</Alert>}
         <Paper sx={{ p: 2 }}>
           <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" alignItems="center">
             <Chip label={data.mode} color={data.mode === 'monitoring' && !data.error ? 'success' : 'default'} />
@@ -105,6 +106,7 @@ export default function BehaviorPage() {
           </Stack>
           <Typography variant="body2" sx={{ mt: 1 }}>Capture-time learning coverage: {(elapsed / 3600).toFixed(2)} h / {(data.minLearningNS / 3.6e12).toFixed(2)} h minimum; {data.samples}/{data.minSamples} minimum observations.</Typography>
           <Typography variant="caption" sx={{ overflowWrap: 'anywhere' }}>Baseline identity: {data.baselineId || 'Not approved'} · Reordered observations: {data.outOfOrder}</Typography>
+          {data.policy && <Typography variant="body2">Detector window: {data.policy.windowNS / 1e9} s · SMB fan-out: {data.policy.fanout} hosts · RDP pattern: {data.policy.rdpAttempts} attempts · Calibrated traffic sources: {Object.keys(data.approvedRates ?? {}).length}</Typography>}
           <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
             <Button variant="contained" disabled={!learningReady(data) || busy} onClick={() => openAction('approve')}>Approve learned baseline</Button>
             <Button disabled={busy || !!data.error} onClick={() => openAction(data.mode === 'paused' ? 'resume' : 'pause')}>{data.mode === 'paused' ? 'Resume' : 'Pause'}</Button>

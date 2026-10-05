@@ -132,9 +132,14 @@ baseline explicitly with `-behavior-baseline <path>`.
 | Alerts | `Alert.ncap.gz` is appended and synced per alert, readable before capture finishes; malformed history is rejected without overwriting it |
 | Live API | `GET /api/alerts/stream` emits SSE alerts with durable-history cursors; reconnect using `Last-Event-ID`. At most 8 readers; slow-client write deadline 10 s; replacement/truncation produces a gap |
 | WebUI | `/behavior` provides scoped inventory, candidates, explicit baseline decisions, evidence pivots, decision history and a bounded live feed |
+| Service jobs | `--service --behavior` reaches helper and embedded capture paths. A configured baseline is copied into each new session; session decisions never modify the template |
+| Lateral patterns | Distinct-target SMB fan-out, independent RDP attempts, novel internal SSH edges and inferred A→B→C sequences; retransmitted SYNs reuse their flow token |
+| Traffic deviations | Frozen packet/byte models learned over at least 4 windows; idle windows included; monitoring does not adapt the approved model |
+| Detector policy | `-behavior-window`, `-behavior-fanout`, `-behavior-rdp-attempts`, `-behavior-approved-source`, `-behavior-deny-country`, `-behavior-deny-asn` |
+| Snapshot compatibility | Schema 2 adds bounded, persisted correlation and traffic state; schema 1 migrates without changing approved fact identity |
 
-These paths implement the initial W58 slices. Lateral correlation, geographic/rate
-policies, graphical topology and service-job configuration require subsequent integration.
+These paths implement the current W58 slices. Graphical topology, inventory
+annotations and full release qualification remain in progress.
 Endpoint visibility is limited to traffic at the selected interface; encrypted
 SSH/RDP connection patterns do not establish authentication failures.
 

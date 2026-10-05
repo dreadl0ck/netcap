@@ -3,6 +3,7 @@ package behavior
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"net"
 	"net/netip"
 
@@ -75,7 +76,7 @@ func PacketFacts(packet gopacket.Packet, scope Scope) []Fact {
 	if layer := packet.Layer(layers.LayerTypeTCP); layer != nil {
 		tcp := layer.(*layers.TCP)
 		if tcp.SYN && !tcp.ACK && tcp.DstPort != 0 {
-			facts = append(facts, Fact{Scope: scope, Kind: "service", SrcIP: src, DstIP: dst, Port: uint16(tcp.DstPort), Protocol: "tcp"})
+			facts = append(facts, Fact{Scope: scope, Kind: "service", SrcIP: src, DstIP: dst, Port: uint16(tcp.DstPort), Protocol: "tcp", Token: fmt.Sprintf("%d:%d", tcp.SrcPort, tcp.Seq)})
 		}
 	}
 	if layer := packet.Layer(layers.LayerTypeDNS); layer != nil {
@@ -121,5 +122,6 @@ func PacketFacts(packet gopacket.Packet, scope Scope) []Fact {
 			}
 		}
 	}
+	facts = append(facts, Fact{Scope: scope, Kind: "traffic", SrcIP: network.NetworkFlow().Src().String(), Bytes: uint64(len(packet.Data()))})
 	return facts
 }

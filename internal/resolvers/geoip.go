@@ -174,3 +174,30 @@ func LookupGeolocation(addr string) (string, string) {
 	geolocationsMu.Unlock()
 	return record.repr()
 }
+
+type GeoContext struct {
+	Country   string
+	ASN       string
+	Providers []string
+}
+
+func LookupGeoContext(addr string) GeoContext {
+	ip := net.ParseIP(addr)
+	if ip == nil || ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.IsMulticast() || ip.IsUnspecified() {
+		return GeoContext{}
+	}
+	_, _ = LookupGeolocation(addr)
+	geoMu.RLock()
+	defer geoMu.RUnlock()
+	geolocationsMu.RLock()
+	record := geolocations[ip.String()]
+	geolocationsMu.RUnlock()
+	context := GeoContext{Country: record.Country.ISOCode}
+	if record.ASN.Number > 0 {
+		context.ASN = strconv.FormatInt(record.ASN.Number, 10)
+	}
+	for _, provider := range geoProviders {
+		context.Providers = append(context.Providers, provider.name)
+	}
+	return context
+}

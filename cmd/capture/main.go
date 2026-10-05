@@ -467,7 +467,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 
 	// Check if running in service mode
 	if flagService {
-		runServiceMode()
+		runServiceMode(c)
 		return nil
 	}
 
@@ -745,6 +745,8 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		}
 
 		// Create server in local mode (unrestricted)
+		options := behaviorcommand.ReadOptions(behaviorCommand)
+		runtimeConfig.Behavior = &options
 		webUIServer = webui.NewServer(flagHTTP, initialOutDir, inputFiles, flagHTTPAssets, flagDebug, flagDPI, false, nil, runtimeConfig, flagDev)
 		webUIServer.SetLiveMode(live) // Set live mode flag
 

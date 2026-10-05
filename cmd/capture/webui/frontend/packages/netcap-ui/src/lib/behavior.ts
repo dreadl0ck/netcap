@@ -7,6 +7,8 @@ export interface BehaviorScope {
 }
 
 export interface BehaviorFact {
+	bytes?: number;
+	token?: string;
   scope: BehaviorScope;
   kind: string;
   srcIP?: string;
@@ -26,6 +28,9 @@ export interface BehaviorObservation {
 }
 
 export interface BehaviorSnapshot {
+	windowOverflow?: number;
+	policy?: { windowNS: number; fanout: number; rdpAttempts: number; rateWindows: number; rateMultiplier: number; approvedSources?: string[] };
+	approvedRates?: Record<string, { windows: number; packetsMean: number; bytesMean: number }>;
   schema: number;
   error?: string;
   mode: 'learning' | 'monitoring' | 'paused';
@@ -69,13 +74,14 @@ export function factLabel(fact: BehaviorFact): string {
   if (fact.kind === 'edge') return `${fact.srcIP} ↔ ${fact.dstIP}`;
   if (fact.kind === 'service' || fact.kind === 'resolver') return `${fact.srcIP} → ${fact.dstIP}:${fact.port}/${fact.protocol}`;
   if (fact.kind === 'dns') return `${fact.srcIP} → ${fact.value}`;
+  if (fact.kind === 'traffic') return `${fact.srcIP} packet/byte volume`;
   return fact.value ?? `${fact.srcIP ?? ''} → ${fact.dstIP ?? ''}`;
 }
 
 export function learningReady(snapshot: BehaviorSnapshot): boolean {
   return snapshot.mode === 'learning' && snapshot.samples >= snapshot.minSamples &&
     snapshot.watermark - snapshot.learningStarted >= snapshot.minLearningNS &&
-    snapshot.overflow === 0 && Object.keys(snapshot.observed).length > 0 && !snapshot.error;
+    snapshot.overflow === 0 && !snapshot.windowOverflow && Object.keys(snapshot.observed).length > 0 && !snapshot.error;
 }
 
 export async function behaviorRequest<T>(fetcher: typeof fetch, url: string, init?: RequestInit): Promise<T> {
