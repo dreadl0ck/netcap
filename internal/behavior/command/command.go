@@ -13,9 +13,12 @@ import (
 	"github.com/dreadl0ck/netcap/internal/behavior"
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/rules"
+	"github.com/dreadl0ck/netcap/types"
 )
 
 type Options struct {
+	OnAlert    func(*types.Alert) `json:"-"`
+	PolicyFile string
 	Policy     *behavior.Policy
 	Enabled    bool
 	Baseline   string
@@ -30,6 +33,10 @@ func ReadOptions(command *cli.Command) Options {
 	options := Options{Enabled: command.Bool("behavior") || command.String("behavior-baseline") != "", Baseline: command.String("behavior-baseline"),
 		Sensor: command.String("behavior-sensor"), Prefixes: command.StringSlice("behavior-prefix"), Learning: command.Duration("behavior-learning"),
 		MinSamples: command.Uint64("behavior-min-samples"), MaxFacts: command.Int("behavior-max-facts")}
+	options.PolicyFile = command.String("behavior-policy")
+	if options.PolicyFile != "" {
+		options.Enabled = true
+	}
 	if command.IsSet("behavior-window") || command.IsSet("behavior-fanout") || command.IsSet("behavior-rdp-attempts") || command.IsSet("behavior-approved-source") || command.IsSet("behavior-deny-country") || command.IsSet("behavior-deny-asn") {
 		policy := behavior.DefaultPolicy()
 		policy.WindowNS = int64(command.Duration("behavior-window"))
@@ -58,6 +65,7 @@ func Flags() []cli.Flag {
 		&cli.StringSliceFlag{Name: "behavior-approved-source", Usage: "approved scanner/jump-host IP or CIDR; repeat for multiple sources"},
 		&cli.StringSliceFlag{Name: "behavior-deny-country", Usage: "destination country ISO code to flag by explicit policy; repeat for multiple codes"},
 		&cli.StringSliceFlag{Name: "behavior-deny-asn", Usage: "destination ASN number to flag by explicit policy; repeat for multiple ASNs"},
+		&cli.StringFlag{Name: "behavior-policy", Usage: "JSON detector policy, including capture-time maintenance windows"},
 	}
 }
 
@@ -73,6 +81,16 @@ func StartOptions(options Options, coll *collector.Collector, output, iface stri
 	if options.MinSamples == 0 || options.Learning <= 0 || options.MaxFacts < 1 || options.MaxFacts > 100000 {
 		return nil, errors.New("positive learning duration/sample count and fact limit 1..100000 are required")
 	}
+	if options.PolicyFile != "" {
+		if options.Policy != nil {
+			return nil, errors.New("use behavior-policy or explicit detector flags, not both")
+		}
+		policy, err := behavior.LoadPolicy(options.PolicyFile)
+		if err != nil {
+			return nil, err
+		}
+		options.Policy = &policy
+	}
 	path := options.Baseline
 	if path == "" {
 		path = filepath.Join(output, "Behavior.json")
@@ -81,7 +99,11 @@ func StartOptions(options Options, coll *collector.Collector, output, iface stri
 	if err != nil {
 		return nil, err
 	}
-	engine, err := behavior.Open(behavior.Config{Path: path, MinLearning: options.Learning, MinSamples: options.MinSamples, MaxFacts: options.MaxFacts, Policy: options.Policy}, sink)
+	var alertSink behavior.AlertSink = sink
+	if options.OnAlert != nil {
+		alertSink = &mirrorSink{local: sink, notify: options.OnAlert}
+	}
+	engine, err := behavior.Open(behavior.Config{Path: path, MinLearning: options.Learning, MinSamples: options.MinSamples, MaxFacts: options.MaxFacts, Policy: options.Policy}, alertSink)
 	if err != nil {
 		return nil, errors.Join(err, sink.Close())
 	}
@@ -141,3 +163,17 @@ func StartOptions(options Options, coll *collector.Collector, output, iface stri
 		return closeErr
 	}, nil
 }
+
+type mirrorSink struct {
+	local  *rules.FileAlertWriter
+	notify func(*types.Alert)
+}
+
+func (s *mirrorSink) WriteAlert(alert *types.Alert) error {
+	if err := s.local.WriteAlert(alert); err != nil {
+		return err
+	}
+	s.notify(alert)
+	return nil
+}
+func (s *mirrorSink) Error() error { return s.local.Error() }

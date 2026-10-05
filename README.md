@@ -136,10 +136,16 @@ baseline explicitly with `-behavior-baseline <path>`.
 | Lateral patterns | Distinct-target SMB fan-out, independent RDP attempts, novel internal SSH edges and inferred A→B→C sequences; retransmitted SYNs reuse their flow token |
 | Traffic deviations | Frozen packet/byte models learned over at least 4 windows; idle windows included; monitoring does not adapt the approved model |
 | Detector policy | `-behavior-window`, `-behavior-fanout`, `-behavior-rdp-attempts`, `-behavior-approved-source`, `-behavior-deny-country`, `-behavior-deny-asn` |
-| Snapshot compatibility | Schema 2 adds bounded, persisted correlation and traffic state; schema 1 migrates without changing approved fact identity |
+| Snapshot compatibility | Schema 3 adds labels, prefix corrections and learned DHCP leases; schema 1/2 snapshots migrate without changing approved fact identity |
+| Topology and inventory | `/behavior` includes a scoped, capped graph, persistent asset labels and CIDR corrections; original observations and alert evidence remain available |
+| Benign changes | Learned DHCP-server leases explain reassignment; explicit binding approvals support failover; unknown DHCP servers cannot disable conflict indicators |
+| Maintenance | `-behavior-policy <JSON>` supports source-specific UTC-nanosecond `maintenance` intervals; exemptions expire according to capture time |
+| Endpoint delivery | Agent sensors default to their certificate fingerprint; alerts are synced locally before entering the bounded distributed queue |
 
-These paths implement the current W58 slices. Graphical topology, inventory
-annotations and full release qualification remain in progress.
+The synthetic packet-to-SSE gate (`TestBehavioralPacketToSSELatency`, 100 samples)
+measured p95 51.5 ms on the development Mac. PCAP replay has equivalent evidence
+at 1/2/4/8 workers (`TestBehavioralPCAPReplayAcrossWorkerCounts`). These scoped
+results do not establish latency on arbitrary traffic or hardware.
 Endpoint visibility is limited to traffic at the selected interface; encrypted
 SSH/RDP connection patterns do not establish authentication failures.
 

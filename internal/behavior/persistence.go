@@ -29,13 +29,48 @@ func ReadSnapshot(path string) (Snapshot, error) {
 		return state, fmt.Errorf("invalid baseline snapshot: %w", err)
 	}
 	if state.Schema == 1 {
-		state.Schema = SchemaVersion
+		state.Schema = 2
 		state.Policy = DefaultPolicy()
 		state.Activity = make(map[string]Activity)
 		state.Rates = make(map[string]RateStats)
 		state.ApprovedRates = make(map[string]RateModel)
+	}
+	if state.Schema == 2 {
+		state.Schema = SchemaVersion
+		state.Labels = make(map[string]AssetLabel)
+		state.Corrections = make(map[string]Fact)
+		state.Leases = make(map[string]Lease)
 	} else if state.Schema != SchemaVersion {
 		return state, fmt.Errorf("unsupported baseline schema %d", state.Schema)
+	}
+	if state.Labels == nil || state.Corrections == nil || state.Leases == nil || len(state.Labels) > state.MaxFacts || len(state.Corrections) > state.MaxFacts || len(state.Leases) > state.MaxFacts {
+		return state, errors.New("invalid inventory bounds")
+	}
+	for id, label := range state.Labels {
+		fact := label.Fact
+		if err := fact.normalize(); err != nil {
+			return state, err
+		}
+		if id != factID(fact) || label.Name == "" || len(label.Name) > 128 || len(label.Role) > 128 || len(label.Notes) > 1024 {
+			return state, errors.New("invalid asset label")
+		}
+	}
+	for id, correction := range state.Corrections {
+		if err := correction.normalize(); err != nil {
+			return state, err
+		}
+		if original, ok := state.Observed[id]; !ok || original.Fact.Kind != "prefix" || correction.Kind != "prefix" || !sameScope(original.Fact.Scope, correction.Scope) {
+			return state, errors.New("invalid prefix correction")
+		}
+	}
+	for id, lease := range state.Leases {
+		fact := lease.Fact
+		if err := fact.normalize(); err != nil {
+			return state, err
+		}
+		if fact.Kind != "binding" || fact.Provenance != "dhcp" || fact.DstIP == "" || id != bindingKey(fact) || lease.At <= 0 || lease.Expires < lease.At || lease.Expires-lease.At > int64(7*24*3600)*1e9 {
+			return state, errors.New("invalid DHCP lease")
+		}
 	}
 	if err := validatePolicy(state.Policy); err != nil {
 		return state, err

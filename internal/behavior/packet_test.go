@@ -91,10 +91,14 @@ func TestPacketFactsDHCPPrefix(t *testing.T) {
 		YourClientIP: net.ParseIP("192.0.2.130"), ClientHWAddr: net.HardwareAddr{0, 1, 2, 3, 4, 5}, Options: layers.DHCPOptions{
 			{Type: layers.DHCPOptMessageType, Length: 1, Data: []byte{byte(layers.DHCPMsgTypeAck)}},
 			{Type: layers.DHCPOptSubnetMask, Length: 4, Data: []byte{255, 255, 255, 128}},
+			{Type: layers.DHCPOptLeaseTime, Length: 4, Data: []byte{0, 0, 14, 16}},
 		}}
 	facts := PacketFacts(serializePacket(t, ethernet(), ip, udp, dhcp), testFact().Scope)
 	if len(facts) != 5 || facts[1].Kind != "prefix" || facts[1].Value != "192.0.2.128/25" || facts[1].Provenance != "dhcp" {
 		t.Fatalf("facts = %+v", facts)
+	}
+	if facts[3].Kind != "binding" || facts[3].LeaseSeconds != 3600 || facts[3].DstIP != "192.0.2.1" {
+		t.Fatal("DHCP lease/server evidence not decoded")
 	}
 	dhcp.Options[1].Data = []byte{255, 0, 255, 0}
 	for _, fact := range PacketFacts(serializePacket(t, ethernet(), ip, udp, dhcp), testFact().Scope) {

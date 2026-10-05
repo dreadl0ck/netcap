@@ -20,6 +20,19 @@ func validatePolicy(policy Policy) error {
 	if len(policy.DeniedCountries) > 256 || len(policy.DeniedASNs) > 256 {
 		return errors.New("geographic policy exceeds limits")
 	}
+	if len(policy.Maintenance) > 256 {
+		return errors.New("maintenance policy exceeds limits")
+	}
+	for _, window := range policy.Maintenance {
+		if window.Start <= 0 || window.End <= window.Start || window.End-window.Start > int64(30*24*3600)*1e9 {
+			return errors.New("maintenance needs a positive UTC-nanosecond interval of at most 30 days")
+		}
+		if _, err := netip.ParsePrefix(window.Source); err != nil {
+			if _, err := netip.ParseAddr(window.Source); err != nil {
+				return errors.New("invalid maintenance source")
+			}
+		}
+	}
 	for _, country := range policy.DeniedCountries {
 		if len(country) != 2 || country[0] < 'A' || country[0] > 'Z' || country[1] < 'A' || country[1] > 'Z' {
 			return errors.New("country policy requires uppercase ISO codes")
@@ -110,7 +123,7 @@ func (e *Engine) isInternal(scope Scope, ip string) bool {
 	return false
 }
 
-func (e *Engine) approvedSource(ip string) bool {
+func (e *Engine) approvedSource(ip string, ns int64) bool {
 	addr, err := netip.ParseAddr(ip)
 	if err != nil {
 		return false
@@ -120,6 +133,17 @@ func (e *Engine) approvedSource(ip string) bool {
 			return true
 		}
 		if allowed, err := netip.ParseAddr(value); err == nil && allowed == addr {
+			return true
+		}
+	}
+	for _, window := range e.state.Policy.Maintenance {
+		if ns < window.Start || ns >= window.End {
+			continue
+		}
+		if prefix, err := netip.ParsePrefix(window.Source); err == nil && prefix.Contains(addr) {
+			return true
+		}
+		if allowed, err := netip.ParseAddr(window.Source); err == nil && allowed == addr {
 			return true
 		}
 	}
@@ -141,7 +165,7 @@ func (e *Engine) observeActivity(ns int64, id string, fact Fact) error {
 	e.state.Activity[key] = Activity{Fact: fact, At: ns}
 	e.indexActivity(key, e.state.Activity[key])
 	heap.Push(e.activity, expiration{key: key, at: ns})
-	if e.state.Mode != Monitoring || e.approvedSource(fact.SrcIP) || !e.isInternal(fact.Scope, fact.SrcIP) || !e.isInternal(fact.Scope, fact.DstIP) {
+	if e.state.Mode != Monitoring || e.approvedSource(fact.SrcIP, ns) || !e.isInternal(fact.Scope, fact.SrcIP) || !e.isInternal(fact.Scope, fact.DstIP) {
 		return nil
 	}
 	if _, suppressed := e.state.Suppressed[id]; suppressed {
@@ -153,6 +177,9 @@ func (e *Engine) observeActivity(ns int64, id string, fact Fact) error {
 	var pivots []Fact
 	for _, event := range e.bySource[sourceKey(fact)] {
 		prior := event.Fact
+		if e.approvedSource(prior.SrcIP, event.At) {
+			continue
+		}
 		if !sameScope(prior.Scope, fact.Scope) || event.At > ns {
 			continue
 		}
@@ -164,6 +191,9 @@ func (e *Engine) observeActivity(ns int64, id string, fact Fact) error {
 	}
 	for _, event := range e.incoming[scopeKey(fact.Scope)+"|"+fact.SrcIP] {
 		prior := event.Fact
+		if e.approvedSource(prior.SrcIP, event.At) {
+			continue
+		}
 		if prior.SrcIP != fact.DstIP && prior.SrcIP != fact.SrcIP && e.isInternal(prior.Scope, prior.SrcIP) && event.At < ns && (prior.Port == 22 || prior.Port == 3389 || prior.Port == 445) {
 			pivots = append(pivots, prior)
 		}
@@ -241,14 +271,28 @@ func (e *Engine) rebuildIndexes() {
 	e.incoming = make(map[string]map[string]Activity)
 	e.localIPs = make(map[string]map[netip.Addr]bool)
 	e.networks = make(map[string][]netip.Prefix)
+	e.trustedDHCP = make(map[string]bool)
 	for key, event := range e.state.Activity {
 		e.indexActivity(key, event)
 	}
-	for _, observation := range e.state.Observed {
-		e.indexLocal(observation.Fact)
+	for id, observation := range e.state.Observed {
+		if correction, ok := e.state.Corrections[id]; ok {
+			e.indexLocal(correction)
+		} else {
+			e.indexLocal(observation.Fact)
+		}
 	}
 	for _, prefix := range e.prefixes {
-		e.indexLocal(prefix)
+		if correction, ok := e.state.Corrections[factID(prefix)]; ok {
+			e.indexLocal(correction)
+		} else {
+			e.indexLocal(prefix)
+		}
+	}
+	for _, fact := range e.state.Approved {
+		if fact.Kind == "binding" && fact.Provenance == "dhcp" && fact.DstIP != "" {
+			e.trustedDHCP[scopeKey(fact.Scope)+"|"+fact.DstIP] = true
+		}
 	}
 }
 

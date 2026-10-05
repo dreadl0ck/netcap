@@ -14,7 +14,7 @@ import (
 	"github.com/dreadl0ck/netcap/types"
 )
 
-const SchemaVersion = 2
+const SchemaVersion = 3
 
 type Mode string
 
@@ -32,17 +32,18 @@ type Scope struct {
 
 // Fact is a reproducible observation identity. Port is a destination service port.
 type Fact struct {
-	Bytes      uint64 `json:"bytes,omitempty"`
-	Token      string `json:"token,omitempty"`
-	Scope      Scope  `json:"scope"`
-	Kind       string `json:"kind"`
-	SrcIP      string `json:"srcIP,omitempty"`
-	DstIP      string `json:"dstIP,omitempty"`
-	MAC        string `json:"mac,omitempty"`
-	Protocol   string `json:"protocol,omitempty"`
-	Port       uint16 `json:"port,omitempty"`
-	Value      string `json:"value,omitempty"`
-	Provenance string `json:"provenance,omitempty"`
+	LeaseSeconds uint32 `json:"leaseSeconds,omitempty"`
+	Bytes        uint64 `json:"bytes,omitempty"`
+	Token        string `json:"token,omitempty"`
+	Scope        Scope  `json:"scope"`
+	Kind         string `json:"kind"`
+	SrcIP        string `json:"srcIP,omitempty"`
+	DstIP        string `json:"dstIP,omitempty"`
+	MAC          string `json:"mac,omitempty"`
+	Protocol     string `json:"protocol,omitempty"`
+	Port         uint16 `json:"port,omitempty"`
+	Value        string `json:"value,omitempty"`
+	Provenance   string `json:"provenance,omitempty"`
 }
 
 func (f *Fact) normalize() error {
@@ -131,8 +132,10 @@ func factID(f Fact) string {
 	}
 	f.Token = ""
 	f.Bytes = 0
+	f.LeaseSeconds = 0
 	if f.Kind == "binding" {
 		f.Provenance = ""
+		f.DstIP = ""
 	}
 	data, _ := json.Marshal(f)
 	hash := sha256.Sum256(data)
@@ -147,14 +150,18 @@ type Observation struct {
 }
 
 type Decision struct {
-	At         int64  `json:"at"`
-	Action     string `json:"action"`
-	Reason     string `json:"reason"`
-	Version    uint64 `json:"version"`
-	BaselineID string `json:"baselineId"`
+	IDs        []string `json:"ids,omitempty"`
+	At         int64    `json:"at"`
+	Action     string   `json:"action"`
+	Reason     string   `json:"reason"`
+	Version    uint64   `json:"version"`
+	BaselineID string   `json:"baselineId"`
 }
 
 type Snapshot struct {
+	Labels          map[string]AssetLabel  `json:"labels"`
+	Corrections     map[string]Fact        `json:"corrections"`
+	Leases          map[string]Lease       `json:"leases"`
 	Rates           map[string]RateStats   `json:"rates"`
 	ApprovedRates   map[string]RateModel   `json:"approvedRates"`
 	Policy          Policy                 `json:"policy"`
@@ -178,6 +185,29 @@ type Snapshot struct {
 	Approved        map[string]Fact        `json:"approved"`
 	Suppressed      map[string]string      `json:"suppressed"`
 	Decisions       []Decision             `json:"decisions"`
+}
+
+type AssetLabel struct {
+	Fact  Fact   `json:"fact"`
+	Name  string `json:"name"`
+	Role  string `json:"role,omitempty"`
+	Notes string `json:"notes,omitempty"`
+}
+
+type Lease struct {
+	Fact    Fact  `json:"fact"`
+	At      int64 `json:"at"`
+	Expires int64 `json:"expires"`
+}
+
+type InventoryEdit struct {
+	ID      string `json:"id"`
+	Name    string `json:"name,omitempty"`
+	Role    string `json:"role,omitempty"`
+	Notes   string `json:"notes,omitempty"`
+	Prefix  string `json:"prefix,omitempty"`
+	Reason  string `json:"reason"`
+	Version uint64 `json:"version"`
 }
 
 type Config struct {
@@ -205,14 +235,21 @@ type Evidence struct {
 }
 
 type Policy struct {
-	DeniedCountries []string `json:"deniedCountries,omitempty"`
-	DeniedASNs      []string `json:"deniedASNs,omitempty"`
-	RateWindows     uint64   `json:"rateWindows"`
-	RateMultiplier  float64  `json:"rateMultiplier"`
-	WindowNS        int64    `json:"windowNS"`
-	Fanout          int      `json:"fanout"`
-	RDPAttempts     int      `json:"rdpAttempts"`
-	ApprovedSources []string `json:"approvedSources,omitempty"`
+	Maintenance     []Maintenance `json:"maintenance,omitempty"`
+	DeniedCountries []string      `json:"deniedCountries,omitempty"`
+	DeniedASNs      []string      `json:"deniedASNs,omitempty"`
+	RateWindows     uint64        `json:"rateWindows"`
+	RateMultiplier  float64       `json:"rateMultiplier"`
+	WindowNS        int64         `json:"windowNS"`
+	Fanout          int           `json:"fanout"`
+	RDPAttempts     int           `json:"rdpAttempts"`
+	ApprovedSources []string      `json:"approvedSources,omitempty"`
+}
+
+type Maintenance struct {
+	Source string `json:"source"`
+	Start  int64  `json:"start"`
+	End    int64  `json:"end"`
 }
 
 type Activity struct {

@@ -67,7 +67,7 @@ func (e *Engine) observeRate(ns int64, id string, fact Fact) error {
 	rate.Packets++
 	rate.Bytes += fact.Bytes
 	e.state.Rates[id] = rate
-	if e.state.Mode != Monitoring || e.approvedSource(fact.SrcIP) {
+	if e.state.Mode != Monitoring || e.approvedSource(fact.SrcIP, ns) {
 		return nil
 	}
 	if _, suppressed := e.state.Suppressed[id]; suppressed {

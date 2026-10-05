@@ -102,12 +102,16 @@ func PacketFacts(packet gopacket.Packet, scope Scope) []Fact {
 		// Only server ACKs provide an assigned address and authoritative subnet mask.
 		ack := false
 		var mask net.IPMask
+		var leaseSeconds uint32
 		for _, option := range dhcp.Options {
 			if option.Type == layers.DHCPOptMessageType && len(option.Data) == 1 && option.Data[0] == byte(layers.DHCPMsgTypeAck) {
 				ack = true
 			}
 			if option.Type == layers.DHCPOptSubnetMask && len(option.Data) == 4 {
 				mask = net.IPMask(option.Data)
+			}
+			if option.Type == layers.DHCPOptLeaseTime && len(option.Data) == 4 {
+				leaseSeconds = binary.BigEndian.Uint32(option.Data)
 			}
 		}
 		if ack && dhcp.YourClientIP.To4() != nil {
@@ -118,7 +122,7 @@ func PacketFacts(packet gopacket.Packet, scope Scope) []Fact {
 			}
 			if len(dhcp.ClientHWAddr) == 6 && dhcp.ClientHWAddr[0]&1 == 0 {
 				mac := dhcp.ClientHWAddr.String()
-				facts = append(facts, Fact{Scope: scope, Kind: "device", MAC: mac}, Fact{Scope: scope, Kind: "binding", SrcIP: dhcp.YourClientIP.String(), MAC: mac, Provenance: "dhcp"})
+				facts = append(facts, Fact{Scope: scope, Kind: "device", MAC: mac}, Fact{Scope: scope, Kind: "binding", SrcIP: dhcp.YourClientIP.String(), DstIP: src, MAC: mac, Provenance: "dhcp", LeaseSeconds: leaseSeconds})
 			}
 		}
 	}

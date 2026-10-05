@@ -110,4 +110,34 @@ describe('behavioral monitoring', () => {
     const request = fetcher.mock.calls.find(([, init]) => init?.method === 'POST');
     expect(JSON.parse(request?.[1]?.body as string).version).toBe(0);
   });
+
+  it('saves inventory labels and keeps the topology frame sandboxed', async () => {
+    let current = snapshot();
+    const fetcher = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      if (String(url).includes('/topology')) return { ok: true, status: 200, json: async () => ({ nodes: [], links: [], totalNodes: 1, totalLinks: 0, truncated: false }) } as Response;
+      if (init?.method === 'POST') current = { ...current, version: 1, labels: { device: { fact: current.observed.device.fact, name: 'Office gateway', role: 'router' } } };
+      return { ok: true, status: 200, json: async () => current } as Response;
+    });
+    render(<SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}><NetcapProvider config={{
+      backendUrl: 'http://fixture', router: { pathname: '/behavior', query: {}, isReady: true, push: vi.fn() },
+      Link: ({ href, children }) => <a href={href}>{children}</a>, fetch: fetcher,
+      api: { getStatus: async () => status, getInputFiles: async () => [] },
+    }}><BehaviorPage /></NetcapProvider></SWRConfig>);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Label' }));
+    expect(screen.getByRole('button', { name: 'Save inventory' })).toBeDisabled();
+    await user.type(screen.getByRole('textbox', { name: 'Asset name' }), 'Office gateway');
+    await user.type(screen.getByRole('textbox', { name: 'Asset role' }), 'router');
+    await user.type(screen.getByRole('textbox', { name: /Inventory decision reason/ }), 'Reviewed gateway inventory');
+    await user.click(screen.getByRole('button', { name: 'Save inventory' }));
+    await waitFor(() => expect(screen.getByText('Office gateway')).toBeInTheDocument());
+    const request = fetcher.mock.calls.find(([, init]) => init?.method === 'POST');
+    const body = JSON.parse(request?.[1]?.body as string);
+    expect(body.version).toBe(0);
+    expect(body.inventory).toEqual({ id: 'device', name: 'Office gateway', role: 'router', notes: '' });
+    await user.click(await screen.findByRole('tab', { name: 'Topology' }));
+    const frame = screen.getByTitle('Scoped observed network topology');
+    expect(frame).toHaveAttribute('sandbox', 'allow-scripts allow-downloads');
+    expect(frame.getAttribute('src')).toContain('format=html');
+  });
 });

@@ -72,6 +72,15 @@ func (c *Collector) InitBatching(bpf string, in string) ([]BatchInfo, *pcap.Hand
 	ps := gopacket.NewPacketSource(handle, handle.LinkType())
 
 	// init collector
+	// Batching is a channel sink even when callers pass ordinary capture defaults.
+	decoderConfig := c.config.DecoderConfig.Clone()
+	decoderConfig.Chan = true
+	decoderConfig.Buffer, decoderConfig.Compression = false, false
+	if decoderConfig.ChanSize <= 0 {
+		decoderConfig.ChanSize = 1024
+	}
+	decoderConfig.CSV, decoderConfig.JSON, decoderConfig.Null, decoderConfig.Elastic = false, false, false, false
+	c.config.DecoderConfig = decoderConfig
 	err = c.Init()
 	if err != nil {
 		return chans, nil, err

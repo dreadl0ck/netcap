@@ -20,6 +20,7 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -38,6 +39,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/internal/distributed"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
@@ -179,7 +181,8 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		DecodeOptions: utils.GetDecodeOptions(c.String("opts")),
 	})
 
-	if c.Bool("behavior") || c.String("behavior-baseline") != "" {
+	behaviorOptions := behaviorcommand.ReadOptions(c)
+	if behaviorOptions.Enabled {
 		output := filepath.Dir(c.String("behavior-baseline"))
 		if c.String("behavior-baseline") == "" {
 			dir, err := os.UserConfigDir()
@@ -188,7 +191,24 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			}
 			output = filepath.Join(dir, "netcap", "behavior", filepath.Base(c.String("iface")))
 		}
-		stopBehavior, err := behaviorcommand.Start(c, coll, output, c.String("iface"), true)
+		if !c.IsSet("behavior-sensor") {
+			behaviorOptions.Sensor, _ = distributed.IdentityFingerprint(id)
+		}
+		behaviorOptions.OnAlert = func(alert *types.Alert) {
+			var data bytes.Buffer
+			if err := delimited.NewWriter(&data).PutProto(alert); err != nil {
+				log.Printf("agent: behavioral alert encoding failed: %v", err)
+				return
+			}
+			if data.Len() > distributed.MaxRecordSize {
+				log.Printf("agent: behavioral alert retained locally but exceeds remote record limit")
+				return
+			}
+			if err := client.Enqueue(&types.Batch{MessageType: types.Type_NC_Alert, TotalSize: int32(data.Len()), Data: data.Bytes()}); err != nil {
+				log.Printf("agent: behavioral alert retained locally, remote delivery unavailable: %v", err)
+			}
+		}
+		stopBehavior, err := behaviorcommand.StartOptions(behaviorOptions, coll, output, c.String("iface"), true)
 		if err != nil {
 			return fmt.Errorf("start agent behavioral monitoring: %w", err)
 		}

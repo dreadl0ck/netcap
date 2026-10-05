@@ -156,6 +156,15 @@ func TestBatchModeWorkerPools(t *testing.T) {
 	if len(chans) == 0 {
 		t.Fatal("InitBatching returned no decoder channels")
 	}
+	var drains sync.WaitGroup
+	for _, batch := range chans {
+		drains.Add(1)
+		go func() {
+			defer drains.Done()
+			for range batch.Chan {
+			}
+		}()
+	}
 
 	stopPing := make(chan struct{})
 	pingers := pingLoopback(t, stopPing)
@@ -172,6 +181,7 @@ func TestBatchModeWorkerPools(t *testing.T) {
 	}()
 	select {
 	case <-stopped:
+		drains.Wait()
 	case <-time.After(60 * time.Second):
 		t.Fatal("batch mode did not stop")
 	}

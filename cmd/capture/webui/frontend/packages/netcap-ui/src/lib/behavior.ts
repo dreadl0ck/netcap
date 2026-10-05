@@ -28,6 +28,8 @@ export interface BehaviorObservation {
 }
 
 export interface BehaviorSnapshot {
+	labels?: Record<string, { fact: BehaviorFact; name: string; role?: string; notes?: string }>;
+	corrections?: Record<string, BehaviorFact>;
 	windowOverflow?: number;
 	policy?: { windowNS: number; fanout: number; rdpAttempts: number; rateWindows: number; rateMultiplier: number; approvedSources?: string[] };
 	approvedRates?: Record<string, { windows: number; packetsMean: number; bytesMean: number }>;
@@ -49,6 +51,14 @@ export interface BehaviorSnapshot {
   approved: Record<string, BehaviorFact>;
   suppressed: Record<string, string>;
   decisions: { at: number; action: string; reason: string; version: number; baselineId: string }[] | null;
+}
+
+export interface BehaviorTopology {
+  nodes: { id: string; kind: string; name: string; address: string; scope: BehaviorScope; factId?: string }[];
+  links: { source: string; target: string; kind: string; factId?: string }[];
+  totalNodes: number;
+  totalLinks: number;
+  truncated: boolean;
 }
 
 export type BehaviorAction = 'approve' | 'pause' | 'resume' | 'relearn' | 'reset' | 'approve-changes' | 'suppress' | 'unsuppress';

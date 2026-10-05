@@ -93,10 +93,11 @@ func (s *Server) handleBehaviorChange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var request struct {
-		Action  string   `json:"action"`
-		IDs     []string `json:"ids"`
-		Reason  string   `json:"reason"`
-		Version *uint64  `json:"version"`
+		Action    string                  `json:"action"`
+		IDs       []string                `json:"ids"`
+		Reason    string                  `json:"reason"`
+		Version   *uint64                 `json:"version"`
+		Inventory *behavior.InventoryEdit `json:"inventory,omitempty"`
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 	decoder := json.NewDecoder(r.Body)
@@ -135,7 +136,14 @@ func (s *Server) handleBehaviorChange(w http.ResponseWriter, r *http.Request) {
 		finish = func() error { return errors.Join(engine.Close(), sink.Close()) }
 		defer finish()
 	}
-	if err := engine.ChangeAtVersion(request.Action, request.IDs, request.Reason, *request.Version); err != nil {
+	var changeErr error
+	if request.Action == "inventory" && request.Inventory != nil {
+		request.Inventory.Version, request.Inventory.Reason = *request.Version, request.Reason
+		changeErr = engine.EditInventory(*request.Inventory)
+	} else {
+		changeErr = engine.ChangeAtVersion(request.Action, request.IDs, request.Reason, *request.Version)
+	}
+	if err := changeErr; err != nil {
 		http.Error(w, errors.Join(err, finish()).Error(), http.StatusConflict)
 		return
 	}

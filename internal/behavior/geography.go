@@ -3,7 +3,7 @@ package behavior
 import "strings"
 
 func (e *Engine) checkGeography(ns int64, id string, fact Fact) error {
-	if e.approvedSource(fact.SrcIP) {
+	if e.approvedSource(fact.SrcIP, ns) {
 		return nil
 	}
 	if _, suppressed := e.state.Suppressed[id]; suppressed {

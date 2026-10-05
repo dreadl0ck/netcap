@@ -17,20 +17,21 @@ import (
 )
 
 type Engine struct {
-	mu       sync.Mutex
-	config   Config
-	state    Snapshot
-	sink     AlertSink
-	recent   map[string]int64
-	err      error
-	closed   bool
-	lease    *os.File
-	prefixes []Fact
-	activity *activityIndex
-	bySource map[string]map[string]Activity
-	incoming map[string]map[string]Activity
-	localIPs map[string]map[netip.Addr]bool
-	networks map[string][]netip.Prefix
+	mu          sync.Mutex
+	config      Config
+	state       Snapshot
+	sink        AlertSink
+	recent      map[string]int64
+	err         error
+	closed      bool
+	lease       *os.File
+	prefixes    []Fact
+	activity    *activityIndex
+	bySource    map[string]map[string]Activity
+	incoming    map[string]map[string]Activity
+	localIPs    map[string]map[netip.Addr]bool
+	networks    map[string][]netip.Prefix
+	trustedDHCP map[string]bool
 }
 
 func Open(config Config, sink AlertSink) (*Engine, error) {
@@ -81,7 +82,7 @@ func Open(config Config, sink AlertSink) (*Engine, error) {
 	state, err := ReadSnapshot(config.Path)
 	if err == nil {
 		e.state = state
-		if len(state.Observed) > config.MaxFacts || len(state.Approved) > config.MaxFacts || len(state.Activity) > config.MaxFacts || len(state.Rates) > config.MaxFacts || len(state.ApprovedRates) > config.MaxFacts {
+		if len(state.Observed) > config.MaxFacts || len(state.Approved) > config.MaxFacts || len(state.Activity) > config.MaxFacts || len(state.Rates) > config.MaxFacts || len(state.ApprovedRates) > config.MaxFacts || len(state.Labels) > config.MaxFacts || len(state.Corrections) > config.MaxFacts || len(state.Leases) > config.MaxFacts {
 			return nil, errors.New("baseline exceeds configured fact limit")
 		}
 		// A restarted baseline retains its learning criteria.
@@ -90,7 +91,7 @@ func Open(config Config, sink AlertSink) (*Engine, error) {
 		e.state.MaxFacts = config.MaxFacts
 	} else if errors.Is(err, os.ErrNotExist) {
 		e.state = Snapshot{Schema: SchemaVersion, Mode: Learning, MinLearningNS: int64(config.MinLearning), MinSamples: config.MinSamples,
-			MaxFacts: config.MaxFacts, Observed: make(map[string]Observation), Approved: make(map[string]Fact), Suppressed: make(map[string]string), Activity: make(map[string]Activity), Policy: DefaultPolicy(), Rates: make(map[string]RateStats), ApprovedRates: make(map[string]RateModel)}
+			MaxFacts: config.MaxFacts, Observed: make(map[string]Observation), Approved: make(map[string]Fact), Suppressed: make(map[string]string), Activity: make(map[string]Activity), Policy: DefaultPolicy(), Rates: make(map[string]RateStats), ApprovedRates: make(map[string]RateModel), Labels: make(map[string]AssetLabel), Corrections: make(map[string]Fact), Leases: make(map[string]Lease)}
 	} else {
 		return nil, err
 	}
@@ -102,6 +103,7 @@ func Open(config Config, sink AlertSink) (*Engine, error) {
 		e.state.Policy.ApprovedSources = append([]string(nil), config.Policy.ApprovedSources...)
 		e.state.Policy.DeniedCountries = append([]string(nil), config.Policy.DeniedCountries...)
 		e.state.Policy.DeniedASNs = append([]string(nil), config.Policy.DeniedASNs...)
+		e.state.Policy.Maintenance = append([]Maintenance(nil), config.Policy.Maintenance...)
 	}
 	if err := validatePolicy(e.state.Policy); err != nil {
 		return nil, err
@@ -154,8 +156,16 @@ func (e *Engine) Observe(at time.Time, facts ...Fact) error {
 	normalized = append(normalized, e.prefixes...)
 	e.expireActivity(ns)
 	for _, fact := range normalized {
+		if fact.Kind == "binding" && fact.Provenance == "dhcp" {
+			e.observeLease(ns, fact)
+		}
+	}
+	for _, fact := range normalized {
 		id := factID(fact)
 		observation, exists := e.state.Observed[id]
+		if exists && fact.Kind == "binding" && fact.Provenance == "dhcp" && ns >= observation.LastSeen {
+			observation.Fact = fact
+		}
 		if !exists {
 			if len(e.state.Observed) >= e.config.MaxFacts {
 				e.state.Overflow++
@@ -196,13 +206,21 @@ func (e *Engine) Observe(at time.Time, facts ...Fact) error {
 		if e.state.Mode != Monitoring {
 			continue
 		}
+		_, bindingSuppressed := e.state.Suppressed[id]
+		if fact.Kind == "binding" && !bindingSuppressed && e.leaseConflict(ns, fact) {
+			if err := e.emitCorrelation(ns, "baseline.arp-conflict", id, fact, "link-layer claim matches the most recent learned DHCP lease", 1, nil, ""); err != nil {
+				e.err = err
+				return err
+			}
+			continue
+		}
 		if _, approved := e.state.Approved[id]; approved {
 			continue
 		}
 		if _, suppressed := e.state.Suppressed[id]; suppressed {
 			continue
 		}
-		if (fact.Kind == "service" || fact.Kind == "resolver" || fact.Kind == "dns" || fact.Kind == "geo" || fact.Kind == "edge") && (e.approvedSource(fact.SrcIP) || (fact.Kind == "edge" && e.approvedSource(fact.DstIP))) {
+		if (fact.Kind == "service" || fact.Kind == "resolver" || fact.Kind == "dns" || fact.Kind == "geo" || fact.Kind == "edge") && (e.approvedSource(fact.SrcIP, ns) || (fact.Kind == "edge" && e.approvedSource(fact.DstIP, ns))) {
 			continue
 		}
 		if previous, sent := e.recent[id]; sent && ns-previous < int64(e.config.DedupWindow) {
@@ -221,7 +239,9 @@ func (e *Engine) emit(ns int64, id string, fact Fact) error {
 	detector := "baseline.new-" + fact.Kind
 	expected := "fact present in approved baseline"
 	severity := "low"
-	if fact.Kind == "binding" && fact.Provenance != "dhcp" {
+	if fact.Kind == "binding" && e.leaseMatches(ns, fact) {
+		detector, expected = "baseline.dhcp-reassignment", "address change supported by a lease from an approved DHCP server; review inventory change"
+	} else if fact.Kind == "binding" && fact.Provenance != "dhcp" {
 		var conflicting []string
 		for _, approved := range e.state.Approved {
 			if approved.Kind == "binding" && approved.SrcIP == fact.SrcIP && sameScope(approved.Scope, fact.Scope) && approved.MAC != fact.MAC {
@@ -346,6 +366,8 @@ func (e *Engine) change(action string, ids []string, reason string, version *uin
 		}
 		next.Mode, next.ResumeMode = next.ResumeMode, ""
 	case "relearn":
+		next.Corrections = make(map[string]Fact)
+		next.Leases = make(map[string]Lease)
 		next.WindowOverflow = 0
 		next.Mode, next.ResumeMode = Learning, ""
 		next.LearningStarted, next.Watermark, next.Samples, next.Overflow, next.OutOfOrder = 0, 0, 0, 0, 0
@@ -354,6 +376,9 @@ func (e *Engine) change(action string, ids []string, reason string, version *uin
 		next.Activity = make(map[string]Activity)
 		next.Rates = make(map[string]RateStats)
 	case "reset":
+		next.Labels = make(map[string]AssetLabel)
+		next.Corrections = make(map[string]Fact)
+		next.Leases = make(map[string]Lease)
 		next.WindowOverflow = 0
 		next.Mode, next.ResumeMode = Learning, ""
 		next.LearningStarted, next.Watermark, next.Samples, next.Overflow, next.OutOfOrder = 0, 0, 0, 0, 0
@@ -394,7 +419,7 @@ func (e *Engine) change(action string, ids []string, reason string, version *uin
 		next.Version++
 		next.BaselineID = baselineStateID(next.Approved, next.ApprovedRates)
 	}
-	next.Decisions = append(next.Decisions, Decision{At: time.Now().UnixNano(), Action: action, Reason: reason, Version: next.Version, BaselineID: next.BaselineID})
+	next.Decisions = append(next.Decisions, Decision{At: time.Now().UnixNano(), Action: action, Reason: reason, Version: next.Version, BaselineID: next.BaselineID, IDs: append([]string(nil), ids...)})
 	if err := writeSnapshot(e.config.Path, next); err != nil {
 		return err
 	}

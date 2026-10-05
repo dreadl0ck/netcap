@@ -106,7 +106,7 @@ func TestSchemaOneMigrationKeepsApprovedIdentity(t *testing.T) {
 	}
 	defer restarted.Close()
 	state := restarted.Snapshot()
-	if state.Schema != 2 || state.Version != before.Version || state.BaselineID != before.BaselineID || state.Activity == nil || state.Rates == nil {
+	if state.Schema != 3 || state.Version != before.Version || state.BaselineID != before.BaselineID || state.Activity == nil || state.Rates == nil || state.Labels == nil {
 		t.Fatal("migration changed approved semantics or lost new state")
 	}
 }

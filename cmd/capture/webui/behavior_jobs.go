@@ -18,6 +18,7 @@ func (s *Server) behaviorOptionsForJob(job *AnalysisJob) (BehaviorOptions, error
 			policy.ApprovedSources = append([]string(nil), options.Policy.ApprovedSources...)
 			policy.DeniedCountries = append([]string(nil), options.Policy.DeniedCountries...)
 			policy.DeniedASNs = append([]string(nil), options.Policy.DeniedASNs...)
+			policy.Maintenance = append([]behavior.Maintenance(nil), options.Policy.Maintenance...)
 			options.Policy = &policy
 		}
 	}
@@ -40,6 +41,9 @@ func behaviorJobArgs(options BehaviorOptions) []string {
 		"-behavior-min-samples", strconv.FormatUint(options.MinSamples, 10), "-behavior-max-facts", strconv.Itoa(options.MaxFacts)}
 	for _, prefix := range options.Prefixes {
 		args = append(args, "-behavior-prefix", prefix)
+	}
+	if options.PolicyFile != "" {
+		args = append(args, "-behavior-policy", options.PolicyFile)
 	}
 	if options.Policy != nil {
 		args = append(args, "-behavior-window", strconv.FormatInt(options.Policy.WindowNS, 10)+"ns", "-behavior-fanout", strconv.Itoa(options.Policy.Fanout), "-behavior-rdp-attempts", strconv.Itoa(options.Policy.RDPAttempts))

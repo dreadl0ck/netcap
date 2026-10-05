@@ -5,11 +5,12 @@ import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogAct
 import useSWR from 'swr';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import { ChartFrame } from '../components/ChartFrame';
 import { useNetcapApi, useNetcapRouter } from '../hooks';
 import { useNetcapConfig } from '../providers';
 import { useLiveAlerts } from '../hooks/useLiveAlerts';
 import { behaviorRequest, behaviorSelection, factLabel, learningReady, scopeLabel } from '../lib/behavior';
-import type { BehaviorAction, BehaviorSnapshot } from '../lib/behavior';
+import type { BehaviorAction, BehaviorSnapshot, BehaviorTopology } from '../lib/behavior';
 
 const timeLabel = (ns: number) => ns > 0 ? new Date(ns / 1e6).toLocaleString() : 'Not observed';
 
@@ -39,9 +40,11 @@ export default function BehaviorPage() {
   const [failure, setFailure] = useState('');
   const [restart, setRestart] = useState(0);
   const [evidence, setEvidence] = useState<string | null>(null);
+  const [graphGeneration, setGraphGeneration] = useState(0);
+  const [inventory, setInventory] = useState<{ id: string; version: number; name: string; role: string; notes: string; prefix: string; isPrefix: boolean; reason: string } | null>(null);
   const live = useLiveAlerts(status && tab === 2 ? `${config.apiBaseUrl}/alerts/stream${selection}` : null, restart);
 
-  useEffect(() => { setSelected([]); setPage(0); setScope(''); setAction(null); setFailure(''); }, [selection]);
+  useEffect(() => { setSelected([]); setPage(0); setScope(''); setAction(null); setInventory(null); setFailure(''); }, [selection]);
   useEffect(() => { setSelected([]); }, [data?.version]);
 
   const rows = useMemo(() => Object.entries(data?.observed ?? {}).sort(([a], [b]) => a.localeCompare(b)), [data?.observed]);
@@ -52,6 +55,10 @@ export default function BehaviorPage() {
     return `${observation.fact.kind} ${factLabel(observation.fact)} ${scopeLabel(observation.fact.scope)}`.toLowerCase().includes(search.toLowerCase());
   }), [rows, scope, search, tab, data?.approved, data?.suppressed]);
   const elapsed = data ? Math.max(0, (data.watermark - data.learningStarted) / 1e9) : 0;
+  const graphScope = scope ? rows.find(([, observation]) => scopeLabel(observation.fact.scope) === scope)?.[1].fact.scope : undefined;
+  const graphURL = `${config.apiBaseUrl}/behavior/topology${selection || '?'}${selection ? '&' : ''}maxNodes=100${graphScope ? `&scope=${encodeURIComponent(JSON.stringify(graphScope))}` : ''}`;
+  const { data: topology } = useSWR<BehaviorTopology>(status && tab === 4 ? [graphURL, graphGeneration, data?.version] : null,
+    () => behaviorRequest(fetcher, graphURL), { refreshInterval: 30000 });
 
   const changeCapture = async (path: string) => {
     setSwitching(true);
@@ -86,6 +93,20 @@ export default function BehaviorPage() {
   };
   const selectionAction = (next: BehaviorAction, label: string) => <Button disabled={!selected.length || data?.mode !== 'monitoring' || busy}
     onClick={() => openAction(next)}>{label}</Button>;
+  const saveInventory = async () => {
+    if (!inventory || !inventory.reason.trim()) return;
+    setBusy(true); setFailure('');
+    try {
+      const snapshot = await behaviorRequest<BehaviorSnapshot>(fetcher, `${config.apiBaseUrl}/behavior/change${selection}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+          action: 'inventory', version: inventory.version, reason: inventory.reason.trim(),
+          inventory: { id: inventory.id, name: inventory.name, role: inventory.role, notes: inventory.notes, ...(inventory.isPrefix ? { prefix: inventory.prefix } : {}) },
+        }),
+      });
+      await mutate(snapshot, false); setInventory(null); setGraphGeneration(value => value + 1);
+    } catch (error) { setFailure(error instanceof Error ? error.message : 'Inventory edit failed'); }
+    finally { setBusy(false); }
+  };
 
   return <Layout title="Behavioral monitoring" headerAction={<FileSelectorHeader inputFiles={files ?? []} status={status}
     switchingFile={switching} onFileChange={changeCapture} />}>
@@ -116,7 +137,7 @@ export default function BehaviorPage() {
           </Stack>
         </Paper>
         <Tabs value={tab} onChange={(_, value: number) => { setTab(value); setPage(0); }} variant="scrollable" scrollButtons="auto" aria-label="Behavioral monitoring views">
-          <Tab label="Network inventory" /><Tab label="Baseline candidates" /><Tab label="Live alerts" /><Tab label="Decision history" />
+          <Tab label="Network inventory" /><Tab label="Baseline candidates" /><Tab label="Live alerts" /><Tab label="Decision history" /><Tab label="Topology" />
         </Tabs>
         {tab < 2 && <>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -132,7 +153,7 @@ export default function BehaviorPage() {
             {selectionAction('approve-changes', 'Approve selected changes')}{selectionAction('suppress', 'Suppress selected')}{selectionAction('unsuppress', 'Remove suppression')}
           </Stack>
           <TableContainer component={Paper}><Table size="small" aria-label="Observed network facts">
-            <TableHead><TableRow><TableCell>Select</TableCell><TableCell>Kind / evidence</TableCell><TableCell>Network scope</TableCell><TableCell>Status</TableCell><TableCell>First / last seen</TableCell><TableCell align="right">Samples</TableCell><TableCell>Pivot</TableCell></TableRow></TableHead>
+            <TableHead><TableRow><TableCell>Select</TableCell><TableCell>Kind / evidence</TableCell><TableCell>Network scope</TableCell><TableCell>Status</TableCell><TableCell>First / last seen</TableCell><TableCell align="right">Samples</TableCell><TableCell>Pivot</TableCell><TableCell>Edit</TableCell></TableRow></TableHead>
             <TableBody>{visible.slice(page * rowsPerPage, (page + 1) * rowsPerPage).map(([id, observation]) => {
               const fact = observation.fact;
               const approved = !!data.approved[id];
@@ -140,7 +161,9 @@ export default function BehaviorPage() {
               return <TableRow key={id}>
                 <TableCell><Checkbox checked={selected.includes(id)} inputProps={{ 'aria-label': `Select ${factLabel(fact)}` }}
                   onChange={(_, checked) => setSelected(previous => checked ? [...previous, id] : previous.filter(value => value !== id))} /></TableCell>
-                <TableCell><Typography variant="body2">{fact.kind}: {factLabel(fact)}</Typography><Typography variant="caption">{fact.provenance || 'Observed traffic'}</Typography></TableCell>
+                <TableCell><Typography variant="body2">{data.labels?.[id]?.name || `${fact.kind}: ${factLabel(fact)}`}</Typography>
+                  {data.labels?.[id] && <Typography variant="caption" display="block">{factLabel(fact)} · {data.labels[id].role}</Typography>}
+                  <Typography variant="caption">{data.corrections?.[id] ? `Corrected interpretation: ${data.corrections[id].value}` : fact.provenance || 'Observed traffic'}</Typography></TableCell>
                 <TableCell>{scopeLabel(fact.scope)}</TableCell>
                 <TableCell><Chip size="small" label={approved ? 'Approved' : suppressed ? 'Suppressed' : 'Candidate'} color={approved ? 'success' : 'default'} />{suppressed && <Typography variant="caption" display="block">{data.suppressed[id]}</Typography>}</TableCell>
                 <TableCell>{timeLabel(observation.firstSeen)}<br />{timeLabel(observation.lastSeen)}</TableCell>
@@ -148,6 +171,8 @@ export default function BehaviorPage() {
                 <TableCell>{fact.mac && <Button size="small" onClick={() => router.push(`/devices?search=${encodeURIComponent(fact.mac!)}`)}>Device</Button>}
                   {fact.srcIP && <Button size="small" onClick={() => router.push(`/hosts?search=${encodeURIComponent(fact.srcIP!)}`)}>Host</Button>}
                   <Button size="small" onClick={() => setEvidence(JSON.stringify({ id, ...observation }, null, 2))}>Evidence</Button></TableCell>
+                <TableCell><Button size="small" onClick={() => setInventory({ id, version: data.version, name: data.labels?.[id]?.name ?? '', role: data.labels?.[id]?.role ?? '',
+                  notes: data.labels?.[id]?.notes ?? '', prefix: fact.value ?? '', isPrefix: fact.kind === 'prefix', reason: '' })}>{fact.kind === 'prefix' ? 'Correct prefix' : 'Label'}</Button></TableCell>
               </TableRow>;
             })}</TableBody>
           </Table><TablePagination component="div" count={visible.length} page={page} rowsPerPage={rowsPerPage} rowsPerPageOptions={[25, 50, 100]}
@@ -167,6 +192,15 @@ export default function BehaviorPage() {
         {tab === 3 && <TableContainer component={Paper}><Table size="small" aria-label="Baseline decision history"><TableHead><TableRow><TableCell>Time</TableCell><TableCell>Action</TableCell><TableCell>Reason</TableCell><TableCell>Version</TableCell></TableRow></TableHead>
           <TableBody>{[...(data.decisions ?? [])].reverse().map((decision, index) => <TableRow key={`${decision.at}-${index}`}><TableCell>{timeLabel(decision.at)}</TableCell><TableCell>{decision.action}</TableCell><TableCell>{decision.reason}</TableCell><TableCell>{decision.version}</TableCell></TableRow>)}</TableBody>
         </Table></TableContainer>}
+        {tab === 4 && <>
+          <FormControl size="small" sx={{ minWidth: 240 }}><InputLabel id="topology-scope-label">Topology scope</InputLabel>
+            <Select labelId="topology-scope-label" label="Topology scope" value={scope} onChange={event => setScope(event.target.value)}><MenuItem value="">All scopes</MenuItem>{scopes.map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</Select>
+          </FormControl>
+          <Alert severity="info">Green rectangles: directly observed MAC devices. Blue circles: IP hosts. Yellow diamonds: observed/configured prefixes. Lines show observed communications/bindings or prefix membership; they do not imply complete switch topology.</Alert>
+          <Stack direction="row" spacing={2} alignItems="center"><Button onClick={() => setGraphGeneration(value => value + 1)}>Refresh topology</Button>
+            <Typography variant="body2">{topology?.nodes.length ?? 0} shown / {topology?.totalNodes ?? 0} known nodes{topology?.truncated ? ' · Graph capped; inventory retains the full set' : ''}</Typography></Stack>
+          <ChartFrame key={`${graphURL}-${graphGeneration}-${data.version}`} src={`${graphURL}&format=html`} title="Scoped observed network topology" style={{ width: '100%', height: 560, border: 0 }} />
+        </>}
       </>}
     </Stack>
     <Dialog open={action !== null} onClose={() => { if (!busy) setAction(null); }} maxWidth="sm" fullWidth>
@@ -180,5 +214,17 @@ export default function BehaviorPage() {
     <Dialog open={evidence !== null} onClose={() => setEvidence(null)} maxWidth="md" fullWidth><DialogTitle>Observation evidence</DialogTitle>
       <DialogContent><Box component="pre" sx={{ overflow: 'auto', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{evidence}</Box></DialogContent>
       <DialogActions><Button onClick={() => setEvidence(null)}>Close</Button></DialogActions></Dialog>
+    <Dialog open={inventory !== null} onClose={() => { if (!busy) setInventory(null); }} maxWidth="sm" fullWidth><DialogTitle>{inventory?.isPrefix ? 'Correct subnet prefix' : 'Label inventory asset'}</DialogTitle>
+      <DialogContent><Stack spacing={2} sx={{ pt: 1 }}>
+        <Typography variant="body2">Editing baseline v{inventory?.version}. Original observations and alert evidence are retained.</Typography>
+        {inventory?.isPrefix ? <TextField label="Correct CIDR prefix" value={inventory.prefix} onChange={event => setInventory({ ...inventory, prefix: event.target.value })} /> : <>
+          <TextField label="Asset name" value={inventory?.name ?? ''} slotProps={{ htmlInput: { maxLength: 128 } }} onChange={event => inventory && setInventory({ ...inventory, name: event.target.value })} />
+          <TextField label="Asset role" value={inventory?.role ?? ''} slotProps={{ htmlInput: { maxLength: 128 } }} onChange={event => inventory && setInventory({ ...inventory, role: event.target.value })} />
+          <TextField label="Asset notes" value={inventory?.notes ?? ''} multiline slotProps={{ htmlInput: { maxLength: 1024 } }} onChange={event => inventory && setInventory({ ...inventory, notes: event.target.value })} />
+        </>}
+        <TextField label="Inventory decision reason" required value={inventory?.reason ?? ''} slotProps={{ htmlInput: { maxLength: 1024 } }} onChange={event => inventory && setInventory({ ...inventory, reason: event.target.value })} />
+        {failure && <Alert severity="error">{failure}</Alert>}
+      </Stack></DialogContent><DialogActions><Button disabled={busy} onClick={() => setInventory(null)}>Cancel</Button><Button variant="contained" disabled={busy || !inventory?.reason.trim()} onClick={() => void saveInventory()}>Save inventory</Button></DialogActions>
+    </Dialog>
   </Layout>;
 }
