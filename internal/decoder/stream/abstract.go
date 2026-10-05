@@ -104,7 +104,7 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 		wg.Add(1)
 
 		func(d core.DecoderAPI) {
-			w := netio.NewAuditRecordWriter(&netio.WriterConfig{
+			writerConfig := &netio.WriterConfig{
 				CSV:     c.CSV,
 				Encode:  c.Encode,
 				Label:   c.Label,
@@ -135,7 +135,8 @@ func InitAbstractDecoders(c *config.Config) (decoders []core.DecoderAPI, err err
 				CompressionLevel:     c.CompressionLevel,
 				PerfTracker:          c.PerfTracker,
 				LabelManager:         c.LabelManager,
-			})
+			}
+			w := abstractAuditWriter(writerConfig)
 			d.SetWriter(w)
 
 			// call postinit func if set

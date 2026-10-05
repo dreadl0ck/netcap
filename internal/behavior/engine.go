@@ -215,6 +215,10 @@ func (e *Engine) Snapshot() Snapshot {
 	_ = json.Unmarshal(data, &snapshot)
 	if e.err != nil {
 		snapshot.Error = e.err.Error()
+	} else if source, ok := e.sink.(interface{ Error() error }); ok {
+		if err := source.Error(); err != nil {
+			snapshot.Error = err.Error()
+		}
 	}
 	return snapshot
 }
@@ -353,6 +357,12 @@ func (e *Engine) Checkpoint() error {
 	}
 	if e.err != nil {
 		return e.err
+	}
+	if source, ok := e.sink.(interface{ Error() error }); ok {
+		if err := source.Error(); err != nil {
+			e.err = err
+			return err
+		}
 	}
 	e.err = writeSnapshot(e.config.Path, e.state)
 	return e.err

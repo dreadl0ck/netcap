@@ -130,8 +130,9 @@ baseline explicitly with `-behavior-baseline <path>`.
 | Bounds | `-behavior-max-facts` defaults to 10,000; overflow is visible and prevents approving incomplete learning |
 | Persistence | Atomic checkpoints every second and on shutdown; a single-writer file lock prevents concurrent baseline mutation |
 | Alerts | `Alert.ncap.gz` is appended and synced per alert, readable before capture finishes; malformed history is rejected without overwriting it |
+| Live API | `GET /api/alerts/stream` emits SSE alerts with durable-history cursors; reconnect using `Last-Event-ID`. At most 8 readers; slow-client write deadline 10 s; replacement/truncation produces a gap |
 
-These paths implement the first W58 slice. Lateral correlation, geographic/rate
+These paths implement the initial W58 slices. Lateral correlation, geographic/rate
 policies, topology controls and the live alert UI require subsequent integration.
 Endpoint visibility is limited to traffic at the selected interface; encrypted
 SSH/RDP connection patterns do not establish authentication failures.

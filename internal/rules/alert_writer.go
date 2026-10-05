@@ -73,6 +73,7 @@ type alertStore struct {
 	err    error
 	buffer bytes.Buffer
 	gzip   *gzip.Writer
+	header *types.Header
 }
 
 // Rule jobs in one process share a file; separate processes must use separate output directories.
@@ -199,7 +200,11 @@ func (w *FileAlertWriter) WriteAlert(alert *types.Alert) error {
 		s.file = file
 	}
 	if s.size == 0 {
-		if err := s.appendMember(netio.NewHeader(types.Type_NC_Alert, "", "", false, time.Now())); err != nil {
+		header := s.header
+		if header == nil {
+			header = netio.NewHeader(types.Type_NC_Alert, "", "", false, time.Now())
+		}
+		if err := s.appendMember(header); err != nil {
 			return err
 		}
 		if err := syncAlertDirectory(filepath.Dir(s.path)); err != nil {
@@ -253,6 +258,15 @@ func (s *alertStore) appendMember(msg proto.Message) error {
 	}
 	s.size += int64(n)
 	return nil
+}
+
+// Error includes failures raised by other writers sharing this file.
+func (w *FileAlertWriter) Error() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.store.mu.Lock()
+	defer w.store.mu.Unlock()
+	return w.store.err
 }
 
 // Close releases this writer; it is idempotent and reports persistence failures.

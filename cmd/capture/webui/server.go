@@ -217,6 +217,7 @@ type Server struct {
 	currentProcessing *AnalysisJob      // Currently processing job (service mode only)
 	currentProc       *os.Process       // Currently running out-of-process net capture (for cleanup; nil in the in-process/appstore build)
 	currentCmdMutex   sync.RWMutex      // Mutex for currentProc
+	alertStreams      int               // protected by mu
 }
 
 // UploadCallbackFunc is called when files are uploaded via the web UI
@@ -539,6 +540,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/rule-sets", s.handleRuleSets)
 	mux.HandleFunc("/api/rule-sets/", s.handleRuleSet)
 	mux.HandleFunc("/api/alerts", s.handleAlerts)
+	mux.HandleFunc("/api/alerts/stream", s.handleAlertsStream)
 	mux.HandleFunc("/api/alerts/grouped", s.handleGroupedAlerts)
 	mux.HandleFunc("/api/alerts/stats", s.handleAlertStats)
 	mux.HandleFunc("/api/alerts/clear", s.handleClearAlerts)
