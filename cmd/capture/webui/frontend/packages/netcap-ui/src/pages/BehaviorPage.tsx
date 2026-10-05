@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent,
   DialogTitle, FormControl, InputLabel, MenuItem, Paper, Select, Stack, Tab, Table, TableBody,
   TableCell, TableContainer, TableHead, TablePagination, TableRow, Tabs, TextField, Typography } from '@mui/material';
@@ -14,7 +14,11 @@ import type { BehaviorAction, BehaviorSnapshot, BehaviorTopology } from '../lib/
 
 const timeLabel = (ns: number) => ns > 0 ? new Date(ns / 1e6).toLocaleString() : 'Not observed';
 
-export default function BehaviorPage() {
+export interface BehaviorPageProps {
+  renderEvidenceActions?: (evidence: string) => ReactNode;
+}
+
+export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProps = {}) {
   const api = useNetcapApi();
   const router = useNetcapRouter();
   const config = useNetcapConfig();
@@ -213,7 +217,7 @@ export default function BehaviorPage() {
     </Dialog>
     <Dialog open={evidence !== null} onClose={() => setEvidence(null)} maxWidth="md" fullWidth><DialogTitle>Observation evidence</DialogTitle>
       <DialogContent><Box component="pre" sx={{ overflow: 'auto', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{evidence}</Box></DialogContent>
-      <DialogActions><Button onClick={() => setEvidence(null)}>Close</Button></DialogActions></Dialog>
+      <DialogActions>{evidence && renderEvidenceActions?.(evidence)}<Button onClick={() => setEvidence(null)}>Close</Button></DialogActions></Dialog>
     <Dialog open={inventory !== null} onClose={() => { if (!busy) setInventory(null); }} maxWidth="sm" fullWidth><DialogTitle>{inventory?.isPrefix ? 'Correct subnet prefix' : 'Label inventory asset'}</DialogTitle>
       <DialogContent><Stack spacing={2} sx={{ pt: 1 }}>
         <Typography variant="body2">Editing baseline v{inventory?.version}. Original observations and alert evidence are retained.</Typography>
