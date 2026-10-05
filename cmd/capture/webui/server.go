@@ -1528,14 +1528,17 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 	totalRecords := 0
 	totalRulesProcessed := 0
 
-	// Create a single alert writer for the entire job
-	// This ensures we read existing alerts once and write all new alerts at the end
+	// Share one incremental alert writer across the job's rule engines.
 	alertWriter, err := rules.NewFileAlertWriter(job.OutputDir)
 	if err != nil {
 		log.Printf("%s Failed to create alert writer for session %s: %v", mode, job.SessionID, err)
 		return
 	}
-	defer alertWriter.Close()
+	defer func() {
+		if err := alertWriter.Close(); err != nil {
+			log.Printf("%s Failed to close alert writer for session %s: %v", mode, job.SessionID, err)
+		}
+	}()
 
 	// Group rules by type to minimize file reads
 	// We want to read each audit file (e.g. TCP.ncap.gz) only once
@@ -1612,9 +1615,9 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 			// Evaluate
 			alerts, err := engine.Evaluate(auditRecord)
 			if err != nil {
-				// Log error but continue
-				// log.Printf("%s Error evaluating record: %v", mode, err)
-				continue
+				reader.Close()
+				log.Printf("%s Rule execution failed for session %s: %v", mode, job.SessionID, err)
+				return
 			}
 			batchAlerts += alerts
 		}

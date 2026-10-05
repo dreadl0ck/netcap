@@ -1095,7 +1095,11 @@ func (s *Server) executeRuleOnCapture(rule *rules.Rule, outDir string) (alertsCo
 	if err != nil {
 		return 0, 0, fmt.Errorf("failed to create alert writer: %w", err)
 	}
-	defer alertWriter.Close()
+	defer func() {
+		if closeErr := alertWriter.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close alert writer: %w", closeErr)
+		}
+	}()
 
 	// Create a rules engine with just this rule
 	// Note: We can't use NewEngine as it expects a file path, so we create manually
@@ -1155,8 +1159,7 @@ func (s *Server) executeRuleOnCapture(rule *rules.Rule, outDir string) (alertsCo
 		// Evaluate the record against the rule
 		alerts, err := engine.Evaluate(auditRecord)
 		if err != nil {
-			log.Printf("[WebUI] Error evaluating record: %v", err)
-			continue
+			return alertsCount, recordsRead, fmt.Errorf("failed to evaluate record: %w", err)
 		}
 
 		alertsCount += alerts
