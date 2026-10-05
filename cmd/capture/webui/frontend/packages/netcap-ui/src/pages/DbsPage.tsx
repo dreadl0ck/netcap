@@ -35,6 +35,10 @@ import {
   AlertTitle,
   Button,
   Snackbar,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 // MUI 7's Grid ignores item/xs; GridLegacy keeps the v5 API these pages use.
 import Grid from '@mui/material/GridLegacy';
@@ -50,7 +54,8 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 
 // Map database types to friendly names and colors
 const DB_TYPE_INFO: Record<string, { label: string; color: 'primary' | 'secondary' | 'success' | 'warning' | 'info' | 'error' | 'default' }> = {
-  maxmind: { label: 'MaxMind GeoIP', color: 'primary' },
+  maxmind: { label: 'GeoIP (MMDB)', color: 'primary' },
+  mmdb: { label: 'GeoIP (MMDB)', color: 'primary' },
   sqlite: { label: 'SQLite', color: 'secondary' },
   bleve: { label: 'Bleve Index (unused since v0.10)', color: 'default' },
   json: { label: 'JSON', color: 'info' },
@@ -62,6 +67,8 @@ const DB_TYPE_INFO: Record<string, { label: string; color: 'primary' | 'secondar
 
 // Map database file names to descriptions
 const DB_DESCRIPTIONS: Record<string, string> = {
+  'dbip-city-lite.mmdb': 'DB-IP Lite City - monthly country and approximate city geolocation',
+  'dbip-asn-lite.mmdb': 'DB-IP Lite ASN - monthly autonomous system number and organization',
   'GeoLite2-City.mmdb': 'MaxMind GeoLite2 City database - provides city-level geolocation data for IP addresses',
   'GeoLite2-ASN.mmdb': 'MaxMind GeoLite2 ASN database - provides autonomous system number information',
   'netcap.sqlite': 'Vulnerability and exploit database - NIST NVD CVEs and ExploitDB entries with full-text search, shared by the Go and Rust engines',
@@ -80,6 +87,8 @@ export default function DatabasesPage() {
     refreshInterval: 0, // No need to refresh automatically
   });
   const { data: status } = useSWR('status', () => api.getStatus());
+  const { data: geoStatus, mutate: refreshGeoStatus } = useSWR('dbs/status', () => api.getDatabaseStatus(), { refreshInterval: 5000 });
+  const [savingGeo, setSavingGeo] = useState(false);
   
   const [updating, setUpdating] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -108,6 +117,22 @@ export default function DatabasesPage() {
 
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
+  };
+
+  const setProviders = async (providers: string) => {
+    setSavingGeo(true);
+    try {
+      const result = await api.setGeoProviders(providers);
+      await refreshGeoStatus(result, false);
+      setSnackbarMessage('Provider order saved. Applies to the next capture.');
+      setSnackbarSeverity('success');
+    } catch (error) {
+      setSnackbarMessage((error as Error).message);
+      setSnackbarSeverity('error');
+    } finally {
+      setSnackbarOpen(true);
+      setSavingGeo(false);
+    }
   };
 
   if (isLoading) {
@@ -164,6 +189,32 @@ export default function DatabasesPage() {
       }
     >
       <Box>
+        {geoStatus && (
+          <Card variant="outlined" sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>Geolocation providers</Typography>
+              <FormControl fullWidth disabled={savingGeo}>
+                <InputLabel id="geo-provider-label">Provider order</InputLabel>
+                <Select labelId="geo-provider-label" label="Provider order" value={geoStatus.geoProviders || 'dbip,geolite2'} onChange={(event) => setProviders(event.target.value)}>
+                  <MenuItem value="dbip,geolite2">DB-IP, then GeoLite2</MenuItem>
+                  <MenuItem value="geolite2,dbip">GeoLite2, then DB-IP</MenuItem>
+                  <MenuItem value="dbip">DB-IP only</MenuItem>
+                  <MenuItem value="geolite2">GeoLite2 only</MenuItem>
+                </Select>
+              </FormControl>
+              <Typography variant="body2" sx={{ mt: 2 }}>Only selected providers load. Location and ASN each fall back in this order. Changes apply to new captures; existing records are unchanged.</Typography>
+              {geoStatus.geoStatus?.map((provider) => (
+                <Box key={provider.name} sx={{ mt: 2 }}>
+                  <Typography variant="subtitle2">{provider.name === 'dbip' ? 'DB-IP Lite' : 'MaxMind GeoLite2'}: {provider.selected ? 'selected' : 'not selected'}, {provider.available ? 'available' : 'unavailable'}{provider.loaded ? ', loaded in this process' : ''}</Typography>
+                  {provider.available && <Typography variant="caption">City build: {provider.cityBuild}; ASN build: {provider.asnBuild}</Typography>}
+                  {!provider.available && <Typography variant="body2" color="text.secondary">{provider.error}</Typography>}
+                </Box>
+              ))}
+              <Typography variant="body2" sx={{ mt: 2 }}>DB-IP Lite is bundled with v2 community databases. GeoLite2 is user-installed: set NETCAP_GEOLITE_API_KEY and run <code>net util -download-geolite</code>. City names are approximate, including for anycast and mobile networks.</Typography>
+              {geoStatus.geoError && <Alert severity="error" sx={{ mt: 2 }}>{geoStatus.geoError}</Alert>}
+            </CardContent>
+          </Card>
+        )}
         {/* Summary Cards */}
         <Grid container spacing={3} mb={4}>
           <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
@@ -335,4 +386,3 @@ export default function DatabasesPage() {
     </Layout>
   );
 }
-

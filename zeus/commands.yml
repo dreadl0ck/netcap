@@ -594,7 +594,7 @@ commands:
             cp /usr/local/etc/netcap/livecapture.conf dist/
             #cp -r /usr/local/etc/netcap/exploits dist/
             cp /usr/local/etc/netcap/dbs/hosts dist/
-            cp /usr/local/etc/netcap/dbs/*.mmdb dist/
+            cp /usr/local/etc/netcap/dbs/dbip-*-lite.mmdb dist/
             cp /usr/local/etc/netcap/fingerprint_api_key dist/
 
     ## Frontend
@@ -1152,26 +1152,8 @@ commands:
         exec: GOPROXY=proxy.golang.org go list -m github.com/dreadl0ck/netcap@${VERSION}
 
     download-geolite:
-        description: download the last maxmind geolite version that has been distributed under the creative commons licencse
-        exec: |
-            mkdir -p dist/geolite
-            cd dist/geolite
-
-            if [ ! -f GeoLite2-City_20191224/GeoLite2-City.mmdb ]; then
-                echo "downloading GeoLite2-City.tar.gz"
-                wget -q https://web.archive.org/web/20191227182209if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz
-                tar xzf GeoLite2-City.tar.gz
-            else
-                echo "GeoLite2-City_20191224/GeoLite2-City.mmdb already downloaded"
-            fi
-
-            if [ ! -f GeoLite2-ASN_20192124/GeoLite2-ASN.mmdb ]; then
-                echo "downloading GeoLite2-ASN.tar.gz"
-                wget -q https://web.archive.org/web/20191227182527if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz
-                tar xzf GeoLite2-ASN.tar.gz
-            else
-                echo "GeoLite2-ASN_20191224/GeoLite2-ASN.mmdb already downloaded"
-            fi
+        description: download optional user-local GeoLite2 with NETCAP_GEOLITE_API_KEY
+        exec: net util -download-geolite
 
     callvis:
         description: generate callvis graphics

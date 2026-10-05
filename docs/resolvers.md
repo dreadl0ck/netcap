@@ -19,6 +19,8 @@ External data sources are stored in a central directory on the system, which def
 Database files:
 
 * _domain-whitelist.csv_
+* _dbip-city-lite.mmdb_
+* _dbip-asn-lite.mmdb_
 * _GeoLite2-City.mmdb_
 * _GeoLite2-ASN.mmdb_
 * _ja3fingerprint.json_
@@ -35,9 +37,8 @@ By default, all resolvers are disabled. You need to use the **-reverse-dns**, **
 
 ## Quickstart
 
-You can download a bundled version of all databases except for the MaxMind GeoLite, here:
-
-{% file src=".gitbook/assets/resolver-dbs \(1\) \(2\).zip" %}
+Run `net util -download-dbs` for the current community database archive,
+including DB-IP Lite in layout 2. GeoLite2 and Nmap probes are user-installed.
 
 ## DNS
 
@@ -57,29 +58,21 @@ And provide it to netcaps resolver via a **hosts** file in the database director
 
 ## Domain Whitelisting
 
-To filter known legitimate domains away, the alexa top 1 million can be used for example.
-
-{% embed url="https://aws.amazon.com/alexa-top-sites/" caption="" %}
-
-You can download the CSV file here:
-
-{% embed url="http://s3.amazonaws.com/alexa-static/top-1m.csv.zip" caption="" %}
-
-Rename it to **domain-whitelist.csv** and move it into the database path:
-
-```text
-$ mv top-1m.csv ~/.config/netcap/dbs/domain-whitelist.csv
-```
+An optional local `domain-whitelist.csv` contains `rank,domain` rows for the
+filtered transforms. The Alexa feed is retired and no whitelist is shipped.
 
 ## Geolocation
 
-To determine the geolocation for a given host, the MaxMind GeoLite database is used. The lite database is freely available, but you have to register on their website to download it.
+`-geoProviders dbip,geolite2` uses bundled DB-IP Lite first and optional
+user-installed GeoLite2 second. Use `dbip`, `geolite2` or `geolite2,dbip` to
+control loading and priority; `NC_GEO_PROVIDERS` sets the same order.
+Location and ASN fall back separately. The Databases page saves an order for new
+captures and shows availability, loaded providers and build timestamps.
+`-geoDB=false` disables enrichment.
 
-{% embed url="https://dev.maxmind.com/geoip/geoip2/geolite2/" caption="GeoLite2 MaxMind" %}
-
-Geolocation lookups can provide the Country, City and ASN for a given IP address.
-
-Download the databases and move them into the database path.
+DB-IP Lite (CC BY 4.0) is credited through the web UI footer and archive notices.
+City names are approximate. User-installed MaxMind files are never included in
+community archives. See [provider and installation instructions](../internal/dbs/README.md#geolocation-providers).
 
 ## Vendor Identification
 
@@ -104,4 +97,3 @@ To identify hosts that use TLS connections, the Ja3 fingerprint database from **
 For more fingerprints, you can load other databases additionally. For example from **ja3erDB**:
 
 {% embed url="https://ja3er.com/downloads.html" caption="Ja3er JSON database downloads" %}
-

@@ -11,6 +11,79 @@ import (
 	"testing"
 )
 
+func TestArchivesExcludeUserInstalledAndRetiredData(t *testing.T) {
+	for _, method := range []string{"generator", "server", "packer"} {
+		t.Run(method, func(t *testing.T) {
+			root := t.TempDir()
+			dir := filepath.Join(root, "dbs")
+			if err := os.Mkdir(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			for _, name := range []string{"nmap-service-probes", "domain-whitelist.csv", "GeoLite2-ASN.mmdb", "GeoLite2-City.mmdb", "GeoLite2-Country.mmdb", "sample.json"} {
+				if err := os.WriteFile(filepath.Join(dir, name), []byte("fixture"), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			var archive bytes.Buffer
+			switch method {
+			case "generator":
+				if err := makeTarball(dir, "dbs", &archive); err != nil {
+					t.Fatal(err)
+				}
+			case "server":
+				path := filepath.Join(root, "release.tar.gz")
+				if _, _, err := new(DBServer).createTarball(dir, path); err != nil {
+					t.Fatal(err)
+				}
+				body, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				archive.Write(body)
+			case "packer":
+				cmd := exec.Command("bash", "../../zeus/scripts/pack-dbs.sh", "-d", dir, "-o", root, "-v", "2026-10-05", "-D", "false")
+				if output, err := cmd.CombinedOutput(); err != nil {
+					t.Fatalf("pack: %v\n%s", err, output)
+				}
+				body, err := os.ReadFile(filepath.Join(root, "2026-10-05.tar.gz"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				archive.Write(body)
+			}
+			zr, err := gzip.NewReader(&archive)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer zr.Close()
+			tr := tar.NewReader(zr)
+			found := false
+			for {
+				h, err := tr.Next()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				switch filepath.Base(h.Name) {
+				case "nmap-service-probes", "domain-whitelist.csv", "GeoLite2-ASN.mmdb", "GeoLite2-City.mmdb", "GeoLite2-Country.mmdb":
+					t.Fatalf("shipped %s", h.Name)
+				}
+				if filepath.Base(h.Name) == "sample.json" {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatal("omitted allowed data")
+			}
+			if _, err := os.Stat(filepath.Join(dir, "nmap-service-probes")); err != nil {
+				t.Fatalf("modified user-installed source: %v", err)
+			}
+		})
+	}
+}
+
 func TestGeneratedDatabaseArchiveIncludesNotices(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "dbs")
 	if err := os.Mkdir(dir, 0o755); err != nil {

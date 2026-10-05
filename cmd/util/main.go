@@ -82,8 +82,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	}
 
 	if c.Bool("download-geolite") {
-		dbs.DownloadGeoLite()
-		return nil
+		return dbs.DownloadGeoLite()
 	}
 
 	if c.Bool("serve-dbs") {

@@ -116,11 +116,12 @@ type RuntimeConfig struct {
 	Context       bool
 
 	// Database/Enrichment
-	MacDB      bool
-	ServiceDB  bool
-	GeoDB      bool
-	ReverseDNS bool
-	LocalDNS   bool
+	MacDB        bool
+	ServiceDB    bool
+	GeoDB        bool
+	GeoProviders string
+	ReverseDNS   bool
+	LocalDNS     bool
 
 	// TCP Reassembly
 	ReassembleConnections bool
@@ -163,33 +164,34 @@ type RuntimeConfig struct {
 
 // Server represents the web UI HTTP server
 type Server struct {
-	addr               string
-	outDir             string
-	baseOutDir         string // Original output directory for multi-file mode
-	inputFiles         []string
-	assetsPath         string
-	httpServer         *http.Server
-	mu                 sync.RWMutex
-	isProcessing       bool
-	isLiveMode         bool                           // Whether in live capture mode
-	stopCapture        context.CancelFunc             // Function to stop live capture
-	activeInputFile    string                         // Currently selected input file for viewing
-	completedFiles     map[string]bool                // Tracks which files have completed processing
-	processingStats    ProcessingStats                // Live processing statistics
-	fileErrors         map[string]FileError           // Tracks errors for each file
-	debugLogging       bool                           // Runtime debug logging state
-	payloadCapture     bool                           // Runtime payload capture state (default false)
-	dpiConfigured      bool                           // Whether DPI was configured at startup (via -dpi flag)
-	runtimeConfig      *RuntimeConfig                 // Actual runtime configuration values from flags
-	collector          CollectorInterface             // Reference to collector for runtime config changes
-	uploadCallback     UploadCallbackFunc             // Function to call when files are uploaded
-	fileBPFFilters     map[string]string              // Tracks BPF filter used for each file
-	fileOutputDirs     map[string]string              // Tracks actual output directory for each file
-	fileProcessingTime map[string]float64             // Tracks processing time in seconds for each file
-	dpiPreferences     map[string]*UserDPIPreferences // DPI preferences per user IP
-	reportedIssues     map[string]bool                // Tracks which file hashes have had issues reported
-	fileIDToPath       map[string]string              // Maps file IDs to file paths (local mode)
-	devMode            bool                           // Development mode: use current binary instead of "net"
+	addr                 string
+	outDir               string
+	baseOutDir           string // Original output directory for multi-file mode
+	inputFiles           []string
+	assetsPath           string
+	httpServer           *http.Server
+	mu                   sync.RWMutex
+	geoProvidersOverride string
+	isProcessing         bool
+	isLiveMode           bool                           // Whether in live capture mode
+	stopCapture          context.CancelFunc             // Function to stop live capture
+	activeInputFile      string                         // Currently selected input file for viewing
+	completedFiles       map[string]bool                // Tracks which files have completed processing
+	processingStats      ProcessingStats                // Live processing statistics
+	fileErrors           map[string]FileError           // Tracks errors for each file
+	debugLogging         bool                           // Runtime debug logging state
+	payloadCapture       bool                           // Runtime payload capture state (default false)
+	dpiConfigured        bool                           // Whether DPI was configured at startup (via -dpi flag)
+	runtimeConfig        *RuntimeConfig                 // Actual runtime configuration values from flags
+	collector            CollectorInterface             // Reference to collector for runtime config changes
+	uploadCallback       UploadCallbackFunc             // Function to call when files are uploaded
+	fileBPFFilters       map[string]string              // Tracks BPF filter used for each file
+	fileOutputDirs       map[string]string              // Tracks actual output directory for each file
+	fileProcessingTime   map[string]float64             // Tracks processing time in seconds for each file
+	dpiPreferences       map[string]*UserDPIPreferences // DPI preferences per user IP
+	reportedIssues       map[string]bool                // Tracks which file hashes have had issues reported
+	fileIDToPath         map[string]string              // Maps file IDs to file paths (local mode)
+	devMode              bool                           // Development mode: use current binary instead of "net"
 
 	// Rules cache
 	rulesConfig      any // Cached rules config (uses rules.Config type to avoid circular import)

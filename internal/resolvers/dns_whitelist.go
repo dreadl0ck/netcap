@@ -23,6 +23,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -34,9 +35,13 @@ var dnsWhitelist = make(map[string]struct{})
 // InitDNSWhitelist initializes the domain whitelist.
 func InitDNSWhitelist() {
 	var hosts int
+	dnsWhitelist = make(map[string]struct{})
 
 	data, err := ioutil.ReadFile(filepath.Join(DataBaseFolderPath, "domain-whitelist.csv"))
 	if err != nil {
+		if os.IsNotExist(err) {
+			return
+		}
 		log.Fatal(err)
 	}
 

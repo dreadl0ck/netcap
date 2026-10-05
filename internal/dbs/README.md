@@ -52,6 +52,71 @@ net util -download-dbs
 net util -download-dbs -force
 ```
 
+### Geolocation providers
+
+Layout 2 bundles `dbip-city-lite.mmdb` and `dbip-asn-lite.mmdb` from
+[DB-IP Lite](https://db-ip.com/db/lite.php), licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Layout 1 excludes them.
+`geoip-sources.json` records each release month, source URL and SHA-256.
+The generator and nightly server try the current month, then the previous month;
+a verified cache survives an upstream outage. Invalid MMDB types or modified
+files prevent packaging. The packer uses `v2/` when `netcap.sqlite` is present;
+legacy input goes to `dbs/` and excludes DB-IP. Packing v2 DB-IP inputs requires
+Python 3 for manifest/hash verification.
+
+| `-geoProviders` / `NC_GEO_PROVIDERS` | Use |
+| --- | --- |
+| `dbip,geolite2` | Default: DB-IP first, then optional GeoLite2 |
+| `geolite2,dbip` | Prefer user-installed GeoLite2, fall back to DB-IP |
+| `dbip` | Load DB-IP only |
+| `geolite2` | Load GeoLite2 only |
+
+`-geoDB=false` disables all geolocation. Location (country/city together) and
+ASN fall back independently; country, city and ASN output formats are unchanged.
+Each selected provider requires its City and ASN pair. Missing or corrupt
+providers are skipped; an unselected provider is never used. Reloading providers
+clears the lookup cache. Startup logs and `/api/dbs/status` show loaded providers
+and build timestamps. The Databases page saves its order in
+`$NC_CONFIG_ROOT/geoip-settings.json` (normally `~/.config/netcap/`), for new
+captures. Precedence: explicit CLI/config value, environment, saved UI order,
+default. UI changes override the running server's startup order for new jobs.
+
+City estimates are approximate and monthly DB-IP Lite has lower accuracy than
+its commercial edition. Anycast/mobile addresses need particular care. DB-IP
+IPv6 city results with no matching DB-IP ASN are suppressed to avoid its broad
+unallocated-address fallback; GeoLite2 can supply the next result. This may also
+suppress legitimate IPv6 city data where the ASN database has a coverage gap.
+The shared web UI footer credits DB-IP and GeoNames. Applications redistributing
+or displaying the data must retain attribution and the licence link.
+
+### Optional user-installed databases
+
+The community archives exclude `nmap-service-probes` and every `GeoLite2-*.mmdb`.
+The retired Alexa feed (`domain-whitelist.csv`) is no longer fetched or shipped.
+The generator, server and `pack-dbs.sh` also exclude user-installed copies when
+creating an archive.
+
+Existing installations can fetch the republished archive with
+`net util -download-dbs -force`. Extraction preserves existing local files;
+remove an old community-supplied `domain-whitelist.csv` yourself if present.
+Keep any whitelist you maintain locally. Nmap and MaxMind files already installed
+by the user remain local.
+
+Set `DBS_DIR` to the database directory reported by Netcap (normally
+`$HOME/.config/netcap/dbs`, or `$NC_CONFIG_ROOT/dbs` when configured).
+
+| Data | Install locally |
+| --- | --- |
+| Nmap service probes | Review [NPSL](https://nmap.org/npsl/), including §3's reader conditions. Copy `nmap-service-probes` from your Nmap installation (often `/usr/share/nmap/`), or use the command below. Separate downloading does not settle Netcap/NPSL compatibility. |
+| MaxMind GeoLite2 | Register at [MaxMind](https://www.maxmind.com/), accept its terms and download GeoLite2 ASN and City. Extract `GeoLite2-ASN.mmdb` and `GeoLite2-City.mmdb` into `DBS_DIR`. Alternatively, set `NETCAP_GEOLITE_API_KEY` to your own license key and run `net util -download-geolite`. Do not republish these downloads. |
+
+```bash
+DBS_DIR="$HOME/.config/netcap/dbs" # replace with your configured directory
+mkdir -p "$DBS_DIR"
+curl --fail --location https://svn.nmap.org/nmap/nmap-service-probes \
+  --output "$DBS_DIR/nmap-service-probes"
+```
+
 ### API Endpoints
 
 - `GET /health` - Health check (reports `layout`)
@@ -73,8 +138,9 @@ netcap-dbs-server/          # Root directory (NC_CONFIG_ROOT)
 │   ├── 2026-10-04.json
 │   ├── latest.tar.gz       # symlink, replaced atomically
 │   └── latest.json
-├── dbs/                    # Frozen layout 1 revision, never rewritten
+├── dbs/                    # Legacy layout 1; data-source removals may be republished
 ├── staging/                # Private to a rebuild: build/ downloads, dbs/ tarball content
+├── geoip-cache/             # Verified monthly DB-IP pair and source manifest
 └── build/
 ```
 
@@ -175,7 +241,8 @@ If you want to **contribute** to the repository, you will need to install the lf
 
 ## Data Sources
 
-The following data sources are included:
+The following catalogue includes historical sources; `DATABASE_NOTICES.txt`
+describes the distributed files. Optional and retired sources are marked below.
 
 ### Wappalyzer Technologies Database
 
@@ -197,28 +264,16 @@ License: Commercial
 
 ### Domain Whitelist (Alexa Top 1 million)
 
-Commonly seen domains on the web, mostly from legitimate companies not known to distribute malicious software.
-
-Be aware that some malicious domains made it into this list in the past,
-but this list is still useful to filter out likely harmless traffic on big datasets.
-
-Source: http://s3.amazonaws.com/alexa-static/top-1m.csv.zip
-
-License: MIT
+Retired. `domain-whitelist.csv` is no longer fetched or shipped. A local
+`rank,domain` CSV remains optional for the filtered transforms.
 
 ### MaxMind GeoLite2 CC Databases
 
 For retrieving geographic City and ASN information about an IP address.
 
-This repository contains the last version of the database that was distributed under the Creative Commons license (from the 27th of December 2019, backed up the by the web archive).
-
-For obtaining the latest version, you have to sign up at maxmind and agree to their terms of service:
-
-https://blog.maxmind.com/2019/12/18/significant-changes-to-accessing-and-using-geolite2-databases
-
-To ensure the latest version is not accidentally pushed into the repository pre-commit and post-commit git hooks are used, essentially hot swapping the versions in the repository root with the CC licensed ones on every commit.
-
-License: CC / Commercial
+User-installed only; community archives exclude all `GeoLite2-*.mmdb`, including
+the historical 2019 snapshots. See [installation instructions](#optional-user-installed-databases)
+for account-based downloads under MaxMind's terms.
 
 ### HASSHDB from AdelKa
 
@@ -267,6 +322,9 @@ Source: https://macaddress.io/database-download
 License: https://macaddress.io/terms-of-service
 
 ### Nmap Service Probes
+
+User-installed only; community archives exclude `nmap-service-probes`.
+See [installation instructions](#optional-user-installed-databases).
 
 https://svn.nmap.org/nmap/nmap-service-probes
 

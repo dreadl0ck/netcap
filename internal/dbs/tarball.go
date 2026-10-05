@@ -38,6 +38,9 @@ import (
 
 // makeTarball will create a compressed tarball
 func makeTarball(source string, revision string, buf io.Writer) error {
+	if err := validateGeoIPBundle(source); err != nil {
+		return err
+	}
 
 	// tar -> gzip -> buffer
 	var (
@@ -50,6 +53,15 @@ func makeTarball(source string, revision string, buf io.Writer) error {
 
 	// process every file in the source folder
 	err := filepath.Walk(source, func(file string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if excludedFromDistribution(file) {
+			if fi.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
 
 		// generate tar header for archive
 		hdr, err := tar.FileInfoHeader(fi, file)

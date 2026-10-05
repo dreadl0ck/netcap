@@ -63,7 +63,9 @@ See the [Gallery](docs/GALLERY.md) for screenshots.
 ### Enrichment
 
 - DNS reverse resolution
-- GeoIP geolocation (MaxMind)
+- GeoIP geolocation and ASN: bundled DB-IP Lite with optional user-installed
+  GeoLite2. Select providers using `-geoProviders dbip,geolite2` (default order)
+  or the Databases page; see [GeoIP configuration](internal/dbs/README.md#geolocation-providers).
 - MAC vendor lookup
 - Deep Packet Inspection (optional, via nDPI/libprotoident)
 - **Hyperscan / Vectorscan** acceleration (optional) — multi-pattern regex prefilter for nmap service probes (~2.2× faster), CMS/web framework detection (~1.4×) and rule-engine `MatchesPattern` (up to ~6× on miss-heavy detection traffic), see [docs/hyperscan.md](docs/hyperscan.md)

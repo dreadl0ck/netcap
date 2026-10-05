@@ -92,6 +92,7 @@ func runServiceMode() {
 
 		ServiceDB:             flagServiceDB,
 		GeoDB:                 flagGeolocationDB,
+		GeoProviders:          flagGeoProviders,
 		ReverseDNS:            flagReverseDNS,
 		LocalDNS:              flagLocalDNS,
 		ReassembleConnections: flagReassembleConnections,

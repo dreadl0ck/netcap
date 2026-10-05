@@ -124,6 +124,10 @@ func Init(c Config, quietMode bool) {
 				"Download the databases from the Databases screen, "+
 				"or pass -geoDB=false to silence this.", err)
 		}
+	} else {
+		geoMu.Lock()
+		closeGeoProviders()
+		geoMu.Unlock()
 	}
 	if c.DHCPDB {
 		InitDHCPFingerprintDB()

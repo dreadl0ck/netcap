@@ -32,6 +32,7 @@ require (
 	github.com/klauspost/pgzip v1.2.6
 	github.com/magiconair/properties v1.8.0
 	github.com/mark3labs/mcp-go v0.46.0
+	github.com/maxmind/mmdbwriter v1.2.0
 	github.com/mcnijman/go-emailaddress v1.1.1
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/namsral/flag v1.7.4-pre
@@ -85,6 +86,7 @@ require (
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
+	github.com/oschwald/maxminddb-golang/v2 v2.1.1 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.1 // indirect
@@ -94,6 +96,7 @@ require (
 	github.com/spf13/cast v1.7.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.3 // indirect
+	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect

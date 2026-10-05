@@ -189,6 +189,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 				JA4DB:         c.Bool("ja4DB"),
 				ServiceDB:     c.Bool("serviceDB"),
 				GeolocationDB: c.Bool("geoDB"),
+				GeoProviders:  c.String("geoProviders"),
 			},
 			OutDirPermission:      0o700,
 			FreeOSMem:             0,

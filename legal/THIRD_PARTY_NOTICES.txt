@@ -4,6 +4,17 @@ This distribution includes software and data under the licenses described here,
 in THIRD_PARTY_LICENSES.txt, and in THIRD_PARTY_RUST_LICENSES.txt. Netcap itself
 is licensed under GPL-3.0; see ../LICENSE.
 
+DB-IP Lite geolocation data
+---------------------------
+IP Geolocation by DB-IP (https://db-ip.com/), copyright DB-IP / Eris Networks
+S.A.S., licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/).
+Includes GeoNames data (https://www.geonames.org/) under CC BY.
+Community layout-2 database archives include unmodified DB-IP Lite City and
+ASN MMDBs with normalized filenames; geoip-sources.json records their releases
+and hashes. Redistribution requires attribution and a license link. Web
+applications using the data must link to DB-IP on pages showing results.
+Optional user-supplied GeoLite2 data has separate MaxMind terms.
+
 Corresponding source for Netcap
 -------------------------------
 The complete corresponding source for a release is available at no charge from

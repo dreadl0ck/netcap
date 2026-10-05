@@ -20,12 +20,14 @@
 package capture
 
 import (
+	"context"
 	"runtime"
 	"time"
 
 	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 )
 
 // Flags returns all flag names.
@@ -344,6 +346,18 @@ func GetFlags() []cli.Flag {
 			Value:   true,
 			Usage:   "use geolocation for device profiling",
 			Sources: cli.EnvVars("NC_GEODB"),
+		},
+		&cli.StringFlag{
+			Name:    "geoProviders",
+			Usage:   "ordered GeoIP providers: dbip,geolite2 (default), dbip, geolite2, or geolite2,dbip",
+			Sources: cli.EnvVars("NC_GEO_PROVIDERS"),
+			Action: func(_ context.Context, _ *cli.Command, value string) error {
+				if value == "" {
+					return nil
+				}
+				_, err := resolvers.ParseGeoProviders(value)
+				return err
+			},
 		},
 		&cli.BoolFlag{
 			Name:    "dpi",

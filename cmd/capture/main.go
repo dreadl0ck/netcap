@@ -708,6 +708,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 			ServiceDB:             flagServiceDB,
 			GeoDB:                 flagGeolocationDB,
+			GeoProviders:          flagGeoProviders,
 			ReverseDNS:            flagReverseDNS,
 			LocalDNS:              flagLocalDNS,
 			ReassembleConnections: flagReassembleConnections,
@@ -993,6 +994,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 			ServiceDB:     flagServiceDB,
 			GeolocationDB: flagGeolocationDB,
+			GeoProviders:  flagGeoProviders,
 		},
 	})
 	coll.Bpf = flagBPF
@@ -1333,6 +1335,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 					ServiceDB:     flagServiceDB,
 					GeolocationDB: flagGeolocationDB,
+					GeoProviders:  flagGeoProviders,
 				},
 			})
 			coll.Bpf = flagBPF

@@ -156,7 +156,7 @@ LATEST_TARBALL="$OUTPUT_DIR/latest.tar.gz"
 LATEST_METADATA="$OUTPUT_DIR/latest.json"
 
 # Count database files, including the notice appended below when absent.
-FILE_COUNT=$(find "$DBS_DIR" -type f | wc -l | tr -d ' ')
+FILE_COUNT=$(find "$DBS_DIR" -type f ! -name 'nmap-service-probes' ! -name 'domain-whitelist.csv' ! -name 'GeoLite2-*.mmdb' | wc -l | tr -d ' ')
 if [[ -f "$DBS_DIR/DATABASE_NOTICES.txt" ]]; then
     if ! cmp -s "$DBS_DIR/DATABASE_NOTICES.txt" "$NOTICE_FILE"; then
         error "Database notices differ from $NOTICE_FILE"
@@ -174,15 +174,43 @@ START_TIME=$(date +%s)
 # Create tarball from the parent directory to preserve relative paths
 PARENT_DIR=$(dirname "$DBS_DIR")
 DBS_NAME=$(basename "$DBS_DIR")
+EXCLUDES=(--exclude='nmap-service-probes' --exclude='domain-whitelist.csv' --exclude='GeoLite2-*.mmdb')
+LAYOUT=1
+DEPLOY_SUBDIR=dbs
+if [[ -f "$DBS_DIR/netcap.sqlite" ]]; then
+    LAYOUT=2
+    DEPLOY_SUBDIR=v2
+    if [[ -f "$DBS_DIR/dbip-city-lite.mmdb" || -f "$DBS_DIR/dbip-asn-lite.mmdb" || -f "$DBS_DIR/geoip-sources.json" ]]; then
+        python3 - "$DBS_DIR" <<'PY'
+import hashlib, json, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+manifest = json.loads((root / 'geoip-sources.json').read_text())
+assert [m['file'] for m in manifest] == ['dbip-city-lite.mmdb', 'dbip-asn-lite.mmdb']
+assert manifest[0]['release'] == manifest[1]['release']
+for entry in manifest:
+    assert entry['license'] == 'https://creativecommons.org/licenses/by/4.0/'
+    assert not (root / entry['file']).is_symlink()
+    with (root / entry['file']).open('rb') as f:
+        digest = hashlib.sha256()
+        for chunk in iter(lambda: f.read(1024 * 1024), b''):
+            digest.update(chunk)
+        assert digest.hexdigest() == entry['sha256'], entry['file']
+PY
+    fi
+else
+    EXCLUDES+=(--exclude='dbip-*-lite.mmdb' --exclude='geoip-sources.json')
+    EXCLUDED_COUNT=$(find "$DBS_DIR" -type f \( -name 'dbip-*-lite.mmdb' -o -name 'geoip-sources.json' \) | wc -l | tr -d ' ')
+    FILE_COUNT=$((FILE_COUNT - EXCLUDED_COUNT))
+fi
 
 if [[ -f "$DBS_DIR/DATABASE_NOTICES.txt" ]]; then
-    tar -czf "$TARBALL_FILE" -C "$PARENT_DIR" "$DBS_NAME"
+    tar "${EXCLUDES[@]}" -czf "$TARBALL_FILE" -C "$PARENT_DIR" "$DBS_NAME"
 else
     NOTICE_STAGE=$(mktemp -d)
     trap 'rm -rf "$NOTICE_STAGE"' EXIT
     mkdir "$NOTICE_STAGE/$DBS_NAME"
     cp "$NOTICE_FILE" "$NOTICE_STAGE/$DBS_NAME/DATABASE_NOTICES.txt"
-    tar -czf "$TARBALL_FILE" -C "$PARENT_DIR" "$DBS_NAME" -C "$NOTICE_STAGE" "$DBS_NAME/DATABASE_NOTICES.txt"
+    tar "${EXCLUDES[@]}" -czf "$TARBALL_FILE" -C "$PARENT_DIR" "$DBS_NAME" -C "$NOTICE_STAGE" "$DBS_NAME/DATABASE_NOTICES.txt"
     rm -rf "$NOTICE_STAGE"
     trap - EXIT
 fi
@@ -197,10 +225,19 @@ info "Tarball created in ${DURATION}s (${TARBALL_SIZE})"
 
 # Create metadata JSON
 info "Creating metadata: ${VERSION}.json"
+if command -v sha256sum >/dev/null; then
+    SHA256=$(sha256sum "$TARBALL_FILE" | cut -d' ' -f1)
+else
+    SHA256=$(shasum -a 256 "$TARBALL_FILE" | cut -d' ' -f1)
+fi
 
 cat > "$METADATA_FILE" << EOF
 {
   "version": "${VERSION}",
+  "layout": ${LAYOUT},
+  "vulndb_schema": $((LAYOUT == 2 ? 1 : 0)),
+  "sha256": "${SHA256}",
+  "size": $(stat -f%z "$TARBALL_FILE" 2>/dev/null || stat -c%s "$TARBALL_FILE"),
   "created_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "tarball": "${VERSION}.tar.gz",
   "tarball_size_bytes": $(stat -f%z "$TARBALL_FILE" 2>/dev/null || stat -c%s "$TARBALL_FILE" 2>/dev/null || echo 0),
@@ -250,7 +287,7 @@ if [[ "$DEPLOY" == "true" ]] || [[ "$DEPLOY" == "1" ]] || [[ "$DEPLOY" == "yes" 
         error "scp command not found, skipping deployment"
     else
         # Deploy the files
-        if scp -r "${VERSION}.json" "${VERSION}.tar.gz" "latest.json" "latest.tar.gz" "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/dbs"; then
+        if scp -r "${VERSION}.json" "${VERSION}.tar.gz" "latest.json" "latest.tar.gz" "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/${DEPLOY_SUBDIR}"; then
             info "✓ Deployment successful!"
             DEPLOYMENT_SUCCESS=true
         else
@@ -278,7 +315,7 @@ info "✓ Pack complete!"
 echo ""
 
 if [[ "$DEPLOYMENT_SUCCESS" == "true" ]]; then
-    echo "Files deployed to ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/dbs and removed locally:"
+    echo "Files deployed to ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/${DEPLOY_SUBDIR} and removed locally:"
     echo "  ${VERSION}.tar.gz"
     echo "  ${VERSION}.json"
     echo "  latest.tar.gz"

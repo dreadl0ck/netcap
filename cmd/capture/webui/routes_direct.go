@@ -7,6 +7,7 @@ import "net/http"
 func registerEditionRoutes(mux *http.ServeMux, s *Server) {
 	mux.HandleFunc("/api/dbs", s.handleDatabaseInfo)
 	mux.HandleFunc("/api/dbs/status", s.handleDatabaseStatus)
+	mux.HandleFunc("/api/dbs/geoip", s.handleGeoProviders)
 	mux.HandleFunc("/api/dbs/update", s.handleUpdateDatabases)
 	mux.HandleFunc("/api/dbs/update/progress", s.handleDatabaseDownloadProgress)
 	mux.HandleFunc("/api/dpi", s.handleDPIInfo)

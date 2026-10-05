@@ -13,16 +13,18 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/dbs"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
+	"github.com/dreadl0ck/netcap/internal/testutil"
 )
 
 func withEmptyDatabaseDir(t *testing.T) string {
 	t.Helper()
+	t.Setenv("NC_GEO_PROVIDERS", resolvers.DefaultGeoProviders)
 
 	original := resolvers.DataBaseFolderPath
 	dir := t.TempDir()
@@ -89,9 +91,7 @@ func TestDatabaseStatusIsSatisfiedWhenPresent(t *testing.T) {
 	resetDownloadTracker(t)
 
 	for _, db := range append(dbs.RequiredDBs(), dbs.RecommendedDBs()...) {
-		if err := os.WriteFile(filepath.Join(dir, db.File), []byte{1}, 0o644); err != nil {
-			t.Fatalf("write: %v", err)
-		}
+		writeGeoStatusFixture(t, dir, db.File)
 	}
 
 	rec := httptest.NewRecorder()
@@ -114,9 +114,7 @@ func TestDatabaseStatusMissingIsNeverNullJSON(t *testing.T) {
 	resetDownloadTracker(t)
 
 	for _, db := range append(dbs.RequiredDBs(), dbs.RecommendedDBs()...) {
-		if err := os.WriteFile(filepath.Join(dir, db.File), []byte{1}, 0o644); err != nil {
-			t.Fatalf("write: %v", err)
-		}
+		writeGeoStatusFixture(t, dir, db.File)
 	}
 
 	rec := httptest.NewRecorder()
@@ -130,6 +128,19 @@ func TestDatabaseStatusMissingIsNeverNullJSON(t *testing.T) {
 	if string(raw["missing"]) != "[]" {
 		t.Errorf("missing = %s, want []", raw["missing"])
 	}
+}
+
+func writeGeoStatusFixture(t *testing.T, dir, file string) {
+	kind := "GeoLite2-City"
+	switch file {
+	case "GeoLite2-ASN.mmdb":
+		kind = "GeoLite2-ASN"
+	case "dbip-city-lite.mmdb":
+		kind = "DBIP-City-Lite"
+	case "dbip-asn-lite.mmdb":
+		kind = "DBIP-ASN-Lite"
+	}
+	testutil.WriteMMDB(t, filepath.Join(dir, file), kind, time.Now(), nil)
 }
 
 // A second start while one is running must be refused. Two concurrent 91 MB

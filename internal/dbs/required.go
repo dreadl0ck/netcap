@@ -27,13 +27,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/vulndb"
 )
 
-// RequiredDB describes a database file that a capture run depends on.
-//
-// "Required" means the analysis aborts without it, not that it is merely
-// useful. The registry exists because that knowledge used to live only in the
-// resolver that crashed on it: a fresh install shipped no databases on any
-// platform, so `net capture` exited before the first packet and the GUI could
-// only report "exit status 1".
+// RequiredDB describes an enrichment file and the flag that disables its feature.
 type RequiredDB struct {
 	// File is the basename inside resolvers.DataBaseFolderPath.
 	File string
@@ -45,12 +39,10 @@ type RequiredDB struct {
 	Feature string
 }
 
-// requiredDBs lists every database whose absence aborts a capture run.
-//
-// Only the geolocation pair is listed. The MAC, service and DHCP resolvers
-// log a warning and continue when their database is missing, so they do not
-// gate a run and must not be treated as if they did.
+// One complete selected provider is sufficient; both providers are not required.
 var requiredDBs = []RequiredDB{
+	{File: "dbip-city-lite.mmdb", Flag: "-geoDB=false", Feature: "geolocation enrichment"},
+	{File: "dbip-asn-lite.mmdb", Flag: "-geoDB=false", Feature: "geolocation enrichment"},
 	{File: "GeoLite2-City.mmdb", Flag: "-geoDB=false", Feature: "geolocation enrichment"},
 	{File: "GeoLite2-ASN.mmdb", Flag: "-geoDB=false", Feature: "geolocation enrichment"},
 }
@@ -66,8 +58,8 @@ var recommendedDBs = []RequiredDB{
 
 // MissingDBs returns every required and recommended database that is absent,
 // for reporting. Capture flags come from MissingRequiredDBs alone.
-func MissingDBs() []RequiredDB {
-	missing := MissingRequiredDBs()
+func MissingDBs(selection ...string) []RequiredDB {
+	missing := MissingRequiredDBs(selection...)
 	for _, db := range recommendedDBs {
 		if !dbFilePresent(filepath.Join(resolvers.DataBaseFolderPath, db.File)) {
 			missing = append(missing, db)
@@ -93,19 +85,36 @@ func RequiredDBs() []RequiredDB {
 	return out
 }
 
-// MissingRequiredDBs returns the required databases that are not present in
-// resolvers.DataBaseFolderPath, in registry order.
-//
-// A path that exists but is a directory, or is empty, counts as missing: a
-// truncated download leaves a zero byte file behind, and reporting that as
-// present sends the caller into the maxminddb parser instead of back here.
-func MissingRequiredDBs() []RequiredDB {
+// MissingRequiredDBs returns unavailable files only when no selected pair is usable.
+func MissingRequiredDBs(selection ...string) []RequiredDB {
 	var missing []RequiredDB
-
-	for _, db := range requiredDBs {
-		if !dbFilePresent(filepath.Join(resolvers.DataBaseFolderPath, db.File)) {
-			missing = append(missing, db)
+	raw := ""
+	if len(selection) > 0 {
+		raw = selection[0]
+	}
+	order, err := resolvers.GeoProviderOrder(raw)
+	if err != nil {
+		return RequiredDBs()
+	}
+	for _, name := range order {
+		files := resolvers.GeoFiles(name)
+		var absent []RequiredDB
+		for _, file := range []string{files.City, files.ASN} {
+			kind := "City"
+			if file == files.ASN {
+				kind = "ASN"
+			}
+			reader, err := resolvers.OpenGeoDatabase(filepath.Join(resolvers.DataBaseFolderPath, file), name, kind)
+			if err != nil {
+				absent = append(absent, RequiredDB{file, "-geoDB=false", "geolocation enrichment"})
+			} else {
+				reader.Close()
+			}
 		}
+		if len(absent) == 0 {
+			return nil
+		}
+		missing = append(missing, absent...)
 	}
 
 	return missing
@@ -117,13 +126,13 @@ func MissingRequiredDBs() []RequiredDB {
 // Passing these lets a run proceed with reduced enrichment rather than
 // aborting, which is the difference between a usable app and one that cannot
 // open a single capture until a 91 MB download completes.
-func DisableFlagsForMissingDBs() []string {
+func DisableFlagsForMissingDBs(selection ...string) []string {
 	var (
 		flags []string
 		seen  = make(map[string]bool)
 	)
 
-	for _, db := range MissingRequiredDBs() {
+	for _, db := range MissingRequiredDBs(selection...) {
 		if db.Flag == "" || seen[db.Flag] {
 			continue
 		}

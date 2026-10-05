@@ -37,8 +37,9 @@ type Config struct {
 	// Enables resolving port numbers to service names
 	ServiceDB bool
 
-	// Enables ip to geolocation lookups via MaxMind GeoLite
+	// Enables IP geolocation and ASN lookups.
 	GeolocationDB bool
+	GeoProviders  string
 
 	// Enables DHCP fingerprint lookups
 	DHCPDB bool

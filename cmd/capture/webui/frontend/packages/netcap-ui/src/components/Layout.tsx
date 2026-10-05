@@ -31,6 +31,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
+import GeoIPAttribution from './GeoIPAttribution';
 import MenuIcon from '@mui/icons-material/Menu';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
@@ -986,6 +987,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
       >
         <CommunityIDFilterBar />
         {children}
+        <GeoIPAttribution />
       </Box>
       <MobileBottomNav onMoreClick={handleDrawerToggle} />
       <LearnModeOverlay />

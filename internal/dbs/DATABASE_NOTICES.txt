@@ -6,24 +6,32 @@ have different rightsholders and licenses; Netcap's GPLv3 license does not
 replace them. A source URL or this notice alone does not grant redistribution
 rights where the rightsholder has not supplied them.
 
-nmap-service-probes
-  Copyright: see the header of nmap-service-probes (Nmap Software LLC and
-  contributors). Source: https://svn.nmap.org/nmap/nmap-service-probes
-  License: Nmap Public Source License (NPSL), including its GPLv2 exhibit:
-  https://svn.nmap.org/nmap/LICENSE
-  The NPSL expressly discusses programs that read this data file in section 3.
-  This notice does not resolve compatibility with Netcap's GPLv3 license.
+dbip-city-lite.mmdb, dbip-asn-lite.mmdb (layout 2 only)
+  IP Geolocation by DB-IP: https://db-ip.com/
+  Copyright DB-IP / Eris Networks S.A.S. Data is licensed under Creative
+  Commons Attribution 4.0 International:
+  https://creativecommons.org/licenses/by/4.0/
+  DB-IP incorporates GeoNames data: https://www.geonames.org/
+  GeoNames attribution license: https://creativecommons.org/licenses/by/4.0/
+  Source: https://db-ip.com/db/lite.php
+  Release month, download URL and SHA-256 are recorded in geoip-sources.json.
+  MMDB data is unmodified; gzip compression is removed and filenames are
+  normalized. Country/city estimates are approximate. The free Lite editions
+  have reduced accuracy and coverage and are updated monthly.
+  Web applications using this data must link to DB-IP on result pages.
 
-GeoLite2-ASN.mmdb, GeoLite2-City.mmdb
-  This product includes GeoLite Data created by MaxMind, available from
-  https://www.maxmind.com/. Archived 2019 releases were distributed under
-  Creative Commons Attribution-ShareAlike 4.0 International:
-  https://creativecommons.org/licenses/by-sa/4.0/legalcode
-  These databases incorporate GeoNames geographical data made available under
-  Creative Commons Attribution 3.0:
-  https://creativecommons.org/licenses/by/3.0/us/legalcode
-  The provenance and license of each shipped MMDB must be checked. Newer
-  MaxMind downloads have separate terms; this notice does not license them.
+OPTIONAL USER-INSTALLED DATA (not included in this archive)
+  Nmap probes: review https://nmap.org/npsl/ and obtain nmap-service-probes
+  from your Nmap installation or https://svn.nmap.org/nmap/nmap-service-probes.
+  Copy it into your Netcap database directory under that exact filename.
+  NPSL section 3 addresses programs reading this file; a separate download
+  does not resolve the reader's licensing requirements.
+  MaxMind GeoLite2: create an account at https://www.maxmind.com/ and accept
+  its terms. Download and extract GeoLite2-ASN.mmdb and GeoLite2-City.mmdb
+  into your Netcap database directory. Keep these user-local downloads out
+  of redistributed archives. Instructions:
+  https://github.com/dreadl0ck/netcap/blob/master/internal/dbs/README.md#optional-user-installed-databases
+  The retired Alexa domain whitelist is no longer distributed.
 
 hasshdb.json
   Source: https://github.com/0x4D31/hassh-utils
@@ -57,7 +65,7 @@ netcap.sqlite (nvd, nvd_versions, nvd_fts tables)
   the National Institute of Standards and Technology (NIST):
   https://nvd.nist.gov/vuln/data-feeds
 
-cmsdb.json, dhcp-fingerprints.json, domain-whitelist.csv,
+cmsdb.json, dhcp-fingerprints.json,
 macaddress.io-db.json, ja3erDB.json, ja3fingerprint.json
   Claimed source details are in https://github.com/dreadl0ck/netcap-dbs .
   The applicable version-specific redistribution grants have not been

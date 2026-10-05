@@ -20,8 +20,11 @@
 package agent
 
 import (
+	"context"
 	"runtime"
 	"time"
+
+	"github.com/dreadl0ck/netcap/internal/resolvers"
 
 	"github.com/urfave/cli/v3"
 
@@ -233,6 +236,13 @@ func GetFlags() []cli.Flag {
 			Usage:   "use geolocation for device profiling",
 			Sources: cli.EnvVars("NC_GEODB"),
 		},
+		&cli.StringFlag{Name: "geoProviders", Usage: "ordered GeoIP providers (default dbip,geolite2)", Sources: cli.EnvVars("NC_GEO_PROVIDERS"), Action: func(_ context.Context, _ *cli.Command, value string) error {
+			if value == "" {
+				return nil
+			}
+			_, err := resolvers.ParseGeoProviders(value)
+			return err
+		}},
 		&cli.BoolFlag{
 			Name:    "dpi",
 			Usage:   "use DPI for device profiling",

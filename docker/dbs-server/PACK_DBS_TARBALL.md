@@ -65,16 +65,20 @@ output-directory/
 
 ### Tarball Structure
 
-The tarball preserves the `internal/dbs/` directory structure:
+The tarball preserves the source directory name. Layout 2 (`netcap.sqlite`
+present) includes validated DB-IP Lite files and `geoip-sources.json`;
+legacy layout 1 excludes them. Both exclude Nmap probes, GeoLite2 MMDBs and
+the retired Alexa whitelist. Python 3 is required to validate DB-IP manifests.
 
 ```
 YYYY-MM-DD.tar.gz
-└── internal/dbs/
+└── dbs/
     ├── service-names-port-numbers.csv
-    ├── domain-whitelist.csv
-    ├── ja3_fingerprints.json
-    ├── GeoLite2-City.mmdb
-    ├── GeoLite2-ASN.mmdb
+    ├── DATABASE_NOTICES.txt
+    ├── netcap.sqlite
+    ├── dbip-city-lite.mmdb
+    ├── dbip-asn-lite.mmdb
+    ├── geoip-sources.json
     └── ... (all database files)
 ```
 
@@ -259,4 +263,3 @@ pack-dbs-tarball:
 - [MOUNTING_DATABASES.md](MOUNTING_DATABASES.md) - Detailed mounting guide
 - [README.md](README.md) - DBS server documentation
 - [../dbs/README.md](../dbs/README.md) - Database overview
-

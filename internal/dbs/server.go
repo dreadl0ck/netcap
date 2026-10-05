@@ -225,6 +225,9 @@ func (s *DBServer) rebuildDatabases() error {
 		go s.processSourceForServer(source, stagingBase, &wg)
 	}
 	wg.Wait()
+	if err := includeDBIP(stagingBase, filepath.Join(s.buildDir, "geoip-cache")); err != nil {
+		return fmt.Errorf("failed to include DB-IP, keeping previous revision: %w", err)
+	}
 
 	if err := BuildVulnDB(stagingBuild, stagingDBs, nvdStartYear, s.verbose); err != nil {
 		return fmt.Errorf("failed to build %s, keeping previous revision: %w", vulndb.FileName, err)
@@ -366,6 +369,9 @@ func (s *DBServer) processSourceForServer(source *datasource, base string, wg *s
 // temporary file and returns its sha256 and size. sourceDir must not contain
 // targetPath.
 func (s *DBServer) createTarball(sourceDir, targetPath string) (string, int64, error) {
+	if err := validateGeoIPBundle(sourceDir); err != nil {
+		return "", 0, err
+	}
 	if err := writeDatabaseNotices(sourceDir); err != nil {
 		return "", 0, fmt.Errorf("failed to include database notices: %w", err)
 	}
@@ -389,6 +395,12 @@ func (s *DBServer) createTarball(sourceDir, targetPath string) (string, int64, e
 	err = filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+		if excludedFromDistribution(path) {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 
 		// Update header name to be relative to source directory

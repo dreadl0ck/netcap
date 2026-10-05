@@ -2,6 +2,15 @@
 
 This project uses the following third-party packages that require attribution:
 
+## DB-IP Lite geolocation data
+
+IP Geolocation by [DB-IP](https://db-ip.com/), copyright DB-IP / Eris Networks
+S.A.S., licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+Includes [GeoNames](https://www.geonames.org/) data under CC BY. Layout-2
+community archives contain unmodified MMDB data with normalized filenames;
+`geoip-sources.json` records release months and hashes. The shared page footer
+credits DB-IP on result pages. Optional GeoLite2 files have MaxMind's terms.
+
 ## caniuse-lite
 
 - **License**: CC-BY-4.0 (Creative Commons Attribution 4.0 International)
@@ -40,4 +49,3 @@ use, modification, and redistribution for both personal and commercial purposes.
 The libvips library is used by the sharp image processing library for
 high-performance image optimization in Next.js. This is an optional
 dependency and can be replaced by users if needed.
-

@@ -25,6 +25,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -67,6 +68,9 @@ type DatabaseDownloadStatus struct {
 // DatabaseStatus answers "can this install analyse a capture at full fidelity,
 // and if not, what is missing and is a fix already running".
 type DatabaseStatus struct {
+	GeoProviders string                        `json:"geoProviders"`
+	GeoStatus    []resolvers.GeoProviderStatus `json:"geoStatus"`
+	GeoError     string                        `json:"geoError,omitempty"`
 	// Satisfied is true when no required database is absent.
 	Satisfied bool `json:"satisfied"`
 	// Missing lists the absent required databases.
@@ -155,17 +159,26 @@ func finishDatabaseDownload(err error) {
 	dbDownload.status.Message = "Databases installed"
 }
 
-func currentDatabaseStatus() DatabaseStatus {
+func currentDatabaseStatus(selection ...string) DatabaseStatus {
+	raw := ""
+	if len(selection) > 0 {
+		raw = selection[0]
+	}
+	order, _ := resolvers.GeoProviderOrder(raw)
+	statuses, geoErr := resolvers.GeoProviderStatuses(raw)
 	missing := make([]MissingDB, 0)
-	for _, db := range dbs.MissingDBs() {
+	for _, db := range dbs.MissingDBs(raw) {
 		missing = append(missing, MissingDB{File: db.File, Feature: db.Feature})
 	}
 
 	return DatabaseStatus{
-		Satisfied:   len(missing) == 0,
-		Missing:     missing,
-		DatabaseDir: resolvers.DataBaseFolderPath,
-		Download:    databaseDownloadStatus(),
+		GeoProviders: strings.Join(order, ","),
+		GeoStatus:    statuses,
+		GeoError:     errorText(geoErr),
+		Satisfied:    len(missing) == 0,
+		Missing:      missing,
+		DatabaseDir:  resolvers.DataBaseFolderPath,
+		Download:     databaseDownloadStatus(),
 	}
 }
 
@@ -178,7 +191,14 @@ func (s *Server) handleDatabaseStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondDatabaseJSON(w, currentDatabaseStatus())
+	respondDatabaseJSON(w, currentDatabaseStatus(s.geoProviderSelection()))
+}
+
+func errorText(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
 }
 
 // handleDatabaseDownloadProgress reports only the download half, for polling

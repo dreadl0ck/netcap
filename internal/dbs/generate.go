@@ -155,16 +155,11 @@ var sources = []*datasource{
 	makeSource("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/dbs/dhcp-fingerprints.json", "", moveToDbs),
 	makeSource("https://raw.githubusercontent.com/dreadl0ck/netcap-dbs/main/dbs/cmsdb.json", "", moveToDbs),
 
-	makeSource("http://s3.amazonaws.com/alexa-static/top-1m.csv.zip", "domain-whitelist.csv", unzipAndMoveToDbs),
 	makeSource("https://raw.githubusercontent.com/tobie/ua-parser/master/regexes.yaml", "", moveToDbs),
 
-	// TODO: manage custom netcap probes separately and merge
-	makeSource("https://svn.nmap.org/nmap/nmap-service-probes", "", moveToDbs),
 	makeSource("https://macaddress.io/database/macaddress.io-db.json", "", moveToDbs),
 
 	makeSource("https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv", "", moveToDbs),
-	makeSource("https://web.archive.org/web/20191227182527if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-ASN.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
-	makeSource("https://web.archive.org/web/20191227182209if_/https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz", "", untarAndMoveGeoliteToBuildDbs),
 
 	// NVD feeds and files_exploits.csv land in build/; BuildVulnDB turns them
 	// into netcap.sqlite once every source has finished.
@@ -384,6 +379,10 @@ func GenerateDBs(nvdIndexStartYear int) {
 	time.Sleep(1 * time.Second)
 	fmt.Println("waiting for downloads to complete...")
 	wg.Wait()
+	if err := includeDBIP(base, filepath.Join(base, "geoip-cache")); err != nil {
+		log.Printf("database generation stopped: %v", err)
+		return
+	}
 
 	// Print summary
 	fmt.Printf("\n=== Download Summary ===\n")

@@ -102,15 +102,10 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		args = append(args, "-dpi")
 	}
 
-	// Disable every enrichment whose database is absent.
-	//
-	// Without this the helper inherits -geoDB=true, the geolocation resolver
-	// cannot find GeoLite2-City.mmdb, and the run aborts before the first
-	// packet. No installer on any platform ships these databases, so that was
-	// every capture on every clean install, reported to the GUI as nothing
-	// more than "exit status 1". Analysis now proceeds with reduced
-	// enrichment while the UI offers the download.
-	if disableFlags := dbs.DisableFlagsForMissingDBs(); len(disableFlags) > 0 {
+	// Snapshot the order for this job; later UI changes apply to subsequent captures.
+	selection := s.geoProviderSelection()
+	args = append(args, "-geoProviders", selection)
+	if disableFlags := dbs.DisableFlagsForMissingDBs(selection); len(disableFlags) > 0 {
 		args = append(args, disableFlags...)
 		log.Printf("[Service] Missing databases, disabling enrichment for session %s: %s",
 			job.SessionID, strings.Join(disableFlags, " "))

@@ -83,6 +83,7 @@ var (
 	flagJA4DB                          bool
 	flagServiceDB                      bool
 	flagGeolocationDB                  bool
+	flagGeoProviders                   string
 	flagDPI                            bool
 	flagDPIModules                     string
 	flagFreeOSMemory                   int
@@ -212,6 +213,7 @@ func setFlagsFromContext(c *cli.Command) {
 	flagJA4DB = c.Bool("ja4DB")
 	flagServiceDB = c.Bool("serviceDB")
 	flagGeolocationDB = c.Bool("geoDB")
+	flagGeoProviders = c.String("geoProviders")
 	flagDPI = c.Bool("dpi")
 	flagDPIModules = c.String("dpi-modules")
 	flagFreeOSMemory = c.Int("free-os-mem")

@@ -98,9 +98,9 @@ func (s *Server) handleResolve(_ context.Context, req mcplib.CallToolRequest) (*
 			out["local"] = local
 		}
 	case "geoip":
-		country, city := resolvers.LookupGeolocation(value)
-		out["country"] = country
-		out["city"] = city
+		location, asn := resolvers.LookupGeolocation(value)
+		out["geolocation"] = location
+		out["asn"] = asn
 	case "mac_vendor":
 		out["vendor"] = resolvers.LookupManufacturer(value)
 	case "iana_service":

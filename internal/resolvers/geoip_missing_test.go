@@ -65,7 +65,9 @@ func TestInitGeolocationDBDistinguishesCorruptFromMissing(t *testing.T) {
 
 	t.Cleanup(func() {
 		DataBaseFolderPath = original
-		cityReader, asnReader = nil, nil
+		geoMu.Lock()
+		closeGeoProviders()
+		geoMu.Unlock()
 	})
 
 	for _, name := range []string{"GeoLite2-City.mmdb", "GeoLite2-ASN.mmdb"} {
@@ -88,14 +90,14 @@ func TestInitGeolocationDBDistinguishesCorruptFromMissing(t *testing.T) {
 // safe rather than a deferred nil dereference.
 func TestLookupGeolocationIsSafeWithoutDatabases(t *testing.T) {
 	original := DataBaseFolderPath
-	originalCity, originalASN := cityReader, asnReader
 
 	DataBaseFolderPath = t.TempDir()
-	cityReader, asnReader = nil, nil
 
 	t.Cleanup(func() {
 		DataBaseFolderPath = original
-		cityReader, asnReader = originalCity, originalASN
+		geoMu.Lock()
+		closeGeoProviders()
+		geoMu.Unlock()
 	})
 
 	_ = initGeolocationDB()

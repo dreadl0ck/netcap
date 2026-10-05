@@ -20,7 +20,7 @@
 package dbs
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -29,21 +29,19 @@ import (
 )
 
 // DownloadGeoLite will download the GeoLite Database if the API key is set in the environment
-func DownloadGeoLite() {
+func DownloadGeoLite() error {
 
 	apiKey := os.Getenv(env.GeoLiteAPIKey)
 	if apiKey == "" {
-		log.Fatal("please set the " + env.GeoLiteAPIKey + " env variable")
+		return fmt.Errorf("please set the %s env variable", env.GeoLiteAPIKey)
 	}
 
-	// check if database root path exists already
-	if _, err := os.Stat(resolvers.ConfigRootPath); err != nil {
-		log.Fatal("database root path: ", resolvers.DataBaseFolderPath, " does not exist")
+	if err := os.MkdirAll(resolvers.DataBaseFolderPath, 0o755); err != nil {
+		return err
 	}
 
 	for _, s := range []*datasource{
 		makeSource("https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-ASN&license_key="+apiKey+"&suffix=tar.gz", "GeoLite2-ASN.mmdb", untarAndMoveGeoliteToDbs),
-		makeSource("https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key="+apiKey+"&suffix=tar.gz", "GeoLite2-Country.mmdb", untarAndMoveGeoliteToDbs),
 		makeSource("https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-City&license_key="+apiKey+"&suffix=tar.gz", "GeoLite2-City.mmdb", untarAndMoveGeoliteToDbs),
 	} {
 
@@ -53,14 +51,17 @@ func DownloadGeoLite() {
 
 		// fetch via HTTP GET from single remote source if provided
 		// if multiple sources need to be fetched, the logic can be implemented in the hook
-		fetchResource(s, out)
+		if err := fetchResource(s, out); err != nil {
+			return err
+		}
 
 		// run hook
 		if s.hook != nil {
 			err := s.hook(out, s, resolvers.ConfigRootPath)
 			if err != nil {
-				log.Println("hook for", s.name, "failed with error", err)
+				return err
 			}
 		}
 	}
+	return nil
 }

@@ -169,6 +169,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			JA4DB:         c.Bool("ja4DB"),
 			ServiceDB:     c.Bool("serviceDB"),
 			GeolocationDB: c.Bool("geoDB"),
+			GeoProviders:  c.String("geoProviders"),
 		},
 		DPI:           c.Bool("dpi"),
 		DPIModules:    c.String("dpi-modules"),

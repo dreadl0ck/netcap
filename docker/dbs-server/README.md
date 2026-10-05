@@ -115,8 +115,12 @@ Downloads a specific database version by date.
 To download databases from a running server using the `netcap` command:
 
 ```bash
-# Download from default URL (dbs.netcap.io)
+# Download layout 2 from default URL (dbs.netcap.io), including DB-IP Lite
 net util -download-dbs
+
+# Select only the bundled provider, or prefer user-installed GeoLite2
+net capture -read traffic.pcap -geoProviders dbip
+net capture -read traffic.pcap -geoProviders geolite2,dbip
 
 # Download from custom URL
 net util -download-dbs -dbs-url http://your-server:8080
@@ -483,4 +487,3 @@ See the main NETCAP repository for license information.
 ## Support
 
 For issues and questions, please visit: https://github.com/dreadl0ck/netcap
-

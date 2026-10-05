@@ -10,8 +10,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/resolvers"
+	"github.com/dreadl0ck/netcap/internal/testutil"
 	"github.com/dreadl0ck/netcap/internal/vulndb"
 )
 
@@ -19,6 +21,7 @@ import (
 // for the duration of a test.
 func withDatabaseDir(t *testing.T) string {
 	t.Helper()
+	t.Setenv("NC_GEO_PROVIDERS", resolvers.DefaultGeoProviders)
 
 	original := resolvers.DataBaseFolderPath
 	dir := t.TempDir()
@@ -31,8 +34,37 @@ func withDatabaseDir(t *testing.T) string {
 	return dir
 }
 
+func TestRequiredDBsRespectProviderSelection(t *testing.T) {
+	dir := withDatabaseDir(t)
+	writeDB(t, dir, "dbip-city-lite.mmdb", 1)
+	writeDB(t, dir, "dbip-asn-lite.mmdb", 1)
+	if flags := DisableFlagsForMissingDBs("dbip,geolite2"); len(flags) != 0 {
+		t.Fatal("disabled usable DB-IP", flags)
+	}
+	if flags := DisableFlagsForMissingDBs("geolite2"); len(flags) != 1 {
+		t.Fatal("used unselected DB-IP", flags)
+	}
+	os.WriteFile(filepath.Join(dir, "dbip-asn-lite.mmdb"), []byte("corrupt"), 0o644)
+	if flags := DisableFlagsForMissingDBs("dbip"); len(flags) != 1 {
+		t.Fatal("accepted corrupt provider", flags)
+	}
+}
+
 func writeDB(t *testing.T, dir, name string, size int) {
 	t.Helper()
+	if size > 0 {
+		kind := "GeoLite2-City"
+		switch name {
+		case "GeoLite2-ASN.mmdb":
+			kind = "GeoLite2-ASN"
+		case "dbip-city-lite.mmdb":
+			kind = "DBIP-City-Lite"
+		case "dbip-asn-lite.mmdb":
+			kind = "DBIP-ASN-Lite"
+		}
+		testutil.WriteMMDB(t, filepath.Join(dir, name), kind, time.Now(), nil)
+		return
+	}
 
 	if err := os.WriteFile(filepath.Join(dir, name), make([]byte, size), 0o644); err != nil {
 		t.Fatalf("write %s: %v", name, err)

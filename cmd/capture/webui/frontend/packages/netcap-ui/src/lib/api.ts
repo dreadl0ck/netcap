@@ -112,6 +112,7 @@ function createNoOpApi(): NetcapApiClient {
       download: { state: 'idle' as const, downloaded: 0, total: 0, percent: 0 },
     }),
     getDatabaseStatus: noOpReturn(null),
+    setGeoProviders: noOpReturn(null),
     getDatabaseDownloadProgress: noOpReturn(null),
     getVersion: noOpReturn({ version: '', commit: '', gopacketVersion: '' }),
     getDPIInfo: noOpReturn({ enabled: false, hasSupport: false, ndpiVersion: '', libprotoidentVersion: '', goDpiVersion: '', activeModules: [], availableModules: [], moduleProtocols: {}, ndpiProtocolsUrl: '', libprotoidentProtocolsUrl: '' }),
@@ -358,6 +359,12 @@ export interface MissingDatabase {
 }
 
 export interface DatabaseStatus {
+  geoProviders?: string;
+  geoError?: string;
+  geoStatus?: Array<{
+    name: string; selected: boolean; available: boolean; loaded: boolean;
+    cityFile: string; asnFile: string; cityBuild?: string; asnBuild?: string; error?: string;
+  }>;
   satisfied: boolean;
   missing: MissingDatabase[];
   databaseDir: string;
@@ -1425,6 +1432,15 @@ function createApiWithBase(apiBase: string) {
     if (!res.ok) {
       throw new Error(await describeFailure(res, 'Failed to fetch database status'));
     }
+    return res.json();
+  },
+
+  async setGeoProviders(providers: string): Promise<DatabaseStatus | null> {
+    const res = await fetch(`${apiBase}/dbs/geoip`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ providers }),
+    });
+    if (!res.ok) throw new Error(await describeFailure(res, 'Failed to save geolocation providers'));
     return res.json();
   },
 
