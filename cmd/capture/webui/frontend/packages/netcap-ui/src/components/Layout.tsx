@@ -666,6 +666,11 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                 <ListItemText primary="Vulnerabilities" />
               </ListItemButton>
             </Link>
+            <Link href="/behavior" passHref style={LINK_STYLE}>
+              <ListItemButton selected={router.isActive('/behavior')} sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}>
+                <ListItemIcon><NotificationsActiveIcon /></ListItemIcon><ListItemText primary="Behavior" />
+              </ListItemButton>
+            </Link>
             <Link href="/alerts" passHref style={LINK_STYLE}>
               <ListItemButton
                 selected={router.isActive('/alerts')}

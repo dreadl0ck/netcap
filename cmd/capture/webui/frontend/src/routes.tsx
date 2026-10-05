@@ -9,6 +9,7 @@ import { Routes, Route } from 'react-router';
 
 const DashboardPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.DashboardPage })));
 const AlertsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.AlertsPage })));
+const BehaviorPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.BehaviorPage })));
 const AnalyzePage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.AnalyzePage })));
 const AuditPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.AuditPage })));
 const BPFPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.BPFPage })));
@@ -49,6 +50,7 @@ export function AppRoutes() {
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/alerts" element={<AlertsPage />} />
+        <Route path="/behavior" element={<BehaviorPage />} />
         <Route path="/analyze" element={<AnalyzePage />} />
         <Route path="/audit" element={<AuditPage />} />
         <Route path="/bpf" element={<BPFPage />} />

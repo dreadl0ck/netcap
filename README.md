@@ -131,9 +131,10 @@ baseline explicitly with `-behavior-baseline <path>`.
 | Persistence | Atomic checkpoints every second and on shutdown; a single-writer file lock prevents concurrent baseline mutation |
 | Alerts | `Alert.ncap.gz` is appended and synced per alert, readable before capture finishes; malformed history is rejected without overwriting it |
 | Live API | `GET /api/alerts/stream` emits SSE alerts with durable-history cursors; reconnect using `Last-Event-ID`. At most 8 readers; slow-client write deadline 10 s; replacement/truncation produces a gap |
+| WebUI | `/behavior` provides scoped inventory, candidates, explicit baseline decisions, evidence pivots, decision history and a bounded live feed |
 
 These paths implement the initial W58 slices. Lateral correlation, geographic/rate
-policies, topology controls and the live alert UI require subsequent integration.
+policies, graphical topology and service-job configuration require subsequent integration.
 Endpoint visibility is limited to traffic at the selected interface; encrypted
 SSH/RDP connection patterns do not establish authentication failures.
 
