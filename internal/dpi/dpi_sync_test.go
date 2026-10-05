@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	dpitypes "github.com/dreadl0ck/go-dpi/types"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 )
@@ -17,7 +16,7 @@ func TestDPILifecycleIdempotent(t *testing.T) {
 	Destroy()
 	t.Cleanup(Destroy)
 	Init("go")
-	tracker := dpitypes.FlowTrackerInstance
+	tracker := dpiPool
 	if !IsEnabled() || tracker == nil {
 		t.Fatal("Init did not enable DPI and initialize flow tracking")
 	}
@@ -27,24 +26,24 @@ func TestDPILifecycleIdempotent(t *testing.T) {
 		wg.Go(func() { Init("go") })
 	}
 	wg.Wait()
-	if dpitypes.FlowTrackerInstance != tracker {
+	if dpiPool != tracker {
 		t.Fatal("repeated Init replaced the active flow tracker")
 	}
 	for range 16 {
 		wg.Go(Destroy)
 	}
 	wg.Wait()
-	if IsEnabled() || dpitypes.FlowTrackerInstance != nil {
+	if IsEnabled() || dpiPool != nil {
 		t.Fatal("Destroy did not disable DPI and release flow tracking")
 	}
 
 	Init("go")
-	if !IsEnabled() || dpitypes.FlowTrackerInstance == nil {
+	if !IsEnabled() || dpiPool == nil {
 		t.Fatal("Init after Destroy did not enable DPI")
 	}
 	Reset("go")
 	Reset("go")
-	if IsEnabled() || dpitypes.FlowTrackerInstance != nil {
+	if IsEnabled() || dpiPool != nil {
 		t.Fatal("Reset must remain teardown-only")
 	}
 }

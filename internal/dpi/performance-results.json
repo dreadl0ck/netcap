@@ -1,0 +1,44 @@
+{
+  "measured_at": "2026-10-05",
+  "platform": "darwin/arm64, Apple M5 Max",
+  "go": "1.27.0",
+  "ndpi": "4.14.0",
+  "base_commits": {"netcap": "e03ac0d9820c6882ef249851e0c4ad95d9778207", "go-dpi": "b65f20ec6f6b7531b82478977dc2c17879c4288c"},
+  "integration_samples": 6,
+  "integration_iterations": 1000,
+  "baseline": "Legacy replay integration after correcting native deallocation; budget-only additionally caps classification attempts.",
+  "units": "Nanoseconds per decoded synthetic flow lifecycle; decoding excluded. B/op and allocs/op are Go allocations.",
+  "integration_medians_ns": [
+    {"modules": "ndpi", "workload": "short_unknown", "packets": 1, "legacy": 2530.5, "incremental": 2528.0},
+    {"modules": "ndpi", "workload": "budget_unknown", "packets": 10, "legacy": 73595.0, "incremental": 15222.0},
+    {"modules": "ndpi", "workload": "long_unknown", "packets": 100, "legacy": 1065344.0, "budget_only": 127213.0, "incremental": 40281.5},
+    {"modules": "ndpi", "workload": "http", "packets": 10, "legacy": 7509.0, "incremental": 5131.0},
+    {"modules": "lpi,ndpi", "workload": "budget_unknown", "packets": 10, "legacy": 98745.0, "incremental": 17424.0},
+    {"modules": "lpi,ndpi", "workload": "long_unknown", "packets": 100, "legacy": 1395569.0, "budget_only": 158323.0, "incremental": 40534.0},
+    {"modules": "lpi,ndpi", "workload": "shared_packet", "packets": 10, "calls": 30, "legacy": 383936.0, "incremental": 19770.0}
+  ],
+  "long_unknown_lpi_ndpi_go_allocations": {"legacy_bytes_per_flow": 394413.0, "incremental_bytes_per_flow": 439.0, "legacy_allocations_per_flow": 3161.0, "incremental_allocations_per_flow": 2.0},
+  "fresh_ten_packet_native_flow_scaling_ns": [
+    {"workers": 1, "legacy": 73396.5, "incremental": 12357.5},
+    {"workers": 8, "legacy": 87590.5, "incremental": 1755.0}
+  ],
+  "rss_mib": {
+    "churn_legacy_one_context": 54.6,
+    "churn_incremental_one_context": 45.3,
+    "churn_incremental_eight_contexts": 107.2,
+    "32768_short_flows_legacy_one_context": 109.1,
+    "32768_short_flows_incremental_one_context": 64.7,
+    "32768_short_flows_incremental_eight_contexts": 126.2
+  },
+  "reproduce": "bash zeus/scripts/benchmark-c-dpi.sh EXISTING_OUTPUT_DIRECTORY",
+  "raw_evidence_directory": "/var/folders/sb/n7njgj0s1ln8wkb4j9hs4n8h0000gn/T/opencode/c-dpi-final-results",
+  "caveats": [
+    "These are DPI microbenchmarks, not whole-capture netcap speedups.",
+    "One-packet nDPI throughput was statistically unchanged; existing Go heuristics remain unchanged.",
+    "Eight private nDPI contexts increase fixed RSS; dpi-workers=1 is the memory-focused setting.",
+    "Small unidentified first IP packets (<=512 bytes) are replayed once on promotion to persistent native state.",
+    "Consecutive repeated enrichment calls share inspection progress; result maps remain caller-owned.",
+    "Capture extensions cannot select the parser: wireguard.pcap contains PCAPNG. sip.pcap was excluded for caplen 92 > original length 76.",
+    "Legacy LPI UNKNOWN/NO_PAYLOAD/generic UDP caching hides later detections. Corpus checks preserve legacy application detections and pin expected recovered detections."
+  ]
+}

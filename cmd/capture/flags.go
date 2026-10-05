@@ -371,6 +371,11 @@ func GetFlags() []cli.Flag {
 			Sources: cli.EnvVars("NC_DPI_MODULES"),
 		},
 		&cli.IntFlag{
+			Name:    "dpi-workers",
+			Usage:   "independent DPI contexts (0: automatic, up to 8; 1: minimum native context memory)",
+			Sources: cli.EnvVars("NC_DPI_WORKERS"),
+		},
+		&cli.IntFlag{
 			Name:    "free-os-mem",
 			Usage:   "free OS memory every X minutes, disabled if set to 0",
 			Sources: cli.EnvVars("NC_FREE_OS_MEM"),

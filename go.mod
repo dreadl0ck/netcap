@@ -13,7 +13,7 @@ require (
 	github.com/coreos/go-iptables v0.8.0
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dlclark/regexp2 v1.11.5
-	github.com/dreadl0ck/go-dpi v1.4.1 // Pinned: v1.3.1+ has crash in commit 5376956f (protocol mapping changes)
+	github.com/dreadl0ck/go-dpi v1.4.2-0.20261005194543-4ea71360ee07 // Worker-owned incremental native DPI contexts.
 	github.com/dreadl0ck/ja4plus v0.1.0
 	github.com/dreadl0ck/maltego v0.0.3
 	github.com/dreadl0ck/tlsx v1.2.0

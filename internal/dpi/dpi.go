@@ -23,13 +23,11 @@
 package dpi
 
 import (
-	"fmt"
 	"log"
 	"strings"
 	"sync"
 	"sync/atomic"
 
-	godpi "github.com/dreadl0ck/go-dpi"
 	"github.com/dreadl0ck/go-dpi/modules/classifiers"
 	"github.com/dreadl0ck/go-dpi/modules/wrappers"
 	. "github.com/dreadl0ck/go-dpi/types"
@@ -41,8 +39,9 @@ import (
 
 var disableDPI atomic.Bool
 
-// Serialize flow tracking, classification, and native engine lifecycle.
-var dpiMu sync.Mutex
+// Lifecycle writes exclude classification; individual contexts are locked per shard.
+var dpiMu sync.RWMutex
+var dpiPool *incrementalPool
 
 // Cache for module protocols to avoid re-initializing wrappers
 var (
@@ -69,6 +68,10 @@ func IsEnabled() bool {
 // If empty, all modules will be enabled.
 // This function is thread-safe and will only execute once if called concurrently.
 func Init(modules string) {
+	InitWithConfig(modules, RuntimeConfig{})
+}
+
+func InitWithConfig(modules string, config RuntimeConfig) {
 	dpiMu.Lock()
 	defer dpiMu.Unlock()
 	if !disableDPI.Load() {
@@ -77,61 +80,16 @@ func Init(modules string) {
 
 	log.Println(ansi.Yellow + "[DPI] Init() called" + ansi.Reset)
 
-	var (
-		selectedModules []Module
-		enabledWrappers []wrappers.Wrapper
-	)
-
-	// Parse the modules string to determine which ones to enable
 	moduleSet := parseModules(modules)
-
-	// Create wrappers based on selection
-	if moduleSet["lpi"] {
-		lPI := wrappers.NewLPIWrapper()
-		enabledWrappers = append(enabledWrappers, lPI)
-		//log.Println("DPI: enabled LPI wrapper")
-	}
-
-	if moduleSet["ndpi"] {
-		nDPI := wrappers.NewNDPIWrapper()
-		enabledWrappers = append(enabledWrappers, nDPI)
-		//log.Println("DPI: enabled nDPI wrapper")
-	}
-
-	// Configure wrapper module if any wrappers are enabled
-	if len(enabledWrappers) > 0 {
-		wm := wrappers.NewWrapperModule()
-		wm.ConfigureModule(wrappers.WrapperModuleConfig{Wrappers: enabledWrappers})
-		selectedModules = append(selectedModules, wm)
-	}
-
-	// Add go-dpi classifier module if selected
-	if moduleSet["go"] {
-		goDPI := classifiers.NewClassifierModule()
-		selectedModules = append(selectedModules, goDPI)
-		//log.Println("DPI: enabled go-dpi classifier")
-		//dpiLog.Info("DPI: enabled go-dpi classifier")
-	}
-
-	// Set modules and initialize
-	if len(selectedModules) == 0 {
+	if len(moduleSet) == 0 {
 		log.Println("DPI: no modules enabled, defaulting to all modules")
-		// Default to all modules
-		wm := wrappers.NewWrapperModule()
-		wm.ConfigureModule(wrappers.WrapperModuleConfig{
-			Wrappers: []wrappers.Wrapper{
-				wrappers.NewLPIWrapper(),
-				wrappers.NewNDPIWrapper(),
-			},
-		})
-		selectedModules = append(selectedModules, wm, classifiers.NewClassifierModule())
+		moduleSet = parseModules("")
 	}
-
-	godpi.SetModules(selectedModules)
-
-	if err := godpi.Initialize(); err != nil {
-		log.Fatal("goDPI initialization returned an error: ", err)
+	pool, err := configuredIncrementalPool(moduleSet, config)
+	if err != nil {
+		log.Fatal("DPI initialization returned an error: ", err)
 	}
+	dpiPool = pool
 
 	// Enable DPI after successful initialization
 	disableDPI.Store(false)
@@ -172,9 +130,7 @@ func parseModules(modules string) map[string]bool {
 	return moduleSet
 }
 
-// Destroy tears down godpi and frees the memory allocated for cgo.
-// It also explicitly resets the internal flow tracker to release all tracked flows.
-// Returned errors are logged to stdout.
+// Destroy releases native contexts and all tracked flow state.
 // Concurrent calls are safe; already disabled engines are left untouched.
 func Destroy() {
 	dpiMu.Lock()
@@ -185,13 +141,9 @@ func Destroy() {
 
 	log.Println(ansi.Red + "[DPI] Destroy() called" + ansi.Reset)
 
-	// Destroy modules and flow tracker
-	// This calls types.DestroyCache() which flushes the flow cache
-	// and nils the FlowTrackerInstance to allow GC
-	for _, e := range godpi.Destroy() {
-		if e != nil {
-			fmt.Println(e)
-		}
+	if dpiPool != nil {
+		dpiPool.close()
+		dpiPool = nil
 	}
 }
 
@@ -205,10 +157,6 @@ func Reset(modules string) {
 
 		log.Printf("[DPI] Resetting DPI state with modules: %s", modules)
 
-		// Destroy will:
-		// - Call godpi.Destroy() which calls types.DestroyCache()
-		// - types.DestroyCache() flushes the cache and nils FlowTrackerInstance
-		// - This releases all tracked flows and allows GC to reclaim memory
 		Destroy()
 	}
 
@@ -218,69 +166,19 @@ func Reset(modules string) {
 // GetProtocols returns a map of all the identified protocol names to a result datastructure
 // packets are identified with libprotoident, nDPI and a few custom heuristics from godpi.
 // Will return nil if dpi is disabled.
-// Classification is invoked for each packet up to MaxPacketsPerFlow; godpi internally
-// manages when to actually perform classification based on MinPacketsForClassification.
+// Native engines keep incremental state until detection or the inspection budget.
 func GetProtocols(packet gopacket.Packet) map[string]ClassificationResult {
 
 	if disableDPI.Load() {
 		return nil
 	}
-	dpiMu.Lock()
-	defer dpiMu.Unlock()
+	dpiMu.RLock()
+	defer dpiMu.RUnlock()
 	if disableDPI.Load() {
 		return nil
 	}
 
-	// Validate that the packet has a transport layer with valid endpoints
-	// This prevents crashes when trying to process packets without proper transport layer data
-	if packet.TransportLayer() == nil {
-		return nil
-	}
-
-	// Check that transport endpoints have valid data
-	// UDP/TCP endpoints need at least 2 bytes for the port number
-	transportFlow := packet.TransportLayer().TransportFlow()
-	if len(transportFlow.Src().Raw()) == 0 || len(transportFlow.Dst().Raw()) == 0 {
-		return nil
-	}
-
-	//start := time.Now()
-	//fmt.Println("DPI", packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow())
-
-	// Get packet flow and validate it to prevent null pointer dereferences
-	// GetPacketFlow returns (flow, exists) where exists indicates if flow was already tracked
-	flow, _ := godpi.GetPacketFlow(packet)
-
-	// Validate that flow is not nil before accessing its methods
-	// This prevents segmentation faults in the nDPI wrapper when DPI libraries
-	// are not properly initialized or protocol data files are missing
-	if flow == nil {
-		return nil
-	}
-
-	// godpi only stores up to MaxPacketsPerFlow packets per flow.
-	// Try classification on each packet up to this limit.
-	// godpi internally checks MinPacketsForClassification before actually classifying.
-	if flow.GetPacketCount() <= MaxPacketsPerFlow {
-		results := godpi.ClassifyFlowAllModules(flow)
-
-		//fmt.Println(packet.NetworkLayer().NetworkFlow(), packet.TransportLayer().TransportFlow(), "complete", time.Since(start))
-		//spew.Dump(results)
-
-		// when using all modules we might receive duplicate classifications
-		// so they will be deduplicated by protocol name before counting them later
-		protocols := make(map[string]ClassificationResult)
-		for _, r := range results {
-			if r.Protocol == "UNKNOWN" || r.Protocol == "NO_PAYLOAD" {
-				continue
-			}
-			protocols[string(r.Protocol)] = r
-		}
-
-		return protocols
-	}
-
-	return nil
+	return dpiPool.classify(packet)
 }
 
 // NewProto initializes a new protocol.
