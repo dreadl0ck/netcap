@@ -27,6 +27,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	behaviorcommand "github.com/dreadl0ck/netcap/internal/behavior/command"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 )
 
@@ -40,7 +41,7 @@ func Flags() (flags []string) {
 
 // GetFlags returns the CLI flags for the capture subcommand.
 func GetFlags() []cli.Flag {
-	return []cli.Flag{
+	return append([]cli.Flag{
 		&cli.BoolFlag{
 			Name:    "gen-config",
 			Usage:   "generate config",
@@ -733,5 +734,5 @@ func GetFlags() []cli.Flag {
 			Usage:   "port-to-message-type mappings (format: port:package.MessageType, can be specified multiple times)",
 			Sources: cli.EnvVars("NC_PROTO_MESSAGE_TYPES"),
 		},
-	}
+	}, behaviorcommand.Flags()...)
 }

@@ -109,6 +109,33 @@ sudo ./net capture -iface en0
 air
 ```
 
+## Behavioral monitoring
+
+`capture -behavior` and `agent -behavior` enable passive, sensor/interface/VLAN-
+scoped observations. Capture defaults to `<output>/Behavior.json`; agents use
+the user-config `netcap/behavior/<interface>/` directory. Select an existing
+baseline explicitly with `-behavior-baseline <path>`.
+
+```bash
+./net capture -read traffic.pcap -out capture -behavior -http localhost:8080
+./net capture -iface en0 -out live -behavior -behavior-sensor office-router
+```
+
+| Contract | Behavior |
+| --- | --- |
+| Discovery | ARP/DHCP/NDP device bindings, TCP SYN service edges, DNS queries/resolvers and authoritative DHCP/IPv6 router-advertisement prefixes; `-behavior-prefix` supplies configured CIDRs |
+| Learning | Defaults to 7 days of capture-time coverage and 100 observations; `-behavior-learning` and `-behavior-min-samples` tune the criteria |
+| Approval | `GET /api/behavior` returns the snapshot; `POST /api/behavior/change` takes `{action, ids, reason, version}` for approve, pause, resume, relearn, reset, approve-changes, suppress or unsuppress |
+| Monitoring | Unknown facts remain candidates; approval creates a new baseline version. Alerts include the expected/observed fact and original baseline identity in `MatchedRecord` |
+| Bounds | `-behavior-max-facts` defaults to 10,000; overflow is visible and prevents approving incomplete learning |
+| Persistence | Atomic checkpoints every second and on shutdown; a single-writer file lock prevents concurrent baseline mutation |
+| Alerts | `Alert.ncap.gz` is appended and synced per alert, readable before capture finishes; malformed history is rejected without overwriting it |
+
+These paths implement the first W58 slice. Lateral correlation, geographic/rate
+policies, topology controls and the live alert UI require subsequent integration.
+Endpoint visibility is limited to traffic at the selected interface; encrypted
+SSH/RDP connection patterns do not establish authentication failures.
+
 ## Subcommands
 
 | Command | Description |

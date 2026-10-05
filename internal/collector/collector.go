@@ -49,6 +49,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/behavior"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/service"
@@ -160,6 +161,9 @@ type Collector struct {
 	rulesEngine    *rules.Engine
 	filteredCount  int64
 	alertCount     int64
+	behaviorEngine *behavior.Engine
+	behaviorScope  behavior.Scope
+	behaviorError  error
 }
 
 // GetTotalBytesWritten returns the total bytes written to disk.
@@ -666,6 +670,8 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	}
 	// Capture metadata before transferring ownership to the worker.
 	ref := p.Metadata().CaptureInfo.Timestamp
+	// Observe ingress serially before pooled-packet ownership moves to a worker.
+	c.observeBehavior(p)
 	c.wg.Add(1)
 	atomic.AddInt64(&c.current, 1)
 	select {

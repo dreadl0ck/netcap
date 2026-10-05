@@ -5,6 +5,8 @@ package webui
 import "net/http"
 
 func registerEditionRoutes(mux *http.ServeMux, s *Server) {
+	mux.HandleFunc("/api/behavior", s.handleBehavior)
+	mux.HandleFunc("/api/behavior/change", s.handleBehaviorChange)
 	mux.HandleFunc("/api/dbs", s.handleDatabaseInfo)
 	mux.HandleFunc("/api/dbs/status", s.handleDatabaseStatus)
 	mux.HandleFunc("/api/dbs/geoip", s.handleGeoProviders)

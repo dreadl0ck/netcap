@@ -26,6 +26,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -33,6 +34,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap"
+	behaviorcommand "github.com/dreadl0ck/netcap/internal/behavior/command"
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
@@ -65,7 +67,7 @@ func Run() {
 }
 
 // RunWithContext runs the agent command with a CLI context.
-func RunWithContext(ctx context.Context, c *cli.Command) error {
+func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 	if c.Bool("gen-keypair") {
 		fp, err := distributed.GenerateIdentity(c.String("cert"), c.String("key"), "netcap-agent")
 		if err != nil {
@@ -176,6 +178,22 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		BaseLayer:     utils.GetBaseLayer(c.String("base")),
 		DecodeOptions: utils.GetDecodeOptions(c.String("opts")),
 	})
+
+	if c.Bool("behavior") || c.String("behavior-baseline") != "" {
+		output := filepath.Dir(c.String("behavior-baseline"))
+		if c.String("behavior-baseline") == "" {
+			dir, err := os.UserConfigDir()
+			if err != nil {
+				return err
+			}
+			output = filepath.Join(dir, "netcap", "behavior", filepath.Base(c.String("iface")))
+		}
+		stopBehavior, err := behaviorcommand.Start(c, coll, output, c.String("iface"), true)
+		if err != nil {
+			return fmt.Errorf("start agent behavioral monitoring: %w", err)
+		}
+		defer func() { runErr = errors.Join(runErr, stopBehavior()) }()
+	}
 
 	// initialize batching
 	chans, handle, err := coll.InitBatching(c.String("bpf"), c.String("iface"))
