@@ -83,6 +83,12 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 		"-y",        // Force overwrite without prompting (required for non-interactive mode)
 		"-http", "", // Disable web UI server
 	}
+	behaviorOptions, err := s.behaviorOptionsForJob(job)
+	if err != nil {
+		s.recordAnalysisFailure(job, fmt.Sprintf("behavioral baseline setup: %v", err), "")
+		return
+	}
+	args = append(args, behaviorJobArgs(behaviorOptions)...)
 
 	// Add critical stream processing flags to ensure SSH records are created
 	args = append(args,
@@ -323,21 +329,6 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 
 	// Execute rules automatically after successful analysis (async to not block next job)
 	go s.executeRulesForJob(job)
-}
-
-// recordAnalysisFailure records a failed run against whichever bookkeeping the
-// current mode uses. Both modes always get the error log path, so the UI can
-// offer the full output in local mode too; it used to be passed only in
-// service mode, which is why the desktop app could never show one.
-func (s *Server) recordAnalysisFailure(job *AnalysisJob, message, errorLogPath string) {
-	if s.sessionManager != nil {
-		log.Printf("[Service] Setting error log path for session %s: %s", job.SessionID, errorLogPath)
-		s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, message, errorLogPath)
-
-		return
-	}
-
-	s.SetFileError(job.InputFile, message, errorLogPath)
 }
 
 // analysisErrorSummaryLimit is how many trailing bytes of the helper's output

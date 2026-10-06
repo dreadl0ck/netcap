@@ -22,6 +22,7 @@ package capture
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -39,6 +40,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/internal/analyze"
+	behaviorcommand "github.com/dreadl0ck/netcap/internal/behavior/command"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream"
@@ -397,7 +399,8 @@ func Run() {
 }
 
 // RunWithContext runs the capture command with a CLI context.
-func RunWithContext(ctx context.Context, c *cli.Command) error {
+func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
+	behaviorCommand := c
 	// Populate global variables from CLI context
 	setFlagsFromContext(c)
 
@@ -464,7 +467,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 
 	// Check if running in service mode
 	if flagService {
-		runServiceMode()
+		runServiceMode(c)
 		return nil
 	}
 
@@ -742,6 +745,8 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		}
 
 		// Create server in local mode (unrestricted)
+		options := behaviorcommand.ReadOptions(behaviorCommand)
+		runtimeConfig.Behavior = &options
 		webUIServer = webui.NewServer(flagHTTP, initialOutDir, inputFiles, flagHTTPAssets, flagDebug, flagDPI, false, nil, runtimeConfig, flagDev)
 		webUIServer.SetLiveMode(live) // Set live mode flag
 
@@ -1057,6 +1062,16 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		}
 	}
 
+	stopBehavior := func() error { return nil }
+	if live || len(inputFiles) <= 1 {
+		var err error
+		stopBehavior, err = behaviorcommand.Start(behaviorCommand, coll, flagOutDir, flagInterface, live)
+		if err != nil {
+			return fmt.Errorf("start behavioral monitoring: %w", err)
+		}
+	}
+	defer func() { runErr = errors.Join(runErr, stopBehavior()) }()
+
 	coll.PrintConfiguration()
 
 	// Connect collector to webui server for runtime debug logging
@@ -1139,6 +1154,9 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	// Process each input file
 	for fileIdx, inputFile := range inputFiles {
 		if len(inputFiles) > 1 {
+			if err := stopBehavior(); err != nil {
+				return fmt.Errorf("checkpoint previous behavioral capture: %w", err)
+			}
 			fmt.Printf("\n|| ================================================================== ||\n")
 			fmt.Printf("   Processing file %d/%d: %s\n", fileIdx+1, len(inputFiles), inputFile)
 			fmt.Printf("|| ================================================================== ||\n")
@@ -1344,6 +1362,11 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			coll.InputFile = inputFile
 			coll.PrintTime = flagTime
 			coll.Epochs = numEpochs
+			nextStopBehavior, err := behaviorcommand.Start(behaviorCommand, coll, flagOutDir, flagInterface, false)
+			if err != nil {
+				return fmt.Errorf("start behavioral monitoring for %s: %w", inputFile, err)
+			}
+			stopBehavior = nextStopBehavior
 
 			coll.PrintConfiguration()
 

@@ -39,6 +39,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	behaviorcommand "github.com/dreadl0ck/netcap/internal/behavior/command"
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
@@ -92,6 +93,7 @@ type FileError struct {
 // RuntimeConfig holds the actual runtime configuration values passed from the capture package
 // This allows the webUI to display the actual values the application was started with
 type RuntimeConfig struct {
+	Behavior *BehaviorOptions
 	// Branding
 	LogoSubText string // Custom label shown below NETCAP logo (overrides LOCAL/SERVICE)
 
@@ -162,6 +164,8 @@ type RuntimeConfig struct {
 	BannerSize int
 }
 
+type BehaviorOptions = behaviorcommand.Options
+
 // Server represents the web UI HTTP server
 type Server struct {
 	addr                 string
@@ -217,6 +221,7 @@ type Server struct {
 	currentProcessing *AnalysisJob      // Currently processing job (service mode only)
 	currentProc       *os.Process       // Currently running out-of-process net capture (for cleanup; nil in the in-process/appstore build)
 	currentCmdMutex   sync.RWMutex      // Mutex for currentProc
+	alertStreams      int               // protected by mu
 }
 
 // UploadCallbackFunc is called when files are uploaded via the web UI
@@ -539,6 +544,13 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/rule-sets", s.handleRuleSets)
 	mux.HandleFunc("/api/rule-sets/", s.handleRuleSet)
 	mux.HandleFunc("/api/alerts", s.handleAlerts)
+	mux.HandleFunc("/api/behavior", s.handleBehavior)
+	mux.HandleFunc("/api/behavior/health", s.handleBehaviorHealth)
+	mux.HandleFunc("/api/behavior/asset", s.handleBehaviorAsset)
+	mux.HandleFunc("/api/behavior/records", s.handleBehaviorRecords)
+	mux.HandleFunc("/api/behavior/change", s.handleBehaviorChange)
+	mux.HandleFunc("/api/behavior/topology", s.handleBehaviorTopology)
+	mux.HandleFunc("/api/alerts/stream", s.handleAlertsStream)
 	mux.HandleFunc("/api/alerts/grouped", s.handleGroupedAlerts)
 	mux.HandleFunc("/api/alerts/stats", s.handleAlertStats)
 	mux.HandleFunc("/api/alerts/clear", s.handleClearAlerts)
@@ -1528,14 +1540,17 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 	totalRecords := 0
 	totalRulesProcessed := 0
 
-	// Create a single alert writer for the entire job
-	// This ensures we read existing alerts once and write all new alerts at the end
+	// Share one incremental alert writer across the job's rule engines.
 	alertWriter, err := rules.NewFileAlertWriter(job.OutputDir)
 	if err != nil {
 		log.Printf("%s Failed to create alert writer for session %s: %v", mode, job.SessionID, err)
 		return
 	}
-	defer alertWriter.Close()
+	defer func() {
+		if err := alertWriter.Close(); err != nil {
+			log.Printf("%s Failed to close alert writer for session %s: %v", mode, job.SessionID, err)
+		}
+	}()
 
 	// Group rules by type to minimize file reads
 	// We want to read each audit file (e.g. TCP.ncap.gz) only once
@@ -1612,9 +1627,9 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 			// Evaluate
 			alerts, err := engine.Evaluate(auditRecord)
 			if err != nil {
-				// Log error but continue
-				// log.Printf("%s Error evaluating record: %v", mode, err)
-				continue
+				reader.Close()
+				log.Printf("%s Rule execution failed for session %s: %v", mode, job.SessionID, err)
+				return
 			}
 			batchAlerts += alerts
 		}
@@ -1780,6 +1795,20 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 
 	c.Bpf = job.BPFFilter
 	c.InputFile = job.InputFile
+	behaviorOptions, err := s.behaviorOptionsForJob(job)
+	if err != nil {
+		s.recordAnalysisFailure(job, fmt.Sprintf("behavioral baseline setup: %v", err), "")
+		return
+	}
+	stopBehavior, err := behaviorcommand.StartOptions(behaviorOptions, c, job.OutputDir, "pcap", false)
+	if err != nil {
+		s.recordAnalysisFailure(job, fmt.Sprintf("behavioral monitoring setup: %v", err), "")
+		return
+	}
+	defer stopBehavior()
+	if behaviorOptions.Enabled {
+		s.SetCollector(c)
+	}
 
 	// Create error log file for capturing errors
 	errorLogPath := filepath.Join(job.OutputDir, analysisErrorLogName)
@@ -1850,6 +1879,9 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		analysisErr = c.CollectPcap(job.InputFile)
 	} else {
 		analysisErr = c.CollectPcapNG(job.InputFile)
+	}
+	if err := stopBehavior(); err != nil {
+		analysisErr = fmt.Errorf("behavioral monitoring: %w", err)
 	}
 
 	duration := time.Since(startTime)

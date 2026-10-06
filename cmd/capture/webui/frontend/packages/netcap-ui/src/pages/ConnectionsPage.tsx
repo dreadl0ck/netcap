@@ -63,6 +63,7 @@ import {
 } from '@mui/icons-material';
 import ResponsiveDataView from '../components/ResponsiveDataView';
 import Layout from '../components/Layout';
+import BehaviorAssetContext from '../components/BehaviorAssetContext';
 import ConversationModal from '../components/ConversationModal';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
@@ -1322,6 +1323,8 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                           <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={9}>
                             <Collapse in={expandedRow === rowKey} timeout="auto" unmountOnExit>
                               <Box sx={{ py: 2 }} data-learn="Connection Details: Extended information about this network connection including timestamps, MAC addresses, protocols, flags, and statistics.">
+                                {conn.srcIP && <BehaviorAssetContext asset={conn.srcIP} />}
+                                {conn.dstIP && <BehaviorAssetContext asset={conn.dstIP} />}
                                 <Grid container spacing={2}>
                                   {/* Time Range */}
                                   <Grid item xs={12} md={6}>
@@ -1686,6 +1689,11 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                                       )}
                                       
                                       {/* Navigation Buttons */}
+                                      {[['Client', conn.srcIP], ['Server', conn.dstIP]].filter(([, address]) => address).map(([label, address]) => (
+                                        <Button key={label} variant="outlined" size="small" onClick={(event) => { event.stopPropagation(); router.push(`/behavior?asset=${encodeURIComponent(address)}`); }}>
+                                          {label} behavioral history
+                                        </Button>
+                                      ))}
                                       {conn.srcIP && (
                                         <Button
                                           data-learn="View Client in Hosts: Navigate to the Hosts page filtered for the client IP address."

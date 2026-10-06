@@ -48,6 +48,7 @@ pcaps
 # above, otherwise the negations are ignored.
 !tests/new_decoders_test.go
 !tests/The Ultimate PCAP v20260316.pcapng
+!internal/behavior/testdata/qualification/**/*.pcap
 zeus/.history
 zeus/dumps
 priv.key

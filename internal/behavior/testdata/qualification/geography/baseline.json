@@ -1,0 +1,269 @@
+{
+  "labels": {},
+  "corrections": {},
+  "leases": {},
+  "rates": {
+    "5212476a00048e5469639bc1d949834331b1240e606512d454f2030f2be1f8fe": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "traffic",
+        "srcIP": "192.0.2.10"
+      },
+      "start": 1699999980000000000,
+      "packets": 3,
+      "bytes": 180,
+      "model": {
+        "windows": 0,
+        "packetsMean": 0,
+        "packetsM2": 0,
+        "bytesMean": 0,
+        "bytesM2": 0
+      }
+    }
+  },
+  "approvedRates": {},
+  "policy": {
+    "deniedCountries": [
+      "US"
+    ],
+    "deniedASNs": [
+      "15169"
+    ],
+    "rateWindows": 4,
+    "rateMultiplier": 4,
+    "windowNS": 60000000000,
+    "fanout": 5,
+    "rdpAttempts": 10
+  },
+  "activity": {
+    "ca193fe323a0f4ca07f33be4ecd28f70752bdbbeab6df5468b047fcd67b2e05c": {
+      "fact": {
+        "token": "50003:3",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "10.0.0.1",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000002000000000
+    },
+    "ce61b4404dfb4d652e0b6f3f188113c568b5303b39651cf38f551ef19ae30c60": {
+      "fact": {
+        "token": "50001:1",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "1.1.1.1",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000000000000000
+    },
+    "e092c7ff97f371edf799dc1d1a40173cf25e7444ae3ab90b3006923d45ceb3a4": {
+      "fact": {
+        "token": "50002:2",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "1.1.1.1",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000001000000000
+    }
+  },
+  "windowOverflow": 0,
+  "schema": 3,
+  "mode": "monitoring",
+  "version": 1,
+  "baselineId": "076eca0f381fee7cd214ee389625db4fbb290f3264d46b1fc3be8c93717105b0",
+  "learningStarted": 1700000000000000000,
+  "watermark": 1700000002000000000,
+  "samples": 3,
+  "overflow": 0,
+  "outOfOrder": 0,
+  "minLearningNS": 1000000000,
+  "minSamples": 2,
+  "maxFacts": 10000,
+  "observed": {
+    "5212476a00048e5469639bc1d949834331b1240e606512d454f2030f2be1f8fe": {
+      "fact": {
+        "bytes": 60,
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "traffic",
+        "srcIP": "192.0.2.10"
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000002000000000,
+      "samples": 3
+    },
+    "61945a25a1b1d82b4ddaac42bf156fef35a6b9730411d3d36537c6f2a92f8f7a": {
+      "fact": {
+        "token": "50001:1",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "1.1.1.1",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000001000000000,
+      "samples": 2
+    },
+    "73751e5ec95781419be763f69452364b7d4fcb587492d6864641d4127b86c744": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "edge",
+        "srcIP": "10.0.0.1",
+        "dstIP": "192.0.2.10"
+      },
+      "firstSeen": 1700000002000000000,
+      "lastSeen": 1700000002000000000,
+      "samples": 1
+    },
+    "e907a25590c5d9e65710d100c05fe84b353f8a3ac224110182d7c5073646d8ca": {
+      "fact": {
+        "token": "50003:3",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "10.0.0.1",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "firstSeen": 1700000002000000000,
+      "lastSeen": 1700000002000000000,
+      "samples": 1
+    },
+    "f75a4c661542f9e4e4f6e0146ac555e8150e825a0f53c1069ac65790a879952c": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "geo",
+        "srcIP": "192.0.2.10",
+        "dstIP": "1.1.1.1",
+        "value": "AU|13335",
+        "provenance": "dbip"
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000001000000000,
+      "samples": 2
+    },
+    "fe8d0df602d4c59e2d06aae5699defb1258e07be4d9b4c0f1a36af37544f7a5d": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "edge",
+        "srcIP": "1.1.1.1",
+        "dstIP": "192.0.2.10"
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000001000000000,
+      "samples": 2
+    }
+  },
+  "approved": {
+    "5212476a00048e5469639bc1d949834331b1240e606512d454f2030f2be1f8fe": {
+      "bytes": 60,
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "traffic",
+      "srcIP": "192.0.2.10"
+    },
+    "61945a25a1b1d82b4ddaac42bf156fef35a6b9730411d3d36537c6f2a92f8f7a": {
+      "token": "50001:1",
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "service",
+      "srcIP": "192.0.2.10",
+      "dstIP": "1.1.1.1",
+      "protocol": "tcp",
+      "port": 443
+    },
+    "73751e5ec95781419be763f69452364b7d4fcb587492d6864641d4127b86c744": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "edge",
+      "srcIP": "10.0.0.1",
+      "dstIP": "192.0.2.10"
+    },
+    "e907a25590c5d9e65710d100c05fe84b353f8a3ac224110182d7c5073646d8ca": {
+      "token": "50003:3",
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "service",
+      "srcIP": "192.0.2.10",
+      "dstIP": "10.0.0.1",
+      "protocol": "tcp",
+      "port": 443
+    },
+    "f75a4c661542f9e4e4f6e0146ac555e8150e825a0f53c1069ac65790a879952c": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "geo",
+      "srcIP": "192.0.2.10",
+      "dstIP": "1.1.1.1",
+      "value": "AU|13335",
+      "provenance": "dbip"
+    },
+    "fe8d0df602d4c59e2d06aae5699defb1258e07be4d9b4c0f1a36af37544f7a5d": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "edge",
+      "srcIP": "1.1.1.1",
+      "dstIP": "192.0.2.10"
+    }
+  },
+  "suppressed": {},
+  "decisions": [
+    {
+      "at": 1791251273720986000,
+      "action": "approve",
+      "reason": "reviewed geographic fixture",
+      "version": 1,
+      "baselineId": "076eca0f381fee7cd214ee389625db4fbb290f3264d46b1fc3be8c93717105b0"
+    }
+  ]
+}

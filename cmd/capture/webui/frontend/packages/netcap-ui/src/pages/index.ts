@@ -23,6 +23,8 @@
 
 export { default as DashboardPage } from './DashboardPage';
 export { default as AlertsPage } from './AlertsPage';
+export { default as BehaviorPage } from './BehaviorPage';
+export type { BehaviorPageProps } from './BehaviorPage';
 export { default as AnalyzePage } from './AnalyzePage';
 export { default as AuditPage } from './AuditPage';
 export { default as BPFPage } from './BPFPage';

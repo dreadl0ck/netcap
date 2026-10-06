@@ -16,6 +16,7 @@ package delimited
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
 	"io"
 
 	"github.com/gogo/protobuf/proto"
@@ -23,8 +24,14 @@ import (
 
 // Reader reads length-delimited records from a byte data source.
 type Reader struct {
-	data   []byte
-	buffer *bufio.Reader
+	data      []byte
+	buffer    *bufio.Reader
+	maxRecord uint64
+}
+
+// NewReaderWithLimit rejects oversized frames before allocating their payload.
+func NewReaderWithLimit(r io.Reader, maxRecord uint64) *Reader {
+	return &Reader{buffer: bufio.NewReader(r), maxRecord: maxRecord}
 }
 
 // NewReader returns a new delimited Reader for the records in r.
@@ -46,6 +53,9 @@ func (r *Reader) Next() ([]byte, error) {
 	size, err := binary.ReadUvarint(r.buffer)
 	if err != nil {
 		return nil, err
+	}
+	if r.maxRecord > 0 && size > r.maxRecord {
+		return nil, fmt.Errorf("record size %d exceeds limit %d", size, r.maxRecord)
 	}
 
 	// alloc memory for data

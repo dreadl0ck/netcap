@@ -1,0 +1,15 @@
+{
+  "contract": 1,
+  "geolocation": true,
+  "interface": "pcap",
+  "referenceCommit": "435925c5a0034b11e890e0486e90ac83fe88c5a3",
+  "schema": 3,
+  "sensor": "replay",
+  "sha256": {
+    "alerts.json": "eb27cf46a63bca1a413c3424515822b0559f6e9042f7f206cf7dbc4d41952956",
+    "baseline.json": "c45687d90556a247d66f44ffece33cb7d4b7264d6068de6af96e561937ad9f56",
+    "dbs/dbip-asn-lite.mmdb": "77680a64a009f57e0376d5f6f276e7a9d8adc89090ab8829bb09cc24b449fac7",
+    "dbs/dbip-city-lite.mmdb": "7de37d4ba469199e3e01174ad0afed80e7b94d6dca4d4dadc5ac18033b0d342f",
+    "monitoring.pcap": "af435fe9edf5f981223821e05ea387d2cf913ea4c152c10075e75ab80e6047c0"
+  }
+}

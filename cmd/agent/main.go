@@ -20,12 +20,14 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -33,9 +35,12 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/internal/behavior"
+	behaviorcommand "github.com/dreadl0ck/netcap/internal/behavior/command"
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/packet"
+	"github.com/dreadl0ck/netcap/internal/delimited"
 	"github.com/dreadl0ck/netcap/internal/distributed"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
@@ -65,7 +70,7 @@ func Run() {
 }
 
 // RunWithContext runs the agent command with a CLI context.
-func RunWithContext(ctx context.Context, c *cli.Command) error {
+func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 	if c.Bool("gen-keypair") {
 		fp, err := distributed.GenerateIdentity(c.String("cert"), c.String("key"), "netcap-agent")
 		if err != nil {
@@ -178,6 +183,35 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 		DecodeOptions: utils.GetDecodeOptions(c.String("opts")),
 	})
 
+	behaviorOptions := behaviorcommand.ReadOptions(c)
+	if behaviorOptions.Enabled {
+		behaviorOptions.DeliveryHealth = func() *behavior.DeliveryHealth {
+			stats := client.Stats()
+			return &behavior.DeliveryHealth{Acked: stats.Acked, Rejected: stats.Rejected, Dropped: stats.Dropped, Pending: stats.Pending}
+		}
+		output := filepath.Dir(c.String("behavior-baseline"))
+		if c.String("behavior-baseline") == "" {
+			dir, err := os.UserConfigDir()
+			if err != nil {
+				return err
+			}
+			output = filepath.Join(dir, "netcap", "behavior", filepath.Base(c.String("iface")))
+		}
+		if !c.IsSet("behavior-sensor") {
+			behaviorOptions.Sensor, _ = distributed.IdentityFingerprint(id)
+		}
+		behaviorOptions.OnAlert = func(alert *types.Alert) {
+			if err := enqueueBehaviorAlert(client, alert); err != nil {
+				log.Printf("agent: behavioral alert retained locally, remote delivery unavailable: %v", err)
+			}
+		}
+		stopBehavior, err := behaviorcommand.StartOptions(behaviorOptions, coll, output, c.String("iface"), true)
+		if err != nil {
+			return fmt.Errorf("start agent behavioral monitoring: %w", err)
+		}
+		defer func() { runErr = errors.Join(runErr, stopBehavior()) }()
+	}
+
 	// initialize batching
 	chans, handle, err := coll.InitBatching(c.String("bpf"), c.String("iface"))
 	if err != nil {
@@ -248,4 +282,15 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 	}
 
 	return nil
+}
+
+func enqueueBehaviorAlert(client *distributed.Client, alert *types.Alert) error {
+	var data bytes.Buffer
+	if err := delimited.NewWriter(&data).PutProto(alert); err != nil {
+		return fmt.Errorf("encode behavioral alert: %w", err)
+	}
+	if data.Len() > distributed.MaxRecordSize {
+		return errors.New("behavioral alert exceeds remote record limit")
+	}
+	return client.Enqueue(&types.Batch{MessageType: types.Type_NC_Alert, TotalSize: int32(data.Len()), Data: data.Bytes()})
 }

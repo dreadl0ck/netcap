@@ -1,0 +1,205 @@
+{
+  "labels": {},
+  "corrections": {},
+  "leases": {},
+  "rates": {
+    "5212476a00048e5469639bc1d949834331b1240e606512d454f2030f2be1f8fe": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "traffic",
+        "srcIP": "192.0.2.10"
+      },
+      "start": 1699999980000000000,
+      "packets": 1,
+      "bytes": 73,
+      "model": {
+        "windows": 0,
+        "packetsMean": 0,
+        "packetsM2": 0,
+        "bytesMean": 0,
+        "bytesM2": 0
+      }
+    }
+  },
+  "approvedRates": {},
+  "policy": {
+    "rateWindows": 4,
+    "rateMultiplier": 4,
+    "windowNS": 60000000000,
+    "fanout": 5,
+    "rdpAttempts": 10
+  },
+  "activity": {},
+  "windowOverflow": 0,
+  "schema": 3,
+  "mode": "monitoring",
+  "version": 1,
+  "baselineId": "a541ddc243bf6598cc624b0d27ea2518c75042f1a5696866b0a0991eaf45a503",
+  "learningStarted": 1700000000000000000,
+  "watermark": 1700000002000000000,
+  "samples": 2,
+  "overflow": 0,
+  "outOfOrder": 0,
+  "minLearningNS": 1000000000,
+  "minSamples": 2,
+  "maxFacts": 10000,
+  "observed": {
+    "5212476a00048e5469639bc1d949834331b1240e606512d454f2030f2be1f8fe": {
+      "fact": {
+        "bytes": 73,
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "traffic",
+        "srcIP": "192.0.2.10"
+      },
+      "firstSeen": 1700000002000000000,
+      "lastSeen": 1700000002000000000,
+      "samples": 1
+    },
+    "a4b98b51c3dac4c3d2884d4d3a4c19f6b6f2ae88823db391bf5ee1a16b070041": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "device",
+        "mac": "00:01:02:03:04:05"
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000000000000000,
+      "samples": 1
+    },
+    "a6ff0fc04e1a3d2e7be48f2b46b59ef7b547ceffa61fac47a25b989be9e13778": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "dns",
+        "srcIP": "192.0.2.10",
+        "value": "known.example"
+      },
+      "firstSeen": 1700000002000000000,
+      "lastSeen": 1700000002000000000,
+      "samples": 1
+    },
+    "b7129b8f82848a0e57a275705992308cb1fbb94ef5345db8bbb561670467fc0b": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "binding",
+        "srcIP": "192.0.2.10",
+        "mac": "00:01:02:03:04:05",
+        "provenance": "arp"
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000000000000000,
+      "samples": 1
+    },
+    "cc586e074ed2e15dcbb2fd25dc0488008653e0523952828df7d564e9c81a43c0": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "resolver",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.53",
+        "protocol": "udp",
+        "port": 53
+      },
+      "firstSeen": 1700000002000000000,
+      "lastSeen": 1700000002000000000,
+      "samples": 1
+    },
+    "d238dc95993a6532a8fe5068999756f5ff9c8a7fa7b5bf8571a7f4272baeb9fa": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "edge",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.53"
+      },
+      "firstSeen": 1700000002000000000,
+      "lastSeen": 1700000002000000000,
+      "samples": 1
+    }
+  },
+  "approved": {
+    "5212476a00048e5469639bc1d949834331b1240e606512d454f2030f2be1f8fe": {
+      "bytes": 73,
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "traffic",
+      "srcIP": "192.0.2.10"
+    },
+    "a4b98b51c3dac4c3d2884d4d3a4c19f6b6f2ae88823db391bf5ee1a16b070041": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "device",
+      "mac": "00:01:02:03:04:05"
+    },
+    "a6ff0fc04e1a3d2e7be48f2b46b59ef7b547ceffa61fac47a25b989be9e13778": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "dns",
+      "srcIP": "192.0.2.10",
+      "value": "known.example"
+    },
+    "b7129b8f82848a0e57a275705992308cb1fbb94ef5345db8bbb561670467fc0b": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "binding",
+      "srcIP": "192.0.2.10",
+      "mac": "00:01:02:03:04:05",
+      "provenance": "arp"
+    },
+    "cc586e074ed2e15dcbb2fd25dc0488008653e0523952828df7d564e9c81a43c0": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "resolver",
+      "srcIP": "192.0.2.10",
+      "dstIP": "192.0.2.53",
+      "protocol": "udp",
+      "port": 53
+    },
+    "d238dc95993a6532a8fe5068999756f5ff9c8a7fa7b5bf8571a7f4272baeb9fa": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "edge",
+      "srcIP": "192.0.2.10",
+      "dstIP": "192.0.2.53"
+    }
+  },
+  "suppressed": {},
+  "decisions": [
+    {
+      "at": 1791251270688639000,
+      "action": "approve",
+      "reason": "reviewed discovery fixture",
+      "version": 1,
+      "baselineId": "a541ddc243bf6598cc624b0d27ea2518c75042f1a5696866b0a0991eaf45a503"
+    }
+  ]
+}

@@ -1,0 +1,290 @@
+{
+  "labels": {},
+  "corrections": {},
+  "leases": {
+    "{\"sensor\":\"replay\",\"interface\":\"pcap\"}|192.0.2.130": {
+      "fact": {
+        "leaseSeconds": 3600,
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "binding",
+        "srcIP": "192.0.2.130",
+        "dstIP": "192.0.2.1",
+        "mac": "00:01:02:03:04:05",
+        "provenance": "dhcp"
+      },
+      "at": 1700000000000000000,
+      "expires": 1700003600000000000
+    }
+  },
+  "rates": {
+    "0a8ab80350d78865463735a80f085241b6b3838da25ba4e67a62a5ec03b3ca30": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "traffic",
+        "srcIP": "2001:db8:1::10"
+      },
+      "start": 1699999980000000000,
+      "packets": 1,
+      "bytes": 86,
+      "model": {
+        "windows": 0,
+        "packetsMean": 0,
+        "packetsM2": 0,
+        "bytesMean": 0,
+        "bytesM2": 0
+      }
+    },
+    "2ad8652a13b06703ee6103ff4689badbdcce37fe15667838c505d3021f7cc31a": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "traffic",
+        "srcIP": "192.0.2.1"
+      },
+      "start": 1699999980000000000,
+      "packets": 1,
+      "bytes": 298,
+      "model": {
+        "windows": 0,
+        "packetsMean": 0,
+        "packetsM2": 0,
+        "bytesMean": 0,
+        "bytesM2": 0
+      }
+    }
+  },
+  "approvedRates": {},
+  "policy": {
+    "rateWindows": 4,
+    "rateMultiplier": 4,
+    "windowNS": 60000000000,
+    "fanout": 5,
+    "rdpAttempts": 10
+  },
+  "activity": {},
+  "windowOverflow": 0,
+  "schema": 3,
+  "mode": "monitoring",
+  "version": 1,
+  "baselineId": "80a8385ac088ac7a87df879a420fc73ff419c8d06afdce9c90438a03a8c51ade",
+  "learningStarted": 1700000000000000000,
+  "watermark": 1700000002000000000,
+  "samples": 2,
+  "overflow": 0,
+  "outOfOrder": 0,
+  "minLearningNS": 1000000000,
+  "minSamples": 2,
+  "maxFacts": 10000,
+  "observed": {
+    "00c34d623bcfb2bbb14d54b647dee3aa257ace824d3b2a05bd32366ce813061c": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "binding",
+        "srcIP": "2001:db8:1::10",
+        "mac": "00:01:02:03:04:05",
+        "provenance": "ndp"
+      },
+      "firstSeen": 1700000002000000000,
+      "lastSeen": 1700000002000000000,
+      "samples": 1
+    },
+    "0892b7262f8502df0695dabe9228f2bd556337bd2e24845519a0f5ff98676c2d": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "edge",
+        "srcIP": "2001:db8:1::10",
+        "dstIP": "ff02::1"
+      },
+      "firstSeen": 1700000002000000000,
+      "lastSeen": 1700000002000000000,
+      "samples": 1
+    },
+    "0a8ab80350d78865463735a80f085241b6b3838da25ba4e67a62a5ec03b3ca30": {
+      "fact": {
+        "bytes": 86,
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "traffic",
+        "srcIP": "2001:db8:1::10"
+      },
+      "firstSeen": 1700000002000000000,
+      "lastSeen": 1700000002000000000,
+      "samples": 1
+    },
+    "2ad8652a13b06703ee6103ff4689badbdcce37fe15667838c505d3021f7cc31a": {
+      "fact": {
+        "bytes": 298,
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "traffic",
+        "srcIP": "192.0.2.1"
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000000000000000,
+      "samples": 1
+    },
+    "3dc7f53938954d3284544057cd07cc59af0eb671fe90ccebee87d07129f57469": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "prefix",
+        "value": "192.0.2.128/25",
+        "provenance": "dhcp"
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000000000000000,
+      "samples": 1
+    },
+    "a4b98b51c3dac4c3d2884d4d3a4c19f6b6f2ae88823db391bf5ee1a16b070041": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "device",
+        "mac": "00:01:02:03:04:05"
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000002000000000,
+      "samples": 2
+    },
+    "c0b3b7b2711108af8b7ae16a63c3d90246608d33cdc4e8e7e0d185aba4ef3f32": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "edge",
+        "srcIP": "192.0.2.1",
+        "dstIP": "255.255.255.255"
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000000000000000,
+      "samples": 1
+    },
+    "c6d2674853b3134022c0f6b40f67f639af53fb86685f45640a07db2558729919": {
+      "fact": {
+        "leaseSeconds": 3600,
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "binding",
+        "srcIP": "192.0.2.130",
+        "dstIP": "192.0.2.1",
+        "mac": "00:01:02:03:04:05",
+        "provenance": "dhcp"
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000000000000000,
+      "samples": 1
+    }
+  },
+  "approved": {
+    "00c34d623bcfb2bbb14d54b647dee3aa257ace824d3b2a05bd32366ce813061c": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "binding",
+      "srcIP": "2001:db8:1::10",
+      "mac": "00:01:02:03:04:05",
+      "provenance": "ndp"
+    },
+    "0892b7262f8502df0695dabe9228f2bd556337bd2e24845519a0f5ff98676c2d": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "edge",
+      "srcIP": "2001:db8:1::10",
+      "dstIP": "ff02::1"
+    },
+    "0a8ab80350d78865463735a80f085241b6b3838da25ba4e67a62a5ec03b3ca30": {
+      "bytes": 86,
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "traffic",
+      "srcIP": "2001:db8:1::10"
+    },
+    "2ad8652a13b06703ee6103ff4689badbdcce37fe15667838c505d3021f7cc31a": {
+      "bytes": 298,
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "traffic",
+      "srcIP": "192.0.2.1"
+    },
+    "3dc7f53938954d3284544057cd07cc59af0eb671fe90ccebee87d07129f57469": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "prefix",
+      "value": "192.0.2.128/25",
+      "provenance": "dhcp"
+    },
+    "a4b98b51c3dac4c3d2884d4d3a4c19f6b6f2ae88823db391bf5ee1a16b070041": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "device",
+      "mac": "00:01:02:03:04:05"
+    },
+    "c0b3b7b2711108af8b7ae16a63c3d90246608d33cdc4e8e7e0d185aba4ef3f32": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "edge",
+      "srcIP": "192.0.2.1",
+      "dstIP": "255.255.255.255"
+    },
+    "c6d2674853b3134022c0f6b40f67f639af53fb86685f45640a07db2558729919": {
+      "leaseSeconds": 3600,
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "binding",
+      "srcIP": "192.0.2.130",
+      "dstIP": "192.0.2.1",
+      "mac": "00:01:02:03:04:05",
+      "provenance": "dhcp"
+    }
+  },
+  "suppressed": {},
+  "decisions": [
+    {
+      "at": 1791251269432472000,
+      "action": "approve",
+      "reason": "reviewed address fixture",
+      "version": 1,
+      "baselineId": "80a8385ac088ac7a87df879a420fc73ff419c8d06afdce9c90438a03a8c51ade"
+    }
+  ]
+}

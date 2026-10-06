@@ -29,6 +29,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	behaviorcommand "github.com/dreadl0ck/netcap/internal/behavior/command"
 )
 
 // Flags returns all flag names for the agent subcommand.
@@ -42,7 +43,7 @@ func Flags() []string {
 
 // GetFlags returns the CLI flags for the agent subcommand.
 func GetFlags() []cli.Flag {
-	return []cli.Flag{
+	return append([]cli.Flag{
 		&cli.BoolFlag{
 			Name:    "gen-keypair",
 			Usage:   "write a new agent certificate and key to -cert and -key, print its fingerprint and exit",
@@ -356,5 +357,5 @@ func GetFlags() []cli.Flag {
 			Usage:   "reassembly: close connections that are inactive after X",
 			Sources: cli.EnvVars("NC_CLOSE_INACTIVE_TIMEOUT"),
 		},
-	}
+	}, behaviorcommand.Flags()...)
 }

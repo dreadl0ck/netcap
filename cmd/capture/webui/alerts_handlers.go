@@ -20,6 +20,7 @@
 package webui
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -257,8 +258,7 @@ func (s *Server) readAlertsFromFile(filePath string) ([]AlertResponse, error) {
 			if err == io.EOF {
 				break
 			}
-			log.Printf("[WebUI] Error reading alert record: %v", err)
-			continue
+			return nil, fmt.Errorf("failed to read alert record: %w", err)
 		}
 
 		// Type assert to Alert
@@ -268,28 +268,7 @@ func (s *Server) readAlertsFromFile(filePath string) ([]AlertResponse, error) {
 			continue
 		}
 
-		// Convert timestamp from nanoseconds to milliseconds for JavaScript
-		timestampMs := alert.Timestamp / 1000000
-
-		alertResp := AlertResponse{
-			Timestamp:       timestampMs,
-			Name:            alert.Name,
-			Description:     alert.Description,
-			RuleName:        alert.RuleName,
-			RecordType:      alert.RecordType,
-			Severity:        alert.Severity,
-			Tags:            alert.Tags,
-			MITRE:           alert.MITRE,
-			SrcIP:           alert.SrcIP,
-			DstIP:           alert.DstIP,
-			MatchedRecord:   alert.MatchedRecord,
-			RuleExpression:  alert.RuleExpression,
-			Threshold:       alert.Threshold,
-			ThresholdWindow: alert.ThresholdWindow,
-		}
-
-		// Generate alert ID
-		alertResp.AlertID = generateAlertID(alertResp)
+		alertResp := alertResponse(alert)
 
 		// Check if resolved
 		resolved, resolvedAt := isAlertResolved(alertResp.AlertID, resolvedStore)
@@ -710,8 +689,12 @@ func contains(slice []string, item string) bool {
 
 // generateAlertID generates a unique identifier for an alert
 func generateAlertID(alert AlertResponse) string {
-	// Use combination of rule name, timestamp, srcIP, dstIP to create unique ID
-	return fmt.Sprintf("%s-%d-%s-%s", alert.RuleName, alert.Timestamp, alert.SrcIP, alert.DstIP)
+	id := fmt.Sprintf("%s-%d-%s-%s", alert.RuleName, alert.Timestamp, alert.SrcIP, alert.DstIP)
+	if alert.RecordType == "Behavior" {
+		hash := sha256.Sum256([]byte(alert.MatchedRecord))
+		return fmt.Sprintf("%s-%x", id, hash[:16])
+	}
+	return id
 }
 
 // generateGroupID generates a unique identifier for an alert group
