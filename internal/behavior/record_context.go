@@ -79,6 +79,7 @@ func MatchLateralRecord(e Evidence, alertNS int64, record proto.Message, index i
 		return nil
 	}
 	matched := false
+	// A source port narrows candidates but cannot recover omitted sensor/VLAN metadata.
 	facts := append([]Fact{e.Observed}, e.Related...)
 	for _, fact := range facts {
 		if fact.Kind != "service" || fact.Protocol != "tcp" || fact.SrcIP != src || fact.DstIP != dst || fact.Port != port {
