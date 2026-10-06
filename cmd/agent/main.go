@@ -195,16 +195,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			behaviorOptions.Sensor, _ = distributed.IdentityFingerprint(id)
 		}
 		behaviorOptions.OnAlert = func(alert *types.Alert) {
-			var data bytes.Buffer
-			if err := delimited.NewWriter(&data).PutProto(alert); err != nil {
-				log.Printf("agent: behavioral alert encoding failed: %v", err)
-				return
-			}
-			if data.Len() > distributed.MaxRecordSize {
-				log.Printf("agent: behavioral alert retained locally but exceeds remote record limit")
-				return
-			}
-			if err := client.Enqueue(&types.Batch{MessageType: types.Type_NC_Alert, TotalSize: int32(data.Len()), Data: data.Bytes()}); err != nil {
+			if err := enqueueBehaviorAlert(client, alert); err != nil {
 				log.Printf("agent: behavioral alert retained locally, remote delivery unavailable: %v", err)
 			}
 		}
@@ -285,4 +276,15 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 	}
 
 	return nil
+}
+
+func enqueueBehaviorAlert(client *distributed.Client, alert *types.Alert) error {
+	var data bytes.Buffer
+	if err := delimited.NewWriter(&data).PutProto(alert); err != nil {
+		return fmt.Errorf("encode behavioral alert: %w", err)
+	}
+	if data.Len() > distributed.MaxRecordSize {
+		return errors.New("behavioral alert exceeds remote record limit")
+	}
+	return client.Enqueue(&types.Batch{MessageType: types.Type_NC_Alert, TotalSize: int32(data.Len()), Data: data.Bytes()})
 }

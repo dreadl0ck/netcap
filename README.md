@@ -141,13 +141,32 @@ baseline explicitly with `-behavior-baseline <path>`.
 | Benign changes | Learned DHCP-server leases explain reassignment; explicit binding approvals support failover; unknown DHCP servers cannot disable conflict indicators |
 | Maintenance | `-behavior-policy <JSON>` supports source-specific UTC-nanosecond `maintenance` intervals; exemptions expire according to capture time |
 | Endpoint delivery | Agent sensors default to their certificate fingerprint; alerts are synced locally before entering the bounded distributed queue |
+| Corrupt baseline recovery | Startup rejects corrupt snapshots without overwriting them. Stop capture, retain the damaged file, restore a known-good approved snapshot to a separate writable path, and select it with `-behavior-baseline`; without a trusted backup, select a new path and explicitly relearn |
 
 The synthetic packet-to-SSE gate (`TestBehavioralPacketToSSELatency`, 100 samples)
-measured p95 51.5 ms on the development Mac. PCAP replay has equivalent evidence
-at 1/2/4/8 workers (`TestBehavioralPCAPReplayAcrossWorkerCounts`). These scoped
+measured p95 51.85 ms including decode on Darwin ARM64 / Apple M5 Max, Go 1.27.0,
+at 19.99 synthetic packets/s. PCAP oracles in `behavior_replay_test.go` cover
+discovery/DNS, rates, DHCP transitions, IPv6 conflicts, geography and lateral
+patterns with equivalent evidence at 1/2/4/8 workers. These scoped
 results do not establish latency on arbitrary traffic or hardware.
 Endpoint visibility is limited to traffic at the selected interface; encrypted
 SSH/RDP connection patterns do not establish authentication failures.
+
+`BenchmarkBaselineDurableStorage` compares atomic JSON checkpoints with SQLite
+WAL / `synchronous=FULL` on the same Mac (100 iterations, 2026-10-06):
+
+| Facts | JSON checkpoint | SQLite full-state checkpoint | SQLite one-row commit |
+| --- | --- | --- | --- |
+| 1,000 | 5.003 ms | 0.650 ms | 0.051 ms |
+| 10,000 | 10.987 ms | 6.473 ms | 0.033 ms |
+
+Live state remains bounded in memory with portable JSON checkpoints every 1 s;
+the measured 10,000-fact checkpoint costs 10.987 ms. The SQLite row result is a
+lower bound for one observation, not a complete lifecycle/state-store port.
+Alerts remain separately synced per event. `TestCorruptBaselineRecoveryFromValidatedTemplate`
+verifies recovery preserves approval and both the damaged file and backup;
+`cmd/agent/behavior_test.go` verifies TLS delivery of identical retained alert
+evidence after a collector outage and local-engine restart.
 
 ## Subcommands
 

@@ -326,6 +326,58 @@ func TestBaselineRejectsCorruptSnapshot(t *testing.T) {
 	}
 }
 
+func TestCorruptBaselineRecoveryFromValidatedTemplate(t *testing.T) {
+	e, sink := testEngine(t, 100)
+	learn(t, e, testFact())
+	approved := e.Snapshot()
+	if err := e.Close(); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(e.config.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	backup := filepath.Join(t.TempDir(), "approved.json")
+	if err := os.WriteFile(backup, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	corrupt := []byte("{truncated snapshot")
+	if err := os.WriteFile(e.config.Path, corrupt, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if rejected, err := Open(e.config, sink); err == nil {
+		rejected.Close()
+		t.Fatal("corrupt baseline was accepted")
+	}
+	path := filepath.Join(t.TempDir(), "recovered.json")
+	if err := SeedTemplate(backup, path); err != nil {
+		t.Fatal(err)
+	}
+	config := e.config
+	config.Path = path
+	recovered, err := Open(config, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer recovered.Close()
+	state := recovered.Snapshot()
+	if state.Mode != Monitoring || state.Version != approved.Version || state.BaselineID != approved.BaselineID || !reflect.DeepEqual(state.Approved, approved.Approved) {
+		t.Fatal("recovery changed approved baseline")
+	}
+	if err := recovered.Observe(testTime.Add(time.Second), testFact()); err != nil {
+		t.Fatal(err)
+	}
+	if len(sink.alerts) != 0 {
+		t.Fatal("restored approved observation became an anomaly")
+	}
+	if got, err := os.ReadFile(e.config.Path); err != nil || string(got) != string(corrupt) {
+		t.Fatal("recovery overwrote corrupt evidence")
+	}
+	if got, err := os.ReadFile(backup); err != nil || string(got) != string(data) {
+		t.Fatal("recovery mutated the approved backup")
+	}
+}
+
 func TestBaselineConcurrentObservations(t *testing.T) {
 	e, _ := testEngine(t, 10)
 	var wg sync.WaitGroup
