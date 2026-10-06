@@ -100,6 +100,53 @@ func TestApprovedBaselineDoesNotLearnDeviations(t *testing.T) {
 	}
 }
 
+func TestAcknowledgementPersistsWithoutTrustSuppressionOrDedupReset(t *testing.T) {
+	e, sink := testEngine(t, 10)
+	learn(t, e, testFact())
+	novel := testFact()
+	novel.DstIP = "192.0.2.30"
+	if err := e.Observe(testTime.Add(2*time.Second), novel); err != nil {
+		t.Fatal(err)
+	}
+	before := e.Snapshot()
+	evidence := sink.alerts[0].MatchedRecord
+	id := factID(novel)
+	for _, ids := range [][]string{nil, {id, "unknown"}} {
+		if err := e.ChangeAtVersion("acknowledge", ids, "reviewed", before.Version); err == nil {
+			t.Fatal("invalid acknowledgement accepted")
+		}
+	}
+	if err := e.ChangeAtVersion("acknowledge", []string{id}, "Investigating new peer", before.Version); err != nil {
+		t.Fatal(err)
+	}
+	after := e.Snapshot()
+	if after.Version != before.Version || after.BaselineID != before.BaselineID || !reflect.DeepEqual(after.Approved, before.Approved) || !reflect.DeepEqual(after.Suppressed, before.Suppressed) {
+		t.Fatal("acknowledgement changed trust or suppression")
+	}
+	if err := e.Observe(testTime.Add(3*time.Second), novel); err != nil || len(sink.alerts) != 1 {
+		t.Fatalf("acknowledgement reset dedup: %v, %d alerts", err, len(sink.alerts))
+	}
+	if err := e.Observe(testTime.Add(24*time.Hour), novel); err != nil || len(sink.alerts) != 2 {
+		t.Fatalf("acknowledgement suppressed future detection: %v, %d alerts", err, len(sink.alerts))
+	}
+	if sink.alerts[0].MatchedRecord != evidence {
+		t.Fatal("historical evidence changed")
+	}
+	if err := e.Close(); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := Open(e.config, &testSink{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	history := reopened.Snapshot().Decisions
+	decision := history[len(history)-1]
+	if decision.Action != "acknowledge" || decision.Reason != "Investigating new peer" || !reflect.DeepEqual(decision.IDs, []string{id}) || decision.BaselineID != before.BaselineID {
+		t.Fatalf("acknowledgement not retained: %+v", decision)
+	}
+}
+
 func TestBaselineRestartAndExclusiveLease(t *testing.T) {
 	e, sink := testEngine(t, 10)
 	learn(t, e, testFact())

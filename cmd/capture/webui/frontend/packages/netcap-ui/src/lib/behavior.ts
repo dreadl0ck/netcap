@@ -50,7 +50,7 @@ export interface BehaviorSnapshot {
   observed: Record<string, BehaviorObservation>;
   approved: Record<string, BehaviorFact>;
   suppressed: Record<string, string>;
-  decisions: { at: number; action: string; reason: string; version: number; baselineId: string }[] | null;
+  decisions: { at: number; action: string; reason: string; version: number; baselineId: string; ids?: string[] }[] | null;
 }
 
 export interface BehaviorTopology {
@@ -61,7 +61,7 @@ export interface BehaviorTopology {
   truncated: boolean;
 }
 
-export type BehaviorAction = 'approve' | 'pause' | 'resume' | 'relearn' | 'reset' | 'approve-changes' | 'suppress' | 'unsuppress';
+export type BehaviorAction = 'approve' | 'pause' | 'resume' | 'relearn' | 'reset' | 'acknowledge' | 'approve-changes' | 'suppress' | 'unsuppress';
 
 export function behaviorSelection(status?: StatusResponse, files: FileInfo[] = []): string {
   if (status?.isServiceMode && status.sessionId) return `?sessionId=${encodeURIComponent(status.sessionId)}`;

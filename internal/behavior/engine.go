@@ -301,7 +301,7 @@ func (e *Engine) Fail(err error) {
 }
 
 // Change records an explicit analyst action and commits it atomically.
-// ids are required for approve-changes, suppress and unsuppress.
+// ids are required for acknowledge, approve-changes, suppress and unsuppress.
 func (e *Engine) Change(action string, ids []string, reason string) error {
 	return e.change(action, ids, reason, nil)
 }
@@ -389,7 +389,7 @@ func (e *Engine) change(action string, ids []string, reason string, version *uin
 		next.Rates = make(map[string]RateStats)
 		next.ApprovedRates = make(map[string]RateModel)
 		baselineChanged = true
-	case "approve-changes", "suppress", "unsuppress":
+	case "acknowledge", "approve-changes", "suppress", "unsuppress":
 		if next.Mode != Monitoring || len(ids) == 0 {
 			return errors.New("monitoring and selected fact IDs are required")
 		}
@@ -426,7 +426,9 @@ func (e *Engine) change(action string, ids []string, reason string, version *uin
 	e.state = next
 	e.activity = newActivityIndex(next.Activity)
 	e.rebuildIndexes()
-	clear(e.recent)
+	if action != "acknowledge" {
+		clear(e.recent)
+	}
 	return nil
 }
 

@@ -47,6 +47,23 @@ try {
   await page.getByLabel('Search observed facts').fill('198.51.100.100');
   const candidate = page.getByRole('table', { name: 'Observed network facts' }).getByRole('row').filter({ hasText: 'service:' });
   await candidate.getByRole('checkbox').check();
+  const beforeReview = await (await page.request.get(`${base}/api/behavior`)).json();
+  await page.getByRole('button', { name: 'Acknowledge selected', exact: true }).click();
+  await page.getByRole('dialog').getByLabel('Decision reason').fill('Reviewed browser acknowledgement');
+  await page.getByRole('dialog').getByRole('button', { name: 'Apply decision' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(candidate).toHaveCount(1);
+  const afterReview = await (await page.request.get(`${base}/api/behavior`)).json();
+  assert.deepEqual(afterReview.approved, beforeReview.approved);
+  assert.deepEqual(afterReview.suppressed, beforeReview.suppressed);
+  assert.equal(afterReview.baselineId, beforeReview.baselineId);
+  assert.equal(afterReview.version, beforeReview.version);
+  assert.equal(afterReview.decisions.at(-1).action, 'acknowledge');
+  assert.equal(afterReview.decisions.at(-1).ids.length, 1);
+  await page.getByRole('tab', { name: 'Decision history' }).click();
+  await expect(page.getByRole('table', { name: 'Baseline decision history' })).toContainText('Reviewed browser acknowledgement');
+  await page.getByRole('tab', { name: 'Baseline candidates' }).click();
+  await candidate.getByRole('checkbox').check();
   await page.getByRole('button', { name: 'Suppress selected', exact: true }).click();
   await page.getByRole('dialog').getByLabel('Decision reason').fill('Reviewed browser suppression');
   await page.getByRole('dialog').getByRole('button', { name: 'Apply decision' }).click();
@@ -55,7 +72,7 @@ try {
   await expect(page.getByRole('table', { name: 'Baseline decision history' })).toContainText('Reviewed browser suppression');
   assert.deepEqual(errors, [], 'browser JavaScript errors');
   console.log(JSON.stringify({ browser: await browser.version(), samples: 100, sensors: 1, ...workload, ...background,
-    workload: 'decisive TCP SYNs during 100-packet/10-ms background bursts; actual Community approval, SSE, React render, evidence, reconnect and suppression',
+    workload: 'decisive TCP SYNs during 100-packet/10-ms background bursts; actual Community approval, SSE, React render, evidence, reconnect, acknowledgement and suppression',
     durationMS, packetsPerSecond: 100000 / durationMS, captureDrops: 0, queueDrops: 0,
     dropScope: 'synthetic synchronous ingress', p50MS: latencies[49], p95MS: latencies[94], maxMS: latencies[99] }));
 } finally {

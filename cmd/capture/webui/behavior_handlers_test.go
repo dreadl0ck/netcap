@@ -58,6 +58,19 @@ func TestBehaviorAPIPersistedApprovalAndStaleVersion(t *testing.T) {
 	if state.Mode != behavior.Monitoring || state.Version != 1 || len(state.BaselineID) != 64 {
 		t.Fatalf("state = %+v", state)
 	}
+	var id string
+	for key := range state.Observed {
+		id = key
+	}
+	body, err := json.Marshal(map[string]any{"action": "acknowledge", "ids": []string{id}, "reason": "Reviewed device evidence", "version": state.Version})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ack := httptest.NewRecorder()
+	s.handleBehaviorChange(ack, httptest.NewRequest(http.MethodPost, "/api/behavior/change", strings.NewReader(string(body))))
+	if ack.Code != http.StatusOK {
+		t.Fatalf("acknowledge = %d: %s", ack.Code, ack.Body)
+	}
 	stale := httptest.NewRecorder()
 	s.handleBehaviorChange(stale, httptest.NewRequest(http.MethodPost, "/api/behavior/change", strings.NewReader(`{"action":"reset","reason":"stale browser","version":0}`)))
 	if stale.Code != http.StatusConflict {
@@ -66,6 +79,9 @@ func TestBehaviorAPIPersistedApprovalAndStaleVersion(t *testing.T) {
 	stored, err := behavior.ReadSnapshot(filepath.Join(s.outDir, "Behavior.json"))
 	if err != nil || stored.Version != 1 || stored.Mode != behavior.Monitoring {
 		t.Fatalf("stale changed baseline: %+v, %v", stored, err)
+	}
+	if len(stored.Decisions) != 2 || stored.Decisions[1].Action != "acknowledge" || stored.Decisions[1].IDs[0] != id || len(stored.Suppressed) != 0 {
+		t.Fatalf("acknowledgement not retained independently of trust: %+v", stored.Decisions)
 	}
 }
 

@@ -91,9 +91,9 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
     } finally { setBusy(false); }
   };
 
-  const openAction = (next: BehaviorAction) => {
+  const openAction = (next: BehaviorAction, ids = selected) => {
     if (!data) return;
-    setReason(''); setAction(next); setDecisionVersion(data.version); setDecisionIDs([...selected]); setFailure('');
+    setReason(''); setAction(next); setDecisionVersion(data.version); setDecisionIDs([...ids]); setFailure('');
   };
   const selectionAction = (next: BehaviorAction, label: string) => <Button disabled={!selected.length || data?.mode !== 'monitoring' || busy}
     onClick={() => openAction(next)}>{label}</Button>;
@@ -154,7 +154,7 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
           </Stack>
           <Stack direction="row" useFlexGap flexWrap="wrap" spacing={1}>
             <Typography variant="body2" sx={{ alignSelf: 'center' }}>{selected.length} selected</Typography>
-            {selectionAction('approve-changes', 'Approve selected changes')}{selectionAction('suppress', 'Suppress selected')}{selectionAction('unsuppress', 'Remove suppression')}
+            {selectionAction('acknowledge', 'Acknowledge selected')}{selectionAction('approve-changes', 'Approve selected changes')}{selectionAction('suppress', 'Suppress selected')}{selectionAction('unsuppress', 'Remove suppression')}
           </Stack>
           <TableContainer component={Paper}><Table size="small" aria-label="Observed network facts">
             <TableHead><TableRow><TableCell>Select</TableCell><TableCell>Kind / evidence</TableCell><TableCell>Network scope</TableCell><TableCell>Status</TableCell><TableCell>First / last seen</TableCell><TableCell align="right">Samples</TableCell><TableCell>Pivot</TableCell><TableCell>Edit</TableCell></TableRow></TableHead>
@@ -189,12 +189,17 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
           {live.error && <Alert severity="warning">{live.error}</Alert>}
           <Typography variant="body2" color="text.secondary">Latest 200 retained/live alerts. Encrypted SSH/RDP connection patterns do not prove failed logins.</Typography>
           <TableContainer component={Paper}><Table size="small" aria-label="Live security alerts"><TableHead><TableRow><TableCell>Time</TableCell><TableCell>Detector</TableCell><TableCell>Severity</TableCell><TableCell>Endpoints</TableCell><TableCell>Evidence</TableCell></TableRow></TableHead>
-            <TableBody>{live.alerts.map(alert => <TableRow key={alert.alertId}><TableCell>{new Date(alert.timestamp).toLocaleString()}</TableCell><TableCell>{alert.ruleName || alert.name}</TableCell><TableCell>{alert.severity}</TableCell>
-              <TableCell>{alert.srcIP} → {alert.dstIP}</TableCell><TableCell><Button size="small" onClick={() => setEvidence(alert.matchedRecord)}>Expected / observed</Button></TableCell></TableRow>)}</TableBody>
+            <TableBody>{live.alerts.map(alert => {
+              let factId = '';
+              try { const parsed = JSON.parse(alert.matchedRecord); if (typeof parsed.factId === 'string') factId = parsed.factId; } catch { /* Non-behavioral evidence remains readable. */ }
+              return <TableRow key={alert.alertId}><TableCell>{new Date(alert.timestamp).toLocaleString()}</TableCell><TableCell>{alert.ruleName || alert.name}</TableCell><TableCell>{alert.severity}</TableCell>
+              <TableCell>{alert.srcIP} → {alert.dstIP}</TableCell><TableCell><Button size="small" onClick={() => setEvidence(alert.matchedRecord)}>Expected / observed</Button>
+                {factId && data.observed[factId] && <Button size="small" disabled={busy || data.mode !== 'monitoring'} onClick={() => openAction('acknowledge', [factId])}>Acknowledge observation</Button>}</TableCell></TableRow>;
+            })}</TableBody>
           </Table></TableContainer>
         </>}
-        {tab === 3 && <TableContainer component={Paper}><Table size="small" aria-label="Baseline decision history"><TableHead><TableRow><TableCell>Time</TableCell><TableCell>Action</TableCell><TableCell>Reason</TableCell><TableCell>Version</TableCell></TableRow></TableHead>
-          <TableBody>{[...(data.decisions ?? [])].reverse().map((decision, index) => <TableRow key={`${decision.at}-${index}`}><TableCell>{timeLabel(decision.at)}</TableCell><TableCell>{decision.action}</TableCell><TableCell>{decision.reason}</TableCell><TableCell>{decision.version}</TableCell></TableRow>)}</TableBody>
+        {tab === 3 && <TableContainer component={Paper}><Table size="small" aria-label="Baseline decision history"><TableHead><TableRow><TableCell>Time</TableCell><TableCell>Action</TableCell><TableCell>Reason</TableCell><TableCell>Version</TableCell><TableCell>Selected evidence</TableCell></TableRow></TableHead>
+          <TableBody>{[...(data.decisions ?? [])].reverse().map((decision, index) => <TableRow key={`${decision.at}-${index}`}><TableCell>{timeLabel(decision.at)}</TableCell><TableCell>{decision.action}</TableCell><TableCell>{decision.reason}</TableCell><TableCell>{decision.version}</TableCell><TableCell>{decision.ids?.map(id => data.observed[id] ? factLabel(data.observed[id].fact) : id).join(', ')}</TableCell></TableRow>)}</TableBody>
         </Table></TableContainer>}
         {tab === 4 && <>
           <FormControl size="small" sx={{ minWidth: 240 }}><InputLabel id="topology-scope-label">Topology scope</InputLabel>
@@ -210,7 +215,7 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
     <Dialog open={action !== null} onClose={() => { if (!busy) setAction(null); }} maxWidth="sm" fullWidth>
       <DialogTitle>Baseline decision: {action}</DialogTitle><DialogContent>
         <Typography variant="body2" sx={{ mb: 1 }}>Reviewing baseline v{decisionVersion}. Selected facts: {decisionIDs.length}.</Typography>
-        <Typography variant="body2" sx={{ mb: 2 }}>{action === 'reset' ? 'Reset removes the approved baseline and current observations; recorded alert evidence remains unchanged.' : 'This decision is recorded with the current baseline version. Newly observed traffic is not automatically trusted.'}</Typography>
+        <Typography variant="body2" sx={{ mb: 2 }}>{action === 'reset' ? 'Reset removes the approved baseline and current observations; recorded alert evidence remains unchanged.' : action === 'acknowledge' ? 'Acknowledgement records review of the selected observations. It does not approve changes or suppress future alerts.' : 'This decision is recorded with the current baseline version. Newly observed traffic is not automatically trusted.'}</Typography>
         <TextField autoFocus fullWidth required label="Decision reason" value={reason} onChange={event => setReason(event.target.value)} slotProps={{ htmlInput: { maxLength: 1024 } }} />
         {failure && <Alert severity="error" sx={{ mt: 2 }}>{failure}</Alert>}
       </DialogContent><DialogActions><Button disabled={busy} onClick={() => setAction(null)}>Cancel</Button><Button variant="contained" disabled={busy || !reason.trim()} onClick={() => void apply()}>Apply decision</Button></DialogActions>

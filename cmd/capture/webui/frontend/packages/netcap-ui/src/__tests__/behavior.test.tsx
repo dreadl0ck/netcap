@@ -88,6 +88,37 @@ describe('behavioral monitoring', () => {
     expect(MockSource.sources[1].url).toContain('sessionId=two');
   });
 
+  it('acknowledges selected observations with retained IDs and no implicit approval', async () => {
+    let current = { ...snapshot(), mode: 'monitoring' as const, version: 1, baselineId: 'approved' };
+    const fetcher = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        const decision = JSON.parse(init.body as string);
+        current = { ...current, decisions: [{ ...decision, at: 1700000002000000000, baselineId: 'approved' }] };
+      }
+      return { ok: true, status: 200, json: async () => current } as Response;
+    });
+    render(<SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}><NetcapProvider config={{
+      backendUrl: 'http://fixture', router: { pathname: '/behavior', query: {}, isReady: true, push: vi.fn() },
+      Link: ({ href, children }) => <a href={href}>{children}</a>, fetch: fetcher,
+      api: { getStatus: async () => status, getInputFiles: async () => [] },
+    }}><BehaviorPage /></NetcapProvider></SWRConfig>);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('checkbox', { name: 'Select 00:11:22:33:44:55' }));
+    await user.click(screen.getByRole('button', { name: 'Acknowledge selected' }));
+    expect(screen.getByText(/does not approve changes or suppress future alerts/)).toBeInTheDocument();
+    await user.type(screen.getByRole('textbox', { name: /Decision reason/ }), 'Investigating new device');
+    await user.click(screen.getByRole('button', { name: 'Apply decision' }));
+    await waitFor(() => expect(fetcher.mock.calls.some(([, init]) => init?.method === 'POST')).toBe(true));
+    const request = fetcher.mock.calls.find(([, init]) => init?.method === 'POST');
+    expect(JSON.parse(request?.[1]?.body as string)).toEqual({ action: 'acknowledge', ids: ['device'], reason: 'Investigating new device', version: 1 });
+    await user.click(await screen.findByRole('tab', { name: 'Decision history' }));
+    expect(await screen.findByText('acknowledge')).toBeInTheDocument();
+    expect(screen.getByText('Investigating new device')).toBeInTheDocument();
+    expect(screen.getByText('00:11:22:33:44:55')).toBeInTheDocument();
+    expect(current.approved).toEqual({});
+    expect(current.suppressed).toEqual({});
+  });
+
   it('keeps the reviewed version when a refresh changes the baseline', async () => {
     let current = snapshot();
     const fetcher = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => init?.method === 'POST'
