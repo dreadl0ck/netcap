@@ -241,7 +241,10 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
             </> : <Typography variant="body2">Capture counters: Unavailable for this saved/imported capture</Typography>}
             <Typography variant="body2">Storage: baseline {health.baselineBytes ?? 'Unavailable'} bytes · Alert history {health.alertBytes ?? 'Not created'} bytes · Last baseline write {health.baselineWrittenAt ? new Date(health.baselineWrittenAt).toLocaleString() : 'Unavailable'}</Typography>
             {health.storageError && <Alert severity="error">Storage failure: {health.storageError}</Alert>}
-            {health.delivery ? <Typography variant="body2">Endpoint delivery: {health.delivery.acked} ACKed · {health.delivery.pending} pending · {health.delivery.rejected} rejected · {health.delivery.dropped} dropped</Typography> : <Typography variant="body2">Endpoint delivery: Not configured or metrics unavailable in this capture</Typography>}
+            {health.delivery ? <>
+              <Typography variant="body2">Endpoint delivery: {health.delivery.acked} ACKed · {health.delivery.pending ?? 'Unavailable'} pending · {health.delivery.rejected} rejected · {health.delivery.dropped} dropped{health.delivery.pendingBytes !== undefined ? ` · ${health.delivery.pendingBytes} pending bytes` : ''}</Typography>
+              {health.delivery.error && <Alert severity="warning">Delivery failure: {health.delivery.error}</Alert>}
+            </> : <Typography variant="body2">Endpoint delivery: Not configured or metrics unavailable in this capture</Typography>}
             <Alert severity="info">Counters apply only to this sensor's visible traffic. Unavailable is not zero; no alert does not prove complete visibility. Retained counters describe the last sampled run, not current capture or collector connectivity.</Alert>
           </Stack>}
         </Paper>}

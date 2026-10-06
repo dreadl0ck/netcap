@@ -81,6 +81,8 @@ try {
   await expect(page.getByText(/Unavailable is not zero/)).toBeVisible();
   if (workload.sourcePages) {
     for (const [route, address] of [['hosts', '192.0.2.1'], ['devices', '00:11:22:33:44:55'], ['connections', '192.0.2.1']]) {
+      const inventory = await page.request.get(`${base}/api/${route}`);
+      assert.equal(inventory.status(), 200, `${route} API: ${await inventory.text()}`);
       await page.goto(`${base}/${route}?search=${encodeURIComponent(address)}`);
       const sourceRow = page.getByRole('row').filter({ hasText: address });
       await expect(sourceRow.first()).toBeVisible();

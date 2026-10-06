@@ -69,7 +69,7 @@ export interface BehaviorHealth {
   scopesTruncated: boolean;
   capture: { scope: BehaviorScope; packets: number; queueDrops: number | null; kernelDrops: number | null; kernelReceived: number | null;
     statsAt: number; statsError?: string; workers: number; queued: number; queueCapacity: number } | null;
-  delivery: { acked: number; rejected: number; dropped: number; pending: number } | null;
+  delivery: { acked: number; rejected: number; dropped: number; pending: number | null; pendingBytes?: number; error?: string } | null;
   detectorError?: string;
   observations: number;
   factOverflow: number;
