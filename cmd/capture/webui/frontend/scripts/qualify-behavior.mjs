@@ -75,6 +75,10 @@ try {
   const historyRows = page.getByRole('table', { name: 'Observed network facts' }).getByRole('row').filter({ has: page.getByRole('checkbox') });
   await expect(historyRows.first()).toBeVisible();
   for (const row of await historyRows.all()) await expect(row).toContainText('198.51.100.100');
+  await page.getByRole('tab', { name: 'Coverage and health' }).click();
+  await expect(page.getByText(/Observed interfaces\/scopes/)).toContainText('browser-fixture');
+  await expect(page.getByText(/Storage: baseline/)).not.toContainText('Unavailable');
+  await expect(page.getByText(/Unavailable is not zero/)).toBeVisible();
   assert.deepEqual(errors, [], 'browser JavaScript errors');
   console.log(JSON.stringify({ browser: await browser.version(), samples: 100, sensors: 1, ...workload, ...background,
     workload: 'decisive TCP SYNs during 100-packet/10-ms background bursts; actual Community approval, SSE, React render, evidence, reconnect, acknowledgement and suppression',

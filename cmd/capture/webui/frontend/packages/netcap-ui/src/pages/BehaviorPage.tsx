@@ -10,7 +10,7 @@ import { useNetcapApi, useNetcapRouter } from '../hooks';
 import { useNetcapConfig } from '../providers';
 import { useLiveAlerts } from '../hooks/useLiveAlerts';
 import { assetObservations, behaviorRequest, behaviorSelection, factLabel, learningReady, scopeLabel } from '../lib/behavior';
-import type { BehaviorAction, BehaviorSnapshot, BehaviorTopology } from '../lib/behavior';
+import type { BehaviorAction, BehaviorHealth, BehaviorSnapshot, BehaviorTopology } from '../lib/behavior';
 
 const timeLabel = (ns: number) => ns > 0 ? new Date(ns / 1e6).toLocaleString() : 'Not observed';
 
@@ -65,6 +65,9 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
   const graphURL = `${config.apiBaseUrl}/behavior/topology${selection || '?'}${selection ? '&' : ''}maxNodes=100${graphScope ? `&scope=${encodeURIComponent(JSON.stringify(graphScope))}` : ''}`;
   const { data: topology } = useSWR<BehaviorTopology>(status && tab === 4 ? [graphURL, graphGeneration, data?.version] : null,
     () => behaviorRequest(fetcher, graphURL), { refreshInterval: 30000 });
+  const healthURL = `${config.apiBaseUrl}/behavior/health${selection}`;
+  const { data: health, error: healthError } = useSWR<BehaviorHealth>(status && tab === 5 ? healthURL : null,
+    () => behaviorRequest(fetcher, healthURL), { refreshInterval: 1000, keepPreviousData: false });
 
   const changeCapture = async (path: string) => {
     setSwitching(true);
@@ -151,7 +154,7 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
           </Stack>
         </Paper>
         <Tabs value={tab} onChange={(_, value: number) => { setTab(value); setPage(0); }} variant="scrollable" scrollButtons="auto" aria-label="Behavioral monitoring views">
-          <Tab label="Network inventory" /><Tab label="Baseline candidates" /><Tab label="Live alerts" /><Tab label="Decision history" /><Tab label="Topology" />
+          <Tab label="Network inventory" /><Tab label="Baseline candidates" /><Tab label="Live alerts" /><Tab label="Decision history" /><Tab label="Topology" /><Tab label="Coverage and health" />
         </Tabs>
         {tab < 2 && <>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
@@ -220,6 +223,28 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
             <Typography variant="body2">{topology?.nodes.length ?? 0} shown / {topology?.totalNodes ?? 0} known nodes{topology?.truncated ? ' · Graph capped; inventory retains the full set' : ''}</Typography></Stack>
           <ChartFrame key={`${graphURL}-${graphGeneration}-${data.version}`} src={`${graphURL}&format=html`} title="Scoped observed network topology" style={{ width: '100%', height: 560, border: 0 }} />
         </>}
+        {tab === 5 && <Paper sx={{ p: 2 }}>
+          <Typography variant="h6">Coverage and health</Typography>
+          {healthError && <Alert severity="warning">Health unavailable: {healthError.message}</Alert>}
+          {!health && !healthError && <CircularProgress aria-label="Loading monitoring health" />}
+          {health && <Stack spacing={1}>
+            <Typography variant="body2">{health.active ? 'Active runtime' : 'Retained capture'} · Sampled {new Date(health.sampledAt).toLocaleString()}</Typography>
+            <Typography variant="body2">Observed interfaces/scopes: {health.scopes.map(scopeLabel).join('; ') || 'No traffic observations yet'}{health.scopesTruncated ? ' · Scope display capped' : ''}</Typography>
+            <Typography variant="body2">Detector: {health.observations.toLocaleString()} observations · Fact overflow {health.factOverflow} · Window overflow {health.windowOverflow}</Typography>
+            {health.detectorError && <Alert severity="error">Detector/storage failure: {health.detectorError}</Alert>}
+            {health.capture ? <>
+				<Typography variant="body2">Capture interface: {scopeLabel(health.capture.scope)}</Typography>
+              <Typography variant="body2">Capture: {health.capture.packets.toLocaleString()} admitted packets · {health.capture.workers} workers · Queue {health.capture.queued}/{health.capture.queueCapacity}</Typography>
+              <Typography variant="body2">Queue drops: {health.capture.queueDrops ?? 'Unavailable'} · Kernel drops: {health.capture.kernelDrops ?? 'Unavailable'} · Kernel received: {health.capture.kernelReceived ?? 'Unavailable'}</Typography>
+              {health.capture.statsAt > 0 && <Typography variant="caption">Kernel counters sampled {new Date(health.capture.statsAt).toLocaleString()}</Typography>}
+              {health.capture.statsError && <Alert severity="warning">Capture counters: {health.capture.statsError}</Alert>}
+            </> : <Typography variant="body2">Capture counters: Unavailable for this saved/imported capture</Typography>}
+            <Typography variant="body2">Storage: baseline {health.baselineBytes ?? 'Unavailable'} bytes · Alert history {health.alertBytes ?? 'Not created'} bytes · Last baseline write {health.baselineWrittenAt ? new Date(health.baselineWrittenAt).toLocaleString() : 'Unavailable'}</Typography>
+            {health.storageError && <Alert severity="error">Storage failure: {health.storageError}</Alert>}
+            {health.delivery ? <Typography variant="body2">Endpoint delivery: {health.delivery.acked} ACKed · {health.delivery.pending} pending · {health.delivery.rejected} rejected · {health.delivery.dropped} dropped</Typography> : <Typography variant="body2">Endpoint delivery: Not configured or metrics unavailable in this capture</Typography>}
+            <Alert severity="info">Counters apply only to this sensor's visible traffic. Unavailable is not zero; no alert does not prove complete visibility. Retained counters describe the last sampled run, not current capture or collector connectivity.</Alert>
+          </Stack>}
+        </Paper>}
       </>}
     </Stack>
     <Dialog open={action !== null} onClose={() => { if (!busy) setAction(null); }} maxWidth="sm" fullWidth>

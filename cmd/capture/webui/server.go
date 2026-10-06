@@ -545,6 +545,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/rule-sets/", s.handleRuleSet)
 	mux.HandleFunc("/api/alerts", s.handleAlerts)
 	mux.HandleFunc("/api/behavior", s.handleBehavior)
+	mux.HandleFunc("/api/behavior/health", s.handleBehaviorHealth)
 	mux.HandleFunc("/api/behavior/change", s.handleBehaviorChange)
 	mux.HandleFunc("/api/behavior/topology", s.handleBehaviorTopology)
 	mux.HandleFunc("/api/alerts/stream", s.handleAlertsStream)

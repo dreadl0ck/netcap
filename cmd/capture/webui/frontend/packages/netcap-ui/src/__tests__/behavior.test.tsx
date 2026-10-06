@@ -8,7 +8,7 @@ import { NetcapProvider } from '../providers';
 import BehaviorPage from '../pages/BehaviorPage';
 import { useLiveAlerts } from '../hooks/useLiveAlerts';
 import { assetObservations, behaviorSelection, factLabel, learningReady } from '../lib/behavior';
-import type { BehaviorSnapshot } from '../lib/behavior';
+import type { BehaviorHealth, BehaviorSnapshot } from '../lib/behavior';
 import type { Alert, StatusResponse } from '../lib/api';
 
 vi.mock('../components/Layout', () => ({ default: ({ children }: { children: React.ReactNode }) => <main>{children}</main> }));
@@ -35,6 +35,30 @@ class MockSource extends EventTarget {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); MockSource.sources = []; });
 
 describe('behavioral monitoring', () => {
+  it('distinguishes measured zero drops, unavailable counters and retained delivery failures', async () => {
+    const health: BehaviorHealth = { schema: 1, sampledAt: 1700000002000, active: false,
+      scopes: [{ sensor: 'fixture', interface: 'eth0', vlans: [10] }], scopesTruncated: false,
+      capture: { scope: { sensor: 'fixture', interface: 'eth0' }, packets: 30, queueDrops: 0, kernelDrops: null, kernelReceived: null, statsAt: 0, workers: 4, queued: 0, queueCapacity: 400 },
+      delivery: { acked: 2, pending: 1, dropped: 3, rejected: 4 }, detectorError: 'disk full', observations: 30, factOverflow: 1, windowOverflow: 2,
+      baselineBytes: 1024, baselineWrittenAt: 1700000002000, alertBytes: 2048, storageError: 'checkpoint failed' };
+    const fetcher = vi.fn(async (url: RequestInfo | URL) => ({ ok: true, status: 200, json: async () => String(url).includes('/health') ? health : snapshot() } as Response));
+    render(<SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}><NetcapProvider config={{
+      backendUrl: 'http://fixture', router: { pathname: '/behavior', query: {}, isReady: true, push: vi.fn() },
+      Link: ({ href, children }) => <a href={href}>{children}</a>, fetch: fetcher,
+      api: { getStatus: async () => status, getInputFiles: async () => [] },
+    }}><BehaviorPage /></NetcapProvider></SWRConfig>);
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Coverage and health' }));
+    expect(await screen.findByText(/Queue drops: 0/)).toHaveTextContent('Kernel drops: Unavailable');
+    expect(screen.getByText(/Observed interfaces/)).toHaveTextContent('VLAN 10');
+    expect(screen.getByText(/Endpoint delivery: 2 ACKed/)).toHaveTextContent('1 pending · 4 rejected · 3 dropped');
+    expect(screen.getByText(/Storage failure/)).toHaveTextContent('checkpoint failed');
+    expect(screen.getByText(/Detector\/storage failure/)).toHaveTextContent('disk full');
+    expect(screen.getByText(/Retained capture/)).toBeInTheDocument();
+    expect(screen.getByText(/Unavailable is not zero/)).toBeInTheDocument();
+    expect(fetcher.mock.calls.some(([url]) => String(url) === 'http://fixture/api/behavior/health?inputFile=%2Ffixture.pcap')).toBe(true);
+  });
+
   it('joins MAC-associated IP history only within its observed network scope', () => {
     const state = snapshot();
     const scope = { sensor: 'fixture', interface: 'pcap', vlans: [10] };

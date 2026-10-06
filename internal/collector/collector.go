@@ -79,27 +79,32 @@ var (
 // Collector provides an interface to collect data from PCAP or a network interface.
 // this structure has an optimized field order to avoid excessive padding.
 type Collector struct {
-	lifecycleMu       sync.Mutex // full initialization and task registration
-	lifecycleStopped  bool
-	initialized       bool
-	runCtx            context.Context
-	runCancel         context.CancelFunc
-	producersWG       sync.WaitGroup
-	backgroundWG      sync.WaitGroup
-	mu                sync.Mutex
-	statMutex         sync.Mutex
-	acceptingPackets  bool
-	current           int64
-	numPacketsLast    int64
-	totalBytesWritten int64
-	numPackets        int64
-	numWorkers        int
-	workers           []chan gopacket.Packet
-	dispatchMu        sync.Mutex // admission, controls, and assembler lifecycle
-	workersWG         sync.WaitGroup
-	workersStopped    bool
-	admittedPackets   uint64
-	start             time.Time
+	lifecycleMu            sync.Mutex // full initialization and task registration
+	lifecycleStopped       bool
+	initialized            bool
+	runCtx                 context.Context
+	runCancel              context.CancelFunc
+	producersWG            sync.WaitGroup
+	backgroundWG           sync.WaitGroup
+	mu                     sync.Mutex
+	statMutex              sync.Mutex
+	acceptingPackets       bool
+	current                int64
+	numPacketsLast         int64
+	totalBytesWritten      int64
+	numPackets             int64
+	numWorkers             int
+	workers                []chan gopacket.Packet
+	dispatchMu             sync.Mutex // admission, controls, and assembler lifecycle
+	behaviorHealthMu       sync.Mutex
+	behaviorCaptureHealth  behavior.CaptureHealth
+	behaviorQueueDrops     uint64
+	behaviorPackets        uint64
+	behaviorDeliveryHealth func() *behavior.DeliveryHealth
+	workersWG              sync.WaitGroup
+	workersStopped         bool
+	admittedPackets        uint64
+	start                  time.Time
 
 	// when running multiple epochs, the timestamp of the first run can be preserved.
 	startFirst               time.Time
@@ -678,11 +683,15 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	case c.workers[idx] <- p:
 		accepted = true
 	case <-deadline:
+		c.behaviorQueueDrops++
 		c.wg.Done()
 		atomic.AddInt64(&c.current, -1)
 		return false
 	}
 	c.admittedPackets++
+	if c.behaviorEngine != nil {
+		c.behaviorPackets++
+	}
 	if c.config != nil && c.config.ReassembleConnections && c.config.DecoderConfig.FlushEvery > 0 {
 		if c.admittedPackets%uint64(c.config.DecoderConfig.FlushEvery) == 0 {
 			for _, w := range c.workers {

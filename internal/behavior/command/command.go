@@ -17,16 +17,17 @@ import (
 )
 
 type Options struct {
-	OnAlert    func(*types.Alert) `json:"-"`
-	PolicyFile string
-	Policy     *behavior.Policy
-	Enabled    bool
-	Baseline   string
-	Sensor     string
-	Prefixes   []string
-	Learning   time.Duration
-	MinSamples uint64
-	MaxFacts   int
+	DeliveryHealth func() *behavior.DeliveryHealth `json:"-"`
+	OnAlert        func(*types.Alert)              `json:"-"`
+	PolicyFile     string
+	Policy         *behavior.Policy
+	Enabled        bool
+	Baseline       string
+	Sensor         string
+	Prefixes       []string
+	Learning       time.Duration
+	MinSamples     uint64
+	MaxFacts       int
 }
 
 func ReadOptions(command *cli.Command) Options {
@@ -132,6 +133,7 @@ func StartOptions(options Options, coll *collector.Collector, output, iface stri
 		}
 	}
 	coll.SetBehaviorEngine(engine, scope)
+	coll.SetBehaviorDeliveryHealth(options.DeliveryHealth)
 	stop, done := make(chan struct{}), make(chan struct{})
 	var checkpointErr error
 	go func() {
@@ -147,6 +149,11 @@ func StartOptions(options Options, coll *collector.Collector, output, iface stri
 					checkpointErr = err
 					return
 				}
+				if err := behavior.WriteHealth(output, coll.GetBehaviorHealth(output)); err != nil {
+					checkpointErr = err
+					engine.Fail(err)
+					return
+				}
 			}
 		}
 	}()
@@ -157,8 +164,12 @@ func StartOptions(options Options, coll *collector.Collector, output, iface stri
 			close(stop)
 			<-done
 			observerErr := coll.GetBehaviorError()
+			engineErr := engine.Close()
+			health := coll.GetBehaviorHealth(output)
+			health.Active = false
+			healthErr := behavior.WriteHealth(output, health)
 			coll.SetBehaviorEngine(nil, scope)
-			closeErr = errors.Join(observerErr, checkpointErr, engine.Close(), sink.Close())
+			closeErr = errors.Join(observerErr, checkpointErr, healthErr, engineErr, sink.Close())
 		})
 		return closeErr
 	}, nil

@@ -155,6 +155,10 @@ func writeSnapshot(path string, state Snapshot) (err error) {
 	if len(data) > maxSnapshotBytes {
 		return errors.New("baseline snapshot exceeds size limit")
 	}
+	return writeBehaviorFile(path, data)
+}
+
+func writeBehaviorFile(path string, data []byte) error {
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err

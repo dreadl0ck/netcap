@@ -114,6 +114,10 @@ func TestCommandStartsScopedObserverAndPersistsOnShutdown(t *testing.T) {
 	if state.Samples != 1 || len(state.Observed) != 2 {
 		t.Fatalf("snapshot = %+v", state)
 	}
+	health, err := behavior.ReadHealth(dir)
+	if err != nil || health.Active || health.Observations != 1 || health.BaselineBytes == nil || health.Capture != nil {
+		t.Fatalf("shutdown health hides unsupported capture counters: %+v, %v", health, err)
+	}
 	for _, observation := range state.Observed {
 		if observation.Fact.Kind == "prefix" && (observation.Fact.Value != "192.0.2.128/25" || observation.FirstSeen != 1700000000000000000) {
 			t.Fatal("prefix used wall time or guessed mask")

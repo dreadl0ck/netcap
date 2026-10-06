@@ -25,6 +25,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcapgo"
@@ -79,6 +80,24 @@ func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error
 		data []byte
 		ci   gopacket.CaptureInfo
 	)
+	nextStats := time.Time{}
+	behaviorStats := c.GetBehaviorEngine() != nil
+	sampleStats := func() {
+		if !behaviorStats {
+			return
+		}
+		if time.Now().Before(nextStats) {
+			return
+		}
+		nextStats = time.Now().Add(time.Second)
+		stats, err := handle.Stats()
+		if err != nil {
+			c.recordBehaviorCaptureStats(0, 0, true, err)
+			return
+		}
+		c.recordBehaviorCaptureStats(uint64(stats.Packets), uint64(stats.Drops), true, nil)
+	}
+	defer func() { nextStats = time.Time{}; sampleStats() }()
 
 	// read packets from channel
 	for {
@@ -91,6 +110,7 @@ func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error
 
 			// read next packet
 			data, ci, err = handle.ReadPacketData()
+			sampleStats()
 			if err != nil {
 				if errors.Is(err, io.EOF) {
 					goto done

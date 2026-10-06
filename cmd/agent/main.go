@@ -35,6 +35,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/dreadl0ck/netcap"
+	"github.com/dreadl0ck/netcap/internal/behavior"
 	behaviorcommand "github.com/dreadl0ck/netcap/internal/behavior/command"
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
@@ -183,6 +184,10 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 
 	behaviorOptions := behaviorcommand.ReadOptions(c)
 	if behaviorOptions.Enabled {
+		behaviorOptions.DeliveryHealth = func() *behavior.DeliveryHealth {
+			stats := client.Stats()
+			return &behavior.DeliveryHealth{Acked: stats.Acked, Rejected: stats.Rejected, Dropped: stats.Dropped, Pending: stats.Pending}
+		}
 		output := filepath.Dir(c.String("behavior-baseline"))
 		if c.String("behavior-baseline") == "" {
 			dir, err := os.UserConfigDir()

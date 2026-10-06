@@ -3,11 +3,75 @@ package collector
 import (
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/dreadl0ck/netcap/internal/behavior"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/gopacket/gopacket"
 )
+
+func (c *Collector) SetBehaviorDeliveryHealth(read func() *behavior.DeliveryHealth) {
+	c.behaviorHealthMu.Lock()
+	defer c.behaviorHealthMu.Unlock()
+	c.behaviorDeliveryHealth = read
+}
+
+func (c *Collector) GetBehaviorHealth(output string) behavior.Health {
+	c.behaviorHealthMu.Lock()
+	capture := c.behaviorCaptureHealth
+	readDelivery := c.behaviorDeliveryHealth
+	c.behaviorHealthMu.Unlock()
+	c.dispatchMu.Lock()
+	engine := c.behaviorEngine
+	capture.Scope = c.behaviorScope
+	drops := c.behaviorQueueDrops
+	capture.QueueDrops = &drops
+	capture.Packets = c.behaviorPackets
+	capture.Workers = len(c.workers)
+	if capture.Workers == 0 {
+		capture.Workers = c.numWorkers
+	}
+	for _, worker := range c.workers {
+		capture.Queued += len(worker)
+		capture.QueueCapacity += cap(worker)
+	}
+	if capture.QueueCapacity == 0 && c.config != nil {
+		capture.QueueCapacity = c.config.PacketBufferSize * capture.Workers
+	}
+	c.dispatchMu.Unlock()
+	var delivery *behavior.DeliveryHealth
+	if readDelivery != nil {
+		delivery = readDelivery()
+	}
+	if engine == nil {
+		return behavior.Health{}
+	}
+	if capture.Workers == 0 {
+		return engine.Health(output, nil, delivery)
+	}
+	return engine.Health(output, &capture, delivery)
+}
+
+// Linux packet-socket stats are deltas; libpcap stats are cumulative.
+func (c *Collector) recordBehaviorCaptureStats(received, dropped uint64, delta bool, err error) {
+	c.behaviorHealthMu.Lock()
+	defer c.behaviorHealthMu.Unlock()
+	if err != nil {
+		c.behaviorCaptureHealth.StatsError = err.Error()
+		return
+	}
+	if delta {
+		if c.behaviorCaptureHealth.KernelReceived != nil {
+			received += *c.behaviorCaptureHealth.KernelReceived
+		}
+		if c.behaviorCaptureHealth.KernelDrops != nil {
+			dropped += *c.behaviorCaptureHealth.KernelDrops
+		}
+	}
+	c.behaviorCaptureHealth.KernelReceived, c.behaviorCaptureHealth.KernelDrops = &received, &dropped
+	c.behaviorCaptureHealth.StatsAt = time.Now().UnixMilli()
+	c.behaviorCaptureHealth.StatsError = ""
+}
 
 func (c *Collector) BehaviorForOutput(output string) *behavior.Engine {
 	c.dispatchMu.Lock()
@@ -33,6 +97,12 @@ func (c *Collector) SetBehaviorEngine(engine *behavior.Engine, scope behavior.Sc
 	defer c.dispatchMu.Unlock()
 	c.behaviorEngine, c.behaviorScope = engine, scope
 	c.behaviorError = nil
+	if engine != nil {
+		c.behaviorPackets, c.behaviorQueueDrops = 0, 0
+		c.behaviorHealthMu.Lock()
+		c.behaviorCaptureHealth = behavior.CaptureHealth{}
+		c.behaviorHealthMu.Unlock()
+	}
 }
 
 func (c *Collector) GetBehaviorEngine() *behavior.Engine {

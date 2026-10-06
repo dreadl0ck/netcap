@@ -115,3 +115,30 @@ func TestBehaviorAPIRejectsInvalidSelectorsAndBodies(t *testing.T) {
 		t.Fatal("invalid request changed baseline")
 	}
 }
+
+func TestBehaviorHealthRetainedUnknownAndDeliveryMetrics(t *testing.T) {
+	s := behaviorServerFixture(t)
+	response := httptest.NewRecorder()
+	s.handleBehaviorHealth(response, httptest.NewRequest(http.MethodGet, "/api/behavior/health", nil))
+	var health behavior.Health
+	if response.Code != http.StatusOK || json.Unmarshal(response.Body.Bytes(), &health) != nil || health.Capture != nil || health.Delivery != nil || health.Active || health.BaselineBytes == nil {
+		t.Fatalf("unknown metrics: %s", response.Body)
+	}
+	zero := uint64(0)
+	health.Capture = &behavior.CaptureHealth{KernelDrops: &zero, Packets: 10}
+	health.Delivery = &behavior.DeliveryHealth{Acked: 2, Pending: 1}
+	health.Active = true
+	if err := behavior.WriteHealth(s.outDir, health); err != nil {
+		t.Fatal(err)
+	}
+	response = httptest.NewRecorder()
+	s.handleBehaviorHealth(response, httptest.NewRequest(http.MethodGet, "/api/behavior/health", nil))
+	if json.Unmarshal(response.Body.Bytes(), &health) != nil || health.Active || health.Capture.KernelDrops == nil || *health.Capture.KernelDrops != 0 || health.Delivery.Pending != 1 {
+		t.Fatalf("retained measured counters: %s", response.Body)
+	}
+	response = httptest.NewRecorder()
+	s.handleBehaviorHealth(response, httptest.NewRequest(http.MethodGet, "/api/behavior/health?inputFile=unknown", nil))
+	if response.Code != http.StatusNotFound {
+		t.Fatal("unknown selector used active health")
+	}
+}

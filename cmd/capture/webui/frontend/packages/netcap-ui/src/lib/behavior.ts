@@ -61,6 +61,25 @@ export interface BehaviorTopology {
   truncated: boolean;
 }
 
+export interface BehaviorHealth {
+  schema: number;
+  sampledAt: number;
+  active: boolean;
+  scopes: BehaviorScope[];
+  scopesTruncated: boolean;
+  capture: { scope: BehaviorScope; packets: number; queueDrops: number | null; kernelDrops: number | null; kernelReceived: number | null;
+    statsAt: number; statsError?: string; workers: number; queued: number; queueCapacity: number } | null;
+  delivery: { acked: number; rejected: number; dropped: number; pending: number } | null;
+  detectorError?: string;
+  observations: number;
+  factOverflow: number;
+  windowOverflow: number;
+  baselineBytes: number | null;
+  baselineWrittenAt: number;
+  alertBytes: number | null;
+  storageError?: string;
+}
+
 export type BehaviorAction = 'approve' | 'pause' | 'resume' | 'relearn' | 'reset' | 'acknowledge' | 'approve-changes' | 'suppress' | 'unsuppress';
 
 export function behaviorSelection(status?: StatusResponse, files: FileInfo[] = []): string {
