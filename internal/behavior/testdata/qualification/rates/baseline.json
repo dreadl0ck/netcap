@@ -1,0 +1,447 @@
+{
+  "labels": {},
+  "corrections": {},
+  "leases": {},
+  "rates": {
+    "5212476a00048e5469639bc1d949834331b1240e606512d454f2030f2be1f8fe": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "traffic",
+        "srcIP": "192.0.2.10"
+      },
+      "start": 1700000004000000000,
+      "packets": 10,
+      "bytes": 600,
+      "model": {
+        "windows": 4,
+        "packetsMean": 10,
+        "packetsM2": 0,
+        "bytesMean": 600,
+        "bytesM2": 0
+      }
+    }
+  },
+  "approvedRates": {
+    "5212476a00048e5469639bc1d949834331b1240e606512d454f2030f2be1f8fe": {
+      "windows": 4,
+      "packetsMean": 10,
+      "packetsM2": 0,
+      "bytesMean": 600,
+      "bytesM2": 0
+    }
+  },
+  "policy": {
+    "rateWindows": 4,
+    "rateMultiplier": 4,
+    "windowNS": 1000000000,
+    "fanout": 5,
+    "rdpAttempts": 10
+  },
+  "activity": {
+    "0dc617ea57562bceb1cf9cb8793cf57cb1b15e20998a9640f312d2f6221e56ad": {
+      "fact": {
+        "token": "50036:36",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000003000000000
+    },
+    "2a8571aefcb7b4159f8d075bedc73e32b2a949d9cbbe54c0a5da1463782166b3": {
+      "fact": {
+        "token": "50050:50",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000004000000000
+    },
+    "2b44598119d8fe2f3ea93a3573d6054a31035f3072dffff515ad04edf2e0a666": {
+      "fact": {
+        "token": "50046:46",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000004000000000
+    },
+    "34ac3edbff5a723838223c20c41c50605faab21e705719081b85eb570d48cfe1": {
+      "fact": {
+        "token": "50041:41",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000004000000000
+    },
+    "3f2bc384ec87a69d4b15317e41b09f0735c21f92fe22009a5945a8039cac8aae": {
+      "fact": {
+        "token": "50038:38",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000003000000000
+    },
+    "4065fdbe66829be68e06160e067a2a10b543f8dd8b9afdc48cdf9f169580f61d": {
+      "fact": {
+        "token": "50031:31",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000003000000000
+    },
+    "579c9d0205c340303e45ccbacf6fd265b7293323c9906f5ef9fe2311b727caeb": {
+      "fact": {
+        "token": "50032:32",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000003000000000
+    },
+    "659a4f5bd43a48f5b9db9d0e0d60085e8f5cd6e1c178e1b2d947b26f34f7ab17": {
+      "fact": {
+        "token": "50042:42",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000004000000000
+    },
+    "6818e708325af19c1d538db3e3ee52a8bb7e87bd4b30c3867fc1de7bb4aa1410": {
+      "fact": {
+        "token": "50049:49",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000004000000000
+    },
+    "7017be3d6b2186335910430b45ee201f847acac42d8453d0ac7d4a92f2b95c7e": {
+      "fact": {
+        "token": "50037:37",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000003000000000
+    },
+    "73a5959eccc9ebf07b9b2ec35b3812c72d72b76bc328a827d5ab6cdfda462750": {
+      "fact": {
+        "token": "50048:48",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000004000000000
+    },
+    "7558846fed8f4dc0a2d8da94f396a97494024db8ed9d84961b81dc1f438af07e": {
+      "fact": {
+        "token": "50039:39",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000003000000000
+    },
+    "8bd1be48cb1fef6ac5207ffe46fc23d1603c9bd74c33e95d9791ed2854aad5e1": {
+      "fact": {
+        "token": "50045:45",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000004000000000
+    },
+    "8fa35238931e6d6cb11fc6ba6c08b43414517d103c464285b221b8af70af4049": {
+      "fact": {
+        "token": "50033:33",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000003000000000
+    },
+    "b15280e4a0a1320955c34df6f63d6f01187169ace9fb6ef5b256d2a1ba1f9e64": {
+      "fact": {
+        "token": "50040:40",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000003000000000
+    },
+    "b76c925a9e6baaa2003df42fe4064c24d7d9a5b910f5c5a9e002f9748c9e05d7": {
+      "fact": {
+        "token": "50043:43",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000004000000000
+    },
+    "ba41760da85240e55f03118242d1efbdcb659433e677631e291aa9e37bfbeb9a": {
+      "fact": {
+        "token": "50035:35",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000003000000000
+    },
+    "bc18346f3746485a261d6c8bb7af28ebb0f5e1ea76a6ea98fe5af89a4db93785": {
+      "fact": {
+        "token": "50044:44",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000004000000000
+    },
+    "ef1102326be8d1db2c8968dce7d38dadf37cb5190ffc3f47a46a95850f943146": {
+      "fact": {
+        "token": "50034:34",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000003000000000
+    },
+    "f66f2cd5e3fbe3a86419b0d2f76e123b64f7621f91832751f9701793bdb22a12": {
+      "fact": {
+        "token": "50047:47",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "at": 1700000004000000000
+    }
+  },
+  "windowOverflow": 0,
+  "schema": 3,
+  "mode": "monitoring",
+  "version": 1,
+  "baselineId": "a7f81f16fbf34314d9bca41b3f882b7b680990f9d0c7864b0cf7e71a834ddfc8",
+  "learningStarted": 1700000000000000000,
+  "watermark": 1700000004000000000,
+  "samples": 50,
+  "overflow": 0,
+  "outOfOrder": 0,
+  "minLearningNS": 1000000000,
+  "minSamples": 2,
+  "maxFacts": 10000,
+  "observed": {
+    "39ad07499f4efd6e16d446b1e25d15017f0fe49f4db196d5c1031bd704a2c64c": {
+      "fact": {
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "edge",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20"
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000004000000000,
+      "samples": 50
+    },
+    "5212476a00048e5469639bc1d949834331b1240e606512d454f2030f2be1f8fe": {
+      "fact": {
+        "bytes": 60,
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "traffic",
+        "srcIP": "192.0.2.10"
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000004000000000,
+      "samples": 50
+    },
+    "8e7b558b5d1d51e5cc58d2bd181dad22678e8e10ca25ff6b8c69fbd1d51ac7a5": {
+      "fact": {
+        "token": "50001:1",
+        "scope": {
+          "sensor": "replay",
+          "interface": "pcap"
+        },
+        "kind": "service",
+        "srcIP": "192.0.2.10",
+        "dstIP": "192.0.2.20",
+        "protocol": "tcp",
+        "port": 443
+      },
+      "firstSeen": 1700000000000000000,
+      "lastSeen": 1700000004000000000,
+      "samples": 50
+    }
+  },
+  "approved": {
+    "39ad07499f4efd6e16d446b1e25d15017f0fe49f4db196d5c1031bd704a2c64c": {
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "edge",
+      "srcIP": "192.0.2.10",
+      "dstIP": "192.0.2.20"
+    },
+    "5212476a00048e5469639bc1d949834331b1240e606512d454f2030f2be1f8fe": {
+      "bytes": 60,
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "traffic",
+      "srcIP": "192.0.2.10"
+    },
+    "8e7b558b5d1d51e5cc58d2bd181dad22678e8e10ca25ff6b8c69fbd1d51ac7a5": {
+      "token": "50001:1",
+      "scope": {
+        "sensor": "replay",
+        "interface": "pcap"
+      },
+      "kind": "service",
+      "srcIP": "192.0.2.10",
+      "dstIP": "192.0.2.20",
+      "protocol": "tcp",
+      "port": 443
+    }
+  },
+  "suppressed": {},
+  "decisions": [
+    {
+      "at": 1791251272862532000,
+      "action": "approve",
+      "reason": "reviewed rate fixture",
+      "version": 1,
+      "baselineId": "a7f81f16fbf34314d9bca41b3f882b7b680990f9d0c7864b0cf7e71a834ddfc8"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "contract": 1,
+  "geolocation": false,
+  "interface": "pcap",
+  "referenceCommit": "435925c5a0034b11e890e0486e90ac83fe88c5a3",
+  "schema": 3,
+  "sensor": "replay",
+  "sha256": {
+    "alerts.json": "74feaea7bf777667c7f0ba59a61760db025be48b771d4d2db4cd77ed9715cffb",
+    "baseline.json": "ea64dd84dfaebbd55220250909bd171b0730cd42c65328064c48640507acac9a",
+    "monitoring.pcap": "111185caa0d00bdb63b010bd1fd44d11f9197e13f0ef914706ad039116050870"
+  }
+}

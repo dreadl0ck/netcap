@@ -85,7 +85,7 @@ func replayNDP(at time.Time, mac byte) behaviorPacket {
 
 func TestBehavioralAddressChangesPCAPOracle(t *testing.T) {
 	start := time.Unix(1700000000, 0)
-	root := t.TempDir()
+	root := behaviorFixtureDirectory(t, "address-changes")
 	training, benign, reassignment, attack := filepath.Join(root, "training.pcap"), filepath.Join(root, "benign.pcap"), filepath.Join(root, "reassignment.pcap"), filepath.Join(root, "attack.pcap")
 	writeBehaviorPCAP(t, training, []behaviorPacket{replayDHCP(start, 5), replayNDP(start.Add(2*time.Second), 5)})
 	writeBehaviorPCAP(t, benign, []behaviorPacket{replayARP(start.Add(3*time.Second), "192.0.2.130", 5), replayNDP(start.Add(4*time.Second), 5)})
@@ -109,6 +109,9 @@ func TestBehavioralAddressChangesPCAPOracle(t *testing.T) {
 			if err := engine.Change("approve", nil, "reviewed address fixture"); err != nil {
 				t.Fatal(err)
 			}
+			if workers == 1 {
+				exportBehaviorSeed(t, root, engine)
+			}
 			runBehaviorPCAP(t, benign, out, workers, engine)
 			if got := replayAlertSemantics(t, out); len(got) != 0 {
 				t.Fatalf("benign address traffic generated alerts: %v", got)
@@ -121,6 +124,9 @@ func TestBehavioralAddressChangesPCAPOracle(t *testing.T) {
 			}
 			runBehaviorPCAP(t, attack, out, workers, engine)
 			got := replayAlertSemantics(t, out)
+			if workers == 1 {
+				exportBehaviorResult(t, root, got, false, benign, reassignment, attack)
+			}
 			oracle := map[string]int{"baseline.new-device": 2, "baseline.dhcp-reassignment": 1, "baseline.arp-conflict": 1, "baseline.address-conflict": 1}
 			for _, item := range got {
 				name, _, _ := strings.Cut(item, "|")
@@ -145,7 +151,7 @@ func TestBehavioralAddressChangesPCAPOracle(t *testing.T) {
 
 func TestBehavioralDiscoveryAndDNSPCAPOracle(t *testing.T) {
 	start := time.Unix(1700000000, 0)
-	root := t.TempDir()
+	root := behaviorFixtureDirectory(t, "discovery-dns")
 	training, benign, attack := filepath.Join(root, "training.pcap"), filepath.Join(root, "benign.pcap"), filepath.Join(root, "attack.pcap")
 	writeBehaviorPCAP(t, training, []behaviorPacket{replayARP(start, "192.0.2.10", 5), replayDNS(start.Add(2*time.Second), "192.0.2.53", "known.example")})
 	writeBehaviorPCAP(t, benign, []behaviorPacket{replayARP(start.Add(3*time.Second), "192.0.2.10", 5), replayDNS(start.Add(4*time.Second), "192.0.2.53", "known.example")})
@@ -168,12 +174,18 @@ func TestBehavioralDiscoveryAndDNSPCAPOracle(t *testing.T) {
 			if err := engine.Change("approve", nil, "reviewed discovery fixture"); err != nil {
 				t.Fatal(err)
 			}
+			if workers == 1 {
+				exportBehaviorSeed(t, root, engine)
+			}
 			runBehaviorPCAP(t, benign, out, workers, engine)
 			if got := replayAlertSemantics(t, out); len(got) != 0 {
 				t.Fatalf("benign discovery generated alerts: %v", got)
 			}
 			runBehaviorPCAP(t, attack, out, workers, engine)
 			got := replayAlertSemantics(t, out)
+			if workers == 1 {
+				exportBehaviorResult(t, root, got, false, benign, attack)
+			}
 			oracle := map[string]int{"baseline.new-device": 1, "baseline.arp-conflict": 1, "baseline.new-resolver": 1, "baseline.new-dns": 1, "baseline.new-edge": 2, "baseline.new-service": 1}
 			for _, item := range got {
 				name, _, _ := strings.Cut(item, "|")
@@ -266,7 +278,7 @@ func replayAlertSemantics(t *testing.T, out string) []string {
 
 func TestBehavioralPCAPReplayAcrossWorkerCounts(t *testing.T) {
 	start := time.Unix(1700000000, 0)
-	dir := t.TempDir()
+	dir := behaviorFixtureDirectory(t, "lateral")
 	training, attack, benign := filepath.Join(dir, "training.pcap"), filepath.Join(dir, "attack.pcap"), filepath.Join(dir, "benign.pcap")
 	writeBehaviorPCAP(t, training, []behaviorPacket{replaySYN(start, "192.0.2.10", "192.0.2.20", 443, 1), replaySYN(start.Add(2*time.Second), "192.0.2.10", "192.0.2.20", 443, 2)})
 	var packets []behaviorPacket
@@ -300,12 +312,18 @@ func TestBehavioralPCAPReplayAcrossWorkerCounts(t *testing.T) {
 			if err := engine.Change("approve", nil, "reviewed replay fixture"); err != nil {
 				t.Fatal(err)
 			}
+			if workers == 1 {
+				exportBehaviorSeed(t, dir, engine)
+			}
 			runBehaviorPCAP(t, benign, out, workers, engine)
 			if got := replayAlertSemantics(t, out); len(got) != 0 {
 				t.Fatalf("benign replay generated alerts: %v", got)
 			}
 			runBehaviorPCAP(t, attack, out, workers, engine)
 			got := replayAlertSemantics(t, out)
+			if workers == 1 {
+				exportBehaviorResult(t, dir, got, false, benign, attack)
+			}
 			if len(got) == 0 {
 				t.Fatal("attack fixture produced no alerts")
 			}
@@ -332,7 +350,7 @@ func TestBehavioralPCAPReplayAcrossWorkerCounts(t *testing.T) {
 
 func TestBehavioralRatePCAPOracle(t *testing.T) {
 	start := time.Unix(1700000000, 0)
-	root := t.TempDir()
+	root := behaviorFixtureDirectory(t, "rates")
 	training, benign, attack := filepath.Join(root, "training.pcap"), filepath.Join(root, "benign.pcap"), filepath.Join(root, "attack.pcap")
 	var packets []behaviorPacket
 	for window := range 5 {
@@ -373,6 +391,9 @@ func TestBehavioralRatePCAPOracle(t *testing.T) {
 			if err := engine.Change("approve", nil, "reviewed rate fixture"); err != nil {
 				t.Fatal(err)
 			}
+			if workers == 1 {
+				exportBehaviorSeed(t, root, engine)
+			}
 			before := engine.Snapshot()
 			runBehaviorPCAP(t, benign, out, workers, engine)
 			if got := replayAlertSemantics(t, out); len(got) != 0 {
@@ -380,6 +401,9 @@ func TestBehavioralRatePCAPOracle(t *testing.T) {
 			}
 			runBehaviorPCAP(t, attack, out, workers, engine)
 			got := replayAlertSemantics(t, out)
+			if workers == 1 {
+				exportBehaviorResult(t, root, got, false, benign, attack)
+			}
 			oracle := map[string]int{"baseline.packet-rate": 1, "baseline.byte-rate": 1}
 			for _, item := range got {
 				name, _, _ := strings.Cut(item, "|")
@@ -407,9 +431,13 @@ func TestBehavioralRatePCAPOracle(t *testing.T) {
 }
 
 func TestBehavioralGeographicPCAPOracle(t *testing.T) {
-	root := t.TempDir()
+	root := behaviorFixtureDirectory(t, "geography")
+	dbs := filepath.Join(root, "dbs")
+	if err := os.MkdirAll(dbs, 0700); err != nil {
+		t.Fatal(err)
+	}
 	oldPath, oldRoot, oldConfig := resolvers.DataBaseFolderPath, resolvers.ConfigRootPath, resolvers.CurrentConfig
-	resolvers.DataBaseFolderPath, resolvers.ConfigRootPath = root, root
+	resolvers.DataBaseFolderPath, resolvers.ConfigRootPath = dbs, root
 	t.Setenv("NC_GEO_PROVIDERS", "dbip")
 	t.Cleanup(func() {
 		resolvers.SetLogger(zap.NewNop())
@@ -417,8 +445,8 @@ func TestBehavioralGeographicPCAPOracle(t *testing.T) {
 		resolvers.DataBaseFolderPath, resolvers.ConfigRootPath, resolvers.CurrentConfig = oldPath, oldRoot, oldConfig
 	})
 	files := resolvers.GeoFiles("dbip")
-	testutil.WriteMMDB(t, filepath.Join(root, files.City), "DBIP-City-Lite", time.Now(), map[string]mmdbtype.Map{"1.1.1.0/24": testutil.City("AU", "fixture"), "8.8.8.0/24": testutil.City("US", "fixture")})
-	testutil.WriteMMDB(t, filepath.Join(root, files.ASN), "DBIP-ASN-Lite (compat=GeoLite2-ASN)", time.Now(), map[string]mmdbtype.Map{"1.1.1.0/24": testutil.ASN(13335, "fixture"), "8.8.8.0/24": testutil.ASN(15169, "fixture")})
+	testutil.WriteMMDB(t, filepath.Join(dbs, files.City), "DBIP-City-Lite", time.Unix(1700000000, 0), map[string]mmdbtype.Map{"1.1.1.0/24": testutil.City("AU", "fixture"), "8.8.8.0/24": testutil.City("US", "fixture")})
+	testutil.WriteMMDB(t, filepath.Join(dbs, files.ASN), "DBIP-ASN-Lite (compat=GeoLite2-ASN)", time.Unix(1700000000, 0), map[string]mmdbtype.Map{"1.1.1.0/24": testutil.ASN(13335, "fixture"), "8.8.8.0/24": testutil.ASN(15169, "fixture")})
 	start := time.Unix(1700000000, 0)
 	training, benign, attack := filepath.Join(root, "training.pcap"), filepath.Join(root, "benign.pcap"), filepath.Join(root, "attack.pcap")
 	writeBehaviorPCAP(t, training, []behaviorPacket{replaySYN(start, "192.0.2.10", "1.1.1.1", 443, 1), replaySYN(start.Add(time.Second), "192.0.2.10", "1.1.1.1", 443, 2), replaySYN(start.Add(2*time.Second), "192.0.2.10", "10.0.0.1", 443, 3)})
@@ -447,12 +475,18 @@ func TestBehavioralGeographicPCAPOracle(t *testing.T) {
 			if err := engine.Change("approve", nil, "reviewed geographic fixture"); err != nil {
 				t.Fatal(err)
 			}
+			if workers == 1 {
+				exportBehaviorSeed(t, root, engine)
+			}
 			run(benign)
 			if got := replayAlertSemantics(t, out); len(got) != 0 {
 				t.Fatalf("benign geography generated alerts: %v", got)
 			}
 			run(attack)
 			got := replayAlertSemantics(t, out)
+			if workers == 1 {
+				exportBehaviorResult(t, root, got, true, benign, attack)
+			}
 			oracle := map[string]int{"baseline.new-geo": 1, "policy.geographic-country": 1, "policy.geographic-asn": 1, "baseline.new-edge": 1, "baseline.new-service": 1}
 			for _, item := range got {
 				name, _, _ := strings.Cut(item, "|")

@@ -186,6 +186,16 @@ verifies recovery preserves approval and both the damaged file and backup;
 `cmd/agent/behavior_test.go` verifies TLS delivery of identical retained alert
 evidence after a collector outage and local-engine restart.
 
+`internal/behavior/testdata/qualification/` pins fixture contract 1: schema-3
+approved snapshots, monitoring PCAPs, exact detector/endpoint/evidence oracles
+and SHA-256 manifests for discovery/DNS, address changes, lateral patterns,
+rates and geography. The geography case includes synthetic DB-IP MMDBs.
+`NETCAP_BEHAVIOR_EXPORT=<absolute fresh directory>` plus
+`NETCAP_BEHAVIOR_REFERENCE=<Go commit>` exports the same corpus while running
+`go test ./internal/collector -run 'TestBehavioral.*(Oracle|WorkerCounts)$' -count=1`.
+Export refuses an existing case directory. Decision timestamps are generated at
+approval; consumers verify the committed bytes against each manifest.
+
 ## Subcommands
 
 | Command | Description |
