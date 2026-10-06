@@ -31,7 +31,7 @@ export interface BehaviorSnapshot {
 	labels?: Record<string, { fact: BehaviorFact; name: string; role?: string; notes?: string }>;
 	corrections?: Record<string, BehaviorFact>;
 	windowOverflow?: number;
-	policy?: { windowNS: number; fanout: number; rdpAttempts: number; rateWindows: number; rateMultiplier: number; approvedSources?: string[] };
+	policy?: { windowNS: number; fanout: number; rdpAttempts: number; rateWindows: number; rateMultiplier: number; approvedSources?: string[]; deniedCountries?: string[]; deniedASNs?: string[]; maintenance?: { source?: string; start: number; end: number }[] };
 	approvedRates?: Record<string, { windows: number; packetsMean: number; bytesMean: number }>;
   schema: number;
   error?: string;
@@ -85,7 +85,26 @@ export function factLabel(fact: BehaviorFact): string {
   if (fact.kind === 'service' || fact.kind === 'resolver') return `${fact.srcIP} → ${fact.dstIP}:${fact.port}/${fact.protocol}`;
   if (fact.kind === 'dns') return `${fact.srcIP} → ${fact.value}`;
   if (fact.kind === 'traffic') return `${fact.srcIP} packet/byte volume`;
+  if (fact.kind === 'geo') {
+    const [country, asn] = (fact.value ?? '').split('|');
+    return `${fact.srcIP} → ${fact.dstIP}: country ${country || 'unknown/private'}, ASN ${asn || 'unknown/private'}`;
+  }
   return fact.value ?? `${fact.srcIP ?? ''} → ${fact.dstIP ?? ''}`;
+}
+
+export function assetObservations(snapshot: BehaviorSnapshot, asset: string): [string, BehaviorObservation][] {
+  const rows = Object.entries(snapshot.observed);
+  if (!asset) return rows;
+  const bindings = new Map<string, Set<string>>();
+  const key = (scope: BehaviorScope) => JSON.stringify([scope.sensor, scope.interface, scope.vlans ?? []]);
+  for (const [, { fact }] of rows) {
+    if (fact.kind !== 'binding' || fact.mac !== asset || !fact.srcIP) continue;
+    const scope = key(fact.scope);
+    if (!bindings.has(scope)) bindings.set(scope, new Set());
+    bindings.get(scope)!.add(fact.srcIP);
+  }
+  return rows.filter(([, { fact }]) => fact.mac === asset || fact.srcIP === asset || fact.dstIP === asset ||
+    bindings.get(key(fact.scope))?.has(fact.srcIP ?? '') || bindings.get(key(fact.scope))?.has(fact.dstIP ?? ''));
 }
 
 export function learningReady(snapshot: BehaviorSnapshot): boolean {

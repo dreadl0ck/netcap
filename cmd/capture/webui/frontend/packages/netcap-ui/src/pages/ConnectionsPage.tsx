@@ -1686,6 +1686,11 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                                       )}
                                       
                                       {/* Navigation Buttons */}
+                                      {[['Client', conn.srcIP], ['Server', conn.dstIP]].filter(([, address]) => address).map(([label, address]) => (
+                                        <Button key={label} variant="outlined" size="small" onClick={(event) => { event.stopPropagation(); router.push(`/behavior?asset=${encodeURIComponent(address)}`); }}>
+                                          {label} behavioral history
+                                        </Button>
+                                      ))}
                                       {conn.srcIP && (
                                         <Button
                                           data-learn="View Client in Hosts: Navigate to the Hosts page filtered for the client IP address."

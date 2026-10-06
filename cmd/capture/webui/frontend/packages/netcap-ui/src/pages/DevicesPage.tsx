@@ -684,6 +684,7 @@ export default function DevicesPage() {
                       <TableRow>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={9}>
                           <Collapse in={expandedRow === device.macAddr} timeout="auto" unmountOnExit>
+                            <Button variant="outlined" size="small" onClick={(event) => { event.stopPropagation(); router.push(`/behavior?asset=${encodeURIComponent(device.macAddr)}`); }}>Behavioral asset history</Button>
                             <Box sx={{ py: 2 }}>
                               <Grid container spacing={2}>
                                 {/* Time Info */}
@@ -895,4 +896,3 @@ export default function DevicesPage() {
     </Layout>
   );
 }
-

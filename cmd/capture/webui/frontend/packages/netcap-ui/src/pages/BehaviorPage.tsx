@@ -9,7 +9,7 @@ import { ChartFrame } from '../components/ChartFrame';
 import { useNetcapApi, useNetcapRouter } from '../hooks';
 import { useNetcapConfig } from '../providers';
 import { useLiveAlerts } from '../hooks/useLiveAlerts';
-import { behaviorRequest, behaviorSelection, factLabel, learningReady, scopeLabel } from '../lib/behavior';
+import { assetObservations, behaviorRequest, behaviorSelection, factLabel, learningReady, scopeLabel } from '../lib/behavior';
 import type { BehaviorAction, BehaviorSnapshot, BehaviorTopology } from '../lib/behavior';
 
 const timeLabel = (ns: number) => ns > 0 ? new Date(ns / 1e6).toLocaleString() : 'Not observed';
@@ -51,7 +51,9 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
   useEffect(() => { setSelected([]); setPage(0); setScope(''); setAction(null); setInventory(null); setFailure(''); }, [selection]);
   useEffect(() => { setSelected([]); }, [data?.version]);
 
-  const rows = useMemo(() => Object.entries(data?.observed ?? {}).sort(([a], [b]) => a.localeCompare(b)), [data?.observed]);
+  const asset = typeof router.query.asset === 'string' ? router.query.asset : '';
+  useEffect(() => { setPage(0); setSelected([]); setScope(''); setSearch(''); }, [asset]);
+  const rows = useMemo(() => (data ? assetObservations(data, asset) : []).sort(([a], [b]) => a.localeCompare(b)), [data, asset]);
   const scopes = useMemo(() => [...new Set(rows.map(([, observation]) => scopeLabel(observation.fact.scope)))].sort(), [rows]);
   const visible = useMemo(() => rows.filter(([id, observation]) => {
     if (scope && scopeLabel(observation.fact.scope) !== scope) return false;
@@ -116,6 +118,7 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
     switchingFile={switching} onFileChange={changeCapture} />}>
     <Stack spacing={2} sx={{ minWidth: 0 }}>
       <Typography color="text.secondary">Passive observations are scoped by sensor, interface and VLAN. Coverage is limited to traffic visible at the sensor.</Typography>
+      {asset && <Alert severity="info">Asset history: {asset}. IP-only flow records cannot establish a sensor/interface/VLAN identity; select the observed network scope below. MAC-associated IP history is joined only within the same scope.</Alert>}
       {failure && <Alert severity="error">{failure}</Alert>}
       {error && <Alert severity="warning">{error.message}</Alert>}
       {!data && !error && <CircularProgress aria-label="Loading behavioral baseline" />}
@@ -132,6 +135,13 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
           <Typography variant="body2" sx={{ mt: 1 }}>Capture-time learning coverage: {(elapsed / 3600).toFixed(2)} h / {(data.minLearningNS / 3.6e12).toFixed(2)} h minimum; {data.samples}/{data.minSamples} minimum observations.</Typography>
           <Typography variant="caption" sx={{ overflowWrap: 'anywhere' }}>Baseline identity: {data.baselineId || 'Not approved'} · Reordered observations: {data.outOfOrder}</Typography>
           {data.policy && <Typography variant="body2">Detector window: {data.policy.windowNS / 1e9} s · SMB fan-out: {data.policy.fanout} hosts · RDP pattern: {data.policy.rdpAttempts} attempts · Calibrated traffic sources: {Object.keys(data.approvedRates ?? {}).length}</Typography>}
+          {data.policy && <Box sx={{ mt: 1 }}>
+            <Typography variant="subtitle2">Geographic and administrative policy</Typography>
+            <Typography variant="body2">Flagged destination countries: {data.policy.deniedCountries?.join(', ') || 'None'} · Flagged destination ASNs: {data.policy.deniedASNs?.join(', ') || 'None'}</Typography>
+            <Typography variant="body2">Approved administrative sources: {data.policy.approvedSources?.join(', ') || 'None'}</Typography>
+            {data.policy.maintenance?.map((window, index) => <Typography key={index} variant="body2">Maintenance: {window.source || 'All sources'} · {new Date(window.start / 1e6).toISOString()} to {new Date(window.end / 1e6).toISOString()}</Typography>)}
+            <Typography variant="caption">Country/ASN is context, not proof of maliciousness. Missing/private locations remain unknown. Review geographic candidates with Suppress selected to record an exception; baseline approval does not remove the configured deny policy.</Typography>
+          </Box>}
           <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
             <Button variant="contained" disabled={!learningReady(data) || busy} onClick={() => openAction('approve')}>Approve learned baseline</Button>
             <Button disabled={busy || !!data.error} onClick={() => openAction(data.mode === 'paused' ? 'resume' : 'pause')}>{data.mode === 'paused' ? 'Resume' : 'Pause'}</Button>

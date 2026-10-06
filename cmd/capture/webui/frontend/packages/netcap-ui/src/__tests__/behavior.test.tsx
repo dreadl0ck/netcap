@@ -7,7 +7,7 @@ import { SWRConfig } from 'swr';
 import { NetcapProvider } from '../providers';
 import BehaviorPage from '../pages/BehaviorPage';
 import { useLiveAlerts } from '../hooks/useLiveAlerts';
-import { behaviorSelection, learningReady } from '../lib/behavior';
+import { assetObservations, behaviorSelection, factLabel, learningReady } from '../lib/behavior';
 import type { BehaviorSnapshot } from '../lib/behavior';
 import type { Alert, StatusResponse } from '../lib/api';
 
@@ -35,6 +35,54 @@ class MockSource extends EventTarget {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); MockSource.sources = []; });
 
 describe('behavioral monitoring', () => {
+  it('joins MAC-associated IP history only within its observed network scope', () => {
+    const state = snapshot();
+    const scope = { sensor: 'fixture', interface: 'pcap', vlans: [10] };
+    const observation = state.observed.device;
+    state.observed = {
+      binding: { ...observation, fact: { scope, kind: 'binding', mac: '00:11:22:33:44:55', srcIP: '192.0.2.1' } },
+      own: { ...observation, fact: { scope, kind: 'service', srcIP: '192.0.2.1', dstIP: '192.0.2.2', port: 22 } },
+      otherVLAN: { ...observation, fact: { scope: { ...scope, vlans: [20] }, kind: 'service', srcIP: '192.0.2.1', dstIP: '192.0.2.3', port: 22 } },
+      similar: { ...observation, fact: { scope, kind: 'edge', srcIP: '192.0.2.10', dstIP: '192.0.2.4' } },
+    };
+    expect(assetObservations(state, '00:11:22:33:44:55').map(([id]) => id)).toEqual(['binding', 'own']);
+    expect(assetObservations(state, '192.0.2.1').map(([id]) => id)).toEqual(['binding', 'own', 'otherVLAN']);
+    expect(factLabel({ scope, kind: 'geo', srcIP: '192.0.2.1', dstIP: '192.0.2.2', value: '|' })).toContain('country unknown/private, ASN unknown/private');
+  });
+
+  it('presents geographic policy and records an explicitly reviewed exception', async () => {
+    let current: BehaviorSnapshot = { ...snapshot(), mode: 'monitoring', version: 1, baselineId: 'approved',
+      policy: { windowNS: 60e9, fanout: 5, rdpAttempts: 3, rateWindows: 4, rateMultiplier: 3, deniedCountries: ['US'], deniedASNs: ['15169'], approvedSources: ['192.0.2.5'] },
+      observed: { geo: { ...snapshot().observed.device, fact: { scope: { sensor: 'fixture', interface: 'pcap' }, kind: 'geo', srcIP: '192.0.2.1', dstIP: '8.8.8.8', value: 'US|15169', provenance: 'dbip' } } } };
+    const fetcher = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        const decision = JSON.parse(init.body as string);
+        current = { ...current, suppressed: { geo: decision.reason }, decisions: [{ ...decision, at: 1700000002000000000, baselineId: current.baselineId }] };
+      }
+      return { ok: true, status: 200, json: async () => current } as Response;
+    });
+    render(<SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}><NetcapProvider config={{
+      backendUrl: 'http://fixture', router: { pathname: '/behavior', query: { asset: '192.0.2.1' }, isReady: true, push: vi.fn() },
+      Link: ({ href, children }) => <a href={href}>{children}</a>, fetch: fetcher,
+      api: { getStatus: async () => status, getInputFiles: async () => [] },
+    }}><BehaviorPage /></NetcapProvider></SWRConfig>);
+    const user = userEvent.setup();
+    expect(await screen.findByText(/Flagged destination countries: US/)).toHaveTextContent('15169');
+    expect(screen.getByText(/Approved administrative sources/)).toHaveTextContent('192.0.2.5');
+    expect(screen.getByText(/IP-only flow records cannot establish/)).toBeInTheDocument();
+    await user.click(screen.getByRole('checkbox', { name: /Select.*country US, ASN 15169/ }));
+    await user.click(screen.getByRole('button', { name: 'Suppress selected' }));
+    await user.type(screen.getByRole('textbox', { name: /Decision reason/ }), 'Reviewed regional exception');
+    await user.click(screen.getByRole('button', { name: 'Apply decision' }));
+    await user.click(await screen.findByRole('tab', { name: 'Decision history' }));
+    expect(await screen.findByText('Reviewed regional exception')).toBeInTheDocument();
+    expect(screen.getByText(/country US, ASN 15169/)).toBeInTheDocument();
+    const request = fetcher.mock.calls.find(([, init]) => init?.method === 'POST');
+    expect(JSON.parse(request?.[1]?.body as string)).toEqual({ action: 'suppress', ids: ['geo'], reason: 'Reviewed regional exception', version: 1 });
+    expect(current.policy?.deniedCountries).toEqual(['US']);
+    expect(current.approved).toEqual({});
+  });
+
   it('pins explicit capture selectors and blocks incomplete learning', () => {
     expect(behaviorSelection(status)).toBe('?inputFile=%2Ffixture.pcap');
     expect(behaviorSelection({ ...status, isServiceMode: true, sessionId: 'session-1' })).toBe('?sessionId=session-1');

@@ -805,6 +805,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                             <Box sx={{ py: 2 }}>
                               {/* Action Buttons */}
                               <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', gap: 1, flexWrap: 'wrap' }}>
+                                <Button variant="outlined" size="small" onClick={(event) => { event.stopPropagation(); router.push(`/behavior?asset=${encodeURIComponent(host.addr)}`); }}>Behavioral asset history</Button>
                                 <Button
                                   data-learn="Show Connections: Navigate to the Connections page filtered for this host IP to view all network connections involving this host."
                                   variant="outlined"
@@ -1024,4 +1025,3 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
     </Layout>
   );
 }
-
