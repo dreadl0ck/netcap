@@ -125,17 +125,17 @@ baseline explicitly with `-behavior-baseline <path>`.
 | --- | --- |
 | Discovery | ARP/DHCP/NDP device bindings, TCP SYN service edges, DNS queries/resolvers and authoritative DHCP/IPv6 router-advertisement prefixes; `-behavior-prefix` supplies configured CIDRs |
 | Learning | Defaults to 7 days of capture-time coverage and 100 observations; `-behavior-learning` and `-behavior-min-samples` tune the criteria |
-| Approval | `GET /api/behavior` returns the snapshot; `POST /api/behavior/change` takes `{action, ids, reason, version}` for approve, pause, resume, relearn, reset, approve-changes, suppress or unsuppress |
+| Approval | `GET /api/behavior` returns the snapshot; `POST /api/behavior/change` takes `{action, ids, reason, version}` for approve, pause, resume, relearn, reset, acknowledge, approve-changes, suppress or unsuppress; acknowledgement retains reviewed fact IDs/reason without changing trust, suppression or dedup |
 | Monitoring | Unknown facts remain candidates; approval creates a new baseline version. Alerts include the expected/observed fact and original baseline identity in `MatchedRecord` |
 | Bounds | `-behavior-max-facts` defaults to 10,000; overflow is visible and prevents approving incomplete learning |
 | Persistence | Atomic checkpoints every second and on shutdown; a single-writer file lock prevents concurrent baseline mutation |
 | Alerts | `Alert.ncap.gz` is appended and synced per alert, readable before capture finishes; malformed history is rejected without overwriting it |
 | Live API | `GET /api/alerts/stream` emits SSE alerts with durable-history cursors; reconnect using `Last-Event-ID`. At most 8 readers; slow-client write deadline 10 s; replacement/truncation produces a gap |
-| WebUI | `/behavior` provides scoped inventory, candidates, explicit baseline decisions, evidence pivots, decision history and a bounded live feed |
+| WebUI | `/behavior` provides scoped inventory, candidates, explicit baseline decisions, evidence pivots, decision history and a bounded live feed; Device/Host/Connection details link to `/behavior?asset=<address>` with exact matching and scope-preserving MAC/IP history joins |
 | Service jobs | `--service --behavior` reaches helper and embedded capture paths. A configured baseline is copied into each new session; session decisions never modify the template |
 | Lateral patterns | Distinct-target SMB fan-out, independent RDP attempts, novel internal SSH edges and inferred A→B→C sequences; retransmitted SYNs reuse their flow token |
 | Traffic deviations | Frozen packet/byte models learned over at least 4 windows; idle windows included; monitoring does not adapt the approved model |
-| Detector policy | `-behavior-window`, `-behavior-fanout`, `-behavior-rdp-attempts`, `-behavior-approved-source`, `-behavior-deny-country`, `-behavior-deny-asn` |
+| Detector policy | `-behavior-window`, `-behavior-fanout`, `-behavior-rdp-attempts`, `-behavior-approved-source`, `-behavior-deny-country`, `-behavior-deny-asn`; `/behavior` displays geographic/admin policies and records reviewed geographic exceptions through selected-fact suppression |
 | Snapshot compatibility | Schema 3 adds labels, prefix corrections and learned DHCP leases; schema 1/2 snapshots migrate without changing approved fact identity |
 | Topology and inventory | `/behavior` includes a scoped, capped graph, persistent asset labels and CIDR corrections; original observations and alert evidence remain available |
 | Benign changes | Learned DHCP-server leases explain reassignment; explicit binding approvals support failover; unknown DHCP servers cannot disable conflict indicators |

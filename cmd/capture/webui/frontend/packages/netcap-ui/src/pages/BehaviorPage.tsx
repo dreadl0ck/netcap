@@ -130,7 +130,7 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
           <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" alignItems="center">
             <Chip label={data.mode} color={data.mode === 'monitoring' && !data.error ? 'success' : 'default'} />
             <Chip label={`Baseline v${data.version}`} variant="outlined" />
-            <Typography variant="body2">{data.samples.toLocaleString()} observations · {rows.length.toLocaleString()}/{data.maxFacts.toLocaleString()} facts · {Object.keys(data.approved).length.toLocaleString()} approved</Typography>
+            <Typography variant="body2">{data.samples.toLocaleString()} observations · {Object.keys(data.observed).length.toLocaleString()}/{data.maxFacts.toLocaleString()} facts · {Object.keys(data.approved).length.toLocaleString()} approved</Typography>
           </Stack>
           <Typography variant="body2" sx={{ mt: 1 }}>Capture-time learning coverage: {(elapsed / 3600).toFixed(2)} h / {(data.minLearningNS / 3.6e12).toFixed(2)} h minimum; {data.samples}/{data.minSamples} minimum observations.</Typography>
           <Typography variant="caption" sx={{ overflowWrap: 'anywhere' }}>Baseline identity: {data.baselineId || 'Not approved'} · Reordered observations: {data.outOfOrder}</Typography>
