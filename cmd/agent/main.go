@@ -178,6 +178,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		},
 		DPI:           c.Bool("dpi"),
 		DPIModules:    c.String("dpi-modules"),
+		DPIWorkers:    c.Int("dpi-workers"),
 		BaseLayer:     utils.GetBaseLayer(c.String("base")),
 		DecodeOptions: utils.GetDecodeOptions(c.String("opts")),
 	})

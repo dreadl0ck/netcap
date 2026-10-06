@@ -86,6 +86,7 @@ var (
 	flagGeoProviders                   string
 	flagDPI                            bool
 	flagDPIModules                     string
+	flagDPIWorkers                     int
 	flagFreeOSMemory                   int
 	flagReassembleConnections          bool
 	flagTCPDebug                       bool
@@ -216,6 +217,7 @@ func setFlagsFromContext(c *cli.Command) {
 	flagGeoProviders = c.String("geoProviders")
 	flagDPI = c.Bool("dpi")
 	flagDPIModules = c.String("dpi-modules")
+	flagDPIWorkers = c.Int("dpi-workers")
 	flagFreeOSMemory = c.Int("free-os-mem")
 	flagReassembleConnections = c.Bool("reassemble-connections")
 	flagTCPDebug = c.Bool("tcp-debug")

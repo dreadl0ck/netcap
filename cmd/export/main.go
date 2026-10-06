@@ -182,6 +182,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) error {
 			// FileStorage:   defaults.FileStorage, // TODO:
 			DPI:        c.Bool("dpi"),
 			DPIModules: c.String("dpi-modules"),
+			DPIWorkers: c.Int("dpi-workers"),
 			ResolverConfig: resolvers.Config{
 				ReverseDNS:    c.Bool("reverse-dns"),
 				LocalDNS:      c.Bool("local-dns"),

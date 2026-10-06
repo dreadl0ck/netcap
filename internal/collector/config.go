@@ -123,6 +123,9 @@ type Config struct {
 	// If empty and DPI is enabled, all modules will be used
 	DPIModules string
 
+	// Independent DPI contexts; 0 selects automatically, 1 minimizes native context memory.
+	DPIWorkers int
+
 	// Use TCP reassembly
 	ReassembleConnections bool
 

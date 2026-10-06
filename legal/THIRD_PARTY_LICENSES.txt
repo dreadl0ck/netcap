@@ -3517,35 +3517,6 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 ================================================================================
-github.com/denisbrodbeck/machineid v1.0.1
-License: MIT
-Used by: darwin-dpi, darwin-nodpi, linux-dpi, linux-dpi-noyara, linux-hyperscan, linux-nodpi, windows-nodpi
-Source: https://pkg.go.dev/github.com/denisbrodbeck/machineid@v1.0.1
-
---- LICENSE.md ---
-The MIT License (MIT)
-
-Copyright (c) 2017 Denis Brodbeck
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-================================================================================
 github.com/dlclark/regexp2 v1.11.5
 License: MIT
 Used by: darwin-dpi, darwin-nodpi, linux-dpi, linux-dpi-noyara, linux-hyperscan, linux-nodpi, windows-nodpi
@@ -3575,10 +3546,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ================================================================================
-github.com/dreadl0ck/go-dpi v1.4.1
+github.com/dreadl0ck/go-dpi v1.5.0
 License: MIT
 Used by: darwin-dpi, linux-dpi, linux-dpi-noyara, linux-hyperscan
-Source: https://pkg.go.dev/github.com/dreadl0ck/go-dpi@v1.4.1
+Source: https://pkg.go.dev/github.com/dreadl0ck/go-dpi@v1.5.0
 
 --- LICENSE ---
 MIT License
@@ -8192,35 +8163,6 @@ BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
 ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-================================================================================
-github.com/sirupsen/logrus v1.9.3
-License: MIT
-Used by: darwin-dpi, darwin-nodpi, linux-dpi, linux-dpi-noyara, linux-hyperscan, linux-nodpi, windows-nodpi
-Source: https://pkg.go.dev/github.com/sirupsen/logrus@v1.9.3
-
---- LICENSE ---
-The MIT License (MIT)
-
-Copyright (c) 2014 Simon Eskildsen
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
 
 ================================================================================
 github.com/spf13/cast v1.7.1

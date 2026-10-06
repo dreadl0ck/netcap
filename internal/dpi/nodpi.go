@@ -36,6 +36,8 @@ func IsEnabled() bool {
 // Init is a stub that accepts modules parameter but does nothing when DPI is disabled
 func Init(modules string) {}
 
+func InitWithConfig(modules string, config RuntimeConfig) {}
+
 func Destroy() {}
 
 // Reset is a stub that does nothing when DPI is disabled

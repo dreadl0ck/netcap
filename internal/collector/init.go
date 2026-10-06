@@ -100,7 +100,7 @@ func (c *Collector) Init() (err error) {
 	// init deep packet inspection
 	if c.config.DPI {
 		c.printlnStdOut("initializing dpi libs")
-		dpi.Init(c.config.DPIModules)
+		dpi.InitWithConfig(c.config.DPIModules, dpi.RuntimeConfig{Workers: c.config.DPIWorkers})
 	}
 
 	// init AI-based file type classification

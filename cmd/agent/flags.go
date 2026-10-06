@@ -255,6 +255,11 @@ func GetFlags() []cli.Flag {
 			Sources: cli.EnvVars("NC_DPI_MODULES"),
 		},
 		&cli.IntFlag{
+			Name:    "dpi-workers",
+			Usage:   "independent DPI contexts (0: automatic, up to 8; 1: minimum native context memory)",
+			Sources: cli.EnvVars("NC_DPI_WORKERS"),
+		},
+		&cli.IntFlag{
 			Name:    "flushevery",
 			Value:   defaults.FlushEvery,
 			Usage:   "flush assembler every N packets",
