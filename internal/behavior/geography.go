@@ -15,7 +15,10 @@ func (e *Engine) checkGeography(ns int64, id string, fact Fact) error {
 	}
 	for _, country := range e.state.Policy.DeniedCountries {
 		if country == parts[0] {
-			return e.emitCorrelation(ns, "policy.geographic-country", id, fact, "destination country outside configured deny policy; location is context, not proof of maliciousness", 1, nil, "")
+			if err := e.emitCorrelation(ns, "policy.geographic-country", id, fact, "destination country outside configured deny policy; location is context, not proof of maliciousness", 1, nil, ""); err != nil {
+				return err
+			}
+			break
 		}
 	}
 	for _, asn := range e.state.Policy.DeniedASNs {
