@@ -142,3 +142,20 @@ func TestBehaviorHealthRetainedUnknownAndDeliveryMetrics(t *testing.T) {
 		t.Fatal("unknown selector used active health")
 	}
 }
+
+func TestBehaviorAssetContextAPISelectorsAndAddressValidation(t *testing.T) {
+	s := behaviorServerFixture(t)
+	response := httptest.NewRecorder()
+	s.handleBehaviorAsset(response, httptest.NewRequest(http.MethodGet, "/api/behavior/asset?asset=00:11:22:33:44:55", nil))
+	var context behavior.AssetContext
+	if response.Code != http.StatusOK || json.Unmarshal(response.Body.Bytes(), &context) != nil || context.TotalRecords != 1 || context.Records[0].Direction != "unknown" {
+		t.Fatalf("asset context: %d %s", response.Code, response.Body)
+	}
+	for target, expected := range map[string]int{"/api/behavior/asset?asset=invalid": http.StatusBadRequest, "/api/behavior/asset?asset=00:11:22:33:44:55&inputFile=unknown": http.StatusNotFound} {
+		response = httptest.NewRecorder()
+		s.handleBehaviorAsset(response, httptest.NewRequest(http.MethodGet, target, nil))
+		if response.Code != expected {
+			t.Fatalf("selector/address: %s = %d", target, response.Code)
+		}
+	}
+}

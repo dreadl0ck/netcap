@@ -22,6 +22,8 @@ import (
 	"github.com/dreadl0ck/netcap/internal/collector"
 	"github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/rules"
+	"github.com/dreadl0ck/netcap/types"
+	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/layers"
 )
@@ -55,9 +57,14 @@ func TestBehavioralBrowserDelivery(t *testing.T) {
 	known := gopacket.NewPacket(packetBytes("192.0.2.2", 1), layers.LayerTypeIPv4, gopacket.Default)
 	start := time.Now().Add(-time.Second)
 	var inventory []behavior.Fact
-	for i := range 997 {
+	for i := range 994 {
 		inventory = append(inventory, behavior.Fact{Scope: scope, Kind: "device", MAC: fmt.Sprintf("02:00:00:00:%02x:%02x", byte(i>>8), byte(i))})
 	}
+	mac := "00:11:22:33:44:55"
+	inventory = append(inventory,
+		behavior.Fact{Scope: scope, Kind: "device", MAC: mac},
+		behavior.Fact{Scope: scope, Kind: "binding", MAC: mac, SrcIP: "192.0.2.1", Provenance: "arp"},
+		behavior.Fact{Scope: scope, Kind: "prefix", Value: "192.0.2.0/24", Provenance: "configured"})
 	if err := engine.Observe(start, inventory...); err != nil {
 		t.Fatal(err)
 	}
@@ -66,6 +73,16 @@ func TestBehavioralBrowserDelivery(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+	for id, observation := range engine.Snapshot().Observed {
+		if observation.Fact.Kind == "binding" && observation.Fact.MAC == mac {
+			if err := engine.EditInventory(behavior.InventoryEdit{ID: id, Name: "Synthetic office gateway", Role: "router", Reason: "Browser fixture inventory", Version: 0}); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, []proto.Message{&types.Connection{TimestampFirst: start.UnixNano(), TimestampLast: start.UnixNano(), SrcIP: "192.0.2.1", DstIP: "192.0.2.2", SrcMAC: mac, SrcPort: "50001", DstPort: "443", NetworkProto: "IPv4", TransportProto: "TCP", NumPackets: 2, TotalSize: 80}})
+	writeTimelineAuditFile(t, dir, "Host", types.Type_NC_Host, []proto.Message{&types.Host{Addr: "192.0.2.1", NumPackets: 2}})
+	writeTimelineAuditFile(t, dir, "DeviceProfile", types.Type_NC_DeviceProfile, []proto.Message{&types.DeviceProfile{MacAddr: mac, NumPackets: 2, DeviceIPs: []string{"192.0.2.1"}}})
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -129,7 +146,7 @@ func TestBehavioralBrowserDelivery(t *testing.T) {
 					}
 				}()
 			})
-			_ = json.NewEncoder(w).Encode(map[string]any{"baselineFacts": len(engine.Snapshot().Approved)})
+			_ = json.NewEncoder(w).Encode(map[string]any{"baselineFacts": len(engine.Snapshot().Approved), "sourcePages": true})
 			return
 		}
 		if r.URL.Path == "/stop" {

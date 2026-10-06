@@ -79,6 +79,21 @@ try {
   await expect(page.getByText(/Observed interfaces\/scopes/)).toContainText('browser-fixture');
   await expect(page.getByText(/Storage: baseline/)).not.toContainText('Unavailable');
   await expect(page.getByText(/Unavailable is not zero/)).toBeVisible();
+  if (workload.sourcePages) {
+    for (const [route, address] of [['hosts', '192.0.2.1'], ['devices', '00:11:22:33:44:55'], ['connections', '192.0.2.1']]) {
+      await page.goto(`${base}/${route}?search=${encodeURIComponent(address)}`);
+      const sourceRow = page.getByRole('row').filter({ hasText: address });
+      await expect(sourceRow.first()).toBeVisible();
+      await sourceRow.first().click();
+      const context = page.getByRole('region', { name: `Behavioral context for ${address}` });
+      await expect(context).toBeVisible();
+      await expect(context).toContainText('Synthetic office gateway');
+      await expect(context).toContainText('192.0.2.0/24 (configured)');
+      await context.getByRole('button', { name: 'Open scoped asset history' }).click();
+      await expect(page).toHaveURL(new RegExp(`/behavior\\?asset=${encodeURIComponent(address)}`));
+      await expect(page.getByText(`Asset history: ${address}.`, { exact: false })).toBeVisible();
+    }
+  }
   assert.deepEqual(errors, [], 'browser JavaScript errors');
   console.log(JSON.stringify({ browser: await browser.version(), samples: 100, sensors: 1, ...workload, ...background,
     workload: 'decisive TCP SYNs during 100-packet/10-ms background bursts; actual Community approval, SSE, React render, evidence, reconnect, acknowledgement and suppression',

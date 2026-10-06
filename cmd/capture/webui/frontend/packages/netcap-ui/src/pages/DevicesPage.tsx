@@ -56,6 +56,7 @@ import {
   BarChart as BarChartIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import BehaviorAssetContext from '../components/BehaviorAssetContext';
 import ResponsiveDataView from '../components/ResponsiveDataView';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
@@ -684,6 +685,7 @@ export default function DevicesPage() {
                       <TableRow>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={9}>
                           <Collapse in={expandedRow === device.macAddr} timeout="auto" unmountOnExit>
+                            <BehaviorAssetContext asset={device.macAddr} />
                             <Button variant="outlined" size="small" onClick={(event) => { event.stopPropagation(); router.push(`/behavior?asset=${encodeURIComponent(device.macAddr)}`); }}>Behavioral asset history</Button>
                             <Box sx={{ py: 2 }}>
                               <Grid container spacing={2}>

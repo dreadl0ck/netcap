@@ -62,6 +62,7 @@ import {
   FilterAlt as FilterAltIcon,
 } from '@mui/icons-material';
 import Layout from '../components/Layout';
+import BehaviorAssetContext from '../components/BehaviorAssetContext';
 import ResponsiveDataView from '../components/ResponsiveDataView';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import SearchInput from '../components/SearchInput';
@@ -802,6 +803,7 @@ export default function HostsPage({ rowActions }: HostsPageProps = {}) {
                       <TableRow>
                         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
                           <Collapse in={expandedRow === host.addr} timeout="auto" unmountOnExit>
+                            <BehaviorAssetContext asset={host.addr} />
                             <Box sx={{ py: 2 }}>
                               {/* Action Buttons */}
                               <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', gap: 1, flexWrap: 'wrap' }}>
