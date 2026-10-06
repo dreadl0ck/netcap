@@ -44,9 +44,9 @@ func TestBehavioralBrowserDelivery(t *testing.T) {
 	}
 	defer engine.Close()
 	scope := behavior.Scope{Sensor: "browser-fixture", Interface: "synthetic"}
-	packetBytes := func(destination string, seq uint32) []byte {
+	packetBytesForPort := func(destination string, seq uint32, port uint16) []byte {
 		ip := &layers.IPv4{Version: 4, TTL: 64, SrcIP: net.ParseIP("192.0.2.1"), DstIP: net.ParseIP(destination), Protocol: layers.IPProtocolTCP}
-		tcp := &layers.TCP{SrcPort: layers.TCPPort(50000 + seq), DstPort: 443, SYN: true, Seq: seq}
+		tcp := &layers.TCP{SrcPort: layers.TCPPort(50000 + seq), DstPort: layers.TCPPort(port), SYN: true, Seq: seq}
 		_ = tcp.SetNetworkLayerForChecksum(ip)
 		buffer := gopacket.NewSerializeBuffer()
 		if err := gopacket.SerializeLayers(buffer, gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true}, ip, tcp); err != nil {
@@ -54,6 +54,7 @@ func TestBehavioralBrowserDelivery(t *testing.T) {
 		}
 		return buffer.Bytes()
 	}
+	packetBytes := func(destination string, seq uint32) []byte { return packetBytesForPort(destination, seq, 443) }
 	known := gopacket.NewPacket(packetBytes("192.0.2.2", 1), layers.LayerTypeIPv4, gopacket.Default)
 	start := time.Now().Add(-time.Second)
 	var inventory []behavior.Fact
@@ -113,6 +114,20 @@ func TestBehavioralBrowserDelivery(t *testing.T) {
 		}
 	}()
 	fixture := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/lateral" {
+			at := time.Now()
+			for i := range 5 {
+				packet := gopacket.NewPacket(packetBytesForPort(fmt.Sprintf("192.0.2.%d", 10+i), uint32(11+i), 445), layers.LayerTypeIPv4, gopacket.Default)
+				if err := engine.Observe(at.Add(time.Duration(i)), behavior.PacketFacts(packet, scope)...); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+			writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, []proto.Message{&types.Connection{TimestampFirst: at.UnixNano(), TimestampLast: at.Add(5 * time.Minute).UnixNano(), SrcIP: "192.0.2.1", DstIP: "192.0.2.10", SrcPort: "50011", DstPort: "445", TransportProto: "TCP", NumRSTFlags: 1}})
+			writeTimelineAuditFile(t, dir, "SMB", types.Type_NC_SMB, []proto.Message{&types.SMB{Timestamp: at.Add(time.Second).UnixNano(), SrcIP: "192.0.2.10", DstIP: "192.0.2.1", SrcPort: 445, DstPort: 50011, IsResponse: true, AuthStatus: "FAILED", Status: 0xc000006d}})
+			_ = json.NewEncoder(w).Encode(map[string]any{"syntheticCaptureLagNS": int64(5 * time.Minute)})
+			return
+		}
 		if r.URL.Path == "/start" {
 			workloadOnce.Do(func() {
 				workloadStarted = time.Now()
@@ -146,7 +161,7 @@ func TestBehavioralBrowserDelivery(t *testing.T) {
 					}
 				}()
 			})
-			_ = json.NewEncoder(w).Encode(map[string]any{"baselineFacts": len(engine.Snapshot().Approved), "sourcePages": true})
+			_ = json.NewEncoder(w).Encode(map[string]any{"baselineFacts": len(engine.Snapshot().Approved), "sourcePages": true, "lateralRecords": true})
 			return
 		}
 		if r.URL.Path == "/stop" {

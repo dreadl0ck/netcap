@@ -547,6 +547,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/behavior", s.handleBehavior)
 	mux.HandleFunc("/api/behavior/health", s.handleBehaviorHealth)
 	mux.HandleFunc("/api/behavior/asset", s.handleBehaviorAsset)
+	mux.HandleFunc("/api/behavior/records", s.handleBehaviorRecords)
 	mux.HandleFunc("/api/behavior/change", s.handleBehaviorChange)
 	mux.HandleFunc("/api/behavior/topology", s.handleBehaviorTopology)
 	mux.HandleFunc("/api/alerts/stream", s.handleAlertsStream)

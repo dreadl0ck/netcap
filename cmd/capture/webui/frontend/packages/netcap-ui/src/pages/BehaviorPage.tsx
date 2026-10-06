@@ -5,6 +5,7 @@ import { Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogAct
 import useSWR from 'swr';
 import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
+import BehaviorRecordContext from '../components/BehaviorRecordContext';
 import { ChartFrame } from '../components/ChartFrame';
 import { useNetcapApi, useNetcapRouter } from '../hooks';
 import { useNetcapConfig } from '../providers';
@@ -44,11 +45,12 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
   const [failure, setFailure] = useState('');
   const [restart, setRestart] = useState(0);
   const [evidence, setEvidence] = useState<string | null>(null);
+  const [evidenceAlertID, setEvidenceAlertID] = useState<string | null>(null);
   const [graphGeneration, setGraphGeneration] = useState(0);
   const [inventory, setInventory] = useState<{ id: string; version: number; name: string; role: string; notes: string; prefix: string; isPrefix: boolean; reason: string } | null>(null);
   const live = useLiveAlerts(status && tab === 2 ? `${config.apiBaseUrl}/alerts/stream${selection}` : null, restart);
 
-  useEffect(() => { setSelected([]); setPage(0); setScope(''); setAction(null); setInventory(null); setFailure(''); }, [selection]);
+  useEffect(() => { setSelected([]); setPage(0); setScope(''); setAction(null); setInventory(null); setFailure(''); setEvidence(null); setEvidenceAlertID(null); }, [selection]);
   useEffect(() => { setSelected([]); }, [data?.version]);
 
   const asset = typeof router.query.asset === 'string' ? router.query.asset : '';
@@ -206,7 +208,7 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
               let factId = '';
               try { const parsed = JSON.parse(alert.matchedRecord); if (typeof parsed.factId === 'string') factId = parsed.factId; } catch { /* Non-behavioral evidence remains readable. */ }
               return <TableRow key={alert.alertId}><TableCell>{new Date(alert.timestamp).toLocaleString()}</TableCell><TableCell>{alert.ruleName || alert.name}</TableCell><TableCell>{alert.severity}</TableCell>
-              <TableCell>{alert.srcIP} → {alert.dstIP}</TableCell><TableCell><Button size="small" onClick={() => setEvidence(alert.matchedRecord)}>Expected / observed</Button>
+              <TableCell>{alert.srcIP} → {alert.dstIP}</TableCell><TableCell><Button size="small" onClick={() => { setEvidence(alert.matchedRecord); setEvidenceAlertID(alert.ruleName.startsWith('lateral.') ? alert.alertId : null); }}>Expected / observed</Button>
                 {factId && data.observed[factId] && <Button size="small" disabled={busy || data.mode !== 'monitoring'} onClick={() => openAction('acknowledge', [factId])}>Acknowledge observation</Button>}</TableCell></TableRow>;
             })}</TableBody>
           </Table></TableContainer>
@@ -259,7 +261,7 @@ export default function BehaviorPage({ renderEvidenceActions }: BehaviorPageProp
       </DialogContent><DialogActions><Button disabled={busy} onClick={() => setAction(null)}>Cancel</Button><Button variant="contained" disabled={busy || !reason.trim()} onClick={() => void apply()}>Apply decision</Button></DialogActions>
     </Dialog>
     <Dialog open={evidence !== null} onClose={() => setEvidence(null)} maxWidth="md" fullWidth><DialogTitle>Observation evidence</DialogTitle>
-      <DialogContent><Box component="pre" sx={{ overflow: 'auto', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{evidence}</Box></DialogContent>
+      <DialogContent><Box component="pre" sx={{ overflow: 'auto', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{evidence}</Box>{evidenceAlertID && <BehaviorRecordContext alertId={evidenceAlertID} selection={selection} />}</DialogContent>
       <DialogActions>{evidence && renderEvidenceActions?.(evidence)}<Button onClick={() => setEvidence(null)}>Close</Button></DialogActions></Dialog>
     <Dialog open={inventory !== null} onClose={() => { if (!busy) setInventory(null); }} maxWidth="sm" fullWidth><DialogTitle>{inventory?.isPrefix ? 'Correct subnet prefix' : 'Label inventory asset'}</DialogTitle>
       <DialogContent><Stack spacing={2} sx={{ pt: 1 }}>

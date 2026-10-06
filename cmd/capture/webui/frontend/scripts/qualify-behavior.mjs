@@ -79,6 +79,20 @@ try {
   await expect(page.getByText(/Observed interfaces\/scopes/)).toContainText('browser-fixture');
   await expect(page.getByText(/Storage: baseline/)).not.toContainText('Unavailable');
   await expect(page.getByText(/Unavailable is not zero/)).toBeVisible();
+  if (workload.lateralRecords) {
+    assert.equal((await page.request.post(`${fixture}/lateral`)).status(), 200);
+    await page.goto(`${base}/behavior`);
+    await page.getByRole('tab', { name: 'Live alerts' }).click();
+    const lateral = page.getByRole('table', { name: 'Live security alerts' }).getByRole('row').filter({ hasText: 'lateral.smb-fanout' });
+    await expect(lateral).toBeVisible();
+    await lateral.getByRole('button', { name: 'Expected / observed' }).click();
+    const later = page.getByRole('region', { name: 'Later connection and SMB evidence' });
+    await expect(later).toContainText('TCP reset observed');
+    await expect(later).toContainText('Authentication: FAILED');
+    await expect(later).toContainText('Capture-time lag 300.000 s');
+    await expect(later).toContainText('omit sensor/interface/VLAN');
+    await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
+  }
   if (workload.sourcePages) {
     for (const [route, address] of [['hosts', '192.0.2.1'], ['devices', '00:11:22:33:44:55'], ['connections', '192.0.2.1']]) {
       const inventory = await page.request.get(`${base}/api/${route}`);
@@ -87,7 +101,7 @@ try {
       const sourceRow = page.getByRole('row').filter({ hasText: address });
       await expect(sourceRow.first()).toBeVisible();
       await sourceRow.first().click();
-      const context = page.getByRole('region', { name: `Behavioral context for ${address}` });
+      const context = page.getByRole('region', { name: `Behavioral context for ${address}`, exact: true });
       await expect(context).toBeVisible();
       await expect(context).toContainText('Synthetic office gateway');
       await expect(context).toContainText('192.0.2.0/24 (configured)');

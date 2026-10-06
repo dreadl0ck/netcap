@@ -6,6 +6,7 @@ import userEvent from '@testing-library/user-event';
 import { SWRConfig } from 'swr';
 import { NetcapProvider } from '../providers';
 import BehaviorPage from '../pages/BehaviorPage';
+import BehaviorRecordContext from '../components/BehaviorRecordContext';
 import { useLiveAlerts } from '../hooks/useLiveAlerts';
 import { assetObservations, behaviorSelection, factLabel, learningReady } from '../lib/behavior';
 import type { BehaviorHealth, BehaviorSnapshot } from '../lib/behavior';
@@ -35,6 +36,24 @@ class MockSource extends EventTarget {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); MockSource.sources = []; });
 
 describe('behavioral monitoring', () => {
+  it('qualifies later transport evidence without inventing authentication or network scope', async () => {
+    const fetcher = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({
+      qualification: 'Tuple/time candidates only: records omit sensor/interface/VLAN. Original alert evidence is unchanged.',
+      scanned: 10, truncated: true, unavailable: ['SMB: retained records unavailable'],
+      records: [{ type: 'Connection', index: 7, sha256: 'a'.repeat(64), firstSeen: 1700000000000000000,
+        lastSeen: 1700000300000000000, captureLagNS: 300e9, outcome: 'TCP reset observed', authentication: 'unavailable' }],
+    }) } as Response));
+    render(<SWRConfig value={{ provider: () => new Map() }}><NetcapProvider config={{
+      backendUrl: 'http://fixture', router: { pathname: '/behavior', query: {}, isReady: true, push: vi.fn() },
+      Link: ({ href, children }) => <a href={href}>{children}</a>, fetch: fetcher,
+    }}><BehaviorRecordContext alertId="lateral.smb-fanout-a" selection="?inputFile=%2Ffixture.pcap" /></NetcapProvider></SWRConfig>);
+    expect(await screen.findByText(/TCP reset observed/)).toHaveTextContent('Authentication: unavailable');
+    expect(screen.getByText(/Tuple\/time candidates only/)).toHaveTextContent('omit sensor/interface/VLAN');
+    expect(screen.getByText(/Capture-time lag/)).toHaveTextContent('300.000 s');
+    expect(screen.getByText(/records examined/)).toHaveTextContent('Scan/display capped');
+    expect(screen.getByText(/SMB: retained records unavailable/)).toBeInTheDocument();
+    expect(fetcher.mock.calls.length).toBeGreaterThan(0);
+  });
   it('distinguishes measured zero drops, unavailable counters and retained delivery failures', async () => {
     const health: BehaviorHealth = { schema: 1, sampledAt: 1700000002000, active: false,
       scopes: [{ sensor: 'fixture', interface: 'eth0', vlans: [10] }], scopesTruncated: false,
