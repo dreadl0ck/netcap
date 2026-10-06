@@ -32,8 +32,8 @@ jobs:
           # Branch where signatures will be stored
           branch: 'master'
           
-          # Allowlist for bots and automated accounts (won't be asked to sign)
-          allowlist: bot*,dependabot[bot],renovate[bot],github-actions[bot]
+          # The repository owner and automated accounts are exempt.
+          allowlist: dreadl0ck,bot*,dependabot[bot],renovate[bot],github-actions[bot]
 
           # Custom messages
           custom-notsigned-prcomment: |
