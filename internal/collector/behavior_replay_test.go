@@ -36,6 +36,77 @@ func replaySYN(at time.Time, src, dst string, port uint16, seq uint32) behaviorP
 	return behaviorPacket{at: at, stack: []gopacket.SerializableLayer{eth, ip, tcp}}
 }
 
+func replayARP(at time.Time, ip string, mac byte) behaviorPacket {
+	hardware := net.HardwareAddr{0, 1, 2, 3, 4, mac}
+	return behaviorPacket{at: at, stack: []gopacket.SerializableLayer{
+		&layers.Ethernet{SrcMAC: hardware, DstMAC: net.HardwareAddr{255, 255, 255, 255, 255, 255}, EthernetType: layers.EthernetTypeARP},
+		&layers.ARP{AddrType: layers.LinkTypeEthernet, Protocol: layers.EthernetTypeIPv4, HwAddressSize: 6, ProtAddressSize: 4, Operation: layers.ARPReply, SourceHwAddress: hardware, SourceProtAddress: net.ParseIP(ip).To4(), DstHwAddress: make([]byte, 6), DstProtAddress: net.ParseIP("192.0.2.1").To4()},
+	}}
+}
+
+func replayDNS(at time.Time, resolver, domain string) behaviorPacket {
+	ip := &layers.IPv4{Version: 4, TTL: 64, SrcIP: net.ParseIP("192.0.2.10"), DstIP: net.ParseIP(resolver), Protocol: layers.IPProtocolUDP}
+	udp := &layers.UDP{SrcPort: 53000, DstPort: 53}
+	_ = udp.SetNetworkLayerForChecksum(ip)
+	return behaviorPacket{at: at, stack: []gopacket.SerializableLayer{
+		&layers.Ethernet{SrcMAC: net.HardwareAddr{0, 1, 2, 3, 4, 5}, DstMAC: net.HardwareAddr{0, 1, 2, 3, 4, 6}, EthernetType: layers.EthernetTypeIPv4}, ip, udp,
+		&layers.DNS{ID: 1, RD: true, Questions: []layers.DNSQuestion{{Name: []byte(domain), Type: layers.DNSTypeA, Class: layers.DNSClassIN}}},
+	}}
+}
+
+func TestBehavioralDiscoveryAndDNSPCAPOracle(t *testing.T) {
+	start := time.Unix(1700000000, 0)
+	root := t.TempDir()
+	training, benign, attack := filepath.Join(root, "training.pcap"), filepath.Join(root, "benign.pcap"), filepath.Join(root, "attack.pcap")
+	writeBehaviorPCAP(t, training, []behaviorPacket{replayARP(start, "192.0.2.10", 5), replayDNS(start.Add(2*time.Second), "192.0.2.53", "known.example")})
+	writeBehaviorPCAP(t, benign, []behaviorPacket{replayARP(start.Add(3*time.Second), "192.0.2.10", 5), replayDNS(start.Add(4*time.Second), "192.0.2.53", "known.example")})
+	writeBehaviorPCAP(t, attack, []behaviorPacket{replayARP(start.Add(5*time.Second), "192.0.2.10", 9), replayDNS(start.Add(6*time.Second), "192.0.2.54", "novel.example"), replaySYN(start.Add(7*time.Second), "192.0.2.10", "192.0.2.20", 8443, 1)})
+	var reference []string
+	for _, workers := range []int{1, 2, 4, 8} {
+		t.Run(fmt.Sprint(workers), func(t *testing.T) {
+			out := t.TempDir()
+			sink, err := rules.NewFileAlertWriter(out)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer sink.Close()
+			engine, err := behavior.Open(behavior.Config{Path: filepath.Join(out, "Behavior.json"), MinLearning: time.Second, MinSamples: 2}, sink)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer engine.Close()
+			runBehaviorPCAP(t, training, out, workers, engine)
+			if err := engine.Change("approve", nil, "reviewed discovery fixture"); err != nil {
+				t.Fatal(err)
+			}
+			runBehaviorPCAP(t, benign, out, workers, engine)
+			if got := replayAlertSemantics(t, out); len(got) != 0 {
+				t.Fatalf("benign discovery generated alerts: %v", got)
+			}
+			runBehaviorPCAP(t, attack, out, workers, engine)
+			got := replayAlertSemantics(t, out)
+			oracle := map[string]int{"baseline.new-device": 1, "baseline.arp-conflict": 1, "baseline.new-resolver": 1, "baseline.new-dns": 1, "baseline.new-edge": 2, "baseline.new-service": 1}
+			for _, item := range got {
+				name, _, _ := strings.Cut(item, "|")
+				if _, exists := oracle[name]; !exists {
+					t.Fatalf("unexpected detector: %s", name)
+				}
+				oracle[name]--
+			}
+			for name, remaining := range oracle {
+				if remaining != 0 {
+					t.Fatalf("detector %s differs from oracle by %d", name, remaining)
+				}
+			}
+			if reference == nil {
+				reference = got
+			} else if !reflect.DeepEqual(reference, got) {
+				t.Fatal("worker count changed discovery evidence")
+			}
+		})
+	}
+}
+
 func writeBehaviorPCAP(t *testing.T, path string, packets []behaviorPacket) {
 	t.Helper()
 	file, err := os.Create(path)
