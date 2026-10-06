@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -477,4 +478,66 @@ func TestBehavioralGeographicPCAPOracle(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBehavioralCollectorPressure(t *testing.T) {
+	if os.Getenv("NETCAP_BEHAVIOR_PRESSURE") != "1" {
+		t.Skip("100,000-packet capture qualification; enable NETCAP_BEHAVIOR_PRESSURE=1")
+	}
+	const count = 100000
+	start := time.Unix(1700000000, 0)
+	root := t.TempDir()
+	input, out := filepath.Join(root, "pressure.pcap"), filepath.Join(root, "audit")
+	packet := replaySYN(start, "192.0.2.10", "192.0.2.20", 443, 1)
+	packets := make([]behaviorPacket, count)
+	for i := range packets {
+		packets[i] = behaviorPacket{at: start.Add(2*time.Second + time.Duration(i)*100*time.Microsecond), stack: packet.stack}
+	}
+	writeBehaviorPCAP(t, input, packets)
+	sink, err := rules.NewFileAlertWriter(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sink.Close()
+	engine, err := behavior.Open(behavior.Config{Path: filepath.Join(out, "Behavior.json"), MinLearning: time.Second, MinSamples: 2, MaxFacts: 1000}, sink)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.Close()
+	buffer := gopacket.NewSerializeBuffer()
+	if err := gopacket.SerializeLayers(buffer, gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true}, packet.stack...); err != nil {
+		t.Fatal(err)
+	}
+	facts := behavior.PacketFacts(gopacket.NewPacket(buffer.Bytes(), layers.LayerTypeEthernet, gopacket.Default), behavior.Scope{Sensor: "pressure", Interface: "pcap"})
+	for _, at := range []time.Time{start, start.Add(time.Second)} {
+		if err := engine.Observe(at, facts...); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := engine.Change("approve", nil, "reviewed pressure fixture"); err != nil {
+		t.Fatal(err)
+	}
+	dc := config.DefaultConfig.Clone()
+	dc.Out, dc.Source, dc.IncludeDecoders, dc.Quiet = out, input, "Ethernet,IPv4,TCP,Alert", true
+	c := New(Config{Workers: 4, PacketBufferSize: 100, BaseLayer: layers.LayerTypeEthernet, DecodeOptions: gopacket.Default, DecoderConfig: dc, NoPrompt: true, NoSignalHandling: true, OutDirPermission: 0700})
+	c.SetBehaviorEngine(engine, behavior.Scope{Sensor: "pressure", Interface: "pcap"})
+	received := time.Now()
+	if err := c.CollectPcap(input); err != nil {
+		t.Fatal(err)
+	}
+	duration := time.Since(received)
+	if err := c.GetBehaviorError(); err != nil {
+		t.Fatal(err)
+	}
+	state := engine.Snapshot()
+	if c.GetCurrentPacketCount() != count || state.Samples != count+2 {
+		t.Fatalf("ingress lost packets: collector=%d observations=%d", c.GetCurrentPacketCount(), state.Samples)
+	}
+	if state.Overflow != 0 || state.WindowOverflow != 0 || len(state.Observed) != 3 || len(state.Activity) > state.MaxFacts || len(state.Rates) > state.MaxFacts {
+		t.Fatalf("state bounds under pressure: %+v", state)
+	}
+	if got := replayAlertSemantics(t, out); len(got) != 0 {
+		t.Fatalf("stable pressure traffic produced false alerts: %v", got)
+	}
+	t.Logf("OS=%s arch=%s CPUs=%d Go=%s packets=%d workers=4 packetBuffer=100 sensors=1 approvedFacts=3 maxFacts=1000 decoders=Ethernet,IPv4,TCP,Alert behavioralPolicy=default wall=%s throughput=%.0f packets/s missingIngress=0 factOverflow=0 windowOverflow=0; offline PCAP has no kernel-capture drops; includes protocol audit persistence and capture shutdown", runtime.GOOS, runtime.GOARCH, runtime.NumCPU(), runtime.Version(), count, duration, count/duration.Seconds())
 }

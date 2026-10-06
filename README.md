@@ -145,7 +145,25 @@ baseline explicitly with `-behavior-baseline <path>`.
 
 The synthetic packet-to-SSE gate (`TestBehavioralPacketToSSELatency`, 100 samples)
 measured p95 51.85 ms including decode on Darwin ARM64 / Apple M5 Max, Go 1.27.0,
-at 19.99 synthetic packets/s. PCAP oracles in `behavior_replay_test.go` cover
+at 19.99 synthetic packets/s. `TestBehavioralBrowserDelivery` measured receipt to
+React-render p95 99.10 ms in Chrome 154.0.8037.98, with 1,000 approved facts,
+100 decisive SYNs over 5.998 s and 58,000 background SYNs at 9,586 packets/s;
+zero fact/window overflow. Browser approval, reconnect, evidence and suppression
+history are asserted against the real backend. `TestBehavioralCollectorPressure`
+processed 100,000 stable SYNs through 4 protocol workers and audit persistence
+in 0.406 s (246,310 packets/s), with zero missing observations or state overflow.
+The browser workload uses synchronous synthetic ingress; the collector workload
+uses an offline PCAP. Neither measures kernel-capture drops.
+
+Run the opt-in gates after `pnpm install --frozen-lockfile && pnpm build` in
+`cmd/capture/webui/frontend`; the browser gate also requires Google Chrome:
+
+```bash
+NETCAP_BEHAVIOR_BROWSER=1 go test -race ./cmd/capture/webui -run '^TestBehavioralBrowserDelivery$' -count=1 -timeout 120s
+NETCAP_BEHAVIOR_PRESSURE=1 go test ./internal/collector -run '^TestBehavioralCollectorPressure$' -count=1 -timeout 90s
+```
+
+PCAP oracles in `behavior_replay_test.go` cover
 discovery/DNS, rates, DHCP transitions, IPv6 conflicts, geography and lateral
 patterns with equivalent evidence at 1/2/4/8 workers. These scoped
 results do not establish latency on arbitrary traffic or hardware.
