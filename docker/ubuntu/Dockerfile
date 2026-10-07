@@ -55,5 +55,10 @@ COPY --from=builder /netcap/LICENSE /usr/share/licenses/netcap/LICENSE
 COPY --from=builder /netcap/legal /usr/share/licenses/netcap/
 COPY --from=builder /usr/local/lib/* /usr/lib/
 COPY --from=builder /usr/lib/libndpi* /usr/lib/
+COPY --from=builder /usr/lib/libprotoident.so* /usr/lib/
+COPY --from=builder /usr/lib/libflowmanager.so* /usr/lib/
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libtrace.so* /usr/lib/
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libwandio.so* /usr/lib/
+RUN ldconfig && /usr/bin/net -version
 
 CMD ["/bin/sh"]
