@@ -89,6 +89,8 @@ var (
 	flagDPIWorkers                     int
 	flagFreeOSMemory                   int
 	flagReassembleConnections          bool
+	flagFlowExports                    bool
+	flagFlowExportPorts                string
 	flagTCPDebug                       bool
 	flagSaveConns                      bool
 	flagCalcEntropy                    bool
@@ -220,6 +222,8 @@ func setFlagsFromContext(c *cli.Command) {
 	flagDPIWorkers = c.Int("dpi-workers")
 	flagFreeOSMemory = c.Int("free-os-mem")
 	flagReassembleConnections = c.Bool("reassemble-connections")
+	flagFlowExports = c.Bool("flow-exports")
+	flagFlowExportPorts = c.String("flow-export-ports")
 	flagTCPDebug = c.Bool("tcp-debug")
 	flagSaveConns = c.Bool("conns")
 	flagCalcEntropy = c.Bool("entropy")

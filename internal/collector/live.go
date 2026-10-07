@@ -23,6 +23,7 @@ package collector
 
 import (
 	"context"
+	stdErrors "errors"
 	"io"
 
 	"github.com/gopacket/gopacket"
@@ -34,14 +35,14 @@ import (
 // optionally a bpf can be supplied.
 // this is the darwin version that uses the pcap lib with c bindings to fetch packets
 // currently there is no other option to do that.
-func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
+func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) (resultErr error) {
 	// Recover from any panics during processing
 	defer c.recoverFromPanic()
 	runCtx, finish, err := c.beginCapture()
 	if err != nil {
 		return err
 	}
-	defer c.cleanup(false)
+	defer func() { c.cleanup(false); resultErr = stdErrors.Join(resultErr, c.flowExportError) }()
 	defer finish()
 
 	// open interface in live mode

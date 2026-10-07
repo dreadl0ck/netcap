@@ -169,4 +169,6 @@ type Config struct {
 	// If zero, no periodic flushing is performed (records only flushed on shutdown).
 	// Recommended: 30s to 60s for most use cases.
 	LiveFlushInterval time.Duration
+	FlowExports       bool
+	FlowExportPorts   string
 }

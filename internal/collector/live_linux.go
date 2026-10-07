@@ -23,6 +23,7 @@ package collector
 
 import (
 	"context"
+	stdErrors "errors"
 	"fmt"
 	"io"
 	"time"
@@ -35,14 +36,14 @@ import (
 // CollectLive starts collection of data from the given interface.
 // optionally a BPF can be supplied.
 // this is the linux version that uses the pure go version from pcapgo to fetch packets live.
-func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error {
+func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) (resultErr error) {
 	// Recover from any panics during processing
 	defer c.recoverFromPanic()
 	runCtx, finish, err := c.beginCapture()
 	if err != nil {
 		return err
 	}
-	defer c.cleanup(false)
+	defer func() { c.cleanup(false); resultErr = stdErrors.Join(resultErr, c.flowExportError) }()
 	defer finish()
 
 	// use raw socket to fetch packet on linux live mode

@@ -127,6 +127,8 @@ type RuntimeConfig struct {
 
 	// TCP Reassembly
 	ReassembleConnections bool
+	FlowExports           bool
+	FlowExportPorts       string
 	FlushEvery            int
 	Checksum              bool
 	NoOptCheck            bool
@@ -1697,6 +1699,13 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		log.Printf("[WebUI] File extraction enabled for session %s: %s", job.SessionID, filesDir)
 	}
 
+	flowExports, flowPorts := true, ""
+	s.mu.RLock()
+	if s.runtimeConfig != nil {
+		flowExports = s.runtimeConfig.FlowExports
+		flowPorts = s.runtimeConfig.FlowExportPorts
+	}
+	s.mu.RUnlock()
 	// Build collector configuration
 	c := collector.New(collector.Config{
 		Workers:               runtime.NumCPU() * 2,
@@ -1709,6 +1718,8 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		DPI:                   job.EnableDPI,
 		DPIModules:            "",
 		ReassembleConnections: true,
+		FlowExports:           flowExports,
+		FlowExportPorts:       flowPorts,
 		FreeOSMem:             0,
 		LogErrors:             false,
 		NoPrompt:              true,

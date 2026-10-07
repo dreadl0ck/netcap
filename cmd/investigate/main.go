@@ -3,18 +3,39 @@ package investigate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/flow"
+	"github.com/dreadl0ck/netcap/internal/flowexport"
 	"github.com/urfave/cli/v3"
 )
 
 func GetCommand() *cli.Command {
 	return &cli.Command{Name: "investigate", Usage: "bounded flow queries and verifiable packet evidence", Commands: []*cli.Command{
+		{Name: "collect-flows", Usage: "receive UDP flow exports into a fresh output directory", Flags: []cli.Flag{
+			&cli.StringFlag{Name: "listen", Value: "127.0.0.1:2055", Usage: "local UDP address"},
+			&cli.StringFlag{Name: "out", Required: true, Usage: "existing directory without flow-export artifacts"},
+			&cli.DurationFlag{Name: "duration", Value: time.Minute, Usage: "bounded collection duration"},
+		}, Action: runCollectFlows},
+		{Name: "exported-flows", Usage: "rank one exporter/domain's normalized flow metadata", Flags: []cli.Flag{
+			&cli.StringFlag{Name: "read", Required: true, Usage: "FlowExports.jsonl with finalized health sidecar"},
+			&cli.StringFlag{Name: "exporter", Required: true, Usage: "transport exporter IP:port"},
+			&cli.StringFlag{Name: "format", Required: true, Usage: "netflow-v5, netflow-v9, ipfix or sflow-v5"},
+			&cli.StringFlag{Name: "domain", Required: true, Usage: "observation domain or engine/subagent identifier"},
+			&cli.StringFlag{Name: "start-ns", Required: true, Usage: "inclusive UTC nanosecond start"},
+			&cli.StringFlag{Name: "end-ns", Required: true, Usage: "inclusive UTC nanosecond end"},
+			&cli.StringFlag{Name: "time-basis", Value: "flow", Usage: "flow or receive; sFlow provides receive time only"},
+			&cli.StringFlag{Name: "host", Usage: "either endpoint IP or CIDR"},
+			&cli.StringFlag{Name: "group-by", Value: "srcIP", Usage: "srcIP, dstIP, dstPort, protocol, ingress, egress, srcAS, dstAS or nextHop"},
+			&cli.IntFlag{Name: "limit", Value: 100, Usage: "returned groups (1..1000)"},
+			&cli.DurationFlag{Name: "timeout", Value: 2 * time.Minute},
+		}, Action: runExportedFlows},
 		{Name: "flows", Usage: "rank Connection observations with explicit snapshot/count semantics", Flags: []cli.Flag{
 			&cli.StringFlag{Name: "read", Required: true, Usage: "Connection.ncap or Connection.ncap.gz"},
 			&cli.StringFlag{Name: "start-ns", Required: true, Usage: "inclusive UTC nanosecond start; counters cover whole overlapping observations"},
@@ -35,6 +56,61 @@ func GetCommand() *cli.Command {
 			&cli.DurationFlag{Name: "timeout", Value: 2 * time.Minute, Usage: "maximum export duration"},
 		}, Action: runPacketEvidence},
 	}}
+}
+
+func runCollectFlows(ctx context.Context, cmd *cli.Command) error {
+	if cmd.Args().Len() != 0 || cmd.Duration("duration") <= 0 {
+		return fmt.Errorf("positive duration and no positional arguments required")
+	}
+	addr, err := net.ResolveUDPAddr("udp", cmd.String("listen"))
+	if err != nil {
+		return err
+	}
+	conn, err := net.ListenUDP("udp", addr)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+	recorder, err := flowexport.NewRecorder(cmd.String("out"), flowexport.DefaultConfig())
+	if err != nil {
+		return err
+	}
+	bounded, cancel := context.WithTimeout(ctx, cmd.Duration("duration"))
+	defer cancel()
+	receiveErr := flowexport.Receive(bounded, conn, recorder)
+	if errors.Is(receiveErr, context.DeadlineExceeded) && ctx.Err() == nil {
+		receiveErr = nil
+	}
+	return errors.Join(receiveErr, recorder.Close())
+}
+
+func runExportedFlows(ctx context.Context, cmd *cli.Command) error {
+	if cmd.Args().Len() != 0 {
+		return fmt.Errorf("exported-flows does not accept positional arguments")
+	}
+	start, err := strconv.ParseInt(cmd.String("start-ns"), 10, 64)
+	if err != nil {
+		return err
+	}
+	end, err := strconv.ParseInt(cmd.String("end-ns"), 10, 64)
+	if err != nil {
+		return err
+	}
+	domain, err := strconv.ParseUint(cmd.String("domain"), 10, 32)
+	if err != nil {
+		return err
+	}
+	id := uint32(domain)
+	if cmd.Duration("timeout") <= 0 {
+		return fmt.Errorf("timeout must be positive")
+	}
+	ctx, cancel := context.WithTimeout(ctx, cmd.Duration("timeout"))
+	defer cancel()
+	result, err := flowexport.ReadReport(ctx, cmd.String("read"), flowexport.Query{StartNs: start, EndNs: end, TimeBasis: cmd.String("time-basis"), Exporter: cmd.String("exporter"), Format: cmd.String("format"), Domain: &id, Host: cmd.String("host"), GroupBy: cmd.String("group-by"), Limit: cmd.Int("limit")})
+	if err != nil {
+		return err
+	}
+	return json.NewEncoder(cmd.Root().Writer).Encode(result)
 }
 
 func runFlows(ctx context.Context, cmd *cli.Command) error {

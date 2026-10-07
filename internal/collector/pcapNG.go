@@ -20,6 +20,7 @@
 package collector
 
 import (
+	stdErrors "errors"
 	"fmt"
 	"io"
 	"os"
@@ -90,14 +91,14 @@ func countPacketsNG(path string) (count int64, err error) {
 }
 
 // CollectPcapNG implements parallel decoding of incoming packets.
-func (c *Collector) CollectPcapNG(path string) error {
+func (c *Collector) CollectPcapNG(path string) (resultErr error) {
 	// Recover from any panics during processing
 	defer c.recoverFromPanic()
 	ctx, finish, err := c.beginCapture()
 	if err != nil {
 		return err
 	}
-	defer c.cleanup(false)
+	defer func() { c.cleanup(false); resultErr = stdErrors.Join(resultErr, c.flowExportError) }()
 	defer finish()
 
 	// stat input file

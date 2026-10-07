@@ -387,6 +387,8 @@ func GetFlags() []cli.Flag {
 			Usage:   "reassemble TCP connections",
 			Sources: cli.EnvVars("NC_REASSEMBLE_CONNECTIONS"),
 		},
+		&cli.BoolFlag{Name: "flow-exports", Value: true, Usage: "normalize NetFlow v5/v9, IPFIX and sFlow metadata with collection health", Sources: cli.EnvVars("NC_FLOW_EXPORTS")},
+		&cli.StringFlag{Name: "flow-export-ports", Value: "2055,4739,6343,9995,9996", Usage: "UDP destination ports observed as flow exports", Sources: cli.EnvVars("NC_FLOW_EXPORT_PORTS")},
 		&cli.BoolFlag{
 			Name:    "tcp-debug",
 			Usage:   "add debug output for TCP connections to debug.log",

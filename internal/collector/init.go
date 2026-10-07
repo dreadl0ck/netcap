@@ -259,6 +259,9 @@ func (c *Collector) Init() (err error) {
 
 	c.buildProgressString()
 	c.printlnStdOut("done in", time.Since(start))
+	if err := c.initFlowExports(); err != nil {
+		return err
+	}
 	c.initWorkers()
 	c.log.Info("spawned workers", zap.Int("total", c.config.Workers))
 	c.initialized = true

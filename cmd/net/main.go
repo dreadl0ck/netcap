@@ -298,7 +298,7 @@ func printCompletions(previous, current, full string) {
 	// show flags for subcommands
 	switch previous {
 	case cmdInvestigate:
-		fmt.Println("flows packet-evidence")
+		fmt.Println("flows exported-flows collect-flows packet-evidence")
 		return
 	case cmdCapture:
 		printFlags(capture.Flags())

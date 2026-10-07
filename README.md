@@ -224,6 +224,11 @@ net investigate flows --read Connection.ncap.gz \
 
 net investigate packet-evidence --read exercise.pcapng \
   --bpf 'host 192.0.2.1 and tcp port 80' --out evidence.zip
+
+net investigate collect-flows --listen 127.0.0.1:2055 --out ./fresh-output --duration 1m
+net investigate exported-flows --read ./fresh-output/FlowExports.jsonl \
+  --exporter 192.0.2.10:50000 --format netflow-v9 --domain 7 \
+  --start-ns "$START_NS" --end-ns "$END_NS" --time-basis receive
 ```
 
 `START_NS` and `END_NS` are inclusive UTC nanosecond integers. The WebUI API
@@ -243,6 +248,21 @@ exports cap captured packets at 1 MiB and PCAPNG blocks/metadata at 16 MiB;
 flow queries cap records at 4 MiB and decoded input at 256 MiB.
 The book-derived qualification inventory is `testdata/investigation-coverage.json`;
 `partial` means named checks passed, not complete workflow coverage.
+
+`capture --flow-exports` normalizes UDP NetFlow v5/v9, IPFIX and sFlow v5 on
+`--flow-export-ports` (default `2055,4739,6343,9995,9996`). It records raw
+datagrams, normalized observations and issues in `FlowExports.jsonl` before
+worker dispatch. `FlowExportsHealth.json` binds final health to the record-file
+SHA-256. Existing flow artifacts are refused; use a fresh output directory.
+
+| Export interpretation | Contract |
+| --- | --- |
+| Templates | Collector-owned, exporter/collector/domain scoped; 30-minute expiry, 128 domains, 1,024 templates, 256 fields/template. |
+| Sampling | Counts remain as reported; no automatic expansion. Reports reject mixed sampling settings. |
+| Time | `flow` requires exported start/end; `receive` selects datagram capture/receipt time. sFlow does not establish flow start/end. |
+| Gaps | Missing templates, malformed data and sequence discontinuities produce issue events and partial health. |
+| Ranking | Requires exporter, format and domain. Cumulative counts and incomplete counters are excluded and counted explicitly. |
+| Coverage | sFlow counter/unknown sample formats remain in raw datagrams; unsupported options scopes are not applied globally. |
 
 ## Docker
 
