@@ -24,6 +24,11 @@ import (
 
 func GetCommand() *cli.Command {
 	return &cli.Command{Name: "investigate", Usage: "bounded flow queries and verifiable packet evidence", Commands: []*cli.Command{
+		{Name: "protocol-fields", Usage: "validate a framing/field hypothesis and optionally compare directional streams", Flags: []cli.Flag{
+			&cli.StringFlag{Name: "spec", Required: true, Usage: "versioned JSON grammar"},
+			&cli.StringFlag{Name: "read", Required: true, Usage: "contiguous directional byte stream"},
+			&cli.StringFlag{Name: "compare", Usage: "second directional byte stream"},
+		}, Action: runProtocolFields},
 		{Name: "tls-capture", Usage: "analyze TLS plaintext using supplied session secrets and installed tshark", Flags: []cli.Flag{
 			&cli.StringFlag{Name: "read", Required: true, Usage: "PCAP/PCAPNG containing the TLS handshake and application traffic"},
 			&cli.StringFlag{Name: "key-log", Required: true, Usage: "NSS-format session secret log; never included in output"},
@@ -75,6 +80,43 @@ func GetCommand() *cli.Command {
 			&cli.DurationFlag{Name: "timeout", Value: 2 * time.Minute, Usage: "maximum export duration"},
 		}, Action: runPacketEvidence},
 	}}
+}
+
+func runProtocolFields(ctx context.Context, cmd *cli.Command) error {
+	if cmd.Args().Len() != 0 {
+		return fmt.Errorf("protocol-fields does not accept positional arguments")
+	}
+	var grammar protocoltest.Grammar
+	if err := readExperimentSpec(cmd.String("spec"), &grammar); err != nil {
+		return err
+	}
+	read := func(path string) ([]byte, error) {
+		data, err := protocoltest.ReadDirectionalInput(path)
+		if err != nil {
+			return nil, err
+		}
+		return data, ctx.Err()
+	}
+	input, err := read(cmd.String("read"))
+	if err != nil {
+		return err
+	}
+	if cmd.String("compare") != "" {
+		other, err := read(cmd.String("compare"))
+		if err != nil {
+			return err
+		}
+		report, err := grammar.Compare(input, other)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(cmd.Root().Writer).Encode(report)
+	}
+	report, err := grammar.Interpret(input)
+	if err != nil {
+		return err
+	}
+	return json.NewEncoder(cmd.Root().Writer).Encode(report)
 }
 
 func runTLSCapture(ctx context.Context, cmd *cli.Command) error {

@@ -283,6 +283,12 @@ experiment. Byte fields use JSON base64; `Framing` supports `length-prefix`,
 TLS verifies certificates and hostnames; optional `rootCAFile` and paired
 `clientCertificateFile`/`clientKeyFile` configure experiment trust and mTLS.
 
+`net investigate protocol-fields --spec grammar.json --read client.bin --compare other-client.bin`
+validates framed streams against declared byte/UTF-8/signed/unsigned fields and
+reports changes by frame ordinal and field name. Fields include offsets, raw
+bytes and hypothesis descriptions. Frame insertions can shift alignment; a
+successful parse does not prove the hypothesized application semantics.
+
 `net investigate tls-capture --read tls.pcapng --key-log secrets.log --stream 0`
 uses installed `tshark` for offline TLS dissection. Output binds input, key-log
 and plaintext hashes to the tool version; key material is not included. Node
