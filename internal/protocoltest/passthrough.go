@@ -12,7 +12,7 @@ import (
 // Passthrough observations are transport chunks, not application frames. TLS
 // remains end-to-end: neither keys nor plaintext are available to this mode.
 func proxyPassthrough(ctx context.Context, l net.Listener, spec Proxy) ([]ProxyObservation, error) {
-	if spec.TLS != nil || len(spec.Mutations) > 0 || spec.Framing.Kind != "" {
+	if spec.TLS != nil || len(spec.Mutations) > 0 || len(spec.Injections) > 0 || spec.Framing.Kind != "" {
 		return nil, fmt.Errorf("passthrough forbids TLS termination, framing and mutations")
 	}
 	if spec.MaxFrames < 1 || spec.MaxFrames > 10000 || spec.MaxTotalBytes < 2 || spec.MaxTotalBytes > 16<<20 || spec.TimeoutMilliseconds < 1 || spec.TimeoutMilliseconds > 300000 {
