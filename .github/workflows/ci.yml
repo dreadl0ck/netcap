@@ -102,6 +102,7 @@ jobs:
             -v "${{ github.workspace }}:/netcap" \
             -w /netcap \
             -e GOFLAGS=-buildvcs=false \
+            -e 'GOPROXY=https://proxy.golang.org|direct' \
             "$BUILDER_IMAGE" \
             sh -eux <<'SCRIPT'
           go version
