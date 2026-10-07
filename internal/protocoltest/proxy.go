@@ -2,6 +2,7 @@ package protocoltest
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -23,6 +24,8 @@ type Mutation struct {
 }
 
 type Proxy struct {
+	Mode                string     `json:"mode,omitempty"`
+	TLS                 *ProxyTLS  `json:"tls,omitempty"`
 	Address             string     `json:"address"`
 	Framing             Framing    `json:"framing"`
 	TimeoutMilliseconds int        `json:"timeoutMilliseconds"`
@@ -31,7 +34,53 @@ type Proxy struct {
 	Mutations           []Mutation `json:"mutations"`
 }
 
+// ProxyTLS requires explicit identity and trust for both independently negotiated legs.
+type ProxyTLS struct {
+	ClientCertificateFile string `json:"clientCertificateFile,omitempty"`
+	ClientKeyFile         string `json:"clientKeyFile,omitempty"`
+	PeerCertificateSHA256 string `json:"peerCertificateSHA256,omitempty"`
+	Mode                  string `json:"mode,omitempty"`
+	CertificateFile       string `json:"certificateFile"`
+	KeyFile               string `json:"keyFile"`
+	RootCAFile            string `json:"rootCAFile"`
+	ServerName            string `json:"serverName"`
+}
+
+func proxyTLSConfigs(spec *ProxyTLS) (*tls.Config, *tls.Config, error) {
+	if spec.Mode != "" && spec.Mode != "terminate" {
+		return nil, nil, fmt.Errorf("only explicit two-leg TLS termination is supported; ciphertext passthrough mutation is unsupported")
+	}
+	if spec.CertificateFile == "" || spec.KeyFile == "" || spec.RootCAFile == "" || spec.ServerName == "" {
+		return nil, nil, fmt.Errorf("TLS proxy requires explicit certificate, key, upstream CA and server name")
+	}
+	identity, err := loadIdentity(spec.CertificateFile, spec.KeyFile)
+	if err != nil {
+		return nil, nil, err
+	}
+	roots, err := loadTrust(spec.RootCAFile)
+	if err != nil {
+		return nil, nil, err
+	}
+	upstream := &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots, ServerName: spec.ServerName}
+	if (spec.ClientCertificateFile == "") != (spec.ClientKeyFile == "") {
+		return nil, nil, fmt.Errorf("upstream mTLS requires both certificate and key")
+	}
+	if spec.ClientCertificateFile != "" {
+		cert, err := loadIdentity(spec.ClientCertificateFile, spec.ClientKeyFile)
+		if err != nil {
+			return nil, nil, err
+		}
+		upstream.Certificates = []tls.Certificate{cert}
+	}
+	if err := setPeerPin(upstream, spec.PeerCertificateSHA256); err != nil {
+		return nil, nil, err
+	}
+	return &tls.Config{MinVersion: tls.VersionTLS12, Certificates: []tls.Certificate{identity}}, upstream, nil
+}
+
 type ProxyObservation struct {
+	TLSVersion  uint16 `json:"tlsVersion,omitempty"`
+	TLSCipher   uint16 `json:"tlsCipher,omitempty"`
 	Direction   string `json:"direction"`
 	Frame       int    `json:"frame"`
 	Original    []byte `json:"original"`
@@ -89,6 +138,20 @@ func MutateFrame(frame []byte, framing Framing, mutation Mutation) ([]byte, erro
 // ProxyOne handles one accepted TCP connection. The caller owns listener.
 // It terminates both legs on framing, mutation, budget, timeout or transport failure.
 func ProxyOne(ctx context.Context, listener net.Listener, spec Proxy) ([]ProxyObservation, error) {
+	if spec.Mode == "passthrough" {
+		return proxyPassthrough(ctx, listener, spec)
+	}
+	if spec.Mode != "" && spec.Mode != "application" {
+		return nil, fmt.Errorf("unsupported proxy mode %q", spec.Mode)
+	}
+	var inbound, outbound *tls.Config
+	if spec.TLS != nil {
+		var err error
+		inbound, outbound, err = proxyTLSConfigs(spec.TLS)
+		if err != nil {
+			return nil, err
+		}
+	}
 	if err := spec.Framing.Validate(); err != nil {
 		return nil, err
 	}
@@ -118,7 +181,8 @@ func ProxyOne(ctx context.Context, listener net.Listener, spec Proxy) ([]ProxyOb
 		return nil, err
 	}
 	defer server.Close()
-	stop := context.AfterFunc(ctx, func() { _ = client.Close(); _ = server.Close() })
+	rawClient, rawServer := client, server
+	stop := context.AfterFunc(ctx, func() { _ = rawClient.Close(); _ = rawServer.Close() })
 	defer stop()
 	deadline, _ := ctx.Deadline()
 	if err := client.SetDeadline(deadline); err != nil {
@@ -127,15 +191,31 @@ func ProxyOne(ctx context.Context, listener net.Listener, spec Proxy) ([]ProxyOb
 	if err := server.SetDeadline(deadline); err != nil {
 		return nil, err
 	}
+	if inbound != nil {
+		front := tls.Server(client, inbound)
+		if err := front.HandshakeContext(ctx); err != nil {
+			return nil, err
+		}
+		back := tls.Client(server, outbound)
+		if err := back.HandshakeContext(ctx); err != nil {
+			return nil, err
+		}
+		client, server = front, back
+	}
 	var mu sync.Mutex
 	observations := []ProxyObservation{}
 	total, frames := 0, 0
 	done := make(chan error, 2)
 	transfer := func(direction string, src, dst net.Conn) {
+		var tlsVersion, tlsCipher uint16
+		if conn, ok := src.(*tls.Conn); ok {
+			state := conn.ConnectionState()
+			tlsVersion, tlsCipher = state.Version, state.CipherSuite
+		}
 		for index := 0; ; index++ {
 			frame, err := spec.Framing.Read(src)
 			if err == io.EOF && len(frame) == 0 {
-				if tcp, ok := dst.(*net.TCPConn); ok {
+				if tcp, ok := dst.(interface{ CloseWrite() error }); ok {
 					_ = tcp.CloseWrite()
 				}
 				done <- nil
@@ -146,7 +226,7 @@ func ProxyOne(ctx context.Context, listener net.Listener, spec Proxy) ([]ProxyOb
 				if len(frame) <= spec.MaxTotalBytes-total && frames < spec.MaxFrames {
 					total += len(frame)
 					frames++
-					observations = append(observations, ProxyObservation{Direction: direction, Frame: index, Original: append([]byte(nil), frame...), TimestampNs: fmt.Sprint(time.Now().UnixNano()), Error: err.Error()})
+					observations = append(observations, ProxyObservation{TLSVersion: tlsVersion, TLSCipher: tlsCipher, Direction: direction, Frame: index, Original: append([]byte(nil), frame...), TimestampNs: fmt.Sprint(time.Now().UnixNano()), Error: err.Error()})
 				}
 				mu.Unlock()
 				done <- err
@@ -161,6 +241,13 @@ func ProxyOne(ctx context.Context, listener net.Listener, spec Proxy) ([]ProxyOb
 				}
 				data, err = MutateFrame(data, spec.Framing, mutation)
 				if err != nil {
+					mu.Lock()
+					if len(frame) <= spec.MaxTotalBytes-total && frames < spec.MaxFrames {
+						total += len(frame)
+						frames++
+						observations = append(observations, ProxyObservation{TLSVersion: tlsVersion, TLSCipher: tlsCipher, Direction: direction, Frame: index, Original: append([]byte(nil), frame...), TimestampNs: fmt.Sprint(time.Now().UnixNano()), Error: err.Error()})
+					}
+					mu.Unlock()
 					done <- err
 					return
 				}
@@ -187,6 +274,9 @@ func ProxyOne(ctx context.Context, listener net.Listener, spec Proxy) ([]ProxyOb
 				case <-timer.C:
 				case <-ctx.Done():
 					timer.Stop()
+					mu.Lock()
+					observations = append(observations, ProxyObservation{TLSVersion: tlsVersion, TLSCipher: tlsCipher, Direction: direction, Frame: index, Original: append([]byte(nil), frame...), TimestampNs: fmt.Sprint(time.Now().UnixNano()), Error: ctx.Err().Error()})
+					mu.Unlock()
 					done <- ctx.Err()
 					return
 				}
@@ -211,7 +301,10 @@ func ProxyOne(ctx context.Context, listener net.Listener, spec Proxy) ([]ProxyOb
 				}
 			}
 			mu.Lock()
-			observations = append(observations, ProxyObservation{Direction: direction, Frame: index, Original: append([]byte(nil), frame...), Transmitted: transmitted, Copies: copies, TimestampNs: fmt.Sprint(time.Now().UnixNano())})
+			observations = append(observations, ProxyObservation{TLSVersion: tlsVersion, TLSCipher: tlsCipher, Direction: direction, Frame: index, Original: append([]byte(nil), frame...), Transmitted: transmitted, Copies: copies, TimestampNs: fmt.Sprint(time.Now().UnixNano())})
+			if err != nil {
+				observations[len(observations)-1].Error = err.Error()
+			}
 			mu.Unlock()
 			if err != nil {
 				done <- err

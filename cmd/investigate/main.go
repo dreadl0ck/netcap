@@ -24,6 +24,7 @@ import (
 
 func GetCommand() *cli.Command {
 	return &cli.Command{Name: "investigate", Usage: "bounded flow queries and verifiable packet evidence", Commands: []*cli.Command{
+		protocolServerCommand(), protocolAccessCommand(), protocolCorpusCommand(), protocolTriageCommand(), protocolCampaignCommand(), protocolGenerateCommand(), protocolReproduceCommand(),
 		{Name: "protocol-fields", Usage: "validate a framing/field hypothesis and optionally compare directional streams", Flags: []cli.Flag{
 			&cli.StringFlag{Name: "spec", Required: true, Usage: "versioned JSON grammar"},
 			&cli.StringFlag{Name: "read", Required: true, Usage: "contiguous directional byte stream"},
@@ -35,7 +36,7 @@ func GetCommand() *cli.Command {
 			&cli.IntFlag{Name: "stream", Value: 0, Usage: "tshark TLS follow-stream index"},
 			&cli.DurationFlag{Name: "timeout", Value: time.Minute},
 		}, Action: runTLSCapture},
-		{Name: "protocol-proxy", Usage: "proxy one framed TCP exchange with bounded message mutations", Flags: []cli.Flag{
+		{Name: "protocol-proxy", Usage: "one bounded TCP session: framed application edits (optional TLS termination) or opaque passthrough", Flags: []cli.Flag{
 			&cli.StringFlag{Name: "spec", Required: true, Usage: "JSON proxy specification (maximum 2 MiB)"},
 			&cli.StringFlag{Name: "listen", Value: "127.0.0.1:0", Usage: "local TCP address; selected port is printed on stderr"},
 		}, Action: runProtocolProxy},
@@ -161,13 +162,22 @@ func runProtocolProxy(ctx context.Context, cmd *cli.Command) error {
 		status = "error"
 		message = runErr.Error()
 	}
+	mode, unit := spec.Mode, "application frames"
+	if mode == "" {
+		mode = "application"
+	}
+	if mode == "passthrough" {
+		unit = "transport read chunks, not message boundaries; TLS remains end-to-end"
+	}
 	result := struct {
+		Mode                string                          `json:"mode"`
+		EvidenceUnit        string                          `json:"evidenceUnit"`
 		Version             int                             `json:"version"`
 		ConfigurationSHA256 string                          `json:"configurationSHA256"`
 		Status              string                          `json:"status"`
 		Error               string                          `json:"error,omitempty"`
 		Observations        []protocoltest.ProxyObservation `json:"observations"`
-	}{1, hex.EncodeToString(digest[:]), status, message, observations}
+	}{mode, unit, 1, hex.EncodeToString(digest[:]), status, message, observations}
 	return errors.Join(runErr, json.NewEncoder(cmd.Root().Writer).Encode(result))
 }
 

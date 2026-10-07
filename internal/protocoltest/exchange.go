@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -30,18 +29,20 @@ type Step struct {
 }
 
 type Exchange struct {
-	Version               int     `json:"version"`
-	Network               string  `json:"network"`
-	Address               string  `json:"address"`
-	TLS                   bool    `json:"tls"`
-	ServerName            string  `json:"serverName,omitempty"`
-	RootCAFile            string  `json:"rootCAFile,omitempty"`
-	ClientCertificateFile string  `json:"clientCertificateFile,omitempty"`
-	ClientKeyFile         string  `json:"clientKeyFile,omitempty"`
-	Framing               Framing `json:"framing"`
-	TimeoutMilliseconds   int     `json:"timeoutMilliseconds"`
-	MaxTotalBytes         int     `json:"maxTotalBytes"`
-	Steps                 []Step  `json:"steps"`
+	ServerTLS             *ServerTLS `json:"serverTLS,omitempty"`
+	PeerCertificateSHA256 string     `json:"peerCertificateSHA256,omitempty"`
+	Version               int        `json:"version"`
+	Network               string     `json:"network"`
+	Address               string     `json:"address"`
+	TLS                   bool       `json:"tls"`
+	ServerName            string     `json:"serverName,omitempty"`
+	RootCAFile            string     `json:"rootCAFile,omitempty"`
+	ClientCertificateFile string     `json:"clientCertificateFile,omitempty"`
+	ClientKeyFile         string     `json:"clientKeyFile,omitempty"`
+	Framing               Framing    `json:"framing"`
+	TimeoutMilliseconds   int        `json:"timeoutMilliseconds"`
+	MaxTotalBytes         int        `json:"maxTotalBytes"`
+	Steps                 []Step     `json:"steps"`
 }
 
 type Observation struct {
@@ -79,6 +80,9 @@ func (e Exchange) Validate() error {
 	}
 	if e.TLS && e.Network != "tcp" {
 		return fmt.Errorf("TLS requires TCP")
+	}
+	if !e.TLS && (e.ServerTLS != nil || e.PeerCertificateSHA256 != "") {
+		return fmt.Errorf("certificate configuration requires TLS")
 	}
 	if !e.TLS && (e.RootCAFile != "" || e.ClientCertificateFile != "" || e.ClientKeyFile != "" || e.ServerName != "") {
 		return fmt.Errorf("TLS settings require tls=true")
@@ -120,6 +124,9 @@ func Run(ctx context.Context, exchange Exchange) (result Result, runErr error) {
 	if err := exchange.Validate(); err != nil {
 		return result, err
 	}
+	if exchange.ServerTLS != nil {
+		return result, fmt.Errorf("serverTLS is only supported by server emulation")
+	}
 	configuration, err := json.Marshal(exchange)
 	if err != nil {
 		return result, err
@@ -132,26 +139,17 @@ func Run(ctx context.Context, exchange Exchange) (result Result, runErr error) {
 	var conn net.Conn
 	if exchange.TLS {
 		config := &tls.Config{MinVersion: tls.VersionTLS12, ServerName: exchange.ServerName}
+		if err := setPeerPin(config, exchange.PeerCertificateSHA256); err != nil {
+			return result, err
+		}
 		if exchange.RootCAFile != "" {
-			data, err := boundedFile(exchange.RootCAFile, 1<<20)
+			config.RootCAs, err = loadTrust(exchange.RootCAFile)
 			if err != nil {
 				return result, err
-			}
-			config.RootCAs = x509.NewCertPool()
-			if !config.RootCAs.AppendCertsFromPEM(data) {
-				return result, fmt.Errorf("root CA file contains no valid PEM certificates")
 			}
 		}
 		if exchange.ClientCertificateFile != "" {
-			certPEM, err := boundedFile(exchange.ClientCertificateFile, 1<<20)
-			if err != nil {
-				return result, err
-			}
-			keyPEM, err := boundedFile(exchange.ClientKeyFile, 1<<20)
-			if err != nil {
-				return result, err
-			}
-			certificate, err := tls.X509KeyPair(certPEM, keyPEM)
+			certificate, err := loadIdentity(exchange.ClientCertificateFile, exchange.ClientKeyFile)
 			if err != nil {
 				return result, err
 			}
@@ -166,6 +164,10 @@ func Run(ctx context.Context, exchange Exchange) (result Result, runErr error) {
 		return result, err
 	}
 	defer conn.Close()
+	return runConnection(ctx, conn, exchange, result)
+}
+
+func runConnection(ctx context.Context, conn net.Conn, exchange Exchange, result Result) (Result, error) {
 	stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
 	defer stop()
 	deadline, _ := ctx.Deadline()
@@ -177,6 +179,7 @@ func Run(ctx context.Context, exchange Exchange) (result Result, runErr error) {
 		state := tlsConn.ConnectionState()
 		result.TLSVersion, result.TLSCipher = state.Version, state.CipherSuite
 	}
+	var err error
 	total := 0
 	variables := map[string][]byte{}
 	record := func(index int, name, direction string, data []byte) {
@@ -275,7 +278,7 @@ func boundedFile(path string, limit int64) ([]byte, error) {
 		return nil, err
 	}
 	if int64(len(data)) > limit {
-		return nil, fmt.Errorf("TLS input exceeds size limit")
+		return nil, fmt.Errorf("input file exceeds size limit")
 	}
 	return data, nil
 }
