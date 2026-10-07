@@ -24,14 +24,23 @@ type Mutation struct {
 }
 
 type Proxy struct {
-	Mode                string     `json:"mode,omitempty"`
-	TLS                 *ProxyTLS  `json:"tls,omitempty"`
-	Address             string     `json:"address"`
-	Framing             Framing    `json:"framing"`
-	TimeoutMilliseconds int        `json:"timeoutMilliseconds"`
-	MaxFrames           int        `json:"maxFrames"`
-	MaxTotalBytes       int        `json:"maxTotalBytes"`
-	Mutations           []Mutation `json:"mutations"`
+	Injections          []Injection `json:"injections,omitempty"`
+	Mode                string      `json:"mode,omitempty"`
+	TLS                 *ProxyTLS   `json:"tls,omitempty"`
+	Address             string      `json:"address"`
+	Framing             Framing     `json:"framing"`
+	TimeoutMilliseconds int         `json:"timeoutMilliseconds"`
+	MaxFrames           int         `json:"maxFrames"`
+	MaxTotalBytes       int         `json:"maxTotalBytes"`
+	Mutations           []Mutation  `json:"mutations"`
+}
+
+// Injection writes a complete message before reading the selected source frame.
+// BeforeFrame=0 can initiate a session without any bytes from that source.
+type Injection struct {
+	Direction   string `json:"direction"`
+	BeforeFrame int    `json:"beforeFrame"`
+	Message     []byte `json:"message"`
 }
 
 // ProxyTLS requires explicit identity and trust for both independently negotiated legs.
@@ -79,6 +88,8 @@ func proxyTLSConfigs(spec *ProxyTLS) (*tls.Config, *tls.Config, error) {
 }
 
 type ProxyObservation struct {
+	Planned     []byte `json:"planned,omitempty"`
+	Injected    bool   `json:"injected,omitempty"`
 	TLSVersion  uint16 `json:"tlsVersion,omitempty"`
 	TLSCipher   uint16 `json:"tlsCipher,omitempty"`
 	Direction   string `json:"direction"`
@@ -161,6 +172,18 @@ func ProxyOne(ctx context.Context, listener net.Listener, spec Proxy) ([]ProxyOb
 	if len(spec.Mutations) > 256 {
 		return nil, fmt.Errorf("mutation limit exceeded")
 	}
+	if len(spec.Injections) > 256 {
+		return nil, fmt.Errorf("injection limit exceeded")
+	}
+	for _, injection := range spec.Injections {
+		if (injection.Direction != "client" && injection.Direction != "server") || injection.BeforeFrame < 0 || injection.BeforeFrame >= spec.MaxFrames || len(injection.Message) > spec.Framing.MaxBytes {
+			return nil, fmt.Errorf("invalid injection selector/bounds")
+		}
+		frames, err := spec.Framing.ParseAll(injection.Message)
+		if err != nil || len(frames) != 1 {
+			return nil, fmt.Errorf("injection must contain exactly one complete framed message")
+		}
+	}
 	for _, m := range spec.Mutations {
 		if (m.Direction != "client" && m.Direction != "server") || m.Frame < 0 || m.Copies < 0 || m.Copies > 8 || m.DelayMilliseconds < 0 || m.DelayMilliseconds > 30000 {
 			return nil, fmt.Errorf("invalid mutation selector/action")
@@ -213,6 +236,42 @@ func ProxyOne(ctx context.Context, listener net.Listener, spec Proxy) ([]ProxyOb
 			tlsVersion, tlsCipher = state.Version, state.CipherSuite
 		}
 		for index := 0; ; index++ {
+			for _, injection := range spec.Injections {
+				if injection.Direction != direction || injection.BeforeFrame != index {
+					continue
+				}
+				mu.Lock()
+				if 2*len(injection.Message) > spec.MaxTotalBytes-total || frames >= spec.MaxFrames {
+					mu.Unlock()
+					done <- fmt.Errorf("proxy injection evidence budget exceeded")
+					return
+				}
+				total += 2 * len(injection.Message)
+				frames++
+				mu.Unlock()
+				o := ProxyObservation{Planned: append([]byte(nil), injection.Message...), Injected: true, TLSVersion: tlsVersion, TLSCipher: tlsCipher, Direction: direction, Frame: index, Copies: 1, TimestampNs: fmt.Sprint(time.Now().UnixNano())}
+				var writeErr error
+				for offset := 0; offset < len(injection.Message); {
+					n, err := dst.Write(injection.Message[offset:])
+					o.Transmitted = append(o.Transmitted, injection.Message[offset:offset+n]...)
+					offset += n
+					if err == nil && n == 0 {
+						err = io.ErrShortWrite
+					}
+					if err != nil {
+						writeErr = err
+						o.Error = err.Error()
+						break
+					}
+				}
+				mu.Lock()
+				observations = append(observations, o)
+				mu.Unlock()
+				if writeErr != nil {
+					done <- writeErr
+					return
+				}
+			}
 			frame, err := spec.Framing.Read(src)
 			if err == io.EOF && len(frame) == 0 {
 				if tcp, ok := dst.(interface{ CloseWrite() error }); ok {
