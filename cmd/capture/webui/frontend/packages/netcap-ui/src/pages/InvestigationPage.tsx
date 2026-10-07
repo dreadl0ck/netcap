@@ -43,12 +43,19 @@ export default function InvestigationPage({ downloadArtifact }: InvestigationPag
   const streamURL = `${config.apiBaseUrl}/investigation/streams${selection}`;
   const { data: capture, error: captureError } = useSWR<CaptureManifest>(status ? captureURL : null, () => behaviorRequest(fetcher, captureURL), { keepPreviousData: false });
   const { data: streams, error: streamError } = useSWR<StreamRow[]>(status ? streamURL : null, () => behaviorRequest(fetcher, streamURL), { keepPreviousData: false });
+  const healthURL = (kind: string) => `${config.apiBaseUrl}/investigation/health${selection}${selection ? '&' : '?'}kind=${kind}`;
+  const { data: ftpHealth, error: ftpHealthError } = useSWR(status ? healthURL('ftp') : null, () => behaviorRequest(fetcher, healthURL('ftp')), { keepPreviousData: false });
+  const { data: reassemblyHealth, error: reassemblyHealthError } = useSWR(status ? healthURL('reassembly') : null, () => behaviorRequest(fetcher, healthURL('reassembly')), { keepPreviousData: false });
   const [source, setSource] = useState('packet');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [expression, setExpression] = useState('');
   const [exporter, setExporter] = useState('');
   const [domain, setDomain] = useState('');
+  const [ingress, setIngress] = useState('');
+  const [egress, setEgress] = useState('');
+  const [nextHop, setNextHop] = useState('');
+  const [sortBy, setSortBy] = useState('bytes');
   const [format, setFormat] = useState('netflow-v9');
   const [basis, setBasis] = useState('flow');
   const [group, setGroup] = useState('srcIP');
@@ -78,7 +85,8 @@ export default function InvestigationPage({ downloadArtifact }: InvestigationPag
       if (source === 'export') {
         if (!exporter || !/^\d+$/.test(domain)) throw new Error('Exporter IP:port and observation domain are required.');
         endpoint = 'flows/exports/query'; params.set('exporter', exporter); params.set('domain', domain); params.set('format', format); params.set('timeBasis', basis);
-      } else { params.set('filter', expression); params.set('sortBy', 'bytes'); params.set('windowMode', windowMode); if (bucketNs) params.set('bucketNs', bucketNs); }
+        if (ingress) params.set('ingress', ingress); if (egress) params.set('egress', egress); if (nextHop) params.set('nextHop', nextHop);
+      } else { params.set('filter', expression); params.set('sortBy', sortBy); params.set('windowMode', windowMode); if (bucketNs) params.set('bucketNs', bucketNs); }
       const result = await behaviorRequest<FlowReport>(fetcher, `${config.apiBaseUrl}/${endpoint}?${params}`);
       if (generation.current === requestGeneration) setReport(result);
     } catch (failure) { if (generation.current === requestGeneration) setError(failure instanceof Error ? failure.message : 'Query failed'); }
@@ -112,6 +120,8 @@ export default function InvestigationPage({ downloadArtifact }: InvestigationPag
           {capture.limitations.map(text => <Typography key={text} variant="body2">{text}</Typography>)}
           <Typography>Packet segments: {capture.segments.filter(segment => segment.state === 'retained').length} retained, {capture.segments.filter(segment => segment.state === 'expired').length} expired</Typography>
         </>}
+        <details><summary>FTP data association health</summary>{ftpHealthError ? <Alert severity="warning">{ftpHealthError.message}</Alert> : <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(ftpHealth ?? { status: 'loading' }, null, 2)}</pre>}</details>
+        <details><summary>TCP reassembly and checksum policy</summary>{reassemblyHealthError ? <Alert severity="warning">{reassemblyHealthError.message}</Alert> : <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(reassemblyHealth ?? { status: 'loading' }, null, 2)}</pre>}</details>
       </Stack></Paper>
       <Paper sx={{ p: 2 }}><Stack spacing={2}>
         <Typography variant="h6" component="h2">Scoped flow investigation</Typography>
@@ -126,8 +136,14 @@ export default function InvestigationPage({ downloadArtifact }: InvestigationPag
           <TextField select label="Export format" value={format} onChange={event => setFormat(event.target.value)}>{['netflow-v5', 'netflow-v9', 'ipfix', 'sflow-v5'].map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
           <TextField select label="Time basis" value={basis} onChange={event => setBasis(event.target.value)}><MenuItem value="flow">Exported flow time</MenuItem><MenuItem value="receive">Datagram receive time</MenuItem></TextField>
         </Stack>}
-        <TextField select label="Group by" value={group} onChange={event => setGroup(event.target.value)}>{(source === 'packet' ? ['srcIP', 'dstIP', 'dstPort', 'pair', 'protocol'] : ['srcIP', 'dstIP', 'dstPort', 'protocol', 'ingress', 'egress', 'srcAS', 'dstAS', 'nextHop']).map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
+        <TextField select label="Group by" value={group} onChange={event => setGroup(event.target.value)}>{(source === 'packet' ? ['srcIP', 'dstIP', 'dstPort', 'pair', 'hostPair', 'protocol'] : ['srcIP', 'dstIP', 'dstPort', 'protocol', 'ingress', 'egress', 'ingressEgress', 'srcAS', 'dstAS', 'srcPrefix', 'dstPrefix', 'nextHop']).map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
+        {source === 'export' && <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          <TextField label="Ingress ifIndex" value={ingress} onChange={event => setIngress(event.target.value)} />
+          <TextField label="Egress ifIndex" value={egress} onChange={event => setEgress(event.target.value)} />
+          <TextField label="Next-hop address" value={nextHop} onChange={event => setNextHop(event.target.value)} />
+        </Stack>}
         {source === 'packet' && <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          <TextField select label="Rank by" value={sortBy} onChange={event => setSortBy(event.target.value)}>{['bytes', 'packets', 'records', 'peers', 'ports', 'duration', 'rate'].map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
           <TextField select label="Time-window match" value={windowMode} onChange={event => setWindowMode(event.target.value)}>{['overlap', 'contained', 'start', 'end'].map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
           <TextField label="Estimated series bin width (nanoseconds)" value={bucketNs} onChange={event => setBucketNs(event.target.value)} helperText="Optional; uniform-over-duration estimates, not observed packet-bin rates. Maximum 4096 bins." fullWidth />
         </Stack>}

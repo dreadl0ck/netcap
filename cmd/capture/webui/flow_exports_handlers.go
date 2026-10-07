@@ -15,7 +15,7 @@ import (
 
 func parseExportQuery(values url.Values) (flowexport.Query, error) {
 	var q flowexport.Query
-	for _, key := range []string{"startNs", "endNs", "exporter", "format", "domain", "timeBasis", "host", "groupBy", "limit"} {
+	for _, key := range []string{"startNs", "endNs", "exporter", "format", "domain", "timeBasis", "host", "groupBy", "limit", "ingress", "egress", "nextHop"} {
 		if len(values[key]) > 1 {
 			return q, fmt.Errorf("duplicate export query parameter %s", key)
 		}
@@ -34,6 +34,16 @@ func parseExportQuery(values url.Values) (flowexport.Query, error) {
 	}
 	id := uint32(domain)
 	q = flowexport.Query{StartNs: start, EndNs: end, Exporter: values.Get("exporter"), Format: values.Get("format"), Domain: &id, TimeBasis: values.Get("timeBasis"), Host: values.Get("host"), GroupBy: values.Get("groupBy"), Limit: 100}
+	q.NextHop = values.Get("nextHop")
+	for key, dst := range map[string]**uint64{"ingress": &q.Ingress, "egress": &q.Egress} {
+		if values.Has(key) {
+			n, err := strconv.ParseUint(values.Get(key), 10, 64)
+			if err != nil {
+				return q, fmt.Errorf("invalid %s", key)
+			}
+			*dst = &n
+		}
+	}
 	if q.TimeBasis == "" {
 		q.TimeBasis = "flow"
 	}

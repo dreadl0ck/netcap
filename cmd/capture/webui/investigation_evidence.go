@@ -84,6 +84,36 @@ func (s *Server) handleCaptureEvidence(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(manifest)
 }
 
+func (s *Server) handleInvestigationHealth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	filename := ""
+	switch r.URL.Query().Get("kind") {
+	case "ftp":
+		filename = "FTPDataHealth.json"
+	case "reassembly":
+		filename = "TCPReassemblyHealth.json"
+	default:
+		http.Error(w, "kind must be ftp or reassembly", http.StatusBadRequest)
+		return
+	}
+	out, _ := s.resolveEvidenceOutput(r)
+	if out == "" {
+		http.Error(w, "No selected analysis", http.StatusServiceUnavailable)
+		return
+	}
+	var value any
+	if err := readEvidenceJSON(filepath.Join(out, filename), &value); err != nil {
+		http.Error(w, "Investigation health unavailable: "+err.Error(), http.StatusUnprocessableEntity)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	_ = json.NewEncoder(w).Encode(value)
+}
+
 func (s *Server) handleStreamEvidence(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

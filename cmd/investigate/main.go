@@ -57,7 +57,10 @@ func GetCommand() *cli.Command {
 			&cli.StringFlag{Name: "end-ns", Required: true, Usage: "inclusive UTC nanosecond end"},
 			&cli.StringFlag{Name: "time-basis", Value: "flow", Usage: "flow or receive; sFlow provides receive time only"},
 			&cli.StringFlag{Name: "host", Usage: "either endpoint IP or CIDR"},
-			&cli.StringFlag{Name: "group-by", Value: "srcIP", Usage: "srcIP, dstIP, dstPort, protocol, ingress, egress, srcAS, dstAS or nextHop"},
+			&cli.StringFlag{Name: "ingress", Usage: "exact exported ingress ifIndex (including zero)"},
+			&cli.StringFlag{Name: "egress", Usage: "exact exported egress ifIndex (including zero)"},
+			&cli.StringFlag{Name: "next-hop", Usage: "exact exported next-hop address"},
+			&cli.StringFlag{Name: "group-by", Value: "srcIP", Usage: "srcIP, dstIP, dstPort, protocol, ingress, egress, ingressEgress, srcAS, dstAS, srcPrefix, dstPrefix or nextHop"},
 			&cli.IntFlag{Name: "limit", Value: 100, Usage: "returned groups (1..1000)"},
 			&cli.DurationFlag{Name: "timeout", Value: 2 * time.Minute},
 		}, Action: runExportedFlows},
@@ -68,8 +71,8 @@ func GetCommand() *cli.Command {
 			&cli.StringFlag{Name: "start-ns", Required: true, Usage: "inclusive UTC nanosecond start; counters cover whole overlapping observations"},
 			&cli.StringFlag{Name: "end-ns", Required: true, Usage: "inclusive UTC nanosecond end"},
 			&cli.StringFlag{Name: "filter", Usage: "typed Connection expression (AND, OR, inversion and network helpers)"},
-			&cli.StringFlag{Name: "group-by", Value: "srcIP", Usage: "srcIP, dstIP, dstPort, pair or protocol"},
-			&cli.StringFlag{Name: "sort-by", Value: "bytes", Usage: "bytes, packets, peers, duration or rate"},
+			&cli.StringFlag{Name: "group-by", Value: "srcIP", Usage: "srcIP, dstIP, dstPort, pair, hostPair or protocol"},
+			&cli.StringFlag{Name: "sort-by", Value: "bytes", Usage: "bytes, packets, records, peers, ports, duration or rate"},
 			&cli.IntFlag{Name: "limit", Value: 100, Usage: "returned groups (1..1000)"},
 			&cli.DurationFlag{Name: "timeout", Value: 2 * time.Minute, Usage: "maximum query duration"},
 		}, Action: runFlows},
@@ -265,7 +268,17 @@ func runExportedFlows(ctx context.Context, cmd *cli.Command) error {
 	}
 	ctx, cancel := context.WithTimeout(ctx, cmd.Duration("timeout"))
 	defer cancel()
-	result, err := flowexport.ReadReport(ctx, cmd.String("read"), flowexport.Query{StartNs: start, EndNs: end, TimeBasis: cmd.String("time-basis"), Exporter: cmd.String("exporter"), Format: cmd.String("format"), Domain: &id, Host: cmd.String("host"), GroupBy: cmd.String("group-by"), Limit: cmd.Int("limit")})
+	query := flowexport.Query{StartNs: start, EndNs: end, TimeBasis: cmd.String("time-basis"), Exporter: cmd.String("exporter"), Format: cmd.String("format"), Domain: &id, Host: cmd.String("host"), GroupBy: cmd.String("group-by"), Limit: cmd.Int("limit"), NextHop: cmd.String("next-hop")}
+	for key, dst := range map[string]**uint64{"ingress": &query.Ingress, "egress": &query.Egress} {
+		if cmd.IsSet(key) {
+			n, err := strconv.ParseUint(cmd.String(key), 10, 64)
+			if err != nil {
+				return err
+			}
+			*dst = &n
+		}
+	}
+	result, err := flowexport.ReadReport(ctx, cmd.String("read"), query)
 	if err != nil {
 		return err
 	}
