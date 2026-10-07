@@ -13,9 +13,20 @@ type Distribution struct {
 	Max    int64 `json:"max,string"`
 }
 type Statistics struct {
-	Bytes      Distribution `json:"bytes"`
-	Packets    Distribution `json:"packets"`
-	DurationNs Distribution `json:"durationNs"`
+	Bytes                Distribution     `json:"bytes"`
+	Packets              Distribution     `json:"packets"`
+	DurationNs           Distribution     `json:"durationNs"`
+	AverageBitsPerSecond RateDistribution `json:"averageBitsPerSecond"`
+}
+
+// Zero-duration records have no defined rate and are counted separately.
+type RateDistribution struct {
+	Count     int     `json:"count"`
+	Undefined int     `json:"undefined"`
+	Min       float64 `json:"min"`
+	Median    float64 `json:"median"`
+	P95       float64 `json:"p95"`
+	Max       float64 `json:"max"`
 }
 type Bucket struct {
 	StartNs                int64   `json:"startNs,string"`
@@ -51,10 +62,19 @@ func distribution(values []int64) Distribution {
 
 func sampleStatistics(samples []seriesSample) Statistics {
 	bytes, packets, durations := make([]int64, len(samples)), make([]int64, len(samples)), make([]int64, len(samples))
+	var rates []float64
 	for i, s := range samples {
 		bytes[i], packets[i], durations[i] = s.bytes, s.packets, s.end-s.start
+		if s.end > s.start {
+			rates = append(rates, float64(s.bytes)*8e9/float64(s.end-s.start))
+		}
 	}
-	return Statistics{Bytes: distribution(bytes), Packets: distribution(packets), DurationNs: distribution(durations)}
+	sort.Float64s(rates)
+	r := RateDistribution{Count: len(rates), Undefined: len(samples) - len(rates)}
+	if len(rates) > 0 {
+		r.Min, r.Median, r.P95, r.Max = rates[0], rates[(len(rates)-1)/2], rates[(95*len(rates)+99)/100-1], rates[len(rates)-1]
+	}
+	return Statistics{Bytes: distribution(bytes), Packets: distribution(packets), DurationNs: distribution(durations), AverageBitsPerSecond: r}
 }
 
 func sampleSeries(ctx context.Context, samples []seriesSample, q Query) ([]Bucket, error) {

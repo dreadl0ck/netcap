@@ -40,11 +40,13 @@ type Group struct {
 	DurationNs           int64       `json:"durationNs,string"`
 	Observations         int         `json:"observations"`
 	DistinctPeers        int         `json:"distinctPeers"`
+	DistinctPorts        int         `json:"distinctPorts"`
 	AverageBitsPerSecond float64     `json:"averageBitsPerSecond"`
 	Members              []Reference `json:"members"`
 	MembersTruncated     bool        `json:"membersTruncated"`
 	BytePercent          float64     `json:"bytePercent"`
 	peers                map[string]struct{}
+	ports                map[string]struct{}
 }
 
 type Result struct {
@@ -159,12 +161,12 @@ func validQuery(q Query) error {
 		return fmt.Errorf("time series requires a positive window and at most 4096 bins")
 	}
 	switch q.GroupBy {
-	case "srcIP", "dstIP", "dstPort", "pair", "protocol":
+	case "srcIP", "dstIP", "dstPort", "pair", "hostPair", "protocol":
 	default:
 		return fmt.Errorf("unsupported flow groupBy %q", q.GroupBy)
 	}
 	switch q.SortBy {
-	case "bytes", "packets", "peers", "duration", "rate":
+	case "bytes", "packets", "records", "peers", "ports", "duration", "rate":
 	default:
 		return fmt.Errorf("unsupported flow sortBy %q", q.SortBy)
 	}
@@ -222,7 +224,7 @@ func (d *Dataset) Query(ctx context.Context, q Query) (Result, error) {
 			if len(groups) >= 10000 {
 				return result, fmt.Errorf("flow group limit exceeded: 10000")
 			}
-			g = &Group{Key: key, Members: []Reference{}, peers: make(map[string]struct{})}
+			g = &Group{Key: key, Members: []Reference{}, peers: make(map[string]struct{}), ports: make(map[string]struct{})}
 			groups[key] = g
 		}
 		duration := c.TimestampLast - c.TimestampFirst
@@ -234,6 +236,9 @@ func (d *Dataset) Query(ctx context.Context, q Query) (Result, error) {
 		g.DurationNs += duration
 		g.Observations++
 		g.peers[peer] = struct{}{}
+		if c.DstPort != "" {
+			g.ports[c.TransportProto+"/"+c.DstPort] = struct{}{}
+		}
 		if bytes > math.MaxInt64-totalBytes {
 			return result, fmt.Errorf("total byte count overflow")
 		}
@@ -251,6 +256,7 @@ func (d *Dataset) Query(ctx context.Context, q Query) (Result, error) {
 			g.BytePercent = 100 * float64(g.Bytes) / float64(totalBytes)
 		}
 		g.DistinctPeers = len(g.peers)
+		g.DistinctPorts = len(g.ports)
 		if g.DurationNs > 0 {
 			g.AverageBitsPerSecond = float64(g.Bytes) * 8e9 / float64(g.DurationNs)
 		}
@@ -274,6 +280,14 @@ func (d *Dataset) Query(ctx context.Context, q Query) (Result, error) {
 		case "packets":
 			if a.Packets != b.Packets {
 				return a.Packets > b.Packets
+			}
+		case "records":
+			if a.Observations != b.Observations {
+				return a.Observations > b.Observations
+			}
+		case "ports":
+			if a.DistinctPorts != b.DistinctPorts {
+				return a.DistinctPorts > b.DistinctPorts
 			}
 		case "peers":
 			if a.DistinctPeers != b.DistinctPeers {
@@ -307,6 +321,8 @@ func groupKey(c *types.Connection, group string) (string, string) {
 		return c.TransportProto + "/" + c.DstPort, c.DstIP
 	case "protocol":
 		return c.TransportProto, c.DstIP
+	case "hostPair":
+		return c.SrcIP + "/" + c.DstIP, c.DstIP
 	default:
 		return c.TransportProto + "/" + net.JoinHostPort(c.SrcIP, c.SrcPort) + "/" + net.JoinHostPort(c.DstIP, c.DstPort), c.DstIP
 	}

@@ -13,6 +13,8 @@ var Stats struct {
 	Totalsz                 int64
 	RejectFsm               int64
 	RejectOpt               int64
+	RejectChecksum          int64
+	RejectIPv4Checksum      int64
 	RejectConnFsm           int64
 	Reassembled             int64
 	OutOfOrderBytes         int64
@@ -59,6 +61,8 @@ func ResetStats() {
 	Stats.Totalsz = 0
 	Stats.RejectFsm = 0
 	Stats.RejectOpt = 0
+	Stats.RejectChecksum = 0
+	Stats.RejectIPv4Checksum = 0
 	Stats.RejectConnFsm = 0
 	Stats.Reassembled = 0
 	Stats.OutOfOrderBytes = 0

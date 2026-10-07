@@ -10,11 +10,11 @@
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
 package ftp
@@ -22,458 +22,214 @@ package ftp
 import (
 	"bufio"
 	"fmt"
-	"path/filepath"
-	"regexp"
+	"net"
 	"strconv"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"time"
 
-	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/decoder/core"
-	"github.com/dreadl0ck/netcap/internal/decoder/stream/file"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/types"
-	"go.uber.org/zap"
 )
 
-// FTP connection tracking for correlating control and data channels
-var (
-	ftpDataConnections   = make(map[string]*FTPDataConnection)
-	ftpDataConnectionsMu sync.RWMutex
-)
-
-// FTPDataConnection tracks expected FTP data connections
-type FTPDataConnection struct {
-	IP           string
-	Port         int
-	Filename     string
-	Command      string // RETR or STOR
-	TransferMode string
-	IsPassive    bool
-	FileSize     int64
-	CreatedAt    time.Time
-}
-
-func initConnectionTracker() {
-	// Initialize or reset connection tracker
-	ftpDataConnectionsMu.Lock()
-	ftpDataConnections = make(map[string]*FTPDataConnection)
-	ftpDataConnectionsMu.Unlock()
-
-	// Start cleanup timer
-	startCleanupTimer()
-}
-
-func startCleanupTimer() {
-	// Start periodic cleanup of expired connections
-	go func() {
-		ticker := time.NewTicker(1 * time.Minute)
-		for range ticker.C {
-			CleanupExpiredConnections()
-		}
-	}()
-}
-
-// CleanupExpiredConnections removes stale data connection expectations
-func CleanupExpiredConnections() {
-	ftpDataConnectionsMu.Lock()
-	defer ftpDataConnectionsMu.Unlock()
-
-	now := time.Now()
-	for key, conn := range ftpDataConnections {
-		// Remove connections older than 5 minutes
-		if now.Sub(conn.CreatedAt) > 5*time.Minute {
-			delete(ftpDataConnections, key)
-			ftpLog.Debug("Cleaned up expired FTP data connection tracking",
-				zap.String("key", key),
-			)
-		}
-	}
-}
-
-// ftpReader implements the stream decoder interface for FTP
 type ftpReader struct {
-	conversation *core.ConversationInfo
-
-	// timestamp of the message currently being read, from the packet that
-	// carried its first byte.
-	timestamp int64
-
-	lastCommand  string
-	lastFilename string
-	lastArg      string
-	username     string
-	transferMode string
-	dataIP       string
-	dataPort     int
-	isPassive    bool
-	fileSize     int64
+	conversation                                              *core.ConversationInfo
+	timestamp                                                 int64
+	lastCommand, lastFilename, username, transferMode, dataIP string
+	dataPort                                                  int
+	isPassive, protected                                      bool
+	fileSize                                                  int64
+	multiline                                                 int
+	pending                                                   *dataTransfer
 }
 
-// New creates a new FTP stream decoder
-func (f *ftpReader) New(conversation *core.ConversationInfo) core.StreamDecoderInterface {
-	return &ftpReader{
-		conversation: conversation,
+func (f *ftpReader) New(c *core.ConversationInfo) core.StreamDecoderInterface {
+	return &ftpReader{conversation: c}
+}
+
+func (f *ftpReader) Decode() {
+	streamutils.DecodeConversationAt(f.conversation.Ident, f.conversation.Data, f.readClient, f.readServer)
+	f.finishTransfer()
+}
+
+func (f *ftpReader) finishTransfer() {
+	if f.pending != nil {
+		registerTransfer(*f.pending)
+		f.pending = nil
 	}
 }
 
-// Decode parses the FTP control channel conversation
-func (f *ftpReader) Decode() {
-	streamutils.DecodeConversationAt(
-		f.conversation.Ident,
-		f.conversation.Data,
-		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
-			return f.readClient(b, pos)
-		},
-		func(b *bufio.Reader, pos *streamutils.ReadPosition) error {
-			return f.readServer(b, pos)
-		},
-	)
-}
-
-// readClient parses FTP commands from client
 func (f *ftpReader) readClient(b *bufio.Reader, pos *streamutils.ReadPosition) error {
-	// Taken before the line is consumed, so the record carries the time of the
-	// packet the command started in.
 	f.timestamp = pos.Timestamp()
-
 	line, err := b.ReadString('\n')
 	if err != nil {
 		return err
 	}
-
-	line = strings.TrimSpace(line)
-	parts := strings.SplitN(line, " ", 2)
-
-	if len(parts) == 0 {
-		return nil
+	parts := strings.SplitN(strings.TrimSpace(line), " ", 2)
+	command, arg := strings.ToUpper(parts[0]), ""
+	if len(parts) == 2 {
+		arg = strings.TrimSpace(parts[1])
 	}
-
-	command := strings.ToUpper(parts[0])
-	argument := ""
-	if len(parts) > 1 {
-		argument = strings.TrimSpace(parts[1])
-	}
-
 	f.lastCommand = command
-	f.lastArg = argument
-
-	// Write FTP audit record for command
-	f.writeFTPRecord(false, command, argument, 0, "")
-
-	// Handle specific commands
 	switch command {
 	case "USER":
-		f.username = argument
-
-	case "RETR", "STOR":
-		f.lastFilename = argument
-		ftpLog.Debug("FTP file transfer command",
-			zap.String("command", command),
-			zap.String("filename", f.lastFilename),
-			zap.String("ident", f.conversation.Ident),
-		)
-
+		f.username = arg
 	case "TYPE":
-		// Transfer mode: A (ASCII), I (IMAGE/Binary), E (EBCDIC)
-		if argument == "A" {
-			f.transferMode = "ASCII"
-		} else if argument == "I" {
-			f.transferMode = "BINARY"
-		} else if argument == "E" {
-			f.transferMode = "EBCDIC"
-		}
-
+		f.transferMode = map[string]string{"A": "ASCII", "I": "BINARY", "E": "EBCDIC"}[arg]
+	case "PROT":
+		f.protected = strings.EqualFold(arg, "P")
 	case "PORT":
-		// Active mode: PORT h1,h2,h3,h4,p1,p2
-		f.parsePORTCommand(argument)
-
+		f.dataIP, f.dataPort = parseEndpoint(arg)
+		f.isPassive = false
+	case "PASV", "EPSV":
+		f.dataIP, f.dataPort = "", 0
+		f.isPassive = true
+	case "EPRT":
+		f.dataIP, f.dataPort = "", 0
+		f.isPassive = false
+		if len(arg) > 0 {
+			p := strings.Split(arg, arg[:1])
+			if len(p) == 5 && p[4] == "" && (p[1] == "1" || p[1] == "2") && net.ParseIP(p[2]) != nil {
+				ip := net.ParseIP(p[2])
+				port, e := strconv.Atoi(p[3])
+				if e == nil && port > 0 && port <= 65535 && (p[1] == "1") == (ip.To4() != nil) {
+					f.dataIP, f.dataPort = ip.String(), port
+				}
+			}
+		}
 	case "SIZE":
-		// Client requesting file size (useful for tracking)
-		f.lastFilename = argument
+		f.lastFilename = arg
+	case "RETR", "STOR":
+		f.finishTransfer()
+		f.lastFilename = arg
+		if f.dataPort != 0 && !f.protected {
+			f.pending = &dataTransfer{ControlID: f.conversation.Ident, ControlCommunityID: f.conversation.CommunityID, ClientIP: f.conversation.ClientIP, ServerIP: f.conversation.ServerIP, IP: f.dataIP, Port: int32(f.dataPort), Passive: f.isPassive, Command: command, Filename: arg, Start: f.timestamp, End: f.timestamp + int64(5*time.Minute)}
+		}
 	}
-
+	f.writeFTPRecord(false, command, arg, 0, "")
 	return nil
 }
 
-// parsePORTCommand parses the PORT command for active mode data connection
-// Format: PORT h1,h2,h3,h4,p1,p2 where IP=h1.h2.h3.h4 and port=p1*256+p2
-func (f *ftpReader) parsePORTCommand(arg string) {
-	parts := strings.Split(arg, ",")
-	if len(parts) != 6 {
-		return
+func parseEndpoint(s string) (string, int) {
+	p := strings.Split(s, ",")
+	if len(p) != 6 {
+		return "", 0
 	}
-
-	// Parse IP address
-	f.dataIP = fmt.Sprintf("%s.%s.%s.%s", parts[0], parts[1], parts[2], parts[3])
-
-	// Parse port
-	p1, err1 := strconv.Atoi(parts[4])
-	p2, err2 := strconv.Atoi(parts[5])
-	if err1 == nil && err2 == nil {
-		f.dataPort = (p1 * 256) + p2
-		f.isPassive = false
-
-		// Track this data connection
-		f.trackDataConnection()
-
-		ftpLog.Debug("FTP PORT command",
-			zap.String("dataIP", f.dataIP),
-			zap.Int("dataPort", f.dataPort),
-			zap.String("ident", f.conversation.Ident),
-		)
+	var n [6]uint64
+	for i, v := range p {
+		x, err := strconv.ParseUint(v, 10, 8)
+		if err != nil {
+			return "", 0
+		}
+		n[i] = x
 	}
+	port := int(n[4]*256 + n[5])
+	if port == 0 {
+		return "", 0
+	}
+	return fmt.Sprintf("%d.%d.%d.%d", n[0], n[1], n[2], n[3]), port
 }
 
-// parsePASVResponse parses PASV response for passive mode
-// Format: 227 Entering Passive Mode (h1,h2,h3,h4,p1,p2)
-var pasvRegex = regexp.MustCompile(`\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)`)
-
-func (f *ftpReader) parsePASVResponse(message string) {
-	matches := pasvRegex.FindStringSubmatch(message)
-	if len(matches) != 7 {
-		return
-	}
-
-	// Parse IP and port
-	f.dataIP = fmt.Sprintf("%s.%s.%s.%s", matches[1], matches[2], matches[3], matches[4])
-
-	p1, err1 := strconv.Atoi(matches[5])
-	p2, err2 := strconv.Atoi(matches[6])
-	if err1 == nil && err2 == nil {
-		f.dataPort = (p1 * 256) + p2
-		f.isPassive = true
-
-		// Track this data connection
-		f.trackDataConnection()
-
-		ftpLog.Debug("FTP PASV response",
-			zap.String("dataIP", f.dataIP),
-			zap.Int("dataPort", f.dataPort),
-			zap.String("ident", f.conversation.Ident),
-		)
-	}
-}
-
-// trackDataConnection records the expected data connection
-func (f *ftpReader) trackDataConnection() {
-	if f.dataIP == "" || f.dataPort == 0 {
-		return
-	}
-
-	key := fmt.Sprintf("%s:%d", f.dataIP, f.dataPort)
-
-	ftpDataConnectionsMu.Lock()
-	ftpDataConnections[key] = &FTPDataConnection{
-		IP:           f.dataIP,
-		Port:         f.dataPort,
-		Filename:     f.lastFilename,
-		Command:      f.lastCommand,
-		TransferMode: f.transferMode,
-		IsPassive:    f.isPassive,
-		FileSize:     f.fileSize,
-		CreatedAt:    time.Now(),
-	}
-	ftpDataConnectionsMu.Unlock()
-
-	ftpLog.Info("Tracked FTP data connection",
-		zap.String("key", key),
-		zap.String("filename", f.lastFilename),
-		zap.String("command", f.lastCommand),
-	)
-}
-
-// readServer parses FTP responses from server
 func (f *ftpReader) readServer(b *bufio.Reader, pos *streamutils.ReadPosition) error {
 	f.timestamp = pos.Timestamp()
-
 	line, err := b.ReadString('\n')
 	if err != nil {
 		return err
 	}
-
 	line = strings.TrimSpace(line)
-
-	// FTP responses are typically "### message"
 	if len(line) < 3 {
 		return nil
 	}
-
-	// Parse response code
-	codeStr := line[:3]
-	code, err := strconv.Atoi(codeStr)
+	code, err := strconv.Atoi(line[:3])
 	if err != nil {
 		return nil
 	}
-
 	message := ""
 	if len(line) > 4 {
 		message = line[4:]
 	}
-
-	// Write FTP audit record for response
+	// Only the terminating reply line changes transfer state.
+	final := len(line) >= 4 && line[3] == ' '
+	if len(line) >= 4 && line[3] == '-' && f.multiline == 0 {
+		f.multiline = code
+		final = false
+	}
+	if f.multiline != 0 {
+		final = final && code == f.multiline
+		if final {
+			f.multiline = 0
+		}
+	}
+	if final {
+		switch code {
+		case 125, 150:
+			if f.pending != nil {
+				f.pending.Accepted = true
+			}
+		case 226, 250:
+			if f.pending != nil {
+				f.pending.Complete = true
+				f.pending.End = f.timestamp
+				f.finishTransfer()
+			}
+			f.dataIP, f.dataPort = "", 0
+		case 421, 425, 426, 450, 451, 452, 500, 501, 502, 530, 550, 551, 552, 553:
+			if f.pending != nil {
+				f.pending.End = f.timestamp
+				f.finishTransfer()
+			}
+			f.dataIP, f.dataPort = "", 0
+		case 213:
+			f.fileSize, _ = strconv.ParseInt(message, 10, 64)
+		case 227:
+			f.dataIP, f.dataPort = "", 0
+			if _, tail, ok := strings.Cut(message, "("); ok {
+				s, _, ok := strings.Cut(tail, ")")
+				if ok {
+					f.dataIP, f.dataPort = parseEndpoint(s)
+				}
+			}
+			f.isPassive = true
+		case 229:
+			f.dataIP, f.dataPort = "", 0
+			f.isPassive = true
+			if _, tail, ok := strings.Cut(message, "("); ok && len(tail) > 0 {
+				s, _, ok := strings.Cut(tail, ")")
+				if ok && len(s) > 0 {
+					p := strings.Split(s, s[:1])
+					if len(p) == 5 && p[1] == "" && p[2] == "" && p[4] == "" {
+						port, e := strconv.Atoi(p[3])
+						if e == nil && port > 0 && port <= 65535 {
+							f.dataIP, f.dataPort = f.conversation.ServerIP, port
+						}
+					}
+				}
+			}
+		}
+	}
 	f.writeFTPRecord(true, "", "", int32(code), message)
-
-	// Handle specific responses
-	switch code {
-	case 150:
-		// Data transfer starting
-		ftpLog.Debug("FTP data transfer started",
-			zap.String("lastCommand", f.lastCommand),
-			zap.String("filename", f.lastFilename),
-			zap.String("ident", f.conversation.Ident),
-		)
-
-	case 213:
-		// SIZE response: 213 <size>
-		if size, err := strconv.ParseInt(message, 10, 64); err == nil {
-			f.fileSize = size
-		}
-
-	case 227:
-		// PASV response
-		f.parsePASVResponse(message)
-	}
-
 	return nil
 }
 
-// extractFile attempts to extract a file from FTP DATA channel
-// Note: This is a simplified implementation. Full FTP DATA channel tracking
-// requires correlating control and data connections, which needs more infrastructure.
-func (f *ftpReader) extractFile(data []byte) error {
-	if decoderconfig.Instance.FileStorage == "" {
-		return nil
-	}
-
-	if len(data) == 0 {
-		return nil
-	}
-
-	filename := f.lastFilename
-	if filename == "" {
-		filename = "ftp-file"
-	}
-	filename = filepath.Base(filename)
-
-	// Determine flow direction based on command
-	flowDirection := "server_to_client" // RETR (download)
-	if f.lastCommand == "STOR" {
-		flowDirection = "client_to_server" // STOR (upload)
-	}
-
-	// Use file extraction framework
-	if extractor, ok := file.GetExtractor("FTP"); ok {
-		metadata := file.FileMetadata{
-			ConnectionUID: f.conversation.Ident,
-			FlowDirection: flowDirection,
-			FTPCommand:    f.lastCommand,
-			Filename:      filename,
-			Host:          f.conversation.ServerIP,
-		}
-		return extractor.ExtractFile(f.conversation, data, metadata)
-	}
-
-	return nil
-}
-
-// writeFTPRecord writes an FTP audit record
-func (f *ftpReader) writeFTPRecord(isResponse bool, command, argument string, responseCode int32, responseMessage string) {
+func (f *ftpReader) writeFTPRecord(response bool, command, arg string, code int32, message string) {
 	if Decoder.Writer == nil {
 		return
 	}
-
-	dataMode := "UNKNOWN"
+	mode := "UNKNOWN"
 	if f.isPassive {
-		dataMode = "PASSIVE"
+		mode = "PASSIVE"
 	} else if f.dataIP != "" {
-		dataMode = "ACTIVE"
+		mode = "ACTIVE"
 	}
-
-	// A response comes from the server. Every record used to name the client as
-	// its source, so a record saying IsResponse contradicted itself and a reply
-	// could not be told from the command that provoked it.
-	srcIP, dstIP := f.conversation.ClientIP, f.conversation.ServerIP
-	srcPort, dstPort := f.conversation.ClientPort, f.conversation.ServerPort
-
-	if isResponse {
-		srcIP, dstIP = dstIP, srcIP
-		srcPort, dstPort = dstPort, srcPort
+	src, dst, sp, dp := f.conversation.ClientIP, f.conversation.ServerIP, f.conversation.ClientPort, f.conversation.ServerPort
+	if response {
+		src, dst, sp, dp = dst, src, dp, sp
 	}
-
-	ftp := &types.FTP{
-		Timestamp:          f.timestamp,
-		SrcIP:              srcIP,
-		DstIP:              dstIP,
-		SrcPort:            srcPort,
-		DstPort:            dstPort,
-		IsResponse:         isResponse,
-		Command:            command,
-		Argument:           argument,
-		ResponseCode:       responseCode,
-		ResponseMessage:    responseMessage,
-		Filename:           f.lastFilename,
-		TransferMode:       f.transferMode,
-		DataConnectionMode: dataMode,
-		DataIP:             f.dataIP,
-		DataPort:           int32(f.dataPort),
-		Username:           f.username,
-		IsControl:          true,
-		FileSize:           f.fileSize,
-		CommunityID:        f.conversation.CommunityID,
-	}
-
+	r := &types.FTP{Timestamp: f.timestamp, SrcIP: src, DstIP: dst, SrcPort: sp, DstPort: dp, IsResponse: response, Command: command, Argument: arg, ResponseCode: code, ResponseMessage: message, Filename: f.lastFilename, TransferMode: f.transferMode, DataConnectionMode: mode, DataIP: f.dataIP, DataPort: int32(f.dataPort), Username: f.username, IsControl: true, FileSize: f.fileSize, CommunityID: f.conversation.CommunityID}
 	atomic.AddInt64(&Decoder.NumRecordsWritten, 1)
-	err := Decoder.Writer.Write(ftp)
-	if err != nil {
+	if err := Decoder.Writer.Write(r); err != nil {
 		decoderutils.ErrorMap.Inc(err.Error())
 	}
-}
-
-// CheckDataConnection checks if a connection matches an expected FTP data connection
-func CheckDataConnection(key string) (*FTPDataConnection, bool) {
-	ftpDataConnectionsMu.RLock()
-	conn, ok := ftpDataConnections[key]
-	ftpDataConnectionsMu.RUnlock()
-
-	return conn, ok
-}
-
-// ExtractDataChannel extracts file from FTP data channel
-func ExtractDataChannel(conv *core.ConversationInfo, data []byte, conn *FTPDataConnection) error {
-	if len(data) == 0 {
-		return nil
-	}
-
-	ftpLog.Info("Extracting FTP data channel file",
-		zap.String("filename", conn.Filename),
-		zap.String("command", conn.Command),
-		zap.Int("dataSize", len(data)),
-		zap.String("ident", conv.Ident),
-	)
-
-	// Use file extraction framework
-	extractor, ok := file.GetExtractor("FTP")
-	if !ok {
-		ftpLog.Error("FTP file extractor not registered")
-		return nil
-	}
-
-	flowDirection := "server_to_client"
-	if conn.Command == "STOR" {
-		flowDirection = "client_to_server"
-	}
-
-	metadata := file.FileMetadata{
-		ConnectionUID: conv.Ident,
-		FlowDirection: flowDirection,
-		FTPCommand:    conn.Command,
-		Filename:      filepath.Base(conn.Filename),
-		Host:          conn.IP,
-	}
-
-	return extractor.ExtractFile(conv, data, metadata)
 }

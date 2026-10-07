@@ -60,6 +60,9 @@ var Decoder = &decoder.StreamDecoder{
 		return false
 	},
 	DeInit: func(sd *decoder.StreamDecoder) error {
+		if err := FinalizeDataConnections(); err != nil {
+			return err
+		}
 		return ftpLog.Sync()
 	},
 	Factory: &ftpReader{},
