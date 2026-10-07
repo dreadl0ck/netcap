@@ -138,22 +138,6 @@ func exportBookCase(t *testing.T, input, out string, workers int, strict bool) {
 		}
 		digest := fmt.Sprintf("%x", sha256.Sum256(data))
 		oracle.Files = append(oracle.Files, bookExportFile{rel, digest, int64(len(data))})
-		if filepath.Base(rel) == "qualification-alerts.jsonl" {
-			scanner := bufio.NewScanner(bytes.NewReader(data))
-			scanner.Buffer(make([]byte, 4096), 2<<20)
-			for ordinal := uint64(0); scanner.Scan(); ordinal++ {
-				line := append([]byte(nil), scanner.Bytes()...)
-				var a types.Alert
-				if err := json.Unmarshal(line, &a); err != nil {
-					t.Fatal(err)
-				}
-				oracle.Records = append(oracle.Records, bookExportRecord{File: rel, FileSHA256: digest, Type: "Alert", Ordinal: ordinal, TimestampNs: fmt.Sprint(a.Timestamp), RecordSHA256: fmt.Sprintf("%x", sha256.Sum256(line)), Record: line})
-			}
-			if err := scanner.Err(); err != nil {
-				t.Fatal(err)
-			}
-			return
-		}
 		if filepath.Base(rel) == "FlowExports.jsonl" {
 			scanner := bufio.NewScanner(bytes.NewReader(data))
 			scanner.Buffer(make([]byte, 4096), 2<<20)
@@ -395,6 +379,9 @@ func verifyBookExport(t *testing.T, path string) {
 			}
 		}
 		if r.Type == "Alert" {
+			if filepath.Base(r.File) != "Alert.ncap" && filepath.Base(r.File) != "Alert.ncap.gz" {
+				t.Fatal("alert reference must target a standard audit file")
+			}
 			var a types.Alert
 			if err := json.Unmarshal(r.Record, &a); err != nil {
 				t.Fatal(err)
