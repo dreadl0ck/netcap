@@ -215,6 +215,13 @@ func runBookCase(t *testing.T, input string, workers int, strict bool) string {
 	if manifest.Status != "done" || manifest.InputSHA256 != fmt.Sprintf("%x", sha256.Sum256(pcap)) || manifest.IngressPackets == 0 || manifest.IngressPackets != manifest.AdmittedPackets || manifest.QueueDrops != 0 {
 		t.Fatalf("capture provenance: %+v", manifest)
 	}
+	if os.Getenv("NETCAP_BOOK_EXPORT_DIR") != "" {
+		t.Cleanup(func() {
+			if !t.Failed() {
+				exportBookCase(t, input, out, workers, strict)
+			}
+		})
+	}
 	return out
 }
 

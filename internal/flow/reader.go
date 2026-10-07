@@ -29,6 +29,9 @@ func ReadFile(ctx context.Context, path string, query Query) (FileResult, error)
 	if err := validQuery(query); err != nil {
 		return response, err
 	}
+	if query.Offset > 0 && query.ExpectedSHA256 == "" {
+		return response, fmt.Errorf("expectedSHA256 is required for subsequent flow pages")
+	}
 	file, err := os.Open(path)
 	if err != nil {
 		return response, err
@@ -91,6 +94,9 @@ func ReadFile(ctx context.Context, path string, query Query) (FileResult, error)
 		return response, err
 	}
 	response.RecordFileSHA256 = hex.EncodeToString(digest.Sum(nil))
+	if query.ExpectedSHA256 != "" && !strings.EqualFold(query.ExpectedSHA256, response.RecordFileSHA256) {
+		return FileResult{}, fmt.Errorf("flow page source hash changed")
+	}
 	response.RecordType = "Connection"
 	return response, nil
 }

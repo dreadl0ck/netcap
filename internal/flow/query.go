@@ -2,6 +2,7 @@ package flow
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math"
@@ -17,14 +18,16 @@ import (
 var ErrAmbiguousLegacy = errors.New("ambiguous legacy connection observations")
 
 type Query struct {
-	StartNs    int64  `json:"startNs,string"`
-	EndNs      int64  `json:"endNs,string"`
-	Expression string `json:"expression"`
-	GroupBy    string `json:"groupBy"`
-	SortBy     string `json:"sortBy"`
-	Limit      int    `json:"limit"`
-	WindowMode string `json:"windowMode,omitempty"`
-	BucketNs   int64  `json:"bucketNs,omitempty,string"`
+	StartNs        int64  `json:"startNs,string"`
+	EndNs          int64  `json:"endNs,string"`
+	Expression     string `json:"expression"`
+	GroupBy        string `json:"groupBy"`
+	SortBy         string `json:"sortBy"`
+	Limit          int    `json:"limit"`
+	Offset         int    `json:"offset,omitempty"`
+	ExpectedSHA256 string `json:"expectedSHA256,omitempty"`
+	WindowMode     string `json:"windowMode,omitempty"`
+	BucketNs       int64  `json:"bucketNs,omitempty,string"`
 }
 
 type Reference struct {
@@ -55,6 +58,7 @@ type Result struct {
 	CollapsedSnapshots uint64     `json:"collapsedSnapshots"`
 	Matched            int        `json:"matchedObservations"`
 	TotalGroups        int        `json:"totalGroups"`
+	NextOffset         *int       `json:"nextOffset,omitempty"`
 	Groups             []Group    `json:"groups"`
 	Limitations        []string   `json:"limitations"`
 	Statistics         Statistics `json:"statistics"`
@@ -146,6 +150,15 @@ func (d *Dataset) Add(c *types.Connection, ordinal uint64) error {
 }
 
 func validQuery(q Query) error {
+	if q.ExpectedSHA256 != "" {
+		digest, err := hex.DecodeString(q.ExpectedSHA256)
+		if err != nil || len(digest) != 32 {
+			return fmt.Errorf("expectedSHA256 must be a SHA-256 hex digest")
+		}
+	}
+	if q.Offset < 0 || q.Offset > 10000 {
+		return fmt.Errorf("flow offset must be between 0 and 10000")
+	}
 	if q.EndNs < q.StartNs || q.Limit < 1 || q.Limit > 1000 || len(q.Expression) > 4096 {
 		return fmt.Errorf("invalid flow time range, result limit or expression length")
 	}
@@ -305,9 +318,12 @@ func (d *Dataset) Query(ctx context.Context, q Query) (Result, error) {
 		return a.Key < b.Key
 	})
 	result.TotalGroups = len(result.Groups)
-	if len(result.Groups) > q.Limit {
-		result.Groups = result.Groups[:q.Limit]
+	start := min(q.Offset, len(result.Groups))
+	end := min(start+q.Limit, len(result.Groups))
+	if end < len(result.Groups) {
+		result.NextOffset = &end
 	}
+	result.Groups = result.Groups[start:end]
 	return result, nil
 }
 
@@ -329,7 +345,7 @@ func groupKey(c *types.Connection, group string) (string, string) {
 }
 
 func ParseQuery(values map[string][]string) (Query, error) {
-	for _, key := range []string{"startNs", "endNs", "filter", "groupBy", "sortBy", "limit", "windowMode", "bucketNs"} {
+	for _, key := range []string{"startNs", "endNs", "filter", "groupBy", "sortBy", "limit", "offset", "expectedSHA256", "windowMode", "bucketNs"} {
 		if len(values[key]) > 1 {
 			return Query{}, fmt.Errorf("duplicate flow query parameter %s", key)
 		}
@@ -350,6 +366,13 @@ func ParseQuery(values map[string][]string) (Query, error) {
 	}
 	q := Query{StartNs: start, EndNs: end, Expression: get("filter"), GroupBy: get("groupBy"), SortBy: get("sortBy"), Limit: 100}
 	q.WindowMode = get("windowMode")
+	q.ExpectedSHA256 = get("expectedSHA256")
+	if raw := get("offset"); raw != "" {
+		q.Offset, err = strconv.Atoi(raw)
+		if err != nil {
+			return q, err
+		}
+	}
 	if raw := get("bucketNs"); raw != "" {
 		q.BucketNs, err = strconv.ParseInt(raw, 10, 64)
 		if err != nil {
