@@ -390,6 +390,10 @@ message Connection {
   string DstGeoLocation = 53;           // Destination country/city (GeoLite2-City)
   string SrcASN = 54;                   // Source ASN (GeoLite2-ASN)
   string DstASN = 55;                   // Destination ASN (GeoLite2-ASN)
+
+  // (client bytes - server bytes) / (client bytes + server bytes), in [-1, 1].
+  // 1 = client only produced, -1 = client only consumed; 0 when no bytes.
+  double ProducerConsumerRatio = 56;
 }
 
 //
@@ -1041,6 +1045,13 @@ message DNS {
   
   // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
   string CommunityID = 32;
+
+  // Capture-time query/response pairing. Key: client and server endpoints,
+  // DNS ID, first question name (case-insensitive) and type. Per-message records
+  // are unchanged; these fields describe the pairing state at this message.
+  int64 RTT = 33;                  // Response minus the latest matching query, in ns; 0 when unpaired
+  string TransactionStatus = 34;   // query | retransmission | answered | late | unsolicited
+  int32 QueryTransmissions = 35;   // Matching queries seen for this transaction (>1 means retransmitted)
 }
 
 message DNSResourceRecord {
@@ -4448,6 +4459,10 @@ message DCERPC {
   string DstIP = 14;
   int32 SrcPort = 15;
   int32 DstPort = 16;
+  int32 ContextID = 17;        // Presentation context of Request/Response/Fault PDUs
+  string CommunityID = 18;
+  string OperationName = 19;   // Procedure for a recognized interface and opnum; empty when unknown
+  uint32 FaultStatus = 20;     // Status of a Fault PDU; 0 otherwise
 }
 
 // OCSP - Online Certificate Status Protocol

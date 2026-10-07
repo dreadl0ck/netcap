@@ -5,8 +5,10 @@ description: "Detection rules for connection-level anomalies including C2 beacon
 
 rules:
   # C2 Communication Indicators
-  - name: Potential C2 Beaconing
-    description: Connection with symmetric byte ratio to public IP (near 1:1 traffic pattern typical of C2 beacons)
+  # Byte symmetry within one connection, not timing. Periodic connections are
+  # detected by network detection (c2.beacon).
+  - name: Symmetric External Connection
+    description: Connection to a public IP with near 1:1 client/server bytes; a weak C2 heuristic that does not measure periodicity
     type: Connection
     expression: 'ByteRatio > 0.8 && ByteRatio < 1.2 && NumPackets > 20 && IsPublicIP(DstIP) && IsPrivateIP(SrcIP) && TotalSize > 1000'
     severity: medium
