@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -171,6 +172,7 @@ func TestBookICMPAndServerRecon(t *testing.T) {
 	b.packet("198.51.100.10", "192.0.2.1", &layers.TCP{SrcPort: 25, DstPort: 55001, RST: true}, "", false)
 	b.packet("198.51.100.10", "192.0.2.1", &layers.TCP{SrcPort: 26, DstPort: 55003, RST: true, ACK: true}, "", false)
 	b.conversation("192.0.2.1", "198.51.100.10", 55002, 21, false, bookMessage{true, "220 Recon FTP\r\n"}, bookMessage{false, "SYST\r\n"}, bookMessage{true, "215 UNIX lab\r\n"})
+	ledger := bookWireCounts(t, input)
 	for _, workers := range []int{1, 2, 4, 8} {
 		t.Run(fmt.Sprint(workers), func(t *testing.T) {
 			out := runBookCase(t, input, workers, false)
@@ -208,6 +210,45 @@ func TestBookICMPAndServerRecon(t *testing.T) {
 			if len(limited.Groups) != 1 || limited.TotalGroups != 4 || limited.Matched != r.Matched {
 				t.Fatal("limited recon result silently claimed pagination completeness")
 			}
+			pages := map[string]flow.Group{}
+			page := limited
+			for {
+				for _, g := range page.Groups {
+					if _, duplicate := pages[g.Key]; duplicate {
+						t.Fatal("duplicate group across recon pages")
+					}
+					pages[g.Key] = g
+				}
+				if page.NextOffset == nil {
+					break
+				}
+				q := page.Query
+				q.Offset = *page.NextOffset
+				q.ExpectedSHA256 = limited.RecordFileSHA256
+				page, err = flow.ReadFile(context.Background(), filepath.Join(out, "Connection.ncap"), q)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			if len(pages) != len(r.Groups) {
+				t.Fatal("pagination did not retrieve entire recon sweep")
+			}
+			for _, g := range r.Groups {
+				got := pages[g.Key]
+				if len(got.Members) != 1 || got.Members[0] != g.Members[0] || got.Bytes != g.Bytes || got.Packets != g.Packets {
+					t.Fatal("paginated recon member differs from full result")
+				}
+			}
+			q := limited.Query
+			q.Offset = 1
+			q.ExpectedSHA256 = strings.Repeat("0", 64)
+			if _, err := flow.ReadFile(context.Background(), filepath.Join(out, "Connection.ncap"), q); err == nil {
+				t.Fatal("pagination accepted a different source snapshot")
+			}
+			q.ExpectedSHA256 = ""
+			if _, err := flow.ReadFile(context.Background(), filepath.Join(out, "Connection.ncap"), q); err == nil {
+				t.Fatal("pagination accepted an unbound source")
+			}
 			r = bookFlow(t, out, `NumRSTFlags > 0 && NumSYNFlags == 0 && NumACKFlags == 0 && NumFINFlags == 0 && NumPSHFlags == 0`, "srcIP")
 			if r.Matched != 1 {
 				t.Fatalf("RST-only filter: %+v", r)
@@ -215,6 +256,42 @@ func TestBookICMPAndServerRecon(t *testing.T) {
 			ftpRecords := bookRecords(t, out, "FTP", func() *types.FTP { return new(types.FTP) })
 			if len(ftpRecords) != 3 || ftpRecords[0].Timestamp <= records[4].Timestamp {
 				t.Fatal("ICMP/service chronology or transaction completeness")
+			}
+			icmpLast := int64(0)
+			for _, r := range records {
+				icmpLast = max(icmpLast, r.Timestamp)
+			}
+			portsFirst, portsLast, serviceFirst := int64(1<<63-1), int64(0), int64(1<<63-1)
+			tcps := bookRecords(t, out, "TCP", func() *types.TCP { return new(types.TCP) })
+			for _, r := range tcps {
+				if r.SrcPort == 55002 || r.DstPort == 55002 {
+					serviceFirst = min(serviceFirst, r.Timestamp)
+				} else {
+					portsFirst = min(portsFirst, r.Timestamp)
+					portsLast = max(portsLast, r.Timestamp)
+				}
+			}
+			if !(icmpLast < portsFirst && portsLast < serviceFirst && serviceFirst < ftpRecords[0].Timestamp) {
+				t.Fatal("ICMP -> port -> service handshake -> banner temporal order failed")
+			}
+			got := map[string]bookWireCount{}
+			connections := bookRecords(t, out, "Connection", func() *types.Connection { return new(types.Connection) })
+			for _, c := range connections {
+				for _, d := range []struct {
+					ip             string
+					packets, bytes int64
+				}{{c.SrcIP, c.PacketsClientToServer, c.BytesClientToServer}, {c.DstIP, c.PacketsServerToClient, c.BytesServerToClient}} {
+					key := d.ip + "/" + c.TransportProto
+					n := got[key]
+					n.Packets += d.packets
+					n.Bytes += d.bytes
+					got[key] = n
+				}
+			}
+			for key, want := range ledger {
+				if got[key] != want {
+					t.Fatalf("recon both-direction reconciliation %s: %+v != %+v", key, got[key], want)
+				}
 			}
 		})
 	}
@@ -235,11 +312,17 @@ func TestBookVPNAndUnexpectedService(t *testing.T) {
 			payload[3] = 0x58
 		}
 		b.network("192.0.2.1", "198.51.100.1", p, payload)
-		b.network("198.51.100.1", "192.0.2.1", p, payload)
+		for range 2 {
+			b.network("198.51.100.1", "192.0.2.1", p, append(append([]byte(nil), payload...), bytes.Repeat([]byte{0x42}, 32)...))
+		}
 	}
 	b.udp("192.0.2.1", "198.51.100.1", 4500, 4500, []byte{0, 0, 0, 1, 0, 0, 0, 2, 0xca, 0xfe})
+	for range 2 {
+		b.udp("198.51.100.1", "192.0.2.1", 4500, 4500, bytes.Repeat([]byte{0x42}, 80))
+	}
 	b.conversation("192.0.2.2", "198.51.100.2", 55100, 8088, false, bookMessage{false, "GET /nonstandard HTTP/1.1\r\nHost: lab.invalid\r\n\r\n"}, bookMessage{true, "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n"})
 	b.conversation("192.0.2.2", "198.51.100.2", 55101, 80, false, bookMessage{false, "NOT HTTP\x00\xff"}, bookMessage{true, "OPAQUE\x00"})
+	ledger := bookWireCounts(t, input)
 	for _, workers := range []int{1, 4} {
 		t.Run(fmt.Sprint(workers), func(t *testing.T) {
 			out := runBookCase(t, input, workers, false)
@@ -251,9 +334,24 @@ func TestBookVPNAndUnexpectedService(t *testing.T) {
 				if g.Key == "" {
 					t.Fatal("missing outer protocol")
 				}
-				if g.Key != "UDP" && g.Packets != 2 {
+				if g.Packets != 3 {
 					t.Fatalf("VPN direction lost: %+v", g)
 				}
+			}
+			connections := bookRecords(t, out, "Connection", func() *types.Connection { return new(types.Connection) })
+			checked := 0
+			for _, c := range connections {
+				if c.SrcIP != "192.0.2.1" {
+					continue
+				}
+				checked++
+				client, server := ledger[c.SrcIP+"/"+c.TransportProto], ledger[c.DstIP+"/"+c.TransportProto]
+				if client.Packets != 1 || server.Packets != 2 || client.Bytes >= server.Bytes || c.PacketsClientToServer != client.Packets || c.BytesClientToServer != client.Bytes || c.PacketsServerToClient != server.Packets || c.BytesServerToClient != server.Bytes || c.TotalSize64 != client.Bytes+server.Bytes {
+					t.Fatalf("VPN directional ledger mismatch: %v, client=%+v server=%+v", c, client, server)
+				}
+			}
+			if checked != 4 {
+				t.Fatal("not every VPN protocol reconciled")
 			}
 			http := bookRecords(t, out, "HTTP", func() *types.HTTP { return new(types.HTTP) })
 			if len(http) != 1 || http[0].DstPort != 8088 || http[0].URL != "/nonstandard" {
