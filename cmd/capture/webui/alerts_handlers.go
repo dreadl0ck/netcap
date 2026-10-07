@@ -458,8 +458,17 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 
 	// Group alerts
 	groups := groupAlerts(alerts, severityFilter, ruleNameFilter)
-	if classification:=query.Get("classification");classification!="" {
-		filtered:=make([]GroupedAlert,0,len(groups));for _,group:=range groups{for _,tag:=range group.Tags{if tag==classification{filtered=append(filtered,group);break}}};groups=filtered
+	if classification := query.Get("classification"); classification != "" {
+		filtered := make([]GroupedAlert, 0, len(groups))
+		for _, group := range groups {
+			for _, tag := range group.Tags {
+				if tag == classification {
+					filtered = append(filtered, group)
+					break
+				}
+			}
+		}
+		groups = filtered
 	}
 
 	// Sort groups
