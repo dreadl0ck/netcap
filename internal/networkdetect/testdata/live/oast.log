@@ -1,0 +1,17 @@
+
+AlphaSOC Network Flight Simulator™  (https://github.com/alphasoc/flightsim)
+The address of the network interface for IP traffic is 127.0.0.1
+The address of the network interface for DNS queries is 127.0.0.1
+The current time is 07-Oct-26 09:03:17
+
+09:03:17 [oast] Preparing to simulate OAST traffic
+09:03:17 [oast] Resolving oast.fun
+09:03:20 [oast] Resolving oast.live
+09:03:23 [oast] Resolving oast.me
+09:03:26 [oast] Resolving oast.online
+09:03:29 [oast] Resolving oast.pro
+09:03:32 [oast] Resolving oast.site
+09:03:35 [oast] Resolving oastify.com
+09:03:38 [oast] Done (7/7)
+
+All done! Check your SIEM for alerts using the timestamps and details above.

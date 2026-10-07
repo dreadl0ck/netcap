@@ -1,0 +1,56 @@
+[
+  {
+    "Timestamp": 1791363759819068000,
+    "Name": "network.scan",
+    "Description": "network.scan: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "48019",
+    "DstIP": "203.0.113.130",
+    "DstPort": "143",
+    "MITRE": "T1046",
+    "RuleName": "network.scan",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363758521136000,\"lastSeen\":1791363759819068000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"203.0.113.130:111\",\"203.0.113.130:135\",\"203.0.113.130:139\",\"203.0.113.130:143\",\"203.0.113.130:21\",\"203.0.113.130:22\",\"203.0.113.130:23\",\"203.0.113.130:25\"],\"limitations\":[\"Distinct TCP destinations; connection outcomes and intent are not inferred\"]}"
+  },
+  {
+    "Timestamp": 1791363761522330000,
+    "Name": "network.scan",
+    "Description": "network.scan: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "39419",
+    "DstIP": "203.0.113.139",
+    "DstPort": "21",
+    "MITRE": "T1046",
+    "RuleName": "network.scan",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363758521136000,\"lastSeen\":1791363761522330000,\"observed\":22,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"203.0.113.130:111\",\"203.0.113.130:135\",\"203.0.113.130:139\",\"203.0.113.130:143\",\"203.0.113.130:1433\",\"203.0.113.130:1521\",\"203.0.113.130:21\",\"203.0.113.130:22\"],\"limitations\":[\"Distinct TCP destinations; connection outcomes and intent are not inferred\"]}"
+  },
+  {
+    "Timestamp": 1791363764525780000,
+    "Name": "network.scan",
+    "Description": "network.scan: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "60315",
+    "DstIP": "203.0.113.250",
+    "DstPort": "21",
+    "MITRE": "T1046",
+    "RuleName": "network.scan",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363758521136000,\"lastSeen\":1791363764525780000,\"observed\":43,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"203.0.113.130:111\",\"203.0.113.130:135\",\"203.0.113.130:139\",\"203.0.113.130:143\",\"203.0.113.130:1433\",\"203.0.113.130:1521\",\"203.0.113.130:21\",\"203.0.113.130:22\"],\"limitations\":[\"Distinct TCP destinations; connection outcomes and intent are not inferred\"]}"
+  }
+]

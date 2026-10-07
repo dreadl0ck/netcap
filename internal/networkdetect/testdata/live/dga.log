@@ -1,0 +1,25 @@
+
+AlphaSOC Network Flight Simulator™  (https://github.com/alphasoc/flightsim)
+The address of the network interface for IP traffic is 127.0.0.1
+The address of the network interface for DNS queries is 127.0.0.1
+The current time is 07-Oct-26 09:02:30
+
+09:02:30 [dga] Generating a list of DGA domains
+09:02:30 [dga] Resolving ujjsae8q.info
+09:02:30 [dga] Resolving mcwisx5y.com
+09:02:30 [dga] Resolving suycr1ax.com
+09:02:30 [dga] Resolving shthq0ec.com
+09:02:30 [dga] Resolving dk3sspbt.com
+09:02:30 [dga] Resolving g7pqklpy.info
+09:02:30 [dga] Resolving cokuc9ba.com
+09:02:30 [dga] Resolving kfjhdx0m.info
+09:02:30 [dga] Resolving jekpe0dz.info
+09:02:30 [dga] Resolving ynq2hsbj.info
+09:02:30 [dga] Resolving 0fqdrekj.xyz
+09:02:30 [dga] Resolving bhfy6vdn.com
+09:02:30 [dga] Resolving v8bqqtof.xyz
+09:02:30 [dga] Resolving 3nwllcmp.com
+09:02:30 [dga] Resolving wnebi5kc.xyz
+09:02:30 [dga] Done (15/15)
+
+All done! Check your SIEM for alerts using the timestamps and details above.

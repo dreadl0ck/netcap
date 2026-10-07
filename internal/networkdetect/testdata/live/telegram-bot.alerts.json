@@ -1,0 +1,20 @@
+[
+  {
+    "Timestamp": 1791363821205349000,
+    "Name": "policy.telegram-api",
+    "Description": "policy.telegram-api: policy-observation",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "0",
+    "DstIP": "127.0.0.1",
+    "DstPort": "0",
+    "Domain": "api.telegram.org",
+    "RuleName": "policy.telegram-api",
+    "RecordType": "NetworkDetection",
+    "Severity": "info",
+    "Tags": [
+      "network-detection",
+      "policy-observation"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.telegram-api\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363821205349000,\"lastSeen\":1791363821205349000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"api.telegram.org\"],\"limitations\":[\"Encrypted traffic does not reveal bot method, token or intent\"]}"
+  }
+]

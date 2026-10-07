@@ -1,0 +1,20 @@
+[
+  {
+    "Timestamp": 1791363777606599000,
+    "Name": "ssh.large-upload",
+    "Description": "ssh.large-upload: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "59053",
+    "DstIP": "127.0.0.3",
+    "DstPort": "22",
+    "MITRE": "T1048.002",
+    "RuleName": "ssh.large-upload",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"ssh.large-upload\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363777501512000,\"lastSeen\":1791363777606599000,\"observed\":583899,\"threshold\":524288,\"windowNS\":60000000000,\"samples\":[\"Unique contiguous client TCP payload bytes\"],\"limitations\":[\"Encrypted content and authorization are unavailable; configured source exceptions apply\"]}"
+  }
+]

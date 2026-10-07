@@ -1,0 +1,15 @@
+
+AlphaSOC Network Flight Simulator™  (https://github.com/alphasoc/flightsim)
+The address of the network interface for IP traffic is 127.0.0.1
+The address of the network interface for DNS queries is 127.0.0.1
+The current time is 07-Oct-26 09:03:43
+
+09:03:43 [cleartext] Preparing to simulate cleartext protocol traffic
+09:03:43 [cleartext] Sending random data to 127.0.0.3:21
+09:03:43 [cleartext] Sending random data to 127.0.0.3:23
+09:03:43 [cleartext] Sending random data to 127.0.0.3:110
+09:03:43 [cleartext] Sending random data to 127.0.0.3:143
+09:03:43 [cleartext] Sending random data to 127.0.0.3:873
+09:03:43 [cleartext] Done (5/5)
+
+All done! Check your SIEM for alerts using the timestamps and details above.

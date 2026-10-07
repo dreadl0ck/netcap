@@ -109,6 +109,47 @@ sudo ./net capture -iface en0
 air
 ```
 
+## Network detections
+
+`net capture` enables capture-time network detections independently of baseline
+approval. `-network-detection=false` disables them;
+`-network-detection-config policy.json` loads bounded JSON thresholds, authorized
+source IPs/CIDRs and versioned indicators (`internal/networkdetect/config.go`).
+
+| Finding | Evidence / interpretation |
+| --- | --- |
+| DNS DGA and tunneling | Distinct randomized apex names or high-entropy TXT labels beneath one parent, capture-time counts and sampled names; behavioral suspicion |
+| TCP scans and SMTP fan-out | Distinct destination endpoints or mail hosts; retries do not increase cardinality |
+| ICMP tunneling | Repeated large, high-entropy echo requests; diagnostic traffic can look similar |
+| SSH transfer and unusual ports | SSH banners, unique contiguous client bytes and service port; encrypted contents and authorization remain unknown |
+| Stratum, IRC, OAST and Telegram | Protocol/destination observations; legitimate use is possible |
+| C2, sinkhole and imposter | Configured domain/IP matches with source, version and capture-time validity; no live feed is bundled |
+| Legacy cleartext-service ports | Payload not recognized as TLS/SSH on a legacy service port; port alone does not identify the application or prove credentials were sent |
+| Analyst UI | `/alerts` exposes classification, measured values, scope, limits and original evidence export; `/api/network-detection` exposes coverage, overflow, skipped late events and stream gaps |
+
+Defaults: 60 s windows, 300 s alert deduplication, 10 distinct DNS names/TCP
+endpoints/large echoes, 5 SMTP hosts and 10 MiB SSH client payload. State retains
+at most 4,096 keys, 128 values per window and 1,024 flows with 4 KiB prefixes per
+direction. A stream gap stops signature/transfer claims for that direction and
+is reported. Indicator validity uses Unix nanoseconds at capture time. A missing
+status file or zero configured indicators is displayed as unavailable coverage.
+
+`internal/networkdetect/testdata/live/` contains 15 real FlightSim CLI captures
+at revision `3709d1c6905d9527885c62f66f49a955c7b0d191`, generated with Docker
+`--network none` and local DNS/API/SSH/SFTP/IRC/Stratum fixtures. C2 intelligence
+is synthetic lab data; SSH qualification uses a 1 MiB transfer and a 512 KiB
+threshold. `testdata/cases.json` separately labels synthetic source-shape and
+benign controls. Scenario names never enter the detector.
+
+```sh
+go test -race ./internal/networkdetect
+go test -race -tags nodpi,noyara,nomagika ./internal/collector -run '^TestFlightSimCollectorReplay$'
+```
+
+The collector checks replay at 1/2/4/8 workers. The lab requires a 32 MiB
+tcpdump buffer and a 2 s drain; `tests/flightsim-lab/run.sh` rejects kernel drops
+and failed simulator modules before sealing capture hashes.
+
 ## Behavioral monitoring
 
 `capture -behavior` and `agent -behavior` enable passive, sensor/interface/VLAN-

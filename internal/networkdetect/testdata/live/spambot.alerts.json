@@ -1,0 +1,262 @@
+[
+  {
+    "Timestamp": 1791363772469794000,
+    "Name": "smtp.fanout",
+    "Description": "smtp.fanout: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "48677",
+    "DstIP": "127.0.0.67",
+    "DstPort": "25",
+    "RuleName": "smtp.fanout",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"smtp.fanout\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772469794000,\"observed\":5,\"threshold\":5,\"windowNS\":60000000000,\"samples\":[\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.60\",\"127.0.0.67\"],\"limitations\":[\"Mail relays can legitimately contact many SMTP servers\"]}"
+  },
+  {
+    "Timestamp": 1791363772476100000,
+    "Name": "smtp.fanout",
+    "Description": "smtp.fanout: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "58323",
+    "DstIP": "127.0.0.72",
+    "DstPort": "25",
+    "RuleName": "smtp.fanout",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"smtp.fanout\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772476100000,\"observed\":6,\"threshold\":5,\"windowNS\":60000000000,\"samples\":[\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.60\",\"127.0.0.67\",\"127.0.0.72\"],\"limitations\":[\"Mail relays can legitimately contact many SMTP servers\"]}"
+  },
+  {
+    "Timestamp": 1791363772485776000,
+    "Name": "smtp.fanout",
+    "Description": "smtp.fanout: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "45195",
+    "DstIP": "127.0.0.116",
+    "DstPort": "25",
+    "RuleName": "smtp.fanout",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"smtp.fanout\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772485776000,\"observed\":7,\"threshold\":5,\"windowNS\":60000000000,\"samples\":[\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.60\",\"127.0.0.67\",\"127.0.0.72\"],\"limitations\":[\"Mail relays can legitimately contact many SMTP servers\"]}"
+  },
+  {
+    "Timestamp": 1791363772496183000,
+    "Name": "smtp.fanout",
+    "Description": "smtp.fanout: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "55409",
+    "DstIP": "127.0.0.46",
+    "DstPort": "25",
+    "RuleName": "smtp.fanout",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"smtp.fanout\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772496183000,\"observed\":8,\"threshold\":5,\"windowNS\":60000000000,\"samples\":[\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.46\",\"127.0.0.60\",\"127.0.0.67\",\"127.0.0.72\"],\"limitations\":[\"Mail relays can legitimately contact many SMTP servers\"]}"
+  },
+  {
+    "Timestamp": 1791363772502541000,
+    "Name": "smtp.fanout",
+    "Description": "smtp.fanout: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "59427",
+    "DstIP": "127.0.0.102",
+    "DstPort": "25",
+    "RuleName": "smtp.fanout",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"smtp.fanout\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772502541000,\"observed\":9,\"threshold\":5,\"windowNS\":60000000000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.46\",\"127.0.0.60\",\"127.0.0.67\"],\"limitations\":[\"Mail relays can legitimately contact many SMTP servers\"]}"
+  },
+  {
+    "Timestamp": 1791363772507173000,
+    "Name": "network.scan",
+    "Description": "network.scan: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "54939",
+    "DstIP": "127.0.0.52",
+    "DstPort": "25",
+    "MITRE": "T1046",
+    "RuleName": "network.scan",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772507173000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"127.0.0.102:25\",\"127.0.0.116:25\",\"127.0.0.117:25\",\"127.0.0.120:25\",\"127.0.0.13:25\",\"127.0.0.46:25\",\"127.0.0.52:25\",\"127.0.0.60:25\"],\"limitations\":[\"Distinct TCP destinations; connection outcomes and intent are not inferred\"]}"
+  },
+  {
+    "Timestamp": 1791363772507173000,
+    "Name": "smtp.fanout",
+    "Description": "smtp.fanout: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "54939",
+    "DstIP": "127.0.0.52",
+    "DstPort": "25",
+    "RuleName": "smtp.fanout",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"smtp.fanout\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772507173000,\"observed\":10,\"threshold\":5,\"windowNS\":60000000000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.46\",\"127.0.0.52\",\"127.0.0.60\"],\"limitations\":[\"Mail relays can legitimately contact many SMTP servers\"]}"
+  },
+  {
+    "Timestamp": 1791363772516942000,
+    "Name": "network.scan",
+    "Description": "network.scan: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "33821",
+    "DstIP": "127.0.0.48",
+    "DstPort": "25",
+    "MITRE": "T1046",
+    "RuleName": "network.scan",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772516942000,\"observed\":11,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"127.0.0.102:25\",\"127.0.0.116:25\",\"127.0.0.117:25\",\"127.0.0.120:25\",\"127.0.0.13:25\",\"127.0.0.46:25\",\"127.0.0.48:25\",\"127.0.0.52:25\"],\"limitations\":[\"Distinct TCP destinations; connection outcomes and intent are not inferred\"]}"
+  },
+  {
+    "Timestamp": 1791363772516942000,
+    "Name": "smtp.fanout",
+    "Description": "smtp.fanout: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "33821",
+    "DstIP": "127.0.0.48",
+    "DstPort": "25",
+    "RuleName": "smtp.fanout",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"smtp.fanout\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772516942000,\"observed\":11,\"threshold\":5,\"windowNS\":60000000000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.46\",\"127.0.0.48\",\"127.0.0.52\"],\"limitations\":[\"Mail relays can legitimately contact many SMTP servers\"]}"
+  },
+  {
+    "Timestamp": 1791363772524158000,
+    "Name": "network.scan",
+    "Description": "network.scan: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "59517",
+    "DstIP": "127.0.0.24",
+    "DstPort": "25",
+    "MITRE": "T1046",
+    "RuleName": "network.scan",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772524158000,\"observed\":12,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"127.0.0.102:25\",\"127.0.0.116:25\",\"127.0.0.117:25\",\"127.0.0.120:25\",\"127.0.0.13:25\",\"127.0.0.24:25\",\"127.0.0.46:25\",\"127.0.0.48:25\"],\"limitations\":[\"Distinct TCP destinations; connection outcomes and intent are not inferred\"]}"
+  },
+  {
+    "Timestamp": 1791363772524158000,
+    "Name": "smtp.fanout",
+    "Description": "smtp.fanout: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "59517",
+    "DstIP": "127.0.0.24",
+    "DstPort": "25",
+    "RuleName": "smtp.fanout",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"smtp.fanout\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772524158000,\"observed\":12,\"threshold\":5,\"windowNS\":60000000000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.24\",\"127.0.0.46\",\"127.0.0.48\"],\"limitations\":[\"Mail relays can legitimately contact many SMTP servers\"]}"
+  },
+  {
+    "Timestamp": 1791363772527158000,
+    "Name": "network.scan",
+    "Description": "network.scan: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "56875",
+    "DstIP": "127.0.0.61",
+    "DstPort": "25",
+    "MITRE": "T1046",
+    "RuleName": "network.scan",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772527158000,\"observed\":13,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"127.0.0.102:25\",\"127.0.0.116:25\",\"127.0.0.117:25\",\"127.0.0.120:25\",\"127.0.0.13:25\",\"127.0.0.24:25\",\"127.0.0.46:25\",\"127.0.0.48:25\"],\"limitations\":[\"Distinct TCP destinations; connection outcomes and intent are not inferred\"]}"
+  },
+  {
+    "Timestamp": 1791363772527158000,
+    "Name": "smtp.fanout",
+    "Description": "smtp.fanout: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "56875",
+    "DstIP": "127.0.0.61",
+    "DstPort": "25",
+    "RuleName": "smtp.fanout",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"smtp.fanout\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772527158000,\"observed\":13,\"threshold\":5,\"windowNS\":60000000000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.24\",\"127.0.0.46\",\"127.0.0.48\"],\"limitations\":[\"Mail relays can legitimately contact many SMTP servers\"]}"
+  },
+  {
+    "Timestamp": 1791363772532886000,
+    "Name": "network.scan",
+    "Description": "network.scan: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "50929",
+    "DstIP": "127.0.0.64",
+    "DstPort": "25",
+    "MITRE": "T1046",
+    "RuleName": "network.scan",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"network.scan\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772532886000,\"observed\":14,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"127.0.0.102:25\",\"127.0.0.116:25\",\"127.0.0.117:25\",\"127.0.0.120:25\",\"127.0.0.13:25\",\"127.0.0.24:25\",\"127.0.0.46:25\",\"127.0.0.48:25\"],\"limitations\":[\"Distinct TCP destinations; connection outcomes and intent are not inferred\"]}"
+  },
+  {
+    "Timestamp": 1791363772532886000,
+    "Name": "smtp.fanout",
+    "Description": "smtp.fanout: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "50929",
+    "DstIP": "127.0.0.64",
+    "DstPort": "25",
+    "RuleName": "smtp.fanout",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"smtp.fanout\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363772458090000,\"lastSeen\":1791363772532886000,\"observed\":14,\"threshold\":5,\"windowNS\":60000000000,\"samples\":[\"127.0.0.102\",\"127.0.0.116\",\"127.0.0.117\",\"127.0.0.120\",\"127.0.0.13\",\"127.0.0.24\",\"127.0.0.46\",\"127.0.0.48\"],\"limitations\":[\"Mail relays can legitimately contact many SMTP servers\"]}"
+  }
+]

@@ -1,0 +1,41 @@
+{
+  "windowNS": 60000000000,
+  "dedupNS": 300000000000,
+  "maxKeys": 4096,
+  "maxFlows": 1024,
+  "dnsNames": 10,
+  "scanTargets": 10,
+  "smtpHosts": 5,
+  "icmpEchoes": 10,
+  "sshBytes": 4096,
+  "approvedSources": null,
+  "indicators": [
+    {
+      "value": "c2.example",
+      "kind": "domain",
+      "category": "c2",
+      "source": "synthetic qualification",
+      "version": "1",
+      "validFrom": 1799999999000000000,
+      "validUntil": 1800000100000000000
+    },
+    {
+      "value": "sink.example",
+      "kind": "domain",
+      "category": "sink",
+      "source": "synthetic qualification",
+      "version": "1",
+      "validFrom": 1799999999000000000,
+      "validUntil": 1800000100000000000
+    },
+    {
+      "value": "imposter.example",
+      "kind": "domain",
+      "category": "imposter",
+      "source": "synthetic qualification",
+      "version": "1",
+      "validFrom": 1799999999000000000,
+      "validUntil": 1800000100000000000
+    }
+  ]
+}
