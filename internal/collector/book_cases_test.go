@@ -228,6 +228,9 @@ func runBookCase(t *testing.T, input string, workers int, strict bool) string {
 func bookRecords[T proto.Message](t *testing.T, out, name string, makeRecord func() T) []T {
 	t.Helper()
 	r, err := netio.Open(filepath.Join(out, name+".ncap"), 4096)
+	if os.IsNotExist(err) {
+		r, err = netio.Open(filepath.Join(out, name+".ncap.gz"), 4096)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}

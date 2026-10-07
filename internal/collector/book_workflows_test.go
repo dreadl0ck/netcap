@@ -14,6 +14,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -204,6 +205,17 @@ func TestBookDownloadIntelligenceIntegration(t *testing.T) {
 		response := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Length: %d\r\nContent-Type: application/octet-stream\r\n\r\n%s", len(content), content)
 		b.conversation("192.0.2.20", "198.51.100.20", uint16(58000+i), 8080, false, bookMessage{false, request}, bookMessage{true, response})
 	}
+	// Three distinct peers trigger the behavioral rule. Repeated connections to
+	// one peer and two distinct peers from a different source are negative controls.
+	for i := range 3 {
+		b.packet("192.0.2.20", fmt.Sprintf("203.0.113.%d", 40+i), &layers.TCP{SrcPort: layers.TCPPort(58100 + i), DstPort: 445, Seq: 1, SYN: true}, "", false)
+	}
+	for i := range 3 {
+		b.packet("192.0.2.30", "203.0.113.50", &layers.TCP{SrcPort: layers.TCPPort(58200 + i), DstPort: 445, Seq: 1, SYN: true}, "", false)
+	}
+	for i := range 2 {
+		b.packet("192.0.2.31", fmt.Sprintf("203.0.113.%d", 60+i), &layers.TCP{SrcPort: layers.TCPPort(58300 + i), DstPort: 445, Seq: 1, SYN: true}, "", false)
+	}
 	rulePath := filepath.Join(t.TempDir(), "indicators.yml")
 	ruleText := fmt.Sprintf(`rules:
   - name: lab-domain-indicator-v1
@@ -220,6 +232,16 @@ func TestBookDownloadIntelligenceIntegration(t *testing.T) {
     severity: low
     expression: 'toJSON(Hashes) matches "\"SHA256\"[[:space:]]*:[[:space:]]*\"%s\""'
     tags: [source:local-lab, indicator:sha256, version:1]
+  - name: lab-syn-fanout-v1
+    description: 'source=local-lab; behavioral fanout candidate; not exploit evidence, no execution claim'
+    type: Connection
+    enabled: true
+    severity: low
+    expression: 'TransportProto == "TCP" && DstPort == "445" && NumSYNFlags == 1 && NumACKFlags == 0'
+    distinct_field: DstIP
+    distinct_threshold: 3
+    threshold_window: 60
+    tags: [source:local-lab, behavior:syn-fanout, version:1]
 `, digest)
 	if err := os.WriteFile(rulePath, []byte(ruleText), 0600); err != nil {
 		t.Fatal(err)
@@ -240,7 +262,6 @@ func TestBookDownloadIntelligenceIntegration(t *testing.T) {
 				t.Fatal("missing download transactions/artifacts")
 			}
 			domainHits, fileHits := 0, 0
-			var alerts []*types.Alert
 			for _, r := range http {
 				a, err := rules.EvaluateRule(cfg.Rules[0], r)
 				if err != nil {
@@ -251,7 +272,6 @@ func TestBookDownloadIntelligenceIntegration(t *testing.T) {
 				}
 				if a != nil {
 					domainHits++
-					alerts = append(alerts, a)
 					if r.Host != "cdn.download.invalid" || a.Timestamp != r.Timestamp || a.RuleDigest == "" || a.MatchedRecordSHA256 != fmt.Sprintf("%x", sha256.Sum256([]byte(a.MatchedRecord))) {
 						t.Fatalf("domain alert provenance: %v", a)
 					}
@@ -264,7 +284,6 @@ func TestBookDownloadIntelligenceIntegration(t *testing.T) {
 				}
 				if a != nil {
 					fileHits++
-					alerts = append(alerts, a)
 					if f.Hashes == nil || f.Hashes.SHA256 != digest {
 						t.Fatal("SHA256 rule matched a different artifact")
 					}
@@ -285,19 +304,92 @@ func TestBookDownloadIntelligenceIntegration(t *testing.T) {
 			if domainHits != 1 || fileHits != 2 {
 				t.Fatalf("domain/hash hits=%d/%d", domainHits, fileHits)
 			}
-			var alertData bytes.Buffer
-			for _, a := range alerts {
-				if err := json.NewEncoder(&alertData).Encode(a); err != nil {
-					t.Fatal(err)
-				}
-			}
-			if err := os.WriteFile(filepath.Join(out, "qualification-alerts.jsonl"), alertData.Bytes(), 0600); err != nil {
-				t.Fatal(err)
-			}
 			if err := os.WriteFile(filepath.Join(out, "indicator-source.yml"), []byte(ruleText), 0600); err != nil {
 				t.Fatal(err)
 			}
 			connections := bookRecords(t, out, "Connection", func() *types.Connection { return new(types.Connection) })
+			writer, err := rules.NewFileAlertWriter(out)
+			if err != nil {
+				t.Fatal(err)
+			}
+			engine, err := rules.NewEngine(filepath.Join(out, "indicator-source.yml"), writer)
+			if err != nil {
+				writer.Close()
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { _ = engine.Close() })
+			// Use the engine's normal five-minute deduplication window. The two
+			// matching artifacts on the same host pair produce one retained alert.
+			var inputs []types.AuditRecord
+			for _, r := range http {
+				inputs = append(inputs, r)
+			}
+			for _, r := range files {
+				inputs = append(inputs, r)
+			}
+			for _, r := range connections {
+				inputs = append(inputs, r)
+			}
+			sort.Slice(inputs, func(i, j int) bool {
+				if inputs[i].Time() != inputs[j].Time() {
+					return inputs[i].Time() < inputs[j].Time()
+				}
+				a, _ := json.Marshal(inputs[i])
+				b, _ := json.Marshal(inputs[j])
+				return string(a) < string(b)
+			})
+			generated := 0
+			for _, r := range inputs {
+				n, err := engine.Evaluate(r)
+				if err != nil {
+					t.Fatal(err)
+				}
+				generated += n
+			}
+			if err := engine.Close(); err != nil {
+				t.Fatal(err)
+			}
+			alerts := bookRecords(t, out, "Alert", func() *types.Alert { return new(types.Alert) })
+			if generated != 3 || len(alerts) != 3 {
+				t.Fatalf("engine/persisted alerts=%d/%d want 3", generated, len(alerts))
+			}
+			wantNames := []string{"lab-artifact-indicator-v1", "lab-domain-indicator-v1", "lab-syn-fanout-v1"}
+			for ordinal, a := range alerts {
+				if a.Name != wantNames[ordinal] || a.TimestampBasis != "record-time" || a.SrcIP != "192.0.2.20" || len(a.RuleDigest) != 64 || a.MatchedRecordSHA256 != fmt.Sprintf("%x", sha256.Sum256([]byte(a.MatchedRecord))) {
+					t.Fatalf("persisted alert %d: %v", ordinal, a)
+				}
+				linked := false
+				for _, r := range inputs {
+					encoded, err := json.Marshal(r)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if r.NetcapType().String() == a.RecordType && string(encoded) == a.MatchedRecord {
+						linked = true
+						if r.Time() != a.Timestamp {
+							t.Fatal("alert timestamp detached from source record")
+						}
+					}
+				}
+				if !linked {
+					t.Fatal("persisted alert has no exact audit-record pivot")
+				}
+				if a.Name == "lab-syn-fanout-v1" {
+					var c types.Connection
+					if err := json.Unmarshal([]byte(a.MatchedRecord), &c); err != nil {
+						t.Fatal(err)
+					}
+					if c.DstIP != "203.0.113.42" || c.NumSYNFlags != 1 || c.NumACKFlags != 0 || !strings.Contains(a.Description, "not exploit evidence") {
+						t.Fatal("behavioral alert fired on control or claimed exploitation")
+					}
+				}
+			}
+			if _, err := os.Stat(filepath.Join(out, "Alert.ncap.gz")); err != nil {
+				t.Fatal("standard retained Alert audit missing", err)
+			}
+			if _, err := os.Stat(filepath.Join(out, "qualification-alerts.jsonl")); !os.IsNotExist(err) {
+				t.Fatal("nonstandard alert file must not be exported")
+			}
 			for _, f := range files {
 				found := false
 				for _, c := range connections {
