@@ -1,0 +1,19 @@
+[
+  {
+    "Timestamp": 1791363823692957000,
+    "Name": "policy.cleartext-service",
+    "Description": "policy.cleartext-service: policy-observation",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "42855",
+    "DstIP": "127.0.0.3",
+    "DstPort": "21",
+    "RuleName": "policy.cleartext-service",
+    "RecordType": "NetworkDetection",
+    "Severity": "low",
+    "Tags": [
+      "network-detection",
+      "policy-observation"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"policy.cleartext-service\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363823692054000,\"lastSeen\":1791363823692957000,\"observed\":1000,\"threshold\":64,\"windowNS\":60000000000,\"samples\":[\"TCP destination port 21\"],\"limitations\":[\"Port and observed payload do not identify the application protocol or prove credentials were sent\"]}"
+  }
+]

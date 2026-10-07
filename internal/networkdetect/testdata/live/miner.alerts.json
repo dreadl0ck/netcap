@@ -1,0 +1,20 @@
+[
+  {
+    "Timestamp": 1791363756026515000,
+    "Name": "protocol.stratum",
+    "Description": "protocol.stratum: policy-observation",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "57393",
+    "DstIP": "127.0.0.7",
+    "DstPort": "3333",
+    "MITRE": "T1496",
+    "RuleName": "protocol.stratum",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "policy-observation"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"protocol.stratum\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363756025256000,\"lastSeen\":1791363756026515000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"mining.subscribe\"],\"limitations\":[\"Mining protocol activity does not establish unauthorized mining\"]}"
+  }
+]

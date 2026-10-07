@@ -1,0 +1,20 @@
+[
+  {
+    "Timestamp": 1791363750919283000,
+    "Name": "dns.dga",
+    "Description": "dns.dga: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "0",
+    "DstIP": "127.0.0.1",
+    "DstPort": "0",
+    "MITRE": "T1568.002",
+    "RuleName": "dns.dga",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"dns.dga\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363750865210000,\"lastSeen\":1791363750919283000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"cokuc9ba.com\",\"dk3sspbt.com\",\"g7pqklpy.info\",\"jekpe0dz.info\",\"kfjhdx0m.info\",\"mcwisx5y.com\",\"shthq0ec.com\",\"suycr1ax.com\"],\"limitations\":[\"Lexical/domain-diversity heuristic; DNS response outcomes are not required or inferred\"]}"
+  }
+]

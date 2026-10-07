@@ -35,7 +35,7 @@ FROM --platform=linux/amd64 ubuntu:26.04
 ARG IPV6_SUPPORT=true
 
 RUN apt-get update
-RUN apt install -y --fix-missing libpcap0.8 software-properties-common ca-certificates liblzo2-2 libkeyutils-dev tcpdump curl xz-utils
+RUN apt install -y --fix-missing libpcap0.8 software-properties-common ca-certificates liblzo2-2 libkeyutils-dev libnuma1 libbz2-1.0 liblz4-1 libzstd1 tcpdump curl xz-utils
 RUN update-ca-certificates
 
 # Install Google Magika CLI v1.0.2 for AI-based file type classification
@@ -55,5 +55,17 @@ COPY --from=builder /netcap/LICENSE /usr/share/licenses/netcap/LICENSE
 COPY --from=builder /netcap/legal /usr/share/licenses/netcap/
 COPY --from=builder /usr/local/lib/* /usr/lib/
 COPY --from=builder /usr/lib/libndpi* /usr/lib/
+COPY --from=builder /usr/lib/libprotoident.so* /usr/lib/
+COPY --from=builder /usr/lib/libflowmanager.so* /usr/lib/
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libtrace.so* /usr/lib/
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libwandio.so* /usr/lib/
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libwandder.so* /usr/lib/
+COPY --from=builder /usr/lib/x86_64-linux-gnu/librte_eal.so* /usr/lib/
+COPY --from=builder /usr/lib/x86_64-linux-gnu/librte_ethdev.so* /usr/lib/
+COPY --from=builder /usr/lib/x86_64-linux-gnu/librte_mbuf.so* /usr/lib/
+COPY --from=builder /usr/lib/x86_64-linux-gnu/librte_mempool.so* /usr/lib/
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libssl.so.1.1 /usr/lib/
+RUN ldconfig && /usr/bin/net -version
 
 CMD ["/bin/sh"]

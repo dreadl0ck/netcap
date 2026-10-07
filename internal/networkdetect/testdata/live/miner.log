@@ -1,0 +1,25 @@
+
+AlphaSOC Network Flight Simulator™  (https://github.com/alphasoc/flightsim)
+The address of the network interface for IP traffic is 127.0.0.1
+The address of the network interface for DNS queries is 127.0.0.1
+The current time is 07-Oct-26 09:02:35
+
+09:02:35 [miner] Preparing a random sample of cryptomining IP:port pairs
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Connecting to 127.0.0.7:3333
+09:02:36 [miner] Done (15/15)
+
+All done! Check your SIEM for alerts using the timestamps and details above.

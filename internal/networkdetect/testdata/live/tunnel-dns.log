@@ -1,0 +1,10 @@
+
+AlphaSOC Network Flight Simulator™  (https://github.com/alphasoc/flightsim)
+The address of the network interface for IP traffic is 127.0.0.1
+The address of the network interface for DNS queries is 127.0.0.1
+The current time is 07-Oct-26 09:03:00
+
+09:03:00 [tunnel-dns] Simulating DNS tunneling via *.sandbox.alphasoc.xyz
+09:03:10 [tunnel-dns] Done (1/1)
+
+All done! Check your SIEM for alerts using the timestamps and details above.

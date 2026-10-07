@@ -71,6 +71,7 @@ import useSWR, { mutate, mutate as globalMutate } from 'swr';
 import { FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 
 import { syntaxHighlightJSON } from '../lib/html';
+import NetworkDetectionEvidence, { NetworkDetectionCoverage } from '../components/NetworkDetectionEvidence';
 // Helper function to convert unix timestamps to human-readable format
 // fieldName parameter helps identify if we should convert this number
 function convertTimestamps(obj: any, fieldName?: string): any {
@@ -132,14 +133,19 @@ function convertTimestamps(obj: any, fieldName?: string): any {
 }
 
 // Syntax highlighting for JSON
+function formatMatchedRecord(raw: string): string {
+  try { return JSON.stringify(convertTimestamps(JSON.parse(raw)), null, 2); }
+  catch { return raw; }
+}
 
-export default function AlertsPage() {
+export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceActions?: (alert: Alert) => React.ReactNode } = {}) {
   const api = useNetcapApi();
   const isMobile = useIsMobile();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(50);
   const [severityFilter, setSeverityFilter] = useState<string>('');
   const [ruleFilter, setRuleFilter] = useState<string>('');
+  const [classificationFilter, setClassificationFilter] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [sortBy, setSortBy] = useState<'count' | 'lastSeen' | 'firstSeen' | 'severity'>('lastSeen');
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
@@ -157,6 +163,7 @@ export default function AlertsPage() {
   // Fetch status and input files for capture selector
   const { data: status, mutate: mutateStatus } = useSWR('status', () => api.getStatus());
   const { data: inputFiles } = useSWR('inputFiles', () => api.getInputFiles());
+  const { data: detectionCoverage, error: detectionCoverageError } = useSWR(['network-detection', status?.activeInputFile], () => api.getNetworkDetectionStats(status?.activeInputFile || undefined), { refreshInterval: 5000 });
 
   // Compute selected file from status and inputFiles
   const selectedFile = useMemo(() => {
@@ -166,13 +173,14 @@ export default function AlertsPage() {
 
   // Fetch grouped alerts
   const { data: groupedAlertsData, error } = useSWR(
-    ['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy],
+    ['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter],
     () =>
       api.getGroupedAlerts({
         limit: rowsPerPage,
         offset: page * rowsPerPage,
         severity: severityFilter || undefined,
         ruleName: ruleFilter || undefined,
+        classification: classificationFilter || undefined,
         sort: sortOrder,
         sortBy: sortBy,
       }),
@@ -202,7 +210,7 @@ export default function AlertsPage() {
   };
 
   const handleRefresh = () => {
-    mutate(['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy]);
+    mutate(['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter]);
     mutate('alertStats');
   };
 
@@ -227,7 +235,7 @@ export default function AlertsPage() {
       
       // Refresh local data
       await mutateStatus();
-      await mutate(['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy]);
+      await mutate(['groupedAlerts', page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter]);
       await mutate('alertStats');
       
       // Globally invalidate status cache for all pages
@@ -245,7 +253,7 @@ export default function AlertsPage() {
     } finally {
       setSwitchingFile(false);
     }
-  }, [mutateStatus, mutate, page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy]);
+  }, [mutateStatus, mutate, page, rowsPerPage, severityFilter, ruleFilter, sortOrder, sortBy, classificationFilter]);
 
   const handleClearAlerts = async () => {
     if (!confirm('Are you sure you want to clear all alerts? This action cannot be undone.')) return;
@@ -457,6 +465,11 @@ export default function AlertsPage() {
             Failed to load alerts: {error.message}
           </MuiAlert>
         )}
+
+        <Box sx={{ mb: 2 }}><NetworkDetectionCoverage stats={detectionCoverage ?? undefined} unavailable={Boolean(detectionCoverageError) || detectionCoverage === null} /></Box>
+        <FormControl size="small" sx={{ mb: 2, minWidth: 240 }}><InputLabel id="finding-class-label">Finding classification</InputLabel><Select labelId="finding-class-label" label="Finding classification" value={classificationFilter} onChange={event => { setClassificationFilter(event.target.value); setPage(0); }}>
+          <MenuItem value="">All classifications</MenuItem><MenuItem value="indicator-match">Indicator matches</MenuItem><MenuItem value="behavioral-suspicion">Behavioral suspicions</MenuItem><MenuItem value="policy-observation">Policy observations</MenuItem>
+        </Select></FormControl>
 
         {/* Statistics Cards */}
         {stats && (
@@ -1050,6 +1063,8 @@ export default function AlertsPage() {
           <DialogContent>
             {selectedAlert && (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <NetworkDetectionEvidence alert={selectedAlert} />
+                {selectedAlert.recordType === 'NetworkDetection' && renderEvidenceActions?.(selectedAlert)}
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary">
                     Timestamp
@@ -1201,7 +1216,7 @@ export default function AlertsPage() {
                           wordBreak: 'break-word',
                         }}
                         dangerouslySetInnerHTML={{
-                          __html: syntaxHighlightJSON(JSON.stringify(convertTimestamps(JSON.parse(selectedAlert.matchedRecord)), null, 2))
+                          __html: syntaxHighlightJSON(formatMatchedRecord(selectedAlert.matchedRecord))
                         }}
                       />
                     </Paper>
@@ -1233,4 +1248,3 @@ export default function AlertsPage() {
     </Layout>
   );
 }
-

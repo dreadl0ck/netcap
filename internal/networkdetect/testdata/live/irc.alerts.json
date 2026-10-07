@@ -1,0 +1,36 @@
+[
+  {
+    "Timestamp": 1791363795069164000,
+    "Name": "protocol.irc",
+    "Description": "protocol.irc: policy-observation",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "51085",
+    "DstIP": "127.0.0.3",
+    "DstPort": "6667",
+    "RuleName": "protocol.irc",
+    "RecordType": "NetworkDetection",
+    "Severity": "info",
+    "Tags": [
+      "network-detection",
+      "policy-observation"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"protocol.irc\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363795069000000,\"lastSeen\":1791363795069164000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"IRC NICK and USER commands\"],\"limitations\":[\"IRC is also used legitimately\"]}"
+  },
+  {
+    "Timestamp": 1791363795222401000,
+    "Name": "protocol.irc",
+    "Description": "protocol.irc: policy-observation",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "59247",
+    "DstIP": "127.0.0.8",
+    "DstPort": "6667",
+    "RuleName": "protocol.irc",
+    "RecordType": "NetworkDetection",
+    "Severity": "info",
+    "Tags": [
+      "network-detection",
+      "policy-observation"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"protocol.irc\",\"classification\":\"policy-observation\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363795221659000,\"lastSeen\":1791363795222401000,\"observed\":1,\"threshold\":1,\"windowNS\":60000000000,\"samples\":[\"IRC NICK and USER commands\"],\"limitations\":[\"IRC is also used legitimately\"]}"
+  }
+]

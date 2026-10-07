@@ -186,6 +186,7 @@ function createNoOpApi(): NetcapApiClient {
     getInjectionStats: noOpReturn({ totalRules: 0, enabledRules: 0, totalEvents: 0, eventsByRule: {}, eventsByResult: {}, eventsByAction: {} }),
     getInjectionActions: noOpReturn({ actions: [] }),
     getAlerts: noOpReturn({ alerts: [], totalCount: 0 }),
+    getNetworkDetectionStats: noOpReturn(null),
     getGroupedAlerts: noOpReturn({ groups: [], totalCount: 0, groupCount: 0 }),
     getAlertStats: noOpReturn({ totalAlerts: 0, groupCount: 0, bySeverity: {}, byRule: {}, recentAlerts: [], criticalAlerts: 0, lastUpdate: 0 }),
     clearAlerts: noOpReturn({ success: false, message: '' }),
@@ -1036,6 +1037,9 @@ export interface UpdateRuleSetRequest {
 }
 
 export interface Alert {
+  srcPort?: string;
+  dstPort?: string;
+  domain?: string;
   timestamp: number;
   name: string;
   description: string;
@@ -1059,6 +1063,7 @@ export interface AlertsResponse {
   alerts: Alert[];
   totalCount: number;
 }
+export interface NetworkDetectionStats { schema: number; active: boolean; events: number; alerts: number; overflow: number; late: number; streamGaps: number; keys: number; flows: number; indicators: number; error?: string }
 
 export interface GroupedAlert {
   ruleName: string;
@@ -2287,6 +2292,13 @@ function createApiWithBase(apiBase: string) {
   },
 
   // Alerts API
+  async getNetworkDetectionStats(inputFile?: string): Promise<NetworkDetectionStats | null> {
+    const query = inputFile ? `?inputFile=${encodeURIComponent(inputFile)}` : '';
+    const res = await fetch(`${apiBase}/network-detection${query}`);
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error('Failed to read network detection coverage');
+    return res.json();
+  },
   async getAlerts(params?: {
     limit?: number;
     offset?: number;
@@ -2307,6 +2319,7 @@ function createApiWithBase(apiBase: string) {
   },
 
   async getGroupedAlerts(params?: {
+	classification?: string;
     limit?: number;
     offset?: number;
     severity?: string;
@@ -2321,6 +2334,7 @@ function createApiWithBase(apiBase: string) {
     if (params?.ruleName) queryParams.set('ruleName', params.ruleName);
     if (params?.sort) queryParams.set('sort', params.sort);
     if (params?.sortBy) queryParams.set('sortBy', params.sortBy);
+    if (params?.classification) queryParams.set('classification', params.classification);
 
     const res = await fetch(`${apiBase}/alerts/grouped?${queryParams}`);
     if (!res.ok) throw new Error('Failed to fetch grouped alerts');

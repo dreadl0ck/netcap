@@ -1,0 +1,11 @@
+
+AlphaSOC Network Flight Simulator™  (https://github.com/alphasoc/flightsim)
+The address of the network interface for IP traffic is 127.0.0.1
+The address of the network interface for DNS queries is 127.0.0.1
+The current time is 07-Oct-26 09:02:54
+
+09:02:54 [ssh-exfil:1MB] Preparing to send randomly generated data to a non-standard SSH port
+09:02:54 [ssh-exfil:1MB] Simulating an SSH/SFTP file transfer of 1048576B (1.00MB) to ssh.sandbox-services.alphasoc.xyz:995
+09:02:55 [ssh-exfil:1MB] Done (1/1)
+
+All done! Check your SIEM for alerts using the timestamps and details above.

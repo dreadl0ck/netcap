@@ -1,0 +1,20 @@
+[
+  {
+    "Timestamp": 1791363792553940000,
+    "Name": "icmp.tunnel",
+    "Description": "icmp.tunnel: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "0",
+    "DstIP": "127.0.0.3",
+    "DstPort": "0",
+    "MITRE": "T1048.003",
+    "RuleName": "icmp.tunnel",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"icmp.tunnel\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363792544040000,\"lastSeen\":1791363792553940000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"15663104\",\"15663105\",\"15663106\",\"15663107\",\"15663108\",\"15663109\",\"15663110\",\"15663111\"],\"limitations\":[\"Large randomized diagnostic echoes can look similar\"]}"
+  }
+]

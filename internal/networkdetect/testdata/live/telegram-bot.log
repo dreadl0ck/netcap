@@ -1,0 +1,12 @@
+
+AlphaSOC Network Flight Simulator™  (https://github.com/alphasoc/flightsim)
+The address of the network interface for IP traffic is 127.0.0.1
+The address of the network interface for DNS queries is 127.0.0.1
+The current time is 07-Oct-26 09:03:41
+
+09:03:41 [telegram-bot] Preparing to simulate Telegram bot traffic
+09:03:41 [telegram-bot] Simulating Telegram Bot API traffic to api.telegram.org
+09:03:41 [telegram-bot] WARNING: No token in environment variable FLIGHTSIM_TELEGRAM_TOKEN was found. Using random string instead. This will generate traffic to api.telegram.org but return an authentication error. However, the traffic should still be captured by your SIEM.
+09:03:41 [telegram-bot] Done (1/1)
+
+All done! Check your SIEM for alerts using the timestamps and details above.

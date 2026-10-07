@@ -1,0 +1,25 @@
+
+AlphaSOC Network Flight Simulator™  (https://github.com/alphasoc/flightsim)
+The address of the network interface for IP traffic is 127.0.0.1
+The address of the network interface for DNS queries is 127.0.0.1
+The current time is 07-Oct-26 09:02:52
+
+09:02:52 [spambot] Preparing a random sample of Internet mail servers
+09:02:52 [spambot] Connecting to mx.wow.com:25
+09:02:52 [spambot] Connecting to mx.libero.it:25
+09:02:52 [spambot] Connecting to mx.talktalk.co.uk:25
+09:02:52 [spambot] Connecting to mx.web.de:25
+09:02:52 [spambot] Connecting to mx.zoho.com:25
+09:02:52 [spambot] Connecting to mx.yahoo.com.br:25
+09:02:52 [spambot] Connecting to mx.t-online.de:25
+09:02:52 [spambot] Connecting to mx.ya.ru:25
+09:02:52 [spambot] Connecting to mx.tiscali.co.uk:25
+09:02:52 [spambot] Connecting to mx.aol.com:25
+09:02:52 [spambot] Connecting to mx.hotmail.com.br:25
+09:02:52 [spambot] Connecting to mx.orange.fr:25
+09:02:52 [spambot] Connecting to mx.online.de:25
+09:02:52 [spambot] Connecting to mx.msn.com:25
+09:02:52 [spambot] Connecting to mx.virginmedia.com:25
+09:02:52 [spambot] Done (15/15)
+
+All done! Check your SIEM for alerts using the timestamps and details above.

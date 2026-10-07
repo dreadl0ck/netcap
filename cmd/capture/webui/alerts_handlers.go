@@ -39,6 +39,9 @@ import (
 
 // AlertResponse represents an alert for the API
 type AlertResponse struct {
+	SrcPort             string   `json:"srcPort,omitempty"`
+	DstPort             string   `json:"dstPort,omitempty"`
+	Domain              string   `json:"domain,omitempty"`
 	Timestamp           int64    `json:"timestamp"`
 	Name                string   `json:"name"`
 	Description         string   `json:"description"`
@@ -460,6 +463,18 @@ func (s *Server) handleGroupedAlerts(w http.ResponseWriter, r *http.Request) {
 
 	// Group alerts
 	groups := groupAlerts(alerts, severityFilter, ruleNameFilter)
+	if classification := query.Get("classification"); classification != "" {
+		filtered := make([]GroupedAlert, 0, len(groups))
+		for _, group := range groups {
+			for _, tag := range group.Tags {
+				if tag == classification {
+					filtered = append(filtered, group)
+					break
+				}
+			}
+		}
+		groups = filtered
+	}
 
 	// Sort groups
 	sortGroupedAlerts(groups, sortBy, sortOrder)
@@ -699,7 +714,7 @@ func generateAlertID(alert AlertResponse) string {
 		hash := sha256.Sum256([]byte(alert.RuleDigest + "/" + alert.TimestampNs + "/" + alert.DetectedAtNs + "/" + alert.MatchedRecordSHA256))
 		return fmt.Sprintf("%s-v2-%x", id, hash[:16])
 	}
-	if alert.RecordType == "Behavior" {
+	if alert.RecordType == "Behavior" || alert.RecordType == "NetworkDetection" {
 		hash := sha256.Sum256([]byte(alert.MatchedRecord))
 		return fmt.Sprintf("%s-%x", id, hash[:16])
 	}

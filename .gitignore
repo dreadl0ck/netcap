@@ -49,6 +49,9 @@ pcaps
 !tests/new_decoders_test.go
 !tests/The Ultimate PCAP v20260316.pcapng
 !internal/behavior/testdata/qualification/**/*.pcap
+!internal/networkdetect/testdata/**/*.pcap
+!tests/flightsim-lab/
+!tests/flightsim-lab/**
 zeus/.history
 zeus/dumps
 priv.key
@@ -103,6 +106,7 @@ links.txt
 
 # Log files at any level
 **/*.log
+!internal/networkdetect/testdata/live/*.log
 
 # Collector artifacts
 internal/collector/errors.pcap

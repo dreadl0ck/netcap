@@ -61,6 +61,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/flowexport"
 	"github.com/dreadl0ck/netcap/internal/label/manager"
 	"github.com/dreadl0ck/netcap/internal/netio"
+	"github.com/dreadl0ck/netcap/internal/networkdetect"
 	"github.com/dreadl0ck/netcap/internal/performance"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/rules"
@@ -181,6 +182,9 @@ type Collector struct {
 	captureKind, captureSource string
 	captureLinkType            layers.LinkType
 	captureComplete            bool
+	networkDetector            *networkdetect.Engine
+	networkAlertWriter         *rules.FileAlertWriter
+	networkDetectionError      error
 }
 
 // GetTotalBytesWritten returns the total bytes written to disk.
@@ -692,6 +696,7 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	c.observeCaptureEvidence(p)
 	c.observeFlowExport(p)
 	c.observeBehavior(p)
+	c.observeNetworkDetection(p)
 	c.wg.Add(1)
 	atomic.AddInt64(&c.current, 1)
 	select {

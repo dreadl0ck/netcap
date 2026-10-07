@@ -900,19 +900,21 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 
 	// init collector
 	coll := collector.New(collector.Config{
-		Workers:               flagWorkers,
-		PacketBufferSize:      flagPacketBuffer,
-		WriteUnknownPackets:   !flagIgnoreUnknown,
-		Promisc:               flagPromiscMode,
-		SnapLen:               flagSnapLen,
-		BaseLayer:             utils.GetBaseLayer(flagBaseLayer),
-		DecodeOptions:         utils.GetDecodeOptions(flagDecodeOptions),
-		DPI:                   flagDPI,
-		DPIModules:            flagDPIModules,
-		DPIWorkers:            flagDPIWorkers,
-		ReassembleConnections: flagReassembleConnections,
-		FlowExports:           flagFlowExports,
-		CaptureEvidence:       flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
+		NetworkDetection:       flagNetworkDetection,
+		NetworkDetectionConfig: flagNetworkDetectionConfig,
+		Workers:                flagWorkers,
+		PacketBufferSize:       flagPacketBuffer,
+		WriteUnknownPackets:    !flagIgnoreUnknown,
+		Promisc:                flagPromiscMode,
+		SnapLen:                flagSnapLen,
+		BaseLayer:              utils.GetBaseLayer(flagBaseLayer),
+		DecodeOptions:          utils.GetDecodeOptions(flagDecodeOptions),
+		DPI:                    flagDPI,
+		DPIModules:             flagDPIModules,
+		DPIWorkers:             flagDPIWorkers,
+		ReassembleConnections:  flagReassembleConnections,
+		FlowExports:            flagFlowExports,
+		CaptureEvidence:        flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
 		FlowExportPorts:      flagFlowExportPorts,
 		FreeOSMem:            flagFreeOSMemory,
 		LogErrors:            flagLogErrors,
@@ -1010,6 +1012,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		},
 	})
 	coll.Bpf = flagBPF
+	defer func() { runErr = errors.Join(runErr, coll.GetNetworkDetectionError()) }()
 	coll.InputFile = flagInput
 	coll.PrintTime = flagTime
 	coll.Epochs = numEpochs
@@ -1258,19 +1261,21 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 
 			// Create a fresh collector instance with updated configuration for this file
 			coll = collector.New(collector.Config{
-				Workers:               flagWorkers,
-				PacketBufferSize:      flagPacketBuffer,
-				WriteUnknownPackets:   !flagIgnoreUnknown,
-				Promisc:               flagPromiscMode,
-				SnapLen:               flagSnapLen,
-				BaseLayer:             utils.GetBaseLayer(flagBaseLayer),
-				DecodeOptions:         utils.GetDecodeOptions(flagDecodeOptions),
-				DPI:                   flagDPI,
-				DPIModules:            flagDPIModules,
-				DPIWorkers:            flagDPIWorkers,
-				ReassembleConnections: flagReassembleConnections,
-				FlowExports:           flagFlowExports,
-				CaptureEvidence:       flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
+				NetworkDetection:       flagNetworkDetection,
+				NetworkDetectionConfig: flagNetworkDetectionConfig,
+				Workers:                flagWorkers,
+				PacketBufferSize:       flagPacketBuffer,
+				WriteUnknownPackets:    !flagIgnoreUnknown,
+				Promisc:                flagPromiscMode,
+				SnapLen:                flagSnapLen,
+				BaseLayer:              utils.GetBaseLayer(flagBaseLayer),
+				DecodeOptions:          utils.GetDecodeOptions(flagDecodeOptions),
+				DPI:                    flagDPI,
+				DPIModules:             flagDPIModules,
+				DPIWorkers:             flagDPIWorkers,
+				ReassembleConnections:  flagReassembleConnections,
+				FlowExports:            flagFlowExports,
+				CaptureEvidence:        flagCaptureEvidence, RetainPackets: flagRetainPackets, PacketSegmentBytes: flagPacketSegmentBytes, PacketRetentionBytes: flagPacketRetentionBytes,
 				FlowExportPorts:      flagFlowExportPorts,
 				FreeOSMem:            flagFreeOSMemory,
 				LogErrors:            flagLogErrors,

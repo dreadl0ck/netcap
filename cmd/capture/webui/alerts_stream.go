@@ -16,6 +16,7 @@ import (
 
 func alertResponse(alert *types.Alert) AlertResponse {
 	response := AlertResponse{Timestamp: alert.Timestamp / 1000000, Name: alert.Name, Description: alert.Description, RuleName: alert.RuleName,
+		SrcPort: alert.SrcPort, DstPort: alert.DstPort, Domain: alert.Domain,
 		RecordType: alert.RecordType, Severity: alert.Severity, Tags: alert.Tags, MITRE: alert.MITRE, SrcIP: alert.SrcIP, DstIP: alert.DstIP,
 		MatchedRecord: alert.MatchedRecord, RuleExpression: alert.RuleExpression, Threshold: alert.Threshold, ThresholdWindow: alert.ThresholdWindow}
 	if alert.TimestampBasis != "" {

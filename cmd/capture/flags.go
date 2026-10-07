@@ -42,6 +42,8 @@ func Flags() (flags []string) {
 // GetFlags returns the CLI flags for the capture subcommand.
 func GetFlags() []cli.Flag {
 	return append([]cli.Flag{
+		&cli.BoolFlag{Name: "network-detection", Value: true, Usage: "capture-time network threat and policy detections", Sources: cli.EnvVars("NC_NETWORK_DETECTION")},
+		&cli.StringFlag{Name: "network-detection-config", Usage: "bounded JSON thresholds, approved sources and versioned indicators", Sources: cli.EnvVars("NC_NETWORK_DETECTION_CONFIG")},
 		&cli.BoolFlag{
 			Name:    "gen-config",
 			Usage:   "generate config",
