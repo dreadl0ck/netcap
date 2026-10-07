@@ -23,6 +23,9 @@ type Query struct {
 	Format    string  `json:"format"`
 	Domain    *uint32 `json:"domain,omitempty"`
 	Host      string  `json:"host,omitempty"`
+	Ingress   *uint64 `json:"ingress,omitempty,string"`
+	Egress    *uint64 `json:"egress,omitempty,string"`
+	NextHop   string  `json:"nextHop,omitempty"`
 	GroupBy   string  `json:"groupBy"`
 	Limit     int     `json:"limit"`
 }
@@ -70,11 +73,16 @@ func ReadReport(ctx context.Context, path string, query Query) (Report, error) {
 		return result, fmt.Errorf("time basis must be flow or receive")
 	}
 	switch query.GroupBy {
-	case "srcIP", "dstIP", "dstPort", "protocol", "ingress", "egress", "srcAS", "dstAS", "nextHop":
+	case "srcIP", "dstIP", "dstPort", "protocol", "ingress", "egress", "ingressEgress", "srcAS", "dstAS", "nextHop", "srcPrefix", "dstPrefix":
 	default:
 		return result, fmt.Errorf("unsupported export group %q", query.GroupBy)
 	}
 	var prefix netip.Prefix
+	if query.NextHop != "" {
+		if _, err := netip.ParseAddr(query.NextHop); err != nil {
+			return result, fmt.Errorf("invalid next hop: %w", err)
+		}
+	}
 	if query.Host != "" {
 		var err error
 		prefix, err = netip.ParsePrefix(query.Host)
@@ -166,6 +174,11 @@ func ReadReport(ctx context.Context, path string, query Query) (Report, error) {
 				continue
 			}
 		}
+		if query.Ingress != nil && (o.Ingress == nil || *o.Ingress != *query.Ingress) ||
+			query.Egress != nil && (o.Egress == nil || *o.Egress != *query.Egress) ||
+			query.NextHop != "" && o.NextHop != query.NextHop {
+			continue
+		}
 		if o.Bytes == nil || o.Packets == nil || o.CounterSemantics == "exported-cumulative-as-reported" {
 			result.Excluded++
 			continue
@@ -253,11 +266,28 @@ func exportGroup(o *Observation, group string) (string, string) {
 		return value(o.Ingress), o.SrcIP
 	case "egress":
 		return value(o.Egress), o.DstIP
+	case "ingressEgress":
+		return value(o.Ingress) + "/" + value(o.Egress), o.DstIP
 	case "srcAS":
 		return value(o.SrcAS), o.DstIP
 	case "dstAS":
 		return value(o.DstAS), o.SrcIP
+	case "srcPrefix":
+		return exportedPrefix(o.SrcIP, o.SrcPrefixLength), o.DstIP
+	case "dstPrefix":
+		return exportedPrefix(o.DstIP, o.DstPrefixLength), o.SrcIP
 	default:
+		if o.NextHop == "" {
+			return "unavailable", o.DstIP
+		}
 		return o.NextHop, o.DstIP
 	}
+}
+
+func exportedPrefix(ip string, length *uint64) string {
+	addr, err := netip.ParseAddr(ip)
+	if err != nil || length == nil || *length > uint64(addr.BitLen()) {
+		return "unavailable"
+	}
+	return netip.PrefixFrom(addr, int(*length)).Masked().String()
 }

@@ -42,6 +42,10 @@ func (h *HTTPFileExtractor) DescribeFile(handle *file.FileHandle) string {
 
 // ExtractFile performs HTTP file extraction with enhanced metadata
 func (h *HTTPFileExtractor) ExtractFile(conv *core.ConversationInfo, data []byte, metadata file.FileMetadata) error {
+	return h.extractFile(conv, data, metadata, nil)
+}
+
+func (h *HTTPFileExtractor) extractFile(conv *core.ConversationInfo, data []byte, metadata file.FileMetadata, bodyErr error) error {
 	// Check if HTTP file extraction is enabled
 	if !file.IsProtocolEnabled("HTTP") {
 		return nil
@@ -71,7 +75,7 @@ func (h *HTTPFileExtractor) ExtractFile(conv *core.ConversationInfo, data []byte
 		conv,
 		source,
 		filename,
-		nil, // no error
+		bodyErr,
 		data,
 		metadata.Encoding,
 		metadata.Host,

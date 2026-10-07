@@ -41,6 +41,23 @@ func TestExportReportScopeCountsAndHealth(t *testing.T) {
 	if report.Matched != 1 || report.Groups[0].Bytes != 600000000 || report.Groups[0].Packets != 123 || report.Groups[0].Key != "192.0.2.1" || report.SourceSHA256 != hex.EncodeToString(hash[:]) {
 		t.Fatalf("report: %+v", report)
 	}
+	query.GroupBy = "ingressEgress"
+	report, err = ReadReport(context.Background(), path, query)
+	if err != nil || len(report.Groups) != 1 || report.Groups[0].Key != "unavailable/unavailable" {
+		t.Fatalf("missing interfaces became interface zero: %+v, %v", report, err)
+	}
+	zero := uint64(0)
+	query.Egress = &zero
+	report, err = ReadReport(context.Background(), path, query)
+	if err != nil || report.Matched != 0 {
+		t.Fatalf("interface-zero filter included unavailable telemetry: %+v, %v", report, err)
+	}
+	query.Egress = nil
+	query.NextHop = "not-an-address"
+	if _, err := ReadReport(context.Background(), path, query); err == nil {
+		t.Fatal("invalid next hop silently returned a clean negative")
+	}
+	query.NextHop = ""
 	query.TimeBasis = "flow"
 	report, err = ReadReport(context.Background(), path, query)
 	if err != nil {
@@ -52,5 +69,26 @@ func TestExportReportScopeCountsAndHealth(t *testing.T) {
 	query.Format = "misspelled"
 	if _, err := ReadReport(context.Background(), path, query); err == nil {
 		t.Fatal("unknown format silently produced empty report")
+	}
+}
+
+func TestExportedPrefixMetadata(t *testing.T) {
+	zero, v4, v6, invalid := uint64(0), uint64(24), uint64(48), uint64(129)
+	for _, tc := range []struct {
+		ip     string
+		length *uint64
+		want   string
+	}{
+		{"192.0.2.17", &v4, "192.0.2.0/24"},
+		{"2001:db8:1234:abcd::17", &v6, "2001:db8:1234::/48"},
+		{"192.0.2.17", &zero, "0.0.0.0/0"},
+		{"192.0.2.17", nil, "unavailable"},
+		{"192.0.2.17", &v6, "unavailable"},
+		{"2001:db8::17", &invalid, "unavailable"},
+		{"", &zero, "unavailable"},
+	} {
+		if got := exportedPrefix(tc.ip, tc.length); got != tc.want {
+			t.Fatalf("prefix(%s,%v)=%s want %s", tc.ip, tc.length, got, tc.want)
+		}
 	}
 }

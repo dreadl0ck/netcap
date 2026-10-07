@@ -161,9 +161,6 @@ func (f *ftpReader) readClient(b *bufio.Reader, pos *streamutils.ReadPosition) e
 	f.lastCommand = command
 	f.lastArg = argument
 
-	// Write FTP audit record for command
-	f.writeFTPRecord(false, command, argument, 0, "")
-
 	// Handle specific commands
 	switch command {
 	case "USER":
@@ -171,6 +168,7 @@ func (f *ftpReader) readClient(b *bufio.Reader, pos *streamutils.ReadPosition) e
 
 	case "RETR", "STOR":
 		f.lastFilename = argument
+		f.trackDataConnection()
 		ftpLog.Debug("FTP file transfer command",
 			zap.String("command", command),
 			zap.String("filename", f.lastFilename),
@@ -196,6 +194,7 @@ func (f *ftpReader) readClient(b *bufio.Reader, pos *streamutils.ReadPosition) e
 		f.lastFilename = argument
 	}
 
+	f.writeFTPRecord(false, command, argument, 0, "")
 	return nil
 }
 
@@ -314,9 +313,6 @@ func (f *ftpReader) readServer(b *bufio.Reader, pos *streamutils.ReadPosition) e
 		message = line[4:]
 	}
 
-	// Write FTP audit record for response
-	f.writeFTPRecord(true, "", "", int32(code), message)
-
 	// Handle specific responses
 	switch code {
 	case 150:
@@ -338,6 +334,7 @@ func (f *ftpReader) readServer(b *bufio.Reader, pos *streamutils.ReadPosition) e
 		f.parsePASVResponse(message)
 	}
 
+	f.writeFTPRecord(true, "", "", int32(code), message)
 	return nil
 }
 
