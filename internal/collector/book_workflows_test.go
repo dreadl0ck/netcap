@@ -240,6 +240,7 @@ func TestBookDownloadIntelligenceIntegration(t *testing.T) {
 				t.Fatal("missing download transactions/artifacts")
 			}
 			domainHits, fileHits := 0, 0
+			var alerts []*types.Alert
 			for _, r := range http {
 				a, err := rules.EvaluateRule(cfg.Rules[0], r)
 				if err != nil {
@@ -250,6 +251,7 @@ func TestBookDownloadIntelligenceIntegration(t *testing.T) {
 				}
 				if a != nil {
 					domainHits++
+					alerts = append(alerts, a)
 					if r.Host != "cdn.download.invalid" || a.Timestamp != r.Timestamp || a.RuleDigest == "" || a.MatchedRecordSHA256 != fmt.Sprintf("%x", sha256.Sum256([]byte(a.MatchedRecord))) {
 						t.Fatalf("domain alert provenance: %v", a)
 					}
@@ -262,6 +264,7 @@ func TestBookDownloadIntelligenceIntegration(t *testing.T) {
 				}
 				if a != nil {
 					fileHits++
+					alerts = append(alerts, a)
 					if f.Hashes == nil || f.Hashes.SHA256 != digest {
 						t.Fatal("SHA256 rule matched a different artifact")
 					}
@@ -281,6 +284,18 @@ func TestBookDownloadIntelligenceIntegration(t *testing.T) {
 			}
 			if domainHits != 1 || fileHits != 2 {
 				t.Fatalf("domain/hash hits=%d/%d", domainHits, fileHits)
+			}
+			var alertData bytes.Buffer
+			for _, a := range alerts {
+				if err := json.NewEncoder(&alertData).Encode(a); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := os.WriteFile(filepath.Join(out, "qualification-alerts.jsonl"), alertData.Bytes(), 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(out, "indicator-source.yml"), []byte(ruleText), 0600); err != nil {
+				t.Fatal(err)
 			}
 			connections := bookRecords(t, out, "Connection", func() *types.Connection { return new(types.Connection) })
 			for _, f := range files {

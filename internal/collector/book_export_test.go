@@ -138,6 +138,22 @@ func exportBookCase(t *testing.T, input, out string, workers int, strict bool) {
 		}
 		digest := fmt.Sprintf("%x", sha256.Sum256(data))
 		oracle.Files = append(oracle.Files, bookExportFile{rel, digest, int64(len(data))})
+		if filepath.Base(rel) == "qualification-alerts.jsonl" {
+			scanner := bufio.NewScanner(bytes.NewReader(data))
+			scanner.Buffer(make([]byte, 4096), 2<<20)
+			for ordinal := uint64(0); scanner.Scan(); ordinal++ {
+				line := append([]byte(nil), scanner.Bytes()...)
+				var a types.Alert
+				if err := json.Unmarshal(line, &a); err != nil {
+					t.Fatal(err)
+				}
+				oracle.Records = append(oracle.Records, bookExportRecord{File: rel, FileSHA256: digest, Type: "Alert", Ordinal: ordinal, TimestampNs: fmt.Sprint(a.Timestamp), RecordSHA256: fmt.Sprintf("%x", sha256.Sum256(line)), Record: line})
+			}
+			if err := scanner.Err(); err != nil {
+				t.Fatal(err)
+			}
+			return
+		}
 		if filepath.Base(rel) == "FlowExports.jsonl" {
 			scanner := bufio.NewScanner(bytes.NewReader(data))
 			scanner.Buffer(make([]byte, 4096), 2<<20)
@@ -376,6 +392,24 @@ func verifyBookExport(t *testing.T, path string) {
 						t.Fatal("artifact path hash mismatch")
 					}
 				}
+			}
+		}
+		if r.Type == "Alert" {
+			var a types.Alert
+			if err := json.Unmarshal(r.Record, &a); err != nil {
+				t.Fatal(err)
+			}
+			if len(a.RuleDigest) != 64 || a.MatchedRecordSHA256 != fmt.Sprintf("%x", sha256.Sum256([]byte(a.MatchedRecord))) {
+				t.Fatal("exported alert provenance invalid")
+			}
+			found := false
+			for _, source := range oracle.Records {
+				if source.Type == strings.TrimPrefix(a.RecordType, "NC_") && source.RecordSHA256 == a.MatchedRecordSHA256 {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatal("exported alert has no matching retained audit record")
 			}
 		}
 	}
