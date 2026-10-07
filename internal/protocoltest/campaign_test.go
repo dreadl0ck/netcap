@@ -30,7 +30,7 @@ func TestCampaignUDPControlsReproductionAndMinimization(t *testing.T) {
 		}
 	}()
 	e := Exchange{Version: 1, Network: "udp", Address: conn.LocalAddr().String(), Framing: Framing{MaxBytes: 128}, MaxTotalBytes: 512, TimeoutMilliseconds: 500, Steps: []Step{{Send: []byte("AA"), Receive: true, Expect: []byte("VALID")}}}
-	spec := Campaign{Control: e, FailureMarker: []byte("REJECTED"), MaxCases: 16, MaxAttempts: 32}
+	spec := Campaign{Metadata: fixtureMetadata(), Control: e, FailureMarker: []byte("REJECTED"), MaxCases: 16, MaxAttempts: 32}
 	r, err := RunCampaign(context.Background(), spec)
 	if err != nil || r.Before.Status != "matched" || r.After.Status != "matched" || r.Minimized == nil || !r.Minimized.Complete || !bytes.Equal(r.Minimized.Input, []byte{0xbe}) {
 		t.Fatalf("campaign %+v %v", r, err)
@@ -97,7 +97,7 @@ func TestAccessStateTransitionsAndResponseSelector(t *testing.T) {
 			state = "logged-out"
 		}
 		steps = append(steps, Step{Send: []byte("READ fixture\n"), Receive: true})
-		cases = append(cases, AccessCase{Role: "alice", State: state, Resource: "fixture", Message: "READ", Allowed: !logout, Marker: []byte("OWNER-MARKER"), ResponseStep: len(steps) - 1, Exchange: lineExchange(l.Addr().String(), steps...)})
+		cases = append(cases, AccessCase{Metadata: fixtureMetadata(), Role: "alice", State: state, Resource: "fixture", Message: "READ", Allowed: !logout, Marker: []byte("OWNER-MARKER"), ResponseStep: len(steps) - 1, Exchange: lineExchange(l.Addr().String(), steps...)})
 	}
 	r, err := RunAccess(context.Background(), cases)
 	<-done

@@ -23,21 +23,21 @@ func TestProtocolCorpusAndTriageCLI(t *testing.T) {
 	var output bytes.Buffer
 	cmd := GetCommand()
 	cmd.Writer = &output
-	if err := cmd.Run(context.Background(), []string{"investigate", "protocol-corpus", "--read", input}); err != nil {
+	if err := cmd.Run(context.Background(), []string{"investigate", "protocol-corpus", "--read", input, "--target-version", "fixture-1"}); err != nil {
 		t.Fatal(err)
 	}
-	var corpus []protocoltest.CorpusCase
-	if err := json.Unmarshal(output.Bytes(), &corpus); err != nil || len(corpus) != 7 {
+	var corpus protocoltest.ByteCorpus
+	if err := json.Unmarshal(output.Bytes(), &corpus); err != nil || len(corpus.Cases) != 7 || corpus.GenerationVersion != protocoltest.GenerationVersion || corpus.TargetVersion != "fixture-1" {
 		t.Fatal("corpus CLI", err, output.String())
 	}
 	output.Reset()
 	cmd = GetCommand()
 	cmd.Writer = &output
-	if err := cmd.Run(context.Background(), []string{"investigate", "protocol-triage", "--read", input, "--artifact", artifact, "--kind", "stack", "--target-version", "fixture-1", "--reset", "restart fixture"}); err != nil {
+	if err := cmd.Run(context.Background(), []string{"investigate", "protocol-triage", "--read", input, "--artifact", artifact, "--kind", "stack", "--target-version", "fixture-1", "--reset", "restart fixture", "--input-generation", protocoltest.GenerationVersion}); err != nil {
 		t.Fatal(err)
 	}
 	var report protocoltest.TriageArtifact
-	if err := json.Unmarshal(output.Bytes(), &report); err != nil || report.Classification != "external evidence; impact unverified" || !bytes.Equal(report.Input, corpus[0].Input) {
+	if err := json.Unmarshal(output.Bytes(), &report); err != nil || report.Classification != "external evidence; impact unverified" || !bytes.Equal(report.Input, corpus.Cases[0].Input) {
 		t.Fatal("triage CLI", err, output.String())
 	}
 }

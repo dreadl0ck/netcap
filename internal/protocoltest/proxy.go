@@ -3,7 +3,6 @@ package protocoltest
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -25,6 +24,7 @@ type Mutation struct {
 }
 
 type Proxy struct {
+	Mode                string     `json:"mode,omitempty"`
 	TLS                 *ProxyTLS  `json:"tls,omitempty"`
 	Address             string     `json:"address"`
 	Framing             Framing    `json:"framing"`
@@ -36,11 +36,14 @@ type Proxy struct {
 
 // ProxyTLS requires explicit identity and trust for both independently negotiated legs.
 type ProxyTLS struct {
-	Mode            string `json:"mode,omitempty"`
-	CertificateFile string `json:"certificateFile"`
-	KeyFile         string `json:"keyFile"`
-	RootCAFile      string `json:"rootCAFile"`
-	ServerName      string `json:"serverName"`
+	ClientCertificateFile string `json:"clientCertificateFile,omitempty"`
+	ClientKeyFile         string `json:"clientKeyFile,omitempty"`
+	PeerCertificateSHA256 string `json:"peerCertificateSHA256,omitempty"`
+	Mode                  string `json:"mode,omitempty"`
+	CertificateFile       string `json:"certificateFile"`
+	KeyFile               string `json:"keyFile"`
+	RootCAFile            string `json:"rootCAFile"`
+	ServerName            string `json:"serverName"`
 }
 
 func proxyTLSConfigs(spec *ProxyTLS) (*tls.Config, *tls.Config, error) {
@@ -50,27 +53,29 @@ func proxyTLSConfigs(spec *ProxyTLS) (*tls.Config, *tls.Config, error) {
 	if spec.CertificateFile == "" || spec.KeyFile == "" || spec.RootCAFile == "" || spec.ServerName == "" {
 		return nil, nil, fmt.Errorf("TLS proxy requires explicit certificate, key, upstream CA and server name")
 	}
-	cert, err := boundedFile(spec.CertificateFile, 1<<20)
+	identity, err := loadIdentity(spec.CertificateFile, spec.KeyFile)
 	if err != nil {
 		return nil, nil, err
 	}
-	key, err := boundedFile(spec.KeyFile, 1<<20)
+	roots, err := loadTrust(spec.RootCAFile)
 	if err != nil {
 		return nil, nil, err
 	}
-	identity, err := tls.X509KeyPair(cert, key)
-	if err != nil {
+	upstream := &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots, ServerName: spec.ServerName}
+	if (spec.ClientCertificateFile == "") != (spec.ClientKeyFile == "") {
+		return nil, nil, fmt.Errorf("upstream mTLS requires both certificate and key")
+	}
+	if spec.ClientCertificateFile != "" {
+		cert, err := loadIdentity(spec.ClientCertificateFile, spec.ClientKeyFile)
+		if err != nil {
+			return nil, nil, err
+		}
+		upstream.Certificates = []tls.Certificate{cert}
+	}
+	if err := setPeerPin(upstream, spec.PeerCertificateSHA256); err != nil {
 		return nil, nil, err
 	}
-	ca, err := boundedFile(spec.RootCAFile, 1<<20)
-	if err != nil {
-		return nil, nil, err
-	}
-	roots := x509.NewCertPool()
-	if !roots.AppendCertsFromPEM(ca) {
-		return nil, nil, fmt.Errorf("invalid upstream CA")
-	}
-	return &tls.Config{MinVersion: tls.VersionTLS12, Certificates: []tls.Certificate{identity}}, &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots, ServerName: spec.ServerName}, nil
+	return &tls.Config{MinVersion: tls.VersionTLS12, Certificates: []tls.Certificate{identity}}, upstream, nil
 }
 
 type ProxyObservation struct {
@@ -133,6 +138,12 @@ func MutateFrame(frame []byte, framing Framing, mutation Mutation) ([]byte, erro
 // ProxyOne handles one accepted TCP connection. The caller owns listener.
 // It terminates both legs on framing, mutation, budget, timeout or transport failure.
 func ProxyOne(ctx context.Context, listener net.Listener, spec Proxy) ([]ProxyObservation, error) {
+	if spec.Mode == "passthrough" {
+		return proxyPassthrough(ctx, listener, spec)
+	}
+	if spec.Mode != "" && spec.Mode != "application" {
+		return nil, fmt.Errorf("unsupported proxy mode %q", spec.Mode)
+	}
 	var inbound, outbound *tls.Config
 	if spec.TLS != nil {
 		var err error

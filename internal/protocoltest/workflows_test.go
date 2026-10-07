@@ -31,6 +31,10 @@ func lineExchange(address string, steps ...Step) Exchange {
 	return Exchange{Version: 1, Network: "tcp", Address: address, Framing: Framing{Kind: "delimiter", Delimiter: []byte("\n"), MaxBytes: 128}, MaxTotalBytes: 1024, TimeoutMilliseconds: 2000, Steps: steps}
 }
 
+func fixtureMetadata() ExperimentMetadata {
+	return ExperimentMetadata{Version: 1, TargetVersion: "loopback-fixture-v1", Reset: ResetSpec{Mode: "connection", Description: "fixture state and variables are scoped to a new connection"}}
+}
+
 func TestServeOneStateCaptureResetAndNegativeControl(t *testing.T) {
 	for _, request := range []string{"fresh-one\n", "fresh-two\n", "wrong\n"} {
 		l := loopback(t)
@@ -165,7 +169,7 @@ func TestAccessMatrixActualMarkersAndCanonicalization(t *testing.T) {
 		cases := []AccessCase{}
 		for _, role := range []string{"anonymous", "alice", "bob"} {
 			for _, resource := range []string{"/alice/fixture", "/alice/../alice/fixture"} {
-				cases = append(cases, AccessCase{Role: role, State: "read", Resource: resource, Message: "get", Allowed: role == "alice", Marker: []byte("ALICE-ONLY-MARKER"), Exchange: lineExchange(l.Addr().String(), Step{Send: []byte(role + " " + resource + "\n"), Receive: true})})
+				cases = append(cases, AccessCase{Metadata: fixtureMetadata(), Role: role, State: "read", Resource: resource, Message: "get", Allowed: role == "alice", Marker: []byte("ALICE-ONLY-MARKER"), Exchange: lineExchange(l.Addr().String(), Step{Send: []byte(role + " " + resource + "\n"), Receive: true})})
 			}
 		}
 		results, e := RunAccess(context.Background(), cases)

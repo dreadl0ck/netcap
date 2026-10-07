@@ -8,20 +8,22 @@ import (
 )
 
 type AccessCase struct {
-	ResponseStep int      `json:"responseStep"`
-	Role         string   `json:"role"`
-	State        string   `json:"state"`
-	Resource     string   `json:"resource"`
-	Message      string   `json:"message"`
-	Allowed      bool     `json:"allowed"`
-	Marker       []byte   `json:"marker"`
-	Exchange     Exchange `json:"exchange"`
+	Metadata     ExperimentMetadata `json:"metadata"`
+	ResponseStep int                `json:"responseStep"`
+	Role         string             `json:"role"`
+	State        string             `json:"state"`
+	Resource     string             `json:"resource"`
+	Message      string             `json:"message"`
+	Allowed      bool               `json:"allowed"`
+	Marker       []byte             `json:"marker"`
+	Exchange     Exchange           `json:"exchange"`
 }
 type AccessObservation struct {
-	Case           AccessCase `json:"case"`
-	Result         Result     `json:"result"`
-	MarkerReturned bool       `json:"markerReturned"`
-	Status         string     `json:"status"`
+	Reset          ResetEvidence `json:"reset"`
+	Case           AccessCase    `json:"case"`
+	Result         Result        `json:"result"`
+	MarkerReturned bool          `json:"markerReturned"`
+	Status         string        `json:"status"`
 }
 
 // RunAccess opens a fresh session per case. Absence is meaningful only after
@@ -34,6 +36,9 @@ func RunAccess(ctx context.Context, cases []AccessCase) ([]AccessObservation, er
 	}
 	total := 0
 	for _, c := range cases {
+		if err := c.Metadata.Validate(); err != nil {
+			return nil, err
+		}
 		if c.Role == "" || c.State == "" || c.Resource == "" || c.Message == "" || len(c.Marker) == 0 {
 			return nil, fmt.Errorf("matrix labels and resource marker required")
 		}
@@ -43,7 +48,7 @@ func RunAccess(ctx context.Context, cases []AccessCase) ([]AccessObservation, er
 		if c.ResponseStep < 0 || c.ResponseStep >= len(c.Exchange.Steps) || !c.Exchange.Steps[c.ResponseStep].Receive || len(c.Marker) > c.Exchange.Framing.MaxBytes {
 			return nil, fmt.Errorf("resource response step and bounded marker required")
 		}
-		total += c.Exchange.MaxTotalBytes
+		total += c.Exchange.MaxTotalBytes + c.Metadata.resetBytes()
 		if total > 16<<20 {
 			return nil, fmt.Errorf("matrix evidence budget exceeded")
 		}
@@ -53,8 +58,8 @@ func RunAccess(ctx context.Context, cases []AccessCase) ([]AccessObservation, er
 		if err := ctx.Err(); err != nil {
 			return out, err
 		}
-		r, err := Run(ctx, c.Exchange)
-		o := AccessObservation{Case: c, Result: r, Status: "inconclusive"}
+		r, reset, err := runIsolated(ctx, c.Exchange, c.Metadata)
+		o := AccessObservation{Reset: reset, Case: c, Result: r, Status: "inconclusive"}
 		for _, v := range r.Observations {
 			if v.Step == c.ResponseStep && v.Direction == "received" && bytes.Contains(v.Bytes, c.Marker) {
 				o.MarkerReturned = true

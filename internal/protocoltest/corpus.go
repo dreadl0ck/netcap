@@ -14,6 +14,30 @@ type CorpusCase struct {
 	SHA256 string `json:"sha256"`
 }
 
+type ByteCorpus struct {
+	Version             int          `json:"version"`
+	GenerationVersion   string       `json:"generationVersion"`
+	TargetVersion       string       `json:"targetVersion"`
+	ConfigurationSHA256 string       `json:"configurationSHA256"`
+	Cases               []CorpusCase `json:"cases"`
+}
+
+func GenerateByteCorpus(seed []byte, maxCases, maxBytes int, target string) (ByteCorpus, error) {
+	r := ByteCorpus{Version: 1, GenerationVersion: GenerationVersion, TargetVersion: target}
+	if target == "" || len(target) > 1024 {
+		return r, fmt.Errorf("target version required")
+	}
+	r.ConfigurationSHA256 = configHash(struct {
+		Version            int
+		Generator, Target  string
+		Seed               []byte
+		MaxCases, MaxBytes int
+	}{1, GenerationVersion, target, seed, maxCases, maxBytes})
+	var err error
+	r.Cases, err = MutationCorpus(seed, maxCases, maxBytes)
+	return r, err
+}
+
 // MutationCorpus is deterministic: control, truncations, then single-byte XORs.
 // It deliberately preserves malformed lengths; it does not infer a grammar.
 func MutationCorpus(seed []byte, maxCases, maxBytes int) ([]CorpusCase, error) {
@@ -98,20 +122,32 @@ func Minimize(ctx context.Context, input []byte, maxAttempts int, oracle func(co
 }
 
 type TriageArtifact struct {
-	Kind           string `json:"kind"`
-	TargetVersion  string `json:"targetVersion"`
-	Reset          string `json:"reset"`
-	Input          []byte `json:"input"`
-	Evidence       []byte `json:"evidence"`
-	EvidenceSHA256 string `json:"evidenceSHA256"`
-	Classification string `json:"classification"`
+	InputGeneration     string `json:"inputGeneration"`
+	Version             int    `json:"version"`
+	GenerationVersion   string `json:"generationVersion"`
+	ConfigurationSHA256 string `json:"configurationSHA256"`
+	InputSHA256         string `json:"inputSHA256"`
+	Kind                string `json:"kind"`
+	TargetVersion       string `json:"targetVersion"`
+	Reset               string `json:"reset"`
+	Input               []byte `json:"input"`
+	Evidence            []byte `json:"evidence"`
+	EvidenceSHA256      string `json:"evidenceSHA256"`
+	Classification      string `json:"classification"`
 }
 
 // ImportTriage retains external evidence verbatim without executing it or
 // interpreting a stack, sanitizer report or process exit as proof of impact.
 func ImportTriage(kind, version, reset string, input []byte, path string) (TriageArtifact, error) {
-	r := TriageArtifact{Kind: kind, TargetVersion: version, Reset: reset, Input: bytes.Clone(input), Classification: "external evidence; impact unverified"}
-	if (kind != "stack" && kind != "sanitizer" && kind != "process" && kind != "impact") || version == "" || reset == "" || len(input) > 65536 {
+	return ImportGeneratedTriage(kind, version, reset, "external-unspecified", input, path)
+}
+func ImportGeneratedTriage(kind, version, reset, inputGeneration string, input []byte, path string) (TriageArtifact, error) {
+	r := TriageArtifact{Version: 1, GenerationVersion: GenerationVersion, Kind: kind, TargetVersion: version, Reset: reset, Input: bytes.Clone(input), Classification: "external evidence; impact unverified"}
+	r.InputGeneration = inputGeneration
+	if inputGeneration == "" || len(inputGeneration) > 1024 {
+		return r, fmt.Errorf("input generation/config version required")
+	}
+	if (kind != "stack" && kind != "sanitizer" && kind != "process" && kind != "impact" && kind != "routing" && kind != "socket-trace" && kind != "debugger" && kind != "decompiler" && kind != "reset") || version == "" || reset == "" || len(input) > 65536 {
 		return r, fmt.Errorf("unsupported artifact kind or missing reproduction metadata")
 	}
 	b, err := boundedFile(path, 1<<20)
@@ -124,5 +160,11 @@ func ImportTriage(kind, version, reset string, input []byte, path string) (Triag
 	r.Evidence = b
 	sum := sha256.Sum256(b)
 	r.EvidenceSHA256 = hex.EncodeToString(sum[:])
+	sum = sha256.Sum256(input)
+	r.InputSHA256 = hex.EncodeToString(sum[:])
+	r.ConfigurationSHA256 = configHash(struct {
+		Version                                         int
+		Generator, Kind, Target, Reset, Input, Evidence string
+	}{1, GenerationVersion + ":" + inputGeneration, kind, version, reset, r.InputSHA256, r.EvidenceSHA256})
 	return r, nil
 }
