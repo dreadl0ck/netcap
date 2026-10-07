@@ -2,8 +2,10 @@ package collector
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -27,6 +29,17 @@ func TestInvestigationPacketToFlowQualification(t *testing.T) {
 				}
 				if result.Matched != workerReplayFlows || len(result.Groups) != 1 || result.Groups[0].Key != "TCP" || result.Groups[0].Bytes != int64(bytes) || result.Groups[0].Packets != int64(packets) {
 					t.Fatalf("packet/flow evidence differs from fixture ledger: %+v; want bytes=%d packets=%d", result, bytes, packets)
+				}
+				data, err := os.ReadFile(filepath.Join(out, "capture-manifest.json"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				var capture evidence.CaptureManifest
+				if err := json.Unmarshal(data, &capture); err != nil {
+					t.Fatal(err)
+				}
+				if capture.Status != "done" || capture.IngressPackets != uint64(packets) || capture.AdmittedPackets != uint64(packets) || len(capture.InputSHA256) != 64 || capture.QueueDrops != 0 {
+					t.Fatalf("capture provenance differs from fixture: %+v", capture)
 				}
 			})
 		}

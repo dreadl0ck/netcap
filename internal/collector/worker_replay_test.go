@@ -195,6 +195,7 @@ func TestWorkerReplayProcess(t *testing.T) {
 	}
 	c := New(Config{
 		Workers: workers, PacketBufferSize: 8, ReassembleConnections: true,
+		CaptureEvidence:  os.Getenv("NETCAP_WORKER_REPLAY_CONNECTIONS") == "1",
 		NoSignalHandling: true, NoPrompt: true,
 		BaseLayer: layers.LayerTypeEthernet, DecodeOptions: gopacket.Default,
 		DecoderConfig: &config.Config{

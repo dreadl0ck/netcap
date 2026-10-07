@@ -90,6 +90,10 @@ var (
 	flagFreeOSMemory                   int
 	flagReassembleConnections          bool
 	flagFlowExports                    bool
+	flagCaptureEvidence                bool
+	flagRetainPackets                  bool
+	flagPacketSegmentBytes             int64
+	flagPacketRetentionBytes           int64
 	flagFlowExportPorts                string
 	flagTCPDebug                       bool
 	flagSaveConns                      bool
@@ -223,6 +227,10 @@ func setFlagsFromContext(c *cli.Command) {
 	flagFreeOSMemory = c.Int("free-os-mem")
 	flagReassembleConnections = c.Bool("reassemble-connections")
 	flagFlowExports = c.Bool("flow-exports")
+	flagCaptureEvidence = c.Bool("capture-evidence")
+	flagRetainPackets = c.Bool("retain-packets")
+	flagPacketSegmentBytes = c.Int64("packet-segment-mb") << 20
+	flagPacketRetentionBytes = c.Int64("packet-retention-mb") << 20
 	flagFlowExportPorts = c.String("flow-export-ports")
 	flagTCPDebug = c.Bool("tcp-debug")
 	flagSaveConns = c.Bool("conns")

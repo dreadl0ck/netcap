@@ -65,6 +65,7 @@ func (c *Collector) cleanup(force bool) {
 				}
 			}
 		}
+		c.finalizeCaptureEvidence()
 		if c.log == nil {
 			return
 		}

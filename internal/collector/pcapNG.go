@@ -92,14 +92,19 @@ func countPacketsNG(path string) (count int64, err error) {
 
 // CollectPcapNG implements parallel decoding of incoming packets.
 func (c *Collector) CollectPcapNG(path string) (resultErr error) {
+	c.captureKind, c.captureSource = "file", path
 	// Recover from any panics during processing
 	defer c.recoverFromPanic()
 	ctx, finish, err := c.beginCapture()
 	if err != nil {
 		return err
 	}
-	defer func() { c.cleanup(false); resultErr = stdErrors.Join(resultErr, c.flowExportError) }()
-	defer finish()
+	defer func() {
+		c.captureRunError = resultErr
+		finish()
+		c.cleanup(false)
+		resultErr = stdErrors.Join(resultErr, c.flowExportError, c.captureEvidenceError)
+	}()
 
 	// stat input file
 	stat, err := os.Stat(path)
@@ -160,7 +165,8 @@ func (c *Collector) CollectPcapNG(path string) (resultErr error) {
 		// fetch the next packet data and packet header
 		data, ci, err = r.ReadPacketData()
 		if err != nil {
-			if ctx.Err() != nil || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			if ctx.Err() != nil || errors.Is(err, io.EOF) {
+				c.captureComplete = ctx.Err() == nil && errors.Is(err, io.EOF)
 				break
 			}
 

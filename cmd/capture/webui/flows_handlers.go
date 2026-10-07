@@ -25,7 +25,7 @@ func (s *Server) handleFlowQuery(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	outDir, _ := s.resolveOutDirFromRequest(r)
+	outDir, _ := s.resolveEvidenceOutput(r)
 	if outDir == "" {
 		http.Error(w, "No selected analysis dataset", http.StatusServiceUnavailable)
 		return

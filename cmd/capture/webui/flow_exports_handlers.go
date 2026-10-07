@@ -59,7 +59,7 @@ func (s *Server) handleFlowExportQuery(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	out, _ := s.resolveOutDirFromRequest(r)
+	out, _ := s.resolveEvidenceOutput(r)
 	if out == "" {
 		http.Error(w, "No selected analysis dataset", http.StatusServiceUnavailable)
 		return

@@ -388,6 +388,10 @@ func GetFlags() []cli.Flag {
 			Sources: cli.EnvVars("NC_REASSEMBLE_CONNECTIONS"),
 		},
 		&cli.BoolFlag{Name: "flow-exports", Value: true, Usage: "normalize NetFlow v5/v9, IPFIX and sFlow metadata with collection health", Sources: cli.EnvVars("NC_FLOW_EXPORTS")},
+		&cli.BoolFlag{Name: "capture-evidence", Value: true, Usage: "write capture identity, configuration and health manifest", Sources: cli.EnvVars("NC_CAPTURE_EVIDENCE")},
+		&cli.BoolFlag{Name: "retain-packets", Usage: "retain bounded rotating PCAPNG segments", Sources: cli.EnvVars("NC_RETAIN_PACKETS")},
+		&cli.Int64Flag{Name: "packet-segment-mb", Value: 32, Usage: "retained segment target size in MiB", Sources: cli.EnvVars("NC_PACKET_SEGMENT_MB")},
+		&cli.Int64Flag{Name: "packet-retention-mb", Value: 512, Usage: "retained packet disk budget in MiB", Sources: cli.EnvVars("NC_PACKET_RETENTION_MB")},
 		&cli.StringFlag{Name: "flow-export-ports", Value: "2055,4739,6343,9995,9996", Usage: "UDP destination ports observed as flow exports", Sources: cli.EnvVars("NC_FLOW_EXPORT_PORTS")},
 		&cli.BoolFlag{
 			Name:    "tcp-debug",

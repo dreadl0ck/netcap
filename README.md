@@ -269,6 +269,14 @@ These bytes contain no ANSI markup. The manifest preserves per-direction offsets
 capture times, TCP gaps and UDP datagram boundaries. A `gapped` stream must not be
 parsed as contiguous data; the legacy display transcript remains separate.
 
+`capture --capture-evidence` writes `capture-manifest.json` with input/configuration
+hashes, ingress/admission/drop counters and nullable kernel statistics. Add
+`--retain-packets --packet-segment-mb 32 --packet-retention-mb 512` for rotating
+PCAPNG retention. Expired segments remain recorded as tombstones. A fresh output
+directory is required; retention failure is an error, not successful collection.
+The **Investigation evidence** page (`/investigation-evidence`) displays this
+coverage, scoped flow reports and directional stream downloads.
+
 `net investigate exchange --spec exchange.json` executes one bounded TCP/UDP
 experiment. Byte fields use JSON base64; `Framing` supports `length-prefix`,
 `delimiter` and `fixed`. Response variables capture fresh negotiation values.

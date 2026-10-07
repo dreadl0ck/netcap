@@ -56,6 +56,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tcp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
+	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/internal/flowexport"
 	"github.com/dreadl0ck/netcap/internal/label/manager"
@@ -163,17 +164,23 @@ type Collector struct {
 	perfTracker *performance.Tracker
 
 	// filtering and rules
-	filterPrograms     map[types.Type]*filter.CompiledFilter
-	rulesEngine        *rules.Engine
-	filteredCount      int64
-	alertCount         int64
-	behaviorEngine     *behavior.Engine
-	behaviorScope      behavior.Scope
-	behaviorError      error
-	flowExports        *flowexport.Recorder
-	flowExportPorts    map[layers.UDPPort]bool
-	flowExportError    error
-	flowIngressOrdinal uint64
+	filterPrograms             map[types.Type]*filter.CompiledFilter
+	rulesEngine                *rules.Engine
+	filteredCount              int64
+	alertCount                 int64
+	behaviorEngine             *behavior.Engine
+	behaviorScope              behavior.Scope
+	behaviorError              error
+	flowExports                *flowexport.Recorder
+	flowExportPorts            map[layers.UDPPort]bool
+	flowExportError            error
+	flowIngressOrdinal         uint64
+	captureEvidence            *evidence.Capture
+	captureEvidenceError       error
+	captureRunError            error
+	captureKind, captureSource string
+	captureLinkType            layers.LinkType
+	captureComplete            bool
 }
 
 // GetTotalBytesWritten returns the total bytes written to disk.
@@ -682,6 +689,7 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	ref := p.Metadata().CaptureInfo.Timestamp
 	// Observe ingress serially before pooled-packet ownership moves to a worker.
 	c.flowIngressOrdinal++
+	c.observeCaptureEvidence(p)
 	c.observeFlowExport(p)
 	c.observeBehavior(p)
 	c.wg.Add(1)

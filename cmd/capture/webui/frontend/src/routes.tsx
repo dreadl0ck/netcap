@@ -16,6 +16,7 @@ const BPFPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ def
 const CertificatesPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.CertificatesPage })));
 const ConfigPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.ConfigPage })));
 const ConnectionsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.ConnectionsPage })));
+const InvestigationPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.InvestigationPage })));
 const SecretsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.SecretsPage })));
 const DbsPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.DbsPage })));
 const DecodersPage = lazy(() => import('@dreadl0ck/netcap-ui/pages').then(m => ({ default: m.DecodersPage })));
@@ -57,6 +58,7 @@ export function AppRoutes() {
         <Route path="/certificates" element={<CertificatesPage />} />
         <Route path="/config" element={<ConfigPage />} />
         <Route path="/connections" element={<ConnectionsPage />} />
+        <Route path="/investigation-evidence" element={<InvestigationPage />} />
         <Route path="/secrets" element={<SecretsPage />} />
         <Route path="/dbs" element={<DbsPage />} />
         <Route path="/decoders" element={<DecodersPage />} />

@@ -48,6 +48,7 @@ func defaultWorkers() int {
 //goland:noinspection GoUnusedGlobalVariable,GoUnnecessarilyExportedIdentifiers
 var DefaultConfig = Config{
 	Workers:             0, // 0 means use defaultWorkers() at init time
+	CaptureEvidence:     true,
 	PacketBufferSize:    1000,
 	WriteUnknownPackets: false,
 	Promisc:             false,
@@ -66,6 +67,7 @@ var DefaultConfig = Config{
 //goland:noinspection GoUnusedGlobalVariable,GoUnnecessarilyExportedIdentifiers
 var DefaultConfigDPI = Config{
 	Workers:             0, // 0 means use defaultWorkers() at init time
+	CaptureEvidence:     true,
 	PacketBufferSize:    1000,
 	WriteUnknownPackets: false,
 	Promisc:             false,
@@ -168,7 +170,11 @@ type Config struct {
 	// This makes data visible while capture is ongoing.
 	// If zero, no periodic flushing is performed (records only flushed on shutdown).
 	// Recommended: 30s to 60s for most use cases.
-	LiveFlushInterval time.Duration
-	FlowExports       bool
-	FlowExportPorts   string
+	LiveFlushInterval    time.Duration
+	FlowExports          bool
+	FlowExportPorts      string
+	CaptureEvidence      bool
+	RetainPackets        bool
+	PacketSegmentBytes   int64
+	PacketRetentionBytes int64
 }

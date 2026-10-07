@@ -32,6 +32,7 @@ export { default as CertificatesPage } from './CertificatesPage';
 export type { CertificateSummary, CertificatesPageProps } from './CertificatesPage';
 export { default as ConfigPage } from './ConfigPage';
 export { default as ConnectionsPage } from './ConnectionsPage';
+export { default as InvestigationPage } from './InvestigationPage';
 export type { ConnectionSummary, ConnectionsPageProps } from './ConnectionsPage';
 export { default as SecretsPage } from './SecretsPage';
 export type { SecretSummary, SecretsPageProps } from './SecretsPage';
