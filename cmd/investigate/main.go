@@ -1,23 +1,36 @@
 package investigate
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/flow"
 	"github.com/dreadl0ck/netcap/internal/flowexport"
+	"github.com/dreadl0ck/netcap/internal/protocoltest"
 	"github.com/urfave/cli/v3"
 )
 
 func GetCommand() *cli.Command {
 	return &cli.Command{Name: "investigate", Usage: "bounded flow queries and verifiable packet evidence", Commands: []*cli.Command{
+		{Name: "protocol-proxy", Usage: "proxy one framed TCP exchange with bounded message mutations", Flags: []cli.Flag{
+			&cli.StringFlag{Name: "spec", Required: true, Usage: "JSON proxy specification (maximum 2 MiB)"},
+			&cli.StringFlag{Name: "listen", Value: "127.0.0.1:0", Usage: "local TCP address; selected port is printed on stderr"},
+		}, Action: runProtocolProxy},
+		{Name: "exchange", Usage: "execute a bounded TCP/UDP protocol experiment and emit byte-backed results", Flags: []cli.Flag{
+			&cli.StringFlag{Name: "spec", Required: true, Usage: "versioned JSON exchange specification (maximum 2 MiB)"},
+		}, Action: runExchange},
 		{Name: "collect-flows", Usage: "receive UDP flow exports into a fresh output directory", Flags: []cli.Flag{
 			&cli.StringFlag{Name: "listen", Value: "127.0.0.1:2055", Usage: "local UDP address"},
 			&cli.StringFlag{Name: "out", Required: true, Usage: "existing directory without flow-export artifacts"},
@@ -56,6 +69,79 @@ func GetCommand() *cli.Command {
 			&cli.DurationFlag{Name: "timeout", Value: 2 * time.Minute, Usage: "maximum export duration"},
 		}, Action: runPacketEvidence},
 	}}
+}
+
+func runProtocolProxy(ctx context.Context, cmd *cli.Command) error {
+	if cmd.Args().Len() != 0 {
+		return fmt.Errorf("protocol-proxy does not accept positional arguments")
+	}
+	var spec protocoltest.Proxy
+	if err := readExperimentSpec(cmd.String("spec"), &spec); err != nil {
+		return err
+	}
+	listener, err := net.Listen("tcp", cmd.String("listen"))
+	if err != nil {
+		return err
+	}
+	defer listener.Close()
+	if _, err := fmt.Fprintln(cmd.Root().ErrWriter, "Protocol proxy listening on", listener.Addr().String()); err != nil {
+		return err
+	}
+	data, err := json.Marshal(spec)
+	if err != nil {
+		return err
+	}
+	digest := sha256.Sum256(data)
+	observations, runErr := protocoltest.ProxyOne(ctx, listener, spec)
+	status, message := "completed", ""
+	if runErr != nil {
+		status = "error"
+		message = runErr.Error()
+	}
+	result := struct {
+		Version             int                             `json:"version"`
+		ConfigurationSHA256 string                          `json:"configurationSHA256"`
+		Status              string                          `json:"status"`
+		Error               string                          `json:"error,omitempty"`
+		Observations        []protocoltest.ProxyObservation `json:"observations"`
+	}{1, hex.EncodeToString(digest[:]), status, message, observations}
+	return errors.Join(runErr, json.NewEncoder(cmd.Root().Writer).Encode(result))
+}
+
+func runExchange(ctx context.Context, cmd *cli.Command) error {
+	if cmd.Args().Len() != 0 {
+		return fmt.Errorf("exchange does not accept positional arguments")
+	}
+	var spec protocoltest.Exchange
+	if err := readExperimentSpec(cmd.String("spec"), &spec); err != nil {
+		return err
+	}
+	result, runErr := protocoltest.Run(ctx, spec)
+	return errors.Join(runErr, json.NewEncoder(cmd.Root().Writer).Encode(result))
+}
+
+func readExperimentSpec(path string, target any) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	data, err := io.ReadAll(io.LimitReader(file, (2<<20)+1))
+	if err != nil {
+		return err
+	}
+	if len(data) > 2<<20 {
+		return fmt.Errorf("exchange specification exceeds 2 MiB")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(target); err != nil {
+		return err
+	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		return fmt.Errorf("exchange specification has trailing data")
+	}
+	return nil
 }
 
 func runCollectFlows(ctx context.Context, cmd *cli.Command) error {

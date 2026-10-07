@@ -264,6 +264,23 @@ SHA-256. Existing flow artifacts are refused; use a fresh output directory.
 | Ranking | Requires exporter, format and domain. Cumulative counts and incomplete counters are excluded and counted explicitly. |
 | Coverage | sFlow counter/unknown sample formats remain in raw datagrams; unsupported options scopes are not applied globally. |
 
+`capture --conns` also writes `stream-evidence/stream-*/{client.bin,server.bin,manifest.json}`.
+These bytes contain no ANSI markup. The manifest preserves per-direction offsets,
+capture times, TCP gaps and UDP datagram boundaries. A `gapped` stream must not be
+parsed as contiguous data; the legacy display transcript remains separate.
+
+`net investigate exchange --spec exchange.json` executes one bounded TCP/UDP
+experiment. Byte fields use JSON base64; `Framing` supports `length-prefix`,
+`delimiter` and `fixed`. Response variables capture fresh negotiation values.
+TLS verifies certificates and hostnames; optional `rootCAFile` and paired
+`clientCertificateFile`/`clientKeyFile` configure experiment trust and mTLS.
+
+`net investigate protocol-proxy --spec proxy.json --listen 127.0.0.1:9000`
+handles one framed TCP connection. Mutations select direction/frame and byte
+range, with optional length-prefix repair, drop, duplication and delay. Output
+records original/transmitted bytes. Both tools enforce time/frame/byte limits;
+response matches are protocol observations, not proof of endpoint effects.
+
 ## Docker
 
 Pre-built images are available for multiple configurations:
