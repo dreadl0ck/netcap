@@ -128,6 +128,9 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 
 	outDir, _ := s.resolveOutDirFromRequest(r)
+	if filter.observationID != "" {
+		outDir, _ = s.resolveEvidenceOutput(r)
+	}
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
