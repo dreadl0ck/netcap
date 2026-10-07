@@ -120,6 +120,7 @@ source IPs/CIDRs and versioned indicators (`internal/networkdetect/config.go`).
 | --- | --- |
 | DNS DGA and tunneling | Distinct randomized apex names or high-entropy TXT labels beneath one parent, capture-time counts and sampled names; behavioral suspicion |
 | TCP scans and SMTP fan-out | Distinct destination endpoints or mail hosts; retries do not increase cardinality |
+| Periodic connections (`c2.beacon`) | Latest 8 TCP connection starts from one source to one service, mean interval ≥ 10 s, coefficient of variation ≤ 0.1 within 1 h; retransmitted SYNs ignored. Updates and monitoring are also periodic |
 | ICMP tunneling | Repeated large, high-entropy echo requests; diagnostic traffic can look similar |
 | SSH transfer and unusual ports | SSH banners, unique contiguous client bytes and service port; encrypted contents and authorization remain unknown |
 | Stratum, IRC, OAST and Telegram | Protocol/destination observations; legitimate use is possible |
@@ -139,7 +140,18 @@ at revision `3709d1c6905d9527885c62f66f49a955c7b0d191`, generated with Docker
 `--network none` and local DNS/API/SSH/SFTP/IRC/Stratum fixtures. C2 intelligence
 is synthetic lab data; SSH qualification uses a 1 MiB transfer and a 512 KiB
 threshold. `testdata/cases.json` separately labels synthetic source-shape and
-benign controls. Scenario names never enter the detector.
+benign controls. Scenario names never enter the detector. `beacon` has no
+FlightSim capture and is synthetic only.
+
+### Hunting fields
+
+| Record | Fields | Semantics |
+| --- | --- | --- |
+| DNS | `TransactionStatus`, `RTT`, `QueryTransmissions` | Capture-time pairing on endpoints, ID and first question: `query`, `retransmission`, `answered`, `late` (> 30 s) or `unsolicited`. At most 65,536 outstanding queries |
+| DCERPC | `ContextID`, `InterfaceName`, `OperationName`, `FaultStatus`, `CommunityID` | Requests and responses are attributed through Bind/AlterContext contexts; responses inherit the opnum of their call. A request is an attempt; the Response/Fault carries the outcome |
+| Connection | `ProducerConsumerRatio` | `(client − server bytes) / (client + server bytes)`, `[-1, 1]`; 0 when no bytes |
+
+The WebUI Domains page shows median RTT and pairing anomalies per domain.
 
 ```sh
 go test -race ./internal/networkdetect

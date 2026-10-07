@@ -33,10 +33,19 @@ type Config struct {
 	SSHBytes        uint64      `json:"sshBytes"`
 	ApprovedSources []string    `json:"approvedSources"`
 	Indicators      []Indicator `json:"indicators"`
+
+	// Periodic TCP connection starts from one source to one service. Samples
+	// is the number of connection starts examined (0 disables), Jitter the
+	// largest accepted coefficient of variation of their intervals.
+	BeaconSamples       int     `json:"beaconSamples"`
+	BeaconJitter        float64 `json:"beaconJitter"`
+	BeaconMinIntervalNS int64   `json:"beaconMinIntervalNS"`
+	BeaconWindowNS      int64   `json:"beaconWindowNS"`
 }
 
 func DefaultConfig() Config {
-	return Config{WindowNS: 60e9, DedupNS: 300e9, MaxKeys: 4096, MaxFlows: 1024, DNSNames: 10, ScanTargets: 10, SMTPHosts: 5, ICMPEchoes: 10, SSHBytes: 10 << 20}
+	return Config{WindowNS: 60e9, DedupNS: 300e9, MaxKeys: 4096, MaxFlows: 1024, DNSNames: 10, ScanTargets: 10, SMTPHosts: 5, ICMPEchoes: 10, SSHBytes: 10 << 20,
+		BeaconSamples: 8, BeaconJitter: 0.1, BeaconMinIntervalNS: 10e9, BeaconWindowNS: 3600e9}
 }
 
 func LoadConfig(path string) (Config, error) {
@@ -72,6 +81,10 @@ func (c Config) Validate() error {
 		if n < 2 || n > 128 {
 			return errors.New("invalid network detection threshold")
 		}
+	}
+	if c.BeaconSamples != 0 && (c.BeaconSamples < 4 || c.BeaconSamples > maxBeaconTimes || !(c.BeaconJitter > 0 && c.BeaconJitter <= 1) ||
+		c.BeaconMinIntervalNS < 1e9 || c.BeaconMinIntervalNS > 3600e9 || c.BeaconWindowNS < 60e9 || c.BeaconWindowNS > 86400e9) {
+		return errors.New("invalid beacon detection limits")
 	}
 	for _, s := range c.ApprovedSources {
 		if _, err := netip.ParsePrefix(s); err != nil {

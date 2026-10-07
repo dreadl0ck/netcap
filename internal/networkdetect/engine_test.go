@@ -108,6 +108,16 @@ func corpus() fixtureCorpus {
 		ev.QType = 1
 		result.Cases = append(result.Cases, fixtureCase{tc.name, []Event{ev}, []string{tc.detector}})
 	}
+	// Ten connection starts 60 s apart with up to 2 s of jitter.
+	var periodic []Event
+	jitter := []int64{0, 2e9, -1e9, 1e9, 0, -2e9, 1e9, 0, 2e9, -1e9}
+	for n := 0; n < 10; n++ {
+		ev := baseEvent("syn", 0)
+		ev.At += int64(n)*60e9 + jitter[n]
+		ev.DstIP, ev.DstPort, ev.SrcPort, ev.Seq = "198.51.100.20", 8443, uint16(41000+n), uint32(1000+n)
+		periodic = append(periodic, ev)
+	}
+	result.Cases = append(result.Cases, fixtureCase{"beacon", periodic, []string{"c2.beacon"}})
 	var benign []Event
 	for n := 0; n < 15; n++ {
 		ev := baseEvent("dns", n)
@@ -122,6 +132,21 @@ func corpus() fixtureCorpus {
 		ev.Seq = uint32(n)
 		ev.Payload = make([]byte, 1400)
 		benign = append(benign, ev)
+	}
+	// Repeated connection starts that are irregular, or periodic but faster
+	// than the minimum beacon interval, must not be reported as beacons.
+	at := baseEvent("syn", 20).At
+	for n := 0; n < 10; n++ {
+		fast := baseEvent("syn", 0)
+		fast.At, fast.DstIP, fast.DstPort, fast.SrcPort, fast.Seq = at+int64(n)*1e9, "198.51.100.22", 8443, uint16(43000+n), uint32(3000+n)
+		benign = append(benign, fast)
+	}
+	at += 10e9
+	for n, gap := range []int64{3, 47, 12, 90, 5, 33, 61, 8, 120, 20} {
+		at += gap * 1e9
+		irregular := baseEvent("syn", 0)
+		irregular.At, irregular.DstIP, irregular.DstPort, irregular.SrcPort, irregular.Seq = at, "198.51.100.21", 8443, uint16(42000+n), uint32(2000+n)
+		benign = append(benign, irregular)
 	}
 	result.Cases = append(result.Cases, fixtureCase{"benign", benign, []string{}})
 	return result
