@@ -64,7 +64,7 @@ func (f Framing) Read(reader io.Reader) ([]byte, error) {
 				return data, nil
 			}
 		}
-		return data, fmt.Errorf("delimiter frame limit exceeded")
+		return data, fmt.Errorf("%w: delimiter frame limit exceeded", ErrBudgetExceeded)
 	default:
 		header := make([]byte, f.LengthBytes)
 		if n, err := io.ReadFull(reader, header); err != nil {
@@ -90,7 +90,7 @@ func (f Framing) Read(reader io.Reader) ([]byte, error) {
 			length -= uint32(f.LengthBytes)
 		}
 		if uint64(length)+uint64(f.LengthBytes) > uint64(f.MaxBytes) {
-			return header, fmt.Errorf("declared frame exceeds maxBytes")
+			return header, fmt.Errorf("%w: declared frame exceeds maxBytes", ErrBudgetExceeded)
 		}
 		body := make([]byte, int(length))
 		n, err := io.ReadFull(reader, body)

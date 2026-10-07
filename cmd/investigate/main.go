@@ -24,7 +24,7 @@ import (
 
 func GetCommand() *cli.Command {
 	return &cli.Command{Name: "investigate", Usage: "bounded flow queries and verifiable packet evidence", Commands: []*cli.Command{
-		protocolServerCommand(), protocolAccessCommand(), protocolCorpusCommand(), protocolTriageCommand(), protocolCampaignCommand(), protocolGenerateCommand(), protocolReproduceCommand(),
+		protocolServerCommand(), protocolAccessCommand(), protocolCorpusCommand(), protocolTriageCommand(), protocolCampaignCommand(), protocolGenerateCommand(), protocolReproduceCommand(), protocolBoundaryCommand(),
 		{Name: "protocol-fields", Usage: "validate a framing/field hypothesis and optionally compare directional streams", Flags: []cli.Flag{
 			&cli.StringFlag{Name: "spec", Required: true, Usage: "versioned JSON grammar"},
 			&cli.StringFlag{Name: "read", Required: true, Usage: "contiguous directional byte stream"},
@@ -113,16 +113,10 @@ func runProtocolFields(ctx context.Context, cmd *cli.Command) error {
 			return err
 		}
 		report, err := grammar.Compare(input, other)
-		if err != nil {
-			return err
-		}
-		return json.NewEncoder(cmd.Root().Writer).Encode(report)
+		return errors.Join(err, json.NewEncoder(cmd.Root().Writer).Encode(report))
 	}
 	report, err := grammar.Interpret(input)
-	if err != nil {
-		return err
-	}
-	return json.NewEncoder(cmd.Root().Writer).Encode(report)
+	return errors.Join(err, json.NewEncoder(cmd.Root().Writer).Encode(report))
 }
 
 func runTLSCapture(ctx context.Context, cmd *cli.Command) error {
