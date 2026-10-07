@@ -146,7 +146,7 @@ func (t *tcpConnection) Accept(tcp *layers.TCP, dir reassembly.TCPFlowDirection,
 	// stats
 	if !accept {
 		streamutils.Stats.Lock()
-		streamutils.Stats.RejectOpt++
+		streamutils.Stats.RejectChecksum++
 		streamutils.Stats.Unlock()
 	}
 
@@ -483,6 +483,8 @@ func (t *tcpConnection) decode() {
 		zap.Int("mergedFragments", len(t.merged)),
 	)
 
+	stream.ObserveFTPData(conv)
+
 	// The fallback scan sees a whole direction concatenated, because a
 	// length-prefixed protocol cannot be recognized from its first fragment
 	// alone. The port pass sees only that fragment.
@@ -543,6 +545,14 @@ func (t *tcpConnection) decode() {
 // ReassemblePacket takes care of submitting a TCP / UDP packet to the reassembly.
 // The caller owns the assembler and serializes assembly and maintenance.
 func ReassemblePacket(packet gopacket.Packet, assembler *reassembly.Assembler) {
+	if decoderconfig.Instance.Checksum {
+		if ip, ok := packet.NetworkLayer().(*layers.IPv4); ok && !validIPv4Checksum(ip.Contents) {
+			streamutils.Stats.Lock()
+			streamutils.Stats.RejectIPv4Checksum++
+			streamutils.Stats.Unlock()
+			return
+		}
+	}
 	// DefragIPv4 is unsupported: retain fragments as network conversations,
 	// never as partial TCP/UDP segments. Avoid decoding ordinary TCP payloads.
 	switch ip := packet.NetworkLayer().(type) {
@@ -642,6 +652,9 @@ func CleanupReassembly(_ bool, assemblers []*reassembly.Assembler) {
 
 	udp.FlushUDPStreams()
 	network.FlushNetworkStreams()
+	if err := WriteReassemblyHealth(); err != nil {
+		reassemblyLog.Error("reassembly health write failed", zap.Error(err))
+	}
 
 	// create a memory snapshot for debugging
 	if decoderconfig.Instance.MemProfile != "" {
@@ -699,6 +712,8 @@ func CleanupReassembly(_ bool, assemblers []*reassembly.Assembler) {
 			[]string{"total packets", strconv.FormatInt(streamutils.Stats.Pkt, 10)},
 			[]string{"rejected FSM", strconv.FormatInt(streamutils.Stats.RejectFsm, 10)},
 			[]string{"rejected Options", strconv.FormatInt(streamutils.Stats.RejectOpt, 10)},
+			[]string{"rejected Checksums", strconv.FormatInt(streamutils.Stats.RejectChecksum, 10)},
+			[]string{"rejected IPv4 Checksums", strconv.FormatInt(streamutils.Stats.RejectIPv4Checksum, 10)},
 			[]string{"reassembled bytes", strconv.FormatInt(streamutils.Stats.Sz, 10)},
 			[]string{"total TCP bytes", strconv.FormatInt(streamutils.Stats.Totalsz, 10)},
 			[]string{"connection rejected FSM", strconv.FormatInt(streamutils.Stats.RejectConnFsm, 10)},

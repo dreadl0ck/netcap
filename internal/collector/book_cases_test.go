@@ -37,10 +37,12 @@ import (
 
 // All traffic is serialized locally; no socket, executable or book malware runs.
 type bookCapture struct {
-	t      *testing.T
-	w      *pcapgo.Writer
-	n      int
-	offset time.Duration
+	t                 *testing.T
+	w                 *pcapgo.Writer
+	n                 int
+	offset            time.Duration
+	corruptIPv4Source string
+	omitSource        string
 }
 
 func newBookCapture(t *testing.T) (*bookCapture, string) {
@@ -73,7 +75,14 @@ func (b *bookCapture) packet(src, dst string, tcp *layers.TCP, payload string, c
 	if corrupt {
 		data[14+20+16] ^= 0xff
 	}
+	if src == b.corruptIPv4Source {
+		data[14+10], data[14+11] = 0, 0
+	}
 	ts := time.Unix(1700000000, int64(b.n)*100000+int64(b.offset))
+	if src == b.omitSource {
+		b.n++
+		return ts.UnixNano()
+	}
 	if err := b.w.WritePacket(gopacket.CaptureInfo{Timestamp: ts, CaptureLength: len(data), Length: len(data)}, data); err != nil {
 		b.t.Fatal(err)
 	}
@@ -154,17 +163,24 @@ func TestBookCaseProcess(t *testing.T) {
 	cfg := file.GetDefaultConfig()
 	cfg.FileExtraction.Enabled = true
 	cfg.FileExtraction.Protocols.HTTP = true
+	cfg.FileExtraction.Protocols.FTP = true
 	cfg.FileExtraction.HashAlgorithms.SHA256 = true
 	file.SetGlobalConfig(cfg)
 	c := New(Config{Workers: workers, PacketBufferSize: 8, ReassembleConnections: true, CaptureEvidence: true, FlowExports: true, NoSignalHandling: true, NoPrompt: true, BaseLayer: layers.LayerTypeEthernet, DecodeOptions: gopacket.Default,
 		DecoderConfig: &config.Config{Out: os.Getenv("NETCAP_BOOK_OUT"), Quiet: true, IncludeDecoders: "Connection,HTTP,FTP,File,TCP,DNS", Proto: true, Buffer: true, MemBufferSize: 4096, SaveConns: true, WaitForConnections: true, NoOptCheck: true, Checksum: os.Getenv("NETCAP_BOOK_STRICT") == "1", ClosePendingTimeOut: 5 * time.Second, CloseInactiveTimeOut: time.Minute, StreamBufferSize: 8, StreamDecoderBufSize: 8, NumStreamWorkers: 4, BannerSize: 256, FileStorage: "files", IncludePayloads: true}})
 	c.config.DecoderConfig.WriteIncomplete = true
-	if err := c.CollectPcap(input); err != nil {
+	c.config.RetainPackets = true
+	c.config.DecoderConfig.IncludeDecoders += ",IPv4,IPv6,ICMPv4,IPSecESP,IPSecAH,GRE"
+	collect := c.CollectPcap
+	if strings.HasSuffix(input, ".pcapng") {
+		collect = c.CollectPcapNG
+	}
+	if err := collect(input); err != nil {
 		t.Fatal(err)
 	}
 	if os.Getenv("NETCAP_BOOK_STRICT") == "1" {
 		streamutils.Stats.Lock()
-		rejects := streamutils.Stats.RejectOpt
+		rejects := streamutils.Stats.RejectChecksum + streamutils.Stats.RejectIPv4Checksum
 		streamutils.Stats.Unlock()
 		if rejects == 0 {
 			t.Fatal("strict checksum rejection was not accounted")
@@ -502,8 +518,7 @@ func TestBookIncompleteDownload(t *testing.T) {
 	}
 }
 
-// These qualify the raw/control evidence pivot, not automatic file extraction:
-// FTP-DATA currently has no collector registration/caller.
+// Control and data close on different workers; association uses packet time.
 func TestBookFTPControlDataEvidence(t *testing.T) {
 	b, input := newBookCapture(t)
 	archives := make([]string, 4)
@@ -584,6 +599,36 @@ func TestBookFTPControlDataEvidence(t *testing.T) {
 					t.Fatalf("archive associated with wrong peer: %+v", m)
 				}
 			}
+			files := bookRecords(t, out, "File", func() *types.File { return new(types.File) })
+			if len(files) != 4 {
+				t.Fatalf("FTP extracted files=%d want 4", len(files))
+			}
+			seen := map[string]bool{}
+			for _, f := range files {
+				if f.Protocol != "FTP" || !f.IsComplete || f.Hashes == nil {
+					t.Fatalf("FTP file evidence: %v", f)
+				}
+				data, err := os.ReadFile(f.Location)
+				if err != nil {
+					t.Fatal(err)
+				}
+				matched := false
+				for _, want := range archives {
+					if string(data) == want {
+						matched = true
+						seen[want] = true
+						if f.Hashes.SHA256 != fmt.Sprintf("%x", sha256.Sum256(data)) {
+							t.Fatal("FTP hash differs")
+						}
+					}
+				}
+				if !matched {
+					t.Fatal("unrelated FTP artifact")
+				}
+			}
+			if len(seen) != 4 {
+				t.Fatal("duplicate/missing FTP archive")
+			}
 		})
 	}
 }
@@ -620,6 +665,14 @@ func TestBookFlowFanoutFailures(t *testing.T) {
 			r = query(`SrcIP == "192.0.2.2"`, "dstPort", "bytes")
 			if len(r.Groups) != 5 || !strings.HasSuffix(r.Groups[0].Key, "80") {
 				t.Fatalf("unfiltered responding-port pivot: %+v", r)
+			}
+			r = query(`SrcIP == "192.0.2.2"`, "hostPair", "ports")
+			if len(r.Groups) != 1 || r.Groups[0].DistinctPorts != 5 || r.Groups[0].Observations != 5 {
+				t.Fatalf("host-pair port fanout: %+v", r)
+			}
+			r = query("true", "srcIP", "records")
+			if r.Groups[0].Key != "192.0.2.1" || r.Groups[0].Observations != 6 {
+				t.Fatalf("record-count ranking: %+v", r)
 			}
 			r = query(`DstIP == "198.51.100.20"`, "dstIP", "peers")
 			if r.Matched != 3 || r.Groups[0].DistinctPeers != 3 {
@@ -819,6 +872,35 @@ func TestBookFlowBaselineAndSeries(t *testing.T) {
 			if r.Matched != 4 || len(r.Groups) != 1 || len(r.Groups[0].Members) != 4 || len(r.Series) != 4 || r.Statistics.Bytes.Median != r.Statistics.Bytes.Min || r.Statistics.Bytes.Max <= r.Statistics.Bytes.Median {
 				t.Fatalf("baseline/recurrence: %+v", r)
 			}
+			if r.Statistics.AverageBitsPerSecond.Count != 4 || r.Statistics.AverageBitsPerSecond.Undefined != 0 || r.Statistics.AverageBitsPerSecond.Max <= r.Statistics.AverageBitsPerSecond.Median {
+				t.Fatalf("rate distribution: %+v", r.Statistics)
+			}
+			saved, err := json.Marshal(q)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal(saved, &q); err != nil {
+				t.Fatal(err)
+			}
+			replayed := read()
+			if replayed.RecordFileSHA256 != r.RecordFileSHA256 || replayed.Matched != r.Matched {
+				t.Fatal("saved subset scope/source changed")
+			}
+			q.Expression = `DstPort == "80"`
+			category := read()
+			if category.Matched != r.Matched || category.Groups[0].Bytes != r.Groups[0].Bytes {
+				t.Fatal("overlapping category source changed")
+			}
+			members := map[string]bool{}
+			for _, m := range r.Groups[0].Members {
+				members[m.ObservationID] = true
+			}
+			for _, m := range category.Groups[0].Members {
+				if !members[m.ObservationID] {
+					t.Fatal("overlap cannot be identified by exact member")
+				}
+			}
+			q.Expression = `SrcIP == "192.0.2.20" && DstPort == "80"`
 			var sum float64
 			for _, bin := range r.Series {
 				sum += bin.EstimatedBytes

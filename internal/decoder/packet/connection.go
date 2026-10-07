@@ -79,10 +79,11 @@ type connectionID struct {
 	LinkFlowID      uint64
 	NetworkFlowID   uint64
 	TransportFlowID uint64
+	IPProtocol      uint8
 }
 
 func (c connectionID) String() string {
-	return strconv.FormatUint(c.LinkFlowID, 10) + strconv.FormatUint(c.NetworkFlowID, 10) + strconv.FormatUint(c.TransportFlowID, 10)
+	return strconv.FormatUint(c.LinkFlowID, 10) + "/" + strconv.FormatUint(c.NetworkFlowID, 10) + "/" + strconv.FormatUint(c.TransportFlowID, 10) + "/" + strconv.Itoa(int(c.IPProtocol))
 }
 
 type connection struct {
@@ -246,6 +247,12 @@ func handlePacket(p gopacket.Packet) proto.Message {
 	nl := p.NetworkLayer()
 	if nl != nil {
 		connID.NetworkFlowID = nl.NetworkFlow().FastHash()
+		switch ip := nl.(type) {
+		case *layers.IPv4:
+			connID.IPProtocol = uint8(ip.Protocol)
+		case *layers.IPv6:
+			connID.IPProtocol = uint8(ip.NextHeader)
+		}
 	}
 
 	tl := p.TransportLayer()
@@ -440,6 +447,8 @@ func makeConnection(p gopacket.Packet, connID connectionID, ll gopacket.LinkLaye
 		if len(tl.TransportFlow().Dst().Raw()) > 0 {
 			co.DstPort = tl.TransportFlow().Dst().String()
 		}
+	} else if connID.IPProtocol != 0 {
+		co.TransportProto = layers.IPProtocol(connID.IPProtocol).String()
 	}
 	if al := p.ApplicationLayer(); al != nil {
 		co.ApplicationProto = al.LayerType().String()

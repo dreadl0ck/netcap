@@ -143,3 +143,20 @@ func TestFlowQueryBoundsIPv6AndOverflow(t *testing.T) {
 		t.Fatalf("cancelled empty query: %v", err)
 	}
 }
+
+func TestRateDistributionDoesNotInventZeroDurationRate(t *testing.T) {
+	d := NewDataset(3)
+	for i, c := range []*types.Connection{flowFixture("reset", "192.0.2.1", "198.51.100.1", 60, 0, 1), flowFixture("bulk", "192.0.2.2", "198.51.100.1", 600000000, 60, 1)} {
+		if err := d.Add(c, uint64(i)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r, err := d.Query(context.Background(), Query{StartNs: 0, EndNs: 60e9, GroupBy: "srcIP", SortBy: "rate", Limit: 10})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := r.Statistics.AverageBitsPerSecond
+	if s.Count != 1 || s.Undefined != 1 || s.Min != 80000000 || s.Max != 80000000 || s.Median != 80000000 {
+		t.Fatalf("zero-duration packet distorted rate distribution: %+v", s)
+	}
+}
