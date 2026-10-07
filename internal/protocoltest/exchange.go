@@ -166,6 +166,10 @@ func Run(ctx context.Context, exchange Exchange) (result Result, runErr error) {
 		return result, err
 	}
 	defer conn.Close()
+	return runConnection(ctx, conn, exchange, result)
+}
+
+func runConnection(ctx context.Context, conn net.Conn, exchange Exchange, result Result) (Result, error) {
 	stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
 	defer stop()
 	deadline, _ := ctx.Deadline()
@@ -177,6 +181,7 @@ func Run(ctx context.Context, exchange Exchange) (result Result, runErr error) {
 		state := tlsConn.ConnectionState()
 		result.TLSVersion, result.TLSCipher = state.Version, state.CipherSuite
 	}
+	var err error
 	total := 0
 	variables := map[string][]byte{}
 	record := func(index int, name, direction string, data []byte) {
