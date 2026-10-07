@@ -390,6 +390,14 @@ message Connection {
   string DstGeoLocation = 53;           // Destination country/city (GeoLite2-City)
   string SrcASN = 54;                   // Source ASN (GeoLite2-ASN)
   string DstASN = 55;                   // Destination ASN (GeoLite2-ASN)
+  string ObservationID = 56;            // Opaque identity scoped to one analysis run; not a TCP session ID
+  uint64 SnapshotSequence = 57;         // Increasing cumulative snapshot number within ObservationID
+  string CounterSemantics = 58;         // "tuple-cumulative"; empty for legacy records
+  int64 TotalSize64 = 59;                // Exact wire-byte count
+  int64 AppPayloadSize64 = 60;           // Exact transport-payload byte count
+  int64 NumPackets64 = 61;               // Exact observed packet count
+  bool LegacyCountersSaturated = 62;     // One or more int32 compatibility counters reached their limit
+  string ObservationBoundary = 63;       // first-observed, initial-syn or new-syn-observed; not proof of a complete session
 }
 
 //
@@ -2471,6 +2479,9 @@ message File {
   string MagikaGroup = 42;          // Content group (e.g., "code", "document", "image")
   string MagikaDescription = 43;    // Human-readable description of detected type
   bool MagikaIsText = 44;           // Whether Magika considers the content text-based
+  string CompletenessReason = 45;  // Empty means legacy/unqualified; otherwise reports known extraction/decode/stream loss
+  int64 StreamMissingBytes = 46;   // Known stream loss, not bytes attributed to this file
+  bool StreamInitialLossUnknown = 47;
 }
 
 // SMTPResponse SMTP response type
@@ -3025,6 +3036,10 @@ message Alert {
   // Threshold-based rule configuration (0 means not a threshold-based rule)
   int32 Threshold = 19; // Number of matches required to trigger this alert
   int32 ThresholdWindow = 20; // Time window in seconds within which threshold must be reached
+  int64 DetectedAt = 21;      // Processing time; Timestamp remains the matched record's event time
+  string RuleDigest = 22;    // SHA-256 of the effective YAML rule configuration
+  string MatchedRecordSHA256 = 23;
+  string TimestampBasis = 24; // "record-time" for generic rules; empty for legacy/other producers
 }
 
 // RADIUS (Remote Authentication Dial-In User Service) is a networking protocol

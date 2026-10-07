@@ -79,6 +79,7 @@ func SaveFileEnhanced(
 	flowDirection string,
 	protocol string,
 ) error {
+	extractionErr := err
 	saveFileLog.Info("SaveFileEnhanced",
 		zap.String("source", source),
 		zap.String("name", name),
@@ -131,6 +132,24 @@ func SaveFileEnhanced(
 			WasCompressed:  false,
 			CompressedSize: int64(len(body)),
 		}
+	}
+	streamMissing, initialLossUnknown := conversationLoss(conv)
+	var completeness []string
+	if extractionErr != nil {
+		completeness = append(completeness, "extraction-error")
+	}
+	if hashErr != nil {
+		completeness = append(completeness, "content-decoding-error")
+	}
+	if streamMissing > 0 {
+		completeness = append(completeness, "unattributed-stream-gap")
+	}
+	if initialLossUnknown {
+		completeness = append(completeness, "unknown-initial-stream-loss")
+	}
+	isComplete := len(completeness) == 0
+	if isComplete {
+		completeness = append(completeness, "no-reported-loss")
 	}
 
 	// Log compression info if file was compressed
@@ -387,21 +406,24 @@ func SaveFileEnhanced(
 		ContentTypeDetected: sanitizedCTypeDetected,
 		SrcIP:               conv.ClientIP,
 		DstIP:               conv.ServerIP,
-		SrcPort:             conv.ServerPort,
-		DstPort:             conv.ClientPort,
+		SrcPort:             conv.ClientPort,
+		DstPort:             conv.ServerPort,
 		Host:                sanitizedHost,
 		Hashes: &types.FileHashes{
 			MD5:    hashes.MD5,
 			SHA1:   hashes.SHA1,
 			SHA256: hashes.SHA256,
 		},
-		Depth:         int32(depth),
-		MissingBytes:  0, // TODO: Track from reassembly
-		IsComplete:    err == nil,
-		ParentFileID:  utils.SanitizeUTF8(parentFileID),
-		FlowDirection: sanitizedFlowDirection,
-		ConnectionUID: conv.Ident,
-		Protocol:      utils.SanitizeUTF8(protocol),
+		Depth:                    int32(depth),
+		MissingBytes:             0, // TODO: Track from reassembly
+		IsComplete:               isComplete,
+		CompletenessReason:       strings.Join(completeness, ","),
+		StreamMissingBytes:       streamMissing,
+		StreamInitialLossUnknown: initialLossUnknown,
+		ParentFileID:             utils.SanitizeUTF8(parentFileID),
+		FlowDirection:            sanitizedFlowDirection,
+		ConnectionUID:            conv.Ident,
+		Protocol:                 utils.SanitizeUTF8(protocol),
 		// Security analysis fields
 		Entropy:             analysis.Entropy,
 		MagicBytes:          analysis.MagicBytes,
@@ -429,6 +451,25 @@ func SaveFileEnhanced(
 	})
 
 	return nil
+}
+
+func conversationLoss(conv *core.ConversationInfo) (int64, bool) {
+	fragments := conv.Data
+	if len(conv.ClientData)+len(conv.ServerData) > 0 {
+		fragments = append(append(core.DataFragments(nil), conv.ClientData...), conv.ServerData...)
+	}
+	var missing int64
+	var unknown bool
+	for _, fragment := range fragments {
+		if data, ok := fragment.(*core.StreamData); ok && data != nil {
+			if data.SkippedBytes < 0 {
+				unknown = true
+			} else {
+				missing += int64(data.SkippedBytes)
+			}
+		}
+	}
+	return missing, unknown
 }
 
 // trimEncoding removes encoding information from content type

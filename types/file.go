@@ -58,6 +58,11 @@ var fieldsFile = []string{
 	fieldWasCompressed,
 	fieldCompressionType,
 	fieldCompressedSize,
+	"IsComplete",
+	"MissingBytes",
+	"CompletenessReason",
+	"StreamMissingBytes",
+	"StreamInitialLossUnknown",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -84,6 +89,11 @@ func (a *File) CSVRecord() []string {
 		strconv.FormatBool(a.WasCompressed),
 		a.CompressionType,
 		formatInt64(a.CompressedSize),
+		strconv.FormatBool(a.IsComplete),
+		formatInt64(a.MissingBytes),
+		a.CompletenessReason,
+		formatInt64(a.StreamMissingBytes),
+		strconv.FormatBool(a.StreamInitialLossUnknown),
 	})
 }
 
@@ -95,9 +105,10 @@ func (a *File) Time() int64 {
 // JSON returns the JSON representation of the audit record.
 func (a *File) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
-	a.Timestamp /= int64(time.Millisecond)
+	copy := *a
+	copy.Timestamp /= int64(time.Millisecond)
 
-	return jsonMarshaler.MarshalToString(a)
+	return jsonMarshaler.MarshalToString(&copy)
 }
 
 var fieldsFileMetric = []string{
@@ -186,6 +197,11 @@ func (a *File) Encode() []string {
 		fileEncoder.Bool(a.WasCompressed),
 		fileEncoder.String(fieldCompressionType, a.CompressionType),
 		fileEncoder.Int64(fieldCompressedSize, a.CompressedSize),
+		fileEncoder.Bool(a.IsComplete),
+		fileEncoder.Int64("MissingBytes", a.MissingBytes),
+		fileEncoder.String("CompletenessReason", a.CompletenessReason),
+		fileEncoder.Int64("StreamMissingBytes", a.StreamMissingBytes),
+		fileEncoder.Bool(a.StreamInitialLossUnknown),
 	})
 }
 

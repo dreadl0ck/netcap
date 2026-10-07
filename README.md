@@ -212,7 +212,37 @@ approval; consumers verify the committed bytes against each manifest.
 | `transform` | Maltego OSINT transform plugin |
 | `util` | Utilities: timestamp conversion, interface listing, database generation, search indexing |
 | `inject` | Inline packet manipulation via NFQueue (Linux) |
+| `investigate` | Bounded flow rankings and packet-evidence ZIP exports |
 | `split` | Split audit record files |
+
+### Investigation tools
+
+```sh
+net investigate flows --read Connection.ncap.gz \
+  --start-ns "$START_NS" --end-ns "$END_NS" \
+  --filter 'InSubnet(SrcIP, "192.0.2.0/24")' --group-by srcIP
+
+net investigate packet-evidence --read exercise.pcapng \
+  --bpf 'host 192.0.2.1 and tcp port 80' --out evidence.zip
+```
+
+`START_NS` and `END_NS` are inclusive UTC nanosecond integers. The WebUI API
+exposes the same flow engine at `GET /api/flows/query` with `startNs`, `endNs`,
+`filter`, `groupBy`, `sortBy` and `limit`. Connection downloads accept
+`format=evidence`, a TCP/UDP `protocol`, and optional paired time bounds.
+
+| Output | Interpretation |
+| --- | --- |
+| Flow report | `ObservationID` and `SnapshotSequence` reconcile cumulative records; counters cover whole observations overlapping the window. Rates divide bytes by summed observation durations. |
+| Legacy records | Repeated tuples without snapshot semantics fail as ambiguous; no guessed deduplication or session count. |
+| `evidence.zip` | `packets.pcapng` plus `manifest.json`: source/output SHA-256, source packet ranges, interface mapping, truncation counts and selection. Packet options, secrets and source statistics remain in the original capture. |
+| File records | `CompletenessReason` reports extraction/decoding errors and observed stream loss. `StreamMissingBytes` is not loss attributed to the extracted file. |
+
+Exports refuse replacement and fail on truncation or exceeded limits. Packet
+exports cap captured packets at 1 MiB and PCAPNG blocks/metadata at 16 MiB;
+flow queries cap records at 4 MiB and decoded input at 256 MiB.
+The book-derived qualification inventory is `testdata/investigation-coverage.json`;
+`partial` means named checks passed, not complete workflow coverage.
 
 ## Docker
 

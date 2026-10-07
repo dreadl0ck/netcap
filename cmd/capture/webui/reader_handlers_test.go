@@ -25,12 +25,16 @@ func TestAuditRecordHandlerReaders(t *testing.T) {
 		want    any
 	}{
 		{"Connection", types.Type_NC_Connection, []proto.Message{
-			&types.Connection{SrcIP: "192.0.2.1", NumPackets: 42, TotalSize: 10},
+			&types.Connection{SrcIP: "192.0.2.1", NumPackets: 42, TotalSize: 10, TimestampFirst: 1700000000000000001, TimestampLast: 1700000000000000003},
 			&types.Connection{TotalSize: 30},
 			&types.Connection{TotalSize: 20},
 		}, func(dir string) (any, error) {
 			return readConnections(dir)
-		}, []ConnectionSummary{{TotalSize: 30}, {TotalSize: 20}, {SrcIP: "192.0.2.1", NumPackets: 42, TotalSize: 10}}},
+		}, []ConnectionSummary{
+			{TotalSize: 30, TimestampFirstNs: "0", TimestampLastNs: "0"},
+			{TotalSize: 20, TimestampFirstNs: "0", TimestampLastNs: "0"},
+			{SrcIP: "192.0.2.1", NumPackets: 42, TotalSize: 10, TimestampFirst: 1700000000000000001, TimestampLast: 1700000000000000003, TimestampFirstNs: "1700000000000000001", TimestampLastNs: "1700000000000000003"},
+		}},
 		{"Service", types.Type_NC_Service, []proto.Message{
 			&types.Service{Name: "https", Port: 443, BytesServer: 10},
 			&types.Service{BytesClient: 30},

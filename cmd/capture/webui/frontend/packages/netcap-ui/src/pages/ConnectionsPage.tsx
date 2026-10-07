@@ -78,6 +78,8 @@ import { ChartFrame } from '../components/ChartFrame';
 export interface ConnectionSummary {
   timestampFirst: number;
   timestampLast: number;
+  timestampFirstNs?: string;
+  timestampLastNs?: string;
   linkProto: string;
   networkProto: string;
   transportProto: string;
@@ -565,7 +567,12 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
         srcPort: conn.srcPort,
         dstIP: conn.dstIP,
         dstPort: conn.dstPort,
+        protocol: conn.transportProto,
       });
+      if (conn.timestampFirstNs && conn.timestampLastNs) {
+        params.set('startNs', conn.timestampFirstNs);
+        params.set('endNs', conn.timestampLastNs);
+      }
       const downloadUrl = `${getBackendUrl()}/api/connections/download-pcap?${params}`;
       
       // Fetch the file as a blob
