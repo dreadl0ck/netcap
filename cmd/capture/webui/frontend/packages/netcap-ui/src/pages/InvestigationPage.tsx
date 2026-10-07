@@ -19,8 +19,11 @@ interface StreamRow {
     client: { length: string; sha256: string }; server: { length: string; sha256: string } };
 }
 interface FlowReport {
+  query?: Record<string, unknown>;
   matchedObservations?: number; matchedRecords?: number; totalGroups: number; unquantifiableRecords?: number;
   recordFileSHA256?: string; sourceSHA256?: string; limitations: string[];
+  statistics?: { bytes: { count: number; min: string; median: string; p95: string; max: string } };
+  series?: { startNs: string; endNs: string; estimatedBytes: number; estimatedBitsPerSecond: number; directionalComplete: boolean }[];
   groups: { key: string; bytes: string; packets: string; distinctPeers?: number; peers?: number;
     members?: { ordinal: number; observationId?: string }[]; observationIds?: string[] }[];
 }
@@ -45,6 +48,8 @@ export default function InvestigationPage() {
   const [format, setFormat] = useState('netflow-v9');
   const [basis, setBasis] = useState('flow');
   const [group, setGroup] = useState('srcIP');
+  const [windowMode, setWindowMode] = useState('overlap');
+  const [bucketNs, setBucketNs] = useState('');
   const [report, setReport] = useState<FlowReport | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -69,7 +74,7 @@ export default function InvestigationPage() {
       if (source === 'export') {
         if (!exporter || !/^\d+$/.test(domain)) throw new Error('Exporter IP:port and observation domain are required.');
         endpoint = 'flows/exports/query'; params.set('exporter', exporter); params.set('domain', domain); params.set('format', format); params.set('timeBasis', basis);
-      } else { params.set('filter', expression); params.set('sortBy', 'bytes'); }
+      } else { params.set('filter', expression); params.set('sortBy', 'bytes'); params.set('windowMode', windowMode); if (bucketNs) params.set('bucketNs', bucketNs); }
       const result = await behaviorRequest<FlowReport>(fetcher, `${config.apiBaseUrl}/${endpoint}?${params}`);
       if (generation.current === requestGeneration) setReport(result);
     } catch (failure) { if (generation.current === requestGeneration) setError(failure instanceof Error ? failure.message : 'Query failed'); }
@@ -115,14 +120,21 @@ export default function InvestigationPage() {
           <TextField select label="Time basis" value={basis} onChange={event => setBasis(event.target.value)}><MenuItem value="flow">Exported flow time</MenuItem><MenuItem value="receive">Datagram receive time</MenuItem></TextField>
         </Stack>}
         <TextField select label="Group by" value={group} onChange={event => setGroup(event.target.value)}>{(source === 'packet' ? ['srcIP', 'dstIP', 'dstPort', 'pair', 'protocol'] : ['srcIP', 'dstIP', 'dstPort', 'protocol', 'ingress', 'egress', 'srcAS', 'dstAS', 'nextHop']).map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
+        {source === 'packet' && <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          <TextField select label="Time-window match" value={windowMode} onChange={event => setWindowMode(event.target.value)}>{['overlap', 'contained', 'start', 'end'].map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}</TextField>
+          <TextField label="Estimated series bin width (nanoseconds)" value={bucketNs} onChange={event => setBucketNs(event.target.value)} helperText="Optional; uniform-over-duration estimates, not observed packet-bin rates. Maximum 4096 bins." fullWidth />
+        </Stack>}
         <Box><Button variant="contained" disabled={busy || switching || !status} onClick={query}>{busy ? 'Querying…' : 'Run scoped query'}</Button></Box>
         {report && <>
           <Typography role="status">Matched {report.matchedObservations ?? report.matchedRecords ?? 0} observations; {report.totalGroups} groups; {report.unquantifiableRecords ?? 0} unquantifiable records.</Typography>
+          {report.query && <details><summary>Executed query</summary><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(report.query, null, 2)}</pre></details>}
           {report.limitations.map(text => <Alert key={text} severity="info">{text}</Alert>)}
           <Typography sx={{ overflowWrap: 'anywhere' }}>Record-file SHA-256: {report.recordFileSHA256 ?? report.sourceSHA256}</Typography>
+          {report.statistics && <Typography>Observed byte distribution: minimum {report.statistics.bytes.min}, median {report.statistics.bytes.median}, 95th percentile {report.statistics.bytes.p95}, maximum {report.statistics.bytes.max} ({report.statistics.bytes.count} observations).</Typography>}
           <TableContainer><Table size="small" aria-label="Flow investigation results"><TableHead><TableRow><TableCell>Group</TableCell><TableCell>Bytes</TableCell><TableCell>Packets</TableCell><TableCell>Peers</TableCell><TableCell>Evidence identifiers</TableCell></TableRow></TableHead>
             <TableBody>{report.groups.map(row => <TableRow key={row.key}><TableCell>{row.key}</TableCell><TableCell>{row.bytes}</TableCell><TableCell>{row.packets}</TableCell><TableCell>{row.distinctPeers ?? row.peers}</TableCell><TableCell><details><summary>Record references</summary><pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(row.members ?? row.observationIds, null, 2)}</pre></details></TableCell></TableRow>)}</TableBody>
           </Table></TableContainer>
+          {!!report.series?.length && <TableContainer><Table size="small" aria-label="Estimated flow time series"><TableHead><TableRow><TableCell>Start (UTC ns)</TableCell><TableCell>End (UTC ns)</TableCell><TableCell>Estimated bytes</TableCell><TableCell>Estimated bit/s</TableCell><TableCell>Directional counters</TableCell></TableRow></TableHead><TableBody>{report.series.map(bin => <TableRow key={bin.startNs}><TableCell>{bin.startNs}</TableCell><TableCell>{bin.endNs}</TableCell><TableCell>{bin.estimatedBytes.toFixed(2)}</TableCell><TableCell>{bin.estimatedBitsPerSecond.toFixed(2)}</TableCell><TableCell>{bin.directionalComplete ? 'Available for matched observations' : 'Incomplete'}</TableCell></TableRow>)}</TableBody></Table></TableContainer>}
         </>}
       </Stack></Paper>
       <Paper sx={{ p: 2 }}><Stack spacing={2}>

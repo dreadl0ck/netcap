@@ -277,6 +277,12 @@ exposes the same flow engine at `GET /api/flows/query` with `startNs`, `endNs`,
 `filter`, `groupBy`, `sortBy` and `limit`. Connection downloads accept
 `format=evidence`, a TCP/UDP `protocol`, and optional paired time bounds.
 
+`flows --window-mode overlap|contained|start|end` selects interval semantics.
+Optional `--bucket-ns` emits uniformly interpolated byte/rate estimates, capped
+at 4,096 bins; raw group counters remain whole-observation counts. Reports also
+include byte shares and nearest-rank size/packet/duration distributions. The
+Investigation Evidence page exposes both controls and labels estimated values.
+
 | Output | Interpretation |
 | --- | --- |
 | Flow report | `ObservationID` and `SnapshotSequence` reconcile cumulative records; counters cover whole observations overlapping the window. Rates divide bytes by summed observation durations. |

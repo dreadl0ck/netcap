@@ -23,6 +23,8 @@ type Query struct {
 	GroupBy    string `json:"groupBy"`
 	SortBy     string `json:"sortBy"`
 	Limit      int    `json:"limit"`
+	WindowMode string `json:"windowMode,omitempty"`
+	BucketNs   int64  `json:"bucketNs,omitempty,string"`
 }
 
 type Reference struct {
@@ -41,17 +43,20 @@ type Group struct {
 	AverageBitsPerSecond float64     `json:"averageBitsPerSecond"`
 	Members              []Reference `json:"members"`
 	MembersTruncated     bool        `json:"membersTruncated"`
+	BytePercent          float64     `json:"bytePercent"`
 	peers                map[string]struct{}
 }
 
 type Result struct {
-	Query              Query    `json:"query"`
-	ReadRecords        uint64   `json:"readRecords"`
-	CollapsedSnapshots uint64   `json:"collapsedSnapshots"`
-	Matched            int      `json:"matchedObservations"`
-	TotalGroups        int      `json:"totalGroups"`
-	Groups             []Group  `json:"groups"`
-	Limitations        []string `json:"limitations"`
+	Query              Query      `json:"query"`
+	ReadRecords        uint64     `json:"readRecords"`
+	CollapsedSnapshots uint64     `json:"collapsedSnapshots"`
+	Matched            int        `json:"matchedObservations"`
+	TotalGroups        int        `json:"totalGroups"`
+	Groups             []Group    `json:"groups"`
+	Limitations        []string   `json:"limitations"`
+	Statistics         Statistics `json:"statistics"`
+	Series             []Bucket   `json:"series,omitempty"`
 }
 
 type observation struct {
@@ -142,6 +147,17 @@ func validQuery(q Query) error {
 	if q.EndNs < q.StartNs || q.Limit < 1 || q.Limit > 1000 || len(q.Expression) > 4096 {
 		return fmt.Errorf("invalid flow time range, result limit or expression length")
 	}
+	switch q.WindowMode {
+	case "", "overlap", "contained", "start", "end":
+	default:
+		return fmt.Errorf("unsupported time-window mode")
+	}
+	if q.BucketNs < 0 {
+		return fmt.Errorf("bucketNs must be nonnegative")
+	}
+	if q.BucketNs > 0 && (q.EndNs-q.StartNs <= 0 || (q.EndNs-q.StartNs)/q.BucketNs > 4095) {
+		return fmt.Errorf("time series requires a positive window and at most 4096 bins")
+	}
 	switch q.GroupBy {
 	case "srcIP", "dstIP", "dstPort", "pair", "protocol":
 	default:
@@ -176,12 +192,14 @@ func (d *Dataset) Query(ctx context.Context, q Query) (Result, error) {
 		return result, err
 	}
 	groups := make(map[string]*Group)
+	var samples []seriesSample
+	var totalBytes int64
 	for _, item := range d.items {
 		if err := ctx.Err(); err != nil {
 			return result, err
 		}
 		c := item.record
-		if c.TimestampFirst > q.EndNs || c.TimestampLast < q.StartNs {
+		if !matchesWindow(c.TimestampFirst, c.TimestampLast, q) {
 			continue
 		}
 		match, err := filter.EvaluateExpression(program, c)
@@ -216,6 +234,11 @@ func (d *Dataset) Query(ctx context.Context, q Query) (Result, error) {
 		g.DurationNs += duration
 		g.Observations++
 		g.peers[peer] = struct{}{}
+		if bytes > math.MaxInt64-totalBytes {
+			return result, fmt.Errorf("total byte count overflow")
+		}
+		totalBytes += bytes
+		samples = append(samples, seriesSample{start: c.TimestampFirst, end: c.TimestampLast, bytes: bytes, packets: packets, client: c.BytesClientToServer, server: c.BytesServerToClient})
 		if len(g.Members) < 1000 {
 			g.Members = append(g.Members, item.ref)
 		} else {
@@ -224,11 +247,22 @@ func (d *Dataset) Query(ctx context.Context, q Query) (Result, error) {
 		result.Matched++
 	}
 	for _, g := range groups {
+		if totalBytes > 0 {
+			g.BytePercent = 100 * float64(g.Bytes) / float64(totalBytes)
+		}
 		g.DistinctPeers = len(g.peers)
 		if g.DurationNs > 0 {
 			g.AverageBitsPerSecond = float64(g.Bytes) * 8e9 / float64(g.DurationNs)
 		}
 		result.Groups = append(result.Groups, *g)
+	}
+	result.Statistics = sampleStatistics(samples)
+	if q.BucketNs > 0 {
+		result.Series, err = sampleSeries(ctx, samples, q)
+		if err != nil {
+			return result, err
+		}
+		result.Limitations = append(result.Limitations, "time-series bytes and rates are uniform-over-duration estimates, not observed packet bins; zero-duration observations are assigned to their timestamp")
 	}
 	sort.Slice(result.Groups, func(i, j int) bool {
 		a, b := result.Groups[i], result.Groups[j]
@@ -279,7 +313,7 @@ func groupKey(c *types.Connection, group string) (string, string) {
 }
 
 func ParseQuery(values map[string][]string) (Query, error) {
-	for _, key := range []string{"startNs", "endNs", "filter", "groupBy", "sortBy", "limit"} {
+	for _, key := range []string{"startNs", "endNs", "filter", "groupBy", "sortBy", "limit", "windowMode", "bucketNs"} {
 		if len(values[key]) > 1 {
 			return Query{}, fmt.Errorf("duplicate flow query parameter %s", key)
 		}
@@ -299,6 +333,13 @@ func ParseQuery(values map[string][]string) (Query, error) {
 		return Query{}, fmt.Errorf("endNs must be an exact nanosecond integer")
 	}
 	q := Query{StartNs: start, EndNs: end, Expression: get("filter"), GroupBy: get("groupBy"), SortBy: get("sortBy"), Limit: 100}
+	q.WindowMode = get("windowMode")
+	if raw := get("bucketNs"); raw != "" {
+		q.BucketNs, err = strconv.ParseInt(raw, 10, 64)
+		if err != nil {
+			return q, fmt.Errorf("invalid bucketNs")
+		}
+	}
 	if q.GroupBy == "" {
 		q.GroupBy = "srcIP"
 	}

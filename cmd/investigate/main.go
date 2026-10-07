@@ -61,6 +61,8 @@ func GetCommand() *cli.Command {
 			&cli.DurationFlag{Name: "timeout", Value: 2 * time.Minute},
 		}, Action: runExportedFlows},
 		{Name: "flows", Usage: "rank Connection observations with explicit snapshot/count semantics", Flags: []cli.Flag{
+			&cli.StringFlag{Name: "window-mode", Value: "overlap", Usage: "overlap, contained, start or end"},
+			&cli.StringFlag{Name: "bucket-ns", Usage: "optional time-series bin width; results are uniformly interpolated estimates"},
 			&cli.StringFlag{Name: "read", Required: true, Usage: "Connection.ncap or Connection.ncap.gz"},
 			&cli.StringFlag{Name: "start-ns", Required: true, Usage: "inclusive UTC nanosecond start; counters cover whole overlapping observations"},
 			&cli.StringFlag{Name: "end-ns", Required: true, Usage: "inclusive UTC nanosecond end"},
@@ -265,7 +267,7 @@ func runFlows(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("flows does not accept positional arguments")
 	}
 	q, err := flow.ParseQuery(url.Values{"startNs": {cmd.String("start-ns")}, "endNs": {cmd.String("end-ns")},
-		"filter": {cmd.String("filter")}, "groupBy": {cmd.String("group-by")}, "sortBy": {cmd.String("sort-by")}, "limit": {strconv.Itoa(cmd.Int("limit"))}})
+		"filter": {cmd.String("filter")}, "groupBy": {cmd.String("group-by")}, "sortBy": {cmd.String("sort-by")}, "limit": {strconv.Itoa(cmd.Int("limit"))}, "windowMode": {cmd.String("window-mode")}, "bucketNs": {cmd.String("bucket-ns")}})
 	if err != nil {
 		return err
 	}
