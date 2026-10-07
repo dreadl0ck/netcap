@@ -283,6 +283,13 @@ experiment. Byte fields use JSON base64; `Framing` supports `length-prefix`,
 TLS verifies certificates and hostnames; optional `rootCAFile` and paired
 `clientCertificateFile`/`clientKeyFile` configure experiment trust and mTLS.
 
+`net investigate tls-capture --read tls.pcapng --key-log secrets.log --stream 0`
+uses installed `tshark` for offline TLS dissection. Output binds input, key-log
+and plaintext hashes to the tool version; key material is not included. Node
+ordering follows tshark's reported endpoints, not an assumed client role.
+`NETCAP_REQUIRE_TLS_ADAPTER=1 go test ./internal/protocoltest -run TestTLSCaptureAdapter`
+requires the TLS 1.2/1.3 adapter fixtures instead of skipping when tshark is absent.
+
 `net investigate protocol-proxy --spec proxy.json --listen 127.0.0.1:9000`
 handles one framed TCP connection. Mutations select direction/frame and byte
 range, with optional length-prefix repair, drop, duplication and delay. Output

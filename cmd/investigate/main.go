@@ -24,6 +24,12 @@ import (
 
 func GetCommand() *cli.Command {
 	return &cli.Command{Name: "investigate", Usage: "bounded flow queries and verifiable packet evidence", Commands: []*cli.Command{
+		{Name: "tls-capture", Usage: "analyze TLS plaintext using supplied session secrets and installed tshark", Flags: []cli.Flag{
+			&cli.StringFlag{Name: "read", Required: true, Usage: "PCAP/PCAPNG containing the TLS handshake and application traffic"},
+			&cli.StringFlag{Name: "key-log", Required: true, Usage: "NSS-format session secret log; never included in output"},
+			&cli.IntFlag{Name: "stream", Value: 0, Usage: "tshark TLS follow-stream index"},
+			&cli.DurationFlag{Name: "timeout", Value: time.Minute},
+		}, Action: runTLSCapture},
 		{Name: "protocol-proxy", Usage: "proxy one framed TCP exchange with bounded message mutations", Flags: []cli.Flag{
 			&cli.StringFlag{Name: "spec", Required: true, Usage: "JSON proxy specification (maximum 2 MiB)"},
 			&cli.StringFlag{Name: "listen", Value: "127.0.0.1:0", Usage: "local TCP address; selected port is printed on stderr"},
@@ -69,6 +75,19 @@ func GetCommand() *cli.Command {
 			&cli.DurationFlag{Name: "timeout", Value: 2 * time.Minute, Usage: "maximum export duration"},
 		}, Action: runPacketEvidence},
 	}}
+}
+
+func runTLSCapture(ctx context.Context, cmd *cli.Command) error {
+	if cmd.Args().Len() != 0 || cmd.Duration("timeout") <= 0 {
+		return fmt.Errorf("positive timeout and no positional arguments required")
+	}
+	ctx, cancel := context.WithTimeout(ctx, cmd.Duration("timeout"))
+	defer cancel()
+	result, err := protocoltest.AnalyzeTLSCapture(ctx, cmd.String("read"), cmd.String("key-log"), cmd.Int("stream"))
+	if err != nil {
+		return err
+	}
+	return json.NewEncoder(cmd.Root().Writer).Encode(result)
 }
 
 func runProtocolProxy(ctx context.Context, cmd *cli.Command) error {
