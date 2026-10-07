@@ -82,6 +82,8 @@ var DefaultConfigDPI = Config{
 // for the Collector instance.
 // this structure has an optimized field order to avoid excessive padding.
 type Config struct {
+	NetworkDetection       bool
+	NetworkDetectionConfig string
 
 	// Decoder configuration
 	DecoderConfig *config.Config

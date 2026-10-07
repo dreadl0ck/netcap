@@ -100,6 +100,9 @@ func (c *Collector) doCleanup(force bool) {
 	c.workers = nil
 	c.dispatchMu.Unlock()
 
+	if err := c.closeNetworkDetection(); err != nil {
+		c.log.Error("network detection finalization failed", zap.Error(err))
+	}
 	c.teardown()
 
 	// Reset package-level stream pools so a subsequent CollectPcap call in

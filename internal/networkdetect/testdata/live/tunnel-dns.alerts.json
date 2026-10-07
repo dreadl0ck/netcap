@@ -1,0 +1,21 @@
+[
+  {
+    "Timestamp": 1791363781936160000,
+    "Name": "dns.tunnel",
+    "Description": "dns.tunnel: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "0",
+    "DstIP": "127.0.0.1",
+    "DstPort": "0",
+    "MITRE": "T1071.004",
+    "Domain": "sandbox.alphasoc.xyz",
+    "RuleName": "dns.tunnel",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"dns.tunnel\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363780118010000,\"lastSeen\":1791363781936160000,\"observed\":10,\"threshold\":10,\"windowNS\":60000000000,\"samples\":[\"dptfdrswrudztjbculvosbphurprhe\",\"gxnaqsxruopdhiibkaitjcxkjheakf\",\"jnsysldgdohnrksxpmuzkbhtdbrdbd\",\"meqwiusunrjezqakiwswcwvdamnycf\",\"ppueuhhdnqcfpwzokfsodmwezxpyfw\",\"uhzajwysbdrtrrcqpegneagolgnniu\",\"ujljnmwtursuwtiompfsxjezgpoabd\",\"xrqxdgcbhyrqrwfzepuihucgpwlxvr\"],\"limitations\":[\"High-entropy TXT queries can also be legitimate\"]}"
+  }
+]

@@ -166,6 +166,9 @@ func (c *Collector) Init() (err error) {
 	}
 
 	c.printStdOut("initializing decoders... ")
+	if err = c.initNetworkDetection(); err != nil {
+		return fmt.Errorf("network detection: %w", err)
+	}
 	c.netcapLog.Println("initializing decoders... ")
 
 	if c.config.DecoderConfig.ExportMetrics {

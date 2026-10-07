@@ -1,0 +1,43 @@
+
+AlphaSOC Network Flight Simulator™  (https://github.com/alphasoc/flightsim)
+The address of the network interface for IP traffic is 127.0.0.1
+The address of the network interface for DNS queries is 127.0.0.1
+The current time is 07-Oct-26 09:02:49
+
+09:02:49 [sink] Preparing a random sample of sinkholed domains
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Resolving sink.example
+09:02:49 [sink] Done (15/15)
+
+09:02:50 [sink] Preparing a random sample of sinkholed IP:port pairs
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Connecting to 127.0.0.6:8080
+09:02:50 [sink] Done (15/15)
+
+All done! Check your SIEM for alerts using the timestamps and details above.

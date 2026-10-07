@@ -1,0 +1,10 @@
+{
+  "sshBytes": 524288,
+  "indicators": [
+    {"value":"c2.example","kind":"domain","category":"c2","source":"egress-disabled FlightSim lab","version":"3709d1c","validFrom":1,"validUntil":2000000000000000000},
+    {"value":"127.0.0.5","kind":"ip","category":"c2","source":"egress-disabled FlightSim lab","version":"3709d1c","validFrom":1,"validUntil":2000000000000000000},
+    {"value":"sink.example","kind":"domain","category":"sink","source":"egress-disabled FlightSim lab","version":"3709d1c","validFrom":1,"validUntil":2000000000000000000},
+    {"value":"127.0.0.6","kind":"ip","category":"sink","source":"egress-disabled FlightSim lab","version":"3709d1c","validFrom":1,"validUntil":2000000000000000000},
+    {"value":"imposter.example","kind":"domain","category":"imposter","source":"egress-disabled FlightSim lab","version":"3709d1c","validFrom":1,"validUntil":2000000000000000000}
+  ]
+}

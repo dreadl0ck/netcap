@@ -1,0 +1,43 @@
+
+AlphaSOC Network Flight Simulator™  (https://github.com/alphasoc/flightsim)
+The address of the network interface for IP traffic is 127.0.0.1
+The address of the network interface for DNS queries is 127.0.0.1
+The current time is 07-Oct-26 09:03:15
+
+09:03:15 [irc] Preparing a random sample of IRC server domains
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Simulating IRC traffic to irc.example
+09:03:15 [irc] Done (15/15)
+
+09:03:15 [irc] Preparing a random sample of IRC server IP:port pairs
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Simulating IRC traffic to 127.0.0.8:6667
+09:03:15 [irc] Done (15/15)
+
+All done! Check your SIEM for alerts using the timestamps and details above.

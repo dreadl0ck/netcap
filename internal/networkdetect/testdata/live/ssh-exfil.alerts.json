@@ -1,0 +1,56 @@
+[
+  {
+    "Timestamp": 1791363774911717000,
+    "Name": "ssh.nonstandard-port",
+    "Description": "ssh.nonstandard-port: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "55455",
+    "DstIP": "127.0.0.3",
+    "DstPort": "995",
+    "MITRE": "T1571",
+    "RuleName": "ssh.nonstandard-port",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"ssh.nonstandard-port\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363774911290000,\"lastSeen\":1791363774911717000,\"observed\":995,\"threshold\":22,\"windowNS\":60000000000,\"samples\":[\"SSH version banner\"],\"limitations\":[\"SSH service identification does not establish exfiltration\"]}"
+  },
+  {
+    "Timestamp": 1791363774968682000,
+    "Name": "ssh.nonstandard-port",
+    "Description": "ssh.nonstandard-port: behavioral-suspicion",
+    "SrcIP": "127.0.0.3",
+    "SrcPort": "995",
+    "DstIP": "127.0.0.1",
+    "DstPort": "55455",
+    "MITRE": "T1571",
+    "RuleName": "ssh.nonstandard-port",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"ssh.nonstandard-port\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363774911290000,\"lastSeen\":1791363774968682000,\"observed\":995,\"threshold\":22,\"windowNS\":60000000000,\"samples\":[\"SSH version banner\"],\"limitations\":[\"SSH service identification does not establish exfiltration\"]}"
+  },
+  {
+    "Timestamp": 1791363775009965000,
+    "Name": "ssh.large-upload",
+    "Description": "ssh.large-upload: behavioral-suspicion",
+    "SrcIP": "127.0.0.1",
+    "SrcPort": "55455",
+    "DstIP": "127.0.0.3",
+    "DstPort": "995",
+    "MITRE": "T1048.002",
+    "RuleName": "ssh.large-upload",
+    "RecordType": "NetworkDetection",
+    "Severity": "medium",
+    "Tags": [
+      "network-detection",
+      "behavioral-suspicion"
+    ],
+    "MatchedRecord": "{\"schema\":1,\"detector\":\"ssh.large-upload\",\"classification\":\"behavioral-suspicion\",\"scope\":{\"sensor\":\"qualification\",\"interface\":\"pcap\"},\"firstSeen\":1791363774911290000,\"lastSeen\":1791363775009965000,\"observed\":525264,\"threshold\":524288,\"windowNS\":60000000000,\"samples\":[\"Unique contiguous client TCP payload bytes\"],\"limitations\":[\"Encrypted content and authorization are unavailable; configured source exceptions apply\"]}"
+  }
+]

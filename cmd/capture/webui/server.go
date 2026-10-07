@@ -545,6 +545,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/rule-sets/", s.handleRuleSet)
 	mux.HandleFunc("/api/alerts", s.handleAlerts)
 	mux.HandleFunc("/api/behavior", s.handleBehavior)
+	mux.HandleFunc("/api/network-detection", s.handleNetworkDetection)
 	mux.HandleFunc("/api/behavior/health", s.handleBehaviorHealth)
 	mux.HandleFunc("/api/behavior/asset", s.handleBehaviorAsset)
 	mux.HandleFunc("/api/behavior/records", s.handleBehaviorRecords)
@@ -1698,25 +1699,27 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 
 	// Build collector configuration
 	c := collector.New(collector.Config{
-		Workers:               runtime.NumCPU() * 2,
-		PacketBufferSize:      defaults.PacketBuffer,
-		WriteUnknownPackets:   false,
-		Promisc:               true,
-		SnapLen:               defaults.SnapLen,
-		BaseLayer:             utils.GetBaseLayer("ethernet"),
-		DecodeOptions:         utils.GetDecodeOptions("default"),
-		DPI:                   job.EnableDPI,
-		DPIModules:            "",
-		ReassembleConnections: true,
-		FreeOSMem:             0,
-		LogErrors:             false,
-		NoPrompt:              true,
-		HTTPShutdownEndpoint:  false,
-		NoSignalHandling:      true, // Disable signal handling in service mode
-		Timeout:               1 * time.Second,
-		Labels:                "",
-		Scatter:               true,
-		ScatterDuration:       5 * time.Minute,
+		NetworkDetection:       true,
+		NetworkDetectionConfig: os.Getenv("NC_NETWORK_DETECTION_CONFIG"),
+		Workers:                runtime.NumCPU() * 2,
+		PacketBufferSize:       defaults.PacketBuffer,
+		WriteUnknownPackets:    false,
+		Promisc:                true,
+		SnapLen:                defaults.SnapLen,
+		BaseLayer:              utils.GetBaseLayer("ethernet"),
+		DecodeOptions:          utils.GetDecodeOptions("default"),
+		DPI:                    job.EnableDPI,
+		DPIModules:             "",
+		ReassembleConnections:  true,
+		FreeOSMem:              0,
+		LogErrors:              false,
+		NoPrompt:               true,
+		HTTPShutdownEndpoint:   false,
+		NoSignalHandling:       true, // Disable signal handling in service mode
+		Timeout:                1 * time.Second,
+		Labels:                 "",
+		Scatter:                true,
+		ScatterDuration:        5 * time.Minute,
 		DecoderConfig: &config.Config{
 			Quiet:            true,
 			PrintProgress:    false,
@@ -1882,6 +1885,9 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	}
 	if err := stopBehavior(); err != nil {
 		analysisErr = fmt.Errorf("behavioral monitoring: %w", err)
+	}
+	if err := c.GetNetworkDetectionError(); err != nil {
+		analysisErr = fmt.Errorf("network detection failed: %w (capture error: %v)", err, analysisErr)
 	}
 
 	duration := time.Since(startTime)

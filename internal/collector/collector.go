@@ -59,6 +59,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/internal/label/manager"
 	"github.com/dreadl0ck/netcap/internal/netio"
+	"github.com/dreadl0ck/netcap/internal/networkdetect"
 	"github.com/dreadl0ck/netcap/internal/performance"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
 	"github.com/dreadl0ck/netcap/internal/rules"
@@ -162,13 +163,16 @@ type Collector struct {
 	perfTracker *performance.Tracker
 
 	// filtering and rules
-	filterPrograms map[types.Type]*filter.CompiledFilter
-	rulesEngine    *rules.Engine
-	filteredCount  int64
-	alertCount     int64
-	behaviorEngine *behavior.Engine
-	behaviorScope  behavior.Scope
-	behaviorError  error
+	filterPrograms        map[types.Type]*filter.CompiledFilter
+	rulesEngine           *rules.Engine
+	filteredCount         int64
+	alertCount            int64
+	behaviorEngine        *behavior.Engine
+	behaviorScope         behavior.Scope
+	behaviorError         error
+	networkDetector       *networkdetect.Engine
+	networkAlertWriter    *rules.FileAlertWriter
+	networkDetectionError error
 }
 
 // GetTotalBytesWritten returns the total bytes written to disk.
@@ -677,6 +681,7 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	ref := p.Metadata().CaptureInfo.Timestamp
 	// Observe ingress serially before pooled-packet ownership moves to a worker.
 	c.observeBehavior(p)
+	c.observeNetworkDetection(p)
 	c.wg.Add(1)
 	atomic.AddInt64(&c.current, 1)
 	select {
