@@ -11,12 +11,13 @@ vi.mock('../components/Layout', () => ({ default: ({ children }: { children: Rea
 afterEach(cleanup);
 
 it('keeps exact time/counter strings and distinguishes unavailable collection evidence', async () => {
+  const nativeDownload = vi.fn(async () => undefined);
   const fetcher = vi.fn(async (url: RequestInfo | URL) => ({ ok: true, status: 200, json: async () => {
     if (String(url).includes('/investigation/capture')) return { runId: 'fixture', status: 'partial', inputSHA256: 'a'.repeat(64), configSHA256: 'b'.repeat(64), ingressPackets: 10, admittedPackets: 9, queueDrops: 1, truncatedPackets: 0, kernelReceived: null, kernelDrops: null, firstNs: '1700000000000000001', lastNs: '1700000000000000003', limitations: ['Sensor topology unknown'], segments: [{ state: 'expired', name: 'segment', packets: 1, sha256: 'c'.repeat(64) }] };
-    if (String(url).includes('/investigation/streams')) return [];
+    if (String(url).includes('/investigation/streams')) return [{ id: 'stream-fixture', spanCount: 1, manifest: { protocol: 'TCP', connectionKey: 'fixture', status: 'no-reported-gap', communityId: 'cid', client: { length: '3', sha256: 'e'.repeat(64) }, server: { length: '0', sha256: 'f'.repeat(64) } } }];
     return { matchedObservations: 1, totalGroups: 1, recordFileSHA256: 'd'.repeat(64), limitations: ['Whole observations; no time clipping'], series: [{ startNs: '1700000000000000001', endNs: '1700000000000000002', estimatedBytes: 10, estimatedBitsPerSecond: 80000000000, directionalComplete: false }], groups: [{ key: '192.0.2.1', bytes: '9007199254740993', packets: '42', distinctPeers: 1, members: [{ ordinal: 7, observationId: 'fixture' }] }] };
   }} as Response));
-  render(<SWRConfig value={{ provider: () => new Map() }}><NetcapProvider config={{ backendUrl: 'http://fixture', router: { pathname: '/investigation-evidence', query: {}, isReady: true, push: vi.fn() }, Link: ({ href, children }) => <a href={href}>{children}</a>, fetch: fetcher, api: { getStatus: async () => ({ isProcessing: false, outputDir: '/capture', inputFiles: ['/fixture.pcap'], serverStarted: '', activeInputFile: '/fixture.pcap', isMultiFile: false, isLiveMode: false }), getInputFiles: async () => [] } }}><InvestigationPage /></NetcapProvider></SWRConfig>);
+  render(<SWRConfig value={{ provider: () => new Map() }}><NetcapProvider config={{ backendUrl: 'http://fixture', router: { pathname: '/investigation-evidence', query: {}, isReady: true, push: vi.fn() }, Link: ({ href, children }) => <a href={href}>{children}</a>, fetch: fetcher, api: { getStatus: async () => ({ isProcessing: false, outputDir: '/capture', inputFiles: ['/fixture.pcap'], serverStarted: '', activeInputFile: '/fixture.pcap', isMultiFile: false, isLiveMode: false }), getInputFiles: async () => [] } }}><InvestigationPage downloadArtifact={nativeDownload} /></NetcapProvider></SWRConfig>);
   expect(await screen.findByText(/Kernel received: unavailable/)).toHaveTextContent('Kernel drops: unavailable');
   expect(screen.getByText(/Packet segments:/)).toHaveTextContent('0 retained, 1 expired');
   await waitFor(() => expect(screen.getByLabelText('Start UTC nanoseconds')).toHaveValue('1700000000000000001'));
@@ -33,4 +34,6 @@ it('keeps exact time/counter strings and distinguishes unavailable collection ev
   expect(params.get('inputFile')).toBe('/fixture.pcap');
   expect(params.get('bucketNs')).toBe('1');
   expect(screen.getByRole('table', { name: 'Estimated flow time series' })).toHaveTextContent('Incomplete');
+  await user.click(screen.getByRole('button', { name: 'Download client' }));
+  expect(nativeDownload).toHaveBeenCalledWith('http://fixture/api/investigation/streams?inputFile=%2Ffixture.pcap&id=stream-fixture&direction=client', 'stream-fixture-client.bin');
 });

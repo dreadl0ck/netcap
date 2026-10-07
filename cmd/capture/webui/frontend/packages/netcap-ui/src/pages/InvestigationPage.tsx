@@ -28,7 +28,11 @@ interface FlowReport {
     members?: { ordinal: number; observationId?: string }[]; observationIds?: string[] }[];
 }
 
-export default function InvestigationPage() {
+export interface InvestigationPageProps {
+  downloadArtifact?: (url: string, filename: string) => Promise<void>;
+}
+
+export default function InvestigationPage({ downloadArtifact }: InvestigationPageProps = {}) {
   const api = useNetcapApi();
   const config = useNetcapConfig();
   const fetcher = config.fetch ?? fetch;
@@ -83,10 +87,13 @@ export default function InvestigationPage() {
   const download = async (id: string, direction: string) => {
     try {
       const params = new URLSearchParams(selection.replace(/^\?/, '')); params.set('id', id); params.set('direction', direction);
-      const response = await fetcher(`${config.apiBaseUrl}/investigation/streams?${params}`);
+      const downloadURL = `${config.apiBaseUrl}/investigation/streams?${params}`;
+      const filename = `${id}-${direction}.${direction === 'manifest' ? 'json' : 'bin'}`;
+      if (downloadArtifact) { await downloadArtifact(downloadURL, filename); return; }
+      const response = await fetcher(downloadURL);
       if (!response.ok) throw new Error(await response.text());
       const url = URL.createObjectURL(await response.blob()); const anchor = document.createElement('a');
-      anchor.href = url; anchor.download = `${id}-${direction}.${direction === 'manifest' ? 'json' : 'bin'}`; anchor.click(); URL.revokeObjectURL(url);
+      anchor.href = url; anchor.download = filename; anchor.click(); URL.revokeObjectURL(url);
     } catch (failure) { setError(failure instanceof Error ? failure.message : 'Download failed'); }
   };
   return <Layout title="Investigation evidence" headerAction={<FileSelectorHeader inputFiles={files ?? []} status={status} switchingFile={switching} onFileChange={changeCapture} />}>
