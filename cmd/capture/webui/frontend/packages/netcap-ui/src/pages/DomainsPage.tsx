@@ -64,6 +64,7 @@ import SearchInput from '../components/SearchInput';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatTimestamp, getBackendUrl } from '../lib/api';
 import { parseSearchQuery, matchesSearchTerms } from '../lib/tableSearch';
+import { formatDurationNs, medianRTT, rttSortKey, transactionFlags, type DNSTransactionSummary } from '../lib/dnsTransactions';
 import { useNetcapApi, useTableKeyboardNavigation, useViewMode } from '../hooks';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
@@ -82,6 +83,7 @@ export interface DomainSummary {
   resolvedIPs: string[];
   source: string; // "DNS", "TLS SNI", or "DNS, TLS SNI"
   communityIds: string[]; // Community IDs for cross-tool correlation
+  dnsTransactions?: DNSTransactionSummary; // absent for SNI-only domains and older captures
 }
 
 interface DomainsResponse {
@@ -89,7 +91,7 @@ interface DomainsResponse {
   totalCount: number;
 }
 
-type DomainSortField = 'domain' | 'queries' | 'clients' | 'type';
+type DomainSortField = 'domain' | 'queries' | 'clients' | 'type' | 'rtt';
 type SortOrder = 'asc' | 'desc';
 
 export interface DomainsPageProps {
@@ -186,6 +188,12 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
         case 'clients':
           comparison = a.uniqueClients - b.uniqueClients;
           break;
+        case 'rtt': {
+          const ka = rttSortKey(a.dnsTransactions);
+          const kb = rttSortKey(b.dnsTransactions);
+          comparison = ka === kb ? 0 : ka < kb ? -1 : 1;
+          break;
+        }
         case 'type':
           // Sort root domains first
           if (a.isSubdomain === b.isSubdomain) {
@@ -584,6 +592,16 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
                         Clients
                       </TableSortLabel>
                     </TableCell>
+                    <TableCell align="right" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                      <TableSortLabel
+                        data-learn="Sort by RTT: Median time between a DNS query and its paired response, measured from capture timestamps."
+                        active={sortField === 'rtt'}
+                        direction={sortField === 'rtt' ? sortOrder : 'asc'}
+                        onClick={() => handleSort('rtt')}
+                      >
+                        Median RTT
+                      </TableSortLabel>
+                    </TableCell>
                     <TableCell>Record Types</TableCell>
                     <TableCell>Resolved IPs</TableCell>
                   </TableRow>
@@ -656,6 +674,14 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
                             {domain.uniqueClients.toLocaleString()}
                           </Typography>
                         </TableCell>
+                        <TableCell align="right" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                          <Tooltip title={transactionFlags(domain.dnsTransactions).join(', ') || 'No pairing anomalies'} placement="top">
+                            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                              {medianRTT(domain.dnsTransactions)}
+                              {transactionFlags(domain.dnsTransactions).length > 0 && ' ⚠'}
+                            </Typography>
+                          </Tooltip>
+                        </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                             {(domain.recordTypes || []).slice(0, 3).map((rt) => (
@@ -706,7 +732,7 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
                       
                       {/* Expandable Row Details */}
                       <TableRow>
-                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={8}>
+                        <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={9}>
                           <Collapse in={expandedRow === domain.domain} timeout="auto" unmountOnExit>
                             <Box sx={{ py: 2 }} data-learn="Domain Details: Extended information about DNS queries and responses for this domain.">
                               <Grid container spacing={2}>
@@ -744,6 +770,31 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
                                   )}
                                 </Grid>
                                 
+                                {domain.dnsTransactions && (
+                                  <Grid item xs={12} md={6}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                      DNS Transactions
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Queries: {domain.dnsTransactions.queries.toLocaleString()} · retransmitted: {domain.dnsTransactions.retransmissions.toLocaleString()}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Answered: {domain.dnsTransactions.answered.toLocaleString()} · late: {domain.dnsTransactions.late.toLocaleString()} · unanswered (at least): {domain.dnsTransactions.unanswered.toLocaleString()}
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Unsolicited responses: {domain.dnsTransactions.unsolicited.toLocaleString()}
+                                    </Typography>
+                                    {domain.dnsTransactions.rttSamples > 0 && (
+                                      <Typography variant="body2" color="text.secondary">
+                                        RTT median {formatDurationNs(domain.dnsTransactions.rttMedianNs)}, p95 {formatDurationNs(domain.dnsTransactions.rttP95Ns)} ({domain.dnsTransactions.rttSamples.toLocaleString()} responses)
+                                      </Typography>
+                                    )}
+                                    <Typography variant="caption" color="text.secondary">
+                                      Unsolicited responses and unanswered queries can also result from capture loss or asymmetric visibility.
+                                    </Typography>
+                                  </Grid>
+                                )}
+
                                 {/* All Record Types */}
                                 {(domain.recordTypes || []).length > 0 && (
                                   <Grid item xs={12}>

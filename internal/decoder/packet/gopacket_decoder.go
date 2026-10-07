@@ -97,6 +97,7 @@ func (dec *GoPacketDecoder) NumRecords() int64 {
 // InitGoPacketDecoders initializes all gopacket decoders.
 func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*GoPacketDecoder, err error) {
 	decoders = map[gopacket.LayerType][]*GoPacketDecoder{}
+	dnsTx.reset()
 
 	active, err := decoderutils.SelectDecoders(defaultGoPacketDecoders, c.IncludeDecoders, c.ExcludeDecoders, func(d *GoPacketDecoder) string {
 		return d.Layer.String()
@@ -216,6 +217,9 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 			} else {
 				fmt.Printf("type: %#v\n", record)
 				log.Fatal("type does not implement the types.AuditRecord interface")
+			}
+			if d, ok := record.(*types.DNS); ok {
+				dnsTx.observe(d)
 			}
 		}
 

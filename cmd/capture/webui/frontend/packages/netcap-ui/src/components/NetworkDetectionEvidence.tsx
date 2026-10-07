@@ -53,7 +53,7 @@ export default function NetworkDetectionEvidence({ alert }: { alert: Alert }) {
   const evidence = parseNetworkEvidence(alert.matchedRecord);
   if (!evidence) return <MuiAlert severity="warning">Network detection evidence is unavailable or uses an unsupported schema. The original alert remains available below.</MuiAlert>;
   const rows = [
-    [evidence.detector === 'ssh.nonstandard-port' ? 'Observed / expected service port' : 'Observed / threshold', `${evidence.observed.toLocaleString()} / ${evidence.threshold.toLocaleString()}`],
+    [evidence.detector === 'ssh.nonstandard-port' ? 'Observed / expected service port' : evidence.detector === 'c2.beacon' ? 'Connection starts examined / required' : 'Observed / threshold', `${evidence.observed.toLocaleString()} / ${evidence.threshold.toLocaleString()}`],
     ['Capture-time window', `${evidence.windowNS / 1e9} seconds`],
     ['First / last seen (UTC)', `${utc(evidence.firstSeen)} / ${utc(evidence.lastSeen)}`],
     ['Capture scope', `${evidence.scope.sensor} / ${evidence.scope.interface} / VLANs ${evidence.scope.vlans?.join(', ') || 'untagged'}`],

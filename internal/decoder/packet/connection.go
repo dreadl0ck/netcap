@@ -510,6 +510,8 @@ func (d *Decoder) writeConn(conn *types.Connection, clientIP string, apps map[st
 		conn.ByteRatio = float64(conn.BytesClientToServer) / float64(conn.BytesServerToClient)
 	}
 
+	conn.ProducerConsumerRatio = ProducerConsumerRatio(conn.BytesClientToServer, conn.BytesServerToClient)
+
 	// Calculate packet ratio
 	if pktsS2C > 0 {
 		conn.PacketRatio = float64(pktsC2S) / float64(pktsS2C)
