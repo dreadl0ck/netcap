@@ -167,7 +167,12 @@ func Run(ctx context.Context, exchange Exchange) (result Result, runErr error) {
 	return runConnection(ctx, conn, exchange, result)
 }
 
-func runConnection(ctx context.Context, conn net.Conn, exchange Exchange, result Result) (Result, error) {
+func runConnection(ctx context.Context, conn net.Conn, exchange Exchange, result Result) (out Result, runErr error) {
+	defer func() {
+		if runErr != nil && ctx.Err() != nil {
+			runErr = ctx.Err()
+		}
+	}()
 	stop := context.AfterFunc(ctx, func() { _ = conn.Close() })
 	defer stop()
 	deadline, _ := ctx.Deadline()
@@ -200,7 +205,7 @@ func runConnection(ctx context.Context, conn net.Conn, exchange Exchange, result
 				data = append(data, value...)
 			}
 			if len(data) > exchange.Framing.MaxBytes || len(data) > exchange.MaxTotalBytes-total {
-				return result, fmt.Errorf("send byte budget exceeded")
+				return result, fmt.Errorf("%w: send byte budget exceeded", ErrBudgetExceeded)
 			}
 			n := 0
 			if exchange.Network == "udp" {
@@ -231,7 +236,7 @@ func runConnection(ctx context.Context, conn net.Conn, exchange Exchange, result
 		if step.Receive {
 			var data []byte
 			if exchange.Framing.MaxBytes > exchange.MaxTotalBytes-total {
-				return result, fmt.Errorf("receive byte budget exhausted")
+				return result, fmt.Errorf("%w: receive byte budget exhausted", ErrBudgetExceeded)
 			}
 			if exchange.Network == "udp" {
 				buffer := make([]byte, exchange.Framing.MaxBytes+1)
@@ -239,7 +244,7 @@ func runConnection(ctx context.Context, conn net.Conn, exchange Exchange, result
 				n, err = conn.Read(buffer)
 				data = buffer[:n]
 				if n > exchange.Framing.MaxBytes {
-					err = fmt.Errorf("UDP datagram exceeds maxBytes")
+					err = fmt.Errorf("%w: UDP datagram exceeds maxBytes", ErrBudgetExceeded)
 				}
 			} else {
 				data, err = exchange.Framing.Read(conn)
