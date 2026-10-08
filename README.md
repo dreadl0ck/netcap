@@ -293,8 +293,10 @@ Investigation Evidence page exposes both controls and labels estimated values.
 Exports refuse replacement and fail on truncation or exceeded limits. Packet
 exports cap captured packets at 1 MiB and PCAPNG blocks/metadata at 16 MiB;
 flow queries cap records at 4 MiB and decoded input at 256 MiB.
-The book-derived qualification inventory is `testdata/investigation-coverage.json`;
-`partial` means named checks passed, not complete workflow coverage.
+The 38 book-derived workflow families are qualified in
+`testdata/investigation-coverage.json`, with exact fixture references and mandatory
+integration commands. Coverage is scoped to those fixtures and declared limits;
+external endpoint, proxy and organizational evidence remains explicitly external.
 
 `capture --flow-exports` normalizes UDP NetFlow v5/v9, IPFIX and sFlow v5 on
 `--flow-export-ports` (default `2055,4739,6343,9995,9996`). It records raw
@@ -348,6 +350,22 @@ handles one framed TCP connection. Mutations select direction/frame and byte
 range, with optional length-prefix repair, drop, duplication and delay. Output
 records original/transmitted bytes. Both tools enforce time/frame/byte limits;
 response matches are protocol observations, not proof of endpoint effects.
+
+| Investigation command | Qualified workflow |
+| --- | --- |
+| `protocol-server` | Bounded TCP/TLS or single-peer UDP server emulation |
+| `protocol-access` | Role/state/resource matrix with observed reset controls |
+| `protocol-generate`, `protocol-corpus` | Deterministic bounded grammar/field/state/byte cases |
+| `protocol-fuzz`, `protocol-reproduce` | Valid controls, minimized marker-positive cases and exact reproduction |
+| `protocol-boundary` | Target rejection separated from harness timeout/budget-stop |
+| `protocol-triage` | Hashed debugger/process/routing evidence import; impact remains unverified |
+| `sensor-seal`, `sensor-import`, `sensor-prune` | HMAC-bound output bundles, receiver-authorized sensor namespaces and expiry; transport remains caller-owned |
+
+Use each command's `--help` for the versioned JSON/input contract. FTP data
+extraction waits for control/data readers to drain; `FTPDataHealth.json` records
+associations and exclusions. `TCPReassemblyHealth.json` records checksum policy
+and rejection counts. Both sidecars are shown in the Investigation Evidence page
+and retained by Pro projects.
 
 ## Docker
 

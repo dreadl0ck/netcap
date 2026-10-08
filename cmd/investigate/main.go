@@ -23,7 +23,7 @@ import (
 )
 
 func GetCommand() *cli.Command {
-	return &cli.Command{Name: "investigate", Usage: "bounded flow queries and verifiable packet evidence", Commands: []*cli.Command{
+	command := &cli.Command{Name: "investigate", Usage: "bounded flow queries and verifiable packet evidence", Commands: []*cli.Command{
 		protocolServerCommand(), protocolAccessCommand(), protocolCorpusCommand(), protocolTriageCommand(), protocolCampaignCommand(), protocolGenerateCommand(), protocolReproduceCommand(), protocolBoundaryCommand(),
 		{Name: "protocol-fields", Usage: "validate a framing/field hypothesis and optionally compare directional streams", Flags: []cli.Flag{
 			&cli.StringFlag{Name: "spec", Required: true, Usage: "versioned JSON grammar"},
@@ -86,6 +86,8 @@ func GetCommand() *cli.Command {
 			&cli.DurationFlag{Name: "timeout", Value: 2 * time.Minute, Usage: "maximum export duration"},
 		}, Action: runPacketEvidence},
 	}}
+	command.Commands = append(command.Commands, sensorCommands()...)
+	return command
 }
 
 func runProtocolFields(ctx context.Context, cmd *cli.Command) error {
