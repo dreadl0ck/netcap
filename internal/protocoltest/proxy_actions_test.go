@@ -179,7 +179,8 @@ func TestProxySlowReaderBackpressureCompletesAndStopsBoundedly(t *testing.T) {
 				t.Fatal(e)
 			}
 			defer c.Close()
-			_ = c.(*net.TCPConn).SetReadBuffer(1024)
+			// Stay below the payload size without Linux's tiny-window persist delays.
+			_ = c.(*net.TCPConn).SetReadBuffer(32 << 10)
 			_ = c.SetDeadline(time.Now().Add(3 * time.Second))
 			_ = c.(*net.TCPConn).CloseWrite()
 			if drain {
