@@ -39,6 +39,8 @@
 //   - vite dev: the origin is the dev server, whose /api proxy forwards to the
 //     backend (see vite.config.ts)
 //   - embedded elsewhere: set window.__BACKEND_URL__ or VITE_BACKEND_URL
+import { parseRelatedEvidence, type EvidenceSelector, type RelatedEvidence } from './evidenceLinks';
+
 export function getBackendUrl(): string {
   // No origin during SSR/static generation. Returning empty makes createApi()
   // hand back its no-op client instead of throwing on window.
@@ -187,6 +189,9 @@ function createNoOpApi(): NetcapApiClient {
     getInjectionActions: noOpReturn({ actions: [] }),
     getAlerts: noOpReturn({ alerts: [], totalCount: 0 }),
     getNetworkDetectionStats: noOpReturn(null),
+    getFeatures: noOpReturn({ features: [] }),
+    setFeature: noOpReturn({ features: [] }),
+    getRelatedEvidence: noOpReturn({ status: 'unavailable', error: 'not connected' }),
     getGroupedAlerts: noOpReturn({ groups: [], totalCount: 0, groupCount: 0 }),
     getAlertStats: noOpReturn({ totalAlerts: 0, groupCount: 0, bySeverity: {}, byRule: {}, recentAlerts: [], criticalAlerts: 0, lastUpdate: 0 }),
     clearAlerts: noOpReturn({ success: false, message: '' }),
@@ -1063,6 +1068,12 @@ export interface AlertsResponse {
   alerts: Alert[];
   totalCount: number;
 }
+export interface FeatureState { name: string; title: string; description: string; scope: 'query' | 'capture'; flag: string; env: string; enabled: boolean }
+export interface FeaturesResponse { features: FeatureState[] }
+export type RelatedEvidenceResponse =
+  | { status: 'ok'; result: RelatedEvidence }
+  | { status: 'disabled' | 'not-found' | 'unavailable'; error: string };
+
 export interface NetworkDetectionStats { schema: number; active: boolean; events: number; alerts: number; overflow: number; late: number; streamGaps: number; keys: number; flows: number; indicators: number; error?: string }
 
 export interface GroupedAlert {
@@ -2292,6 +2303,28 @@ function createApiWithBase(apiBase: string) {
   },
 
   // Alerts API
+  async getFeatures(): Promise<FeaturesResponse> {
+    const res = await fetch(`${apiBase}/features`, { cache: 'no-store' });
+    if (res.status === 404) return { features: [] };
+    if (!res.ok) throw new Error('Failed to read features');
+    return res.json();
+  },
+  async setFeature(name: string, enabled: boolean): Promise<FeaturesResponse> {
+    const res = await fetch(`${apiBase}/features`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, enabled }) });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to update feature');
+    return res.json();
+  },
+  async getRelatedEvidence(selector: EvidenceSelector, inputFile?: string): Promise<RelatedEvidenceResponse> {
+    const params = new URLSearchParams(Object.entries(selector).filter(([, v]) => v !== undefined && v !== '').map(([k, v]) => [k, String(v)]));
+    if (inputFile) params.set('inputFile', inputFile);
+    const res = await fetch(`${apiBase}/evidence/related?${params}`, { cache: 'no-store' });
+    const body = await res.json().catch(() => ({}));
+    if (res.status === 409) return { status: 'disabled', error: body.error || 'evidence linking is disabled' };
+    if (res.status === 404) return { status: 'not-found', error: body.error || 'record is not indexed' };
+    if (!res.ok) return { status: 'unavailable', error: body.error || `HTTP ${res.status}` };
+    const result = parseRelatedEvidence(body);
+    return result ? { status: 'ok', result } : { status: 'unavailable', error: 'unexpected response' };
+  },
   async getNetworkDetectionStats(inputFile?: string): Promise<NetworkDetectionStats | null> {
     const query = inputFile ? `?inputFile=${encodeURIComponent(inputFile)}` : '';
     const res = await fetch(`${apiBase}/network-detection${query}`);

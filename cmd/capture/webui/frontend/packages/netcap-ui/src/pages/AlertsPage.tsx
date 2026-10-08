@@ -72,6 +72,8 @@ import { FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 
 import { syntaxHighlightJSON } from '../lib/html';
 import NetworkDetectionEvidence, { NetworkDetectionCoverage } from '../components/NetworkDetectionEvidence';
+import RelatedEvidence from '../components/RelatedEvidence';
+import { selectorForAlert } from '../lib/evidenceLinks';
 // Helper function to convert unix timestamps to human-readable format
 // fieldName parameter helps identify if we should convert this number
 function convertTimestamps(obj: any, fieldName?: string): any {
@@ -1065,6 +1067,8 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <NetworkDetectionEvidence alert={selectedAlert} />
                 {selectedAlert.recordType === 'NetworkDetection' && renderEvidenceActions?.(selectedAlert)}
+                {selectorForAlert(selectedAlert.recordType, selectedAlert.matchedRecord) &&
+                  <RelatedEvidence selector={selectorForAlert(selectedAlert.recordType, selectedAlert.matchedRecord)} />}
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary">
                     Timestamp

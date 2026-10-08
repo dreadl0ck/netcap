@@ -55,6 +55,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/vulnerability"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
 	"github.com/dreadl0ck/netcap/internal/dpi"
+	"github.com/dreadl0ck/netcap/internal/evidencelink"
 	"github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/internal/rules"
@@ -94,6 +95,10 @@ type FileError struct {
 // This allows the webUI to display the actual values the application was started with
 type RuntimeConfig struct {
 	Behavior *BehaviorOptions
+	// Features holds startup state of optional features by name; a missing
+	// name means enabled. See features.go.
+	Features      map[string]bool
+	EvidenceLinks *evidencelink.Config
 	// Branding
 	LogoSubText string // Custom label shown below NETCAP logo (overrides LOCAL/SERVICE)
 
@@ -191,6 +196,7 @@ type Server struct {
 	fileErrors           map[string]FileError           // Tracks errors for each file
 	debugLogging         bool                           // Runtime debug logging state
 	payloadCapture       bool                           // Runtime payload capture state (default false)
+	features             *featureSet                    // Optional feature toggles shown in Settings
 	dpiConfigured        bool                           // Whether DPI was configured at startup (via -dpi flag)
 	runtimeConfig        *RuntimeConfig                 // Actual runtime configuration values from flags
 	collector            CollectorInterface             // Reference to collector for runtime config changes
@@ -263,7 +269,12 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		}
 	}
 
+	var initialFeatures map[string]bool
+	if runtimeConfig != nil {
+		initialFeatures = runtimeConfig.Features
+	}
 	s := &Server{
+		features:           newFeatureSet(initialFeatures),
 		addr:               addr,
 		outDir:             outDir,
 		baseOutDir:         outDir,
@@ -552,6 +563,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/alerts", s.handleAlerts)
 	mux.HandleFunc("/api/behavior", s.handleBehavior)
 	mux.HandleFunc("/api/network-detection", s.handleNetworkDetection)
+	mux.HandleFunc("/api/features", s.handleFeatures)
+	mux.HandleFunc("/api/evidence/related", s.handleEvidenceRelated)
 	mux.HandleFunc("/api/behavior/health", s.handleBehaviorHealth)
 	mux.HandleFunc("/api/behavior/asset", s.handleBehaviorAsset)
 	mux.HandleFunc("/api/behavior/records", s.handleBehaviorRecords)
@@ -1721,7 +1734,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	s.mu.RUnlock()
 	// Build collector configuration
 	c := collector.New(collector.Config{
-		NetworkDetection:       true,
+		NetworkDetection:       s.featureEnabled(featureNetworkDetection),
 		NetworkDetectionConfig: os.Getenv("NC_NETWORK_DETECTION_CONFIG"),
 		Workers:                runtime.NumCPU() * 2,
 		PacketBufferSize:       defaults.PacketBuffer,

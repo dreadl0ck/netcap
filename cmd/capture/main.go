@@ -694,7 +694,13 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		}
 
 		// Create runtime config with actual flag values
+		if err := flagEvidenceLinks.Validate(); err != nil {
+			return err
+		}
+		evidenceLinks := flagEvidenceLinks
 		runtimeConfig := &webui.RuntimeConfig{
+			Features:      map[string]bool{"network-detection": flagNetworkDetection, "evidence-links": flagEvidenceLinks.Enabled},
+			EvidenceLinks: &evidenceLinks,
 			Compress:      flagCompress,
 			Buffer:        flagBuffer,
 			Workers:       flagWorkers,

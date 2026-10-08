@@ -68,6 +68,7 @@ import ConversationModal from '../components/ConversationModal';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
 import ProducerConsumerEvidence from '../components/ProducerConsumerEvidence';
+import RelatedEvidence from '../components/RelatedEvidence';
 import SearchInput from '../components/SearchInput';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
@@ -1425,6 +1426,12 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                                         Community ID
                                       </Typography>
                                       <CommunityIDChip communityId={conn.communityId} mode="text" />
+                                    </Grid>
+                                  )}
+
+                                  {conn.observationId && (
+                                    <Grid item xs={12}>
+                                      <RelatedEvidence selector={{ observationId: conn.observationId }} inputFile={evidenceInputFile || undefined} />
                                     </Grid>
                                   )}
 

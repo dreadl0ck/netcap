@@ -28,6 +28,10 @@ export { NetcapLink } from './NetcapLink';
 export { default as FileSelectorHeader } from './FileSelectorHeader';
 export type { FileSelectorHeaderProps } from './FileSelectorHeader';
 
+// Evidence
+export { default as RelatedEvidence } from './RelatedEvidence';
+export { default as FeatureToggles } from './FeatureToggles';
+
 // Learn mode components
 export { default as LearnModeToggle } from './LearnModeToggle';
 export { default as LearnModeOverlay } from './LearnModeOverlay';
