@@ -197,7 +197,16 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
   });
 
   // Extract grouped alerts data and filter based on showResolved
-  const allGroups = groupedAlertsData?.groups || [];
+  // Backends may send null for empty lists (e.g. a rule without tags).
+  const allGroups = (groupedAlertsData?.groups || []).map(g => ({
+    ...g,
+    tags: g.tags || [],
+    uniqueSrcIPs: g.uniqueSrcIPs || [],
+    uniqueDstIPs: g.uniqueDstIPs || [],
+    uniqueSrcPorts: g.uniqueSrcPorts || [],
+    uniqueDstPorts: g.uniqueDstPorts || [],
+    sampleAlerts: g.sampleAlerts || [],
+  }));
   const groups = showResolved ? allGroups : allGroups.filter(g => !g.resolved);
   const totalCount = groupedAlertsData?.totalCount || 0;
   const groupCount = groups.length;
@@ -1185,13 +1194,13 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                   </Box>
                 )}
 
-                {selectedAlert.tags.length > 0 && (
+                {(selectedAlert.tags || []).length > 0 && (
                   <Box>
                     <Typography variant="subtitle2" color="text.secondary">
                       Tags
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                      {selectedAlert.tags.map((tag) => (
+                      {(selectedAlert.tags || []).map((tag) => (
                         <Chip key={tag} label={tag} size="small" />
                       ))}
                     </Box>
