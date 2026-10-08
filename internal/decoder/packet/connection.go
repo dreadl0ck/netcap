@@ -35,6 +35,7 @@ import (
 	"github.com/gopacket/gopacket/layers"
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
+	"github.com/dreadl0ck/netcap/internal/dnsaudit"
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
@@ -510,7 +511,7 @@ func (d *Decoder) writeConn(conn *types.Connection, clientIP string, apps map[st
 		conn.ByteRatio = float64(conn.BytesClientToServer) / float64(conn.BytesServerToClient)
 	}
 
-	conn.ProducerConsumerRatio = ProducerConsumerRatio(conn.BytesClientToServer, conn.BytesServerToClient)
+	conn.ProducerConsumerRatio = dnsaudit.ProducerConsumerRatio(conn.BytesClientToServer, conn.BytesServerToClient)
 
 	// Calculate packet ratio
 	if pktsS2C > 0 {

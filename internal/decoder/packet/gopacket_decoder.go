@@ -30,6 +30,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
@@ -97,7 +98,7 @@ func (dec *GoPacketDecoder) NumRecords() int64 {
 // InitGoPacketDecoders initializes all gopacket decoders.
 func InitGoPacketDecoders(c *config.Config) (decoders map[gopacket.LayerType][]*GoPacketDecoder, err error) {
 	decoders = map[gopacket.LayerType][]*GoPacketDecoder{}
-	dnsTx.reset()
+	dnsTx.Reset()
 
 	active, err := decoderutils.SelectDecoders(defaultGoPacketDecoders, c.IncludeDecoders, c.ExcludeDecoders, func(d *GoPacketDecoder) string {
 		return d.Layer.String()
@@ -207,6 +208,9 @@ func newGoPacketDecoder(nt types.Type, lt gopacket.LayerType, description string
 // this calls the handler function of the decoder
 // and writes the serialized protobuf into the data pipe.
 func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, l gopacket.Layer) error {
+	if dec.Type == types.Type_NC_DNS && p.Layer(layers.LayerTypeTCP) != nil {
+		return nil // The stream producer owns TCP framing and emits each DNS message once.
+	}
 	record := dec.Handler(l, p.Metadata().Timestamp.UnixNano())
 	if record != nil {
 
@@ -219,7 +223,13 @@ func (dec *GoPacketDecoder) Decode(ctx *types.PacketContext, p gopacket.Packet, 
 				log.Fatal("type does not implement the types.AuditRecord interface")
 			}
 			if d, ok := record.(*types.DNS); ok {
-				dnsTx.observe(d)
+				scope := fmt.Sprintf("%d", p.Metadata().CaptureInfo.InterfaceIndex)
+				for _, layer := range p.Layers() {
+					if vlan, ok := layer.(*layers.Dot1Q); ok {
+						scope += fmt.Sprintf("/%d", vlan.VLANIdentifier)
+					}
+				}
+				dnsTx.ObserveScoped(d, scope)
 			}
 		}
 

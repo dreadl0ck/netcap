@@ -67,6 +67,7 @@ import BehaviorAssetContext from '../components/BehaviorAssetContext';
 import ConversationModal from '../components/ConversationModal';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import CommunityIDChip from '../components/CommunityIDChip';
+import ProducerConsumerEvidence from '../components/ProducerConsumerEvidence';
 import SearchInput from '../components/SearchInput';
 import StatBox, { StatBoxGrid } from '../components/StatBox';
 import { formatBytes, formatTimestamp, getBackendUrl } from '../lib/api';
@@ -1433,6 +1434,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                                     <Typography variant="body2" color="text.secondary">
                                       Server→Client: {formatBytes(conn.bytesServerToClient)}
                                     </Typography>
+                                    <ProducerConsumerEvidence produced={conn.bytesClientToServer} consumed={conn.bytesServerToClient} />
                                   </Grid>
 
                                   {/* Connection Indicators */}
@@ -1506,7 +1508,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                                             color={conn.byteRatio > 0.9 && conn.byteRatio < 1.1 ? 'warning' : 'default'}
                                             variant="outlined"
                                             sx={{ fontSize: '0.7rem' }}
-                                            data-learn="Byte Ratio: Client/Server byte ratio close to 1.0 may indicate beaconing behavior."
+                                            data-learn="Byte Ratio: Client/Server byte symmetry within this connection. It does not measure periodicity."
                                           />
                                         </Box>
                                       )}
@@ -1521,7 +1523,7 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                                             color={conn.packetRatio > 0.9 && conn.packetRatio < 1.1 ? 'warning' : 'default'}
                                             variant="outlined"
                                             sx={{ fontSize: '0.7rem' }}
-                                            data-learn="Packet Ratio: Client/Server packet ratio close to 1.0 may indicate beaconing behavior."
+                                            data-learn="Packet Ratio: Client/Server packet symmetry within this connection. It does not measure periodicity."
                                           />
                                         </Box>
                                       )}

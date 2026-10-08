@@ -18,6 +18,7 @@ const maxBeaconTimes = 64
 type beacon struct {
 	times []int64
 	seq   uint32
+	port  uint16
 }
 
 type addFunc func(detector, class, severity, mitre string, count, threshold uint64, samples []string, first int64, indicator *Indicator, limitations ...string)
@@ -61,11 +62,12 @@ func (e *Engine) observeBeacon(ev Event, add addFunc) {
 		}
 		b = &beacon{}
 		e.beacons[key] = b
-	} else if ev.Seq == b.seq {
+	} else if ev.Seq == b.seq && ev.SrcPort == b.port {
 		// A retransmitted SYN is the same connection attempt.
 		return
 	}
 	b.seq = ev.Seq
+	b.port = ev.SrcPort
 
 	drop := 0
 	for drop < len(b.times) && ev.At-b.times[drop] > c.BeaconWindowNS {

@@ -1,7 +1,8 @@
-package packet
+package dnsaudit
 
 import (
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/dreadl0ck/netcap/types"
@@ -79,7 +80,7 @@ func TestDNSTransactionTimeoutAndReorder(t *testing.T) {
 	tx.observe(dnsMsg(100, false, 10, "x.example"))
 	backwards := dnsMsg(50, true, 10, "x.example")
 	tx.observe(backwards)
-	if backwards.TransactionStatus != DNSStatusAnswered || backwards.RTT != 0 {
+	if backwards.TransactionStatus != DNSStatusReordered || backwards.RTT != 0 {
 		t.Fatalf("reordered timestamps must not produce a negative RTT: %+v", backwards)
 	}
 	tx.observe(dnsMsg(0, false, 11, "re.example"))
@@ -110,9 +111,30 @@ func TestProducerConsumerRatio(t *testing.T) {
 	for _, c := range []struct {
 		produced, consumed int64
 		want               float64
-	}{{0, 0, 0}, {100, 0, 1}, {0, 100, -1}, {300, 100, 0.5}, {-1, 5, 0}} {
+	}{{0, 0, 0}, {100, 0, 1}, {0, 100, -1}, {300, 100, 0.5}, {-1, 5, 0}, {math.MaxInt64, math.MaxInt64, 0}, {math.MaxInt64, 0, 1}} {
 		if got := ProducerConsumerRatio(c.produced, c.consumed); got != c.want {
 			t.Fatalf("PCR(%d,%d)=%v want %v", c.produced, c.consumed, got, c.want)
 		}
+	}
+}
+
+func TestDNSCaptureScopeAndClassIsolation(t *testing.T) {
+	tx := newDNSTransactions()
+	tx.observeScoped(dnsMsg(1, false, 1, "a.example"), "interface-1/vlan-10")
+	wrong := dnsMsg(2, true, 1, "a.example")
+	tx.observeScoped(wrong, "interface-1/vlan-11")
+	if wrong.TransactionStatus != DNSStatusUnsolicited {
+		t.Fatal("paired across VLANs")
+	}
+	wrong = dnsMsg(3, true, 1, "a.example")
+	wrong.Questions[0].Class = 3
+	tx.observeScoped(wrong, "interface-1/vlan-10")
+	if wrong.TransactionStatus != DNSStatusUnsolicited {
+		t.Fatal("paired across DNS classes")
+	}
+	correct := dnsMsg(4, true, 1, "a.example")
+	tx.observeScoped(correct, "interface-1/vlan-10")
+	if correct.TransactionStatus != DNSStatusAnswered {
+		t.Fatal("lost original scoped query")
 	}
 }

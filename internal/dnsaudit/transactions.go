@@ -4,7 +4,7 @@
  * License: GNU General Public License v3.0
  */
 
-package packet
+package dnsaudit
 
 import (
 	"container/list"
@@ -22,6 +22,7 @@ const (
 	DNSStatusAnswered       = "answered"
 	DNSStatusLate           = "late"
 	DNSStatusUnsolicited    = "unsolicited"
+	DNSStatusReordered      = "reordered"
 )
 
 const (
@@ -46,18 +47,31 @@ type dnsTransactions struct {
 	pending map[string]*list.Element
 	order   *list.List
 	evicted int64
+	limit   int
 }
 
 func newDNSTransactions() *dnsTransactions {
-	return &dnsTransactions{pending: map[string]*list.Element{}, order: list.New()}
+	return &dnsTransactions{pending: map[string]*list.Element{}, order: list.New(), limit: dnsMaxPending}
 }
 
-var dnsTx = newDNSTransactions()
+// DNSTransactionTracker is shared by packet and framed stream producers.
+type DNSTransactionTracker = dnsTransactions
+
+func NewDNSTransactionTracker() *DNSTransactionTracker {
+	t := newDNSTransactions()
+	t.limit = 256
+	return t
+}
+
+func (t *dnsTransactions) Observe(d *types.DNS)                     { t.observe(d) }
+func (t *dnsTransactions) ObserveScoped(d *types.DNS, scope string) { t.observeScoped(d, scope) }
+func (t *dnsTransactions) Reset()                                   { t.reset() }
+func NewPacketTracker() *DNSTransactionTracker                      { return newDNSTransactions() }
 
 // dnsKey identifies a transaction from the client's perspective. ok is false
 // when endpoints or the question needed for an unambiguous key are missing.
 func dnsKey(d *types.DNS) (string, bool) {
-	if d.SrcIP == "" || d.DstIP == "" || len(d.Questions) == 0 {
+	if d.SrcIP == "" || d.DstIP == "" || len(d.Questions) == 0 || d.Questions[0] == nil || len(d.Questions[0].Name) > 253 {
 		return "", false
 	}
 	client, server := endpoint(d.SrcIP, d.SrcPort), endpoint(d.DstIP, d.DstPort)
@@ -65,7 +79,7 @@ func dnsKey(d *types.DNS) (string, bool) {
 		client, server = server, client
 	}
 	q := d.Questions[0]
-	return client + "|" + server + "|" + strconv.Itoa(int(d.ID)) + "|" + strings.ToLower(strings.TrimSuffix(q.Name, ".")) + "|" + strconv.Itoa(int(q.Type)), true
+	return d.CommunityID + "|" + client + "|" + server + "|" + strconv.Itoa(int(d.ID)) + "|" + strings.ToLower(strings.TrimSuffix(q.Name, ".")) + "|" + strconv.Itoa(int(q.Type)) + "|" + strconv.Itoa(int(q.Class)), true
 }
 
 func endpoint(ip string, port int32) string {
@@ -74,10 +88,15 @@ func endpoint(ip string, port int32) string {
 
 // observe annotates d with its pairing state.
 func (t *dnsTransactions) observe(d *types.DNS) {
+	t.observeScoped(d, "")
+}
+
+func (t *dnsTransactions) observeScoped(d *types.DNS, scope string) {
 	key, ok := dnsKey(d)
 	if !ok {
 		return
 	}
+	key = scope + "|" + key
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
@@ -97,7 +116,7 @@ func (t *dnsTransactions) observe(d *types.DNS) {
 			d.TransactionStatus, d.QueryTransmissions = DNSStatusRetransmission, p.sends
 			return
 		}
-		if len(t.pending) >= dnsMaxPending {
+		if len(t.pending) >= t.limit {
 			oldest := t.order.Front()
 			delete(t.pending, oldest.Value.(*dnsPending).key)
 			t.order.Remove(oldest)
@@ -118,6 +137,9 @@ func (t *dnsTransactions) observe(d *types.DNS) {
 	// Capture timestamps can run backwards across reordered packets.
 	if d.Timestamp >= p.at {
 		d.RTT = d.Timestamp - p.at
+	} else {
+		d.TransactionStatus = DNSStatusReordered
+		return
 	}
 	d.TransactionStatus = DNSStatusAnswered
 	if d.RTT > DNSTransactionTimeout {
@@ -144,8 +166,9 @@ func (t *dnsTransactions) reset() {
 // ProducerConsumerRatio returns (produced - consumed) / (produced + consumed)
 // for one direction's byte counts, or 0 when no bytes were observed.
 func ProducerConsumerRatio(produced, consumed int64) float64 {
-	if produced < 0 || consumed < 0 || produced+consumed == 0 {
+	if produced < 0 || consumed < 0 || (produced == 0 && consumed == 0) {
 		return 0
 	}
-	return float64(produced-consumed) / float64(produced+consumed)
+	p, c := float64(produced), float64(consumed)
+	return (p - c) / (p + c)
 }

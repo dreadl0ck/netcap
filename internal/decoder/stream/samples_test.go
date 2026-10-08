@@ -254,6 +254,12 @@ func samples() []sample {
 			server: kerberosTCP(0x6b, 300), // AS-REP
 		},
 		{
+			decoder: "DNS", port: 53, transport: core.TCP,
+			client: hexBytes("001e000701000001000000000000076578616d706c6504746573740000010001"),
+			server: hexBytes("001e000781800001000000000000076578616d706c6504746573740000010001"),
+			note:   "RFC 7766 length-framed query and reply",
+		},
+		{
 			decoder: "S7Comm", port: 102, transport: core.TCP,
 			client: s7JobPDU([]byte{0x04, 0x00}), // ReadVar
 			note:   "composed from s7comm/s7comm_test.go helpers",

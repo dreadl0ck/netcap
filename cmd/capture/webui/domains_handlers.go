@@ -58,14 +58,17 @@ type DNSTransactionSummary struct {
 	Answered        int   `json:"answered"`
 	Late            int   `json:"late"`
 	Unsolicited     int   `json:"unsolicited"`
+	Reordered       int   `json:"reordered"`
 	Unanswered      int   `json:"unanswered"`
 	RTTSamples      int   `json:"rttSamples"`
 	RTTMedianNS     int64 `json:"rttMedianNs"`
 	RTTP95NS        int64 `json:"rttP95Ns"`
+	RTTTruncated    bool  `json:"rttTruncated"`
 }
 
 // maxRTTSamples bounds retained RTTs per domain; later samples are dropped.
 const maxRTTSamples = 10000
+const maxDomainRTTSamples = 250000
 
 // DomainsResponse contains the list of domains
 type DomainsResponse struct {
@@ -130,6 +133,7 @@ func readDomains(outDir string) ([]DomainSummary, error) {
 
 // readDNSDomains reads domains from DNS records
 func readDNSDomains(filePath string, domainMap map[string]*domainAggregator) error {
+	remainingRTT := maxDomainRTTSamples
 	// Read DNS records
 	reader, err := NewAuditRecordReader(filePath)
 	if err != nil {
@@ -183,6 +187,7 @@ func readDNSDomains(filePath string, domainMap map[string]*domainAggregator) err
 					firstSeen:     dns.Timestamp,
 					lastSeen:      dns.Timestamp,
 					source:        "DNS",
+					rttBudget:     &remainingRTT,
 				}
 				domainMap[domain] = agg
 			}
@@ -190,6 +195,7 @@ func readDNSDomains(filePath string, domainMap map[string]*domainAggregator) err
 			agg.queryCount++
 			agg.clients[dns.SrcIP] = true
 			agg.recordTypes[question.Type] = true
+			agg.rttBudget = &remainingRTT
 			// Pairing is keyed on the first question only.
 			if i == 0 {
 				agg.observeTransaction(dns)
@@ -411,6 +417,7 @@ type domainAggregator struct {
 	source        string // "DNS", "TLS SNI", or "DNS, TLS SNI"
 	tx            *DNSTransactionSummary
 	rtts          []int64
+	rttBudget     *int
 }
 
 // observeTransaction counts one DNS message's pairing state. Records written
@@ -433,11 +440,18 @@ func (a *domainAggregator) observeTransaction(d *types.DNS) {
 		} else {
 			a.tx.Late++
 		}
-		if len(a.rtts) < maxRTTSamples {
+		if len(a.rtts) < maxRTTSamples && (a.rttBudget == nil || *a.rttBudget > 0) {
 			a.rtts = append(a.rtts, d.RTT)
+			if a.rttBudget != nil {
+				*a.rttBudget -= 1
+			}
+		} else {
+			a.tx.RTTTruncated = true
 		}
 	case "unsolicited":
 		a.tx.Unsolicited++
+	case "reordered":
+		a.tx.Reordered++
 	}
 }
 
@@ -446,7 +460,7 @@ func (a *domainAggregator) transactionSummary() *DNSTransactionSummary {
 		return nil
 	}
 	s := *a.tx
-	s.Unanswered = max(0, s.Queries-s.Answered-s.Late)
+	s.Unanswered = max(0, s.Queries-s.Answered-s.Late-s.Reordered)
 	if n := len(a.rtts); n > 0 {
 		rtts := append([]int64(nil), a.rtts...)
 		sort.Slice(rtts, func(i, j int) bool { return rtts[i] < rtts[j] })

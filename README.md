@@ -147,7 +147,7 @@ FlightSim capture and is synthetic only.
 
 | Record | Fields | Semantics |
 | --- | --- | --- |
-| DNS | `TransactionStatus`, `RTT`, `QueryTransmissions` | Capture-time pairing on endpoints, ID and first question: `query`, `retransmission`, `answered`, `late` (> 30 s) or `unsolicited`. At most 65,536 outstanding queries |
+| DNS | `TransactionStatus`, `RTT`, `QueryTransmissions` | Capture-time pairing on scoped endpoints, ID, first question/type/class: `query`, `retransmission`, `answered`, `late` (> 30 s), `unsolicited` or `reordered` (RTT unavailable). UDP table capped at 65,536; TCP at 256 per flow |
 | DCERPC | `ContextID`, `InterfaceName`, `OperationName`, `FaultStatus`, `CommunityID` | Requests and responses are attributed through Bind/AlterContext contexts; responses inherit the opnum of their call. A request is an attempt; the Response/Fault carries the outcome |
 | Connection | `ProducerConsumerRatio` | `(client − server bytes) / (client + server bytes)`, `[-1, 1]`; 0 when no bytes |
 

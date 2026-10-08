@@ -14,6 +14,10 @@ const summary = (over: Partial<DNSTransactionSummary> = {}): DNSTransactionSumma
 });
 
 describe('dnsTransactions', () => {
+  it('makes unavailable clock order and capped sampling visible', () => {
+    expect(transactionFlags(summary({ reordered:2, rttTruncated:true }))).toEqual(['2 clock-order unknown','RTT sample limit reached']);
+    expect(medianRTT(summary({ rttTruncated:true }))).toBe('~12.3 ms');
+  });
   it('formats durations by magnitude', () => {
     expect(formatDurationNs(850)).toBe('0.850 µs');
     expect(formatDurationNs(12_345_678)).toBe('12.3 ms');

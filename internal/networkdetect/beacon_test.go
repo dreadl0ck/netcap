@@ -95,3 +95,22 @@ func TestBeaconConfigValidation(t *testing.T) {
 		t.Fatalf("disabled detector rejected: %v", err)
 	}
 }
+
+func TestBeaconSeparatesScopeAndRepeatedSequenceOnDifferentPorts(t *testing.T) {
+	c := DefaultConfig()
+	start := baseEvent("syn", 0).At
+	var mixed, independent []Event
+	for n := 0; n < 8; n++ {
+		ev := beaconSYN(start+int64(n)*30e9, 7)
+		ev.SrcPort = uint16(40000 + n)
+		independent = append(independent, ev)
+		ev.Scope.VLANs = []uint16{uint16(n%2 + 1)}
+		mixed = append(mixed, ev)
+	}
+	if count, _ := beaconAlerts(t, c, mixed); count != 0 {
+		t.Fatal("joined different VLANs")
+	}
+	if count, _ := beaconAlerts(t, c, independent); count != 1 {
+		t.Fatal("different source ports treated as retries")
+	}
+}

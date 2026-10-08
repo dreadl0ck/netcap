@@ -160,7 +160,51 @@ func TestMergedDataFallbackSplitsDirections(t *testing.T) {
 		fragment(request(5, 0, 7), 3, false),
 	}}
 	got := decodeAll(conv)
-	if len(got) != 3 || got[1].OperationName != "SamrOpenDomain" || got[2].OperationName != "SamrOpenDomain" {
+	if len(got) != 3 || got[1].OperationName != "" || got[2].OperationName != "SamrOpenDomain" {
 		t.Fatalf("merged fallback: %+v", got)
+	}
+}
+
+func TestContextChangesDoNotRewriteEarlierCalls(t *testing.T) {
+	changed := bind(3, uuidSAMR)
+	changed[2] = ptypeAlterContext
+	conv := &core.ConversationInfo{Data: core.DataFragments{
+		fragment(bind(1, uuidSVCCTL), 10, false),
+		fragment(request(2, 0, 12), 20, false),
+		fragment(changed, 30, false),
+		fragment(response(ptypeResponse, 2, 0, 0), 40, true),
+	}}
+	got := decodeAll(conv)
+	if got[3].InterfaceName != "SVCCTL" || got[3].OperationName != "RCreateServiceW" {
+		t.Fatalf("later binding rewrote earlier call: %+v", got[3])
+	}
+}
+
+func TestNoFramingOrAttributionAcrossStreamGap(t *testing.T) {
+	a := request(2, 0, 12)
+	gap := fragment(a[20:], 30, false)
+	gap.SkippedBytes = 1
+	conv := &core.ConversationInfo{Data: core.DataFragments{
+		fragment(bind(1, uuidSVCCTL), 10, false),
+		fragment(a[:20], 20, false), gap,
+		fragment(request(3, 0, 19), 40, false),
+	}}
+	got := decodeAll(conv)
+	if len(got) != 2 || got[1].InterfaceName != "" || got[1].OperationName != "" {
+		t.Fatalf("gap retained context or joined bytes: %+v", got)
+	}
+}
+
+func TestPendingCallsAreBounded(t *testing.T) {
+	var client []byte
+	client = append(client, bind(1, uuidSVCCTL)...)
+	for i := 0; i < maxPendingCalls+10; i++ {
+		client = append(client, request(uint32(i+2), 0, 12)...)
+	}
+	r := &dcerpcReader{conversation: &core.ConversationInfo{ClientData: core.DataFragments{fragment(client, 1, false)}}}
+	n := 0
+	r.decode(func(*types.DCERPC) { n++ })
+	if n != maxPendingCalls+11 || r.pending != maxPendingCalls {
+		t.Fatalf("records=%d pending=%d", n, r.pending)
 	}
 }

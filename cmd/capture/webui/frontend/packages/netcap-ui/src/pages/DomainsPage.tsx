@@ -784,6 +784,8 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
                                     <Typography variant="body2" color="text.secondary">
                                       Unsolicited responses: {domain.dnsTransactions.unsolicited.toLocaleString()}
                                     </Typography>
+                                    {(domain.dnsTransactions.reordered ?? 0) > 0 && <Typography variant="body2" color="text.secondary">Clock-order unknown: {domain.dnsTransactions.reordered}; RTT excluded.</Typography>}
+                                    {domain.dnsTransactions.rttTruncated && <Typography variant="body2" color="text.secondary">RTT sample limit reached; percentiles describe retained samples only.</Typography>}
                                     {domain.dnsTransactions.rttSamples > 0 && (
                                       <Typography variant="body2" color="text.secondary">
                                         RTT median {formatDurationNs(domain.dnsTransactions.rttMedianNs)}, p95 {formatDurationNs(domain.dnsTransactions.rttP95Ns)} ({domain.dnsTransactions.rttSamples.toLocaleString()} responses)
@@ -914,4 +916,3 @@ export default function DomainsPage({ rowActions }: DomainsPageProps = {}) {
     </Layout>
   );
 }
-

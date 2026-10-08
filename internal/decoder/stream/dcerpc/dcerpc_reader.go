@@ -36,12 +36,14 @@ type dcerpcReader struct {
 	// presentation context id -> abstract syntax UUID, learned from Bind and AlterContext
 	contexts map[uint16]string
 	// call id -> requests awaiting a response, oldest first
-	calls map[uint32][]call
+	calls   map[uint32][]call
+	pending int
 }
 
 type call struct {
 	context uint16
 	opnum   uint16
+	uuid    string
 }
 
 // New returns a new DCE/RPC reader.
@@ -54,7 +56,8 @@ func (d *dcerpcReader) New(conversation *core.ConversationInfo) core.StreamDecod
 const (
 	dcerpcHeaderLen = 16
 	maxContexts     = 64
-	maxCalls        = 128
+	// maxPendingCalls bounds requests awaiting a response across all call ids.
+	maxPendingCalls = 1024
 )
 
 const (
@@ -144,56 +147,71 @@ func (d *dcerpcReader) Decode() {
 	})
 }
 
-// decode frames each direction separately: PDUs can span or share TCP
-// segments. Client PDUs come first so responses can be attributed to the
-// interface and opnum of their request.
+// decode preserves delivery order across directions. A response never learns
+// an operation from a request or binding that arrives later.
 func (d *dcerpcReader) decode(emit func(*types.DCERPC)) {
 	d.contexts = map[uint16]string{}
 	d.calls = map[uint32][]call{}
+	d.pending = 0
 
-	client, server := d.conversation.ClientData, d.conversation.ServerData
-	if client == nil && server == nil {
-		for _, f := range d.conversation.Data {
-			if f.Direction() == reassembly.TCPDirServerToClient {
-				server = append(server, f)
-			} else {
-				client = append(client, f)
-			}
-		}
+	fragments := d.conversation.Data
+	if len(fragments) == 0 {
+		fragments = append(append(core.DataFragments{}, d.conversation.ClientData...), d.conversation.ServerData...)
 	}
-
-	d.frameDirection(client, emit)
-	d.frameDirection(server, emit)
-}
-
-func (d *dcerpcReader) frameDirection(fragments core.DataFragments, emit func(*types.DCERPC)) {
-	data, index := core.Flatten(fragments)
-
-	for offset := 0; offset+dcerpcHeaderLen <= len(data); {
-		pdu := data[offset:]
-		if pdu[0] != 5 || (pdu[1] != 0 && pdu[1] != 1) || pdu[2] > 19 {
-			return
+	type side struct {
+		data []byte
+		at   int64
+	}
+	var sides [2]side
+	for _, f := range fragments {
+		index := 0
+		if f.Direction() == reassembly.TCPDirServerToClient {
+			index = 1
 		}
-
-		var order binary.ByteOrder = binary.LittleEndian
-		if pdu[4]&0x10 == 0 {
-			order = binary.BigEndian
+		b := &sides[index]
+		if gap, ok := f.(*core.StreamData); ok && gap.SkippedBytes != 0 {
+			b.data = nil
+			d.contexts = map[uint16]string{}
+			d.calls = map[uint32][]call{}
+			d.pending = 0
+			continue
 		}
-
-		fragLength := int(order.Uint16(pdu[8:10]))
-		if fragLength < dcerpcHeaderLen || fragLength > len(pdu) {
-			// Malformed, or truncated by the end of the capture.
-			return
+		raw := f.Raw()
+		for len(raw) > 0 {
+			if len(b.data) == 0 {
+				b.at = core.FragmentTime(f)
+			}
+			if len(b.data) < dcerpcHeaderLen {
+				n := min(dcerpcHeaderLen-len(b.data), len(raw))
+				b.data = append(b.data, raw[:n]...)
+				raw = raw[n:]
+				if len(b.data) < dcerpcHeaderLen {
+					break
+				}
+			}
+			pdu := b.data
+			var order binary.ByteOrder = binary.LittleEndian
+			if pdu[4]&0x10 == 0 {
+				order = binary.BigEndian
+			}
+			length := int(order.Uint16(pdu[8:10]))
+			if pdu[0] != 5 || pdu[1] > 1 || pdu[2] > 19 || length < dcerpcHeaderLen {
+				b.data = nil
+				break
+			}
+			n := min(length-len(b.data), len(raw))
+			b.data = append(b.data, raw[:n]...)
+			raw = raw[n:]
+			if len(b.data) < length {
+				break
+			}
+			rec := d.parsePDU(b.data, order)
+			rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = d.conversation.Endpoints(f)
+			rec.Timestamp = b.at
+			rec.Flow, rec.CommunityID = d.conversation.Ident, d.conversation.CommunityID
+			emit(rec)
+			b.data = b.data[:0]
 		}
-
-		rec := d.parsePDU(pdu[:fragLength], order)
-		rec.SrcIP, rec.DstIP, rec.SrcPort, rec.DstPort = d.conversation.EndpointsAt(index, offset)
-		rec.Timestamp, _ = index.At(offset)
-		rec.Flow = d.conversation.Ident
-		rec.CommunityID = d.conversation.CommunityID
-		emit(rec)
-
-		offset += fragLength
 	}
 }
 
@@ -225,11 +243,9 @@ func (d *dcerpcReader) parsePDU(pdu []byte, order binary.ByteOrder) *types.DCERP
 			rec.ContextID, rec.OpNum = int32(ctx), int32(opnum)
 			d.attribute(rec, ctx, opnum, true)
 			// Only the first fragment of a request starts a call.
-			if pdu[3]&0x01 != 0 {
-				pending := d.calls[callID]
-				if len(pending) < maxCalls {
-					d.calls[callID] = append(pending, call{context: ctx, opnum: opnum})
-				}
+			if pdu[3]&0x01 != 0 && d.pending < maxPendingCalls {
+				d.calls[callID] = append(d.calls[callID], call{context: ctx, opnum: opnum, uuid: d.contexts[ctx]})
+				d.pending++
 			}
 		}
 	case ptypeResponse, ptypeFault:
@@ -237,11 +253,15 @@ func (d *dcerpcReader) parsePDU(pdu []byte, order binary.ByteOrder) *types.DCERP
 		if len(body) >= 6 {
 			ctx := order.Uint16(body[4:6])
 			rec.ContextID = int32(ctx)
-			opnum, known := d.complete(callID, ctx, pdu[3]&0x02 != 0 || pktType == ptypeFault)
+			request, known := d.complete(callID, ctx, pdu[3]&0x02 != 0 || pktType == ptypeFault)
 			if known {
-				rec.OpNum = int32(opnum)
+				rec.OpNum = int32(request.opnum)
+				rec.InterfaceUUID = request.uuid
+				rec.InterfaceName = wellKnownInterfaces[request.uuid]
+				rec.OperationName = OperationName(rec.InterfaceName, request.opnum)
+			} else {
+				d.attribute(rec, ctx, 0, false)
 			}
-			d.attribute(rec, ctx, opnum, known)
 		}
 		if pktType == ptypeFault && len(body) >= 12 {
 			rec.FaultStatus = order.Uint32(body[8:12])
@@ -268,13 +288,14 @@ func (d *dcerpcReader) attribute(rec *types.DCERPC, ctx, opnum uint16, opnumKnow
 
 // complete returns the opnum of the oldest request for callID on ctx and
 // removes it when this is the last fragment of the reply.
-func (d *dcerpcReader) complete(callID uint32, ctx uint16, last bool) (uint16, bool) {
+func (d *dcerpcReader) complete(callID uint32, ctx uint16, last bool) (call, bool) {
 	pending := d.calls[callID]
 	for i, c := range pending {
 		if c.context != ctx {
 			continue
 		}
 		if last {
+			d.pending--
 			pending = append(pending[:i:i], pending[i+1:]...)
 			if len(pending) == 0 {
 				delete(d.calls, callID)
@@ -282,9 +303,9 @@ func (d *dcerpcReader) complete(callID uint32, ctx uint16, last bool) (uint16, b
 				d.calls[callID] = pending
 			}
 		}
-		return c.opnum, true
+		return c, true
 	}
-	return 0, false
+	return call{}, false
 }
 
 // parseContextList records every presentation context of a Bind or

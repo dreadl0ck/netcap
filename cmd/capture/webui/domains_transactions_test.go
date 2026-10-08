@@ -41,6 +41,7 @@ func TestDomainTransactionSummary(t *testing.T) {
 		q("a.example", "query", false, 0), q("a.example", "retransmission", false, 0), q("a.example", "answered", true, 30),
 		q("a.example", "query", false, 0), // never answered
 		q("a.example", "unsolicited", true, 0),
+		q("a.example", "query", false, 0), q("a.example", "reordered", true, 0),
 		q("b.example", "query", false, 0), q("b.example", "late", true, 40e9),
 		q("legacy.example", "", false, 0), // written before pairing existed
 	}
@@ -59,7 +60,7 @@ func TestDomainTransactionSummary(t *testing.T) {
 		byName[d.Domain] = d
 	}
 	a := byName["a.example"].Transactions
-	if a == nil || a.Queries != 3 || a.Retransmissions != 1 || a.Answered != 2 || a.Unsolicited != 1 || a.Unanswered != 1 ||
+	if a == nil || a.Queries != 4 || a.Retransmissions != 1 || a.Answered != 2 || a.Unsolicited != 1 || a.Unanswered != 1 || a.Reordered != 1 ||
 		a.RTTSamples != 2 || a.RTTMedianNS != 10 || a.RTTP95NS != 30 {
 		t.Fatalf("a.example: %+v", a)
 	}
@@ -72,5 +73,17 @@ func TestDomainTransactionSummary(t *testing.T) {
 	}
 	if c := byName["c.example"].Transactions; c == nil || c.Queries != 1 {
 		t.Fatalf("first question carries the pairing: %+v", c)
+	}
+}
+
+func TestRTTBudgetIsBoundedAndVisible(t *testing.T) {
+	budget := 2
+	aggregate := &domainAggregator{rttBudget: &budget}
+	for i := 0; i < 4; i++ {
+		aggregate.observeTransaction(&types.DNS{TransactionStatus: "answered", RTT: int64(i + 1)})
+	}
+	summary := aggregate.transactionSummary()
+	if budget != 0 || len(aggregate.rtts) != 2 || summary.Answered != 4 || !summary.RTTTruncated {
+		t.Fatalf("unbounded or hidden RTT sampling: %+v", summary)
 	}
 }
