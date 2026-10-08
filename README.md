@@ -198,6 +198,10 @@ so they work for finished and live captures and do not depend on worker count.
 Per-packet records (TCP, TLSRecord, PacketContext, PKTAP) and records without a
 computed Community ID (fallback hashes) are not linked. Network-detection alerts
 carry evidence rather than a matched record, so they are not linked.
+Known Connection observations suppress fallback flow links when no unique
+observation contains the target. Duplicate type/Community ID/timestamp selectors
+are rejected; use the exact type and ordinal instead. Each directory's index has
+a 64 MiB accounted storage budget as well as its record limit.
 
 | Option | Default | Purpose |
 | --- | --- | --- |

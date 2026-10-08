@@ -34,6 +34,9 @@ import (
 // Schema is the version of the Result JSON contract.
 const Schema = 1
 
+// IndexBudget bounds accounted storage for records, summaries and join keys.
+const IndexBudget uint64 = 64 << 20
+
 // Link kinds.
 const (
 	KindSameConnection     = "same-connection"
@@ -143,6 +146,7 @@ type Index struct {
 	dnsPeer  map[string]string   // DNS response ref -> client
 	indexed  int64
 	full     bool
+	bytes    uint64
 }
 
 func refKey(typ string, ordinal int64) string { return typ + "#" + strconv.FormatInt(ordinal, 10) }
@@ -155,6 +159,11 @@ func Joinable(id string) bool { return strings.HasPrefix(id, "1:") }
 func Build(dir string, config Config) (*Index, error) {
 	if err := config.Validate(); err != nil {
 		return nil, err
+	}
+	if info, err := os.Stat(dir); err != nil {
+		return nil, err
+	} else if !info.IsDir() {
+		return nil, errors.New("evidence linking requires an output directory")
 	}
 	idx := &Index{
 		config: config, byRef: map[string]Record{}, byCID: map[string][]Record{},
@@ -258,8 +267,14 @@ func (idx *Index) addFile(typ, path string) error {
 		if !Joinable(cid) {
 			continue
 		}
-		idx.indexed++
 		entry := Record{Type: typ, Ordinal: ordinal, Timestamp: record.Time(), CommunityID: cid, Summary: Summarize(typ, message)}
+		cost := storageCost(entry, message)
+		if cost > IndexBudget-idx.bytes {
+			idx.full = true
+			return nil
+		}
+		idx.bytes += cost
+		idx.indexed++
 		key := refKey(typ, ordinal)
 		idx.byRef[key] = entry
 		idx.byCID[cid] = append(idx.byCID[cid], entry)
@@ -270,6 +285,24 @@ func (idx *Index) addFile(typ, path string) error {
 			idx.addDNS(value, entry, key)
 		}
 	}
+}
+
+func storageCost(entry Record, message any) uint64 {
+	cost := uint64(1024 + 4*(len(entry.Type)+len(entry.CommunityID)))
+	for _, field := range entry.Summary {
+		cost += uint64(4 * (len(field.Name) + len(field.Value)))
+	}
+	switch value := message.(type) {
+	case *types.Connection:
+		cost += uint64(4 * (len(value.ObservationID) + len(value.SrcIP) + len(value.DstIP) + len(value.SrcPort) + len(value.DstPort)))
+	case *types.DNS:
+		for _, answer := range value.Answers {
+			if answer != nil && (answer.Type == 1 || answer.Type == 28) {
+				cost += uint64(512 + 4*(len(value.DstIP)+len(answer.IP)))
+			}
+		}
+	}
+	return cost
 }
 
 func (idx *Index) addConnection(c *types.Connection, entry Record) {
@@ -347,7 +380,7 @@ var ErrNotFound = errors.New("record is not indexed: missing, beyond limits or w
 
 // Selector identifies the target record: Type+Ordinal, ObservationID (the
 // latest snapshot of a Connection observation), or Type+CommunityID+Time
-// (the lowest-ordinal record of that type with exactly that timestamp).
+// (exactly one record of that type with that timestamp; ambiguous matches fail).
 type Selector struct {
 	Type          string
 	Ordinal       int64
@@ -373,7 +406,10 @@ func (idx *Index) Resolve(sel Selector) (string, int64, error) {
 		found := false
 		var best int64
 		for _, r := range idx.byCID[sel.CommunityID] {
-			if r.Type == sel.Type && r.Timestamp == sel.Time && (!found || r.Ordinal < best) {
+			if r.Type == sel.Type && r.Timestamp == sel.Time {
+				if found {
+					return "", 0, errors.New("ambiguous record selection; use type and ordinal")
+				}
 				best, found = r.Ordinal, true
 			}
 		}
@@ -395,7 +431,7 @@ func (idx *Index) Related(typ string, ordinal int64) (*Result, error) {
 	}
 	result := &Result{Schema: Schema, Target: target, Links: []Link{}, Indexed: idx.indexed, Limits: idx.config, Truncated: idx.full, Notes: []string{}}
 	if idx.full {
-		result.Notes = append(result.Notes, fmt.Sprintf("index stopped at %d records; later records are not linked", idx.config.MaxRecords))
+		result.Notes = append(result.Notes, "index reached its record limit or 64 MiB accounted storage budget; later records are not linked")
 	}
 	session := idx.session(target)
 	result.Session = session
@@ -426,10 +462,12 @@ func (idx *Index) Related(typ string, ordinal int64) (*Result, error) {
 		if answer, ok := idx.resolution(session); ok {
 			add(KindDNSResolution, BasisAnswerBefore, answer)
 		}
+	} else if len(idx.sessions[target.CommunityID]) > 0 {
+		result.Notes = append(result.Notes, "no unique Connection observation contains this record; same-flow links are withheld")
 	} else {
 		result.Notes = append(result.Notes, "no Connection observation contains this record; Community ID links use the time window")
 		for _, record := range members {
-			if abs(record.Timestamp-target.Timestamp) > idx.config.WindowNS {
+			if !within(record.Timestamp, target.Timestamp, idx.config.WindowNS) {
 				continue
 			}
 			kind := KindSameFlow
@@ -443,7 +481,7 @@ func (idx *Index) Related(typ string, ordinal int64) (*Result, error) {
 		client := idx.dnsPeer[key]
 		for _, ip := range ips {
 			for _, candidate := range idx.conns[client+"|"+ip] {
-				if candidate.First < target.Timestamp || candidate.First-target.Timestamp > idx.config.WindowNS {
+				if candidate.First < target.Timestamp || !within(candidate.First, target.Timestamp, idx.config.WindowNS) {
 					continue
 				}
 				if record, ok := idx.byRef[refKey("Connection", candidate.Ordinal)]; ok {
@@ -494,9 +532,10 @@ func (idx *Index) session(target Record) *Session {
 		if target.Timestamp < s.First || target.Timestamp > s.Last {
 			continue
 		}
-		if best == nil || s.First > best.First || (s.First == best.First && s.Ordinal < best.Ordinal) {
-			best = s
+		if best != nil {
+			return nil
 		}
+		best = s
 	}
 	return best
 }
@@ -509,7 +548,7 @@ func (idx *Index) resolution(session *Session) (Record, bool) {
 	var best *Record
 	for _, answer := range idx.answers[addr.Unmap().String()] {
 		r := answer.record
-		if answer.client != session.SrcIP || r.Timestamp > session.First || session.First-r.Timestamp > idx.config.WindowNS {
+		if answer.client != session.SrcIP || r.Timestamp > session.First || !within(session.First, r.Timestamp, idx.config.WindowNS) {
 			continue
 		}
 		if best == nil || r.Timestamp > best.Timestamp || (r.Timestamp == best.Timestamp && r.Ordinal < best.Ordinal) {
@@ -523,9 +562,10 @@ func (idx *Index) resolution(session *Session) (Record, bool) {
 	return *best, true
 }
 
-func abs(v int64) int64 {
-	if v < 0 {
-		return -v
+// Unsigned subtraction avoids overflow for adversarial int64 timestamps.
+func within(a, b, window int64) bool {
+	if a < b {
+		a, b = b, a
 	}
-	return v
+	return uint64(a)-uint64(b) <= uint64(window)
 }

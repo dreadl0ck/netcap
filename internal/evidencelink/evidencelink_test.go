@@ -161,3 +161,32 @@ func TestFallbackIdentifiersAndLimits(t *testing.T) {
 		}
 	}
 }
+
+func TestAmbiguousAndExtremeTimesDoNotInventLinks(t *testing.T) {
+	dir := fixture(t)
+	writeFile(t, dir, "HTTP", types.Type_NC_HTTP,
+		&types.HTTP{Timestamp: t0 + 2*sec + 1, CommunityID: cidA},
+		&types.HTTP{Timestamp: t0 + 2*sec + 1, CommunityID: cidA},
+		&types.HTTP{Timestamp: t0 + 50*sec, CommunityID: cidA},
+	)
+	idx, err := Build(dir, DefaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := idx.Resolve(Selector{Type: "HTTP", CommunityID: cidA, Time: t0 + 2*sec + 1, HasTime: true}); err == nil {
+		t.Fatal("duplicate timestamp selected an arbitrary record")
+	}
+	gap, err := idx.Related("HTTP", 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gap.Session != nil || len(gap.Links) != 0 {
+		t.Fatalf("linked across tuple reuse: %+v", gap)
+	}
+	if within(-1<<63, 1<<63-1, 1) || !within(-1<<63, -1<<63+1, 1) {
+		t.Fatal("timestamp distance overflowed")
+	}
+	if _, err := Build(dir+"/missing", DefaultConfig()); err == nil {
+		t.Fatal("missing directory accepted")
+	}
+}

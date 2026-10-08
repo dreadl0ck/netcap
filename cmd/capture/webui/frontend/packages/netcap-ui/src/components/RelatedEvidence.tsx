@@ -47,7 +47,7 @@ export function RelatedEvidence({ selector, inputFile }: { selector: EvidenceSel
               <Typography variant="body2" color="text.secondary">
                 Connection {result.session.srcIp}:{result.session.srcPort} → {result.session.dstIp}:{result.session.dstPort}, {utc(result.session.first)} – {utc(result.session.last)}
               </Typography>
-            ) : <Typography variant="body2" color="text.secondary">No connection contains this record; flow links use the ±{result.limits.windowNs / 1e9} s window.</Typography>}
+            ) : <Typography variant="body2" color="text.secondary">No unique connection contains this record. See the link reasons and coverage notes below.</Typography>}
             {result.links.length === 0 && <Typography variant="body2">No related records.</Typography>}
             {result.links.length > 0 && (
               <Box sx={{ overflowX: 'auto' }}>
