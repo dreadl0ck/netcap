@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert as MuiAlert, Box, Chip, CircularProgress, Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
+import { Alert as MuiAlert, Box, Button, Chip, CircularProgress, Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography } from '@mui/material';
 import { useNetcapApi } from '../hooks';
 import type { RelatedEvidenceResponse } from '../lib/api';
 import { linkKindLabels, type EvidenceRecord, type EvidenceSelector } from '../lib/evidenceLinks';
@@ -16,22 +16,25 @@ const kindColor = { 'same-connection': 'default', 'same-flow': 'default', alert:
 export function RelatedEvidence({ selector, inputFile }: { selector: EvidenceSelector | null; inputFile?: string }) {
   const api = useNetcapApi();
   const [response, setResponse] = useState<RelatedEvidenceResponse | null>(null);
+  const [focus, setFocus] = useState<{ root: string; id: string } | null>(null);
   const key = JSON.stringify(selector);
+  const focusedId = focus?.root === key ? focus.id : '';
   useEffect(() => {
     if (!selector) return;
     let current = true;
     setResponse(null);
-    api.getRelatedEvidence(selector, inputFile)
+    api.getRelatedEvidence(focusedId ? { id: focusedId } : selector, inputFile)
       .then(r => { if (current) setResponse(r); })
       .catch(e => { if (current) setResponse({ status: 'unavailable', error: String(e?.message || e) }); });
     return () => { current = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, inputFile]);
+  }, [key, inputFile, focusedId]);
   if (!selector) return null;
   return (
     <Paper variant="outlined" sx={{ p: 1.5 }} data-testid="related-evidence"
       data-learn="Related evidence: records of the same connection (Community ID within the connection's time span), the DNS answer that resolved its destination, connections opened to an answered address, and alerts. Each row states how the link was made.">
       <Typography variant="subtitle2" gutterBottom>Related evidence</Typography>
+      {focusedId && <Button size="small" onClick={() => setFocus(null)}>Back to original record</Button>}
       {!response && <CircularProgress size={18} />}
       {response?.status === 'disabled' && <MuiAlert severity="info">Evidence linking is disabled. Enable it in Settings → Features.</MuiAlert>}
       {response && response.status !== 'ok' && response.status !== 'disabled' &&
@@ -60,7 +63,9 @@ export function RelatedEvidence({ selector, inputFile }: { selector: EvidenceSel
                         <TableCell sx={{ whiteSpace: 'nowrap', fontFamily: 'monospace' }}>{offset(row.record.timestamp, base)}</TableCell>
                         <TableCell>{row.target ? <Chip size="small" label="Selected" color="primary" /> :
                           <Chip size="small" label={linkKindLabels[row.kind as keyof typeof linkKindLabels]} color={kindColor[row.kind as keyof typeof kindColor]} title={row.basis} />}</TableCell>
-                        <TableCell>{row.record.type}</TableCell>
+                        <TableCell>{!row.target && row.record.id ?
+                          <Button size="small" onClick={() => setFocus({ root: key, id: row.record.id! })}
+                            aria-label={`Explore related ${row.record.type} record`}>{row.record.type}</Button> : row.record.type}</TableCell>
                         <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.8rem', wordBreak: 'break-all' }}>{summary(row.record)}</TableCell>
                       </TableRow>
                     ))}

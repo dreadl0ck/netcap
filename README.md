@@ -186,6 +186,9 @@ and failed simulator modules before sealing capture hashes.
 Answers "what else happened in this connection or because of this lookup"
 without manual joins. Links are computed from the output directory when asked,
 so they work for finished and live captures and do not depend on worker count.
+Record-level sensor/interface/VLAN scope is not yet propagated to these records;
+links are candidates within the selected output directory, not scope-qualified
+causality. This is an unfinished M1 gate.
 
 | Link | Basis |
 | --- | --- |
@@ -212,7 +215,8 @@ a 64 MiB accounted storage budget as well as its record limit.
 
 The WebUI shows the timeline in alert details (for rule alerts) and in expanded
 Connections rows. The API selects a record by `type`+`ordinal`, by
-`observationId` (Connection), or by `type`+`communityId`+`time` (Unix ns):
+`observationId` (Connection), by `type`+`communityId`+`time` (Unix ns), or by
+the content-bound `id` returned by a previous query:
 
 ```sh
 curl 'http://127.0.0.1:8080/api/evidence/related?observationId=<id>'
@@ -220,7 +224,12 @@ net investigate related -read out -type HTTP -ordinal 0
 ```
 
 Each link states its `kind` and `basis`; `notes` explain truncation and when no
-connection contains the record. Links are not available to capture-time rules:
+connection contains the record. References include the audit-file `fileSha256`
+and an `id` derived from type, file digest and ordinal. Replacing or extending
+that file invalidates its old references rather than rebinding them. Index
+construction rejects files changing during the scan. Linked record buttons
+open another related-evidence timeline; Back returns to the original target.
+Links are not available to capture-time rules:
 records are written in a different order than they are captured, so a rule could
 not see the same links at every worker count.
 

@@ -190,3 +190,30 @@ func TestAmbiguousAndExtremeTimesDoNotInventLinks(t *testing.T) {
 		t.Fatal("missing directory accepted")
 	}
 }
+
+func TestContentBoundReferencesRejectReplacedAuditFiles(t *testing.T) {
+	dir := fixture(t)
+	index, err := Build(dir, DefaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, err := index.Related("HTTP", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	typ, ordinal, err := index.Resolve(Selector{ID: before.Target.ID})
+	if err != nil || typ != "HTTP" || ordinal != 0 {
+		t.Fatalf("reference failed: %s %d %v", typ, ordinal, err)
+	}
+	if len(before.Target.FileSHA256) != 64 || len(before.Target.ID) != 64 {
+		t.Fatal("missing content identity")
+	}
+	writeFile(t, dir, "HTTP", types.Type_NC_HTTP, &types.HTTP{Timestamp: t0 + 2*sec + 1, CommunityID: cidA, URL: "/replacement"})
+	after, err := Build(dir, DefaultConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := after.Resolve(Selector{ID: before.Target.ID}); err != ErrNotFound {
+		t.Fatalf("old reference rebound: %v", err)
+	}
+}

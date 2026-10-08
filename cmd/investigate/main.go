@@ -78,6 +78,7 @@ func GetCommand() *cli.Command {
 			&cli.DurationFlag{Name: "timeout", Value: 2 * time.Minute, Usage: "maximum query duration"},
 		}, Action: runFlows},
 		{Name: "related", Usage: "records linked across protocols: same connection, resolving DNS answer, resolved connections and alerts", Flags: []cli.Flag{
+			&cli.StringFlag{Name: "id", Usage: "content-bound record ID returned by a prior related query"},
 			&cli.StringFlag{Name: "read", Required: true, Usage: "capture output directory"},
 			&cli.StringFlag{Name: "type", Usage: "record type of the target, e.g. HTTP"},
 			&cli.StringFlag{Name: "ordinal", Usage: "0-based record position in its audit file"},
@@ -104,7 +105,7 @@ func GetCommand() *cli.Command {
 
 func runRelated(_ context.Context, cmd *cli.Command) error {
 	config := evidencelink.Config{Enabled: true, WindowNS: int64(cmd.Duration("window")), MaxRecords: cmd.Int64("max-records"), MaxLinks: int(cmd.Int("max-links"))}
-	selector := evidencelink.Selector{Type: cmd.String("type"), ObservationID: cmd.String("observation-id"), CommunityID: cmd.String("community-id")}
+	selector := evidencelink.Selector{ID: cmd.String("id"), Type: cmd.String("type"), ObservationID: cmd.String("observation-id"), CommunityID: cmd.String("community-id")}
 	if raw := cmd.String("ordinal"); raw != "" {
 		ordinal, err := strconv.ParseInt(raw, 10, 64)
 		if err != nil || ordinal < 0 {

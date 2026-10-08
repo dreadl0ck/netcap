@@ -1,12 +1,13 @@
 // Related-evidence contract served by /api/evidence/related (schema 1).
 
 export type EvidenceSelector =
+  | { id: string }
   | { type: string; ordinal: number }
   | { observationId: string }
   | { type: string; communityId: string; time: string };
 
 export interface EvidenceField { name: string; value: string }
-export interface EvidenceRecord { type: string; ordinal: number; timestamp: number; communityId?: string; summary?: EvidenceField[] }
+export interface EvidenceRecord { id?: string; fileSha256?: string; type: string; ordinal: number; timestamp: number; communityId?: string; summary?: EvidenceField[] }
 export type EvidenceLinkKind = 'same-connection' | 'same-flow' | 'alert' | 'dns-resolution' | 'resolved-connection';
 export interface EvidenceLink { kind: EvidenceLinkKind; basis: string; record: EvidenceRecord }
 export interface EvidenceSession { observationId?: string; communityId: string; first: number; last: number; srcIp: string; srcPort: string; dstIp: string; dstPort: string; ordinal: number }

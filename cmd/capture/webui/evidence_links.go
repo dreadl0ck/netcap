@@ -115,7 +115,10 @@ func (s *Server) handleEvidenceRelated(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := r.URL.Query()
-	selector := evidencelink.Selector{Type: q.Get("type"), ObservationID: q.Get("observationId"), CommunityID: q.Get("communityId")}
+	selector := evidencelink.Selector{ID: q.Get("id"), Type: q.Get("type"), ObservationID: q.Get("observationId"), CommunityID: q.Get("communityId")}
+	if id := r.PathValue("id"); id != "" {
+		selector.ID = id
+	}
 	if selector.Type != "" && (strings.ContainsAny(selector.Type, `/\.`) || len(selector.Type) > 64) {
 		RespondJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid record type"})
 		return

@@ -565,6 +565,7 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/network-detection", s.handleNetworkDetection)
 	mux.HandleFunc("/api/features", s.handleFeatures)
 	mux.HandleFunc("/api/evidence/related", s.handleEvidenceRelated)
+	mux.HandleFunc("/api/evidence/{id}/related", s.handleEvidenceRelated)
 	mux.HandleFunc("/api/behavior/health", s.handleBehaviorHealth)
 	mux.HandleFunc("/api/behavior/asset", s.handleBehaviorAsset)
 	mux.HandleFunc("/api/behavior/records", s.handleBehaviorRecords)

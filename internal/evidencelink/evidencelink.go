@@ -14,6 +14,8 @@
 package evidencelink
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -88,6 +90,8 @@ type Field struct {
 
 // Record identifies an audit record by file type and position.
 type Record struct {
+	ID          string  `json:"id"`
+	FileSHA256  string  `json:"fileSha256"`
 	Type        string  `json:"type"`
 	Ordinal     int64   `json:"ordinal"`
 	Timestamp   int64   `json:"timestamp"`
@@ -220,6 +224,42 @@ func auditFiles(dir string) []auditFile {
 }
 
 func (idx *Index) addFile(typ, path string) error {
+	digest, err := fileDigest(path)
+	if err != nil {
+		return err
+	}
+	if err := idx.readFile(typ, path, digest); err != nil {
+		return err
+	}
+	after, err := fileDigest(path)
+	if err != nil {
+		return err
+	}
+	if after != digest {
+		return errors.New("audit file changed while indexing; retry after capture flush")
+	}
+	return nil
+}
+
+func fileDigest(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func recordID(typ, digest string, ordinal int64) string {
+	h := sha256.Sum256([]byte(typ + "\x00" + digest + "\x00" + strconv.FormatInt(ordinal, 10)))
+	return hex.EncodeToString(h[:])
+}
+
+func (idx *Index) readFile(typ, path, digest string) error {
 	reader, err := netio.Open(path, defaults.BufferSize)
 	if err != nil {
 		return err
@@ -231,6 +271,9 @@ func (idx *Index) addFile(typ, path string) error {
 			return nil
 		}
 		return err
+	}
+	if header.Type.String() != "NC_"+typ {
+		return errors.New("audit filename does not match header record type")
 	}
 	message := netio.InitRecord(header.Type)
 	if message == nil {
@@ -267,7 +310,7 @@ func (idx *Index) addFile(typ, path string) error {
 		if !Joinable(cid) {
 			continue
 		}
-		entry := Record{Type: typ, Ordinal: ordinal, Timestamp: record.Time(), CommunityID: cid, Summary: Summarize(typ, message)}
+		entry := Record{ID: recordID(typ, digest, ordinal), FileSHA256: digest, Type: typ, Ordinal: ordinal, Timestamp: record.Time(), CommunityID: cid, Summary: Summarize(typ, message)}
 		cost := storageCost(entry, message)
 		if cost > IndexBudget-idx.bytes {
 			idx.full = true
@@ -382,6 +425,7 @@ var ErrNotFound = errors.New("record is not indexed: missing, beyond limits or w
 // latest snapshot of a Connection observation), or Type+CommunityID+Time
 // (exactly one record of that type with that timestamp; ambiguous matches fail).
 type Selector struct {
+	ID            string
 	Type          string
 	Ordinal       int64
 	HasOrdinal    bool
@@ -394,6 +438,12 @@ type Selector struct {
 // Resolve returns the type and ordinal of the selected record.
 func (idx *Index) Resolve(sel Selector) (string, int64, error) {
 	switch {
+	case sel.ID != "":
+		for _, record := range idx.byRef {
+			if record.ID == sel.ID {
+				return record.Type, record.Ordinal, nil
+			}
+		}
 	case sel.ObservationID != "":
 		if s := idx.byObs[sel.ObservationID]; s != nil {
 			return "Connection", s.Ordinal, nil
@@ -429,7 +479,8 @@ func (idx *Index) Related(typ string, ordinal int64) (*Result, error) {
 	if !ok {
 		return nil, ErrNotFound
 	}
-	result := &Result{Schema: Schema, Target: target, Links: []Link{}, Indexed: idx.indexed, Limits: idx.config, Truncated: idx.full, Notes: []string{}}
+	result := &Result{Schema: Schema, Target: target, Links: []Link{}, Indexed: idx.indexed, Limits: idx.config, Truncated: idx.full,
+		Notes: []string{"record-level sensor/interface/VLAN scope is unavailable; links are candidates within this output directory"}}
 	if idx.full {
 		result.Notes = append(result.Notes, "index reached its record limit or 64 MiB accounted storage budget; later records are not linked")
 	}
