@@ -46,7 +46,29 @@ type DomainSummary struct {
 	ResolvedIPs   []string `json:"resolvedIPs"`
 	Source        string   `json:"source"`       // "DNS" or "TLS SNI"
 	CommunityIDs  []string `json:"communityIds"` // Community IDs for cross-tool correlation
+	// Capture-time DNS query/response pairing; absent for SNI-only domains.
+	Transactions *DNSTransactionSummary `json:"dnsTransactions,omitempty"`
 }
+
+// DNSTransactionSummary aggregates DNS.TransactionStatus and DNS.RTT.
+// Unanswered is a lower bound: queries minus responses paired to them.
+type DNSTransactionSummary struct {
+	Queries         int   `json:"queries"`
+	Retransmissions int   `json:"retransmissions"`
+	Answered        int   `json:"answered"`
+	Late            int   `json:"late"`
+	Unsolicited     int   `json:"unsolicited"`
+	Reordered       int   `json:"reordered"`
+	Unanswered      int   `json:"unanswered"`
+	RTTSamples      int   `json:"rttSamples"`
+	RTTMedianNS     int64 `json:"rttMedianNs"`
+	RTTP95NS        int64 `json:"rttP95Ns"`
+	RTTTruncated    bool  `json:"rttTruncated"`
+}
+
+// maxRTTSamples bounds retained RTTs per domain; later samples are dropped.
+const maxRTTSamples = 10000
+const maxDomainRTTSamples = 250000
 
 // DomainsResponse contains the list of domains
 type DomainsResponse struct {
@@ -111,6 +133,7 @@ func readDomains(outDir string) ([]DomainSummary, error) {
 
 // readDNSDomains reads domains from DNS records
 func readDNSDomains(filePath string, domainMap map[string]*domainAggregator) error {
+	remainingRTT := maxDomainRTTSamples
 	// Read DNS records
 	reader, err := NewAuditRecordReader(filePath)
 	if err != nil {
@@ -142,7 +165,7 @@ func readDNSDomains(filePath string, domainMap map[string]*domainAggregator) err
 		}
 
 		// Extract domains from questions
-		for _, question := range dns.Questions {
+		for i, question := range dns.Questions {
 			if question.Name == "" {
 				continue
 			}
@@ -164,6 +187,7 @@ func readDNSDomains(filePath string, domainMap map[string]*domainAggregator) err
 					firstSeen:     dns.Timestamp,
 					lastSeen:      dns.Timestamp,
 					source:        "DNS",
+					rttBudget:     &remainingRTT,
 				}
 				domainMap[domain] = agg
 			}
@@ -171,6 +195,11 @@ func readDNSDomains(filePath string, domainMap map[string]*domainAggregator) err
 			agg.queryCount++
 			agg.clients[dns.SrcIP] = true
 			agg.recordTypes[question.Type] = true
+			agg.rttBudget = &remainingRTT
+			// Pairing is keyed on the first question only.
+			if i == 0 {
+				agg.observeTransaction(dns)
+			}
 			agg.responseCodes[dns.ResponseCode] = true
 
 			// Track community ID for cross-tool correlation
@@ -334,6 +363,7 @@ func aggregateDomains(domainMap map[string]*domainAggregator) []DomainSummary {
 			ResolvedIPs:   resolvedIPs,
 			Source:        agg.source,
 			CommunityIDs:  communityIDs,
+			Transactions:  agg.transactionSummary(),
 		})
 	}
 
@@ -385,4 +415,58 @@ type domainAggregator struct {
 	firstSeen     int64
 	lastSeen      int64
 	source        string // "DNS", "TLS SNI", or "DNS, TLS SNI"
+	tx            *DNSTransactionSummary
+	rtts          []int64
+	rttBudget     *int
+}
+
+// observeTransaction counts one DNS message's pairing state. Records written
+// before pairing existed carry no status and are not counted.
+func (a *domainAggregator) observeTransaction(d *types.DNS) {
+	if d.TransactionStatus == "" {
+		return
+	}
+	if a.tx == nil {
+		a.tx = &DNSTransactionSummary{}
+	}
+	switch d.TransactionStatus {
+	case "query":
+		a.tx.Queries++
+	case "retransmission":
+		a.tx.Retransmissions++
+	case "answered", "late":
+		if d.TransactionStatus == "answered" {
+			a.tx.Answered++
+		} else {
+			a.tx.Late++
+		}
+		if len(a.rtts) < maxRTTSamples && (a.rttBudget == nil || *a.rttBudget > 0) {
+			a.rtts = append(a.rtts, d.RTT)
+			if a.rttBudget != nil {
+				*a.rttBudget -= 1
+			}
+		} else {
+			a.tx.RTTTruncated = true
+		}
+	case "unsolicited":
+		a.tx.Unsolicited++
+	case "reordered":
+		a.tx.Reordered++
+	}
+}
+
+func (a *domainAggregator) transactionSummary() *DNSTransactionSummary {
+	if a.tx == nil {
+		return nil
+	}
+	s := *a.tx
+	s.Unanswered = max(0, s.Queries-s.Answered-s.Late-s.Reordered)
+	if n := len(a.rtts); n > 0 {
+		rtts := append([]int64(nil), a.rtts...)
+		sort.Slice(rtts, func(i, j int) bool { return rtts[i] < rtts[j] })
+		s.RTTSamples = n
+		s.RTTMedianNS = rtts[(n-1)/2]
+		s.RTTP95NS = rtts[(n*95+99)/100-1]
+	}
+	return &s
 }

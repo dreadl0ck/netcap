@@ -1,50 +1,50 @@
 # DCE/RPC Security Detection Rules
-# Detect lateral movement, privilege escalation, and AD attacks via RPC interfaces
+# Interface and operation names come from the connection's Bind/AlterContext
+# contexts, so a request is attributed only when its context was observed.
+# A request is an attempt: the Response/Fault record carries the outcome.
 
-description: "Detection rules for DCE/RPC-based attacks including DCSync, remote service control, registry access, and authentication coercion."
+description: "Detection rules for DCE/RPC-based attacks including DCSync, remote service and task creation, registry modification, account enumeration and authentication coercion."
 
 rules:
-  # DCSync - DRSUAPI replication interface access
-  # Non-DC hosts should never use this interface
-  - name: DCERPC DRSUAPI Access
-    description: DRSUAPI replication interface accessed, a strong indicator of DCSync credential dumping from Active Directory
+  # DCSync - DRSUAPI replication. Domain controllers replicate legitimately;
+  # approve them with !IsApprovedWorkstation(SrcIP) or a source allowlist.
+  - name: DCERPC DRSUAPI GetNCChanges
+    description: IDL_DRSGetNCChanges request, the directory replication call used by DCSync credential dumping; expected only between domain controllers
     type: DCERPC
-    expression: 'InterfaceName == "DRSUAPI"'
+    expression: 'OperationName == "IDL_DRSGetNCChanges" && PacketTypeName == "Request"'
     severity: critical
     mitre: ["T1003.006"]
     tags: ["dcerpc", "credential-access", "dcsync"]
     enabled: true
 
   # SAMR - Security Account Manager Remote
-  # Used for user and group enumeration in AD
   - name: DCERPC SAMR User Enumeration
-    description: SAMR interface request detected, commonly used for remote user and group enumeration in Active Directory
+    description: SAMR domain or user enumeration request, commonly used for remote account discovery in Active Directory
     type: DCERPC
-    expression: 'InterfaceName == "LSARPC" && PacketTypeName == "Request"'
+    expression: 'InterfaceName == "SAMR" && PacketTypeName == "Request" && OperationName in ["SamrEnumerateDomainsInSamServer", "SamrEnumerateUsersInDomain", "SamrLookupNamesInDomain"]'
     severity: medium
     mitre: ["T1087.002"]
     tags: ["dcerpc", "discovery", "user-enumeration"]
     enabled: true
 
-  # SVCCTL - Service Control Manager
-  # Remote service creation is a common lateral movement technique
-  - name: DCERPC Remote Service Control
-    description: Remote Service Control Manager access detected, commonly used for lateral movement via service creation
+  # SVCCTL - remote service creation, as used by PsExec-style lateral movement
+  - name: DCERPC Remote Service Creation
+    description: Remote Service Control Manager service creation request; correlate with RStartServiceW and the Response/Fault outcome
     type: DCERPC
-    expression: 'InterfaceName == "SVCCTL" && PacketTypeName == "Request"'
+    expression: 'PacketTypeName == "Request" && OperationName in ["RCreateServiceW", "RCreateServiceA", "RCreateServiceWOW64W"]'
     severity: high
-    mitre: ["T1569.002"]
+    mitre: ["T1569.002", "T1543.003"]
     tags: ["dcerpc", "execution", "remote-service"]
     enabled: true
 
-  # WINREG - Remote Registry
-  - name: DCERPC Remote Registry Access
-    description: Remote Windows Registry access detected via WINREG interface
+  # WINREG - Remote Registry writes
+  - name: DCERPC Remote Registry Modification
+    description: Remote registry create, delete or set-value request via WINREG
     type: DCERPC
-    expression: 'InterfaceName == "WINREG" && PacketTypeName == "Request"'
+    expression: 'InterfaceName == "WINREG" && PacketTypeName == "Request" && OperationName in ["BaseRegCreateKey", "BaseRegDeleteKey", "BaseRegSetValue"]'
     severity: high
-    mitre: ["T1012"]
-    tags: ["dcerpc", "discovery", "remote-registry"]
+    mitre: ["T1112"]
+    tags: ["dcerpc", "defense-evasion", "remote-registry"]
     enabled: true
 
   # EFSR - Encrypted File System Remote (PetitPotam / EFSRPotato)
@@ -57,12 +57,12 @@ rules:
     tags: ["dcerpc", "credential-access", "coercion", "petitpotam"]
     enabled: true
 
-  # ITaskSchedulerService - Remote Scheduled Task creation
-  - name: DCERPC Remote Task Scheduler
-    description: Remote Task Scheduler interface accessed, used for persistence and lateral movement via scheduled task creation
+  # Remote scheduled task or job creation
+  - name: DCERPC Remote Scheduled Task Creation
+    description: Remote task registration (ITaskSchedulerService) or job creation (ATSVC), used for persistence and lateral movement
     type: DCERPC
-    expression: 'InterfaceName == "ITaskSchedulerService" && PacketTypeName == "Request"'
+    expression: 'PacketTypeName == "Request" && OperationName in ["SchRpcRegisterTask", "NetrJobAdd"]'
     severity: high
-    mitre: ["T1053.005"]
+    mitre: ["T1053.005", "T1053.002"]
     tags: ["dcerpc", "execution", "scheduled-task", "persistence"]
     enabled: true

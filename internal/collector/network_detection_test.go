@@ -33,7 +33,7 @@ func TestFlightSimCollectorReplay(t *testing.T) {
 	}
 	for _, tc := range corpus.Cases {
 		for _, origin := range []string{"synthetic", "live"} {
-			if origin == "live" && tc.Name == "benign" {
+			if origin == "live" && networkdetect.SyntheticOnlyCase(tc.Name) {
 				continue
 			}
 			caseRoot := root

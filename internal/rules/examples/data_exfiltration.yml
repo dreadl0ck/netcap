@@ -66,9 +66,9 @@ rules:
 
   # After Hours Data Transfer
   - name: After Hours Data Transfer
-    description: Detect large data transfers during non-business hours
+    description: Detect large outbound TCP payloads outside 08:00-18:00 local time on weekdays and all weekend
     type: TCP
-    expression: IsPrivateIP(SrcIP) && IsPublicIP(DstIP) && PayloadSize > 5000
+    expression: IsPrivateIP(SrcIP) && IsPublicIP(DstIP) && PayloadSize > 5000 && !IsBusinessHours(Timestamp, 8, 18)
     severity: low
     mitre: ["T1020"]
     tags: ["after-hours"]
@@ -104,9 +104,10 @@ rules:
     tags: ["exfiltration"]
     enabled: false  # Disabled - requires domain-based filtering for known cloud services
 
-  # DNS High Query Volume
-  - name: DNS High Query Volume
-    description: Detect high volume DNS queries that may indicate DNS-based C2
+  # A single message with many questions. Per-source query volume over time is
+  # measured by network detection (dns.tunnel, dns.dga), not by this predicate.
+  - name: DNS Multi-Question Message
+    description: DNS message carrying more than 5 questions; resolvers almost always send one question per message
     type: DNS
     expression: len(Questions) > 5
     severity: info

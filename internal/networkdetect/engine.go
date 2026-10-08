@@ -72,6 +72,7 @@ type Engine struct {
 	windows   map[string]*window
 	recent    map[string]int64
 	flows     map[string]*flow
+	beacons   map[string]*beacon
 	watermark int64
 	lastSweep int64
 	stats     Stats
@@ -89,7 +90,7 @@ func New(c Config) (*Engine, error) {
 			c.Indicators[n].Value = addr.Unmap().String()
 		}
 	}
-	return &Engine{config: c, windows: map[string]*window{}, recent: map[string]int64{}, flows: map[string]*flow{}, stats: Stats{Schema: 1, Indicators: len(c.Indicators)}}, nil
+	return &Engine{config: c, windows: map[string]*window{}, recent: map[string]int64{}, flows: map[string]*flow{}, beacons: map[string]*beacon{}, stats: Stats{Schema: 1, Indicators: len(c.Indicators)}}, nil
 }
 
 func (e *Engine) Stats() Stats {
@@ -153,7 +154,11 @@ func (e *Engine) Observe(ev Event) ([]*types.Alert, error) {
 		if limitations == nil {
 			limitations = []string{}
 		}
-		evidence := Evidence{1, detector, class, ev.Scope, first, ev.At, count, threshold, e.config.WindowNS, samples, limitations, indicator}
+		window := e.config.WindowNS
+		if detector == "c2.beacon" {
+			window = e.config.BeaconWindowNS
+		}
+		evidence := Evidence{1, detector, class, ev.Scope, first, ev.At, count, threshold, window, samples, limitations, indicator}
 		data, _ := json.Marshal(evidence)
 		alerts = append(alerts, &types.Alert{Timestamp: ev.At, Name: detector, RuleName: detector, Description: detector + ": " + class, RecordType: "NetworkDetection", Severity: severity, SrcIP: ev.SrcIP, DstIP: ev.DstIP, SrcPort: fmt.Sprint(ev.SrcPort), DstPort: fmt.Sprint(ev.DstPort), Domain: ev.Name, MITRE: mitre, Tags: []string{"network-detection", class}, MatchedRecord: string(data)})
 		e.stats.Alerts++
@@ -218,6 +223,7 @@ func (e *Engine) Observe(ev Event) ([]*types.Alert, error) {
 				add("smtp.fanout", "behavioral-suspicion", "medium", "", uint64(count), uint64(e.config.SMTPHosts), samples, first, nil, "Mail relays can legitimately contact many SMTP servers")
 			}
 		}
+		e.observeBeacon(ev, add)
 		e.startFlow(ev)
 	case "icmp":
 		if len(ev.Payload) >= 1024 && entropy(ev.Payload) >= 6 {
@@ -315,4 +321,5 @@ func (e *Engine) expire(at int64) {
 			delete(e.flows, k)
 		}
 	}
+	e.expireBeacons(at)
 }

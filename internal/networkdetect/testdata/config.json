@@ -37,5 +37,9 @@
       "validFrom": 1799999999000000000,
       "validUntil": 1800000100000000000
     }
-  ]
+  ],
+  "beaconSamples": 8,
+  "beaconJitter": 0.1,
+  "beaconMinIntervalNS": 10000000000,
+  "beaconWindowNS": 3600000000000
 }

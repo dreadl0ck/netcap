@@ -152,3 +152,5 @@ export type {
 
 export { SECURITY_VIEWS, pickRandomView, viewsForFields, viewsForTypes } from './securityViews';
 export type { SecurityView } from './securityViews';
+export { formatDurationNs, medianRTT, rttSortKey, transactionFlags } from './dnsTransactions';
+export type { DNSTransactionSummary } from './dnsTransactions';

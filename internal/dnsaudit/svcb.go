@@ -1,4 +1,4 @@
-package packet
+package dnsaudit
 
 import (
 	"bytes"
@@ -119,3 +119,5 @@ func dnsSVCB(rr layers.DNSResourceRecord) *types.DNSSVCB {
 	}
 	return s
 }
+
+func SVCB(rr layers.DNSResourceRecord) *types.DNSSVCB { return dnsSVCB(rr) }

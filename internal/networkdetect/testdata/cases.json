@@ -41,7 +41,11 @@
         "validFrom": 1799999999000000000,
         "validUntil": 1800000100000000000
       }
-    ]
+    ],
+    "beaconSamples": 8,
+    "beaconJitter": 0.1,
+    "beaconMinIntervalNS": 10000000000,
+    "beaconWindowNS": 3600000000000
   },
   "cases": [
     {
@@ -1059,6 +1063,144 @@
       ]
     },
     {
+      "name": "beacon",
+      "events": [
+        {
+          "at": 1800000000000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.20",
+          "srcPort": 41000,
+          "dstPort": 8443,
+          "seq": 1000
+        },
+        {
+          "at": 1800000062000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.20",
+          "srcPort": 41001,
+          "dstPort": 8443,
+          "seq": 1001
+        },
+        {
+          "at": 1800000119000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.20",
+          "srcPort": 41002,
+          "dstPort": 8443,
+          "seq": 1002
+        },
+        {
+          "at": 1800000181000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.20",
+          "srcPort": 41003,
+          "dstPort": 8443,
+          "seq": 1003
+        },
+        {
+          "at": 1800000240000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.20",
+          "srcPort": 41004,
+          "dstPort": 8443,
+          "seq": 1004
+        },
+        {
+          "at": 1800000298000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.20",
+          "srcPort": 41005,
+          "dstPort": 8443,
+          "seq": 1005
+        },
+        {
+          "at": 1800000361000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.20",
+          "srcPort": 41006,
+          "dstPort": 8443,
+          "seq": 1006
+        },
+        {
+          "at": 1800000420000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.20",
+          "srcPort": 41007,
+          "dstPort": 8443,
+          "seq": 1007
+        },
+        {
+          "at": 1800000482000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.20",
+          "srcPort": 41008,
+          "dstPort": 8443,
+          "seq": 1008
+        },
+        {
+          "at": 1800000539000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.20",
+          "srcPort": 41009,
+          "dstPort": 8443,
+          "seq": 1009
+        }
+      ],
+      "expected": [
+        "c2.beacon"
+      ]
+    },
+    {
       "name": "benign",
       "events": [
         {
@@ -1689,6 +1831,266 @@
           "qType": 16,
           "seq": 14,
           "payload": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        },
+        {
+          "at": 1800000002000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.22",
+          "srcPort": 43000,
+          "dstPort": 8443,
+          "seq": 3000
+        },
+        {
+          "at": 1800000003000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.22",
+          "srcPort": 43001,
+          "dstPort": 8443,
+          "seq": 3001
+        },
+        {
+          "at": 1800000004000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.22",
+          "srcPort": 43002,
+          "dstPort": 8443,
+          "seq": 3002
+        },
+        {
+          "at": 1800000005000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.22",
+          "srcPort": 43003,
+          "dstPort": 8443,
+          "seq": 3003
+        },
+        {
+          "at": 1800000006000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.22",
+          "srcPort": 43004,
+          "dstPort": 8443,
+          "seq": 3004
+        },
+        {
+          "at": 1800000007000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.22",
+          "srcPort": 43005,
+          "dstPort": 8443,
+          "seq": 3005
+        },
+        {
+          "at": 1800000008000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.22",
+          "srcPort": 43006,
+          "dstPort": 8443,
+          "seq": 3006
+        },
+        {
+          "at": 1800000009000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.22",
+          "srcPort": 43007,
+          "dstPort": 8443,
+          "seq": 3007
+        },
+        {
+          "at": 1800000010000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.22",
+          "srcPort": 43008,
+          "dstPort": 8443,
+          "seq": 3008
+        },
+        {
+          "at": 1800000011000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.22",
+          "srcPort": 43009,
+          "dstPort": 8443,
+          "seq": 3009
+        },
+        {
+          "at": 1800000015000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.21",
+          "srcPort": 42000,
+          "dstPort": 8443,
+          "seq": 2000
+        },
+        {
+          "at": 1800000062000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.21",
+          "srcPort": 42001,
+          "dstPort": 8443,
+          "seq": 2001
+        },
+        {
+          "at": 1800000074000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.21",
+          "srcPort": 42002,
+          "dstPort": 8443,
+          "seq": 2002
+        },
+        {
+          "at": 1800000164000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.21",
+          "srcPort": 42003,
+          "dstPort": 8443,
+          "seq": 2003
+        },
+        {
+          "at": 1800000169000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.21",
+          "srcPort": 42004,
+          "dstPort": 8443,
+          "seq": 2004
+        },
+        {
+          "at": 1800000202000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.21",
+          "srcPort": 42005,
+          "dstPort": 8443,
+          "seq": 2005
+        },
+        {
+          "at": 1800000263000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.21",
+          "srcPort": 42006,
+          "dstPort": 8443,
+          "seq": 2006
+        },
+        {
+          "at": 1800000271000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.21",
+          "srcPort": 42007,
+          "dstPort": 8443,
+          "seq": 2007
+        },
+        {
+          "at": 1800000391000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.21",
+          "srcPort": 42008,
+          "dstPort": 8443,
+          "seq": 2008
+        },
+        {
+          "at": 1800000411000000000,
+          "scope": {
+            "sensor": "qualification",
+            "interface": "pcap"
+          },
+          "kind": "syn",
+          "srcIP": "192.0.2.10",
+          "dstIP": "198.51.100.21",
+          "srcPort": 42009,
+          "dstPort": 8443,
+          "seq": 2009
         }
       ],
       "expected": []

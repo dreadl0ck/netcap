@@ -48,7 +48,7 @@ func TestFlightSimCapturedReplay(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tc := range corpus().Cases {
-		if tc.Name == "benign" {
+		if SyntheticOnlyCase(tc.Name) {
 			continue
 		}
 		t.Run(tc.Name, func(t *testing.T) {

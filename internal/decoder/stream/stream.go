@@ -16,6 +16,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/cip"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/dcerpc"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/dnp3"
+	"github.com/dreadl0ck/netcap/internal/decoder/stream/dns"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/ftp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/http"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/iec62351"
@@ -71,6 +72,7 @@ var DefaultStreamDecoders = map[int32]core.StreamDecoderAPI{
 	21:    ftp.Decoder,
 	22:    ssh.Decoder,
 	25:    smtp.Decoder,
+	53:    dns.Decoder,
 	80:    http.Decoder,
 	102:   s7comm.Decoder, // S7comm ICS/SCADA (Siemens S7 PLCs)
 	110:   pop3.Decoder,

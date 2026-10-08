@@ -51,6 +51,7 @@ See the [Gallery](docs/GALLERY.md) for screenshots.
 - **Credential harvesting** — configurable protocol-aware credential capture
 - **File extraction** — extract files from HTTP, FTP, SMTP, POP3, IMAP, SMB, IRC with hashing (MD5, SHA1, SHA256) and MIME detection
 - **Detection rules** — 30+ YAML rule categories covering reconnaissance, exfiltration, web attacks, industrial ports, and more. The expression engine supports source→distinct-destination cardinality (fan-out) detection, an approved-workstation allowlist (`IsApprovedWorkstation`), and time-of-day helpers (`IsBusinessHours`, `HourOfDay`)
+- **Hunting evidence** — DNS query/response pairing with RTT, retransmission and unanswered/late status over UDP and TCP; DCE/RPC calls attributed to interface and operation with fault outcomes; periodic-connection (`c2.beacon`) detection; signed producer–consumer byte ratio per connection. See [Hunting evidence](#hunting-evidence)
 - **OT/ICS threat hunting** — function-code level Siemens S7comm detection (write / logic download / logic theft / PLC stop / CPU restart) mapped to [CISA AA26-231A](docs/s7-threat-hunt-AA26-231A.md); ships `internal/rules/examples/s7comm_hunt.yml`
 
 ### Output Formats
@@ -120,6 +121,7 @@ source IPs/CIDRs and versioned indicators (`internal/networkdetect/config.go`).
 | --- | --- |
 | DNS DGA and tunneling | Distinct randomized apex names or high-entropy TXT labels beneath one parent, capture-time counts and sampled names; behavioral suspicion |
 | TCP scans and SMTP fan-out | Distinct destination endpoints or mail hosts; retries do not increase cardinality |
+| Periodic connections (`c2.beacon`) | Latest 8 TCP connection starts from one source to one service, mean interval ≥ 10 s, coefficient of variation ≤ 0.1 within 1 h; retransmitted SYNs ignored. Updates and monitoring are also periodic |
 | ICMP tunneling | Repeated large, high-entropy echo requests; diagnostic traffic can look similar |
 | SSH transfer and unusual ports | SSH banners, unique contiguous client bytes and service port; encrypted contents and authorization remain unknown |
 | Stratum, IRC, OAST and Telegram | Protocol/destination observations; legitimate use is possible |
@@ -139,7 +141,34 @@ at revision `3709d1c6905d9527885c62f66f49a955c7b0d191`, generated with Docker
 `--network none` and local DNS/API/SSH/SFTP/IRC/Stratum fixtures. C2 intelligence
 is synthetic lab data; SSH qualification uses a 1 MiB transfer and a 512 KiB
 threshold. `testdata/cases.json` separately labels synthetic source-shape and
-benign controls. Scenario names never enter the detector.
+benign controls. Scenario names never enter the detector. `beacon` has no
+FlightSim capture and is synthetic only.
+
+### Hunting evidence
+
+These fields turn individual records into answers for common hunts: which
+resolvers are slow or failing, which remote procedures were actually called and
+whether they succeeded, and which hosts upload more than they download.
+
+| Record | Fields | Purpose and semantics |
+| --- | --- | --- |
+| DNS | `TransactionStatus`, `RTT`, `QueryTransmissions` | Find slow, failing, retried or unanswered lookups. Queries and responses are paired at capture time on client/server endpoints, DNS ID and first question name/type/class, separately per capture context and VLAN. Status is `query`, `retransmission`, `answered`, `late` (> 30 s), `unsolicited` or `reordered` (response before query in capture order; RTT unavailable). DNS over TCP is framed per connection, including messages split across or coalesced within segments. State is capped at 65,536 UDP and 256 per-TCP-flow pending queries |
+| DCERPC | `ContextID`, `InterfaceName`, `OperationName`, `FaultStatus`, `CommunityID` | Hunt on what a remote call did, not just which interface was opened. Requests and responses inherit the interface from the connection's Bind/AlterContext context, and responses the operation of their call. A request is an attempt; the Response or Fault carries the outcome. Attribution stops at a stream gap rather than guessing |
+| Connection | `ProducerConsumerRatio` | Spot uploads and data staging. `(client − server bytes) / (client + server bytes)` in `[-1, 1]`: `1` only sent, `-1` only received, `0` balanced or no bytes |
+
+WebUI views:
+
+- **Domains** shows per-domain median RTT and counts of retried, late,
+  unanswered and reordered transactions.
+- **Connections** shows the producer–consumer ratio with a sent/received label.
+- **Alerts** shows the service, mean interval and jitter behind `c2.beacon`.
+
+The bundled DCE/RPC rules match specific operations: DCSync
+(`IDL_DRSGetNCChanges`), SAMR account enumeration, remote service creation,
+remote registry writes and remote scheduled task/job creation. `After Hours Data
+Transfer` now applies its business-hours condition. Two rules were renamed for
+what they measure: `Symmetric External Connection` (byte symmetry, not timing)
+and `DNS Multi-Question Message`.
 
 ```sh
 go test -race ./internal/networkdetect

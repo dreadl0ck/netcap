@@ -398,6 +398,10 @@ message Connection {
   int64 NumPackets64 = 61;               // Exact observed packet count
   bool LegacyCountersSaturated = 62;     // One or more int32 compatibility counters reached their limit
   string ObservationBoundary = 63;       // first-observed, initial-syn or new-syn-observed; not proof of a complete session
+
+  // (client bytes - server bytes) / (client bytes + server bytes), in [-1, 1].
+  // 1 = client only produced, -1 = client only consumed; 0 when no bytes.
+  double ProducerConsumerRatio = 64;
 }
 
 //
@@ -1049,6 +1053,14 @@ message DNS {
   
   // Community ID v1 for cross-tool correlation (Zeek, Suricata, etc.)
   string CommunityID = 32;
+
+  // Capture-time query/response pairing, scoped by capture context and VLAN.
+  // Key: client and server endpoints, DNS ID, first question name
+  // (case-insensitive), type and class; TCP pairs within one connection.
+  // These fields describe the pairing state at this message.
+  int64 RTT = 33;                  // Response minus the latest matching query, in ns; 0 when unpaired
+  string TransactionStatus = 34;   // query | retransmission | answered | late | unsolicited | reordered
+  int32 QueryTransmissions = 35;   // Matching queries seen for this transaction (>1 means retransmitted)
 }
 
 message DNSResourceRecord {
@@ -4463,6 +4475,10 @@ message DCERPC {
   string DstIP = 14;
   int32 SrcPort = 15;
   int32 DstPort = 16;
+  int32 ContextID = 17;        // Presentation context of Request/Response/Fault PDUs
+  string CommunityID = 18;
+  string OperationName = 19;   // Procedure for a recognized interface and opnum; empty when unknown
+  uint32 FaultStatus = 20;     // Status of a Fault PDU; 0 otherwise
 }
 
 // OCSP - Online Certificate Status Protocol
