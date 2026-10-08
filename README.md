@@ -51,6 +51,7 @@ See the [Gallery](docs/GALLERY.md) for screenshots.
 - **Credential harvesting** — configurable protocol-aware credential capture
 - **File extraction** — extract files from HTTP, FTP, SMTP, POP3, IMAP, SMB, IRC with hashing (MD5, SHA1, SHA256) and MIME detection
 - **Detection rules** — 30+ YAML rule categories covering reconnaissance, exfiltration, web attacks, industrial ports, and more. The expression engine supports source→distinct-destination cardinality (fan-out) detection, an approved-workstation allowlist (`IsApprovedWorkstation`), and time-of-day helpers (`IsBusinessHours`, `HourOfDay`)
+- **Hunting evidence** — DNS query/response pairing with RTT, retransmission and unanswered/late status over UDP and TCP; DCE/RPC calls attributed to interface and operation with fault outcomes; periodic-connection (`c2.beacon`) detection; signed producer–consumer byte ratio per connection. See [Hunting evidence](#hunting-evidence)
 - **OT/ICS threat hunting** — function-code level Siemens S7comm detection (write / logic download / logic theft / PLC stop / CPU restart) mapped to [CISA AA26-231A](docs/s7-threat-hunt-AA26-231A.md); ships `internal/rules/examples/s7comm_hunt.yml`
 
 ### Output Formats
@@ -143,15 +144,31 @@ threshold. `testdata/cases.json` separately labels synthetic source-shape and
 benign controls. Scenario names never enter the detector. `beacon` has no
 FlightSim capture and is synthetic only.
 
-### Hunting fields
+### Hunting evidence
 
-| Record | Fields | Semantics |
+These fields turn individual records into answers for common hunts: which
+resolvers are slow or failing, which remote procedures were actually called and
+whether they succeeded, and which hosts upload more than they download.
+
+| Record | Fields | Purpose and semantics |
 | --- | --- | --- |
-| DNS | `TransactionStatus`, `RTT`, `QueryTransmissions` | Capture-time pairing on scoped endpoints, ID, first question/type/class: `query`, `retransmission`, `answered`, `late` (> 30 s), `unsolicited` or `reordered` (RTT unavailable). UDP table capped at 65,536; TCP at 256 per flow |
-| DCERPC | `ContextID`, `InterfaceName`, `OperationName`, `FaultStatus`, `CommunityID` | Requests and responses are attributed through Bind/AlterContext contexts; responses inherit the opnum of their call. A request is an attempt; the Response/Fault carries the outcome |
-| Connection | `ProducerConsumerRatio` | `(client − server bytes) / (client + server bytes)`, `[-1, 1]`; 0 when no bytes |
+| DNS | `TransactionStatus`, `RTT`, `QueryTransmissions` | Find slow, failing, retried or unanswered lookups. Queries and responses are paired at capture time on client/server endpoints, DNS ID and first question name/type/class, separately per capture context and VLAN. Status is `query`, `retransmission`, `answered`, `late` (> 30 s), `unsolicited` or `reordered` (response before query in capture order; RTT unavailable). DNS over TCP is framed per connection, including messages split across or coalesced within segments. State is capped at 65,536 UDP and 256 per-TCP-flow pending queries |
+| DCERPC | `ContextID`, `InterfaceName`, `OperationName`, `FaultStatus`, `CommunityID` | Hunt on what a remote call did, not just which interface was opened. Requests and responses inherit the interface from the connection's Bind/AlterContext context, and responses the operation of their call. A request is an attempt; the Response or Fault carries the outcome. Attribution stops at a stream gap rather than guessing |
+| Connection | `ProducerConsumerRatio` | Spot uploads and data staging. `(client − server bytes) / (client + server bytes)` in `[-1, 1]`: `1` only sent, `-1` only received, `0` balanced or no bytes |
 
-The WebUI Domains page shows median RTT and pairing anomalies per domain.
+WebUI views:
+
+- **Domains** shows per-domain median RTT and counts of retried, late,
+  unanswered and reordered transactions.
+- **Connections** shows the producer–consumer ratio with a sent/received label.
+- **Alerts** shows the service, mean interval and jitter behind `c2.beacon`.
+
+The bundled DCE/RPC rules match specific operations: DCSync
+(`IDL_DRSGetNCChanges`), SAMR account enumeration, remote service creation,
+remote registry writes and remote scheduled task/job creation. `After Hours Data
+Transfer` now applies its business-hours condition. Two rules were renamed for
+what they measure: `Symmetric External Connection` (byte symmetry, not timing)
+and `DNS Multi-Question Message`.
 
 ```sh
 go test -race ./internal/networkdetect
