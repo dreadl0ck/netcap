@@ -20,6 +20,7 @@
 package webui
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -41,6 +42,8 @@ import (
 type ConnectionSummary struct {
 	TimestampFirst       int64    `json:"timestampFirst"`
 	TimestampLast        int64    `json:"timestampLast"`
+	TimestampFirstNs     string   `json:"timestampFirstNs"`
+	TimestampLastNs      string   `json:"timestampLastNs"`
 	LinkProto            string   `json:"linkProto"`
 	NetworkProto         string   `json:"networkProto"`
 	TransportProto       string   `json:"transportProto"`
@@ -89,7 +92,15 @@ type ConnectionSummary struct {
 	// TLS SNI
 	Sni string `json:"sni"`
 	// Community ID for cross-tool correlation
-	CommunityID string `json:"communityId"`
+	CommunityID             string `json:"communityId"`
+	ObservationID           string `json:"observationId,omitempty"`
+	SnapshotSequence        uint64 `json:"snapshotSequence,string"`
+	CounterSemantics        string `json:"counterSemantics,omitempty"`
+	TotalSize64             int64  `json:"totalSize64,string"`
+	AppPayloadSize64        int64  `json:"appPayloadSize64,string"`
+	NumPackets64            int64  `json:"numPackets64,string"`
+	LegacyCountersSaturated bool   `json:"legacyCountersSaturated"`
+	ObservationBoundary     string `json:"observationBoundary,omitempty"`
 }
 
 // ConnectionsResponse contains the list of connections
@@ -117,6 +128,9 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 
 	outDir, _ := s.resolveOutDirFromRequest(r)
+	if filter.observationID != "" {
+		outDir, _ = s.resolveEvidenceOutput(r)
+	}
 
 	if outDir == "" {
 		http.Error(w, "No output directory set", http.StatusServiceUnavailable)
@@ -197,6 +211,8 @@ func readConnections(outDir string) ([]ConnectionSummary, error) {
 		connections = append(connections, ConnectionSummary{
 			TimestampFirst:       conn.TimestampFirst,
 			TimestampLast:        conn.TimestampLast,
+			TimestampFirstNs:     strconv.FormatInt(conn.TimestampFirst, 10),
+			TimestampLastNs:      strconv.FormatInt(conn.TimestampLast, 10),
 			LinkProto:            conn.LinkProto,
 			NetworkProto:         conn.NetworkProto,
 			TransportProto:       conn.TransportProto,
@@ -245,7 +261,15 @@ func readConnections(outDir string) ([]ConnectionSummary, error) {
 			// TLS SNI
 			Sni: conn.Sni,
 			// Community ID for cross-tool correlation
-			CommunityID: conn.CommunityID,
+			CommunityID:             conn.CommunityID,
+			ObservationID:           conn.ObservationID,
+			SnapshotSequence:        conn.SnapshotSequence,
+			CounterSemantics:        conn.CounterSemantics,
+			TotalSize64:             conn.TotalSize64,
+			AppPayloadSize64:        conn.AppPayloadSize64,
+			NumPackets64:            conn.NumPackets64,
+			LegacyCountersSaturated: conn.LegacyCountersSaturated,
+			ObservationBoundary:     conn.ObservationBoundary,
 		})
 	})
 	if err != nil {
@@ -284,7 +308,6 @@ func (s *Server) handleConnectionConversation(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Get query parameters
 	srcIP := r.URL.Query().Get("srcIP")
 	srcPort := r.URL.Query().Get("srcPort")
 	dstIP := r.URL.Query().Get("dstIP")
@@ -488,16 +511,16 @@ func (s *Server) handleConnectionDownloadPCAP(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Get query parameters
+	selection, err := parseConnectionPacketSelection(r.URL.Query())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	srcIP := r.URL.Query().Get("srcIP")
 	srcPort := r.URL.Query().Get("srcPort")
 	dstIP := r.URL.Query().Get("dstIP")
 	dstPort := r.URL.Query().Get("dstPort")
-
-	if srcIP == "" || srcPort == "" || dstIP == "" || dstPort == "" {
-		http.Error(w, "Missing required parameters", http.StatusBadRequest)
-		return
-	}
 
 	activeInputFile, _ := s.resolveInputFileFromRequest(r)
 
@@ -511,24 +534,32 @@ func (s *Server) handleConnectionDownloadPCAP(w http.ResponseWriter, r *http.Req
 		http.Error(w, "Input file not found", http.StatusNotFound)
 		return
 	}
+	if format := r.URL.Query().Get("format"); format == "evidence" {
+		serveConnectionEvidence(w, r, activeInputFile, selection)
+		return
+	} else if format != "" && format != "pcap" {
+		http.Error(w, "format must be pcap or evidence", http.StatusBadRequest)
+		return
+	}
 
-	// Create BPF filter for the connection
-	// Format: (host srcIP and port srcPort) and (host dstIP and port dstPort)
-	bpf := fmt.Sprintf("(host %s and port %s) and (host %s and port %s)",
-		srcIP, srcPort, dstIP, dstPort)
-
-	// Create temporary output file
-	tempDir := os.TempDir()
-	outputFile := filepath.Join(tempDir, fmt.Sprintf("connection_%s-%s_%s-%s.pcap",
-		strings.ReplaceAll(srcIP, ".", "_"),
-		srcPort,
-		strings.ReplaceAll(dstIP, ".", "_"),
-		dstPort))
+	temp, err := os.CreateTemp("", "netcap-connection-*.pcap")
+	if err != nil {
+		http.Error(w, "Failed to create packet export", http.StatusInternalServerError)
+		return
+	}
+	outputFile := temp.Name()
+	defer os.Remove(outputFile)
+	if err := temp.Close(); err != nil {
+		http.Error(w, "Failed to close packet export", http.StatusInternalServerError)
+		return
+	}
 
 	// Filter the PCAP entirely in-process (no external tcpdump).
-	log.Printf("[WebUI] Filtering PCAP in-process: %s -> %s (bpf: %s)", activeInputFile, outputFile, bpf)
+	log.Printf("[WebUI] Filtering PCAP in-process: %s -> %s (bpf: %s)", activeInputFile, outputFile, selection.bpf)
 
-	written, err := filterPCAPToFileWithTimeout(r.Context(), activeInputFile, bpf, outputFile, 30*time.Second)
+	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
+	defer cancel()
+	written, err := filterPCAPSelectionContext(ctx, activeInputFile, selection.bpf, outputFile, selection.contains)
 	if err != nil {
 		log.Printf("[WebUI] PCAP filter error: %v", err)
 		os.Remove(outputFile)

@@ -72,7 +72,8 @@ func TestSaveFileConcurrent(t *testing.T) {
 					if mode == "different-content" {
 						body = fmt.Sprintf("content %d", i)
 					}
-					if err := SaveFileEnhanced(&core.ConversationInfo{Ident: "same-flow"}, body, "same-name", nil, []byte(body), nil, "", "", 0, "", "", "HTTP"); err != nil {
+					conv := &core.ConversationInfo{Ident: "same-flow", ClientIP: "192.0.2.1", ClientPort: 12345, ServerIP: "192.0.2.2", ServerPort: 80}
+					if err := SaveFileEnhanced(conv, body, "same-name", nil, []byte(body), nil, "", "", 0, "", "", "HTTP"); err != nil {
 						t.Error(err)
 					}
 				}()
@@ -84,6 +85,9 @@ func TestSaveFileConcurrent(t *testing.T) {
 			}
 			paths := make(map[string]bool)
 			for _, record := range w.records {
+				if record.SrcIP != "192.0.2.1" || record.SrcPort != 12345 || record.DstIP != "192.0.2.2" || record.DstPort != 80 {
+					t.Fatalf("file evidence has crossed endpoints: %s", record)
+				}
 				paths[record.Location] = true
 				data, err := os.ReadFile(record.Location)
 				if err != nil || string(data) != record.Source {

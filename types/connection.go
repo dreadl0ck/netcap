@@ -20,6 +20,7 @@
 package types
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -110,6 +111,14 @@ var fieldsConnection = []string{
 	fieldDstGeoLocation,
 	fieldSrcASN,
 	fieldDstASN,
+	"ObservationID",
+	"SnapshotSequence",
+	"CounterSemantics",
+	"TotalSize64",
+	"AppPayloadSize64",
+	"NumPackets64",
+	"LegacyCountersSaturated",
+	"ObservationBoundary",
 }
 
 // CSVHeader returns the CSV header for the audit record.
@@ -163,6 +172,14 @@ func (c *Connection) CSVRecord() []string {
 		c.DstGeoLocation,
 		c.SrcASN,
 		c.DstASN,
+		c.ObservationID,
+		strconv.FormatUint(c.SnapshotSequence, 10),
+		c.CounterSemantics,
+		formatInt64(c.TotalSize64),
+		formatInt64(c.AppPayloadSize64),
+		formatInt64(c.NumPackets64),
+		strconv.FormatBool(c.LegacyCountersSaturated),
+		c.ObservationBoundary,
 	})
 }
 
@@ -174,10 +191,11 @@ func (c *Connection) Time() int64 {
 // JSON returns the JSON representation of the audit record.
 func (c *Connection) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
-	c.TimestampFirst /= int64(time.Millisecond)
-	c.TimestampLast /= int64(time.Millisecond)
+	copy := *c
+	copy.TimestampFirst /= int64(time.Millisecond)
+	copy.TimestampLast /= int64(time.Millisecond)
 
-	return jsonMarshaler.MarshalToString(c)
+	return jsonMarshaler.MarshalToString(&copy)
 }
 
 var (
@@ -307,6 +325,25 @@ func (c *Connection) Encode() []string {
 		connectionEncoder.Int32(fieldNumNSFlags, c.NumNSFlags),
 		connectionEncoder.Int32(fieldMeanWindowSize, c.MeanWindowSize),
 		connectionEncoder.String(fieldApplications, join(c.Applications...)),
+		connectionEncoder.String(fieldServerPortName, c.ServerPortName),
+		connectionEncoder.String(fieldDetectedProtocolName, c.DetectedProtocolName),
+		connectionEncoder.Int64(fieldTcpRttNanos, c.TcpRttNanos),
+		connectionEncoder.Int64(fieldTlsHandshakeNanos, c.TlsHandshakeNanos),
+		connectionEncoder.String(fieldJa4lClient, c.Ja4LClient),
+		connectionEncoder.String(fieldJa4lServer, c.Ja4LServer),
+		connectionEncoder.Int32(fieldSynTtl, c.SynTtl),
+		connectionEncoder.String(fieldSrcGeoLocation, c.SrcGeoLocation),
+		connectionEncoder.String(fieldDstGeoLocation, c.DstGeoLocation),
+		connectionEncoder.String(fieldSrcASN, c.SrcASN),
+		connectionEncoder.String(fieldDstASN, c.DstASN),
+		connectionEncoder.String("ObservationID", c.ObservationID),
+		connectionEncoder.Uint64("SnapshotSequence", c.SnapshotSequence),
+		connectionEncoder.String("CounterSemantics", c.CounterSemantics),
+		connectionEncoder.Int64("TotalSize64", c.TotalSize64),
+		connectionEncoder.Int64("AppPayloadSize64", c.AppPayloadSize64),
+		connectionEncoder.Int64("NumPackets64", c.NumPackets64),
+		connectionEncoder.Bool(c.LegacyCountersSaturated),
+		connectionEncoder.String("ObservationBoundary", c.ObservationBoundary),
 	})
 }
 

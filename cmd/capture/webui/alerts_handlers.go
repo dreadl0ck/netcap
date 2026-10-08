@@ -39,26 +39,31 @@ import (
 
 // AlertResponse represents an alert for the API
 type AlertResponse struct {
-	SrcPort         string   `json:"srcPort,omitempty"`
-	DstPort         string   `json:"dstPort,omitempty"`
-	Domain          string   `json:"domain,omitempty"`
-	Timestamp       int64    `json:"timestamp"`
-	Name            string   `json:"name"`
-	Description     string   `json:"description"`
-	RuleName        string   `json:"ruleName"`
-	RecordType      string   `json:"recordType"`
-	Severity        string   `json:"severity"`
-	Tags            []string `json:"tags"`
-	MITRE           string   `json:"mitre"`
-	SrcIP           string   `json:"srcIP"`
-	DstIP           string   `json:"dstIP"`
-	MatchedRecord   string   `json:"matchedRecord"`
-	RuleExpression  string   `json:"ruleExpression"`
-	Threshold       int32    `json:"threshold"`
-	ThresholdWindow int32    `json:"thresholdWindow"`
-	Resolved        bool     `json:"resolved"`
-	ResolvedAt      int64    `json:"resolvedAt,omitempty"`
-	AlertID         string   `json:"alertId"` // Unique identifier for the alert
+	SrcPort             string   `json:"srcPort,omitempty"`
+	DstPort             string   `json:"dstPort,omitempty"`
+	Domain              string   `json:"domain,omitempty"`
+	Timestamp           int64    `json:"timestamp"`
+	Name                string   `json:"name"`
+	Description         string   `json:"description"`
+	RuleName            string   `json:"ruleName"`
+	RecordType          string   `json:"recordType"`
+	Severity            string   `json:"severity"`
+	Tags                []string `json:"tags"`
+	MITRE               string   `json:"mitre"`
+	SrcIP               string   `json:"srcIP"`
+	DstIP               string   `json:"dstIP"`
+	MatchedRecord       string   `json:"matchedRecord"`
+	RuleExpression      string   `json:"ruleExpression"`
+	Threshold           int32    `json:"threshold"`
+	ThresholdWindow     int32    `json:"thresholdWindow"`
+	Resolved            bool     `json:"resolved"`
+	ResolvedAt          int64    `json:"resolvedAt,omitempty"`
+	AlertID             string   `json:"alertId"` // Unique identifier for the alert
+	TimestampNs         string   `json:"timestampNs,omitempty"`
+	DetectedAtNs        string   `json:"detectedAtNs,omitempty"`
+	TimestampBasis      string   `json:"timestampBasis,omitempty"`
+	RuleDigest          string   `json:"ruleDigest,omitempty"`
+	MatchedRecordSHA256 string   `json:"matchedRecordSHA256,omitempty"`
 }
 
 // GroupedAlert represents a deduplicated/grouped alert
@@ -705,6 +710,10 @@ func contains(slice []string, item string) bool {
 // generateAlertID generates a unique identifier for an alert
 func generateAlertID(alert AlertResponse) string {
 	id := fmt.Sprintf("%s-%d-%s-%s", alert.RuleName, alert.Timestamp, alert.SrcIP, alert.DstIP)
+	if alert.RuleDigest != "" {
+		hash := sha256.Sum256([]byte(alert.RuleDigest + "/" + alert.TimestampNs + "/" + alert.DetectedAtNs + "/" + alert.MatchedRecordSHA256))
+		return fmt.Sprintf("%s-v2-%x", id, hash[:16])
+	}
 	if alert.RecordType == "Behavior" || alert.RecordType == "NetworkDetection" {
 		hash := sha256.Sum256([]byte(alert.MatchedRecord))
 		return fmt.Sprintf("%s-%x", id, hash[:16])

@@ -62,16 +62,22 @@ type templateField struct {
 	Length uint16
 }
 
-// NetFlow v9 template cache
+type netflowScope struct {
+	sourceID         uint32
+	srcIP, dstIP     string
+	srcPort, dstPort uint16
+}
+
+// Legacy wire-record cache; normalized FlowExports records use collector-owned state.
 var (
-	netflowTemplates sync.Map // map[uint32]map[uint16][]templateField  (sourceID -> templateID -> fields)
+	netflowTemplates sync.Map
 )
 
 var netflowDecoder = newPacketDecoder(
 	types.Type_NC_NetFlowV9,
 	"NetFlowV9",
 	"NetFlow v9 provides IP flow information for network monitoring and analysis",
-	nil,
+	func(*Decoder) error { netflowTemplates.Clear(); return nil },
 	func(p gopacket.Packet) proto.Message {
 		udpLayer := p.Layer(layers.LayerTypeUDP)
 		if udpLayer == nil {
@@ -105,6 +111,11 @@ var netflowDecoder = newPacketDecoder(
 		unixSecs := binary.BigEndian.Uint32(payload[8:12])
 		seqNum := binary.BigEndian.Uint32(payload[12:16])
 		sourceID := binary.BigEndian.Uint32(payload[16:20])
+		scope := netflowScope{sourceID: sourceID, srcPort: uint16(udp.SrcPort), dstPort: uint16(udp.DstPort)}
+		if nl := p.NetworkLayer(); nl != nil {
+			scope.srcIP = nl.NetworkFlow().Src().String()
+			scope.dstIP = nl.NetworkFlow().Dst().String()
+		}
 
 		var flowSets []*types.NetFlowV9FlowSet
 		isTemplate := false
@@ -123,13 +134,13 @@ var netflowDecoder = newPacketDecoder(
 			if fsID == 0 {
 				// Template FlowSet
 				isTemplate = true
-				fields = parseNetflowTemplateFlowSet(payload[offset+4:offset+fsLen], sourceID)
+				fields = parseNetflowTemplateFlowSet(payload[offset+4:offset+fsLen], scope)
 			} else if fsID == 1 {
 				// Options Template FlowSet
 				isTemplate = true
 			} else if fsID >= 256 {
 				// Data FlowSet - decode using cached template
-				fields = parseNetflowDataFlowSet(payload[offset+4:offset+fsLen], fsID, sourceID)
+				fields = parseNetflowDataFlowSet(payload[offset+4:offset+fsLen], fsID, scope)
 			}
 
 			flowSets = append(flowSets, &types.NetFlowV9FlowSet{
@@ -165,7 +176,7 @@ var netflowDecoder = newPacketDecoder(
 )
 
 // parseNetflowTemplateFlowSet parses template records and caches them
-func parseNetflowTemplateFlowSet(data []byte, sourceID uint32) []*types.NetFlowV9Field {
+func parseNetflowTemplateFlowSet(data []byte, scope netflowScope) []*types.NetFlowV9Field {
 	var fields []*types.NetFlowV9Field
 	offset := 0
 
@@ -173,6 +184,9 @@ func parseNetflowTemplateFlowSet(data []byte, sourceID uint32) []*types.NetFlowV
 		templateID := binary.BigEndian.Uint16(data[offset : offset+2])
 		fieldCount := binary.BigEndian.Uint16(data[offset+2 : offset+4])
 		offset += 4
+		if fieldCount == 0 || int(fieldCount) > (len(data)-offset)/4 {
+			return nil
+		}
 
 		var tmplFields []templateField
 		for i := 0; i < int(fieldCount) && offset+4 <= len(data); i++ {
@@ -194,7 +208,7 @@ func parseNetflowTemplateFlowSet(data []byte, sourceID uint32) []*types.NetFlowV
 		}
 
 		// Cache the template
-		templatesI, _ := netflowTemplates.LoadOrStore(sourceID, &sync.Map{})
+		templatesI, _ := netflowTemplates.LoadOrStore(scope, &sync.Map{})
 		templates := templatesI.(*sync.Map)
 		templates.Store(templateID, tmplFields)
 	}
@@ -203,8 +217,8 @@ func parseNetflowTemplateFlowSet(data []byte, sourceID uint32) []*types.NetFlowV
 }
 
 // parseNetflowDataFlowSet decodes data records using cached templates
-func parseNetflowDataFlowSet(data []byte, templateID uint16, sourceID uint32) []*types.NetFlowV9Field {
-	templatesI, ok := netflowTemplates.Load(sourceID)
+func parseNetflowDataFlowSet(data []byte, templateID uint16, scope netflowScope) []*types.NetFlowV9Field {
+	templatesI, ok := netflowTemplates.Load(scope)
 	if !ok {
 		return nil
 	}

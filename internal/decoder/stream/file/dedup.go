@@ -21,10 +21,15 @@ package file
 
 import (
 	"bytes"
+	"compress/flate"
+	"compress/zlib"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"io"
+	"math"
+	"strings"
 	"sync"
 
 	gzip "github.com/klauspost/pgzip"
@@ -125,59 +130,78 @@ type ContentInfo struct {
 // This function decodes gzip/deflate/base64 content before hashing to ensure we hash the actual content.
 // It also returns compression information for audit records.
 func ComputeContentHash(body []byte, encoding []string) (*ContentInfo, error) {
+	limit := GetMaxFileSize()
+	if limit <= 0 {
+		limit = 100 << 20
+	}
+	return ComputeContentHashWithLimit(body, encoding, limit)
+}
+
+func ComputeContentHashWithLimit(body []byte, encoding []string, limit int64) (*ContentInfo, error) {
 	info := &ContentInfo{
 		CompressedSize: int64(len(body)),
 	}
-
-	var currentData = body
-
-	// Process all encodings in order (they may be stacked)
-	for _, enc := range encoding {
-		switch enc {
-		case "gzip", "deflate":
-			info.WasCompressed = true
-			info.CompressionType = enc
-
-			gzipReader, err := gzip.NewReader(bytes.NewBuffer(currentData))
-			if err != nil {
-				// If decompression fails, mark as NOT compressed (we couldn't decode it)
-				// and use the raw content - hash will match what's saved
-				info.WasCompressed = false
-				info.CompressionType = ""
-				info.DecodedContent = body
-				hash := sha256.Sum256(body)
-				info.Hash = hex.EncodeToString(hash[:])
-				return info, nil
-			}
-
-			decompressed, err := io.ReadAll(gzipReader)
-			gzipReader.Close()
-			if err != nil {
-				// If reading fails, mark as NOT compressed and use raw content
-				info.WasCompressed = false
-				info.CompressionType = ""
-				info.DecodedContent = body
-				hash := sha256.Sum256(body)
-				info.Hash = hex.EncodeToString(hash[:])
-				return info, nil
-			}
-
-			currentData = decompressed
-
-		case "base64":
-			decoded, err := io.ReadAll(base64.NewDecoder(base64.StdEncoding, bytes.NewBuffer(currentData)))
-			if err != nil {
-				// If base64 decode fails, use current data as-is
-				continue
-			}
-			currentData = decoded
-		}
+	fallback := func(err error) (*ContentInfo, error) {
+		hash := sha256.Sum256(body)
+		return &ContentInfo{Hash: hex.EncodeToString(hash[:]), DecodedContent: body, CompressedSize: int64(len(body))}, err
 	}
-
-	info.DecodedContent = currentData
-
-	// Compute SHA256 hash of the fully decoded content
-	hash := sha256.Sum256(info.DecodedContent)
+	if limit <= 0 || limit == math.MaxInt64 || len(encoding) > 8 {
+		return fallback(fmt.Errorf("invalid decoded-content limit or encoding stack exceeds 8 layers"))
+	}
+	current := body
+	var compressed []string
+	// Content-Encoding lists application order; decoding reverses it.
+	for i := len(encoding) - 1; i >= 0; i-- {
+		enc := strings.ToLower(strings.TrimSpace(encoding[i]))
+		var reader io.Reader
+		var closer io.Closer
+		switch enc {
+		case "", "identity":
+			continue
+		case "gzip":
+			r, err := gzip.NewReader(bytes.NewReader(current))
+			if err != nil {
+				return fallback(fmt.Errorf("decode gzip: %w", err))
+			}
+			reader, closer = r, r
+		case "deflate":
+			r, err := zlib.NewReader(bytes.NewReader(current))
+			if err == nil {
+				reader, closer = r, r
+			} else {
+				raw := flate.NewReader(bytes.NewReader(current))
+				reader, closer = raw, raw
+			}
+		case "base64":
+			reader = base64.NewDecoder(base64.StdEncoding, bytes.NewReader(current))
+		default:
+			return fallback(fmt.Errorf("unsupported content encoding %q", enc))
+		}
+		decoded, err := io.ReadAll(io.LimitReader(reader, limit+1))
+		if closer != nil {
+			closeErr := closer.Close()
+			if err == nil {
+				err = closeErr
+			}
+		}
+		if err != nil {
+			return fallback(fmt.Errorf("decode %s: %w", enc, err))
+		}
+		if int64(len(decoded)) > limit {
+			return fallback(fmt.Errorf("decoded-content limit exceeded: %d", limit))
+		}
+		if enc == "gzip" || enc == "deflate" {
+			compressed = append(compressed, enc)
+		}
+		current = decoded
+	}
+	if int64(len(current)) > limit {
+		return fallback(fmt.Errorf("decoded-content limit exceeded: %d", limit))
+	}
+	info.DecodedContent = current
+	info.WasCompressed = len(compressed) > 0
+	info.CompressionType = strings.Join(compressed, ",")
+	hash := sha256.Sum256(current)
 	info.Hash = hex.EncodeToString(hash[:])
 	return info, nil
 }

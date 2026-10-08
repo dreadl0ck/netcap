@@ -20,6 +20,8 @@
 package rules
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -312,9 +314,17 @@ func EvaluateRule(rule *Rule, record types.AuditRecord) (*types.Alert, error) {
 		tags = []string{}
 	}
 
-	// Create alert
+	configuration, err := yaml.Marshal(rule)
+	if err != nil {
+		return nil, fmt.Errorf("rule %s provenance: %w", rule.Name, err)
+	}
+	digest := sha256.Sum256(configuration)
+	// Keep offline observations on their capture timeline.
 	alert := &types.Alert{
-		Timestamp:       time.Now().UnixNano(),
+		Timestamp:       record.Time(),
+		DetectedAt:      time.Now().UnixNano(),
+		TimestampBasis:  "record-time",
+		RuleDigest:      hex.EncodeToString(digest[:]),
 		Name:            rule.Name,
 		Description:     rule.Description,
 		RuleName:        rule.Name,
@@ -339,6 +349,8 @@ func EvaluateRule(rule *Rule, record types.AuditRecord) (*types.Alert, error) {
 	recordJSON, err := json.Marshal(record)
 	if err == nil {
 		alert.MatchedRecord = string(recordJSON)
+		digest := sha256.Sum256(recordJSON)
+		alert.MatchedRecordSHA256 = hex.EncodeToString(digest[:])
 	}
 
 	return alert, nil

@@ -265,7 +265,119 @@ approval; consumers verify the committed bytes against each manifest.
 | `transform` | Maltego OSINT transform plugin |
 | `util` | Utilities: timestamp conversion, interface listing, database generation, search indexing |
 | `inject` | Inline packet manipulation via NFQueue (Linux) |
+| `investigate` | Bounded flow rankings and packet-evidence ZIP exports |
 | `split` | Split audit record files |
+
+### Investigation tools
+
+```sh
+net investigate flows --read Connection.ncap.gz \
+  --start-ns "$START_NS" --end-ns "$END_NS" \
+  --filter 'InSubnet(SrcIP, "192.0.2.0/24")' --group-by srcIP
+
+net investigate packet-evidence --read exercise.pcapng \
+  --bpf 'host 192.0.2.1 and tcp port 80' --out evidence.zip
+
+net investigate collect-flows --listen 127.0.0.1:2055 --out ./fresh-output --duration 1m
+net investigate exported-flows --read ./fresh-output/FlowExports.jsonl \
+  --exporter 192.0.2.10:50000 --format netflow-v9 --domain 7 \
+  --start-ns "$START_NS" --end-ns "$END_NS" --time-basis receive
+```
+
+`START_NS` and `END_NS` are inclusive UTC nanosecond integers. The WebUI API
+exposes the same flow engine at `GET /api/flows/query` with `startNs`, `endNs`,
+`filter`, `groupBy`, `sortBy` and `limit`. Connection downloads accept
+`format=evidence`, a TCP/UDP `protocol`, and optional paired time bounds.
+
+`flows --window-mode overlap|contained|start|end` selects interval semantics.
+Optional `--bucket-ns` emits uniformly interpolated byte/rate estimates, capped
+at 4,096 bins; raw group counters remain whole-observation counts. Reports also
+include byte shares and nearest-rank size/packet/duration distributions. The
+Investigation Evidence page exposes both controls and labels estimated values.
+
+| Output | Interpretation |
+| --- | --- |
+| Flow report | `ObservationID` and `SnapshotSequence` reconcile cumulative records; counters cover whole observations overlapping the window. Rates divide bytes by summed observation durations. |
+| Legacy records | Repeated tuples without snapshot semantics fail as ambiguous; no guessed deduplication or session count. |
+| `evidence.zip` | `packets.pcapng` plus `manifest.json`: source/output SHA-256, source packet ranges, interface mapping, truncation counts and selection. Packet options, secrets and source statistics remain in the original capture. |
+| File records | `CompletenessReason` reports extraction/decoding errors and observed stream loss. `StreamMissingBytes` is not loss attributed to the extracted file. |
+
+Exports refuse replacement and fail on truncation or exceeded limits. Packet
+exports cap captured packets at 1 MiB and PCAPNG blocks/metadata at 16 MiB;
+flow queries cap records at 4 MiB and decoded input at 256 MiB.
+The 38 book-derived workflow families are qualified in
+`testdata/investigation-coverage.json`, with exact fixture references and mandatory
+integration commands. Coverage is scoped to those fixtures and declared limits;
+external endpoint, proxy and organizational evidence remains explicitly external.
+
+`capture --flow-exports` normalizes UDP NetFlow v5/v9, IPFIX and sFlow v5 on
+`--flow-export-ports` (default `2055,4739,6343,9995,9996`). It records raw
+datagrams, normalized observations and issues in `FlowExports.jsonl` before
+worker dispatch. `FlowExportsHealth.json` binds final health to the record-file
+SHA-256. Existing flow artifacts are refused; use a fresh output directory.
+
+| Export interpretation | Contract |
+| --- | --- |
+| Templates | Collector-owned, exporter/collector/domain scoped; 30-minute expiry, 128 domains, 1,024 templates, 256 fields/template. |
+| Sampling | Counts remain as reported; no automatic expansion. Reports reject mixed sampling settings. |
+| Time | `flow` requires exported start/end; `receive` selects datagram capture/receipt time. sFlow does not establish flow start/end. |
+| Gaps | Missing templates, malformed data and sequence discontinuities produce issue events and partial health. |
+| Ranking | Requires exporter, format and domain. Cumulative counts and incomplete counters are excluded and counted explicitly. |
+| Coverage | sFlow counter/unknown sample formats remain in raw datagrams; unsupported options scopes are not applied globally. |
+
+`capture --conns` also writes `stream-evidence/stream-*/{client.bin,server.bin,manifest.json}`.
+These bytes contain no ANSI markup. The manifest preserves per-direction offsets,
+capture times, TCP gaps and UDP datagram boundaries. A `gapped` stream must not be
+parsed as contiguous data; the legacy display transcript remains separate.
+
+`capture --capture-evidence` writes `capture-manifest.json` with input/configuration
+hashes, ingress/admission/drop counters and nullable kernel statistics. Add
+`--retain-packets --packet-segment-mb 32 --packet-retention-mb 512` for rotating
+PCAPNG retention. Expired segments remain recorded as tombstones. A fresh output
+directory is required; retention failure is an error, not successful collection.
+The **Investigation evidence** page (`/investigation-evidence`) displays this
+coverage, scoped flow reports and directional stream downloads.
+
+`net investigate exchange --spec exchange.json` executes one bounded TCP/UDP
+experiment. Byte fields use JSON base64; `Framing` supports `length-prefix`,
+`delimiter` and `fixed`. Response variables capture fresh negotiation values.
+TLS verifies certificates and hostnames; optional `rootCAFile` and paired
+`clientCertificateFile`/`clientKeyFile` configure experiment trust and mTLS.
+
+`net investigate protocol-fields --spec grammar.json --read client.bin --compare other-client.bin`
+validates framed streams against declared byte/UTF-8/signed/unsigned fields and
+reports changes by frame ordinal and field name. Fields include offsets, raw
+bytes and hypothesis descriptions. Frame insertions can shift alignment; a
+successful parse does not prove the hypothesized application semantics.
+
+`net investigate tls-capture --read tls.pcapng --key-log secrets.log --stream 0`
+uses installed `tshark` for offline TLS dissection. Output binds input, key-log
+and plaintext hashes to the tool version; key material is not included. Node
+ordering follows tshark's reported endpoints, not an assumed client role.
+`NETCAP_REQUIRE_TLS_ADAPTER=1 go test ./internal/protocoltest -run TestTLSCaptureAdapter`
+requires the TLS 1.2/1.3 adapter fixtures instead of skipping when tshark is absent.
+
+`net investigate protocol-proxy --spec proxy.json --listen 127.0.0.1:9000`
+handles one framed TCP connection. Mutations select direction/frame and byte
+range, with optional length-prefix repair, drop, duplication and delay. Output
+records original/transmitted bytes. Both tools enforce time/frame/byte limits;
+response matches are protocol observations, not proof of endpoint effects.
+
+| Investigation command | Qualified workflow |
+| --- | --- |
+| `protocol-server` | Bounded TCP/TLS or single-peer UDP server emulation |
+| `protocol-access` | Role/state/resource matrix with observed reset controls |
+| `protocol-generate`, `protocol-corpus` | Deterministic bounded grammar/field/state/byte cases |
+| `protocol-fuzz`, `protocol-reproduce` | Valid controls, minimized marker-positive cases and exact reproduction |
+| `protocol-boundary` | Target rejection separated from harness timeout/budget-stop |
+| `protocol-triage` | Hashed debugger/process/routing evidence import; impact remains unverified |
+| `sensor-seal`, `sensor-import`, `sensor-prune` | HMAC-bound output bundles, receiver-authorized sensor namespaces and expiry; transport remains caller-owned |
+
+Use each command's `--help` for the versioned JSON/input contract. FTP data
+extraction waits for control/data readers to drain; `FTPDataHealth.json` records
+associations and exclusions. `TCPReassemblyHealth.json` records checksum policy
+and rejection counts. Both sidecars are shown in the Investigation Evidence page
+and retained by Pro projects.
 
 ## Docker
 

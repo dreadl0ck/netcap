@@ -91,9 +91,11 @@ func (a *Alert) Time() int64 {
 // JSON returns the JSON representation of the audit record.
 func (a *Alert) JSON() (string, error) {
 	// convert unix timestamp from nano to millisecond precision for elastic
-	a.Timestamp /= int64(time.Millisecond)
+	copy := *a
+	copy.Timestamp /= int64(time.Millisecond)
+	copy.DetectedAt /= int64(time.Millisecond)
 
-	return jsonMarshaler.MarshalToString(a)
+	return jsonMarshaler.MarshalToString(&copy)
 }
 
 var aMetric = prometheus.NewCounterVec(

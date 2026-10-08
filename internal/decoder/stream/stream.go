@@ -59,6 +59,11 @@ var errInvalidStreamDecoder = errors.New("invalid stream decoder")
 // Debug controls debug log messages and behavior
 var Debug bool
 
+// ObserveFTPData retains bounded candidates until control/data readers drain.
+func ObserveFTPData(c *core.ConversationInfo) {
+	ftp.ObserveDataConversation(c)
+}
+
 // DefaultStreamDecoders contains stream decoders mapped to their protocols default port
 // int32 is used to avoid casting when looking up values
 // Note: Multiple decoders can share the same port if they use different transports (TCP vs UDP).

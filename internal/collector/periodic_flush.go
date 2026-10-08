@@ -72,6 +72,19 @@ func (c *Collector) flushAllDecoders() {
 	c.statMutex.Unlock()
 
 	start := time.Now()
+	c.dispatchMu.Lock()
+	if c.captureEvidence != nil {
+		if err := c.captureEvidence.Checkpoint(c.admittedPackets, c.behaviorQueueDrops); err != nil {
+			c.captureEvidenceError = err
+		}
+	}
+	if c.flowExports != nil {
+		if err := c.flowExports.Flush(); err != nil {
+			c.flowExportError = err
+			c.log.Error("flow-export flush failure", zap.Error(err))
+		}
+	}
+	c.dispatchMu.Unlock()
 	var totalFlushed int64
 
 	// Flush gopacket decoders (they write records immediately, just flush buffers)

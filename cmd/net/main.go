@@ -36,6 +36,7 @@ import (
 	"github.com/dreadl0ck/netcap/cmd/dump"
 	"github.com/dreadl0ck/netcap/cmd/export"
 	"github.com/dreadl0ck/netcap/cmd/inject"
+	"github.com/dreadl0ck/netcap/cmd/investigate"
 	"github.com/dreadl0ck/netcap/cmd/label"
 	"github.com/dreadl0ck/netcap/cmd/licenses"
 	"github.com/dreadl0ck/netcap/cmd/mcp"
@@ -48,19 +49,20 @@ import (
 )
 
 const (
-	cmdCapture   = "capture"
-	cmdUtil      = "util"
-	cmdProxy     = "proxy"
-	cmdLabel     = "label"
-	cmdExport    = "export"
-	cmdDump      = "dump"
-	cmdCollect   = "collect"
-	cmdTransform = "transform"
-	cmdAgent     = "agent"
-	cmdInject    = "inject"
-	cmdMCP       = "mcp"
-	cmdLicenses  = "licenses"
-	cmdVersion   = "version"
+	cmdCapture     = "capture"
+	cmdUtil        = "util"
+	cmdProxy       = "proxy"
+	cmdLabel       = "label"
+	cmdExport      = "export"
+	cmdDump        = "dump"
+	cmdCollect     = "collect"
+	cmdTransform   = "transform"
+	cmdAgent       = "agent"
+	cmdInject      = "inject"
+	cmdMCP         = "mcp"
+	cmdLicenses    = "licenses"
+	cmdVersion     = "version"
+	cmdInvestigate = "investigate"
 
 	nameReadFlag   = "-read"
 	nameConfigFlag = "-config"
@@ -102,6 +104,7 @@ func main() {
 			},
 		},
 		Commands: []*cli.Command{
+			investigate.GetCommand(),
 			{
 				Name:  cmdCapture,
 				Usage: "capture audit records from network traffic",
@@ -214,6 +217,7 @@ available subcommands:
   > inject        inline packet manipulation (MITM mode, Linux only)
   > mcp           MCP server (stdio) for LLM-driven PCAP analysis
   > licenses      list or print bundled license documents
+  > investigate   bounded flow queries and verifiable packet evidence
 
 usage: ./net <subcommand> [flags]
 or: ./net <subcommand> [-h] to get help for the subcommand`)
@@ -277,6 +281,7 @@ func printCompletions(previous, current, full string) {
 		cmdInject,
 		cmdMCP,
 		cmdLicenses,
+		cmdInvestigate,
 	}
 
 	if os.Getenv(env.CompletionDebug) == "1" {
@@ -292,6 +297,9 @@ func printCompletions(previous, current, full string) {
 
 	// show flags for subcommands
 	switch previous {
+	case cmdInvestigate:
+		fmt.Println("flows exported-flows collect-flows packet-evidence exchange protocol-proxy protocol-fields tls-capture")
+		return
 	case cmdCapture:
 		printFlags(capture.Flags())
 	case cmdUtil:

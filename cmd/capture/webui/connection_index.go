@@ -25,12 +25,28 @@ type connectionFilter struct {
 	layer, ipVersion, host, srcIP, dstIP, protocol string
 	communityIDs                                   map[string]bool
 	offset, limit                                  int
+	observationID                                  string
+	snapshotSequence                               uint64
 }
 
 func parseConnectionFilter(q url.Values) (connectionFilter, error) {
 	opts := connectionFilter{
 		layer: q.Get("layer"), ipVersion: q.Get("ipVersion"),
 		host: q.Get("host"), srcIP: q.Get("srcIP"), dstIP: q.Get("dstIP"), protocol: q.Get("protocol"),
+	}
+	if q.Has("observationId") || q.Has("snapshotSequence") {
+		if len(q["observationId"]) != 1 || len(q["snapshotSequence"]) != 1 {
+			return opts, errors.New("exact connection selection requires one observationId and snapshotSequence")
+		}
+		opts.observationID = q.Get("observationId")
+		if len(opts.observationID) != 64 || strings.Trim(opts.observationID, "0123456789abcdef") != "" {
+			return opts, errors.New("invalid connection observation identity")
+		}
+		sequence, err := strconv.ParseUint(q.Get("snapshotSequence"), 10, 64)
+		if err != nil || sequence == 0 {
+			return opts, errors.New("invalid connection snapshot sequence")
+		}
+		opts.snapshotSequence = sequence
 	}
 	if opts.layer == "" {
 		opts.layer = "all"
@@ -64,6 +80,9 @@ func parseConnectionFilter(q url.Values) (connectionFilter, error) {
 }
 
 func (f connectionFilter) match(row ConnectionSummary) bool {
+	if f.observationID != "" && (row.ObservationID != f.observationID || row.SnapshotSequence != f.snapshotSequence) {
+		return false
+	}
 	if f.layer != "" && f.layer != "all" && f.layer != "transport" && f.layer != "network" ||
 		f.ipVersion != "" && f.ipVersion != "all" && f.ipVersion != "ipv4" && f.ipVersion != "ipv6" {
 		return false

@@ -307,12 +307,9 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 			zap.Error(err),
 			zap.Int("length", s),
 		)
-	} else {
-		_ = res.Body.Close()
-
-		// Restore body so it can be read again
-		res.Body = io.NopCloser(bytes.NewBuffer(body))
 	}
+	_ = res.Body.Close()
+	res.Body = io.NopCloser(bytes.NewReader(body))
 	//if h.parent.hexdump {
 	//	logReassemblyInfo("Body(%d/0x%x)\n%s\n", len(body), len(body), hex.Dump(body))
 	//}
@@ -359,7 +356,7 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 
 		var (
 			name         = "unknown"
-			ctype        string
+			ctype        = res.Header.Get(headerContentType)
 			numResponses = len(h.responses)
 			numRequests  = len(h.requests)
 			host         string
@@ -377,7 +374,6 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 				name = path.Base(req.request.URL.Path)
 				method = req.request.Method
 				urlPath = req.request.URL.Path
-				ctype = strings.Join(req.request.Header[headerContentType], " ")
 			}
 		}
 
@@ -398,6 +394,10 @@ func (h *httpReader) readResponse(b *bufio.Reader, pos *streamutils.ReadPosition
 			ContentType:    ctype,
 			Host:           host,
 			Encoding:       encoding,
+		}
+		if err != nil {
+			// The generic extractor interface cannot carry the body read error.
+			return (&HTTPFileExtractor{}).extractFile(h.conversation, body, metadata, err)
 		}
 		return extractor.ExtractFile(h.conversation, body, metadata)
 	}

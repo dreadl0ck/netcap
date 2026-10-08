@@ -57,6 +57,15 @@ func (c *Collector) cleanup(force bool) {
 		c.stopWorkers()
 		c.producersWG.Wait()
 		c.backgroundWG.Wait()
+		if c.flowExports != nil {
+			if err := c.flowExports.Close(); err != nil {
+				c.flowExportError = err
+				if c.log != nil {
+					c.log.Error("flow-export finalization failure", zap.Error(err))
+				}
+			}
+		}
+		c.finalizeCaptureEvidence()
 		if c.log == nil {
 			return
 		}

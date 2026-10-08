@@ -62,6 +62,10 @@ func filterPCAPToFileWithTimeout(parent context.Context, inputFile, bpfExpr, out
 }
 
 func filterPCAPToFileContext(ctx context.Context, inputFile, bpfExpr, outputFile string) (int, error) {
+	return filterPCAPSelectionContext(ctx, inputFile, bpfExpr, outputFile, nil)
+}
+
+func filterPCAPSelectionContext(ctx context.Context, inputFile, bpfExpr, outputFile string, keep func(gopacket.CaptureInfo) bool) (int, error) {
 	in, err := os.Open(inputFile)
 	if err != nil {
 		return 0, fmt.Errorf("open input: %w", err)
@@ -86,7 +90,7 @@ func filterPCAPToFileContext(ctx context.Context, inputFile, bpfExpr, outputFile
 	}
 	buffered := bufio.NewWriter(out)
 
-	writer := pcapgo.NewWriter(buffered)
+	writer := pcapgo.NewWriterNanos(buffered)
 	if err = writer.WriteFileHeader(262144, linkType); err != nil {
 		out.Close()
 		os.Remove(outputFile)
@@ -110,7 +114,7 @@ func filterPCAPToFileContext(ctx context.Context, inputFile, bpfExpr, outputFile
 			os.Remove(outputFile)
 			return 0, fmt.Errorf("read packet: %w", rerr)
 		}
-		if !bpf.Matches(ci, data) {
+		if (keep != nil && !keep(ci)) || !bpf.Matches(ci, data) {
 			continue
 		}
 		if werr := writer.WritePacket(ci, data); werr != nil {
@@ -157,7 +161,7 @@ func newPacketReader(f *os.File) (pcapReader, layers.LinkType, error) {
 
 	// A PCAPNG section header block starts with 0x0A0D0D0A.
 	if binary.BigEndian.Uint32(magic) == 0x0a0d0d0a {
-		ng, err := pcapgo.NewNgReader(f, pcapgo.DefaultNgReaderOptions)
+		ng, err := pcapgo.NewNgReader(f, pcapgo.NgReaderOptions{ErrorOnMismatchingLinkType: true})
 		if err != nil {
 			return nil, 0, fmt.Errorf("open pcapng: %w", err)
 		}

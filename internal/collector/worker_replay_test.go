@@ -189,13 +189,18 @@ func TestWorkerReplayProcess(t *testing.T) {
 	if err != nil || segments < 1 {
 		t.Fatal("invalid response segment count")
 	}
+	include := "HTTP"
+	if os.Getenv("NETCAP_WORKER_REPLAY_CONNECTIONS") == "1" {
+		include += ",Connection"
+	}
 	c := New(Config{
 		Workers: workers, PacketBufferSize: 8, ReassembleConnections: true,
+		CaptureEvidence:  os.Getenv("NETCAP_WORKER_REPLAY_CONNECTIONS") == "1",
 		NoSignalHandling: true, NoPrompt: true,
 		BaseLayer: layers.LayerTypeEthernet, DecodeOptions: gopacket.Default,
 		DecoderConfig: &config.Config{
 			Out: os.Getenv("NETCAP_WORKER_REPLAY_OUT"), Quiet: true,
-			IncludeDecoders: "HTTP", Proto: true, Buffer: true, MemBufferSize: 4096,
+			IncludeDecoders: include, Proto: true, Buffer: true, MemBufferSize: 4096,
 			SaveConns: true, WaitForConnections: true, NoOptCheck: true,
 			FlushEvery: flush, ClosePendingTimeOut: 5 * time.Second, CloseInactiveTimeOut: time.Minute,
 			StreamBufferSize: 8, StreamDecoderBufSize: 8, NumStreamWorkers: 4, BannerSize: 256,

@@ -23,11 +23,13 @@ package collector
 
 import (
 	"context"
+	stdErrors "errors"
 	"fmt"
 	"io"
 	"time"
 
 	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 	"github.com/gopacket/gopacket/pcapgo"
 	"github.com/pkg/errors"
 )
@@ -35,15 +37,21 @@ import (
 // CollectLive starts collection of data from the given interface.
 // optionally a BPF can be supplied.
 // this is the linux version that uses the pure go version from pcapgo to fetch packets live.
-func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error {
+func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) (resultErr error) {
+	c.captureKind, c.captureSource, c.Bpf = "live", i, bpf
+	c.captureLinkType = layers.LinkTypeEthernet
 	// Recover from any panics during processing
 	defer c.recoverFromPanic()
 	runCtx, finish, err := c.beginCapture()
 	if err != nil {
 		return err
 	}
-	defer c.cleanup(false)
-	defer finish()
+	defer func() {
+		c.captureRunError = resultErr
+		finish()
+		c.cleanup(false)
+		resultErr = stdErrors.Join(resultErr, c.flowExportError, c.captureEvidenceError)
+	}()
 
 	// use raw socket to fetch packet on linux live mode
 	handle, err := pcapgo.NewEthernetHandle(i)
@@ -81,11 +89,7 @@ func (c *Collector) CollectLive(i string, bpf string, ctx context.Context) error
 		ci   gopacket.CaptureInfo
 	)
 	nextStats := time.Time{}
-	behaviorStats := c.GetBehaviorEngine() != nil
 	sampleStats := func() {
-		if !behaviorStats {
-			return
-		}
 		if time.Now().Before(nextStats) {
 			return
 		}
@@ -150,5 +154,5 @@ done:
 	// Stop periodic flushing
 	close(stopPeriodicFlush)
 
-	return nil
+	return resultErr
 }

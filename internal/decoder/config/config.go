@@ -270,7 +270,7 @@ type Config struct {
 	// Dont check TCP options
 	NoOptCheck bool
 
-	// Dont verify the packet checksums
+	// Verify IPv4 header and TCP checksums before stream reassembly.
 	Checksum bool
 
 	// Defragment IPv4 packets

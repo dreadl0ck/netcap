@@ -201,7 +201,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
   
   // Initialize dataMenuOpen based on current route
   const [dataMenuOpen, setDataMenuOpen] = useState(() => {
-    const dataRoutes = ['/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/http', '/certificates', '/secrets',
+    const dataRoutes = ['/investigation-evidence', '/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/http', '/certificates', '/secrets',
                         '/services', '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files', '/logs'];
     return dataRoutes.some(route => router.pathname.startsWith(route));
   });
@@ -281,7 +281,7 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
 
   // Auto-expand Data menu when navigating to data routes
   useEffect(() => {
-    const dataRoutes = ['/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/http', '/certificates', '/secrets',
+    const dataRoutes = ['/investigation-evidence', '/records', '/explore', '/visualize', '/hosts', '/devices', '/connections', '/http', '/certificates', '/secrets',
                         '/services', '/domains', '/fingerprints', '/software', '/vulnerabilities', '/alerts', '/files', '/logs'];
     const isDataRoute = dataRoutes.some(route => router.pathname.startsWith(route));
     
@@ -552,6 +552,11 @@ export function Layout({ children, title, headerAction, topPadding }: LayoutProp
                   </Badge>
                 </ListItemIcon>
                 <ListItemText primary="Connections" />
+              </ListItemButton>
+            </Link>
+            <Link href="/investigation-evidence" passHref style={LINK_STYLE}>
+              <ListItemButton selected={router.isActive('/investigation-evidence')} sx={{ ...SELECTED_MENU_ITEM_SX, pl: 4 }}>
+                <ListItemIcon><SyncAltIcon /></ListItemIcon><ListItemText primary="Investigation evidence" />
               </ListItemButton>
             </Link>
             <Link href="/http" passHref style={LINK_STYLE}>

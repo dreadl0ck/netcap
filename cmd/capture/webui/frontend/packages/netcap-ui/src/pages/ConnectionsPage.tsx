@@ -77,8 +77,12 @@ import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 import { ChartFrame } from '../components/ChartFrame';
 export interface ConnectionSummary {
+  observationId?: string;
+  snapshotSequence?: string;
   timestampFirst: number;
   timestampLast: number;
+  timestampFirstNs?: string;
+  timestampLastNs?: string;
   linkProto: string;
   networkProto: string;
   transportProto: string;
@@ -188,12 +192,17 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
   );
 
   // Fetch only matching connections when the cross-page Community ID filter is active.
+  const observationId = typeof router.query.observationId === 'string' ? router.query.observationId : '';
+  const snapshotSequence = typeof router.query.snapshotSequence === 'string' ? router.query.snapshotSequence : '';
+  const evidenceInputFile = typeof router.query.inputFile === 'string' ? router.query.inputFile : '';
   const { data: connectionsData, error, mutate } = useSWR<ConnectionsResponse>(
-    ['connections', layerFilter, ipVersionFilter, communityIds],
+    ['connections', layerFilter, ipVersionFilter, communityIds, observationId, snapshotSequence, evidenceInputFile],
     () => {
       const params = new URLSearchParams({ layer: layerFilter, ipVersion: ipVersionFilter });
       communityIds.forEach(id => params.append('communityId', id));
-      return fetch(`${getBackendUrl()}/api/connections?${params}`).then(res => res.json());
+      if (observationId || snapshotSequence) { params.set('observationId', observationId); params.set('snapshotSequence', snapshotSequence); }
+      if (evidenceInputFile) params.set('inputFile', evidenceInputFile);
+      return fetch(`${getBackendUrl()}/api/connections?${params}`).then(async res => { if (!res.ok) throw new Error(await res.text()); return res.json(); });
     },
     {
       // Disable auto-refresh to prevent table from reordering while user is viewing
@@ -566,7 +575,12 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
         srcPort: conn.srcPort,
         dstIP: conn.dstIP,
         dstPort: conn.dstPort,
+        protocol: conn.transportProto,
       });
+      if (conn.timestampFirstNs && conn.timestampLastNs) {
+        params.set('startNs', conn.timestampFirstNs);
+        params.set('endNs', conn.timestampLastNs);
+      }
       const downloadUrl = `${getBackendUrl()}/api/connections/download-pcap?${params}`;
       
       // Fetch the file as a blob

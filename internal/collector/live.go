@@ -23,7 +23,9 @@ package collector
 
 import (
 	"context"
+	stdErrors "errors"
 	"io"
+	"sync"
 
 	"github.com/gopacket/gopacket"
 	"github.com/gopacket/gopacket/pcap"
@@ -34,15 +36,20 @@ import (
 // optionally a bpf can be supplied.
 // this is the darwin version that uses the pcap lib with c bindings to fetch packets
 // currently there is no other option to do that.
-func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
+func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) (resultErr error) {
+	c.captureKind, c.captureSource, c.Bpf = "live", iface, bpf
 	// Recover from any panics during processing
 	defer c.recoverFromPanic()
 	runCtx, finish, err := c.beginCapture()
 	if err != nil {
 		return err
 	}
-	defer c.cleanup(false)
-	defer finish()
+	defer func() {
+		c.captureRunError = resultErr
+		finish()
+		c.cleanup(false)
+		resultErr = stdErrors.Join(resultErr, c.flowExportError, c.captureEvidenceError)
+	}()
 
 	// open interface in live mode
 	// snaplen, promiscuous mode and the timeout value can be configured over the collector instance
@@ -51,7 +58,23 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 		return err
 	}
 	// close handle on exit
-	defer handle.Close()
+	var handleMu sync.Mutex
+	closed := false
+	closeHandle := func() {
+		handleMu.Lock()
+		defer handleMu.Unlock()
+		if !closed {
+			stats, statsErr := handle.Stats()
+			if statsErr != nil {
+				c.recordBehaviorCaptureStats(0, 0, false, statsErr)
+			} else {
+				c.recordBehaviorCaptureStats(uint64(stats.PacketsReceived), uint64(stats.PacketsDropped), false, nil)
+			}
+			handle.Close()
+			closed = true
+		}
+	}
+	defer closeHandle()
 
 	// set BPF if requested
 	if bpf != "" {
@@ -64,12 +87,25 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 	if err = c.handleLinkType(handle.LinkType()); err != nil {
 		return err
 	}
-	defer interruptCapture(runCtx, ctx, handle.Close)()
+	defer interruptCapture(runCtx, ctx, closeHandle)()
 
 	// initialize collector
 	if err = c.Init(); err != nil {
 		return err
 	}
+	defer func() {
+		handleMu.Lock()
+		defer handleMu.Unlock()
+		if closed {
+			return
+		}
+		stats, err := handle.Stats()
+		if err != nil {
+			c.recordBehaviorCaptureStats(0, 0, false, err)
+		} else {
+			c.recordBehaviorCaptureStats(uint64(stats.PacketsReceived), uint64(stats.PacketsDropped), false, nil)
+		}
+	}()
 
 	stopProgress := c.printProgressInterval()
 	stopPeriodicFlush := c.startPeriodicFlush()
@@ -116,6 +152,7 @@ func (c *Collector) CollectLive(iface, bpf string, ctx context.Context) error {
 				}
 
 				// For other errors, perform cleanup and return the error
+				resultErr = err
 				goto done
 			}
 
@@ -133,5 +170,5 @@ done:
 	// Stop periodic flushing
 	close(stopPeriodicFlush)
 
-	return nil
+	return resultErr
 }

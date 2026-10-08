@@ -127,6 +127,12 @@ type RuntimeConfig struct {
 
 	// TCP Reassembly
 	ReassembleConnections bool
+	FlowExports           bool
+	CaptureEvidence       bool
+	RetainPackets         bool
+	PacketSegmentBytes    int64
+	PacketRetentionBytes  int64
+	FlowExportPorts       string
 	FlushEvery            int
 	Checksum              bool
 	NoOptCheck            bool
@@ -625,6 +631,11 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/connections/conversation", s.handleConnectionConversation)
 	mux.HandleFunc("/api/connections/network-conversation", s.handleNetworkConversation)
 	mux.HandleFunc("/api/connections/download-pcap", s.handleConnectionDownloadPCAP)
+	mux.HandleFunc("/api/flows/query", s.handleFlowQuery)
+	mux.HandleFunc("/api/flows/exports/query", s.handleFlowExportQuery)
+	mux.HandleFunc("/api/investigation/capture", s.handleCaptureEvidence)
+	mux.HandleFunc("/api/investigation/health", s.handleInvestigationHealth)
+	mux.HandleFunc("/api/investigation/streams", s.handleStreamEvidence)
 	mux.HandleFunc("/api/connections/top-by-traffic", s.handleConnectionsTopByTraffic)
 	mux.HandleFunc("/api/connections/protocols", s.handleConnectionsProtocols)
 	mux.HandleFunc("/api/connections/applications", s.handleConnectionsApplications)
@@ -1697,6 +1708,17 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		log.Printf("[WebUI] File extraction enabled for session %s: %s", job.SessionID, filesDir)
 	}
 
+	flowExports, flowPorts := true, ""
+	captureEvidence, retainPackets := true, false
+	var segmentBytes, retentionBytes int64
+	s.mu.RLock()
+	if s.runtimeConfig != nil {
+		flowExports = s.runtimeConfig.FlowExports
+		flowPorts = s.runtimeConfig.FlowExportPorts
+		captureEvidence, retainPackets = s.runtimeConfig.CaptureEvidence, s.runtimeConfig.RetainPackets
+		segmentBytes, retentionBytes = s.runtimeConfig.PacketSegmentBytes, s.runtimeConfig.PacketRetentionBytes
+	}
+	s.mu.RUnlock()
 	// Build collector configuration
 	c := collector.New(collector.Config{
 		NetworkDetection:       true,
@@ -1711,15 +1733,19 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 		DPI:                    job.EnableDPI,
 		DPIModules:             "",
 		ReassembleConnections:  true,
-		FreeOSMem:              0,
-		LogErrors:              false,
-		NoPrompt:               true,
-		HTTPShutdownEndpoint:   false,
-		NoSignalHandling:       true, // Disable signal handling in service mode
-		Timeout:                1 * time.Second,
-		Labels:                 "",
-		Scatter:                true,
-		ScatterDuration:        5 * time.Minute,
+		FlowExports:            flowExports,
+		CaptureEvidence:        captureEvidence,
+		RetainPackets:          retainPackets, PacketSegmentBytes: segmentBytes, PacketRetentionBytes: retentionBytes,
+		FlowExportPorts:      flowPorts,
+		FreeOSMem:            0,
+		LogErrors:            false,
+		NoPrompt:             true,
+		HTTPShutdownEndpoint: false,
+		NoSignalHandling:     true, // Disable signal handling in service mode
+		Timeout:              1 * time.Second,
+		Labels:               "",
+		Scatter:              true,
+		ScatterDuration:      5 * time.Minute,
 		DecoderConfig: &config.Config{
 			Quiet:            true,
 			PrintProgress:    false,

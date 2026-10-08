@@ -24,7 +24,7 @@ func TestCaptureLive(t *testing.T) {
 	requireGeolocationDBs(t)
 
 	// prepare default config
-	collector.DefaultConfig.DecoderConfig.Out = "../../tests/collector-test-live"
+	collector.DefaultConfig.DecoderConfig.Out = t.TempDir()
 	collector.DefaultConfig.DecoderConfig.Source = "unit tests live capture"
 	collector.DefaultConfig.DecoderConfig.Quiet = true
 
