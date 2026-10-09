@@ -186,9 +186,11 @@ and failed simulator modules before sealing capture hashes.
 Answers "what else happened in this connection or because of this lookup"
 without manual joins. Links are computed from the output directory when asked,
 so they work for finished and live captures and do not depend on worker count.
-Record-level sensor/interface/VLAN scope is not yet propagated to these records;
-links are candidates within the selected output directory, not scope-qualified
-causality. This is an unfinished M1 gate.
+With `-capture-evidence` (default `true`), packet ingress records a scope ledger
+in `capture-manifest.json`. After finalization, the linker qualifies records by
+capture RunID, local sensor, capture-wide interface index and VLAN stack. PCAPNG
+interface numbering is normalized across sections. DNS resolution links remain
+temporal candidates, not proof that a lookup caused a connection.
 
 | Link | Basis |
 | --- | --- |
@@ -205,6 +207,15 @@ Known Connection observations suppress fallback flow links when no unique
 observation contains the target. Duplicate type/Community ID/timestamp selectors
 are rejected; use the exact type and ordinal instead. Each directory's index has
 a 64 MiB accounted storage budget as well as its record limit.
+
+| Scope status | Meaning |
+| --- | --- |
+| `verified` | Community ID occurred in exactly one packet scope; cross-protocol links require the same scope |
+| `ambiguous` | Community ID occurred in multiple interfaces/VLANs; all links for it are withheld |
+| `pending` | Scope ledger is not finalized; scoped claims are withheld |
+| `overflow` | The 32,768-entry scope ledger overflowed; scoped claims are withheld globally |
+| `missing` | No packet scope for this record; links are withheld. Filtered offline inputs deliberately do not claim preserved interface metadata |
+| `legacy` | No scope ledger, including captures made with `-capture-evidence=false`; results are explicitly labelled candidates within the directory |
 
 | Option | Default | Purpose |
 | --- | --- | --- |
@@ -225,7 +236,9 @@ net investigate related -read out -type HTTP -ordinal 0
 
 Each link states its `kind` and `basis`; `notes` explain truncation and when no
 connection contains the record. References include the audit-file `fileSha256`
-and an `id` derived from type, file digest and ordinal. Replacing or extending
+and an `id` derived from type, file digest, capture RunID, scope-manifest digest
+and ordinal. `captureManifestSha256` binds the selected capture/scope witness.
+Replacing or extending
 that file invalidates its old references rather than rebinding them. Index
 construction rejects files changing during the scan. Linked record buttons
 open another related-evidence timeline; Back returns to the original target.

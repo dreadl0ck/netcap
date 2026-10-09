@@ -45,6 +45,7 @@ type CaptureSegment struct {
 }
 
 type CaptureManifest struct {
+	CommunityScopes  *ScopeLedger     `json:"communityScopes,omitempty"`
 	Version          int              `json:"version"`
 	RunID            string           `json:"runId"`
 	CreatedAt        string           `json:"createdAt"`
@@ -69,17 +70,19 @@ type CaptureManifest struct {
 }
 
 type Capture struct {
-	mu           sync.Mutex
-	directory    string
-	manifest     CaptureManifest
-	writer       *pcapgo.NgWriter
-	file         *os.File
-	interfaces   map[captureInterface]int
-	segment      *CaptureSegment
-	sequence     uint64
-	storageError error
-	closed       bool
-	sourceInfo   os.FileInfo
+	scopes        map[string]CommunityScope
+	scopeOverflow uint64
+	mu            sync.Mutex
+	directory     string
+	manifest      CaptureManifest
+	writer        *pcapgo.NgWriter
+	file          *os.File
+	interfaces    map[captureInterface]int
+	segment       *CaptureSegment
+	sequence      uint64
+	storageError  error
+	closed        bool
+	sourceInfo    os.FileInfo
 }
 
 type captureInterface struct {
@@ -381,6 +384,8 @@ func (c *Capture) expireSegments(budget int64) error {
 
 func (c *Capture) checkpoint() error {
 	manifest := c.manifest
+	scopes := c.scopeSnapshot()
+	manifest.CommunityScopes = &scopes
 	if c.segment != nil {
 		manifest.Segments = append(append([]CaptureSegment(nil), manifest.Segments...), *c.segment)
 	}

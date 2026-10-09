@@ -34,7 +34,24 @@ import (
 )
 
 // openPcap opens pcap files.
-func openPcapNG(file string) (*pcapgo.NgReader, *os.File, error) {
+type scopedNgReader struct {
+	*pcapgo.NgReader
+	interfaceBase int
+}
+
+func (r *scopedNgReader) ReadPacketData() ([]byte, gopacket.CaptureInfo, error) {
+	data, ci, err := r.NgReader.ReadPacketData()
+	ci.InterfaceIndex += r.interfaceBase
+	return data, ci, err
+}
+
+func (r *scopedNgReader) ZeroCopyReadPacketData() ([]byte, gopacket.CaptureInfo, error) {
+	data, ci, err := r.NgReader.ZeroCopyReadPacketData()
+	ci.InterfaceIndex += r.interfaceBase
+	return data, ci, err
+}
+
+func openPcapNG(file string) (*scopedNgReader, *os.File, error) {
 	// get file handle
 	f, err := os.Open(file)
 	if err != nil {
@@ -46,6 +63,11 @@ func openPcapNG(file string) (*pcapgo.NgReader, *os.File, error) {
 	// (e.g., Ethernet + FPP for IS-IS, different encapsulations)
 	opts := pcapgo.DefaultNgReaderOptions
 	opts.WantMixedLinkType = true
+	scoped := &scopedNgReader{}
+	// Source IDs reset in each section; expose capture-wide interface ordinals.
+	opts.SectionEndCallback = func(interfaces []pcapgo.NgInterface, _ pcapgo.NgSectionInfo) {
+		scoped.interfaceBase += len(interfaces)
+	}
 	r, err := pcapgo.NewNgReader(f, opts)
 	if err != nil {
 		// Close the file before returning error
@@ -54,7 +76,8 @@ func openPcapNG(file string) (*pcapgo.NgReader, *os.File, error) {
 		return nil, nil, enhancePcapError(file, err)
 	}
 
-	return r, f, nil
+	scoped.NgReader = r
+	return scoped, f, nil
 }
 
 // countPackets returns the number of packets in a PCAP file.

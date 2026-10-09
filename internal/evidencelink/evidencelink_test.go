@@ -1,11 +1,15 @@
 package evidencelink
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/dreadl0ck/netcap"
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 	"github.com/gogo/protobuf/proto"
@@ -34,6 +38,68 @@ func writeFile(t *testing.T, dir, name string, typ types.Type, records ...types.
 		}
 	}
 	w.Close(int64(len(records)))
+}
+
+func TestScopedLinkingWithholdsAmbiguityAndCrossVLANResolution(t *testing.T) {
+	dir := fixture(t)
+	scope := evidence.FlowScope{Sensor: "local", InterfaceIndex: 0, VLANs: []uint16{10}}
+	ledger := evidence.ScopeLedger{Schema: 1, Complete: true, Entries: []evidence.CommunityScope{
+		{CommunityID: cidA, Scope: scope}, {CommunityID: cidB, Scope: scope},
+		{CommunityID: "1:dnsaaaaaaaaaaaaaaaaaaaaaaaa=", Scope: scope},
+	}}
+	runID := "capture-one"
+	write := func() {
+		t.Helper()
+		data, err := json.Marshal(map[string]any{"runId": runID, "communityScopes": ledger})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "capture-manifest.json"), data, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	query := func() *Result {
+		t.Helper()
+		write()
+		idx, err := Build(dir, DefaultConfig())
+		if err != nil {
+			t.Fatal(err)
+		}
+		result, err := idx.Related("HTTP", 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return result
+	}
+	first := query()
+	if first.ScopeStatus != "verified" || first.CaptureID != runID || first.Target.Scope == nil || len(first.Links) != 3 {
+		t.Fatalf("scope not propagated: %+v", first)
+	}
+	ledger.Entries[2].Scope.VLANs = []uint16{20}
+	for _, link := range query().Links {
+		if link.Kind == KindDNSResolution {
+			t.Fatal("cross-VLAN DNS resolution linked")
+		}
+	}
+	ledger.Entries[0].Ambiguous = true
+	if result := query(); result.ScopeStatus != "ambiguous" || len(result.Links) != 0 {
+		t.Fatalf("ambiguous scope linked: %+v", result)
+	}
+	ledger.Entries[0].Ambiguous = false
+	ledger.Complete = false
+	if result := query(); result.ScopeStatus != "pending" || len(result.Links) != 0 {
+		t.Fatal("unfinished capture scope trusted")
+	}
+	ledger.Complete = true
+	ledger.Overflow = 1
+	if result := query(); result.ScopeStatus != "overflow" || len(result.Links) != 0 {
+		t.Fatal("overflowed scope trusted")
+	}
+	ledger.Overflow = 0
+	runID = "capture-two"
+	if second := query(); second.Target.ID == first.Target.ID {
+		t.Fatal("record identity was not capture-qualified")
+	}
 }
 
 func fixture(t *testing.T) string {

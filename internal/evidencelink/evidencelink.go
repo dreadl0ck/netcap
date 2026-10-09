@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/dreadl0ck/netcap/defaults"
+	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/netio"
 	"github.com/dreadl0ck/netcap/types"
 )
@@ -90,13 +91,14 @@ type Field struct {
 
 // Record identifies an audit record by file type and position.
 type Record struct {
-	ID          string  `json:"id"`
-	FileSHA256  string  `json:"fileSha256"`
-	Type        string  `json:"type"`
-	Ordinal     int64   `json:"ordinal"`
-	Timestamp   int64   `json:"timestamp"`
-	CommunityID string  `json:"communityId,omitempty"`
-	Summary     []Field `json:"summary,omitempty"`
+	Scope       *evidence.FlowScope `json:"scope,omitempty"`
+	ID          string              `json:"id"`
+	FileSHA256  string              `json:"fileSha256"`
+	Type        string              `json:"type"`
+	Ordinal     int64               `json:"ordinal"`
+	Timestamp   int64               `json:"timestamp"`
+	CommunityID string              `json:"communityId,omitempty"`
+	Summary     []Field             `json:"summary,omitempty"`
 }
 
 // Link is one related record and how it was found.
@@ -108,28 +110,32 @@ type Link struct {
 
 // Session is the connection observation that scopes Community ID links.
 type Session struct {
-	ObservationID string `json:"observationId,omitempty"`
-	CommunityID   string `json:"communityId"`
-	First         int64  `json:"first"`
-	Last          int64  `json:"last"`
-	SrcIP         string `json:"srcIp"`
-	SrcPort       string `json:"srcPort"`
-	DstIP         string `json:"dstIp"`
-	DstPort       string `json:"dstPort"`
-	Ordinal       int64  `json:"ordinal"`
+	Scope         *evidence.FlowScope `json:"scope,omitempty"`
+	ObservationID string              `json:"observationId,omitempty"`
+	CommunityID   string              `json:"communityId"`
+	First         int64               `json:"first"`
+	Last          int64               `json:"last"`
+	SrcIP         string              `json:"srcIp"`
+	SrcPort       string              `json:"srcPort"`
+	DstIP         string              `json:"dstIp"`
+	DstPort       string              `json:"dstPort"`
+	Ordinal       int64               `json:"ordinal"`
 	snapshot      uint64
 }
 
 // Result is the API and CLI response.
 type Result struct {
-	Schema    int      `json:"schema"`
-	Target    Record   `json:"target"`
-	Session   *Session `json:"session"`
-	Links     []Link   `json:"links"`
-	Truncated bool     `json:"truncated"`
-	Indexed   int64    `json:"indexed"`
-	Limits    Config   `json:"limits"`
-	Notes     []string `json:"notes"`
+	ManifestSHA256 string `json:"captureManifestSha256,omitempty"`
+	CaptureID   string   `json:"captureId,omitempty"`
+	ScopeStatus string   `json:"scopeStatus"`
+	Schema      int      `json:"schema"`
+	Target      Record   `json:"target"`
+	Session     *Session `json:"session"`
+	Links       []Link   `json:"links"`
+	Truncated   bool     `json:"truncated"`
+	Indexed     int64    `json:"indexed"`
+	Limits      Config   `json:"limits"`
+	Notes       []string `json:"notes"`
 }
 
 type dnsAnswer struct {
@@ -139,18 +145,22 @@ type dnsAnswer struct {
 
 // Index holds the joinable records of one output directory.
 type Index struct {
-	config   Config
-	byRef    map[string]Record
-	byCID    map[string][]Record
-	sessions map[string][]*Session // by Community ID
-	byObs    map[string]*Session
-	conns    map[string][]*Session // by client|server
-	answers  map[string][]dnsAnswer
-	dnsIPs   map[string][]string // DNS response ref -> answered IPs
-	dnsPeer  map[string]string   // DNS response ref -> client
-	indexed  int64
-	full     bool
-	bytes    uint64
+	manifestSHA string
+	captureID   string
+	scopeStatus string
+	scopes      map[string]evidence.CommunityScope
+	config      Config
+	byRef       map[string]Record
+	byCID       map[string][]Record
+	sessions    map[string][]*Session // by Community ID
+	byObs       map[string]*Session
+	conns       map[string][]*Session // by client|server
+	answers     map[string][]dnsAnswer
+	dnsIPs      map[string][]string // DNS response ref -> answered IPs
+	dnsPeer     map[string]string   // DNS response ref -> client
+	indexed     int64
+	full        bool
+	bytes       uint64
 }
 
 func refKey(typ string, ordinal int64) string { return typ + "#" + strconv.FormatInt(ordinal, 10) }
@@ -174,6 +184,9 @@ func Build(dir string, config Config) (*Index, error) {
 		sessions: map[string][]*Session{}, byObs: map[string]*Session{}, conns: map[string][]*Session{},
 		answers: map[string][]dnsAnswer{}, dnsIPs: map[string][]string{}, dnsPeer: map[string]string{},
 	}
+	if err := idx.loadScopes(dir); err != nil {
+		return nil, err
+	}
 	for _, file := range auditFiles(dir) {
 		if idx.full {
 			break
@@ -184,6 +197,15 @@ func Build(dir string, config Config) (*Index, error) {
 	}
 	for _, list := range idx.byCID {
 		sort.Slice(list, func(i, j int) bool { return less(list[i], list[j]) })
+	}
+	check := &Index{}
+	if err := check.loadScopes(dir); err != nil {
+		return nil, err
+	}
+	before, _ := json.Marshal(idx.scopes)
+	after, _ := json.Marshal(check.scopes)
+	if idx.manifestSHA != check.manifestSHA || idx.captureID != check.captureID || idx.scopeStatus != check.scopeStatus || string(before) != string(after) {
+		return nil, errors.New("capture scope changed while indexing; retry after capture flush")
 	}
 	return idx, nil
 }
@@ -310,7 +332,7 @@ func (idx *Index) readFile(typ, path, digest string) error {
 		if !Joinable(cid) {
 			continue
 		}
-		entry := Record{ID: recordID(typ, digest, ordinal), FileSHA256: digest, Type: typ, Ordinal: ordinal, Timestamp: record.Time(), CommunityID: cid, Summary: Summarize(typ, message)}
+		entry := Record{Scope: idx.scopeFor(cid), ID: recordID(typ, digest+"\x00"+idx.captureID+"\x00"+idx.manifestSHA, ordinal), FileSHA256: digest, Type: typ, Ordinal: ordinal, Timestamp: record.Time(), CommunityID: cid, Summary: Summarize(typ, message)}
 		cost := storageCost(entry, message)
 		if cost > IndexBudget-idx.bytes {
 			idx.full = true
@@ -354,6 +376,7 @@ func (idx *Index) addConnection(c *types.Connection, entry Record) {
 		last = c.TimestampFirst
 	}
 	session := &Session{
+		Scope:         entry.Scope,
 		ObservationID: c.ObservationID, CommunityID: entry.CommunityID, First: c.TimestampFirst, Last: last,
 		SrcIP: c.SrcIP, SrcPort: c.SrcPort, DstIP: c.DstIP, DstPort: c.DstPort, Ordinal: entry.Ordinal, snapshot: c.SnapshotSequence,
 	}
@@ -479,8 +502,21 @@ func (idx *Index) Related(typ string, ordinal int64) (*Result, error) {
 	if !ok {
 		return nil, ErrNotFound
 	}
-	result := &Result{Schema: Schema, Target: target, Links: []Link{}, Indexed: idx.indexed, Limits: idx.config, Truncated: idx.full,
-		Notes: []string{"record-level sensor/interface/VLAN scope is unavailable; links are candidates within this output directory"}}
+	result := &Result{ManifestSHA256: idx.manifestSHA, CaptureID: idx.captureID, ScopeStatus: idx.scopeStatus, Schema: Schema, Target: target, Links: []Link{}, Indexed: idx.indexed, Limits: idx.config, Truncated: idx.full, Notes: []string{}}
+	if idx.scopeStatus == "legacy" {
+		result.Notes = append(result.Notes, "record-level sensor/interface/VLAN scope is unavailable; links are candidates within this output directory")
+	} else if target.Scope == nil {
+		if idx.scopeStatus == "ready" {
+			result.ScopeStatus = "missing"
+			if entry, ok := idx.scopes[target.CommunityID]; ok && entry.Ambiguous {
+				result.ScopeStatus = "ambiguous"
+			}
+		}
+		result.Notes = append(result.Notes, "capture scope is "+result.ScopeStatus+"; links are withheld")
+		return result, nil
+	} else {
+		result.ScopeStatus = "verified"
+	}
 	if idx.full {
 		result.Notes = append(result.Notes, "index reached its record limit or 64 MiB accounted storage budget; later records are not linked")
 	}
@@ -498,6 +534,9 @@ func (idx *Index) Related(typ string, ordinal int64) (*Result, error) {
 	members := idx.byCID[target.CommunityID]
 	if session != nil {
 		for _, record := range members {
+			if !sameRecordScope(record.Scope, session.Scope) {
+				continue
+			}
 			if record.Timestamp < session.First || record.Timestamp > session.Last {
 				continue
 			}
@@ -518,6 +557,9 @@ func (idx *Index) Related(typ string, ordinal int64) (*Result, error) {
 	} else {
 		result.Notes = append(result.Notes, "no Connection observation contains this record; Community ID links use the time window")
 		for _, record := range members {
+			if !sameRecordScope(record.Scope, target.Scope) {
+				continue
+			}
 			if !within(record.Timestamp, target.Timestamp, idx.config.WindowNS) {
 				continue
 			}
@@ -532,6 +574,9 @@ func (idx *Index) Related(typ string, ordinal int64) (*Result, error) {
 		client := idx.dnsPeer[key]
 		for _, ip := range ips {
 			for _, candidate := range idx.conns[client+"|"+ip] {
+				if !sameRecordScope(target.Scope, candidate.Scope) {
+					continue
+				}
 				if candidate.First < target.Timestamp || !within(candidate.First, target.Timestamp, idx.config.WindowNS) {
 					continue
 				}
@@ -598,6 +643,9 @@ func (idx *Index) resolution(session *Session) (Record, bool) {
 	}
 	var best *Record
 	for _, answer := range idx.answers[addr.Unmap().String()] {
+		if !sameRecordScope(answer.record.Scope, session.Scope) {
+			continue
+		}
 		r := answer.record
 		if answer.client != session.SrcIP || r.Timestamp > session.First || !within(session.First, r.Timestamp, idx.config.WindowNS) {
 			continue

@@ -7,11 +7,15 @@ export type EvidenceSelector =
   | { type: string; communityId: string; time: string };
 
 export interface EvidenceField { name: string; value: string }
-export interface EvidenceRecord { id?: string; fileSha256?: string; type: string; ordinal: number; timestamp: number; communityId?: string; summary?: EvidenceField[] }
+export interface EvidenceScope { sensor: string; interfaceIndex: number; vlans: number[] }
+export interface EvidenceRecord { id?: string; fileSha256?: string; scope?: EvidenceScope; type: string; ordinal: number; timestamp: number; communityId?: string; summary?: EvidenceField[] }
 export type EvidenceLinkKind = 'same-connection' | 'same-flow' | 'alert' | 'dns-resolution' | 'resolved-connection';
 export interface EvidenceLink { kind: EvidenceLinkKind; basis: string; record: EvidenceRecord }
 export interface EvidenceSession { observationId?: string; communityId: string; first: number; last: number; srcIp: string; srcPort: string; dstIp: string; dstPort: string; ordinal: number }
 export interface RelatedEvidence {
+  captureId?: string;
+  captureManifestSha256?: string;
+  scopeStatus?: 'verified' | 'legacy' | 'pending' | 'overflow' | 'missing' | 'ambiguous';
   schema: 1;
   target: EvidenceRecord;
   session: EvidenceSession | null;
@@ -34,12 +38,16 @@ export const linkKindLabels: Record<EvidenceLinkKind, string> = {
 
 const isRecord = (r: any): r is EvidenceRecord =>
   r && typeof r.type === 'string' && Number.isInteger(r.ordinal) && typeof r.timestamp === 'number' &&
+  (r.scope === undefined || (r.scope !== null && typeof r.scope.sensor === 'string' && Number.isInteger(r.scope.interfaceIndex) && r.scope.interfaceIndex >= 0 && Array.isArray(r.scope.vlans) && r.scope.vlans.length <= 4 && r.scope.vlans.every((v: unknown) => Number.isInteger(v) && Number(v) >= 0 && Number(v) <= 4095))) &&
   (r.summary === undefined || (Array.isArray(r.summary) && r.summary.length <= 32 && r.summary.every((f: any) => typeof f?.name === 'string' && typeof f?.value === 'string')));
 
 export function parseRelatedEvidence(body: any): RelatedEvidence | null {
+  if (body?.scopeStatus !== undefined && !['verified', 'legacy', 'pending', 'overflow', 'missing', 'ambiguous'].includes(body.scopeStatus)) return null;
   if (!body || body.schema !== 1 || !isRecord(body.target) || !Array.isArray(body.links) || body.links.length > 10000 ||
     !body.links.every((l: any) => kinds.includes(l?.kind) && typeof l?.basis === 'string' && isRecord(l?.record)) ||
     typeof body.truncated !== 'boolean' || typeof body.indexed !== 'number' || !Array.isArray(body.notes)) return null;
+  if (body.scopeStatus === 'verified' && !body.target.scope) return null;
+  if (['pending', 'overflow', 'missing', 'ambiguous'].includes(body.scopeStatus) && body.links.length !== 0) return null;
   if (body.session !== null && (typeof body.session?.first !== 'number' || typeof body.session?.last !== 'number')) return null;
   return body as RelatedEvidence;
 }

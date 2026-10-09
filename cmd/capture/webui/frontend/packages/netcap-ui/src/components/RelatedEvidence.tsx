@@ -46,6 +46,13 @@ export function RelatedEvidence({ selector, inputFile }: { selector: EvidenceSel
           .sort((a, b) => a.record.timestamp - b.record.timestamp);
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {result.scopeStatus === 'verified' && result.target.scope &&
+              <Typography variant="body2" color="text.secondary" data-testid="verified-evidence-scope">
+                Packet scope verified: sensor {result.target.scope.sensor}, interface {result.target.scope.interfaceIndex}, VLAN {result.target.scope.vlans.length ? result.target.scope.vlans.join('/') : 'untagged'} · capture {result.captureId}
+              </Typography>}
+            {['pending', 'overflow', 'missing', 'ambiguous'].includes(result.scopeStatus || '') &&
+              <MuiAlert severity="info">Related evidence withheld: packet scope is {result.scopeStatus}.</MuiAlert>}
+            {result.scopeStatus === 'legacy' && <Typography variant="caption" color="text.secondary">Packet scope unavailable: links are candidates within this output directory.</Typography>}
             {result.session ? (
               <Typography variant="body2" color="text.secondary">
                 Connection {result.session.srcIp}:{result.session.srcPort} → {result.session.dstIp}:{result.session.dstPort}, {utc(result.session.first)} – {utc(result.session.last)}

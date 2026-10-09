@@ -60,6 +60,15 @@ it('explains a disabled feature instead of showing an empty result', async () =>
   expect(await screen.findByText(/Enable it in Settings → Features/)).toBeInTheDocument();
 });
 
+it('shows ambiguous packet scope as withheld evidence, not an empty successful hunt', async () => {
+  const withheld = { ...result, scopeStatus: 'ambiguous', links: [], session: null, notes: ['capture scope is ambiguous; links are withheld'] };
+  expect(parseRelatedEvidence(withheld)).not.toBeNull();
+  expect(parseRelatedEvidence({ ...withheld, links: result.links })).toBeNull();
+  expect(parseRelatedEvidence({ ...result, scopeStatus: 'verified' })).toBeNull();
+  wrap({ getRelatedEvidence: async () => ({ status: 'ok', result: withheld }) }, <RelatedEvidence selector={{ type: 'HTTP', ordinal: 0 }} />);
+  expect(await screen.findByText('Related evidence withheld: packet scope is ambiguous.')).toBeInTheDocument();
+});
+
 it('toggles a feature individually', async () => {
   const features = [
     { name: 'evidence-links', title: 'Evidence linking', description: 'd', scope: 'query', flag: '-evidence-links', env: 'NC_EVIDENCE_LINKS', enabled: true },

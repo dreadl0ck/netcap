@@ -35,7 +35,7 @@ func evidenceSignature(dir string) (string, error) {
 	}
 	var b strings.Builder
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.Contains(entry.Name(), ".ncap") {
+		if entry.IsDir() || (!strings.Contains(entry.Name(), ".ncap") && entry.Name() != "capture-manifest.json" && entry.Name() != "scope-manifest.json") {
 			continue
 		}
 		info, err := entry.Info()
