@@ -45,3 +45,13 @@ func TestScopeTTLAndResponseValidity(t *testing.T) {
 		t.Fatal("unsolicited answer accepted")
 	}
 }
+
+func TestOverflowedPairingAgeNeverCreatesResolutionContext(t *testing.T) {
+	tracker := New()
+	questions := []*types.DNSQuestion{{Name: "example.test", Type: 1, Class: 1}}
+	tracker.Observe(&types.DNS{Timestamp: -1 << 63, ID: 7, SrcIP: "192.0.2.10", DstIP: "192.0.2.53", SrcPort: 41000, DstPort: 53, Questions: questions}, "0")
+	tracker.Observe(&types.DNS{Timestamp: 1<<63 - 1, ID: 7, QR: true, SrcIP: "192.0.2.53", DstIP: "192.0.2.10", SrcPort: 53, DstPort: 41000, Questions: questions, Answers: []*types.DNSResourceRecord{{Name: "example.test", Type: 1, Class: 1, IP: "198.51.100.1", TTL: 0}}}, "0")
+	if got := tracker.Lookup("0", "192.0.2.10", "198.51.100.1", 1<<63-1); got.State != "unobserved" {
+		t.Fatal("unrepresentable pairing age created context")
+	}
+}

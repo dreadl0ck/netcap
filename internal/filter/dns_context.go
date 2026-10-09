@@ -11,5 +11,12 @@ func DNSResolutionMatches(state, name string, answeredAt, at int64, domain strin
 	if uint64(at)-uint64(answeredAt) > uint64(maxAgeNS) {
 		return false
 	}
+	for _, value := range []string{name, domain} {
+		for i := range value {
+			if value[i] < 33 || value[i] > 126 {
+				return false
+			}
+		}
+	}
 	return strings.EqualFold(strings.TrimSuffix(name, "."), strings.TrimSuffix(domain, "."))
 }

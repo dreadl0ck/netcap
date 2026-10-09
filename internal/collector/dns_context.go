@@ -23,7 +23,7 @@ func (c *Collector) observeDNSContext(packet gopacket.Packet) {
 		return
 	}
 	source, destination := network.NetworkFlow().Src().String(), network.NetworkFlow().Dst().String()
-	if udp, ok := packet.TransportLayer().(*layers.UDP); ok {
+	if udp, ok := packet.TransportLayer().(*layers.UDP); ok && (udp.SrcPort == 53 || udp.DstPort == 53) {
 		if layer := packet.Layer(layers.LayerTypeDNS); layer != nil {
 			if dns, ok := layer.(*layers.DNS); ok {
 				record := dnsaudit.Record(dns, ci.Timestamp.UnixNano(), false)

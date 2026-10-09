@@ -136,7 +136,12 @@ func (t *dnsTransactions) observeScoped(d *types.DNS, scope string) {
 	d.QueryTransmissions = p.sends
 	// Capture timestamps can run backwards across reordered packets.
 	if d.Timestamp >= p.at {
-		d.RTT = d.Timestamp - p.at
+		distance := uint64(d.Timestamp) - uint64(p.at)
+		if distance > 1<<63-1 {
+			d.RTT = 1<<63 - 1
+		} else {
+			d.RTT = int64(distance)
+		}
 	} else {
 		d.TransactionStatus = DNSStatusReordered
 		return

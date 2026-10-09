@@ -45,15 +45,15 @@ func key(scope, client, destination string) string {
 // reordered and failed responses never create resolution context.
 func (t *Tracker) Observe(record *types.DNS, scope string) {
 	t.pairing.ObserveScoped(record, scope)
-	if !record.QR || record.ResponseCode != 0 || record.TransactionStatus != dnsaudit.DNSStatusAnswered || len(record.Questions) != 1 || record.Questions[0] == nil || record.Questions[0].Class != 1 {
+	if !record.QR || record.TC || record.ResponseCode != 0 || record.TransactionStatus != dnsaudit.DNSStatusAnswered || len(record.Questions) != 1 || record.Questions[0] == nil || record.Questions[0].Class != 1 {
 		return
 	}
 	name := strings.ToLower(strings.TrimSuffix(record.Questions[0].Name, "."))
-	if name == "" || len(name) > 253 {
+	if name == "" || len(name) > 253 || !asciiName(record.Questions[0].Name) {
 		return
 	}
 	for _, rr := range record.Answers {
-		if rr == nil || (rr.Type != 1 && rr.Type != 28) || rr.Class != 1 || rr.Type != record.Questions[0].Type || strings.ToLower(strings.TrimSuffix(rr.Name, ".")) != name {
+		if rr == nil || (rr.Type != 1 && rr.Type != 28) || rr.Class != 1 || rr.Type != record.Questions[0].Type || !asciiName(rr.Name) || strings.ToLower(strings.TrimSuffix(rr.Name, ".")) != name {
 			continue
 		}
 		ip, err := netip.ParseAddr(rr.IP)
@@ -85,6 +85,15 @@ func (t *Tracker) Observe(record *types.DNS, scope string) {
 
 // Lookup returns a value, not a pointer into the tracker. Its lifetime is the
 // first packet's lifetime, independent of subsequent answers or eviction.
+func asciiName(name string) bool {
+	for i := range name {
+		if name[i] < 33 || name[i] > 126 {
+			return false
+		}
+	}
+	return true
+}
+
 func (t *Tracker) Lookup(scope, source, destination string, at int64) Snapshot {
 	missing := Snapshot{State: "unobserved"}
 	entry := t.answers[key(scope, source, destination)]

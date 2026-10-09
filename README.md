@@ -256,7 +256,8 @@ query mutable cross-flow state. Fields 65–67 are `DNSResolvedName`,
 empty when disabled). A new observation retains its first packet's context,
 including after later answers or cache eviction.
 
-Only paired, successful, single-question IN A/AAAA responses with a direct
+Only paired, successful, non-truncated, single-question IN A/AAAA responses on
+UDP port 53 with an ASCII direct
 matching answer name contribute. Context expires at the answer TTL, capped at
 1 h, and is isolated by capture-wide interface/VLAN and client/destination IP.
 TCP DNS and CNAME chains are not contributors yet. The answer cache and pending
@@ -271,8 +272,8 @@ expression: 'DNSResolutionMatches(DNSResolutionState, DNSResolvedName, DNSResolv
 `DNSResolutionMatches` is a pure predicate on immutable record fields: exact
 DNS name comparison (case/trailing-dot normalized), nonnegative bounded age,
 and `resolved` state. Settings → Features has a separate switch applying to
-the next analysis; expanded Connections rows display the snapshot. This Go
-implementation still needs its Rust counterpart before release.
+the next analysis; expanded Connections rows display the snapshot. Go/Rust
+qualification checks enabled/disabled fields and rule alerts at 1/2/4/8 workers.
 
 ### Feature switches
 
