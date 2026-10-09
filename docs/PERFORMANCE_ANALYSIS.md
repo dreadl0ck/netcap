@@ -1,38 +1,5 @@
 # Netcap Performance Analysis
 
-## Go and Rust comparison
-
-The subsequent 61-step small review completed with matching synthetic and common
-packet audits. One-worker medians Go/Rust: UDP 8 MiB 0.114/0.029 s, DNS 8 MiB
-0.459/0.156 s, Snort common packets 1.123/1.176 s. All-audit Snort counts differ;
-no equivalent-work claim applies. See [release notes](../RELEASE_NOTES.md) for
-the completed screening scope; the earlier exploratory figures below are retained.
-
-Review prepared 2026-10-09: Go `29464936`, Rust `58170da`, Apple M5 Max,
-Go 1.27.0/Rust 1.90.0. Each synthetic sweep used 240 measured captures,
-48 warmups and eight decoded parity checks. Another benchmark ran concurrently;
-timings are provisional and final release verification is deferred.
-
-| 64 MiB / 1 worker | Sidecars off: Go / Rust s | Sidecars on: Go / Rust s | Off: Go / Rust RSS MiB |
-| --- | ---: | ---: | ---: |
-| UDP | 0.227 / 0.067 | 0.293 / 2.067 | 142.2 / 28.8 |
-| DNS | 2.749 / 0.994 | 2.980 / 29.267 | 207.0 / 27.7 |
-
-Selected protobuf records match; sidecar/durability equivalence is not established.
-The next optimization experiments are evidence-checkpoint batching and shared
-ingress decoding in Rust, and allocation/GC plus writer/decoder queue profiling
-in Go. Preserve exact final counters and scope/record fingerprints before claiming
-an improvement. No throughput optimization is implemented by this preparation.
-Full plan and binary hashes:
-[`../netcap-rs/perf/README.md`](../../netcap-rs/perf/README.md#current-comparison-and-improvement-plan),
-[`latest-review-20261009.json`](../../netcap-rs/perf/results/latest-review-20261009.json).
-
-Pitfalls: default-enabled evidence performs durable I/O despite the old no-fsync
-description; the real-capture validator rejected Go's empty `Alert.ncap.gz` beside
-plain files. Both harness fixes are prepared; a quiet-host real-capture rerun is pending.
-
-## Historical subsystem review
-
 **Date:** April 2026
 **Scope:** Full codebase analysis across all subsystems
 **Findings:** 53 performance issues, 4 correctness bugs, 7 critical bottlenecks

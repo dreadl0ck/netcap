@@ -8,9 +8,7 @@ Published to [GitHub Packages](https://github.com/dreadl0ck/netcap/packages).
 
 Version 0.13.0 includes related-evidence timelines in Connections and
 Alerts, independent feature controls, and safe rendering of alerts without tags.
-The accompanying Go/Rust engine comparison reports the completed small screening
-run; it is not a UI speedup:
-[coordinated release notes](https://github.com/dreadl0ck/netcap/blob/master/RELEASE_NOTES.md#go-and-rust-performance-review).
+[Release notes](https://github.com/dreadl0ck/netcap/blob/master/RELEASE_NOTES.md#hunting-evidence).
 
 ## Installation
 
