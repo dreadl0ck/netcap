@@ -4,6 +4,14 @@ Netcap UI component library - reusable React components for building network ana
 
 Published to [GitHub Packages](https://github.com/dreadl0ck/netcap/packages).
 
+## Release notes
+
+Version 0.13.0 includes related-evidence timelines in Connections and
+Alerts, independent feature controls, and safe rendering of alerts without tags.
+The accompanying Go/Rust engine comparison reports the completed small screening
+run; it is not a UI speedup:
+[coordinated release notes](https://github.com/dreadl0ck/netcap/blob/master/RELEASE_NOTES.md#go-and-rust-performance-review).
+
 ## Installation
 
 First, configure npm to use GitHub Packages for the `@dreadl0ck` scope. Create or edit `~/.npmrc`:
@@ -243,4 +251,3 @@ pnpm run build
 ## License
 
 GPL-3.0
-

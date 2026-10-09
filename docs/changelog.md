@@ -4,6 +4,18 @@ description: Detailed Version History Information
 
 # Changelog
 
+## v0.13.0
+
+Small review completed on 2026-10-09: 61 steps plus 1,000 hunting-field,
+848 DNS-context and 6,656 evidence-link comparisons. Affected Go packages pass
+524 tests. [Release notes](../RELEASE_NOTES.md) report screening medians and scope.
+
+| Change | Evidence |
+| --- | --- |
+| Scoped cross-protocol linking, immutable audit references, capture-time DNS context and independent feature switches | `29464936`, [release notes](../RELEASE_NOTES.md#hunting-evidence) |
+| Shared UI 0.13.0, including related evidence and tagless-alert rendering | `cmd/capture/webui/frontend/packages/netcap-ui/package.json` |
+| Latest Go/Rust performance review and improvement plan | [performance log](PERFORMANCE_ANALYSIS.md#go-and-rust-comparison); measurements are provisional under concurrent host load |
+
 ## v0.10.3
 
 ### Native DPI
