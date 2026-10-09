@@ -45,6 +45,7 @@ func GetFlags() []cli.Flag {
 		&cli.BoolFlag{Name: "network-detection", Value: true, Usage: "capture-time network threat and policy detections", Sources: cli.EnvVars("NC_NETWORK_DETECTION")},
 		&cli.StringFlag{Name: "network-detection-config", Usage: "bounded JSON thresholds, approved sources and versioned indicators", Sources: cli.EnvVars("NC_NETWORK_DETECTION_CONFIG")},
 		&cli.BoolFlag{Name: "evidence-links", Value: true, Usage: "serve related evidence across protocols in the WebUI (/api/evidence/related)", Sources: cli.EnvVars("NC_EVIDENCE_LINKS")},
+		&cli.BoolFlag{Name: "dns-resolution-context", Usage: "snapshot matched UDP DNS answers onto Connection records for capture-time rules", Sources: cli.EnvVars("NC_DNS_RESOLUTION_CONTEXT")},
 		&cli.DurationFlag{Name: "evidence-links-window", Value: time.Hour, Usage: "maximum time between a DNS answer and a connection, and the Community ID window outside connections", Sources: cli.EnvVars("NC_EVIDENCE_LINKS_WINDOW")},
 		&cli.Int64Flag{Name: "evidence-links-max-records", Value: 1_000_000, Usage: "records indexed per output directory before linking reports truncation", Sources: cli.EnvVars("NC_EVIDENCE_LINKS_MAX_RECORDS")},
 		&cli.IntFlag{Name: "evidence-links-max-links", Value: 500, Usage: "related records returned per query", Sources: cli.EnvVars("NC_EVIDENCE_LINKS_MAX_LINKS")},

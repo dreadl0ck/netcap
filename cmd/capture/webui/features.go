@@ -16,8 +16,9 @@ const (
 
 // Feature names. Each one has a capture flag of the same name.
 const (
-	featureNetworkDetection = "network-detection"
-	featureEvidenceLinks    = "evidence-links"
+	featureNetworkDetection     = "network-detection"
+	featureEvidenceLinks        = "evidence-links"
+	featureDNSResolutionContext = "dns-resolution-context"
 )
 
 // FeatureState is one optional capability as shown in Settings.
@@ -32,6 +33,8 @@ type FeatureState struct {
 }
 
 var featureCatalog = []FeatureState{
+	{Name: featureDNSResolutionContext, Title: "DNS resolution context", Scope: featureScopeCapture, Flag: "-dns-resolution-context", Env: "NC_DNS_RESOLUTION_CONTEXT",
+		Description: "Snapshot paired UDP DNS answers onto new Connection observations for capture-time rules."},
 	{Name: featureNetworkDetection, Title: "Network detections", Scope: featureScopeCapture, Flag: "-network-detection", Env: "NC_NETWORK_DETECTION",
 		Description: "Capture-time detections such as DNS tunneling, scans and periodic connections (c2.beacon)."},
 	{Name: featureEvidenceLinks, Title: "Evidence linking", Scope: featureScopeQuery, Flag: "-evidence-links", Env: "NC_EVIDENCE_LINKS",
@@ -47,7 +50,7 @@ func newFeatureSet(initial map[string]bool) *featureSet {
 	f := &featureSet{enabled: map[string]bool{}}
 	for _, feature := range featureCatalog {
 		enabled, ok := initial[feature.Name]
-		f.enabled[feature.Name] = !ok || enabled
+		f.enabled[feature.Name] = (!ok && feature.Name != featureDNSResolutionContext) || (ok && enabled)
 	}
 	return f
 }

@@ -40,6 +40,9 @@ import (
 
 // ConnectionSummary represents aggregated information for a single connection
 type ConnectionSummary struct {
+	DNSResolvedName      string   `json:"dnsResolvedName,omitempty"`
+	DNSResolvedAtNs      string   `json:"dnsResolvedAtNs,omitempty"`
+	DNSResolutionState   string   `json:"dnsResolutionState,omitempty"`
 	TimestampFirst       int64    `json:"timestampFirst"`
 	TimestampLast        int64    `json:"timestampLast"`
 	TimestampFirstNs     string   `json:"timestampFirstNs"`
@@ -208,7 +211,12 @@ func readConnections(outDir string) ([]ConnectionSummary, error) {
 
 	connections := make([]ConnectionSummary, 0)
 	err := visitAuditRecords(filePath, "Connection", func(conn *types.Connection) {
+		var resolvedAt string
+		if conn.DNSResolutionState != "" {
+			resolvedAt = strconv.FormatInt(conn.DNSResolvedAt, 10)
+		}
 		connections = append(connections, ConnectionSummary{
+			DNSResolvedName: conn.DNSResolvedName, DNSResolvedAtNs: resolvedAt, DNSResolutionState: conn.DNSResolutionState,
 			TimestampFirst:       conn.TimestampFirst,
 			TimestampLast:        conn.TimestampLast,
 			TimestampFirstNs:     strconv.FormatInt(conn.TimestampFirst, 10),

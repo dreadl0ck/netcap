@@ -85,6 +85,7 @@ var DefaultConfigDPI = Config{
 // this structure has an optimized field order to avoid excessive padding.
 type Config struct {
 	NetworkDetection       bool
+	DNSResolutionContext   bool
 	NetworkDetectionConfig string
 
 	// Decoder configuration

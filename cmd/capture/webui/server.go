@@ -1736,6 +1736,7 @@ func (s *Server) runAnalysisInProcess(job *AnalysisJob) {
 	// Build collector configuration
 	c := collector.New(collector.Config{
 		NetworkDetection:       s.featureEnabled(featureNetworkDetection),
+		DNSResolutionContext:   s.featureEnabled(featureDNSResolutionContext),
 		NetworkDetectionConfig: os.Getenv("NC_NETWORK_DETECTION_CONFIG"),
 		Workers:                runtime.NumCPU() * 2,
 		PacketBufferSize:       defaults.PacketBuffer,

@@ -39,6 +39,7 @@ import (
 
 	decoderconfig "github.com/dreadl0ck/netcap/internal/decoder/config"
 	"github.com/dreadl0ck/netcap/internal/dnsaudit"
+	"github.com/dreadl0ck/netcap/internal/dnscontext"
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/resolvers"
 	"github.com/dreadl0ck/netcap/internal/utils"
@@ -397,6 +398,11 @@ retry:
 
 func makeConnection(p gopacket.Packet, connID connectionID, ll gopacket.LinkLayer, nl gopacket.NetworkLayer, tl gopacket.TransportLayer, generation uint64) *connection {
 	co := &types.Connection{}
+	for _, context := range p.Metadata().CaptureInfo.AncillaryData {
+		if stamp, ok := context.(dnscontext.Snapshot); ok {
+			co.DNSResolvedName, co.DNSResolvedAt, co.DNSResolutionState = stamp.Name, stamp.AnsweredAt, stamp.State
+		}
+	}
 	observationID := sha256.Sum256([]byte(connID.String() + "/" + strconv.FormatInt(p.Metadata().Timestamp.UnixNano(), 10) + "/" + strconv.FormatUint(generation, 10)))
 	co.ObservationID = hex.EncodeToString(observationID[:])
 	co.CounterSemantics = "tuple-cumulative"

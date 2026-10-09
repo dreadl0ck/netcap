@@ -246,6 +246,34 @@ Links are not available to capture-time rules:
 records are written in a different order than they are captured, so a rule could
 not see the same links at every worker count.
 
+### Capture-time DNS context
+
+`-dns-resolution-context` (`NC_DNS_RESOLUTION_CONTEXT`, default `false`) enables
+an independent capture-time snapshot on Connection records. The collector pairs
+UDP DNS at serialized ingress and copies context before dispatch; workers never
+query mutable cross-flow state. Fields 65–67 are `DNSResolvedName`,
+`DNSResolvedAt` (UTC ns) and `DNSResolutionState` (`resolved` or `unobserved`;
+empty when disabled). A new observation retains its first packet's context,
+including after later answers or cache eviction.
+
+Only paired, successful, single-question IN A/AAAA responses with a direct
+matching answer name contribute. Context expires at the answer TTL, capped at
+1 h, and is isolated by capture-wide interface/VLAN and client/destination IP.
+TCP DNS and CNAME chains are not contributors yet. The answer cache and pending
+query table each cap at 65,536 entries. `unobserved` is missing context, not a
+verdict that no resolution occurred.
+
+```yaml
+type: Connection
+expression: 'DNSResolutionMatches(DNSResolutionState, DNSResolvedName, DNSResolvedAt, TimestampFirst, "example.test", 60000000000)'
+```
+
+`DNSResolutionMatches` is a pure predicate on immutable record fields: exact
+DNS name comparison (case/trailing-dot normalized), nonnegative bounded age,
+and `resolved` state. Settings → Features has a separate switch applying to
+the next analysis; expanded Connections rows display the snapshot. This Go
+implementation still needs its Rust counterpart before release.
+
 ### Feature switches
 
 Settings → Features lists optional features with their flag and environment

@@ -78,6 +78,9 @@ import { useCommunityIDFilter } from '../contexts/CommunityIDFilterContext';
 
 import { ChartFrame } from '../components/ChartFrame';
 export interface ConnectionSummary {
+  dnsResolvedName?: string;
+  dnsResolvedAtNs?: string;
+  dnsResolutionState?: string;
   observationId?: string;
   snapshotSequence?: string;
   timestampFirst: number;
@@ -1434,6 +1437,15 @@ export default function ConnectionsPage({ rowActions }: ConnectionsPageProps = {
                                       <RelatedEvidence selector={{ observationId: conn.observationId }} inputFile={evidenceInputFile || undefined} />
                                     </Grid>
                                   )}
+
+                                  {conn.dnsResolutionState && <Grid item xs={12}>
+                                    <Typography variant="subtitle2">Capture-time DNS context</Typography>
+                                    <Typography variant="body2" color="text.secondary">
+                                      {conn.dnsResolutionState === 'resolved'
+                                        ? `Observed resolution: ${conn.dnsResolvedName}; answer timestamp ${conn.dnsResolvedAtNs} UTC ns`
+                                        : 'No eligible UDP DNS resolution at the first observed packet. This does not establish absence of DNS activity.'}
+                                    </Typography>
+                                  </Grid>}
 
                                   {/* Traffic Statistics */}
                                   <Grid item xs={12} md={6}>
