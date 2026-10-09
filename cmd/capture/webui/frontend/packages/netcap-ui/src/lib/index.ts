@@ -154,3 +154,6 @@ export { SECURITY_VIEWS, pickRandomView, viewsForFields, viewsForTypes } from '.
 export type { SecurityView } from './securityViews';
 export { formatDurationNs, medianRTT, rttSortKey, transactionFlags } from './dnsTransactions';
 export type { DNSTransactionSummary } from './dnsTransactions';
+export { parseRelatedEvidence, selectorForAlert, linkKindLabels } from './evidenceLinks';
+export type { EvidenceScope, EvidenceSelector, EvidenceRecord, EvidenceLink, EvidenceLinkKind, EvidenceSession, RelatedEvidence as RelatedEvidenceResult } from './evidenceLinks';
+export type { FeatureState, FeaturesResponse, RelatedEvidenceResponse } from './api';

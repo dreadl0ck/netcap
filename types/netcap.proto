@@ -402,6 +402,9 @@ message Connection {
   // (client bytes - server bytes) / (client bytes + server bytes), in [-1, 1].
   // 1 = client only produced, -1 = client only consumed; 0 when no bytes.
   double ProducerConsumerRatio = 64;
+  string DNSResolvedName = 65;       // First observed packet's ingress-time UDP DNS context
+  int64 DNSResolvedAt = 66;          // Matching answer's capture time (ns)
+  string DNSResolutionState = 67;    // empty when disabled | unobserved | resolved
 }
 
 //

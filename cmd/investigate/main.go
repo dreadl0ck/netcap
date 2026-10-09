@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/dreadl0ck/netcap/internal/evidence"
+	"github.com/dreadl0ck/netcap/internal/evidencelink"
 	"github.com/dreadl0ck/netcap/internal/flow"
 	"github.com/dreadl0ck/netcap/internal/flowexport"
 	"github.com/dreadl0ck/netcap/internal/protocoltest"
@@ -76,6 +77,18 @@ func GetCommand() *cli.Command {
 			&cli.IntFlag{Name: "limit", Value: 100, Usage: "returned groups (1..1000)"},
 			&cli.DurationFlag{Name: "timeout", Value: 2 * time.Minute, Usage: "maximum query duration"},
 		}, Action: runFlows},
+		{Name: "related", Usage: "records linked across protocols: same connection, resolving DNS answer, resolved connections and alerts", Flags: []cli.Flag{
+			&cli.StringFlag{Name: "id", Usage: "content-bound record ID returned by a prior related query"},
+			&cli.StringFlag{Name: "read", Required: true, Usage: "capture output directory"},
+			&cli.StringFlag{Name: "type", Usage: "record type of the target, e.g. HTTP"},
+			&cli.StringFlag{Name: "ordinal", Usage: "0-based record position in its audit file"},
+			&cli.StringFlag{Name: "observation-id", Usage: "Connection ObservationID (latest snapshot is used)"},
+			&cli.StringFlag{Name: "community-id", Usage: "Community ID; requires -type and -time"},
+			&cli.StringFlag{Name: "time", Usage: "record timestamp in Unix nanoseconds"},
+			&cli.DurationFlag{Name: "window", Value: time.Hour, Usage: "DNS answer to connection window, and Community ID window outside connections"},
+			&cli.Int64Flag{Name: "max-records", Value: 1_000_000, Usage: "records indexed before results report truncation"},
+			&cli.IntFlag{Name: "max-links", Value: 500, Usage: "related records returned"},
+		}, Action: runRelated},
 		{Name: "packet-evidence", Usage: "export PCAPNG and provenance manifest in a ZIP archive", Flags: []cli.Flag{
 			&cli.StringFlag{Name: "read", Required: true, Usage: "original PCAP or PCAPNG"},
 			&cli.StringFlag{Name: "out", Required: true, Usage: "new output ZIP; existing files are never replaced"},
@@ -88,6 +101,40 @@ func GetCommand() *cli.Command {
 	}}
 	command.Commands = append(command.Commands, sensorCommands()...)
 	return command
+}
+
+func runRelated(_ context.Context, cmd *cli.Command) error {
+	config := evidencelink.Config{Enabled: true, WindowNS: int64(cmd.Duration("window")), MaxRecords: cmd.Int64("max-records"), MaxLinks: int(cmd.Int("max-links"))}
+	selector := evidencelink.Selector{ID: cmd.String("id"), Type: cmd.String("type"), ObservationID: cmd.String("observation-id"), CommunityID: cmd.String("community-id")}
+	if raw := cmd.String("ordinal"); raw != "" {
+		ordinal, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || ordinal < 0 {
+			return fmt.Errorf("invalid -ordinal %q", raw)
+		}
+		selector.Ordinal, selector.HasOrdinal = ordinal, true
+	}
+	if raw := cmd.String("time"); raw != "" {
+		at, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid -time %q", raw)
+		}
+		selector.Time, selector.HasTime = at, true
+	}
+	index, err := evidencelink.Build(cmd.String("read"), config)
+	if err != nil {
+		return err
+	}
+	typ, ordinal, err := index.Resolve(selector)
+	if err != nil {
+		return err
+	}
+	result, err := index.Related(typ, ordinal)
+	if err != nil {
+		return err
+	}
+	encoder := json.NewEncoder(cmd.Root().Writer)
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(result)
 }
 
 func runProtocolFields(ctx context.Context, cmd *cli.Command) error {

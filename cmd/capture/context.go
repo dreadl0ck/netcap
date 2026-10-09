@@ -23,6 +23,8 @@ import (
 	"time"
 
 	"github.com/urfave/cli/v3"
+
+	"github.com/dreadl0ck/netcap/internal/evidencelink"
 )
 
 // Global flag variables for helper functions
@@ -157,6 +159,8 @@ var (
 	flagRules                          string
 	flagNetworkDetection               bool
 	flagNetworkDetectionConfig         string
+	flagEvidenceLinks                  evidencelink.Config
+	flagDNSResolutionContext           bool
 	flagApprovedWorkstations           string
 	flagDev                            bool
 	flagProtoSearchPaths               []string
@@ -296,6 +300,8 @@ func setFlagsFromContext(c *cli.Command) {
 	flagRules = c.String("rules")
 	flagNetworkDetection = c.Bool("network-detection")
 	flagNetworkDetectionConfig = c.String("network-detection-config")
+	flagDNSResolutionContext = c.Bool("dns-resolution-context")
+	flagEvidenceLinks = evidencelink.Config{Enabled: c.Bool("evidence-links"), WindowNS: int64(c.Duration("evidence-links-window")), MaxRecords: c.Int64("evidence-links-max-records"), MaxLinks: int(c.Int("evidence-links-max-links"))}
 	flagApprovedWorkstations = c.String("approved-workstations")
 	flagDev = c.Bool("dev")
 	flagProtoSearchPaths = c.StringSlice("proto-paths")

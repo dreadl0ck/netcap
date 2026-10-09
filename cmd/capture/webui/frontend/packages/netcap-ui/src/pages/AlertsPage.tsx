@@ -72,6 +72,8 @@ import { FilterExpressionBlock } from '../components/FilterExpressionHighlight';
 
 import { syntaxHighlightJSON } from '../lib/html';
 import NetworkDetectionEvidence, { NetworkDetectionCoverage } from '../components/NetworkDetectionEvidence';
+import RelatedEvidence from '../components/RelatedEvidence';
+import { selectorForAlert } from '../lib/evidenceLinks';
 // Helper function to convert unix timestamps to human-readable format
 // fieldName parameter helps identify if we should convert this number
 function convertTimestamps(obj: any, fieldName?: string): any {
@@ -195,7 +197,16 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
   });
 
   // Extract grouped alerts data and filter based on showResolved
-  const allGroups = groupedAlertsData?.groups || [];
+  // Backends may send null for empty lists (e.g. a rule without tags).
+  const allGroups = (groupedAlertsData?.groups || []).map(g => ({
+    ...g,
+    tags: g.tags || [],
+    uniqueSrcIPs: g.uniqueSrcIPs || [],
+    uniqueDstIPs: g.uniqueDstIPs || [],
+    uniqueSrcPorts: g.uniqueSrcPorts || [],
+    uniqueDstPorts: g.uniqueDstPorts || [],
+    sampleAlerts: g.sampleAlerts || [],
+  }));
   const groups = showResolved ? allGroups : allGroups.filter(g => !g.resolved);
   const totalCount = groupedAlertsData?.totalCount || 0;
   const groupCount = groups.length;
@@ -1065,6 +1076,8 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <NetworkDetectionEvidence alert={selectedAlert} />
                 {selectedAlert.recordType === 'NetworkDetection' && renderEvidenceActions?.(selectedAlert)}
+                {selectorForAlert(selectedAlert.recordType, selectedAlert.matchedRecord) &&
+                  <RelatedEvidence selector={selectorForAlert(selectedAlert.recordType, selectedAlert.matchedRecord)} />}
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary">
                     Timestamp
@@ -1181,13 +1194,13 @@ export default function AlertsPage({ renderEvidenceActions }: { renderEvidenceAc
                   </Box>
                 )}
 
-                {selectedAlert.tags.length > 0 && (
+                {(selectedAlert.tags || []).length > 0 && (
                   <Box>
                     <Typography variant="subtitle2" color="text.secondary">
                       Tags
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                      {selectedAlert.tags.map((tag) => (
+                      {(selectedAlert.tags || []).map((tag) => (
                         <Chip key={tag} label={tag} size="small" />
                       ))}
                     </Box>

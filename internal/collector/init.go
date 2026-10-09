@@ -29,6 +29,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tcp"
 	streamutils "github.com/dreadl0ck/netcap/internal/decoder/stream/utils"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
+	"github.com/dreadl0ck/netcap/internal/dnscontext"
 	"github.com/dreadl0ck/netcap/internal/dpi"
 	"github.com/dreadl0ck/netcap/internal/magika"
 	"github.com/dreadl0ck/netcap/internal/reassembly"
@@ -168,6 +169,11 @@ func (c *Collector) Init() (err error) {
 	c.printStdOut("initializing decoders... ")
 	if err = c.initNetworkDetection(); err != nil {
 		return fmt.Errorf("network detection: %w", err)
+	}
+	if c.config.DNSResolutionContext {
+		c.dnsContext = dnscontext.New()
+	} else {
+		c.dnsContext = nil
 	}
 	c.netcapLog.Println("initializing decoders... ")
 

@@ -694,7 +694,13 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		}
 
 		// Create runtime config with actual flag values
+		if err := flagEvidenceLinks.Validate(); err != nil {
+			return err
+		}
+		evidenceLinks := flagEvidenceLinks
 		runtimeConfig := &webui.RuntimeConfig{
+			Features:      map[string]bool{"network-detection": flagNetworkDetection, "evidence-links": flagEvidenceLinks.Enabled, "dns-resolution-context": flagDNSResolutionContext},
+			EvidenceLinks: &evidenceLinks,
 			Compress:      flagCompress,
 			Buffer:        flagBuffer,
 			Workers:       flagWorkers,
@@ -901,6 +907,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 	// init collector
 	coll := collector.New(collector.Config{
 		NetworkDetection:       flagNetworkDetection,
+		DNSResolutionContext:   flagDNSResolutionContext,
 		NetworkDetectionConfig: flagNetworkDetectionConfig,
 		Workers:                flagWorkers,
 		PacketBufferSize:       flagPacketBuffer,
@@ -1262,6 +1269,7 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 			// Create a fresh collector instance with updated configuration for this file
 			coll = collector.New(collector.Config{
 				NetworkDetection:       flagNetworkDetection,
+				DNSResolutionContext:   flagDNSResolutionContext,
 				NetworkDetectionConfig: flagNetworkDetectionConfig,
 				Workers:                flagWorkers,
 				PacketBufferSize:       flagPacketBuffer,

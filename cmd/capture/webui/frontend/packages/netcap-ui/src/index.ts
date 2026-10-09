@@ -84,6 +84,7 @@ export {
   ConnectionOverlay,
   CommunityIDChip,
   CommunityIDFilterBar,
+  RelatedEvidence,
 } from './components';
 
 export type {

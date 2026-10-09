@@ -40,6 +40,7 @@ Built-in React (Vite + TypeScript) dashboard in service mode with interactive vi
 - Sankey diagrams, treemaps, 3D scatter plots, geo maps, host communication graphs
 - Record browsing with JSON/UI views and field-level filtering
 - Protocol statistics, connection analysis, host profiling, alert management
+- Related-evidence timeline on alerts and connections; Settings → Features switches optional features individually
 
 See the [Gallery](docs/GALLERY.md) for screenshots.
 
@@ -52,6 +53,7 @@ See the [Gallery](docs/GALLERY.md) for screenshots.
 - **File extraction** — extract files from HTTP, FTP, SMTP, POP3, IMAP, SMB, IRC with hashing (MD5, SHA1, SHA256) and MIME detection
 - **Detection rules** — 30+ YAML rule categories covering reconnaissance, exfiltration, web attacks, industrial ports, and more. The expression engine supports source→distinct-destination cardinality (fan-out) detection, an approved-workstation allowlist (`IsApprovedWorkstation`), and time-of-day helpers (`IsBusinessHours`, `HourOfDay`)
 - **Hunting evidence** — DNS query/response pairing with RTT, retransmission and unanswered/late status over UDP and TCP; DCE/RPC calls attributed to interface and operation with fault outcomes; periodic-connection (`c2.beacon`) detection; signed producer–consumer byte ratio per connection. See [Hunting evidence](#hunting-evidence)
+- **Evidence linking** — from any record, list the records of the same connection, the DNS answer that resolved its destination, connections opened to an answered address and alerts, as a timeline. See [Evidence linking](#evidence-linking)
 - **OT/ICS threat hunting** — function-code level Siemens S7comm detection (write / logic download / logic theft / PLC stop / CPU restart) mapped to [CISA AA26-231A](docs/s7-threat-hunt-AA26-231A.md); ships `internal/rules/examples/s7comm_hunt.yml`
 
 ### Output Formats
@@ -178,6 +180,108 @@ go test -race -tags nodpi,noyara,nomagika ./internal/collector -run '^TestFlight
 The collector checks replay at 1/2/4/8 workers. The lab requires a 32 MiB
 tcpdump buffer and a 2 s drain; `tests/flightsim-lab/run.sh` rejects kernel drops
 and failed simulator modules before sealing capture hashes.
+
+## Evidence linking
+
+Answers "what else happened in this connection or because of this lookup"
+without manual joins. Links are computed from the output directory when asked,
+so they work for finished and live captures and do not depend on worker count.
+With `-capture-evidence` (default `true`), packet ingress records a scope ledger
+in `capture-manifest.json`. After finalization, the linker qualifies records by
+capture RunID, local sensor, capture-wide interface index and VLAN stack. PCAPNG
+interface numbering is normalized across sections. DNS resolution links remain
+temporal candidates, not proof that a lookup caused a connection.
+
+| Link | Basis |
+| --- | --- |
+| Same connection | Record has the connection's Community ID and a timestamp within the Connection observation's first–last packet span. A reused 5-tuple is a different observation, and only the latest snapshot of an observation is shown |
+| Resolved by DNS | Latest DNS response whose A/AAAA answer is the connection's destination, sent to the connection's client, at most `-evidence-links-window` before the connection started |
+| Connection to answer | From a DNS response: connections from the same client to an answered address starting within the window after it |
+| Alert | Rule alert whose matched record carries the Community ID, within the same span |
+| Same flow | Records with the Community ID but no containing Connection observation, within ± the window |
+
+Per-packet records (TCP, TLSRecord, PacketContext, PKTAP) and records without a
+computed Community ID (fallback hashes) are not linked. Network-detection alerts
+carry evidence rather than a matched record, so they are not linked.
+Known Connection observations suppress fallback flow links when no unique
+observation contains the target. Duplicate type/Community ID/timestamp selectors
+are rejected; use the exact type and ordinal instead. Each directory's index has
+a 64 MiB accounted storage budget as well as its record limit.
+
+| Scope status | Meaning |
+| --- | --- |
+| `verified` | Community ID occurred in exactly one packet scope; cross-protocol links require the same scope |
+| `ambiguous` | Community ID occurred in multiple interfaces/VLANs; all links for it are withheld |
+| `pending` | Scope ledger is not finalized; scoped claims are withheld |
+| `overflow` | The 32,768-entry scope ledger overflowed; scoped claims are withheld globally |
+| `missing` | No packet scope for this record; links are withheld. Filtered offline inputs deliberately do not claim preserved interface metadata |
+| `legacy` | No scope ledger, including captures made with `-capture-evidence=false`; results are explicitly labelled candidates within the directory |
+
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `-evidence-links` / `NC_EVIDENCE_LINKS` | `true` | Serve `/api/evidence/related`; switchable at runtime in Settings → Features |
+| `-evidence-links-window` | `1h` | DNS answer → connection window and Community ID window outside connections |
+| `-evidence-links-max-records` | `1000000` | Records indexed per output directory; beyond it results say they are truncated |
+| `-evidence-links-max-links` | `500` | Related records returned per query |
+
+The WebUI shows the timeline in alert details (for rule alerts) and in expanded
+Connections rows. The API selects a record by `type`+`ordinal`, by
+`observationId` (Connection), by `type`+`communityId`+`time` (Unix ns), or by
+the content-bound `id` returned by a previous query:
+
+```sh
+curl 'http://127.0.0.1:8080/api/evidence/related?observationId=<id>'
+net investigate related -read out -type HTTP -ordinal 0
+```
+
+Each link states its `kind` and `basis`; `notes` explain truncation and when no
+connection contains the record. References include the audit-file `fileSha256`
+and an `id` derived from type, file digest, capture RunID, scope-manifest digest
+and ordinal. `captureManifestSha256` binds the selected capture/scope witness.
+Replacing or extending
+that file invalidates its old references rather than rebinding them. Index
+construction rejects files changing during the scan. Linked record buttons
+open another related-evidence timeline; Back returns to the original target.
+Links are not available to capture-time rules:
+records are written in a different order than they are captured, so a rule could
+not see the same links at every worker count.
+
+### Capture-time DNS context
+
+`-dns-resolution-context` (`NC_DNS_RESOLUTION_CONTEXT`, default `false`) enables
+an independent capture-time snapshot on Connection records. The collector pairs
+UDP DNS at serialized ingress and copies context before dispatch; workers never
+query mutable cross-flow state. Fields 65–67 are `DNSResolvedName`,
+`DNSResolvedAt` (UTC ns) and `DNSResolutionState` (`resolved` or `unobserved`;
+empty when disabled). A new observation retains its first packet's context,
+including after later answers or cache eviction.
+
+Only paired, successful, non-truncated, single-question IN A/AAAA responses on
+UDP port 53 with an ASCII direct
+matching answer name contribute. Context expires at the answer TTL, capped at
+1 h, and is isolated by capture-wide interface/VLAN and client/destination IP.
+TCP DNS and CNAME chains are not contributors yet. The answer cache and pending
+query table each cap at 65,536 entries. `unobserved` is missing context, not a
+verdict that no resolution occurred.
+
+```yaml
+type: Connection
+expression: 'DNSResolutionMatches(DNSResolutionState, DNSResolvedName, DNSResolvedAt, TimestampFirst, "example.test", 60000000000)'
+```
+
+`DNSResolutionMatches` is a pure predicate on immutable record fields: exact
+DNS name comparison (case/trailing-dot normalized), nonnegative bounded age,
+and `resolved` state. Settings → Features has a separate switch applying to
+the next analysis; expanded Connections rows display the snapshot. Go/Rust
+qualification checks enabled/disabled fields and rule alerts at 1/2/4/8 workers.
+
+### Feature switches
+
+Settings → Features lists optional features with their flag and environment
+variable. `GET /api/features` returns them; `POST /api/features
+{"name":"evidence-links","enabled":false}` switches one until the process exits.
+Query features (evidence linking) apply to the next request; capture features
+(network detections) apply to the next analysis started from the WebUI.
 
 ## Behavioral monitoring
 

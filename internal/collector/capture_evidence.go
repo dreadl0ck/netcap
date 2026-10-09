@@ -3,8 +3,10 @@ package collector
 import (
 	"errors"
 	"fmt"
+	decoderpacket "github.com/dreadl0ck/netcap/internal/decoder/packet"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 )
 
 func (c *Collector) initCaptureEvidence() error {
@@ -43,6 +45,13 @@ func (c *Collector) observeCaptureEvidence(packet gopacket.Packet) {
 	if c.captureEvidence == nil {
 		return
 	}
+	var vlans []uint16
+	for _, layer := range packet.Layers() {
+		if vlan, ok := layer.(*layers.Dot1Q); ok {
+			vlans = append(vlans, vlan.VLANIdentifier)
+		}
+	}
+	c.captureEvidence.ObserveScope(decoderpacket.CalcCommunityID(packet), packet.Metadata().CaptureInfo.InterfaceIndex, vlans)
 	if err := c.captureEvidence.Observe(packet.Data(), packet.Metadata().CaptureInfo, c.captureLinkType); err != nil {
 		c.captureEvidenceError = err
 	}

@@ -44,6 +44,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import InfoIcon from '@mui/icons-material/Info';
 import useSWR from 'swr';
 import Layout from '../components/Layout';
+import FeatureToggles from '../components/FeatureToggles';
 import { type ConfigOption } from '../lib/api';
 import { useNetcapApi } from '../hooks';
 
@@ -175,6 +176,8 @@ export default function Config() {
           {updateError}
         </Alert>
       )}
+
+      <FeatureToggles />
 
       <Box sx={{ mb: 3 }}>
         <TextField

@@ -60,6 +60,9 @@ func CompileExpression(expression string, recordType types.Type) (*vm.Program, e
 		expr.Env(env),
 		expr.AsBool(),
 		// Network helper functions with explicit type signatures
+		expr.Function("DNSResolutionMatches", func(params ...any) (any, error) {
+			return DNSResolutionMatches(params[0].(string), params[1].(string), params[2].(int64), params[3].(int64), params[4].(string), params[5].(int64)), nil
+		}, new(func(string, string, int64, int64, string, int64) bool)),
 		expr.Function("InSubnet",
 			func(params ...any) (any, error) {
 				return InSubnet(params[0].(string), params[1].(string)), nil
@@ -190,6 +193,7 @@ func EvaluateExpression(program *vm.Program, record types.AuditRecord) (bool, er
 	// Add helper functions to the evaluation environment
 	// These are used at runtime, while type information comes from expr.Function() at compile time
 	env["InSubnet"] = InSubnet
+	env["DNSResolutionMatches"] = DNSResolutionMatches
 	env["IsPrivateIP"] = IsPrivateIP
 	env["IsPublicIP"] = IsPublicIP
 	env["IsApprovedWorkstation"] = IsApprovedWorkstation

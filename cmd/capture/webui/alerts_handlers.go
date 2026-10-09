@@ -534,7 +534,7 @@ func groupAlerts(alerts []AlertResponse, severityFilter, ruleNameFilter string) 
 				Description:     alert.Description,
 				Severity:        alert.Severity,
 				RecordType:      alert.RecordType,
-				Tags:            alert.Tags,
+				Tags:            append([]string{}, alert.Tags...),
 				MITRE:           alert.MITRE,
 				RuleExpression:  alert.RuleExpression,
 				Threshold:       alert.Threshold,

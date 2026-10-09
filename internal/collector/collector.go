@@ -56,6 +56,7 @@ import (
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/tcp"
 	"github.com/dreadl0ck/netcap/internal/decoder/stream/udp"
 	decoderutils "github.com/dreadl0ck/netcap/internal/decoder/utils"
+	"github.com/dreadl0ck/netcap/internal/dnscontext"
 	"github.com/dreadl0ck/netcap/internal/evidence"
 	"github.com/dreadl0ck/netcap/internal/filter"
 	"github.com/dreadl0ck/netcap/internal/flowexport"
@@ -177,6 +178,7 @@ type Collector struct {
 	flowExportError            error
 	flowIngressOrdinal         uint64
 	captureEvidence            *evidence.Capture
+	dnsContext                 *dnscontext.Tracker
 	captureEvidenceError       error
 	captureRunError            error
 	captureKind, captureSource string
@@ -697,6 +699,7 @@ func (c *Collector) submitPacket(p gopacket.Packet, timeout bool) bool {
 	c.observeFlowExport(p)
 	c.observeBehavior(p)
 	c.observeNetworkDetection(p)
+	c.observeDNSContext(p)
 	c.wg.Add(1)
 	atomic.AddInt64(&c.current, 1)
 	select {
