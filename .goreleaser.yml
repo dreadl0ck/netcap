@@ -209,3 +209,4 @@ brews:
 
 before:
   hooks:
+    - python3 scripts/check-release-notes.py

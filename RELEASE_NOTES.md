@@ -1,5 +1,3 @@
-# Netcap v0.13.0 and netcap-ui 0.13.0
-
 ## Hunting evidence
 
 | Feature | Interface / behavior |

@@ -530,7 +530,7 @@ commands:
             `goreleaser check` is given an explicit config path because without
             one it validates 0 files and still exits 0, so the guard in front of
             the release would pass no matter what was in .goreleaser.yml.
-        exec: goreleaser check .goreleaser.yml && GOWORK=off goreleaser release --skip-validate
+        exec: python3 scripts/check-release-notes.py && goreleaser check .goreleaser.yml && GOWORK=off goreleaser release --skip-validate --release-notes RELEASE_NOTES.md
 
     update-release-assets:
         exec: |
