@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
-import { chromium } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+import { qualify } from './browser-fixture.mjs';
 
-const browser = await chromium.launch({ executablePath: process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', headless: true });
-try {
-  const page = await browser.newPage({ viewport: { width: 1800, height: 1000 } });
+await qualify(process.argv[2], async page => {
   const errors = [];
   page.on('pageerror', error => errors.push(String(error)));
   await page.goto(`${process.argv[2]}/alerts`);
@@ -19,6 +18,13 @@ try {
   await page.getByText('Indicator association does not establish execution or compromise', { exact: true }).waitFor();
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Export original evidence JSON' }).click()]);
   assert.equal(download.suggestedFilename(), 'netcap-detection-evidence.json');
+  assert.equal(await download.failure(), null);
+  const exported = JSON.parse(await readFile(await download.path(), 'utf8'));
+  assert.equal(exported.detector, 'intel.c2');
+  const evidence = JSON.parse(exported.evidenceJSON);
+  assert.equal(evidence.classification, 'indicator-match');
+  assert.equal(evidence.indicator.category, 'c2');
+  assert.ok(evidence.limitations.includes('Indicator association does not establish execution or compromise'));
   assert.equal(errors.length, 0, errors.join('\n'));
   console.log('Real API → coverage → classified finding → provenance/limits → evidence download passed');
-} finally { await browser.close(); }
+});

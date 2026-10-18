@@ -5,7 +5,6 @@ package webui
 import (
 	"context"
 	"encoding/json"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,8 +17,9 @@ import (
 
 func TestNetworkDetectionBrowser(t *testing.T) {
 	if os.Getenv("NETCAP_NETWORK_BROWSER") != "1" {
-		t.Skip("requires built frontend and Chrome; NETCAP_NETWORK_BROWSER=1")
+		t.Skip("requires built frontend and Playwright Chromium or CHROME_PATH; NETCAP_NETWORK_BROWSER=1")
 	}
+	isolateBrowserFixture(t)
 	dir := t.TempDir()
 	data, err := os.ReadFile("../../../internal/networkdetect/testdata/live/c2.alerts.json")
 	if err != nil {
@@ -44,13 +44,7 @@ func TestNetworkDetectionBrowser(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, NetworkDetectionSnapshotName), []byte(`{"schema":1,"events":101,"alerts":2,"overflow":0,"late":0,"streamGaps":0,"keys":1,"flows":0,"indicators":5}`), 0600); err != nil {
 		t.Fatal(err)
 	}
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	address := listener.Addr().String()
-	listener.Close()
-	server := NewServer(address, dir, nil, "", false, false, false, nil, nil, false)
+	server := NewServer("127.0.0.1:0", dir, nil, "", false, false, false, nil, nil, false)
 	if err := server.Start(); err != nil {
 		t.Fatal(err)
 	}
@@ -59,6 +53,7 @@ func TestNetworkDetectionBrowser(t *testing.T) {
 	defer cancel()
 	command := exec.CommandContext(ctx, "node", "scripts/qualify-network-detection.mjs", server.GetURL())
 	command.Dir = "frontend"
+	command.Env = browserFixtureEnvironment(t, dir)
 	output, err := command.CombinedOutput()
 	t.Log(string(output))
 	if err != nil {

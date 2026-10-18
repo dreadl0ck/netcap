@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
-import { chromium, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { qualify } from './browser-fixture.mjs';
 
 const [base, fixture] = process.argv.slice(2);
 assert.ok(base && fixture, 'backend and packet-fixture URLs required');
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
-try {
-  const page = await browser.newPage();
+await qualify(base, async page => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(`${base}/behavior`);
@@ -18,6 +17,8 @@ try {
   await expect(page.getByText('Stream: connected', { exact: true })).toBeVisible();
   const latencies = [];
   const workload = await (await page.request.post(`${fixture}/start`)).json();
+  assert.equal(workload.sourcePages, true, 'source-page fixture required');
+  assert.equal(workload.lateralRecords, true, 'lateral evidence fixture required');
   const runStarted = Date.now();
   for (let id = 1; id <= 100; id++) {
     const response = await page.request.post(fixture, { data: { id } });
@@ -111,10 +112,10 @@ try {
     }
   }
   assert.deepEqual(errors, [], 'browser JavaScript errors');
-  console.log(JSON.stringify({ browser: await browser.version(), samples: 100, sensors: 1, ...workload, ...background,
+  const observations = { samples: 100, sensors: 1, ...workload, ...background,
     workload: 'decisive TCP SYNs during 100-packet/10-ms background bursts; actual Community approval, SSE, React render, evidence, reconnect, acknowledgement and suppression',
     durationMS, packetsPerSecond: 100000 / durationMS, captureDrops: 0, queueDrops: 0,
-    dropScope: 'synthetic synchronous ingress', p50MS: latencies[49], p95MS: latencies[94], maxMS: latencies[99] }));
-} finally {
-  await browser.close();
-}
+    dropScope: 'synthetic synchronous ingress', p50MS: latencies[49], p95MS: latencies[94], maxMS: latencies[99] };
+  console.log(JSON.stringify(observations));
+  return observations;
+}, [fixture]);

@@ -26,6 +26,7 @@ import (
 	stdio "io"
 	"log"
 	"maps"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -526,6 +527,14 @@ func (s *Server) loadPreloadedPcaps() {
 
 // Start starts the HTTP server in a goroutine
 func (s *Server) Start() error {
+	listener, err := net.Listen("tcp", s.addr)
+	if err != nil {
+		return err
+	}
+	if host, port, err := net.SplitHostPort(s.addr); err == nil && port == "0" {
+		_, boundPort, _ := net.SplitHostPort(listener.Addr().String())
+		s.addr = net.JoinHostPort(host, boundPort)
+	}
 	mux := http.NewServeMux()
 
 	// API endpoints
@@ -767,7 +776,7 @@ func (s *Server) Start() error {
 	// Start HTTP server first
 	go func() {
 		log.Printf("Web UI server starting on http://%s\n", s.addr)
-		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := s.httpServer.Serve(listener); err != nil && err != http.ErrServerClosed {
 			log.Printf("Web UI server error: %v\n", err)
 		}
 	}()

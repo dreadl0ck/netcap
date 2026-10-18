@@ -30,8 +30,9 @@ import (
 
 func TestBehavioralBrowserDelivery(t *testing.T) {
 	if os.Getenv("NETCAP_BEHAVIOR_BROWSER") != "1" {
-		t.Skip("requires pnpm install, pnpm build and Google Chrome; enable NETCAP_BEHAVIOR_BROWSER=1")
+		t.Skip("requires built frontend and Playwright Chromium or CHROME_PATH; enable NETCAP_BEHAVIOR_BROWSER=1")
 	}
+	isolateBrowserFixture(t)
 	dir := t.TempDir()
 	writer, err := rules.NewFileAlertWriter(dir)
 	if err != nil {
@@ -84,13 +85,7 @@ func TestBehavioralBrowserDelivery(t *testing.T) {
 	writeTimelineAuditFile(t, dir, "Connection", types.Type_NC_Connection, []proto.Message{&types.Connection{TimestampFirst: start.UnixNano(), TimestampLast: start.UnixNano(), SrcIP: "192.0.2.1", DstIP: "192.0.2.2", SrcMAC: mac, SrcPort: "50001", DstPort: "443", NetworkProto: "IPv4", TransportProto: "TCP", NumPackets: 2, TotalSize: 80}})
 	writeTimelineAuditFile(t, dir, "Host", types.Type_NC_Host, []proto.Message{&types.Host{Addr: "192.0.2.1", NumPackets: 2}})
 	writeTimelineAuditFile(t, dir, "DeviceProfile", types.Type_NC_DeviceProfile, []proto.Message{&types.DeviceProfile{MacAddr: mac, NumPackets: 2, DeviceIPs: []string{"192.0.2.1"}}})
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatal(err)
-	}
-	address := listener.Addr().String()
-	listener.Close()
-	server := NewServer(address, dir, nil, "", false, false, false, nil, nil, false)
+	server := NewServer("127.0.0.1:0", dir, nil, "", false, false, false, nil, nil, false)
 	dc := config.DefaultConfig.Clone()
 	dc.Out = dir
 	coll := collector.New(collector.Config{DecoderConfig: dc})
@@ -194,6 +189,7 @@ func TestBehavioralBrowserDelivery(t *testing.T) {
 	defer cancel()
 	command := exec.CommandContext(ctx, "node", "scripts/qualify-behavior.mjs", server.GetURL(), fixture.URL)
 	command.Dir = "frontend"
+	command.Env = browserFixtureEnvironment(t, dir)
 	output, err := command.CombinedOutput()
 	t.Log(string(output))
 	t.Logf("reference hardware: OS=%s arch=%s CPUs=%d Go=%s; synthetic synchronous ingress, 1000-fact approved baseline, no protocol-worker or kernel-capture workload", runtime.GOOS, runtime.GOARCH, runtime.NumCPU(), runtime.Version())
