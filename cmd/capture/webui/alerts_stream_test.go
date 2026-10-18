@@ -142,3 +142,88 @@ func TestBehaviorAlertIDsIncludeFactEvidence(t *testing.T) {
 		t.Fatalf("legacy ID changed: %s", got)
 	}
 }
+
+func TestCanceledAlertStreamsReleaseOnlyOwnedSlots(t *testing.T) {
+	dir := t.TempDir()
+	writer, err := rules.NewFileAlertWriter(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer writer.Close()
+	if err := writer.WriteAlert(&types.Alert{Name: "persisted-after-cancel"}); err != nil {
+		t.Fatal(err)
+	}
+	s := &Server{outDir: dir, baseOutDir: dir, shutdownChan: make(chan struct{})}
+	done := make(chan struct{}, 16)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.handleAlertsStream(w, r)
+		done <- struct{}{}
+	}))
+	defer server.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var responses []*http.Response
+	defer func() {
+		for _, response := range responses {
+			response.Body.Close()
+		}
+	}()
+	open := func() *http.Response {
+		t.Helper()
+		request, err := http.NewRequestWithContext(ctx, http.MethodGet, server.URL, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		response, err := http.DefaultClient.Do(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		responses = append(responses, response)
+		return response
+	}
+	waitDone := func() {
+		t.Helper()
+		timer := time.NewTimer(5 * time.Second)
+		defer timer.Stop()
+		select {
+		case <-done:
+		case <-timer.C:
+			t.Fatal("canceled SSE handler retained its slot/tail")
+		}
+	}
+	for range 8 {
+		response := open()
+		if response.StatusCode != http.StatusOK || readTestSSE(t, bufio.NewReader(response.Body)).event != "connected" {
+			t.Fatal("owned stream did not connect")
+		}
+	}
+	if response := open(); response.StatusCode != http.StatusTooManyRequests {
+		t.Fatalf("ninth stream = %d", response.StatusCode)
+	}
+	waitDone()
+	responses[0].Body.Close()
+	waitDone()
+	replacement := open()
+	reader := bufio.NewReader(replacement.Body)
+	if replacement.StatusCode != http.StatusOK || readTestSSE(t, reader).event != "connected" {
+		t.Fatal("canceled slot was not reusable")
+	}
+	if event := readTestSSE(t, reader); event.event != "alert" || !strings.Contains(event.data, "persisted-after-cancel") {
+		t.Fatalf("cancel closed/deleted shared alert history: %+v", event)
+	}
+	cancel()
+	for range 8 {
+		waitDone()
+	}
+	s.mu.RLock()
+	remaining := s.alertStreams
+	s.mu.RUnlock()
+	if remaining != 0 {
+		t.Fatalf("stream resources retained: %d", remaining)
+	}
+	select {
+	case <-s.shutdownChan:
+		t.Fatal("request cancellation shut down the shared server")
+	default:
+	}
+}

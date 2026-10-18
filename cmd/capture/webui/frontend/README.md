@@ -1,70 +1,47 @@
 # Netcap Web UI Frontend
 
-This is the Next.js-based frontend for the Netcap Web UI.
+`package.json` pins pnpm 9.15.0; `pnpm-lock.yaml` resolves React 19, MUI 7,
+React Router 7 and Vite 6. `pnpm run build` builds the canonical shared UI in
+`packages/netcap-ui/`, then the Go-embedded production bundle in `dist/`.
 
-## Development
+| Command (this directory) | Purpose |
+| --- | --- |
+| `corepack pnpm dev` | Shared-library watcher and Vite development server; `/api` proxies to `localhost:8080` |
+| `corepack pnpm run build` | Legal assets, shared UI/types, production bundle |
+| `corepack pnpm test` | Vitest |
+| `node --test scripts/browser-fixture.test.mjs` | Reject an unrelated server before browser actions |
 
-```bash
-pnpm install
-pnpm run dev
+## Local browser evidence
+
+From the repository root, after building the frontend:
+
+```sh
+env -i PATH="$PATH" HOME="$HOME" TMPDIR="$TMPDIR" GOWORK=off \
+  CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  NETCAP_INVESTIGATION_BROWSER=1 \
+  go test -race -tags nodpi,noyara,nomagika ./cmd/capture/webui \
+  -run '^TestInvestigationBrowserPersistence$' -count=1 -v -timeout 120s
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the result.
+`PATH` must put a real Node executable before Volta/mise shims: the browser
+subprocess has a temporary `HOME`. Set `CHROME_PATH` to an installed browser,
+or install the Playwright 1.63.0 browser in `PLAYWRIGHT_BROWSERS_PATH`.
 
-## Building for Production
+| Check | Evidence boundary |
+| --- | --- |
+| `TestInvestigationBrowserPersistence` | Synthetic PCAP reader → capture/stream persistence writers → real HTTP → production React; input hash, byte-exact binary/empty/manifest downloads, reload/switch persistence, empty versus unavailable, missing flow-record error |
+| `TestInvestigationKnownForeignSessionSelection` | Shareable session reads return only selected evidence; foreign-IP active-session switch rejected; unknown/duplicate selectors and missing manifest fail explicitly |
+| `TestCanceledAlertStreamsReleaseOnlyOwnedSlots` | Eight actual SSE clients, ninth rejected, canceled slot reused, persisted alert still readable, all handlers return without shutting down shared server |
+| `TestServerStopPreservesUnrelatedListener` | Failed bind/owned shutdown preserve unrelated HTTP identity and release owned port |
 
-```bash
-pnpm run build
-```
+Fixtures own ephemeral `127.0.0.1:0` listeners and temporary synthetic data;
+`browser-fixture.mjs` verifies output identity, blocks unexpected browser origins
+and saves private `netcap-browser-evidence-*` reports/failure traces under the OS
+temporary directory. Backend egress is source-audited, not OS-firewalled.
 
-This creates a static export in the `out/` directory which is embedded into the Go binary.
-
-## Tech Stack
-
-- **Next.js 14**: React framework with static export
-- **Material-UI 5**: Component library
-- **TypeScript**: Type safety
-- **SWR**: Data fetching and caching
-
-## Project Structure
-
-```
-src/
-├── components/       # Reusable components
-│   └── Layout.tsx   # Main layout with navigation
-├── lib/             # Utilities and API client
-│   └── api.ts       # API client and helpers
-└── pages/           # Next.js pages
-    ├── _app.tsx     # App wrapper with theme
-    ├── _document.tsx # Document wrapper
-    ├── index.tsx    # Dashboard
-    ├── files.tsx    # Input files viewer
-    ├── audit.tsx    # Audit records browser
-    └── logs.tsx     # Log viewer
-```
-
-## Customization
-
-### Theme
-
-Edit `src/pages/_app.tsx` to customize the Material-UI theme:
-
-```typescript
-const theme = createTheme({
-  palette: {
-    mode: 'dark', // or 'light'
-    primary: {
-      main: '#00bcd4', // Change primary color
-    },
-  },
-});
-```
-
-### API Endpoint
-
-The API base URL is automatically set to `/api` for production. For development with a different backend, edit `src/lib/api.ts`:
-
-```typescript
-const API_BASE = 'http://localhost:8080/api';
-```
-
+The shared fix belongs in `packages/netcap-ui/src/pages/InvestigationPage.tsx`.
+Publishing `@dreadl0ck/netcap-ui` and updating sibling consumers are separate
+release tasks. macOS arm64 local evidence does not qualify another OS, full
+collector/reassembly, native dialogs, live capture or injection. Next: execute
+these mandatory fixtures on an actual Linux/Windows runner; compilation alone
+does not qualify that OS.

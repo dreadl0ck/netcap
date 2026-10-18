@@ -5,7 +5,13 @@ import Layout from '../components/Layout';
 import FileSelectorHeader from '../components/FileSelectorHeader';
 import { useNetcapApi } from '../hooks';
 import { useNetcapConfig } from '../providers';
-import { behaviorRequest, behaviorSelection } from '../lib/behavior';
+import { behaviorSelection } from '../lib/behavior';
+
+async function investigationRequest<T>(fetcher: typeof fetch, url: string): Promise<T> {
+  const response = await fetcher(url);
+  if (!response.ok) throw new Error(await response.text() || `Request failed (${response.status})`);
+  return response.json() as Promise<T>;
+}
 
 interface CaptureManifest {
   runId: string; status: string; inputSHA256?: string; configSHA256: string; error?: string;
@@ -41,11 +47,11 @@ export default function InvestigationPage({ downloadArtifact }: InvestigationPag
   const selection = behaviorSelection(status, files);
   const captureURL = `${config.apiBaseUrl}/investigation/capture${selection}`;
   const streamURL = `${config.apiBaseUrl}/investigation/streams${selection}`;
-  const { data: capture, error: captureError } = useSWR<CaptureManifest>(status ? captureURL : null, () => behaviorRequest(fetcher, captureURL), { keepPreviousData: false });
-  const { data: streams, error: streamError } = useSWR<StreamRow[]>(status ? streamURL : null, () => behaviorRequest(fetcher, streamURL), { keepPreviousData: false });
+  const { data: capture, error: captureError } = useSWR<CaptureManifest>(status ? captureURL : null, () => investigationRequest(fetcher, captureURL), { keepPreviousData: false });
+  const { data: streams, error: streamError } = useSWR<StreamRow[]>(status ? streamURL : null, () => investigationRequest(fetcher, streamURL), { keepPreviousData: false });
   const healthURL = (kind: string) => `${config.apiBaseUrl}/investigation/health${selection}${selection ? '&' : '?'}kind=${kind}`;
-  const { data: ftpHealth, error: ftpHealthError } = useSWR(status ? healthURL('ftp') : null, () => behaviorRequest(fetcher, healthURL('ftp')), { keepPreviousData: false });
-  const { data: reassemblyHealth, error: reassemblyHealthError } = useSWR(status ? healthURL('reassembly') : null, () => behaviorRequest(fetcher, healthURL('reassembly')), { keepPreviousData: false });
+  const { data: ftpHealth, error: ftpHealthError } = useSWR(status ? healthURL('ftp') : null, () => investigationRequest(fetcher, healthURL('ftp')), { keepPreviousData: false });
+  const { data: reassemblyHealth, error: reassemblyHealthError } = useSWR(status ? healthURL('reassembly') : null, () => investigationRequest(fetcher, healthURL('reassembly')), { keepPreviousData: false });
   const [source, setSource] = useState('packet');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
@@ -87,7 +93,7 @@ export default function InvestigationPage({ downloadArtifact }: InvestigationPag
         endpoint = 'flows/exports/query'; params.set('exporter', exporter); params.set('domain', domain); params.set('format', format); params.set('timeBasis', basis);
         if (ingress) params.set('ingress', ingress); if (egress) params.set('egress', egress); if (nextHop) params.set('nextHop', nextHop);
       } else { params.set('filter', expression); params.set('sortBy', sortBy); params.set('windowMode', windowMode); if (bucketNs) params.set('bucketNs', bucketNs); }
-      const result = await behaviorRequest<FlowReport>(fetcher, `${config.apiBaseUrl}/${endpoint}?${params}`);
+      const result = await investigationRequest<FlowReport>(fetcher, `${config.apiBaseUrl}/${endpoint}?${params}`);
       if (generation.current === requestGeneration) setReport(result);
     } catch (failure) { if (generation.current === requestGeneration) setError(failure instanceof Error ? failure.message : 'Query failed'); }
     finally { if (generation.current === requestGeneration) setBusy(false); }
