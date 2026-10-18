@@ -83,7 +83,11 @@ func ReadSnapshot(path string) (Snapshot, error) {
 		if err := fact.normalize(); err != nil {
 			return state, err
 		}
-		if fact.Kind != "traffic" || id != factID(fact) || rate.Start <= 0 || !validRateModel(rate.Model) {
+		observation, observed := state.Observed[id]
+		// Zero is the first Unix bucket, not an uninitialized rate sentinel.
+		if fact.Kind != "traffic" || id != factID(fact) || rate.Start < 0 || !validRateModel(rate.Model) ||
+			!observed || observation.LastSeen <= 0 || observation.LastSeen > state.Watermark ||
+			rate.Start != observation.LastSeen/state.Policy.WindowNS*state.Policy.WindowNS {
 			return state, errors.New("invalid rate state")
 		}
 	}
