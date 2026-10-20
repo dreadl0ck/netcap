@@ -69,6 +69,7 @@ RUN protoc --proto_path=types --gogofaster_out=types/. types/netcap.proto && tes
 
 # Accept VERSION as a build argument (defaults to 0.7.7 if not provided)
 ARG VERSION=0.7.7
+ARG COMMIT
 
 # Clear Go build cache to ensure fresh build
 RUN go clean -cache -modcache -i -r
@@ -84,6 +85,7 @@ RUN GOPACKET_VERSION=$(grep "github.com/gopacket/gopacket" /netcap/go.mod | grep
     GOWORK=off GOOS=linux GOARCH=amd64 go build -a -trimpath \
     -ldflags "-r /usr/local/lib -s -w \
         -X github.com/dreadl0ck/netcap.Version=v${VERSION} \
+        -X github.com/dreadl0ck/netcap.Commit=${COMMIT} \
         -X github.com/dreadl0ck/netcap.GopacketVersion=${GOPACKET_VERSION} \
         -X github.com/dreadl0ck/netcap/internal/dpi.NDPIVersion=4.14.0 \
         -X github.com/dreadl0ck/netcap/internal/dpi.LibprotoidentVersion=2.0.15-1 \
