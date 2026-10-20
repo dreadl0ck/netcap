@@ -235,7 +235,7 @@ func TestRatePersistenceRejectsMalformedJSON(t *testing.T) {
 }
 
 func TestRatePersistenceExistingPCAPSave(t *testing.T) {
-	file, err := os.Open("../collector/testdata/http.pcap")
+	file, err := os.Open("testdata/qualification/discovery-dns/attack.pcap")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -331,12 +331,8 @@ retry:
 			if tl != nil {
 				// TODO: change field type to int and use binary.LittleEndian.Uint16(...Src().Raw())
 				// Check if the endpoint has valid data before converting to string
-				if len(tl.TransportFlow().Src().Raw()) > 0 {
-					conn.SrcPort = tl.TransportFlow().Src().String()
-				}
-				if len(tl.TransportFlow().Dst().Raw()) > 0 {
-					conn.DstPort = tl.TransportFlow().Dst().String()
-				}
+				conn.SrcPort = connectionPort(tl.TransportFlow().Src())
+				conn.DstPort = connectionPort(tl.TransportFlow().Dst())
 			}
 		}
 
@@ -348,7 +344,7 @@ retry:
 		}
 
 		if nl != nil {
-			if conn.clientIP == nl.NetworkFlow().Src().String() && (tl == nil || conn.clientPort == tl.TransportFlow().Src().String()) {
+			if conn.clientIP == nl.NetworkFlow().Src().String() && (tl == nil || conn.clientPort == connectionPort(tl.TransportFlow().Src())) {
 				conn.BytesClientToServer += int64(p.Metadata().Length)
 				conn.packetsClientToServer++
 			} else {
@@ -448,12 +444,8 @@ func makeConnection(p gopacket.Packet, connID connectionID, ll gopacket.LinkLaye
 	if tl != nil {
 		co.TransportProto = tl.LayerType().String()
 		// Check if the endpoint has valid data before converting to string
-		if len(tl.TransportFlow().Src().Raw()) > 0 {
-			co.SrcPort = tl.TransportFlow().Src().String()
-		}
-		if len(tl.TransportFlow().Dst().Raw()) > 0 {
-			co.DstPort = tl.TransportFlow().Dst().String()
-		}
+		co.SrcPort = connectionPort(tl.TransportFlow().Src())
+		co.DstPort = connectionPort(tl.TransportFlow().Dst())
 	} else if connID.IPProtocol != 0 {
 		co.TransportProto = layers.IPProtocol(connID.IPProtocol).String()
 	}
@@ -493,6 +485,25 @@ func makeConnection(p gopacket.Packet, connID connectionID, ll gopacket.LinkLaye
 	return newConn
 }
 
+// Truncated decodes can expose a transport layer without complete port endpoints.
+func connectionPort(endpoint gopacket.Endpoint) string {
+	raw := endpoint.Raw()
+	if len(raw) == 0 {
+		return ""
+	}
+	switch endpoint.EndpointType() {
+	case layers.EndpointTCPPort, layers.EndpointUDPPort, layers.EndpointSCTPPort, layers.EndpointUDPLitePort:
+		if len(raw) != 2 {
+			return ""
+		}
+	case layers.EndpointRUDPPort:
+		if len(raw) != 1 {
+			return ""
+		}
+	}
+	return endpoint.String()
+}
+
 func connectionNewSYN(conn *connection, p gopacket.Packet) bool {
 	tcp, ok := p.TransportLayer().(*layers.TCP)
 	return ok && tcp.SYN && !tcp.ACK && p.Metadata().Timestamp.UnixNano() >= conn.TimestampLast &&
@@ -509,7 +520,7 @@ func trackConnectionLifecycle(conn *connection, p gopacket.Packet) {
 		conn.tcpSynSequence = tcp.Seq
 	}
 	if tcp.FIN {
-		client := p.NetworkLayer() != nil && p.NetworkLayer().NetworkFlow().Src().String() == conn.clientIP && p.TransportLayer().TransportFlow().Src().String() == conn.clientPort
+		client := p.NetworkLayer() != nil && p.NetworkLayer().NetworkFlow().Src().String() == conn.clientIP && connectionPort(p.TransportLayer().TransportFlow().Src()) == conn.clientPort
 		if client {
 			conn.finClient = true
 		} else {
