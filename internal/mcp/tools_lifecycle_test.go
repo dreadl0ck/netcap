@@ -56,6 +56,27 @@ func TestDeleteSessionForwardsDELETE(t *testing.T) {
 	}
 }
 
+func TestCompletionUsesFileStateRatherThanIdleServer(t *testing.T) {
+	for _, test := range []struct {
+		name, files string
+		want        bool
+	}{
+		{"incomplete", `[{"path":"/data/x.pcap","isCompleted":false}]`, false},
+		{"failed", `[{"path":"/data/x.pcap","isCompleted":false,"error":"analysis failed"}]`, false},
+		{"unknown", `[{"path":"/data/other.pcap","isCompleted":true}]`, false},
+		{"completed", `[{"path":"/data/x.pcap","isCompleted":true}]`, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			for _, processing := range []bool{false, true} {
+				status := json.RawMessage(fmt.Sprintf(`{"isProcessing":%t}`, processing))
+				if got := deriveCompleted(SessionRef{ID: "/data/x.pcap", isPath: true}, json.RawMessage(test.files), status); got != test.want {
+					t.Fatalf("processing=%v: completed=%v, want %v", processing, got, test.want)
+				}
+			}
+		})
+	}
+}
+
 // TestWaitForSessionPollsUntilCompleted: simulates a session that
 // reports isCompleted=false twice, then true. The tool should poll
 // and return when completed=true.
@@ -87,8 +108,8 @@ func TestWaitForSessionPollsUntilCompleted(t *testing.T) {
 		Params: mcplib.CallToolParams{
 			Name: "wait_for_session",
 			Arguments: map[string]any{
-				"session_id":      "/data/x.pcap",
-				"timeout_seconds": 5,
+				"session_id":       "/data/x.pcap",
+				"timeout_seconds":  5,
 				"poll_interval_ms": 100,
 			},
 		},

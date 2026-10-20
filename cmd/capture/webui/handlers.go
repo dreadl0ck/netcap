@@ -38,7 +38,6 @@ import (
 	"slices"
 	"sort"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/dreadl0ck/netcap"
@@ -69,7 +68,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := StatusResponse{
-		IsProcessing:    s.isProcessing,
+		IsProcessing:    s.processingLocked(),
 		OutputDir:       s.outDir,
 		InputFiles:      inputFiles,
 		ServerStarted:   serverStartTime,
@@ -701,14 +700,12 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Queue the job
-		select {
-		case s.jobQueue <- job:
-			atomic.AddInt64(&s.jobsScheduled, 1)
-			log.Printf("[WebUI] Reanalysis job queued for session %s: %s", req.SessionID, session.InputFilename)
-		default:
-			http.Error(w, "Job queue is full", http.StatusServiceUnavailable)
+		if err := s.enqueueAnalysis(job, false); err != nil {
+			s.recordAnalysisFailure(job, err.Error(), "")
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
+		log.Printf("[WebUI] Reanalysis job queued for session %s: %s", req.SessionID, session.InputFilename)
 
 		respondJSON(w, http.StatusOK, map[string]any{
 			"success":   true,
@@ -794,14 +791,12 @@ func (s *Server) handleReanalyze(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	select {
-	case s.jobQueue <- job:
-		atomic.AddInt64(&s.jobsScheduled, 1)
-		log.Printf("[WebUI] Reanalysis job queued for file: %s -> %s", req.InputFile, outputDir)
-	default:
-		http.Error(w, "Job queue is full", http.StatusServiceUnavailable)
+	if err := s.enqueueAnalysis(job, false); err != nil {
+		s.recordAnalysisFailure(job, err.Error(), "")
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
+	log.Printf("[WebUI] Reanalysis job queued for file: %s -> %s", req.InputFile, outputDir)
 
 	respondJSON(w, http.StatusOK, map[string]any{
 		"success":  true,
@@ -2040,9 +2035,7 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 		// Queue the job
 		log.Printf("[WebUI] Queueing analysis job for uploaded file: %s -> %s", inputPath, outputDir)
-		select {
-		case s.jobQueue <- job:
-			atomic.AddInt64(&s.jobsScheduled, 1)
+		if err := s.enqueueAnalysis(job, false); err == nil {
 			log.Printf("[WebUI] Analysis job queued successfully")
 
 			// Add the uploaded file to inputFiles so it appears in the UI
@@ -2054,11 +2047,11 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 				log.Printf("[WebUI] Added uploaded file to inputFiles list: %s", inputPath)
 			}
 			s.mu.Unlock()
-		default:
+		} else {
 			log.Printf("[WebUI] Job queue is full, cannot queue analysis")
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(map[string]any{
-				"error":   "Analysis queue is full, please try again later",
+				"error":   err.Error(),
 				"success": false,
 			})
 			return

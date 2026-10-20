@@ -904,6 +904,11 @@ func RunWithContext(ctx context.Context, c *cli.Command) (runErr error) {
 		return nil
 	}
 
+	if webUIServer != nil {
+		webUIServer.SetProcessingStarted()
+		defer webUIServer.SetProcessingComplete()
+	}
+
 	// init collector
 	coll := collector.New(collector.Config{
 		NetworkDetection:       flagNetworkDetection,

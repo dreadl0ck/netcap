@@ -220,8 +220,18 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 
 	// Start the command
 	startTime := time.Now()
+	s.currentCmdMutex.Lock()
+	s.mu.RLock()
+	stopping := s.processingStopping
+	s.mu.RUnlock()
+	if stopping {
+		s.currentCmdMutex.Unlock()
+		s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
+		return
+	}
 	err = cmd.Start()
 	if err != nil {
+		s.currentCmdMutex.Unlock()
 		log.Printf("[Service] Failed to start command for session %s: %v", job.SessionID, err)
 		s.recordAnalysisFailure(job, fmt.Sprintf("Failed to start analysis: %v", err), "")
 
@@ -229,7 +239,6 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	}
 
 	// Store the running process for potential cleanup during shutdown
-	s.currentCmdMutex.Lock()
 	s.currentProc = cmd.Process
 	s.currentCmdMutex.Unlock()
 
@@ -328,7 +337,7 @@ func (s *Server) runAnalysis(job *AnalysisJob) {
 	}
 
 	// Execute rules automatically after successful analysis (async to not block next job)
-	go s.executeRulesForJob(job)
+	s.startProcessingWork(func() { s.executeRulesForJob(job) })
 }
 
 // analysisErrorSummaryLimit is how many trailing bytes of the helper's output

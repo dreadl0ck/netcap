@@ -74,7 +74,7 @@ type AuditStatsResponse struct {
 	TotalRecords       int64 `json:"totalRecords"`
 	ExploitCount       int64 `json:"exploitCount"`
 	VulnerabilityCount int64 `json:"vulnerabilityCount"`
-	SecretCount   int64 `json:"secretCount"`
+	SecretCount        int64 `json:"secretCount"`
 	SoftwareCount      int64 `json:"softwareCount"`
 }
 
@@ -99,6 +99,7 @@ type UserDPIPreferences struct {
 
 // AnalysisJob represents a job in the analysis queue (service mode only)
 type AnalysisJob struct {
+	processingDone  func()
 	SessionID       string
 	InputFile       string
 	OutputDir       string

@@ -189,6 +189,9 @@ type Server struct {
 	mu                   sync.RWMutex
 	geoProvidersOverride string
 	isProcessing         bool
+	processingWork       int
+	processingStopping   bool
+	enqueueMu            sync.RWMutex
 	isLiveMode           bool                           // Whether in live capture mode
 	stopCapture          context.CancelFunc             // Function to stop live capture
 	activeInputFile      string                         // Currently selected input file for viewing
@@ -281,7 +284,6 @@ func NewServer(addr, outDir string, inputFiles []string, assetsPath string, debu
 		baseOutDir:         outDir,
 		inputFiles:         inputFiles,
 		assetsPath:         assetsPath,
-		isProcessing:       true,
 		dpiConfigured:      dpiConfigured,
 		runtimeConfig:      runtimeConfig,
 		completedFiles:     make(map[string]bool),
@@ -389,6 +391,11 @@ func (s *Server) loadPreloadedPcaps() {
 	var skippedCount int
 
 	for _, file := range files {
+		select {
+		case <-s.shutdownChan:
+			return
+		default:
+		}
 		if file.IsDir() {
 			continue
 		}
@@ -462,6 +469,11 @@ func (s *Server) loadPreloadedPcaps() {
 	// Second pass: process files in order of size (smallest first)
 	preloadedCount := 0
 	for _, pcapFile := range pcapFiles {
+		select {
+		case <-s.shutdownChan:
+			return
+		default:
+		}
 		// Generate session ID for this preloaded pcap
 		sessionID := generateSessionID()
 
@@ -511,8 +523,10 @@ func (s *Server) loadPreloadedPcaps() {
 			ExcludeDecoders: "",
 		}
 
-		atomic.AddInt64(&s.jobsScheduled, 1)
-		s.jobQueue <- job
+		if err := s.enqueueAnalysis(job, true); err != nil {
+			s.recordAnalysisFailure(job, err.Error(), "")
+			return
+		}
 		preloadedCount++
 
 		//log.Printf("[Server] Queued preloaded pcap: %s (session: %s, size: %d bytes)", pcapFile.filename, sessionID, pcapFile.size)
@@ -758,7 +772,7 @@ func (s *Server) Start() error {
 	if s.jobQueue != nil {
 		// Start job processor
 		s.wg.Add(1)
-		go s.processJobs()
+		go s.processJobs(s.runAnalysis)
 		if s.isServiceMode {
 			log.Println("[WebUI] Started job processor for service mode")
 		} else {
@@ -784,7 +798,7 @@ func (s *Server) Start() error {
 	// Load and queue preloaded pcaps after server starts (in goroutine to avoid blocking)
 	// This can take time with many files and the channel may block if queue is full
 	if s.isServiceMode && s.jobQueue != nil {
-		go s.loadPreloadedPcaps()
+		s.startProcessingWork(s.loadPreloadedPcaps)
 	}
 
 	return nil
@@ -819,6 +833,7 @@ func (s *Server) handleDecodersRouter(w http.ResponseWriter, r *http.Request) {
 // Stop gracefully stops the HTTP server
 func (s *Server) Stop(ctx context.Context) error {
 	log.Println("[WebUI] Shutting down server...")
+	s.stopProcessingAdmission()
 
 	// Kill any running out-of-process net capture (non-appstore builds only;
 	// the in-process analysis path never sets currentProc).
@@ -833,13 +848,6 @@ func (s *Server) Stop(ctx context.Context) error {
 		s.currentProc = nil
 	}
 	s.currentCmdMutex.Unlock()
-
-	// Signal shutdown to background workers (only close once)
-	if s.shutdownChan != nil {
-		s.shutdownOnce.Do(func() {
-			close(s.shutdownChan)
-		})
-	}
 
 	// Stop HTTP server
 	if s.httpServer != nil {
@@ -869,18 +877,25 @@ func (s *Server) Stop(ctx context.Context) error {
 	return nil
 }
 
-// SetProcessingComplete marks capture processing as complete
+// SetProcessingStarted marks an externally managed CLI capture as active.
+func (s *Server) SetProcessingStarted() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.isProcessing = true
+}
+
+// SetProcessingComplete finishes the external capture without hiding queued work.
 func (s *Server) SetProcessingComplete() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.isProcessing = false
 }
 
-// IsProcessing returns whether capture is still processing
+// IsProcessing includes admitted capture, queued analysis, and post-processing work.
 func (s *Server) IsProcessing() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.isProcessing
+	return s.processingLocked()
 }
 
 // UpdateOutputDir updates the output directory (useful for multi-file processing)
@@ -979,8 +994,10 @@ func (s *Server) AddInputFile(filePath string) {
 		ExcludeDecoders: "",
 	}
 
-	atomic.AddInt64(&s.jobsScheduled, 1)
-	s.jobQueue <- job
+	if err := s.enqueueAnalysis(job, true); err != nil {
+		s.recordAnalysisFailure(job, err.Error(), "")
+		return
+	}
 
 	log.Printf("[WebUI] Queued job for input file: %s (session: %s)", filePath, sessionID)
 }
@@ -1412,12 +1429,28 @@ func (s *Server) SetDPIPreferences(userIP string, prefs *UserDPIPreferences) {
 }
 
 // processJobs processes analysis jobs from the queue one at a time (service mode only)
-func (s *Server) processJobs() {
+func (s *Server) processJobs(runAnalysis func(*AnalysisJob)) {
 	defer s.wg.Done()
 
 	for {
 		select {
-		case job := <-s.jobQueue:
+		case <-s.shutdownChan:
+			return
+		default:
+		}
+		select {
+		case job, ok := <-s.jobQueue:
+			if !ok {
+				return
+			}
+			s.mu.RLock()
+			stopping := s.processingStopping
+			s.mu.RUnlock()
+			if stopping {
+				s.recordAnalysisFailure(job, "Analysis canceled during shutdown", "")
+				job.processingDone()
+				return
+			}
 			// Set current processing job
 			s.currentJobMutex.Lock()
 			s.currentProcessing = job
@@ -1433,25 +1466,23 @@ func (s *Server) processJobs() {
 			// Wrap job processing with panic recovery to prevent crashes from killing the service
 			func() {
 				defer func() {
+					s.currentJobMutex.Lock()
+					s.currentProcessing = nil
+					s.currentJobMutex.Unlock()
+					job.processingDone()
+				}()
+				defer func() {
 					if r := recover(); r != nil {
 						log.Printf("[WebUI] PANIC recovered in job processor for session %s: %v", job.SessionID, r)
 						log.Printf("[WebUI] Stack trace:\n%s", debug.Stack())
 
 						// Mark session as failed
-						if s.sessionManager != nil {
-							errorMsg := fmt.Sprintf("Analysis crashed: %v", r)
-							s.sessionManager.UpdateSessionStatus(job.SessionID, StatusFailed, errorMsg, "")
-						}
+						s.recordAnalysisFailure(job, fmt.Sprintf("Analysis crashed: %v", r), "")
 					}
 				}()
 
-				s.runAnalysis(job)
+				runAnalysis(job)
 			}()
-
-			// Clear current processing job
-			s.currentJobMutex.Lock()
-			s.currentProcessing = nil
-			s.currentJobMutex.Unlock()
 
 			log.Printf("[WebUI] Job processing completed: job %d/%d, session=%s", currentPos, totalScheduled, job.SessionID)
 		case <-s.shutdownChan:
@@ -1595,6 +1626,11 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 	}
 
 	for typeStr, typeRules := range rulesByType {
+		select {
+		case <-s.shutdownChan:
+			return
+		default:
+		}
 		// Skip if no rules for this type
 		if len(typeRules) == 0 {
 			continue
@@ -1642,6 +1678,12 @@ func (s *Server) executeRulesForJob(job *AnalysisJob) {
 		batchAlerts := 0
 
 		for {
+			select {
+			case <-s.shutdownChan:
+				reader.Close()
+				return
+			default:
+			}
 			record, err := reader.NextRecord()
 			if err != nil {
 				if err == stdio.EOF {

@@ -513,17 +513,19 @@ func deriveCompleted(ref SessionRef, files, status json.RawMessage) bool {
 			for _, f := range fl {
 				if ref.isPath {
 					if p, _ := f["path"].(string); p == ref.ID {
-						if b, _ := f["isCompleted"].(bool); b {
-							return true
-						}
+						b, _ := f["isCompleted"].(bool)
+						return b
 					}
 				} else {
 					if sid, _ := f["sessionId"].(string); sid == ref.ID {
-						if b, _ := f["isCompleted"].(bool); b {
-							return true
-						}
+						b, _ := f["isCompleted"].(bool)
+						return b
 					}
 				}
+			}
+			// Idle does not imply success for failed, unknown, or unqueued files.
+			if len(fl) > 0 {
+				return false
 			}
 		}
 	}
